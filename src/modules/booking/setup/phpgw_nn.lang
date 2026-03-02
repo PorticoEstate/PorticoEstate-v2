@@ -1080,3 +1080,12 @@ note_saved	booking	nn	Notat lagra
 application_accepted	booking	nn	Søknad godkjent
 application_rejected	booking	nn	Søknad avslått
 case_officer_changed	booking	nn	Saksbehandlar endra
+no_case_officer_warning	booking	nn	Ingen saksbehandlar er tildelt — tilordna deg sjølv for å behandle denne søknaden
+different_case_officer_warning	booking	nn	Denne søknaden er tildelt ein annan saksbehandlar
+subject	booking	nn	Emne
+message	booking	nn	Melding
+message_sent	booking	nn	Melding sendt
+archive_key	booking	nn	Arkivnøkkel
+in_tax_register	booking	nn	I MVA-registeret
+unit_cost	booking	nn	Einingspris
+associated_items	booking	nn	Tilhøyrande element

@@ -389,6 +389,34 @@ class ApplicationService
 		}
 	}
 
+	// ── Messenger ──────────────────────────────────────────────────────
+
+	/**
+	 * Send a message to the application's case officer via the internal messenger.
+	 */
+	public function sendMessage(int $appId, int $fromAccountId, string $subject, string $content): void
+	{
+		$app = $this->repo->getById($appId);
+		if (!$app) {
+			throw new RuntimeException('Application not found', 404);
+		}
+
+		$caseOfficerId = (int) ($app['case_officer_id'] ?? 0);
+		if (!$caseOfficerId) {
+			throw new RuntimeException('No case officer assigned', 400);
+		}
+		if ($caseOfficerId === $fromAccountId) {
+			throw new RuntimeException('Cannot send message to yourself', 400);
+		}
+
+		$messenger = \CreateObject('messenger.somessenger');
+		$messenger->send_message([
+			'to'      => $caseOfficerId,
+			'subject' => $subject,
+			'content' => $content,
+		]);
+	}
+
 	// ── Email helper ───────────────────────────────────────────────────
 
 	/**

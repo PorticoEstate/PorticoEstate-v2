@@ -234,7 +234,7 @@ class ApplicationRepository
 	{
 		try {
 			$stmt = $this->db->prepare(
-				"SELECT id, type, from_, to_, active
+				"SELECT id, type, from_, to_, active, cost
 				 FROM bb_application_association
 				 WHERE application_id = :id
 				 ORDER BY from_ NULLS LAST"
@@ -619,6 +619,27 @@ class ApplicationRepository
 			);
 			$stmt->execute([':id' => $applicationId]);
 		}
+	}
+
+	/**
+	 * Deactivate a single association (allocation/booking/event) by type and ID.
+	 */
+	public function deactivateAssociation(string $type, int $associationId): bool
+	{
+		$tableMap = [
+			'allocation' => 'bb_allocation',
+			'booking'    => 'bb_booking',
+			'event'      => 'bb_event',
+		];
+		$table = $tableMap[$type] ?? null;
+		if (!$table) {
+			return false;
+		}
+		$stmt = $this->db->prepare(
+			"UPDATE {$table} SET active = 0 WHERE id = :id"
+		);
+		$stmt->execute([':id' => $associationId]);
+		return $stmt->rowCount() > 0;
 	}
 
 	public function deactivateAssociations(int $applicationId): void

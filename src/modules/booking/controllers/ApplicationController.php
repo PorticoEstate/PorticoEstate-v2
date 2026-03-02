@@ -148,6 +148,7 @@ class ApplicationController
 			// System-wide terms config
 			$bookingConfig = $this->repo->fetchBookingConfig();
 			$result['application_terms'] = $bookingConfig['application_terms'] ?? '';
+			$result['activate_application_articles'] = !empty($bookingConfig['activate_application_articles']);
 
 			// Regulation documents for terms tab
 			$resourceIds = array_column($resources, 'id');
@@ -581,7 +582,11 @@ class ApplicationController
 
 		try {
 			$rows = $this->repo->fetchDocuments($id);
-			$documents = array_map(fn($row) => (new Document($row, Document::OWNER_APPLICATION))->serialize(), $rows);
+			$documents = array_map(function ($row) {
+				$doc = (new Document($row, Document::OWNER_APPLICATION))->serialize();
+				$doc['download_url'] = '/?menuaction=booking.uidocument_application.download&id=' . $row['id'];
+				return $doc;
+			}, $rows);
 			return ResponseHelper::sendJSONResponse($documents, 200, $response);
 		} catch (Exception $e) {
 			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
@@ -667,6 +672,42 @@ class ApplicationController
 				}
 			}
 			return ResponseHelper::sendJSONResponse($allAssociations, 200, $response);
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
+		}
+	}
+
+	// ── DELETE /booking/applications/{id}/associations/{assocId} ─────────
+
+	public function deleteAssociation(Request $request, Response $response, array $args): Response
+	{
+		$id = $this->getApplicationId($args);
+		$assocId = (int) ($args['assocId'] ?? 0);
+		if (!$id || !$assocId) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Missing application or association ID'], 400);
+		}
+
+		// Verify case officer
+		$app = $this->repo->getById($id);
+		if (!$app) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Application not found'], 404);
+		}
+		if ((int) ($app['case_officer_id'] ?? 0) !== $this->currentAccountId) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Only the case officer can delete associations'], 403);
+		}
+
+		$body = json_decode((string) $request->getBody(), true) ?: [];
+		$type = $body['type'] ?? '';
+		if (!in_array($type, ['allocation', 'booking', 'event'])) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Invalid association type'], 400);
+		}
+
+		try {
+			$success = $this->repo->deactivateAssociation($type, $assocId);
+			if (!$success) {
+				return ResponseHelper::sendErrorResponse(['error' => 'Association not found'], 404);
+			}
+			return ResponseHelper::sendJSONResponse(['status' => 'ok'], 200, $response);
 		} catch (Exception $e) {
 			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
 		}
@@ -878,6 +919,32 @@ class ApplicationController
 
 		try {
 			$this->service->rejectApplication($id, $this->currentAccountId, $reason, $sendEmail);
+			return ResponseHelper::sendJSONResponse(['status' => 'ok'], 200, $response);
+		} catch (RuntimeException $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], $this->httpCode($e));
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
+		}
+	}
+
+	// ── POST /booking/applications/{id}/message ─────────────────────────
+
+	public function sendMessage(Request $request, Response $response, array $args): Response
+	{
+		$id = $this->getApplicationId($args);
+		if (!$id) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Missing application ID'], 400);
+		}
+
+		$body = json_decode((string) $request->getBody(), true) ?: [];
+		$subject = trim($body['subject'] ?? '');
+		$content = trim($body['content'] ?? '');
+		if ($content === '') {
+			return ResponseHelper::sendErrorResponse(['error' => 'Message content is required'], 400);
+		}
+
+		try {
+			$this->service->sendMessage($id, $this->currentAccountId, $subject, $content);
 			return ResponseHelper::sendJSONResponse(['status' => 'ok'], 200, $response);
 		} catch (RuntimeException $e) {
 			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], $this->httpCode($e));

@@ -972,3 +972,13 @@ note_saved	booking	en	Note saved
 application_accepted	booking	en	Application accepted
 application_rejected	booking	en	Application rejected
 case_officer_changed	booking	en	Case officer changed
+no_case_officer_warning	booking	en	No case officer assigned — assign yourself to manage this application
+different_case_officer_warning	booking	en	This application is assigned to another case officer
+subject	booking	en	Subject
+message	booking	en	Message
+message_sent	booking	en	Message sent
+archive_key	booking	en	Archive key
+in_tax_register	booking	en	In tax register
+unit	booking	en	Unit
+unit_cost	booking	en	Unit price
+associated_items	booking	en	Associated items

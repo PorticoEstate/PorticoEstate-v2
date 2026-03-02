@@ -27,6 +27,10 @@
 		return div.innerHTML;
 	}
 
+	function escNl(str) {
+		return esc(str).replace(/\n/g, '<br>');
+	}
+
 	function fmtDate(str) {
 		if (!str) return '';
 		var d = new Date(str);
@@ -244,6 +248,16 @@
 		if (tab && !tab.classList.contains('app-show__tab--active')) tab.click();
 	});
 
+	// Building schedule popup from header meta
+	root.addEventListener('click', function (e) {
+		var link = e.target.closest('[data-building-schedule]');
+		if (!link) return;
+		e.preventDefault();
+		var buildingId = link.dataset.buildingSchedule;
+		var scheduleUrl = '/?menuaction=bookingfrontend.uibuilding.schedule&id=' + buildingId + '&backend=1';
+		window.open(scheduleUrl, '', 'width=1048,height=600,scrollbars=yes');
+	});
+
 	// ═══════════════════════════════════════════════════════════════════
 	// Toolbar
 	// ═══════════════════════════════════════════════════════════════════
@@ -362,10 +376,18 @@
 
 		var warningHtml = '';
 		if (!isCO) {
-			warningHtml += '<div class="app-show__case-officer-warning" role="alert">';
-			warningHtml += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> ';
-			warningHtml += lang('notCaseOfficerWarning');
-			warningHtml += '</div>';
+			var warningIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> ';
+			if (!hasCO) {
+				warningHtml += '<div class="app-show__case-officer-warning" role="alert">';
+				warningHtml += warningIcon;
+				warningHtml += lang('noCaseOfficerWarning');
+				warningHtml += '</div>';
+			} else {
+				warningHtml += '<div class="app-show__case-officer-warning" role="alert">';
+				warningHtml += warningIcon;
+				warningHtml += lang('differentCaseOfficerWarning');
+				warningHtml += '</div>';
+			}
 		}
 		document.getElementById('application-toolbar').innerHTML = warningHtml;
 
@@ -441,6 +463,7 @@
 			// Modal actions
 		if (action === 'comment-modal') showCommentModal();
 		else if (action === 'internal-note-modal') showInternalNoteModal();
+		else if (action === 'messenger-modal') showMessengerModal();
 		else if (action === 'accept-modal') showAcceptModal();
 		else if (action === 'reject-modal') showRejectModal();
 		else if (action === 'change-user-modal') showChangeUserModal();
@@ -453,17 +476,29 @@
 
 	function renderHeader(app) {
 		var toolbarHtml = renderToolbar._toolbarHtml || '';
+		var titleText = app.related_application_count > 1
+			? lang('combinedApplication') + ' (' + app.related_application_count + ') — ' + esc(app.building_name)
+			: lang('application') + ' #' + esc(app.id);
 		var html = '<div class="app-show__title-row">' +
 			'<div class="app-show__title-left">' +
-			'<h1 class="app-show__title">' + lang('application') + ' #' + esc(app.id) + '</h1>' +
+			'<h1 class="app-show__title">' + titleText + '</h1>' +
 			statusTag(app.status) +
 			'</div>' +
 			toolbarHtml +
 			'</div>';
 
 		html += '<div class="app-show__meta">';
-		html += '<span class="app-show__meta-item">' + lang('building') + ': ' + esc(app.building_name) + '</span>';
+		html += '<span class="app-show__meta-item">' + lang('building') + ': ' + esc(app.building_name);
+		if (app.building_id) {
+			html += ' <a href="javascript:void(0)" class="app-show__schedule-link" data-building-schedule="' + esc(app.building_id) + '" title="' + lang('schedule') + '">' +
+				'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
+				'</a>';
+		}
+		html += '</span>';
 		html += '<span class="app-show__meta-item">' + lang('created') + ': ' + fmtDate(app.created) + '</span>';
+		if (app.modified) {
+			html += '<span class="app-show__meta-item">' + lang('modified') + ': ' + fmtDate(app.modified) + '</span>';
+		}
 		html += '<span class="app-show__meta-item">' + lang('caseOfficer') + ': ';
 		if (app.case_officer_name) {
 			html += esc(app.case_officer_name);
@@ -478,7 +513,10 @@
 			html += '<span class="app-show__meta-item">' + lang('relatedApps') + ': ' + app.related_application_count + '</span>';
 		}
 		if (app.num_associations > 0) {
-			html += '<span class="app-show__meta-item">' + lang('associations') + ': ' + app.num_associations + '</span>';
+			html += '<span class="app-show__meta-item">' + lang('associationsCount') + ': ' + app.num_associations + '</span>';
+		}
+		if (app.toolbar && app.toolbar.external_archive_key) {
+			html += '<span class="app-show__meta-item">' + lang('archiveKey') + ': ' + esc(app.toolbar.external_archive_key) + '</span>';
 		}
 		html += '</div>';
 
@@ -547,6 +585,10 @@
 			var orgHtml = '';
 			orgHtml += field(lang('name'), app.organization.name);
 			orgHtml += field(lang('orgNumber'), app.organization.organization_number);
+			if (app.organization.in_tax_register != null) {
+				orgHtml += field(lang('inTaxRegister'),
+					(app.organization.in_tax_register === 1 || app.organization.in_tax_register === '1') ? lang('yes') : lang('no'));
+			}
 			html += section(lang('organization'), orgHtml);
 		} else if (app.customer_identifier_type === 'ssn' && app.customer_ssn) {
 			var ssnHtml = field(lang('ssn'), app.customer_ssn.substring(0, 6) + '*****');
@@ -570,8 +612,8 @@
 			var eventHtml = '';
 			eventHtml += field(lang('activity'), app.activity_name);
 			eventHtml += field(lang('eventName'), app.name);
-			eventHtml += field(lang('description'), app.description);
-			eventHtml += field(lang('equipment'), app.equipment);
+			eventHtml += fieldHtml(lang('description'), app.description ? escNl(app.description) : '');
+			eventHtml += fieldHtml(lang('equipment'), app.equipment ? escNl(app.equipment) : '');
 			eventHtml += field(lang('organizer'), app.organizer);
 			if (app.homepage) {
 				eventHtml += fieldHtml(lang('homepage'), '<a href="' + esc(app.homepage) + '" target="_blank">' + esc(app.homepage) + '</a>');
@@ -726,47 +768,116 @@
 			window.open(scheduleUrl, '', 'width=1048,height=600,scrollbars=yes');
 		});
 
+		// Delegated event: association delete button
+		root.addEventListener('click', function (e) {
+			var btn = e.target.closest('.app-show__assoc-delete');
+			if (!btn) return;
+			if (!confirm(lang('deleteAssociationConfirm') !== 'deleteAssociationConfirm' ? lang('deleteAssociationConfirm') : 'Deactivate this association?')) return;
+			var assocId = btn.dataset.assocId;
+			var assocType = btn.dataset.assocType;
+			btn.disabled = true;
+			btn.textContent = '...';
+			fetch(apiUrl + '/associations/' + assocId, {
+				method: 'DELETE',
+				credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ type: assocType })
+			}).then(function (res) {
+				if (!res.ok) throw new Error('HTTP ' + res.status);
+				return res.json();
+			}).then(function () {
+				window.location.reload();
+			}).catch(function (err) {
+				btn.disabled = false;
+				btn.textContent = lang('delete');
+				alert(lang('error') + ': ' + err.message);
+			});
+		});
+
 		// Documents
 		var docs = data.documents || [];
 		if (docs.length > 0) {
 			var docsHtml = '<table class="ds-table" data-border>' +
 				'<thead><tr><th>' + lang('name') + '</th><th>' + lang('category') + '</th></tr></thead><tbody>';
 			docs.forEach(function (doc) {
-				docsHtml += '<tr><td>' + esc(doc.name) + '</td><td>' + esc(doc.category) + '</td></tr>';
+				var nameCell = doc.download_url
+					? '<a href="' + esc(doc.download_url) + '">' + esc(doc.name) + '</a>'
+					: esc(doc.name);
+				docsHtml += '<tr><td>' + nameCell + '</td><td>' + esc(doc.category) + '</td></tr>';
 			});
 			docsHtml += '</tbody></table>';
 			html += section(lang('documents'), docsHtml);
 		}
 
-		// Orders
+		// Orders (only when articles config is enabled)
+		// Aggregate all order lines by article into a single summary table (matches legacy)
 		var orders = data.orders || [];
-		if (orders.length > 0) {
-			var ordersHtml = '';
+		if (app.activate_application_articles && orders.length > 0) {
+			var articleMap = {};
+			var grandTotal = 0;
 			orders.forEach(function (order) {
-				var caption = lang('order') + ' #' + esc(order.order_id);
-				if (isCombined && order.application_id) {
-					caption += ' (' + lang('application') + ' #' + esc(order.application_id) + ')';
-				}
-				caption += ' &mdash; ' + lang('sum') + ': ' + Number(order.sum).toFixed(2);
-				ordersHtml += '<table class="ds-table" data-border>' +
-					'<caption>' + caption + '</caption>' +
-					'<thead><tr><th>' + lang('article') + '</th><th>' + lang('quantity') + '</th><th>' + lang('amount') + '</th><th>' + lang('tax') + '</th></tr></thead><tbody>';
 				(order.lines || []).forEach(function (line) {
-					ordersHtml += '<tr><td>' + esc(line.name) + '</td><td>' + esc(line.quantity) + ' ' + esc(line.unit) + '</td><td>' + Number(line.amount).toFixed(2) + '</td><td>' + Number(line.tax).toFixed(2) + '</td></tr>';
+					var key = line.article_mapping_id || line.name;
+					if (!articleMap[key]) {
+						articleMap[key] = {
+							name: line.name,
+							unit: line.unit,
+							unit_price: 0,
+							tax_per_unit: 0,
+							quantity: 0,
+							total: 0
+						};
+					}
+					articleMap[key].quantity += Number(line.quantity) || 0;
+					var lineAmount = Number(line.amount) || 0;
+					var lineTax = Number(line.tax) || 0;
+					articleMap[key].total += lineAmount + lineTax;
+					// Derive unit price from the line (amount / quantity)
+					var qty = Number(line.quantity) || 1;
+					articleMap[key].unit_price = (lineAmount / qty);
+					articleMap[key].tax_per_unit = (lineTax / qty);
+					grandTotal += lineAmount + lineTax;
 				});
-				ordersHtml += '</tbody></table>';
 			});
-			html += section(lang('orders'), ordersHtml);
+
+			var articleKeys = Object.keys(articleMap);
+			if (articleKeys.length > 0) {
+				var ordersHtml = '';
+				if (isCombined) {
+					ordersHtml += '<p>' + orders.length + ' ' + lang('orders') + '</p>';
+				}
+				ordersHtml += '<table class="ds-table" data-border>' +
+					'<thead><tr><th>' + lang('article') + '</th><th>' + lang('unit') + '</th><th>' + lang('unitPrice') + '</th><th>' + lang('tax') + '</th><th>' + lang('quantity') + '</th><th>' + lang('sum') + '</th></tr></thead><tbody>';
+				articleKeys.forEach(function (key) {
+					var a = articleMap[key];
+					ordersHtml += '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.unit) + '</td><td>' + a.unit_price.toFixed(2) + '</td><td>' + a.tax_per_unit.toFixed(2) + '</td><td>' + a.quantity + '</td><td>' + a.total.toFixed(2) + '</td></tr>';
+				});
+				ordersHtml += '</tbody>' +
+					'<tfoot><tr><td colspan="5">' + lang('sum') + ':</td><td>' + grandTotal.toFixed(2) + '</td></tr></tfoot>' +
+					'</table>';
+				html += section(lang('orders'), ordersHtml);
+			}
 		}
 
 		// Associations
 		var associations = data.associations || [];
 		if (associations.length > 0) {
 			var assocHtml = '<table class="ds-table" data-border>' +
-				'<thead><tr><th>ID</th><th>' + lang('type') + '</th><th>' + lang('from') + '</th><th>' + lang('to') + '</th><th>' + lang('active') + '</th></tr></thead><tbody>';
+				'<thead><tr><th>ID</th><th>' + lang('type') + '</th><th>' + lang('from') + '</th><th>' + lang('to') + '</th><th>' + lang('cost') + '</th><th>' + lang('active') + '</th>';
+			if (isCO) assocHtml += '<th></th>';
+			assocHtml += '</tr></thead><tbody>';
 			associations.forEach(function (a) {
 				var activeLabel = (a.active === 1 || a.active === '1') ? lang('yes') : lang('no');
-				assocHtml += '<tr><td>' + esc(a.id) + '</td><td>' + esc(a.type) + '</td><td>' + fmtDate(a.from_) + '</td><td>' + fmtDate(a.to_) + '</td><td>' + activeLabel + '</td></tr>';
+				var costVal = (a.cost != null && a.cost !== '' && Number(a.cost) !== 0) ? Number(a.cost).toFixed(2) : '—';
+				assocHtml += '<tr><td>' + esc(a.id) + '</td><td>' + esc(a.type) + '</td><td>' + fmtDate(a.from_) + '</td><td>' + fmtDate(a.to_) + '</td><td>' + costVal + '</td><td>' + activeLabel + '</td>';
+				if (isCO) {
+					if (a.active === 1 || a.active === '1') {
+						assocHtml += '<td><button type="button" class="app-button app-button-sm app-button-danger app-show__assoc-delete" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' + lang('delete') + '</button></td>';
+					} else {
+						assocHtml += '<td></td>';
+					}
+				}
+				assocHtml += '</tr>';
 			});
 			assocHtml += '</tbody></table>';
 			html += section(lang('associations'), assocHtml);
@@ -849,7 +960,7 @@
 				'<div class="app-show__comment-meta">' +
 				esc(note.author_name || 'Unknown') + ' &mdash; ' + fmtDate(note.created) +
 				'</div>' +
-				'<div class="app-show__comment-text">' + esc(note.content) + '</div>' +
+				'<div class="app-show__comment-text">' + escNl(note.content) + '</div>' +
 				'</div>';
 		});
 		document.getElementById('application-notes').innerHTML = html;
@@ -876,7 +987,7 @@
 				esc(comment.author || comment.name || 'System') + ' &mdash; ' + fmtDate(comment.time) +
 				typeTag +
 				'</div>' +
-				'<div class="app-show__comment-text">' + esc(comment.comment) + '</div>' +
+				'<div class="app-show__comment-text">' + escNl(comment.comment) + '</div>' +
 				'</div>';
 		});
 		document.getElementById('application-comments').innerHTML = html;
@@ -1217,6 +1328,40 @@
 			}).catch(function (err) {
 				btn.disabled = false;
 				btn.textContent = lang('rejectBtn');
+				alert(lang('error') + ': ' + err.message);
+			});
+		});
+	}
+
+	// ── Messenger modal ───────────────────────────────────────────────
+
+	function showMessengerModal() {
+		var body = '<label class="app-show__modal-label" for="modal-messenger-subject">' + esc(lang('subject')) + '</label>' +
+			'<input type="text" id="modal-messenger-subject" class="app-show__modal-input">' +
+			'<label class="app-show__modal-label" for="modal-messenger-content">' + esc(lang('message')) + '</label>' +
+			'<textarea id="modal-messenger-content" class="app-show__modal-textarea" rows="5"></textarea>';
+		var footer = '<button type="button" class="app-button" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="app-button app-button-success" id="modal-messenger-submit">' + esc(lang('send')) + '</button>';
+
+		showModal('messenger-dialog', lang('sendMessageToCaseOfficer'), body, footer);
+
+		document.getElementById('modal-messenger-submit').addEventListener('click', function () {
+			var subject = document.getElementById('modal-messenger-subject').value.trim();
+			var content = document.getElementById('modal-messenger-content').value.trim();
+			if (!content) {
+				document.getElementById('modal-messenger-content').focus();
+				return;
+			}
+			var btn = this;
+			btn.disabled = true;
+			btn.textContent = '...';
+
+			postJsonBody(apiUrl + '/message', { subject: subject, content: content }).then(function () {
+				closeModal('messenger-dialog');
+				showToast(lang('messageSent'));
+			}).catch(function (err) {
+				btn.disabled = false;
+				btn.textContent = lang('send');
 				alert(lang('error') + ': ' + err.message);
 			});
 		});

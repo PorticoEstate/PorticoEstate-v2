@@ -1068,3 +1068,12 @@ note_saved	booking	no	Notat lagret
 application_accepted	booking	no	Søknad godkjent
 application_rejected	booking	no	Søknad avslått
 case_officer_changed	booking	no	Saksbehandler endret
+no_case_officer_warning	booking	no	Ingen saksbehandler er tildelt — tilordne deg selv for å behandle denne søknaden
+different_case_officer_warning	booking	no	Denne søknaden er tildelt en annen saksbehandler
+subject	booking	no	Emne
+message	booking	no	Melding
+message_sent	booking	no	Melding sendt
+archive_key	booking	no	Arkivnøkkel
+in_tax_register	booking	no	I MVA-registeret
+unit_cost	booking	no	Enhetspris
+associated_items	booking	no	Tilhørende elementer

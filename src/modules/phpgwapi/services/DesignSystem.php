@@ -66,7 +66,7 @@ class DesignSystem
 
         if ($this->useDesignsystemet) {
             // Digdir Designsystemet Web Components
-            $scripts[] = '/node_modules/@digdir/designsystemet-web/dist/index.esm.js';
+            $scripts[] = '/node_modules/@digdir/designsystemet-web/dist/esm/index.js';
         } else {
             // Bootstrap JS (handled elsewhere)
         }

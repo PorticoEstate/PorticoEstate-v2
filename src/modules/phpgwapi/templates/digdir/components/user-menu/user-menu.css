@@ -4,3 +4,45 @@
 	margin-top: 0;
 	transform: translateY(-4px);
 }
+
+/* Mobile nav items inside user menu */
+.app-user-menu__mobile-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.app-user-menu__mobile-list li {
+	margin: 0;
+}
+
+.app-user-menu__mobile-header {
+	padding: var(--ds-spacing-2, 0.5rem) var(--ds-spacing-3, 0.75rem);
+	font-size: var(--ds-font-size-xs, 0.75rem);
+	font-weight: var(--ds-font-weight-semibold, 600);
+	color: var(--ds-color-text-subtle, #6c757d);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.app-user-menu__mobile-select {
+	width: 100%;
+	padding: var(--ds-spacing-2, 0.5rem) var(--ds-spacing-3, 0.75rem);
+	border: 1px solid var(--ds-color-border-default, #dee2e6);
+	border-radius: var(--ds-border-radius-sm, 0.25rem);
+	font-size: var(--ds-font-size-sm, 0.875rem);
+	background-color: var(--ds-color-background-default, #fff);
+	color: var(--ds-color-text-default, #1e2b3c);
+	margin: var(--ds-spacing-1, 0.25rem) var(--ds-spacing-3, 0.75rem);
+	width: calc(100% - 1.5rem);
+}
+
+.app-user-menu__mobile-lang {
+	padding: var(--ds-spacing-1, 0.25rem) var(--ds-spacing-3, 0.75rem);
+}
+
+.app-user-menu__divider {
+	margin: var(--ds-spacing-2, 0.5rem) 0;
+	border: 0;
+	border-top: 1px solid var(--ds-color-border-default, #dee2e6);
+}

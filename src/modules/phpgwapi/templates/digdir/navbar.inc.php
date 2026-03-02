@@ -388,14 +388,16 @@ HTML;
 
 					<!-- Topbar Navigation -->
 					<nav class="app-topbar__nav">
-						<a href="{$home_url}" class="app-topbar__link">{$home_text}</a>
-						{$template_selector}
- 						{$manual_option}
-						{$debug_option}
-						{$support_option}
-						{$language_option}
-						{$bookmark_option}
-						{$messenger_option}
+						<div class="app-topbar__nav-items">
+							<a href="{$home_url}" class="app-topbar__link">{$home_text}</a>
+							{$template_selector}
+							{$manual_option}
+							{$debug_option}
+							{$support_option}
+							{$language_option}
+							{$bookmark_option}
+							{$messenger_option}
+						</div>
 
 						{$user_menu}
 

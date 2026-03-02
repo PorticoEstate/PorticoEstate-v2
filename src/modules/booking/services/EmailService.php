@@ -565,11 +565,31 @@ class EmailService
      */
     protected function getBookingConfig(): ?array
     {
+        // Try legacy CreateObject first (works in legacy context)
+        if (function_exists('CreateObject')) {
+            try {
+                $config = CreateObject('phpgwapi.config', 'booking');
+                $config->read();
+                return $config->config_data ?? null;
+            } catch (\Throwable $e) {
+                // Fall through to direct DB query
+            }
+        }
+
+        // Direct DB fallback for new Slim controller context
         try {
-            $config = CreateObject('phpgwapi.config', 'booking');
-            $config->read();
-            return $config->config_data ?? null;
-        } catch (Exception $e) {
+            $db = \App\Database\Db::getInstance();
+            $stmt = $db->prepare(
+                "SELECT config_name, config_value FROM phpgw_config WHERE config_app = 'booking'"
+            );
+            $stmt->execute();
+            $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            $config = [];
+            foreach ($rows as $r) {
+                $config[$r['config_name']] = $r['config_value'];
+            }
+            return $config ?: null;
+        } catch (\Throwable $e) {
             error_log("Failed to get booking config: " . $e->getMessage());
             return null;
         }

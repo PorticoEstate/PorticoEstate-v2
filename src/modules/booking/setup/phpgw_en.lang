@@ -928,3 +928,47 @@ webservice host	booking	en	WebService Host
 organization name	booking	en	Organization name
 percent	booking	en	Percent
 remark	booking	en	Remark
+history	booking	en	History
+related_applications	booking	en	Related applications
+recurring	booking	en	Recurring
+internal_notes	booking	en	Internal notes
+collision	booking	en	Collision
+no_collision	booking	en	Available
+associations	booking	en	Associations
+dates	booking	en	Dates
+comments	booking	en	Comments
+purchase_orders	booking	en	Purchase orders
+send_reply_to_applicant	booking	en	Send reply to applicant
+send_message_to_case_officer	booking	en	Send message to case officer
+create_internal_note	booking	en	Create internal note
+change_case_officer	booking	en	Change case officer
+reply	booking	en	Reply
+forward	booking	en	Forward
+back_to_overview	booking	en	Back to main overview
+not_case_officer_warning	booking	en	To work with this application you must first become the case officer
+not_assigned	booking	en	Not assigned
+amount	booking	en	Amount
+ends	booking	en	Ends
+season_from	booking	en	Season from
+season_to	booking	en	Season to
+order	booking	en	Order
+type	booking	en	Type
+handling	booking	en	Actions
+not_yet_created	booking	en	Not yet created
+creating_allocations	booking	en	Creating allocations
+weeks	booking	en	weeks
+show	booking	en	Show
+successfully_created	booking	en	successfully created
+write_reply_to_applicant	booking	en	Write reply to applicant
+send	booking	en	Send
+acceptance_message	booking	en	Message to applicant
+rejection_reason	booking	en	Reason for rejection
+select_case_officer	booking	en	Select case officer
+note_content	booking	en	Content
+optional	booking	en	Optional
+cancel_action	booking	en	Cancel
+comment_sent	booking	en	Reply sent
+note_saved	booking	en	Note saved
+application_accepted	booking	en	Application accepted
+application_rejected	booking	en	Application rejected
+case_officer_changed	booking	en	Case officer changed

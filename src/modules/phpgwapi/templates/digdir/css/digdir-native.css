@@ -105,6 +105,13 @@ body {
     padding: 0;
 }
 
+/* Wrapper for nav items (collapsible on mobile) */
+.app-topbar__nav-items {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-spacing-2, 0.5rem);
+}
+
 /* Navigation links */
 .app-topbar__link {
     display: flex;
@@ -510,8 +517,20 @@ body {
         margin-left: 0;
     }
 
-    .app-topbar__link span {
+    /* Hide topbar nav items on mobile — they move into user menu */
+    .app-topbar__nav-items {
         display: none;
+    }
+}
+
+/* Mobile nav items inside user menu popover — hidden on desktop */
+.app-user-menu__mobile-nav {
+    display: none;
+}
+
+@media (max-width: 991px) {
+    .app-user-menu__mobile-nav {
+        display: block;
     }
 }
 

@@ -261,6 +261,81 @@ abstract class booking_uicommon extends phpgwapi_uicommon_jquery
 		}
 	}
 
+	/**
+	 * Detect a JSON POST request and populate $_POST from the JSON body.
+	 * ISO dates in from_/to_ are converted to the user's dateformat so that
+	 * date_to_timestamp() in the legacy add methods works correctly.
+	 *
+	 * @return bool true if this is a JSON request
+	 */
+	protected static function handleJsonPost(): bool
+	{
+		$contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+		if ($_SERVER['REQUEST_METHOD'] !== 'POST' || stripos($contentType, 'application/json') === false) {
+			return false;
+		}
+
+		$json = json_decode(file_get_contents('php://input'), true);
+		if (!is_array($json)) {
+			return false;
+		}
+
+		$userSettings = Settings::getInstance()->get('user');
+		$dateformat = $userSettings['preferences']['common']['dateformat'] ?? 'Y-m-d';
+
+		// Convert ISO dates to user dateformat + " H:i"
+		foreach (['from_', 'to_'] as $field) {
+			if (!isset($json[$field])) continue;
+			if (is_array($json[$field])) {
+				foreach ($json[$field] as &$val) {
+					$val = self::isoToUserDate($val, $dateformat);
+				}
+				unset($val);
+			} else {
+				$json[$field] = self::isoToUserDate($json[$field], $dateformat);
+			}
+		}
+
+		// Expand nested objects (male, female) into PHP array POST format:
+		// { "male": {"2": 5} } → $_POST['male'] = ['2' => 5]
+		// This matches the legacy form's male[agegroup_id]=value pattern.
+		foreach (['male', 'female'] as $field) {
+			if (isset($json[$field]) && is_array($json[$field])) {
+				$_POST[$field] = $json[$field];
+				unset($json[$field]);
+			}
+		}
+
+		$_POST = array_merge($_POST, $json);
+		return true;
+	}
+
+	/**
+	 * Convert "Y-m-d H:i:s" or "Y-m-dTH:i:s" to the user's dateformat + " H:i".
+	 */
+	private static function isoToUserDate(string $iso, string $dateformat): string
+	{
+		// Parse ISO 8601 date, preserving local time (strip timezone offset)
+		$clean = preg_replace('/[+-]\d{2}:\d{2}$/', '', $iso);
+		$clean = str_replace('T', ' ', $clean);
+		$ts = strtotime($clean);
+		if ($ts === false) {
+			return $iso;
+		}
+		return date($dateformat . ' H:i', $ts);
+	}
+
+	/**
+	 * Send a JSON response and exit (used by add methods when handling JSON POST).
+	 */
+	protected static function sendJsonResponse(array $data, int $status = 200): void
+	{
+		http_response_code($status);
+		header('Content-Type: application/json');
+		echo json_encode($data);
+		exit;
+	}
+
 	public function create_error_stack($errors = array())
 	{
 		return CreateObject('booking.errorstack', $errors);

@@ -242,7 +242,7 @@ class ApplicationController extends DocumentController
             }
 
             // Return the complete application data
-			return ResponseHelper::sendJSONResponse($fullApplication->serialize());
+			return ResponseHelper::sendJSONResponse($fullApplication->serialize(['user_ssn' => $this->bouser->ssn]));
 
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(

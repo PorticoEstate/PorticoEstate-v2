@@ -14,6 +14,7 @@ use App\modules\bookingfrontend\models\Order;
 use App\modules\bookingfrontend\models\OrderLine;
 use App\modules\bookingfrontend\models\helper\Date;
 use App\modules\booking\services\DocumentService;
+use App\modules\booking\repositories\DocumentRepository;
 
 class ApplicationRepository
 {
@@ -58,7 +59,7 @@ class ApplicationRepository
             $application->agegroups = $this->fetchAgeGroups($application->id);
             $application->audience = $this->fetchTargetAudience($application->id);
             $application->documents = $this->fetchDocuments($application->id);
-            $applications[] = $application->serialize([]);
+            $applications[] = $application->serialize(['user_ssn' => $this->userHelper->ssn]);
         }
 
         return $applications;
@@ -92,7 +93,7 @@ class ApplicationRepository
             $application->agegroups = $this->fetchAgeGroups($application->id);
             $application->audience = $this->fetchTargetAudience($application->id);
             $application->documents = $this->fetchDocuments($application->id);
-            $applications[] = $application->serialize([]);
+            $applications[] = $application->serialize(['user_ssn' => $this->userHelper->ssn]);
         }
 
         return $applications;
@@ -185,7 +186,7 @@ class ApplicationRepository
             $application->documents = $this->fetchDocuments($application->id);
 
             // Add metadata about application type
-            $serialized = $application->serialize([]);
+            $serialized = $application->serialize(['user_ssn' => $this->userHelper->ssn]);
             $serialized['application_type'] = $result['application_type'];
             $applications[] = $serialized;
         }

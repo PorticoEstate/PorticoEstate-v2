@@ -1,0 +1,199 @@
+{% extends layout|default('@views/_layout.twig') %}
+
+{% block title %}{{ lang('booking.application') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/application/show/application_show.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<div id="application-show"
+	 class="app-show"
+	 data-application-id="{{ application_id }}"
+	 data-api-url="{{ phpgw_link('/booking/applications/' ~ application_id) }}"
+	 data-lang-loading="{{ lang('common.loading') }}"
+	 data-lang-error="{{ lang('common.error') }}"
+	 data-lang-application="{{ lang('booking.application') }}"
+	 data-lang-status="{{ lang('common.status') }}"
+	 data-lang-created="{{ lang('booking.created') }}"
+	 data-lang-building="{{ lang('booking.Building') }}"
+	 data-lang-contact="{{ lang('booking.contact information') }}"
+	 data-lang-contact-name="{{ lang('booking.contact_name') }}"
+	 data-lang-contact-email="{{ lang('booking.contact_email') }}"
+	 data-lang-contact-phone="{{ lang('booking.contact_phone') }}"
+	 data-lang-description="{{ lang('common.description') }}"
+	 data-lang-equipment="{{ lang('booking.Extra info') }}"
+	 data-lang-organizer="{{ lang('booking.Organizer') }}"
+	 data-lang-event-name="{{ lang('booking.Event name') }}"
+	 data-lang-dates="{{ lang('booking.dates') }}"
+	 data-lang-resources="{{ lang('booking.resources') }}"
+	 data-lang-organization="{{ lang('booking.Organization') }}"
+	 data-lang-org-number="{{ lang('booking.organization number') }}"
+	 data-lang-target-audience="{{ lang('booking.Target audience') }}"
+	 data-lang-participants="{{ lang('booking.Number of participants') }}"
+	 data-lang-agegroup="{{ lang('booking.Age group') }}"
+	 data-lang-male="{{ lang('booking.Male') }}"
+	 data-lang-female="{{ lang('booking.Female') }}"
+	 data-lang-comments="{{ lang('booking.Comments') }}"
+	 data-lang-internal-notes="{{ lang('booking.internal_notes') }}"
+	 data-lang-case-officer="{{ lang('booking.case_officer') }}"
+	 data-lang-activity="{{ lang('booking.Activity') }}"
+	 data-lang-invoice="{{ lang('booking.invoice information') }}"
+	 data-lang-street="{{ lang('booking.Street') }}"
+	 data-lang-zip="{{ lang('booking.Zip code') }}"
+	 data-lang-city="{{ lang('booking.Postal City') }}"
+	 data-lang-homepage="{{ lang('booking.Homepage') }}"
+	 data-lang-from="{{ lang('booking.from') }}"
+	 data-lang-to="{{ lang('common.to') }}"
+	 data-lang-collision="{{ lang('booking.collision') }}"
+	 data-lang-no-collision="{{ lang('booking.no_collision') }}"
+	 data-lang-related-apps="{{ lang('booking.related_applications') }}"
+	 data-lang-recurring="{{ lang('booking.recurring') }}"
+	 data-lang-name="{{ lang('common.name') }}"
+	 data-lang-associations="{{ lang('booking.associations') }}"
+	 data-lang-ssn="{{ lang('booking.Date of birth or SSN') }}"
+	 data-lang-yes="{{ lang('common.yes') }}"
+	 data-lang-no="{{ lang('common.no') }}"
+	 data-lang-documents="{{ lang('booking.documents') }}"
+	 data-lang-orders="{{ lang('booking.purchase_orders') }}"
+	 data-lang-details="{{ lang('booking.details') }}"
+	 data-lang-history="{{ lang('booking.history') }}"
+	 data-lang-reply="{{ lang('booking.reply') }}"
+	 data-lang-forward="{{ lang('booking.forward') }}"
+	 data-lang-send-reply-to-applicant="{{ lang('booking.send_reply_to_applicant') }}"
+	 data-lang-send-message-to-case-officer="{{ lang('booking.send_message_to_case_officer') }}"
+	 data-lang-create-internal-note="{{ lang('booking.create_internal_note') }}"
+	 data-lang-change-case-officer="{{ lang('booking.change_case_officer') }}"
+	 data-lang-assign-to-me="{{ lang('booking.Assign to me') }}"
+	 data-lang-unassign-me="{{ lang('booking.Unassign me') }}"
+	 data-lang-reject-application="{{ lang('booking.reject application') }}"
+	 data-lang-accept-application="{{ lang('booking.accept application') }}"
+	 data-lang-edit="{{ lang('common.edit') }}"
+	 data-lang-back-to-dashboard="{{ lang('booking.Back to Dashboard') }}"
+	 data-lang-back-to-overview="{{ lang('booking.back_to_overview') }}"
+	 data-lang-not-case-officer-warning="{{ lang('booking.not_case_officer_warning') }}"
+	 data-lang-not-assigned="{{ lang('booking.not_assigned') }}"
+	 data-lang-actions="{{ lang('booking.actions') }}"
+	 data-lang-hide-from-dashboard="{{ lang('booking.Hide from my Dashboard until new activity occurs') }}"
+	 data-lang-display-in-dashboard="{{ lang('booking.Display in my Dashboard') }}"
+	 data-lang-re-assign-to-me="{{ lang('booking.Re-assign to me') }}"
+	 data-lang-pdf-export-to-archive="{{ lang('booking.PDF-export to archive') }}"
+	 data-lang-preview="{{ lang('booking.preview') }}"
+	 data-lang-transfer-case-confirm="{{ lang('booking.transfer case to external system?') }}"
+	 data-lang-accept-requires-associations="{{ lang('booking.One or more bookings, allocations or events needs to be created before an application can be Accepted') }}"
+	 data-lang-edit-invoicing="{{ lang('booking.invoicing_only') }}"
+	 data-lang-category="{{ lang('booking.category') }}"
+	 data-lang-order="{{ lang('booking.order') }}"
+	 data-lang-sum="{{ lang('booking.sum') }}"
+	 data-lang-article="{{ lang('booking.Article') }}"
+	 data-lang-quantity="{{ lang('booking.quantity') }}"
+	 data-lang-amount="{{ lang('booking.amount') }}"
+	 data-lang-tax="{{ lang('booking.tax') }}"
+	 data-lang-interval="{{ lang('booking.Interval') }}"
+	 data-lang-ends="{{ lang('booking.ends') }}"
+	 data-lang-season="{{ lang('booking.season') }}"
+	 data-lang-season-from="{{ lang('booking.season_from') }}"
+	 data-lang-season-to="{{ lang('booking.season_to') }}"
+	 data-lang-terms-and-conditions="{{ lang('booking.terms and conditions') }}"
+	 data-lang-type="{{ lang('booking.type') }}"
+	 data-lang-active="{{ lang('booking.active') }}"
+	 data-lang-document="{{ lang('booking.document') }}"
+	 data-lang-terms-footer="{{ lang('booking.To borrow premises you must verify that you have read terms and conditions') }}"
+	 data-lang-additional-requirements="{{ lang('booking.additional requirements') }}"
+	 data-lang-combined-application="{{ lang('booking.combined_application') }}"
+	 data-lang-timeslots="{{ lang('booking.timeslots') }}"
+	 data-lang-create-allocation="{{ lang('booking.Create allocation') }}"
+	 data-lang-create-booking="{{ lang('booking.Create booking') }}"
+	 data-lang-create-event="{{ lang('booking.Create event') }}"
+	 data-lang-date-actions="{{ lang('booking.- Actions -') }}"
+	 data-lang-date-created="{{ lang('booking.- Created -') }}"
+	 data-lang-schedule="{{ lang('booking.schedule') }}"
+	 data-lang-handling="{{ lang('booking.handling') }}"
+	 data-lang-show="{{ lang('common.show') }}"
+	 data-lang-weeks="{{ lang('booking.weeks') }}"
+	 data-lang-not-yet-created="{{ lang('booking.not_yet_created') }}"
+	 data-lang-create-all-allocations="{{ lang('booking.create_all_allocations') }}"
+	 data-lang-create-non-conflicting-allocations="{{ lang('booking.create_non_conflicting_allocations') }}"
+	 data-lang-all-allocations-created="{{ lang('booking.all_allocations_created') }}"
+	 data-lang-creating-allocations="{{ lang('booking.creating_allocations') }}"
+	 data-lang-recurring-allocations-summary="{{ lang('booking.recurring_allocations_summary') }}"
+	 data-lang-successfully-created="{{ lang('booking.successfully_created') }}"
+	 data-lang-write-reply-to-applicant="{{ lang('booking.write_reply_to_applicant') }}"
+	 data-lang-send="{{ lang('booking.send') }}"
+	 data-lang-cancel="{{ lang('booking.cancel_action') }}"
+	 data-lang-acceptance-message="{{ lang('booking.acceptance_message') }}"
+	 data-lang-send-email-to-applicant="{{ lang('booking.send_email_to_applicant') }}"
+	 data-lang-approve="{{ lang('booking.approve') }}"
+	 data-lang-rejection-reason="{{ lang('booking.rejection_reason') }}"
+	 data-lang-reject-btn="{{ lang('booking.reject') }}"
+	 data-lang-select-case-officer="{{ lang('booking.select_case_officer') }}"
+	 data-lang-note-content="{{ lang('booking.note_content') }}"
+	 data-lang-optional="{{ lang('booking.optional') }}"
+	 data-lang-messenger-modal="{{ lang('booking.send_message_to_case_officer') }}"
+	 data-lang-comment-sent="{{ lang('booking.comment_sent') }}"
+	 data-lang-note-saved="{{ lang('booking.note_saved') }}"
+	 data-lang-application-accepted="{{ lang('booking.application_accepted') }}"
+	 data-lang-application-rejected="{{ lang('booking.application_rejected') }}"
+	 data-lang-case-officer-changed="{{ lang('booking.case_officer_changed') }}"
+>
+	{# Loading state — replaced by JS once data arrives #}
+	<div id="application-loading" class="app-show__loading">
+		<div class="app-show__spinner"></div>
+		<p>{{ lang('common.loading') }}...</p>
+	</div>
+
+	{# Error state — shown by JS on fetch failure #}
+	<div id="application-error" class="app-show__error" hidden>
+		<p id="application-error-message"></p>
+	</div>
+
+	{# Content — populated by JS #}
+	<div id="application-content" hidden>
+		{# Toolbar — rendered by JS with dropdown buttons #}
+		<div id="application-toolbar" class="app-show__toolbar-container"></div>
+
+		{# Header #}
+		<div id="application-header" class="app-show__header"></div>
+
+		{# Tab navigation #}
+		<div class="app-show__tabs" role="tablist">
+			<button class="app-show__tab app-show__tab--active" role="tab" aria-selected="true" data-tab="details">
+				{{ lang('booking.details') }}
+			</button>
+			<button class="app-show__tab" role="tab" aria-selected="false" data-tab="notes">
+				{{ lang('booking.internal_notes') }}
+			</button>
+			<button class="app-show__tab" role="tab" aria-selected="false" data-tab="history">
+				{{ lang('booking.history') }}
+			</button>
+			<button class="app-show__tab" role="tab" aria-selected="false" data-tab="terms">
+				{{ lang('booking.terms and conditions') }}
+			</button>
+		</div>
+
+		{# Tab: Details #}
+		<div id="tab-details" class="app-show__tab-content" role="tabpanel">
+			<div id="application-details"></div>
+		</div>
+
+		{# Tab: Internal Notes #}
+		<div id="tab-notes" class="app-show__tab-content" role="tabpanel" hidden>
+			<div id="application-notes"></div>
+		</div>
+
+		{# Tab: History / Comments #}
+		<div id="tab-history" class="app-show__tab-content" role="tabpanel" hidden>
+			<div id="application-comments"></div>
+		</div>
+
+		{# Tab: Terms and Conditions #}
+		<div id="tab-terms" class="app-show__tab-content" role="tabpanel" hidden>
+			<div id="application-terms"></div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/application/show/application_show.js') }}</script>
+{% endblock %}

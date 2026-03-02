@@ -20,6 +20,8 @@ use App\modules\booking\controllers\OrganizationDocumentController;
 use App\modules\booking\viewcontrollers\DocumentViewController;
 use App\modules\booking\viewcontrollers\ConfigViewController;
 use App\modules\booking\viewcontrollers\RegistryViewController;
+use App\modules\booking\viewcontrollers\ApplicationViewController;
+use App\modules\booking\controllers\ApplicationController;
 use App\modules\phpgwapi\controllers\ConfigController;
 use App\modules\booking\controllers\EmailCompareController;
 
@@ -82,6 +84,8 @@ $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 			$registryGroup->get('/{type}/add', RegistryViewController::class . ':edit');
 			$registryGroup->get('/{type}/{id:[0-9]+}', RegistryViewController::class . ':edit');
 		});
+
+		$viewGroup->get('/applications/{id:[0-9]+}', ApplicationViewController::class . ':show');
 	});
 
 
@@ -180,6 +184,34 @@ $app->group('/booking/registry', function (RouteCollectorProxy $group) use ($con
 		$typeGroup->put('/{id:[0-9]+}', [$controller, 'update']); // Update item
 		$typeGroup->delete('/{id:[0-9]+}', [$controller, 'delete']); // Delete item
 	});
+})
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
+
+$app->group('/booking/applications', function (RouteCollectorProxy $group)
+{
+	$group->get('/{id:[0-9]+}', ApplicationController::class . ':show');
+	$group->post('/{id:[0-9]+}/assign', ApplicationController::class . ':assign');
+	$group->post('/{id:[0-9]+}/unassign', ApplicationController::class . ':unassign');
+	$group->post('/{id:[0-9]+}/toggle-dashboard', ApplicationController::class . ':toggleDashboard');
+	$group->get('/{id:[0-9]+}/dates', ApplicationController::class . ':showDates');
+	$group->get('/{id:[0-9]+}/resources', ApplicationController::class . ':showResources');
+	$group->get('/{id:[0-9]+}/agegroups', ApplicationController::class . ':showAgegroups');
+	$group->get('/{id:[0-9]+}/audience', ApplicationController::class . ':showAudience');
+	$group->get('/{id:[0-9]+}/comments', ApplicationController::class . ':showComments');
+	$group->get('/{id:[0-9]+}/internal-notes', ApplicationController::class . ':showInternalNotes');
+	$group->get('/{id:[0-9]+}/documents', ApplicationController::class . ':showDocuments');
+	$group->get('/{id:[0-9]+}/orders', ApplicationController::class . ':showOrders');
+	$group->get('/{id:[0-9]+}/associations', ApplicationController::class . ':showAssociations');
+	$group->get('/{id:[0-9]+}/related', ApplicationController::class . ':showRelated');
+	$group->get('/{id:[0-9]+}/user-list', ApplicationController::class . ':showUserList');
+	$group->post('/{id:[0-9]+}/comment', ApplicationController::class . ':addComment');
+	$group->post('/{id:[0-9]+}/internal-note', ApplicationController::class . ':addInternalNote');
+	$group->post('/{id:[0-9]+}/accept', ApplicationController::class . ':accept');
+	$group->post('/{id:[0-9]+}/reject', ApplicationController::class . ':reject');
+	$group->post('/{id:[0-9]+}/reassign', ApplicationController::class . ':reassign');
+	$group->get('/{id:[0-9]+}/recurring-preview', ApplicationController::class . ':recurringPreview');
+	$group->post('/{id:[0-9]+}/create-recurring-allocations', ApplicationController::class . ':createRecurringAllocations');
 })
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));

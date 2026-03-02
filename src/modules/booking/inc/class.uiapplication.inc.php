@@ -3764,6 +3764,13 @@ class booking_uiapplication extends booking_uicommon
 			phpgw::no_access('booking', lang('missing id'));
 		}
 
+		$template_set = $this->userSettings['preferences']['common']['template_set'] ?? '';
+		if ($template_set === 'digdir')
+		{
+			\phpgw::redirect_link('/booking/view/applications/' . $id);
+			return;
+		}
+
 		// Check if we should open the approve modal after allocation creation
 		$open_approve_modal = Sanitizer::get_var('open_approve_modal', 'int', 'GET', 0);
 
@@ -4796,21 +4803,7 @@ JS;
 			'show_recurring_summary' => $show_recurring_summary
 		);
 
-		$template_set = $this->userSettings['preferences']['common']['template_set'] ?? '';
-		$use_twig = false;
-
-		$twig_template_path = PHPGW_SERVER_ROOT . "/booking/templates/{$template_set}/{$template_name}.twig";
-		$use_twig = is_file($twig_template_path);
-
-
-		if ($use_twig)
-		{
-			self::render_template_twig($template_name, $template_data, PHPGW_SERVER_ROOT . "/booking/templates/{$template_set}");
-		}
-		else
-		{
-			self::render_template_xsl($template_name, $template_data);
-		}
+		self::render_template_xsl($template_name, $template_data);
 	}
 
 	private function generate_recurring_preview($application, $recurring_data)

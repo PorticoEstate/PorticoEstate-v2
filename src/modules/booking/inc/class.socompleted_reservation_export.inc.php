@@ -2763,7 +2763,7 @@ class booking_socompleted_reservation_export extends booking_socommon
 
 				if ($type == 'internal')
 				{
-					$log_customer_nr = $header['tekst4'] . ' ' . $header['ext_ord_ref'];
+					$log_customer_nr = $header['tekst4'] . ' ' . iconv("ISO-8859-1//TRANSLIT", "utf-8", $header['ext_ord_ref']); //reverse convert to get original name back in log
 				}
 				else
 				{
@@ -3573,7 +3573,7 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 
 			if ($type == 'internal')
 			{
-				$log_customer_nr = $header['tekst4'] . ' ' . $header['ext_ord_ref'];
+				$log_customer_nr = $header['tekst4'] . ' ' . iconv("ISO-8859-1//TRANSLIT", "utf-8", $header['ext_ord_ref']); //reverse convert to get original name back in log
 			}
 			else
 			{

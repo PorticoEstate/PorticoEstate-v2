@@ -92,11 +92,16 @@ class ApplicationController
 				$app->case_officer_is_current_user = ((int) $row['case_officer_id'] === $this->currentAccountId);
 			}
 
-			$app->num_associations = $this->repo->countAssociations($id);
-
 			$relatedInfo = $this->repo->getRelatedApplications($id);
 			$app->parent_id = $relatedInfo['parent_id'];
 			$app->related_application_count = $relatedInfo['total_count'];
+
+			// Count associations across all related apps (matches the table)
+			$totalAssociations = 0;
+			foreach ($relatedInfo['application_ids'] as $appId) {
+				$totalAssociations += $this->repo->countAssociations($appId);
+			}
+			$app->num_associations = $totalAssociations;
 
 			// Is simple booking?
 			$resources = $this->repo->fetchResources($id);
@@ -447,7 +452,37 @@ class ApplicationController
 		}
 
 		try {
-			return ResponseHelper::sendJSONResponse($this->repo->fetchAgegroups($id), 200, $response);
+			$relatedInfo = $this->repo->getRelatedApplications($id);
+
+			if ($relatedInfo['total_count'] <= 1) {
+				// Single application — flat array (backwards compatible)
+				return ResponseHelper::sendJSONResponse($this->repo->fetchAgegroups($id), 200, $response);
+			}
+
+			// Combined: return per-app agegroups with dates
+			$perApp = [];
+			foreach ($relatedInfo['application_ids'] as $appId) {
+				$row = $this->repo->getById($appId);
+				$dates = $this->repo->fetchDates($appId);
+				$perApp[] = [
+					'application_id'   => $appId,
+					'application_name' => $row['name'] ?? '',
+					'dates'            => $dates,
+					'agegroups'        => $this->repo->fetchAgegroups($appId),
+				];
+			}
+
+			// Check if all apps have identical agegroup data
+			$fingerprints = array_map(function ($entry) {
+				return json_encode($entry['agegroups']);
+			}, $perApp);
+			$allSame = count(array_unique($fingerprints)) === 1;
+
+			return ResponseHelper::sendJSONResponse([
+				'combined' => true,
+				'all_same' => $allSame,
+				'per_app'  => $perApp,
+			], 200, $response);
 		} catch (Exception $e) {
 			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
 		}

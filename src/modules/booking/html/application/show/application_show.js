@@ -513,7 +513,7 @@
 			html += '<span class="app-show__meta-item">' + lang('relatedApps') + ': ' + app.related_application_count + '</span>';
 		}
 		if (app.num_associations > 0) {
-			html += '<span class="app-show__meta-item">' + lang('associationsCount') + ': ' + app.num_associations + '</span>';
+			html += '<span class="app-show__meta-item">' + lang('associations') + ': ' + app.num_associations + '</span>';
 		}
 		if (app.toolbar && app.toolbar.external_archive_key) {
 			html += '<span class="app-show__meta-item">' + lang('archiveKey') + ': ' + esc(app.toolbar.external_archive_key) + '</span>';
@@ -634,21 +634,55 @@
 				}
 			}
 
-			var agegroups = data.agegroups || [];
-			if (agegroups.length > 0) {
-				var agHtml = '<table class="ds-table" data-border>' +
+			var rawAgegroups = data.agegroups || [];
+
+			function renderAgTable(groups) {
+				var tbl = '<table class="ds-table" data-border>' +
 					'<thead><tr><th>' + lang('name') + '</th><th>' + lang('male') + '</th><th>' + lang('female') + '</th></tr></thead><tbody>';
-				var hasAgeData = false;
-				agegroups.forEach(function (ag) {
+				var hasData = false;
+				(groups || []).forEach(function (ag) {
 					var m = parseInt(ag.male || 0);
 					var f = parseInt(ag.female || 0);
 					if (m > 0 || f > 0) {
-						hasAgeData = true;
-						agHtml += '<tr><td>' + esc(ag.name) + '</td><td>' + m + '</td><td>' + f + '</td></tr>';
+						hasData = true;
+						tbl += '<tr><td>' + esc(ag.name) + '</td><td>' + m + '</td><td>' + f + '</td></tr>';
 					}
 				});
-				agHtml += '</tbody></table>';
-				if (hasAgeData) html += section(lang('participants'), agHtml);
+				tbl += '</tbody></table>';
+				return hasData ? tbl : '';
+			}
+
+			if (rawAgegroups.combined) {
+				// Combined application — per-app or single depending on all_same
+				if (rawAgegroups.all_same) {
+					var agContent = renderAgTable((rawAgegroups.per_app[0] || {}).agegroups || []);
+					if (agContent) html += section(lang('participants'), agContent);
+				} else {
+					var agContent = '';
+					(rawAgegroups.per_app || []).forEach(function (entry) {
+						var tbl = renderAgTable(entry.agegroups || []);
+						if (tbl) {
+							var heading = esc(entry.application_name) + ' (#' + entry.application_id + ')';
+							if (entry.dates && entry.dates.length === 1) {
+								var f = entry.dates[0].from_ || '';
+								var t = entry.dates[0].to_ || '';
+								var fDay = f.substring(0, 10);
+								var tDay = t.substring(0, 10);
+								if (fDay === tDay) {
+									heading += ' ' + fmtDate(f) + ' – ' + fmtDate(t).replace(/^.*,\s*/, '');
+								} else {
+									heading += ' ' + fmtDate(f) + ' – ' + fmtDate(t);
+								}
+							}
+							agContent += '<h4>' + heading + '</h4>' + tbl;
+						}
+					});
+					if (agContent) html += section(lang('participants'), agContent);
+				}
+			} else if (rawAgegroups.length > 0) {
+				// Single application — flat array
+				var agContent = renderAgTable(rawAgegroups);
+				if (agContent) html += section(lang('participants'), agContent);
 			}
 		}
 
@@ -698,8 +732,11 @@
 						'</a>';
 				}
 
-				// Build params for this date
-				dateParamsMap[d.id] = buildDateParams(app, d, data.agegroups || [], data.audience || {});
+				// Build params for this date — extract flat agegroups for combined apps
+				var flatAgegroups = rawAgegroups.combined
+					? ((rawAgegroups.per_app || [])[0] || {}).agegroups || []
+					: rawAgegroups || [];
+				dateParamsMap[d.id] = buildDateParams(app, d, flatAgegroups, data.audience || {});
 
 				// Action dropdown
 				var selectHtml = '<select class="app-show__date-select" data-date-id="' + d.id + '"';

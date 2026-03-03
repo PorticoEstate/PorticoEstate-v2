@@ -2763,7 +2763,7 @@ class booking_socompleted_reservation_export extends booking_socommon
 
 				if ($type == 'internal')
 				{
-					$log_customer_nr = $header['tekst4'] . ' ' . $header['ext_ord_ref'];
+					$log_customer_nr = $header['tekst4'] . ' ' . iconv("ISO-8859-1//TRANSLIT", "utf-8", $header['ext_ord_ref']); //reverse convert to get original name back in log
 				}
 				else
 				{
@@ -3002,9 +3002,8 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 
 	$log = array();
 
-	/* NOTE: Version 5.5 uses 8 character date fields (YYYYMMDD) left-padded with spaces
-		 */
-	$date = str_pad(date('Ymd'), 8, ' ', STR_PAD_LEFT);
+	/* NOTE: Version 5.5 uses 8 character date fields (YYYYMMDD)*/
+	$date = date('Ymd');
 
 	$batch_id = strtoupper(sprintf('BO%s%s', $account_codes['unit_prefix'], date('ymd')));
 	$batch_id = str_pad(substr($batch_id, 0, 25), 25, ' ');
@@ -3022,9 +3021,9 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 	$order_type = str_pad(substr(strtoupper('FS'), 0, 2), 2, ' ');
 	$pay_method = str_pad(substr(strtoupper('IP'), 0, 2), 2, ' ');
 
-	/* NOTE: Version 5.5 uses 6 character period field (YYYYMM) left-padded with zeros
-		 */
-	$period = str_pad(substr('00' . date('Ym'), 0, 6), 6, '0', STR_PAD_LEFT);
+	/* NOTE: Version 5.5 uses 6 character period field (YYYYMM)
+	 */
+	$period = date('Ym');
 
 	if (!empty($this->config_data['voucher_responsible']))
 	{
@@ -3574,7 +3573,7 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 
 			if ($type == 'internal')
 			{
-				$log_customer_nr = $header['tekst4'] . ' ' . $header['ext_ord_ref'];
+				$log_customer_nr = $header['tekst4'] . ' ' . iconv("ISO-8859-1//TRANSLIT", "utf-8", $header['ext_ord_ref']); //reverse convert to get original name back in log
 			}
 			else
 			{
@@ -3912,104 +3911,104 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 		}
 
 		$row_template = array(
-			'account' => str_repeat(' ', 25),
-			'accountable' => str_repeat(' ', 25),
-			'address' => str_repeat(' ', 160),
-			'allocation_key' => str_repeat(' ', 2),
-			'amount' => str_repeat(' ', 20),
-			'amount_set' => str_repeat(' ', 1),
-			'apar_id' => str_repeat(' ', 25),
-			'apar_id_ref' => str_repeat(' ', 25),
-			'apar_name' => str_repeat(' ', 255),
-			'art_descr' => str_repeat(' ', 255),
-			'article' => str_repeat(' ', 25),
-			'att_1_id' => str_repeat(' ', 4),
-			'att_2_id' => str_repeat(' ', 4),
-			'att_3_id' => str_repeat(' ', 4),
-			'att_4_id' => str_repeat(' ', 4),
-			'att_5_id' => str_repeat(' ', 4),
-			'att_6_id' => str_repeat(' ', 4),
-			'att_7_id' => str_repeat(' ', 4),
-			'bank_account' => str_repeat(' ', 35),
-			'batch_id' => str_repeat(' ', 25),
-			'client' => str_repeat(' ', 25),
-			'client_ref' => str_repeat(' ', 25),
-			'confirm_date' => str_repeat(' ', 8),
-			'control' => str_repeat(' ', 1),
-			'cur_amount' => str_repeat(' ', 20),
-			'currency' => str_repeat(' ', 25),
-			'del_met_descr' => str_repeat(' ', 255),
-			'del_term_descr' => str_repeat(' ', 255),
-			'deliv_addr' => str_repeat(' ', 255),
-			'deliv_attention' => str_repeat(' ', 50),
-			'deliv_countr' => str_repeat(' ', 25),
-			'deliv_date' => str_repeat(' ', 8),
-			'deliv_method' => str_repeat(' ', 25),
-			'deliv_terms' => str_repeat(' ', 25),
-			'dim_1' => str_repeat(' ', 25),
-			'dim_2' => str_repeat(' ', 25),
-			'dim_3' => str_repeat(' ', 25),
-			'dim_4' => str_repeat(' ', 25),
-			'dim_5' => str_repeat(' ', 25),
-			'dim_6' => str_repeat(' ', 25),
-			'dim_7' => str_repeat(' ', 25),
-			'dim_value_1' => str_repeat(' ', 25),
-			'dim_value_2' => str_repeat(' ', 25),
-			'dim_value_3' => str_repeat(' ', 25),
-			'dim_value_4' => str_repeat(' ', 25),
-			'dim_value_5' => str_repeat(' ', 25),
-			'dim_value_6' => str_repeat(' ', 25),
-			'dim_value_7' => str_repeat(' ', 25),
-			'discount' => str_repeat(' ', 20),
-			'disc_percent' => str_repeat(' ', 20),
-			'ean' => str_repeat(' ', 50),
-			'exch_rate' => str_repeat(' ', 20),
-			'ext_ord_ref' => str_repeat(' ', 100),
-			'intrule_id' => str_repeat(' ', 25),
-			'line_no' => str_repeat(' ', 4),
-			'location' => str_repeat(' ', 12),
-			'long_info1' => str_repeat(' ', 120),
-			'long_info2' => str_repeat(' ', 120),
-			'lot' => str_repeat(' ', 10),
-			'main_apar_id' => str_repeat(' ', 25),
-			'mark_attention' => str_repeat(' ', 50),
-			'mark_ctry_cd' => str_repeat(' ', 25),
-			'markings' => str_repeat(' ', 255),
-			'obs_date' => str_repeat(' ', 8),
-			'order_date' => str_repeat(' ', 8),
-			'order_id' => str_repeat(' ', 15),
-			'order_type' => str_repeat(' ', 2),
-			'pay_method' => str_repeat(' ', 2),
-			'pay_temp_id' => str_repeat(' ', 4),
-			'period' => str_repeat(' ', 6),
-			'place' => str_repeat(' ', 30),
-			'province' => str_repeat(' ', 40),
-			'rel_value' => str_repeat(' ', 25),
-			'responsible' => str_repeat(' ', 25),
-			'responsible2' => str_repeat(' ', 25),
-			'sequence_no' => str_repeat(' ', 8),
-			'sequence_ref' => str_repeat(' ', 8),
-			'serial_no' => str_repeat(' ', 20),
-			'short_info' => str_repeat(' ', 60),
-			'status' => str_repeat(' ', 1),
-			'sup_article' => str_repeat(' ', 50),
-			'tax_code' => str_repeat(' ', 25),
-			'tax_system' => str_repeat(' ', 25),
-			'template_id' => str_repeat(' ', 8),
-			'terms_id' => str_repeat(' ', 25),
-			'tekst1' => str_repeat(' ', 100),
-			'tekst2' => str_repeat(' ', 100),
-			'tekst3' => str_repeat(' ', 100),
-			'tekst4' => str_repeat(' ', 100),
-			'trans_type' => str_repeat(' ', 2),
-			'unit_code' => str_repeat(' ', 3),
-			'unit_descr' => str_repeat(' ', 255),
-			'unit_price' => str_repeat(' ', 20),
-			'value_1' => str_repeat(' ', 20),
-			'voucher_ref' => str_repeat(' ', 15),
-			'voucher_type' => str_repeat(' ', 25),
-			'warehouse' => str_repeat(' ', 25),
-			'zip_code' => str_repeat(' ', 15)
+			'account' => str_repeat(' ', 25),            // pos 1-25
+			'accountable' => str_repeat(' ', 25),        // pos 26-50
+			'address' => str_repeat(' ', 160),           // pos 51-210
+			'allocation_key' => str_repeat(' ', 2),      // pos 211-212
+			'amount' => str_repeat(' ', 20),             // pos 213-232
+			'amount_set' => str_repeat(' ', 1),          // pos 233-233
+			'apar_id' => str_repeat(' ', 25),            // pos 234-258
+			'apar_id_ref' => str_repeat(' ', 25),        // pos 259-283
+			'apar_name' => str_repeat(' ', 255),         // pos 284-538
+			'art_descr' => str_repeat(' ', 255),         // pos 539-793
+			'article' => str_repeat(' ', 25),            // pos 794-818
+			'att_1_id' => str_repeat(' ', 4),            // pos 819-822
+			'att_2_id' => str_repeat(' ', 4),            // pos 823-826
+			'att_3_id' => str_repeat(' ', 4),            // pos 827-830
+			'att_4_id' => str_repeat(' ', 4),            // pos 831-834
+			'att_5_id' => str_repeat(' ', 4),            // pos 835-838
+			'att_6_id' => str_repeat(' ', 4),            // pos 839-842
+			'att_7_id' => str_repeat(' ', 4),            // pos 843-846
+			'bank_account' => str_repeat(' ', 35),       // pos 847-881
+			'batch_id' => str_repeat(' ', 25),           // pos 882-906
+			'client' => str_repeat(' ', 25),             // pos 907-931
+			'client_ref' => str_repeat(' ', 25),         // pos 932-956
+			'confirm_date' => str_repeat(' ', 8),        // pos 957-964
+			'control' => str_repeat(' ', 1),             // pos 965-965
+			'cur_amount' => str_repeat(' ', 20),         // pos 966-985
+			'currency' => str_repeat(' ', 25),           // pos 986-1010
+			'del_met_descr' => str_repeat(' ', 255),     // pos 1011-1265
+			'del_term_descr' => str_repeat(' ', 255),    // pos 1266-1520
+			'deliv_addr' => str_repeat(' ', 255),        // pos 1521-1775
+			'deliv_attention' => str_repeat(' ', 50),    // pos 1776-1825
+			'deliv_countr' => str_repeat(' ', 25),       // pos 1826-1850
+			'deliv_date' => str_repeat(' ', 8),          // pos 1851-1858
+			'deliv_method' => str_repeat(' ', 25),       // pos 1859-1883
+			'deliv_terms' => str_repeat(' ', 25),        // pos 1884-1908
+			'dim_1' => str_repeat(' ', 25),              // pos 1909-1933
+			'dim_2' => str_repeat(' ', 25),              // pos 1934-1958
+			'dim_3' => str_repeat(' ', 25),              // pos 1959-1983
+			'dim_4' => str_repeat(' ', 25),              // pos 1984-2008
+			'dim_5' => str_repeat(' ', 25),              // pos 2009-2033
+			'dim_6' => str_repeat(' ', 25),              // pos 2034-2058
+			'dim_7' => str_repeat(' ', 25),              // pos 2059-2083
+			'dim_value_1' => str_repeat(' ', 25),        // pos 2084-2108
+			'dim_value_2' => str_repeat(' ', 25),        // pos 2109-2133
+			'dim_value_3' => str_repeat(' ', 25),        // pos 2134-2158
+			'dim_value_4' => str_repeat(' ', 25),        // pos 2159-2183
+			'dim_value_5' => str_repeat(' ', 25),        // pos 2184-2208
+			'dim_value_6' => str_repeat(' ', 25),        // pos 2209-2233
+			'dim_value_7' => str_repeat(' ', 25),        // pos 2234-2258
+			'discount' => str_repeat(' ', 20),           // pos 2259-2278
+			'disc_percent' => str_repeat(' ', 20),       // pos 2279-2298
+			'ean' => str_repeat(' ', 50),                // pos 2299-2348
+			'exch_rate' => str_repeat(' ', 20),          // pos 2349-2368
+			'ext_ord_ref' => str_repeat(' ', 100),       // pos 2369-2468
+			'intrule_id' => str_repeat(' ', 25),         // pos 2469-2493
+			'line_no' => str_repeat(' ', 4),             // pos 2494-2497
+			'location' => str_repeat(' ', 12),           // pos 2498-2509
+			'long_info1' => str_repeat(' ', 120),        // pos 2510-2629
+			'long_info2' => str_repeat(' ', 120),        // pos 2630-2749
+			'lot' => str_repeat(' ', 10),                // pos 2750-2759
+			'main_apar_id' => str_repeat(' ', 25),       // pos 2760-2784
+			'mark_attention' => str_repeat(' ', 50),     // pos 2785-2834
+			'mark_ctry_cd' => str_repeat(' ', 25),       // pos 2835-2859
+			'markings' => str_repeat(' ', 255),          // pos 2860-3114
+			'obs_date' => str_repeat(' ', 8),            // pos 3115-3122
+			'order_date' => str_repeat(' ', 8),          // pos 3123-3130
+			'order_id' => str_repeat(' ', 15),           // pos 3131-3145
+			'order_type' => str_repeat(' ', 2),          // pos 3146-3147
+			'pay_method' => str_repeat(' ', 2),          // pos 3148-3149
+			'pay_temp_id' => str_repeat(' ', 4),         // pos 3150-3153
+			'period' => str_repeat(' ', 6),              // pos 3154-3159
+			'place' => str_repeat(' ', 40),              // pos 3160-3199
+			'province' => str_repeat(' ', 40),           // pos 3200-3239
+			'rel_value' => str_repeat(' ', 25),          // pos 3240-3264
+			'responsible' => str_repeat(' ', 25),        // pos 3265-3289
+			'responsible2' => str_repeat(' ', 25),       // pos 3290-3314
+			'sequence_no' => str_repeat(' ', 8),         // pos 3315-3322
+			'sequence_ref' => str_repeat(' ', 8),        // pos 3323-3330
+			'serial_no' => str_repeat(' ', 20),          // pos 3331-3350
+			'short_info' => str_repeat(' ', 60),         // pos 3351-3410
+			'status' => str_repeat(' ', 1),              // pos 3411-3411
+			'sup_article' => str_repeat(' ', 50),        // pos 3412-3461
+			'tax_code' => str_repeat(' ', 25),           // pos 3462-3486
+			'tax_system' => str_repeat(' ', 25),         // pos 3487-3511
+			'template_id' => str_repeat(' ', 8),         // pos 3512-3519
+			'terms_id' => str_repeat(' ', 25),           // pos 3520-3544
+			'tekst1' => str_repeat(' ', 100),            // pos 3545-3644
+			'tekst2' => str_repeat(' ', 100),            // pos 3645-3744
+			'tekst3' => str_repeat(' ', 100),            // pos 3745-3844
+			'tekst4' => str_repeat(' ', 100),            // pos 3845-3944
+			'trans_type' => str_repeat(' ', 2),          // pos 3945-3946
+			'unit_code' => str_repeat(' ', 3),           // pos 3947-3949
+			'unit_descr' => str_repeat(' ', 255),        // pos 3950-4204
+			'unit_price' => str_repeat(' ', 20),         // pos 4205-4224
+			'value_1' => str_repeat(' ', 20),            // pos 4225-4244
+			'voucher_ref' => str_repeat(' ', 15),        // pos 4245-4259
+			'voucher_type' => str_repeat(' ', 25),       // pos 4260-4284
+			'warehouse' => str_repeat(' ', 25),          // pos 4285-4309
+			'zip_code' => str_repeat(' ', 15)            // pos 4310-4324
 		);
 		return $row_template;
 	}

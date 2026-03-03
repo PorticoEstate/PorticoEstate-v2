@@ -7958,7 +7958,7 @@ function booking_upgrade0_2_114($oProc)
 			'uc' => array()
 		)
 	);
- 
+
 	$location_obj = new Locations();
 
 	$custom_config = CreateObject('admin.soconfig', $location_obj->get_id('booking', 'run'));
@@ -8102,6 +8102,23 @@ function booking_upgrade0_2_117($oProc)
 
 $test[] = '0.2.118';
 function booking_upgrade0_2_118($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	// Fix: bb_application.from_ should be nullable - it gets populated from bb_application_date
+	// and is not available at initial insert time for partial applications
+	$oProc->m_odb->query("ALTER TABLE bb_application ALTER COLUMN from_ DROP NOT NULL");
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.119';
+		return $currentver;
+	}
+}
+
+
+$test[] = '0.2.119';
+function booking_upgrade0_2_119($oProc)
 {
 	$oProc->m_odb->transaction_begin();
 
@@ -8269,7 +8286,7 @@ function booking_upgrade0_2_118($oProc)
 
 	if ($oProc->m_odb->transaction_commit())
 	{
-		$currentver = '0.2.119';
+		$currentver = '0.2.120';
 		return $currentver;
 	}
 }

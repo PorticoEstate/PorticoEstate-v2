@@ -1,0 +1,14 @@
+{# Single application details: name, organizer, resource, location #}
+<h3>{{ heading|default('Søknadsdetaljer:') }}</h3>
+{% if application_name %}
+<p><strong>Arrangement:</strong> {{ application_name }}</p>
+{% endif %}
+{% if organizer %}
+<p><strong>Arrangør:</strong> {{ organizer }}</p>
+{% endif %}
+{% if resourcename is defined and resourcename %}
+<p><strong>Ressurs:</strong> {{ resourcename }}</p>
+{% endif %}
+{% if building_name is defined and building_name %}
+<p><strong>Lokasjon:</strong> {{ building_name }}</p>
+{% endif %}

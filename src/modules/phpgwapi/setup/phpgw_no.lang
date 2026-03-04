@@ -407,3 +407,5 @@ zip_code_min_length	common	no	Postnummer må være minst 4 tegn
 invalid_url_format	common	no	Ugyldig URL-format
 phone_number_required	common	no	Telefonnummer er påkrevd
 email_required	common	no	E-post er påkrevd
+
+previous	common	no	Forrige

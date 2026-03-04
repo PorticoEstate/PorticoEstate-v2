@@ -127,6 +127,17 @@ class StartPoint
 				{
 					$return_data =  \phpgwapi_xslttemplates::getInstance()->parse();
 				}
+				else if (!empty(Settings::getInstance()->get('flags')['twig_app']))
+				{
+					$output_header = empty(Settings::getInstance()->get('flags')['noframework']);
+					$stripped_htm = Sanitizer::get_var('phpgw_return_as') == 'stripped_html';
+					if (!$stripped_htm)
+					{
+						$phpgwapi_common->phpgw_header($output_header);
+					}
+					$return_data = \App\modules\phpgwapi\services\Twig::getInstance()->getRenderedOutput();
+					\App\modules\phpgwapi\services\Twig::getInstance()->clearRenderedOutput();
+				}
 				else
 				{
 					$return_data = '';
@@ -245,6 +256,17 @@ class StartPoint
 				if (!empty(Settings::getInstance()->get('flags')['xslt_app']))
 				{
 					$return_data =  \phpgwapi_xslttemplates::getInstance()->parse();
+				}
+				else if (!empty(Settings::getInstance()->get('flags')['twig_app']))
+				{
+					$output_header = empty(Settings::getInstance()->get('flags')['noframework']);
+					$stripped_htm = Sanitizer::get_var('phpgw_return_as') == 'stripped_html';
+					if (!$stripped_htm)
+					{
+						$phpgwapi_common->phpgw_header($output_header);
+					}
+					$return_data = \App\modules\phpgwapi\services\Twig::getInstance()->getRenderedOutput();
+					\App\modules\phpgwapi\services\Twig::getInstance()->clearRenderedOutput();
 				}
 				else
 				{
@@ -607,6 +629,17 @@ HTML;
 				{
 					$return_data =  \phpgwapi_xslttemplates::getInstance()->parse();
 				}
+				else if (!empty(Settings::getInstance()->get('flags')['twig_app']))
+				{
+					$output_header = empty(Settings::getInstance()->get('flags')['noframework']);
+					$stripped_htm = Sanitizer::get_var('phpgw_return_as') == 'stripped_html';
+					if (!$stripped_htm)
+					{
+						$phpgwapi_common->phpgw_header($output_header);
+					}
+					$return_data = \App\modules\phpgwapi\services\Twig::getInstance()->getRenderedOutput();
+					\App\modules\phpgwapi\services\Twig::getInstance()->clearRenderedOutput();
+				}
 				else
 				{
 					$return_data = '';
@@ -779,6 +812,17 @@ HTML;
 				if (!empty(Settings::getInstance()->get('flags')['xslt_app']))
 				{
 					$return_data =  \phpgwapi_xslttemplates::getInstance()->parse();
+				}
+				else if (!empty(Settings::getInstance()->get('flags')['twig_app']))
+				{
+					$output_header = empty(Settings::getInstance()->get('flags')['noframework']);
+					$stripped_htm = Sanitizer::get_var('phpgw_return_as') == 'stripped_html';
+					if (!$stripped_htm)
+					{
+						$phpgwapi_common->phpgw_header($output_header);
+					}
+					$return_data = \App\modules\phpgwapi\services\Twig::getInstance()->getRenderedOutput();
+					\App\modules\phpgwapi\services\Twig::getInstance()->clearRenderedOutput();
 				}
 				else
 				{

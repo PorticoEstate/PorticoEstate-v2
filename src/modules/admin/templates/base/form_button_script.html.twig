@@ -1,0 +1,7 @@
+{# Form_button_script template #}
+<!-- $Id$ -->
+{% block form_button %}
+<form action="{{ action_url_button }}" method="post" name="{{ action_text_button }}form">
+ {{ action_extra_field }} <input type="submit" class="pure-button" title="{{ action_text_button }}" value="{{ submit_button }}" {{ action_confirm_button }}>
+</form>
+{% endblock %}

@@ -1,0 +1,13 @@
+<p>{{ contact_name }} sin søknad om leie/lån av {{ resourcename }} på {{ building_name }}</p>
+
+{% if approved_dates is not empty %}
+<pre>Godkjent:
+{%- for date in approved_dates %}
+{{ date }}
+{%- endfor %}
+</pre>
+{% endif %}
+
+{% if equipment %}
+<p><b>{{ equipment_label }}:</b><br />{{ equipment }}</p>
+{% endif %}

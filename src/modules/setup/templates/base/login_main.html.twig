@@ -1,0 +1,50 @@
+{# Login_main template #}
+<!-- begin login_main.tpl -->
+<p>&nbsp;</p>
+<table align="center" cellspacing="0" cellpadding="2" style="border: 1px solid #486591;">
+
+{{ V_login_stage_header|raw }}
+
+<tr class="th">
+    <td colspan="2">&nbsp;<b>{{ lang('Header Admin Login') }}</b>
+	</td>		
+</tr>
+
+{# Header Admin Login section #}
+
+<tr class="row_off">
+	<td colspan="2" class="feedback">{{ HeaderLoginMSG }}</td>
+</tr>
+<form action="setup/manageheader" method="POST" name="admin">
+<tr class="row_off">
+	<td> {{ lang('Password') }}: </td>
+	<td>
+		<input type="password" name="FormPW" value="">
+	</td>
+</tr>
+<tr class="row_off">
+	<td colspan="2">
+		{{ lang_select |raw }}
+		<input type="submit" name="Submit" value="Login">
+		<input type="hidden" name="HeaderLogin" value="Login">
+	</td>
+</tr>
+<tr class="row_off">
+	<td colspan="2">{{ HeaderLoginWarning|raw }}</td>
+</tr>
+<tr class="row_off">
+	<td colspan="2">&nbsp;</td>
+</tr>
+</form>
+<tr class="th">
+        <td colspan="2">&nbsp;<b>{{ lang('Other Options') }}</b></td>
+</tr>
+ {# Other Options section #}
+<tr class="row_on">
+	<td colspan="2"><a href="login_ui"> {{ lang('Return to Portico Estate') }}: </a></td>
+</tr>
+<tr class="row_on">
+	<td colspan="2">&nbsp;</td>
+</tr>
+</table>
+<!-- end login_main.tpl -->

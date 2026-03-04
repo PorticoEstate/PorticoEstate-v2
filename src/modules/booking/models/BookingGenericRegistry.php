@@ -105,6 +105,7 @@ class BookingGenericRegistry extends GenericRegistry
 				'name' => 'Article Service',
 				'acl_app' => 'booking',
 				'acl_location' => '.admin',
+				'menu_selection' => 'booking::commerce::service',
 			],
 
 			'vendor' => [
@@ -243,6 +244,11 @@ class BookingGenericRegistry extends GenericRegistry
 				'name' => 'E-Lock System',
 				'acl_app' => 'booking',
 				'acl_location' => '.admin',
+				'defaults' => [
+					'user_id' => ['add' => 'current_user'],
+					'entry_date' => ['add' => 'now'],
+					'modified_date' => ['edit' => 'now'],
+				],
 			],
 
 			'multi_domain' => [
@@ -266,6 +272,57 @@ class BookingGenericRegistry extends GenericRegistry
 				'name' => 'Multi Domain',
 				'acl_app' => 'booking',
 				'acl_location' => '.admin',
+				'defaults' => [
+					'user_id' => ['add' => 'current_user'],
+					'entry_date' => ['add' => 'now'],
+					'modified_date' => ['edit' => 'now'],
+				],
+			],
+
+			'tax' => [
+				'table' => 'fm_ecomva',
+				'id' => ['name' => 'id', 'type' => 'int'],
+				'fields' => [
+					[
+						'name' => 'percent_',
+						'descr' => 'Percent',
+						'type' => 'int',
+					],
+					[
+						'name' => 'descr',
+						'descr' => 'Description',
+						'type' => 'varchar',
+						'maxlength' => 255
+					]
+				],
+				'name' => 'Tax Code',
+				'acl_app' => 'booking',
+				'acl_location' => '.admin',
+				'menu_selection' => 'booking::commerce::accounting_tax',
+			],
+
+			'article_group' => [
+				'table' => 'bb_article_group',
+				'id' => ['name' => 'id', 'type' => 'int'],
+				'fields' => [
+					[
+						'name' => 'name',
+						'descr' => 'Name',
+						'type' => 'varchar',
+						'required' => true,
+						'maxlength' => 255
+					],
+					[
+						'name' => 'remark',
+						'descr' => 'Remark',
+						'type' => 'text',
+						'nullable' => true
+					]
+				],
+				'name' => 'Article Group',
+				'acl_app' => 'booking',
+				'acl_location' => '.admin',
+				'menu_selection' => 'booking::commerce::article_group',
 			]
 		];
 	}

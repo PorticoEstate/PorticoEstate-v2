@@ -1,0 +1,59 @@
+/* Language Selector Component */
+.app-language-selector .fi {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.app-language-selector .app-dropdown__trigger .fi {
+    font-size: 1.2em;
+    border: none;
+    border-radius: 3px;
+    padding: 2px 4px;
+}
+
+.app-language-selector__dropdown.ds-dropdown {
+    --_ds-floating: bottom;
+    max-width: none;
+    margin-top: 0;
+    padding: var(--ds-spacing-2, 0.5rem);
+    translate: 0 -6px;
+}
+
+.app-language-selector__dropdown h6,
+.app-language-selector__dropdown p,
+.app-language-selector__dropdown ul {
+    margin: 0;
+    padding: 0;
+}
+
+.app-language-selector__dropdown ul {
+    list-style: none;
+}
+
+.app-language-selector__subtitle {
+    font-size: 0.8rem;
+    color: var(--ds-color-neutral-text-subtle, #6a6a6a);
+    margin: 0.25rem 0 0;
+}
+
+.app-language-selector__item {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-spacing-2, 0.5rem);
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: var(--ds-border-radius-sm, 4px);
+    transition: background-color 0.2s;
+}
+
+.app-language-selector__item:hover {
+    background-color: var(--ds-color-neutral-surface-hover, #f8f9fa);
+}
+
+.app-language-selector__item input[type="radio"] {
+    cursor: pointer;
+}
+
+.app-language-selector__item .fi {
+    font-size: 1.1em;
+}

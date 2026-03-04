@@ -2,9 +2,9 @@
 
 namespace App\modules\bookingfrontend\controllers;
 
-use App\modules\bookingfrontend\helpers\ResponseHelper;
+use App\helpers\ResponseHelper;
 use App\modules\bookingfrontend\services\OrganizationService;
-use App\modules\bookingfrontend\models\Document;
+use App\modules\booking\models\Document;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Exception;

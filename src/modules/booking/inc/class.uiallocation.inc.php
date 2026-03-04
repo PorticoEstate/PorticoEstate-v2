@@ -322,6 +322,7 @@
 
 		public function add()
 		{
+			$isJsonRequest = self::handleJsonPost();
 			$errors = array();
 			$step = Sanitizer::get_var('step', 'int', 'REQUEST', 1);
 			$invalid_dates = array();
@@ -575,6 +576,14 @@
 						}
 
 						$this->bo->so->update_id_string();
+
+						if ($isJsonRequest) {
+							self::sendJsonResponse([
+								'id' => $receipt['id'],
+								'type' => 'allocation',
+								'edit_url' => '/?menuaction=booking.uiallocation.show&id=' . $receipt['id'],
+							], 201);
+						}
 						
 						// Check if this came from recurring application and redirect back to application  
 						$recurring_app_id = Sanitizer::get_var('recurring_application_id', 'int', 'GET');

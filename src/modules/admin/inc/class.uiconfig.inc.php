@@ -19,6 +19,7 @@ use App\helpers\Template;
 use App\modules\phpgwapi\services\Hooks;
 use App\modules\phpgwapi\services\Translation;
 use App\modules\phpgwapi\services\Config;
+use App\modules\phpgwapi\services\Twig;
 
 
 class admin_uiconfig
@@ -30,6 +31,7 @@ class admin_uiconfig
 	);
 	private $appname;
 	private $serverSettings;
+	private $userSettings;
 	private $flags;
 	private $hooks;
 	private $translation;
@@ -41,6 +43,7 @@ class admin_uiconfig
 	{
 		$appname = Sanitizer::get_var('appname', 'string');
 		$this->serverSettings = Settings::getInstance()->get('server');
+		$this->userSettings = Settings::getInstance()->get('user');
 		$this->flags = Settings::getInstance()->get('flags');
 		Settings::getInstance()->update('flags', ['currentapp' => $appname]);
 		$this->apps = Settings::getInstance()->get('apps');
@@ -124,7 +127,6 @@ HTML;
 		
 HTML;
 		}
-
 	}
 
 
@@ -180,15 +182,10 @@ HTML;
 				break;
 		}
 
-		$t = Template::getInstance();
-		$t->set_root($this->phpgwapi_common->get_tpl_dir($appname));
-
-		$t->set_file(array('config' => 'config.tpl'));
-		$t->set_block('config', 'body', 'body');
-
+		// Initialize Twig environment for the admin module
+		$twigService = Twig::getInstance();
 
 		$c = new Config($config_appname);
-
 		$c->read();
 
 		if ($c->config_data)
@@ -207,7 +204,6 @@ HTML;
 			/* Load hook file with functions to validate each config (one/none/all) */
 			$this->hooks->single('config_validate', $appname);
 
-			//while (list($key,$config) = each($_POST['newsettings']))
 			if (is_array($_POST['newsettings']))
 			{
 				foreach ($_POST['newsettings'] as $key => $config)
@@ -265,123 +261,130 @@ HTML;
 			}
 		}
 
-		if (isset($errors) && $errors)
-		{
-			$t->set_var(array(
-				'error'			 => lang('Error: %1', $errors),
-				'error_class'	 => 'error'
-			));
-			unset($errors);
-			unset($GLOBALS['config_error']);
-		}
-		else
-		{
-			$t->set_var(array(
-				'error'			 => '',
-				'error_class'	 => ''
-			));
-		}
-
-
-		$t->set_var(array(
-			'action_url'	 => phpgw::link('/index.php', array(
+		// Initialize template variables
+		$theme = Settings::getInstance()->get('theme');
+		$templateVars = [
+			'action_url' => phpgw::link('/index.php', array(
 				'menuaction' => 'admin.uiconfig.index',
 				'appname' => $appname
 			)),
-			'lang_cancel'	 => lang('cancel'),
-			'lang_submit'	 => lang('save'),
-			'title'			 => lang('Site Configuration'),
-		));
+			'lang_cancel' => lang('cancel'),
+			'lang_submit' => lang('save'),
+			'title' => lang('Site Configuration'),
+			'error' => $errors ? lang('Error: %1', $errors) : '',
+			'error_class' => $errors ? 'error' : '',
+			'th_bg' => $theme['th_bg'] ?? '#486591',
+			'th_text' => $theme['th_text'] ?? '#FFFFFF',
+			'row_on' => $theme['row_on'] ?? '#DDDDDD',
+			'row_off' => $theme['row_off'] ?? '#EEEEEE',
+		];
 
-		//		$t->unknown_regexp = 'loose';
-		$vars = $t->get_undefined('body');
-		//		$t->unknown_regexp = '';
-
+		// Setup all the language variables
 		$this->hooks->single('config', $appname);
 
-		if (is_array($vars))
+		// Legacy template used to gather undefined variables from the template
+		// We'll scan for variables with these prefixes and add them to the Twig context
+		$varPrefixes = ['lang_', 'value_', 'selected_', 'checked_', 'hook_'];
+
+		// Get template to extract variable names
+
+		$originalTplPath = $this->phpgwapi_common->get_tpl_dir($appname) . '/config.html.twig';
+		$originalTplPath = str_replace($this->userSettings['preferences']['common']['template_set'], 'base', $originalTplPath);
+
+		if (file_exists($originalTplPath))
 		{
-			foreach ($vars as $value)
+			$templateContent = file_get_contents($originalTplPath);
+
+			// Extract variables with {variable_name} pattern
+			preg_match_all('/{{\s*([a-zA-Z0-9_]+)(?:\s*\|[^}]*)?\s*}}/', $templateContent, $matches);
+			if (!empty($matches[1]))
 			{
-				$valarray	 = explode('_', $value);
-				$type		 = $valarray[0];
-				$new		 = array();
-				$newval		 = '';
+				$vars = $matches[1];
 
-				while ($chunk = next($valarray))
+				foreach ($vars as $value)
 				{
-					$new[] = $chunk;
-				}
-				$newval = implode(' ', $new);
+					$valarray	 = explode('_', $value);
+					$type		 = $valarray[0];
+					$new		 = array();
+					$newval		 = '';
 
-				switch ($type)
-				{
-					case 'lang':
-						$t->set_var($value, $this->translation->translate($newval, array(), false, $appname));
-						break;
-					case 'value':
-						$newval = preg_replace('/ /', '_', $newval);
-						/* Don't show passwords in the form */
-						if (!isset($current_config[$newval]) || preg_match('/passwd/', $value) || preg_match('/password/', $value) || preg_match('/root_pw/', $value))
-						{
-							$t->set_var($value, '');
-						}
-						else
-						{
-							$t->set_var($value, (isset($current_config[$newval]) ? $current_config[$newval] : ''));
-						}
-						break;
-					case 'checked':
-						/* '+' is used as a delimiter for the check value */
-						list($newvalue, $check) = preg_split('/\+/', $newval);
-						$newval = preg_replace('/ /', '_', $newvalue);
-						if ($current_config[$newval] == $check)
-						{
-							$t->set_var($value, ' checked');
-						}
-						else
-						{
-							$t->set_var($value, '');
-						}
-						break;
-					case 'selected':
-						$configs = array();
-						$config	 = '';
-						$newvals = explode(' ', $newval);
-						$setting = end($newvals);
-						for ($i = 0; $i < (count($newvals) - 1); $i++)
-						{
-							$configs[] = $newvals[$i];
-						}
-						$config = implode('_', $configs);
-						/* echo $config . '=' . $current_config[$config]; */
-						if (isset($current_config[$config]) && $current_config[$config] == $setting)
-						{
-							$t->set_var($value, ' selected');
-						}
-						else
-						{
-							$t->set_var($value, '');
-						}
-						break;
-					case 'hook':
-						$newval = preg_replace('/ /', '_', $newval);
-						if (function_exists($newval))
-						{
-							$t->set_var($value, $newval($current_config));
-						}
-						else
-						{
-							$t->set_var($value, '');
-						}
-						break;
-					default:
-						$t->set_var($value, '');
-						break;
+					while ($chunk = next($valarray))
+					{
+						$new[] = $chunk;
+					}
+					$newval = implode(' ', $new);
+
+					switch ($type)
+					{
+						case 'lang':
+							$templateVars[$value] = $this->translation->translate($newval, array(), false, $appname);
+							break;
+						case 'value':
+							$newval = str_replace(' ', '_', $newval);
+							if (preg_match('/(passwd|password|root_pw)/i', $value))
+							{
+								$templateVars[$value] = '';
+							}
+							else
+							{
+								$templateVars[$value] = isset($current_config[$newval]) ? $current_config[$newval] : '';
+							}
+							break;
+						case 'checked':
+							/* '+' is used as a delimiter for the check value */
+							list($newvalue, $check) = preg_split('/\+/', $newval);
+							$newval = preg_replace('/ /', '_', $newvalue);
+							if ($current_config[$newval] == $check)
+							{
+								$templateVars[$value] = ' checked';
+							}
+							else
+							{
+								$templateVars[$value] = '';
+							}
+							break;
+						case 'selected':
+							$configs = array();
+							$config  = '';
+							$newvals = explode(' ', $newval);
+							$setting = end($newvals);
+							for ($i = 0; $i < (count($newvals) - 1); ++$i)
+							{
+								$configs[] = $newvals[$i];
+							}
+							$config = implode('_', $configs);
+							if (isset($current_config[$config]) && $current_config[$config] == $setting)
+							{
+								$templateVars[$value] = ' selected';
+							}
+							else
+							{
+								$templateVars[$value] = '';
+							}
+							break;
+						case 'hook':
+							$newval = str_replace(' ', '_', $newval);
+							if (function_exists($newval))
+							{
+								$templateVars[$value] = $newval($current_config);
+							}
+							else
+							{
+								$templateVars[$value] = '';
+							}
+							break;
+						default:
+							$templateVars[$value] = '';
+							break;
+					}
+
 				}
 			}
 		}
+
 		$this->phpgwapi_common->phpgw_header(true);
-		$t->pfp('out', 'config');
+
+		// Render the Twig template with all variables
+		echo $twigService->render('config.html.twig', $templateVars, $config_appname);
 	}
 }

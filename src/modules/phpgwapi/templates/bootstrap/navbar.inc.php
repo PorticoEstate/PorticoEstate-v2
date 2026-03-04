@@ -3,6 +3,7 @@
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Cache;
 use App\helpers\Template;
+use App\helpers\twig\TwigTemplate;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Hooks;
 use App\modules\phpgwapi\services\Translation;
@@ -51,7 +52,6 @@ function parse_navbar($force = False)
 	$home_icon		= 'icon icon-home';
 	$about_url	= phpgw::link('/about.php', array('app' => $flags['currentapp']));
 	$about_text	= lang('about');
-	//		$var['logout_url']	= phpgw::link('/logout_ui');
 	$var['logout_text']	= lang('logout');
 	$var['user_fullname'] = $user_fullname;
 	$preferences_url = phpgw::link('/preferences/index.php');
@@ -63,24 +63,36 @@ function parse_navbar($force = False)
 		case 'portico':
 			$selecte_portico = ' selected = "selected"';
 			$selecte_bootstrap = '';
+			$selecte_digdir = '';
 			break;
 		case 'bootstrap':
 			$selecte_portico = '';
 			$selecte_bootstrap = ' selected = "selected"';
+			$selecte_digdir = '';
+			break;
+		case 'digdir':
+			$selecte_portico = '';
+			$selecte_bootstrap = '';
+			$selecte_digdir = ' selected = "selected"';
+			break;
+		default:
+			$selecte_portico = '';
+			$selecte_bootstrap = ' selected = "selected"';
+			$selecte_digdir = '';
 			break;
 	}
 
 	$template_selector = <<<HTML
 
 	   <select id = "template_selector" class="btn btn-link btn-sm nav-item dropdown no-arrow nav-link text-white dropdown-toggle" style="height:2rem">
-		<option class="nav-link text-white" value="bootstrap"{$selecte_bootstrap}>Bootstrap</option>
 		<option class="nav-link text-white" value="portico"{$selecte_portico}>Portico</option>
+		<option class="nav-link text-white" value="bootstrap"{$selecte_bootstrap}>Bootstrap</option>
+		<option class="nav-link text-white" value="digdir"{$selecte_digdir}>Digdir</option>
 	   </select>
 HTML;
 
-	$template = new Template(PHPGW_TEMPLATE_DIR);
-
-	$template->set_file('navbar', 'navbar.tpl');
+	$templateDir = PHPGW_TEMPLATE_DIR;
+	$twigDir = PHPGW_TEMPLATE_DIR . '/twig';
 
 	$var['current_app_title'] = isset($flags['app_header']) ? $flags['app_header'] : lang($flags['currentapp']);
 	$flags['menu_selection'] = isset($flags['menu_selection']) ? $flags['menu_selection'] : '';
@@ -567,7 +579,7 @@ HTML;
 		$var['top_panel'] = <<<HTML
 	        <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
 	            <!-- Sidebar Toggle-->
-		        <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle" ><i class="fas fa-bars"></i></button>
+		        <button class="btn btn-link btn-sm order-0 order-lg-0 me-4 me-lg-0" id="sidebarToggle" ><i class="fas fa-bars"></i></button>
 		        <!--  Brand-->
 				<a class="navbar-brand ps-3" href="#">{$serverSettings['site_title']}</a>
 		        <!-- Navbar-->
@@ -607,8 +619,14 @@ HTML;
 HTML;
 	}
 
-	$template->set_var($var);
-	$template->pfp('out', 'navbar');
+	// Use Twig to render the template
+	try {
+		$twig = \App\modules\phpgwapi\services\Twig::getInstance();
+		echo $twig->render('navbar.twig', $var);
+	} catch (\Twig\Error\Error $e) {
+		error_log("Failed to render navbar.twig: " . $e->getMessage());
+		echo "<div class='alert alert-danger'>Error loading navbar template. Please check logs.</div>";
+	}
 
 	if (Sanitizer::get_var('phpgw_return_as') != 'json' && $global_message = Cache::system_get('phpgwapi', 'phpgw_global_message'))
 	{
@@ -1205,8 +1223,8 @@ function parse_footer_end()
 		return true;
 	}
 
-	$template = new Template(PHPGW_TEMPLATE_DIR);
-	$template->set_file('footer', 'footer.tpl');
+	$templateDir = PHPGW_TEMPLATE_DIR;
+	$twigDir = PHPGW_TEMPLATE_DIR . '/twig';
 
 	$version = isset($serverSettings['versions']['system']) ? $serverSettings['versions']['system'] : $serverSettings['versions']['phpgwapi'];
 
@@ -1235,9 +1253,14 @@ function parse_footer_end()
 		'javascript_end' => $phpgwapi_common->get_javascript_end($cache_refresh_token)
 	);
 
-	$template->set_var($var);
-
-	$template->pfp('out', 'footer');
+	// Use Twig to render the template
+	try {
+		$twig = \App\modules\phpgwapi\services\Twig::getInstance();
+		echo $twig->render('footer.twig', $var);
+	} catch (\Twig\Error\Error $e) {
+		error_log("Failed to render footer.twig: " . $e->getMessage());
+		echo "<!-- Error loading footer template. Please check logs. -->";
+	}
 
 	$footer_included = true;
 }

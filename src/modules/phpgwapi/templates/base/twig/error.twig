@@ -1,0 +1,88 @@
+{# twig #}
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>{{ 'error'|trans }} - {{ site_title }}</title>
+	<link href="/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css" type="text/css" rel="StyleSheet">
+	<style>
+		body {
+			background-color: #f8f9fa;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			min-height: 100vh;
+			font-family: Arial, sans-serif;
+		}
+		.error-container {
+			background-color: white;
+			padding: 40px;
+			border-radius: 8px;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+			max-width: 600px;
+			text-align: center;
+		}
+		.error-icon {
+			font-size: 4rem;
+			color: #dc3545;
+			margin-bottom: 20px;
+		}
+		.error-title {
+			color: #dc3545;
+			margin-bottom: 20px;
+			font-size: 1.8rem;
+		}
+		.error-message {
+			color: #666;
+			margin-bottom: 20px;
+			font-size: 1rem;
+			line-height: 1.6;
+		}
+		.error-details {
+			background-color: #f8d7da;
+			border: 1px solid #f5c6cb;
+			color: #721c24;
+			padding: 15px;
+			border-radius: 4px;
+			margin-bottom: 20px;
+			text-align: left;
+			font-size: 0.9rem;
+			max-height: 300px;
+			overflow-y: auto;
+			font-family: 'Courier New', monospace;
+		}
+		.error-actions {
+			margin-top: 30px;
+		}
+		.error-actions a {
+			margin: 0 10px;
+		}
+	</style>
+</head>
+<body>
+	<div class="error-container">
+		<div class="error-icon">⚠️</div>
+		<h1 class="error-title">{{ 'template_error'|trans }}</h1>
+		
+		<p class="error-message">
+			{{ message|default('An error occurred while rendering the template. Please contact the system administrator.') }}
+		</p>
+		
+		{% if show_details and details %}
+		<div class="error-details">
+			<strong>{{ 'details'|trans }}:</strong><br>
+			{{ details|escape }}
+		</div>
+		{% endif %}
+		
+		<div class="error-actions">
+			<a href="/" class="btn btn-primary">{{ 'go_to_home'|trans }}</a>
+			{% if show_back_button %}
+			<a href="javascript:history.back()" class="btn btn-secondary">{{ 'go_back'|trans }}</a>
+			{% endif %}
+		</div>
+	</div>
+</body>
+</html>

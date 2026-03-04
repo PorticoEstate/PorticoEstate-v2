@@ -1,0 +1,19 @@
+{# Log level select template #}
+
+{% block log_level_select %}
+	<form action="{{ select_link }}" method="post" name="{{ select_name }}_form">
+		<input type="hidden" name="level_type" value="{{ level_type }}"/>
+		<input type="hidden" name="level_key" value="{{ level_key }}"/>
+		<select name="{{ select_name }}" size="1" onchange="document.{{ select_name }}_form.submit()">
+			<option value="F" {{ F_selected ? 'selected' : '' }}>{{ lang('fatal') }}</option>
+			<option value="E" {{ E_selected ? 'selected' : '' }}>{{ lang('error') }}</option>
+			<option value="W" {{ W_selected ? 'selected' : '' }}>{{ lang('warn') }}</option>
+			<option value="N" {{ N_selected ? 'selected' : '' }}>{{ lang('notice') }}</option>
+			<option value="I" {{ I_selected ? 'selected' : '' }}>{{ lang('info') }}</option>
+			<option value="D" {{ D_selected ? 'selected' : '' }}>{{ lang('debug') }}</option>
+			<option value="DP" {{ DP_selected ? 'selected' : '' }}>{{ lang('deprecated') }}</option>
+			<option value="A" {{ A_selected ? 'selected' : '' }}>{{ lang('all') }}</option>
+		</select>
+		<noscript><input type="submit"></noscript>
+	</form>
+{% endblock %}

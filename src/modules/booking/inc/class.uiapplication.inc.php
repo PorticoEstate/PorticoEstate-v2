@@ -3764,6 +3764,13 @@ class booking_uiapplication extends booking_uicommon
 			phpgw::no_access('booking', lang('missing id'));
 		}
 
+		$template_set = $this->userSettings['preferences']['common']['template_set'] ?? '';
+		if ($template_set === 'digdir')
+		{
+			\phpgw::redirect_link('/booking/view/applications/' . $id);
+			return;
+		}
+
 		// Check if we should open the approve modal after allocation creation
 		$open_approve_modal = Sanitizer::get_var('open_approve_modal', 'int', 'GET', 0);
 
@@ -4765,39 +4772,38 @@ JS;
 //			'show_recurring_summary' => $show_recurring_summary,
 //			'recurring_approval_summary' => $recurring_approval_summary
 //		));
-		self::render_template_xsl(
-			$template_name,
-			array(
-				'application'		 => $application,
-				'organization'		 => $organization,
-				'audience'			 => $audience,
-				'agegroups'			 => $agegroups,
-				'num_associations'	 => $num_associations,
-				'assoc'				 => $from,
-				'collision'			 => $collision_dates,
-				'comments'			 => $comments,
-				'simple'			 => $simple,
-				'config'			 => $config,
-				'export_pdf_action'	 => self::link(array('menuaction' => 'booking.uiapplication.export_pdf', 'id' => $application['id'])),
-				'external_archive'	 => !empty($this->userSettings['preferences']['common']['archive_user_id']) ? $external_archive : '',
-				'user_list'			 => array('options' => createObject('booking.sopermission_building')->get_user_list()),
-				'internal_notes'	 => $internal_notes,
-				'show_edit_selection' => $show_edit_selection,
-				'related_applications' => $related_applications,
-				'show_recurring_button' => $show_recurring_button,
-				'recurring_allocation_url' => $recurring_allocation_url,
-				'recurring_data' => $recurring_data,
-				'recurring_preview' => $recurring_preview,
-				'season_info' => $season_info,
-				'create_button_text' => $create_button_text,
-				'create_button_count' => $create_button_count,
-				'has_conflicts' => $has_conflicts,
-				'can_create_allocations' => $can_create_allocations,
-				'has_partial_allocations_with_conflicts' => $has_partial_allocations_with_conflicts,
-				'open_approve_modal' => $open_approve_modal,
-				'show_recurring_summary' => $show_recurring_summary
-			)
+		$template_data = array(
+			'application'		 => $application,
+			'organization'		 => $organization,
+			'audience'			 => $audience,
+			'agegroups'			 => $agegroups,
+			'num_associations'	 => $num_associations,
+			'assoc'				 => $from,
+			'collision'			 => $collision_dates,
+			'comments'			 => $comments,
+			'simple'			 => $simple,
+			'config'			 => $config,
+			'export_pdf_action'	 => self::link(array('menuaction' => 'booking.uiapplication.export_pdf', 'id' => $application['id'])),
+			'external_archive'	 => !empty($this->userSettings['preferences']['common']['archive_user_id']) ? $external_archive : '',
+			'user_list'			 => array('options' => createObject('booking.sopermission_building')->get_user_list()),
+			'internal_notes'	 => $internal_notes,
+			'show_edit_selection' => $show_edit_selection,
+			'related_applications' => $related_applications,
+			'show_recurring_button' => $show_recurring_button,
+			'recurring_allocation_url' => $recurring_allocation_url,
+			'recurring_data' => $recurring_data,
+			'recurring_preview' => $recurring_preview,
+			'season_info' => $season_info,
+			'create_button_text' => $create_button_text,
+			'create_button_count' => $create_button_count,
+			'has_conflicts' => $has_conflicts,
+			'can_create_allocations' => $can_create_allocations,
+			'has_partial_allocations_with_conflicts' => $has_partial_allocations_with_conflicts,
+			'open_approve_modal' => $open_approve_modal,
+			'show_recurring_summary' => $show_recurring_summary
 		);
+
+		self::render_template_xsl($template_name, $template_data);
 	}
 
 	private function generate_recurring_preview($application, $recurring_data)

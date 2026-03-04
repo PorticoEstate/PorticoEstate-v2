@@ -2,7 +2,7 @@
 
 namespace App\modules\bookingfrontend\controllers;
 
-use App\modules\bookingfrontend\helpers\ResponseHelper;
+use App\helpers\ResponseHelper;
 use App\modules\bookingfrontend\models\User;
 use App\modules\bookingfrontend\services\CompletedReservationService;
 use App\modules\bookingfrontend\helpers\UserHelper;

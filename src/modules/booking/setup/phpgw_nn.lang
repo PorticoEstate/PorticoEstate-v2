@@ -1013,3 +1013,79 @@ portrait_preview	booking	nn	200x411 (portrett)
 apply_focal_point	booking	nn	Bruk
 
 short_description	booking	nn	Kort beskriving
+document deleted	booking	nn	Dokument sletta
+no documents found	booking	nn	Ingen dokument funne
+showing _start_ to _end_ of _total_ entries	booking	nn	Viser _START_ til _END_ av _TOTAL_ oppføringar
+no entries to show	booking	nn	Ingen oppføringar å vise
+show _menu_ entries	booking	nn	Vis _MENU_ oppføringar
+highlighted_buildings	booking	nn	Utvalde bygg
+search_buildings	booking	nn	Søk etter bygg
+max_buildings_reached	booking	nn	Maksimalt %1 bygg
+no_buildings_found	booking	nn	Ingen bygg funne
+changes_saved	booking	nn	Endringar lagra
+move_up	booking	nn	Flytt opp
+move_down	booking	nn	Flytt ned
+save	booking	nn	Lagre
+remove	booking	nn	Fjern
+save_error	booking	nn	Feil ved lagring
+building_title	booking	nn	Bygning
+show_all_resources	booking	nn	Vis alle rom
+building_preview	booking	nn	Førehandsvisning
+edit_in_new_window	booking	nn	Rediger i nytt vindauge
+columns	booking	nn	Kolonnar
+download	booking	nn	Last ned
+webservice host	booking	nn	WebService-vert
+organization name	booking	nn	Organisasjonsnamn
+percent	booking	nn	Prosent
+history	booking	nn	Historikk
+related_applications	booking	nn	Relaterte søknader
+recurring	booking	nn	Gjentakande
+internal_notes	booking	nn	Interne notat
+collision	booking	nn	Kollisjon
+no_collision	booking	nn	Ledig
+associations	booking	nn	Tildelingar
+dates	booking	nn	Datoar
+comments	booking	nn	Kommentarar
+purchase_orders	booking	nn	Bestillingar
+send_reply_to_applicant	booking	nn	Send svar til innsendaren
+send_message_to_case_officer	booking	nn	Send melding til saksbehandlar
+create_internal_note	booking	nn	Opprett internt notat
+change_case_officer	booking	nn	Sett sak til annan saksbehandlar
+reply	booking	nn	Svar
+forward	booking	nn	Vidaresend
+back_to_overview	booking	nn	Tilbake til hovudoversikt
+not_case_officer_warning	booking	nn	For å jobbe med denne søknaden må du først bli saksbehandlar
+not_assigned	booking	nn	Ikkje angitt
+ends	booking	nn	Sluttar
+season_from	booking	nn	Sesong frå
+season_to	booking	nn	Sesong til
+order	booking	nn	Ordre
+type	booking	nn	Type
+handling	booking	nn	Handling
+not_yet_created	booking	nn	Ikkje oppretta enno
+creating_allocations	booking	nn	Opprettar tildelingar
+weeks	booking	nn	veker
+show	booking	nn	Vis
+successfully_created	booking	nn	oppretta
+write_reply_to_applicant	booking	nn	Skriv svar til søkjar
+send	booking	nn	Send
+acceptance_message	booking	nn	Melding til søkjar
+rejection_reason	booking	nn	Grunngiving for avslag
+select_case_officer	booking	nn	Vel saksbehandlar
+note_content	booking	nn	Innhald
+optional	booking	nn	Valfritt
+cancel_action	booking	nn	Avbryt
+comment_sent	booking	nn	Svar sendt
+note_saved	booking	nn	Notat lagra
+application_accepted	booking	nn	Søknad godkjent
+application_rejected	booking	nn	Søknad avslått
+case_officer_changed	booking	nn	Saksbehandlar endra
+no_case_officer_warning	booking	nn	Ingen saksbehandlar er tildelt — tilordna deg sjølv for å behandle denne søknaden
+different_case_officer_warning	booking	nn	Denne søknaden er tildelt ein annan saksbehandlar
+subject	booking	nn	Emne
+message	booking	nn	Melding
+message_sent	booking	nn	Melding sendt
+archive_key	booking	nn	Arkivnøkkel
+in_tax_register	booking	nn	I MVA-registeret
+unit_cost	booking	nn	Einingspris
+associated_items	booking	nn	Tilhøyrande element

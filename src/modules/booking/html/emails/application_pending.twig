@@ -1,0 +1,27 @@
+{% extends '@views/emails/_email_layout.twig' %}
+
+{% block content %}
+<p>Din søknad i {{ systemname }} om leie/lån av {{ resourcename }} på {{ building_name }} er {{ status_text }}</p>
+
+{% include '@views/emails/_partials/application_details.twig' with {
+    application_name: application_name,
+    organizer: organizer
+} only %}
+
+{% if dates is not empty %}
+<p><strong>Ønskede tider:</strong></p>
+<pre>
+{%- for date in dates %}
+	{{ date }}
+{%- endfor %}
+</pre>
+{% endif %}
+
+{% if comment %}
+<p><strong>Kommentar fra saksbehandler:</strong><br />{{ comment }}</p>
+{% endif %}
+
+<p>{{ mail_pending|safe_html }}</p>
+
+{% include '@views/emails/_partials/application_link.twig' %}
+{% endblock %}

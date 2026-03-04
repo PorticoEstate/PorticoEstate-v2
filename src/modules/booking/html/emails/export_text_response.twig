@@ -1,0 +1,39 @@
+{% if status == 'PENDING' %}
+<p>{{ contact_name }} sin søknad i {{ systemname }} om leie/lån av {{ resourcename }} på {{ building_name }} er {{ status_text }}</p>
+{% if comment %}
+<p>Kommentar fra saksbehandler:<br />{{ comment }}</p>
+{% endif %}
+<pre>{{ mail_pending|safe_html }}</pre>
+
+{% elseif status == 'ACCEPTED' %}
+<p>{{ contact_name }} sin søknad i {{ systemname }} om leie/lån av {{ resourcename }} på {{ building_name }} er {{ status_text }}</p>
+{% if agreement_requirements %}
+{{ lang('additional requirements') }}:<br />{{ agreement_requirements|safe_html }}<br />
+{% endif %}
+{% if comment %}
+<p>Kommentar fra saksbehandler:<br />{{ comment }}</p>
+{% endif %}
+<p>{{ mail_accepted|safe_html }}</p>
+{% if approved_dates is not empty %}
+<pre>Godkjent:
+{%- for date in approved_dates %}
+{{ date }}
+{%- endfor %}
+</pre>
+{% endif %}
+{% if rejected_dates is not empty %}
+<pre>Avvist: {%- for date in rejected_dates %}
+{{ date }}
+{%- endfor %}
+</pre>
+{% endif %}
+
+{% elseif status == 'REJECTED' %}
+<p>{{ contact_name }} sin søknad i {{ systemname }} om leie/lån av {{ resourcename }} på {{ building_name }} er {{ status_text }}</p>
+{% if comment %}
+<p>Kommentar fra saksbehandler:<br />{{ comment }}</p>
+{% endif %}
+<pre>{{ mail_rejected|safe_html }}</pre>
+{% endif %}
+
+<p>{{ signature|safe_html }}</p>

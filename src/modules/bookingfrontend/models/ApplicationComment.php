@@ -2,21 +2,14 @@
 
 namespace App\modules\bookingfrontend\models;
 
+use App\modules\booking\models\ApplicationComment as BookingApplicationComment;
+
 /**
- * @OA\Schema(
- *     schema="ApplicationComment",
- *     type="object",
- *     title="ApplicationComment",
- *     description="Application comment model"
- * )
+ * Backward-compatible alias — canonical model lives in booking module.
+ *
+ * @OA\Schema(schema="ApplicationComment")
  * @Exclude
  */
-class ApplicationComment extends BaseComment
+class ApplicationComment extends BookingApplicationComment
 {
-    /**
-     * @OA\Property(type="integer", description="Application ID this comment belongs to")
-     * @Expose
-     */
-    public int $application_id;
-
 }

@@ -1,0 +1,20 @@
+{% if jquery_phpgw_i18n is defined and jquery_phpgw_i18n %}
+	<script>
+		JqueryPortico.i18n = {
+			{% for section_name, section in jquery_phpgw_i18n %}
+				{{ section_name }}: function(cfg)
+				{
+					cfg = cfg || {};
+					{% for key, value in section %}
+						{% if key != '_' %}
+							cfg["{{ key }}"] = {{ value|raw }};
+						{% else %}
+							cfg = {{ value|raw }};
+						{% endif %}
+					{% endfor %}
+					return cfg;
+				}{% if not loop.last %},{% endif %}
+			{% endfor %}
+		};
+	</script>
+{% endif %}

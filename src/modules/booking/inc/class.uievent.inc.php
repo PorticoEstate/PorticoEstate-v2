@@ -500,6 +500,7 @@ class booking_uievent extends booking_uicommon
 	public function add()
 	{
 		$errors = array();
+		$isJsonRequest = self::handleJsonPost();
 		$default_is_public = !empty($this->userSettings['preferences']['booking']['event_is_public']) && $this->userSettings['preferences']['booking']['event_is_public'] == 'public' ?  1 : 0;
 		$event = array(
 			'customer_internal' => 0,
@@ -726,10 +727,20 @@ class booking_uievent extends booking_uicommon
 					$this->sopurchase_order->copy_purchase_order_from_application($event, $receipt['id'], 'event');
 					$this->bo->so->update_id_string();
 				}
+				if ($isJsonRequest) {
+					self::sendJsonResponse([
+						'id' => $receipt['id'],
+						'type' => 'event',
+						'edit_url' => '/?menuaction=booking.uievent.edit&id=' . $receipt['id'] . '&secret=' . $event['secret'],
+					], 201);
+				}
 				self::redirect(array(
 					'menuaction' => 'booking.uievent.edit', 'id' => $receipt['id'],
 					'secret' => $event['secret'], 'warnings' => $errors
 				));
+			}
+			if ($isJsonRequest) {
+				self::sendJsonResponse(['errors' => $errors], 422);
 			}
 		}
 		if ($errors['event'])

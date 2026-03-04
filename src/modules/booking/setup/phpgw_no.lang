@@ -1001,3 +1001,79 @@ portrait_preview	booking	no	200x411 (portrett)
 apply_focal_point	booking	no	Bruk
 
 short_description	booking	no	Kort beskrivelse
+document deleted	booking	no	Dokument slettet
+no documents found	booking	no	Ingen dokumenter funnet
+showing _start_ to _end_ of _total_ entries	booking	no	Viser _START_ til _END_ av _TOTAL_ oppføringer
+no entries to show	booking	no	Ingen oppføringer å vise
+show _menu_ entries	booking	no	Vis _MENU_ oppføringer
+highlighted_buildings	booking	no	Utvalgte bygg
+search_buildings	booking	no	Søk etter bygg
+max_buildings_reached	booking	no	Maksimalt %1 bygg
+no_buildings_found	booking	no	Ingen bygg funnet
+changes_saved	booking	no	Endringer lagret
+move_up	booking	no	Flytt opp
+move_down	booking	no	Flytt ned
+save	booking	no	Lagre
+remove	booking	no	Fjern
+save_error	booking	no	Feil ved lagring
+building_title	booking	no	Bygning
+show_all_resources	booking	no	Vis alle rom
+building_preview	booking	no	Forhåndsvisning
+edit_in_new_window	booking	no	Rediger i nytt vindu
+columns	booking	no	Kolonner
+download	booking	no	Last ned
+webservice host	booking	no	WebService-vert
+organization name	booking	no	Organisasjonsnavn
+percent	booking	no	Prosent
+history	booking	no	Historikk
+related_applications	booking	no	Relaterte søknader
+recurring	booking	no	Gjentakende
+internal_notes	booking	no	Interne notater
+collision	booking	no	Kollisjon
+no_collision	booking	no	Ledig
+associations	booking	no	Tildelinger
+dates	booking	no	Datoer
+comments	booking	no	Kommentarer
+purchase_orders	booking	no	Bestillinger
+send_reply_to_applicant	booking	no	Send svar til innsender
+send_message_to_case_officer	booking	no	Send melding til saksbehandler
+create_internal_note	booking	no	Opprett internt notat
+change_case_officer	booking	no	Sett sak til annen saksbehandler
+reply	booking	no	Svar
+forward	booking	no	Videresend
+back_to_overview	booking	no	Tilbake til hovedoversikt
+not_case_officer_warning	booking	no	For å jobbe med denne søknaden må du først bli saksbehandler
+not_assigned	booking	no	Ikke angitt
+ends	booking	no	Slutter
+season_from	booking	no	Sesong fra
+season_to	booking	no	Sesong til
+order	booking	no	Ordre
+type	booking	no	Type
+handling	booking	no	Handling
+not_yet_created	booking	no	Ikke opprettet ennå
+creating_allocations	booking	no	Oppretter tildelinger
+weeks	booking	no	uker
+show	booking	no	Vis
+successfully_created	booking	no	opprettet
+write_reply_to_applicant	booking	no	Skriv svar til søker
+send	booking	no	Send
+acceptance_message	booking	no	Melding til søker
+rejection_reason	booking	no	Begrunnelse for avslag
+select_case_officer	booking	no	Velg saksbehandler
+note_content	booking	no	Innhold
+optional	booking	no	Valgfritt
+cancel_action	booking	no	Avbryt
+comment_sent	booking	no	Svar sendt
+note_saved	booking	no	Notat lagret
+application_accepted	booking	no	Søknad godkjent
+application_rejected	booking	no	Søknad avslått
+case_officer_changed	booking	no	Saksbehandler endret
+no_case_officer_warning	booking	no	Ingen saksbehandler er tildelt — tilordne deg selv for å behandle denne søknaden
+different_case_officer_warning	booking	no	Denne søknaden er tildelt en annen saksbehandler
+subject	booking	no	Emne
+message	booking	no	Melding
+message_sent	booking	no	Melding sendt
+archive_key	booking	no	Arkivnøkkel
+in_tax_register	booking	no	I MVA-registeret
+unit_cost	booking	no	Enhetspris
+associated_items	booking	no	Tilhørende elementer

@@ -300,6 +300,36 @@ After identifying missing translations, you can add them to the language files:
    php test_lang_files.php --compare --lang=en,no,nn --module=module_name
    ```
 
+## Dot-Notation Namespacing
+
+The `lang()` function supports dot-notation to force translation lookup in a specific module, overriding the current module context.
+
+### Syntax
+
+```php
+lang('my_key')              // Default: looks up in current module, falls back to 'common'
+lang('booking.my_key')      // Forces lookup in the 'booking' module
+lang('common.yes')          // Restricts lookup to 'common' translations only
+lang('bookingfrontend.save')// Forces lookup in the 'bookingfrontend' module
+```
+
+### In Twig Templates
+
+```twig
+{{ lang('booking.my_key') }}
+{{ lang('common.yes') }}
+```
+
+### When to Use
+
+- **Cross-module lookups:** When you need a translation from a different module than the current context (e.g., a shared controller rendering translations from `booking` while in `bookingfrontend`).
+- **Explicit common:** Use `lang('common.key')` when you specifically want a common translation and want to avoid accidental matches in the current module.
+- **Default behavior is usually fine:** Within a module's own templates/controllers, plain `lang('key')` already looks up in the current module with common fallback.
+
+### Safety
+
+The dot prefix is only parsed as a namespace if the part before the dot contains **no spaces**. This means existing keys like `"loading..."`, `"no data. try again"`, etc. are unaffected — their prefix (`"loading"`, `"no data"`) either doesn't match a module or contains a space.
+
 ## Best Practices for Translation Keys
 
 ### Use Semantic Keys Instead of Full Text

@@ -158,6 +158,7 @@ class LocationHierarchyAnalyzer
 				if (isset($this->loc2Refs[$loc1]) && is_array($this->loc2Refs[$loc1]))
 				{
 					$existingLoc2List = array_keys($this->loc2Refs[$loc1]);
+					$existingLoc2List = array_filter($existingLoc2List, fn($loc2) => $loc2 !== '00');
 					sort($existingLoc2List, SORT_STRING);
 					foreach ($existingLoc2List as $existingLoc2)
 					{

@@ -65,7 +65,6 @@ interface ApplicationCrudInnerProps extends ApplicationCrudProps {
 	lastSubmittedData?: Partial<ApplicationFormData> | null;
 	bookingUser?: IBookingUser;
 	seasons?: Season[];
-	events?: IEvent[];
 }
 
 const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
@@ -91,10 +90,6 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 		building_id ? +building_id : undefined
 	);
 	const {data: bookingUser, isLoading: userLoading} = useBookingUser();
-	const {data: events, isLoading: eventsLoading} = useBuildingSchedule({
-		building_id: building_id ? +building_id : undefined,
-		weeks: [DateTime.now()]
-	});
 
 	// Check for pending recurring application data after login and update props if needed
 	useEffect(() => {
@@ -164,7 +159,7 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 		return null;
 	}
 
-	if (seasonsLoading || userLoading || buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || eventsLoading || existingApplication === undefined) {
+	if (seasonsLoading || userLoading || buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || existingApplication === undefined) {
 		return null;
 	}
 
@@ -187,7 +182,6 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 				lastSubmittedData={lastSubmittedData}
 				bookingUser={bookingUser}
 				seasons={seasons}
-				events={events}
 				showDebug={isDevMode()} // Always enable debug in dev mode
 				onSubmitSuccess={(data) => {
 					setLastSubmittedData(data);
@@ -217,7 +211,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const [filesToUpload, setFilesToUpload] = useState<FileList | null>(null);
 	const [isUploadingFiles, setIsUploadingFiles] = useState(false);
 	const [hasExternalChanges, setHasExternalChanges] = useState(false);
-	const {building, buildingResources, audience, agegroups, partials, existingApplication, events} = props;
+	const {building, buildingResources, audience, agegroups, partials, existingApplication} = props;
 	const t = useTrans();
 	const [isEditingResources, setIsEditingResources] = useState(false);
 	const createMutation = useCreatePartialApplication();
@@ -226,6 +220,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const uploadDocumentMutation = useUploadApplicationDocument();
 	const deleteDocumentMutation = useDeleteApplicationDocument();
 	const participantsSectionRef = useRef<HTMLDivElement>(null);
+	const dateSectionRef = useRef<HTMLDivElement>(null);
 	const {data: serverSettings} = useServerSettings();
 	const {addToast} = useToast();
 
@@ -520,6 +515,27 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const endTime = watch('end');
 	const isRecurring = watch('isRecurring');
 	const outseason = watch('recurring_info.outseason');
+
+	// Compute all weeks between start and end for overlap detection
+	const scheduleWeeks = useMemo(() => {
+		if (!startTime || !endTime) return [DateTime.now()];
+		const start = DateTime.fromJSDate(startTime).set({weekday: 1}).startOf('day');
+		const end = DateTime.fromJSDate(endTime).set({weekday: 1}).startOf('day');
+		const weeks: DateTime[] = [];
+		let current = start;
+		while (current <= end) {
+			weeks.push(current);
+			current = current.plus({weeks: 1});
+		}
+		return weeks;
+	}, [startTime, endTime]);
+
+	const building_id = props.building_id || props.selectedTempApplication?.extendedProps?.building_id;
+	const {data: events} = useBuildingSchedule({
+		building_id: building_id ? +building_id : undefined,
+		weeks: scheduleWeeks
+	});
+
 	// Function to find the current season based on start/end time
 	const getCurrentSeason = useCallback(() => {
 		if (!props.seasons || !startTime) return null;
@@ -760,59 +776,51 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		return DateTime.fromJSDate(date).toFormat('yyyy-MM-dd\'T\'HH:mm');
 	};
 
-	const checkEventOverlap = useCallback((startDate: Date, endDate: Date, resourceIds: string[]): boolean => {
-		// Get current events from context or props
-		if (!events) return false; // No events to check against
+	// Live overlap detection - reactively checks for conflicts whenever dates, resources, or events change
+	const hasOverlapConflict = useMemo(() => {
+		if (!events || !startTime || !endTime || !selectedResources?.length || !buildingResources) return false;
 
-		const selectStart = DateTime.fromJSDate(startDate);
-		const selectEnd = DateTime.fromJSDate(endDate);
+		const selectStart = DateTime.fromJSDate(startTime);
+		const selectEnd = DateTime.fromJSDate(endTime);
 
-		// Prevent selections in the past
-		const now = DateTime.now();
-		if (selectStart < now) {
-			return false;
-		}
+		if (selectStart < DateTime.now()) return false;
 
-		// Filter to only get actual events (not background events) for selected resources
-		const selectedResourceIds = resourceIds.map(Number);
+		const selectedResourceIds = selectedResources.map(Number);
 
-		// Check for resources with deny_application_if_booked flag
+		// Only check resources with deny_application_if_booked flag
 		const resourcesWithDenyFlag = buildingResources
-			?.filter(res => selectedResourceIds.includes(res.id) && res.deny_application_if_booked === 1);
+			.filter(res => selectedResourceIds.includes(res.id) && res.deny_application_if_booked === 1);
 
-		const hasResourceWithDenyFlag = resourcesWithDenyFlag && resourcesWithDenyFlag.length > 0;
+		if (resourcesWithDenyFlag.length === 0) return false;
 
-		// If no resources have deny flag, allow the booking
-		if (!hasResourceWithDenyFlag) return true;
+		const denyResourceIds = resourcesWithDenyFlag.map(res => res.id);
 
-		// Get all events for the selected resources
-		const relevantEvents = events
-			.filter(event => {
-				// Check if event has any of the selected resources
-				const eventHasSelectedResource = event.resources.some(res =>
-					selectedResourceIds.includes(res.id)
-				);
-
-				// Skip if editing existing event
-				if (existingApplication && existingApplication.id === event.id) {
-					return false;
-				}
-
-				return eventHasSelectedResource;
-			});
-
-		// Check for overlap with each event's times
-		const hasOverlap = relevantEvents.some(event => {
-			const eventStart = DateTime.fromISO(event.from_);
-			const eventEnd = DateTime.fromISO(event.to_);
-
-			// Check if the selection overlaps with this event
-			return !(selectEnd <= eventStart || selectStart >= eventEnd);
+		// Get events that use any of the deny-flagged resources
+		const relevantEvents = events.filter(event => {
+			if (existingApplication && existingApplication.id === event.id) return false;
+			return event.resources.some(res => denyResourceIds.includes(res.id));
 		});
 
-		// If no overlap, return true (booking is allowed)
-		return !hasOverlap;
-	}, [events, buildingResources, existingApplication]);
+		return relevantEvents.some(event => {
+			const eventStart = DateTime.fromISO(event.from_);
+			const eventEnd = DateTime.fromISO(event.to_);
+			return !(selectEnd <= eventStart || selectStart >= eventEnd);
+		});
+	}, [events, startTime, endTime, selectedResources, buildingResources, existingApplication]);
+
+	// Live-update the resources error when overlap status changes
+	useEffect(() => {
+		if (hasOverlapConflict) {
+			setError('resources', {
+				type: 'manual',
+				message: t('bookingfrontend.resource_overlap_detected')
+			});
+		} else {
+			if (errors.resources?.message === t('bookingfrontend.resource_overlap_detected')) {
+				clearErrors('resources');
+			}
+		}
+	}, [hasOverlapConflict, setError, clearErrors, t, errors.resources?.message]);
 
 	const onSubmit = async (data: ApplicationFormData) => {
 		if (!building || !buildingResources) {
@@ -827,10 +835,6 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		// Check for times outside business hours
 		const startOutsideHours = !isWithinBusinessHours(data.start, data.resources);
 		const endOutsideHours = !isWithinBusinessHours(data.end, data.resources);
-
-		// Check if any selected resource denies applications if already booked
-		const selectedResources = buildingResources.filter(res => data.resources.some(id => +id === res.id));
-		const hasResourceWithDenyFlag = selectedResources.some(res => res.deny_application_if_booked === 1);
 
 		// Validate dates
 		if (startInPast || endInPast || startOutsideHours || endOutsideHours) {
@@ -861,18 +865,14 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			return;
 		}
 
-		// If any resource has deny_application_if_booked=1, check for overlaps
-		if (hasResourceWithDenyFlag) {
-			// Use our checkEventOverlap function to check for overlaps
-			const noOverlap = checkEventOverlap(data.start, data.end, data.resources);
-
-			if (!noOverlap) {
-				setError('resources', {
-					type: 'manual',
-					message: t('bookingfrontend.resource_overlap_detected')
-				});
-				return;
-			}
+		// Block submission if overlap detected on deny_application_if_booked resources
+		if (hasOverlapConflict) {
+			setError('resources', {
+				type: 'manual',
+				message: t('bookingfrontend.resource_overlap_detected')
+			});
+			dateSectionRef.current?.scrollIntoView({behavior: 'smooth', block: 'start'});
+			return;
 		}
 
 		if (existingApplication) {
@@ -1258,7 +1258,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 						/>
 					</div>
 
-					<div className={styles.dateTimeGroup}>
+					<div className={styles.dateTimeGroup} ref={dateSectionRef}>
 						<div className={styles.dateTimeInput}>
 							<Controller
 								name="start"

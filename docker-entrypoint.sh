@@ -42,6 +42,16 @@ if [ -f /var/www/html/composer.json ]; then
     fi
 fi
 
+# Check if npm dependencies need to be installed
+if [ -f /var/www/html/package.json ]; then
+    if [ ! -d /var/www/html/node_modules ]; then
+        echo "Installing npm dependencies..."
+        cd /var/www/html && npm ci --omit=dev
+    else
+        echo "npm dependencies are up to date"
+    fi
+fi
+
 # Create log directory for Supervisor
 mkdir -p /var/log/supervisor
 

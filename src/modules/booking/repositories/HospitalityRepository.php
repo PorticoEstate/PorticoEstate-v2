@@ -58,9 +58,9 @@ class HospitalityRepository
     {
         $sql = "INSERT INTO bb_hospitality
                 (resource_id, name, description, active, remote_serving_enabled,
-                 order_by_time_value, order_by_time_unit, created_by, modified_by)
+                 allow_delivery, order_by_time_value, order_by_time_unit, created_by, modified_by)
                 VALUES (:resource_id, :name, :description, :active, :remote_serving_enabled,
-                        :order_by_time_value, :order_by_time_unit, :created_by, :modified_by)";
+                        :allow_delivery, :order_by_time_value, :order_by_time_unit, :created_by, :modified_by)";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             ':resource_id' => $data['resource_id'],
@@ -68,6 +68,7 @@ class HospitalityRepository
             ':description' => $data['description'] ?? null,
             ':active' => $data['active'] ?? 1,
             ':remote_serving_enabled' => $data['remote_serving_enabled'] ?? 0,
+            ':allow_delivery' => $data['allow_delivery'] ?? 0,
             ':order_by_time_value' => $data['order_by_time_value'] ?? null,
             ':order_by_time_unit' => $data['order_by_time_unit'] ?? null,
             ':created_by' => $data['created_by'],
@@ -83,7 +84,7 @@ class HospitalityRepository
 
         $allowedFields = [
             'resource_id', 'name', 'description', 'active',
-            'remote_serving_enabled', 'order_by_time_value', 'order_by_time_unit',
+            'remote_serving_enabled', 'allow_delivery', 'order_by_time_value', 'order_by_time_unit',
         ];
 
         foreach ($allowedFields as $field) {
@@ -110,7 +111,7 @@ class HospitalityRepository
 
     public function delete(int $id): bool
     {
-        $stmt = $this->db->prepare("DELETE FROM bb_hospitality WHERE id = :id");
+        $stmt = $this->db->prepare("UPDATE bb_hospitality SET active = 0, modified = NOW() WHERE id = :id");
         return $stmt->execute([':id' => $id]);
     }
 
@@ -165,7 +166,9 @@ class HospitalityRepository
     }
 
     /**
-     * Get all valid delivery locations for a hospitality (main resource + active remote locations).
+     * Get all valid delivery locations for a hospitality.
+     * - Main resource included only if allow_delivery = 1 (pre-order without booking the resource)
+     * - Remote locations included only if remote_serving_enabled = 1
      */
     public function getDeliveryLocations(int $hospitalityId): array
     {
@@ -173,6 +176,7 @@ class HospitalityRepository
                 FROM bb_hospitality h
                 JOIN bb_resource r ON h.resource_id = r.id
                 WHERE h.id = :id1
+                  AND h.allow_delivery = 1
                 UNION ALL
                 SELECT r.id, r.name, 'remote' AS location_type
                 FROM bb_hospitality_remote_location rl

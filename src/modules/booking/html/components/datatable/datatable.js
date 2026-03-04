@@ -937,7 +937,7 @@
 							var firstOpt = inp.config.options && inp.config.options[0];
 							if (val && firstOpt && String(val) !== String(firstOpt.value)) {
 								if (colIdx != null && colIdx !== '') {
-									pass = String(rowData[colIdx]) === String(val);
+									pass = String(searchData[colIdx]) === String(val);
 								}
 							}
 						} else {

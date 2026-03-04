@@ -982,3 +982,29 @@ in_tax_register	booking	en	In tax register
 unit	booking	en	Unit
 unit_cost	booking	en	Unit price
 associated_items	booking	en	Associated items
+hospitality	booking	en	Hospitality
+remote_serving	booking	en	Remote serving
+allow_delivery	booking	en	Allow delivery
+service_configuration	booking	en	Service configuration
+order_deadline	booking	en	Order deadline
+main_resource	booking	en	Main resource
+remote_locations	booking	en	Remote locations
+remote_serving_disabled	booking	en	Remote serving is disabled for this hospitality. Enable it in the Details tab to manage remote locations.
+no_remote_locations	booking	en	No remote locations configured
+articles	booking	en	Articles
+article_groups	booking	en	Article groups
+ungrouped_articles	booking	en	Ungrouped articles
+base_price	booking	en	Base price
+override_price	booking	en	Override price
+effective_price	booking	en	Effective price
+sort_order	booking	en	Sort order
+no_orders	booking	en	No orders
+saved	booking	en	Saved
+back_to_list	booking	en	Back to list
+hours	booking	en	Hours
+days	booking	en	Days
+select_article	booking	en	Select article
+select_resource	booking	en	Select resource
+no_articles	booking	en	No articles
+price	booking	en	Price
+confirm_delete	booking	en	Are you sure you want to delete this?

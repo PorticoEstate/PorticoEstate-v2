@@ -131,14 +131,9 @@ class HospitalityOrderRepository
         ]);
     }
 
-    public function delete(int $id): bool
+    public function delete(int $id, ?int $modifiedBy = null): bool
     {
-        // Delete order lines first
-        $stmt = $this->db->prepare("DELETE FROM bb_hospitality_order_line WHERE order_id = :id");
-        $stmt->execute([':id' => $id]);
-
-        $stmt = $this->db->prepare("DELETE FROM bb_hospitality_order WHERE id = :id");
-        return $stmt->execute([':id' => $id]);
+        return $this->updateStatus($id, HospitalityOrder::STATUS_CANCELLED, $modifiedBy);
     }
 
     // -- Order Lines --

@@ -8290,3 +8290,16 @@ function booking_upgrade0_2_119($oProc)
 		return $currentver;
 	}
 }
+
+$test[] = '0.2.120';
+function booking_upgrade0_2_120($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	$oProc->m_odb->query("ALTER TABLE bb_hospitality ADD COLUMN allow_delivery SMALLINT DEFAULT 0 NOT NULL");
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.121';
+		return $currentver;
+	}
+}

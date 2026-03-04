@@ -48,10 +48,16 @@ class Hospitality
     public $active = 1;
 
     /**
-     * @OA\Property(type="integer")
+     * @OA\Property(type="integer", description="Whether food can be delivered to remote locations")
      * @Expose
      */
     public $remote_serving_enabled = 0;
+
+    /**
+     * @OA\Property(type="integer", description="Whether pre-ordering to the main resource is allowed without booking it")
+     * @Expose
+     */
+    public $allow_delivery = 0;
 
     /**
      * @OA\Property(type="integer", nullable=true)

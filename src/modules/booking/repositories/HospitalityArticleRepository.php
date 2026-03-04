@@ -73,13 +73,7 @@ class HospitalityArticleRepository
 
     public function deleteGroup(int $id): bool
     {
-        // Unlink articles from this group first
-        $stmt = $this->db->prepare(
-            "UPDATE bb_hospitality_article SET article_group_id = NULL WHERE article_group_id = :id"
-        );
-        $stmt->execute([':id' => $id]);
-
-        $stmt = $this->db->prepare("DELETE FROM bb_hospitality_article_group WHERE id = :id");
+        $stmt = $this->db->prepare("UPDATE bb_hospitality_article_group SET active = 0 WHERE id = :id");
         return $stmt->execute([':id' => $id]);
     }
 
@@ -193,7 +187,7 @@ class HospitalityArticleRepository
 
     public function deleteArticle(int $id): bool
     {
-        $stmt = $this->db->prepare("DELETE FROM bb_hospitality_article WHERE id = :id");
+        $stmt = $this->db->prepare("UPDATE bb_hospitality_article SET active = 0 WHERE id = :id");
         return $stmt->execute([':id' => $id]);
     }
 

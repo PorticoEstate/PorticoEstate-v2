@@ -1089,3 +1089,27 @@ archive_key	booking	nn	Arkivnøkkel
 in_tax_register	booking	nn	I MVA-registeret
 unit_cost	booking	nn	Einingspris
 associated_items	booking	nn	Tilhøyrande element
+hospitality	booking	nn	Servering
+remote_serving	booking	nn	Fjernservering
+allow_delivery	booking	nn	Tillat levering
+service_configuration	booking	nn	Tenestekonfigurasjon
+order_deadline	booking	nn	Bestillingsfrist
+main_resource	booking	nn	Hovudressurs
+remote_locations	booking	nn	Eksterne lokasjonar
+remote_serving_disabled	booking	nn	Ekstern servering er deaktivert for denne bevertinga. Aktiver det i Detaljar-fana for å administrere eksterne lokasjonar.
+no_remote_locations	booking	nn	Ingen eksterne lokasjonar konfigurert
+article_groups	booking	nn	Artikkelgrupper
+ungrouped_articles	booking	nn	Ugrupperte artiklar
+base_price	booking	nn	Grunnpris
+override_price	booking	nn	Overstyrpris
+effective_price	booking	nn	Effektiv pris
+sort_order	booking	nn	Sorteringsrekkjefølgje
+no_orders	booking	nn	Ingen bestillingar
+saved	booking	nn	Lagra
+back_to_list	booking	nn	Tilbake til lista
+hours	booking	nn	Timar
+days	booking	nn	Dagar
+select_article	booking	nn	Vel artikkel
+select_resource	booking	nn	Vel ressurs
+no_articles	booking	nn	Ingen artiklar
+confirm_delete	booking	nn	Er du sikker på at du vil slette dette?

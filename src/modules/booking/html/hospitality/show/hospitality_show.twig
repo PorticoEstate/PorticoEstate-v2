@@ -1,0 +1,131 @@
+{% extends layout|default('@views/_layout.twig') %}
+
+{% block title %}{{ lang('booking.hospitality') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/application/show/application_show.css') }}</style>
+<style>{{ source('@views/hospitality/show/hospitality_show.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<div id="hospitality-show"
+	 class="app-show"
+	 data-hospitality-id="{{ hospitality_id }}"
+	 data-api-url="{{ phpgw_link('/booking/hospitality/' ~ hospitality_id) }}"
+	 data-orders-url="{{ phpgw_link('/booking/hospitality-orders?hospitality_id=' ~ hospitality_id) }}"
+	 data-resources-url="{{ phpgw_link('/booking/resources') }}"
+	 data-can-write="{{ can_write ? '1' : '0' }}"
+	 data-lang-loading="{{ lang('common.loading') }}"
+	 data-lang-error="{{ lang('common.error') }}"
+	 data-lang-hospitality="{{ lang('booking.hospitality') }}"
+	 data-lang-name="{{ lang('common.name') }}"
+	 data-lang-description="{{ lang('common.description') }}"
+	 data-lang-active="{{ lang('booking.active') }}"
+	 data-lang-inactive="{{ lang('booking.inactive') }}"
+	 data-lang-yes="{{ lang('common.yes') }}"
+	 data-lang-no="{{ lang('common.no') }}"
+	 data-lang-save="{{ lang('common.save') }}"
+	 data-lang-cancel="{{ lang('booking.cancel_action') }}"
+	 data-lang-edit="{{ lang('common.edit') }}"
+	 data-lang-delete="{{ lang('common.delete') }}"
+	 data-lang-add="{{ lang('booking.add') }}"
+	 data-lang-details="{{ lang('booking.details') }}"
+	 data-lang-resources="{{ lang('booking.resources') }}"
+	 data-lang-articles="{{ lang('booking.articles') }}"
+	 data-lang-orders="{{ lang('booking.purchase_orders') }}"
+	 data-lang-created="{{ lang('booking.created') }}"
+	 data-lang-modified="{{ lang('booking.modified') }}"
+	 data-lang-resource="{{ lang('booking.resource') }}"
+	 data-lang-status="{{ lang('common.status') }}"
+	 data-lang-service-configuration="{{ lang('booking.service_configuration') }}"
+	 data-lang-remote-serving="{{ lang('booking.remote_serving') }}"
+	 data-lang-allow-delivery="{{ lang('booking.allow_delivery') }}"
+	 data-lang-order-deadline="{{ lang('booking.order_deadline') }}"
+	 data-lang-main-resource="{{ lang('booking.main_resource') }}"
+	 data-lang-remote-locations="{{ lang('booking.remote_locations') }}"
+	 data-lang-remote-serving-disabled="{{ lang('booking.remote_serving_disabled') }}"
+	 data-lang-no-remote-locations="{{ lang('booking.no_remote_locations') }}"
+	 data-lang-article-groups="{{ lang('booking.article_groups') }}"
+	 data-lang-ungrouped-articles="{{ lang('booking.ungrouped_articles') }}"
+	 data-lang-base-price="{{ lang('booking.base_price') }}"
+	 data-lang-override-price="{{ lang('booking.override_price') }}"
+	 data-lang-effective-price="{{ lang('booking.effective_price') }}"
+	 data-lang-sort-order="{{ lang('booking.sort_order') }}"
+	 data-lang-unit="{{ lang('booking.unit') }}"
+	 data-lang-no-orders="{{ lang('booking.no_orders') }}"
+	 data-lang-saved="{{ lang('booking.saved') }}"
+	 data-lang-back-to-list="{{ lang('booking.back_to_list') }}"
+	 data-lang-hours="{{ lang('booking.hours') }}"
+	 data-lang-days="{{ lang('booking.days') }}"
+	 data-lang-group="{{ lang('booking.group') }}"
+	 data-lang-comment="{{ lang('booking.comment') }}"
+	 data-lang-amount="{{ lang('booking.amount') }}"
+	 data-lang-application="{{ lang('booking.application') }}"
+	 data-lang-location="{{ lang('booking.location') }}"
+	 data-lang-article="{{ lang('booking.Article') }}"
+	 data-lang-quantity="{{ lang('booking.quantity') }}"
+	 data-lang-confirm-delete="{{ lang('booking.confirm_delete') }}"
+	 data-lang-price="{{ lang('booking.price') }}"
+	 data-lang-tax-code="{{ lang('booking.tax_code') }}"
+	 data-lang-select-article="{{ lang('booking.select_article') }}"
+	 data-lang-select-resource="{{ lang('booking.select_resource') }}"
+	 data-lang-no-articles="{{ lang('booking.no_articles') }}"
+>
+	{# Loading state #}
+	<div id="hospitality-loading" class="app-show__loading">
+		<div class="app-show__spinner"></div>
+		<p>{{ lang('common.loading') }}...</p>
+	</div>
+
+	{# Error state #}
+	<div id="hospitality-error" class="app-show__error" hidden>
+		<p id="hospitality-error-message"></p>
+	</div>
+
+	{# Content #}
+	<div id="hospitality-content" hidden>
+		{# Header #}
+		<div id="hospitality-header" class="app-show__header"></div>
+
+		{# Tab navigation #}
+		<div class="app-show__tabs" role="tablist">
+			<button class="app-show__tab app-show__tab--active" role="tab" aria-selected="true" data-tab="details">
+				{{ lang('booking.details') }}
+			</button>
+			<button class="app-show__tab" role="tab" aria-selected="false" data-tab="resources">
+				{{ lang('booking.resources') }}
+			</button>
+			<button class="app-show__tab" role="tab" aria-selected="false" data-tab="articles">
+				{{ lang('booking.articles') }}
+			</button>
+			<button class="app-show__tab" role="tab" aria-selected="false" data-tab="orders">
+				{{ lang('booking.purchase_orders') }}
+			</button>
+		</div>
+
+		{# Tab: Details #}
+		<div id="tab-details" class="app-show__tab-content" role="tabpanel">
+			<div id="hospitality-details"></div>
+		</div>
+
+		{# Tab: Resources #}
+		<div id="tab-resources" class="app-show__tab-content" role="tabpanel" hidden>
+			<div id="hospitality-resources"></div>
+		</div>
+
+		{# Tab: Articles #}
+		<div id="tab-articles" class="app-show__tab-content" role="tabpanel" hidden>
+			<div id="hospitality-articles"></div>
+		</div>
+
+		{# Tab: Orders #}
+		<div id="tab-orders" class="app-show__tab-content" role="tabpanel" hidden>
+			<div id="hospitality-orders"></div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/hospitality/show/hospitality_show.js') }}</script>
+{% endblock %}

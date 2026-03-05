@@ -504,7 +504,7 @@ class LocationHierarchyAnalyzer
 					}
 					foreach ($loc2s as $l2 => $streetkeys)
 					{
-						if ($l2 !== $loc2)
+						if ($l2 != $loc2)
 						{
 							continue;
 						}

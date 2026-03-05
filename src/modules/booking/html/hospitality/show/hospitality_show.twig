@@ -316,16 +316,41 @@ import { Sortable, isSortable, SortableKeyboardPlugin, OptimisticSortingPlugin }
 		}
 	});
 
-	// Visual feedback: highlight drop containers during drag
+	// Track the last foreign-group target during drag (for cross-group drops)
+	var _lastForeignTarget = null;
+	var _lastDragoverLog = '';
 	manager.monitor.addEventListener('dragover', function (event) {
 		var target = event.operation.target;
+		var source = event.operation.source;
+
 		// Remove all active highlights
 		document.querySelectorAll('.hosp-show__drop-active').forEach(function (el) {
 			el.classList.remove('hosp-show__drop-active');
 		});
+
+		// Track foreign-group article targets for cross-group detection
+		if (target && target.data && source && isSortable(source)) {
+			var sourceGroupId = source.sortable.draggable.data.groupId;
+			var targetData = target.data;
+
+			if (targetData.type === 'article' && String(targetData.groupId) !== String(sourceGroupId)) {
+				_lastForeignTarget = { groupId: targetData.groupId, articleId: targetData.articleId };
+			} else if (targetData.type === 'article-container' && String(targetData.groupId) !== String(sourceGroupId)) {
+				_lastForeignTarget = { groupId: targetData.groupId, articleId: null };
+				if (target.element) target.element.classList.add('hosp-show__drop-active');
+			}
+		}
+
 		// Highlight container if target is a container droppable
 		if (target && target.data && target.data.type === 'article-container') {
 			if (target.element) target.element.classList.add('hosp-show__drop-active');
+		}
+
+		// Debug: log target changes
+		var logKey = target ? (target.data ? JSON.stringify(target.data) : target.id) : 'none';
+		if (logKey !== _lastDragoverLog) {
+			_lastDragoverLog = logKey;
+			if (COLLAB_DEBUG) console.log('[DnD] dragover target:', target ? target.data : null, 'isSortable:', target ? isSortable(target) : false);
 		}
 	});
 
@@ -343,6 +368,16 @@ import { Sortable, isSortable, SortableKeyboardPlugin, OptimisticSortingPlugin }
 
 		var source = event.operation.source;
 		var target = event.operation.target;
+		var foreignTarget = _lastForeignTarget;
+		_lastForeignTarget = null; // Reset for next drag
+
+		if (COLLAB_DEBUG) console.log('[DnD] dragend', {
+			sourceData: source && isSortable(source) ? source.sortable.draggable.data : null,
+			targetData: target ? target.data : null,
+			foreignTarget: foreignTarget,
+			canceled: event.canceled
+		});
+
 		if (!source) return;
 
 		// Case 1: Sortable-to-sortable (within/between groups with items)
@@ -356,16 +391,23 @@ import { Sortable, isSortable, SortableKeyboardPlugin, OptimisticSortingPlugin }
 			}
 
 			if (data.type === 'article') {
-				// Check if dropped on an empty container (Droppable, not Sortable)
-				// Only handle as container drop if the target group differs from the source group
+				// First try DOM-based detection (works for same-group and optimistic cross-group)
+				if (handleArticleReorder(sortable, target)) return;
+
+				// Fallback: if drag crossed into a foreign group during dragover but
+				// the optimistic plugin didn't move the DOM element, use tracked target
+				if (foreignTarget && String(foreignTarget.groupId) !== String(data.groupId)) {
+					if (COLLAB_DEBUG) console.log('[DnD] cross-group via foreignTarget', foreignTarget);
+					handleArticleDropOnContainer(data.articleId, foreignTarget.groupId, foreignTarget.articleId);
+					return;
+				}
+
+				// Empty container drop
 				if (target && target.data && target.data.type === 'article-container'
 					&& String(target.data.groupId) !== String(data.groupId)) {
-					handleArticleDropOnContainer(data.articleId, target.data.groupId);
-				} else {
-					// Normal sortable reorder (same or cross-group with items)
-					handleArticleReorder(sortable, target);
+					handleArticleDropOnContainer(data.articleId, target.data.groupId, null);
+					return;
 				}
-				return;
 			}
 		}
 	});
@@ -411,16 +453,64 @@ import { Sortable, isSortable, SortableKeyboardPlugin, OptimisticSortingPlugin }
 		}
 	}
 
-	function handleArticleDropOnContainer(articleId, targetGroupId) {
+	function handleArticleDropOnContainer(articleId, targetGroupId, nearArticleId) {
 		var apiUrl = hook.getApiUrl();
 		var newGroupId = targetGroupId === 'ungrouped' ? null : parseInt(targetGroupId, 10);
+		var sourceArticleId = String(articleId);
 
-		var payload = {
-			article_group_id: newGroupId,
-			sort_order: 0
-		};
+		var data = hook.getData();
+		var allArticles = data.articles || [];
 
-		hook.putJson(apiUrl + '/articles/' + articleId, payload).then(function () {
+		// Get current articles in target group, sorted
+		var targetArticles = allArticles
+			.filter(function (a) {
+				var gid = a.article_group_id != null ? String(a.article_group_id) : null;
+				return gid === (newGroupId != null ? String(newGroupId) : null);
+			})
+			.sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); });
+
+		var targetIds = targetArticles.map(function (a) { return String(a.id); });
+
+		// Determine insert position
+		if (nearArticleId) {
+			var nearIdx = targetIds.indexOf(String(nearArticleId));
+			if (nearIdx !== -1) {
+				// Insert after the near article
+				targetIds.splice(nearIdx + 1, 0, sourceArticleId);
+			} else {
+				targetIds.push(sourceArticleId);
+			}
+		} else {
+			// No specific position — append at end
+			targetIds.push(sourceArticleId);
+		}
+
+		// Build reorder items for target group
+		var items = [];
+		targetIds.forEach(function (aid, i) {
+			items.push({ id: parseInt(aid, 10), sort_order: i, article_group_id: newGroupId });
+		});
+
+		// Also reindex the source group (remove the moved article)
+		var movedArticle = allArticles.find(function (a) { return String(a.id) === sourceArticleId; });
+		if (movedArticle) {
+			var sourceGid = movedArticle.article_group_id != null ? movedArticle.article_group_id : null;
+			if (String(sourceGid) !== String(newGroupId)) {
+				var sourceArticles = allArticles
+					.filter(function (a) {
+						var gid = a.article_group_id != null ? String(a.article_group_id) : null;
+						return gid === (sourceGid != null ? String(sourceGid) : null)
+							&& String(a.id) !== sourceArticleId;
+					})
+					.sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); });
+
+				sourceArticles.forEach(function (a, i) {
+					items.push({ id: a.id, sort_order: i, article_group_id: sourceGid });
+				});
+			}
+		}
+
+		hook.putJson(apiUrl + '/articles/reorder', { items: items }).then(function () {
 			hook.showToast(hook.lang('saved'));
 			hook.refreshData();
 		}).catch(function (err) {
@@ -430,78 +520,56 @@ import { Sortable, isSortable, SortableKeyboardPlugin, OptimisticSortingPlugin }
 	}
 
 	function handleArticleReorder(sourceSortable, target) {
-		if (!target || !isSortable(target)) return;
-
-		var articleId = sourceSortable.draggable.data.articleId;
-		var sourceGroupId = sourceSortable.draggable.data.groupId;
-		var targetGroupId = target.sortable.draggable.data.groupId;
 		var apiUrl = hook.getApiUrl();
+		var root = hook.root;
+		var data = hook.getData();
+		var allArticles = data.articles || [];
 
 		function parseGroupId(gid) {
 			if (!gid || gid === 'ungrouped') return null;
 			return parseInt(gid, 10);
 		}
 
-		var sourceGid = parseGroupId(sourceGroupId);
-		var targetGid = parseGroupId(targetGroupId);
-		var groupChanged = sourceGid !== targetGid;
-
-		var data = hook.getData();
-		var allArticles = data.articles || [];
+		// Scan ALL article list containers and compare DOM order to data.
+		// The optimistic plugin may have moved elements within or across containers.
 		var items = [];
+		var changed = false;
+		var articleLists = root.querySelectorAll('[data-dnd-article-list]');
 
-		// Read the current DOM order — dnd-kit's optimistic sorting already
-		// moved the elements, so the DOM reflects the user's intended order.
-		var root = hook.root;
-
-		if (!groupChanged) {
-			// Same group: read DOM order from the article list container
-			var listEl = root.querySelector('[data-dnd-article-list="' + sourceGroupId + '"]');
-			if (!listEl) return;
-
+		articleLists.forEach(function (listEl) {
+			var gid = parseGroupId(listEl.dataset.dndArticleList);
 			var domIds = Array.from(listEl.querySelectorAll('[data-article-id]'))
 				.map(function (el) { return el.dataset.articleId; });
 
-			// Check if DOM order differs from data order
+			// Compare to data: articles that belong to this group, sorted
 			var dataIds = allArticles
 				.filter(function (a) {
-					return String(a.article_group_id || '') === String(sourceGid || '');
+					var aGid = a.article_group_id != null ? a.article_group_id : null;
+					return String(aGid || '') === String(gid || '');
 				})
 				.sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); })
 				.map(function (a) { return String(a.id); });
 
-			var changed = domIds.length !== dataIds.length || domIds.some(function (id, i) { return id !== dataIds[i]; });
-			if (!changed) return;
+			var listChanged = domIds.length !== dataIds.length
+				|| domIds.some(function (id, i) { return id !== dataIds[i]; });
+
+			if (listChanged) changed = true;
 
 			domIds.forEach(function (aid, i) {
-				items.push({ id: parseInt(aid, 10), sort_order: i, article_group_id: sourceGid });
+				items.push({ id: parseInt(aid, 10), sort_order: i, article_group_id: gid });
 			});
-		} else {
-			// Cross-group: read DOM order for both affected containers
-			var sourceListEl = root.querySelector('[data-dnd-article-list="' + sourceGroupId + '"]');
-			var targetListEl = root.querySelector('[data-dnd-article-list="' + targetGroupId + '"]');
-			if (!sourceListEl || !targetListEl) return;
+		});
 
-			Array.from(sourceListEl.querySelectorAll('[data-article-id]'))
-				.forEach(function (el, i) {
-					items.push({ id: parseInt(el.dataset.articleId, 10), sort_order: i, article_group_id: sourceGid });
-				});
+		if (!changed) return false;
 
-			Array.from(targetListEl.querySelectorAll('[data-article-id]'))
-				.forEach(function (el, i) {
-					items.push({ id: parseInt(el.dataset.articleId, 10), sort_order: i, article_group_id: targetGid });
-				});
-		}
-
-		if (items.length > 0) {
-			hook.putJson(apiUrl + '/articles/reorder', { items: items }).then(function () {
-				hook.showToast(hook.lang('saved'));
-				hook.refreshData();
-			}).catch(function (err) {
-				hook.showToast(hook.lang('error') + ': ' + err.message, 'danger');
-				hook.refreshData();
-			});
-		}
+		hook.putJson(apiUrl + '/articles/reorder', { items: items }).then(function () {
+			hook.showToast(hook.lang('saved'));
+			hook.refreshData();
+		}).catch(function (err) {
+			hook.showToast(hook.lang('error') + ': ' + err.message, 'danger');
+			hook.refreshData();
+		});
+		return true;
 	}
 
 	// Initialize on first render and re-initialize on each re-render

@@ -21,6 +21,8 @@ volumes:
         driver: local
     vendor_data:
         driver: local
+    node_modules_data:
+        driver: local
 services:
     slim:
         container_name: ${SLIM_HOST:-portico_api}
@@ -44,6 +46,7 @@ services:
         volumes:
             - .:/var/www/html
             - vendor_data:/var/www/html/vendor
+            - node_modules_data:/var/www/html/node_modules
             - ./logs:/var/log/apache2
             - /var/local/:/var/local/
             # developement: store your files in '/var/local/phpgw/<domain>/tmp' and '/var/local/phpgw/<domain>/files'

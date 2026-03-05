@@ -7,6 +7,8 @@
 	var apiUrl = root.dataset.apiUrl.split('?')[0];
 	var ordersUrl = root.dataset.ordersUrl.split('?')[0] + '?hospitality_id=' + root.dataset.hospitalityId;
 	var resourcesApiUrl = root.dataset.resourcesUrl.split('?')[0];
+	var articleMappingUrl = root.dataset.articleMappingUrl ? root.dataset.articleMappingUrl.split('?')[0] : null;
+	var taxListUrl = root.dataset.taxListUrl ? root.dataset.taxListUrl.split('?')[0] : null;
 	var canWrite = root.dataset.canWrite === '1';
 
 	// ═══════════════════════════════════════════════════════════════════
@@ -855,44 +857,73 @@
 				{
 					category: 'service',
 					excludeIds: existingMappingIds,
-					emptyText: lang('noArticles')
+					emptyText: lang('noArticles'),
+					createEndpoint: articleMappingUrl,
+					taxListEndpoint: taxListUrl,
+					lang: {
+						createNew: lang('createNewArticle'),
+						backToSearch: lang('backToSearch'),
+						articleCode: lang('articleCode'),
+						defaultPrice: lang('defaultPrice'),
+						creationFailed: lang('creationFailed'),
+						name: lang('name'),
+						unit: lang('unit'),
+						taxCode: lang('taxCode'),
+						save: lang('save'),
+						cancel: lang('cancel')
+					}
 				}
 			);
 		}
 
 		document.getElementById('modal-article-submit').addEventListener('click', function () {
-			var data = {};
-
-			if (!isEdit) {
-				var mappingId = articleSelector.getValue();
-				if (!mappingId) { articleSelector.input.focus(); return; }
-				data.article_mapping_id = mappingId;
-			}
-
-			var groupVal = groupSelector.getValue();
-			data.article_group_id = groupVal ? parseInt(groupVal, 10) : null;
-
-			var priceVal = document.getElementById('modal-article-price').value;
-			data.override_price = priceVal !== '' ? parseFloat(priceVal) : null;
-
-			data.sort_order = parseInt(document.getElementById('modal-article-sort').value, 10) || 0;
-			data.active = document.getElementById('modal-article-active').checked ? 1 : 0;
-
 			var btn = this;
 			btn.disabled = true;
 			btn.textContent = '...';
 
-			var promise = isEdit
-				? putJson(apiUrl + '/articles/' + article.id, data)
-				: postJson(apiUrl + '/articles', data);
+			function resetBtn() {
+				btn.disabled = false;
+				btn.textContent = lang('save');
+			}
 
-			promise.then(function () {
+			// If in create mode, create the article first, then save
+			var getMappingId;
+			if (!isEdit && articleSelector && articleSelector.inCreateMode) {
+				getMappingId = articleSelector.submitCreate();
+			} else if (!isEdit) {
+				var mappingId = articleSelector.getValue();
+				if (!mappingId) { articleSelector.input.focus(); resetBtn(); return; }
+				getMappingId = Promise.resolve(mappingId);
+			} else {
+				getMappingId = Promise.resolve(null);
+			}
+
+			getMappingId.then(function (mappingId) {
+				var data = {};
+				if (!isEdit) {
+					data.article_mapping_id = mappingId;
+				}
+
+				var groupVal = groupSelector.getValue();
+				data.article_group_id = groupVal ? parseInt(groupVal, 10) : null;
+
+				var priceVal = document.getElementById('modal-article-price').value;
+				data.override_price = priceVal !== '' ? parseFloat(priceVal) : null;
+
+				data.sort_order = parseInt(document.getElementById('modal-article-sort').value, 10) || 0;
+				data.active = document.getElementById('modal-article-active').checked ? 1 : 0;
+
+				var promise = isEdit
+					? putJson(apiUrl + '/articles/' + article.id, data)
+					: postJson(apiUrl + '/articles', data);
+
+				return promise;
+			}).then(function () {
 				closeModal('article-dialog');
 				showToast(lang('saved'));
 				refreshData();
 			}).catch(function (err) {
-				btn.disabled = false;
-				btn.textContent = lang('save');
+				resetBtn();
 				showToast(lang('error') + ': ' + err.message, 'danger');
 			});
 		});
@@ -1007,7 +1038,7 @@
 		});
 
 		modal.addEventListener('click', function (e) {
-			if (e.target === modal || e.target.closest('[data-modal-close]')) {
+			if (e.target.closest('[data-modal-close]')) {
 				closeModal(id);
 			}
 		});

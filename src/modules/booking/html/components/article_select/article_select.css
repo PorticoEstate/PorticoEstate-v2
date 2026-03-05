@@ -44,6 +44,19 @@
 	font-weight: var(--ds-font-weight-medium, 500);
 }
 
+.article-select__item--add-new {
+	display: flex;
+	align-items: center;
+	gap: var(--ds-spacing-2, 0.5rem);
+	color: var(--ds-color-accent-text-default, #0062ba);
+	font-weight: var(--ds-font-weight-medium, 500);
+	border-bottom: 1px solid var(--ds-color-border-subtle, #e0e0e0);
+}
+
+.article-select__item--add-new:hover {
+	background: var(--ds-color-accent-surface-hover, #e6f0ff);
+}
+
 .article-select__item-meta {
 	font-size: 0.8125rem;
 	color: var(--ds-color-text-subtle, #68707c);
@@ -54,3 +67,73 @@
 	color: var(--ds-color-text-subtle, #666);
 	font-style: italic;
 }
+
+/* Inline create form */
+.article-select__create-form {
+	border: 1px solid var(--ds-color-border-default, #ccc);
+	border-radius: 4px;
+	padding: var(--ds-spacing-3, 0.75rem);
+	background: var(--ds-color-background-subtle, #fafafa);
+}
+
+.article-select__create-back {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--ds-spacing-1, 0.25rem);
+	background: none;
+	border: none;
+	color: var(--ds-color-accent-text-default, #0062ba);
+	cursor: pointer;
+	padding: 0;
+	font-size: 0.8125rem;
+	margin-bottom: var(--ds-spacing-3, 0.75rem);
+}
+
+.article-select__create-back:hover {
+	text-decoration: underline;
+}
+
+.article-select__create-fields {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: var(--ds-spacing-2, 0.5rem);
+}
+
+.article-select__create-field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ds-spacing-1, 0.25rem);
+}
+
+.article-select__create-field:first-child {
+	grid-column: 1 / -1;
+}
+
+.article-select__create-field label {
+	font-size: 0.8125rem;
+	font-weight: var(--ds-font-weight-medium, 500);
+	color: var(--ds-color-text-default, #1e2b3c);
+}
+
+.article-select__create-input {
+	padding: var(--ds-spacing-1, 0.25rem) var(--ds-spacing-2, 0.5rem);
+	border: 1px solid var(--ds-color-border-default, #ccc);
+	border-radius: 4px;
+	font-size: 0.875rem;
+	background: var(--ds-color-background-default, #fff);
+}
+
+.article-select__create-input:focus {
+	outline: 2px solid var(--ds-color-accent-border-default, #0062ba);
+	outline-offset: -1px;
+}
+
+.article-select__create-error {
+	margin-top: var(--ds-spacing-2, 0.5rem);
+	padding: var(--ds-spacing-2, 0.5rem);
+	font-size: 0.8125rem;
+	color: var(--ds-color-danger-text-default, #c30000);
+	background: var(--ds-color-danger-surface-default, #fff5f5);
+	border-radius: 4px;
+}
+

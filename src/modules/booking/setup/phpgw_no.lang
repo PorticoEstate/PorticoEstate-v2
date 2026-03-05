@@ -1104,3 +1104,8 @@ allow_on_site_hospitality	booking	no	Tillat servering på stedet
 remote_serving_desc	booking	no	Tillat bestillinger levert til tilknyttede eksterne ressurser
 allow_on_site_hospitality_desc	booking	no	Tillat forhåndsbestilling til hovedressursen uten en reservasjon
 order_deadline_desc	booking	no	Hvor lang tid i forveien bestillinger må legges inn før arrangementet
+create_new_article	booking	no	Opprett ny artikkel
+back_to_search	booking	no	Tilbake til søk
+article_code	booking	no	Artikkelkode
+default_price	booking	no	Standardpris
+creation_failed	booking	no	Oppretting feilet

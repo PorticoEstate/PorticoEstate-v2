@@ -1116,3 +1116,8 @@ allow_on_site_hospitality	booking	nn	Tillat servering på staden
 remote_serving_desc	booking	nn	Tillat bestillingar levert til tilknytte eksterne ressursar
 allow_on_site_hospitality_desc	booking	nn	Tillat førehandsbestilling til hovudressursen utan ein reservasjon
 order_deadline_desc	booking	nn	Kor lang tid på førehand bestillingar må leggjast inn før arrangementet
+create_new_article	booking	nn	Opprett ny artikkel
+back_to_search	booking	nn	Tilbake til søk
+article_code	booking	nn	Artikkelkode
+default_price	booking	nn	Standardpris
+creation_failed	booking	nn	Oppretting feila

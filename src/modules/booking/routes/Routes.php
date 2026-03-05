@@ -27,6 +27,7 @@ use App\modules\booking\controllers\EmailCompareController;
 use App\modules\booking\controllers\HospitalityController;
 use App\modules\booking\controllers\HospitalityArticleController;
 use App\modules\booking\controllers\HospitalityOrderController;
+use App\modules\booking\controllers\ArticleMappingController;
 use App\modules\booking\viewcontrollers\HospitalityViewController;
 
 $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
@@ -277,6 +278,12 @@ $app->group('/booking/hospitality-orders', function (RouteCollectorProxy $group)
 	$group->post('/{id:[0-9]+}/lines', HospitalityOrderController::class . ':addLine');
 	$group->put('/{id:[0-9]+}/lines/{lineId:[0-9]+}', HospitalityOrderController::class . ':updateLine');
 	$group->delete('/{id:[0-9]+}/lines/{lineId:[0-9]+}', HospitalityOrderController::class . ':destroyLine');
+})
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
+
+$app->group('/booking/article-mappings', function (RouteCollectorProxy $group) {
+	$group->post('', ArticleMappingController::class . ':store');
 })
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));

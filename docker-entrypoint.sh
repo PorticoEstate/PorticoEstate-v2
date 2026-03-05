@@ -50,7 +50,7 @@ if [ -f /var/www/html/package.json ]; then
             apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/*
         fi
         echo "Installing npm dependencies..."
-        cd /var/www/html && npm ci --omit=dev
+        cd /var/www/html && npm ci
     else
         echo "npm dependencies are up to date"
     fi

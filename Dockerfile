@@ -233,7 +233,7 @@ RUN apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists
 # Copy npm files and install dependencies
 COPY package.json package-lock.json ./
 
-RUN npm ci --omit=dev
+RUN npm ci
 
 # Clean up
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

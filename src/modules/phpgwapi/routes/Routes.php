@@ -55,56 +55,7 @@ $app->get('/assets/design-tokens/{file:.*\\.css}', function (Request $request, R
 // Serve whitelisted node_modules files (JS, CSS, images)
 $app->get('/assets/npm/{path:.*}', function (Request $request, Response $response, array $args)
 {
-	$params = $request->getQueryParams();
 	$nodeModulesDir = dirname(dirname(PHPGW_SERVER_ROOT)) . '/node_modules';
-
-	if (!empty($params['debug']))
-	{
-		$debug = [];
-		$debug['node_modules_path'] = $nodeModulesDir;
-		$debug['node_modules_exists'] = is_dir($nodeModulesDir);
-		$debug['node_modules_readable'] = is_readable($nodeModulesDir);
-
-		if (is_dir($nodeModulesDir))
-		{
-			$items = @scandir($nodeModulesDir);
-			if ($items !== false)
-			{
-				$items = array_filter($items, fn($i) => $i !== '.' && $i !== '..');
-				$debug['node_modules_count'] = count($items);
-				$debug['node_modules_contents'] = array_values($items);
-			}
-			else
-			{
-				$debug['node_modules_contents'] = 'scandir failed';
-			}
-		}
-
-		$debug['node'] = trim(@shell_exec('which node 2>&1') ?: 'not found');
-		$debug['node_version'] = trim(@shell_exec('node --version 2>&1') ?: 'n/a');
-		$debug['npm'] = trim(@shell_exec('which npm 2>&1') ?: 'not found');
-		$debug['npm_version'] = trim(@shell_exec('npm --version 2>&1') ?: 'n/a');
-
-		$path = $args['path'] ?? '';
-		if ($path !== '')
-		{
-			$filePath = $nodeModulesDir . '/' . $path;
-			$debug['requested_path'] = $path;
-			$debug['resolved_file'] = $filePath;
-			$debug['file_exists'] = file_exists($filePath);
-			$debug['file_readable'] = is_readable($filePath);
-			if (!file_exists($filePath))
-			{
-				$parts = explode('/', $path);
-				$packageDir = $nodeModulesDir . '/' . (str_starts_with($path, '@') && count($parts) >= 2 ? $parts[0] . '/' . $parts[1] : $parts[0]);
-				$debug['package_dir'] = $packageDir;
-				$debug['package_exists'] = is_dir($packageDir);
-			}
-		}
-
-		$response->getBody()->write(json_encode($debug, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-		return $response->withHeader('Content-Type', 'application/json');
-	}
 
 	$allowedPrefixes = [
 		'@digdir/designsystemet-web/',

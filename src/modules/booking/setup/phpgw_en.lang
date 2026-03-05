@@ -984,7 +984,6 @@ unit_cost	booking	en	Unit price
 associated_items	booking	en	Associated items
 hospitality	booking	en	Hospitality
 remote_serving	booking	en	Remote serving
-allow_delivery	booking	en	Allow delivery
 service_configuration	booking	en	Service configuration
 order_deadline	booking	en	Order deadline
 main_resource	booking	en	Main resource
@@ -1008,3 +1007,7 @@ select_resource	booking	en	Select resource
 no_articles	booking	en	No articles
 price	booking	en	Price
 confirm_delete	booking	en	Are you sure you want to delete this?
+allow_on_site_hospitality	booking	en	Allow on-site hospitality
+remote_serving_desc	booking	en	Allow orders to be served at linked remote resources
+allow_on_site_hospitality_desc	booking	en	Allow pre-ordering to the main resource without a booking
+order_deadline_desc	booking	en	How far in advance orders must be placed before the event

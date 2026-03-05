@@ -57,7 +57,7 @@ class Hospitality
      * @OA\Property(type="integer", description="Whether pre-ordering to the main resource is allowed without booking it")
      * @Expose
      */
-    public $allow_delivery = 0;
+    public $allow_on_site_hospitality = 0;
 
     /**
      * @OA\Property(type="integer", nullable=true)

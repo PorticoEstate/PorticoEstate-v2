@@ -35,8 +35,8 @@
 			}
 		},
 		{
-			data: 'allow_delivery',
-			title: L.allow_delivery,
+			data: 'allow_on_site_hospitality',
+			title: L.allow_on_site_hospitality,
 			render: function (data, type) {
 				if (type !== 'display') return data;
 				return data == 1 || data === true ? L.yes : L.no;

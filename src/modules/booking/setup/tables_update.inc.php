@@ -8295,7 +8295,7 @@ $test[] = '0.2.120';
 function booking_upgrade0_2_120($oProc)
 {
 	$oProc->m_odb->transaction_begin();
-	$oProc->m_odb->query("ALTER TABLE bb_hospitality ADD COLUMN allow_delivery SMALLINT DEFAULT 0 NOT NULL");
+	$oProc->m_odb->query("ALTER TABLE bb_hospitality ADD COLUMN allow_on_site_hospitality SMALLINT DEFAULT 0 NOT NULL");
 
 	if ($oProc->m_odb->transaction_commit())
 	{

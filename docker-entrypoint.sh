@@ -36,7 +36,7 @@ echo "SetEnv WEBSOCKET_SERVER ${WEBSOCKET_SERVER}" >> /etc/apache2/conf-enabled/
 if [ -f /var/www/html/composer.json ]; then
     if [ ! -d /var/www/html/vendor ] || [ ! -f /var/www/html/vendor/autoload.php ] || [ /var/www/html/composer.json -nt /var/www/html/vendor/composer/installed.json ]; then
         echo "Updating Composer dependencies..."
-        cd /var/www/html && composer install --no-dev --optimize-autoloader
+        cd /var/www/html && XDEBUG_MODE=off composer install --no-dev --optimize-autoloader
     else
         echo "Composer dependencies are up to date"
     fi

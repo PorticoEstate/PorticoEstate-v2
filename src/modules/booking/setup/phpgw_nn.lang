@@ -1091,7 +1091,6 @@ unit_cost	booking	nn	Einingspris
 associated_items	booking	nn	Tilhøyrande element
 hospitality	booking	nn	Servering
 remote_serving	booking	nn	Fjernservering
-allow_delivery	booking	nn	Tillat levering
 service_configuration	booking	nn	Tenestekonfigurasjon
 order_deadline	booking	nn	Bestillingsfrist
 main_resource	booking	nn	Hovudressurs
@@ -1113,3 +1112,7 @@ select_article	booking	nn	Vel artikkel
 select_resource	booking	nn	Vel ressurs
 no_articles	booking	nn	Ingen artiklar
 confirm_delete	booking	nn	Er du sikker på at du vil slette dette?
+allow_on_site_hospitality	booking	nn	Tillat servering på staden
+remote_serving_desc	booking	nn	Tillat bestillingar levert til tilknytte eksterne ressursar
+allow_on_site_hospitality_desc	booking	nn	Tillat førehandsbestilling til hovudressursen utan ein reservasjon
+order_deadline_desc	booking	nn	Kor lang tid på førehand bestillingar må leggjast inn før arrangementet

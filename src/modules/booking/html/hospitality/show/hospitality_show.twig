@@ -374,8 +374,7 @@ import { Sortable, isSortable, SortableKeyboardPlugin, OptimisticSortingPlugin }
 		if (COLLAB_DEBUG) console.log('[DnD] dragend', {
 			sourceData: source && isSortable(source) ? source.sortable.draggable.data : null,
 			targetData: target ? target.data : null,
-			foreignTarget: foreignTarget,
-			canceled: event.canceled
+			foreignTarget: foreignTarget
 		});
 
 		if (!source) return;
@@ -413,29 +412,26 @@ import { Sortable, isSortable, SortableKeyboardPlugin, OptimisticSortingPlugin }
 	});
 
 	function handleGroupReorder(sourceSortable, target) {
-		if (!target || !isSortable(target)) return;
-
-		var sourceIdx = sourceSortable.initialIndex;
-		var targetIdx = target.sortable.index;
-		if (sourceIdx === targetIdx) return;
-
-		// Build current group ID order from sortables
-		var groupSortables = sortables
-			.filter(function (s) { return s.draggable.data.type === 'group'; })
-			.sort(function (a, b) { return a.index - b.index; });
-
-		var ids = groupSortables.map(function (s) { return s.draggable.data.groupId; });
-
-		// Move source from its position to target position
-		var movedId = ids.splice(sourceIdx, 1)[0];
-		ids.splice(targetIdx, 0, movedId);
-
+		// Read DOM order of groups after optimistic sort
+		var root = hook.root;
+		var apiUrl = hook.getApiUrl();
 		var data = hook.getData();
 		var groups = data.article_groups || [];
-		var promises = [];
-		var apiUrl = hook.getApiUrl();
 
-		ids.forEach(function (groupId, newIndex) {
+		var domGroupIds = Array.from(root.querySelectorAll('[data-group-id][data-group-index]'))
+			.map(function (el) { return el.dataset.groupId; });
+
+		var dataGroupIds = groups
+			.sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); })
+			.map(function (g) { return String(g.id); });
+
+		var changed = domGroupIds.length !== dataGroupIds.length
+			|| domGroupIds.some(function (id, i) { return id !== dataGroupIds[i]; });
+
+		if (!changed) return;
+
+		var promises = [];
+		domGroupIds.forEach(function (groupId, newIndex) {
 			var original = groups.find(function (g) { return String(g.id) === String(groupId); });
 			if (original && original.sort_order !== newIndex) {
 				promises.push(hook.putJson(apiUrl + '/article-groups/' + groupId, { sort_order: newIndex }));

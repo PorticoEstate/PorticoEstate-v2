@@ -914,24 +914,54 @@ class LocationHierarchyAnalyzer
 		$tables = $this->findLocationCodeTables();
 		foreach ($tables as $table => $columns)
 		{
-			$sql = "UPDATE {$table} SET location_code = location_mapping.new_location_code";
+			$updatefields = [];
+			$filterfields = [];
+			$level = 0;
+			if (in_array('location_code', $columns))
+			{
+				$updatefields[] = "location_code = location_mapping.new_location_code";
+			}
+			
 			if (in_array('loc1', $columns))
 			{
-				$sql .= ", loc1 = location_mapping.loc1";
+				$level = 1;
+				$filterfields[] = "{$table}.loc1 = location_mapping.loc1";
 			}
 			if (in_array('loc2', $columns))
 			{
-				$sql .= ", loc2 = location_mapping.new_loc2";
+				$level = 2;
+				$updatefields[] = "loc2 = location_mapping.new_loc2";
+				$filterfields[] = "{$table}.loc2 = location_mapping.old_loc2";
 			}
 			if (in_array('loc3', $columns))
 			{
-				$sql .= ", loc3 = location_mapping.new_loc3";
+				$level = 3;
+				$updatefields[] = "loc3 = location_mapping.new_loc3";
+				$filterfields[] = "{$table}.loc3 = location_mapping.old_loc3";
 			}
 			if (in_array('loc4', $columns))
 			{
-				$sql .= ", loc4 = location_mapping.loc4";
+				$level = 4;
+				$filterfields[] = "{$table}.loc4 = location_mapping.loc4";
 			}
-			$sql .= " FROM location_mapping WHERE {$table}.location_code = location_mapping.old_location_code;";
+
+			if($level === 0 || $level === 1)
+			{
+				// skip
+				continue;
+			}
+
+			$sql = "UPDATE {$table} SET " . implode(', ', $updatefields);
+
+			if (in_array('location_code', $columns))
+			{
+				$sql .= " FROM location_mapping WHERE {$table}.location_code = location_mapping.old_location_code;";
+			}
+			else
+			{
+			 // If there's no location_code column, we need to join on loc1, loc2, loc3, loc4 to identify the correct records to update	
+				$sql .= " FROM location_mapping WHERE " . implode(' AND ', $filterfields) . ";";
+			}
 			$sqlStatements[] = $sql;
 		}
 		$this->sqlStatements['update_location_from_mapping'] = $sqlStatements;
@@ -1505,7 +1535,7 @@ class LocationHierarchyAnalyzer
 		$tables = [];
 		$sql = "SELECT table_name, column_name FROM information_schema.columns
 		 WHERE column_name IN ('location_code', 'loc1', 'loc2', 'loc3', 'loc4')
-		 AND table_name NOT IN ('fm_location4', 'fm_location3', 'fm_location2', 'fm_location1', 'location_mapping')";
+		 AND table_name NOT IN ('fm_location4', 'fm_location3', 'fm_location2', 'fm_location1','fm_gab_location', 'location_mapping')";
 		$this->db->query($sql, __LINE__, __FILE__);
 		while ($this->db->next_record())
 		{

@@ -81,21 +81,31 @@
 		});
 	}
 
-	function sendJson(method, url, data) {
+	function sendJson(method, url, data, extraHeaders) {
+		var headers = { 'Content-Type': 'application/json' };
+		if (extraHeaders) {
+			Object.keys(extraHeaders).forEach(function (k) { headers[k] = extraHeaders[k]; });
+		}
 		return fetch(url, {
 			method: method,
 			credentials: 'same-origin',
-			headers: { 'Content-Type': 'application/json' },
+			headers: headers,
 			body: JSON.stringify(data || {})
 		}).then(function (res) {
 			return res.json().then(function (json) {
+				if (res.status === 409 && json.error === 'CONFLICT') {
+					var err = new Error('CONFLICT');
+					err.conflict = true;
+					err.current = json.current;
+					throw err;
+				}
 				if (!res.ok) throw new Error(json.error || 'HTTP ' + res.status);
 				return json;
 			});
 		});
 	}
 
-	function putJson(url, data) { return sendJson('PUT', url, data); }
+	function putJson(url, data, extraHeaders) { return sendJson('PUT', url, data, extraHeaders); }
 	function postJson(url, data) { return sendJson('POST', url, data); }
 	function patchJson(url, data) { return sendJson('PATCH', url, data); }
 	function deleteJson(url) {
@@ -150,6 +160,36 @@
 			renderResources(hospitalityData);
 			renderArticles(hospitalityData);
 			renderOrders(ordersData);
+		}).catch(function (err) {
+			showToast(lang('error') + ': ' + err.message, 'danger');
+		});
+	}
+
+	function refreshSection(section) {
+		fetchJson(apiUrl).then(function (data) {
+			hospitalityData = data;
+			renderHeader(hospitalityData);
+			switch (section) {
+				case 'details':
+					renderDetails(hospitalityData);
+					break;
+				case 'resources':
+					renderResources(hospitalityData);
+					break;
+				case 'articles':
+					renderArticles(hospitalityData);
+					break;
+				case 'orders':
+					fetchJson(ordersUrl).then(function (orders) {
+						ordersData = orders;
+						renderOrders(ordersData);
+					});
+					break;
+				default:
+					renderDetails(hospitalityData);
+					renderResources(hospitalityData);
+					renderArticles(hospitalityData);
+			}
 		}).catch(function (err) {
 			showToast(lang('error') + ': ' + err.message, 'danger');
 		});
@@ -288,6 +328,18 @@
 			'</span></div>';
 	}
 
+	// Helper: notify collab about edit start/stop
+	function collabStartEditing(scope) {
+		if (window.__hospWs && window.__hospWs.collab) {
+			window.__hospWs.collab.startEditing(scope);
+		}
+	}
+	function collabStopEditing(scope) {
+		if (window.__hospWs && window.__hospWs.collab) {
+			window.__hospWs.collab.stopEditing(scope);
+		}
+	}
+
 	// Delegated click handler for pen icons
 	root.addEventListener('click', function (e) {
 		var trigger = e.target.closest('.hosp-show__edit-trigger');
@@ -340,6 +392,9 @@
 
 		valueSpan.innerHTML = formHtml;
 
+		var editScope = 'field:' + fieldName;
+		collabStartEditing(editScope);
+
 		var input = valueSpan.querySelector('.hosp-show__edit-input');
 		if (input && input.tagName !== 'DIV') input.focus();
 
@@ -361,19 +416,43 @@
 			this.disabled = true;
 			this.textContent = '...';
 
-			putJson(apiUrl, payload).then(function (updated) {
+			// Include modified timestamp for conflict detection
+			var headers = {};
+			if (hospitalityData && hospitalityData.modified) {
+				headers['X-If-Modified-Since'] = hospitalityData.modified;
+			}
+
+			putJson(apiUrl, payload, headers).then(function (updated) {
+				collabStopEditing(editScope);
 				hospitalityData = Object.assign(hospitalityData, updated);
 				showToast(lang('saved'));
 				renderDetails(hospitalityData);
 				renderHeader(hospitalityData);
 			}).catch(function (err) {
-				showToast(lang('error') + ': ' + err.message, 'danger');
-				renderDetails(hospitalityData);
+				collabStopEditing(editScope);
+				if (err.conflict) {
+					showConflictDialog(err.current, function () {
+						// Retry without conflict check
+						putJson(apiUrl, payload).then(function (updated) {
+							hospitalityData = Object.assign(hospitalityData, updated);
+							showToast(lang('saved'));
+							renderDetails(hospitalityData);
+							renderHeader(hospitalityData);
+						}).catch(function (retryErr) {
+							showToast(lang('error') + ': ' + retryErr.message, 'danger');
+							renderDetails(hospitalityData);
+						});
+					});
+				} else {
+					showToast(lang('error') + ': ' + err.message, 'danger');
+					renderDetails(hospitalityData);
+				}
 			});
 		});
 
 		// Cancel handler
 		valueSpan.querySelector('.hosp-show__edit-cancel').addEventListener('click', function () {
+			collabStopEditing(editScope);
 			renderDetails(hospitalityData);
 		});
 
@@ -1059,6 +1138,175 @@
 			setTimeout(function () { modal.remove(); }, 200);
 		}
 	}
+
+	// ═══════════════════════════════════════════════════════════════════
+	// Collaborative editing UI
+	// ═══════════════════════════════════════════════════════════════════
+
+	var COLLAB_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+	var peerColorMap = {};
+
+	function getPeerColor(peerId) {
+		if (!peerColorMap[peerId]) {
+			var idx = Object.keys(peerColorMap).length % COLLAB_COLORS.length;
+			peerColorMap[peerId] = COLLAB_COLORS[idx];
+		}
+		return peerColorMap[peerId];
+	}
+
+	function renderPresence(peers) {
+		var bar = document.getElementById('collab-presence-bar');
+		if (!bar) return;
+
+		if (!peers || peers.length === 0) {
+			bar.innerHTML = '';
+			return;
+		}
+
+		var html = '<div class="collab-presence">' +
+			'<span class="collab-presence__label">' + esc(lang('viewers')) + ':</span>' +
+			'<span class="collab-presence__peers">';
+
+		peers.forEach(function (p) {
+			var color = getPeerColor(p.peerId);
+			html += '<span class="collab-presence__peer">' +
+				'<span class="collab-presence__dot" style="background:' + color + '"></span>' +
+				'<span class="collab-presence__name">' + esc(p.userName) + '</span>' +
+				'</span>';
+		});
+
+		html += '</span></div>';
+		bar.innerHTML = html;
+	}
+
+	function showEditIndicator(peerId, userName, scope) {
+		// scope format: "field:name", "article:42", "drag:articles"
+		var parts = scope.split(':');
+		var type = parts[0];
+		var key = parts[1];
+		var color = getPeerColor(peerId);
+		var badgeId = 'collab-badge-' + peerId + '-' + scope.replace(/[^a-zA-Z0-9]/g, '_');
+
+		var targetEl = null;
+		if (type === 'field') {
+			targetEl = root.querySelector('[data-editable="' + key + '"]');
+		} else if (type === 'article') {
+			targetEl = root.querySelector('[data-edit-article="' + key + '"]');
+			if (targetEl) targetEl = targetEl.closest('.hosp-show__article-row');
+		} else if (type === 'drag') {
+			targetEl = root.querySelector('[data-dnd-' + key + ']') || root.querySelector('#hospitality-articles');
+		}
+
+		if (!targetEl) return;
+
+		targetEl.classList.add('collab-editing');
+		targetEl.style.setProperty('--collab-color', color);
+
+		// Add name badge if not already present
+		if (!document.getElementById(badgeId)) {
+			var badge = document.createElement('span');
+			badge.id = badgeId;
+			badge.className = 'collab-editing__badge';
+			badge.style.background = color;
+			badge.textContent = userName;
+			targetEl.style.position = 'relative';
+			targetEl.appendChild(badge);
+		}
+	}
+
+	function removeEditIndicator(peerId, scope) {
+		var badgeId = 'collab-badge-' + peerId + '-' + scope.replace(/[^a-zA-Z0-9]/g, '_');
+		var badge = document.getElementById(badgeId);
+		if (badge) {
+			var parent = badge.parentElement;
+			badge.remove();
+			// Only remove collab-editing class if no more badges remain
+			if (parent && !parent.querySelector('.collab-editing__badge')) {
+				parent.classList.remove('collab-editing');
+				parent.style.removeProperty('--collab-color');
+			}
+		}
+	}
+
+	function showConnectionStatus(connected) {
+		var bar = document.getElementById('collab-presence-bar');
+		if (!bar) return;
+
+		var existing = bar.querySelector('.collab-status');
+		if (connected) {
+			if (existing) existing.remove();
+		} else {
+			if (!existing) {
+				var el = document.createElement('div');
+				el.className = 'collab-status collab-status--reconnecting';
+				el.textContent = lang('reconnecting') + '...';
+				bar.insertBefore(el, bar.firstChild);
+			}
+		}
+	}
+
+	function showDeletedBanner() {
+		var bar = document.getElementById('collab-presence-bar');
+		if (!bar) return;
+		bar.innerHTML = '<div class="collab-deleted-banner">' + esc(lang('entityDeleted')) + '</div>';
+
+		// Disable all interactive elements
+		root.querySelectorAll('button, input, select, textarea').forEach(function (el) {
+			el.disabled = true;
+		});
+	}
+
+	function showConflictDialog(currentData, retryFn) {
+		var body = '<p>' + esc(lang('conflictMessage')) + '</p>';
+		if (currentData) {
+			body += '<div class="collab-conflict__current">' +
+				'<strong>' + esc(lang('serverVersion')) + ':</strong><br>' +
+				esc(JSON.stringify(currentData, null, 2).substring(0, 500)) +
+				'</div>';
+		}
+
+		var footer = '<button type="button" class="app-button" data-modal-close id="conflict-keep-theirs">' + esc(lang('keepTheirs')) + '</button>' +
+			'<button type="button" class="app-button app-button-primary" id="conflict-overwrite">' + esc(lang('overwriteWithMine')) + '</button>';
+
+		showModal('collab-conflict-dialog', lang('editConflict'), body, footer);
+
+		document.getElementById('conflict-keep-theirs').addEventListener('click', function () {
+			// Accept server version — refresh
+			closeModal('collab-conflict-dialog');
+			refreshData();
+		});
+
+		document.getElementById('conflict-overwrite').addEventListener('click', function () {
+			closeModal('collab-conflict-dialog');
+			if (retryFn) retryFn();
+		});
+	}
+
+	// ═══════════════════════════════════════════════════════════════════
+	// WebSocket collab hook (consumed by ES module script)
+	// ═══════════════════════════════════════════════════════════════════
+
+	window.__hospWs = {
+		renderPresence: renderPresence,
+		showEditIndicator: showEditIndicator,
+		removeEditIndicator: removeEditIndicator,
+		showConnectionStatus: showConnectionStatus,
+		showDeletedBanner: showDeletedBanner,
+		showConflictDialog: showConflictDialog,
+		refreshSection: refreshSection,
+		refreshData: refreshData,
+		renderHeader: renderHeader,
+		renderDetails: renderDetails,
+		renderResources: renderResources,
+		renderArticles: renderArticles,
+		putJson: putJson,
+		showToast: showToast,
+		lang: lang,
+		esc: esc,
+		root: root,
+		getHospitalityData: function () { return hospitalityData; },
+		collab: null  // Set by module script after CollabClient is created
+	};
 
 	// ═══════════════════════════════════════════════════════════════════
 	// DnD integration hook (consumed by ES module script)

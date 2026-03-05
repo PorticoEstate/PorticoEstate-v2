@@ -8,6 +8,7 @@ use App\modules\booking\repositories\HospitalityRepository;
 use App\modules\booking\repositories\HospitalityArticleRepository;
 use App\modules\booking\models\HospitalityArticleGroup;
 use App\modules\booking\models\HospitalityArticle;
+use App\modules\bookingfrontend\helpers\WebSocketHelper;
 
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -112,6 +113,12 @@ class HospitalityArticleController
 			$row = $this->repository->getGroupById($groupId);
 			$model = new HospitalityArticleGroup($row);
 
+			$accountId = (int)$this->userSettings['account_id'];
+			WebSocketHelper::sendEntityNotificationAsync(
+				'hospitality', $id, 'Article group created', 'updated',
+				['section' => 'articles', 'groupId' => $groupId, 'modifiedBy' => $accountId]
+			);
+
 			$response->getBody()->write(json_encode($model->serialize()));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
 		} catch (Exception $e) {
@@ -156,6 +163,12 @@ class HospitalityArticleController
 			$row = $this->repository->getGroupById($groupId);
 			$model = new HospitalityArticleGroup($row);
 
+			$accountId = (int)$this->userSettings['account_id'];
+			WebSocketHelper::sendEntityNotificationAsync(
+				'hospitality', $id, 'Article group updated', 'updated',
+				['section' => 'articles', 'groupId' => $groupId, 'modifiedBy' => $accountId]
+			);
+
 			$response->getBody()->write(json_encode($model->serialize()));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		} catch (Exception $e) {
@@ -195,6 +208,12 @@ class HospitalityArticleController
 			}
 
 			$this->repository->deleteGroup($groupId);
+
+			$accountId = (int)$this->userSettings['account_id'];
+			WebSocketHelper::sendEntityNotificationAsync(
+				'hospitality', $id, 'Article group deleted', 'updated',
+				['section' => 'articles', 'groupId' => $groupId, 'modifiedBy' => $accountId]
+			);
 
 			$response->getBody()->write(json_encode(['message' => 'Article group deleted']));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
@@ -293,6 +312,12 @@ class HospitalityArticleController
 			$row = $this->repository->getArticleById($articleId);
 			$model = new HospitalityArticle($row);
 
+			$accountId = (int)$this->userSettings['account_id'];
+			WebSocketHelper::sendEntityNotificationAsync(
+				'hospitality', $id, 'Article added', 'updated',
+				['section' => 'articles', 'articleId' => $articleId, 'modifiedBy' => $accountId]
+			);
+
 			$response->getBody()->write(json_encode($model->serialize()));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
 		} catch (Exception $e) {
@@ -371,6 +396,12 @@ class HospitalityArticleController
 			$row = $this->repository->getArticleById($articleId);
 			$model = new HospitalityArticle($row);
 
+			$accountId = (int)$this->userSettings['account_id'];
+			WebSocketHelper::sendEntityNotificationAsync(
+				'hospitality', $id, 'Article updated', 'updated',
+				['section' => 'articles', 'articleId' => $articleId, 'modifiedBy' => $accountId]
+			);
+
 			$response->getBody()->write(json_encode($model->serialize()));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		} catch (Exception $e) {
@@ -411,7 +442,65 @@ class HospitalityArticleController
 
 			$this->repository->deleteArticle($articleId);
 
+			$accountId = (int)$this->userSettings['account_id'];
+			WebSocketHelper::sendEntityNotificationAsync(
+				'hospitality', $id, 'Article deleted', 'updated',
+				['section' => 'articles', 'articleId' => $articleId, 'modifiedBy' => $accountId]
+			);
+
 			$response->getBody()->write(json_encode(['message' => 'Article deleted']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+		} catch (Exception $e) {
+			$response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+	/**
+	 * @OA\Put(
+	 *     path="/booking/hospitality/{id}/articles/reorder",
+	 *     summary="Batch reorder articles (sort_order and optional group changes)",
+	 *     tags={"Hospitality Articles"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\RequestBody(required=true, @OA\JsonContent(
+	 *         required={"items"},
+	 *         @OA\Property(property="items", type="array", @OA\Items(
+	 *             @OA\Property(property="id", type="integer"),
+	 *             @OA\Property(property="sort_order", type="integer"),
+	 *             @OA\Property(property="article_group_id", type="integer", nullable=true)
+	 *         ))
+	 *     )),
+	 *     @OA\Response(response=200, description="Articles reordered"),
+	 *     @OA\Response(response=403, description="Permission denied")
+	 * )
+	 */
+	public function reorderArticles(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->acl->check('.application', Acl::EDIT, 'booking')) {
+			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+		}
+
+		try {
+			$id = (int)$args['id'];
+			if ($err = $this->validateHospitality($id, $response)) return $err;
+
+			$body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];
+
+			if (empty($body['items']) || !is_array($body['items'])) {
+				$response->getBody()->write(json_encode(['error' => 'items array is required']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			$this->repository->reorderArticles($id, $body['items']);
+
+			$accountId = (int)$this->userSettings['account_id'];
+			WebSocketHelper::sendEntityNotificationAsync(
+				'hospitality', $id, 'Articles reordered', 'updated',
+				['section' => 'articles', 'modifiedBy' => $accountId]
+			);
+
+			$response->getBody()->write(json_encode(['message' => 'Articles reordered']));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		} catch (Exception $e) {
 			$response->getBody()->write(json_encode(['error' => $e->getMessage()]));

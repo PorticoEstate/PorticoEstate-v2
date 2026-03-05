@@ -259,6 +259,7 @@ $app->group('/booking/hospitality', function (RouteCollectorProxy $group) {
 	// Articles
 	$group->get('/{id:[0-9]+}/articles', HospitalityArticleController::class . ':indexArticles');
 	$group->post('/{id:[0-9]+}/articles', HospitalityArticleController::class . ':storeArticle');
+	$group->put('/{id:[0-9]+}/articles/reorder', HospitalityArticleController::class . ':reorderArticles');
 	$group->get('/{id:[0-9]+}/articles/{articleId:[0-9]+}', HospitalityArticleController::class . ':showArticle');
 	$group->put('/{id:[0-9]+}/articles/{articleId:[0-9]+}', HospitalityArticleController::class . ':updateArticle');
 	$group->delete('/{id:[0-9]+}/articles/{articleId:[0-9]+}', HospitalityArticleController::class . ':destroyArticle');

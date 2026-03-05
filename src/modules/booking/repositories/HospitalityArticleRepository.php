@@ -192,6 +192,40 @@ class HospitalityArticleRepository
     }
 
     /**
+     * Batch update sort_order (and optionally article_group_id) for multiple articles.
+     * Runs in a transaction for atomicity.
+     *
+     * @param int $hospitalityId The hospitality entity these articles belong to
+     * @param array $items Array of [ 'id' => int, 'sort_order' => int, 'article_group_id' => int|null ]
+     */
+    public function reorderArticles(int $hospitalityId, array $items): bool
+    {
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare(
+                "UPDATE bb_hospitality_article
+                 SET sort_order = :sort_order, article_group_id = :group_id
+                 WHERE id = :id AND hospitality_id = :hospitality_id"
+            );
+
+            foreach ($items as $item) {
+                $stmt->execute([
+                    ':sort_order' => (int)$item['sort_order'],
+                    ':group_id' => isset($item['article_group_id']) ? (int)$item['article_group_id'] : null,
+                    ':id' => (int)$item['id'],
+                    ':hospitality_id' => $hospitalityId,
+                ]);
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
      * Resolve the effective price and tax code for a hospitality article.
      * Returns override values if set, otherwise falls back to the base article system.
      */

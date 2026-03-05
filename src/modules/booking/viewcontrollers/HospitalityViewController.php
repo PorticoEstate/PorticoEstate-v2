@@ -66,6 +66,7 @@ class HospitalityViewController
 
 		try {
 			$canWrite = $this->acl->check('.application', Acl::EDIT, 'booking');
+			$userSettings = Settings::getInstance()->get('user');
 
 			$flags = Settings::getInstance()->get('flags');
 			$flags['app_header'] = lang('booking') . '::' . lang('Hospitality');
@@ -75,6 +76,8 @@ class HospitalityViewController
 				'layout'         => '@views/_bare.twig',
 				'hospitality_id' => $id,
 				'can_write'      => $canWrite,
+				'account_id'     => (int)($userSettings['account_id'] ?? 0),
+				'account_name'   => $userSettings['fullname'] ?? ($userSettings['account_lid'] ?? 'Unknown'),
 			]);
 
 			$html = $this->legacyView->render($componentHtml, 'booking', 'booking::hospitality');

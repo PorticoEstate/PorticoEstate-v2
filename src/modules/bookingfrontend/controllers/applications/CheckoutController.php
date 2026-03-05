@@ -149,7 +149,7 @@ class CheckoutController
 
                 // Set message in cache
                 Cache::message_set(implode("<br/>", $message_arr), 'message', 'booking.booking confirmed');
-                WebSocketHelper::triggerPartialApplicationsUpdate($session_id);
+				WebSocketHelper::triggerPartialApplicationsUpdate($session_id);
 
                 return ResponseHelper::sendJSONResponse([
                     'message' => 'Applications processed successfully',

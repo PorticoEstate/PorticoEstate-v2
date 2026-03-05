@@ -65,17 +65,24 @@ class SessionService
             
             // Extract bookingfrontend session ID if available
             $bookingSessionId = $cookies['bookingfrontendsession'] ?? null;
-            
-            // Fall back to standard PHP session if booking session not found
-            if (!$bookingSessionId) {
-                $sessionId = $cookies['PHPSESSID'] ?? null;
-            } else {
+
+            // Extract admin (phpgwapi) session ID if available
+            $adminSessionId = $cookies['sessionphpgwsessid'] ?? null;
+
+            // Session priority: bookingfrontend > admin (phpgwapi) > PHPSESSID
+            if ($bookingSessionId) {
                 $sessionId = $bookingSessionId;
+            } elseif ($adminSessionId) {
+                $sessionId = $adminSessionId;
+            } else {
+                $sessionId = $cookies['PHPSESSID'] ?? null;
             }
-            
+
             // Try to get user information from the session
             if ($bookingSessionId) {
                 $userInfo = $this->extractUserInfoFromSession($bookingSessionId);
+            } elseif ($adminSessionId) {
+                $userInfo = $this->extractUserInfoFromSession($adminSessionId);
             }
             
             // Extract User-Agent for browser information
@@ -88,20 +95,24 @@ class SessionService
             $conn->cookies = $cookies;
             $conn->sessionId = $sessionId;
             $conn->bookingSessionId = $bookingSessionId;
+            $conn->adminSessionId = $adminSessionId;
             $conn->userInfo = $userInfo;
             $conn->userAgent = $userAgent;
-            
+
             // Flag this connection as requiring a session ID if none was found
             $conn->sessionIdRequired = !$sessionId;
-            
+
             // Log the extracted data with limited session ID info for security
             $maskedSessionId = $sessionId ? substr($sessionId, 0, 8) . '...' : null;
             $maskedBookingSessionId = $bookingSessionId ? substr($bookingSessionId, 0, 8) . '...' : null;
-            
+            $maskedAdminSessionId = $adminSessionId ? substr($adminSessionId, 0, 8) . '...' : null;
+
             $this->logger->info("Session data extracted", [
                 'sessionId' => $maskedSessionId,
                 'bookingSessionId' => $maskedBookingSessionId,
+                'adminSessionId' => $maskedAdminSessionId,
                 'hasBookingSession' => !empty($bookingSessionId),
+                'hasAdminSession' => !empty($adminSessionId),
                 'userInfo' => $userInfo,
                 'cookiesCount' => count($cookies),
                 'userAgent' => $userAgent
@@ -153,16 +164,22 @@ class SessionService
         // Add basic session info to the message if available
         if (isset($from->sessionId)) {
             $messageType = $data['type'] ?? 'unknown';
-            
+
             // Add session info to the message for broadcasting if appropriate
             if ($messageType !== 'ping' && $messageType !== 'pong') {
+                $sessionType = 'standard';
+                if (!empty($from->bookingSessionId)) {
+                    $sessionType = 'booking';
+                } elseif (!empty($from->adminSessionId)) {
+                    $sessionType = 'admin';
+                }
                 $data['sessionContext'] = [
                     'hasSession' => true,
-                    'sessionType' => isset($from->bookingSessionId) ? 'booking' : 'standard'
+                    'sessionType' => $sessionType
                 ];
             }
         }
-        
+
         return $data;
     }
     
@@ -179,9 +196,15 @@ class SessionService
         $sessionContext = [];
         if (isset($from->sessionId)) {
             $sessionContext['hasSession'] = true;
-            $sessionContext['sessionType'] = isset($from->bookingSessionId) ? 'booking' : 'standard';
+            $sessionType = 'standard';
+            if (!empty($from->bookingSessionId)) {
+                $sessionType = 'booking';
+            } elseif (!empty($from->adminSessionId)) {
+                $sessionType = 'admin';
+            }
+            $sessionContext['sessionType'] = $sessionType;
         }
-        
+
         return array_merge([
             'clientId' => $from->resourceId,
             'type' => $messageType,

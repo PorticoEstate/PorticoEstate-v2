@@ -10,6 +10,7 @@ use App\modules\booking\models\Hospitality;
 use App\modules\booking\models\HospitalityRemoteLocation;
 use App\modules\booking\models\HospitalityArticleGroup;
 use App\modules\booking\models\HospitalityArticle;
+use App\modules\bookingfrontend\helpers\WebSocketHelper;
 
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -190,12 +191,36 @@ class HospitalityController
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
 			}
 
+			// Conflict detection via X-If-Modified-Since header
+			$ifModifiedSince = $request->getHeaderLine('X-If-Modified-Since');
+			if ($ifModifiedSince && !empty($existing['modified'])) {
+				$clientTs = strtotime($ifModifiedSince);
+				$serverTs = strtotime($existing['modified']);
+				if ($clientTs && $serverTs && $clientTs < $serverTs) {
+					$freshRow = $this->repository->getById($id);
+					$freshModel = new Hospitality($freshRow);
+					$response->getBody()->write(json_encode([
+						'error' => 'CONFLICT',
+						'message' => 'Entity was modified by another user',
+						'current' => $freshModel->serialize()
+					]));
+					return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
+				}
+			}
+
 			$body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];
-			$body['modified_by'] = (int)$this->userSettings['account_id'];
+			$accountId = (int)$this->userSettings['account_id'];
+			$body['modified_by'] = $accountId;
 
 			$this->repository->update($id, $body);
 			$row = $this->repository->getById($id);
 			$model = new Hospitality($row);
+
+			// Broadcast update via WebSocket
+			WebSocketHelper::sendEntityNotificationAsync(
+				'hospitality', $id, 'Hospitality updated', 'updated',
+				['section' => 'details', 'changedFields' => array_keys($body), 'modifiedBy' => $accountId]
+			);
 
 			$response->getBody()->write(json_encode($model->serialize()));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
@@ -233,6 +258,12 @@ class HospitalityController
 			}
 
 			$this->repository->delete($id);
+
+			$accountId = (int)$this->userSettings['account_id'];
+			WebSocketHelper::sendEntityNotificationAsync(
+				'hospitality', $id, 'Hospitality deleted', 'deleted',
+				['modifiedBy' => $accountId]
+			);
 
 			$response->getBody()->write(json_encode(['message' => 'Hospitality deleted']));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
@@ -321,6 +352,12 @@ class HospitalityController
 				return (new HospitalityRemoteLocation($r))->serialize();
 			}, $rows);
 
+			$accountId = (int)$this->userSettings['account_id'];
+			WebSocketHelper::sendEntityNotificationAsync(
+				'hospitality', $id, 'Remote location added', 'updated',
+				['section' => 'resources', 'modifiedBy' => $accountId]
+			);
+
 			$response->getBody()->write(json_encode($results));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
 		} catch (Exception $e) {
@@ -352,6 +389,12 @@ class HospitalityController
 			$resourceId = (int)$args['resourceId'];
 
 			$this->repository->removeRemoteLocation($id, $resourceId);
+
+			$accountId = (int)$this->userSettings['account_id'];
+			WebSocketHelper::sendEntityNotificationAsync(
+				'hospitality', $id, 'Remote location removed', 'updated',
+				['section' => 'resources', 'modifiedBy' => $accountId]
+			);
 
 			$response->getBody()->write(json_encode(['message' => 'Remote location removed']));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
@@ -395,6 +438,12 @@ class HospitalityController
 			}
 
 			$this->repository->toggleRemoteLocation($id, $resourceId, (bool)$body['active']);
+
+			$accountId = (int)$this->userSettings['account_id'];
+			WebSocketHelper::sendEntityNotificationAsync(
+				'hospitality', $id, 'Remote location toggled', 'updated',
+				['section' => 'resources', 'modifiedBy' => $accountId]
+			);
 
 			$response->getBody()->write(json_encode(['message' => 'Remote location updated']));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);

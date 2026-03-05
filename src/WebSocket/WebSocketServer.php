@@ -69,7 +69,8 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             'ipAddress' => $conn->remoteAddress ?? 'unknown',
             'totalClients' => $this->connectionService->getClientCount() + 1, // +1 for this new connection
             'hasSession' => isset($conn->sessionId),
-            'hasBookingSession' => isset($conn->bookingSessionId),
+            'hasBookingSession' => !empty($conn->bookingSessionId),
+            'hasAdminSession' => !empty($conn->adminSessionId),
             'hasUserInfo' => isset($conn->userInfo),
             'browser' => isset($conn->userAgent) ? $conn->userAgent : 'unknown'
         ]);
@@ -104,10 +105,11 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             // Store room ID in connection for easier access
             $conn->roomId = $roomId;
 
+            $sessionType = !empty($conn->bookingSessionId) ? 'booking' : (!empty($conn->adminSessionId) ? 'admin' : 'standard');
             $this->logger->info("Client added to session room", [
                 'clientId' => $conn->resourceId,
                 'roomId' => $roomId,
-                'sessionType' => isset($conn->bookingSessionId) ? 'booking' : 'standard'
+                'sessionType' => $sessionType
             ]);
 
             // Send message to user about being added to the room

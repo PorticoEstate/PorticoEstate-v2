@@ -1109,3 +1109,16 @@ back_to_search	booking	no	Tilbake til søk
 article_code	booking	no	Artikkelkode
 default_price	booking	no	Standardpris
 creation_failed	booking	no	Oppretting feilet
+viewers	booking	no	Seere
+editing	booking	no	Redigerer
+edit_conflict	booking	no	Redigeringskonflikt
+conflict_message	booking	no	En annen bruker har endret dette feltet siden du begynte å redigere.
+your_change	booking	no	Din endring
+server_version	booking	no	Gjeldende versjon
+keep_theirs	booking	no	Behold deres
+overwrite_with_mine	booking	no	Overskriv med mine
+someone_is_editing	booking	no	Noen redigerer dette
+data_changed_by_another_user	booking	no	Data endret av en annen bruker
+reconnecting	booking	no	Kobler til på nytt
+connection_lost	booking	no	Tilkobling tapt
+entity_deleted	booking	no	Denne enheten ble slettet av en annen bruker

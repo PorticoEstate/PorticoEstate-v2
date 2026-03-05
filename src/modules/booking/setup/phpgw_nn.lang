@@ -1121,3 +1121,16 @@ back_to_search	booking	nn	Tilbake til søk
 article_code	booking	nn	Artikkelkode
 default_price	booking	nn	Standardpris
 creation_failed	booking	nn	Oppretting feila
+viewers	booking	nn	Sjåarar
+editing	booking	nn	Redigerer
+edit_conflict	booking	nn	Redigeringskonflikt
+conflict_message	booking	nn	Ein annan brukar har endra dette feltet sidan du byrja å redigere.
+your_change	booking	nn	Di endring
+server_version	booking	nn	Gjeldande versjon
+keep_theirs	booking	nn	Behald deira
+overwrite_with_mine	booking	nn	Overskriv med mine
+someone_is_editing	booking	nn	Nokon redigerer dette
+data_changed_by_another_user	booking	nn	Data endra av ein annan brukar
+reconnecting	booking	nn	Koplar til på nytt
+connection_lost	booking	nn	Tilkopling tapt
+entity_deleted	booking	nn	Denne eininga vart sletta av ein annan brukar

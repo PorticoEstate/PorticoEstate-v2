@@ -1016,3 +1016,16 @@ back_to_search	booking	en	Back to search
 article_code	booking	en	Article code
 default_price	booking	en	Default price
 creation_failed	booking	en	Creation failed
+viewers	booking	en	Viewers
+editing	booking	en	Editing
+edit_conflict	booking	en	Edit conflict
+conflict_message	booking	en	Another user has modified this field since you started editing.
+your_change	booking	en	Your change
+server_version	booking	en	Current version
+keep_theirs	booking	en	Keep theirs
+overwrite_with_mine	booking	en	Overwrite with mine
+someone_is_editing	booking	en	Someone is editing this
+data_changed_by_another_user	booking	en	Data changed by another user
+reconnecting	booking	en	Reconnecting
+connection_lost	booking	en	Connection lost
+entity_deleted	booking	en	This entity was deleted by another user

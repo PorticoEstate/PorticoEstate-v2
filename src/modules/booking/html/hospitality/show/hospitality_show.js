@@ -107,6 +107,7 @@
 	var trashIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>';
 	var chevronIcon = '<svg class="hosp-show__group-toggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>';
 	var backArrow = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>';
+	var gripIcon = '<svg class="hosp-show__drag-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>';
 
 	// ═══════════════════════════════════════════════════════════════════
 	// State
@@ -236,6 +237,9 @@
 	function editableField(label, displayValue, fieldName, fieldType, opts) {
 		opts = opts || {};
 		var displayHtml = '';
+		var descHtml = opts.description
+			? '<div class="hosp-show__field-desc">' + esc(opts.description) + '</div>'
+			: '';
 
 		if (fieldType === 'checkbox') {
 			displayHtml = displayValue ? lang('yes') : lang('no');
@@ -244,7 +248,7 @@
 		}
 
 		if (!canWrite) {
-			return fieldHtml(label, displayHtml || '&mdash;');
+			return fieldHtml(label, (displayHtml || '&mdash;') + descHtml);
 		}
 
 		return '<div class="app-show__field" data-editable="' + esc(fieldName) + '" data-field-type="' + esc(fieldType || 'text') + '">' +
@@ -252,10 +256,12 @@
 			'<span class="app-show__value">' +
 			'<span class="hosp-show__display">' + (displayHtml || '&mdash;') + '</span>' +
 			'<button type="button" class="hosp-show__edit-trigger" title="' + esc(lang('edit')) + '">' + penIcon + '</button>' +
+			descHtml +
 			'</span></div>';
 	}
 
-	function deadlineField(label, value, unit) {
+	function deadlineField(label, value, unit, opts) {
+		opts = opts || {};
 		var displayHtml = '';
 		if (value && unit) {
 			displayHtml = esc(value) + ' ' + esc(lang(unit));
@@ -263,8 +269,12 @@
 			displayHtml = '&mdash;';
 		}
 
+		var descHtml = opts.description
+			? '<div class="hosp-show__field-desc">' + esc(opts.description) + '</div>'
+			: '';
+
 		if (!canWrite) {
-			return fieldHtml(label, displayHtml);
+			return fieldHtml(label, displayHtml + descHtml);
 		}
 
 		return '<div class="app-show__field" data-editable="order_deadline" data-field-type="compound">' +
@@ -272,6 +282,7 @@
 			'<span class="app-show__value">' +
 			'<span class="hosp-show__display">' + displayHtml + '</span>' +
 			'<button type="button" class="hosp-show__edit-trigger" title="' + esc(lang('edit')) + '">' + penIcon + '</button>' +
+			descHtml +
 			'</span></div>';
 	}
 
@@ -390,9 +401,15 @@
 
 		// Service configuration
 		var svcHtml = '';
-		svcHtml += editableField(lang('remoteServing'), h.remote_serving_enabled, 'remote_serving_enabled', 'checkbox');
-		svcHtml += editableField(lang('allowDelivery'), h.allow_delivery, 'allow_delivery', 'checkbox');
-		svcHtml += deadlineField(lang('orderDeadline'), h.order_by_time_value, h.order_by_time_unit);
+		svcHtml += editableField(lang('remoteServing'), h.remote_serving_enabled, 'remote_serving_enabled', 'checkbox', {
+			description: lang('remoteServingDesc')
+		});
+		svcHtml += editableField(lang('allowOnSiteHospitality'), h.allow_on_site_hospitality, 'allow_on_site_hospitality', 'checkbox', {
+			description: lang('allowOnSiteHospitalityDesc')
+		});
+		svcHtml += deadlineField(lang('orderDeadline'), h.order_by_time_value, h.order_by_time_unit, {
+			description: lang('orderDeadlineDesc')
+		});
 		html += section(lang('serviceConfiguration'), svcHtml);
 
 		// Metadata
@@ -561,15 +578,23 @@
 				'</div>';
 		}
 
+		// Container for group-level sorting
+		html += '<div class="hosp-show__groups-container" data-dnd-groups>';
+
 		// Groups as collapsible cards
-		groups.forEach(function (group) {
+		groups.forEach(function (group, gi) {
 			var groupArticles = (group.articles || []);
 			var activeTag = group.active
 				? '<span class="ds-tag" data-color="success">' + esc(lang('active')) + '</span>'
 				: '<span class="ds-tag" data-color="danger">' + esc(lang('inactive')) + '</span>';
 
-			html += '<div class="hosp-show__article-group">';
+			html += '<div class="hosp-show__article-group" data-group-id="' + group.id + '" data-group-index="' + gi + '">';
 			html += '<div class="hosp-show__group-header" aria-expanded="true" data-group-toggle="' + group.id + '">';
+
+			if (canWrite) {
+				html += '<span class="hosp-show__drag-handle" data-drag-handle-group="' + group.id + '" title="Drag to reorder">' + gripIcon + '</span>';
+			}
+
 			html += '<div class="hosp-show__group-title">' + chevronIcon + ' ' + esc(group.name) + ' ' + activeTag +
 				' <span class="ds-tag" data-color="neutral">' + groupArticles.length + '</span></div>';
 
@@ -581,67 +606,70 @@
 			}
 			html += '</div>';
 
-			html += '<div class="hosp-show__group-body" data-group-body="' + group.id + '">';
-			html += renderArticleTable(groupArticles);
+			html += '<div class="hosp-show__group-body" data-group-body="' + group.id + '" data-dnd-article-list="' + group.id + '">';
+			html += renderArticleRows(groupArticles, group.id);
 			html += '</div></div>';
 		});
 
-		// Ungrouped articles
+		html += '</div>'; // close groups-container
+
+		// Ungrouped articles (always shown at bottom, draggable into groups)
 		var ungrouped = allArticles.filter(function (a) { return !a.article_group_id; });
-		if (ungrouped.length > 0) {
-			html += section(lang('ungroupedArticles'), renderArticleTable(ungrouped));
-		}
+		html += '<div class="app-show__section">' +
+			'<div class="app-show__section-header"><h3>' + esc(lang('ungroupedArticles')) + '</h3></div>' +
+			'<div class="app-show__section-body" data-dnd-article-list="ungrouped">' +
+			(ungrouped.length > 0 ? renderArticleRows(ungrouped, 'ungrouped') :
+				'<div class="hosp-show__article-empty">' + esc(lang('noArticles')) + '</div>') +
+			'</div></div>';
 
 		if (groups.length === 0 && ungrouped.length === 0) {
 			html += '<p class="app-show__empty">' + esc(lang('noArticles')) + '</p>';
 		}
 
 		document.getElementById('hospitality-articles').innerHTML = html;
+
+		// Notify DnD module to (re-)initialize
+		root.dispatchEvent(new CustomEvent('hospitality:articles-rendered', { bubbles: true }));
 	}
 
-	function renderArticleTable(articles) {
+	function renderArticleRows(articles, groupId) {
 		if (!articles || articles.length === 0) {
-			return '<p class="app-show__empty">' + esc(lang('noArticles')) + '</p>';
+			return '<div class="hosp-show__article-empty">' + esc(lang('noArticles')) + '</div>';
 		}
 
-		var html = '<table class="ds-table" data-border>' +
-			'<thead><tr>' +
-			'<th>' + lang('name') + '</th>' +
-			'<th>' + lang('unit') + '</th>' +
-			'<th>' + lang('basePrice') + '</th>' +
-			'<th>' + lang('overridePrice') + '</th>' +
-			'<th>' + lang('effectivePrice') + '</th>' +
-			'<th>' + lang('active') + '</th>' +
-			'<th>' + lang('sortOrder') + '</th>';
-		if (canWrite) html += '<th></th>';
-		html += '</tr></thead><tbody>';
-
-		articles.forEach(function (a) {
+		var html = '';
+		articles.forEach(function (a, i) {
 			var activeTag = a.active
 				? '<span class="ds-tag" data-color="success">' + esc(lang('yes')) + '</span>'
 				: '<span class="ds-tag" data-color="danger">' + esc(lang('no')) + '</span>';
-			var basePrice = a.base_price != null ? Number(a.base_price).toFixed(2) : '&mdash;';
-			var overridePrice = a.override_price != null ? Number(a.override_price).toFixed(2) : '&mdash;';
-			var effectivePrice = a.effective_price != null ? Number(a.effective_price).toFixed(2) : '&mdash;';
+			var basePrice = a.base_price != null ? Number(a.base_price).toFixed(2) : '—';
+			var overridePrice = a.override_price != null ? Number(a.override_price).toFixed(2) : '—';
+			var effectivePrice = a.effective_price != null ? Number(a.effective_price).toFixed(2) : '—';
 
-			html += '<tr>';
-			html += '<td>' + esc(a.article_name || a.name) + '</td>';
-			html += '<td>' + esc(a.unit) + '</td>';
-			html += '<td>' + basePrice + '</td>';
-			html += '<td>' + overridePrice + '</td>';
-			html += '<td><strong>' + effectivePrice + '</strong></td>';
-			html += '<td>' + activeTag + '</td>';
-			html += '<td>' + (a.sort_order || 0) + '</td>';
+			html += '<div class="hosp-show__article-row" data-article-id="' + a.id + '"' +
+				(groupId ? ' data-group-id="' + groupId + '" data-article-index="' + i + '"' : '') + '>';
+
+			if (canWrite && groupId) {
+				html += '<span class="hosp-show__drag-handle" data-drag-handle-article="' + a.id + '" title="Drag to reorder">' + gripIcon + '</span>';
+			}
+
+			html += '<span class="hosp-show__article-name">' + esc(a.article_name || a.name) + '</span>';
+			html += '<span class="hosp-show__article-unit">' + esc(a.unit) + '</span>';
+			html += '<span class="hosp-show__article-price">' + basePrice + '</span>';
+			html += '<span class="hosp-show__article-price">' + overridePrice + '</span>';
+			html += '<span class="hosp-show__article-price hosp-show__article-price--effective">' + effectivePrice + '</span>';
+			html += '<span class="hosp-show__article-active">' + activeTag + '</span>';
+
 			if (canWrite) {
-				html += '<td>' +
+				html += '<span class="hosp-show__article-actions">' +
 					'<button type="button" class="app-button app-button-sm" data-edit-article="' + a.id + '" title="' + esc(lang('edit')) + '">' + penIcon + '</button> ' +
 					'<button type="button" class="app-button app-button-sm app-button-danger" data-delete-article="' + a.id + '" title="' + esc(lang('delete')) + '">' + trashIcon + '</button>' +
-					'</td>';
+					'</span>';
 			}
-			html += '</tr>';
+
+			html += '</div>';
 		});
 
-		html += '</tbody></table>';
 		return html;
 	}
 
@@ -776,23 +804,23 @@
 		var body = '';
 
 		if (!isEdit) {
-			// Article mapping selector (only for new articles — uses registry)
-			body += '<label class="app-show__modal-label" for="modal-article-mapping">' + esc(lang('selectArticle')) + ' *</label>' +
-				'<select id="modal-article-mapping" class="app-show__modal-select">' +
-				'<option value="">' + esc(lang('loading')) + '...</option></select>';
+			body += '<label class="app-show__modal-label">' + esc(lang('selectArticle')) + ' *</label>' +
+				'<div id="modal-article-select-container" class="article-select">' +
+				'<input type="text" class="article-select__input app-show__modal-textarea" style="min-height:auto;height:2.25rem" placeholder="' + esc(lang('selectArticle')) + '..." autocomplete="off" aria-expanded="false" aria-autocomplete="list" role="combobox">' +
+				'<input type="hidden" id="modal-article-mapping-value">' +
+				'<ul class="article-select__dropdown" role="listbox"></ul>' +
+				'</div>';
 		} else {
 			body += '<p><strong>' + esc(article.article_name || article.name) + '</strong> (' + esc(article.unit) + ')</p>';
 		}
 
 		// Group selector
-		body += '<label class="app-show__modal-label" for="modal-article-group" style="margin-top:0.75rem">' + esc(lang('group')) + '</label>' +
-			'<select id="modal-article-group" class="app-show__modal-select">' +
-			'<option value="">-- ' + esc(lang('ungroupedArticles')) + ' --</option>';
-		groups.forEach(function (g) {
-			var selected = (isEdit && article.article_group_id === g.id) ? ' selected' : '';
-			body += '<option value="' + g.id + '"' + selected + '>' + esc(g.name) + '</option>';
-		});
-		body += '</select>';
+		body += '<label class="app-show__modal-label" style="margin-top:0.75rem">' + esc(lang('group')) + '</label>' +
+			'<div id="modal-group-select-container" class="search-select">' +
+			'<input type="text" class="search-select__input app-show__modal-textarea" style="min-height:auto;height:2.25rem" autocomplete="off" aria-expanded="false" aria-autocomplete="list" role="combobox">' +
+			'<input type="hidden" id="modal-article-group-value">' +
+			'<ul class="search-select__dropdown" role="listbox"></ul>' +
+			'</div>';
 
 		body += '<label class="app-show__modal-label" for="modal-article-price" style="margin-top:0.75rem">' + esc(lang('overridePrice')) + '</label>' +
 			'<input type="number" step="0.01" id="modal-article-price" class="app-show__modal-textarea" style="min-height:auto;height:2.25rem" value="' + (isEdit && article.override_price != null ? article.override_price : '') + '">';
@@ -807,37 +835,41 @@
 
 		showModal('article-dialog', title, body, footer);
 
-		// Load article mappings for new articles (legacy endpoint)
+		// Initialize group search select
+		var groupSelector = new SearchSelect(
+			document.getElementById('modal-group-select-container'),
+			{
+				items: groups,
+				allowEmpty: true,
+				emptyLabel: '-- ' + lang('ungroupedArticles') + ' --',
+				value: isEdit ? (article.article_group_id || null) : null
+			}
+		);
+
+		// Initialize article search select for new articles
+		var articleSelector = null;
 		if (!isEdit) {
-			fetchJson('/?menuaction=booking.uiarticle_mapping.index&phpgw_return_as=json&length=-1').then(function (response) {
-				var mappings = response.data || [];
-				var select = document.getElementById('modal-article-mapping');
-				if (!select) return;
-				// Filter out already-assigned mappings and inactive ones
-				var existingMappingIds = (hospitalityData.articles || []).map(function (a) { return a.article_mapping_id; });
-				var available = mappings.filter(function (m) {
-					return m.active && existingMappingIds.indexOf(m.id) === -1;
-				});
-				select.innerHTML = '<option value="">-- ' + esc(lang('selectArticle')) + ' --</option>';
-				available.forEach(function (m) {
-					select.innerHTML += '<option value="' + m.id + '">' + esc(m.article_name) + ' (' + esc(m.unit) + ')</option>';
-				});
-			}).catch(function () {
-				var select = document.getElementById('modal-article-mapping');
-				if (select) select.innerHTML = '<option value="">' + esc(lang('error')) + '</option>';
-			});
+			var existingMappingIds = (hospitalityData.articles || []).map(function (a) { return a.article_mapping_id; });
+			articleSelector = new ArticleSelect(
+				document.getElementById('modal-article-select-container'),
+				{
+					category: 'service',
+					excludeIds: existingMappingIds,
+					emptyText: lang('noArticles')
+				}
+			);
 		}
 
 		document.getElementById('modal-article-submit').addEventListener('click', function () {
 			var data = {};
 
 			if (!isEdit) {
-				var mappingId = document.getElementById('modal-article-mapping').value;
-				if (!mappingId) { document.getElementById('modal-article-mapping').focus(); return; }
-				data.article_mapping_id = parseInt(mappingId, 10);
+				var mappingId = articleSelector.getValue();
+				if (!mappingId) { articleSelector.input.focus(); return; }
+				data.article_mapping_id = mappingId;
 			}
 
-			var groupVal = document.getElementById('modal-article-group').value;
+			var groupVal = groupSelector.getValue();
 			data.article_group_id = groupVal ? parseInt(groupVal, 10) : null;
 
 			var priceVal = document.getElementById('modal-article-price').value;
@@ -996,5 +1028,20 @@
 			setTimeout(function () { modal.remove(); }, 200);
 		}
 	}
+
+	// ═══════════════════════════════════════════════════════════════════
+	// DnD integration hook (consumed by ES module script)
+	// ═══════════════════════════════════════════════════════════════════
+
+	window.__hospDnd = {
+		getApiUrl: function () { return apiUrl; },
+		canWrite: function () { return canWrite; },
+		getData: function () { return hospitalityData; },
+		putJson: putJson,
+		refreshData: refreshData,
+		showToast: showToast,
+		lang: lang,
+		root: root
+	};
 
 })();

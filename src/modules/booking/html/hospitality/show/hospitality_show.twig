@@ -4,6 +4,8 @@
 
 {% block styles %}
 <style>{{ source('@views/application/show/application_show.css') }}</style>
+<style>{{ source('@views/components/search_select/search_select.css') }}</style>
+<style>{{ source('@views/components/article_select/article_select.css') }}</style>
 <style>{{ source('@views/hospitality/show/hospitality_show.css') }}</style>
 {% endblock %}
 
@@ -39,8 +41,11 @@
 	 data-lang-status="{{ lang('common.status') }}"
 	 data-lang-service-configuration="{{ lang('booking.service_configuration') }}"
 	 data-lang-remote-serving="{{ lang('booking.remote_serving') }}"
-	 data-lang-allow-delivery="{{ lang('booking.allow_delivery') }}"
+	 data-lang-remote-serving-desc="{{ lang('booking.remote_serving_desc') }}"
+	 data-lang-allow-on-site-hospitality="{{ lang('booking.allow_on_site_hospitality') }}"
+	 data-lang-allow-on-site-hospitality-desc="{{ lang('booking.allow_on_site_hospitality_desc') }}"
 	 data-lang-order-deadline="{{ lang('booking.order_deadline') }}"
+	 data-lang-order-deadline-desc="{{ lang('booking.order_deadline_desc') }}"
 	 data-lang-main-resource="{{ lang('booking.main_resource') }}"
 	 data-lang-remote-locations="{{ lang('booking.remote_locations') }}"
 	 data-lang-remote-serving-disabled="{{ lang('booking.remote_serving_disabled') }}"
@@ -127,5 +132,317 @@
 {% endblock %}
 
 {% block scripts %}
+<script>{{ source('@views/components/search_select/search_select.js') }}</script>
+<script>{{ source('@views/components/article_select/article_select.js') }}</script>
 <script>{{ source('@views/hospitality/show/hospitality_show.js') }}</script>
+{% if can_write %}
+<script type="module">
+import { DragDropManager, Droppable } from '@dnd-kit/dom';
+import { Sortable, isSortable, SortableKeyboardPlugin, OptimisticSortingPlugin } from '@dnd-kit/dom/sortable';
+
+(function initHospDnd() {
+	var hook = window.__hospDnd;
+	if (!hook) return;
+
+	var manager = new DragDropManager();
+	var sortables = [];
+	var droppables = [];
+
+	function destroyAll() {
+		sortables.forEach(function (s) { s.destroy(); });
+		sortables = [];
+		droppables.forEach(function (d) { d.destroy(); });
+		droppables = [];
+	}
+
+	function initSortables() {
+		destroyAll();
+
+		var root = hook.root;
+		if (!root) return;
+
+		// --- Group sortables ---
+		var groupEls = root.querySelectorAll('[data-group-id][data-group-index]');
+		groupEls.forEach(function (el) {
+			var groupId = el.dataset.groupId;
+			var index = parseInt(el.dataset.groupIndex, 10);
+			var handle = el.querySelector('[data-drag-handle-group="' + groupId + '"]');
+
+			var s = new Sortable(
+				{
+					id: 'group-' + groupId,
+					index: index,
+					group: 'groups',
+					type: 'group',
+					accept: 'group',
+					element: el,
+					handle: handle || undefined,
+					feedback: 'default',
+					plugins: [SortableKeyboardPlugin],
+					data: { type: 'group', groupId: groupId }
+				},
+				manager
+			);
+			sortables.push(s);
+		});
+
+		// --- Article sortables + group container droppables ---
+		var articleLists = root.querySelectorAll('[data-dnd-article-list]');
+		articleLists.forEach(function (listEl) {
+			var listGroupId = listEl.dataset.dndArticleList;
+
+			// Create a Droppable for each container (groups + ungrouped)
+			var d = new Droppable(
+				{
+					id: 'container-' + listGroupId,
+					element: listEl,
+					collisionPriority: 0, // Lowest — Sortable items take precedence
+					accept: function (draggable) {
+						return draggable.data && draggable.data.type === 'article';
+					},
+					data: { type: 'article-container', groupId: listGroupId }
+				},
+				manager
+			);
+			droppables.push(d);
+
+			var articleEls = listEl.querySelectorAll('[data-article-id]');
+			articleEls.forEach(function (el) {
+				var articleId = el.dataset.articleId;
+				var index = parseInt(el.dataset.articleIndex, 10);
+				var handle = el.querySelector('[data-drag-handle-article="' + articleId + '"]');
+
+				var s = new Sortable(
+					{
+						id: 'article-' + articleId,
+						index: index,
+						group: 'articles-' + listGroupId,
+						type: 'article',
+						accept: 'article',
+						element: el,
+						handle: handle || undefined,
+						feedback: 'default',
+						plugins: [SortableKeyboardPlugin, OptimisticSortingPlugin],
+						data: { type: 'article', articleId: articleId, groupId: listGroupId }
+					},
+					manager
+				);
+				sortables.push(s);
+			});
+		});
+	}
+
+	// Visual feedback: highlight drop containers during drag
+	manager.monitor.addEventListener('dragover', function (event) {
+		var target = event.operation.target;
+		// Remove all active highlights
+		document.querySelectorAll('.hosp-show__drop-active').forEach(function (el) {
+			el.classList.remove('hosp-show__drop-active');
+		});
+		// Highlight container if target is a container droppable
+		if (target && target.data && target.data.type === 'article-container') {
+			if (target.element) target.element.classList.add('hosp-show__drop-active');
+		}
+	});
+
+	// Listen for dragend events
+	manager.monitor.addEventListener('dragend', function (event) {
+		// Clean up highlights
+		document.querySelectorAll('.hosp-show__drop-active').forEach(function (el) {
+			el.classList.remove('hosp-show__drop-active');
+		});
+
+		var source = event.operation.source;
+		var target = event.operation.target;
+		if (!source) return;
+
+		// Case 1: Sortable-to-sortable (within/between groups with items)
+		if (isSortable(source)) {
+			var sortable = source.sortable;
+			var data = sortable.draggable.data;
+
+			if (data.type === 'group') {
+				handleGroupReorder(sortable, target);
+				return;
+			}
+
+			if (data.type === 'article') {
+				// Check if dropped on an empty container (Droppable, not Sortable)
+				// Only handle as container drop if the target group differs from the source group
+				if (target && target.data && target.data.type === 'article-container'
+					&& String(target.data.groupId) !== String(data.groupId)) {
+					handleArticleDropOnContainer(data.articleId, target.data.groupId);
+				} else {
+					// Normal sortable reorder (same or cross-group with items)
+					handleArticleReorder(sortable, target);
+				}
+				return;
+			}
+		}
+	});
+
+	function handleGroupReorder(sourceSortable, target) {
+		if (!target || !isSortable(target)) return;
+
+		var sourceIdx = sourceSortable.initialIndex;
+		var targetIdx = target.sortable.index;
+		if (sourceIdx === targetIdx) return;
+
+		// Build current group ID order from sortables
+		var groupSortables = sortables
+			.filter(function (s) { return s.draggable.data.type === 'group'; })
+			.sort(function (a, b) { return a.index - b.index; });
+
+		var ids = groupSortables.map(function (s) { return s.draggable.data.groupId; });
+
+		// Move source from its position to target position
+		var movedId = ids.splice(sourceIdx, 1)[0];
+		ids.splice(targetIdx, 0, movedId);
+
+		var data = hook.getData();
+		var groups = data.article_groups || [];
+		var promises = [];
+		var apiUrl = hook.getApiUrl();
+
+		ids.forEach(function (groupId, newIndex) {
+			var original = groups.find(function (g) { return String(g.id) === String(groupId); });
+			if (original && original.sort_order !== newIndex) {
+				promises.push(hook.putJson(apiUrl + '/article-groups/' + groupId, { sort_order: newIndex }));
+			}
+		});
+
+		if (promises.length > 0) {
+			Promise.all(promises).then(function () {
+				hook.showToast(hook.lang('saved'));
+				hook.refreshData();
+			}).catch(function (err) {
+				hook.showToast(hook.lang('error') + ': ' + err.message, 'danger');
+				hook.refreshData();
+			});
+		}
+	}
+
+	function handleArticleDropOnContainer(articleId, targetGroupId) {
+		var apiUrl = hook.getApiUrl();
+		var newGroupId = targetGroupId === 'ungrouped' ? null : parseInt(targetGroupId, 10);
+
+		var payload = {
+			article_group_id: newGroupId,
+			sort_order: 0
+		};
+
+		hook.putJson(apiUrl + '/articles/' + articleId, payload).then(function () {
+			hook.showToast(hook.lang('saved'));
+			hook.refreshData();
+		}).catch(function (err) {
+			hook.showToast(hook.lang('error') + ': ' + err.message, 'danger');
+			hook.refreshData();
+		});
+	}
+
+	function handleArticleReorder(sourceSortable, target) {
+		if (!target || !isSortable(target)) return;
+
+		var articleId = sourceSortable.draggable.data.articleId;
+		var sourceGroupId = sourceSortable.draggable.data.groupId;
+		var targetGroupId = target.sortable.draggable.data.groupId;
+		var apiUrl = hook.getApiUrl();
+
+		function parseGroupId(gid) {
+			if (!gid || gid === 'ungrouped') return null;
+			return parseInt(gid, 10);
+		}
+
+		var sourceGid = parseGroupId(sourceGroupId);
+		var targetGid = parseGroupId(targetGroupId);
+		var groupChanged = sourceGid !== targetGid;
+
+		// Get articles in the target group, sorted by current index
+		var targetGroupKey = 'articles-' + targetGroupId;
+		var targetArticles = sortables
+			.filter(function (s) {
+				return s.draggable.data.type === 'article' && s.group === targetGroupKey;
+			})
+			.sort(function (a, b) { return a.index - b.index; });
+
+		// Build ID list for target group
+		var ids = targetArticles.map(function (s) { return s.draggable.data.articleId; });
+
+		if (groupChanged) {
+			// Insert the article at the target position
+			var targetIdx = target.sortable.index;
+			ids.splice(targetIdx, 0, articleId);
+		} else {
+			// Same group: move within the list
+			var sourceIdx = sourceSortable.initialIndex;
+			var targetIdx = target.sortable.index;
+			if (sourceIdx === targetIdx) return;
+			ids.splice(sourceIdx, 1);
+			ids.splice(targetIdx, 0, articleId);
+		}
+
+		var data = hook.getData();
+		var allArticles = data.articles || [];
+		var promises = [];
+
+		ids.forEach(function (aid, newIndex) {
+			var original = allArticles.find(function (a) { return String(a.id) === String(aid); });
+			var payload = {};
+			var needsUpdate = false;
+
+			if (original && original.sort_order !== newIndex) {
+				payload.sort_order = newIndex;
+				needsUpdate = true;
+			}
+			if (String(aid) === String(articleId) && groupChanged) {
+				payload.article_group_id = targetGid;
+				payload.sort_order = newIndex;
+				needsUpdate = true;
+			}
+			if (needsUpdate) {
+				promises.push(hook.putJson(apiUrl + '/articles/' + aid, payload));
+			}
+		});
+
+		// Reindex source group if cross-group move
+		if (groupChanged) {
+			var sourceGroupKey = 'articles-' + sourceGroupId;
+			var sourceArticles = sortables
+				.filter(function (s) {
+					return s.draggable.data.type === 'article' && s.group === sourceGroupKey
+						&& String(s.draggable.data.articleId) !== String(articleId);
+				})
+				.sort(function (a, b) { return a.index - b.index; });
+
+			sourceArticles.forEach(function (s, newIndex) {
+				var aid = s.draggable.data.articleId;
+				var original = allArticles.find(function (a) { return String(a.id) === String(aid); });
+				if (original && original.sort_order !== newIndex) {
+					promises.push(hook.putJson(apiUrl + '/articles/' + aid, { sort_order: newIndex }));
+				}
+			});
+		}
+
+		if (promises.length > 0) {
+			Promise.all(promises).then(function () {
+				hook.showToast(hook.lang('saved'));
+				hook.refreshData();
+			}).catch(function (err) {
+				hook.showToast(hook.lang('error') + ': ' + err.message, 'danger');
+				hook.refreshData();
+			});
+		}
+	}
+
+	// Initialize on first render and re-initialize on each re-render
+	document.addEventListener('hospitality:articles-rendered', initSortables);
+
+	// If articles were already rendered before this module loaded (race condition),
+	// initialize immediately
+	if (hook.root && hook.root.querySelector('[data-dnd-article-list]')) {
+		initSortables();
+	}
+})();
+</script>
+{% endif %}
 {% endblock %}

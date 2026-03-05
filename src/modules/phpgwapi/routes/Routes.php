@@ -57,7 +57,9 @@ $app->get('/assets/npm/{path:.*}', function (Request $request, Response $respons
 {
 	$allowedPrefixes = [
 		'@digdir/designsystemet-web/',
+		'@dnd-kit/',
 		'@floating-ui/',
+		'@preact/',
 		'@u-elements/',
 		'invokers-polyfill/',
 		'jquery/',

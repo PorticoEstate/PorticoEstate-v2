@@ -973,10 +973,10 @@ class LocationHierarchyAnalyzer
 		$this->loc2Refs = [];
 		$this->loc3Refs = [];
 		$this->loc3Names = [];
-		$sql = "SELECT loc1, loc2, loc3, loc4, bygningsnr, street_id, street_number FROM fm_location4";
+		$sql = "SELECT loc1, loc2, loc3, loc4, bygningsnr, street_id, street_number FROM fm_location4 WHERE loc1 !='0000'";
 		if ($filterLoc1) 
 		{
-			$sql .= " WHERE loc1 = '{$filterLoc1}'";
+			$sql .= " AND loc1 = '{$filterLoc1}'";
 		}
 		$sql .= " ORDER BY loc1, loc4, loc2, loc3";
 		$this->db->query($sql, __LINE__, __FILE__);

@@ -964,8 +964,57 @@ class LocationHierarchyAnalyzer
 			}
 			$sqlStatements[] = $sql;
 		}
+
+		$sqlStatements2 = $this->updateFmLocationsFromMapping();
+		$sqlStatements = array_merge($sqlStatements, $sqlStatements2);
 		$this->sqlStatements['update_location_from_mapping'] = $sqlStatements;
 		return $sqlStatements; // Add explicit return
+	}
+
+	/**
+	 * update_fm_locations_from_mapping: Generate separate UPDATE queries for each level.
+	 * For levels 2-4, also update the name column with loc<level>_name from the corresponding fm_location<level> table.
+	 * This should be run after all mapping entries have been inserted to ensure all location_code and name updates are captured.
+	 */
+	private function updateFmLocationsFromMapping()
+	{
+		$sqlStatements = [];
+
+		// Level 1: Only update location_code (no sublevel names available)
+		$sqlStatements[] = "UPDATE fm_locations SET "
+			. "location_code = location_mapping.new_location_code, "
+			. "name = fm_location1.loc1_name "
+			. "FROM location_mapping "
+			. "JOIN fm_location1 ON location_mapping.new_location_code = fm_location1.location_code "
+			. "WHERE fm_locations.level = 1 AND fm_locations.location_code = location_mapping.old_location_code;";
+
+		// Level 2: Update location_code and name from fm_location2.loc2_name
+		$sqlStatements[] = "UPDATE fm_locations SET "
+			. "location_code = location_mapping.new_location_code, "
+			. "name = fm_location2.loc2_name "
+			. "FROM location_mapping "
+			. "JOIN fm_location2 ON location_mapping.new_location_code = fm_location2.location_code "
+			. "WHERE fm_locations.level = 2 AND fm_locations.location_code = location_mapping.old_location_code;";
+
+		// Level 3: Update location_code and name from fm_location3.loc3_name
+		$sqlStatements[] = "UPDATE fm_locations SET "
+			. "location_code = location_mapping.new_location_code, "
+			. "name = fm_location3.loc3_name "
+			. "FROM location_mapping "
+			. "JOIN fm_location3 ON location_mapping.new_location_code = fm_location3.location_code "
+			. "WHERE fm_locations.level = 3 AND fm_locations.location_code = location_mapping.old_location_code;";
+
+		// Level 4: Update location_code and name from parent level (fm_location3.loc3_name)
+		$sqlStatements[] = "UPDATE fm_locations SET "
+			. "location_code = location_mapping.new_location_code, "
+			. "name = fm_location3.loc3_name "
+			. "FROM location_mapping "
+			. "JOIN fm_location3 ON location_mapping.loc1 = fm_location3.loc1 "
+			. "  AND location_mapping.new_loc2 = fm_location3.loc2 "
+			. "  AND location_mapping.new_loc3 = fm_location3.loc3 "
+			. "WHERE fm_locations.level = 4 AND fm_locations.location_code = location_mapping.old_location_code;";
+
+		return $sqlStatements;
 	}
 
 	/**

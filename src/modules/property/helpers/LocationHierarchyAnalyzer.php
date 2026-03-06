@@ -945,7 +945,7 @@ class LocationHierarchyAnalyzer
 				$filterfields[] = "{$table}.loc4 = location_mapping.loc4";
 			}
 
-			if($level === 0 || $level === 1)
+			if($level === 1 && !in_array('location_code', $columns))
 			{
 				// skip
 				continue;
@@ -980,7 +980,13 @@ class LocationHierarchyAnalyzer
 	{
 		$sqlStatements = [];
 
-		// Level 1: Only update location_code (no sublevel names available)
+		// Drop dependent foreign key before dropping the referenced unique constraint.
+		$sqlStatements[] = "ALTER TABLE public.fm_location_contact DROP CONSTRAINT IF EXISTS fm_location_contact_location_code_fkey;";
+
+		// Temporarily drop uniqueness to allow many-to-one remapping.
+		$sqlStatements[] = "ALTER TABLE public.fm_locations DROP CONSTRAINT IF EXISTS fm_locations_location_code_key;";
+
+		// Level 1: Update location_code and name from fm_location1.loc1_name.
 		$sqlStatements[] = "UPDATE fm_locations SET "
 			. "location_code = location_mapping.new_location_code, "
 			. "name = fm_location1.loc1_name "
@@ -996,6 +1002,12 @@ class LocationHierarchyAnalyzer
 			. "JOIN fm_location2 ON location_mapping.new_location_code = fm_location2.location_code "
 			. "WHERE fm_locations.level = 2 AND fm_locations.location_code = location_mapping.old_location_code;";
 
+		$sqlStatements[] = "UPDATE fm_locations SET "
+			. "name = fm_location2.loc2_name "
+			. "FROM fm_location2 "
+			. "WHERE fm_locations.location_code = fm_location2.location_code "
+			. "AND fm_locations.level = 2;";
+
 		// Level 3: Update location_code and name from fm_location3.loc3_name
 		$sqlStatements[] = "UPDATE fm_locations SET "
 			. "location_code = location_mapping.new_location_code, "
@@ -1003,6 +1015,12 @@ class LocationHierarchyAnalyzer
 			. "FROM location_mapping "
 			. "JOIN fm_location3 ON location_mapping.new_location_code = fm_location3.location_code "
 			. "WHERE fm_locations.level = 3 AND fm_locations.location_code = location_mapping.old_location_code;";
+
+		$sqlStatements[] = "UPDATE fm_locations SET "
+			. "name = fm_location3.loc3_name "
+			. "FROM fm_location3 "
+			. "WHERE fm_locations.location_code = fm_location3.location_code "
+			. "AND fm_locations.level = 3;";
 
 		// Level 4: Update location_code and name from parent level (fm_location3.loc3_name)
 		$sqlStatements[] = "UPDATE fm_locations SET "
@@ -1013,6 +1031,59 @@ class LocationHierarchyAnalyzer
 			. "  AND location_mapping.new_loc2 = fm_location3.loc2 "
 			. "  AND location_mapping.new_loc3 = fm_location3.loc3 "
 			. "WHERE fm_locations.level = 4 AND fm_locations.location_code = location_mapping.old_location_code;";
+
+		$sqlStatements[] = "UPDATE fm_locations SET "
+			. "name = CASE "
+			. "  WHEN fm_location4.etasje IS NOT NULL AND TRIM(fm_location4.etasje) <> '' "
+			. "    THEN CONCAT(fm_location3.loc3_name, ' - ', fm_location4.etasje) "
+			. "  ELSE fm_location3.loc3_name "
+			. "END "
+			. "FROM fm_location4 "
+			. "JOIN fm_location3 "
+			. "  ON fm_location4.loc3 = fm_location3.loc3 "
+			. "  AND fm_location4.loc2 = fm_location3.loc2 "
+			. "  AND fm_location4.loc1 = fm_location3.loc1 "
+			. "WHERE fm_locations.location_code = fm_location4.location_code "
+			. "AND fm_locations.level = 4;";
+
+
+		// Remove duplicates on level 2, preferring rows where mapping.id matches fm_location2.id.
+		$sqlStatements[] = "WITH ranked AS ("
+			. " SELECT fl.id, ROW_NUMBER() OVER (PARTITION BY fl.location_code ORDER BY "
+			. " CASE WHEN EXISTS ("
+			. "   SELECT 1 FROM location_mapping lm"
+			. "   JOIN fm_location2 f2 ON f2.id = lm.id"
+			. "   WHERE lm.new_location_code = fl.location_code"
+			. " ) THEN 0 ELSE 1 END, fl.id"
+			. " ) AS rn"
+			. " FROM fm_locations fl"
+			. " WHERE fl.level = 2"
+			. ")"
+			. " DELETE FROM fm_locations fl"
+			. " USING ranked r"
+			. " WHERE fl.id = r.id AND r.rn > 1;";
+
+		// Remove duplicates on level 3, preferring rows where mapping.id matches fm_location3.id.
+		$sqlStatements[] = "WITH ranked AS ("
+			. " SELECT fl.id, ROW_NUMBER() OVER (PARTITION BY fl.location_code ORDER BY "
+			. " CASE WHEN EXISTS ("
+			. "   SELECT 1 FROM location_mapping lm"
+			. "   JOIN fm_location3 f3 ON f3.id = lm.id"
+			. "   WHERE lm.new_location_code = fl.location_code"
+			. " ) THEN 0 ELSE 1 END, fl.id"
+			. " ) AS rn"
+			. " FROM fm_locations fl"
+			. " WHERE fl.level = 3"
+			. ")"
+			. " DELETE FROM fm_locations fl"
+			. " USING ranked r"
+			. " WHERE fl.id = r.id AND r.rn > 1;";
+
+		// Restore uniqueness after deduplication.
+		$sqlStatements[] = "ALTER TABLE public.fm_locations ADD CONSTRAINT fm_locations_location_code_key UNIQUE (location_code);";
+
+		// Restore the foreign key dependency after unique constraint is back.
+		$sqlStatements[] = "ALTER TABLE public.fm_location_contact ADD CONSTRAINT fm_location_contact_location_code_fkey FOREIGN KEY (location_code) REFERENCES public.fm_locations (location_code);";
 
 		return $sqlStatements;
 	}
@@ -1584,7 +1655,7 @@ class LocationHierarchyAnalyzer
 		$tables = [];
 		$sql = "SELECT table_name, column_name FROM information_schema.columns
 		 WHERE column_name IN ('location_code', 'loc1', 'loc2', 'loc3', 'loc4')
-		 AND table_name NOT IN ('fm_location4', 'fm_location3', 'fm_location2', 'fm_location1','fm_gab_location', 'location_mapping')";
+		 AND table_name NOT IN ('fm_location4', 'fm_location3', 'fm_location2', 'fm_location1','fm_gab_location', 'location_mapping', 'fm_locations')";
 		$this->db->query($sql, __LINE__, __FILE__);
 		while ($this->db->next_record())
 		{

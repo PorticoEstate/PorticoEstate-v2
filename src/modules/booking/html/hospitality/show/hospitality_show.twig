@@ -6,6 +6,7 @@
 <style>{{ source('@views/application/show/application_show.css') }}</style>
 <style>{{ source('@views/components/search_select/search_select.css') }}</style>
 <style>{{ source('@views/components/article_select/article_select.css') }}</style>
+<style>{{ source('@views/components/multi_language_text/multi_language_text.css') }}</style>
 <style>{{ source('@views/components/ws_collab/ws_collab.css') }}</style>
 <style>{{ source('@views/hospitality/show/hospitality_show.css') }}</style>
 {% endblock %}
@@ -98,6 +99,9 @@
 	 data-lang-reconnecting="{{ lang('booking.reconnecting') }}"
 	 data-lang-connection-lost="{{ lang('booking.connection_lost') }}"
 	 data-lang-entity-deleted="{{ lang('booking.entity_deleted') }}"
+	 data-lang-uses-fallback="{{ lang('booking.uses_fallback') }}"
+	 data-lang-article-details="{{ lang('booking.article_details') }}"
+	 data-lang-article-details-warning="{{ lang('booking.article_details_warning') }}"
 >
 	{# Loading state #}
 	<div id="hospitality-loading" class="app-show__loading">
@@ -160,6 +164,7 @@
 {% block scripts %}
 <script>{{ source('@views/components/search_select/search_select.js') }}</script>
 <script>{{ source('@views/components/article_select/article_select.js') }}</script>
+<script>{{ source('@views/components/multi_language_text/multi_language_text.js') }}</script>
 <script>{{ source('@views/components/ws_collab/ws_collab.js') }}</script>
 <script>{{ source('@views/hospitality/show/hospitality_show.js') }}</script>
 <script>

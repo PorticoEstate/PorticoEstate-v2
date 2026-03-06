@@ -58,6 +58,7 @@ class ArticleSelect {
         this.loading = false;
         this.inCreateMode = false;
         this._taxSelector = null;
+        this._nameMlt = null;
 
         this._boundOnFocus = this._onFocus.bind(this);
         this._boundOnInput = this._onInput.bind(this);
@@ -307,8 +308,13 @@ class ArticleSelect {
         var fields = document.createElement('div');
         fields.className = 'article-select__create-fields';
 
-        // Name
-        fields.appendChild(this._createField('create-name', this._l('name') + ' *', 'text'));
+        // Name (multi-language)
+        var nameField = document.createElement('div');
+        nameField.className = 'article-select__create-field';
+        var nameLabel = document.createElement('div');
+        nameLabel.id = 'create-name-mlt';
+        nameField.appendChild(nameLabel);
+        fields.appendChild(nameField);
         // Article code
         fields.appendChild(this._createField('create-code', this._l('articleCode') + ' *', 'text'));
         // Unit (select)
@@ -359,9 +365,21 @@ class ArticleSelect {
             emptyText: this._l('taxCode')
         });
 
-        // Focus name field
-        var nameInput = form.querySelector('#create-name');
-        if (nameInput) nameInput.focus();
+        // Initialize multi-language name field
+        var self = this;
+        this._nameMlt = null;
+        MultiLanguageText.fetchLanguages().then(function (langs) {
+            self._nameMlt = new MultiLanguageText(
+                form.querySelector('#create-name-mlt'),
+                {
+                    languages: langs,
+                    label: self._l('name') + ' *',
+                    inputType: 'text',
+                    placeholder: self._l('name'),
+                    fallbackHintPrefix: self._l('usesFallback') || 'Uses'
+                }
+            );
+        });
     }
 
     _exitCreateMode() {
@@ -370,6 +388,10 @@ class ArticleSelect {
         if (this._taxSelector) {
             this._taxSelector.dispose();
             this._taxSelector = null;
+        }
+        if (this._nameMlt) {
+            this._nameMlt.dispose();
+            this._nameMlt = null;
         }
         var form = this.container.querySelector('.article-select__create-form');
         if (form) form.remove();
@@ -423,7 +445,27 @@ class ArticleSelect {
         var errEl = form.querySelector('.article-select__create-error');
         errEl.hidden = true;
 
-        var name = (form.querySelector('#create-name').value || '').trim();
+        var nameValues = this._nameMlt ? this._nameMlt.getValue() : {};
+        // Use first non-empty language value as the plain name
+        var name = '';
+        var langOrder = ['no', 'en', 'nn'];
+        for (var li = 0; li < langOrder.length; li++) {
+            if (nameValues[langOrder[li]] && nameValues[langOrder[li]].trim()) {
+                name = nameValues[langOrder[li]].trim();
+                break;
+            }
+        }
+        // Fallback: any filled language
+        if (!name) {
+            var keys = Object.keys(nameValues);
+            for (var ki = 0; ki < keys.length; ki++) {
+                if (nameValues[keys[ki]] && nameValues[keys[ki]].trim()) {
+                    name = nameValues[keys[ki]].trim();
+                    break;
+                }
+            }
+        }
+
         var code = (form.querySelector('#create-code').value || '').trim();
         var unit = form.querySelector('#create-unit').value;
         var taxCode = this._taxSelector ? this._taxSelector.getValue() : null;
@@ -438,6 +480,7 @@ class ArticleSelect {
 
         var payload = {
             name: name,
+            name_json: nameValues,
             article_code: code,
             unit: unit,
             tax_code: parseInt(taxCode, 10)

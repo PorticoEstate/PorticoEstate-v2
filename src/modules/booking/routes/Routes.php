@@ -285,6 +285,7 @@ $app->group('/booking/hospitality-orders', function (RouteCollectorProxy $group)
 
 $app->group('/booking/article-mappings', function (RouteCollectorProxy $group) {
 	$group->post('', ArticleMappingController::class . ':store');
+	$group->put('/{id:[0-9]+}', ArticleMappingController::class . ':update');
 })
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));

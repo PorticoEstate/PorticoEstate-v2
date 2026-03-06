@@ -83,12 +83,15 @@ class HospitalityArticleRepository
     {
         $sql = "SELECT ha.*,
                        av.name AS article_name,
+                       am.article_code,
                        am.unit,
                        am.tax_code AS base_tax_code,
+                       s.name_json AS service_name_json,
                        ap.price AS base_price
                 FROM bb_hospitality_article ha
                 JOIN bb_article_mapping am ON ha.article_mapping_id = am.id
                 LEFT JOIN bb_article_view av ON am.article_id = av.id AND am.article_cat_id = av.article_cat_id
+                LEFT JOIN bb_service s ON am.article_id = s.id AND am.article_cat_id = 2
                 LEFT JOIN bb_article_price ap ON am.id = ap.article_mapping_id
                     AND ap.active = 1 AND ap.default_ = 1
                 WHERE ha.hospitality_id = :hospitality_id";
@@ -105,12 +108,15 @@ class HospitalityArticleRepository
     {
         $sql = "SELECT ha.*,
                        av.name AS article_name,
+                       am.article_code,
                        am.unit,
                        am.tax_code AS base_tax_code,
+                       s.name_json AS service_name_json,
                        ap.price AS base_price
                 FROM bb_hospitality_article ha
                 JOIN bb_article_mapping am ON ha.article_mapping_id = am.id
                 LEFT JOIN bb_article_view av ON am.article_id = av.id AND am.article_cat_id = av.article_cat_id
+                LEFT JOIN bb_service s ON am.article_id = s.id AND am.article_cat_id = 2
                 LEFT JOIN bb_article_price ap ON am.id = ap.article_mapping_id
                     AND ap.active = 1 AND ap.default_ = 1
                 WHERE ha.article_group_id = :group_id
@@ -124,12 +130,15 @@ class HospitalityArticleRepository
     {
         $sql = "SELECT ha.*,
                        av.name AS article_name,
+                       am.article_code,
                        am.unit,
                        am.tax_code AS base_tax_code,
+                       s.name_json AS service_name_json,
                        ap.price AS base_price
                 FROM bb_hospitality_article ha
                 JOIN bb_article_mapping am ON ha.article_mapping_id = am.id
                 LEFT JOIN bb_article_view av ON am.article_id = av.id AND am.article_cat_id = av.article_cat_id
+                LEFT JOIN bb_service s ON am.article_id = s.id AND am.article_cat_id = 2
                 LEFT JOIN bb_article_price ap ON am.id = ap.article_mapping_id
                     AND ap.active = 1 AND ap.default_ = 1
                 WHERE ha.id = :id";
@@ -141,6 +150,11 @@ class HospitalityArticleRepository
 
     public function createArticle(array $data): int
     {
+        $description = $data['description'] ?? null;
+        if (is_array($description)) {
+            $description = json_encode($description);
+        }
+
         $sql = "INSERT INTO bb_hospitality_article
                 (hospitality_id, article_group_id, article_mapping_id,
                  description, sort_order, active, override_price, override_tax_code)
@@ -151,7 +165,7 @@ class HospitalityArticleRepository
             ':hospitality_id' => $data['hospitality_id'],
             ':article_group_id' => $data['article_group_id'] ?? null,
             ':article_mapping_id' => $data['article_mapping_id'],
-            ':description' => $data['description'] ?? null,
+            ':description' => $description,
             ':sort_order' => $data['sort_order'] ?? 0,
             ':active' => $data['active'] ?? 1,
             ':override_price' => $data['override_price'] ?? null,
@@ -171,8 +185,12 @@ class HospitalityArticleRepository
 
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $data)) {
+                $value = $data[$field];
+                if ($field === 'description' && is_array($value)) {
+                    $value = json_encode($value);
+                }
                 $updates[] = "{$field} = :{$field}";
-                $params[":{$field}"] = $data[$field];
+                $params[":{$field}"] = $value;
             }
         }
 

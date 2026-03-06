@@ -8303,3 +8303,19 @@ function booking_upgrade0_2_120($oProc)
 		return $currentver;
 	}
 }
+
+$test[] = '0.2.121';
+function booking_upgrade0_2_121($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	$oProc->m_odb->query("ALTER TABLE bb_service ADD COLUMN description_json JSONB");
+	$oProc->m_odb->query("ALTER TABLE bb_service ADD COLUMN name_json JSONB");
+	$oProc->m_odb->query("UPDATE bb_service SET name_json = jsonb_build_object('no', name) WHERE name IS NOT NULL AND name != ''");
+	$oProc->m_odb->query("ALTER TABLE bb_hospitality_article ALTER COLUMN description TYPE JSONB USING CASE WHEN description IS NOT NULL AND description != '' THEN jsonb_build_object('no', description) ELSE NULL END");
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.122';
+		return $currentver;
+	}
+}

@@ -895,6 +895,9 @@
 			body += '<p><strong>' + esc(article.article_name || article.name) + '</strong> (' + esc(article.unit) + ')</p>';
 		}
 
+		// Multi-language description
+		body += '<div id="modal-article-desc-mlt" style="margin-top:0.75rem"></div>';
+
 		// Group selector
 		body += '<label class="app-show__modal-label" style="margin-top:0.75rem">' + esc(lang('group')) + '</label>' +
 			'<div id="modal-group-select-container" class="search-select">' +
@@ -911,10 +914,102 @@
 
 		body += '<label class="app-show__modal-checkbox"><input type="checkbox" id="modal-article-active"' + (isEdit ? (article.active ? ' checked' : '') : ' checked') + '> ' + esc(lang('active')) + '</label>';
 
+		// Expandable "Article Details" section (edit mode only)
+		if (isEdit) {
+			var chevronSvg = '<svg class="hosp-show__details-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>';
+			body += '<div class="hosp-show__article-details-section">' +
+				'<button type="button" class="hosp-show__details-toggle" id="article-details-toggle" aria-expanded="false">' +
+				chevronSvg + ' ' + esc(lang('articleDetails')) +
+				'</button>' +
+				'<div class="hosp-show__details-body" id="article-details-body" hidden>' +
+				'<div class="hosp-show__details-warning">' +
+				'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ' +
+				esc(lang('articleDetailsWarning')) +
+				'</div>' +
+				'<div id="modal-detail-name-mlt" style="margin-top:0.75rem"></div>' +
+				'<label class="app-show__modal-label" for="modal-detail-code" style="margin-top:0.75rem">' + esc(lang('articleCode')) + '</label>' +
+				'<input type="text" id="modal-detail-code" class="app-show__modal-textarea" style="min-height:auto;height:2.25rem" value="' + esc(article.article_code || '') + '">' +
+				'<label class="app-show__modal-label" for="modal-detail-unit" style="margin-top:0.75rem">' + esc(lang('unit')) + '</label>' +
+				'<select id="modal-detail-unit" class="app-show__modal-textarea" style="min-height:auto;height:2.25rem">' +
+				['each', 'kg', 'm', 'm2', 'minute', 'hour', 'day'].map(function (u) {
+					return '<option value="' + u + '"' + (article.unit === u ? ' selected' : '') + '>' + u + '</option>';
+				}).join('') +
+				'</select>' +
+				'<label class="app-show__modal-label" style="margin-top:0.75rem">' + esc(lang('taxCode')) + '</label>' +
+				'<div id="modal-detail-tax-container" class="search-select">' +
+				'<input type="text" class="search-select__input app-show__modal-textarea" style="min-height:auto;height:2.25rem" autocomplete="off" aria-expanded="false" aria-autocomplete="list" role="combobox">' +
+				'<input type="hidden" id="modal-detail-tax-value">' +
+				'<ul class="search-select__dropdown" role="listbox"></ul>' +
+				'</div>' +
+				'<label class="app-show__modal-label" for="modal-detail-base-price" style="margin-top:0.75rem">' + esc(lang('basePrice')) + '</label>' +
+				'<input type="number" step="0.01" id="modal-detail-base-price" class="app-show__modal-textarea" style="min-height:auto;height:2.25rem" value="' + (article.base_price != null ? article.base_price : '') + '">' +
+				'</div></div>';
+		}
+
 		var footer = '<button type="button" class="app-button" data-modal-close>' + esc(lang('cancel')) + '</button>' +
 			'<button type="button" class="app-button app-button-primary" id="modal-article-submit">' + esc(lang('save')) + '</button>';
 
 		showModal('article-dialog', title, body, footer);
+
+		// Initialize multi-language description field
+		var descMlt = null;
+		var detailNameMlt = null;
+		var detailTaxSelector = null;
+		MultiLanguageText.fetchLanguages().then(function (langs) {
+			descMlt = new MultiLanguageText(
+				document.getElementById('modal-article-desc-mlt'),
+				{
+					languages: langs,
+					label: lang('description'),
+					inputType: 'textarea',
+					placeholder: lang('description'),
+					fallbackHintPrefix: lang('usesFallback'),
+					value: isEdit ? (article.description || {}) : {}
+				}
+			);
+
+			// Initialize article detail name MLT (edit mode only)
+			if (isEdit && document.getElementById('modal-detail-name-mlt')) {
+				detailNameMlt = new MultiLanguageText(
+					document.getElementById('modal-detail-name-mlt'),
+					{
+						languages: langs,
+						label: lang('name'),
+						inputType: 'text',
+						placeholder: lang('name'),
+						fallbackHintPrefix: lang('usesFallback'),
+						value: article.service_name_json || {}
+					}
+				);
+			}
+		});
+
+		// Initialize article details collapsible toggle (edit mode only)
+		if (isEdit) {
+			var detailsToggle = document.getElementById('article-details-toggle');
+			var detailsBody = document.getElementById('article-details-body');
+			if (detailsToggle && detailsBody) {
+				detailsToggle.addEventListener('click', function () {
+					var expanded = this.getAttribute('aria-expanded') === 'true';
+					this.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+					detailsBody.hidden = expanded;
+				});
+			}
+
+			// Initialize tax code SearchSelect for article details
+			var taxContainer = document.getElementById('modal-detail-tax-container');
+			if (taxContainer && taxListUrl) {
+				detailTaxSelector = new SearchSelect(taxContainer, {
+					apiUrl: taxListUrl,
+					mapResponse: function (resp) {
+						return Array.isArray(resp) ? resp : (resp.data || []);
+					},
+					placeholder: lang('taxCode') + '...',
+					emptyText: lang('taxCode'),
+					value: article.base_tax_code || null
+				});
+			}
+		}
 
 		// Initialize group search select
 		var groupSelector = new SearchSelect(
@@ -949,7 +1044,8 @@
 						unit: lang('unit'),
 						taxCode: lang('taxCode'),
 						save: lang('save'),
-						cancel: lang('cancel')
+						cancel: lang('cancel'),
+						usesFallback: lang('usesFallback')
 					}
 				}
 			);
@@ -978,25 +1074,90 @@
 			}
 
 			getMappingId.then(function (mappingId) {
-				var data = {};
-				if (!isEdit) {
-					data.article_mapping_id = mappingId;
+				// If article details section has changes, save those first
+				var detailPromise = Promise.resolve();
+				if (isEdit && document.getElementById('article-details-body') && !document.getElementById('article-details-body').hidden) {
+					var detailData = {};
+					var hasDetailChanges = false;
+
+					// Name (MLT)
+					if (detailNameMlt) {
+						var nameValues = detailNameMlt.getValue();
+						var origValues = article.service_name_json || {};
+						if (JSON.stringify(nameValues) !== JSON.stringify(origValues)) {
+							detailData.name_json = nameValues;
+							// Use first non-empty value as plain name
+							var langOrder = ['no', 'en', 'nn'];
+							for (var li = 0; li < langOrder.length; li++) {
+								if (nameValues[langOrder[li]] && nameValues[langOrder[li]].trim()) {
+									detailData.name = nameValues[langOrder[li]].trim();
+									break;
+								}
+							}
+							hasDetailChanges = true;
+						}
+					}
+
+					// Article code
+					var codeVal = document.getElementById('modal-detail-code').value.trim();
+					if (codeVal !== (article.article_code || '')) {
+						detailData.article_code = codeVal;
+						hasDetailChanges = true;
+					}
+
+					// Unit
+					var unitVal = document.getElementById('modal-detail-unit').value;
+					if (unitVal !== article.unit) {
+						detailData.unit = unitVal;
+						hasDetailChanges = true;
+					}
+
+					// Tax code
+					if (detailTaxSelector) {
+						var taxVal = detailTaxSelector.getValue();
+						if (taxVal && parseInt(taxVal, 10) !== article.base_tax_code) {
+							detailData.tax_code = parseInt(taxVal, 10);
+							hasDetailChanges = true;
+						}
+					}
+
+					// Base price
+					var basePriceVal = document.getElementById('modal-detail-base-price').value;
+					var origBasePrice = article.base_price != null ? String(article.base_price) : '';
+					if (basePriceVal !== origBasePrice) {
+						detailData.price = basePriceVal !== '' ? parseFloat(basePriceVal) : null;
+						hasDetailChanges = true;
+					}
+
+					if (hasDetailChanges && articleMappingUrl) {
+						detailPromise = putJson(articleMappingUrl + '/' + article.article_mapping_id, detailData);
+					}
 				}
 
-				var groupVal = groupSelector.getValue();
-				data.article_group_id = groupVal ? parseInt(groupVal, 10) : null;
+				return detailPromise.then(function () {
+					var data = {};
+					if (!isEdit) {
+						data.article_mapping_id = mappingId;
+					}
 
-				var priceVal = document.getElementById('modal-article-price').value;
-				data.override_price = priceVal !== '' ? parseFloat(priceVal) : null;
+					var groupVal = groupSelector.getValue();
+					data.article_group_id = groupVal ? parseInt(groupVal, 10) : null;
 
-				data.sort_order = parseInt(document.getElementById('modal-article-sort').value, 10) || 0;
-				data.active = document.getElementById('modal-article-active').checked ? 1 : 0;
+					var priceVal = document.getElementById('modal-article-price').value;
+					data.override_price = priceVal !== '' ? parseFloat(priceVal) : null;
 
-				var promise = isEdit
-					? putJson(apiUrl + '/articles/' + article.id, data)
-					: postJson(apiUrl + '/articles', data);
+					data.sort_order = parseInt(document.getElementById('modal-article-sort').value, 10) || 0;
+					data.active = document.getElementById('modal-article-active').checked ? 1 : 0;
 
-				return promise;
+					// Multi-language description
+					if (descMlt) data.description = descMlt.getValue();
+
+					var promise = isEdit
+						? putJson(apiUrl + '/articles/' + article.id, data)
+						: postJson(apiUrl + '/articles', data);
+
+					return promise;
+				});
 			}).then(function () {
 				closeModal('article-dialog');
 				showToast(lang('saved'));

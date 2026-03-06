@@ -1134,3 +1134,7 @@ data_changed_by_another_user	booking	nn	Data endra av ein annan brukar
 reconnecting	booking	nn	Koplar til på nytt
 connection_lost	booking	nn	Tilkopling tapt
 entity_deleted	booking	nn	Denne eininga vart sletta av ein annan brukar
+uses_fallback	booking	nn	Brukar
+article_details	booking	nn	Artikkeldetaljar
+article_details_warning	booking	nn	Endringar her påverkar plasser denne artikkelen er i bruk
+tax_code	booking	nn	Avgiftskode

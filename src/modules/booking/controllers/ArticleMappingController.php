@@ -94,6 +94,7 @@ class ArticleMappingController
 			// 1. Create bb_service
 			$serviceId = $this->repository->createService([
 				'name' => trim($body['name']),
+				'name_json' => $body['name_json'] ?? null,
 				'description' => $body['description'] ?? null,
 				'active' => 1,
 				'owner_id' => (int)$this->userSettings['account_id'],
@@ -123,6 +124,123 @@ class ArticleMappingController
 
 			$response->getBody()->write(json_encode($model->serialize()));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+		} catch (Exception $e) {
+			$db = Db::getInstance();
+			$db->rollBack();
+
+			$response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+	/**
+	 * @OA\Put(
+	 *     path="/booking/article-mappings/{id}",
+	 *     summary="Update an existing service + article mapping + default price",
+	 *     tags={"Article Mappings"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\RequestBody(required=true, @OA\JsonContent(
+	 *         @OA\Property(property="name", type="string"),
+	 *         @OA\Property(property="name_json", type="object"),
+	 *         @OA\Property(property="article_code", type="string"),
+	 *         @OA\Property(property="unit", type="string", enum={"each","kg","m","m2","minute","hour","day"}),
+	 *         @OA\Property(property="tax_code", type="integer"),
+	 *         @OA\Property(property="price", type="number")
+	 *     )),
+	 *     @OA\Response(response=200, description="Article mapping updated"),
+	 *     @OA\Response(response=400, description="Validation error"),
+	 *     @OA\Response(response=403, description="Permission denied"),
+	 *     @OA\Response(response=404, description="Not found"),
+	 *     @OA\Response(response=409, description="Duplicate name or article code")
+	 * )
+	 */
+	public function update(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->acl->check('.application', Acl::EDIT, 'booking')) {
+			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+		}
+
+		$id = (int) $args['id'];
+		$mapping = $this->repository->getMappingById($id);
+		if (!$mapping) {
+			$response->getBody()->write(json_encode(['error' => 'Article mapping not found']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+		}
+
+		try {
+			$body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];
+
+			// Validate unit if provided
+			if (isset($body['unit']) && !in_array($body['unit'], self::VALID_UNITS, true)) {
+				$response->getBody()->write(json_encode(['error' => 'unit must be one of: ' . implode(', ', self::VALID_UNITS)]));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			// Validate tax_code if provided
+			if (isset($body['tax_code']) && !is_numeric($body['tax_code'])) {
+				$response->getBody()->write(json_encode(['error' => 'tax_code must be numeric']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			$serviceId = $mapping['article_id'];
+
+			// Uniqueness checks (excluding current records)
+			if (isset($body['name']) && !empty(trim($body['name']))) {
+				if ($this->repository->serviceNameExists(trim($body['name']), $serviceId)) {
+					$response->getBody()->write(json_encode(['error' => 'A service with this name already exists']));
+					return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
+				}
+			}
+			if (isset($body['article_code']) && !empty(trim($body['article_code']))) {
+				if ($this->repository->articleCodeExists(trim($body['article_code']), self::ARTICLE_CAT_SERVICE, $id)) {
+					$response->getBody()->write(json_encode(['error' => 'This article code already exists for services']));
+					return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
+				}
+			}
+
+			$db = Db::getInstance();
+			$db->beginTransaction();
+
+			// Update bb_service
+			$serviceData = [];
+			if (isset($body['name'])) {
+				$serviceData['name'] = trim($body['name']);
+			}
+			if (isset($body['name_json'])) {
+				$serviceData['name_json'] = $body['name_json'];
+			}
+			if (!empty($serviceData)) {
+				$this->repository->updateService($serviceId, $serviceData);
+			}
+
+			// Update bb_article_mapping
+			$mappingData = [];
+			if (isset($body['article_code'])) {
+				$mappingData['article_code'] = trim($body['article_code']);
+			}
+			if (isset($body['unit'])) {
+				$mappingData['unit'] = $body['unit'];
+			}
+			if (isset($body['tax_code'])) {
+				$mappingData['tax_code'] = (int) $body['tax_code'];
+			}
+			if (!empty($mappingData)) {
+				$this->repository->updateMapping($id, $mappingData);
+			}
+
+			// Update bb_article_price
+			if (isset($body['price']) && $body['price'] !== '' && is_numeric($body['price'])) {
+				$this->repository->updateDefaultPrice($id, (float) $body['price']);
+			}
+
+			$db->commit();
+
+			$row = $this->repository->getMappingById($id);
+			$model = new ArticleMapping($row);
+
+			$response->getBody()->write(json_encode($model->serialize()));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		} catch (Exception $e) {
 			$db = Db::getInstance();
 			$db->rollBack();

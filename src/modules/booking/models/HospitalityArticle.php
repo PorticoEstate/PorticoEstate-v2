@@ -42,7 +42,7 @@ class HospitalityArticle
     public $article_mapping_id;
 
     /**
-     * @OA\Property(type="string", nullable=true)
+     * @OA\Property(type="object", nullable=true, description="Multi-language JSON: {no: '...', en: '...', nn: '...'}")
      * @Expose
      */
     public $description;
@@ -71,13 +71,25 @@ class HospitalityArticle
      */
     public $override_tax_code;
 
-    // -- Computed fields from bb_article_mapping / bb_article_price --
+    // -- Computed fields from bb_article_mapping / bb_article_price / bb_service --
 
     /**
      * @OA\Property(type="string")
      * @Expose
      */
     public $article_name;
+
+    /**
+     * @OA\Property(type="string", nullable=true)
+     * @Expose
+     */
+    public $article_code;
+
+    /**
+     * @OA\Property(type="object", nullable=true, description="Multi-language name JSON from bb_service")
+     * @Expose
+     */
+    public $service_name_json;
 
     /**
      * @OA\Property(type="string")
@@ -124,6 +136,14 @@ class HospitalityArticle
             if (property_exists($this, $key)) {
                 $this->$key = $value;
             }
+        }
+
+        // Decode JSONB fields from database strings
+        if (is_string($this->description)) {
+            $this->description = json_decode($this->description, true);
+        }
+        if (is_string($this->service_name_json)) {
+            $this->service_name_json = json_decode($this->service_name_json, true);
         }
 
         $this->effective_price = $this->override_price ?? $this->base_price;

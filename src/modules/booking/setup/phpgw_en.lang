@@ -1029,3 +1029,7 @@ data_changed_by_another_user	booking	en	Data changed by another user
 reconnecting	booking	en	Reconnecting
 connection_lost	booking	en	Connection lost
 entity_deleted	booking	en	This entity was deleted by another user
+uses_fallback	booking	en	Uses
+article_details	booking	en	Article details
+article_details_warning	booking	en	Changes here affect all places this article is used
+tax_code	booking	en	Tax code

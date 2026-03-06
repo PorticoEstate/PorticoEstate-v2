@@ -1,0 +1,150 @@
+/* ── Multi Language Text Component ──────────────── */
+
+.mlt {
+	position: relative;
+}
+
+/* Header: label left, tabs right */
+.mlt__header {
+	display: flex;
+	align-items: flex-end;
+	/*gap: 0.5rem;*/
+	margin-bottom: 0;
+}
+
+/* Label (left side) */
+.mlt__label {
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: var(--ds-color-text-default, #1e293b);
+	white-space: nowrap;
+	padding-bottom: calc(0.375rem - 1px);
+	border-bottom: 1px solid var(--ds-color-border-default, #dee2e6);
+	position: relative;
+	padding-right: 0.5rem;
+	/*bottom: -1px;*/
+}
+
+/* Tab bar (pushed to the right) */
+.mlt__tabs {
+	display: flex;
+	gap: 0;
+	border-bottom: 1px solid var(--ds-color-border-default, #dee2e6);
+	flex: 1;
+	min-width: 0;
+	justify-content: flex-end;
+}
+
+.mlt__tab {
+	padding: 0.25rem 0.5rem;
+	font-size: 0.75rem;
+	font-family: inherit;
+	font-weight: 500;
+	color: var(--ds-color-text-subtle, #68707c);
+	background: none;
+	border: 1px solid transparent;
+	border-bottom: none;
+	border-radius: var(--ds-border-radius-sm, 0.25rem) var(--ds-border-radius-sm, 0.25rem) 0 0;
+	cursor: pointer;
+	position: relative;
+	bottom: -1px;
+	white-space: nowrap;
+	transition: color 0.15s, background 0.15s;
+}
+
+.mlt__tab:hover {
+	color: var(--ds-color-text-default, #1e293b);
+	background: var(--ds-color-surface-hover, #f1f5f9);
+}
+
+.mlt__tab--active {
+	color: var(--ds-color-text-default, #1e293b);
+	background: var(--ds-color-background-default, #fff);
+	border-color: var(--ds-color-border-default, #dee2e6);
+	border-bottom-color: var(--ds-color-background-default, #fff);
+}
+
+/* Per-tab fill indicators (small dot) */
+.mlt__tab::after {
+	content: '';
+	display: inline-block;
+	width: 0.375rem;
+	height: 0.375rem;
+	border-radius: 50%;
+	margin-left: 0.375rem;
+	vertical-align: middle;
+}
+
+.mlt__tab--filled::after {
+	background: var(--ds-color-success-base-default, #22c55e);
+}
+
+.mlt__tab--fallback::after {
+	background: var(--ds-color-warning-base-default, #f59e0b);
+}
+
+.mlt__tab--empty::after {
+	background: var(--ds-color-danger-base-default, #ef4444);
+}
+
+/* Body: panels */
+.mlt__body {
+	/*border: 1px solid var(--ds-color-border-default, #dee2e6);*/
+	border-top: none;
+	border-radius: 0 0 var(--ds-border-radius-sm, 0.25rem) var(--ds-border-radius-sm, 0.25rem);
+	/*padding: 0.5rem;*/
+	background: var(--ds-color-background-default, #fff);
+}
+
+.mlt__panel[hidden] {
+	display: none;
+}
+
+.mlt__panel {
+	position: relative;
+}
+
+/* Input / textarea */
+.mlt__input {
+	width: 100%;
+	padding: 0.375rem 0.5rem;
+	font-size: 0.875rem;
+	font-family: inherit;
+	border: 1px solid var(--ds-color-border-default, #dee2e6);
+	border-radius: var(--ds-border-radius-sm, 0.25rem);
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+	box-sizing: border-box;
+	background: var(--ds-color-background-default, #fff);
+	color: var(--ds-color-text-default, #1e293b);
+	border-top: none;
+}
+
+textarea.mlt__input {
+	min-height: 4rem;
+	resize: vertical;
+}
+
+.mlt__input:focus {
+	outline: none;
+	border-color: var(--ds-color-accent-border-default, #0062ba);
+	box-shadow: 0 0 0 2px rgba(0, 98, 186, 0.15);
+}
+
+.mlt__input:disabled {
+	background: var(--ds-color-surface-tinted, #f8fafc);
+	color: var(--ds-color-text-subtle, #68707c);
+	cursor: not-allowed;
+}
+
+/* Fallback hint */
+.mlt__fallback-hint {
+	display: block;
+	font-size: 0.75rem;
+	color: var(--ds-color-warning-text-default, #92400e);
+	margin-top: 0.25rem;
+}
+
+.mlt__fallback-hint[hidden] {
+	display: none;
+}

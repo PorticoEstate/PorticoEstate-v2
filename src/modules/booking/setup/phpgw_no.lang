@@ -1122,3 +1122,7 @@ data_changed_by_another_user	booking	no	Data endret av en annen bruker
 reconnecting	booking	no	Kobler til på nytt
 connection_lost	booking	no	Tilkobling tapt
 entity_deleted	booking	no	Denne enheten ble slettet av en annen bruker
+uses_fallback	booking	no	Bruker
+article_details	booking	no	Artikkeldetaljer
+article_details_warning	booking	no	Endringer her påvirker alle steder denne artikelen er i bruk
+tax_code	booking	no	Avgiftskode

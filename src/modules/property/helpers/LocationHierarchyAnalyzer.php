@@ -914,8 +914,8 @@ class LocationHierarchyAnalyzer
 		$tables = $this->findLocationCodeTables();
 		foreach ($tables as $table => $columns)
 		{
-			// Skip fm_gab_location - it has special handling due to composite primary key
-			if ($table === 'fm_gab_location')
+			// Skip tables with dedicated update handling.
+			if ($table === 'fm_gab_location' || $table === 'fm_bim_item')
 			{
 				continue;
 			}
@@ -976,6 +976,9 @@ class LocationHierarchyAnalyzer
 		
 		$sqlStatements3 = $this->updateFmGabLocationFromMapping();
 		$sqlStatements = array_merge($sqlStatements, $sqlStatements3);
+
+		$sqlStatements4 = $this->updateFmBimItemFromMapping();
+		$sqlStatements = array_merge($sqlStatements, $sqlStatements4);
 		
 		$this->sqlStatements['update_location_from_mapping'] = $sqlStatements;
 		return $sqlStatements; // Add explicit return
@@ -1138,6 +1141,89 @@ class LocationHierarchyAnalyzer
 
 		// Restore composite primary key after deduplication.
 		$sqlStatements[] = "ALTER TABLE public.fm_gab_location ADD CONSTRAINT fm_gab_location_pkey PRIMARY KEY (gab_id, location_code);";
+
+		return $sqlStatements;
+	}
+
+	/**
+	 * update_fm_bim_item_from_mapping: Handle fm_bim_item updates including JSONB payload.
+	 * Keep location fields in json_representation aligned with mapped location_code.
+	 */
+	private function updateFmBimItemFromMapping()
+	{
+		$sqlStatements = [];
+
+		// Update scalar location columns and mirrored JSONB location fields.
+		// Only touch JSON keys that already exist to avoid injecting location payload into unrelated objects.
+		$sqlStatements[] = "UPDATE fm_bim_item SET "
+			. "location_code = location_mapping.new_location_code, "
+			. "loc1 = split_part(location_mapping.new_location_code, '-', 1), "
+			. "json_representation = CASE "
+			. "  WHEN jsonb_exists_any(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), ARRAY['location_code', 'loc1', 'loc2', 'loc3', 'loc4']) THEN "
+			. "    CASE "
+			. "      WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'loc4') "
+			. "        AND array_length(regexp_split_to_array(location_mapping.new_location_code, '-'), 1) >= 4 THEN "
+			. "        jsonb_set("
+			. "          jsonb_set("
+			. "            jsonb_set("
+			. "              jsonb_set("
+			. "                jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{location_code}', to_jsonb(location_mapping.new_location_code::text), false), "
+			. "                '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false" 
+			. "              ), "
+			. "              '{loc2}', to_jsonb(split_part(location_mapping.new_location_code, '-', 2)::text), false" 
+			. "            ), "
+			. "            '{loc3}', to_jsonb(split_part(location_mapping.new_location_code, '-', 3)::text), false" 
+			. "          ), "
+			. "          '{loc4}', to_jsonb(split_part(location_mapping.new_location_code, '-', 4)::text), false" 
+			. "        ) "
+			. "      WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'loc3') "
+			. "        AND array_length(regexp_split_to_array(location_mapping.new_location_code, '-'), 1) >= 3 THEN "
+			. "        jsonb_set("
+			. "          jsonb_set("
+			. "            jsonb_set("
+			. "              jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{location_code}', to_jsonb(location_mapping.new_location_code::text), false), "
+			. "              '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false" 
+			. "            ), "
+			. "            '{loc2}', to_jsonb(split_part(location_mapping.new_location_code, '-', 2)::text), false" 
+			. "          ), "
+			. "          '{loc3}', to_jsonb(split_part(location_mapping.new_location_code, '-', 3)::text), false" 
+			. "        ) "
+			. "      WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'loc2') "
+			. "        AND array_length(regexp_split_to_array(location_mapping.new_location_code, '-'), 1) >= 2 THEN "
+			. "        jsonb_set("
+			. "          jsonb_set("
+			. "            jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{location_code}', to_jsonb(location_mapping.new_location_code::text), false), "
+			. "            '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false" 
+			. "          ), "
+			. "          '{loc2}', to_jsonb(split_part(location_mapping.new_location_code, '-', 2)::text), false" 
+			. "        ) "
+			. "      WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'loc1') "
+			. "        AND array_length(regexp_split_to_array(location_mapping.new_location_code, '-'), 1) >= 1 THEN "
+			. "        jsonb_set("
+			. "          jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{location_code}', to_jsonb(location_mapping.new_location_code::text), false), "
+			. "          '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false" 
+			. "        ) "
+			. "      WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'location_code') THEN "
+			. "        jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{location_code}', to_jsonb(location_mapping.new_location_code::text), false) "
+			. "      ELSE fm_bim_item.json_representation "
+			. "    END "
+			. "  ELSE fm_bim_item.json_representation "
+			. "END "
+			. "FROM location_mapping "
+			. "WHERE fm_bim_item.location_code = location_mapping.old_location_code;";
+
+		// Keep the denormalized address in sync with fm_locations level 4 name.
+		$sqlStatements[] = "UPDATE fm_bim_item SET "
+			. "address = fm_locations.name, "
+			. "json_representation = CASE "
+			. "  WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'address') "
+			. "    THEN jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{address}', to_jsonb(fm_locations.name::text), false) "
+			. "  ELSE fm_bim_item.json_representation "
+			. "END "
+			. "FROM fm_locations "
+			. "WHERE fm_bim_item.location_code = fm_locations.location_code "
+			. "AND fm_locations.level = 4 "
+			. "AND fm_bim_item.address IS DISTINCT FROM fm_locations.name;";
 
 		return $sqlStatements;
 	}

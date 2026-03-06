@@ -914,6 +914,12 @@ class LocationHierarchyAnalyzer
 		$tables = $this->findLocationCodeTables();
 		foreach ($tables as $table => $columns)
 		{
+			// Skip fm_gab_location - it has special handling due to composite primary key
+			if ($table === 'fm_gab_location')
+			{
+				continue;
+			}
+			
 			$updatefields = [];
 			$filterfields = [];
 			$level = 0;
@@ -967,6 +973,10 @@ class LocationHierarchyAnalyzer
 
 		$sqlStatements2 = $this->updateFmLocationsFromMapping();
 		$sqlStatements = array_merge($sqlStatements, $sqlStatements2);
+		
+		$sqlStatements3 = $this->updateFmGabLocationFromMapping();
+		$sqlStatements = array_merge($sqlStatements, $sqlStatements3);
+		
 		$this->sqlStatements['update_location_from_mapping'] = $sqlStatements;
 		return $sqlStatements; // Add explicit return
 	}
@@ -1079,11 +1089,55 @@ class LocationHierarchyAnalyzer
 			. " USING ranked r"
 			. " WHERE fl.id = r.id AND r.rn > 1;";
 
+
+
 		// Restore uniqueness after deduplication.
 		$sqlStatements[] = "ALTER TABLE public.fm_locations ADD CONSTRAINT fm_locations_location_code_key UNIQUE (location_code);";
 
 		// Restore the foreign key dependency after unique constraint is back.
 		$sqlStatements[] = "ALTER TABLE public.fm_location_contact ADD CONSTRAINT fm_location_contact_location_code_fkey FOREIGN KEY (location_code) REFERENCES public.fm_locations (location_code);";
+
+		return $sqlStatements;
+	}
+
+	/**
+	 * update_fm_gab_location_from_mapping: Handle fm_gab_location updates with composite primary key.
+	 * Drop PK, update location_code, remove duplicates, restore PK.
+	 */
+	private function updateFmGabLocationFromMapping()
+	{
+		$sqlStatements = [];
+
+		// Drop composite primary key before updates that could create duplicates.
+		$sqlStatements[] = "ALTER TABLE public.fm_gab_location DROP CONSTRAINT IF EXISTS fm_gab_location_pkey;";
+
+		// Update location_code and loc2/loc3 from location_mapping.
+		$sqlStatements[] = "UPDATE fm_gab_location SET "
+			. "location_code = location_mapping.new_location_code, "
+			. "loc2 = location_mapping.new_loc2, "
+			. "loc3 = location_mapping.new_loc3 "
+			. "FROM location_mapping "
+			. "WHERE fm_gab_location.location_code = location_mapping.old_location_code;";
+
+		$sqlStatements[] = "UPDATE fm_gab_location SET "
+			. "address = fm_location3.loc3_name "
+			. "FROM fm_location3 "
+			. "WHERE fm_gab_location.location_code = fm_location3.location_code;";
+
+		// Remove duplicates, keeping the row with the most recent entry_date (or earliest if NULL).
+		// Priority: prefer rows with higher entry_date (most recent), then lower gab_id alphabetically.
+		$sqlStatements[] = "WITH ranked AS ("
+			. " SELECT ctid, ROW_NUMBER() OVER ("
+			. "   PARTITION BY gab_id, location_code "
+			. "   ORDER BY entry_date DESC NULLS LAST, gab_id"
+			. " ) AS rn"
+			. " FROM fm_gab_location"
+			. ")"
+			. " DELETE FROM fm_gab_location "
+			. " WHERE ctid IN (SELECT ctid FROM ranked WHERE rn > 1);";
+
+		// Restore composite primary key after deduplication.
+		$sqlStatements[] = "ALTER TABLE public.fm_gab_location ADD CONSTRAINT fm_gab_location_pkey PRIMARY KEY (gab_id, location_code);";
 
 		return $sqlStatements;
 	}

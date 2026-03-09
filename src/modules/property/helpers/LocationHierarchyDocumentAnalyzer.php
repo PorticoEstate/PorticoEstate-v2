@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\Property\Helpers;
+namespace App\modules\property\helpers;
 
 use App\Database\Db;
 use App\modules\phpgwapi\services\Settings;
@@ -8,100 +8,313 @@ use App\modules\phpgwapi\services\Settings;
 class LocationHierarchyDocumentAnalyzer
 {
 	private $db;
-	private $locationId;
 	private $basedir;
 
 	public function __construct()
 	{
 		$this->db = Db::getInstance();
 		$serverSettings  = Settings::getInstance()->get('server');
-		$this->basedir = $serverSettings['files_dir'];
-	}
-
-	public function analyze()
-	{
-		$mapping = $this->get_mapping();
-
-
-		//	_debug_array($mapping);
-
-		$matches = $this->find_matching_directories($mapping);
-		_debug_array($matches);
-	}
-
-	function get_mapping()
-	{
-		//get the old and new location_code from location_mapping
-		$sql = "SELECT old_location_code, new_location_code FROM location_mapping";
-
-		$this->db->query($sql);
-		$mapping = [];
-		while ($this->db->next_record())
-		{
-			$old_location_code = $this->db->f('old_location_code');
-			$new_location_code = $this->db->f('new_location_code');
-			$mapping[$old_location_code] = $new_location_code;
-		}
-
-		return $mapping;
+		$this->basedir = isset($serverSettings['files_dir']) ? rtrim($serverSettings['files_dir'], '/\\') : '';
 	}
 
 	/**
-	 * Find if any original location codes are present as directories in phpgw_vfs
-	 * Returns an array of found directories keyed by location code
+	 * Step 1: Analyze mapping table and find candidate directories that can be moved.
 	 */
-	function find_matching_directories($mapping)
+	public function analyzeCandidates()
 	{
-		
-		$found = [];
-		$i = 0;
-
-		foreach ($mapping as $old_location_code   => $new_location_code)
+		$candidates = [];
+		foreach ($this->getDistinctMappings() as $mapping)
 		{
-			if ($i > 10)
-			{
-				break;
-			}
-			$parts = explode('-', $old_location_code);
-			$new_parts = explode('-', $new_location_code);
-			$loc2_pattern = $parts[0] . '-' . $parts[1];
-			$loc3_pattern = $parts[0] . '-' . $parts[1] . '-' . $parts[2];
-			$loc4_pattern = $parts[0] . '-' . $parts[1] . '-' . $parts[2] . '-' . $parts[3];
-
-			$new_loc2_pattern = $new_parts[0] . '-' . $new_parts[1];
-			$new_loc3_pattern = $new_parts[0] . '-' . $new_parts[1] . '-' . $new_parts[2];
-			$new_loc4_pattern = $new_parts[0] . '-' . $new_parts[1] . '-' . $new_parts[2] . '-' . $new_parts[3];
-
-
-			$sql = "SELECT directory FROM phpgw_vfs 
-			WHERE (directory like '%" . $loc2_pattern . "/%' AND directory not like '%" . $new_loc2_pattern . "/%')
-			OR (directory like '%" . $loc3_pattern . "/%' AND directory not like '%" . $new_loc3_pattern . "/%')
-			OR (directory like '%" . $loc4_pattern . "/%' AND directory not like '%" . $new_loc4_pattern . "/%')";
-			$this->db->query($sql);
-			while ($this->db->next_record())
-			{
-
-				$i++;
-				$directory = $this->db->f('directory');
-				//replace the old location code with the new location code for all patterns
-				$new_directory = str_replace([$loc2_pattern, $loc3_pattern, $loc4_pattern], [$new_loc2_pattern, $new_loc3_pattern, $new_loc4_pattern], $directory);
-
-				$found[$directory] = [$old_location_code, $new_location_code, $new_directory];
-			}
+			$directories = $this->findDirectoriesForLocationCode($mapping['old_location_code']);
+			$candidates[] = [
+				'old_location_code' => $mapping['old_location_code'],
+				'new_location_code' => $mapping['new_location_code'],
+				'files_to_move' => (int) $mapping['files_to_move'],
+				'files_moved' => (int) $mapping['files_moved'],
+				'mapping_count' => (int) $mapping['mapping_count'],
+				'directory_count' => count($directories),
+				'directories' => $directories,
+				'selection_key' => $mapping['old_location_code'] . '|' . $mapping['new_location_code'],
+			];
 		}
-		return $found;
+
+		return $candidates;
 	}
 
-	function update_directory($old_directory, $new_directory)
+	/**
+	 * Persist checkbox selection into location_mapping.files_to_move.
+	 *
+	 * @param array $selectedKeys values in format "old_location_code|new_location_code"
+	 */
+	public function updateFilesToMoveSelection(array $selectedKeys)
 	{
-		$sql = "UPDATE phpgw_vfs SET directory = '" . $new_directory . "' WHERE directory = '" . $old_directory . "'";
-		$this->db->query($sql);
-		if ($this->db->affected_rows() > 0)
+		$selectedPairs = $this->parseSelectedMappingKeys($selectedKeys);
+
+		// Reset current selection for all relevant mappings first.
+		$sqlReset = "UPDATE location_mapping
+			SET files_to_move = 0
+			WHERE COALESCE(old_location_code, '') <> ''
+				AND COALESCE(new_location_code, '') <> ''
+				AND old_location_code <> new_location_code";
+		$this->db->query($sqlReset, __LINE__, __FILE__);
+
+		foreach ($selectedPairs as $pair)
 		{
+			$old = addslashes($pair['old_location_code']);
+			$new = addslashes($pair['new_location_code']);
+			$sql = "UPDATE location_mapping
+				SET files_to_move = 1
+				WHERE old_location_code = '{$old}'
+					AND new_location_code = '{$new}'";
+			$this->db->query($sql, __LINE__, __FILE__);
+		}
+	}
+
+	/**
+	 * Step 2: Execute moves for all rows flagged with files_to_move = 1 and not moved yet.
+	 * The process is isolated per location code pair in a dedicated DB transaction.
+	 */
+	public function executeMovesForSelectedMappings()
+	{
+		$results = [];
+		foreach ($this->getMappingsMarkedForMove() as $mapping)
+		{
+			$oldCode = $mapping['old_location_code'];
+			$newCode = $mapping['new_location_code'];
+			$directories = $this->findDirectoriesForLocationCode($oldCode);
+
+			$this->db->transaction_begin();
+			try
+			{
+				$updatedRows = 0;
+				$movedDirectories = 0;
+
+				foreach ($directories as $directory)
+				{
+					$newDirectory = str_replace($oldCode, $newCode, $directory);
+					if ($newDirectory === $directory)
+					{
+						continue;
+					}
+
+					$oldAbsolute = $this->toAbsolutePath($directory);
+					$newAbsolute = $this->toAbsolutePath($newDirectory);
+
+					$filesystemMoveSucceeded = false;
+					$filesystemPathExists = is_dir($oldAbsolute) || is_file($oldAbsolute);
+
+					if ($filesystemPathExists)
+					{
+						if (!$this->movePath($oldAbsolute, $newAbsolute))
+						{
+							throw new \RuntimeException("Failed to move path '{$oldAbsolute}' to '{$newAbsolute}'");
+						}
+						$movedDirectories++;
+						$filesystemMoveSucceeded = true;
+					}
+
+					// Only update VFS if filesystem move succeeded or no filesystem path existed
+					if ($filesystemMoveSucceeded || !$filesystemPathExists)
+					{
+						if (!$this->updateDirectory($directory, $newDirectory))
+						{
+							throw new \RuntimeException("Failed to update VFS directory '{$directory}'");
+						}
+						$updatedRows++;
+					}
+				}
+
+				$this->markFilesMoved($oldCode, $newCode);
+
+				if ($this->db->get_transaction())
+				{
+					$this->db->transaction_commit();
+				}
+
+				$results[] = [
+					'old_location_code' => $oldCode,
+					'new_location_code' => $newCode,
+					'status' => 'success',
+					'updated_rows' => $updatedRows,
+					'moved_directories' => $movedDirectories,
+					'message' => $updatedRows ? 'Location code move completed' : 'No matching directories found; mapping marked as moved',
+				];
+			}
+			catch (\Throwable $e)
+			{
+				$this->db->transaction_abort();
+				$results[] = [
+					'old_location_code' => $oldCode,
+					'new_location_code' => $newCode,
+					'status' => 'error',
+					'updated_rows' => 0,
+					'moved_directories' => 0,
+					'message' => $e->getMessage(),
+				];
+			}
+		}
+
+		return $results;
+	}
+
+	private function getDistinctMappings()
+	{
+		$sql = "SELECT old_location_code, new_location_code,
+			MAX(COALESCE(files_to_move, 0)) AS files_to_move,
+			MAX(COALESCE(files_moved, 0)) AS files_moved,
+			COUNT(*) AS mapping_count
+			FROM location_mapping
+			WHERE COALESCE(old_location_code, '') <> ''
+				AND COALESCE(new_location_code, '') <> ''
+				AND old_location_code <> new_location_code
+			GROUP BY old_location_code, new_location_code
+			ORDER BY old_location_code, new_location_code";
+
+		$this->db->query($sql, __LINE__, __FILE__);
+		$rows = [];
+		while ($this->db->next_record())
+		{
+			$rows[] = [
+				'old_location_code' => $this->db->f('old_location_code'),
+				'new_location_code' => $this->db->f('new_location_code'),
+				'files_to_move' => $this->db->f('files_to_move'),
+				'files_moved' => $this->db->f('files_moved'),
+				'mapping_count' => $this->db->f('mapping_count'),
+			];
+		}
+		return $rows;
+	}
+
+	private function getMappingsMarkedForMove()
+	{
+		$sql = "SELECT DISTINCT old_location_code, new_location_code
+			FROM location_mapping
+			WHERE COALESCE(files_to_move, 0) = 1
+				AND COALESCE(files_moved, 0) = 0
+				AND COALESCE(old_location_code, '') <> ''
+				AND COALESCE(new_location_code, '') <> ''
+				AND old_location_code <> new_location_code
+			ORDER BY old_location_code, new_location_code";
+
+		$this->db->query($sql, __LINE__, __FILE__);
+		$rows = [];
+		while ($this->db->next_record())
+		{
+			$rows[] = [
+				'old_location_code' => $this->db->f('old_location_code'),
+				'new_location_code' => $this->db->f('new_location_code'),
+			];
+		}
+		return $rows;
+	}
+
+	private function markFilesMoved($oldLocationCode, $newLocationCode)
+	{
+		$old = addslashes($oldLocationCode);
+		$new = addslashes($newLocationCode);
+		$sql = "UPDATE location_mapping
+			SET files_moved = 1,
+				update_timestamp = NOW()
+			WHERE old_location_code = '{$old}'
+				AND new_location_code = '{$new}'
+				AND COALESCE(files_to_move, 0) = 1";
+		$this->db->query($sql, __LINE__, __FILE__);
+	}
+
+	private function findDirectoriesForLocationCode($oldLocationCode)
+	{
+		$oldEscaped = addslashes($oldLocationCode);
+		$sql = "SELECT DISTINCT directory
+			FROM phpgw_vfs
+			WHERE directory LIKE '%/{$oldEscaped}/%'
+				OR directory LIKE '%/{$oldEscaped}'
+			ORDER BY directory";
+
+		$this->db->query($sql, __LINE__, __FILE__);
+		$directories = [];
+		while ($this->db->next_record())
+		{
+			$directories[] = $this->db->f('directory');
+		}
+		return $directories;
+	}
+
+	private function parseSelectedMappingKeys(array $selectedKeys)
+	{
+		$pairs = [];
+		foreach ($selectedKeys as $key)
+		{
+			$parts = explode('|', (string) $key, 2);
+			if (count($parts) !== 2)
+			{
+				continue;
+			}
+
+			$old = trim($parts[0]);
+			$new = trim($parts[1]);
+			if ($old === '' || $new === '' || $old === $new)
+			{
+				continue;
+			}
+
+			$pairs[] = [
+				'old_location_code' => $old,
+				'new_location_code' => $new,
+			];
+		}
+		return $pairs;
+	}
+
+	private function toAbsolutePath($vfsDirectory)
+	{
+		if (!$this->basedir)
+		{
+			return $vfsDirectory;
+		}
+
+		$relative = ltrim((string) $vfsDirectory, '/\\');
+		return $this->basedir . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relative);
+	}
+
+	private function movePath($oldPath, $newPath)
+	{
+		$newParent = dirname($newPath);
+		if (!is_dir($newParent) && !mkdir($newParent, 0777, true))
+		{
+			return false;
+		}
+
+		if (!file_exists($newPath))
+		{
+			return @rename($oldPath, $newPath);
+		}
+
+		if (is_dir($oldPath) && is_dir($newPath))
+		{
+			if (!$this->moveDirectoryContents($oldPath, $newPath))
+			{
+				return false;
+			}
+			@rmdir($oldPath);
 			return true;
 		}
+
 		return false;
 	}
+
+	private function updateDirectory($oldDirectory, $newDirectory)
+	{
+		$oldEscaped = addslashes($oldDirectory);
+		$newEscaped = addslashes($newDirectory);
+
+		$sql = "UPDATE phpgw_vfs
+			SET directory = '{$newEscaped}'
+			WHERE directory = '{$oldEscaped}'";
+		$this->db->query($sql, __LINE__, __FILE__);
+
+		return $this->db->affected_rows() > 0;
+	}
+
 	/**
 	 * Move all contents from old directory to new directory.
 	 * Creates new directory if it does not exist.
@@ -111,10 +324,8 @@ class LocationHierarchyDocumentAnalyzer
 	 * @param string $newDir
 	 * @return bool
 	 */
-	function moveDirectoryContents($oldDir, $newDir)
+	private function moveDirectoryContents($oldDir, $newDir)
 	{
-//		$basedir = $this->basedir;
-
 		// Ensure old directory exists
 		if (!is_dir($oldDir))
 		{
@@ -144,12 +355,21 @@ class LocationHierarchyDocumentAnalyzer
 			if (is_dir($oldPath))
 			{
 				// Recursively move subdirectories
-				$this->moveDirectoryContents($oldPath, $newPath);
-				rmdir($oldPath);
+				if (!$this->moveDirectoryContents($oldPath, $newPath))
+				{
+					return false;
+				}
+				if (is_dir($oldPath) && !@rmdir($oldPath))
+				{
+					return false;
+				}
 			}
 			else
 			{
-				rename($oldPath, $newPath);
+				if (!@rename($oldPath, $newPath))
+				{
+					return false;
+				}
 			}
 		}
 		return true;

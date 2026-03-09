@@ -149,8 +149,68 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 
 	public function documents()
 	{
+		if (!$this->isAdmin())
+		{
+			phpgw::no_access();
+		}
+
+		Settings::getInstance()->update('flags', [
+			'app_header' => lang('Location Document Move Analysis'),
+			'menu_selection' => 'property::admin::analyze_location',
+			'xslt_app' => true,
+		]);
+		phpgwapi_xslttemplates::getInstance()->add_file(array('analyze_location_documents'));
+
 		$analyzer = new LocationHierarchyDocumentAnalyzer();
-		$analyzer->analyze();
+		$data = [];
+
+		if (isset($_POST['save_files_to_move']) && $_POST['save_files_to_move'] == 'yes')
+		{
+			$selectedMappings = isset($_POST['mapping_keys']) && is_array($_POST['mapping_keys'])
+				? $_POST['mapping_keys']
+				: [];
+
+			$analyzer->updateFilesToMoveSelection($selectedMappings);
+			$data['selection_saved'] = true;
+			$data['selection_count'] = count($selectedMappings);
+		}
+
+		if (isset($_POST['execute_move']) && $_POST['execute_move'] == 'yes')
+		{
+			if (!empty($_POST['confirm_execute']))
+			{
+				$data['execution_results'] = $analyzer->executeMovesForSelectedMappings();
+			}
+			else
+			{
+				$data['execution_warning'] = 'Please confirm execute before running the move operation.';
+			}
+		}
+
+		$data['candidates'] = $analyzer->analyzeCandidates();
+
+		$summary = [
+			'total_candidates' => 0,
+			'selected_for_move' => 0,
+			'completed_moves' => 0,
+		];
+
+		foreach ($data['candidates'] as $candidate)
+		{
+			$summary['total_candidates']++;
+			if (!empty($candidate['files_to_move']))
+			{
+				$summary['selected_for_move']++;
+			}
+			if (!empty($candidate['files_moved']))
+			{
+				$summary['completed_moves']++;
+			}
+		}
+
+		$data['summary'] = $summary;
+
+		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('documents' => $data));
 	}
 
 	/**

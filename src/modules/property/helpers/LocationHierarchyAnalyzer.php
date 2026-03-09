@@ -1332,7 +1332,9 @@ class LocationHierarchyAnalyzer
 			street_id INTEGER,
 			street_number VARCHAR(10),
 			change_type VARCHAR(100),
-			update_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			update_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			files_to_move integer 2,
+			files_moved integer 2
 		)";
 		$this->db->query($sql, __LINE__, __FILE__);
 	}

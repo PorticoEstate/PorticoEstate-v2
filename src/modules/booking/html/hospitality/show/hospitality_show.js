@@ -7,6 +7,7 @@
 	var apiUrl = root.dataset.apiUrl.split('?')[0];
 	var ordersUrl = root.dataset.ordersUrl.split('?')[0] + '?hospitality_id=' + root.dataset.hospitalityId;
 	var resourcesApiUrl = root.dataset.resourcesUrl.split('?')[0];
+	var buildingsUrl = root.dataset.buildingsUrl ? root.dataset.buildingsUrl.split('?')[0] : null;
 	var articleMappingUrl = root.dataset.articleMappingUrl ? root.dataset.articleMappingUrl.split('?')[0] : null;
 	var taxListUrl = root.dataset.taxListUrl ? root.dataset.taxListUrl.split('?')[0] : null;
 	var canWrite = root.dataset.canWrite === '1';
@@ -174,7 +175,13 @@
 					renderDetails(hospitalityData);
 					break;
 				case 'resources':
-					renderResources(hospitalityData);
+					// If DOM already has building groups, just patch toggle states
+					if (document.getElementById('resource-building-groups') &&
+						document.getElementById('resource-building-groups').children.length > 0) {
+						patchResourceToggles();
+					} else {
+						renderResources(hospitalityData);
+					}
 					break;
 				case 'articles':
 					renderArticles(hospitalityData);
@@ -187,7 +194,12 @@
 					break;
 				default:
 					renderDetails(hospitalityData);
-					renderResources(hospitalityData);
+					if (document.getElementById('resource-building-groups') &&
+						document.getElementById('resource-building-groups').children.length > 0) {
+						patchResourceToggles();
+					} else {
+						renderResources(hospitalityData);
+					}
 					renderArticles(hospitalityData);
 			}
 		}).catch(function (err) {
@@ -506,7 +518,185 @@
 	// Resources tab
 	// ═══════════════════════════════════════════════════════════════════
 
+	var _inlineBuildingSelect = null;
+
+	function renderResourceToggleRow(r) {
+		var html = '<div class="hosp-show__article-row' + (!r.isAdded ? ' hosp-show__article-row--dimmed' : '') + '">';
+		html += '<span class="hosp-show__article-name">' + esc(r.resource_name) + '</span>';
+
+		if (canWrite) {
+			html += '<span class="hosp-show__article-active">' +
+				'<label class="hosp-show__toggle">' +
+				'<input type="checkbox" data-toggle-resource="' + r.resource_id + '"' +
+				(r.isAdded ? ' checked' : '') +
+				' data-resource-added="' + (r.isAdded ? '1' : '0') + '">' +
+				'<span class="hosp-show__toggle-slider"></span></label></span>';
+		} else {
+			var tag = r.isAdded
+				? '<span class="ds-tag" data-color="success">' + esc(lang('yes')) + '</span>'
+				: '';
+			if (tag) html += '<span class="hosp-show__article-active">' + tag + '</span>';
+		}
+
+		html += '</div>';
+		return html;
+	}
+
+	function renderBuildingGroup(group, allBuildingResources) {
+		var groupId = 'rl-building-' + (group.id || 'other');
+		var addedMap = {};
+		group.resources.forEach(function (loc) {
+			addedMap[loc.resource_id] = loc;
+		});
+
+		var mainResourceId = hospitalityData.resource_id;
+
+		// Determine rows
+		var rows;
+		if (allBuildingResources && canWrite) {
+			// Writers see all resources in the building for quick toggle
+			rows = allBuildingResources
+				.filter(function (r) { return r.id !== mainResourceId; })
+				.map(function (r) {
+					return {
+						resource_id: r.id,
+						resource_name: r.name,
+						isAdded: !!addedMap[r.id]
+					};
+				});
+		} else {
+			// Read-only or "Other" group — just show added resources
+			rows = group.resources
+				.filter(function (loc) { return loc.resource_id !== mainResourceId; })
+				.map(function (loc) {
+					return {
+						resource_id: loc.resource_id,
+						resource_name: loc.resource_name,
+						isAdded: true
+					};
+				});
+		}
+
+		var addedCount = rows.filter(function (r) { return r.isAdded; }).length;
+		var totalCount = rows.length;
+
+		var html = '<div class="hosp-show__article-group" data-building-group="' + (group.id || 'other') + '">';
+		html += '<div class="hosp-show__group-header" aria-expanded="true" data-group-toggle="' + groupId + '">';
+		html += '<div class="hosp-show__group-title">' + chevronIcon + ' ' + esc(group.name) +
+			' <span class="ds-tag" data-color="neutral">' + addedCount + ' / ' + totalCount + '</span></div>';
+		html += '</div>';
+		html += '<div class="hosp-show__group-body" data-group-body="' + groupId + '">';
+
+		if (rows.length > 0) {
+			rows.forEach(function (r) {
+				html += renderResourceToggleRow(r);
+			});
+		} else {
+			html += '<div class="hosp-show__article-empty">' + esc(lang('noRemoteLocations')) + '</div>';
+		}
+
+		html += '</div></div>';
+		return html;
+	}
+
+	function populateBuildingGroups(locations) {
+		var container = document.getElementById('resource-building-groups');
+
+		// Group by building
+		var buildingMap = {};
+		var buildingOrder = [];
+		locations.forEach(function (loc) {
+			var key = loc.building_id ? String(loc.building_id) : '_other';
+			if (!buildingMap[key]) {
+				buildingMap[key] = {
+					id: loc.building_id,
+					name: loc.building_name || lang('other'),
+					resources: []
+				};
+				buildingOrder.push(key);
+			}
+			buildingMap[key].resources.push(loc);
+		});
+
+		if (buildingOrder.length === 0) {
+			container.innerHTML = '<p class="app-show__empty">' + esc(lang('noRemoteLocations')) + '</p>';
+			return;
+		}
+
+		// Fetch all resources for each building (parallel) — only for writers
+		var promises = buildingOrder.map(function (key) {
+			var group = buildingMap[key];
+			if (key === '_other' || !canWrite) {
+				return Promise.resolve({ key: key, allResources: null });
+			}
+			return fetchJson(buildingsUrl + '/' + group.id + '/resources')
+				.then(function (resources) { return { key: key, allResources: resources }; })
+				.catch(function () { return { key: key, allResources: null }; });
+		});
+
+		Promise.all(promises).then(function (results) {
+			var html = '';
+			results.forEach(function (result) {
+				var group = buildingMap[result.key];
+				html += renderBuildingGroup(group, result.allResources);
+			});
+			container.innerHTML = html;
+		});
+	}
+
+	function initInlineBuildingSearch(existingLocations) {
+		var container = document.getElementById('inline-building-select');
+		if (!container) return null;
+
+		return new BuildingSelect(container, {
+			apiUrl: buildingsUrl,
+			onChange: function (buildingId, buildingName) {
+				// If building already has a group, scroll to it
+				var existingGroup = document.querySelector('[data-building-group="' + buildingId + '"]');
+				if (existingGroup) {
+					existingGroup.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+					existingGroup.classList.add('hosp-show__highlight');
+					setTimeout(function () { existingGroup.classList.remove('hosp-show__highlight'); }, 1500);
+					// Clear search input
+					container.querySelector('.building-select__input').value = '';
+					return;
+				}
+
+				// Fetch resources for this building and add a new group
+				fetchJson(buildingsUrl + '/' + buildingId + '/resources').then(function (resources) {
+					var group = {
+						id: buildingId,
+						name: buildingName,
+						resources: [] // no existing remote locations
+					};
+					var groupHtml = renderBuildingGroup(group, resources);
+
+					var groupsContainer = document.getElementById('resource-building-groups');
+					var emptyMsg = groupsContainer.querySelector('.app-show__empty');
+					if (emptyMsg) emptyMsg.remove();
+
+					groupsContainer.insertAdjacentHTML('beforeend', groupHtml);
+
+					// Scroll to the new group
+					var newGroup = groupsContainer.querySelector('[data-building-group="' + buildingId + '"]');
+					if (newGroup) {
+						newGroup.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+					}
+
+					// Clear search input
+					container.querySelector('.building-select__input').value = '';
+				});
+			}
+		});
+	}
+
 	function renderResources(h) {
+		// Dispose previous building select
+		if (_inlineBuildingSelect) {
+			_inlineBuildingSelect.dispose();
+			_inlineBuildingSelect = null;
+		}
+
 		var html = '';
 
 		// Info banner if remote serving disabled
@@ -520,127 +710,117 @@
 		// Main resource (read-only)
 		html += section(lang('mainResource'), field(lang('resource'), h.resource_name));
 
-		// Remote locations
-		var locations = h.remote_locations || [];
-		var locHtml = '';
-
-		if (locations.length > 0) {
-			locHtml += '<table class="ds-table" data-border>' +
-				'<thead><tr><th>' + lang('resource') + '</th><th>' + lang('active') + '</th>';
-			if (canWrite) locHtml += '<th></th>';
-			locHtml += '</tr></thead><tbody>';
-
-			locations.forEach(function (loc) {
-				locHtml += '<tr><td>' + esc(loc.resource_name) + '</td>';
-				if (canWrite) {
-					locHtml += '<td><label class="hosp-show__toggle">' +
-						'<input type="checkbox" data-toggle-resource="' + loc.resource_id + '"' + (loc.active ? ' checked' : '') + '>' +
-						'<span class="hosp-show__toggle-slider"></span></label></td>';
-					locHtml += '<td><button type="button" class="app-button app-button-sm app-button-danger" data-remove-resource="' + loc.resource_id + '">' + trashIcon + '</button></td>';
-				} else {
-					locHtml += '<td>' + (loc.active ? lang('yes') : lang('no')) + '</td>';
-				}
-				locHtml += '</tr>';
-			});
-
-			locHtml += '</tbody></table>';
-		} else {
-			locHtml = '<p class="app-show__empty">' + esc(lang('noRemoteLocations')) + '</p>';
-		}
-
+		// Inline building search (top, where add button used to be)
 		if (canWrite) {
-			var addBtn = '<button type="button" class="app-button app-button-sm" id="add-remote-location-btn">' + esc(lang('add')) + '</button>';
-			html += section(lang('remoteLocations'), locHtml, { headerHtml: addBtn });
-		} else {
-			html += section(lang('remoteLocations'), locHtml);
+			html += '<div class="hosp-show__tab-actions">' +
+				'<div id="inline-building-select" class="building-select" style="flex:1;max-width:20rem">' +
+				'<input type="text" class="building-select__input app-input" autocomplete="off" ' +
+				'placeholder="' + esc(lang('searchBuildings')) + '..." ' +
+				'aria-expanded="false" aria-autocomplete="list" role="combobox">' +
+				'<input type="hidden">' +
+				'<ul class="building-select__dropdown" role="listbox"></ul>' +
+				'</div></div>';
 		}
+
+		// Container for building groups (populated async)
+		html += '<div id="resource-building-groups"></div>';
 
 		document.getElementById('hospitality-resources').innerHTML = html;
+
+		// Populate building groups from remote locations data
+		var locations = h.remote_locations || [];
+		populateBuildingGroups(locations);
+
+		// Initialize inline building search
+		if (canWrite) {
+			_inlineBuildingSelect = initInlineBuildingSearch(locations);
+		}
 	}
 
-	// Toggle remote location active
+	/**
+	 * Lightweight DOM patch: sync toggle states from fresh hospitalityData
+	 * without tearing down and rebuilding the whole resources tab.
+	 */
+	function patchResourceToggles() {
+		var locations = hospitalityData.remote_locations || [];
+		var addedIds = {};
+		locations.forEach(function (loc) {
+			addedIds[String(loc.resource_id)] = true;
+		});
+
+		// Patch every toggle already in the DOM
+		var toggles = root.querySelectorAll('[data-toggle-resource]');
+		toggles.forEach(function (toggle) {
+			var rid = toggle.dataset.toggleResource;
+			var shouldBeAdded = !!addedIds[rid];
+			var currentlyAdded = toggle.dataset.resourceAdded === '1';
+
+			if (shouldBeAdded !== currentlyAdded) {
+				toggle.checked = shouldBeAdded;
+				updateRowAndCount(toggle, shouldBeAdded);
+			}
+		});
+	}
+
+	function updateRowAndCount(toggle, added) {
+		var row = toggle.closest('.hosp-show__article-row');
+		if (row) {
+			row.classList.toggle('hosp-show__article-row--dimmed', !added);
+		}
+		toggle.dataset.resourceAdded = added ? '1' : '0';
+
+		// Update the count tag in the parent building group header
+		var group = toggle.closest('[data-building-group]');
+		if (group) {
+			var countTag = group.querySelector('.hosp-show__group-header .ds-tag');
+			if (countTag) {
+				var allToggles = group.querySelectorAll('[data-toggle-resource]');
+				var addedCount = 0;
+				allToggles.forEach(function (t) {
+					if (t.dataset.resourceAdded === '1') addedCount++;
+				});
+				countTag.textContent = addedCount + ' / ' + allToggles.length;
+			}
+		}
+	}
+
+	// Toggle resource on/off (add/remove remote location)
 	root.addEventListener('change', function (e) {
 		var toggle = e.target.closest('[data-toggle-resource]');
 		if (!toggle) return;
 		var resourceId = toggle.dataset.toggleResource;
-		patchJson(apiUrl + '/remote-locations/' + resourceId, { active: toggle.checked }).then(function () {
-			showToast(lang('saved'));
-			refreshData();
-		}).catch(function (err) {
-			showToast(lang('error') + ': ' + err.message, 'danger');
-			toggle.checked = !toggle.checked;
-		});
+		var wasAdded = toggle.dataset.resourceAdded === '1';
+
+		if (toggle.checked && !wasAdded) {
+			// Add as remote location — update DOM immediately
+			updateRowAndCount(toggle, true);
+			postJson(apiUrl + '/remote-locations', { resource_id: parseInt(resourceId, 10) })
+				.then(function () {
+					showToast(lang('saved'));
+					// Silently refresh data in background
+					fetchJson(apiUrl).then(function (data) { hospitalityData = data; });
+				})
+				.catch(function (err) {
+					toggle.checked = false;
+					updateRowAndCount(toggle, false);
+					showToast(lang('error') + ': ' + err.message, 'danger');
+				});
+		} else if (!toggle.checked && wasAdded) {
+			// Remove remote location — update DOM immediately
+			updateRowAndCount(toggle, false);
+			deleteJson(apiUrl + '/remote-locations/' + resourceId)
+				.then(function () {
+					showToast(lang('saved'));
+					// Silently refresh data in background
+					fetchJson(apiUrl).then(function (data) { hospitalityData = data; });
+				})
+				.catch(function (err) {
+					toggle.checked = true;
+					updateRowAndCount(toggle, true);
+					showToast(lang('error') + ': ' + err.message, 'danger');
+				});
+		}
 	});
-
-	// Remove remote location
-	root.addEventListener('click', function (e) {
-		var btn = e.target.closest('[data-remove-resource]');
-		if (!btn) return;
-		if (!confirm(lang('confirmDelete'))) return;
-		var resourceId = btn.dataset.removeResource;
-		btn.disabled = true;
-		deleteJson(apiUrl + '/remote-locations/' + resourceId).then(function () {
-			showToast(lang('saved'));
-			refreshData();
-		}).catch(function (err) {
-			btn.disabled = false;
-			showToast(lang('error') + ': ' + err.message, 'danger');
-		});
-	});
-
-	// Add remote location button
-	root.addEventListener('click', function (e) {
-		if (!e.target.closest('#add-remote-location-btn')) return;
-		showResourcePickerModal();
-	});
-
-	function showResourcePickerModal() {
-		var body = '<p>' + esc(lang('selectResource')) + '</p>' +
-			'<select id="modal-resource-select" class="app-show__modal-select">' +
-			'<option value="">' + esc(lang('loading')) + '...</option></select>';
-		var footer = '<button type="button" class="app-button" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="app-button app-button-primary" id="modal-resource-submit" disabled>' + esc(lang('add')) + '</button>';
-
-		showModal('resource-picker-dialog', lang('add') + ' ' + lang('resource'), body, footer);
-
-		var select = document.getElementById('modal-resource-select');
-		var submitBtn = document.getElementById('modal-resource-submit');
-
-		// Fetch all resources and filter out ones already added
-		fetchJson(resourcesApiUrl).then(function (data) {
-			var resources = Array.isArray(data) ? data : (data.results || []);
-			var existingIds = (hospitalityData.remote_locations || []).map(function (l) { return l.resource_id; });
-			existingIds.push(hospitalityData.resource_id); // exclude main resource
-			var available = resources.filter(function (r) {
-				return existingIds.indexOf(r.id) === -1;
-			});
-
-			select.innerHTML = '<option value="">-- ' + esc(lang('selectResource')) + ' --</option>';
-			available.forEach(function (r) {
-				select.innerHTML += '<option value="' + r.id + '">' + esc(r.name) + '</option>';
-			});
-			submitBtn.disabled = false;
-		}).catch(function () {
-			select.innerHTML = '<option value="">' + esc(lang('error')) + '</option>';
-		});
-
-		submitBtn.addEventListener('click', function () {
-			var resourceId = parseInt(select.value, 10);
-			if (!resourceId) return;
-			submitBtn.disabled = true;
-			submitBtn.textContent = '...';
-
-			postJson(apiUrl + '/remote-locations', { resource_id: resourceId }).then(function () {
-				closeModal('resource-picker-dialog');
-				showToast(lang('saved'));
-				refreshData();
-			}).catch(function (err) {
-				submitBtn.disabled = false;
-				submitBtn.textContent = lang('add');
-				showToast(lang('error') + ': ' + err.message, 'danger');
-			});
-		});
-	}
 
 	// ═══════════════════════════════════════════════════════════════════
 	// Articles tab

@@ -1138,3 +1138,5 @@ uses_fallback	booking	nn	Brukar
 article_details	booking	nn	Artikkeldetaljar
 article_details_warning	booking	nn	Endringar her påverkar plasser denne artikkelen er i bruk
 tax_code	booking	nn	Avgiftskode
+select_building	booking	nn	Vel bygg
+select_resources	booking	nn	Vel ressursar

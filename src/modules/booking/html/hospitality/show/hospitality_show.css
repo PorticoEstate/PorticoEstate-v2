@@ -297,6 +297,24 @@
 	margin-bottom: 0;
 }
 
+.hosp-show__article-row--dimmed {
+	opacity: 0.55;
+}
+
+.hosp-show__article-row--dimmed:hover {
+	opacity: 0.85;
+}
+
+/* Building group highlight (when scrolling to existing group) */
+.hosp-show__highlight {
+	animation: hosp-highlight 1.5s ease;
+}
+
+@keyframes hosp-highlight {
+	0%, 20% { box-shadow: 0 0 0 2px var(--ds-color-accent-border-default, #0062ba); }
+	100% { box-shadow: none; }
+}
+
 .hosp-show__article-name {
 	flex: 2;
 	font-weight: 500;

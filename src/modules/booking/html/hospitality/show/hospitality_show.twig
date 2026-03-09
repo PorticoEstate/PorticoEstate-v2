@@ -8,6 +8,7 @@
 <style>{{ source('@views/components/article_select/article_select.css') }}</style>
 <style>{{ source('@views/components/multi_language_text/multi_language_text.css') }}</style>
 <style>{{ source('@views/components/ws_collab/ws_collab.css') }}</style>
+<style>{{ source('@views/components/building_select/building_select.css') }}</style>
 <style>{{ source('@views/hospitality/show/hospitality_show.css') }}</style>
 {% endblock %}
 
@@ -18,6 +19,7 @@
 	 data-api-url="{{ phpgw_link('/booking/hospitality/' ~ hospitality_id) }}"
 	 data-orders-url="{{ phpgw_link('/booking/hospitality-orders?hospitality_id=' ~ hospitality_id) }}"
 	 data-resources-url="{{ phpgw_link('/booking/resources') }}"
+	 data-buildings-url="{{ phpgw_link('/booking/buildings') }}"
 	 data-can-write="{{ can_write ? '1' : '0' }}"
 	 data-lang-loading="{{ lang('common.loading') }}"
 	 data-lang-error="{{ lang('common.error') }}"
@@ -75,6 +77,11 @@
 	 data-lang-price="{{ lang('booking.price') }}"
 	 data-lang-tax-code="{{ lang('booking.tax_code') }}"
 	 data-lang-select-article="{{ lang('booking.select_article') }}"
+	 data-lang-building="{{ lang('booking.building') }}"
+	 data-lang-select-building="{{ lang('booking.select_building') }}"
+	 data-lang-search-buildings="{{ lang('booking.search_buildings') }}"
+	 data-lang-select-resources="{{ lang('booking.select_resources') }}"
+	 data-lang-other="{{ lang('booking.other') }}"
 	 data-lang-select-resource="{{ lang('booking.select_resource') }}"
 	 data-lang-no-articles="{{ lang('booking.no_articles') }}"
 	 data-lang-create-new-article="{{ lang('booking.create_new_article') }}"
@@ -166,6 +173,7 @@
 <script>{{ source('@views/components/article_select/article_select.js') }}</script>
 <script>{{ source('@views/components/multi_language_text/multi_language_text.js') }}</script>
 <script>{{ source('@views/components/ws_collab/ws_collab.js') }}</script>
+<script src="{{ modules_url }}/booking/js/base/building-select.js"></script>
 <script>{{ source('@views/hospitality/show/hospitality_show.js') }}</script>
 <script>
 (function initHospCollab() {

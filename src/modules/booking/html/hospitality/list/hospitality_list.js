@@ -52,7 +52,7 @@
 			column: 3,
 			options: [
 				{value: '', label: L.all},
-				{value: '1', label: L.yes},
+				{value: '1', label: L.yes, selected: true},
 				{value: '0', label: L.no}
 			]
 		}

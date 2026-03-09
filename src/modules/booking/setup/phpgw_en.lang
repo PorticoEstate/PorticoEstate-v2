@@ -1033,3 +1033,5 @@ uses_fallback	booking	en	Uses
 article_details	booking	en	Article details
 article_details_warning	booking	en	Changes here affect all places this article is used
 tax_code	booking	en	Tax code
+select_building	booking	en	Select building
+select_resources	booking	en	Select resources

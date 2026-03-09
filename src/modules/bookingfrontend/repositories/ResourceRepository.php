@@ -137,6 +137,23 @@ class ResourceRepository
     }
 
     /**
+     * Get active resources for a building (via bb_building_resource join)
+     */
+    public function getByBuildingId(int $buildingId): array
+    {
+        $sql = "SELECT r.*
+                FROM bb_resource r
+                JOIN bb_building_resource br ON r.id = br.resource_id
+                WHERE br.building_id = :building_id AND r.active = 1
+                ORDER BY r.sort, r.name";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':building_id' => $buildingId]);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return array_map([$this, 'createResource'], $results);
+    }
+
+    /**
      * Get resources with filtering and pagination
      */
     public function getFiltered(array $filters = [], int $offset = 0, int $limit = null): array

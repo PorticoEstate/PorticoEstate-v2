@@ -35,6 +35,7 @@ $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 	$group->group('/buildings', function (RouteCollectorProxy $buildingGroup) use ($container)
 	{
 		$buildingGroup->get('', BuildingController::class . ':index');
+		$buildingGroup->get('/{id:[0-9]+}/resources', BuildingController::class . ':resources');
 
 		$buildingGroup->get('/documents/categories', DocumentController::class . ':categories');
 

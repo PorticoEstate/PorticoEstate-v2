@@ -1126,3 +1126,5 @@ uses_fallback	booking	no	Bruker
 article_details	booking	no	Artikkeldetaljer
 article_details_warning	booking	no	Endringer her påvirker alle steder denne artikelen er i bruk
 tax_code	booking	no	Avgiftskode
+select_building	booking	no	Velg bygg
+select_resources	booking	no	Velg ressurser

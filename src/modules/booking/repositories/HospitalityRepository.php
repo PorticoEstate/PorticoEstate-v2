@@ -119,11 +119,14 @@ class HospitalityRepository
 
     public function getRemoteLocations(int $hospitalityId): array
     {
-        $sql = "SELECT rl.*, r.name AS resource_name
+        $sql = "SELECT rl.*, r.name AS resource_name,
+                       b.id AS building_id, b.name AS building_name
                 FROM bb_hospitality_remote_location rl
                 LEFT JOIN bb_resource r ON rl.resource_id = r.id
+                LEFT JOIN bb_building_resource br ON r.id = br.resource_id
+                LEFT JOIN bb_building b ON br.building_id = b.id
                 WHERE rl.hospitality_id = :hospitality_id
-                ORDER BY r.name";
+                ORDER BY b.name NULLS LAST, r.name";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':hospitality_id' => $hospitalityId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

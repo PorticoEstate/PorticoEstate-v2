@@ -43,6 +43,18 @@ class HospitalityRemoteLocation
      */
     public $resource_name;
 
+    /**
+     * @OA\Property(type="integer", nullable=true)
+     * @Expose
+     */
+    public $building_id;
+
+    /**
+     * @OA\Property(type="string", nullable=true)
+     * @Expose
+     */
+    public $building_name;
+
     public function __construct(array $data = [])
     {
         if (!empty($data)) {

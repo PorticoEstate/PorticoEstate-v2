@@ -196,7 +196,7 @@
 		var state = {};
 		if (stateKey) {
 			try {
-				state = JSON.parse(sessionStorage.getItem(stateKey + '_filters') || '{}');
+				state = JSON.parse(localStorage.getItem(stateKey + '_filters') || '{}');
 			} catch (e) { /* ignore */ }
 		}
 
@@ -288,7 +288,7 @@
 		function saveState() {
 			if (!stateKey) return;
 			try {
-				sessionStorage.setItem(stateKey + '_filters', JSON.stringify(getValues()));
+				localStorage.setItem(stateKey + '_filters', JSON.stringify(getValues()));
 			} catch (e) { /* ignore */ }
 		}
 
@@ -574,11 +574,13 @@
 	// ------------------------------------------------------------------
 	function buildStateKey(config) {
 		if (config.stateKey) return config.stateKey;
-		// Auto-generate from URL like datatable2.twig does
 		try {
 			var url = new URL(window.location.href);
 			var menuaction = url.searchParams.get('menuaction');
 			if (menuaction) return 'appdt_' + menuaction.replace(/\./g, '_');
+			// For modern path-based URLs, derive key from pathname
+			var path = url.pathname.replace(/\/+$/, '');
+			if (path) return 'appdt_' + path.replace(/\//g, '_');
 		} catch (e) { /* ignore */ }
 		return null;
 	}
@@ -800,7 +802,7 @@
 		var resolvedStateKey = buildStateKey(config);
 		if (config.stateSave !== false && resolvedStateKey) {
 			dtConfig.stateSave = true;
-			dtConfig.stateDuration = -1; // sessionStorage
+			dtConfig.stateDuration = 0; // localStorage, no expiry
 
 			dtConfig.stateSaveParams = function (settings, data) {
 				if (filterSystem) {

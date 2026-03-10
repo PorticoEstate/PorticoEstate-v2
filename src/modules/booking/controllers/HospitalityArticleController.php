@@ -223,6 +223,40 @@ class HospitalityArticleController
 		}
 	}
 
+	public function reactivateGroup(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->acl->check('.application', Acl::EDIT, 'booking')) {
+			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+		}
+
+		try {
+			$id = (int)$args['id'];
+			$groupId = (int)$args['groupId'];
+			if ($err = $this->validateHospitality($id, $response)) return $err;
+
+			$existing = $this->repository->getGroupById($groupId);
+			if (!$existing || (int)$existing['hospitality_id'] !== $id) {
+				$response->getBody()->write(json_encode(['error' => 'Article group not found']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			}
+
+			$this->repository->reactivateGroup($groupId);
+
+			$accountId = (int)$this->userSettings['account_id'];
+			WebSocketHelper::sendEntityNotificationAsync(
+				'hospitality', $id, 'Article group reactivated', 'updated',
+				['section' => 'articles', 'groupId' => $groupId, 'modifiedBy' => $accountId]
+			);
+
+			$response->getBody()->write(json_encode(['message' => 'Article group reactivated']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+		} catch (Exception $e) {
+			$response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
 	// -- Articles --
 
 	/**

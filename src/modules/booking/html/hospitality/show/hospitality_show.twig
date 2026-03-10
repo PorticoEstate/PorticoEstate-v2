@@ -403,23 +403,29 @@ import { Sortable, isSortable, SortableKeyboardPlugin, OptimisticSortingPlugin }
 			}
 
 			if (data.type === 'article') {
-				// First try DOM-based detection (works for same-group and optimistic cross-group)
-				if (handleArticleReorder(sortable, target)) return;
+				// Cross-group detection must run BEFORE DOM-based reorder,
+				// because @dnd-kit may leave a ghost/clone element in the
+				// source container that causes handleArticleReorder to
+				// misdetect a same-group change.
+				var crossGroupId = null;
+				var crossNearId = null;
 
-				// Fallback: if drag crossed into a foreign group during dragover but
-				// the optimistic plugin didn't move the DOM element, use tracked target
 				if (foreignTarget && String(foreignTarget.groupId) !== String(data.groupId)) {
-					if (COLLAB_DEBUG) console.log('[DnD] cross-group via foreignTarget', foreignTarget);
-					handleArticleDropOnContainer(data.articleId, foreignTarget.groupId, foreignTarget.articleId);
+					crossGroupId = foreignTarget.groupId;
+					crossNearId = foreignTarget.articleId;
+				} else if (target && target.data && target.data.type === 'article-container'
+					&& String(target.data.groupId) !== String(data.groupId)) {
+					crossGroupId = target.data.groupId;
+				}
+
+				if (crossGroupId !== null) {
+					if (COLLAB_DEBUG) console.log('[DnD] cross-group drop', { crossGroupId: crossGroupId, crossNearId: crossNearId });
+					handleArticleDropOnContainer(data.articleId, crossGroupId, crossNearId);
 					return;
 				}
 
-				// Empty container drop
-				if (target && target.data && target.data.type === 'article-container'
-					&& String(target.data.groupId) !== String(data.groupId)) {
-					handleArticleDropOnContainer(data.articleId, target.data.groupId, null);
-					return;
-				}
+				// Same-group reorder via DOM scan
+				if (handleArticleReorder(sortable, target)) return;
 			}
 		}
 	});

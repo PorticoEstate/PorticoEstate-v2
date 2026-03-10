@@ -57,6 +57,33 @@ class HospitalityViewController
 		}
 	}
 
+	public function create(Request $request, Response $response): Response
+	{
+		try {
+			if (!$this->acl->check('.application', Acl::ADD, 'booking')) {
+				return ResponseHelper::sendErrorResponse(['error' => 'Permission denied'], 403);
+			}
+
+			$flags = Settings::getInstance()->get('flags');
+			$flags['app_header'] = lang('booking') . '::' . lang('booking.create_hospitality');
+			Settings::getInstance()->set('flags', $flags);
+
+			$componentHtml = $this->twig->render('@views/hospitality/create/hospitality_create.twig', [
+				'layout' => '@views/_bare.twig',
+			]);
+
+			$html = $this->legacyView->render($componentHtml, 'booking', 'booking::hospitality');
+
+			$response->getBody()->write($html);
+			return $response->withHeader('Content-Type', 'text/html');
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(
+				['error' => 'Error loading create page: ' . $e->getMessage()],
+				500
+			);
+		}
+	}
+
 	public function show(Request $request, Response $response, array $args): Response
 	{
 		$id = (int)($args['id'] ?? 0);

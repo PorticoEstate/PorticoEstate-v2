@@ -1,0 +1,73 @@
+{% extends layout|default('@views/_layout.twig') %}
+
+{% block title %}{{ lang('booking.create_hospitality') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/components/building_select/building_select.css') }}</style>
+<style>{{ source('@views/hospitality/create/hospitality_create.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<div id="hospitality-create" class="hospitality-create">
+	<h2>{{ lang('booking.create_hospitality') }}</h2>
+
+	<div id="alert-success" class="app-alert app-alert--success is-hidden"></div>
+	<div id="alert-error" class="app-alert app-alert--danger is-hidden"></div>
+
+	<form id="hospitality-form" novalidate>
+		<div class="form-group">
+			<label class="app-label" for="field-name">{{ lang('common.name') }} *</label>
+			<input type="text" id="field-name" class="app-input" required>
+		</div>
+
+		<div class="form-group">
+			<label class="app-label" for="field-description">{{ lang('common.description') }}</label>
+			<textarea id="field-description" class="app-input" rows="3"></textarea>
+		</div>
+
+		<div class="form-group">
+			<label class="app-label">{{ lang('booking.building') }}</label>
+			{% include '@views/components/building_select/building_select.twig' with {
+				building_api_url: phpgw_link('/booking/buildings'),
+				building_id: '',
+				building_name: '',
+				field_id: 'building-select'
+			} %}
+		</div>
+
+		<div class="form-group">
+			<label class="app-label" for="field-resource">{{ lang('booking.resource') }} *</label>
+			<select id="field-resource" class="app-select" disabled>
+				<option value="">{{ lang('booking.select_resource') }}</option>
+			</select>
+		</div>
+
+		<div class="hospitality-create__btn-row">
+			<button type="submit" id="btn-create" class="app-button app-button-primary" disabled>
+				{{ lang('common.create') }}
+			</button>
+			<a href="{{ phpgw_link('/booking/view/hospitality') }}" class="app-button app-button-secondary">
+				{{ lang('booking.cancel_action') }}
+			</a>
+		</div>
+	</form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+	window.__hospitalityCreate = {
+		apiUrl: '/booking/hospitality',
+		buildingsUrl: '/booking/buildings',
+		showBaseUrl: '/booking/view/hospitality/',
+		lang: {
+			name: '{{ lang('common.name')|e('js') }}',
+			select_resource: '{{ lang('booking.select_resource')|e('js') }}',
+			error: '{{ lang('common.error')|e('js') }}',
+			loading: '{{ lang('common.loading')|e('js') }}'
+		}
+	};
+</script>
+<script src="{{ modules_url }}/booking/js/base/building-select.js"></script>
+<script>{{ source('@views/hospitality/create/hospitality_create.js') }}</script>
+{% endblock %}

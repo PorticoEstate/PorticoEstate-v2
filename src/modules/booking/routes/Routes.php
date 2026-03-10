@@ -92,6 +92,7 @@ $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 		});
 
 		$viewGroup->get('/hospitality', HospitalityViewController::class . ':index');
+		$viewGroup->get('/hospitality/add', HospitalityViewController::class . ':create');
 		$viewGroup->get('/hospitality/{id:[0-9]+}', HospitalityViewController::class . ':show');
 
 		$viewGroup->get('/applications/{id:[0-9]+}', ApplicationViewController::class . ':show');
@@ -256,6 +257,7 @@ $app->group('/booking/hospitality', function (RouteCollectorProxy $group) {
 	$group->post('/{id:[0-9]+}/article-groups', HospitalityArticleController::class . ':storeGroup');
 	$group->put('/{id:[0-9]+}/article-groups/{groupId:[0-9]+}', HospitalityArticleController::class . ':updateGroup');
 	$group->delete('/{id:[0-9]+}/article-groups/{groupId:[0-9]+}', HospitalityArticleController::class . ':destroyGroup');
+	$group->patch('/{id:[0-9]+}/article-groups/{groupId:[0-9]+}/reactivate', HospitalityArticleController::class . ':reactivateGroup');
 
 	// Articles
 	$group->get('/{id:[0-9]+}/articles', HospitalityArticleController::class . ':indexArticles');

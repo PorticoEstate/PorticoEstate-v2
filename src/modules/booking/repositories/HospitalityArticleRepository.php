@@ -73,7 +73,22 @@ class HospitalityArticleRepository
 
     public function deleteGroup(int $id): bool
     {
-        $stmt = $this->db->prepare("UPDATE bb_hospitality_article_group SET active = 0 WHERE id = :id");
+        // Hard-delete if group has no articles, soft-delete otherwise
+        $countStmt = $this->db->prepare("SELECT COUNT(*) FROM bb_hospitality_article WHERE article_group_id = :id");
+        $countStmt->execute([':id' => $id]);
+        $articleCount = (int)$countStmt->fetchColumn();
+
+        if ($articleCount === 0) {
+            $stmt = $this->db->prepare("DELETE FROM bb_hospitality_article_group WHERE id = :id");
+        } else {
+            $stmt = $this->db->prepare("UPDATE bb_hospitality_article_group SET active = 0 WHERE id = :id");
+        }
+        return $stmt->execute([':id' => $id]);
+    }
+
+    public function reactivateGroup(int $id): bool
+    {
+        $stmt = $this->db->prepare("UPDATE bb_hospitality_article_group SET active = 1 WHERE id = :id");
         return $stmt->execute([':id' => $id]);
     }
 

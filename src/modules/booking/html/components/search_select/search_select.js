@@ -41,6 +41,9 @@ class SearchSelect {
         this.emptyText = options.emptyText || 'No matches';
         this.placeholder = options.placeholder || '';
         this.onChange = options.onChange || function () {};
+        this.allowCreate = options.allowCreate || false;
+        this.createLabel = options.createLabel || 'Create "{query}"';
+        this.onCreate = options.onCreate || null;
 
         this.input = container.querySelector('.search-select__input');
         this.hiddenInput = container.querySelector('input[type="hidden"]');
@@ -53,6 +56,7 @@ class SearchSelect {
         this.items = null;
         this.filtered = [];
         this.highlightIndex = -1;
+        this._hasExplicitValue = 'value' in options && options.value !== undefined;
         this.selectedId = options.value != null ? options.value : null;
         this.selectedName = '';
         this.isOpen = false;
@@ -70,9 +74,9 @@ class SearchSelect {
                 if (found) {
                     this.selectedName = found[this.labelField];
                     this.input.value = this.selectedName;
-                } else if (this.allowEmpty && (this.selectedId === null || this.selectedId === '')) {
-                    this.input.value = this.emptyLabel;
                 }
+            } else if (this._hasExplicitValue && this.allowEmpty) {
+                this.input.value = this.emptyLabel;
             }
         }
 
@@ -143,7 +147,7 @@ class SearchSelect {
             case 'Escape':
                 e.preventDefault();
                 this._close();
-                this.input.value = this.selectedName || (this.allowEmpty ? this.emptyLabel : '');
+                this.input.value = this.selectedName || (this._hasExplicitValue && this.allowEmpty ? this.emptyLabel : '');
                 break;
         }
     }
@@ -151,7 +155,7 @@ class SearchSelect {
     _onDocumentClick(e) {
         if (!this.container.contains(e.target)) {
             this._close();
-            this.input.value = this.selectedName || (this.allowEmpty ? this.emptyLabel : '');
+            this.input.value = this.selectedName || (this._hasExplicitValue && this.allowEmpty ? this.emptyLabel : '');
         }
     }
 
@@ -204,7 +208,11 @@ class SearchSelect {
     _renderDropdown() {
         this.dropdown.innerHTML = '';
 
-        if (this.filtered.length === 0 || (this.filtered.length === 1 && this.filtered[0]._isEmpty)) {
+        var realItems = this.filtered.filter(function (it) { return !it._isEmpty; });
+        var hasNoResults = realItems.length === 0;
+        var query = this.input.value.trim();
+
+        if (hasNoResults && !this.allowCreate) {
             var empty = document.createElement('li');
             empty.className = 'search-select__empty';
             empty.textContent = this.emptyText;
@@ -234,6 +242,30 @@ class SearchSelect {
             item.addEventListener('click', this._onItemClick.bind(this, it));
             this.dropdown.appendChild(item);
         }
+
+        // "Create new" option when allowCreate is enabled and query doesn't exactly match
+        if (this.allowCreate && query) {
+            var labelField = this.labelField;
+            var exactMatch = this.items && this.items.some(function (it) {
+                return String(it[labelField] || '').toLowerCase() === query.toLowerCase();
+            });
+            if (!exactMatch) {
+                var createItem = document.createElement('li');
+                createItem.className = 'search-select__item search-select__item--create';
+                createItem.setAttribute('role', 'option');
+                createItem.textContent = this.createLabel.replace('{query}', query);
+                createItem.style.fontStyle = 'italic';
+                createItem.addEventListener('click', this._onCreateClick.bind(this, query));
+                this.dropdown.appendChild(createItem);
+            }
+        }
+
+        if (hasNoResults && this.allowCreate && !query) {
+            var empty = document.createElement('li');
+            empty.className = 'search-select__empty';
+            empty.textContent = this.emptyText;
+            this.dropdown.appendChild(empty);
+        }
     }
 
     _onItemClick(item, e) {
@@ -242,9 +274,27 @@ class SearchSelect {
         this._select(item);
     }
 
+    _onCreateClick(query, e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.onCreate) {
+            var self = this;
+            var result = this.onCreate(query);
+            if (result && typeof result.then === 'function') {
+                result.then(function (newItem) {
+                    if (newItem) {
+                        self.items.push(newItem);
+                        self._select(newItem);
+                    }
+                });
+            }
+        }
+    }
+
     _select(item) {
         this.selectedId = item[this.idField];
         this.selectedName = item._isEmpty ? this.emptyLabel : (item[this.labelField] || '');
+        this._hasExplicitValue = true;
         this.input.value = this.selectedName;
         if (this.hiddenInput) this.hiddenInput.value = this.selectedId != null ? this.selectedId : '';
         this._close();

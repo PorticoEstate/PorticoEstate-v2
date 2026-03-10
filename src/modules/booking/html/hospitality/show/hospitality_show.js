@@ -860,8 +860,11 @@
 				' <span class="ds-tag" data-color="neutral">' + groupArticles.length + '</span></div>';
 
 			if (canWrite) {
-				html += '<div class="hosp-show__group-actions">' +
-					'<button type="button" class="app-button app-button-sm" data-edit-group="' + group.id + '" title="' + esc(lang('edit')) + '">' + penIcon + '</button>' +
+				html += '<div class="hosp-show__group-actions">';
+				if (!group.active) {
+					html += '<button type="button" class="app-button app-button-sm" data-reactivate-group="' + group.id + '" title="' + esc(lang('active')) + '">&#x21bb;</button>';
+				}
+				html += '<button type="button" class="app-button app-button-sm" data-edit-group="' + group.id + '" title="' + esc(lang('edit')) + '">' + penIcon + '</button>' +
 					'<button type="button" class="app-button app-button-sm app-button-danger" data-delete-group="' + group.id + '" title="' + esc(lang('delete')) + '">' + trashIcon + '</button>' +
 					'</div>';
 			}
@@ -973,6 +976,22 @@
 		var groupId = btn.dataset.deleteGroup;
 		btn.disabled = true;
 		deleteJson(apiUrl + '/article-groups/' + groupId).then(function () {
+			showToast(lang('saved'));
+			refreshData();
+		}).catch(function (err) {
+			btn.disabled = false;
+			showToast(lang('error') + ': ' + err.message, 'danger');
+		});
+	});
+
+	// Reactivate group
+	root.addEventListener('click', function (e) {
+		var btn = e.target.closest('[data-reactivate-group]');
+		if (!btn) return;
+		e.stopPropagation();
+		var groupId = btn.dataset.reactivateGroup;
+		btn.disabled = true;
+		patchJson(apiUrl + '/article-groups/' + groupId + '/reactivate', {}).then(function () {
 			showToast(lang('saved'));
 			refreshData();
 		}).catch(function (err) {
@@ -1192,14 +1211,29 @@
 		}
 
 		// Initialize group search select
+		var groupOpts = {
+			items: groups,
+			allowEmpty: true,
+			emptyLabel: '-- ' + lang('ungroupedArticles') + ' --',
+			allowCreate: true,
+			createLabel: lang('add') + ' "{query}"',
+			onCreate: function (name) {
+				return postJson(apiUrl + '/article-groups', { name: name })
+					.then(function (created) {
+						return created;
+					})
+					.catch(function (err) {
+						showToast(lang('error') + ': ' + err.message, 'danger');
+						return null;
+					});
+			}
+		};
+		if (isEdit) {
+			groupOpts.value = article.article_group_id || null;
+		}
 		var groupSelector = new SearchSelect(
 			document.getElementById('modal-group-select-container'),
-			{
-				items: groups,
-				allowEmpty: true,
-				emptyLabel: '-- ' + lang('ungroupedArticles') + ' --',
-				value: isEdit ? (article.article_group_id || null) : null
-			}
+			groupOpts
 		);
 
 		// Initialize article search select for new articles

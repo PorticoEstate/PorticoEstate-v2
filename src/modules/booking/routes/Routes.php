@@ -251,6 +251,7 @@ $app->group('/booking/hospitality', function (RouteCollectorProxy $group) {
 
 	// Delivery locations
 	$group->get('/{id:[0-9]+}/delivery-locations', HospitalityController::class . ':deliveryLocations');
+	$group->get('/{id:[0-9]+}/relevant-applications', HospitalityController::class . ':relevantApplications');
 
 	// Article groups
 	$group->get('/{id:[0-9]+}/article-groups', HospitalityArticleController::class . ':indexGroups');

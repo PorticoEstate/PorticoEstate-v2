@@ -1036,3 +1036,5 @@ Your application with event details has been added. You can add another applicat
 Your applications have now been processed and confirmation emails have been sent to you.	booking	en	Your applications have now been processed and confirmation emails have been sent to you.
 Your applications have now been registered and confirmation emails have been sent to you.	booking	en	Your applications have now been registered and confirmation emails have been sent to you.
 your_change	booking	en	Your change
+create_order	booking	en	Create order
+special_requirements	booking	en	Special requirements

@@ -1140,3 +1140,5 @@ Your applications have now been processed and confirmation emails have been sent
 Your applications have now been registered and confirmation emails have been sent to you.	booking	nn	Søknadene har nå blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
 your_change	booking	nn	Di endring
 zip code	booking	nn	Postnummer
+create_order	booking	nn	Opprett bestilling
+special_requirements	booking	nn	Spesielle krav

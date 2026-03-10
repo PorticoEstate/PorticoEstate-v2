@@ -10,6 +10,9 @@
 	var buildingsUrl = root.dataset.buildingsUrl ? root.dataset.buildingsUrl.split('?')[0] : null;
 	var articleMappingUrl = root.dataset.articleMappingUrl ? root.dataset.articleMappingUrl.split('?')[0] : null;
 	var taxListUrl = root.dataset.taxListUrl ? root.dataset.taxListUrl.split('?')[0] : null;
+	var ordersStoreUrl = root.dataset.ordersStoreUrl ? root.dataset.ordersStoreUrl.split('?')[0] : null;
+	var deliveryLocationsUrl = root.dataset.deliveryLocationsUrl ? root.dataset.deliveryLocationsUrl.split('?')[0] : null;
+	var relevantAppsUrl = root.dataset.relevantAppsUrl ? root.dataset.relevantAppsUrl.split('?')[0] : null;
 	var canWrite = root.dataset.canWrite === '1';
 
 	// ═══════════════════════════════════════════════════════════════════
@@ -1390,8 +1393,14 @@
 	function renderOrders(orders) {
 		var html = '';
 
+		if (canWrite) {
+			html += '<div class="hosp-show__tab-actions">' +
+				'<button type="button" class="app-button app-button-sm" data-action="create-order">' + esc(lang('createOrder')) + '</button>' +
+				'</div>';
+		}
+
 		if (!orders || orders.length === 0) {
-			html = '<p class="app-show__empty">' + esc(lang('noOrders')) + '</p>';
+			html += '<p class="app-show__empty">' + esc(lang('noOrders')) + '</p>';
 			document.getElementById('hospitality-orders').innerHTML = html;
 			return;
 		}
@@ -1462,6 +1471,127 @@
 		var detailRow = root.querySelector('[data-order-detail="' + orderId + '"]');
 		if (detailRow) detailRow.hidden = !detailRow.hidden;
 	});
+
+	// Create order
+	root.addEventListener('click', function (e) {
+		if (!e.target.closest('[data-action="create-order"]')) return;
+		showOrderModal();
+	});
+
+	function showOrderModal() {
+		var hospitalityId = parseInt(root.dataset.hospitalityId, 10);
+
+		var body = '';
+
+		// Application selector
+		body += '<label class="app-show__modal-label">' + esc(lang('application')) + ' *</label>' +
+			'<div id="modal-order-app-container" class="search-select">' +
+			'<input type="text" class="search-select__input app-show__modal-textarea" style="min-height:auto;height:2.25rem" placeholder="#ID..." autocomplete="off" aria-expanded="false" aria-autocomplete="list" role="combobox">' +
+			'<input type="hidden" id="modal-order-app-value">' +
+			'<ul class="search-select__dropdown" role="listbox"></ul>' +
+			'</div>';
+
+		// Location selector
+		body += '<label class="app-show__modal-label" style="margin-top:0.75rem">' + esc(lang('location')) + ' *</label>' +
+			'<div id="modal-order-loc-container" class="search-select">' +
+			'<input type="text" class="search-select__input app-show__modal-textarea" style="min-height:auto;height:2.25rem" placeholder="' + esc(lang('location')) + '..." autocomplete="off" aria-expanded="false" aria-autocomplete="list" role="combobox">' +
+			'<input type="hidden" id="modal-order-loc-value">' +
+			'<ul class="search-select__dropdown" role="listbox"></ul>' +
+			'</div>';
+
+		// Comment
+		body += '<label class="app-show__modal-label" for="modal-order-comment" style="margin-top:0.75rem">' + esc(lang('comment')) + '</label>' +
+			'<textarea id="modal-order-comment" class="app-show__modal-textarea" rows="2"></textarea>';
+
+		// Special requirements
+		body += '<label class="app-show__modal-label" for="modal-order-special" style="margin-top:0.75rem">' + esc(lang('specialRequirements')) + '</label>' +
+			'<textarea id="modal-order-special" class="app-show__modal-textarea" rows="2"></textarea>';
+
+		var footer = '<button type="button" class="app-button" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="app-button app-button-primary" id="modal-order-submit">' + esc(lang('save')) + '</button>';
+
+		showModal('order-dialog', lang('createOrder'), body, footer);
+
+		// Initialize application SearchSelect
+		var appSelector = new SearchSelect(
+			document.getElementById('modal-order-app-container'),
+			{
+				apiUrl: relevantAppsUrl,
+				idField: 'id',
+				labelField: '_label',
+				mapResponse: function (data) {
+					return (Array.isArray(data) ? data : []).map(function (app) {
+						app._label = '#' + app.id + ' - ' + (app.status || '') + (app.contact_name ? ' (' + app.contact_name + ')' : '');
+						return app;
+					});
+				},
+				placeholder: '#ID...',
+				emptyText: lang('noOrders')
+			}
+		);
+
+		// Initialize location SearchSelect
+		var locSelector = new SearchSelect(
+			document.getElementById('modal-order-loc-container'),
+			{
+				apiUrl: deliveryLocationsUrl,
+				idField: 'id',
+				labelField: '_label',
+				mapResponse: function (data) {
+					return (Array.isArray(data) ? data : []).map(function (loc) {
+						loc._label = loc.name + ' (' + loc.location_type + ')';
+						return loc;
+					});
+				},
+				placeholder: lang('location') + '...',
+				emptyText: lang('noOrders')
+			}
+		);
+
+		// Submit handler
+		document.getElementById('modal-order-submit').addEventListener('click', function () {
+			var appId = appSelector.getValue();
+			var locId = locSelector.getValue();
+
+			// Allow typing a raw application ID
+			if (!appId) {
+				var rawInput = document.getElementById('modal-order-app-container').querySelector('.search-select__input').value.trim();
+				var parsed = parseInt(rawInput.replace('#', ''), 10);
+				if (parsed > 0) appId = parsed;
+			}
+
+			if (!appId) {
+				document.getElementById('modal-order-app-container').querySelector('.search-select__input').focus();
+				return;
+			}
+			if (!locId) {
+				document.getElementById('modal-order-loc-container').querySelector('.search-select__input').focus();
+				return;
+			}
+
+			var btn = this;
+			btn.disabled = true;
+			btn.textContent = '...';
+
+			var payload = {
+				application_id: parseInt(appId, 10),
+				hospitality_id: hospitalityId,
+				location_resource_id: parseInt(locId, 10),
+				comment: document.getElementById('modal-order-comment').value.trim() || null,
+				special_requirements: document.getElementById('modal-order-special').value.trim() || null
+			};
+
+			postJson(ordersStoreUrl, payload).then(function () {
+				closeModal('order-dialog');
+				showToast(lang('saved'));
+				refreshData();
+			}).catch(function (err) {
+				btn.disabled = false;
+				btn.textContent = lang('save');
+				showToast(lang('error') + ': ' + err.message, 'danger');
+			});
+		});
+	}
 
 	// ═══════════════════════════════════════════════════════════════════
 	// Modal system (reused from application_show pattern)

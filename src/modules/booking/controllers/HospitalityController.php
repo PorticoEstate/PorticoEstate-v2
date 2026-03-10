@@ -455,6 +455,37 @@ class HospitalityController
 
 	/**
 	 * @OA\Get(
+	 *     path="/booking/hospitality/{id}/relevant-applications",
+	 *     summary="Get applications with bookings on delivery locations",
+	 *     tags={"Hospitality"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="List of relevant applications"),
+	 *     @OA\Response(response=404, description="Hospitality not found")
+	 * )
+	 */
+	public function relevantApplications(Request $request, Response $response, array $args): Response
+	{
+		try {
+			$id = (int)$args['id'];
+			$existing = $this->repository->getById($id);
+
+			if (!$existing) {
+				$response->getBody()->write(json_encode(['error' => 'Hospitality not found']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			}
+
+			$applications = $this->repository->getRelevantApplications($id);
+
+			$response->getBody()->write(json_encode($applications));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+		} catch (Exception $e) {
+			$response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+	/**
+	 * @OA\Get(
 	 *     path="/booking/hospitality/{id}/delivery-locations",
 	 *     summary="Get valid delivery locations (main + active remotes)",
 	 *     tags={"Hospitality"},

@@ -169,6 +169,33 @@ class HospitalityRepository
     }
 
     /**
+     * Get applications that have resource bookings on this hospitality's delivery locations.
+     * Returns application rows with id, status, contact_name, created.
+     */
+    public function getRelevantApplications(int $hospitalityId): array
+    {
+        $sql = "SELECT DISTINCT a.id, a.status, a.contact_name, a.created
+                FROM bb_application a
+                JOIN bb_application_resource ar ON a.id = ar.application_id
+                WHERE ar.resource_id IN (
+                    -- Main resource if on-site hospitality enabled
+                    SELECT r.id FROM bb_hospitality h
+                    JOIN bb_resource r ON h.resource_id = r.id
+                    WHERE h.id = :id1 AND h.allow_on_site_hospitality = 1
+                    UNION
+                    -- Active remote locations if remote serving enabled
+                    SELECT rl.resource_id FROM bb_hospitality_remote_location rl
+                    JOIN bb_hospitality h ON rl.hospitality_id = h.id
+                    WHERE rl.hospitality_id = :id2 AND rl.active = 1 AND h.remote_serving_enabled = 1
+                )
+                ORDER BY a.id DESC
+                LIMIT 100";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id1' => $hospitalityId, ':id2' => $hospitalityId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Get all valid delivery locations for a hospitality.
      * - Main resource included only if allow_on_site_hospitality = 1 (pre-order without booking the resource)
      * - Remote locations included only if remote_serving_enabled = 1

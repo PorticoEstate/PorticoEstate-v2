@@ -6,7 +6,17 @@
 	<div class="pure-form pure-form-stacked">
 		<h3>Location Document Move Workflow</h3>
 
-		<xsl:if test="selection_saved = true()">
+		<xsl:if test="analysis_ran != 1">
+			<div class="pure-alert pure-alert-primary">
+				<p>Click the button below to start the location document move analysis.</p>
+			</div>
+			<form method="post" action="" class="pure-form">
+				<input type="hidden" name="start_analysis" value="yes" />
+				<button type="submit" class="pure-button pure-button-primary pure-button-lg">Start Analysis</button>
+			</form>
+		</xsl:if>
+
+		<xsl:if test="selection_saved = 1">
 			<div class="pure-alert pure-alert-success">
 				Selection saved. Mappings selected for move:
 				<xsl:value-of select="selection_count" />

@@ -124,7 +124,10 @@ class LocationHierarchyDocumentAnalyzer
 					}
 				}
 
-				$this->markFilesMoved($oldCode, $newCode);
+				if($updatedRows)
+				{
+					$this->markFilesMoved($oldCode, $newCode);
+				}
 
 				if ($this->db->get_transaction())
 				{

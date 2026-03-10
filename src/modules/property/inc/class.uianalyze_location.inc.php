@@ -163,8 +163,14 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 
 		$analyzer = new LocationHierarchyDocumentAnalyzer();
 		$data = [];
+		$data['analysis_ran'] = false;
 
-		if (isset($_POST['save_files_to_move']) && $_POST['save_files_to_move'] == 'yes')
+		if (isset($_POST['start_analysis']) && $_POST['start_analysis'] == 'yes')
+		{
+			$data['analysis_ran'] = true;
+			$data['candidates'] = $analyzer->analyzeCandidates();
+		}
+		else if (isset($_POST['save_files_to_move']) && $_POST['save_files_to_move'] == 'yes')
 		{
 			$selectedMappings = isset($_POST['mapping_keys']) && is_array($_POST['mapping_keys'])
 				? $_POST['mapping_keys']
@@ -173,6 +179,7 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 			$analyzer->updateFilesToMoveSelection($selectedMappings);
 			$data['selection_saved'] = true;
 			$data['selection_count'] = count($selectedMappings);
+			$data['analysis_ran'] = true;
 		}
 
 		if (isset($_POST['execute_move']) && $_POST['execute_move'] == 'yes')
@@ -185,9 +192,10 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 			{
 				$data['execution_warning'] = 'Please confirm execute before running the move operation.';
 			}
+			$data['candidates'] = [];
+			$data['analysis_ran'] = true;
 		}
 
-		$data['candidates'] = $analyzer->analyzeCandidates();
 
 		$summary = [
 			'total_candidates' => 0,

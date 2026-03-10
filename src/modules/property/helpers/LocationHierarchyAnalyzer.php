@@ -824,8 +824,7 @@ class LocationHierarchyAnalyzer
 
 		if (!empty($this->sqlStatements['corrections']))
 		{
-			// Ensure we never output duplicate mapping inserts.
-			$this->sqlStatements['corrections'] = array_values(array_unique($this->sqlStatements['corrections']));
+			$this->sqlStatements['corrections'] = $this->sanitizeCorrectionMappings($this->sqlStatements['corrections']);
 		}
 
 		return [
@@ -897,8 +896,7 @@ class LocationHierarchyAnalyzer
 		}
 		if (!empty($all['sql_statements']['corrections']))
 		{
-			// Ensure we never output duplicate mapping inserts when merging per-loc1 results.
-			$all['sql_statements']['corrections'] = array_values(array_unique($all['sql_statements']['corrections']));
+			$all['sql_statements']['corrections'] = $this->sanitizeCorrectionMappings($all['sql_statements']['corrections']);
 		}
 		$all['sql_statements']['update_location_from_mapping'] = $this->createUpdateStatements();
 		return $all;
@@ -1226,6 +1224,92 @@ class LocationHierarchyAnalyzer
 			. "AND fm_bim_item.address IS DISTINCT FROM fm_locations.name;";
 
 		return $sqlStatements;
+	}
+
+	/**
+	 * Remove duplicate location_mapping inserts and prevent circular reverse pairs.
+	 * For A->B and B->A of the same change_type, keep a deterministic direction.
+	 */
+	private function sanitizeCorrectionMappings(array $statements): array
+	{
+		$uniqueStatements = array_values(array_unique($statements));
+		$groups = [];
+		$passthrough = [];
+
+		foreach ($uniqueStatements as $sql)
+		{
+			$parsed = $this->parseLocationMappingInsert($sql);
+			if ($parsed === null)
+			{
+				$passthrough[] = $sql;
+				continue;
+			}
+
+			$old = $parsed['old'];
+			$new = $parsed['new'];
+			$type = $parsed['type'];
+			$pairMin = strcmp($old, $new) <= 0 ? $old : $new;
+			$pairMax = strcmp($old, $new) <= 0 ? $new : $old;
+			$groupKey = $type . '|' . $pairMin . '|' . $pairMax;
+
+			if (!isset($groups[$groupKey]))
+			{
+				$groups[$groupKey] = [];
+			}
+			$groups[$groupKey][] = [
+				'sql' => $sql,
+				'old' => $old,
+				'new' => $new,
+			];
+		}
+
+		$result = $passthrough;
+
+		foreach ($groups as $entries)
+		{
+			if (count($entries) === 1)
+			{
+				$result[] = $entries[0]['sql'];
+				continue;
+			}
+
+			// Prefer the deterministic direction where old < new if both directions exist.
+			$chosen = null;
+			foreach ($entries as $entry)
+			{
+				if (strcmp($entry['old'], $entry['new']) < 0)
+				{
+					$chosen = $entry['sql'];
+					break;
+				}
+			}
+
+			if ($chosen === null)
+			{
+				$chosen = $entries[0]['sql'];
+			}
+			$result[] = $chosen;
+		}
+
+		return array_values(array_unique($result));
+	}
+
+	/**
+	 * Parse a location_mapping INSERT SQL and extract old/new codes and change_type.
+	 */
+	private function parseLocationMappingInsert(string $sql): ?array
+	{
+		$pattern = "/INSERT\\s+INTO\\s+location_mapping\\s*\\([^)]*\\)\\s*VALUES\\s*\\(\\s*'([^']*)'\\s*,\\s*'([^']*)'.*,\\s*'([^']*)'\\s*\\)\\s*;?\\s*$/i";
+		if (!preg_match($pattern, $sql, $matches))
+		{
+			return null;
+		}
+
+		return [
+			'old' => $matches[1],
+			'new' => $matches[2],
+			'type' => $matches[3],
+		];
 	}
 
 	/**

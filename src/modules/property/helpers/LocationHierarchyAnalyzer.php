@@ -1220,7 +1220,7 @@ class LocationHierarchyAnalyzer
 			. "END "
 			. "FROM fm_locations "
 			. "WHERE fm_bim_item.location_code = fm_locations.location_code "
-			. "AND fm_locations.level = 4 "
+			. "AND fm_locations.level IN (3, 4) "
 			. "AND fm_bim_item.address IS DISTINCT FROM fm_locations.name;";
 
 		return $sqlStatements;

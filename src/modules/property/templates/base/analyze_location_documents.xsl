@@ -7,6 +7,63 @@
 		<h3>Location Document Move Workflow</h3>
 
 		<xsl:if test="analysis_ran != 1">
+			<xsl:if test="previously_selected">
+				<h4>Step 1: Analyze and select mappings to move</h4>
+				<p class="pure-text-muted">Previously selected mappings are shown below. Click "Start Analysis" to include additional candidates.</p>
+				<form method="post" action="" class="pure-form">
+					<input type="hidden" name="save_files_to_move" value="yes" />
+					<table class="pure-table pure-table-bordered">
+						<tr>
+							<th>
+								<label class="pure-checkbox">
+									<input type="checkbox" id="select_all_mappings" onclick="toggleAllMappings(this)" />
+									Select all
+								</label>
+							</th>
+							<th>Old location_code</th>
+							<th>New location_code</th>
+							<th>Mapping rows</th>
+							<th>Matched directories</th>
+							<th>Already moved</th>
+						</tr>
+						<xsl:for-each select="previously_selected">
+							<tr>
+								<td>
+									<xsl:if test="files_moved != 1">
+										<label class="pure-checkbox">
+											<input type="checkbox" name="mapping_keys[]" value="{selection_key}" checked="checked" />
+										</label>
+									</xsl:if>
+								</td>
+								<td><xsl:value-of select="old_location_code" /></td>
+								<td><xsl:value-of select="new_location_code" /></td>
+								<td><xsl:value-of select="mapping_count" /></td>
+								<td>
+									<xsl:value-of select="directory_count" />
+									<xsl:if test="directories">
+										<details>
+											<summary>Show directories</summary>
+											<ul>
+												<xsl:for-each select="directories">
+													<li><xsl:value-of select="." /></li>
+												</xsl:for-each>
+											</ul>
+										</details>
+									</xsl:if>
+								</td>
+								<td>
+									<xsl:choose>
+										<xsl:when test="files_moved = 1">yes</xsl:when>
+										<xsl:otherwise>no</xsl:otherwise>
+									</xsl:choose>
+								</td>
+							</tr>
+						</xsl:for-each>
+					</table>
+					<button type="submit" class="pure-button pure-button-primary">Save files_to_move selection</button>
+				</form>
+			</xsl:if>
+
 			<div class="pure-alert pure-alert-primary">
 				<p>Click the button below to start the location document move analysis.</p>
 			</div>
@@ -89,6 +146,7 @@
 				<xsl:for-each select="candidates[directory_count &gt; 0]">
 					<tr>
 						<td>
+						<xsl:if test="files_moved != 1">
 							<label class="pure-checkbox">
 								<input type="checkbox" name="mapping_keys[]" value="{selection_key}">
 									<xsl:if test="files_to_move = 1">
@@ -96,6 +154,7 @@
 									</xsl:if>
 								</input>
 							</label>
+						</xsl:if>
 						</td>
 						<td><xsl:value-of select="old_location_code" /></td>
 						<td><xsl:value-of select="new_location_code" /></td>

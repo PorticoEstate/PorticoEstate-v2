@@ -3,16 +3,19 @@
 namespace App\modules\property\helpers;
 
 use App\Database\Db;
+use App\Database\Db2;
 use App\modules\phpgwapi\services\Settings;
 
 class LocationHierarchyDocumentAnalyzer
 {
 	private $db;
+	private $db2;
 	private $basedir;
 
 	public function __construct()
 	{
 		$this->db = Db::getInstance();
+		$this->db2	 = new Db2();
 		$serverSettings  = Settings::getInstance()->get('server');
 		$this->basedir = isset($serverSettings['files_dir']) ? rtrim($serverSettings['files_dir'], '/\\') : '';
 	}
@@ -42,6 +45,41 @@ class LocationHierarchyDocumentAnalyzer
 	}
 
 	/**
+	 * Get previously selected mappings (where files_to_move = 1).
+	 */
+	public function getPreviouslySelectionMappings()
+	{
+		$sql = "SELECT DISTINCT old_location_code, new_location_code,
+			COALESCE(files_moved, 0) AS files_moved,
+			COUNT(*) AS mapping_count
+			FROM location_mapping
+			WHERE COALESCE(old_location_code, '') <> ''
+				AND COALESCE(new_location_code, '') <> ''
+				AND old_location_code <> new_location_code
+				AND COALESCE(files_to_move, 0) = 1
+			GROUP BY old_location_code, new_location_code, files_moved
+			ORDER BY old_location_code, new_location_code";
+
+		$this->db->query($sql, __LINE__, __FILE__);
+		$selections = [];
+		while ($this->db->next_record())
+		{
+			$oldCode = $this->db->f('old_location_code');
+			$directories = $this->findDirectoriesForLocationCode($oldCode);
+			$selections[] = [
+				'old_location_code' => $oldCode,
+				'new_location_code' => $this->db->f('new_location_code'),
+				'files_moved' => (int) $this->db->f('files_moved'),
+				'mapping_count' => (int) $this->db->f('mapping_count'),
+				'directory_count' => count($directories),
+				'directories' => $directories,
+				'selection_key' => $oldCode . '|' . $this->db->f('new_location_code'),
+			];
+		}
+		return $selections;
+	}
+
+	/**
 	 * Persist checkbox selection into location_mapping.files_to_move.
 	 *
 	 * @param array $selectedKeys values in format "old_location_code|new_location_code"
@@ -50,12 +88,15 @@ class LocationHierarchyDocumentAnalyzer
 	{
 		$selectedPairs = $this->parseSelectedMappingKeys($selectedKeys);
 
-		// Reset current selection for all relevant mappings first.
+		// Reset current selection for mappings that are not already completed.
+		// Keep files_to_move = 1 for files_moved = 1 rows so the history remains visible
+		// when new items are added from a later analysis run.
 		$sqlReset = "UPDATE location_mapping
 			SET files_to_move = 0
 			WHERE COALESCE(old_location_code, '') <> ''
 				AND COALESCE(new_location_code, '') <> ''
-				AND old_location_code <> new_location_code";
+				AND old_location_code <> new_location_code
+				AND COALESCE(files_moved, 0) = 0";
 		$this->db->query($sqlReset, __LINE__, __FILE__);
 
 		foreach ($selectedPairs as $pair)
@@ -113,8 +154,8 @@ class LocationHierarchyDocumentAnalyzer
 						$filesystemMoveSucceeded = true;
 					}
 
-					// Only update VFS if filesystem move succeeded or no filesystem path existed
-					if ($filesystemMoveSucceeded || !$filesystemPathExists)
+					// Only update VFS if filesystem move succeeded
+					if ($filesystemMoveSucceeded )
 					{
 						if (!$this->updateDirectory($directory, $newDirectory))
 						{
@@ -137,10 +178,10 @@ class LocationHierarchyDocumentAnalyzer
 				$results[] = [
 					'old_location_code' => $oldCode,
 					'new_location_code' => $newCode,
-					'status' => 'success',
+					'status' => $updatedRows ? 'success' : 'no_changes',
 					'updated_rows' => $updatedRows,
 					'moved_directories' => $movedDirectories,
-					'message' => $updatedRows ? 'Location code move completed' : 'No matching directories found; mapping marked as moved',
+					'message' => $updatedRows ? 'Location code move completed' : 'No matching directories found; no changes made',
 				];
 			}
 			catch (\Throwable $e)
@@ -233,11 +274,11 @@ class LocationHierarchyDocumentAnalyzer
 				OR directory LIKE '%/{$oldEscaped}'
 			ORDER BY directory";
 
-		$this->db->query($sql, __LINE__, __FILE__);
+		$this->db2->query($sql, __LINE__, __FILE__);
 		$directories = [];
-		while ($this->db->next_record())
+		while ($this->db2->next_record())
 		{
-			$directories[] = $this->db->f('directory');
+			$directories[] = $this->db2->f('directory');
 		}
 		return $directories;
 	}

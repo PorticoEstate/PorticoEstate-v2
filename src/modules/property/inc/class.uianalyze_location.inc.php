@@ -164,6 +164,7 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 		$analyzer = new LocationHierarchyDocumentAnalyzer();
 		$data = [];
 		$data['analysis_ran'] = false;
+		$data['previously_selected'] = $analyzer->getPreviouslySelectionMappings();
 
 		if (isset($_POST['start_analysis']) && $_POST['start_analysis'] == 'yes')
 		{
@@ -203,13 +204,10 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 			'completed_moves' => 0,
 		];
 
-		foreach ($data['candidates'] as $candidate)
+		foreach (($data['previously_selected'] ?? []) as $candidate)
 		{
 			$summary['total_candidates']++;
-			if (!empty($candidate['files_to_move']))
-			{
-				$summary['selected_for_move']++;
-			}
+			$summary['selected_for_move']++;
 			if (!empty($candidate['files_moved']))
 			{
 				$summary['completed_moves']++;

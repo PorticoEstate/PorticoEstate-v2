@@ -162,6 +162,7 @@ class LocationHierarchyDocumentAnalyzer
 							throw new \RuntimeException("Failed to update VFS directory '{$directory}'");
 						}
 						$updatedRows++;
+						$this->cleanUpEmptyAncestors($oldAbsolute, $oldCode);
 					}
 				}
 
@@ -281,6 +282,32 @@ class LocationHierarchyDocumentAnalyzer
 			$directories[] = $this->db2->f('directory');
 		}
 		return $directories;
+	}
+
+	private function cleanUpEmptyAncestors(string $movedAbsolutePath, string $locationCode): void
+	{
+		$basedirLen = strlen((string) $this->basedir);
+		$dir = dirname($movedAbsolutePath);
+
+		while (strlen($dir) > $basedirLen)
+		{
+			if (!is_dir($dir))
+			{
+				break;
+			}
+			$items = @scandir($dir);
+			if ($items === false || count(array_diff($items, ['.', '..'])) > 0)
+			{
+				break; // not empty – stop walking up
+			}
+			$isLocationDir = (basename($dir) === $locationCode);
+			@rmdir($dir);
+			if ($isLocationDir)
+			{
+				break; // stop after the location-code-named directory itself
+			}
+			$dir = dirname($dir);
+		}
 	}
 
 	private function parseSelectedMappingKeys(array $selectedKeys)

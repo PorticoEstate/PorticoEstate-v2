@@ -1038,3 +1038,19 @@ Your applications have now been registered and confirmation emails have been sen
 your_change	booking	en	Your change
 create_order	booking	en	Create order
 special_requirements	booking	en	Special requirements
+confirm_order	booking	en	Confirm order
+deliver_order	booking	en	Deliver order
+cancel_order	booking	en	Cancel order
+order_lines	booking	en	Order lines
+total	booking	en	Total
+delivered	booking	en	Delivered
+pending_status	booking	en	Pending
+serving_time	booking	en	Serving time
+select_date	booking	en	Select date
+select_time	booking	en	Select time
+changelog	booking	en	Changelog
+changelog_comment	booking	en	Change comment
+changelog_comment_required	booking	en	Please describe the change
+changelog_comment_placeholder	booking	en	Describe what is being changed and why
+no_changes	booking	en	No changes recorded
+exit_edit_mode	booking	en	Exit editing

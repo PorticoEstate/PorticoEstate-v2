@@ -1130,3 +1130,19 @@ your_change	booking	no	Din endring
 zip code	booking	no	Postnummer
 create_order	booking	no	Opprett bestilling
 special_requirements	booking	no	Spesielle krav
+confirm_order	booking	no	Bekreft bestilling
+deliver_order	booking	no	Lever bestilling
+cancel_order	booking	no	Avbryt bestilling
+order_lines	booking	no	Ordrelinjer
+total	booking	no	Totalt
+delivered	booking	no	Levert
+pending_status	booking	no	Venter
+serving_time	booking	no	Serveringstid
+select_date	booking	no	Velg dato
+select_time	booking	no	Velg tid
+changelog	booking	no	Endringslogg
+changelog_comment	booking	no	Endringskommentar
+changelog_comment_required	booking	no	Vennligst beskriv endringen
+changelog_comment_placeholder	booking	no	Beskriv hva som endres og hvorfor
+no_changes	booking	no	Ingen endringer registrert
+exit_edit_mode	booking	no	Avslutt redigering

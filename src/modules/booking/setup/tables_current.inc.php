@@ -1789,6 +1789,7 @@ $phpgw_baseline = array(
 			'status' => array('type' => 'varchar', 'precision' => '20', 'nullable' => false, 'default' => 'pending'),
 			'comment' => array('type' => 'text', 'nullable' => true),
 			'special_requirements' => array('type' => 'text', 'nullable' => true),
+			'serving_time_iso' => array('type' => 'timestamp', 'nullable' => true),
 			'created' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
 			'modified' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
 			'created_by' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
@@ -1815,6 +1816,7 @@ $phpgw_baseline = array(
 			'unit_price' => array('type' => 'decimal', 'precision' => 10, 'scale' => 2, 'nullable' => false),
 			'tax_code' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
 			'amount' => array('type' => 'decimal', 'precision' => 10, 'scale' => 2, 'nullable' => false),
+			'comment' => array('type' => 'text', 'nullable' => true),
 		),
 		'pk' => array('id'),
 		'fk' => array(
@@ -1826,6 +1828,26 @@ $phpgw_baseline = array(
 		),
 		'uc' => array()
 	),
+	'bb_hospitality_order_changelog' => array(
+		'fd' => array(
+			'id' => array('type' => 'auto', 'nullable' => false),
+			'order_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'case_officer_id' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+			'booking_user_id' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+			'changed_at' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
+			'change_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
+			'old_value' => array('type' => 'jsonb', 'nullable' => true),
+			'new_value' => array('type' => 'jsonb', 'nullable' => true),
+			'comment' => array('type' => 'text', 'nullable' => false),
+		),
+		'pk' => array('id'),
+		'fk' => array(
+			'bb_hospitality_order' => array('order_id' => 'id'),
+		),
+		'ix' => array('order_id'),
+		'uc' => array()
+	),
+
 	'bb_hospitality_order_document' => array(
 		'fd' => array(
 			'id' => array('type' => 'auto', 'nullable' => false),

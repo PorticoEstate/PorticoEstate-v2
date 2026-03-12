@@ -9,6 +9,7 @@ use App\modules\booking\repositories\HospitalityArticleRepository;
 use App\modules\booking\repositories\HospitalityOrderRepository;
 use App\modules\booking\models\HospitalityOrder;
 use App\modules\booking\models\HospitalityOrderLine;
+use App\Database\Db;
 
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -46,6 +47,73 @@ class HospitalityOrderController
 		return $model->serialize();
 	}
 
+	private function requireChangelogComment(array $body): ?string
+	{
+		$comment = isset($body['changelog_comment']) ? trim($body['changelog_comment']) : '';
+		return $comment !== '' ? $comment : null;
+	}
+
+	private function recordChanges(int $orderId, string $changeType, ?array $oldValues, ?array $newValues, string $comment): void
+	{
+		$this->repository->addChangelogEntry([
+			'order_id' => $orderId,
+			'case_officer_id' => (int)$this->userSettings['account_id'],
+			'change_type' => $changeType,
+			'old_value' => $oldValues,
+			'new_value' => $newValues,
+			'comment' => $comment,
+		]);
+	}
+
+	private function jsonError(Response $response, string $message, int $status = 400): Response
+	{
+		$response->getBody()->write(json_encode(['error' => $message]));
+		return $response->withHeader('Content-Type', 'application/json')->withStatus($status);
+	}
+
+	/**
+	 * Validate that serving_time_iso (UTC ISO-8601) falls within one of the
+	 * application's date ranges. The date ranges in bb_application_date are
+	 * stored as naive server-local timestamps, so we convert the UTC ISO
+	 * string to server-local before comparing.
+	 *
+	 * Returns null on success, or an error string on failure.
+	 */
+	private function validateServingTime(string $servingTimeIso, int $applicationId): ?string
+	{
+		$db = Db::getInstance();
+
+		$stmtCount = $db->prepare(
+			"SELECT COUNT(*) FROM bb_application_date WHERE application_id = :app_id"
+		);
+		$stmtCount->execute([':app_id' => $applicationId]);
+		if ((int)$stmtCount->fetchColumn() === 0) {
+			return null; // No date constraints
+		}
+
+		// Convert UTC ISO to server-local timestamp for comparison with naive DB columns
+		$dt = new \DateTime($servingTimeIso);
+		$dt->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+		$localTimestamp = $dt->format('Y-m-d H:i:s');
+
+		$stmt = $db->prepare(
+			"SELECT COUNT(*) FROM bb_application_date
+			 WHERE application_id = :app_id
+			   AND :serving_time::timestamp >= from_
+			   AND :serving_time::timestamp <= to_"
+		);
+		$stmt->execute([
+			':app_id' => $applicationId,
+			':serving_time' => $localTimestamp,
+		]);
+
+		if ((int)$stmt->fetchColumn() > 0) {
+			return null;
+		}
+
+		return 'serving_time_iso must be within one of the application date ranges';
+	}
+
 	/**
 	 * @OA\Get(
 	 *     path="/booking/hospitality-orders",
@@ -74,8 +142,7 @@ class HospitalityOrderController
 					$orders[] = $row;
 				}
 			} else {
-				$response->getBody()->write(json_encode(['error' => 'application_id or hospitality_id query parameter is required']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				return $this->jsonError($response, 'application_id or hospitality_id query parameter is required');
 			}
 
 			$results = array_map(function ($row) {
@@ -85,8 +152,7 @@ class HospitalityOrderController
 			$response->getBody()->write(json_encode($results));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		} catch (Exception $e) {
-			$response->getBody()->write(json_encode(['error' => $e->getMessage()]));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+			return $this->jsonError($response, $e->getMessage(), 500);
 		}
 	}
 
@@ -111,37 +177,38 @@ class HospitalityOrderController
 	public function store(Request $request, Response $response): Response
 	{
 		if (!$this->acl->check('.application', Acl::ADD, 'booking')) {
-			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+			return $this->jsonError($response, 'Permission denied', 403);
 		}
 
 		try {
 			$body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];
 
 			if (empty($body['application_id']) || empty($body['hospitality_id']) || empty($body['location_resource_id'])) {
-				$response->getBody()->write(json_encode([
-					'error' => 'application_id, hospitality_id, and location_resource_id are required',
-				]));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				return $this->jsonError($response, 'application_id, hospitality_id, and location_resource_id are required');
 			}
 
 			// Validate hospitality exists and is active
 			$hospitality = $this->hospitalityRepository->getById((int)$body['hospitality_id']);
 			if (!$hospitality) {
-				$response->getBody()->write(json_encode(['error' => 'Hospitality not found']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+				return $this->jsonError($response, 'Hospitality not found', 404);
 			}
 			if (!(int)$hospitality['active']) {
-				$response->getBody()->write(json_encode(['error' => 'Hospitality is not active']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				return $this->jsonError($response, 'Hospitality is not active');
 			}
 
 			// Validate location is a valid delivery location
 			$validLocations = $this->hospitalityRepository->getDeliveryLocations((int)$body['hospitality_id']);
 			$locationIds = array_column($validLocations, 'id');
 			if (!in_array((int)$body['location_resource_id'], array_map('intval', $locationIds))) {
-				$response->getBody()->write(json_encode(['error' => 'Invalid delivery location for this hospitality']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				return $this->jsonError($response, 'Invalid delivery location for this hospitality');
+			}
+
+			// Validate serving_time against application date ranges
+			if (!empty($body['serving_time_iso'])) {
+				$err = $this->validateServingTime($body['serving_time_iso'], (int)$body['application_id']);
+				if ($err !== null) {
+					return $this->jsonError($response, $err);
+				}
 			}
 
 			$body['created_by'] = (int)$this->userSettings['account_id'];
@@ -151,8 +218,7 @@ class HospitalityOrderController
 			$response->getBody()->write(json_encode($this->orderToJson($orderId)));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
 		} catch (Exception $e) {
-			$response->getBody()->write(json_encode(['error' => $e->getMessage()]));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+			return $this->jsonError($response, $e->getMessage(), 500);
 		}
 	}
 
@@ -173,8 +239,7 @@ class HospitalityOrderController
 			$data = $this->repository->getOrderWithLines($id);
 
 			if (!$data) {
-				$response->getBody()->write(json_encode(['error' => 'Order not found']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+				return $this->jsonError($response, 'Order not found', 404);
 			}
 
 			$model = new HospitalityOrder($data);
@@ -182,8 +247,7 @@ class HospitalityOrderController
 			$response->getBody()->write(json_encode($model->serialize()));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		} catch (Exception $e) {
-			$response->getBody()->write(json_encode(['error' => $e->getMessage()]));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+			return $this->jsonError($response, $e->getMessage(), 500);
 		}
 	}
 
@@ -201,8 +265,7 @@ class HospitalityOrderController
 	public function update(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->acl->check('.application', Acl::EDIT, 'booking')) {
-			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+			return $this->jsonError($response, 'Permission denied', 403);
 		}
 
 		try {
@@ -210,11 +273,16 @@ class HospitalityOrderController
 			$existing = $this->repository->getById($id);
 
 			if (!$existing) {
-				$response->getBody()->write(json_encode(['error' => 'Order not found']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+				return $this->jsonError($response, 'Order not found', 404);
 			}
 
 			$body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];
+
+			$changelogComment = $this->requireChangelogComment($body);
+			if (!$changelogComment) {
+				return $this->jsonError($response, 'changelog_comment is required');
+			}
+
 			$body['modified_by'] = (int)$this->userSettings['account_id'];
 
 			// Validate location if being changed
@@ -222,18 +290,40 @@ class HospitalityOrderController
 				$validLocations = $this->hospitalityRepository->getDeliveryLocations((int)$existing['hospitality_id']);
 				$locationIds = array_column($validLocations, 'id');
 				if (!in_array((int)$body['location_resource_id'], array_map('intval', $locationIds))) {
-					$response->getBody()->write(json_encode(['error' => 'Invalid delivery location for this hospitality']));
-					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+					return $this->jsonError($response, 'Invalid delivery location for this hospitality');
+				}
+			}
+
+			// Validate serving_time against application date ranges
+			if (!empty($body['serving_time_iso'])) {
+				$targetAppId = !empty($body['application_id']) ? (int)$body['application_id'] : (int)$existing['application_id'];
+				$err = $this->validateServingTime($body['serving_time_iso'], $targetAppId);
+				if ($err !== null) {
+					return $this->jsonError($response, $err);
+				}
+			}
+
+			// Diff changed fields for changelog
+			$trackFields = ['comment', 'special_requirements', 'serving_time_iso', 'location_resource_id', 'application_id'];
+			$oldValues = [];
+			$newValues = [];
+			foreach ($trackFields as $f) {
+				if (array_key_exists($f, $body) && (string)($body[$f] ?? '') !== (string)($existing[$f] ?? '')) {
+					$oldValues[$f] = $existing[$f];
+					$newValues[$f] = $body[$f];
 				}
 			}
 
 			$this->repository->update($id, $body);
 
+			if (!empty($oldValues)) {
+				$this->recordChanges($id, 'field_update', $oldValues, $newValues, $changelogComment);
+			}
+
 			$response->getBody()->write(json_encode($this->orderToJson($id)));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		} catch (Exception $e) {
-			$response->getBody()->write(json_encode(['error' => $e->getMessage()]));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+			return $this->jsonError($response, $e->getMessage(), 500);
 		}
 	}
 
@@ -255,8 +345,7 @@ class HospitalityOrderController
 	public function updateStatus(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->acl->check('.application', Acl::EDIT, 'booking')) {
-			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+			return $this->jsonError($response, 'Permission denied', 403);
 		}
 
 		try {
@@ -264,23 +353,23 @@ class HospitalityOrderController
 			$existing = $this->repository->getById($id);
 
 			if (!$existing) {
-				$response->getBody()->write(json_encode(['error' => 'Order not found']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+				return $this->jsonError($response, 'Order not found', 404);
 			}
 
 			$body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];
 
+			$changelogComment = $this->requireChangelogComment($body);
+			if (!$changelogComment) {
+				return $this->jsonError($response, 'changelog_comment is required');
+			}
+
 			if (empty($body['status'])) {
-				$response->getBody()->write(json_encode(['error' => 'status is required']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				return $this->jsonError($response, 'status is required');
 			}
 
 			$newStatus = $body['status'];
 			if (!HospitalityOrder::isValidStatus($newStatus)) {
-				$response->getBody()->write(json_encode([
-					'error' => 'Invalid status. Must be one of: ' . implode(', ', HospitalityOrder::VALID_STATUSES),
-				]));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				return $this->jsonError($response, 'Invalid status. Must be one of: ' . implode(', ', HospitalityOrder::VALID_STATUSES));
 			}
 
 			$currentStatus = $existing['status'];
@@ -295,11 +384,16 @@ class HospitalityOrderController
 
 			$this->repository->updateStatus($id, $newStatus, (int)$this->userSettings['account_id']);
 
+			$this->recordChanges($id, 'status_change',
+				['status' => $currentStatus],
+				['status' => $newStatus],
+				$changelogComment
+			);
+
 			$response->getBody()->write(json_encode($this->orderToJson($id)));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		} catch (Exception $e) {
-			$response->getBody()->write(json_encode(['error' => $e->getMessage()]));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+			return $this->jsonError($response, $e->getMessage(), 500);
 		}
 	}
 
@@ -317,8 +411,7 @@ class HospitalityOrderController
 	public function destroy(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->acl->check('.application', Acl::DELETE, 'booking')) {
-			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+			return $this->jsonError($response, 'Permission denied', 403);
 		}
 
 		try {
@@ -326,8 +419,7 @@ class HospitalityOrderController
 			$existing = $this->repository->getById($id);
 
 			if (!$existing) {
-				$response->getBody()->write(json_encode(['error' => 'Order not found']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+				return $this->jsonError($response, 'Order not found', 404);
 			}
 
 			$this->repository->delete($id, (int)$this->userSettings['account_id']);
@@ -335,8 +427,7 @@ class HospitalityOrderController
 			$response->getBody()->write(json_encode(['message' => 'Order cancelled']));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		} catch (Exception $e) {
-			$response->getBody()->write(json_encode(['error' => $e->getMessage()]));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+			return $this->jsonError($response, $e->getMessage(), 500);
 		}
 	}
 
@@ -361,8 +452,7 @@ class HospitalityOrderController
 	public function addLine(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->acl->check('.application', Acl::ADD, 'booking')) {
-			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+			return $this->jsonError($response, 'Permission denied', 403);
 		}
 
 		try {
@@ -370,27 +460,28 @@ class HospitalityOrderController
 			$existing = $this->repository->getById($orderId);
 
 			if (!$existing) {
-				$response->getBody()->write(json_encode(['error' => 'Order not found']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+				return $this->jsonError($response, 'Order not found', 404);
 			}
 
 			$body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];
 
+			$changelogComment = $this->requireChangelogComment($body);
+			if (!$changelogComment) {
+				return $this->jsonError($response, 'changelog_comment is required');
+			}
+
 			if (empty($body['hospitality_article_id'])) {
-				$response->getBody()->write(json_encode(['error' => 'hospitality_article_id is required']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				return $this->jsonError($response, 'hospitality_article_id is required');
 			}
 
 			// Snapshot effective pricing from the article system
 			$pricing = $this->articleRepository->resolveEffectivePricing((int)$body['hospitality_article_id']);
 			if (!$pricing) {
-				$response->getBody()->write(json_encode(['error' => 'Hospitality article not found']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+				return $this->jsonError($response, 'Hospitality article not found', 404);
 			}
 
 			if ($pricing['effective_price'] === null) {
-				$response->getBody()->write(json_encode(['error' => 'Article has no price configured']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				return $this->jsonError($response, 'Article has no price configured');
 			}
 
 			$lineData = [
@@ -399,15 +490,22 @@ class HospitalityOrderController
 				'quantity' => $body['quantity'] ?? 1,
 				'unit_price' => $pricing['effective_price'],
 				'tax_code' => $pricing['effective_tax_code'],
+				'comment' => $body['comment'] ?? null,
 			];
 
-			$this->repository->addOrderLine($lineData);
+			$lineId = $this->repository->addOrderLine($lineData);
+
+			$this->recordChanges($orderId, 'line_add', null, [
+				'line_id' => $lineId,
+				'hospitality_article_id' => $lineData['hospitality_article_id'],
+				'quantity' => $lineData['quantity'],
+				'unit_price' => $lineData['unit_price'],
+			], $changelogComment);
 
 			$response->getBody()->write(json_encode($this->orderToJson($orderId)));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
 		} catch (Exception $e) {
-			$response->getBody()->write(json_encode(['error' => $e->getMessage()]));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+			return $this->jsonError($response, $e->getMessage(), 500);
 		}
 	}
 
@@ -429,8 +527,7 @@ class HospitalityOrderController
 	public function updateLine(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->acl->check('.application', Acl::EDIT, 'booking')) {
-			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+			return $this->jsonError($response, 'Permission denied', 403);
 		}
 
 		try {
@@ -439,32 +536,43 @@ class HospitalityOrderController
 
 			$existing = $this->repository->getById($orderId);
 			if (!$existing) {
-				$response->getBody()->write(json_encode(['error' => 'Order not found']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+				return $this->jsonError($response, 'Order not found', 404);
 			}
 
-			// Verify line belongs to this order
-			$lines = $this->repository->getOrderLines($orderId);
-			$lineExists = false;
-			foreach ($lines as $line) {
-				if ((int)$line['id'] === $lineId) {
-					$lineExists = true;
-					break;
-				}
-			}
-			if (!$lineExists) {
-				$response->getBody()->write(json_encode(['error' => 'Order line not found']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			// Verify line belongs to this order and get current state
+			$oldLine = $this->repository->getOrderLineById($lineId);
+			if (!$oldLine || (int)$oldLine['order_id'] !== $orderId) {
+				return $this->jsonError($response, 'Order line not found', 404);
 			}
 
 			$body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];
+
+			$changelogComment = $this->requireChangelogComment($body);
+			if (!$changelogComment) {
+				return $this->jsonError($response, 'changelog_comment is required');
+			}
+
+			// Diff line fields for changelog
+			$lineTrackFields = ['quantity', 'comment'];
+			$oldValues = [];
+			$newValues = [];
+			foreach ($lineTrackFields as $f) {
+				if (array_key_exists($f, $body) && (string)($body[$f] ?? '') !== (string)($oldLine[$f] ?? '')) {
+					$oldValues["line:{$lineId}:{$f}"] = $oldLine[$f];
+					$newValues["line:{$lineId}:{$f}"] = $body[$f];
+				}
+			}
+
 			$this->repository->updateOrderLine($lineId, $body);
+
+			if (!empty($oldValues)) {
+				$this->recordChanges($orderId, 'line_update', $oldValues, $newValues, $changelogComment);
+			}
 
 			$response->getBody()->write(json_encode($this->orderToJson($orderId)));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		} catch (Exception $e) {
-			$response->getBody()->write(json_encode(['error' => $e->getMessage()]));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+			return $this->jsonError($response, $e->getMessage(), 500);
 		}
 	}
 
@@ -483,8 +591,7 @@ class HospitalityOrderController
 	public function destroyLine(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->acl->check('.application', Acl::DELETE, 'booking')) {
-			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+			return $this->jsonError($response, 'Permission denied', 403);
 		}
 
 		try {
@@ -493,31 +600,36 @@ class HospitalityOrderController
 
 			$existing = $this->repository->getById($orderId);
 			if (!$existing) {
-				$response->getBody()->write(json_encode(['error' => 'Order not found']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+				return $this->jsonError($response, 'Order not found', 404);
 			}
 
-			// Verify line belongs to this order
-			$lines = $this->repository->getOrderLines($orderId);
-			$lineExists = false;
-			foreach ($lines as $line) {
-				if ((int)$line['id'] === $lineId) {
-					$lineExists = true;
-					break;
-				}
+			// Get line data before deletion for changelog
+			$oldLine = $this->repository->getOrderLineById($lineId);
+			if (!$oldLine || (int)$oldLine['order_id'] !== $orderId) {
+				return $this->jsonError($response, 'Order line not found', 404);
 			}
-			if (!$lineExists) {
-				$response->getBody()->write(json_encode(['error' => 'Order line not found']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+
+			// changelog_comment via query param for DELETE
+			$params = $request->getQueryParams();
+			$changelogComment = isset($params['changelog_comment']) ? trim($params['changelog_comment']) : '';
+			if ($changelogComment === '') {
+				return $this->jsonError($response, 'changelog_comment query parameter is required');
 			}
 
 			$this->repository->deleteOrderLine($lineId);
 
+			$this->recordChanges($orderId, 'line_delete', [
+				'line_id' => $lineId,
+				'hospitality_article_id' => $oldLine['hospitality_article_id'],
+				'article_name' => $oldLine['article_name'] ?? null,
+				'quantity' => $oldLine['quantity'],
+				'unit_price' => $oldLine['unit_price'],
+			], null, $changelogComment);
+
 			$response->getBody()->write(json_encode($this->orderToJson($orderId)));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		} catch (Exception $e) {
-			$response->getBody()->write(json_encode(['error' => $e->getMessage()]));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+			return $this->jsonError($response, $e->getMessage(), 500);
 		}
 	}
 }

@@ -1,6 +1,6 @@
 <?php
 $setup_info['booking']['name'] = 'booking';
-$setup_info['booking']['version'] = '0.2.122';
+$setup_info['booking']['version'] = '0.2.124';
 $setup_info['booking']['app_order'] = 9;
 $setup_info['booking']['enable'] = 1;
 $setup_info['booking']['app_group'] = 'office';
@@ -99,6 +99,7 @@ $setup_info['booking']['tables'] = [
 	'bb_hospitality_article',
 	'bb_hospitality_order',
 	'bb_hospitality_order_line',
+	'bb_hospitality_order_changelog',
 	'bb_hospitality_order_document'
 ];
 

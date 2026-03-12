@@ -29,6 +29,7 @@ use App\modules\booking\controllers\HospitalityArticleController;
 use App\modules\booking\controllers\HospitalityOrderController;
 use App\modules\booking\controllers\ArticleMappingController;
 use App\modules\booking\viewcontrollers\HospitalityViewController;
+use App\modules\booking\viewcontrollers\HospitalityOrderViewController;
 
 $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 {
@@ -94,6 +95,7 @@ $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 		$viewGroup->get('/hospitality', HospitalityViewController::class . ':index');
 		$viewGroup->get('/hospitality/add', HospitalityViewController::class . ':create');
 		$viewGroup->get('/hospitality/{id:[0-9]+}', HospitalityViewController::class . ':show');
+		$viewGroup->get('/hospitality-orders/{id:[0-9]+}', HospitalityOrderViewController::class . ':show');
 
 		$viewGroup->get('/applications/{id:[0-9]+}', ApplicationViewController::class . ':show');
 	});

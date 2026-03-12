@@ -1142,3 +1142,19 @@ your_change	booking	nn	Di endring
 zip code	booking	nn	Postnummer
 create_order	booking	nn	Opprett bestilling
 special_requirements	booking	nn	Spesielle krav
+confirm_order	booking	nn	Stadfest bestilling
+deliver_order	booking	nn	Lever bestilling
+cancel_order	booking	nn	Avbryt bestilling
+order_lines	booking	nn	Ordrelinjer
+total	booking	nn	Totalt
+delivered	booking	nn	Levert
+pending_status	booking	nn	Ventar
+serving_time	booking	nn	Serveringstid
+select_date	booking	nn	Vel dato
+select_time	booking	nn	Vel tid
+changelog	booking	nn	Endringslogg
+changelog_comment	booking	nn	Endringskommentar
+changelog_comment_required	booking	nn	Vennligst beskriv endringa
+changelog_comment_placeholder	booking	nn	Beskriv kva som blir endra og kvifor
+no_changes	booking	nn	Ingen endringar registrert
+exit_edit_mode	booking	nn	Avslutt redigering

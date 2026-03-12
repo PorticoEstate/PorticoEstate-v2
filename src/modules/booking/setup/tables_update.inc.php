@@ -8319,3 +8319,45 @@ function booking_upgrade0_2_121($oProc)
 		return $currentver;
 	}
 }
+
+$test[] = '0.2.122';
+function booking_upgrade0_2_122($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	$oProc->m_odb->query("ALTER TABLE bb_hospitality_order ADD COLUMN serving_time_iso TIMESTAMP DEFAULT NULL");
+	$oProc->m_odb->query("ALTER TABLE bb_hospitality_order_line ADD COLUMN comment TEXT DEFAULT NULL");
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.123';
+		return $currentver;
+	}
+}
+
+$test[] = '0.2.123';
+function booking_upgrade0_2_123($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$oProc->m_odb->query("
+		CREATE TABLE bb_hospitality_order_changelog (
+			id SERIAL PRIMARY KEY,
+			order_id INTEGER NOT NULL REFERENCES bb_hospitality_order(id),
+			case_officer_id INTEGER NULL,
+			booking_user_id INTEGER NULL,
+			changed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			change_type VARCHAR(50) NOT NULL,
+			old_value JSONB NULL,
+			new_value JSONB NULL,
+			comment TEXT NOT NULL,
+			CONSTRAINT chk_changelog_user CHECK (case_officer_id IS NOT NULL OR booking_user_id IS NOT NULL)
+		)
+	");
+	$oProc->m_odb->query("CREATE INDEX idx_bb_hosp_order_changelog_order_id ON bb_hospitality_order_changelog(order_id)");
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.124';
+		return $currentver;
+	}
+}

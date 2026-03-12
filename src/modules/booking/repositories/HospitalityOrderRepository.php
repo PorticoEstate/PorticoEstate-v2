@@ -73,9 +73,9 @@ class HospitalityOrderRepository
     {
         $sql = "INSERT INTO bb_hospitality_order
                 (application_id, hospitality_id, location_resource_id,
-                 status, comment, special_requirements, created_by, modified_by)
+                 status, comment, special_requirements, serving_time_iso, created_by, modified_by)
                 VALUES (:application_id, :hospitality_id, :location_resource_id,
-                        :status, :comment, :special_requirements, :created_by, :modified_by)";
+                        :status, :comment, :special_requirements, :serving_time_iso, :created_by, :modified_by)";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             ':application_id' => $data['application_id'],
@@ -84,6 +84,7 @@ class HospitalityOrderRepository
             ':status' => $data['status'] ?? HospitalityOrder::STATUS_PENDING,
             ':comment' => $data['comment'] ?? null,
             ':special_requirements' => $data['special_requirements'] ?? null,
+            ':serving_time_iso' => $data['serving_time_iso'] ?? null,
             ':created_by' => $data['created_by'] ?? null,
             ':modified_by' => $data['created_by'] ?? null,
         ]);
@@ -94,7 +95,7 @@ class HospitalityOrderRepository
     {
         $updates = [];
         $params = [':id' => $id];
-        $allowedFields = ['location_resource_id', 'comment', 'special_requirements'];
+        $allowedFields = ['application_id', 'location_resource_id', 'comment', 'special_requirements', 'serving_time_iso'];
 
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $data)) {
@@ -159,8 +160,8 @@ class HospitalityOrderRepository
         $amount = (float)($data['quantity'] ?? 1) * (float)$data['unit_price'];
 
         $sql = "INSERT INTO bb_hospitality_order_line
-                (order_id, hospitality_article_id, quantity, unit_price, tax_code, amount)
-                VALUES (:order_id, :hospitality_article_id, :quantity, :unit_price, :tax_code, :amount)";
+                (order_id, hospitality_article_id, quantity, unit_price, tax_code, amount, comment)
+                VALUES (:order_id, :hospitality_article_id, :quantity, :unit_price, :tax_code, :amount, :comment)";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             ':order_id' => $data['order_id'],
@@ -169,6 +170,7 @@ class HospitalityOrderRepository
             ':unit_price' => $data['unit_price'],
             ':tax_code' => $data['tax_code'],
             ':amount' => $amount,
+            ':comment' => $data['comment'] ?? null,
         ]);
         return (int) $this->db->lastInsertId();
     }
@@ -208,6 +210,11 @@ class HospitalityOrderRepository
             $params[':tax_code'] = $data['tax_code'];
         }
 
+        if (array_key_exists('comment', $data)) {
+            $updates[] = "comment = :comment";
+            $params[':comment'] = $data['comment'];
+        }
+
         if (empty($updates)) {
             return true;
         }
@@ -236,7 +243,7 @@ class HospitalityOrderRepository
     }
 
     /**
-     * Get full order with lines and computed total.
+     * Get full order with lines, computed total, and changelog.
      */
     public function getOrderWithLines(int $orderId): ?array
     {
@@ -247,7 +254,69 @@ class HospitalityOrderRepository
 
         $order['lines'] = $this->getOrderLines($orderId);
         $order['total_amount'] = $this->calculateOrderTotal($orderId);
+        $order['changelog'] = $this->getChangelog($orderId);
         return $order;
+    }
+
+    // -- Changelog --
+
+    public function addChangelogEntry(array $data): int
+    {
+        $sql = "INSERT INTO bb_hospitality_order_changelog
+                (order_id, case_officer_id, booking_user_id, change_type, old_value, new_value, comment)
+                VALUES (:order_id, :case_officer_id, :booking_user_id, :change_type, :old_value, :new_value, :comment)";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':order_id' => $data['order_id'],
+            ':case_officer_id' => $data['case_officer_id'] ?? null,
+            ':booking_user_id' => $data['booking_user_id'] ?? null,
+            ':change_type' => $data['change_type'],
+            ':old_value' => isset($data['old_value']) ? json_encode($data['old_value']) : null,
+            ':new_value' => isset($data['new_value']) ? json_encode($data['new_value']) : null,
+            ':comment' => $data['comment'],
+        ]);
+        return (int) $this->db->lastInsertId();
+    }
+
+    public function getChangelog(int $orderId): array
+    {
+        $sql = "SELECT cl.*,
+                       a.account_lid AS case_officer_name,
+                       bu.name AS booking_user_name
+                FROM bb_hospitality_order_changelog cl
+                LEFT JOIN phpgw_accounts a ON cl.case_officer_id = a.account_id
+                LEFT JOIN bb_user bu ON cl.booking_user_id = bu.id
+                WHERE cl.order_id = :order_id
+                ORDER BY cl.changed_at DESC, cl.id DESC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':order_id' => $orderId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($rows as &$row) {
+            if ($row['old_value']) {
+                $row['old_value'] = json_decode($row['old_value'], true);
+            }
+            if ($row['new_value']) {
+                $row['new_value'] = json_decode($row['new_value'], true);
+            }
+        }
+        return $rows;
+    }
+
+    public function getOrderLineById(int $lineId): ?array
+    {
+        $sql = "SELECT ol.*,
+                       av.name AS article_name,
+                       am.unit
+                FROM bb_hospitality_order_line ol
+                JOIN bb_hospitality_article ha ON ol.hospitality_article_id = ha.id
+                JOIN bb_article_mapping am ON ha.article_mapping_id = am.id
+                LEFT JOIN bb_article_view av ON am.article_id = av.id AND am.article_cat_id = av.article_cat_id
+                WHERE ol.id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $lineId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
     }
 
     /**

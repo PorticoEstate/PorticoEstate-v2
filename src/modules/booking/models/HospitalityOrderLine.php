@@ -62,6 +62,12 @@ class HospitalityOrderLine
      */
     public $amount;
 
+    /**
+     * @OA\Property(type="string", nullable=true)
+     * @Expose
+     */
+    public $comment;
+
     // -- Computed fields --
 
     /**

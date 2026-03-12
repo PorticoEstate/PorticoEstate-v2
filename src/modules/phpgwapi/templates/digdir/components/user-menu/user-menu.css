@@ -2,7 +2,6 @@
 .app-user-menu__dropdown.ds-dropdown {
 	--_ds-floating: bottom;
 	margin-top: 0;
-	transform: translateY(-4px);
 }
 
 /* Mobile nav items inside user menu */

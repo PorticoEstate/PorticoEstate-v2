@@ -72,6 +72,13 @@ class HospitalityOrder
     public $special_requirements;
 
     /**
+     * When the order should be fulfilled/served (UTC ISO-8601 string)
+     * @OA\Property(type="string", nullable=true, example="2026-03-04T18:30:00.000Z")
+     * @Expose
+     */
+    public $serving_time_iso;
+
+    /**
      * @OA\Property(type="string", format="date-time")
      * @Expose
      */
@@ -121,6 +128,12 @@ class HospitalityOrder
      * @SerializeAs(type="array", of="App\modules\booking\models\HospitalityOrderLine")
      */
     public $lines;
+
+    /**
+     * @OA\Property(type="array", @OA\Items(type="object"))
+     * @Expose
+     */
+    public $changelog;
 
     public function __construct(array $data = [])
     {

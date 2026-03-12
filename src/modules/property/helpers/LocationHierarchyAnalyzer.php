@@ -827,6 +827,8 @@ class LocationHierarchyAnalyzer
 			$this->sqlStatements['corrections'] = $this->sanitizeCorrectionMappings($this->sqlStatements['corrections']);
 		}
 
+		$this->sqlStatements['delete_redundant_locations'] = $this->createDeleteRedundantLocationsStatements();
+
 		return [
 			'statistics' => $statistics,
 			'issues' => $this->issues,
@@ -859,6 +861,7 @@ class LocationHierarchyAnalyzer
 				'location3_loc2_updates' => [],
 				'location4_updates' => [],
 				'corrections' => [],
+				'delete_redundant_locations' => [],
 				],
 		];
 		foreach ($loc1s as $loc1)
@@ -899,6 +902,7 @@ class LocationHierarchyAnalyzer
 			$all['sql_statements']['corrections'] = $this->sanitizeCorrectionMappings($all['sql_statements']['corrections']);
 		}
 		$all['sql_statements']['update_location_from_mapping'] = $this->createUpdateStatements();
+		$all['sql_statements']['delete_redundant_locations'] = $this->createDeleteRedundantLocationsStatements();
 		return $all;
 	}
 
@@ -1224,6 +1228,50 @@ class LocationHierarchyAnalyzer
 			. "AND fm_bim_item.address IS DISTINCT FROM fm_locations.name;";
 
 		return $sqlStatements;
+	}
+
+	/**
+	 * Generate DELETE statements to remove orphaned fm_location3, fm_location2
+	 * and fm_locations entries that have no matching children.
+	 */
+	private function createDeleteRedundantLocationsStatements(): array
+	{
+		$sql = [];
+
+		// Remove fm_location3 rows with no child in fm_location4
+		$sql[] = "DELETE FROM fm_location3
+ WHERE NOT EXISTS (
+   SELECT 1 FROM fm_location4 AS l4
+   WHERE l4.loc1 = fm_location3.loc1
+     AND l4.loc2 = fm_location3.loc2
+     AND l4.loc3 = fm_location3.loc3
+);";
+
+		// Remove fm_location2 rows with no child in fm_location3
+		$sql[] = "DELETE FROM fm_location2
+ WHERE NOT EXISTS (
+   SELECT 1 FROM fm_location3 AS l3
+   WHERE l3.loc1 = fm_location2.loc1
+     AND l3.loc2 = fm_location2.loc2
+);";
+
+		// Remove fm_locations level-3 rows with no matching fm_location3
+		$sql[] = "DELETE FROM fm_locations
+ WHERE level = 3
+   AND NOT EXISTS (
+     SELECT 1 FROM fm_location3 AS l3
+     WHERE l3.location_code = fm_locations.location_code
+);";
+
+		// Remove fm_locations level-2 rows with no matching fm_location2
+		$sql[] = "DELETE FROM fm_locations
+ WHERE level = 2
+   AND NOT EXISTS (
+     SELECT 1 FROM fm_location2 AS l2
+     WHERE l2.location_code = fm_locations.location_code
+);";
+
+		return $sql;
 	}
 
 	/**

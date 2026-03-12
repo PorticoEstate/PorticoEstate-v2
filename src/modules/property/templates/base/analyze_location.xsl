@@ -188,41 +188,45 @@
 								<div class="">
 									<label for="create_schema" class="pure-checkbox">
 										<input type="checkbox" id="create_schema" name="sql_types[]" value="schema" />
-										Create mapping table
-									</label>
-									<label for="create_mapping" class="pure-checkbox">
-										<input type="checkbox" id="create_mapping" name="sql_types[]" value="corrections" />
-										Create mapping records									
+										1. Create mapping table
 									</label>
 
 									<label for="fix_loc2" class="pure-checkbox">
 										<input type="checkbox" id="fix_loc2" name="sql_types[]" value="missing_loc2" />
-										Fix missing loc2 entries
+										2. Fix missing loc2 entries
 									</label>
 									<label for="fix_loc3" class="pure-checkbox">
 										<input type="checkbox" id="fix_loc3" name="sql_types[]" value="missing_loc3" />
-										Fix missing loc3 entries
+										3. Fix missing loc3 entries
 									</label>
 									<label for="update_loc3_name" class="pure-checkbox">
 										<input type="checkbox" id="update_loc3_name" name="sql_types[]" value="loc3_name_updates" />
-										Update loc3 name entries
+										4. Update loc3 name entries
 									</label>
 									<label for="update_loc2_name" class="pure-checkbox">
 										<input type="checkbox" id="update_loc2_name" name="sql_types[]" value="loc2_name_updates" />
-										Update loc2 name entries (building summary)
+										5. Update loc2 name entries (building summary)
 									</label>
 									<!--label for="update_loc3_loc2" class="pure-checkbox">
 										<input type="checkbox" id="update_loc3_loc2" name="sql_types[]" value="location3_loc2_updates" />
 										Update loc3 parent loc2 entries
 									</label-->
+									<label for="create_mapping" class="pure-checkbox">
+										<input type="checkbox" id="create_mapping" name="sql_types[]" value="corrections" />										
+										6. Create mapping records																		
+									</label>
 									<label for="fix_loc4" class="pure-checkbox">
-										<input type="checkbox" id="fix_loc4" name="sql_types[]" value="location4_updates" />										Update location4 entries									
+										<input type="checkbox" id="fix_loc4" name="sql_types[]" value="location4_updates" />
+										7. Update location4 entries									
 									</label>
 									<label for="update_location_from_mapping" class="pure-checkbox">
 										<input type="checkbox" id="update_location_from_mapping" name="sql_types[]" value="update_location_from_mapping" />
-										Update all tables from mapping
+										8. Update all tables from mapping
 									</label>
-
+									<label for="delete_redundant_locations" class="pure-checkbox">
+										<input type="checkbox" id="delete_redundant_locations" name="sql_types[]" value="delete_redundant_locations" />
+										9. Delete redundant locations									
+									</label>
 									<label for="select_all" class="pure-checkbox">
 										<input type="checkbox" id="select_all" onclick="toggleAllSql(this)" />
 										Select all
@@ -319,6 +323,13 @@
 					<h5>Update all tables from mapping</h5>
 					<pre>
 						<xsl:for-each select="sql_statements/update_location_from_mapping">
+							<xsl:value-of select="." />
+							<xsl:text>&#10;</xsl:text>
+						</xsl:for-each>
+					</pre>
+					<h5>Delete redundant locations</h5>
+					<pre>
+						<xsl:for-each select="sql_statements/delete_redundant_locations">
 							<xsl:value-of select="." />
 							<xsl:text>&#10;</xsl:text>
 						</xsl:for-each>

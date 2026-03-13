@@ -1347,10 +1347,10 @@
 															<xsl:text>jpg, jpeg, png, gif, xls, xlsx, doc, docx, txt, pdf, odt, ods</xsl:text>
 														</xsl:attribute>
 														<xsl:attribute name="data-validation-max-size">
-															<xsl:text>2M</xsl:text>
+															<xsl:text>20M</xsl:text>
 														</xsl:attribute>
 														<xsl:attribute name="data-validation-error-msg">
-															<xsl:text>Max 2M:: jpg, jpeg, png, gif, xls, xlsx, doc, docx, txt , pdf, odt, ods</xsl:text>
+															<xsl:text>Max 20M:: jpg, jpeg, png, gif, xls, xlsx, doc, docx, txt , pdf, odt, ods</xsl:text>
 														</xsl:attribute>
 													</input>
 													<br/>

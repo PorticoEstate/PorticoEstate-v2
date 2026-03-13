@@ -55,6 +55,8 @@ $app->get('/assets/design-tokens/{file:.*\\.css}', function (Request $request, R
 // Serve whitelisted node_modules files (JS, CSS, images)
 $app->get('/assets/npm/{path:.*}', function (Request $request, Response $response, array $args)
 {
+	$nodeModulesDir = dirname(dirname(PHPGW_SERVER_ROOT)) . '/node_modules';
+
 	$allowedPrefixes = [
 		'@digdir/designsystemet-web/',
 		'@dnd-kit/',
@@ -88,9 +90,9 @@ $app->get('/assets/npm/{path:.*}', function (Request $request, Response $respons
 		return $response->withStatus(403);
 	}
 
-	$filePath = dirname(dirname(PHPGW_SERVER_ROOT)) . '/node_modules/' . $path;
+	$filePath = $nodeModulesDir . '/' . $path;
 	$realPath = realpath($filePath);
-	$nodeModulesRoot = realpath(dirname(dirname(PHPGW_SERVER_ROOT)) . '/node_modules');
+	$nodeModulesRoot = realpath($nodeModulesDir);
 
 	if (!$realPath || !str_starts_with($realPath, $nodeModulesRoot) || !is_readable($realPath))
 	{

@@ -42,6 +42,20 @@ if [ -f /var/www/html/composer.json ]; then
     fi
 fi
 
+# Check if npm dependencies need to be installed
+if [ -f /var/www/html/package.json ]; then
+    if [ ! -d /var/www/html/node_modules ]; then
+        if ! command -v npm > /dev/null 2>&1; then
+            echo "npm not found, installing Node.js and npm..."
+            apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/*
+        fi
+        echo "Installing npm dependencies..."
+        cd /var/www/html && npm ci
+    else
+        echo "npm dependencies are up to date"
+    fi
+fi
+
 # Create log directory for Supervisor
 mkdir -p /var/log/supervisor
 

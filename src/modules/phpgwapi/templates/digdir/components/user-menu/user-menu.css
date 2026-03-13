@@ -4,6 +4,10 @@
 	margin-top: 0;
 }
 
+.app-user-menu__dropdown[popover]:popover-open {
+	position: fixed;
+}
+
 /* Mobile nav items inside user menu */
 .app-user-menu__mobile-list {
 	list-style: none;

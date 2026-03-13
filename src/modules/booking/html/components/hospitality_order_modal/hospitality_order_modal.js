@@ -115,6 +115,8 @@ var HospitalityOrderModal = (function () {
 		var _allAppDates = [];
 		var _appDates = [];
 		var _selectedLocId = null;
+		var _appResourceIds = null; // resource IDs from the selected application's dates
+		var _allLocations = null;   // full unfiltered location list from API
 		var _currentHospMainResourceId = hospMainResourceId;
 		var dateSelect = document.getElementById('modal-order-serving-date');
 		var timeSelect = document.getElementById('modal-order-serving-time');
@@ -214,6 +216,24 @@ var HospitalityOrderModal = (function () {
 
 			fetchJson(applicationsBaseUrl + '/' + appId + '/dates').then(function (dates) {
 				_allAppDates = dates;
+
+				// Collect all resource IDs from the application's dates
+				_appResourceIds = {};
+				dates.forEach(function (d) {
+					if (d.resources) {
+						d.resources.forEach(function (rid) { _appResourceIds[rid] = true; });
+					}
+				});
+
+				// Filter location selector to only resources in this application.
+				// Use _allLocations (full list) as source if available; otherwise mapResponse handles it on fetch.
+				if (locSelector && _allLocations) {
+					var filtered = _allLocations.filter(function (loc) {
+						return _appResourceIds[loc.id];
+					});
+					locSelector.setItems(filtered);
+				}
+
 				filterAndPopulateDates();
 			}).catch(function () {});
 		}
@@ -236,10 +256,18 @@ var HospitalityOrderModal = (function () {
 				idField: 'id',
 				labelField: '_label',
 				mapResponse: function (data) {
-					return (Array.isArray(data) ? data : []).map(function (loc) {
+					var locations = (Array.isArray(data) ? data : []).map(function (loc) {
 						loc._label = loc.name + ' (' + loc.location_type + ')';
 						return loc;
 					});
+					_allLocations = locations.slice();
+					// Filter to only resources present in the selected application
+					if (_appResourceIds) {
+						locations = locations.filter(function (loc) {
+							return _appResourceIds[loc.id];
+						});
+					}
+					return locations;
 				},
 				placeholder: lang('location') + '...',
 				emptyText: lang('noOrders'),

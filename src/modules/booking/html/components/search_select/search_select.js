@@ -343,6 +343,22 @@ class SearchSelect {
         if (this.hiddenInput) this.hiddenInput.value = id != null ? id : '';
     }
 
+    setItems(items) {
+        this.items = items;
+        this.loading = false;
+        if (this.selectedId != null) {
+            var self = this;
+            var stillValid = items.some(function (it) { return it[self.idField] == self.selectedId; });
+            if (!stillValid) {
+                this.selectedId = null;
+                this.selectedName = '';
+                this.input.value = '';
+                if (this.hiddenInput) this.hiddenInput.value = '';
+                this.onChange(null, '', null);
+            }
+        }
+    }
+
     dispose() {
         this.input.removeEventListener('focus', this._boundOnFocus);
         this.input.removeEventListener('input', this._boundOnInput);

@@ -6,6 +6,7 @@ use App\Database\Db;
 use App\modules\booking\authorization\DocumentBuildingAuthConfig;
 use App\modules\booking\models\Building;
 use App\modules\booking\repositories\PermissionRepository;
+use App\modules\bookingfrontend\repositories\ResourceRepository;
 use App\modules\phpgwapi\services\AuthorizationService;
 use App\helpers\ResponseHelper;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -16,10 +17,33 @@ use Exception;
 class BuildingController
 {
     protected AuthorizationService $authService;
+    private ResourceRepository $resourceRepository;
 
     public function __construct()
     {
         $this->authService = new AuthorizationService(new PermissionRepository());
+        $this->resourceRepository = new ResourceRepository();
+    }
+
+    public function resources(Request $request, Response $response, array $args): Response
+    {
+        $authConfig = new DocumentBuildingAuthConfig();
+        if ($this->authService->authorize($authConfig, 'read') === false) {
+            return ResponseHelper::sendErrorResponse(['error' => 'Permission denied'], 403);
+        }
+
+        try {
+            $buildingId = (int) $args['id'];
+            $resources = $this->resourceRepository->getByBuildingId($buildingId);
+            $serialized = array_map(fn($r) => $r->serialize([], true), $resources);
+
+            return ResponseHelper::sendJSONResponse($serialized, 200, $response);
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Error fetching building resources: ' . $e->getMessage()],
+                500
+            );
+        }
     }
 
     public function index(Request $request, Response $response): Response

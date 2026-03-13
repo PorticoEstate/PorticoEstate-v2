@@ -1094,4 +1094,34 @@ class ApplicationController
 			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
 		}
 	}
+
+	/**
+	 * Get active hospitalities that serve any of this application's (or combined group's) resources.
+	 */
+	public function showHospitalities(Request $request, Response $response, array $args): Response
+	{
+		$id = $this->getApplicationId($args);
+		if (!$id) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Missing application ID'], 400);
+		}
+
+		try {
+			$relatedInfo = $this->repo->getRelatedApplications($id);
+			$allResourceIds = [];
+			foreach ($relatedInfo['application_ids'] as $appId) {
+				foreach ($this->repo->fetchResourceIds($appId) as $rid) {
+					if (!in_array($rid, $allResourceIds)) {
+						$allResourceIds[] = $rid;
+					}
+				}
+			}
+
+			$hospitalityRepo = new \App\modules\booking\repositories\HospitalityRepository();
+			$hospitalities = $hospitalityRepo->getActiveByResourceIds($allResourceIds);
+
+			return ResponseHelper::sendJSONResponse($hospitalities, 200, $response);
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
+		}
+	}
 }

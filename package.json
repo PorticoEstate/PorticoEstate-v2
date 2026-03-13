@@ -4,6 +4,7 @@
   "dependencies": {
     "@digdir/designsystemet-css": "^1.12.1",
     "@digdir/designsystemet-web": "^1.12.1",
+    "@dnd-kit/dom": "^0.3.2",
     "@porticoestate/design-tokens": "https://github.com/PorticoEstate/digdir-design-tokens.git",
     "blueimp-file-upload": "^10.32.0",
     "jqtree": "^1.8.11",

@@ -1,0 +1,36 @@
+{% extends layout|default('@views/_layout.twig') %}
+
+{% block title %}{{ lang('Hospitality') }}{% endblock %}
+
+{% block content %}
+{% include '@views/components/datatable/datatable.twig' %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+	window.__hospitalityList = {
+		dataUrl: '/booking/hospitality',
+		editBaseUrl: '/booking/view/hospitality/',
+		permissions: {
+			read: {{ permissions.read ? 'true' : 'false' }},
+			create: {{ permissions.create ? 'true' : 'false' }},
+			write: {{ permissions.write ? 'true' : 'false' }},
+			delete: {{ permissions.delete ? 'true' : 'false' }}
+		},
+		lang: {
+			name: '{{ lang("Hospitality")|e('js') }}',
+			add: '{{ lang("add")|e('js') }}',
+			edit: '{{ lang("Edit")|e('js') }}',
+emptyTable: '{{ lang("No entries found")|e('js') }}',
+			yes: '{{ lang("common.yes")|e('js') }}',
+			no: '{{ lang("common.no")|e('js') }}',
+			all: '{{ lang("All")|e('js') }}',
+			active: '{{ lang("Active")|e('js') }}',
+			resource_name: '{{ lang("booking.resource")|e('js') }}',
+			remote_serving: '{{ lang("booking.remote_serving")|e('js') }}',
+			allow_on_site_hospitality: '{{ lang("booking.allow_on_site_hospitality")|e('js') }}'
+		}
+	};
+</script>
+<script>{{ source('@views/hospitality/list/hospitality_list.js') }}</script>
+{% endblock %}

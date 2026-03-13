@@ -225,7 +225,7 @@ WORKDIR /var/www/html
 COPY composer.json composer.lock* ./
 
 # Install all dependencies during build time
-RUN composer install --no-dev --optimize-autoloader
+RUN XDEBUG_MODE=off composer install --no-dev --optimize-autoloader
 
 # Install Node.js and npm
 RUN apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/*

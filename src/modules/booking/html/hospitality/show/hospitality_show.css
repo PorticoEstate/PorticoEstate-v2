@@ -1,0 +1,453 @@
+/* ── Hospitality Show (extends app-show base) ─────────────── */
+
+/* Field description / help text */
+.hosp-show__field-desc {
+	font-size: 0.8125rem;
+	color: var(--ds-color-text-subtle, #68707c);
+	margin-top: 0.25rem;
+}
+
+/* Inline editing */
+.hosp-show__edit-trigger {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	margin-left: 0.5rem;
+	padding: 0;
+	border: none;
+	border-radius: var(--ds-border-radius-sm, 0.25rem);
+	background: none;
+	color: var(--ds-color-accent-text-default, #0062ba);
+	cursor: pointer;
+	vertical-align: middle;
+	opacity: 0.6;
+	transition: opacity 0.15s;
+}
+
+.hosp-show__edit-trigger:hover {
+	opacity: 1;
+}
+
+.hosp-show__edit-form {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex: 1;
+}
+
+.hosp-show__edit-form input,
+.hosp-show__edit-form textarea,
+.hosp-show__edit-form select {
+	flex: 1;
+	padding: 0.375rem 0.5rem;
+	font-size: 0.875rem;
+	font-family: inherit;
+	border: 1px solid var(--ds-color-accent-border-default, #0062ba);
+	border-radius: var(--ds-border-radius-sm, 0.25rem);
+	box-sizing: border-box;
+}
+
+.hosp-show__edit-form textarea {
+	min-height: 3rem;
+	resize: vertical;
+}
+
+.hosp-show__edit-form input:focus,
+.hosp-show__edit-form textarea:focus,
+.hosp-show__edit-form select:focus {
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(0, 98, 186, 0.15);
+}
+
+.hosp-show__edit-actions {
+	display: flex;
+	gap: 0.25rem;
+	flex-shrink: 0;
+}
+
+.hosp-show__edit-actions button {
+	padding: 0.25rem 0.625rem;
+	font-size: 0.8125rem;
+	border: 1px solid var(--ds-color-border-default, #dee2e6);
+	border-radius: var(--ds-border-radius-sm, 0.25rem);
+	cursor: pointer;
+}
+
+.hosp-show__edit-save {
+	background: var(--ds-color-accent-base-default, #0062ba);
+	color: #fff;
+	border-color: var(--ds-color-accent-base-default, #0062ba);
+}
+
+.hosp-show__edit-cancel {
+	background: var(--ds-color-background-default, #fff);
+	color: var(--ds-color-text-default, #1e293b);
+}
+
+/* Compound field (e.g. deadline: number + unit) */
+.hosp-show__compound-field {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	flex: 1;
+}
+
+.hosp-show__compound-field input {
+	width: 5rem;
+	flex: 0 0 auto;
+}
+
+.hosp-show__compound-field select {
+	width: auto;
+	flex: 0 0 auto;
+}
+
+/* Article groups */
+.hosp-show__article-group {
+	margin-bottom: 1rem;
+	border: 1px solid var(--ds-color-border-subtle, #e5e7eb);
+	border-radius: var(--ds-border-radius-md, 0.5rem);
+	overflow: hidden;
+}
+
+.hosp-show__group-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0.625rem 1rem;
+	background: var(--ds-color-surface-tinted, #f8fafc);
+	border-bottom: 1px solid var(--ds-color-border-subtle, #e5e7eb);
+	cursor: pointer;
+	user-select: none;
+}
+
+.hosp-show__group-header:hover {
+	background: var(--ds-color-surface-hover, #f1f5f9);
+}
+
+.hosp-show__group-title {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-weight: 600;
+	font-size: 0.9375rem;
+}
+
+.hosp-show__group-toggle {
+	transition: transform 0.2s;
+}
+
+.hosp-show__group-header[aria-expanded="false"] .hosp-show__group-toggle {
+	transform: rotate(-90deg);
+}
+
+.hosp-show__group-actions {
+	display: flex;
+	gap: 0.375rem;
+	align-items: center;
+}
+
+.hosp-show__group-body {
+	padding: 0.75rem;
+}
+
+.hosp-show__group-body[hidden] {
+	display: none;
+}
+
+/* Order expandable detail rows */
+.hosp-show__order-toggle {
+	cursor: pointer;
+	user-select: none;
+}
+
+.hosp-show__order-toggle:hover {
+	background: var(--ds-color-surface-hover, #f1f5f9);
+}
+
+.hosp-show__order-detail {
+	background: var(--ds-color-surface-tinted, #f8fafc);
+}
+
+.hosp-show__order-detail td {
+	padding-top: 0;
+}
+
+.hosp-show__order-detail .ds-table {
+	font-size: 0.8125rem;
+	margin: 0.25rem 0;
+}
+
+/* Info banner */
+.hosp-show__info-banner {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.75rem 1rem;
+	margin-bottom: 1rem;
+	background: var(--ds-color-info-surface-default, #eff6ff);
+	border: 1px solid var(--ds-color-info-border-default, #3b82f6);
+	border-radius: var(--ds-border-radius-md, 0.5rem);
+	font-size: 0.875rem;
+}
+
+.hosp-show__info-banner--warning {
+	background: var(--ds-color-warning-surface-default, #fff8e1);
+	border-color: var(--ds-color-warning-border-default, #f9a825);
+	color: var(--ds-color-warning-text-default, #6d4c00);
+}
+
+/* Toggle switch for remote locations */
+.hosp-show__toggle {
+	position: relative;
+	display: inline-block;
+	width: 2.5rem;
+	height: 1.375rem;
+}
+
+.hosp-show__toggle input {
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.hosp-show__toggle-slider {
+	position: absolute;
+	inset: 0;
+	background: var(--ds-color-border-default, #ccc);
+	border-radius: 1rem;
+	transition: background 0.2s;
+	cursor: pointer;
+}
+
+.hosp-show__toggle-slider::before {
+	content: '';
+	position: absolute;
+	left: 2px;
+	top: 2px;
+	width: 1.125rem;
+	height: 1.125rem;
+	background: #fff;
+	border-radius: 50%;
+	transition: transform 0.2s;
+}
+
+.hosp-show__toggle input:checked + .hosp-show__toggle-slider {
+	background: var(--ds-color-success-base-default, #22c55e);
+}
+
+.hosp-show__toggle input:checked + .hosp-show__toggle-slider::before {
+	transform: translateX(1.125rem);
+}
+
+/* Top action bar per tab */
+.hosp-show__tab-actions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+}
+
+/* ── Drag and drop ──────────────────────────────── */
+
+.hosp-show__drag-handle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	cursor: grab;
+	color: var(--ds-color-text-subtle, #68707c);
+	border-radius: var(--ds-border-radius-sm, 0.25rem);
+	flex-shrink: 0;
+	touch-action: none;
+}
+
+.hosp-show__drag-handle:hover {
+	color: var(--ds-color-text-default, #1e293b);
+	background: var(--ds-color-surface-hover, #f1f5f9);
+}
+
+.hosp-show__drag-handle:active {
+	cursor: grabbing;
+}
+
+.hosp-show__drag-icon {
+	pointer-events: none;
+}
+
+/* Article rows (card-style, replacing table for DnD compatibility) */
+.hosp-show__article-row {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var(--ds-color-border-subtle, #e5e7eb);
+	border-radius: var(--ds-border-radius-sm, 0.25rem);
+	background: var(--ds-color-background-default, #fff);
+	margin-bottom: 0.375rem;
+	font-size: 0.875rem;
+	transition: box-shadow 0.15s, opacity 0.15s;
+}
+
+.hosp-show__article-row:last-child {
+	margin-bottom: 0;
+}
+
+.hosp-show__article-row--dimmed {
+	opacity: 0.55;
+}
+
+.hosp-show__article-row--dimmed:hover {
+	opacity: 0.85;
+}
+
+/* Building group highlight (when scrolling to existing group) */
+.hosp-show__highlight {
+	animation: hosp-highlight 1.5s ease;
+}
+
+@keyframes hosp-highlight {
+	0%, 20% { box-shadow: 0 0 0 2px var(--ds-color-accent-border-default, #0062ba); }
+	100% { box-shadow: none; }
+}
+
+.hosp-show__article-name {
+	flex: 2;
+	font-weight: 500;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.hosp-show__article-unit,
+.hosp-show__article-active {
+	flex: 0 0 4rem;
+	text-align: center;
+}
+
+.hosp-show__article-price {
+	flex: 0 0 5rem;
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
+.hosp-show__article-price--effective {
+	font-weight: 600;
+}
+
+.hosp-show__article-actions {
+	display: flex;
+	gap: 0.25rem;
+	flex-shrink: 0;
+}
+
+.hosp-show__article-empty {
+	padding: 0.75rem;
+	color: var(--ds-color-text-subtle, #68707c);
+	font-size: 0.875rem;
+	text-align: center;
+	min-height: 2.5rem;
+}
+
+/* Ensure article list containers have enough drop area */
+[data-dnd-article-list] {
+	min-height: 3rem;
+}
+
+[data-dnd-article-list].hosp-show__drop-active {
+	outline: 2px dashed var(--ds-color-accent-border-default, #0062ba);
+	outline-offset: -2px;
+	border-radius: var(--ds-border-radius-sm, 0.25rem);
+	background: var(--ds-color-accent-surface-default, #f0f6ff);
+}
+
+/* Drag states applied by @dnd-kit */
+.hosp-show__article-group[data-dnd-dragging] {
+	opacity: 0.5;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.hosp-show__article-row[data-dnd-dragging] {
+	opacity: 0.5;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Collapsible article details in modal ───────── */
+
+.hosp-show__article-details-section {
+	margin-top: 1rem;
+	border-top: 1px solid var(--ds-color-border-subtle, #e5e7eb);
+	padding-top: 0.75rem;
+}
+
+.hosp-show__details-toggle {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	width: 100%;
+	padding: 0.5rem 0;
+	border: none;
+	background: none;
+	font-size: 0.9375rem;
+	font-weight: 600;
+	color: var(--ds-color-text-default, #1e293b);
+	cursor: pointer;
+	text-align: left;
+}
+
+.hosp-show__details-toggle:hover {
+	color: var(--ds-color-accent-text-default, #0062ba);
+}
+
+.hosp-show__details-chevron {
+	transition: transform 0.2s;
+	flex-shrink: 0;
+}
+
+.hosp-show__details-toggle[aria-expanded="true"] .hosp-show__details-chevron {
+	transform: rotate(0deg);
+}
+
+.hosp-show__details-toggle[aria-expanded="false"] .hosp-show__details-chevron {
+	transform: rotate(-90deg);
+}
+
+.hosp-show__details-body {
+	padding-top: 0.25rem;
+}
+
+.hosp-show__details-warning {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.625rem 0.75rem;
+	background: var(--ds-color-warning-surface-default, #fff8e1);
+	border: 1px solid var(--ds-color-warning-border-default, #f9a825);
+	border-radius: var(--ds-border-radius-sm, 0.25rem);
+	font-size: 0.8125rem;
+	color: var(--ds-color-warning-text-default, #6d4c00);
+}
+
+.hosp-show__details-warning svg {
+	flex-shrink: 0;
+}
+
+/* Back link */
+.hosp-show__back-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	font-size: 0.875rem;
+	color: var(--ds-color-accent-text-default, #0062ba);
+	text-decoration: none;
+	margin-bottom: 0.75rem;
+}
+
+.hosp-show__back-link:hover {
+	text-decoration: underline;
+}

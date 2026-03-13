@@ -29,6 +29,7 @@ class Document
     public const OWNER_APPLICATION = 'application';
     public const OWNER_RESOURCE = 'resource';
     public const OWNER_ORGANIZATION = 'organization';
+    public const OWNER_HOSPITALITY_ORDER = 'hospitality_order';
 
 
     /**

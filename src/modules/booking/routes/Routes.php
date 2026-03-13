@@ -24,12 +24,19 @@ use App\modules\booking\viewcontrollers\ApplicationViewController;
 use App\modules\booking\controllers\ApplicationController;
 use App\modules\phpgwapi\controllers\ConfigController;
 use App\modules\booking\controllers\EmailCompareController;
+use App\modules\booking\controllers\HospitalityController;
+use App\modules\booking\controllers\HospitalityArticleController;
+use App\modules\booking\controllers\HospitalityOrderController;
+use App\modules\booking\controllers\ArticleMappingController;
+use App\modules\booking\viewcontrollers\HospitalityViewController;
+use App\modules\booking\viewcontrollers\HospitalityOrderViewController;
 
 $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 {
 	$group->group('/buildings', function (RouteCollectorProxy $buildingGroup) use ($container)
 	{
 		$buildingGroup->get('', BuildingController::class . ':index');
+		$buildingGroup->get('/{id:[0-9]+}/resources', BuildingController::class . ':resources');
 
 		$buildingGroup->get('/documents/categories', DocumentController::class . ':categories');
 
@@ -84,6 +91,11 @@ $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 			$registryGroup->get('/{type}/add', RegistryViewController::class . ':edit');
 			$registryGroup->get('/{type}/{id:[0-9]+}', RegistryViewController::class . ':edit');
 		});
+
+		$viewGroup->get('/hospitality', HospitalityViewController::class . ':index');
+		$viewGroup->get('/hospitality/add', HospitalityViewController::class . ':create');
+		$viewGroup->get('/hospitality/{id:[0-9]+}', HospitalityViewController::class . ':show');
+		$viewGroup->get('/hospitality-orders/{id:[0-9]+}', HospitalityOrderViewController::class . ':show');
 
 		$viewGroup->get('/applications/{id:[0-9]+}', ApplicationViewController::class . ':show');
 	});
@@ -214,6 +226,7 @@ $app->group('/booking/applications', function (RouteCollectorProxy $group)
 	$group->post('/{id:[0-9]+}/reassign', ApplicationController::class . ':reassign');
 	$group->get('/{id:[0-9]+}/recurring-preview', ApplicationController::class . ':recurringPreview');
 	$group->post('/{id:[0-9]+}/create-recurring-allocations', ApplicationController::class . ':createRecurringAllocations');
+	$group->get('/{id:[0-9]+}/hospitalities', ApplicationController::class . ':showHospitalities');
 })
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));
@@ -221,6 +234,65 @@ $app->group('/booking/applications', function (RouteCollectorProxy $group)
 $app->group('/booking/config', function (RouteCollectorProxy $group) {
 	$group->get('/{appname}', ConfigController::class . ':getConfig');
 	$group->put('/{appname}', ConfigController::class . ':updateConfig');
+})
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
+
+$app->group('/booking/hospitality', function (RouteCollectorProxy $group) {
+	// Core hospitality CRUD
+	$group->get('', HospitalityController::class . ':index');
+	$group->post('', HospitalityController::class . ':store');
+	$group->get('/{id:[0-9]+}', HospitalityController::class . ':show');
+	$group->put('/{id:[0-9]+}', HospitalityController::class . ':update');
+	$group->delete('/{id:[0-9]+}', HospitalityController::class . ':destroy');
+
+	// Remote locations
+	$group->get('/{id:[0-9]+}/remote-locations', HospitalityController::class . ':remoteLocations');
+	$group->post('/{id:[0-9]+}/remote-locations', HospitalityController::class . ':addRemoteLocation');
+	$group->delete('/{id:[0-9]+}/remote-locations/{resourceId:[0-9]+}', HospitalityController::class . ':removeRemoteLocation');
+	$group->patch('/{id:[0-9]+}/remote-locations/{resourceId:[0-9]+}', HospitalityController::class . ':toggleRemoteLocation');
+
+	// Delivery locations
+	$group->get('/{id:[0-9]+}/delivery-locations', HospitalityController::class . ':deliveryLocations');
+	$group->get('/{id:[0-9]+}/relevant-applications', HospitalityController::class . ':relevantApplications');
+
+	// Article groups
+	$group->get('/{id:[0-9]+}/article-groups', HospitalityArticleController::class . ':indexGroups');
+	$group->post('/{id:[0-9]+}/article-groups', HospitalityArticleController::class . ':storeGroup');
+	$group->put('/{id:[0-9]+}/article-groups/{groupId:[0-9]+}', HospitalityArticleController::class . ':updateGroup');
+	$group->delete('/{id:[0-9]+}/article-groups/{groupId:[0-9]+}', HospitalityArticleController::class . ':destroyGroup');
+	$group->patch('/{id:[0-9]+}/article-groups/{groupId:[0-9]+}/reactivate', HospitalityArticleController::class . ':reactivateGroup');
+
+	// Articles
+	$group->get('/{id:[0-9]+}/articles', HospitalityArticleController::class . ':indexArticles');
+	$group->post('/{id:[0-9]+}/articles', HospitalityArticleController::class . ':storeArticle');
+	$group->put('/{id:[0-9]+}/articles/reorder', HospitalityArticleController::class . ':reorderArticles');
+	$group->get('/{id:[0-9]+}/articles/{articleId:[0-9]+}', HospitalityArticleController::class . ':showArticle');
+	$group->put('/{id:[0-9]+}/articles/{articleId:[0-9]+}', HospitalityArticleController::class . ':updateArticle');
+	$group->delete('/{id:[0-9]+}/articles/{articleId:[0-9]+}', HospitalityArticleController::class . ':destroyArticle');
+})
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
+
+$app->group('/booking/hospitality-orders', function (RouteCollectorProxy $group) {
+	$group->get('', HospitalityOrderController::class . ':index');
+	$group->post('', HospitalityOrderController::class . ':store');
+	$group->get('/{id:[0-9]+}', HospitalityOrderController::class . ':show');
+	$group->put('/{id:[0-9]+}', HospitalityOrderController::class . ':update');
+	$group->patch('/{id:[0-9]+}/status', HospitalityOrderController::class . ':updateStatus');
+	$group->delete('/{id:[0-9]+}', HospitalityOrderController::class . ':destroy');
+
+	// Order lines
+	$group->post('/{id:[0-9]+}/lines', HospitalityOrderController::class . ':addLine');
+	$group->put('/{id:[0-9]+}/lines/{lineId:[0-9]+}', HospitalityOrderController::class . ':updateLine');
+	$group->delete('/{id:[0-9]+}/lines/{lineId:[0-9]+}', HospitalityOrderController::class . ':destroyLine');
+})
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
+
+$app->group('/booking/article-mappings', function (RouteCollectorProxy $group) {
+	$group->post('', ArticleMappingController::class . ':store');
+	$group->put('/{id:[0-9]+}', ArticleMappingController::class . ':update');
 })
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));

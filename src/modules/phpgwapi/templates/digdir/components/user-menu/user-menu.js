@@ -15,6 +15,12 @@
 
 		popover.addEventListener('toggle', function (e) {
 			trigger.setAttribute('aria-expanded', e.newState === 'open');
+			if (e.newState === 'open') {
+				var rect = trigger.getBoundingClientRect();
+				popover.style.top = rect.bottom + 'px';
+				popover.style.left = 'auto';
+				popover.style.right = (window.innerWidth - rect.right) + 'px';
+			}
 		});
 
 		var logoutBtn = el.querySelector('[data-action="logout"]');

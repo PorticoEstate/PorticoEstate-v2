@@ -16,7 +16,6 @@
     max-width: none;
     margin-top: 0;
     padding: var(--ds-spacing-2, 0.5rem);
-    translate: 0 -6px;
 }
 
 .app-language-selector__dropdown h6,

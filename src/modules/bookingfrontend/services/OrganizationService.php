@@ -423,6 +423,32 @@ class OrganizationService
             }
         }
 
+        // Add organizations from session (Brønnøysundsregisteret roles or test organization)
+        // These are orgs the user has access to via brreg but may not be a delegate or direct owner
+        if (!empty($this->userHelper->organizations)) {
+            $existingIds = array_column($organizations, 'id');
+            $sessionOrgIds = [];
+
+            foreach ($this->userHelper->organizations as $org) {
+                $orgId = (int)$org['org_id'];
+                if (!in_array($orgId, $existingIds)) {
+                    $sessionOrgIds[] = $orgId;
+                }
+            }
+
+            if (!empty($sessionOrgIds)) {
+                $placeholders = implode(',', array_fill(0, count($sessionOrgIds), '?'));
+                $sql = "SELECT *, false as is_delegate FROM bb_organization WHERE id IN ($placeholders) AND active = 1";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute($sessionOrgIds);
+                $sessionOrgs = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+                foreach ($sessionOrgs as $org) {
+                    $organizations[] = $org;
+                }
+            }
+        }
+
         // Sort by name
         usort($organizations, function($a, $b) {
             return strcasecmp($a['name'], $b['name']);
@@ -476,7 +502,18 @@ class OrganizationService
                 ':encoded_ssn' => $encodedSSN
             ]);
 
-            return (bool)$stmt->fetch();
+            if ($stmt->fetch()) {
+                return true; // User is active delegate
+            }
+        }
+
+        // Check if user has access via session (Brønnøysundsregisteret roles or test organization)
+        if (!empty($this->userHelper->organizations)) {
+            foreach ($this->userHelper->organizations as $org) {
+                if ((int)$org['org_id'] === $organizationId) {
+                    return true;
+                }
+            }
         }
 
         return false;

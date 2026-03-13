@@ -425,13 +425,22 @@ class UserHelper
 		 */
 		if (!$organization_id && $organization_number)
 		{
+			// Check session orgs by organization number (brreg/test org)
+			if (!empty($this->organizations)) {
+				foreach ($this->organizations as $org) {
+					if ($org['orgnr'] === $organization_number) {
+						return true;
+					}
+				}
+			}
+
 			// Check if user has active delegate access to organization by number
 			if ($this->ssn) {
 				$encodedSSN = $this->encodeSSN($this->ssn);
-				
+
 				$sql = "SELECT 1 FROM bb_organization o
 						INNER JOIN bb_delegate d ON o.id = d.organization_id
-						WHERE o.organization_number = :org_number 
+						WHERE o.organization_number = :org_number
 						AND (d.ssn = :ssn OR d.ssn = :encoded_ssn)
 						AND d.active = 1";
 
@@ -445,6 +454,15 @@ class UserHelper
 				return (bool)$stmt->fetch();
 			}
 			return false;
+		}
+
+		// Check session orgs by organization ID (brreg/test org)
+		if ($organization_id && !empty($this->organizations)) {
+			foreach ($this->organizations as $org) {
+				if ((int)$org['org_id'] === (int)$organization_id) {
+					return true;
+				}
+			}
 		}
 
 		$organization_info = $this->get_organization_info($organization_id);
@@ -466,9 +484,9 @@ class UserHelper
 		// Check if user has active delegate access to this organization
 		if ($this->ssn) {
 			$encodedSSN = $this->encodeSSN($this->ssn);
-			
+
 			$sql = "SELECT 1 FROM bb_delegate d
-					WHERE d.organization_id = :org_id 
+					WHERE d.organization_id = :org_id
 					AND (d.ssn = :ssn OR d.ssn = :encoded_ssn)
 					AND d.active = 1";
 

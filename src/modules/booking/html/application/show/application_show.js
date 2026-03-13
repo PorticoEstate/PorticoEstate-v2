@@ -232,6 +232,7 @@
 		renderTerms(app);
 		renderNotes(data.internal_notes || []);
 		renderComments(data.comments || []);
+		renderHospitalityOrders(data);
 
 		// Activate tab from URL hash
 		var hash = window.location.hash.replace('#', '');
@@ -1191,6 +1192,141 @@
 			});
 		}
 	}
+
+	// ═══════════════════════════════════════════════════════════════════
+	// Hospitality orders tab
+	// ═══════════════════════════════════════════════════════════════════
+
+	var _hospOrdersHospitalities = []; // cached for create modal
+
+	function renderHospitalityOrders(data) {
+		var container = document.getElementById('application-hospitality-orders');
+		var tabBtn = document.getElementById('tab-btn-hospitality-orders');
+		if (!container) return;
+
+		var hospOrdersUrl = root.dataset.hospitalityOrdersUrl;
+		if (!hospOrdersUrl) return;
+		hospOrdersUrl = hospOrdersUrl.split('?')[0];
+
+		var app = data.application;
+
+		// First: check if any active hospitalities serve this application's resources
+		fetchJson(apiUrl + '/hospitalities').then(function (hospitalities) {
+			if (!hospitalities || hospitalities.length === 0) {
+				// No hospitalities — hide tab entirely
+				if (tabBtn) tabBtn.hidden = true;
+				return;
+			}
+
+			_hospOrdersHospitalities = hospitalities;
+
+			// Show the tab button
+			if (tabBtn) tabBtn.hidden = false;
+
+			// Collect all application IDs
+			var related = data.related || [];
+			var appIds = [];
+			if (related.length > 1) {
+				related.forEach(function (rel) { appIds.push(rel.id); });
+			} else {
+				appIds.push(app.id);
+			}
+
+			// Build query string
+			var queryParts = appIds.map(function (id) {
+				return 'application_id[]=' + encodeURIComponent(id);
+			});
+			var url = hospOrdersUrl + '?' + queryParts.join('&');
+
+			container.innerHTML = '<div class="app-show__loading-inline"><div class="app-show__spinner"></div></div>';
+
+			fetchJson(url).then(function (orders) {
+				var html = '';
+
+				// Create order button
+				html += '<div class="hosp-show__tab-actions" style="margin-bottom:0.75rem">' +
+					'<button type="button" class="app-button app-button-sm" data-action="create-hospitality-order">' +
+					esc(lang('createOrder')) + '</button></div>';
+
+				html += '<div id="application-hospitality-orders-list"></div>';
+				container.innerHTML = html;
+
+				new HospitalityOrderList(document.getElementById('application-hospitality-orders-list'), {
+					orders: orders,
+					lang: lang,
+					columns: { application: false, hospitality: true },
+					emptyText: lang('noOrders')
+				});
+			}).catch(function (err) {
+				container.innerHTML = '<p class="app-show__empty">' + esc(lang('error')) + ': ' + esc(err.message) + '</p>';
+			});
+		}).catch(function () {
+			// Endpoint failed — hide tab
+			if (tabBtn) tabBtn.hidden = true;
+		});
+	}
+
+	// Create hospitality order from application page
+	root.addEventListener('click', function (e) {
+		if (!e.target.closest('[data-action="create-hospitality-order"]')) return;
+
+		var app = null;
+		// Extract current application ID from the URL
+		var appId = parseInt(root.dataset.applicationId, 10);
+
+		var hospitalityBaseUrl = root.dataset.hospitalityBaseUrl;
+		if (hospitalityBaseUrl) hospitalityBaseUrl = hospitalityBaseUrl.split('?')[0];
+
+		var applicationsBaseUrl = root.dataset.applicationsBaseUrl;
+		if (applicationsBaseUrl) applicationsBaseUrl = applicationsBaseUrl.split('?')[0];
+
+		var ordersStoreUrl = root.dataset.hospitalityOrdersUrl;
+		if (ordersStoreUrl) ordersStoreUrl = ordersStoreUrl.split('?')[0];
+
+		HospitalityOrderModal.open({
+			applicationId: appId,
+			hospitalities: _hospOrdersHospitalities,
+			ordersStoreUrl: ordersStoreUrl,
+			applicationsBaseUrl: applicationsBaseUrl,
+			deliveryLocationsBaseUrl: hospitalityBaseUrl,
+			lang: lang,
+			esc: esc,
+			fetchJson: fetchJson,
+			postJson: postJsonBody,
+			showModal: showModal,
+			closeModal: closeModal,
+			showToast: showToast,
+			onSuccess: function () {
+				// Re-fetch and re-render the hospitality orders tab
+				// We need to pass data again — simplest: just reload
+				var container = document.getElementById('application-hospitality-orders');
+				if (container) {
+					container.innerHTML = '<div class="app-show__loading-inline"><div class="app-show__spinner"></div></div>';
+				}
+				var hospOrdersUrl = root.dataset.hospitalityOrdersUrl.split('?')[0];
+				var related = _hospOrdersHospitalities; // reuse cached
+				var appIds = [appId]; // simplified — just main app for refresh
+				var queryParts = appIds.map(function (id) {
+					return 'application_id[]=' + encodeURIComponent(id);
+				});
+				fetchJson(hospOrdersUrl + '?' + queryParts.join('&')).then(function (orders) {
+					if (container) {
+						var html = '<div class="hosp-show__tab-actions" style="margin-bottom:0.75rem">' +
+							'<button type="button" class="app-button app-button-sm" data-action="create-hospitality-order">' +
+							esc(lang('createOrder')) + '</button></div>' +
+							'<div id="application-hospitality-orders-list"></div>';
+						container.innerHTML = html;
+						new HospitalityOrderList(document.getElementById('application-hospitality-orders-list'), {
+							orders: orders,
+							lang: lang,
+							columns: { application: false, hospitality: true },
+							emptyText: lang('noOrders')
+						});
+					}
+				});
+			}
+		});
+	});
 
 	// ═══════════════════════════════════════════════════════════════════
 	// Modal system

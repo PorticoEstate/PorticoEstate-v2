@@ -47,6 +47,31 @@ class HospitalityOrderRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Fetch orders for multiple application IDs in a single query.
+     *
+     * @param int[] $applicationIds
+     */
+    public function getByApplicationIds(array $applicationIds): array
+    {
+        if (empty($applicationIds)) {
+            return [];
+        }
+        $ids = array_map('intval', $applicationIds);
+        $placeholders = implode(',', $ids);
+        $sql = "SELECT o.*,
+                       h.name AS hospitality_name,
+                       r.name AS location_name
+                FROM bb_hospitality_order o
+                LEFT JOIN bb_hospitality h ON o.hospitality_id = h.id
+                LEFT JOIN bb_resource r ON o.location_resource_id = r.id
+                WHERE o.application_id IN ({$placeholders})
+                ORDER BY o.created DESC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function getByHospitalityId(int $hospitalityId, ?string $status = null): array
     {
         $sql = "SELECT o.*,
@@ -325,6 +350,21 @@ class HospitalityOrderRepository
     public function getOrdersWithLinesByApplication(int $applicationId): array
     {
         $orders = $this->getByApplicationId($applicationId);
+        foreach ($orders as &$order) {
+            $order['lines'] = $this->getOrderLines((int) $order['id']);
+            $order['total_amount'] = $this->calculateOrderTotal((int) $order['id']);
+        }
+        return $orders;
+    }
+
+    /**
+     * Get all orders for multiple applications with lines and totals.
+     *
+     * @param int[] $applicationIds
+     */
+    public function getOrdersWithLinesByApplicationIds(array $applicationIds): array
+    {
+        $orders = $this->getByApplicationIds($applicationIds);
         foreach ($orders as &$order) {
             $order['lines'] = $this->getOrderLines((int) $order['id']);
             $order['total_amount'] = $this->calculateOrderTotal((int) $order['id']);

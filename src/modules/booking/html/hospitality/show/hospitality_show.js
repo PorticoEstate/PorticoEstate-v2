@@ -1392,330 +1392,46 @@
 	// ═══════════════════════════════════════════════════════════════════
 
 	function renderOrders(orders) {
-		var html = '';
+		var container = document.getElementById('hospitality-orders');
 
+		// Render "create order" button above the list (hospitality-specific)
+		var actionsHtml = '';
 		if (canWrite) {
-			html += '<div class="hosp-show__tab-actions">' +
+			actionsHtml = '<div class="hosp-show__tab-actions">' +
 				'<button type="button" class="app-button app-button-sm" data-action="create-order">' + esc(lang('createOrder')) + '</button>' +
 				'</div>';
 		}
 
-		if (!orders || orders.length === 0) {
-			html += '<p class="app-show__empty">' + esc(lang('noOrders')) + '</p>';
-			document.getElementById('hospitality-orders').innerHTML = html;
-			return;
-		}
+		container.innerHTML = actionsHtml + '<div id="hospitality-orders-list"></div>';
 
-		var statusColorMap = {
-			pending: 'warning',
-			confirmed: 'info',
-			delivered: 'success',
-			cancelled: 'danger'
-		};
-
-		html += '<table class="ds-table" data-border>' +
-			'<thead><tr>' +
-			'<th>ID</th>' +
-			'<th>' + lang('application') + '</th>' +
-			'<th>' + lang('status') + '</th>' +
-			'<th>' + lang('location') + '</th>' +
-			'<th>' + lang('servingTime') + '</th>' +
-			'<th>' + lang('amount') + '</th>' +
-			'<th>' + lang('created') + '</th>' +
-			'</tr></thead><tbody>';
-
-		orders.forEach(function (order) {
-			var statusColor = statusColorMap[(order.status || '').toLowerCase()] || 'neutral';
-			var statusTag = '<span class="ds-tag" data-color="' + statusColor + '">' + esc(order.status) + '</span>';
-			var amount = order.total_amount != null ? Number(order.total_amount).toFixed(2) : '&mdash;';
-
-			html += '<tr class="hosp-show__order-toggle" data-order-link="' + order.id + '" style="cursor:pointer">';
-			html += '<td>' + esc(order.id) + '</td>';
-			html += '<td>#' + esc(order.application_id) + '</td>';
-			html += '<td>' + statusTag + '</td>';
-			html += '<td>' + esc(order.location_name) + '</td>';
-			html += '<td>' + fmtDate(order.serving_time_iso) + '</td>';
-			html += '<td>' + amount + '</td>';
-			html += '<td>' + fmtDate(order.created) + '</td>';
-			html += '</tr>';
+		new HospitalityOrderList(document.getElementById('hospitality-orders-list'), {
+			orders: orders,
+			lang: lang,
+			columns: { application: true, hospitality: false },
+			emptyText: lang('noOrders')
 		});
-
-		html += '</tbody></table>';
-
-		document.getElementById('hospitality-orders').innerHTML = html;
 	}
-
-	// Order row click → navigate to order show page
-	root.addEventListener('click', function (e) {
-		var row = e.target.closest('[data-order-link]');
-		if (!row) return;
-		var orderId = row.dataset.orderLink;
-		window.location.href = '/booking/view/hospitality-orders/' + orderId;
-	});
 
 	// Create order
 	root.addEventListener('click', function (e) {
 		if (!e.target.closest('[data-action="create-order"]')) return;
-		showOrderModal();
+		HospitalityOrderModal.open({
+			hospitalityId: parseInt(root.dataset.hospitalityId, 10),
+			hospMainResourceId: hospitalityData ? hospitalityData.resource_id : null,
+			ordersStoreUrl: ordersStoreUrl,
+			applicationsBaseUrl: applicationsBaseUrl,
+			relevantAppsUrl: relevantAppsUrl,
+			deliveryLocationsUrl: deliveryLocationsUrl,
+			lang: lang,
+			esc: esc,
+			fetchJson: fetchJson,
+			postJson: postJson,
+			showModal: showModal,
+			closeModal: closeModal,
+			showToast: showToast,
+			onSuccess: refreshData
+		});
 	});
-
-	function showOrderModal() {
-		var hospitalityId = parseInt(root.dataset.hospitalityId, 10);
-
-		var body = '';
-
-		// Application selector
-		body += '<label class="app-show__modal-label">' + esc(lang('application')) + ' *</label>' +
-			'<div id="modal-order-app-container" class="search-select">' +
-			'<input type="text" class="search-select__input app-show__modal-textarea" style="min-height:auto;height:2.25rem" placeholder="#ID..." autocomplete="off" aria-expanded="false" aria-autocomplete="list" role="combobox">' +
-			'<input type="hidden" id="modal-order-app-value">' +
-			'<ul class="search-select__dropdown" role="listbox"></ul>' +
-			'</div>';
-
-		// Location selector
-		body += '<label class="app-show__modal-label" style="margin-top:0.75rem">' + esc(lang('location')) + ' *</label>' +
-			'<div id="modal-order-loc-container" class="search-select">' +
-			'<input type="text" class="search-select__input app-show__modal-textarea" style="min-height:auto;height:2.25rem" placeholder="' + esc(lang('location')) + '..." autocomplete="off" aria-expanded="false" aria-autocomplete="list" role="combobox">' +
-			'<input type="hidden" id="modal-order-loc-value">' +
-			'<ul class="search-select__dropdown" role="listbox"></ul>' +
-			'</div>';
-
-		// Serving time (date + time selects, populated when application is selected)
-		body += '<label class="app-show__modal-label" style="margin-top:0.75rem">' + esc(lang('servingTime')) + ' *</label>' +
-			'<div id="modal-order-serving-container" style="display:flex;gap:0.5rem">' +
-			'<select id="modal-order-serving-date" class="app-show__modal-textarea" style="min-height:auto;height:2.25rem;flex:1;max-width:10rem" disabled>' +
-			'<option value="">' + esc(lang('selectDate')) + '</option></select>' +
-			'<select id="modal-order-serving-time" class="app-show__modal-textarea" style="min-height:auto;height:2.25rem;flex:1;max-width:10rem" disabled>' +
-			'<option value="">' + esc(lang('selectTime')) + '</option></select>' +
-			'</div>';
-
-		// Comment
-		body += '<label class="app-show__modal-label" for="modal-order-comment" style="margin-top:0.75rem">' + esc(lang('comment')) + '</label>' +
-			'<textarea id="modal-order-comment" class="app-show__modal-textarea" rows="2"></textarea>';
-
-		// Special requirements
-		body += '<label class="app-show__modal-label" for="modal-order-special" style="margin-top:0.75rem">' + esc(lang('specialRequirements')) + '</label>' +
-			'<textarea id="modal-order-special" class="app-show__modal-textarea" rows="2"></textarea>';
-
-		var footer = '<button type="button" class="app-button" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="app-button app-button-primary" id="modal-order-submit">' + esc(lang('save')) + '</button>';
-
-		showModal('order-dialog', lang('createOrder'), body, footer);
-
-		// ── Serving time helpers ──
-		var _allAppDates = [];  // raw from API
-		var _appDates = [];     // filtered by location
-		var _selectedLocId = null;
-		var hospMainResourceId = hospitalityData ? hospitalityData.resource_id : null;
-		var dateSelect = document.getElementById('modal-order-serving-date');
-		var timeSelect = document.getElementById('modal-order-serving-time');
-
-		function generate15MinIntervals(from, to) {
-			var slots = [];
-			var start = new Date(from);
-			var end = new Date(to);
-			var mins = start.getMinutes();
-			var rem = mins % 15;
-			if (rem > 0) start.setMinutes(mins + (15 - rem), 0, 0);
-			else start.setSeconds(0, 0);
-			while (start <= end) {
-				slots.push(new Date(start));
-				start.setMinutes(start.getMinutes() + 15);
-			}
-			return slots;
-		}
-
-		function fmtTime(d) {
-			return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-		}
-
-		function fmtShortDate(d) {
-			return d.toLocaleDateString('nb-NO', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
-		}
-
-		function fmtNaiveIso(d) {
-			return d.getFullYear() + '-' +
-				String(d.getMonth() + 1).padStart(2, '0') + '-' +
-				String(d.getDate()).padStart(2, '0') + 'T' +
-				String(d.getHours()).padStart(2, '0') + ':' +
-				String(d.getMinutes()).padStart(2, '0') + ':00';
-		}
-
-		function populateTimeSlots(dateIdx) {
-			timeSelect.innerHTML = '<option value="">' + esc(lang('selectTime')) + '</option>';
-			timeSelect.disabled = true;
-			if (dateIdx === '' || !_appDates[dateIdx]) return;
-
-			var range = _appDates[dateIdx];
-			var slots = generate15MinIntervals(range.from_, range.to_);
-			slots.forEach(function (slot) {
-				var opt = document.createElement('option');
-				opt.value = fmtNaiveIso(slot);
-				opt.textContent = fmtTime(slot);
-				timeSelect.appendChild(opt);
-			});
-			timeSelect.disabled = false;
-		}
-
-		function filterAndPopulateDates() {
-			_appDates = [];
-			dateSelect.innerHTML = '<option value="">' + esc(lang('selectDate')) + '</option>';
-			dateSelect.disabled = true;
-			timeSelect.innerHTML = '<option value="">' + esc(lang('selectTime')) + '</option>';
-			timeSelect.disabled = true;
-
-			if (_allAppDates.length === 0) return;
-
-			// Filter: if location is the hospitality's main resource, show all dates.
-			// Otherwise only show dates where the location resource is booked.
-			var locId = _selectedLocId ? parseInt(_selectedLocId, 10) : null;
-			if (locId && locId !== hospMainResourceId) {
-				_appDates = _allAppDates.filter(function (d) {
-					return d.resources && d.resources.indexOf(locId) !== -1;
-				});
-			} else {
-				_appDates = _allAppDates.slice();
-			}
-
-			if (_appDates.length === 0) return;
-
-			_appDates.forEach(function (d, i) {
-				var opt = document.createElement('option');
-				opt.value = i;
-				opt.textContent = fmtShortDate(new Date(d.from_));
-				dateSelect.appendChild(opt);
-			});
-
-			if (_appDates.length === 1) {
-				dateSelect.value = '0';
-				dateSelect.disabled = true;
-				populateTimeSlots(0);
-			} else {
-				dateSelect.disabled = false;
-			}
-		}
-
-		function loadAppDates(appId) {
-			_allAppDates = [];
-			_appDates = [];
-			dateSelect.innerHTML = '<option value="">' + esc(lang('selectDate')) + '</option>';
-			dateSelect.disabled = true;
-			timeSelect.innerHTML = '<option value="">' + esc(lang('selectTime')) + '</option>';
-			timeSelect.disabled = true;
-
-			if (!appId || !applicationsBaseUrl) return;
-
-			fetchJson(applicationsBaseUrl + '/' + appId + '/dates').then(function (dates) {
-				_allAppDates = dates;
-				filterAndPopulateDates();
-			}).catch(function () {});
-		}
-
-		dateSelect.addEventListener('change', function () {
-			populateTimeSlots(this.value);
-		});
-
-		// Initialize application SearchSelect
-		var appSelector = new SearchSelect(
-			document.getElementById('modal-order-app-container'),
-			{
-				apiUrl: relevantAppsUrl,
-				idField: 'id',
-				labelField: '_label',
-				mapResponse: function (data) {
-					return (Array.isArray(data) ? data : []).map(function (app) {
-						app._label = '#' + app.id + ' - ' + (app.status || '') + (app.contact_name ? ' (' + app.contact_name + ')' : '');
-						return app;
-					});
-				},
-				placeholder: '#ID...',
-				emptyText: lang('noOrders'),
-				onChange: function (id) {
-					loadAppDates(id);
-				}
-			}
-		);
-
-		// Initialize location SearchSelect
-		var locSelector = new SearchSelect(
-			document.getElementById('modal-order-loc-container'),
-			{
-				apiUrl: deliveryLocationsUrl,
-				idField: 'id',
-				labelField: '_label',
-				mapResponse: function (data) {
-					return (Array.isArray(data) ? data : []).map(function (loc) {
-						loc._label = loc.name + ' (' + loc.location_type + ')';
-						return loc;
-					});
-				},
-				placeholder: lang('location') + '...',
-				emptyText: lang('noOrders'),
-				onChange: function (id) {
-					_selectedLocId = id;
-					filterAndPopulateDates();
-				}
-			}
-		);
-
-		// Submit handler
-		document.getElementById('modal-order-submit').addEventListener('click', function () {
-			var appId = appSelector.getValue();
-			var locId = locSelector.getValue();
-
-			// Allow typing a raw application ID
-			if (!appId) {
-				var rawInput = document.getElementById('modal-order-app-container').querySelector('.search-select__input').value.trim();
-				var parsed = parseInt(rawInput.replace('#', ''), 10);
-				if (parsed > 0) appId = parsed;
-			}
-
-			if (!appId) {
-				document.getElementById('modal-order-app-container').querySelector('.search-select__input').focus();
-				return;
-			}
-			if (!locId) {
-				document.getElementById('modal-order-loc-container').querySelector('.search-select__input').focus();
-				return;
-			}
-
-			var servingTimeIso = timeSelect.value;
-			if (!servingTimeIso) {
-				timeSelect.focus();
-				return;
-			}
-
-			// Determine the correct application_id from the selected date entry
-			var selectedDateIdx = dateSelect.value;
-			var targetAppId = parseInt(appId, 10);
-			if (selectedDateIdx !== '' && _appDates[selectedDateIdx] && _appDates[selectedDateIdx].application_id) {
-				targetAppId = _appDates[selectedDateIdx].application_id;
-			}
-
-			var btn = this;
-			btn.disabled = true;
-			btn.textContent = '...';
-
-			var payload = {
-				application_id: targetAppId,
-				hospitality_id: hospitalityId,
-				location_resource_id: parseInt(locId, 10),
-				serving_time_iso: servingTimeIso,
-				comment: document.getElementById('modal-order-comment').value.trim() || null,
-				special_requirements: document.getElementById('modal-order-special').value.trim() || null
-			};
-
-			postJson(ordersStoreUrl, payload).then(function () {
-				closeModal('order-dialog');
-				showToast(lang('saved'));
-				refreshData();
-			}).catch(function (err) {
-				btn.disabled = false;
-				btn.textContent = lang('save');
-				showToast(lang('error') + ': ' + err.message, 'danger');
-			});
-		});
-	}
 
 	// ═══════════════════════════════════════════════════════════════════
 	// Modal system (reused from application_show pattern)

@@ -220,4 +220,38 @@ class HospitalityRepository
         $stmt->execute([':id1' => $hospitalityId, ':id2' => $hospitalityId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    /**
+     * Find active hospitalities that serve any of the given resource IDs.
+     * A resource is "served" if it's the main resource (with allow_on_site_hospitality)
+     * or an active remote location (with remote_serving_enabled).
+     *
+     * @param int[] $resourceIds
+     */
+    public function getActiveByResourceIds(array $resourceIds): array
+    {
+        if (empty($resourceIds)) {
+            return [];
+        }
+        $ids = array_map('intval', $resourceIds);
+        $placeholders = implode(',', $ids);
+
+        $sql = "SELECT DISTINCT h.id, h.name, h.resource_id, r.name AS resource_name,
+                       h.remote_serving_enabled, h.allow_on_site_hospitality
+                FROM bb_hospitality h
+                LEFT JOIN bb_resource r ON h.resource_id = r.id
+                WHERE h.active = 1
+                  AND (
+                    (h.allow_on_site_hospitality = 1 AND h.resource_id IN ({$placeholders}))
+                    OR
+                    (h.remote_serving_enabled = 1 AND h.id IN (
+                      SELECT rl.hospitality_id FROM bb_hospitality_remote_location rl
+                      WHERE rl.resource_id IN ({$placeholders}) AND rl.active = 1
+                    ))
+                  )
+                ORDER BY h.name";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

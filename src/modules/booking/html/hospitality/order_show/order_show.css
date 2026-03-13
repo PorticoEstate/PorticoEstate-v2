@@ -195,6 +195,14 @@
 	opacity: 0.6;
 }
 
+/* Edit mode actions (save + exit buttons in header) */
+.order-show__edit-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-left: auto;
+}
+
 /* Edit mode toggle button */
 .order-show__edit-toggle {
 	margin-left: auto;
@@ -202,6 +210,10 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 0.375rem;
+}
+
+.order-show__edit-actions .order-show__edit-toggle {
+	margin-left: 0;
 }
 
 /* Related application IDs shown after main app link */

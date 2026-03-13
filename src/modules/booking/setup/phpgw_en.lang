@@ -1054,3 +1054,4 @@ changelog_comment_required	booking	en	Please describe the change
 changelog_comment_placeholder	booking	en	Describe what is being changed and why
 no_changes	booking	en	No changes recorded
 exit_edit_mode	booking	en	Exit editing
+hospitality_orders	booking	en	Hospitality orders

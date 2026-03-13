@@ -169,11 +169,16 @@
 	var allArticlesFlat = [];
 	var appDatesData = [];
 	var relatedAppIds = [];  // sibling application IDs (excluding the order's own)
-	var debounceTimers = {};
 
 	// Edit mode state
 	var editMode = false;
 	var pendingChangelogComment = null;
+	var pendingLineChanges = {};
+	// Shape: { [articleId]: { quantity: number, comment: string|null, lineId: number|null, unitPrice: number } }
+
+	function hasPendingLineChanges() {
+		return Object.keys(pendingLineChanges).length > 0;
+	}
 
 	var TERMINAL_STATUSES = ['cancelled', 'delivered'];
 	var STATUS_COLOR_MAP = {
@@ -386,11 +391,15 @@
 			statusTag +
 			'</div>';
 
-		// Edit mode toggle button
+		// Edit mode toggle button + save
 		if (canWrite && !isTerminal()) {
 			if (editMode) {
-				html += '<button type="button" class="app-button order-show__edit-toggle order-show__edit-toggle--active" id="toggle-edit-mode">' +
-					esc(lang('exitEditMode')) + '</button>';
+				html += '<div class="order-show__edit-actions">' +
+					'<button type="button" class="app-button app-button-primary" id="save-all-changes">' +
+					esc(lang('save')) + '</button>' +
+					'<button type="button" class="app-button order-show__edit-toggle order-show__edit-toggle--active" id="toggle-edit-mode">' +
+					esc(lang('exitEditMode')) + '</button>' +
+					'</div>';
 			} else {
 				html += '<button type="button" class="app-button app-button-primary order-show__edit-toggle" id="toggle-edit-mode">' +
 					penIcon + ' ' + esc(lang('edit')) + '</button>';
@@ -419,6 +428,7 @@
 		editMode = !editMode;
 		if (!editMode) {
 			pendingChangelogComment = null;
+			pendingLineChanges = {};
 		}
 		renderHeader();
 		renderDetails();
@@ -476,13 +486,6 @@
 			html += actionsHtml;
 		}
 
-		// Save button for edit mode
-		if (editMode) {
-			html += '<div class="order-show__edit-save-row">' +
-				'<button type="button" class="app-button app-button-primary" id="save-detail-changes">' + esc(lang('save')) + '</button>' +
-				'</div>';
-		}
-
 		document.getElementById('order-details').innerHTML = html;
 
 		if (editMode) {
@@ -491,14 +494,10 @@
 	}
 
 	// ═══════════════════════════════════════════════════════════════════
-	// Save all detail field changes
+	// Unified save — details + line changes
 	// ═══════════════════════════════════════════════════════════════════
 
-	root.addEventListener('click', function (e) {
-		var btn = e.target.closest('#save-detail-changes');
-		if (!btn) return;
-
-		// Collect all changed fields
+	function collectDetailChanges() {
 		var payload = {};
 		var fields = root.querySelectorAll('[data-edit-field]');
 		fields.forEach(function (el) {
@@ -526,8 +525,18 @@
 				payload[fieldName] = newValue;
 			}
 		});
+		return payload;
+	}
 
-		if (Object.keys(payload).length === 0) {
+	root.addEventListener('click', function (e) {
+		var btn = e.target.closest('#save-all-changes');
+		if (!btn) return;
+
+		var detailPayload = collectDetailChanges();
+		var hasDetailChanges = Object.keys(detailPayload).length > 0;
+		var hasLineChanges = hasPendingLineChanges();
+
+		if (!hasDetailChanges && !hasLineChanges) {
 			showToast(lang('noChanges'), 'info');
 			return;
 		}
@@ -535,12 +544,60 @@
 		ensureChangelogComment().then(function (comment) {
 			btn.disabled = true;
 			btn.textContent = '...';
-			payload.changelog_comment = comment;
 
-			putJson(orderUrl, payload).then(function (updatedOrder) {
-				orderData = updatedOrder;
+			var chain = Promise.resolve();
+
+			// 1. Save detail fields
+			if (hasDetailChanges) {
+				detailPayload.changelog_comment = comment;
+				chain = chain.then(function () {
+					return putJson(orderUrl, detailPayload).then(function (updatedOrder) {
+						orderData = updatedOrder;
+					});
+				});
+			}
+
+			// 2. Save line changes
+			if (hasLineChanges) {
+				var orderId = orderData.id;
+				Object.keys(pendingLineChanges).forEach(function (artId) {
+					var p = pendingLineChanges[artId];
+					artId = parseInt(artId, 10);
+
+					if (p.quantity === 0 && p.lineId) {
+						chain = chain.then(function () {
+							return deleteJson(ordersBaseUrl + '/' + orderId + '/lines/' + p.lineId +
+								'?changelog_comment=' + encodeURIComponent(comment)).then(function (r) { orderData = r; });
+						});
+					} else if (p.quantity > 0 && p.lineId) {
+						chain = chain.then(function () {
+							var payload = { quantity: p.quantity, changelog_comment: comment };
+							if (p.comment != null) payload.comment = p.comment;
+							return putJson(ordersBaseUrl + '/' + orderId + '/lines/' + p.lineId, payload).then(function (r) { orderData = r; });
+						});
+					} else if (p.quantity > 0 && !p.lineId) {
+						chain = chain.then(function () {
+							var payload = { hospitality_article_id: artId, quantity: p.quantity, changelog_comment: comment };
+							if (p.comment) payload.comment = p.comment;
+							return postJson(ordersBaseUrl + '/' + orderId + '/lines', payload).then(function (r) { orderData = r; });
+						});
+					} else if (p.lineId && p.comment !== null) {
+						chain = chain.then(function () {
+							return putJson(ordersBaseUrl + '/' + orderId + '/lines/' + p.lineId, {
+								comment: p.comment, changelog_comment: comment
+							}).then(function (r) { orderData = r; });
+						});
+					}
+				});
+			}
+
+			chain.then(function () {
+				pendingLineChanges = {};
+				pendingChangelogComment = null;
 				showToast(lang('saved'));
+				renderHeader();
 				renderDetails();
+				renderLines();
 				renderChangelog();
 			}).catch(function (err) {
 				btn.disabled = false;
@@ -832,9 +889,47 @@
 	});
 
 	// ═══════════════════════════════════════════════════════════════════
-	// Quantity input handling (debounced auto-save)
+	// Pending line changes — local tracking
 	// ═══════════════════════════════════════════════════════════════════
 
+	function getUnitPrice(articleId) {
+		var art = allArticlesFlat.find(function (a) { return a.id === articleId; });
+		if (art) return Number(art.effective_price || art.override_price || art.base_price || 0);
+		// Fallback: look for an existing line
+		var line = (orderData.lines || []).find(function (l) { return l.hospitality_article_id === articleId; });
+		return line ? Number(line.unit_price || 0) : 0;
+	}
+
+	function getOriginalLine(articleId) {
+		return (orderData.lines || []).find(function (l) {
+			return l.hospitality_article_id === articleId;
+		}) || null;
+	}
+
+	function recalcLiveTotal() {
+		var lines = orderData.lines || [];
+		var total = 0;
+		lines.forEach(function (line) {
+			var pending = pendingLineChanges[line.hospitality_article_id];
+			if (pending && pending.quantity === 0) return; // will be deleted
+			if (pending) {
+				total += pending.quantity * pending.unitPrice;
+			} else {
+				total += Number(line.amount || 0);
+			}
+		});
+		// Also count newly added lines (no existing line in orderData)
+		Object.keys(pendingLineChanges).forEach(function (artId) {
+			var p = pendingLineChanges[artId];
+			if (!p.lineId && p.quantity > 0) {
+				total += p.quantity * p.unitPrice;
+			}
+		});
+		var el = root.querySelector('.order-show__total-amount');
+		if (el) el.textContent = total.toFixed(2);
+	}
+
+	// Quantity input — track locally, no API call
 	root.addEventListener('input', function (e) {
 		var input = e.target.closest('[data-qty-article]');
 		if (!input) return;
@@ -842,21 +937,49 @@
 		var articleId = parseInt(input.dataset.qtyArticle, 10);
 		var lineId = input.dataset.qtyLine ? parseInt(input.dataset.qtyLine, 10) : null;
 		var newQty = parseInt(input.value, 10) || 0;
+		var unitPrice = getUnitPrice(articleId);
 
+		// Toggle dimmed class
 		var item = input.closest('.order-show__menu-item');
 		if (item) {
 			item.classList.toggle('order-show__menu-row--dimmed', newQty === 0);
 		}
 
-		var timerKey = 'qty-' + articleId;
-		if (debounceTimers[timerKey]) clearTimeout(debounceTimers[timerKey]);
+		// Check if this is actually a change vs the original data
+		var origLine = getOriginalLine(articleId);
+		var origQty = origLine ? origLine.quantity : 0;
+		var existingPending = pendingLineChanges[articleId];
+		var pendingComment = existingPending ? existingPending.comment : null;
 
-		debounceTimers[timerKey] = setTimeout(function () {
-			saveLineQuantity(articleId, lineId, newQty, input);
-		}, 300);
+		if (newQty === origQty && !pendingComment) {
+			// Reverted to original — remove from pending
+			delete pendingLineChanges[articleId];
+		} else {
+			pendingLineChanges[articleId] = {
+				quantity: newQty,
+				comment: pendingComment,
+				lineId: lineId,
+				unitPrice: unitPrice
+			};
+		}
+
+		// Update the amount cell for this row
+		var newAmount = newQty * unitPrice;
+		if (item) {
+			var amountEl = item.querySelector('.order-show__menu-amount');
+			if (amountEl) amountEl.textContent = newAmount > 0 ? newAmount.toFixed(2) : '\u2014';
+		}
+
+		// Enable/disable comment toggle
+		if (item) {
+			var commentBtn = item.querySelector('[data-toggle-comment]');
+			if (commentBtn) commentBtn.disabled = newQty === 0;
+		}
+
+		recalcLiveTotal();
 	});
 
-	// Line comment input handler (debounced)
+	// Comment input — track locally, no API call
 	root.addEventListener('input', function (e) {
 		var input = e.target.closest('[data-comment-article]');
 		if (!input) return;
@@ -865,94 +988,39 @@
 		var lineId = input.dataset.commentLine ? parseInt(input.dataset.commentLine, 10) : null;
 		var comment = input.value;
 
-		if (!lineId) return;
+		var origLine = getOriginalLine(articleId);
+		var origComment = origLine ? (origLine.comment || '') : '';
+		var existingPending = pendingLineChanges[articleId];
 
-		var timerKey = 'comment-' + articleId;
-		if (debounceTimers[timerKey]) clearTimeout(debounceTimers[timerKey]);
-
-		debounceTimers[timerKey] = setTimeout(function () {
-			ensureChangelogComment().then(function (changelogComment) {
-				putJson(ordersBaseUrl + '/' + orderData.id + '/lines/' + lineId, {
-					comment: comment,
-					changelog_comment: changelogComment
-				}).then(function (updatedOrder) {
-					orderData = updatedOrder;
-				}).catch(function (err) {
-					showToast(lang('error') + ': ' + err.message, 'danger');
-				});
-			}).catch(function () {
-				// User cancelled
-			});
-		}, 500);
-	});
-
-	function saveLineQuantity(articleId, lineId, newQty, input) {
-		var orderId = orderData.id;
-
-		ensureChangelogComment().then(function (changelogComment) {
-			if (newQty === 0 && lineId) {
-				// Delete the line
-				deleteJson(ordersBaseUrl + '/' + orderId + '/lines/' + lineId +
-					'?changelog_comment=' + encodeURIComponent(changelogComment)
-				).then(function (updatedOrder) {
-					orderData = updatedOrder;
-					renderHeader();
-					renderDetails();
-					renderLines();
-					renderChangelog();
-				}).catch(function (err) {
-					showToast(lang('error') + ': ' + err.message, 'danger');
-				});
-			} else if (newQty > 0 && lineId) {
-				// Update existing line
-				putJson(ordersBaseUrl + '/' + orderId + '/lines/' + lineId, {
-					quantity: newQty,
-					changelog_comment: changelogComment
-				}).then(function (updatedOrder) {
-					orderData = updatedOrder;
-					renderHeader();
-					renderDetails();
-					renderLines();
-					renderChangelog();
-				}).catch(function (err) {
-					showToast(lang('error') + ': ' + err.message, 'danger');
-				});
-			} else if (newQty > 0 && !lineId) {
-				var item = input.closest('.order-show__menu-item');
-				var commentInput = item ? item.querySelector('[data-comment-article]') : null;
-				var comment = commentInput ? commentInput.value : null;
-
-				var linePayload = {
-					hospitality_article_id: articleId,
-					quantity: newQty,
-					changelog_comment: changelogComment
-				};
-				if (comment) linePayload.comment = comment;
-				postJson(ordersBaseUrl + '/' + orderId + '/lines', linePayload).then(function (updatedOrder) {
-					if (updatedOrder && updatedOrder.lines) {
-						var newLine = updatedOrder.lines.find(function (l) {
-							return l.hospitality_article_id === articleId;
-						});
-						if (newLine) {
-							input.dataset.qtyLine = newLine.id;
-						}
-					}
-					orderData = updatedOrder;
-					renderHeader();
-					renderDetails();
-					renderLines();
-					renderChangelog();
-				}).catch(function (err) {
-					showToast(lang('error') + ': ' + err.message, 'danger');
-				});
+		if (existingPending) {
+			// Already tracking a quantity change — just update the comment
+			existingPending.comment = comment;
+		} else {
+			// Comment-only change
+			var origQty = origLine ? origLine.quantity : 0;
+			if (comment === origComment) {
+				// No change — don't add to pending
+				return;
 			}
-		}).catch(function () {
-			// User cancelled — revert the input to its previous value
-			var lines = orderData.lines || [];
-			var prevLine = lines.find(function (l) { return l.hospitality_article_id === articleId; });
-			input.value = prevLine ? prevLine.quantity : 0;
-		});
-	}
+			pendingLineChanges[articleId] = {
+				quantity: origQty,
+				comment: comment,
+				lineId: lineId,
+				unitPrice: getUnitPrice(articleId)
+			};
+		}
+
+		// If everything is back to original, remove from pending
+		if (existingPending || pendingLineChanges[articleId]) {
+			var p = pendingLineChanges[articleId];
+			var oQty = origLine ? origLine.quantity : 0;
+			var oCom = origLine ? (origLine.comment || '') : '';
+			if (p && p.quantity === oQty && (p.comment || '') === oCom) {
+				delete pendingLineChanges[articleId];
+			}
+		}
+
+	});
 
 	// ═══════════════════════════════════════════════════════════════════
 	// Changelog section

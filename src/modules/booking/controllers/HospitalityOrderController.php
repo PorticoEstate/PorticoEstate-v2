@@ -131,7 +131,13 @@ class HospitalityOrderController
 			$params = $request->getQueryParams();
 
 			if (!empty($params['application_id'])) {
-				$orders = $this->repository->getOrdersWithLinesByApplication((int)$params['application_id']);
+				if (is_array($params['application_id'])) {
+					$orders = $this->repository->getOrdersWithLinesByApplicationIds(
+						array_map('intval', $params['application_id'])
+					);
+				} else {
+					$orders = $this->repository->getOrdersWithLinesByApplication((int)$params['application_id']);
+				}
 			} elseif (!empty($params['hospitality_id'])) {
 				$status = $params['status'] ?? null;
 				$rows = $this->repository->getByHospitalityId((int)$params['hospitality_id'], $status);

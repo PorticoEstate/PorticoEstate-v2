@@ -226,6 +226,7 @@ $app->group('/booking/applications', function (RouteCollectorProxy $group)
 	$group->post('/{id:[0-9]+}/reassign', ApplicationController::class . ':reassign');
 	$group->get('/{id:[0-9]+}/recurring-preview', ApplicationController::class . ':recurringPreview');
 	$group->post('/{id:[0-9]+}/create-recurring-allocations', ApplicationController::class . ':createRecurringAllocations');
+	$group->get('/{id:[0-9]+}/hospitalities', ApplicationController::class . ':showHospitalities');
 })
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));

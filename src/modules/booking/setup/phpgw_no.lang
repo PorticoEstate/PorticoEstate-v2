@@ -1146,3 +1146,4 @@ changelog_comment_required	booking	no	Vennligst beskriv endringen
 changelog_comment_placeholder	booking	no	Beskriv hva som endres og hvorfor
 no_changes	booking	no	Ingen endringer registrert
 exit_edit_mode	booking	no	Avslutt redigering
+hospitality_orders	booking	no	Bevertningsbestillinger

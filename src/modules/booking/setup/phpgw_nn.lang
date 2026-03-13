@@ -1158,3 +1158,4 @@ changelog_comment_required	booking	nn	Vennligst beskriv endringa
 changelog_comment_placeholder	booking	nn	Beskriv kva som blir endra og kvifor
 no_changes	booking	nn	Ingen endringar registrert
 exit_edit_mode	booking	nn	Avslutt redigering
+hospitality_orders	booking	nn	Bevertningsbestillingar

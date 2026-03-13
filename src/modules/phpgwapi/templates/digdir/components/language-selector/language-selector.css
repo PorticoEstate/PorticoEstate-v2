@@ -18,6 +18,10 @@
     padding: var(--ds-spacing-2, 0.5rem);
 }
 
+.app-language-selector__dropdown[popover]:popover-open {
+    position: fixed;
+}
+
 .app-language-selector__dropdown h6,
 .app-language-selector__dropdown p,
 .app-language-selector__dropdown ul {

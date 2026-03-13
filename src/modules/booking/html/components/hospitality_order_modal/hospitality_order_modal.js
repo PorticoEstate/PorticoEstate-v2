@@ -106,8 +106,8 @@ var HospitalityOrderModal = (function () {
 		body += '<label class="app-show__modal-label" for="modal-order-special" style="margin-top:0.75rem">' + esc(lang('specialRequirements')) + '</label>' +
 			'<textarea id="modal-order-special" class="app-show__modal-textarea" rows="2"></textarea>';
 
-		var footer = '<button type="button" class="app-button" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="app-button app-button-primary" id="modal-order-submit">' + esc(lang('save')) + '</button>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="ds-button" id="modal-order-submit">' + esc(lang('save')) + '</button>';
 
 		opts.showModal('order-dialog', lang('createOrder'), body, footer);
 

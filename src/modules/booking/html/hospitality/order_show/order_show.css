@@ -206,10 +206,6 @@
 /* Edit mode toggle button */
 .order-show__edit-toggle {
 	margin-left: auto;
-	white-space: nowrap;
-	display: inline-flex;
-	align-items: center;
-	gap: 0.375rem;
 }
 
 .order-show__edit-actions .order-show__edit-toggle {
@@ -222,19 +218,6 @@
 	font-size: 0.875em;
 }
 
-/* Save button row below detail fields in edit mode */
-.order-show__edit-save-row {
-	display: flex;
-	justify-content: flex-end;
-	padding: 0.5rem 0;
-	margin-top: 0.5rem;
-}
-
-.order-show__edit-toggle--active {
-	background: var(--ds-color-surface-tinted, #f8fafc);
-	color: var(--ds-color-text-default, #1e293b);
-	border: 1px solid var(--ds-color-border-default, #dee2e6);
-}
 
 /* Changelog section */
 .order-show__changelog-entry {

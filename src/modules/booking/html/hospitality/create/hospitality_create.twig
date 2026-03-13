@@ -11,18 +11,18 @@
 <div id="hospitality-create" class="hospitality-create">
 	<h2>{{ lang('booking.create_hospitality') }}</h2>
 
-	<div id="alert-success" class="app-alert app-alert--success is-hidden"></div>
-	<div id="alert-error" class="app-alert app-alert--danger is-hidden"></div>
+	<div id="alert-success" class="ds-alert is-hidden" data-color="success"></div>
+	<div id="alert-error" class="ds-alert is-hidden" data-color="danger"></div>
 
 	<form id="hospitality-form" novalidate>
 		<div class="form-group">
 			<label class="app-label" for="field-name">{{ lang('common.name') }} *</label>
-			<input type="text" id="field-name" class="app-input" required>
+			<input type="text" id="field-name" class="ds-input" required>
 		</div>
 
 		<div class="form-group">
 			<label class="app-label" for="field-description">{{ lang('common.description') }}</label>
-			<textarea id="field-description" class="app-input" rows="3"></textarea>
+			<textarea id="field-description" class="ds-input" rows="3"></textarea>
 		</div>
 
 		<div class="form-group">
@@ -37,16 +37,16 @@
 
 		<div class="form-group">
 			<label class="app-label" for="field-resource">{{ lang('booking.resource') }} *</label>
-			<select id="field-resource" class="app-select" disabled>
+			<select id="field-resource" class="ds-select" disabled>
 				<option value="">{{ lang('booking.select_resource') }}</option>
 			</select>
 		</div>
 
 		<div class="hospitality-create__btn-row">
-			<button type="submit" id="btn-create" class="app-button app-button-primary" disabled>
+			<button type="submit" id="btn-create" class="ds-button" disabled>
 				{{ lang('common.create') }}
 			</button>
-			<a href="{{ phpgw_link('/booking/view/hospitality') }}" class="app-button app-button-secondary">
+			<a href="{{ phpgw_link('/booking/view/hospitality') }}" class="ds-button" data-variant="secondary">
 				{{ lang('booking.cancel_action') }}
 			</a>
 		</div>

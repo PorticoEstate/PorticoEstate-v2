@@ -73,7 +73,8 @@
 
 	function showToast(message, type) {
 		var toast = document.createElement('div');
-		toast.className = 'app-alert app-alert-' + (type || 'success') + ' app-show__toast';
+		toast.className = 'ds-alert app-show__toast';
+		toast.dataset.color = type || 'success';
 		toast.textContent = message;
 		document.body.appendChild(toast);
 		setTimeout(function () { toast.remove(); }, 3000);
@@ -718,7 +719,7 @@
 		if (canWrite) {
 			html += '<div class="hosp-show__tab-actions">' +
 				'<div id="inline-building-select" class="building-select" style="flex:1;max-width:20rem">' +
-				'<input type="text" class="building-select__input app-input" autocomplete="off" ' +
+				'<input type="text" class="building-select__input ds-input" autocomplete="off" ' +
 				'placeholder="' + esc(lang('searchBuildings')) + '..." ' +
 				'aria-expanded="false" aria-autocomplete="list" role="combobox">' +
 				'<input type="hidden">' +
@@ -838,8 +839,8 @@
 		// Add group button
 		if (canWrite) {
 			html += '<div class="hosp-show__tab-actions">' +
-				'<button type="button" class="app-button app-button-sm" data-action="add-group">' + esc(lang('add')) + ' ' + esc(lang('group')) + '</button>' +
-				'<button type="button" class="app-button app-button-sm" data-action="add-article">' + esc(lang('add')) + ' ' + esc(lang('article')) + '</button>' +
+				'<button type="button" class="ds-button" data-size="sm" data-action="add-group">' + esc(lang('add')) + ' ' + esc(lang('group')) + '</button>' +
+				'<button type="button" class="ds-button" data-size="sm" data-action="add-article">' + esc(lang('add')) + ' ' + esc(lang('article')) + '</button>' +
 				'</div>';
 		}
 
@@ -866,10 +867,10 @@
 			if (canWrite) {
 				html += '<div class="hosp-show__group-actions">';
 				if (!group.active) {
-					html += '<button type="button" class="app-button app-button-sm" data-reactivate-group="' + group.id + '" title="' + esc(lang('active')) + '">&#x21bb;</button>';
+					html += '<button type="button" class="ds-button" data-size="sm" data-reactivate-group="' + group.id + '" title="' + esc(lang('active')) + '">&#x21bb;</button>';
 				}
-				html += '<button type="button" class="app-button app-button-sm" data-edit-group="' + group.id + '" title="' + esc(lang('edit')) + '">' + penIcon + '</button>' +
-					'<button type="button" class="app-button app-button-sm app-button-danger" data-delete-group="' + group.id + '" title="' + esc(lang('delete')) + '">' + trashIcon + '</button>' +
+				html += '<button type="button" class="ds-button" data-size="sm" data-edit-group="' + group.id + '" title="' + esc(lang('edit')) + '">' + penIcon + '</button>' +
+					'<button type="button" class="ds-button" data-size="sm" data-color="danger" data-delete-group="' + group.id + '" title="' + esc(lang('delete')) + '">' + trashIcon + '</button>' +
 					'</div>';
 			}
 			html += '</div>';
@@ -930,8 +931,8 @@
 
 			if (canWrite) {
 				html += '<span class="hosp-show__article-actions">' +
-					'<button type="button" class="app-button app-button-sm" data-edit-article="' + a.id + '" title="' + esc(lang('edit')) + '">' + penIcon + '</button> ' +
-					'<button type="button" class="app-button app-button-sm app-button-danger" data-delete-article="' + a.id + '" title="' + esc(lang('delete')) + '">' + trashIcon + '</button>' +
+					'<button type="button" class="ds-button" data-size="sm" data-edit-article="' + a.id + '" title="' + esc(lang('edit')) + '">' + penIcon + '</button> ' +
+					'<button type="button" class="ds-button" data-size="sm" data-color="danger" data-delete-article="' + a.id + '" title="' + esc(lang('delete')) + '">' + trashIcon + '</button>' +
 					'</span>';
 			}
 
@@ -1014,8 +1015,8 @@
 			'<input type="number" id="modal-group-sort" class="app-show__modal-textarea" style="min-height:auto;height:2.25rem" value="' + (isEdit ? (group.sort_order || 0) : 0) + '">' +
 			'<label class="app-show__modal-checkbox"><input type="checkbox" id="modal-group-active"' + (isEdit ? (group.active ? ' checked' : '') : ' checked') + '> ' + esc(lang('active')) + '</label>';
 
-		var footer = '<button type="button" class="app-button" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="app-button app-button-primary" id="modal-group-submit">' + esc(lang('save')) + '</button>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="ds-button" id="modal-group-submit">' + esc(lang('save')) + '</button>';
 
 		showModal('group-dialog', title, body, footer);
 
@@ -1149,8 +1150,8 @@
 				'</div></div>';
 		}
 
-		var footer = '<button type="button" class="app-button" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="app-button app-button-primary" id="modal-article-submit">' + esc(lang('save')) + '</button>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="ds-button" id="modal-article-submit">' + esc(lang('save')) + '</button>';
 
 		showModal('article-dialog', title, body, footer);
 
@@ -1398,7 +1399,7 @@
 		var actionsHtml = '';
 		if (canWrite) {
 			actionsHtml = '<div class="hosp-show__tab-actions">' +
-				'<button type="button" class="app-button app-button-sm" data-action="create-order">' + esc(lang('createOrder')) + '</button>' +
+				'<button type="button" class="ds-button" data-size="sm" data-action="create-order">' + esc(lang('createOrder')) + '</button>' +
 				'</div>';
 		}
 
@@ -1441,46 +1442,43 @@
 		var existing = document.getElementById(id);
 		if (existing) existing.remove();
 
-		var modal = document.createElement('div');
-		modal.id = id;
-		modal.className = 'app-modal';
-		modal.innerHTML =
-			'<div class="app-modal-dialog app-modal-dialog-centered">' +
-			'<div class="app-modal-content">' +
-			'<div class="app-modal-header">' +
+		var dialog = document.createElement('dialog');
+		dialog.id = id;
+		dialog.className = 'ds-dialog';
+		dialog.innerHTML =
+			'<div class="ds-dialog__block" style="display:flex;align-items:center;justify-content:space-between">' +
 			'<h3 style="margin:0">' + esc(title) + '</h3>' +
-			'<button type="button" class="app-btn-close" data-modal-close>&times;</button>' +
+			'<button type="button" class="ds-button" data-variant="tertiary" data-icon data-modal-close aria-label="Lukk">&times;</button>' +
 			'</div>' +
-			'<div class="app-modal-body">' + bodyHtml + '</div>' +
-			'<div class="app-modal-footer">' + footerHtml + '</div>' +
-			'</div></div>';
+			'<div class="ds-dialog__block">' + bodyHtml + '</div>' +
+			'<div class="ds-dialog__block" style="display:flex;justify-content:flex-end;gap:0.5rem">' + footerHtml + '</div>';
 
-		document.body.appendChild(modal);
+		document.body.appendChild(dialog);
+		dialog.showModal();
 
-		requestAnimationFrame(function () {
-			modal.classList.add('show');
-		});
-
-		modal.addEventListener('click', function (e) {
+		dialog.addEventListener('click', function (e) {
 			if (e.target.closest('[data-modal-close]')) {
+				closeModal(id);
+			} else if (e.target === dialog) {
 				closeModal(id);
 			}
 		});
-		modal.addEventListener('keydown', function (e) {
-			if (e.key === 'Escape') closeModal(id);
+
+		dialog.addEventListener('close', function () {
+			dialog.remove();
 		});
 
-		var firstInput = modal.querySelector('textarea, select, input');
+		var firstInput = dialog.querySelector('textarea, select, input');
 		if (firstInput) setTimeout(function () { firstInput.focus(); }, 50);
 
-		return modal;
+		return dialog;
 	}
 
 	function closeModal(id) {
-		var modal = document.getElementById(id);
-		if (modal) {
-			modal.classList.remove('show');
-			setTimeout(function () { modal.remove(); }, 200);
+		var dialog = document.getElementById(id);
+		if (dialog) {
+			dialog.close();
+			dialog.remove();
 		}
 	}
 
@@ -1610,8 +1608,8 @@
 				'</div>';
 		}
 
-		var footer = '<button type="button" class="app-button" data-modal-close id="conflict-keep-theirs">' + esc(lang('keepTheirs')) + '</button>' +
-			'<button type="button" class="app-button app-button-primary" id="conflict-overwrite">' + esc(lang('overwriteWithMine')) + '</button>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-modal-close id="conflict-keep-theirs">' + esc(lang('keepTheirs')) + '</button>' +
+			'<button type="button" class="ds-button" id="conflict-overwrite">' + esc(lang('overwriteWithMine')) + '</button>';
 
 		showModal('collab-conflict-dialog', lang('editConflict'), body, footer);
 

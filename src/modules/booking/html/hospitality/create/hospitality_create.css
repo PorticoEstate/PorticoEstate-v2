@@ -23,8 +23,8 @@
 	font-weight: var(--ds-font-weight-medium, 500);
 }
 
-.hospitality-create .form-group .app-input,
-.hospitality-create .form-group .app-select,
+.hospitality-create .form-group .ds-input,
+.hospitality-create .form-group .ds-select,
 .hospitality-create .form-group .building-select {
 	flex: 1;
 	min-width: 0;

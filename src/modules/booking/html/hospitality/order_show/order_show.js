@@ -67,7 +67,8 @@
 
 	function showToast(message, type) {
 		var toast = document.createElement('div');
-		toast.className = 'app-alert app-alert-' + (type || 'success') + ' app-show__toast';
+		toast.className = 'ds-alert app-show__toast';
+		toast.dataset.color = type || 'success';
 		toast.textContent = message;
 		document.body.appendChild(toast);
 		setTimeout(function () { toast.remove(); }, 3000);
@@ -206,46 +207,43 @@
 		var existing = document.getElementById(id);
 		if (existing) existing.remove();
 
-		var modal = document.createElement('div');
-		modal.id = id;
-		modal.className = 'app-modal';
-		modal.innerHTML =
-			'<div class="app-modal-dialog app-modal-dialog-centered">' +
-			'<div class="app-modal-content">' +
-			'<div class="app-modal-header">' +
+		var dialog = document.createElement('dialog');
+		dialog.id = id;
+		dialog.className = 'ds-dialog';
+		dialog.innerHTML =
+			'<div class="ds-dialog__block" style="display:flex;align-items:center;justify-content:space-between">' +
 			'<h3 style="margin:0">' + esc(title) + '</h3>' +
-			'<button type="button" class="app-btn-close" data-modal-close>&times;</button>' +
+			'<button type="button" class="ds-button" data-variant="tertiary" data-icon data-modal-close aria-label="Lukk">&times;</button>' +
 			'</div>' +
-			'<div class="app-modal-body">' + bodyHtml + '</div>' +
-			'<div class="app-modal-footer">' + footerHtml + '</div>' +
-			'</div></div>';
+			'<div class="ds-dialog__block">' + bodyHtml + '</div>' +
+			'<div class="ds-dialog__block" style="display:flex;justify-content:flex-end;gap:0.5rem">' + footerHtml + '</div>';
 
-		document.body.appendChild(modal);
+		document.body.appendChild(dialog);
+		dialog.showModal();
 
-		requestAnimationFrame(function () {
-			modal.classList.add('show');
-		});
-
-		modal.addEventListener('click', function (e) {
+		dialog.addEventListener('click', function (e) {
 			if (e.target.closest('[data-modal-close]')) {
+				closeModal(id);
+			} else if (e.target === dialog) {
 				closeModal(id);
 			}
 		});
-		modal.addEventListener('keydown', function (e) {
-			if (e.key === 'Escape') closeModal(id);
+
+		dialog.addEventListener('close', function () {
+			dialog.remove();
 		});
 
-		var firstInput = modal.querySelector('textarea, select, input');
+		var firstInput = dialog.querySelector('textarea, select, input');
 		if (firstInput) setTimeout(function () { firstInput.focus(); }, 50);
 
-		return modal;
+		return dialog;
 	}
 
 	function closeModal(id) {
-		var modal = document.getElementById(id);
-		if (modal) {
-			modal.classList.remove('show');
-			setTimeout(function () { modal.remove(); }, 200);
+		var dialog = document.getElementById(id);
+		if (dialog) {
+			dialog.close();
+			dialog.remove();
 		}
 	}
 
@@ -265,8 +263,8 @@
 				'<textarea id="changelog-comment-input" class="app-show__modal-textarea" rows="3" placeholder="' +
 				esc(lang('changelogCommentPlaceholder')) + '"></textarea>';
 
-			var footer = '<button type="button" class="app-button" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-				'<button type="button" class="app-button app-button-primary" id="changelog-comment-submit">' + esc(lang('save')) + '</button>';
+			var footer = '<button type="button" class="ds-button" data-variant="secondary" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+				'<button type="button" class="ds-button" id="changelog-comment-submit">' + esc(lang('save')) + '</button>';
 
 			showModal('changelog-comment-dialog', lang('changelogComment'), body, footer);
 
@@ -395,13 +393,13 @@
 		if (canWrite && !isTerminal()) {
 			if (editMode) {
 				html += '<div class="order-show__edit-actions">' +
-					'<button type="button" class="app-button app-button-primary" id="save-all-changes">' +
+					'<button type="button" class="ds-button" id="save-all-changes">' +
 					esc(lang('save')) + '</button>' +
-					'<button type="button" class="app-button order-show__edit-toggle order-show__edit-toggle--active" id="toggle-edit-mode">' +
+					'<button type="button" class="ds-button order-show__edit-toggle order-show__edit-toggle--active" data-variant="secondary" id="toggle-edit-mode">' +
 					esc(lang('exitEditMode')) + '</button>' +
 					'</div>';
 			} else {
-				html += '<button type="button" class="app-button app-button-primary order-show__edit-toggle" id="toggle-edit-mode">' +
+				html += '<button type="button" class="ds-button order-show__edit-toggle" id="toggle-edit-mode">' +
 					penIcon + ' ' + esc(lang('edit')) + '</button>';
 			}
 		}
@@ -471,14 +469,14 @@
 			var actionsHtml = '<div class="order-show__status-actions">';
 
 			if (o.status === 'pending') {
-				actionsHtml += '<button type="button" class="app-button app-button-primary" data-status-action="confirmed">' +
+				actionsHtml += '<button type="button" class="ds-button" data-status-action="confirmed">' +
 					esc(lang('confirmOrder')) + '</button>';
-				actionsHtml += '<button type="button" class="app-button app-button-danger" data-status-action="cancelled">' +
+				actionsHtml += '<button type="button" class="ds-button" data-color="danger" data-status-action="cancelled">' +
 					esc(lang('cancelOrder')) + '</button>';
 			} else if (o.status === 'confirmed') {
-				actionsHtml += '<button type="button" class="app-button app-button-primary" data-status-action="delivered">' +
+				actionsHtml += '<button type="button" class="ds-button" data-status-action="delivered">' +
 					esc(lang('deliverOrder')) + '</button>';
-				actionsHtml += '<button type="button" class="app-button app-button-danger" data-status-action="cancelled">' +
+				actionsHtml += '<button type="button" class="ds-button" data-color="danger" data-status-action="cancelled">' +
 					esc(lang('cancelOrder')) + '</button>';
 			}
 
@@ -625,20 +623,20 @@
 		// Edit mode — render inputs directly
 		var inputHtml = '';
 		if (fieldType === 'textarea') {
-			inputHtml = '<textarea class="hosp-show__edit-input" data-edit-field="' + esc(fieldName) + '">' + esc(currentValue) + '</textarea>';
+			inputHtml = '<textarea class="hosp-show__edit-input ds-input" data-edit-field="' + esc(fieldName) + '">' + esc(currentValue) + '</textarea>';
 		} else if (fieldType === 'datetime') {
 			inputHtml = '<div class="hosp-show__edit-form" data-edit-field="' + esc(fieldName) + '" data-field-type="datetime">' +
-				'<select class="hosp-show__edit-input" data-edit-date>';
+				'<select class="hosp-show__edit-input ds-select" data-edit-date>';
 			inputHtml += '<option value="">' + esc(lang('selectDate')) + '</option>';
 			appDatesData.forEach(function (d, i) {
 				inputHtml += '<option value="' + i + '">' + esc(fmtShortDate(new Date(d.from_))) + '</option>';
 			});
 			inputHtml += '</select>' +
-				'<select class="hosp-show__edit-input" data-edit-time disabled>' +
+				'<select class="hosp-show__edit-input ds-select" data-edit-time disabled>' +
 				'<option value="">' + esc(lang('selectTime')) + '</option>' +
 				'</select></div>';
 		} else {
-			inputHtml = '<input type="text" class="hosp-show__edit-input" data-edit-field="' + esc(fieldName) + '" value="' + esc(currentValue) + '">';
+			inputHtml = '<input type="text" class="hosp-show__edit-input ds-input" data-edit-field="' + esc(fieldName) + '" value="' + esc(currentValue) + '">';
 		}
 
 		return '<div class="app-show__field" data-editable="' + esc(fieldName) + '" data-field-type="' + esc(fieldType || 'text') + '">' +

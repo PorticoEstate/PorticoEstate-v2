@@ -3,23 +3,22 @@ set -e
 
 # Log entrypoint output to a file for debugging
 ENTRYPOINT_LOG="/var/www/html/entrypoint.log"
-exec > >(tee -a "$ENTRYPOINT_LOG") 2>&1
-echo "=== Entrypoint started at $(date -Iseconds) ==="
+echo "=== Entrypoint started at $(date -Iseconds) ===" > "$ENTRYPOINT_LOG" 2>/dev/null || true
+log() { echo "$1"; echo "$1" >> "$ENTRYPOINT_LOG" 2>/dev/null || true; }
 
 # Install WebSocket health check cron job if exists
 if [ -f /var/www/html/src/WebSocket/websocket_cron ]; then
-    echo "Installing WebSocket health check cron job"
+    log "Installing WebSocket health check cron job"
     # Ensure file has newline at end
     sed -i -e '$a\' /var/www/html/src/WebSocket/websocket_cron
     cp /var/www/html/src/WebSocket/websocket_cron /etc/cron.d/websocket_cron
     chmod 0644 /etc/cron.d/websocket_cron
-    # Use direct cron.d installation instead of crontab command
-    echo "Cron job installed in /etc/cron.d/"
+    log "Cron job installed in /etc/cron.d/"
 fi
 
 # Create symlink for WebSocket manager tool
 if [ -f /var/www/html/src/WebSocket/ws ]; then
-    echo "Installing WebSocket manager tool"
+    log "Installing WebSocket manager tool"
     ln -sf /var/www/html/src/WebSocket/ws /usr/local/bin/ws
     chmod +x /usr/local/bin/ws
 fi
@@ -40,10 +39,10 @@ echo "SetEnv WEBSOCKET_SERVER ${WEBSOCKET_SERVER}" >> /etc/apache2/conf-enabled/
 # Check if composer dependencies need to be updated (development scenario with mounted volumes)
 if [ -f /var/www/html/composer.json ]; then
     if [ ! -d /var/www/html/vendor ] || [ ! -f /var/www/html/vendor/autoload.php ] || [ /var/www/html/composer.json -nt /var/www/html/vendor/composer/installed.json ]; then
-        echo "Updating Composer dependencies..."
+        log "Updating Composer dependencies..."
         cd /var/www/html && XDEBUG_MODE=off composer install --no-dev --optimize-autoloader
     else
-        echo "Composer dependencies are up to date"
+        log "Composer dependencies are up to date"
     fi
 fi
 
@@ -58,32 +57,37 @@ if [ -f /var/www/html/package.json ]; then
 
     if [ ! -d /var/www/html/node_modules ]; then
         NPM_NEEDS_INSTALL=true
-        echo "node_modules missing, npm install required"
+        log "node_modules missing, npm install required"
     elif [ -f "$IMAGE_HASH_FILE" ]; then
         IMAGE_HASH=$(cat "$IMAGE_HASH_FILE")
         VOLUME_HASH=""
         if [ -f "$VOLUME_HASH_FILE" ]; then
             VOLUME_HASH=$(cat "$VOLUME_HASH_FILE")
         fi
+        log "Image hash: $IMAGE_HASH"
+        log "Volume hash: $VOLUME_HASH"
         if [ "$IMAGE_HASH" != "$VOLUME_HASH" ]; then
             NPM_NEEDS_INSTALL=true
-            echo "package-lock.json checksum changed (image vs volume), npm install required"
+            log "package-lock.json checksum changed (image vs volume), npm install required"
         fi
+    else
+        log "WARNING: Image hash file not found at $IMAGE_HASH_FILE"
     fi
 
     if [ "$NPM_NEEDS_INSTALL" = "true" ]; then
         if ! command -v npm > /dev/null 2>&1; then
-            echo "npm not found, installing Node.js and npm..."
+            log "npm not found, installing Node.js and npm..."
             apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/*
         fi
-        echo "Installing npm dependencies..."
+        log "Installing npm dependencies..."
         cd /var/www/html && npm ci
         # Save the checksum into the volume so subsequent starts skip the install
         if [ -f "$IMAGE_HASH_FILE" ]; then
             cp "$IMAGE_HASH_FILE" "$VOLUME_HASH_FILE"
+            log "Saved hash to volume"
         fi
     else
-        echo "npm dependencies are up to date"
+        log "npm dependencies are up to date"
     fi
 fi
 
@@ -102,5 +106,5 @@ touch /var/log/apache2/websocket.log
 (tail -f /var/log/apache2/websocket.log | sed 's/^/WEBSOCKET: /' &)
 
 # Start all services with Supervisor
-echo "Starting all services with Supervisor..."
+log "Starting all services with Supervisor..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf

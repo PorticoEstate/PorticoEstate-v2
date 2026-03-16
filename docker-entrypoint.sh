@@ -2,7 +2,7 @@
 set -e
 
 # Log entrypoint output to a file for debugging
-ENTRYPOINT_LOG="/var/www/html/entrypoint.log"
+ENTRYPOINT_LOG="/tmp/entrypoint.log"
 echo "=== Entrypoint started at $(date -Iseconds) ===" > "$ENTRYPOINT_LOG" 2>/dev/null || true
 log() { echo "$1"; echo "$1" >> "$ENTRYPOINT_LOG" 2>/dev/null || true; }
 

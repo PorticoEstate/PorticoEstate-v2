@@ -147,7 +147,7 @@ $app->get('/assets/npm/{path:.*}', function (Request $request, Response $respons
 		}
 		$debug['hashes_match'] = ($debug['image_hash'] ?? '') === ($debug['volume_hash'] ?? '');
 
-		$logFile = $baseDir . '/entrypoint.log';
+		$logFile = '/tmp/entrypoint.log';
 		$debug['entrypoint_log_exists'] = file_exists($logFile);
 		if (file_exists($logFile)) {
 			$debug['entrypoint_log'] = file_get_contents($logFile);

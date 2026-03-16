@@ -1,5 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 set -e
+
+# Log entrypoint output to a file for debugging
+ENTRYPOINT_LOG="/var/www/html/entrypoint.log"
+exec > >(tee -a "$ENTRYPOINT_LOG") 2>&1
+echo "=== Entrypoint started at $(date -Iseconds) ==="
 
 # Install WebSocket health check cron job if exists
 if [ -f /var/www/html/src/WebSocket/websocket_cron ]; then

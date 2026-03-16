@@ -18,6 +18,37 @@ $app->get('/favicon.ico', function (Request $request, Response $response)
 	return $response->withStatus(204);
 });
 
+// Debug endpoint: show entrypoint logs and npm hash state
+$app->get('/assets/debug/entrypoint', function (Request $request, Response $response)
+{
+	$baseDir = dirname(dirname(PHPGW_SERVER_ROOT));
+	$debug = [];
+	$debug['timestamp'] = date('c');
+
+	// Entrypoint log
+	$logFile = $baseDir . '/entrypoint.log';
+	$debug['entrypoint_log_exists'] = file_exists($logFile);
+	if (file_exists($logFile)) {
+		$debug['entrypoint_log'] = file_get_contents($logFile);
+	}
+
+	// Hash comparison (same logic as entrypoint)
+	$imageHash = '/tmp/.package-lock-hash';
+	$volumeHash = $baseDir . '/node_modules/.package-lock-hash';
+	$debug['image_hash_exists'] = file_exists($imageHash);
+	$debug['volume_hash_exists'] = file_exists($volumeHash);
+	if (file_exists($imageHash)) {
+		$debug['image_hash'] = trim(file_get_contents($imageHash));
+	}
+	if (file_exists($volumeHash)) {
+		$debug['volume_hash'] = trim(file_get_contents($volumeHash));
+	}
+	$debug['hashes_match'] = ($debug['image_hash'] ?? '') === ($debug['volume_hash'] ?? '');
+
+	$response->getBody()->write(json_encode($debug, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+	return $response->withHeader('Content-Type', 'application/json');
+});
+
 // Serve Designsystemet CSS bundle
 $app->get('/assets/designsystemet/index.css', function (Request $request, Response $response)
 {

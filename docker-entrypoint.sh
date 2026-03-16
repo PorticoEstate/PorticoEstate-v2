@@ -42,9 +42,25 @@ if [ -f /var/www/html/composer.json ]; then
     fi
 fi
 
-# Check if npm dependencies need to be installed
+# Check if npm dependencies need to be installed or updated
 if [ -f /var/www/html/package.json ]; then
+    NPM_NEEDS_INSTALL=false
+
     if [ ! -d /var/www/html/node_modules ]; then
+        NPM_NEEDS_INSTALL=true
+        echo "node_modules missing, npm install required"
+    elif [ ! -f /var/www/html/node_modules/.package-lock.json ]; then
+        NPM_NEEDS_INSTALL=true
+        echo "node_modules/.package-lock.json missing, npm install required"
+    elif [ /var/www/html/package.json -nt /var/www/html/node_modules/.package-lock.json ]; then
+        NPM_NEEDS_INSTALL=true
+        echo "package.json is newer than node_modules, npm install required"
+    elif [ -f /var/www/html/package-lock.json ] && [ /var/www/html/package-lock.json -nt /var/www/html/node_modules/.package-lock.json ]; then
+        NPM_NEEDS_INSTALL=true
+        echo "package-lock.json is newer than node_modules, npm install required"
+    fi
+
+    if [ "$NPM_NEEDS_INSTALL" = "true" ]; then
         if ! command -v npm > /dev/null 2>&1; then
             echo "npm not found, installing Node.js and npm..."
             apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/*

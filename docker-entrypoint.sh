@@ -1,10 +1,11 @@
 #!/bin/bash
-set -e
 
 # Log entrypoint output to a file for debugging
 ENTRYPOINT_LOG="/tmp/entrypoint.log"
-echo "=== Entrypoint started at $(date -Iseconds) ===" > "$ENTRYPOINT_LOG" 2>/dev/null || true
+echo "=== Entrypoint started at $(date -Iseconds) ===" > "$ENTRYPOINT_LOG" 2>&1 || echo "FAILED TO WRITE LOG" >&2
 log() { echo "$1"; echo "$1" >> "$ENTRYPOINT_LOG" 2>/dev/null || true; }
+log "Shell: $SHELL, Bash: $BASH_VERSION, PID: $$"
+log "pwd: $(pwd), whoami: $(whoami)"
 
 # Install WebSocket health check cron job if exists
 if [ -f /var/www/html/src/WebSocket/websocket_cron ]; then
@@ -90,6 +91,8 @@ if [ -f /var/www/html/package.json ]; then
         log "npm dependencies are up to date"
     fi
 fi
+
+set -e
 
 # Create log directory for Supervisor
 mkdir -p /var/log/supervisor

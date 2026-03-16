@@ -1539,9 +1539,11 @@ $phpgw_baseline = array(
 		'fd' => array(
 			'id' => array('type' => 'auto', 'nullable' => false),
 			'name' => array('type' => 'varchar', 'precision' => '100', 'nullable' => false),
+			'name_json' => array('type' => 'jsonb', 'nullable' => True),
 			'active' => array('type' => 'int', 'precision' => 4, 'nullable' => True, 'default' => '1'),
 			'owner_id' => array('type' => 'int', 'precision' => 4, 'nullable' => True),
 			'description' => array('type' => 'text', 'nullable' => True),
+			'description_json' => array('type' => 'jsonb', 'nullable' => True),
 		),
 		'pk' => array('id'),
 		'fk' => array(),
@@ -1702,6 +1704,164 @@ $phpgw_baseline = array(
 			array('subscription_id', 'created_at'),
 			array('entity_type', 'entity_id')
 		),
+		'uc' => array()
+	),
+
+	'bb_hospitality' => array(
+		'fd' => array(
+			'id' => array('type' => 'auto', 'nullable' => false),
+			'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'name' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
+			'description' => array('type' => 'text', 'nullable' => true),
+			'active' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 1),
+			'remote_serving_enabled' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 0),
+			'allow_on_site_hospitality' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 0),
+			'order_by_time_value' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+			'order_by_time_unit' => array('type' => 'varchar', 'precision' => '10', 'nullable' => true),
+			'created' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
+			'modified' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
+			'created_by' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'modified_by' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+		),
+		'pk' => array('id'),
+		'fk' => array(
+			'bb_resource' => array('resource_id' => 'id'),
+		),
+		'ix' => array(),
+		'uc' => array()
+	),
+	'bb_hospitality_remote_location' => array(
+		'fd' => array(
+			'hospitality_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'active' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 1),
+		),
+		'pk' => array('hospitality_id', 'resource_id'),
+		'fk' => array(
+			'bb_hospitality' => array('hospitality_id' => 'id'),
+			'bb_resource' => array('resource_id' => 'id'),
+		),
+		'ix' => array(),
+		'uc' => array()
+	),
+	'bb_hospitality_article_group' => array(
+		'fd' => array(
+			'id' => array('type' => 'auto', 'nullable' => false),
+			'hospitality_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'name' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
+			'sort_order' => array('type' => 'int', 'precision' => '4', 'nullable' => false, 'default' => 0),
+			'active' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 1),
+		),
+		'pk' => array('id'),
+		'fk' => array(
+			'bb_hospitality' => array('hospitality_id' => 'id'),
+		),
+		'ix' => array(),
+		'uc' => array()
+	),
+	'bb_hospitality_article' => array(
+		'fd' => array(
+			'id' => array('type' => 'auto', 'nullable' => false),
+			'hospitality_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'article_group_id' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+			'article_mapping_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'description' => array('type' => 'jsonb', 'nullable' => true),
+			'sort_order' => array('type' => 'int', 'precision' => '4', 'nullable' => false, 'default' => 0),
+			'active' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 1),
+			'override_price' => array('type' => 'decimal', 'precision' => 10, 'scale' => 2, 'nullable' => true),
+			'override_tax_code' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+		),
+		'pk' => array('id'),
+		'fk' => array(
+			'bb_hospitality' => array('hospitality_id' => 'id'),
+			'bb_hospitality_article_group' => array('article_group_id' => 'id'),
+			'bb_article_mapping' => array('article_mapping_id' => 'id'),
+		),
+		'ix' => array(),
+		'uc' => array(array('hospitality_id', 'article_mapping_id'))
+	),
+	'bb_hospitality_order' => array(
+		'fd' => array(
+			'id' => array('type' => 'auto', 'nullable' => false),
+			'application_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'hospitality_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'location_resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'status' => array('type' => 'varchar', 'precision' => '20', 'nullable' => false, 'default' => 'pending'),
+			'comment' => array('type' => 'text', 'nullable' => true),
+			'special_requirements' => array('type' => 'text', 'nullable' => true),
+			'serving_time_iso' => array('type' => 'timestamp', 'nullable' => true),
+			'created' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
+			'modified' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
+			'created_by' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+			'modified_by' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+		),
+		'pk' => array('id'),
+		'fk' => array(
+			'bb_application' => array('application_id' => 'id'),
+			'bb_hospitality' => array('hospitality_id' => 'id'),
+			'bb_resource' => array('location_resource_id' => 'id'),
+		),
+		'ix' => array(
+			array('application_id'),
+			array('hospitality_id'),
+		),
+		'uc' => array()
+	),
+	'bb_hospitality_order_line' => array(
+		'fd' => array(
+			'id' => array('type' => 'auto', 'nullable' => false),
+			'order_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'hospitality_article_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'quantity' => array('type' => 'decimal', 'precision' => 10, 'scale' => 2, 'nullable' => false, 'default' => '1.0'),
+			'unit_price' => array('type' => 'decimal', 'precision' => 10, 'scale' => 2, 'nullable' => false),
+			'tax_code' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'amount' => array('type' => 'decimal', 'precision' => 10, 'scale' => 2, 'nullable' => false),
+			'comment' => array('type' => 'text', 'nullable' => true),
+		),
+		'pk' => array('id'),
+		'fk' => array(
+			'bb_hospitality_order' => array('order_id' => 'id'),
+			'bb_hospitality_article' => array('hospitality_article_id' => 'id'),
+		),
+		'ix' => array(
+			array('order_id'),
+		),
+		'uc' => array()
+	),
+	'bb_hospitality_order_changelog' => array(
+		'fd' => array(
+			'id' => array('type' => 'auto', 'nullable' => false),
+			'order_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'case_officer_id' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+			'booking_user_id' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+			'changed_at' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
+			'change_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
+			'old_value' => array('type' => 'jsonb', 'nullable' => true),
+			'new_value' => array('type' => 'jsonb', 'nullable' => true),
+			'comment' => array('type' => 'text', 'nullable' => false),
+		),
+		'pk' => array('id'),
+		'fk' => array(
+			'bb_hospitality_order' => array('order_id' => 'id'),
+		),
+		'ix' => array('order_id'),
+		'uc' => array()
+	),
+
+	'bb_hospitality_order_document' => array(
+		'fd' => array(
+			'id' => array('type' => 'auto', 'nullable' => false),
+			'name' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
+			'owner_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'category' => array('type' => 'varchar', 'precision' => '150', 'nullable' => false),
+			'description' => array('type' => 'text', 'nullable' => true),
+			'metadata' => array('type' => 'jsonb', 'nullable' => true),
+		),
+		'pk' => array('id'),
+		'fk' => array(
+			'bb_hospitality_order' => array('owner_id' => 'id'),
+		),
+		'ix' => array(),
 		'uc' => array()
 	),
 

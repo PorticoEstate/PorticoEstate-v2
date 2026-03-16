@@ -24,6 +24,7 @@ class DocumentRepository
             Document::OWNER_APPLICATION => 'bb_document_application',
             Document::OWNER_RESOURCE => 'bb_document_resource',
             Document::OWNER_ORGANIZATION => 'bb_document_organization',
+            Document::OWNER_HOSPITALITY_ORDER => 'bb_hospitality_order_document',
             default => 'bb_document_building',
         };
     }
@@ -225,7 +226,8 @@ class DocumentRepository
             Document::OWNER_BUILDING,
             Document::OWNER_RESOURCE,
             Document::OWNER_APPLICATION,
-            Document::OWNER_ORGANIZATION
+            Document::OWNER_ORGANIZATION,
+            Document::OWNER_HOSPITALITY_ORDER,
         ];
 
         foreach ($ownerTypes as $ownerType) {

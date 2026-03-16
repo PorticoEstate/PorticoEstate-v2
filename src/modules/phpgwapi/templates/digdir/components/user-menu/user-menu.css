@@ -2,7 +2,10 @@
 .app-user-menu__dropdown.ds-dropdown {
 	--_ds-floating: bottom;
 	margin-top: 0;
-	transform: translateY(-4px);
+}
+
+.app-user-menu__dropdown[popover]:popover-open {
+	position: fixed;
 }
 
 /* Mobile nav items inside user menu */

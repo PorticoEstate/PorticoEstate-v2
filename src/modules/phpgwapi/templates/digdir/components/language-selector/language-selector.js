@@ -73,9 +73,15 @@
 			const trigger = this.element.querySelector('.app-dropdown__trigger');
 			if (!popover || !trigger) return;
 
-			// Sync aria-expanded with popover state
+			// Sync aria-expanded and position popover below trigger
 			popover.addEventListener('toggle', (e) => {
 				trigger.setAttribute('aria-expanded', e.newState === 'open');
+				if (e.newState === 'open') {
+					const rect = trigger.getBoundingClientRect();
+					popover.style.top = rect.bottom + 'px';
+					popover.style.left = 'auto';
+					popover.style.right = (window.innerWidth - rect.right) + 'px';
+				}
 			});
 
 			// Language change

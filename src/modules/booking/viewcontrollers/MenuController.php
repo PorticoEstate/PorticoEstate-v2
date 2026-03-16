@@ -80,6 +80,13 @@ class MenuController
 //			];
 		}
 
+		$appends['navigation'] = [
+			'hospitality' => [
+				'text' => lang('Hospitality'),
+				'url' => \phpgw::link('/booking/view/hospitality'),
+			],
+		];
+
 		return $appends;
 	}
 

@@ -205,9 +205,11 @@ class Twig
 
         if (is_dir($baseAppTpl)) {
             $this->loader->addPath($baseAppTpl, $this->flags['currentapp']);
+            $this->loader->addPath($baseAppTpl);
         }
         if (is_dir($appTpl)) {
             $this->loader->addPath($appTpl, $this->flags['currentapp']);
+            $this->loader->addPath($appTpl);
         }
     }
 

@@ -4,6 +4,7 @@
 
 {% block styles %}
 <style>{{ source('@views/application/show/application_show.css') }}</style>
+<style>{{ source('@views/components/search_select/search_select.css') }}</style>
 {% endblock %}
 
 {% block content %}
@@ -147,6 +148,21 @@
 	 data-lang-in-tax-register="{{ lang('booking.in_tax_register') }}"
 	 data-lang-unit="{{ lang('booking.unit') }}"
 	 data-lang-unit-price="{{ lang('booking.unit_cost') }}"
+	 data-hospitality-orders-url="{{ phpgw_link('/booking/hospitality-orders') }}"
+	 data-hospitality-base-url="{{ phpgw_link('/booking/hospitality') }}"
+	 data-applications-base-url="{{ phpgw_link('/booking/applications') }}"
+	 data-lang-hospitality-orders="{{ lang('booking.hospitality_orders') }}"
+	 data-lang-hospitality="{{ lang('booking.hospitality') }}"
+	 data-lang-serving-time="{{ lang('booking.serving_time') }}"
+	 data-lang-location="{{ lang('booking.location') }}"
+	 data-lang-no-orders="{{ lang('booking.no_orders') }}"
+	 data-lang-create-order="{{ lang('booking.create_order') }}"
+	 data-lang-select-date="{{ lang('booking.select_date') }}"
+	 data-lang-select-time="{{ lang('booking.select_time') }}"
+	 data-lang-special-requirements="{{ lang('booking.special_requirements') }}"
+	 data-lang-comment="{{ lang('booking.comment') }}"
+	 data-lang-save="{{ lang('common.save') }}"
+	 data-lang-saved="{{ lang('booking.saved') }}"
 >
 	{# Loading state — replaced by JS once data arrives #}
 	<div id="application-loading" class="app-show__loading">
@@ -181,6 +197,9 @@
 			<button class="app-show__tab" role="tab" aria-selected="false" data-tab="terms">
 				{{ lang('booking.terms and conditions') }}
 			</button>
+			<button class="app-show__tab" role="tab" aria-selected="false" data-tab="hospitality-orders" id="tab-btn-hospitality-orders" hidden>
+				{{ lang('booking.hospitality_orders') }}
+			</button>
 		</div>
 
 		{# Tab: Details #}
@@ -202,10 +221,18 @@
 		<div id="tab-terms" class="app-show__tab-content" role="tabpanel" hidden>
 			<div id="application-terms"></div>
 		</div>
+
+		{# Tab: Hospitality Orders #}
+		<div id="tab-hospitality-orders" class="app-show__tab-content" role="tabpanel" hidden>
+			<div id="application-hospitality-orders"></div>
+		</div>
 	</div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script>{{ source('@views/components/search_select/search_select.js') }}</script>
+<script>{{ source('@views/components/hospitality_order_list/hospitality_order_list.js') }}</script>
+<script>{{ source('@views/components/hospitality_order_modal/hospitality_order_modal.js') }}</script>
 <script>{{ source('@views/application/show/application_show.js') }}</script>
 {% endblock %}

@@ -1,0 +1,612 @@
+{% extends layout|default('@views/_layout.twig') %}
+
+{% block title %}{{ lang('booking.hospitality') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/application/show/application_show.css') }}</style>
+<style>{{ source('@views/components/search_select/search_select.css') }}</style>
+<style>{{ source('@views/components/article_select/article_select.css') }}</style>
+<style>{{ source('@views/components/multi_language_text/multi_language_text.css') }}</style>
+<style>{{ source('@views/components/ws_collab/ws_collab.css') }}</style>
+<style>{{ source('@views/components/building_select/building_select.css') }}</style>
+<style>{{ source('@views/hospitality/show/hospitality_show.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<div id="hospitality-show"
+	 class="app-show"
+	 data-hospitality-id="{{ hospitality_id }}"
+	 data-api-url="{{ phpgw_link('/booking/hospitality/' ~ hospitality_id) }}"
+	 data-orders-url="{{ phpgw_link('/booking/hospitality-orders?hospitality_id=' ~ hospitality_id) }}"
+	 data-orders-store-url="{{ phpgw_link('/booking/hospitality-orders') }}"
+	 data-delivery-locations-url="{{ phpgw_link('/booking/hospitality/' ~ hospitality_id ~ '/delivery-locations') }}"
+	 data-relevant-apps-url="{{ phpgw_link('/booking/hospitality/' ~ hospitality_id ~ '/relevant-applications') }}"
+	 data-applications-base-url="{{ phpgw_link('/booking/applications') }}"
+	 data-resources-url="{{ phpgw_link('/booking/resources') }}"
+	 data-buildings-url="{{ phpgw_link('/booking/buildings') }}"
+	 data-can-write="{{ can_write ? '1' : '0' }}"
+	 data-lang-loading="{{ lang('common.loading') }}"
+	 data-lang-error="{{ lang('common.error') }}"
+	 data-lang-hospitality="{{ lang('booking.hospitality') }}"
+	 data-lang-name="{{ lang('common.name') }}"
+	 data-lang-description="{{ lang('common.description') }}"
+	 data-lang-active="{{ lang('booking.active') }}"
+	 data-lang-inactive="{{ lang('booking.inactive') }}"
+	 data-lang-yes="{{ lang('common.yes') }}"
+	 data-lang-no="{{ lang('common.no') }}"
+	 data-lang-save="{{ lang('common.save') }}"
+	 data-lang-cancel="{{ lang('booking.cancel_action') }}"
+	 data-lang-edit="{{ lang('common.edit') }}"
+	 data-lang-delete="{{ lang('common.delete') }}"
+	 data-lang-add="{{ lang('booking.add') }}"
+	 data-lang-details="{{ lang('booking.details') }}"
+	 data-lang-resources="{{ lang('booking.resources') }}"
+	 data-lang-articles="{{ lang('booking.articles') }}"
+	 data-lang-orders="{{ lang('booking.purchase_orders') }}"
+	 data-lang-created="{{ lang('booking.created') }}"
+	 data-lang-modified="{{ lang('booking.modified') }}"
+	 data-lang-resource="{{ lang('booking.resource') }}"
+	 data-lang-status="{{ lang('common.status') }}"
+	 data-lang-service-configuration="{{ lang('booking.service_configuration') }}"
+	 data-lang-remote-serving="{{ lang('booking.remote_serving') }}"
+	 data-lang-remote-serving-desc="{{ lang('booking.remote_serving_desc') }}"
+	 data-lang-allow-on-site-hospitality="{{ lang('booking.allow_on_site_hospitality') }}"
+	 data-lang-allow-on-site-hospitality-desc="{{ lang('booking.allow_on_site_hospitality_desc') }}"
+	 data-lang-order-deadline="{{ lang('booking.order_deadline') }}"
+	 data-lang-order-deadline-desc="{{ lang('booking.order_deadline_desc') }}"
+	 data-lang-main-resource="{{ lang('booking.main_resource') }}"
+	 data-lang-remote-locations="{{ lang('booking.remote_locations') }}"
+	 data-lang-remote-serving-disabled="{{ lang('booking.remote_serving_disabled') }}"
+	 data-lang-no-remote-locations="{{ lang('booking.no_remote_locations') }}"
+	 data-lang-article-groups="{{ lang('booking.article_groups') }}"
+	 data-lang-ungrouped-articles="{{ lang('booking.ungrouped_articles') }}"
+	 data-lang-base-price="{{ lang('booking.base_price') }}"
+	 data-lang-override-price="{{ lang('booking.override_price') }}"
+	 data-lang-effective-price="{{ lang('booking.effective_price') }}"
+	 data-lang-sort-order="{{ lang('booking.sort_order') }}"
+	 data-lang-unit="{{ lang('booking.unit') }}"
+	 data-lang-no-orders="{{ lang('booking.no_orders') }}"
+	 data-lang-saved="{{ lang('booking.saved') }}"
+	 data-lang-back-to-list="{{ lang('booking.back_to_list') }}"
+	 data-lang-hours="{{ lang('booking.hours') }}"
+	 data-lang-days="{{ lang('booking.days') }}"
+	 data-lang-group="{{ lang('booking.group') }}"
+	 data-lang-comment="{{ lang('booking.comment') }}"
+	 data-lang-amount="{{ lang('booking.amount') }}"
+	 data-lang-application="{{ lang('booking.application') }}"
+	 data-lang-location="{{ lang('booking.location') }}"
+	 data-lang-article="{{ lang('booking.Article') }}"
+	 data-lang-quantity="{{ lang('booking.quantity') }}"
+	 data-lang-confirm-delete="{{ lang('booking.confirm_delete') }}"
+	 data-lang-price="{{ lang('booking.price') }}"
+	 data-lang-tax-code="{{ lang('booking.tax_code') }}"
+	 data-lang-select-article="{{ lang('booking.select_article') }}"
+	 data-lang-building="{{ lang('booking.building') }}"
+	 data-lang-select-building="{{ lang('booking.select_building') }}"
+	 data-lang-search-buildings="{{ lang('booking.search_buildings') }}"
+	 data-lang-select-resources="{{ lang('booking.select_resources') }}"
+	 data-lang-other="{{ lang('booking.other') }}"
+	 data-lang-select-resource="{{ lang('booking.select_resource') }}"
+	 data-lang-create-order="{{ lang('booking.create_order') }}"
+	 data-lang-serving-time="{{ lang('booking.serving_time') }}"
+	 data-lang-select-date="{{ lang('booking.select_date') }}"
+	 data-lang-select-time="{{ lang('booking.select_time') }}"
+	 data-lang-special-requirements="{{ lang('booking.special_requirements') }}"
+	 data-lang-no-articles="{{ lang('booking.no_articles') }}"
+	 data-lang-create-new-article="{{ lang('booking.create_new_article') }}"
+	 data-lang-back-to-search="{{ lang('booking.back_to_search') }}"
+	 data-lang-article-code="{{ lang('booking.article_code') }}"
+	 data-lang-default-price="{{ lang('booking.default_price') }}"
+	 data-lang-creation-failed="{{ lang('booking.creation_failed') }}"
+	 data-article-mapping-url="{{ phpgw_link('/booking/article-mappings') }}"
+	 data-tax-list-url="{{ phpgw_link('/booking/registry/tax/list') }}"
+	 data-account-id="{{ account_id }}"
+	 data-account-name="{{ account_name }}"
+	 data-lang-viewers="{{ lang('booking.viewers') }}"
+	 data-lang-editing="{{ lang('booking.editing') }}"
+	 data-lang-edit-conflict="{{ lang('booking.edit_conflict') }}"
+	 data-lang-conflict-message="{{ lang('booking.conflict_message') }}"
+	 data-lang-your-change="{{ lang('booking.your_change') }}"
+	 data-lang-server-version="{{ lang('booking.server_version') }}"
+	 data-lang-keep-theirs="{{ lang('booking.keep_theirs') }}"
+	 data-lang-overwrite-with-mine="{{ lang('booking.overwrite_with_mine') }}"
+	 data-lang-someone-is-editing="{{ lang('booking.someone_is_editing') }}"
+	 data-lang-data-changed-by-another-user="{{ lang('booking.data_changed_by_another_user') }}"
+	 data-lang-reconnecting="{{ lang('booking.reconnecting') }}"
+	 data-lang-connection-lost="{{ lang('booking.connection_lost') }}"
+	 data-lang-entity-deleted="{{ lang('booking.entity_deleted') }}"
+	 data-lang-uses-fallback="{{ lang('booking.uses_fallback') }}"
+	 data-lang-article-details="{{ lang('booking.article_details') }}"
+	 data-lang-article-details-warning="{{ lang('booking.article_details_warning') }}"
+>
+	{# Loading state #}
+	<div id="hospitality-loading" class="app-show__loading">
+		<div class="app-show__spinner"></div>
+		<p>{{ lang('common.loading') }}...</p>
+	</div>
+
+	{# Error state #}
+	<div id="hospitality-error" class="app-show__error" hidden>
+		<p id="hospitality-error-message"></p>
+	</div>
+
+	{# Content #}
+	<div id="hospitality-content" hidden>
+		{# Header #}
+		<div id="hospitality-header" class="app-show__header"></div>
+
+		{# Collaborative editing presence bar (populated by ws_collab) #}
+		<div id="collab-presence-bar"></div>
+
+		{# Tab navigation #}
+		<div class="app-show__tabs" role="tablist">
+			<button class="app-show__tab app-show__tab--active" role="tab" aria-selected="true" data-tab="details">
+				{{ lang('booking.details') }}
+			</button>
+			<button class="app-show__tab" role="tab" aria-selected="false" data-tab="resources">
+				{{ lang('booking.resources') }}
+			</button>
+			<button class="app-show__tab" role="tab" aria-selected="false" data-tab="articles">
+				{{ lang('booking.articles') }}
+			</button>
+			<button class="app-show__tab" role="tab" aria-selected="false" data-tab="orders">
+				{{ lang('booking.purchase_orders') }}
+			</button>
+		</div>
+
+		{# Tab: Details #}
+		<div id="tab-details" class="app-show__tab-content" role="tabpanel">
+			<div id="hospitality-details"></div>
+		</div>
+
+		{# Tab: Resources #}
+		<div id="tab-resources" class="app-show__tab-content" role="tabpanel" hidden>
+			<div id="hospitality-resources"></div>
+		</div>
+
+		{# Tab: Articles #}
+		<div id="tab-articles" class="app-show__tab-content" role="tabpanel" hidden>
+			<div id="hospitality-articles"></div>
+		</div>
+
+		{# Tab: Orders #}
+		<div id="tab-orders" class="app-show__tab-content" role="tabpanel" hidden>
+			<div id="hospitality-orders"></div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/components/search_select/search_select.js') }}</script>
+<script>{{ source('@views/components/article_select/article_select.js') }}</script>
+<script>{{ source('@views/components/multi_language_text/multi_language_text.js') }}</script>
+<script>{{ source('@views/components/ws_collab/ws_collab.js') }}</script>
+<script src="{{ modules_url }}/booking/js/base/building-select.js"></script>
+<script>{{ source('@views/components/hospitality_order_list/hospitality_order_list.js') }}</script>
+<script>{{ source('@views/components/hospitality_order_modal/hospitality_order_modal.js') }}</script>
+<script>{{ source('@views/hospitality/show/hospitality_show.js') }}</script>
+<script>
+(function initHospCollab() {
+	var hook = window.__hospWs;
+	if (!hook) return;
+
+	var root = hook.root;
+	var accountId = root.dataset.accountId;
+	var accountName = root.dataset.accountName;
+	if (!accountId) return;
+
+	var collab = new CollabClient({
+		entityType: 'hospitality',
+		entityId: root.dataset.hospitalityId,
+		userName: accountName,
+		userId: accountId
+	});
+
+	// Wire callbacks
+	collab.onPresenceChange(function (peers) {
+		hook.renderPresence(peers);
+	});
+
+	collab.onEditIndicator(function (info) {
+		if (info.editing) {
+			hook.showEditIndicator(info.peerId, info.userName, info.scope);
+		} else {
+			hook.removeEditIndicator(info.peerId, info.scope);
+		}
+	});
+
+	collab.onEntityUpdate(function (update) {
+		if (update.section === '_deleted') {
+			hook.showDeletedBanner();
+			return;
+		}
+		// Always refresh — server broadcasts arrive for all tabs including
+		// the one that triggered the save. The saving tab already has fresh
+		// data from its PUT response, so a redundant fetch is harmless.
+		hook.refreshSection(update.section);
+	});
+
+	collab.onConnectionChange(function (connected) {
+		hook.showConnectionStatus(connected);
+	});
+
+	// Expose for inline editing integration
+	hook.collab = collab;
+	collab.connect();
+})();
+</script>
+{% if can_write %}
+<script type="module">
+import { DragDropManager, Droppable } from '@dnd-kit/dom';
+import { Sortable, isSortable, SortableKeyboardPlugin, OptimisticSortingPlugin } from '@dnd-kit/dom/sortable';
+
+(function initHospDnd() {
+	var hook = window.__hospDnd;
+	if (!hook) return;
+
+	var manager = new DragDropManager();
+	var sortables = [];
+	var droppables = [];
+
+	function destroyAll() {
+		sortables.forEach(function (s) { s.destroy(); });
+		sortables = [];
+		droppables.forEach(function (d) { d.destroy(); });
+		droppables = [];
+	}
+
+	function initSortables() {
+		destroyAll();
+
+		var root = hook.root;
+		if (!root) return;
+
+		// --- Group sortables ---
+		var groupEls = root.querySelectorAll('[data-group-id][data-group-index]');
+		groupEls.forEach(function (el) {
+			var groupId = el.dataset.groupId;
+			var index = parseInt(el.dataset.groupIndex, 10);
+			var handle = el.querySelector('[data-drag-handle-group="' + groupId + '"]');
+
+			var s = new Sortable(
+				{
+					id: 'group-' + groupId,
+					index: index,
+					group: 'groups',
+					type: 'group',
+					accept: 'group',
+					element: el,
+					handle: handle || undefined,
+					feedback: 'default',
+					plugins: [SortableKeyboardPlugin],
+					data: { type: 'group', groupId: groupId }
+				},
+				manager
+			);
+			sortables.push(s);
+		});
+
+		// --- Article sortables + group container droppables ---
+		var articleLists = root.querySelectorAll('[data-dnd-article-list]');
+		articleLists.forEach(function (listEl) {
+			var listGroupId = listEl.dataset.dndArticleList;
+
+			// Create a Droppable for each container (groups + ungrouped)
+			var d = new Droppable(
+				{
+					id: 'container-' + listGroupId,
+					element: listEl,
+					collisionPriority: 0, // Lowest — Sortable items take precedence
+					accept: function (draggable) {
+						return draggable.data && draggable.data.type === 'article';
+					},
+					data: { type: 'article-container', groupId: listGroupId }
+				},
+				manager
+			);
+			droppables.push(d);
+
+			var articleEls = listEl.querySelectorAll('[data-article-id]');
+			articleEls.forEach(function (el) {
+				var articleId = el.dataset.articleId;
+				var index = parseInt(el.dataset.articleIndex, 10);
+				var handle = el.querySelector('[data-drag-handle-article="' + articleId + '"]');
+
+				var s = new Sortable(
+					{
+						id: 'article-' + articleId,
+						index: index,
+						group: 'articles-' + listGroupId,
+						type: 'article',
+						accept: 'article',
+						element: el,
+						handle: handle || undefined,
+						feedback: 'default',
+						plugins: [SortableKeyboardPlugin, OptimisticSortingPlugin],
+						data: { type: 'article', articleId: articleId, groupId: listGroupId }
+					},
+					manager
+				);
+				sortables.push(s);
+			});
+		});
+	}
+
+	// Collab: notify peers about drag start
+	manager.monitor.addEventListener('dragstart', function () {
+		if (window.__hospWs && window.__hospWs.collab) {
+			window.__hospWs.collab.startEditing('drag:articles');
+		}
+	});
+
+	// Track the last foreign-group target during drag (for cross-group drops)
+	var _lastForeignTarget = null;
+	var _lastDragoverLog = '';
+	manager.monitor.addEventListener('dragover', function (event) {
+		var target = event.operation.target;
+		var source = event.operation.source;
+
+		// Remove all active highlights
+		document.querySelectorAll('.hosp-show__drop-active').forEach(function (el) {
+			el.classList.remove('hosp-show__drop-active');
+		});
+
+		// Track foreign-group article targets for cross-group detection
+		if (target && target.data && source && isSortable(source)) {
+			var sourceGroupId = source.sortable.draggable.data.groupId;
+			var targetData = target.data;
+
+			if (targetData.type === 'article' && String(targetData.groupId) !== String(sourceGroupId)) {
+				_lastForeignTarget = { groupId: targetData.groupId, articleId: targetData.articleId };
+			} else if (targetData.type === 'article-container' && String(targetData.groupId) !== String(sourceGroupId)) {
+				_lastForeignTarget = { groupId: targetData.groupId, articleId: null };
+				if (target.element) target.element.classList.add('hosp-show__drop-active');
+			}
+		}
+
+		// Highlight container if target is a container droppable
+		if (target && target.data && target.data.type === 'article-container') {
+			if (target.element) target.element.classList.add('hosp-show__drop-active');
+		}
+
+		// Debug: log target changes
+		var logKey = target ? (target.data ? JSON.stringify(target.data) : target.id) : 'none';
+		if (logKey !== _lastDragoverLog) {
+			_lastDragoverLog = logKey;
+			if (COLLAB_DEBUG) console.log('[DnD] dragover target:', target ? target.data : null, 'isSortable:', target ? isSortable(target) : false);
+		}
+	});
+
+	// Listen for dragend events
+	manager.monitor.addEventListener('dragend', function (event) {
+		// Collab: notify peers about drag end
+		if (window.__hospWs && window.__hospWs.collab) {
+			window.__hospWs.collab.stopEditing('drag:articles');
+		}
+
+		// Clean up highlights
+		document.querySelectorAll('.hosp-show__drop-active').forEach(function (el) {
+			el.classList.remove('hosp-show__drop-active');
+		});
+
+		var source = event.operation.source;
+		var target = event.operation.target;
+		var foreignTarget = _lastForeignTarget;
+		_lastForeignTarget = null; // Reset for next drag
+
+		if (COLLAB_DEBUG) console.log('[DnD] dragend', {
+			sourceData: source && isSortable(source) ? source.sortable.draggable.data : null,
+			targetData: target ? target.data : null,
+			foreignTarget: foreignTarget
+		});
+
+		if (!source) return;
+
+		// Case 1: Sortable-to-sortable (within/between groups with items)
+		if (isSortable(source)) {
+			var sortable = source.sortable;
+			var data = sortable.draggable.data;
+
+			if (data.type === 'group') {
+				handleGroupReorder(sortable, target);
+				return;
+			}
+
+			if (data.type === 'article') {
+				// Cross-group detection must run BEFORE DOM-based reorder,
+				// because @dnd-kit may leave a ghost/clone element in the
+				// source container that causes handleArticleReorder to
+				// misdetect a same-group change.
+				var crossGroupId = null;
+				var crossNearId = null;
+
+				if (foreignTarget && String(foreignTarget.groupId) !== String(data.groupId)) {
+					crossGroupId = foreignTarget.groupId;
+					crossNearId = foreignTarget.articleId;
+				} else if (target && target.data && target.data.type === 'article-container'
+					&& String(target.data.groupId) !== String(data.groupId)) {
+					crossGroupId = target.data.groupId;
+				}
+
+				if (crossGroupId !== null) {
+					if (COLLAB_DEBUG) console.log('[DnD] cross-group drop', { crossGroupId: crossGroupId, crossNearId: crossNearId });
+					handleArticleDropOnContainer(data.articleId, crossGroupId, crossNearId);
+					return;
+				}
+
+				// Same-group reorder via DOM scan
+				if (handleArticleReorder(sortable, target)) return;
+			}
+		}
+	});
+
+	function handleGroupReorder(sourceSortable, target) {
+		// Read DOM order of groups after optimistic sort
+		var root = hook.root;
+		var apiUrl = hook.getApiUrl();
+		var data = hook.getData();
+		var groups = data.article_groups || [];
+
+		var domGroupIds = Array.from(root.querySelectorAll('[data-group-id][data-group-index]'))
+			.map(function (el) { return el.dataset.groupId; });
+
+		var dataGroupIds = groups
+			.sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); })
+			.map(function (g) { return String(g.id); });
+
+		var changed = domGroupIds.length !== dataGroupIds.length
+			|| domGroupIds.some(function (id, i) { return id !== dataGroupIds[i]; });
+
+		if (!changed) return;
+
+		var promises = [];
+		domGroupIds.forEach(function (groupId, newIndex) {
+			var original = groups.find(function (g) { return String(g.id) === String(groupId); });
+			if (original && original.sort_order !== newIndex) {
+				promises.push(hook.putJson(apiUrl + '/article-groups/' + groupId, { sort_order: newIndex }));
+			}
+		});
+
+		if (promises.length > 0) {
+			Promise.all(promises).then(function () {
+				hook.showToast(hook.lang('saved'));
+				hook.refreshData();
+			}).catch(function (err) {
+				hook.showToast(hook.lang('error') + ': ' + err.message, 'danger');
+				hook.refreshData();
+			});
+		}
+	}
+
+	function handleArticleDropOnContainer(articleId, targetGroupId, nearArticleId) {
+		var apiUrl = hook.getApiUrl();
+		var newGroupId = targetGroupId === 'ungrouped' ? null : parseInt(targetGroupId, 10);
+		var sourceArticleId = String(articleId);
+
+		var data = hook.getData();
+		var allArticles = data.articles || [];
+
+		// Get current articles in target group, sorted
+		var targetArticles = allArticles
+			.filter(function (a) {
+				var gid = a.article_group_id != null ? String(a.article_group_id) : null;
+				return gid === (newGroupId != null ? String(newGroupId) : null);
+			})
+			.sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); });
+
+		var targetIds = targetArticles.map(function (a) { return String(a.id); });
+
+		// Determine insert position
+		if (nearArticleId) {
+			var nearIdx = targetIds.indexOf(String(nearArticleId));
+			if (nearIdx !== -1) {
+				// Insert after the near article
+				targetIds.splice(nearIdx + 1, 0, sourceArticleId);
+			} else {
+				targetIds.push(sourceArticleId);
+			}
+		} else {
+			// No specific position — append at end
+			targetIds.push(sourceArticleId);
+		}
+
+		// Build reorder items for target group
+		var items = [];
+		targetIds.forEach(function (aid, i) {
+			items.push({ id: parseInt(aid, 10), sort_order: i, article_group_id: newGroupId });
+		});
+
+		// Also reindex the source group (remove the moved article)
+		var movedArticle = allArticles.find(function (a) { return String(a.id) === sourceArticleId; });
+		if (movedArticle) {
+			var sourceGid = movedArticle.article_group_id != null ? movedArticle.article_group_id : null;
+			if (String(sourceGid) !== String(newGroupId)) {
+				var sourceArticles = allArticles
+					.filter(function (a) {
+						var gid = a.article_group_id != null ? String(a.article_group_id) : null;
+						return gid === (sourceGid != null ? String(sourceGid) : null)
+							&& String(a.id) !== sourceArticleId;
+					})
+					.sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); });
+
+				sourceArticles.forEach(function (a, i) {
+					items.push({ id: a.id, sort_order: i, article_group_id: sourceGid });
+				});
+			}
+		}
+
+		hook.putJson(apiUrl + '/articles/reorder', { items: items }).then(function () {
+			hook.showToast(hook.lang('saved'));
+			hook.refreshData();
+		}).catch(function (err) {
+			hook.showToast(hook.lang('error') + ': ' + err.message, 'danger');
+			hook.refreshData();
+		});
+	}
+
+	function handleArticleReorder(sourceSortable, target) {
+		var apiUrl = hook.getApiUrl();
+		var root = hook.root;
+		var data = hook.getData();
+		var allArticles = data.articles || [];
+
+		function parseGroupId(gid) {
+			if (!gid || gid === 'ungrouped') return null;
+			return parseInt(gid, 10);
+		}
+
+		// Scan ALL article list containers and compare DOM order to data.
+		// The optimistic plugin may have moved elements within or across containers.
+		var items = [];
+		var changed = false;
+		var articleLists = root.querySelectorAll('[data-dnd-article-list]');
+
+		articleLists.forEach(function (listEl) {
+			var gid = parseGroupId(listEl.dataset.dndArticleList);
+			var domIds = Array.from(listEl.querySelectorAll('[data-article-id]'))
+				.map(function (el) { return el.dataset.articleId; });
+
+			// Compare to data: articles that belong to this group, sorted
+			var dataIds = allArticles
+				.filter(function (a) {
+					var aGid = a.article_group_id != null ? a.article_group_id : null;
+					return String(aGid || '') === String(gid || '');
+				})
+				.sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); })
+				.map(function (a) { return String(a.id); });
+
+			var listChanged = domIds.length !== dataIds.length
+				|| domIds.some(function (id, i) { return id !== dataIds[i]; });
+
+			if (listChanged) changed = true;
+
+			domIds.forEach(function (aid, i) {
+				items.push({ id: parseInt(aid, 10), sort_order: i, article_group_id: gid });
+			});
+		});
+
+		if (!changed) return false;
+
+		hook.putJson(apiUrl + '/articles/reorder', { items: items }).then(function () {
+			hook.showToast(hook.lang('saved'));
+			hook.refreshData();
+		}).catch(function (err) {
+			hook.showToast(hook.lang('error') + ': ' + err.message, 'danger');
+			hook.refreshData();
+		});
+		return true;
+	}
+
+	// Initialize on first render and re-initialize on each re-render
+	document.addEventListener('hospitality:articles-rendered', initSortables);
+
+	// If articles were already rendered before this module loaded (race condition),
+	// initialize immediately
+	if (hook.root && hook.root.querySelector('[data-dnd-article-list]')) {
+		initSortables();
+	}
+})();
+</script>
+{% endif %}
+{% endblock %}

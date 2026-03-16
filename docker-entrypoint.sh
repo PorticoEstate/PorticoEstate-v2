@@ -42,22 +42,28 @@ if [ -f /var/www/html/composer.json ]; then
     fi
 fi
 
-# Check if npm dependencies need to be installed or updated
+# Check if npm dependencies need to be installed or updated.
+# The Docker image stores a checksum of package-lock.json at /tmp/.package-lock-hash
+# during build. We compare it against a checksum saved inside the node_modules volume
+# to detect when the volume is stale after an image rebuild.
 if [ -f /var/www/html/package.json ]; then
     NPM_NEEDS_INSTALL=false
+    IMAGE_HASH_FILE="/tmp/.package-lock-hash"
+    VOLUME_HASH_FILE="/var/www/html/node_modules/.package-lock-hash"
 
     if [ ! -d /var/www/html/node_modules ]; then
         NPM_NEEDS_INSTALL=true
         echo "node_modules missing, npm install required"
-    elif [ ! -f /var/www/html/node_modules/.package-lock.json ]; then
-        NPM_NEEDS_INSTALL=true
-        echo "node_modules/.package-lock.json missing, npm install required"
-    elif [ /var/www/html/package.json -nt /var/www/html/node_modules/.package-lock.json ]; then
-        NPM_NEEDS_INSTALL=true
-        echo "package.json is newer than node_modules, npm install required"
-    elif [ -f /var/www/html/package-lock.json ] && [ /var/www/html/package-lock.json -nt /var/www/html/node_modules/.package-lock.json ]; then
-        NPM_NEEDS_INSTALL=true
-        echo "package-lock.json is newer than node_modules, npm install required"
+    elif [ -f "$IMAGE_HASH_FILE" ]; then
+        IMAGE_HASH=$(cat "$IMAGE_HASH_FILE")
+        VOLUME_HASH=""
+        if [ -f "$VOLUME_HASH_FILE" ]; then
+            VOLUME_HASH=$(cat "$VOLUME_HASH_FILE")
+        fi
+        if [ "$IMAGE_HASH" != "$VOLUME_HASH" ]; then
+            NPM_NEEDS_INSTALL=true
+            echo "package-lock.json checksum changed (image vs volume), npm install required"
+        fi
     fi
 
     if [ "$NPM_NEEDS_INSTALL" = "true" ]; then
@@ -67,6 +73,10 @@ if [ -f /var/www/html/package.json ]; then
         fi
         echo "Installing npm dependencies..."
         cd /var/www/html && npm ci
+        # Save the checksum into the volume so subsequent starts skip the install
+        if [ -f "$IMAGE_HASH_FILE" ]; then
+            cp "$IMAGE_HASH_FILE" "$VOLUME_HASH_FILE"
+        fi
     else
         echo "npm dependencies are up to date"
     fi

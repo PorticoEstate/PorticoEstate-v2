@@ -235,9 +235,10 @@ COPY package.json package-lock.json ./
 
 RUN npm ci
 
-# Store package-lock checksum in the image (outside volume mount) so the
-# entrypoint can detect when the volume's node_modules is stale.
-RUN md5sum package-lock.json > /tmp/.package-lock-hash
+# Backup node_modules into the image so the entrypoint can restore them
+# into the Docker volume when the volume is stale.
+RUN cp -a node_modules /opt/node_modules_build \
+    && md5sum package-lock.json > /opt/.package-lock-hash
 
 # Clean up
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

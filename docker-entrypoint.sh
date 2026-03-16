@@ -1,5 +1,7 @@
 #!/bin/bash
 
+git config --global --add safe.directory /var/www/html
+
 # Log entrypoint output to a file for debugging
 ENTRYPOINT_LOG="/tmp/entrypoint.log"
 echo "=== Entrypoint started at $(date -Iseconds) ===" > "$ENTRYPOINT_LOG" 2>&1 || echo "FAILED TO WRITE LOG" >&2
@@ -47,50 +49,41 @@ if [ -f /var/www/html/composer.json ]; then
     fi
 fi
 
-# Check if npm dependencies need to be installed or updated.
-# The Docker image stores a checksum of package-lock.json at /tmp/.package-lock-hash
-# during build. We compare it against a checksum saved inside the node_modules volume
-# to detect when the volume is stale after an image rebuild.
-if [ -f /var/www/html/package.json ]; then
-    NPM_NEEDS_INSTALL=false
-    IMAGE_HASH_FILE="/tmp/.package-lock-hash"
-    VOLUME_HASH_FILE="/var/www/html/node_modules/.package-lock-hash"
+# Sync node_modules from image backup into the Docker volume if stale.
+# The image stores a pre-built copy at /opt/node_modules_build with a
+# checksum at /opt/.package-lock-hash. We compare against the volume's copy.
+IMAGE_HASH_FILE="/opt/.package-lock-hash"
+VOLUME_HASH_FILE="/var/www/html/node_modules/.package-lock-hash"
 
-    if [ ! -d /var/www/html/node_modules ]; then
-        NPM_NEEDS_INSTALL=true
-        log "node_modules missing, npm install required"
-    elif [ -f "$IMAGE_HASH_FILE" ]; then
-        IMAGE_HASH=$(cat "$IMAGE_HASH_FILE")
-        VOLUME_HASH=""
-        if [ -f "$VOLUME_HASH_FILE" ]; then
-            VOLUME_HASH=$(cat "$VOLUME_HASH_FILE")
-        fi
-        log "Image hash: $IMAGE_HASH"
-        log "Volume hash: $VOLUME_HASH"
-        if [ "$IMAGE_HASH" != "$VOLUME_HASH" ]; then
-            NPM_NEEDS_INSTALL=true
-            log "package-lock.json checksum changed (image vs volume), npm install required"
-        fi
-    else
-        log "WARNING: Image hash file not found at $IMAGE_HASH_FILE"
+if [ -f "$IMAGE_HASH_FILE" ]; then
+    IMAGE_HASH=$(cat "$IMAGE_HASH_FILE")
+    VOLUME_HASH=""
+    if [ -f "$VOLUME_HASH_FILE" ]; then
+        VOLUME_HASH=$(cat "$VOLUME_HASH_FILE")
     fi
+    log "Image hash: $IMAGE_HASH"
+    log "Volume hash: $VOLUME_HASH"
 
-    if [ "$NPM_NEEDS_INSTALL" = "true" ]; then
-        if ! command -v npm > /dev/null 2>&1; then
-            log "npm not found, installing Node.js and npm..."
-            apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/*
-        fi
-        log "Installing npm dependencies..."
-        cd /var/www/html && npm ci
-        # Save the checksum into the volume so subsequent starts skip the install
-        if [ -f "$IMAGE_HASH_FILE" ]; then
-            cp "$IMAGE_HASH_FILE" "$VOLUME_HASH_FILE"
-            log "Saved hash to volume"
-        fi
+    if [ "$IMAGE_HASH" != "$VOLUME_HASH" ]; then
+        log "node_modules volume is stale, syncing from image backup..."
+        rm -rf /var/www/html/node_modules/*
+        cp -a /opt/node_modules_build/. /var/www/html/node_modules/
+        cp "$IMAGE_HASH_FILE" "$VOLUME_HASH_FILE"
+        log "node_modules synced ($(ls /var/www/html/node_modules | wc -l) packages)"
     else
         log "npm dependencies are up to date"
     fi
+else
+    log "WARNING: Image hash file not found at $IMAGE_HASH_FILE (old image?)"
+    # Fallback: run npm ci if node_modules looks empty
+    if [ -f /var/www/html/package.json ] && [ ! -d /var/www/html/node_modules/.bin ]; then
+        log "Fallback: running npm ci..."
+        cd /var/www/html && npm ci
+    fi
 fi
+
+# Install asyncservices cron job
+/bin/sh -c "echo '*/5 * * * * /usr/local/bin/php -q /var/www/html/src/modules/phpgwapi/cron/asyncservices.php default' | sudo -u www-data crontab - "
 
 set -e
 

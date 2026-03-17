@@ -59,7 +59,7 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 
 		Settings::getInstance()->update('flags', [
 			'app_header' => lang('Location Hierarchy Analysis'),
-			'menu_selection' => 'property::admin::analyze_location',
+			'menu_selection' => 'admin::property::location::analyze_location',
 			'xslt_app' => true,
 		]);
 		phpgwapi_xslttemplates::getInstance()->add_file(array('analyze_location'));
@@ -154,7 +154,7 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 
 		Settings::getInstance()->update('flags', [
 			'app_header' => lang('Location Document Move Analysis'),
-			'menu_selection' => 'property::admin::analyze_location_documents',
+			'menu_selection' => 'admin::property::location::analyze_location_documents',
 			'xslt_app' => true,
 		]);
 		phpgwapi_xslttemplates::getInstance()->add_file(array('analyze_location_documents'));

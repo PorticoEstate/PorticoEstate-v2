@@ -69,17 +69,34 @@ class LocationHierarchyDocumentAnalyzer
 		while ($this->db->next_record())
 		{
 			$oldCode = $this->db->f('old_location_code');
-			$directories = $this->findDirectoriesForLocationCode($oldCode);
 			$selections[] = [
 				'old_location_code' => $oldCode,
 				'new_location_code' => $this->db->f('new_location_code'),
 				'files_moved' => (int) $this->db->f('files_moved'),
 				'mapping_count' => (int) $this->db->f('mapping_count'),
-				'directory_count' => count($directories),
-				'directories' => $directories,
 				'selection_key' => $oldCode . '|' . $this->db->f('new_location_code'),
 			];
 		}
+
+		foreach ($selections as &$selection)
+		{
+			$from_dir = $this->rootdir . '/' . $selection['old_location_code'];
+
+			if ($this->vfs->file_exists(array(
+				'string'	 => $from_dir,
+				'relatives'	 => array(RELATIVE_NONE)
+			)))
+			{
+				$selection['directories'] = [$from_dir];
+				$selection['directory_count'] = 1;
+			}
+			else
+			{
+				$selection['directories'] = [];
+				$selection['directory_count'] = 0;
+			}
+		}
+
 		return $selections;
 	}
 

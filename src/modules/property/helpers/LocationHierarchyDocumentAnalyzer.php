@@ -155,86 +155,14 @@ class LocationHierarchyDocumentAnalyzer
 					'message' => "Moved directory '{$from_dir}' to '{$to_dir}' using VFS",
 				];
 				$this->db->transaction_commit();
-				continue;
 			}
-
-			continue;
-
-
-
-			$directories = $this->findDirectoriesForLocationCode($oldCode);
-
-			$this->db->transaction_begin();
-			try
+			else
 			{
-				$updatedRows = 0;
-				$movedDirectories = 0;
-
-				foreach ($directories as $directory)
-				{
-					$newDirectory = str_replace($oldCode, $newCode, $directory);
-					if ($newDirectory === $directory)
-					{
-						continue;
-					}
-
-					$oldAbsolute = $this->toAbsolutePath($directory);
-					$newAbsolute = $this->toAbsolutePath($newDirectory);
-
-					$filesystemMoveSucceeded = false;
-					$filesystemPathExists = is_dir($oldAbsolute) || is_file($oldAbsolute);
-
-					if ($filesystemPathExists)
-					{
-						if (!$this->movePath($oldAbsolute, $newAbsolute))
-						{
-							throw new \RuntimeException("Failed to move path '{$oldAbsolute}' to '{$newAbsolute}'");
-						}
-						$movedDirectories++;
-						$filesystemMoveSucceeded = true;
-					}
-
-					// Only update VFS if filesystem move succeeded
-					if ($filesystemMoveSucceeded )
-					{
-						if (!$this->updateDirectory($directory, $newDirectory))
-						{
-							throw new \RuntimeException("Failed to update VFS directory '{$directory}'");
-						}
-						$updatedRows++;
-						$this->cleanUpEmptyAncestors($oldAbsolute, $oldCode);
-					}
-				}
-
-				if($updatedRows)
-				{
-					$this->markFilesMoved($oldCode, $newCode);
-				}
-
-				if ($this->db->get_transaction())
-				{
-					$this->db->transaction_commit();
-				}
-
 				$results[] = [
 					'old_location_code' => $oldCode,
 					'new_location_code' => $newCode,
-					'status' => $updatedRows ? 'success' : 'no_changes',
-					'updated_rows' => $updatedRows,
-					'moved_directories' => $movedDirectories,
-					'message' => $updatedRows ? 'Location code move completed' : 'No matching directories found; no changes made',
-				];
-			}
-			catch (\Throwable $e)
-			{
-				$this->db->transaction_abort();
-				$results[] = [
-					'old_location_code' => $oldCode,
-					'new_location_code' => $newCode,
-					'status' => 'error',
-					'updated_rows' => 0,
-					'moved_directories' => 0,
-					'message' => $e->getMessage(),
+					'status' => 'skipped',
+					'message' => "Source directory '{$from_dir}' does not exist, skipping move",
 				];
 			}
 		}
@@ -663,31 +591,6 @@ class LocationHierarchyDocumentAnalyzer
 		return $directories;
 	}
 
-	private function cleanUpEmptyAncestors(string $movedAbsolutePath, string $locationCode): void
-	{
-		$basedirLen = strlen((string) $this->basedir);
-		$dir = dirname($movedAbsolutePath);
-
-		while (strlen($dir) > $basedirLen)
-		{
-			if (!is_dir($dir))
-			{
-				break;
-			}
-			$items = @scandir($dir);
-			if ($items === false || count(array_diff($items, ['.', '..'])) > 0)
-			{
-				break; // not empty – stop walking up
-			}
-			$isLocationDir = (basename($dir) === $locationCode);
-			@rmdir($dir);
-			if ($isLocationDir)
-			{
-				break; // stop after the location-code-named directory itself
-			}
-			$dir = dirname($dir);
-		}
-	}
 
 	private function parseSelectedMappingKeys(array $selectedKeys)
 	{
@@ -715,113 +618,4 @@ class LocationHierarchyDocumentAnalyzer
 		return $pairs;
 	}
 
-	private function toAbsolutePath($vfsDirectory)
-	{
-		if (!$this->basedir)
-		{
-			return $vfsDirectory;
-		}
-
-		$relative = ltrim((string) $vfsDirectory, '/\\');
-		return $this->basedir . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relative);
-	}
-
-	private function movePath($oldPath, $newPath)
-	{
-		$newParent = dirname($newPath);
-		if (!is_dir($newParent) && !mkdir($newParent, 0777, true))
-		{
-			return false;
-		}
-
-		if (!file_exists($newPath))
-		{
-			return @rename($oldPath, $newPath);
-		}
-
-		if (is_dir($oldPath) && is_dir($newPath))
-		{
-			if (!$this->moveDirectoryContents($oldPath, $newPath))
-			{
-				return false;
-			}
-			@rmdir($oldPath);
-			return true;
-		}
-
-		return false;
-	}
-
-	private function updateDirectory($oldDirectory, $newDirectory)
-	{
-		$oldEscaped = addslashes($oldDirectory);
-		$newEscaped = addslashes($newDirectory);
-
-		$sql = "UPDATE phpgw_vfs
-			SET directory = '{$newEscaped}'
-			WHERE directory = '{$oldEscaped}'";
-		$this->db->query($sql, __LINE__, __FILE__);
-
-		return $this->db->affected_rows() > 0;
-	}
-
-	/**
-	 * Move all contents from old directory to new directory.
-	 * Creates new directory if it does not exist.
-	 * $oldDir, $newDir has to be absolute paths, starting with $this->basedir.
-	 *
-	 * @param string $oldDir
-	 * @param string $newDir
-	 * @return bool
-	 */
-	private function moveDirectoryContents($oldDir, $newDir)
-	{
-		// Ensure old directory exists
-		if (!is_dir($oldDir))
-		{
-			return false;
-		}
-
-		// Create new directory if it doesn't exist
-		if (!is_dir($newDir))
-		{
-			if (!mkdir($newDir, 0777, true))
-			{
-				return false;
-			}
-		}
-
-		// Move files and subdirectories
-		$items = scandir($oldDir);
-		foreach ($items as $item)
-		{
-			if ($item === '.' || $item === '..')
-			{
-				continue;
-			}
-			$oldPath = $oldDir . DIRECTORY_SEPARATOR . $item;
-			$newPath = $newDir . DIRECTORY_SEPARATOR . $item;
-
-			if (is_dir($oldPath))
-			{
-				// Recursively move subdirectories
-				if (!$this->moveDirectoryContents($oldPath, $newPath))
-				{
-					return false;
-				}
-				if (is_dir($oldPath) && !@rmdir($oldPath))
-				{
-					return false;
-				}
-			}
-			else
-			{
-				if (!@rename($oldPath, $newPath))
-				{
-					return false;
-				}
-			}
-		}
-		return true;
-	}
 }

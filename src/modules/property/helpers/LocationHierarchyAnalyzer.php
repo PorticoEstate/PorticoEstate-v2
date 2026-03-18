@@ -1296,9 +1296,11 @@ class LocationHierarchyAnalyzer
 			$old = $parsed['old'];
 			$new = $parsed['new'];
 			$type = $parsed['type'];
+			$level = substr_count($old, '-');
+			$loc1 = explode('-', $old, 2)[0] ?? '';
 			$pairMin = strcmp($old, $new) <= 0 ? $old : $new;
 			$pairMax = strcmp($old, $new) <= 0 ? $new : $old;
-			$groupKey = $type . '|' . $pairMin . '|' . $pairMax;
+			$groupKey = $type . '|' . $level . '|' . $loc1 . '|' . $pairMin . '|' . $pairMax;
 
 			if (!isset($groups[$groupKey]))
 			{
@@ -1308,26 +1310,44 @@ class LocationHierarchyAnalyzer
 				'sql' => $sql,
 				'old' => $old,
 				'new' => $new,
+				'type' => $type,
+				'level' => $level,
+				'loc1' => $loc1,
 			];
 		}
 
 		$result = $passthrough;
+		$canonical = [];
 
 		foreach ($groups as $entries)
 		{
 			if (count($entries) === 1)
 			{
-				$result[] = $entries[0]['sql'];
+				$entry = $entries[0];
+				$sourceKey = $entry['type'] . '|' . $entry['level'] . '|' . $entry['loc1'] . '|' . $entry['old'];
+				if (!isset($canonical[$sourceKey]))
+				{
+					$canonical[$sourceKey] = [
+						'type' => $entry['type'],
+						'level' => $entry['level'],
+						'loc1' => $entry['loc1'],
+						'old' => $entry['old'],
+						'new' => $entry['new'],
+						'sql' => $entry['sql'],
+					];
+				}
 				continue;
 			}
 
 			// Prefer the deterministic direction where old < new if both directions exist.
 			$chosen = null;
+			$chosenEntry = null;
 			foreach ($entries as $entry)
 			{
 				if (strcmp($entry['old'], $entry['new']) < 0)
 				{
 					$chosen = $entry['sql'];
+					$chosenEntry = $entry;
 					break;
 				}
 			}
@@ -1335,11 +1355,156 @@ class LocationHierarchyAnalyzer
 			if ($chosen === null)
 			{
 				$chosen = $entries[0]['sql'];
+				$chosenEntry = $entries[0];
 			}
-			$result[] = $chosen;
+
+			$sourceKey = $chosenEntry['type'] . '|' . $chosenEntry['level'] . '|' . $chosenEntry['loc1'] . '|' . $chosenEntry['old'];
+			if (!isset($canonical[$sourceKey]))
+			{
+				$canonical[$sourceKey] = [
+					'type' => $chosenEntry['type'],
+					'level' => $chosenEntry['level'],
+					'loc1' => $chosenEntry['loc1'],
+					'old' => $chosenEntry['old'],
+					'new' => $chosenEntry['new'],
+					'sql' => $chosen,
+				];
+			}
+		}
+
+		$resolved = $this->resolveMappingChains(array_values($canonical));
+		foreach ($resolved as $entry)
+		{
+			if ($entry['old'] === $entry['new'])
+			{
+				continue;
+			}
+			$result[] = $this->rewriteLocationMappingInsert($entry['sql'], $entry['old'], $entry['new']);
 		}
 
 		return array_values(array_unique($result));
+	}
+
+	/**
+	 * Flatten chained mappings (A->B->C becomes A->C) and break cycles deterministically.
+	 */
+	private function resolveMappingChains(array $entries): array
+	{
+		$bucketed = []; // type|level|loc1 => old => entry
+		foreach ($entries as $entry)
+		{
+			$bucketKey = $entry['type'] . '|' . $entry['level'] . '|' . $entry['loc1'];
+			if (!isset($bucketed[$bucketKey]))
+			{
+				$bucketed[$bucketKey] = [];
+			}
+			if (!isset($bucketed[$bucketKey][$entry['old']]))
+			{
+				$bucketed[$bucketKey][$entry['old']] = $entry;
+			}
+			elseif (strcmp($entry['new'], $bucketed[$bucketKey][$entry['old']]['new']) < 0)
+			{
+				// Deterministic target when multiple candidates exist.
+				$bucketed[$bucketKey][$entry['old']] = $entry;
+			}
+		}
+
+		$result = [];
+		foreach ($bucketed as $byOld)
+		{
+			$next = [];
+			foreach ($byOld as $old => $entry)
+			{
+				$next[$old] = $entry['new'];
+			}
+
+			$memo = [];
+			foreach ($byOld as $old => $entry)
+			{
+				$final = $this->resolveFinalTarget($old, $next, $memo);
+				$entry['new'] = $final;
+				$result[] = $entry;
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Follow old->new links to terminal node; when a cycle is detected, pick the lexicographically smallest node.
+	 */
+	private function resolveFinalTarget(string $start, array $next, array &$memo): string
+	{
+		if (isset($memo[$start]))
+		{
+			return $memo[$start];
+		}
+
+		$path = [];
+		$indexByNode = [];
+		$current = $start;
+
+		while (isset($next[$current]))
+		{
+			if (isset($memo[$current]))
+			{
+				$target = $memo[$current];
+				foreach ($path as $node)
+				{
+					$memo[$node] = $target;
+				}
+				$memo[$start] = $target;
+				return $target;
+			}
+
+			if (isset($indexByNode[$current]))
+			{
+				$cycle = array_slice($path, $indexByNode[$current]);
+				$cycle[] = $current;
+				$canonical = min($cycle);
+				foreach ($cycle as $node)
+				{
+					$memo[$node] = $canonical;
+				}
+				foreach ($path as $node)
+				{
+					if (!isset($memo[$node]))
+					{
+						$memo[$node] = $canonical;
+					}
+				}
+				$memo[$start] = $canonical;
+				return $canonical;
+			}
+
+			$indexByNode[$current] = count($path);
+			$path[] = $current;
+			$current = $next[$current];
+		}
+
+		$target = $current;
+		foreach ($path as $node)
+		{
+			$memo[$node] = $target;
+		}
+		$memo[$start] = $target;
+		return $target;
+	}
+
+	/**
+	 * Rewrite old/new location codes in a location_mapping INSERT statement.
+	 */
+	private function rewriteLocationMappingInsert(string $sql, string $old, string $new): string
+	{
+		$oldEscaped = str_replace("'", "''", $old);
+		$newEscaped = str_replace("'", "''", $new);
+		$pattern = "/^(INSERT\\s+INTO\\s+location_mapping\\s*\\([^)]*\\)\\s*VALUES\\s*\\(\\s*)'[^']*'\\s*,\\s*'[^']*'(.*)$/i";
+		if (!preg_match($pattern, $sql, $matches))
+		{
+			return $sql;
+		}
+
+		return $matches[1] . "'{$oldEscaped}', '{$newEscaped}'" . $matches[2];
 	}
 
 	/**

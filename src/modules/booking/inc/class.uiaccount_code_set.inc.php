@@ -254,11 +254,12 @@ use App\modules\phpgwapi\services\Settings;
 				if ($config->config_data['external_format'] == 'KOMMFAKT')
 				{
 					$account_code_set['article'] = '1';
-					$account_code_set['service'] = '1';
-					$account_code_set['project_number'] = '1';
-					$account_code_set['unit_number'] = '1';
 					$account_code_set['unit_prefix'] = '1';
 				}
+
+				$account_code_set['service'] = $account_code_set['service'] ?? $account_code_set['service'] ?? '1';
+				$account_code_set['project_number'] = $account_code_set['project_number'] ?? $account_code_set['project_number'] ?? '1';
+				$account_code_set['unit_number'] = $account_code_set['unit_number'] ?? $account_code_set['unit_number'] ?? '1';
 
 				$errors = $this->bo->validate($account_code_set);
 				if (!$errors)

@@ -182,24 +182,29 @@ class phpgwapi_jquery
 			case 'file-upload':
 				$_load_ui();
 				$js->add_url_file('/assets/npm/blueimp-tmpl/js/tmpl.min.js');
-				$js->add_url_file('/assets/npm/blueimp-file-upload/js/jquery.fileupload.js');
-				$js->add_url_file('/assets/npm/blueimp-file-upload/js/jquery.fileupload-process.js');
-				$js->add_url_file('/assets/npm/blueimp-file-upload/js/jquery.fileupload-validate.js');
-				$js->add_url_file('/assets/npm/blueimp-file-upload/js/jquery.fileupload-ui.js');
-				// jquery.fileupload-jquery-ui.js not in npm package, keep as static
-				$load = array("file-upload/js/jquery.fileupload-jquery-ui");
-				$css->add_url_file('/assets/npm/blueimp-file-upload/css/jquery.fileupload.css');
-				$css->add_url_file('/assets/npm/blueimp-file-upload/css/jquery.fileupload-ui.css');
+				$load = array(
+					"file-upload/js/jquery.iframe-transport",
+					"file-upload/js/jquery.fileupload",
+					"file-upload/js/jquery.fileupload-process",
+					"file-upload/js/jquery.fileupload-validate",
+					"file-upload/js/jquery.fileupload-ui",
+					"file-upload/js/jquery.fileupload-jquery-ui",
+				);
+				$css->add_external_file("phpgwapi/js/jquery/file-upload/css/jquery.fileupload.css");
+				$css->add_external_file("phpgwapi/js/jquery/file-upload/css/jquery.fileupload-ui.css");
 				$css->add_external_file("phpgwapi/js/jquery/file-upload/css/jquery.fileupload-custom.css");
 				break;
 
 			case 'file-upload-minimum':
 				$_load_ui();
-				$js->add_url_file('/assets/npm/blueimp-file-upload/js/jquery.fileupload.js');
-				$js->add_url_file('/assets/npm/blueimp-file-upload/js/jquery.fileupload-process.js');
-				$js->add_url_file('/assets/npm/blueimp-file-upload/js/jquery.fileupload-validate.js');
-				$css->add_url_file('/assets/npm/blueimp-file-upload/css/jquery.fileupload.css');
-				$css->add_url_file('/assets/npm/blueimp-file-upload/css/jquery.fileupload-ui.css');
+				$load = array(
+					"file-upload/js/jquery.iframe-transport",
+					"file-upload/js/jquery.fileupload",
+					"file-upload/js/jquery.fileupload-process",
+					"file-upload/js/jquery.fileupload-validate",
+				);
+				$css->add_external_file("phpgwapi/js/jquery/file-upload/css/jquery.fileupload.css");
+				$css->add_external_file("phpgwapi/js/jquery/file-upload/css/jquery.fileupload-ui.css");
 				$css->add_external_file("phpgwapi/js/jquery/file-upload/css/jquery.fileupload-custom.css");
 				break;
 

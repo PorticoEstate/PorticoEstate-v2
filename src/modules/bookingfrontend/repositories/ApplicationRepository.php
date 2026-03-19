@@ -15,6 +15,7 @@ use App\modules\bookingfrontend\models\OrderLine;
 use App\modules\bookingfrontend\models\helper\Date;
 use App\modules\booking\services\DocumentService;
 use App\modules\booking\repositories\DocumentRepository;
+use App\modules\booking\repositories\HospitalityOrderRepository;
 
 class ApplicationRepository
 {
@@ -294,6 +295,10 @@ class ApplicationRepository
      */
     private function deleteAssociatedData(int $application_id): void
     {
+        // Delete hospitality orders (lines, changelog, documents, then orders)
+        $hospitalityOrderRepo = new HospitalityOrderRepository();
+        $hospitalityOrderRepo->deleteByApplicationId($application_id);
+
         // First, delete documents (including physical files)
         $this->deleteApplicationDocuments($application_id);
 

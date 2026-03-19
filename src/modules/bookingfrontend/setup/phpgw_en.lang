@@ -946,3 +946,14 @@ rooms_and_premises	bookingfrontend	en	Rooms and premises
 building_title	bookingfrontend	en	Building
 resource_title	bookingfrontend	en	Room
 show_all_resources	bookingfrontend	en	Show all rooms
+hospitality	bookingfrontend	en	Hospitality
+add_hospitality_order	bookingfrontend	en	Add catering order
+select_serving_date	bookingfrontend	en	Select date
+select_serving_time	bookingfrontend	en	Select time
+serving_time	bookingfrontend	en	Serving time
+delivery_location	bookingfrontend	en	Delivery location
+order_cutoff_warning	bookingfrontend	en	Order must be placed at least %1 %2 before serving time
+special_requirements	bookingfrontend	en	Special requirements
+order_total	bookingfrontend	en	Order total
+article	bookingfrontend	en	article
+serving_at	bookingfrontend	en	Serving at

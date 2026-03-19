@@ -4,6 +4,7 @@ use App\modules\bookingfrontend\controllers\applications\ApplicationController;
 use App\modules\bookingfrontend\controllers\BuildingController;
 use App\modules\bookingfrontend\controllers\applications\CheckoutController;
 use App\modules\bookingfrontend\controllers\applications\CommentsController;
+use App\modules\bookingfrontend\controllers\applications\HospitalityOrderController;
 use App\modules\bookingfrontend\controllers\ScheduleEntityController;
 use App\modules\bookingfrontend\controllers\CompletedReservationController;
 use App\modules\bookingfrontend\controllers\DataStore;
@@ -135,7 +136,17 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('/{id}/comments/stats', CommentsController::class . ':getApplicationCommentStats');
 		$group->put('/{id}/status', CommentsController::class . ':updateApplicationStatus');
 
+		// Hospitality order endpoints
+		$group->get('/{id}/hospitalities', HospitalityOrderController::class . ':getAvailableHospitalities');
+		$group->get('/{id}/hospitality-orders', HospitalityOrderController::class . ':getOrders');
+		$group->post('/{id}/hospitality-orders', HospitalityOrderController::class . ':createOrder');
+		$group->put('/{id}/hospitality-orders/{orderId}', HospitalityOrderController::class . ':updateOrder');
+		$group->delete('/{id}/hospitality-orders/{orderId}', HospitalityOrderController::class . ':deleteOrder');
+
 	});
+
+	// Hospitality menu (no application context needed)
+	$group->get('/hospitality/{id}/menu', HospitalityOrderController::class . ':getMenu');
 
 	$group->group('/checkout', function (RouteCollectorProxy $group)
 	{

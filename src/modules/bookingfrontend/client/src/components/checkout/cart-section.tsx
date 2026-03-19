@@ -8,6 +8,7 @@ import { calculateApplicationCost, formatCurrency } from "@/utils/cost-utils";
 import { RecurringInfoUtils, calculateRecurringInstances } from '@/utils/recurring-utils';
 import { useBuildingSeasons } from "@/service/hooks/api-hooks";
 import BuildingIcon from "@/icons/BuildingIcon";
+import HospitalitySection from "./hospitality/hospitality-section";
 
 interface CartSectionProps {
     applications: IApplication[];
@@ -108,6 +109,10 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                             selectedParentId={buildingParentIds?.[buildingGroup.buildingId]}
                             onParentIdChange={onBuildingParentIdChange ? (parentId) => onBuildingParentIdChange(buildingGroup.buildingId, parentId) : undefined}
                             buildingId={buildingGroup.buildingId}
+                        />
+                        <HospitalitySection
+                            applicationIds={buildingGroup.applications.map(a => a.id)}
+                            applications={buildingGroup.applications}
                         />
                         {sectionTotal > 0 && (
                             <div className={styles.sectionTotal}>

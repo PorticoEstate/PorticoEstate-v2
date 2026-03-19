@@ -7,6 +7,7 @@ use App\modules\bookingfrontend\models\Application;
 use App\modules\booking\models\Document;
 use App\modules\bookingfrontend\repositories\ApplicationRepository;
 use App\modules\bookingfrontend\repositories\ArticleRepository;
+use App\modules\booking\repositories\HospitalityOrderRepository;
 use App\Database\Db;
 use App\modules\booking\services\DocumentService;
 use App\modules\bookingfrontend\services\EventService;
@@ -86,7 +87,7 @@ class ApplicationService
     }
 
     /**
-     * Calculate total sum of applications
+     * Calculate total sum of applications (article orders + hospitality orders where included in checkout).
      *
      * @param array $applications Array of applications
      * @return float Total sum
@@ -101,6 +102,14 @@ class ApplicationService
                 $total_sum += $order['sum'];
             }
         }
+
+        // Add hospitality order totals where include_in_checkout_payment is enabled
+        $applicationIds = array_column($applications, 'id');
+        if (!empty($applicationIds)) {
+            $hospitalityOrderRepo = new HospitalityOrderRepository();
+            $total_sum += $hospitalityOrderRepo->getCheckoutTotal($applicationIds);
+        }
+
         return round($total_sum, 2);
     }
 

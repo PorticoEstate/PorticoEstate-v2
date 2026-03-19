@@ -946,3 +946,14 @@ rooms_and_premises	bookingfrontend	nn	Rom og lokalar
 building_title	bookingfrontend	nn	Bygg
 resource_title	bookingfrontend	nn	Rom
 show_all_resources	bookingfrontend	nn	Sjå alle rom
+hospitality	bookingfrontend	nn	Bevertning
+add_hospitality_order	bookingfrontend	nn	Legg til bevertning
+select_serving_date	bookingfrontend	nn	Velg dato
+select_serving_time	bookingfrontend	nn	Velg tid
+serving_time	bookingfrontend	nn	Serveringstid
+delivery_location	bookingfrontend	nn	Leveringsstad
+order_cutoff_warning	bookingfrontend	nn	Bestillinga må leggjast inn minst %1 %2 før serveringstidspunkt
+special_requirements	bookingfrontend	nn	Spesielle krav
+order_total	bookingfrontend	nn	Ordretotal
+article	bookingfrontend	nn	artikkel
+serving_at	bookingfrontend	nn	Servering i

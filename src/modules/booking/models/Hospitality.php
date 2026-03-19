@@ -60,6 +60,12 @@ class Hospitality
     public $allow_on_site_hospitality = 0;
 
     /**
+     * @OA\Property(type="integer", description="Whether order total is included in Vipps checkout payment (1) or invoiced separately (0)")
+     * @Expose
+     */
+    public $include_in_checkout_payment = 0;
+
+    /**
      * @OA\Property(type="integer", nullable=true)
      * @Expose
      */

@@ -8361,3 +8361,17 @@ function booking_upgrade0_2_123($oProc)
 		return $currentver;
 	}
 }
+
+$test[] = '0.2.124';
+function booking_upgrade0_2_124($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$oProc->m_odb->query("ALTER TABLE bb_hospitality ADD COLUMN include_in_checkout_payment SMALLINT NOT NULL DEFAULT 0");
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.125';
+		return $currentver;
+	}
+}

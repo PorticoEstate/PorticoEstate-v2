@@ -4,6 +4,7 @@ namespace App\modules\bookingfrontend\services\applications;
 
 use App\modules\phpgwapi\controllers\Locations;
 use App\modules\phpgwapi\security\Sessions;
+use App\modules\booking\repositories\HospitalityOrderRepository;
 use Exception;
 
 class CheckoutService
@@ -48,14 +49,22 @@ class CheckoutService
                 }
             }
 
-            // Calculate total amount
+            // Calculate total amount (includes hospitality orders where include_in_checkout_payment is enabled)
             $totalAmount = $this->applicationService->calculateTotalSum($applications);
-            
+
+            // Calculate hospitality-only total for transparency
+            $applicationIds = array_column($applications, 'id');
+            $hospitalityOrderRepo = new HospitalityOrderRepository();
+            $hospitalityTotal = !empty($applicationIds)
+                ? $hospitalityOrderRepo->getCheckoutTotal($applicationIds)
+                : 0.0;
+
             if ($totalAmount <= 0) {
                 return [
                     'eligible' => false,
                     'reason' => 'No payment required',
                     'total_amount' => $totalAmount,
+                    'hospitality_total' => round($hospitalityTotal, 2),
                     'payment_methods' => []
                 ];
             }
@@ -63,11 +72,12 @@ class CheckoutService
             // Check if any resources require prepayment and get payment methods
             // This combines the validation logic from add_contact()
             $paymentMethods = $this->getAvailablePaymentMethods($applications);
-            
+
             return [
                 'eligible' => !empty($paymentMethods),
                 'reason' => !empty($paymentMethods) ? 'External payment available' : 'No payment methods available (no prepayment required or not configured)',
                 'total_amount' => $totalAmount,
+                'hospitality_total' => round($hospitalityTotal, 2),
                 'payment_methods' => $paymentMethods,
                 'applications_count' => count($applications)
             ];

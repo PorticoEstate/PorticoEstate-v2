@@ -371,4 +371,54 @@ class HospitalityOrderRepository
         }
         return $orders;
     }
+
+    /**
+     * Get total amount for hospitality orders where the hospitality has include_in_checkout_payment enabled.
+     *
+     * @param int[] $applicationIds
+     * @return float
+     */
+    public function getCheckoutTotal(array $applicationIds): float
+    {
+        if (empty($applicationIds)) {
+            return 0.0;
+        }
+        $ids = array_map('intval', $applicationIds);
+        $placeholders = implode(',', $ids);
+
+        $sql = "SELECT COALESCE(SUM(ol.quantity * ol.unit_price), 0) as total
+                FROM bb_hospitality_order ho
+                JOIN bb_hospitality_order_line ol ON ol.order_id = ho.id
+                JOIN bb_hospitality h ON h.id = ho.hospitality_id
+                WHERE ho.application_id IN ({$placeholders})
+                  AND ho.status != 'cancelled'
+                  AND h.include_in_checkout_payment = 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        return (float)$stmt->fetchColumn();
+    }
+
+    /**
+     * Hard-delete all hospitality orders (and their lines/changelog/documents) for an application.
+     * Used when deleting partial applications.
+     */
+    public function deleteByApplicationId(int $applicationId): void
+    {
+        // Get order IDs first
+        $stmt = $this->db->prepare("SELECT id FROM bb_hospitality_order WHERE application_id = :id");
+        $stmt->execute([':id' => $applicationId]);
+        $orderIds = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'id');
+
+        if (empty($orderIds)) {
+            return;
+        }
+
+        $placeholders = implode(',', array_map('intval', $orderIds));
+
+        // Delete in correct FK order
+        $this->db->prepare("DELETE FROM bb_hospitality_order_changelog WHERE order_id IN ({$placeholders})")->execute();
+        $this->db->prepare("DELETE FROM bb_hospitality_order_document WHERE owner_id IN ({$placeholders})")->execute();
+        $this->db->prepare("DELETE FROM bb_hospitality_order_line WHERE order_id IN ({$placeholders})")->execute();
+        $this->db->prepare("DELETE FROM bb_hospitality_order WHERE application_id = :id")->execute([':id' => $applicationId]);
+    }
 }

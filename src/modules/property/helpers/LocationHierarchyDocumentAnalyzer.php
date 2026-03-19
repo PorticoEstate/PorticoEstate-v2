@@ -156,22 +156,37 @@ class LocationHierarchyDocumentAnalyzer
 			)))
 			{
 				$this->db->transaction_begin();
-				$this->vfs->mv(
+				
+				if($this->vfs->mv(
 					array(
 						'from'		 => $from_dir,
 						'to'		 => $to_dir,
 						'relatives'	 => array(RELATIVE_ALL, RELATIVE_ALL)
 					)
-				);	
+				))
+				{
+					// Mark as moved in DB only if VFS move succeeded to keep history accurate for any future runs	
+					$this->markFilesMoved($oldCode, $newCode);
+					$results[] = [
+						'old_location_code' => $oldCode,
+						'new_location_code' => $newCode,
+						'status' => 'success',
+						'message' => "Moved directory '{$from_dir}' to '{$to_dir}' using VFS",
+					];
+					$this->db->transaction_commit();
+				}
+				else
+				{
+					$this->db->transaction_abort();
+					$results[] = [
+						'old_location_code' => $oldCode,
+						'new_location_code' => $newCode,
+						'status' => 'failed',
+						'message' => "Failed to move directory '{$from_dir}' to '{$to_dir}' using VFS",
+					];
+					continue;
+				}
 		
-				$this->markFilesMoved($oldCode, $newCode);
-				$results[] = [
-					'old_location_code' => $oldCode,
-					'new_location_code' => $newCode,
-					'status' => 'success',
-					'message' => "Moved directory '{$from_dir}' to '{$to_dir}' using VFS",
-				];
-				$this->db->transaction_commit();
 			}
 			else
 			{

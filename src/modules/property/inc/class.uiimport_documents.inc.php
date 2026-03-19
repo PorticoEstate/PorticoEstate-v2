@@ -381,6 +381,10 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 			return;
 		}
 		$file_name = $this->_get_metadata_file_name($order_id);
+		if(!is_file($file_name))
+		{
+			$this->check_upload_dir($order_id);
+		}
 		$fp	= fopen($file_name, 'w');
 		fputs($fp, json_encode($metadata));
 		return fclose($fp);
@@ -1195,6 +1199,11 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 		$_dir			 = is_array($order) ? $order[0]['dir'] : $sort;
 
 		$order_id = Sanitizer::get_var('order_id', 'int');
+
+		if (!$order_id)
+		{
+			return;
+		}
 
 		$filter_document_category	 = Sanitizer::get_var('filter_document_category');
 		$filter_branch				 = Sanitizer::get_var('filter_branch');

@@ -2353,14 +2353,31 @@ class Vfs extends VfsShared
 					// Both source and target are directories: merge contents instead of replacing
 					$do_merge = true;
 				}
+			}
+
+			if ($this->file_actions)
+			{
+				if ($do_merge)
+				{
+					if (!$this->merge_move_real_directory($f->real_full_path, $t->real_full_path))
+					{
+						return false;
+					}
+
+					// After a successful merge, remove any emptied source directory remnants.
+					$this->cleanup_empty_real_source_dirs($f->real_full_path);
+				}
 				else
 				{
-					$this->rm(
-						array(
-							'string'	=> $t->fake_full_path,
-							'relatives'	=> array($t->mask)
-						)
-					);
+					if (file_exists($t->real_full_path) && !$this->delete_real_path($t->real_full_path))
+					{
+						return false;
+					}
+
+					if (!$this->fileoperation->rename($f, $t))
+					{
+						return false;
+					}
 				}
 			}
 
@@ -2448,22 +2465,6 @@ class Vfs extends VfsShared
 					'relatives'	=> array($t->mask)
 				)
 			);
-
-			if ($this->file_actions && !$do_merge)
-			{
-				$rr = $this->fileoperation->rename($f, $t);
-			}
-			elseif ($this->file_actions && $do_merge && !$f->outside && !$t->outside)
-			{
-				$rr = $this->merge_move_real_directory($f->real_full_path, $t->real_full_path);
-				if (!$rr)
-				{
-					return false;
-				}
-
-				// After a successful merge, remove any emptied source directory remnants.
-				$this->cleanup_empty_real_source_dirs($f->real_full_path);
-			}
 
 			/*
 				   This removes the original entry from the database

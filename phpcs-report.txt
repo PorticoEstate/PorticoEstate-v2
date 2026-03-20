@@ -1,242 +1,242 @@
 
 FILE: /var/www/html/src/helpers/LegacyObjectHandler.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 81 | WARNING | Since PHP 7.0, functions inspecting arguments, like debug_backtrace(), no longer report the original value as
-    |         | passed to a parameter, but will instead provide the current value. The parameter "$classname" was used, and
-    |         | possibly changed (by reference), on line 72.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 81 | WARNING | Since PHP 7.0, functions inspecting arguments, like
+    |         | debug_backtrace(), no longer report the original value as
+    |         | passed to a parameter, but will instead provide the current
+    |         | value. The parameter "$classname" was used, and possibly
+    |         | changed (by reference), on line 72.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/helpers/phpgw.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 385 | WARNING | Since PHP 7.0, functions inspecting arguments, like debug_backtrace(), no longer report the original value as
-     |         | passed to a parameter, but will instead provide the current value. The parameter "$classname" was used, and
-     |         | possibly changed (by reference), on line 376.
-------------------------------------------------------------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/modules/hrm/inc/class.bocategory.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 167 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $action is
-     |         | optional, while parameter $type_id is required. The $action parameter is implicitly treated as a required
-     |         | parameter.
- 167 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $type is
-     |         | optional, while parameter $type_id is required. The $type parameter is implicitly treated as a required parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 385 | WARNING | Since PHP 7.0, functions inspecting arguments, like
+     |         | debug_backtrace(), no longer report the original value as
+     |         | passed to a parameter, but will instead provide the current
+     |         | value. The parameter "$classname" was used, and possibly
+     |         | changed (by reference), on line 376.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpgwapi/inc/class.uicommon_jquery.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 346 | WARNING | Since PHP 7.0, functions inspecting arguments, like debug_backtrace(), no longer report the original value as
-     |         | passed to a parameter, but will instead provide the current value. The parameter "$end_of_page" was used, and
-     |         | possibly changed (by reference), on line 344.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 346 | WARNING | Since PHP 7.0, functions inspecting arguments, like
+     |         | debug_backtrace(), no longer report the original value as
+     |         | passed to a parameter, but will instead provide the current
+     |         | value. The parameter "$end_of_page" was used, and possibly
+     |         | changed (by reference), on line 344.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpgwapi/inc/class.portalbox.inc.php
----------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
----------------------------------------------------------------------------------------------------------
- 56 | WARNING | Global with anything other than bare variables is discouraged since PHP 7.0. Found $$var
----------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 56 | WARNING | Global with anything other than bare variables is discouraged
+    |         | since PHP 7.0. Found $$var
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpgwapi/inc/phpqrcode/phpqrcode.php
-------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 8 WARNINGS AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
-  954 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $filename is
-      |         | optional, while parameter $back_color is required. The $filename parameter is implicitly treated as a required
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 4 WARNINGS AFFECTING 1 LINE
+--------------------------------------------------------------------------------
+ 3550 | WARNING | Declaring an optional parameter before a required parameter
+      |         | is deprecated since PHP 8.0. Parameter $filename is optional,
+      |         | while parameter $back_color is required. The $filename
+      |         | parameter is implicitly treated as a required parameter.
+ 3550 | WARNING | Declaring an optional parameter before a required parameter
+      |         | is deprecated since PHP 8.0. Parameter $pixelPerPoint is
+      |         | optional, while parameter $back_color is required. The
+      |         | $pixelPerPoint parameter is implicitly treated as a required
       |         | parameter.
-  954 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $pixelPerPoint
-      |         | is optional, while parameter $back_color is required. The $pixelPerPoint parameter is implicitly treated as a
-      |         | required parameter.
-  954 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $outerFrame is
-      |         | optional, while parameter $back_color is required. The $outerFrame parameter is implicitly treated as a required
+ 3550 | WARNING | Declaring an optional parameter before a required parameter
+      |         | is deprecated since PHP 8.0. Parameter $outerFrame is
+      |         | optional, while parameter $back_color is required. The
+      |         | $outerFrame parameter is implicitly treated as a required
       |         | parameter.
-  954 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $saveandprint
-      |         | is optional, while parameter $back_color is required. The $saveandprint parameter is implicitly treated as a
-      |         | required parameter.
- 3550 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $filename is
-      |         | optional, while parameter $back_color is required. The $filename parameter is implicitly treated as a required
+ 3550 | WARNING | Declaring an optional parameter before a required parameter
+      |         | is deprecated since PHP 8.0. Parameter $saveandprint is
+      |         | optional, while parameter $back_color is required. The
+      |         | $saveandprint parameter is implicitly treated as a required
       |         | parameter.
- 3550 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $pixelPerPoint
-      |         | is optional, while parameter $back_color is required. The $pixelPerPoint parameter is implicitly treated as a
-      |         | required parameter.
- 3550 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $outerFrame is
-      |         | optional, while parameter $back_color is required. The $outerFrame parameter is implicitly treated as a required
-      |         | parameter.
- 3550 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $saveandprint
-      |         | is optional, while parameter $back_color is required. The $saveandprint parameter is implicitly treated as a
-      |         | required parameter.
-------------------------------------------------------------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/modules/phpgwapi/inc/class.jasper_wrapper.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 116 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $parameters is
-     |         | optional, while parameter $output_type is required. The $parameters parameter is implicitly treated as a required
-     |         | parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpgwapi/inc/class.js.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 449 | WARNING | Since PHP 7.0, functions inspecting arguments, like debug_backtrace(), no longer report the original value as
-     |         | passed to a parameter, but will instead provide the current value. The parameter "$end_of_page" was used, and
-     |         | possibly changed (by reference), on line 447.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 449 | WARNING | Since PHP 7.0, functions inspecting arguments, like
+     |         | debug_backtrace(), no longer report the original value as
+     |         | passed to a parameter, but will instead provide the current
+     |         | value. The parameter "$end_of_page" was used, and possibly
+     |         | changed (by reference), on line 447.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpgwapi/inc/class.html2text.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 235 | WARNING | Since PHP 7.0, functions inspecting arguments, like func_get_args(), no longer report the original value as passed
-     |         | to a parameter, but will instead provide the current value. The parameter "$options" was used, and possibly
-     |         | changed (by reference), on line 234.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 235 | WARNING | Since PHP 7.0, functions inspecting arguments, like
+     |         | func_get_args(), no longer report the original value as passed
+     |         | to a parameter, but will instead provide the current value.
+     |         | The parameter "$options" was used, and possibly changed (by
+     |         | reference), on line 234.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/link/link.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: .../src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/link/link.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 1 | WARNING | No PHP code was found in this file and short open tags are not allowed by this install of PHP. This file may be
-   |         | using short open tags but PHP does not allow them.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1 | WARNING | No PHP code was found in this file and short open tags are not
+   |         | allowed by this install of PHP. This file may be using short
+   |         | open tags but PHP does not allow them.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/dialogs/dialog.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: ...modules/phpgwapi/templates/bookingfrontend_2/styleguide/dialogs/dialog.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 1 | WARNING | No PHP code was found in this file and short open tags are not allowed by this install of PHP. This file may be
-   |         | using short open tags but PHP does not allow them.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1 | WARNING | No PHP code was found in this file and short open tags are not
+   |         | allowed by this install of PHP. This file may be using short
+   |         | open tags but PHP does not allow them.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/modal/modal.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: ...rc/modules/phpgwapi/templates/bookingfrontend_2/styleguide/modal/modal.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 1 | WARNING | No PHP code was found in this file and short open tags are not allowed by this install of PHP. This file may be
-   |         | using short open tags but PHP does not allow them.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1 | WARNING | No PHP code was found in this file and short open tags are not
+   |         | allowed by this install of PHP. This file may be using short
+   |         | open tags but PHP does not allow them.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/menu/menu.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: .../src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/menu/menu.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 1 | WARNING | No PHP code was found in this file and short open tags are not allowed by this install of PHP. This file may be
-   |         | using short open tags but PHP does not allow them.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1 | WARNING | No PHP code was found in this file and short open tags are not
+   |         | allowed by this install of PHP. This file may be using short
+   |         | open tags but PHP does not allow them.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/effects/effects.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: ...odules/phpgwapi/templates/bookingfrontend_2/styleguide/effects/effects.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 1 | WARNING | No PHP code was found in this file and short open tags are not allowed by this install of PHP. This file may be
-   |         | using short open tags but PHP does not allow them.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1 | WARNING | No PHP code was found in this file and short open tags are not
+   |         | allowed by this install of PHP. This file may be using short
+   |         | open tags but PHP does not allow them.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/filter/filter.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: .../modules/phpgwapi/templates/bookingfrontend_2/styleguide/filter/filter.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 1 | WARNING | No PHP code was found in this file and short open tags are not allowed by this install of PHP. This file may be
-   |         | using short open tags but PHP does not allow them.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1 | WARNING | No PHP code was found in this file and short open tags are not
+   |         | allowed by this install of PHP. This file may be using short
+   |         | open tags but PHP does not allow them.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/pill/pill.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: .../src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/pill/pill.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 1 | WARNING | No PHP code was found in this file and short open tags are not allowed by this install of PHP. This file may be
-   |         | using short open tags but PHP does not allow them.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1 | WARNING | No PHP code was found in this file and short open tags are not
+   |         | allowed by this install of PHP. This file may be using short
+   |         | open tags but PHP does not allow them.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/multi-search/multi-search.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: ...gwapi/templates/bookingfrontend_2/styleguide/multi-search/multi-search.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 1 | WARNING | No PHP code was found in this file and short open tags are not allowed by this install of PHP. This file may be
-   |         | using short open tags but PHP does not allow them.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1 | WARNING | No PHP code was found in this file and short open tags are not
+   |         | allowed by this install of PHP. This file may be using short
+   |         | open tags but PHP does not allow them.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/shortcut/shortcut.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: ...ules/phpgwapi/templates/bookingfrontend_2/styleguide/shortcut/shortcut.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 1 | WARNING | No PHP code was found in this file and short open tags are not allowed by this install of PHP. This file may be
-   |         | using short open tags but PHP does not allow them.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1 | WARNING | No PHP code was found in this file and short open tags are not
+   |         | allowed by this install of PHP. This file may be using short
+   |         | open tags but PHP does not allow them.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/datepicker/datepicker.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: .../phpgwapi/templates/bookingfrontend_2/styleguide/datepicker/datepicker.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 1 | WARNING | No PHP code was found in this file and short open tags are not allowed by this install of PHP. This file may be
-   |         | using short open tags but PHP does not allow them.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1 | WARNING | No PHP code was found in this file and short open tags are not
+   |         | allowed by this install of PHP. This file may be using short
+   |         | open tags but PHP does not allow them.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/footer/footer.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: .../modules/phpgwapi/templates/bookingfrontend_2/styleguide/footer/footer.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 1 | WARNING | No PHP code was found in this file and short open tags are not allowed by this install of PHP. This file may be
-   |         | using short open tags but PHP does not allow them.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1 | WARNING | No PHP code was found in this file and short open tags are not
+   |         | allowed by this install of PHP. This file may be using short
+   |         | open tags but PHP does not allow them.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/input/input.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: ...rc/modules/phpgwapi/templates/bookingfrontend_2/styleguide/input/input.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 1 | WARNING | No PHP code was found in this file and short open tags are not allowed by this install of PHP. This file may be
-   |         | using short open tags but PHP does not allow them.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1 | WARNING | No PHP code was found in this file and short open tags are not
+   |         | allowed by this install of PHP. This file may be using short
+   |         | open tags but PHP does not allow them.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/templates/bookingfrontend_2/styleguide/typography/typography.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: .../phpgwapi/templates/bookingfrontend_2/styleguide/typography/typography.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 1 | WARNING | No PHP code was found in this file and short open tags are not allowed by this install of PHP. This file may be
-   |         | using short open tags but PHP does not allow them.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1 | WARNING | No PHP code was found in this file and short open tags are not
+   |         | allowed by this install of PHP. This file may be using short
+   |         | open tags but PHP does not allow them.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpgwapi/security/Auth/Auth_Exchange.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 1 ERROR AND 1 WARNING AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 57 | WARNING | When die() is called within an object constructor, the object destructor will no longer be called since PHP 8.0
-    |         | While no __destruct() method was found in this class, one may be declared in the parent class or in a trait being
-    |         | used.
- 82 | ERROR   | The "salt" parameter for function crypt() is missing. Passing this parameter is no longer optional. The optional
-    |         | nature of the parameter is deprecated since PHP 5.6 and removed since PHP 8.0
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 57 | WARNING | When die() is called within an object constructor, the object
+    |         | destructor will no longer be called since PHP 8.0 While no
+    |         | __destruct() method was found in this class, one may be
+    |         | declared in the parent class or in a trait being used.
+ 82 | ERROR   | The "salt" parameter for function crypt() is missing. Passing
+    |         | this parameter is no longer optional. The optional nature of
+    |         | the parameter is deprecated since PHP 5.6 and removed since PHP
+    |         | 8.0
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpgwapi/security/Auth/Auth_Nis.php
@@ -251,21 +251,23 @@ FOUND 4 ERRORS AFFECTING 2 LINES
 
 
 FILE: /var/www/html/src/modules/phpgwapi/security/Auth/Auth_Ads.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 57 | WARNING | When die() is called within an object constructor, the object destructor will no longer be called since PHP 8.0
-    |         | While no __destruct() method was found in this class, one may be declared in the parent class or in a trait being
-    |         | used.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 57 | WARNING | When die() is called within an object constructor, the object
+    |         | destructor will no longer be called since PHP 8.0 While no
+    |         | __destruct() method was found in this class, one may be
+    |         | declared in the parent class or in a trait being used.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpgwapi/services/CryptoLibsodium.php
-------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 1 ERROR AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------
- 58 | ERROR | Visibility for magic method __wakeup must be public since PHP 8.0. Found: private
-------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 58 | ERROR | Visibility for magic method __wakeup must be public since PHP
+    |       | 8.0. Found: private
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpgwapi/services/Shm.php
@@ -277,72 +279,95 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 
 
 FILE: /var/www/html/src/modules/phpgwapi/services/CryptoMcrypt.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 17 ERRORS AFFECTING 10 LINES
-------------------------------------------------------------------------------------------------------------------------------------
-  37 | ERROR | The constant "MCRYPT_TRIPLEDES" is deprecated since PHP 7.1 and removed since PHP 7.2
-  38 | ERROR | The constant "MCRYPT_MODE_CBC" is deprecated since PHP 7.1 and removed since PHP 7.2
-  54 | ERROR | Function mcrypt_module_open() is deprecated since PHP 7.1 and removed since PHP 7.2; Use OpenSSL instead
-  54 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since PHP 7.2; Use openssl (preferred) or pecl/mcrypt
-     |       | once available instead
-  56 | ERROR | Function mcrypt_enc_get_iv_size() is deprecated since PHP 7.1 and removed since PHP 7.2; Use OpenSSL instead
-  56 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since PHP 7.2; Use openssl (preferred) or pecl/mcrypt
-     |       | once available instead
-  57 | ERROR | Function mcrypt_enc_get_key_size() is deprecated since PHP 7.1 and removed since PHP 7.2; Use OpenSSL instead
-  57 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since PHP 7.2; Use openssl (preferred) or pecl/mcrypt
-     |       | once available instead
-  78 | ERROR | Function mcrypt_generic_deinit() is deprecated since PHP 7.1 and removed since PHP 7.2; Use OpenSSL instead
-  78 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since PHP 7.2; Use openssl (preferred) or pecl/mcrypt
-     |       | once available instead
- 128 | ERROR | Function mcrypt_generic_init() is deprecated since PHP 7.1 and removed since PHP 7.2; Use OpenSSL instead
- 128 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since PHP 7.2; Use openssl (preferred) or pecl/mcrypt
-     |       | once available instead
- 130 | ERROR | Function mcrypt_generic() is deprecated since PHP 7.1 and removed since PHP 7.2; Use OpenSSL instead
- 130 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since PHP 7.2; Use openssl (preferred) or pecl/mcrypt
-     |       | once available instead
- 160 | ERROR | Function mcrypt_generic_init() is deprecated since PHP 7.1 and removed since PHP 7.2; Use OpenSSL instead
- 160 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since PHP 7.2; Use openssl (preferred) or pecl/mcrypt
-     |       | once available instead
- 161 | ERROR | Function mdecrypt_generic() is deprecated since PHP 7.1 and removed since PHP 7.2; Use OpenSSL instead
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+  37 | ERROR | The constant "MCRYPT_TRIPLEDES" is deprecated since PHP 7.1 and
+     |       | removed since PHP 7.2
+  38 | ERROR | The constant "MCRYPT_MODE_CBC" is deprecated since PHP 7.1 and
+     |       | removed since PHP 7.2
+  54 | ERROR | Function mcrypt_module_open() is deprecated since PHP 7.1 and
+     |       | removed since PHP 7.2; Use OpenSSL instead
+  54 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since
+     |       | PHP 7.2; Use openssl (preferred) or pecl/mcrypt once available
+     |       | instead
+  56 | ERROR | Function mcrypt_enc_get_iv_size() is deprecated since PHP 7.1
+     |       | and removed since PHP 7.2; Use OpenSSL instead
+  56 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since
+     |       | PHP 7.2; Use openssl (preferred) or pecl/mcrypt once available
+     |       | instead
+  57 | ERROR | Function mcrypt_enc_get_key_size() is deprecated since PHP 7.1
+     |       | and removed since PHP 7.2; Use OpenSSL instead
+  57 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since
+     |       | PHP 7.2; Use openssl (preferred) or pecl/mcrypt once available
+     |       | instead
+  78 | ERROR | Function mcrypt_generic_deinit() is deprecated since PHP 7.1 and
+     |       | removed since PHP 7.2; Use OpenSSL instead
+  78 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since
+     |       | PHP 7.2; Use openssl (preferred) or pecl/mcrypt once available
+     |       | instead
+ 128 | ERROR | Function mcrypt_generic_init() is deprecated since PHP 7.1 and
+     |       | removed since PHP 7.2; Use OpenSSL instead
+ 128 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since
+     |       | PHP 7.2; Use openssl (preferred) or pecl/mcrypt once available
+     |       | instead
+ 130 | ERROR | Function mcrypt_generic() is deprecated since PHP 7.1 and
+     |       | removed since PHP 7.2; Use OpenSSL instead
+ 130 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since
+     |       | PHP 7.2; Use openssl (preferred) or pecl/mcrypt once available
+     |       | instead
+ 160 | ERROR | Function mcrypt_generic_init() is deprecated since PHP 7.1 and
+     |       | removed since PHP 7.2; Use OpenSSL instead
+ 160 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since
+     |       | PHP 7.2; Use openssl (preferred) or pecl/mcrypt once available
+     |       | instead
+ 161 | ERROR | Function mdecrypt_generic() is deprecated since PHP 7.1 and
+     |       | removed since PHP 7.2; Use OpenSSL instead
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpgwapi/services/Preferences.php
-----------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-----------------------------------------------------------------------------------------------------------
- 225 | WARNING | Global with anything other than bare variables is discouraged since PHP 7.0. Found $$var
-----------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 225 | WARNING | Global with anything other than bare variables is discouraged
+     |         | since PHP 7.0. Found $$var
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpgwapi/services/Twig.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 258 | WARNING | Implicitly marking a parameter as nullable is deprecated since PHP 8.4. Update the type to be explicitly nullable
-     |         | instead. Found implicitly nullable parameter: $namespace.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 258 | WARNING | Implicitly marking a parameter as nullable is deprecated since
+     |         | PHP 8.4. Update the type to be explicitly nullable instead.
+     |         | Found implicitly nullable parameter: $namespace.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpgwapi/services/Vfs/VfsDav.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 1 ERROR AND 1 WARNING AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 159 | WARNING | When die() is called within an object constructor, the object destructor will no longer be called since PHP 8.0
-     |         | While no __destruct() method was found in this class, one may be declared in the parent class or in a trait being
-     |         | used.
- 492 | ERROR   | Since PHP 7.0, functions inspecting arguments, like debug_backtrace(), no longer report the original value as
-     |         | passed to a parameter, but will instead provide the current value. The parameter "$data" was changed on line 402.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 159 | WARNING | When die() is called within an object constructor, the object
+     |         | destructor will no longer be called since PHP 8.0 While no
+     |         | __destruct() method was found in this class, one may be
+     |         | declared in the parent class or in a trait being used.
+ 492 | ERROR   | Since PHP 7.0, functions inspecting arguments, like
+     |         | debug_backtrace(), no longer report the original value as
+     |         | passed to a parameter, but will instead provide the current
+     |         | value. The parameter "$data" was changed on line 402.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/registration/index.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 1 | WARNING | No PHP code was found in this file and short open tags are not allowed by this install of PHP. This file may be
-   |         | using short open tags but PHP does not allow them.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1 | WARNING | No PHP code was found in this file and short open tags are not
+   |         | allowed by this install of PHP. This file may be using short
+   |         | open tags but PHP does not allow them.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/controller/inc/class.uicheck_list.inc.php
@@ -370,12 +395,13 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 
 
 FILE: /var/www/html/src/modules/booking/models/ResourceExample.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 12 | WARNING | 'resource' is a soft reserved keyword as of PHP version 7.0 and should not be used to name a class, interface or
-    |         | trait or as part of a namespace (class declaration)
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 12 | WARNING | 'resource' is a soft reserved keyword as of PHP version 7.0 and
+    |         | should not be used to name a class, interface or trait or as
+    |         | part of a namespace (class declaration)
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/booking/helpers/OutlookHelper.php
@@ -409,11 +435,12 @@ FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
 
 
 FILE: /var/www/html/src/modules/booking/inc/class.soallocation.inc.php
-----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-----------------------------------------------------------------------------------
- 128 | WARNING | The boolean cast is deprecated since PHP 8.5; Use (bool) instead
-----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 128 | WARNING | The boolean cast is deprecated since PHP 8.5; Use (bool)
+     |         | instead
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/booking/inc/class.public360.inc.php
@@ -444,24 +471,32 @@ FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
 
 
 FILE: /var/www/html/src/modules/booking/tasks/testNumberGenerator.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 6 ERRORS AND 2 WARNINGS AFFECTING 7 LINES
-------------------------------------------------------------------------------------------------------------------------------------
-   7 | ERROR   | Using a string as the assertion passed to assert() is deprecated since PHP 7.2 and removed since PHP 8.0. Found:
-     |         | '$numberGenerator instanceof booking_sobilling_sequential_number_generator'
-  10 | ERROR   | Using a string as the assertion passed to assert() is deprecated since PHP 7.2 and removed since PHP 8.0. Found:
-     |         | '$numberGeneratorInstance instanceof booking_sobilling_sequential_number_generator_instance'
-  29 | ERROR   | Using a string as the assertion passed to assert() is deprecated since PHP 7.2 and removed since PHP 8.0. Found:
+--------------------------------------------------------------------------------
+   7 | ERROR   | Using a string as the assertion passed to assert() is
+     |         | deprecated since PHP 7.2 and removed since PHP 8.0. Found:
+     |         | '$numberGenerator instanceof
+     |         | booking_sobilling_sequential_number_generator'
+  10 | ERROR   | Using a string as the assertion passed to assert() is
+     |         | deprecated since PHP 7.2 and removed since PHP 8.0. Found:
+     |         | '$numberGeneratorInstance instanceof
+     |         | booking_sobilling_sequential_number_generator_instance'
+  29 | ERROR   | Using a string as the assertion passed to assert() is
+     |         | deprecated since PHP 7.2 and removed since PHP 8.0. Found:
      |         | '$logic_exception_if_no_active_transaction'
-  60 | ERROR   | Using a string as the assertion passed to assert() is deprecated since PHP 7.2 and removed since PHP 8.0. Found:
+  60 | ERROR   | Using a string as the assertion passed to assert() is
+     |         | deprecated since PHP 7.2 and removed since PHP 8.0. Found:
      |         | '$new_generator_is_created_post_transaction'
-  79 | ERROR   | Using a string as the assertion passed to assert() is deprecated since PHP 7.2 and removed since PHP 8.0. Found:
+  79 | ERROR   | Using a string as the assertion passed to assert() is
+     |         | deprecated since PHP 7.2 and removed since PHP 8.0. Found:
      |         | '$cannotGetCurrentWithoutLock'
-  92 | ERROR   | Using a string as the assertion passed to assert() is deprecated since PHP 7.2 and removed since PHP 8.0. Found:
+  92 | ERROR   | Using a string as the assertion passed to assert() is
+     |         | deprecated since PHP 7.2 and removed since PHP 8.0. Found:
      |         | '$numberGeneratorInstance->get_current() === $previousValue+1'
  154 | WARNING | Function assert_options() is deprecated since PHP 8.3
  154 | WARNING | The constant "ASSERT_CALLBACK" is deprecated since PHP 8.3
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/booking/services/DocumentService.php
@@ -484,23 +519,26 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 
 
 FILE: /var/www/html/src/modules/bookingfrontend/models/Resource.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 19 | WARNING | 'resource' is a soft reserved keyword as of PHP version 7.0 and should not be used to name a class, interface or
-    |         | trait or as part of a namespace (class declaration)
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 19 | WARNING | 'resource' is a soft reserved keyword as of PHP version 7.0 and
+    |         | should not be used to name a class, interface or trait or as
+    |         | part of a namespace (class declaration)
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/bookingfrontend/helpers/WebSocketHelper.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 412 | WARNING | Implicitly marking a parameter as nullable is deprecated since PHP 8.4. Update the type to be explicitly nullable
-     |         | instead. Found implicitly nullable parameter: $sessionId.
- 455 | WARNING | Implicitly marking a parameter as nullable is deprecated since PHP 8.4. Update the type to be explicitly nullable
-     |         | instead. Found implicitly nullable parameter: $sessionId.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 412 | WARNING | Implicitly marking a parameter as nullable is deprecated since
+     |         | PHP 8.4. Update the type to be explicitly nullable instead.
+     |         | Found implicitly nullable parameter: $sessionId.
+ 455 | WARNING | Implicitly marking a parameter as nullable is deprecated since
+     |         | PHP 8.4. Update the type to be explicitly nullable instead.
+     |         | Found implicitly nullable parameter: $sessionId.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/bookingfrontend/inc/custom/default/MinId2.php
@@ -511,39 +549,40 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 -----------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/bookingfrontend/inc/custom/default/navn_fra_fiks_folkeregister.php
---------------------------------------------------------------------------------------------------
+FILE: ...modules/bookingfrontend/inc/custom/default/navn_fra_fiks_folkeregister.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
---------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
  101 | WARNING | Function curl_close() is deprecated since PHP 8.5
---------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/bookingfrontend/inc/class.organization_helper.inc.php
--------------------------------------------------------------------------------------
+FILE: ...www/html/src/modules/bookingfrontend/inc/class.organization_helper.inc.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
--------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
   73 | WARNING | Function curl_close() is deprecated since PHP 8.5
  116 | WARNING | Function curl_close() is deprecated since PHP 8.5
--------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/bookingfrontend/repositories/ResourceRepository.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: ...r/www/html/src/modules/bookingfrontend/repositories/ResourceRepository.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 159 | WARNING | Implicitly marking a parameter as nullable is deprecated since PHP 8.4. Update the type to be explicitly nullable
-     |         | instead. Found implicitly nullable parameter: $limit.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 159 | WARNING | Implicitly marking a parameter as nullable is deprecated since
+     |         | PHP 8.4. Update the type to be explicitly nullable instead.
+     |         | Found implicitly nullable parameter: $limit.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/bookingfrontend/controllers/DocumentController.php
-----------------------------------------------------------------------------------
+FILE: ...ar/www/html/src/modules/bookingfrontend/controllers/DocumentController.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
-----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
  266 | WARNING | Function imagedestroy() is deprecated since PHP 8.5
  292 | WARNING | Function imagedestroy() is deprecated since PHP 8.5
-----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/bookingfrontend/services/OrganizationService.php
@@ -556,31 +595,33 @@ FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
 
 
 FILE: /var/www/html/src/modules/todo/inc/class.uitodo.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 370 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $selected is
-     |         | optional, while parameter $type is required. The $selected parameter is implicitly treated as a required
-     |         | parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 370 | WARNING | Declaring an optional parameter before a required parameter is
+     |         | deprecated since PHP 8.0. Parameter $selected is optional,
+     |         | while parameter $type is required. The $selected parameter is
+     |         | implicitly treated as a required parameter.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/activitycalendar/inc/class.uiimport.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 849 | WARNING | The $escape parameter must be passed when calling fgetcsv() as its default value will change in a future PHP
-     |         | version.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 849 | WARNING | The $escape parameter must be passed when calling fgetcsv() as
+     |         | its default value will change in a future PHP version.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 48 ERRORS AND 1 WARNING AFFECTING 49 LINES
-------------------------------------------------------------------------------------------------------------------------------------
-  104 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $folder is
-      |         | optional, while parameter $header is required. The $folder parameter is implicitly treated as a required
-      |         | parameter.
+--------------------------------------------------------------------------------
+  104 | WARNING | Declaring an optional parameter before a required parameter
+      |         | is deprecated since PHP 8.0. Parameter $folder is optional,
+      |         | while parameter $header is required. The $folder parameter is
+      |         | implicitly treated as a required parameter.
   294 | ERROR   | The constant "SA_ALL" is removed since PHP 8.4
   368 | ERROR   | The constant "SORTARRIVAL" is removed since PHP 8.4
   384 | ERROR   | The constant "SORTDATE" is removed since PHP 8.4
@@ -593,16 +634,26 @@ FOUND 48 ERRORS AND 1 WARNING AFFECTING 49 LINES
   424 | ERROR   | The constant "SORTSUBJECT" is removed since PHP 8.4
   958 | ERROR   | The constant "TYPEMESSAGE" is removed since PHP 8.4
  1102 | ERROR   | The constant "TYPEMESSAGE" is removed since PHP 8.4
- 1301 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed since PHP 8.4; Use integer 0 instead
- 1306 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed since PHP 8.4; Use integer 0 instead
- 1312 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed since PHP 8.4; Use integer 0 instead
- 1318 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed since PHP 8.4; Use integer 0 instead
- 1324 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed since PHP 8.4; Use integer 0 instead
- 1329 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed since PHP 8.4; Use integer 0 instead
- 1334 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed since PHP 8.4; Use integer 0 instead
- 1340 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed since PHP 8.4; Use integer 0 instead
- 1346 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed since PHP 8.4; Use integer 0 instead
- 1352 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed since PHP 8.4; Use integer 0 instead
+ 1301 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed
+      |         | since PHP 8.4; Use integer 0 instead
+ 1306 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed
+      |         | since PHP 8.4; Use integer 0 instead
+ 1312 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed
+      |         | since PHP 8.4; Use integer 0 instead
+ 1318 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed
+      |         | since PHP 8.4; Use integer 0 instead
+ 1324 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed
+      |         | since PHP 8.4; Use integer 0 instead
+ 1329 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed
+      |         | since PHP 8.4; Use integer 0 instead
+ 1334 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed
+      |         | since PHP 8.4; Use integer 0 instead
+ 1340 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed
+      |         | since PHP 8.4; Use integer 0 instead
+ 1346 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed
+      |         | since PHP 8.4; Use integer 0 instead
+ 1352 | ERROR   | The constant "NIL" is deprecated since PHP 8.1 and removed
+      |         | since PHP 8.4; Use integer 0 instead
  1491 | ERROR   | The constant "TYPEOTHER" is removed since PHP 8.4
  1494 | ERROR   | The constant "TYPETEXT" is removed since PHP 8.4
  1495 | ERROR   | The constant "TYPEMULTIPART" is removed since PHP 8.4
@@ -629,7 +680,7 @@ FOUND 48 ERRORS AND 1 WARNING AFFECTING 49 LINES
  1586 | ERROR   | The constant "ENCOTHER" is removed since PHP 8.4
  1963 | ERROR   | The constant "FT_PREFETCHTEXT" is removed since PHP 8.4
  2262 | ERROR   | The constant "FT_NOT" is removed since PHP 8.4
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/email/inc/class.spell.inc.php
@@ -673,11 +724,12 @@ FOUND 24 ERRORS AFFECTING 24 LINES
 
 
 FILE: /var/www/html/src/modules/email/inc/class.boattach_file.inc.php
-----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-----------------------------------------------------------------------------------
- 271 | WARNING | The double cast is deprecated since PHP 8.5; Use (float) instead
-----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 271 | WARNING | The double cast is deprecated since PHP 8.5; Use (float)
+     |         | instead
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/email/inc/class.uifilters.inc.php
@@ -741,24 +793,28 @@ FOUND 10 ERRORS AFFECTING 10 LINES
 
 
 FILE: /var/www/html/src/modules/email/inc/class.mail_send.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 62 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $prefix is
-    |         | optional, while parameter $data is required. The $prefix parameter is implicitly treated as a required parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 62 | WARNING | Declaring an optional parameter before a required parameter is
+    |         | deprecated since PHP 8.0. Parameter $prefix is optional, while
+    |         | parameter $data is required. The $prefix parameter is
+    |         | implicitly treated as a required parameter.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/email/inc/class.mail_dcom_imap_sock.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 16 ERRORS AND 2 WARNINGS AFFECTING 18 LINES
-------------------------------------------------------------------------------------------------------------------------------------
-   42 | WARNING | When exit() is called within an object constructor, the object destructor will no longer be called since PHP 8.0
-      |         | While no __destruct() method was found in this class, one may be declared in the parent class or in a trait being
-      |         | used.
-  355 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $folder is
-      |         | optional, while parameter $header is required. The $folder parameter is implicitly treated as a required
-      |         | parameter.
+--------------------------------------------------------------------------------
+   42 | WARNING | When exit() is called within an object constructor, the
+      |         | object destructor will no longer be called since PHP 8.0
+      |         | While no __destruct() method was found in this class, one may
+      |         | be declared in the parent class or in a trait being used.
+  355 | WARNING | Declaring an optional parameter before a required parameter
+      |         | is deprecated since PHP 8.0. Parameter $folder is optional,
+      |         | while parameter $header is required. The $folder parameter is
+      |         | implicitly treated as a required parameter.
   834 | ERROR   | The constant "SA_ALL" is removed since PHP 8.4
   845 | ERROR   | The constant "SA_MESSAGES" is removed since PHP 8.4
   846 | ERROR   | The constant "SA_RECENT" is removed since PHP 8.4
@@ -775,22 +831,24 @@ FOUND 16 ERRORS AND 2 WARNINGS AFFECTING 18 LINES
  1151 | ERROR   | The constant "SORTCC" is removed since PHP 8.4
  1154 | ERROR   | The constant "SORTSIZE" is removed since PHP 8.4
  1159 | ERROR   | The constant "SORTSUBJECT" is removed since PHP 8.4
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/email/inc/class.mail_msg_wrappers.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 2 ERRORS AND 2 WARNINGS AFFECTING 4 LINES
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
  1065 | ERROR   | The constant "SA_ALL" is removed since PHP 8.4
  1151 | ERROR   | The constant "SA_ALL" is removed since PHP 8.4
- 1527 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $folder is
-      |         | optional, while parameter $message is required. The $folder parameter is implicitly treated as a required
-      |         | parameter.
- 3904 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $data_name is
-      |         | optional, while parameter $data is required. The $data_name parameter is implicitly treated as a required
-      |         | parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+ 1527 | WARNING | Declaring an optional parameter before a required parameter
+      |         | is deprecated since PHP 8.0. Parameter $folder is optional,
+      |         | while parameter $message is required. The $folder parameter
+      |         | is implicitly treated as a required parameter.
+ 3904 | WARNING | Declaring an optional parameter before a required parameter
+      |         | is deprecated since PHP 8.0. Parameter $data_name is
+      |         | optional, while parameter $data is required. The $data_name
+      |         | parameter is implicitly treated as a required parameter.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/email/inc/class.mail_dcom_base_sock.inc.php
@@ -815,12 +873,13 @@ FOUND 14 ERRORS AFFECTING 14 LINES
 
 
 FILE: /var/www/html/src/modules/email/inc/class.mail_dcom_pop3.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 17 ERRORS AND 1 WARNING AFFECTING 18 LINES
-------------------------------------------------------------------------------------------------------------------------------------
-  22 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $folder is
-     |         | optional, while parameter $header is required. The $folder parameter is implicitly treated as a required
-     |         | parameter.
+--------------------------------------------------------------------------------
+  22 | WARNING | Declaring an optional parameter before a required parameter is
+     |         | deprecated since PHP 8.0. Parameter $folder is optional, while
+     |         | parameter $header is required. The $folder parameter is
+     |         | implicitly treated as a required parameter.
   54 | ERROR   | The constant "FT_UID" is removed since PHP 8.4
   56 | ERROR   | The constant "FT_UID" is removed since PHP 8.4
   74 | ERROR   | The constant "FT_UID" is removed since PHP 8.4
@@ -838,35 +897,39 @@ FOUND 17 ERRORS AND 1 WARNING AFFECTING 18 LINES
  212 | ERROR   | The constant "SE_UID" is removed since PHP 8.4
  222 | ERROR   | The constant "SE_UID" is removed since PHP 8.4
  224 | ERROR   | The constant "SE_UID" is removed since PHP 8.4
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/email/inc/class.mail_msg_base.inc.php
-------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 2 ERRORS AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------
- 4791 | ERROR | Function get_magic_quotes_gpc() is deprecated since PHP 7.4 and removed since PHP 8.0
- 4811 | ERROR | Function get_magic_quotes_gpc() is deprecated since PHP 7.4 and removed since PHP 8.0
-------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 4791 | ERROR | Function get_magic_quotes_gpc() is deprecated since PHP 7.4 and
+      |       | removed since PHP 8.0
+ 4811 | ERROR | Function get_magic_quotes_gpc() is deprecated since PHP 7.4 and
+      |       | removed since PHP 8.0
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/email/inc/class.mail_dcom_nntp.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 1 ERROR AND 1 WARNING AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
   66 | ERROR   | The constant "FT_PREFETCHTEXT" is removed since PHP 8.4
- 147 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $folder is
-     |         | optional, while parameter $header is required. The $folder parameter is implicitly treated as a required
-     |         | parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+ 147 | WARNING | Declaring an optional parameter before a required parameter is
+     |         | deprecated since PHP 8.0. Parameter $folder is optional, while
+     |         | parameter $header is required. The $folder parameter is
+     |         | implicitly treated as a required parameter.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/email/inc/class.uisearch.inc.php
---------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
---------------------------------------------------------------------------------------------------------------------
- 440 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date() or IntlDateFormatter::format() instead
---------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 440 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date() or
+     |         | IntlDateFormatter::format() instead
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/email/inc/class.spell_svc_php.inc.php
@@ -880,18 +943,20 @@ FOUND 3 ERRORS AFFECTING 3 LINES
 
 
 FILE: /var/www/html/src/modules/email/inc/LegacyIMAPWrapper.php
----------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 41 ERRORS AFFECTING 40 LINES
----------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
   21 | ERROR | Function imap_open() is removed since PHP 8.4
   33 | ERROR | Function imap_close() is removed since PHP 8.4
   45 | ERROR | Function imap_search() is removed since PHP 8.4
   57 | ERROR | Function imap_fetchheader() is removed since PHP 8.4
   69 | ERROR | Function imap_fetchbody() is removed since PHP 8.4
   81 | ERROR | Function imap_fetchstructure() is removed since PHP 8.4
-  93 | ERROR | Function imap_header() is removed since PHP 8.0; Use imap_headerinfo() instead
+  93 | ERROR | Function imap_header() is removed since PHP 8.0; Use
+     |       | imap_headerinfo() instead
  105 | ERROR | Function imap_headerinfo() is removed since PHP 8.4
- 105 | ERROR | The "defaulthost" parameter for function imap_headerinfo() is removed since PHP 8.0
+ 105 | ERROR | The "defaulthost" parameter for function imap_headerinfo() is
+     |       | removed since PHP 8.0
  117 | ERROR | Function imap_delete() is removed since PHP 8.4
  129 | ERROR | Function imap_expunge() is removed since PHP 8.4
  141 | ERROR | Function imap_num_msg() is removed since PHP 8.4
@@ -924,7 +989,7 @@ FOUND 41 ERRORS AFFECTING 40 LINES
  481 | ERROR | Function imap_rfc822_write_address() is removed since PHP 8.4
  522 | ERROR | Function imap_rfc822_parse_adrlist() is removed since PHP 8.4
  534 | ERROR | Function imap_headers() is removed since PHP 8.4
----------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/email/inc/class.mail_msg_display.inc.php
@@ -949,125 +1014,144 @@ FOUND 14 ERRORS AFFECTING 14 LINES
 
 
 FILE: /var/www/html/src/modules/email/inc/class.so_mail_msg.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 113 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $data_name is
-     |         | optional, while parameter $data is required. The $data_name parameter is implicitly treated as a required
-     |         | parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 113 | WARNING | Declaring an optional parameter before a required parameter is
+     |         | deprecated since PHP 8.0. Parameter $data_name is optional,
+     |         | while parameter $data is required. The $data_name parameter is
+     |         | implicitly treated as a required parameter.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/email/attach_file.php
-----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-----------------------------------------------------------------------------------
- 153 | WARNING | The double cast is deprecated since PHP 8.5; Use (float) instead
-----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 153 | WARNING | The double cast is deprecated since PHP 8.5; Use (float)
+     |         | instead
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/folders/inc/class.treemenu.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 41 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $menu_name is
-    |         | optional, while parameter $content is required. The $menu_name parameter is implicitly treated as a required
-    |         | parameter.
- 42 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $language is
-    |         | optional, while parameter $content is required. The $language parameter is implicitly treated as a required
-    |         | parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 41 | WARNING | Declaring an optional parameter before a required parameter is
+    |         | deprecated since PHP 8.0. Parameter $menu_name is optional,
+    |         | while parameter $content is required. The $menu_name parameter
+    |         | is implicitly treated as a required parameter.
+ 42 | WARNING | Declaring an optional parameter before a required parameter is
+    |         | deprecated since PHP 8.0. Parameter $language is optional,
+    |         | while parameter $content is required. The $language parameter
+    |         | is implicitly treated as a required parameter.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/folders/phplayersmenu/lib/layersmenu-common.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: ...r/www/html/src/modules/folders/phplayersmenu/lib/layersmenu-common.inc.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 642 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $parent_id is
-     |         | optional, while parameter $level is required. The $parent_id parameter is implicitly treated as a required
-     |         | parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 642 | WARNING | Declaring an optional parameter before a required parameter is
+     |         | deprecated since PHP 8.0. Parameter $parent_id is optional,
+     |         | while parameter $level is required. The $parent_id parameter
+     |         | is implicitly treated as a required parameter.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/frontend/inc/class.uientity.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 185 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $data is
-     |         | optional, while parameter $_org_units is required. The $data parameter is implicitly treated as a required
-     |         | parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 185 | WARNING | Declaring an optional parameter before a required parameter is
+     |         | deprecated since PHP 8.0. Parameter $data is optional, while
+     |         | parameter $_org_units is required. The $data parameter is
+     |         | implicitly treated as a required parameter.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/manual/inc/class.help.inc.php
----------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
----------------------------------------------------------------------------------------------------------
- 91 | WARNING | Global with anything other than bare variables is discouraged since PHP 7.0. Found $$var
----------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 91 | WARNING | Global with anything other than bare variables is discouraged
+    |         | since PHP 7.0. Found $$var
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpsysinfo/includes/xml/class.XML.inc.php
--------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
--------------------------------------------------------------------------------------------------
- 873 | WARNING | INI directive 'safe_mode' is deprecated since PHP 5.3 and removed since PHP 5.4
--------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 873 | WARNING | INI directive 'safe_mode' is deprecated since PHP 5.3 and
+     |         | removed since PHP 5.4
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpsysinfo/includes/error/class.PSI_Error.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: ...var/www/html/src/modules/phpsysinfo/includes/error/class.PSI_Error.inc.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 81 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-    |         | message instead.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 81 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+    |         | 8.4. Throw an exception or call exit with a string message
+    |         | instead.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpsysinfo/includes/os/class.BSDCommon.inc.php
--------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 2 ERRORS AFFECTING 2 LINES
--------------------------------------------------------------------------------------------------------------------------
- 262 | ERROR | Using 'break' outside of a loop or switch structure is invalid and will throw a fatal error since PHP 7.0
- 490 | ERROR | Using 'break' outside of a loop or switch structure is invalid and will throw a fatal error since PHP 7.0
--------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 262 | ERROR | Using 'break' outside of a loop or switch structure is invalid
+     |       | and will throw a fatal error since PHP 7.0
+ 490 | ERROR | Using 'break' outside of a loop or switch structure is invalid
+     |       | and will throw a fatal error since PHP 7.0
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpsysinfo/includes/os/class.WINNT.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 4 ERRORS AFFECTING 4 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 1211 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent prior to PHP 7 and support has been removed in PHP 7.
-      |       | Found: '0x0'
- 1215 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent prior to PHP 7 and support has been removed in PHP 7.
-      |       | Found: '0x41'
- 1217 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent prior to PHP 7 and support has been removed in PHP 7.
-      |       | Found: '0x46'
- 1223 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent prior to PHP 7 and support has been removed in PHP 7.
-      |       | Found: '0x41'
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1211 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent
+      |       | prior to PHP 7 and support has been removed in PHP 7. Found:
+      |       | '0x0'
+ 1215 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent
+      |       | prior to PHP 7 and support has been removed in PHP 7. Found:
+      |       | '0x41'
+ 1217 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent
+      |       | prior to PHP 7 and support has been removed in PHP 7. Found:
+      |       | '0x46'
+ 1223 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent
+      |       | prior to PHP 7 and support has been removed in PHP 7. Found:
+      |       | '0x41'
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpsysinfo/includes/os/class.Linux.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 1 ERROR AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 962 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent prior to PHP 7 and support has been removed in PHP 7.
-     |       | Found: '0x41'
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 962 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent
+     |       | prior to PHP 7 and support has been removed in PHP 7. Found:
+     |       | '0x41'
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpsysinfo/includes/mb/class.ipmitool.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 3 ERRORS AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 125 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent prior to PHP 7 and support has been removed in PHP 7.
-     |       | Found: '0x0'
- 125 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent prior to PHP 7 and support has been removed in PHP 7.
-     |       | Found: '0x1'
- 297 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent prior to PHP 7 and support has been removed in PHP 7.
-     |       | Found: '0x0'
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 125 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent
+     |       | prior to PHP 7 and support has been removed in PHP 7. Found:
+     |       | '0x0'
+ 125 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent
+     |       | prior to PHP 7 and support has been removed in PHP 7. Found:
+     |       | '0x1'
+ 297 | ERROR | The behaviour of hexadecimal numeric strings was inconsistent
+     |       | prior to PHP 7 and support has been removed in PHP 7. Found:
+     |       | '0x0'
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/phpsysinfo/includes/autoloader.inc.php
@@ -1079,39 +1163,48 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 
 
 FILE: /var/www/html/src/modules/setup/inc/hook_config.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 5 ERRORS AFFECTING 3 LINES
-------------------------------------------------------------------------------------------------------------------------------------
-  85 | ERROR | The constant "MCRYPT_TRIPLEDES" is deprecated since PHP 7.1 and removed since PHP 7.2
-  87 | ERROR | Function mcrypt_list_algorithms() is deprecated since PHP 7.1 and removed since PHP 7.2; Use OpenSSL instead
-  87 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since PHP 7.2; Use openssl (preferred) or pecl/mcrypt
-     |       | once available instead
- 139 | ERROR | Function mcrypt_list_modes() is deprecated since PHP 7.1 and removed since PHP 7.2; Use OpenSSL instead
- 139 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since PHP 7.2; Use openssl (preferred) or pecl/mcrypt
-     |       | once available instead
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+  85 | ERROR | The constant "MCRYPT_TRIPLEDES" is deprecated since PHP 7.1 and
+     |       | removed since PHP 7.2
+  87 | ERROR | Function mcrypt_list_algorithms() is deprecated since PHP 7.1
+     |       | and removed since PHP 7.2; Use OpenSSL instead
+  87 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since
+     |       | PHP 7.2; Use openssl (preferred) or pecl/mcrypt once available
+     |       | instead
+ 139 | ERROR | Function mcrypt_list_modes() is deprecated since PHP 7.1 and
+     |       | removed since PHP 7.2; Use OpenSSL instead
+ 139 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since
+     |       | PHP 7.2; Use openssl (preferred) or pecl/mcrypt once available
+     |       | instead
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/setup/controllers/Ldap.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 159 | WARNING | Calling ldap_connect() with two parameters is deprecated since PHP 8.3. Call ldap_connect() with an LDAP-URI as
-     |         | the first (and only) parameter instead.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 159 | WARNING | Calling ldap_connect() with two parameters is deprecated since
+     |         | PHP 8.3. Call ldap_connect() with an LDAP-URI as the first
+     |         | (and only) parameter instead.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/bim/inc/class.bimExceptions.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 48 | WARNING | Implicitly marking a parameter as nullable is deprecated since PHP 8.4. Update the type to be explicitly nullable
-    |         | instead. Found implicitly nullable parameter: $previous.
- 76 | WARNING | Implicitly marking a parameter as nullable is deprecated since PHP 8.4. Update the type to be explicitly nullable
-    |         | instead. Found implicitly nullable parameter: $previous.
- 90 | WARNING | Implicitly marking a parameter as nullable is deprecated since PHP 8.4. Update the type to be explicitly nullable
-    |         | instead. Found implicitly nullable parameter: $previous.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 48 | WARNING | Implicitly marking a parameter as nullable is deprecated since
+    |         | PHP 8.4. Update the type to be explicitly nullable instead.
+    |         | Found implicitly nullable parameter: $previous.
+ 76 | WARNING | Implicitly marking a parameter as nullable is deprecated since
+    |         | PHP 8.4. Update the type to be explicitly nullable instead.
+    |         | Found implicitly nullable parameter: $previous.
+ 90 | WARNING | Implicitly marking a parameter as nullable is deprecated since
+    |         | PHP 8.4. Update the type to be explicitly nullable instead.
+    |         | Found implicitly nullable parameter: $previous.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/bim/inc/class.restrequest.inc.php
@@ -1125,51 +1218,64 @@ FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
 
 
 FILE: /var/www/html/src/modules/calendar/inc/class.uicalendar.inc.php
----------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
----------------------------------------------------------------------------------------------------------------------
-  373 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date() or IntlDateFormatter::format() instead
- 1346 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date() or IntlDateFormatter::format() instead
- 2395 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date() or IntlDateFormatter::format() instead
----------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+  373 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date()
+      |         | or IntlDateFormatter::format() instead
+ 1346 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date()
+      |         | or IntlDateFormatter::format() instead
+ 2395 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date()
+      |         | or IntlDateFormatter::format() instead
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/calendar/inc/class.bocalendar.inc.php
----------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
----------------------------------------------------------------------------------------------------------------------
- 1672 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date() or IntlDateFormatter::format() instead
- 1691 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date() or IntlDateFormatter::format() instead
- 1702 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date() or IntlDateFormatter::format() instead
----------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1672 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date()
+      |         | or IntlDateFormatter::format() instead
+ 1691 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date()
+      |         | or IntlDateFormatter::format() instead
+ 1702 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date()
+      |         | or IntlDateFormatter::format() instead
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/calendar/inc/class.boicalendar.inc.php
----------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 2 ERRORS AND 1 WARNING AFFECTING 3 LINES
----------------------------------------------------------------------------------------------------------------------
- 2817 | ERROR   | Using "parent" inside a class without parent is deprecated since PHP 7.4 and removed since PHP 8.0
- 2831 | ERROR   | Using "parent" inside a class without parent is deprecated since PHP 7.4 and removed since PHP 8.0
- 3316 | WARNING | The double cast is deprecated since PHP 8.5; Use (float) instead
----------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 2817 | ERROR   | Using "parent" inside a class without parent is deprecated
+      |         | since PHP 7.4 and removed since PHP 8.0
+ 2831 | ERROR   | Using "parent" inside a class without parent is deprecated
+      |         | since PHP 7.4 and removed since PHP 8.0
+ 3316 | WARNING | The double cast is deprecated since PHP 8.5; Use (float)
+      |         | instead
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/helpdesk/inc/custom/default/ticket_LRS_pre_commit_validate.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: ...src/modules/helpdesk/inc/custom/default/ticket_LRS_pre_commit_validate.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 41 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $id is optional,
-    |         | while parameter $data is required. The $id parameter is implicitly treated as a required parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 41 | WARNING | Declaring an optional parameter before a required parameter is
+    |         | deprecated since PHP 8.0. Parameter $id is optional, while
+    |         | parameter $data is required. The $id parameter is implicitly
+    |         | treated as a required parameter.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/helpdesk/inc/custom/default/ticket_LRS_post_commit_validate.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: ...rc/modules/helpdesk/inc/custom/default/ticket_LRS_post_commit_validate.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 96 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $id is optional,
-    |         | while parameter $data is required. The $id parameter is implicitly treated as a required parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 96 | WARNING | Declaring an optional parameter before a required parameter is
+    |         | deprecated since PHP 8.0. Parameter $id is optional, while
+    |         | parameter $data is required. The $id parameter is implicitly
+    |         | treated as a required parameter.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/messenger/inc/class.somessenger_imap.inc.php
@@ -1192,196 +1298,218 @@ FOUND 12 ERRORS AFFECTING 8 LINES
 
 
 FILE: /var/www/html/src/modules/rental/inc/model/class.property_location.inc.php
----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
----------------------------------------------------------------------------------
- 61 | WARNING | The double cast is deprecated since PHP 8.5; Use (float) instead
- 71 | WARNING | The double cast is deprecated since PHP 8.5; Use (float) instead
----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 61 | WARNING | The double cast is deprecated since PHP 8.5; Use (float)
+    |         | instead
+ 71 | WARNING | The double cast is deprecated since PHP 8.5; Use (float)
+    |         | instead
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/rental/inc/model/class.unit.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 18 | WARNING | Implicitly marking a parameter as nullable is deprecated since PHP 8.4. Update the type to be explicitly nullable
-    |         | instead. Found implicitly nullable parameter: $location.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 18 | WARNING | Implicitly marking a parameter as nullable is deprecated since
+    |         | PHP 8.4. Update the type to be explicitly nullable instead.
+    |         | Found implicitly nullable parameter: $location.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/rental/setup/tables_update.inc.php
---------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
---------------------------------------------------------------------------------------------------------------------
- 225 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date() or IntlDateFormatter::format() instead
---------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 225 | WARNING | Function strftime() is deprecated since PHP 8.1; Use date() or
+     |         | IntlDateFormatter::format() instead
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/mobilefrontend/routes/Routes.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 32 | WARNING | Closures / anonymous functions only have access to $this if used within a class or when bound to an object using
-    |         | bindTo(). Please verify.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 32 | WARNING | Closures / anonymous functions only have access to $this if
+    |         | used within a class or when bound to an object using bindTo().
+    |         | Please verify.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/property/inc/custom/default/hent_maaler_nr_til_besikt_rapport.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: .../modules/property/inc/custom/default/hent_maaler_nr_til_besikt_rapport.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 34 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter
-    |         | $values_attribute is optional, while parameter $action is required. The $values_attribute parameter is implicitly
+--------------------------------------------------------------------------------
+ 34 | WARNING | Declaring an optional parameter before a required parameter is
+    |         | deprecated since PHP 8.0. Parameter $values_attribute is
+    |         | optional, while parameter $action is required. The
+    |         | $values_attribute parameter is implicitly treated as a required
+    |         | parameter.
+--------------------------------------------------------------------------------
+
+
+FILE: ...tml/src/modules/property/inc/custom/default/EBF_overfoer_stroem_maaler.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+--------------------------------------------------------------------------------
+ 35 | WARNING | Declaring an optional parameter before a required parameter is
+    |         | deprecated since PHP 8.0. Parameter $values_attribute is
+    |         | optional, while parameter $action is required. The
+    |         | $values_attribute parameter is implicitly treated as a required
+    |         | parameter.
+--------------------------------------------------------------------------------
+
+
+FILE: ...ww/html/src/modules/property/inc/custom/default/LRS_oppdater_el_anlegg.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+--------------------------------------------------------------------------------
+ 73 | WARNING | Declaring an optional parameter before a required parameter is
+    |         | deprecated since PHP 8.0. Parameter $id is optional, while
+    |         | parameter $current_value is required. The $id parameter is
+    |         | implicitly treated as a required parameter.
+--------------------------------------------------------------------------------
+
+
+FILE: ...rc/modules/property/inc/custom/default/ticket_NLSH_pre_commit_validate.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+--------------------------------------------------------------------------------
+ 25 | WARNING | Declaring an optional parameter before a required parameter is
+    |         | deprecated since PHP 8.0. Parameter $id is optional, while
+    |         | parameter $data is required. The $id parameter is implicitly
     |         | treated as a required parameter.
-------------------------------------------------------------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/modules/property/inc/custom/default/EBF_overfoer_stroem_maaler.php
-------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 35 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter
-    |         | $values_attribute is optional, while parameter $action is required. The $values_attribute parameter is implicitly
-    |         | treated as a required parameter.
-------------------------------------------------------------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/modules/property/inc/custom/default/LRS_oppdater_el_anlegg.php
-------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 73 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $id is optional,
-    |         | while parameter $current_value is required. The $id parameter is implicitly treated as a required parameter.
-------------------------------------------------------------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/modules/property/inc/custom/default/ticket_NLSH_pre_commit_validate.php
-------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 25 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $id is optional,
-    |         | while parameter $data is required. The $id parameter is implicitly treated as a required parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/property/inc/custom/default/vekterinspeksjon.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 32 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter
-    |         | $values_attribute is optional, while parameter $action is required. The $values_attribute parameter is implicitly
-    |         | treated as a required parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 32 | WARNING | Declaring an optional parameter before a required parameter is
+    |         | deprecated since PHP 8.0. Parameter $values_attribute is
+    |         | optional, while parameter $action is required. The
+    |         | $values_attribute parameter is implicitly treated as a required
+    |         | parameter.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/property/inc/class.bogeneric_document.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 82 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $values is
-    |         | optional, while parameter $file_id is required. The $values parameter is implicitly treated as a required
-    |         | parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 82 | WARNING | Declaring an optional parameter before a required parameter is
+    |         | deprecated since PHP 8.0. Parameter $values is optional, while
+    |         | parameter $file_id is required. The $values parameter is
+    |         | implicitly treated as a required parameter.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/property/inc/cron/default/opne_bestillinger_BK_EBF.php
---------------------------------------------------------------------------------------
+FILE: ...ww/html/src/modules/property/inc/cron/default/opne_bestillinger_BK_EBF.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
---------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
  356 | WARNING | Function curl_close() is deprecated since PHP 8.5
---------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/property/inc/cron/default/hent_epost_fra_eksterne_BK.php
-----------------------------------------------------------------------------------------
+FILE: .../html/src/modules/property/inc/cron/default/hent_epost_fra_eksterne_BK.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-----------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
  166 | WARNING | Function curl_close() is deprecated since PHP 8.5
-----------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/property/inc/cron/default/sjekk_manglende_ordreregistering_BK.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: .../modules/property/inc/cron/default/sjekk_manglende_ordreregistering_BK.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 335 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
+--------------------------------------------------------------------------------
+ 335 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
  485 | WARNING | Function curl_close() is deprecated since PHP 8.5
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/property/inc/cron/default/bilagsinfo_BK.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 313 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
+--------------------------------------------------------------------------------
+ 313 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
  496 | WARNING | Function curl_close() is deprecated since PHP 8.5
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/property/inc/cron/default/synkroniser_avdelinger_med_fellesdata.php
----------------------------------------------------------------------------------------------------
+FILE: ...odules/property/inc/cron/default/synkroniser_avdelinger_med_fellesdata.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
----------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
  769 | WARNING | Function curl_close() is deprecated since PHP 8.5
----------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/property/inc/cron/default/sjekk_manglende_fakturamottak_BK.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: ...src/modules/property/inc/cron/default/sjekk_manglende_fakturamottak_BK.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 432 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 432 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/property/inc/cron/default/hent_leverandorer_fra_UBW_BK.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: ...tml/src/modules/property/inc/cron/default/hent_leverandorer_fra_UBW_BK.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 371 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
+--------------------------------------------------------------------------------
+ 371 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
  636 | WARNING | Function curl_close() is deprecated since PHP 8.5
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/property/inc/cron/default/oppdater_betalte_faktura_BK.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: ...html/src/modules/property/inc/cron/default/oppdater_betalte_faktura_BK.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
  371 | WARNING | Function curl_close() is deprecated since PHP 8.5
- 427 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
+ 427 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
  623 | WARNING | Function curl_close() is deprecated since PHP 8.5
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/property/inc/cron/default/deceased_tenants_BK_EBF.php
--------------------------------------------------------------------------------------
+FILE: ...www/html/src/modules/property/inc/cron/default/deceased_tenants_BK_EBF.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
--------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
  699 | WARNING | Function curl_close() is deprecated since PHP 8.5
--------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/property/inc/cron/default/update_workorder_status.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: ...www/html/src/modules/property/inc/cron/default/update_workorder_status.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 56 | WARNING | When die() is called within an object constructor, the object destructor will no longer be called since PHP 8.0
-    |         | While no __destruct() method was found in this class, one may be declared in the parent class or in a trait being
-    |         | used.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 56 | WARNING | When die() is called within an object constructor, the object
+    |         | destructor will no longer be called since PHP 8.0 While no
+    |         | __destruct() method was found in this class, one may be
+    |         | declared in the parent class or in a trait being used.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/property/inc/cron/default/hent_epost_fra_eksterne_BK_LRS.php
---------------------------------------------------------------------------------------------
+FILE: ...l/src/modules/property/inc/cron/default/hent_epost_fra_eksterne_BK_LRS.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
---------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
  178 | WARNING | Function curl_close() is deprecated since PHP 8.5
---------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/property/inc/class.XmlToArray.inc.php
@@ -1394,37 +1522,43 @@ FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
 
 
 FILE: /var/www/html/src/modules/property/inc/class.boalarm.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 164 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $type is
-     |         | optional, while parameter $input_id is required. The $type parameter is implicitly treated as a required
-     |         | parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 164 | WARNING | Declaring an optional parameter before a required parameter is
+     |         | deprecated since PHP 8.0. Parameter $type is optional, while
+     |         | parameter $input_id is required. The $type parameter is
+     |         | implicitly treated as a required parameter.
+--------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/property/inc/class.uiklassifikasjonssystemet.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+FILE: .../www/html/src/modules/property/inc/class.uiklassifikasjonssystemet.inc.php
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 4 WARNINGS AFFECTING 4 LINES
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
   999 | WARNING | Function curl_close() is deprecated since PHP 8.5
- 1015 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $what is
-      |         | optional, while parameter $allrows is required. The $what parameter is implicitly treated as a required
-      |         | parameter.
+ 1015 | WARNING | Declaring an optional parameter before a required parameter
+      |         | is deprecated since PHP 8.0. Parameter $what is optional,
+      |         | while parameter $allrows is required. The $what parameter is
+      |         | implicitly treated as a required parameter.
  1043 | WARNING | Function curl_close() is deprecated since PHP 8.5
  1100 | WARNING | Function curl_close() is deprecated since PHP 8.5
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/property/inc/class.sogeneric_document.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 346 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $data is
-     |         | optional, while parameter $file_id is required. The $data parameter is implicitly treated as a required parameter.
- 369 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $data is
-     |         | optional, while parameter $file_id is required. The $data parameter is implicitly treated as a required parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 346 | WARNING | Declaring an optional parameter before a required parameter is
+     |         | deprecated since PHP 8.0. Parameter $data is optional, while
+     |         | parameter $file_id is required. The $data parameter is
+     |         | implicitly treated as a required parameter.
+ 369 | WARNING | Declaring an optional parameter before a required parameter is
+     |         | deprecated since PHP 8.0. Parameter $data is optional, while
+     |         | parameter $file_id is required. The $data parameter is
+     |         | implicitly treated as a required parameter.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/property/inc/class.botts.inc.php
@@ -1444,88 +1578,128 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 
 
 FILE: /var/www/html/src/modules/addressbook/inc/arr.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 1 | WARNING | No PHP code was found in this file and short open tags are not allowed by this install of PHP. This file may be
-   |         | using short open tags but PHP does not allow them.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 1 | WARNING | No PHP code was found in this file and short open tags are not
+   |         | allowed by this install of PHP. This file may be using short
+   |         | open tags but PHP does not allow them.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/addressbook/csv_import.php
----------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 24 WARNINGS AFFECTING 8 LINES
----------------------------------------------------------------------------------------------------------
- 204 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${PSep}
- 204 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${VPre}
- 204 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${VPre}
- 204 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${VPre}
- 204 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${VPre}
- 204 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${VPre}
- 204 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${VPre}
- 207 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${ASep}
- 207 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${PSep}
- 207 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${PSep}
- 207 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${ASep}
- 210 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${ASep}
- 210 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${PSep}
- 218 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${VPre}
- 221 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${CPre}
- 222 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${CPre}
- 222 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${CPre}
- 222 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${CPre}
- 222 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${CPre}
- 222 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${CPre}
- 227 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${CPre}
- 229 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${CPre}
- 229 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${CPre}
- 229 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use {$var} instead. Found: ${CPre}
----------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 204 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${PSep}
+ 204 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${VPre}
+ 204 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${VPre}
+ 204 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${VPre}
+ 204 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${VPre}
+ 204 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${VPre}
+ 204 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${VPre}
+ 207 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${ASep}
+ 207 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${PSep}
+ 207 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${PSep}
+ 207 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${ASep}
+ 210 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${ASep}
+ 210 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${PSep}
+ 218 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${VPre}
+ 221 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${CPre}
+ 222 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${CPre}
+ 222 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${CPre}
+ 222 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${CPre}
+ 222 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${CPre}
+ 222 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${CPre}
+ 227 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${CPre}
+ 229 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${CPre}
+ 229 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${CPre}
+ 229 | WARNING | Using ${var} in strings is deprecated since PHP 8.2, use
+     |         | {$var} instead. Found: ${CPre}
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/admin/inc/class.html.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
-  20 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $head is
-     |         | optional, while parameter $obj is required. The $head parameter is implicitly treated as a required parameter.
- 266 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $head is
-     |         | optional, while parameter $obj is required. The $head parameter is implicitly treated as a required parameter.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+  20 | WARNING | Declaring an optional parameter before a required parameter is
+     |         | deprecated since PHP 8.0. Parameter $head is optional, while
+     |         | parameter $obj is required. The $head parameter is implicitly
+     |         | treated as a required parameter.
+ 266 | WARNING | Declaring an optional parameter before a required parameter is
+     |         | deprecated since PHP 8.0. Parameter $head is optional, while
+     |         | parameter $obj is required. The $head parameter is implicitly
+     |         | treated as a required parameter.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/admin/inc/hook_config.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 4 ERRORS AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 30 | ERROR | Function mcrypt_list_algorithms() is deprecated since PHP 7.1 and removed since PHP 7.2; Use OpenSSL instead
- 30 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since PHP 7.2; Use openssl (preferred) or pecl/mcrypt once
-    |       | available instead
- 80 | ERROR | Function mcrypt_list_modes() is deprecated since PHP 7.1 and removed since PHP 7.2; Use OpenSSL instead
- 80 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since PHP 7.2; Use openssl (preferred) or pecl/mcrypt once
-    |       | available instead
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 30 | ERROR | Function mcrypt_list_algorithms() is deprecated since PHP 7.1 and
+    |       | removed since PHP 7.2; Use OpenSSL instead
+ 30 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since
+    |       | PHP 7.2; Use openssl (preferred) or pecl/mcrypt once available
+    |       | instead
+ 80 | ERROR | Function mcrypt_list_modes() is deprecated since PHP 7.1 and
+    |       | removed since PHP 7.2; Use OpenSSL instead
+ 80 | ERROR | Extension 'mcrypt' is deprecated since PHP 7.1 and removed since
+    |       | PHP 7.2; Use openssl (preferred) or pecl/mcrypt once available
+    |       | instead
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/Database/Db2.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 7 WARNINGS AFFECTING 7 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 168 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
- 251 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
- 272 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
- 702 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
- 706 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
- 762 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
- 766 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 168 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
+ 251 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
+ 272 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
+ 702 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
+ 706 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
+ 762 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
+ 766 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/Database/FakePDOOCIStatement.php
@@ -1545,18 +1719,22 @@ FOUND 9 ERRORS AFFECTING 9 LINES
 
 
 FILE: /var/www/html/src/Database/Db.php
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 4 WARNINGS AFFECTING 4 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 908 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
- 912 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
- 968 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
- 972 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
-------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ 908 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
+ 912 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
+ 968 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
+ 972 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since
+     |         | 8.4. Throw an exception or call exit with a string message
+     |         | instead.
+--------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/Database/FakePDOOCI.php

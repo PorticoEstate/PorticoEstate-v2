@@ -304,7 +304,7 @@
 					break;
 
 				case 'object':
-					$subnode->set_value((string) $value);
+					$node->set_value((string) $value);
 					break;
 
 				case 'resource':
@@ -458,7 +458,7 @@
 			xml_parser_set_option($parser, XML_OPTION_CASE_FOLDING, 0);
 			xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE,   1);
 			xml_parse_into_struct($parser, $xmldata, $vals, $index);
-			xml_parser_free($parser);
+			unset($parser);
 			unset($index);
 			$node = new xmltool('node',$vals[0]['tag'],$this->indentstring, $this->_encoding);
 			if ( isset($vals[0]['attributes']) )

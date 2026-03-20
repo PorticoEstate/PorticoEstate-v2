@@ -1,87 +1,21 @@
 
-FILE: /var/www/html/src/helpers/Template.php
+FILE: /var/www/html/src/helpers/LegacyObjectHandler.php
 ------------------------------------------------------------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 ------------------------------------------------------------------------------------------------------------------------------------
- 1161 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-      |         | message instead.
-------------------------------------------------------------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/helpers/DateHelper.php
------------------------------------------------------------------------------------------------------------------
-FOUND 2 ERRORS AFFECTING 1 LINE
------------------------------------------------------------------------------------------------------------------
- 713 | ERROR | The "isDST" parameter for function mktime() is deprecated since PHP 5.1 and removed since PHP 7.0
- 713 | ERROR | The "isDST" parameter for function mktime() is deprecated since PHP 5.1 and removed since PHP 7.0
------------------------------------------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/helpers/ErrorHandler.php
-----------------------------------------------------------------------
-FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
-----------------------------------------------------------------------
-  40 | WARNING | The constant "E_STRICT" is deprecated since PHP 8.4
- 182 | WARNING | The constant "E_STRICT" is deprecated since PHP 8.4
-----------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/helpers/LegacyObjectHandler.php
-------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 76 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-    |         | message instead.
  81 | WARNING | Since PHP 7.0, functions inspecting arguments, like debug_backtrace(), no longer report the original value as
     |         | passed to a parameter, but will instead provide the current value. The parameter "$classname" was used, and
     |         | possibly changed (by reference), on line 72.
- 83 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-    |         | message instead.
 ------------------------------------------------------------------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/helpers/phpgw.php
 ------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 ------------------------------------------------------------------------------------------------------------------------------------
- 380 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
  385 | WARNING | Since PHP 7.0, functions inspecting arguments, like debug_backtrace(), no longer report the original value as
      |         | passed to a parameter, but will instead provide the current value. The parameter "$classname" was used, and
      |         | possibly changed (by reference), on line 376.
- 387 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
-------------------------------------------------------------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/helpers/twig/TwigTemplate.php
-------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 701 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
-------------------------------------------------------------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/controllers/GenericRegistryController.php
-------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 1600 | WARNING | The $escape parameter must be passed when calling fputcsv() as its default value will change in a future PHP
-      |         | version.
- 1615 | WARNING | The $escape parameter must be passed when calling fputcsv() as its default value will change in a future PHP
-      |         | version.
-------------------------------------------------------------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/WebSocket/send_notification.php
-------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 33 | WARNING | Implicitly marking a parameter as nullable is deprecated since PHP 8.4. Update the type to be explicitly nullable
-    |         | instead. Found implicitly nullable parameter: $host.
- 34 | WARNING | Implicitly marking a parameter as nullable is deprecated since PHP 8.4. Update the type to be explicitly nullable
-    |         | instead. Found implicitly nullable parameter: $port.
 ------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -115,19 +49,9 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 ---------------------------------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/inc/phpqrcode/qrimage.php
-----------------------------------------------------------------------
-FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
-----------------------------------------------------------------------
-  47 | WARNING | Function ImageDestroy() is deprecated since PHP 8.5
-  62 | WARNING | Function ImageDestroy() is deprecated since PHP 8.5
- 103 | WARNING | Function ImageDestroy() is deprecated since PHP 8.5
-----------------------------------------------------------------------
-
-
 FILE: /var/www/html/src/modules/phpgwapi/inc/phpqrcode/phpqrcode.php
 ------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 11 WARNINGS AFFECTING 5 LINES
+FOUND 0 ERRORS AND 8 WARNINGS AFFECTING 2 LINES
 ------------------------------------------------------------------------------------------------------------------------------------
   954 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $filename is
       |         | optional, while parameter $back_color is required. The $filename parameter is implicitly treated as a required
@@ -141,9 +65,6 @@ FOUND 0 ERRORS AND 11 WARNINGS AFFECTING 5 LINES
   954 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $saveandprint
       |         | is optional, while parameter $back_color is required. The $saveandprint parameter is implicitly treated as a
       |         | required parameter.
-  971 | WARNING | Function ImageDestroy() is deprecated since PHP 8.5
-  986 | WARNING | Function ImageDestroy() is deprecated since PHP 8.5
- 1027 | WARNING | Function ImageDestroy() is deprecated since PHP 8.5
  3550 | WARNING | Declaring an optional parameter before a required parameter is deprecated since PHP 8.0. Parameter $filename is
       |         | optional, while parameter $back_color is required. The $filename parameter is implicitly treated as a required
       |         | parameter.
@@ -169,15 +90,6 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 ------------------------------------------------------------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/inc/class.datetime.inc.php
------------------------------------------------------------------------------------------------------------------
-FOUND 2 ERRORS AFFECTING 1 LINE
------------------------------------------------------------------------------------------------------------------
- 684 | ERROR | The "isDST" parameter for function mktime() is deprecated since PHP 5.1 and removed since PHP 7.0
- 684 | ERROR | The "isDST" parameter for function mktime() is deprecated since PHP 5.1 and removed since PHP 7.0
------------------------------------------------------------------------------------------------------------------
-
-
 FILE: /var/www/html/src/modules/phpgwapi/inc/class.js.inc.php
 ------------------------------------------------------------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
@@ -188,30 +100,6 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 ------------------------------------------------------------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/inc/class.network.inc.php
-------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------
- 81 | WARNING | Function socket_set_timeout() is deprecated since PHP 8.5; Use stream_set_timeout() instead
-------------------------------------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/modules/phpgwapi/inc/class.xmltool.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 5 WARNINGS AFFECTING 5 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 297 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
- 300 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
- 311 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
- 314 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
- 461 | WARNING | Function xml_parser_free() is deprecated since PHP 8.5
-------------------------------------------------------------------------------------------------------------------------------------
-
-
 FILE: /var/www/html/src/modules/phpgwapi/inc/class.html2text.inc.php
 ------------------------------------------------------------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
@@ -219,26 +107,6 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
  235 | WARNING | Since PHP 7.0, functions inspecting arguments, like func_get_args(), no longer report the original value as passed
      |         | to a parameter, but will instead provide the current value. The parameter "$options" was used, and possibly
      |         | changed (by reference), on line 234.
-------------------------------------------------------------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/modules/phpgwapi/inc/class.object_factory.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-------------------------------------------------------------------------------------------------------------------------------------
- 114 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
-------------------------------------------------------------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/modules/phpgwapi/inc/class.xmlhelper.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 103 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
- 106 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
 ------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -559,15 +427,11 @@ FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
 
 
 FILE: /var/www/html/src/modules/booking/inc/class.gi_arkiv.inc.php
-------------------------------------------------------------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
-------------------------------------------------------------------------------------------------------------------------------------
- 320 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
- 357 | WARNING | Passing E_USER_ERROR to trigger_error() is deprecated since 8.4. Throw an exception or call exit with a string
-     |         | message instead.
+----------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+----------------------------------------------------------------------
  586 | WARNING | Function curl_close() is deprecated since PHP 8.5
-------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/booking/inc/class.bodocument.inc.php

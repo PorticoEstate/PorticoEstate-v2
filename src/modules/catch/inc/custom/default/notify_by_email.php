@@ -129,7 +129,7 @@ if (isset($config_data['notify_email']) && $config_data['notify_email'])
 
 		try
 		{
-			$report = $jasper_wrapper->execute($jasper_parameters, $output_type, $report_source, true);
+			$report = $jasper_wrapper->execute($output_type, $report_source, $jasper_parameters, true);
 		}
 		catch (Exception $e)
 		{

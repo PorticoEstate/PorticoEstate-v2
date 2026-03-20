@@ -8115,3 +8115,20 @@ function booking_upgrade0_2_118($oProc)
 		return $currentver;
 	}
 }
+
+$test[] = '0.2.119';
+function booking_upgrade0_2_119($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	// Fix: parent_mapping_id was added as nullable in upgrade 0.2.78 (AddColumn),
+	// but tables_current.inc.php incorrectly had it as NOT NULL.
+	// Ensure all installs have it as nullable for consistency.
+	$oProc->m_odb->query("ALTER TABLE bb_purchase_order_line ALTER COLUMN parent_mapping_id DROP NOT NULL");
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.120';
+		return $currentver;
+	}
+}

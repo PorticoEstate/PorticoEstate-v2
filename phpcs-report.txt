@@ -44,32 +44,6 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 --------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/inc/phpqrcode/phpqrcode.php
---------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 4 WARNINGS AFFECTING 1 LINE
---------------------------------------------------------------------------------
- 3550 | WARNING | Declaring an optional parameter before a required parameter
-      |         | is deprecated since PHP 8.0. Parameter $filename is optional,
-      |         | while parameter $back_color is required. The $filename
-      |         | parameter is implicitly treated as a required parameter.
- 3550 | WARNING | Declaring an optional parameter before a required parameter
-      |         | is deprecated since PHP 8.0. Parameter $pixelPerPoint is
-      |         | optional, while parameter $back_color is required. The
-      |         | $pixelPerPoint parameter is implicitly treated as a required
-      |         | parameter.
- 3550 | WARNING | Declaring an optional parameter before a required parameter
-      |         | is deprecated since PHP 8.0. Parameter $outerFrame is
-      |         | optional, while parameter $back_color is required. The
-      |         | $outerFrame parameter is implicitly treated as a required
-      |         | parameter.
- 3550 | WARNING | Declaring an optional parameter before a required parameter
-      |         | is deprecated since PHP 8.0. Parameter $saveandprint is
-      |         | optional, while parameter $back_color is required. The
-      |         | $saveandprint parameter is implicitly treated as a required
-      |         | parameter.
---------------------------------------------------------------------------------
-
-
 FILE: /var/www/html/src/modules/phpgwapi/inc/class.js.inc.php
 --------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
@@ -270,14 +244,6 @@ FOUND 1 ERROR AFFECTING 1 LINE
 --------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/phpgwapi/services/Shm.php
-----------------------------------------------------------------------
-FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-----------------------------------------------------------------------
- 245 | WARNING | Function shmop_close() is deprecated since PHP 8.0
-----------------------------------------------------------------------
-
-
 FILE: /var/www/html/src/modules/phpgwapi/services/CryptoMcrypt.php
 --------------------------------------------------------------------------------
 FOUND 17 ERRORS AFFECTING 10 LINES
@@ -370,14 +336,6 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 --------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/controller/inc/class.uicheck_list.inc.php
--------------------------------------------------------------------------
-FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
--------------------------------------------------------------------------
- 3527 | WARNING | Function imagedestroy() is deprecated since PHP 8.5
--------------------------------------------------------------------------
-
-
 FILE: /var/www/html/src/modules/sms/inc/plugin/gateway/pswin/send.php
 ----------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
@@ -406,21 +364,10 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 
 FILE: /var/www/html/src/modules/booking/helpers/OutlookHelper.php
 ----------------------------------------------------------------------
-FOUND 0 ERRORS AND 5 WARNINGS AFFECTING 5 LINES
+FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
 ----------------------------------------------------------------------
   76 | WARNING | Function curl_close() is deprecated since PHP 8.5
- 132 | WARNING | Function curl_close() is deprecated since PHP 8.5
- 140 | WARNING | Function curl_close() is deprecated since PHP 8.5
- 199 | WARNING | Function curl_close() is deprecated since PHP 8.5
- 262 | WARNING | Function curl_close() is deprecated since PHP 8.5
-----------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/modules/booking/inc/class.sodocument.inc.php
-----------------------------------------------------------------------
-FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-----------------------------------------------------------------------
- 207 | WARNING | Function finfo_close() is deprecated since PHP 8.5
+ 259 | WARNING | Function curl_close() is deprecated since PHP 8.5
 ----------------------------------------------------------------------
 
 
@@ -453,23 +400,6 @@ FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
 ----------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/booking/inc/class.gi_arkiv.inc.php
-----------------------------------------------------------------------
-FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
-----------------------------------------------------------------------
- 586 | WARNING | Function curl_close() is deprecated since PHP 8.5
-----------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/modules/booking/inc/class.bodocument.inc.php
-----------------------------------------------------------------------
-FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
-----------------------------------------------------------------------
- 263 | WARNING | Function imagedestroy() is deprecated since PHP 8.5
- 289 | WARNING | Function imagedestroy() is deprecated since PHP 8.5
-----------------------------------------------------------------------
-
-
 FILE: /var/www/html/src/modules/booking/tasks/testNumberGenerator.php
 --------------------------------------------------------------------------------
 FOUND 6 ERRORS AND 2 WARNINGS AFFECTING 7 LINES
@@ -497,17 +427,6 @@ FOUND 6 ERRORS AND 2 WARNINGS AFFECTING 7 LINES
  154 | WARNING | Function assert_options() is deprecated since PHP 8.3
  154 | WARNING | The constant "ASSERT_CALLBACK" is deprecated since PHP 8.3
 --------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/modules/booking/services/DocumentService.php
-----------------------------------------------------------------------
-FOUND 0 ERRORS AND 4 WARNINGS AFFECTING 4 LINES
-----------------------------------------------------------------------
- 325 | WARNING | Function imagedestroy() is deprecated since PHP 8.5
- 342 | WARNING | Function imagedestroy() is deprecated since PHP 8.5
- 380 | WARNING | Function imagedestroy() is deprecated since PHP 8.5
- 399 | WARNING | Function imagedestroy() is deprecated since PHP 8.5
-----------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/booking/services/WebhookNotifier.php
@@ -591,17 +510,6 @@ FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
 --------------------------------------------------------------------------------
  319 | WARNING | Function curl_close() is deprecated since PHP 8.5
  357 | WARNING | Function curl_close() is deprecated since PHP 8.5
---------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/modules/todo/inc/class.uitodo.inc.php
---------------------------------------------------------------------------------
-FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
---------------------------------------------------------------------------------
- 370 | WARNING | Declaring an optional parameter before a required parameter is
-     |         | deprecated since PHP 8.0. Parameter $selected is optional,
-     |         | while parameter $type is required. The $selected parameter is
-     |         | implicitly treated as a required parameter.
 --------------------------------------------------------------------------------
 
 
@@ -1207,16 +1115,6 @@ FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
 --------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/bim/inc/class.restrequest.inc.php
-----------------------------------------------------------------------
-FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
-----------------------------------------------------------------------
-  80 | WARNING | Function curl_close() is deprecated since PHP 8.5
-  85 | WARNING | Function curl_close() is deprecated since PHP 8.5
- 168 | WARNING | Function curl_close() is deprecated since PHP 8.5
-----------------------------------------------------------------------
-
-
 FILE: /var/www/html/src/modules/calendar/inc/class.uicalendar.inc.php
 --------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
@@ -1510,15 +1408,6 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 --------------------------------------------------------------------------------
  178 | WARNING | Function curl_close() is deprecated since PHP 8.5
 --------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/modules/property/inc/class.XmlToArray.inc.php
-------------------------------------------------------------------------
-FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
-------------------------------------------------------------------------
- 461 | WARNING | Function xml_parser_free() is deprecated since PHP 8.5
- 464 | WARNING | Function xml_parser_free() is deprecated since PHP 8.5
-------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/property/inc/class.boalarm.inc.php

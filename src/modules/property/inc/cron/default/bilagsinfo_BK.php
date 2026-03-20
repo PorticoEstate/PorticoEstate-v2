@@ -493,7 +493,6 @@ XML;
 
 		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-		curl_close($ch);
 
 		// converting
 		$response1 = str_replace(array("<soap:Body>", "</soap:Body>"), "", $response);

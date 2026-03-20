@@ -98,7 +98,6 @@ class bookingfrontend_external_user_name extends UserHelper
 		$result = curl_exec($ch);
 
 		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		curl_close($ch);
 
 		$ret = json_decode($result, true);
 

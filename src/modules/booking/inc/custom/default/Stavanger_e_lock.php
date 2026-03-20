@@ -98,7 +98,6 @@ class booking_e_lock_integration
 		$result = curl_exec($ch);
 
 		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		curl_close($ch);
 
 		$ret = json_decode($result, true);
 
@@ -147,7 +146,6 @@ class booking_e_lock_integration
 		curl_exec($ch);
 
 		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		curl_close($ch);
 
 		return $http_code;
 	}
@@ -198,7 +196,6 @@ class booking_e_lock_integration
 		curl_exec($ch);
 
 		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		curl_close($ch);
 
 		return $http_code;
 	}

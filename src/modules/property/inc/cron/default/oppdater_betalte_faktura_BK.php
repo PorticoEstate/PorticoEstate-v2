@@ -368,7 +368,6 @@
 			{
 				throw new Exception("No connection: {$url}");
 			}
-			curl_close($ch);
 
 			$result = json_decode($result, true);
 
@@ -620,7 +619,6 @@ XML;
 
 			$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-			curl_close($ch);
 
 			$result = array();
 			try

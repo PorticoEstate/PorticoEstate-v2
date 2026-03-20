@@ -361,6 +361,10 @@ HTML;
 		$toarray = array(
 			'hc483@bergen.kommune.no',
 			'Bjørvik, Ole Christian <Ole.Bjorvik@bergen.kommune.no>',
+			'Siri.Rasmussen@bergen.kommune.no',
+			'Hilde.Bjorkhaug@bergen.kommune.no',
+			'Mari.Halvorsen@bergen.kommune.no',
+			'Karoline.Rokkones@bergen.kommune.no'
 		);
 		$to		 = implode(';', $toarray);
 

@@ -1597,7 +1597,7 @@ class GenericRegistryController
 		// BOM for Excel UTF-8 compatibility
 		fwrite($output, "\xEF\xBB\xBF");
 		// Header row
-		fputcsv($output, array_map(fn($c) => $c['descr'], $csvColumns), ';');
+		fputcsv($output, array_map(fn($c) => $c['descr'], $csvColumns), ';', '"', '\\');
 		// Data rows
 		foreach ($data as $row)
 		{
@@ -1612,7 +1612,7 @@ class GenericRegistryController
 				}
 				$csvRow[] = $val;
 			}
-			fputcsv($output, $csvRow, ';');
+			fputcsv($output, $csvRow, ';', '"', '\\');
 		}
 
 		rewind($output);

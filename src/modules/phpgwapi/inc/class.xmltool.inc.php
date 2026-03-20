@@ -294,10 +294,10 @@
 								break;
 
 							case 'resource':
-								trigger_error('Cannot package PHP resource pointers into XML', E_USER_ERROR);
+								throw new \RuntimeException('Cannot package PHP resource pointers into XML');
 
 							default:
-								trigger_error('Invalid or unknown data type', E_USER_ERROR);
+								throw new \RuntimeException('Invalid or unknown data type');
 						}
 
 					}
@@ -308,10 +308,10 @@
 					break;
 
 				case 'resource':
-					trigger_error('Cannot package PHP resource pointers into XML', E_USER_ERROR);
+					throw new \RuntimeException('Cannot package PHP resource pointers into XML');
 
 				default:
-					trigger_error('Invalid or unknown data type', E_USER_ERROR);
+					throw new \RuntimeException('Invalid or unknown data type');
 			}
 
 			if($is_root)

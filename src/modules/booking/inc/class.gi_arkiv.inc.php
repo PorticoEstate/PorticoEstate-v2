@@ -317,7 +317,7 @@ class booking_gi_arkiv
 */
 			$msg = "SOAP Fault:\n faultcode: {$fault->faultcode},\n faultstring: {$fault->faultstring}";
 			echo $msg . PHP_EOL;
-			trigger_error(nl2br($msg), E_USER_ERROR);
+			throw new \RuntimeException(nl2br($msg));
 		}
 
 		//			$this->oppdater_sakspart($ret->getReturn(), $SakspartListe);
@@ -354,7 +354,7 @@ class booking_gi_arkiv
 			echo '</pre>';
 			$msg = "SOAP Fault:\n faultcode: {$fault->faultcode},\n faultstring: {$fault->faultstring}";
 			echo $msg . PHP_EOL;
-			trigger_error(nl2br($msg), E_USER_ERROR);
+			throw new \RuntimeException(nl2br($msg));
 		}
 	}
 

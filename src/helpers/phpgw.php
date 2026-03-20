@@ -377,14 +377,14 @@ class phpgw
 
 		if (count($parts) != 2)
 		{
-			trigger_error(lang('Invalid class: %1', $classname), E_USER_ERROR);
+			throw new \RuntimeException(lang('Invalid class: %1', $classname));
 		}
 
 		if (!include_class($parts[0], $parts[1]))
 		{
 			$bt = debug_backtrace();
 
-			trigger_error(lang('Unable to load class: %1', $classname) . " called from function: {$bt[0]['function']} file: {$bt[0]['file']} line: {$bt[0]['line']}", E_USER_ERROR);
+			throw new \RuntimeException(lang('Unable to load class: %1', $classname) . " called from function: {$bt[0]['function']} file: {$bt[0]['file']} line: {$bt[0]['line']}");
 		}
 	}
 

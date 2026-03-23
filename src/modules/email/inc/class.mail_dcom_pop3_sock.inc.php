@@ -981,7 +981,7 @@
 			}
 			// do we have an encapsulated (non-boundry based) Embedded Part
 			elseif ( (isset($info->type))
-			&& ($info->type == TYPEMESSAGE)
+			&& ($info->type == PE_IMAP_TYPEMESSAGE)
 			&& (isset($info->subtype))
 			&& (strtolower($info->subtype) == 'rfc822')
 			&& (count($info->parts) == 0))
@@ -1125,7 +1125,7 @@
 			}
 			// no embedded parts, why not?
 			elseif ( (isset($info->type))
-			&& ($info->type == TYPEMESSAGE)
+			&& ($info->type == PE_IMAP_TYPEMESSAGE)
 			&& (isset($info->subtype))
 			&& (strtolower($info->subtype) == 'rfc822')
 			&& (count($info->parts) == 0))
@@ -1986,7 +1986,7 @@
 			$header_glob = $this->get_header_raw($stream_notused,$msg_num,$flags);
 			
 			// do we also need to get the text of the message?
-			if ((int)$flags == FT_PREFETCHTEXT)
+			if ((int)$flags == PE_IMAP_FT_PREFETCHTEXT)
 			{
 				// what the user really wants here is the whole enchalada, i.e. the headers AND the message
 				$header_glob = $header_glob
@@ -2285,7 +2285,7 @@
 				$this->body_array_msgnum = (int)$msg_num;
 			}
 			// ---  Include Headers With Body Or Not  ---
-			if (($flags == FT_NOT) || ($phpgw_include_header == True))
+			if (($flags == PE_IMAP_FT_NOT) || ($phpgw_include_header == True))
 			{
 				// we need to include the header here
 				$body_glob = $header_glob ."\r\n" .$body_glob;

@@ -12,40 +12,14 @@
 
 require_once __DIR__ . '/../../email/inc/imap_config.php';
 
-if (!defined('SA_MESSAGES'))
-{
-	define('SA_MESSAGES', 1);
-}
-
-if (!defined('SORTARRIVAL'))
-{
-	define('SORTARRIVAL', 1);
-}
-
-if (!defined('SORTFROM'))
-{
-	define('SORTFROM', 2);
-}
-
-if (!defined('SORTSUBJECT'))
-{
-	define('SORTSUBJECT', 3);
-}
-
-if (!defined('FT_UID'))
-{
-	define('FT_UID', 1);
-}
-
-if (!defined('ST_UID'))
-{
-	define('ST_UID', 1);
-}
-
-if (!defined('SE_UID'))
-{
-	define('SE_UID', 1);
-}
+	// Guard-defined IMAP compatibility constants (removed in PHP 8.4)
+	defined('PE_IMAP_SA_MESSAGES') || define('PE_IMAP_SA_MESSAGES', 1);
+	defined('PE_IMAP_SORTARRIVAL') || define('PE_IMAP_SORTARRIVAL', 1);
+	defined('PE_IMAP_SORTFROM') || define('PE_IMAP_SORTFROM', 2);
+	defined('PE_IMAP_SORTSUBJECT') || define('PE_IMAP_SORTSUBJECT', 3);
+	defined('PE_IMAP_FT_UID') || define('PE_IMAP_FT_UID', 1);
+	defined('PE_IMAP_ST_UID') || define('PE_IMAP_ST_UID', 1);
+	defined('PE_IMAP_SE_UID') || define('PE_IMAP_SE_UID', 1);
 
 class messenger_somessenger extends somessenger_
 {
@@ -65,7 +39,7 @@ class messenger_somessenger extends somessenger_
 		$this->imap = IMAPManager::imap_open("\{{$this->imap_host}:143/imap/notls}INBOX", $this->userSettings['account_lid'], $this->userSettings['passwd']);
 		if (is_resource($this->imap))
 		{
-			$this->stat = IMAPManager::imap_status($this->imap, "\{{$this->imap_host}}INBOX", SA_MESSAGES);
+			$this->stat = IMAPManager::imap_status($this->imap, "\{{$this->imap_host}}INBOX", PE_IMAP_SA_MESSAGES);
 			$this->connected = true;
 		}
 		parent::__construct();
@@ -78,7 +52,7 @@ class messenger_somessenger extends somessenger_
 	 */
 	function delete_message($message_id)
 	{
-		IMAPManager::imap_delete($this->imap, $message_id, FT_UID);
+		IMAPManager::imap_delete($this->imap, $message_id, PE_IMAP_FT_UID);
 		IMAPManager::imap_expunge($this->imap);
 	}
 
@@ -88,16 +62,16 @@ class messenger_somessenger extends somessenger_
 		switch ($params['order'])
 		{
 			case 'message_date':
-				$idlist = IMAPManager::imap_sort($this->imap, SORTARRIVAL, $sort, SE_UID);
+				$idlist = IMAPManager::imap_sort($this->imap, PE_IMAP_SORTARRIVAL, $sort, PE_IMAP_SE_UID);
 				break;
 			case 'message_from':
-				$idlist = IMAPManager::imap_sort($this->imap, SORTFROM, $sort, SE_UID);
+				$idlist = IMAPManager::imap_sort($this->imap, PE_IMAP_SORTFROM, $sort, PE_IMAP_SE_UID);
 				break;
 			case 'message_subject':
-				$idlist = IMAPManager::imap_sort($this->imap, SORTSUBJECT, $sort, SE_UID);
+				$idlist = IMAPManager::imap_sort($this->imap, PE_IMAP_SORTSUBJECT, $sort, PE_IMAP_SE_UID);
 				break;
 			default:
-				$idlist = IMAPManager::imap_sort($this->imap, SORTARRIVAL, 1, SE_UID);
+				$idlist = IMAPManager::imap_sort($this->imap, PE_IMAP_SORTARRIVAL, 1, PE_IMAP_SE_UID);
 		}
 		foreach ($idlist as $uid)
 		{
@@ -160,7 +134,7 @@ class messenger_somessenger extends somessenger_
 				$flags += " \\Answered";
 				break;
 		}
-		IMAPManager::imap_setflag_full($this->imap, $message_id, $flags, ST_UID);
+		IMAPManager::imap_setflag_full($this->imap, $message_id, $flags, PE_IMAP_ST_UID);
 	}
 
 	/**
@@ -176,7 +150,7 @@ class messenger_somessenger extends somessenger_
 	{
 		if (!is_object($structure))
 		{
-			$structure = IMAPManager::imap_fetchstructure($this->imap, $message_id, FT_UID);
+			$structure = IMAPManager::imap_fetchstructure($this->imap, $message_id, PE_IMAP_FT_UID);
 		}
 		if (!is_object($structure))
 		{

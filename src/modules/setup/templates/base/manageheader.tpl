@@ -67,14 +67,7 @@
 		</td>
 		<td></td>
 	</tr>
-	<!--tr>
-	  <td colspan=2><b>{lang_enablemcrypt}</b><br>
-		<select name="setting[enable_mcrypt]">
-		  <option value="True"{mcrypt_enabled_yes}>True
-		  <option value="False"{mcrypt_enabled_no}>False
-		</select>
-	  </td>
-	</tr-->
+
 	<tr>
 		<td><b>{lang_mcryptiv}</b><br><input type="text" name="setting[mcrypt_iv]" value="{mcrypt_iv}" size="30" class="pure-u-7-8"></td>
 		<td>{lang_mcryptivdescr}</td>

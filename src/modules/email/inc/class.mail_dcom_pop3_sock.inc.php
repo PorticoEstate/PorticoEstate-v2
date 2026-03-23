@@ -21,7 +21,33 @@
 	* 
 	* @package email
 	* @ignore
-	*/	
+	*/
+	// PHP 8.4+ removed constants - define PorticoEstate IMAP compatibility layer
+	defined('PE_IMAP_SA_ALL') || define('PE_IMAP_SA_ALL', 4095);
+	defined('PE_IMAP_SORTDATE') || define('PE_IMAP_SORTDATE', 0);
+	defined('PE_IMAP_SORTARRIVAL') || define('PE_IMAP_SORTARRIVAL', 1);
+	defined('PE_IMAP_SORTFROM') || define('PE_IMAP_SORTFROM', 2);
+	defined('PE_IMAP_SORTSUBJECT') || define('PE_IMAP_SORTSUBJECT', 3);
+	defined('PE_IMAP_SORTTO') || define('PE_IMAP_SORTTO', 4);
+	defined('PE_IMAP_SORTCC') || define('PE_IMAP_SORTCC', 5);
+	defined('PE_IMAP_SORTSIZE') || define('PE_IMAP_SORTSIZE', 6);
+	defined('PE_IMAP_TYPETEXT') || define('PE_IMAP_TYPETEXT', 0);
+	defined('PE_IMAP_TYPEMULTIPART') || define('PE_IMAP_TYPEMULTIPART', 1);
+	defined('PE_IMAP_TYPEMESSAGE') || define('PE_IMAP_TYPEMESSAGE', 2);
+	defined('PE_IMAP_TYPEAPPLICATION') || define('PE_IMAP_TYPEAPPLICATION', 3);
+	defined('PE_IMAP_TYPEAUDIO') || define('PE_IMAP_TYPEAUDIO', 4);
+	defined('PE_IMAP_TYPEIMAGE') || define('PE_IMAP_TYPEIMAGE', 5);
+	defined('PE_IMAP_TYPEVIDEO') || define('PE_IMAP_TYPEVIDEO', 6);
+	defined('PE_IMAP_TYPEOTHER') || define('PE_IMAP_TYPEOTHER', 7);
+	defined('PE_IMAP_ENC7BIT') || define('PE_IMAP_ENC7BIT', 0);
+	defined('PE_IMAP_ENC8BIT') || define('PE_IMAP_ENC8BIT', 1);
+	defined('PE_IMAP_ENCBINARY') || define('PE_IMAP_ENCBINARY', 2);
+	defined('PE_IMAP_ENCBASE64') || define('PE_IMAP_ENCBASE64', 3);
+	defined('PE_IMAP_ENCQUOTEDPRINTABLE') || define('PE_IMAP_ENCQUOTEDPRINTABLE', 4);
+	defined('PE_IMAP_ENCOTHER') || define('PE_IMAP_ENCOTHER', 5);
+	defined('PE_IMAP_FT_PREFETCHTEXT') || define('PE_IMAP_FT_PREFETCHTEXT', 16);
+	defined('PE_IMAP_FT_NOT') || define('PE_IMAP_FT_NOT', 1);
+	
 	class mail_dcom extends mail_dcom_base
 	{
 		/**************************************************************************\
@@ -286,16 +312,16 @@
 		@abstract returns mailbox_status structure
 		@param $stream_notused Not Used because api network class handles the stream
 		@param $fq_folder Same server and folder string that the php function expects
-		@param $options defaults to SA_ALL, may not be completely implemented
+		@param $options defaults to PE_IMAP_SA_ALL, may not be completely implemented
 		@discussion needed
 		@author Angles, skeeter
 		@access public
 		*/
-		function status($stream_notused='', $fq_folder='',$options=SA_ALL)
+		function status($stream_notused='', $fq_folder='',$options=PE_IMAP_SA_ALL)
 		{
 			if ($this->debug_dcom >= 1) { echo 'pop3: Entering status<br />'; }
 			// POP3 has only INBOX so ignore $fq_folder
-			// assume option is SA_ALL for POP3 because POP3 returns so little info anyway
+			// assume option is PE_IMAP_SA_ALL for POP3 because POP3 returns so little info anyway
 			// initialize structure
 			$info = new mailbox_status;
 			$info->messages = '';
@@ -347,25 +373,25 @@
 		@function sort
 		@abstract implements IMAP_SORT
 		@param $stream_notused socket class handles stream reference internally
-		@param $criteria (integer) HOW to sort the messages, we prefer SORTARRIVAL, or &quot;1&quot; as default
+		@param $criteria (integer) HOW to sort the messages, we prefer PE_IMAP_SORTARRIVAL, or &quot;1&quot; as default
 		@param $reverse (boolean) the ordering if the messages , low to high, or high to low, where 
 			FALSE 0 lowest to highest  (default for php's builtin imap)
 			TRUE 1 highest to lowest, a.k.a. Reverse Sorting
 		@param $options not implemented
 		@result returns an array of integers which are messages numbers for the
 		messages sorted as requested.
-		@discussion using SORTDATE can cause some messages to be displayed in the wrong
+		@discussion using PE_IMAP_SORTDATE can cause some messages to be displayed in the wrong
 		cronologicall order, because the sender's MUA can be innaccurate in date stamping
 		@author Angles, Skeeter, Itzchak Rehberg, Joseph Engo
 		@access public
 		@syntax param criteria is used like this
-		SORTDATE 0 This is the Date that the senders email client stamps the message with
-		SORTARRIVAL 1  This is the date the email arrives at your email server (MTA)
-		SORTFROM  2
-		SORTSUBJECT 3
-		SORTSIZE  6
+		PE_IMAP_SORTDATE 0 This is the Date that the senders email client stamps the message with
+		PE_IMAP_SORTARRIVAL 1  This is the date the email arrives at your email server (MTA)
+		PE_IMAP_SORTFROM  2
+		PE_IMAP_SORTSUBJECT 3
+		PE_IMAP_SORTSIZE  6
 		*/
-		function sort($stream_notused='',$criteria=SORTARRIVAL,$reverse=False,$options='')
+		function sort($stream_notused='',$criteria=PE_IMAP_SORTARRIVAL,$reverse=False,$options='')
 		{
 			if ($this->debug_dcom >= 1) { echo 'pop3: Entering sort<br />'; }
 			
@@ -381,14 +407,14 @@
 			if ($this->debug_dcom >= 1) { echo 'pop3: sort: Number of Msgs:'.$msg_num.'<br />'; }
 			switch($criteria)
 			{
-				case SORTDATE:
-					if ($this->debug_dcom >= 1) { echo 'pop3: sort: case SORTDATE<br />'; }
+				case PE_IMAP_SORTDATE:
+					if ($this->debug_dcom >= 1) { echo 'pop3: sort: case PE_IMAP_SORTDATE<br />'; }
 					$old_list = $this->fetch_header_element(1,$msg_num,'Date');
 					$field_list = $this->convert_date_array($old_list);
 					if ($this->debug_dcom >= 2) { echo 'pop3: sort: field_list: '.serialize($field_list).'<br /><br />'; }
 					break;
-				case SORTARRIVAL:
-					if ($this->debug_dcom >= 1) { echo 'pop3: sort: case SORTARRIVAL<br />'; }
+				case PE_IMAP_SORTARRIVAL:
+					if ($this->debug_dcom >= 1) { echo 'pop3: sort: case PE_IMAP_SORTARRIVAL<br />'; }
 					// TEST
 					if (!$this->msg2socket('LIST',"^\+ok",$response))
 					{
@@ -399,29 +425,29 @@
 					$field_list = $this->glob_to_array($response, False, ' ',True,1);
 					if ($this->debug_dcom >= 2) { echo 'pop3: sort: field_list: '.serialize($field_list).'<br /><br /><br />'; }
 					break;
-				case SORTFROM:
-					if ($this->debug_dcom >= 1) { echo 'pop3: sort: case SORTFROM<br />'; }
+				case PE_IMAP_SORTFROM:
+					if ($this->debug_dcom >= 1) { echo 'pop3: sort: case PE_IMAP_SORTFROM<br />'; }
 					$field_list = $this->fetch_header_element(1,$msg_num,'From');
 					break;
-				case SORTSUBJECT:
-					if ($this->debug_dcom >= 1) { echo 'pop3: sort: case SORTSUBJECT<br />'; }
+				case PE_IMAP_SORTSUBJECT:
+					if ($this->debug_dcom >= 1) { echo 'pop3: sort: case PE_IMAP_SORTSUBJECT<br />'; }
 					$field_list = $this->fetch_header_element(1,$msg_num,'Subject');
 					break;
-				case SORTTO:
-					if ($this->debug_dcom >= 1) { echo 'pop3: sort: case SORTTO<br />'; }
+				case PE_IMAP_SORTTO:
+					if ($this->debug_dcom >= 1) { echo 'pop3: sort: case PE_IMAP_SORTTO<br />'; }
 					$field_list = $this->fetch_header_element(1,$msg_num,'To');
 					break;
-				case SORTCC:
-					if ($this->debug_dcom >= 1) { echo 'pop3: sort: case SORTCC<br />'; }
+				case PE_IMAP_SORTCC:
+					if ($this->debug_dcom >= 1) { echo 'pop3: sort: case PE_IMAP_SORTCC<br />'; }
 					$field_list = $this->fetch_header_element(1,$msg_num,'cc');
 					break;
-				case SORTSIZE:
-					if ($this->debug_dcom >= 1) { echo 'pop3: sort: case SORTSIZE<br />'; }
+				case PE_IMAP_SORTSIZE:
+					if ($this->debug_dcom >= 1) { echo 'pop3: sort: case PE_IMAP_SORTSIZE<br />'; }
 					$field_list = $this->fetch_header_element(1,$msg_num,'Size');
 					break;
 			}
 			@reset($field_list);
-			if($criteria == SORTSUBJECT)
+			if($criteria == PE_IMAP_SORTSUBJECT)
 			{
 				if(!$reverse)
 				{
@@ -1298,58 +1324,58 @@
 			// unset any unfilled elements, ALWAYS leave parts and custom
 			if ((string)$info->type == '')
 			{
-				$info->type = NIL;
+				$info->type = 0;
 				unset($info->type);
 			}
 			if ((string)$info->encoding == '')
 			{
-				$info->encoding = NIL;
+				$info->encoding = 0;
 				unset($info->encoding);
 			}
 			//$info->ifsubtype = False;
 			if ((string)$info->subtype == '')
 			{
-				$info->subtype = NIL;
+				$info->subtype = 0;
 				unset($info->subtype);
 			}
 			//$info->ifdescription = False;
 			if ((string)$info->description == '')
 			{
-				$info->description = NIL;
+				$info->description = 0;
 				unset($info->description);
 			}
 			//$info->ifid = False;
 			if ((string)$info->id == '')
 			{
-				$info->id = NIL;
+				$info->id = 0;
 				unset($info->id);
 			}
 			if ((string)$info->lines == '')
 			{
-				$info->lines = NIL;
+				$info->lines = 0;
 				unset($info->lines);
 			}
 			if ((string)$info->bytes == '')
 			{
-				$info->bytes = NIL;
+				$info->bytes = 0;
 				unset($info->bytes);
 			}
 			//$info->ifdisposition = False;
 			if ((string)$info->disposition == '')
 			{
-				$info->disposition = NIL;
+				$info->disposition = 0;
 				unset($info->disposition);
 			}
 			//$info->ifdparameters = False;
 			if (count($info->dparameters) == 0)
 			{
-				$info->dparameters = NIL;
+				$info->dparameters = 0;
 				unset($info->dparameters);
 			}
 			//$info->ifparameters = False;
 			if (count($info->parameters) == 0)
 			{
-				$info->parameters = NIL;
+				$info->parameters = 0;
 				unset($info->parameters);
 			}
 			//$info->custom = array();
@@ -1488,18 +1514,18 @@
 		function type_str_to_int($type_str)
 		{
 			// fallback value
-			$type_int = TYPEOTHER;
+			$type_int = PE_IMAP_TYPEOTHER;
 			switch ($type_str)
 			{
-				case 'text'		: $type_int = TYPETEXT; break;
-				case 'multipart'	: $type_int = TYPEMULTIPART; break;
-				case 'message'		: $type_int = TYPEMESSAGE; break;
-				case 'application'	: $type_int = TYPEAPPLICATION; break;
-				case 'audio'		: $type_int = TYPEAUDIO; break;
-				case 'image'		: $type_int = TYPEIMAGE; break;
-				case 'video'		: $type_int = TYPEVIDEO; break;
+				case 'text'		: $type_int = PE_IMAP_TYPETEXT; break;
+				case 'multipart'	: $type_int = PE_IMAP_TYPEMULTIPART; break;
+				case 'message'		: $type_int = PE_IMAP_TYPEMESSAGE; break;
+				case 'application'	: $type_int = PE_IMAP_TYPEAPPLICATION; break;
+				case 'audio'		: $type_int = PE_IMAP_TYPEAUDIO; break;
+				case 'image'		: $type_int = PE_IMAP_TYPEIMAGE; break;
+				case 'video'		: $type_int = PE_IMAP_TYPEVIDEO; break;
 				// this causes errors under php 4.0.6, but used to work before that, I think
-				//defaut			: $type_int = TYPEOTHER; break;
+				//defaut			: $type_int = PE_IMAP_TYPEOTHER; break;
 			}
 			return $type_int;
 		}
@@ -1512,11 +1538,11 @@
 		{
 			if ($probably_text)
 			{
-				return TYPETEXT;
+				return PE_IMAP_TYPETEXT;
 			}
 			else
 			{
-				return TYPEAPPLICATION;
+				return PE_IMAP_TYPEAPPLICATION;
 			}
 		}
 	
@@ -1524,16 +1550,16 @@
 		@function default_subtype
 		@abstract ?
 		*/
-		function default_subtype($type_int=TYPEAPPLICATION)
+		function default_subtype($type_int=PE_IMAP_TYPEAPPLICATION)
 		{
 			// APPLICATION/OCTET-STREAM is the default when NO info is available
 			switch ($type_int)
 			{
-				case TYPETEXT		: return 'plain'; break;
-				case TYPEMULTIPART	: return 'mixed'; break;
-				case TYPEMESSAGE		: return 'rfc822'; break;
-				case TYPEAPPLICATION	: return 'octet-stream'; break;
-				case TYPEAUDIO		: return 'basic'; break;
+				case PE_IMAP_TYPETEXT		: return 'plain'; break;
+				case PE_IMAP_TYPEMULTIPART	: return 'mixed'; break;
+				case PE_IMAP_TYPEMESSAGE		: return 'rfc822'; break;
+				case PE_IMAP_TYPEAPPLICATION	: return 'octet-stream'; break;
+				case PE_IMAP_TYPEAUDIO		: return 'basic'; break;
 				default			: return 'unknown'; break;
 			}
 		}
@@ -1544,7 +1570,7 @@
 		*/
 		function default_encoding()
 		{
-			return ENC7BIT;
+			return PE_IMAP_ENC7BIT;
 		}
 	
 		// MAY BE OBSOLETED
@@ -1576,14 +1602,14 @@
 		{
 			switch (strtolower($encoding_str))
 			{
-				case '7bit'		: $encoding_int = ENC7BIT; break;
-				case '8bit'		: $encoding_int = ENC8BIT; break;
-				case 'binary'		: $encoding_int = ENCBINARY; break;
-				case 'base64'		: $encoding_int = ENCBASE64; break;
-				case 'quoted-printable' : $encoding_int = ENCQUOTEDPRINTABLE; break;
-				case 'other'		: $encoding_int = ENCOTHER; break;
+				case '7bit'		: $encoding_int = PE_IMAP_ENC7BIT; break;
+				case '8bit'		: $encoding_int = PE_IMAP_ENC8BIT; break;
+				case 'binary'		: $encoding_int = PE_IMAP_ENCBINARY; break;
+				case 'base64'		: $encoding_int = PE_IMAP_ENCBASE64; break;
+				case 'quoted-printable' : $encoding_int = PE_IMAP_ENCQUOTEDPRINTABLE; break;
+				case 'other'		: $encoding_int = PE_IMAP_ENCOTHER; break;
 				case 'uu'		: $encoding_int = ENCUU; break;
-				default			: $encoding_int = ENCOTHER; break;
+				default			: $encoding_int = PE_IMAP_ENCOTHER; break;
 			}
 			return $encoding_int;
 		}

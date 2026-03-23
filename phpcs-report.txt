@@ -317,37 +317,6 @@ FOUND 2 ERRORS AFFECTING 1 LINE
 ---------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/email/inc/class.mail_dcom_imap.inc.php
------------------------------------------------------------------------
-FOUND 24 ERRORS AFFECTING 24 LINES
------------------------------------------------------------------------
-  69 | ERROR | The constant "FT_UID" is removed since PHP 8.4
-  71 | ERROR | The constant "FT_UID" is removed since PHP 8.4
-  92 | ERROR | The constant "FT_UID" is removed since PHP 8.4
-  94 | ERROR | The constant "FT_UID" is removed since PHP 8.4
- 121 | ERROR | The constant "FT_PREFETCHTEXT" is removed since PHP 8.4
- 124 | ERROR | The constant "FT_UID" is removed since PHP 8.4
- 126 | ERROR | The constant "FT_UID" is removed since PHP 8.4
- 135 | ERROR | The constant "FT_UID" is removed since PHP 8.4
- 137 | ERROR | The constant "FT_UID" is removed since PHP 8.4
- 146 | ERROR | The constant "FT_UID" is removed since PHP 8.4
- 148 | ERROR | The constant "FT_UID" is removed since PHP 8.4
- 157 | ERROR | The constant "FT_UID" is removed since PHP 8.4
- 159 | ERROR | The constant "FT_UID" is removed since PHP 8.4
- 191 | ERROR | The constant "CP_UID" is removed since PHP 8.4
- 193 | ERROR | The constant "CP_UID" is removed since PHP 8.4
- 203 | ERROR | The constant "CP_UID" is removed since PHP 8.4
- 205 | ERROR | The constant "CP_UID" is removed since PHP 8.4
- 250 | ERROR | The constant "SE_UID" is removed since PHP 8.4
- 252 | ERROR | The constant "SE_UID" is removed since PHP 8.4
- 261 | ERROR | The constant "SE_UID" is removed since PHP 8.4
- 263 | ERROR | The constant "SE_UID" is removed since PHP 8.4
- 300 | ERROR | The constant "ST_UID" is removed since PHP 8.4
- 325 | ERROR | The constant "FT_UID" is removed since PHP 8.4
- 327 | ERROR | The constant "FT_UID" is removed since PHP 8.4
------------------------------------------------------------------------
-
-
 FILE: /var/www/html/src/modules/email/inc/class.boattach_file.inc.php
 --------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
@@ -355,66 +324,6 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
  271 | WARNING | The double cast is deprecated since PHP 8.5; Use (float)
      |         | instead
 --------------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/modules/email/inc/class.uifilters.inc.php
---------------------------------------------------------------------------
-FOUND 36 ERRORS AFFECTING 36 LINES
---------------------------------------------------------------------------
- 592 | ERROR | The constant "SA_MESSAGES" is removed since PHP 8.4
- 593 | ERROR | The constant "SA_RECENT" is removed since PHP 8.4
- 594 | ERROR | The constant "SA_UNSEEN" is removed since PHP 8.4
- 595 | ERROR | The constant "SA_UIDNEXT" is removed since PHP 8.4
- 596 | ERROR | The constant "SA_UIDVALIDITY" is removed since PHP 8.4
- 597 | ERROR | The constant "SA_ALL" is removed since PHP 8.4
- 599 | ERROR | The constant "SORTDATE" is removed since PHP 8.4
- 600 | ERROR | The constant "SORTARRIVAL" is removed since PHP 8.4
- 601 | ERROR | The constant "SORTFROM" is removed since PHP 8.4
- 602 | ERROR | The constant "SORTSUBJECT" is removed since PHP 8.4
- 603 | ERROR | The constant "SORTTO" is removed since PHP 8.4
- 604 | ERROR | The constant "SORTCC" is removed since PHP 8.4
- 605 | ERROR | The constant "SORTSIZE" is removed since PHP 8.4
- 607 | ERROR | The constant "TYPETEXT" is removed since PHP 8.4
- 608 | ERROR | The constant "TYPEMULTIPART" is removed since PHP 8.4
- 609 | ERROR | The constant "TYPEMESSAGE" is removed since PHP 8.4
- 610 | ERROR | The constant "TYPEAPPLICATION" is removed since PHP 8.4
- 611 | ERROR | The constant "TYPEAUDIO" is removed since PHP 8.4
- 612 | ERROR | The constant "TYPEIMAGE" is removed since PHP 8.4
- 613 | ERROR | The constant "TYPEVIDEO" is removed since PHP 8.4
- 614 | ERROR | The constant "TYPEOTHER" is removed since PHP 8.4
- 615 | ERROR | The constant "TYPEMODEL" is removed since PHP 8.4
- 617 | ERROR | The constant "ENC7BIT" is removed since PHP 8.4
- 618 | ERROR | The constant "ENC8BIT" is removed since PHP 8.4
- 619 | ERROR | The constant "ENCBINARY" is removed since PHP 8.4
- 620 | ERROR | The constant "ENCBASE64" is removed since PHP 8.4
- 621 | ERROR | The constant "ENCQUOTEDPRINTABLE" is removed since PHP 8.4
- 622 | ERROR | The constant "ENCOTHER" is removed since PHP 8.4
- 625 | ERROR | The constant "FT_UID" is removed since PHP 8.4
- 626 | ERROR | The constant "FT_PEEK" is removed since PHP 8.4
- 627 | ERROR | The constant "FT_NOT" is removed since PHP 8.4
- 628 | ERROR | The constant "FT_INTERNAL" is removed since PHP 8.4
- 629 | ERROR | The constant "FT_PREFETCHTEXT" is removed since PHP 8.4
- 631 | ERROR | The constant "SE_UID" is removed since PHP 8.4
- 632 | ERROR | The constant "SE_FREE" is removed since PHP 8.4
- 633 | ERROR | The constant "SE_NOPREFETCH" is removed since PHP 8.4
---------------------------------------------------------------------------
-
-
-FILE: /var/www/html/src/modules/email/inc/class.mail_dcom_nntp_sock.inc.php
----------------------------------------------------------------------------
-FOUND 10 ERRORS AFFECTING 10 LINES
----------------------------------------------------------------------------
- 243 | ERROR | The constant "SA_ALL" is removed since PHP 8.4
- 250 | ERROR | The constant "SORTDATE" is removed since PHP 8.4
- 267 | ERROR | The constant "SORTDATE" is removed since PHP 8.4
- 271 | ERROR | The constant "SORTARRIVAL" is removed since PHP 8.4
- 273 | ERROR | The constant "SORTFROM" is removed since PHP 8.4
- 276 | ERROR | The constant "SORTSUBJECT" is removed since PHP 8.4
- 279 | ERROR | The constant "SORTTO" is removed since PHP 8.4
- 282 | ERROR | The constant "SORTCC" is removed since PHP 8.4
- 285 | ERROR | The constant "SORTSIZE" is removed since PHP 8.4
- 289 | ERROR | The constant "SORTSUBJECT" is removed since PHP 8.4
----------------------------------------------------------------------------
 
 
 FILE: /var/www/html/src/modules/email/inc/class.mail_send.inc.php
@@ -430,32 +339,16 @@ FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 
 FILE: /var/www/html/src/modules/email/inc/class.mail_dcom_imap_sock.inc.php
 --------------------------------------------------------------------------------
-FOUND 16 ERRORS AND 2 WARNINGS AFFECTING 18 LINES
+FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
 --------------------------------------------------------------------------------
-   42 | WARNING | When exit() is called within an object constructor, the
-      |         | object destructor will no longer be called since PHP 8.0
-      |         | While no __destruct() method was found in this class, one may
-      |         | be declared in the parent class or in a trait being used.
-  355 | WARNING | Declaring an optional parameter before a required parameter
-      |         | is deprecated since PHP 8.0. Parameter $folder is optional,
-      |         | while parameter $header is required. The $folder parameter is
-      |         | implicitly treated as a required parameter.
-  834 | ERROR   | The constant "SA_ALL" is removed since PHP 8.4
-  845 | ERROR   | The constant "SA_MESSAGES" is removed since PHP 8.4
-  846 | ERROR   | The constant "SA_RECENT" is removed since PHP 8.4
-  847 | ERROR   | The constant "SA_UNSEEN" is removed since PHP 8.4
-  848 | ERROR   | The constant "SA_UIDNEXT" is removed since PHP 8.4
-  849 | ERROR   | The constant "SA_UIDVALIDITY" is removed since PHP 8.4
- 1102 | ERROR   | The constant "SORTARRIVAL" is removed since PHP 8.4
- 1124 | ERROR   | The constant "SA_ALL" is removed since PHP 8.4
- 1136 | ERROR   | The constant "SORTDATE" is removed since PHP 8.4
- 1140 | ERROR   | The constant "SORTARRIVAL" is removed since PHP 8.4
- 1142 | ERROR   | The constant "SORTFROM" is removed since PHP 8.4
- 1145 | ERROR   | The constant "SORTSUBJECT" is removed since PHP 8.4
- 1148 | ERROR   | The constant "SORTTO" is removed since PHP 8.4
- 1151 | ERROR   | The constant "SORTCC" is removed since PHP 8.4
- 1154 | ERROR   | The constant "SORTSIZE" is removed since PHP 8.4
- 1159 | ERROR   | The constant "SORTSUBJECT" is removed since PHP 8.4
+  56 | WARNING | When exit() is called within an object constructor, the object
+     |         | destructor will no longer be called since PHP 8.0 While no
+     |         | __destruct() method was found in this class, one may be
+     |         | declared in the parent class or in a trait being used.
+ 369 | WARNING | Declaring an optional parameter before a required parameter is
+     |         | deprecated since PHP 8.0. Parameter $folder is optional, while
+     |         | parameter $header is required. The $folder parameter is
+     |         | implicitly treated as a required parameter.
 --------------------------------------------------------------------------------
 
 
@@ -499,29 +392,12 @@ FOUND 14 ERRORS AFFECTING 14 LINES
 
 FILE: /var/www/html/src/modules/email/inc/class.mail_dcom_pop3.inc.php
 --------------------------------------------------------------------------------
-FOUND 17 ERRORS AND 1 WARNING AFFECTING 18 LINES
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
 --------------------------------------------------------------------------------
-  22 | WARNING | Declaring an optional parameter before a required parameter is
-     |         | deprecated since PHP 8.0. Parameter $folder is optional, while
-     |         | parameter $header is required. The $folder parameter is
-     |         | implicitly treated as a required parameter.
-  54 | ERROR   | The constant "FT_UID" is removed since PHP 8.4
-  56 | ERROR   | The constant "FT_UID" is removed since PHP 8.4
-  74 | ERROR   | The constant "FT_UID" is removed since PHP 8.4
-  76 | ERROR   | The constant "FT_UID" is removed since PHP 8.4
-  85 | ERROR   | The constant "FT_UID" is removed since PHP 8.4
-  87 | ERROR   | The constant "FT_UID" is removed since PHP 8.4
-  94 | ERROR   | The constant "FT_PREFETCHTEXT" is removed since PHP 8.4
-  97 | ERROR   | The constant "FT_UID" is removed since PHP 8.4
-  99 | ERROR   | The constant "FT_UID" is removed since PHP 8.4
- 108 | ERROR   | The constant "FT_UID" is removed since PHP 8.4
- 110 | ERROR   | The constant "FT_UID" is removed since PHP 8.4
- 119 | ERROR   | The constant "FT_UID" is removed since PHP 8.4
- 121 | ERROR   | The constant "FT_UID" is removed since PHP 8.4
- 210 | ERROR   | The constant "SE_UID" is removed since PHP 8.4
- 212 | ERROR   | The constant "SE_UID" is removed since PHP 8.4
- 222 | ERROR   | The constant "SE_UID" is removed since PHP 8.4
- 224 | ERROR   | The constant "SE_UID" is removed since PHP 8.4
+ 26 | WARNING | Declaring an optional parameter before a required parameter is
+    |         | deprecated since PHP 8.0. Parameter $folder is optional, while
+    |         | parameter $header is required. The $folder parameter is
+    |         | implicitly treated as a required parameter.
 --------------------------------------------------------------------------------
 
 
@@ -839,19 +715,6 @@ FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
 --------------------------------------------------------------------------------
 
 
-FILE: /var/www/html/src/modules/calendar/inc/class.boicalendar.inc.php
---------------------------------------------------------------------------------
-FOUND 2 ERRORS AND 1 WARNING AFFECTING 3 LINES
---------------------------------------------------------------------------------
- 2817 | ERROR   | Using "parent" inside a class without parent is deprecated
-      |         | since PHP 7.4 and removed since PHP 8.0
- 2831 | ERROR   | Using "parent" inside a class without parent is deprecated
-      |         | since PHP 7.4 and removed since PHP 8.0
- 3316 | WARNING | The double cast is deprecated since PHP 8.5; Use (float)
-      |         | instead
---------------------------------------------------------------------------------
-
-
 FILE: ...src/modules/helpdesk/inc/custom/default/ticket_LRS_pre_commit_validate.php
 --------------------------------------------------------------------------------
 FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
@@ -878,18 +741,18 @@ FILE: /var/www/html/src/modules/messenger/inc/class.somessenger_imap.inc.php
 ----------------------------------------------------------------------------
 FOUND 12 ERRORS AFFECTING 8 LINES
 ----------------------------------------------------------------------------
-  33 | ERROR | The constant "SA_MESSAGES" is removed since PHP 8.4
-  46 | ERROR | The constant "FT_UID" is removed since PHP 8.4
-  56 | ERROR | The constant "SORTARRIVAL" is removed since PHP 8.4
-  56 | ERROR | The constant "SE_UID" is removed since PHP 8.4
-  59 | ERROR | The constant "SORTFROM" is removed since PHP 8.4
-  59 | ERROR | The constant "SE_UID" is removed since PHP 8.4
-  62 | ERROR | The constant "SORTSUBJECT" is removed since PHP 8.4
-  62 | ERROR | The constant "SE_UID" is removed since PHP 8.4
-  65 | ERROR | The constant "SORTARRIVAL" is removed since PHP 8.4
-  65 | ERROR | The constant "SE_UID" is removed since PHP 8.4
- 128 | ERROR | The constant "ST_UID" is removed since PHP 8.4
- 144 | ERROR | The constant "FT_UID" is removed since PHP 8.4
+  68 | ERROR | The constant "SA_MESSAGES" is removed since PHP 8.4
+  81 | ERROR | The constant "FT_UID" is removed since PHP 8.4
+  91 | ERROR | The constant "SORTARRIVAL" is removed since PHP 8.4
+  91 | ERROR | The constant "SE_UID" is removed since PHP 8.4
+  94 | ERROR | The constant "SORTFROM" is removed since PHP 8.4
+  94 | ERROR | The constant "SE_UID" is removed since PHP 8.4
+  97 | ERROR | The constant "SORTSUBJECT" is removed since PHP 8.4
+  97 | ERROR | The constant "SE_UID" is removed since PHP 8.4
+ 100 | ERROR | The constant "SORTARRIVAL" is removed since PHP 8.4
+ 100 | ERROR | The constant "SE_UID" is removed since PHP 8.4
+ 163 | ERROR | The constant "ST_UID" is removed since PHP 8.4
+ 179 | ERROR | The constant "FT_UID" is removed since PHP 8.4
 ----------------------------------------------------------------------------
 
 

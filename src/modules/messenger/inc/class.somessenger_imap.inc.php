@@ -12,6 +12,41 @@
 
 require_once __DIR__ . '/../../email/inc/imap_config.php';
 
+if (!defined('SA_MESSAGES'))
+{
+	define('SA_MESSAGES', 1);
+}
+
+if (!defined('SORTARRIVAL'))
+{
+	define('SORTARRIVAL', 1);
+}
+
+if (!defined('SORTFROM'))
+{
+	define('SORTFROM', 2);
+}
+
+if (!defined('SORTSUBJECT'))
+{
+	define('SORTSUBJECT', 3);
+}
+
+if (!defined('FT_UID'))
+{
+	define('FT_UID', 1);
+}
+
+if (!defined('ST_UID'))
+{
+	define('ST_UID', 1);
+}
+
+if (!defined('SE_UID'))
+{
+	define('SE_UID', 1);
+}
+
 class messenger_somessenger extends somessenger_
 {
 

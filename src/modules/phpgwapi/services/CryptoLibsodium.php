@@ -55,7 +55,7 @@ class Crypto extends Crypto_
         /**
          * Prevent from being unserialized (which would create a second instance of it)
          */
-        private function __wakeup()
+		public function __wakeup()
         {
         }
 

@@ -15,7 +15,7 @@
 		// The property location that this unit represents
 		protected $location;
 
-		public function __construct( int $id, $composite_id = -1, rental_property_location $location = null )
+		public function __construct( int $id, $composite_id = -1, ?rental_property_location $location = null )
 		{
 			parent::__construct($id);
 			$this->composite_id = (int)$composite_id;

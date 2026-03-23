@@ -23,6 +23,8 @@ volumes:
         driver: local
     node_modules_data:
         driver: local
+    postgres_data:
+        driver: local
 services:
     slim:
         container_name: ${SLIM_HOST:-portico_api}
@@ -110,6 +112,22 @@ services:
                 - https_proxy=${https_proxy}
         environment:
             <<: *common-variables
+        networks:
+            - internal
+
+    postgres:
+        image: postgres:15.0
+        profiles: ["db"]
+        container_name: ${POSTGRES_HOST:-portico_postgres}
+        hostname: ${POSTGRES_HOST:-portico_postgres}
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+            PGDATA: /data/postgres
+        volumes:
+            - postgres_data:/data/postgres
+            - ./db_setup:/docker-entrypoint-initdb.d
         networks:
             - internal
 

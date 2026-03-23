@@ -343,7 +343,7 @@ abstract class phpgwapi_uicommon_jquery
 	{
 		if ($end_of_page === "text/javascript")
 		{
-			$bt = debug_backtrace();
+			$bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
 			$log = new Log();
 			$log->error(array(
 				'text'	=> 'js::%1 Called from file: %2 line: %3',

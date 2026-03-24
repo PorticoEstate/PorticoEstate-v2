@@ -1158,7 +1158,7 @@ class Template
 	function haltmsg($msg)
 	{
 		$msg = str_replace(SRC_ROOT_PATH, '/path/to/portico', $msg);
-		trigger_error("Template Error: {$msg}", E_USER_ERROR);
+		throw new \RuntimeException("Template Error: {$msg}");
 	}
 
 	/**

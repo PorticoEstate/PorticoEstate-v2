@@ -156,7 +156,7 @@ class ResourceRepository
     /**
      * Get resources with filtering and pagination
      */
-    public function getFiltered(array $filters = [], int $offset = 0, int $limit = null): array
+    public function getFiltered(array $filters = [], int $offset = 0, ?int $limit = null): array
     {
         $whereConditions = [];
         $params = [];

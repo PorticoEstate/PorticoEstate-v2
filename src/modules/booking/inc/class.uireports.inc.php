@@ -447,7 +447,7 @@ class booking_uireports extends booking_uicommon
 			$jasper_wrapper = CreateObject('phpgwapi.jasper_wrapper');
 			try
 			{
-				$jasper_wrapper->execute($jasper_parameters, $output_type, $report_source);
+				$jasper_wrapper->execute($output_type, $report_source, $jasper_parameters);
 			}
 			catch (Exception $e)
 			{
@@ -613,7 +613,7 @@ HTML;
 				$report_source = PHPGW_SERVER_ROOT . '/booking/jasper/templates/participants.jrxml';
 				try
 				{
-					$jasper_wrapper->execute($jasper_parameters, $output_type, $report_source);
+					$jasper_wrapper->execute($output_type, $report_source, $jasper_parameters);
 				}
 				catch (Exception $e)
 				{

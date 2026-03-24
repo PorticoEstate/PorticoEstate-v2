@@ -4788,14 +4788,8 @@ HTML;
 		function stripslashes_gpc($data)
 		{	/* get rid of the escape \ that magic_quotes HTTP POST will add, " becomes \" and  '  becomes  \'  
 			  but ONLY if magic_quotes is on, less likely to strip user intended slashes this way */
-			if (get_magic_quotes_gpc()==1)
-			{
-				return stripslashes($data);
-			}
-			else
-			{
-				return $data;
-			}
+			// get_magic_quotes_gpc() removed in PHP 8.0; magic quotes were always off since PHP 5.4
+			return $data;
 		}
 	
 		/*!
@@ -4808,14 +4802,8 @@ HTML;
 		function addslashes_gpc($data)
 		{	/* add the escape \ that magic_quotes HTTP POST would add, " becomes \" and  '  becomes  \'  
 			  but ONLY if magic_quotes is OFF, else we may *double* add slashes */
-			if (get_magic_quotes_gpc()==1)
-			{
-				return $data;
-			}
-			else
-			{
-				return addslashes($data);
-			}
+			// get_magic_quotes_gpc() removed in PHP 8.0; magic quotes were always off since PHP 5.4
+			return addslashes($data);
 		}
 		
 		/*!

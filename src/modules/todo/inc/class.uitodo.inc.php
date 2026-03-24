@@ -367,7 +367,7 @@ class todo_uitodo
 		return $body;
 	}
 
-	function formatted_user($selected = '', $type)
+	function formatted_user($type, $selected = '')
 	{
 		if (!$selected)
 		{
@@ -548,8 +548,8 @@ class todo_uitodo
 			'todo_list'			=> $this->formatted_todo($parent),
 			'pri_list'			=> phpgwapi_sbox::getPriority('values[pri]'),
 			'stat_list'			=> phpgwapi_sbox::getPercentage('values[status]', 0),
-			'user_list'			=> $this->formatted_user($assigned, 'accounts'),
-			'group_list'		=> $this->formatted_user($assigned_group, 'groups'),
+			'user_list'			=> $this->formatted_user('accounts', $assigned),
+			'group_list'		=> $this->formatted_user('groups', $assigned_group),
 			'lang_selfortoday'	=> lang('or: select for today:'),
 			'lang_daysfromstartdate' => lang('or: days from startdate:'),
 			'lang_submit'		=> lang('Submit'),
@@ -744,8 +744,8 @@ class todo_uitodo
 
 		$this->t->set_var('pri_list', phpgwapi_sbox::getPriority('values[pri]', $values['pri']));
 		$this->t->set_var('stat_list', phpgwapi_sbox::getPercentage('values[status]', $values['status']));
-		$this->t->set_var('user_list', $this->formatted_user($this->botodo->format_assigned($values['assigned']), 'accounts'));
-		$this->t->set_var('group_list', $this->formatted_user($this->botodo->format_assigned($values['assigned_group']), 'groups'));
+		$this->t->set_var('user_list', $this->formatted_user('accounts', $this->botodo->format_assigned($values['assigned'])));
+		$this->t->set_var('group_list', $this->formatted_user('groups', $this->botodo->format_assigned($values['assigned_group'])));
 
 		if ($values['sdate'] == 0)
 		{

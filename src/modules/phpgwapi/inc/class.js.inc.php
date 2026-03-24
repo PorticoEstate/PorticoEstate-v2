@@ -446,7 +446,7 @@ HTML;
 
 		if ($end_of_page === "text/javascript")
 		{
-			$bt = debug_backtrace();
+			$bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
 			$this->log->error(array(
 				'text' => 'js::%1 Called from file: %2 line: %3',
 				'p1'   => $bt[0]['function'],

@@ -156,7 +156,11 @@
 				$serverSettings['ldap_use_tls'] = $ldap_use_tls;
 				Settings::getInstance()->set('server', $serverSettings);
 				// If anything fails, we will re-display the page with the error
-				if (@ldap_connect($serverSettings['ldap_host'], $serverSettings['ldap_port'])) {
+				$ldapUri = (preg_match('/^ldaps?:\/\//i', $serverSettings['ldap_host'])
+					? $serverSettings['ldap_host']
+					: 'ldap://' . $serverSettings['ldap_host'])
+					. (!empty($serverSettings['ldap_port']) ? ':' . $serverSettings['ldap_port'] : '');
+				if (@ldap_connect($ldapUri)) {
 					header('Location: ldap');
 					exit;
 				}

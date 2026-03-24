@@ -260,7 +260,6 @@
 
 			// Rotate image (negative because imagerotate rotates counter-clockwise)
 			$rotated = imagerotate($source, -$degrees, 0);
-			imagedestroy($source);
 
 			if (!$rotated)
 			{
@@ -285,8 +284,6 @@
 					$success = imagewebp($rotated, $filePath, 90);
 					break;
 			}
-
-			imagedestroy($rotated);
 
 			return $success;
 		}

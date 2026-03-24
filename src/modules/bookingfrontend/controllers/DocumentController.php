@@ -263,7 +263,6 @@ class DocumentController
 
         // Rotate image
         $rotated = imagerotate($source, -$degrees, 0);
-        imagedestroy($source);
 
         if (!$rotated) {
             return $sourceFile;
@@ -289,7 +288,6 @@ class DocumentController
                 break;
         }
 
-        imagedestroy($rotated);
 
         return $success ? $tempFile : $sourceFile;
     }

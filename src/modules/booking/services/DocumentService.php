@@ -322,7 +322,6 @@ class DocumentService
         }
 
         $rotated = imagerotate($source, -$degrees, 0);
-        imagedestroy($source);
 
         if (!$rotated) {
             return false;
@@ -338,8 +337,6 @@ class DocumentService
             'image/webp' => imagewebp($rotated, $filePath, 90),
             default => false,
         };
-
-        imagedestroy($rotated);
 
         return $success;
     }
@@ -377,7 +374,6 @@ class DocumentService
         }
 
         $rotated = imagerotate($source, -$degrees, 0);
-        imagedestroy($source);
 
         if (!$rotated) {
             return $sourceFile;
@@ -395,8 +391,6 @@ class DocumentService
             'image/webp' => imagewebp($rotated, $tempFile, 90),
             default => false,
         };
-
-        imagedestroy($rotated);
 
         return $success ? $tempFile : $sourceFile;
     }

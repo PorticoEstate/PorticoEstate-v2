@@ -31,6 +31,11 @@ class Db
 	public $join = 'JOIN';
 	public $left_join = 'LEFT JOIN';
 
+	private function failWithError($message)
+	{
+		throw new \RuntimeException($message);
+	}
+
 	private function __construct($dsn, $username = null, $password = null, $options = null)
 	{
 		if ($dsn === '')
@@ -905,13 +910,12 @@ class Db
 				{
 					$msg = "SQL: {$sql}<br/><br/> in File: $file<br/><br/> on Line: $line<br/><br/>";
 					$msg .= 'Error: ' . ($e->getMessage());
-					trigger_error($msg, E_USER_ERROR);
+					$this->failWithError($msg);
 				}
 				else
 				{
-					trigger_error("$sql\n" . $e->getMessage(), E_USER_ERROR);
+					$this->failWithError("$sql\n" . $e->getMessage());
 				}
-				exit;
 			}
 			else if ($this->Exception_On_Error && $this->Halt_On_Error == 'yes')
 			{
@@ -965,13 +969,12 @@ class Db
 
 				if ($file)
 				{
-					trigger_error('Error: ' . $e->getMessage() . "<br>SQL: $sql\n in File: $file\n on Line: $line\n", E_USER_ERROR);
+					$this->failWithError('Error: ' . $e->getMessage() . "<br>SQL: $sql\n in File: $file\n on Line: $line\n");
 				}
 				else
 				{
-					trigger_error("$sql\n" . $e->getMessage(), E_USER_ERROR);
+					$this->failWithError("$sql\n" . $e->getMessage());
 				}
-				exit;
 			}
 			else if ($this->Exception_On_Error && $this->Halt_On_Error == 'yes')
 			{

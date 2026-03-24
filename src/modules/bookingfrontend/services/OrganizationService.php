@@ -316,7 +316,6 @@ class OrganizationService
 
         $result = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         $data = json_decode($result, true);
         if (!$data) {
@@ -354,7 +353,6 @@ class OrganizationService
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
         $result = curl_exec($ch);
-        curl_close($ch);
 
         $data = json_decode($result, true);
         if ($data && !isset($data['postadresse'])) {

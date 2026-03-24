@@ -370,7 +370,7 @@
 
 			$var = array(
 				'small_calendar_prev'	=> $minical_prev,
-				'month_identifier'		=> lang(strftime("%B",$m)).' '.$this->bo->year,
+				'month_identifier'		=> lang(date('F', $m)).' '.$this->bo->year,
 				'username'				=> ( $this->bo->is_group
 											? $GLOBALS['phpgw']->common->grab_owner_name($this->bo->owner)
 											: $this->bo->contacts->get_name_of_person_id($this->bo->owner) ),
@@ -1343,7 +1343,7 @@
 				$days = phpgwapi_datetime::days_in_month($m,$y);
 
 				$d     = mktime(0,0,0,$m,1,$y);
-				$month = lang(date('F', $d)).strftime(' %Y', $d);
+				$month = lang(date('F', $d)).date(' Y', $d);
 				$cssclass = $m % 2 ? 'row_on' : 'row_off';
 				$cols  = $days * $intervals_per_day;
 
@@ -2392,7 +2392,7 @@ HTML;
 				}
 				$d = mktime(0,0,0,$m,1,$y);
 				$d_ymd = date('Ymd',$d);
-				$str .= '<option value="'.$d_ymd.'"'.($d_ymd == $thisdate?' selected':'').'>'.lang(date('F', $d)).strftime(' %Y', $d).'</option>'."\n";
+				$str .= '<option value="'.$d_ymd.'"'.($d_ymd == $thisdate?' selected':'').'>'.lang(date('F', $d)).date(' Y', $d).'</option>'."\n";
 			}
 
 			$var = array(

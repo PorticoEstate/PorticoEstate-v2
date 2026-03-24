@@ -996,7 +996,6 @@ class property_uiklassifikasjonssystemet extends phpgwapi_uicommon_jquery
 		$result	 = curl_exec($ch);
 
 		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		curl_close($ch);
 
 		$ret = json_decode($result, true);
 
@@ -1040,7 +1039,6 @@ class property_uiklassifikasjonssystemet extends phpgwapi_uicommon_jquery
 
 		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-		curl_close($ch);
 
 		$ret = json_decode($result, true);
 
@@ -1097,7 +1095,6 @@ class property_uiklassifikasjonssystemet extends phpgwapi_uicommon_jquery
 		//			$curl_info = curl_getinfo($ch);
 		//			_debug_array($curl_info);
 
-		curl_close($ch);
 
 		$ret = json_decode($result, true);
 		return $ret;

@@ -73,7 +73,6 @@ class OutlookHelper
 				'error' => 'Curl error: ' . curl_error($ch)
 			);
 		}
-		curl_close($ch);
 		// Decode the JSON response
 		$result = json_decode($response, true);
 		// Transform members data to rooms format if needed
@@ -129,7 +128,6 @@ class OutlookHelper
 		if (curl_errno($ch))
 		{
 			// Handle error
-			curl_close($ch);
 			return array(
 				'status' => 'error',
 				'msg' => 'Curl error: ' . curl_error($ch)
@@ -137,7 +135,6 @@ class OutlookHelper
 		}
 
 		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		curl_close($ch);
 
 		// Decode the JSON response
 		$result = json_decode($response, true);
@@ -196,7 +193,6 @@ class OutlookHelper
 			Cache::message_set('Error fetching Outlook resources: ' . curl_error($ch), 'error');
 			return [];
 		}
-		curl_close($ch);
 		// Decode the JSON response
 		$result = json_decode($response, true);
 		if (isset($result['error']))
@@ -259,7 +255,6 @@ class OutlookHelper
 				'error' => 'Curl error: ' . curl_error($ch)
 			);
 		}
-		curl_close($ch);
 		// Decode the JSON response
 		$result = json_decode($response, true);
 		if (isset($result['error']))

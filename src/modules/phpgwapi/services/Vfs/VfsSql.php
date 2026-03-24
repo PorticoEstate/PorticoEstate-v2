@@ -2312,10 +2312,11 @@ class Vfs extends VfsShared
 		umask(000);
 
 		/* We can't move directories into themselves */
-		if (($this->file_type(array(
-				'string'	=> $f->fake_full_path,
-				'relatives'	=> array($f->mask)
-			) == 'Directory'))
+		$_data = array(
+			'string'	=> $f->fake_full_path,
+			'relatives'	=> array($f->mask)
+		);
+		if (($this->file_type($_data) == 'Directory')
 			//				&& preg_match("/^{$f->fake_full_path}/", $t->fake_full_path)
 			&& preg_match("/^" . str_replace('/', '\/', $f->fake_full_path) . "/", $t->fake_full_path)
 		)
@@ -2338,17 +2339,46 @@ class Vfs extends VfsShared
 				)
 			);
 
+			$do_merge = false;
 			if ($this->file_exists(array(
 				'string'	=> $t->fake_full_path,
 				'relatives'	=> array($t->mask)
 			)))
 			{
-				$this->rm(
-					array(
-						'string'	=> $t->fake_full_path,
-						'relatives'	=> array($t->mask)
-					)
-				);
+				if (
+					$this->file_type($_data) == 'Directory'
+					&& $this->file_type(array('string' => $t->fake_full_path, 'relatives' => array($t->mask))) == 'Directory'
+				)
+				{
+					// Both source and target are directories: merge contents instead of replacing
+					$do_merge = true;
+				}
+			}
+
+			if ($this->file_actions)
+			{
+				if ($do_merge)
+				{
+					if (!$this->merge_move_real_directory($f->real_full_path, $t->real_full_path))
+					{
+						return false;
+					}
+
+					// After a successful merge, remove any emptied source directory remnants.
+					$this->cleanup_empty_real_source_dirs($f->real_full_path);
+				}
+				else
+				{
+					if (file_exists($t->real_full_path) && !$this->delete_real_path($t->real_full_path))
+					{
+						return false;
+					}
+
+					if (!$this->fileoperation->rename($f, $t))
+					{
+						return false;
+					}
+				}
 			}
 
 			/*
@@ -2397,14 +2427,24 @@ class Vfs extends VfsShared
 			}
 			elseif (!$t->outside)
 			{
-				$extraSql = $this->extra_sql(array('query_type' => VFS_SQL_UPDATE));
-				$sql = "UPDATE phpgw_vfs SET name=:new_name, directory=:new_directory WHERE directory=:directory AND name=:name " . $extraSql['sql'];
+				if ($do_merge)
+				{
+					// Merge: remove the source directory row only; children are repointed by the loop below
+					$sql = "DELETE FROM phpgw_vfs WHERE directory=:directory AND name=:name AND mime_type='Directory'";
+					$stmt = $this->db->prepare($sql);
+					$stmt->execute(array(':directory' => $f->fake_leading_dirs_clean, ':name' => $f->fake_name_clean));
+				}
+				else
+				{
+					$extraSql = $this->extra_sql(array('query_type' => VFS_SQL_UPDATE));
+					$sql = "UPDATE phpgw_vfs SET name=:new_name, directory=:new_directory WHERE directory=:directory AND name=:name " . $extraSql['sql'];
 
-				$stmt = $this->db->prepare($sql);
-				$params = array(':new_name' => $t->fake_name_clean, ':new_directory' => $t->fake_leading_dirs_clean, ':directory' => $f->fake_leading_dirs_clean, ':name' => $f->fake_name_clean);
-				$params = array_merge($params, $extraSql['params']);
+					$stmt = $this->db->prepare($sql);
+					$params = array(':new_name' => $t->fake_name_clean, ':new_directory' => $t->fake_leading_dirs_clean, ':directory' => $f->fake_leading_dirs_clean, ':name' => $f->fake_name_clean);
+					$params = array_merge($params, $extraSql['params']);
 
-				$stmt->execute($params);
+					$stmt->execute($params);
+				}
 			}
 
 			$this->set_attributes(
@@ -2425,11 +2465,6 @@ class Vfs extends VfsShared
 					'relatives'	=> array($t->mask)
 				)
 			);
-
-			if ($this->file_actions)
-			{
-				$rr = $this->fileoperation->rename($f, $t);
-			}
 
 			/*
 				   This removes the original entry from the database
@@ -3735,6 +3770,181 @@ class Vfs extends VfsShared
 	}
 
 	/* Helper functions */
+
+	/**
+	 * Merge-move one real directory tree into another.
+	 * Existing destination files/directories are replaced when names collide.
+	 */
+	private function merge_move_real_directory($sourceDir, $targetDir)
+	{
+		if (!is_dir($sourceDir))
+		{
+			return false;
+		}
+
+		if (file_exists($targetDir) && !is_dir($targetDir))
+		{
+			if (!$this->delete_real_path($targetDir))
+			{
+				return false;
+			}
+		}
+
+		if (!is_dir($targetDir) && !@mkdir($targetDir, 0777, true))
+		{
+			return false;
+		}
+
+		$items = @scandir($sourceDir);
+		if ($items === false)
+		{
+			return false;
+		}
+
+		foreach ($items as $item)
+		{
+			if ($item === '.' || $item === '..')
+			{
+				continue;
+			}
+
+			$sourcePath = $sourceDir . DIRECTORY_SEPARATOR . $item;
+			$targetPath = $targetDir . DIRECTORY_SEPARATOR . $item;
+
+			if (is_dir($sourcePath))
+			{
+				if (file_exists($targetPath) && !is_dir($targetPath))
+				{
+					if (!$this->delete_real_path($targetPath))
+					{
+						return false;
+					}
+				}
+
+				if (!$this->merge_move_real_directory($sourcePath, $targetPath))
+				{
+					return false;
+				}
+
+				if (is_dir($sourcePath) && !$this->remove_real_dir_if_empty($sourcePath))
+				{
+					return false;
+				}
+			}
+			else
+			{
+				if (file_exists($targetPath) && !$this->delete_real_path($targetPath))
+				{
+					return false;
+				}
+
+				$targetParent = dirname($targetPath);
+				if (!is_dir($targetParent) && !@mkdir($targetParent, 0777, true))
+				{
+					return false;
+				}
+
+				if (!@rename($sourcePath, $targetPath))
+				{
+					return false;
+				}
+			}
+		}
+
+		$this->remove_real_dir_if_empty($sourceDir);
+
+		return true;
+	}
+
+	/**
+	 * Best-effort cleanup of now-empty source directories after merge-move.
+	 */
+	private function cleanup_empty_real_source_dirs($sourceDir)
+	{
+		$current = $sourceDir;
+		$base = rtrim((string) $this->basedir, '/\\');
+
+		while ($current && is_dir($current))
+		{
+			if (!$this->remove_real_dir_if_empty($current))
+			{
+				break;
+			}
+
+			$parent = dirname($current);
+			if ($parent === $current || !$parent)
+			{
+				break;
+			}
+
+			if ($base && strlen($parent) < strlen($base))
+			{
+				break;
+			}
+
+			$current = $parent;
+		}
+	}
+
+	/**
+	 * Remove a path recursively.
+	 */
+	private function delete_real_path($path)
+	{
+		if (is_dir($path) && !is_link($path))
+		{
+			$items = @scandir($path);
+			if ($items === false)
+			{
+				return false;
+			}
+
+			foreach ($items as $item)
+			{
+				if ($item === '.' || $item === '..')
+				{
+					continue;
+				}
+				if (!$this->delete_real_path($path . DIRECTORY_SEPARATOR . $item))
+				{
+					return false;
+				}
+			}
+
+			return @rmdir($path);
+		}
+
+		if (!file_exists($path))
+		{
+			return true;
+		}
+
+		return @unlink($path);
+	}
+
+	/**
+	 * Remove directory if empty, return true if removed or does not exist.
+	 */
+	private function remove_real_dir_if_empty($path)
+	{
+		if (!is_dir($path))
+		{
+			return true;
+		}
+
+		$items = @scandir($path);
+		if ($items === false)
+		{
+			return false;
+		}
+
+		if (count(array_diff($items, array('.', '..'))) > 0)
+		{
+			return false;
+		}
+
+		return @rmdir($path);
+	}
 
 	/* This fetchs all available file system information for string(not using the database) */
 	function get_real_info($data)

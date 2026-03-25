@@ -11580,3 +11580,22 @@
 			return	'0.9.17.765';
 		}
 	}
+
+	/**
+	 * Update property version from 0.9.17.765 to 0.9.17.766
+	 * Alter column fm_entity.descr -> text
+	 */
+	$test[] = '0.9.17.765';
+	function property_upgrade0_9_17_765($oProc)
+	{
+		$oProc->m_odb->transaction_begin();
+		$oProc->AlterColumn('fm_entity', 'descr', array(
+			'type' => 'text',
+			'nullable' => True
+		));
+
+		if ($oProc->m_odb->transaction_commit())
+		{
+			return	'0.9.17.766';
+		}
+	}

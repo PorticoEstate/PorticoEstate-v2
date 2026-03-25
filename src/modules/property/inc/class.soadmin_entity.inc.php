@@ -256,10 +256,11 @@
 			$this->db->query($sql, __LINE__, __FILE__);
 
 			$this->category_tree = array();
+			$categories = array();
 			while ($this->db->next_record())
 			{
 				$id				 = $this->db->f('id');
-				$categories[$id] = array
+				$categories[] = array
 					(
 					'id'			 => $id,
 					'name'			 => $this->db->f('name', true),
@@ -270,7 +271,7 @@
 
 			foreach ($categories as $category)
 			{
-				$this->category_tree[$category['id']] = array
+				$this->category_tree[] = array
 					(
 					'id'			 => $category['id'],
 					'name'			 => $category['name'],

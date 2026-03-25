@@ -693,6 +693,8 @@
 					}
 				}
 
+				$menu = createObject('phpgwapi.menu');
+				$menu->clear();
 				$msgbox_data = $this->bocommon->msgbox_data($this->receipt);
 				$message	 = $this->phpgwapi_common->msgbox($msgbox_data);
 				Cache::message_set($message[0]['msgbox_text'], 'message');
@@ -709,8 +711,8 @@
 		{
 			if (!$this->acl_add)
 			{
-				phpgw::redirect_link('/index.php', array('menuaction'	 => 'property.uilocation.stop',
-					'perm'			 => 2, 'acl_location'	 => $this->acl_location));
+				phpgw::no_access($this->type_app[$this->type],  "{$this->type}::edit");
+				return;
 			}
 			$id		 = (int)Sanitizer::get_var('id');
 			$values	 = Sanitizer::get_var('values');
@@ -859,6 +861,9 @@
 						return;
 					}
 				}
+
+				$menu = createObject('phpgwapi.menu');
+				$menu->clear();
 
 				$msgbox_data = $this->bocommon->msgbox_data($this->receipt);
 				$message	 = $this->phpgwapi_common->msgbox($msgbox_data);

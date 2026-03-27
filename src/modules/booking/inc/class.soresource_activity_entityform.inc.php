@@ -89,4 +89,17 @@ class booking_soresource_activity_entityform extends booking_socommon
 			}
 		}
 	}
+
+
+	public function get_entity_forms_by_resource_and_activity($resource_id, $activity_id)
+	{
+
+		// approach using the read method with filters:
+		/*
+			SELECT * FROM public.bb_resource_activity_entityform 
+			WHERE active = 1
+			AND resources  @> '["{$resource_id}"]'::jsonb
+			AND activities   @> '["{$activity_id}"]'::jsonb
+		*/
+	}
 }

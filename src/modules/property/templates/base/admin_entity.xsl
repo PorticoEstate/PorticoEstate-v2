@@ -6,6 +6,11 @@
 			<xsl:call-template name="jquery_phpgw_i18n"/>
 			<xsl:apply-templates select="edit"/>
 		</xsl:when>
+		<xsl:when test="edit_category">
+			<xsl:call-template name="jquery_phpgw_i18n"/>
+			<xsl:apply-templates select="edit_category"/>
+		</xsl:when>
+
 		<xsl:when test="list_attribute">
 			<xsl:apply-templates select="list_attribute"/>
 		</xsl:when>
@@ -473,6 +478,181 @@
 							<xsl:value-of select="entity_name"/>
 						</label>
 					</div>
+
+					<xsl:choose>
+						<xsl:when test="value_id > 0">
+							<div class="pure-control-group">
+								<label>
+									<xsl:value-of select="php:function('lang', 'entity')"/>
+								</label>
+								<xsl:value-of select="value_id"/>
+							</div>
+						</xsl:when>
+					</xsl:choose>
+					<div class="pure-control-group">
+						<label>
+							<xsl:value-of select="php:function('lang', 'name')"/>
+						</label>
+
+						<input type="text" data-validation="required" name="values[name]" value="{value_name}" class="pure-input-3-4">
+							<xsl:attribute name="title">
+								<xsl:value-of select="lang_name_standardtext"/>
+							</xsl:attribute>
+						</input>
+
+					</div>
+					<div class="pure-control-group">
+						<label>
+							<xsl:value-of select="php:function('lang', 'descr')"/>
+						</label>
+						<textarea cols="60" rows="10" name="values[descr]" class="pure-input-3-4">
+							<xsl:attribute name="title">
+								<xsl:value-of select="lang_descr_standardtext"/>
+							</xsl:attribute>
+							<xsl:value-of select="value_descr"/>
+						</textarea>
+					</div>
+					<div class="pure-control-group">
+						<label>
+							<xsl:value-of select="lang_location_form"/>
+						</label>
+						<xsl:choose>
+							<xsl:when test="value_location_form = 1">
+								<input type="checkbox" name="values[location_form]" value="1" checked="checked">
+									<xsl:attribute name="title">
+										<xsl:value-of select="lang_location_form_statustext"/>
+									</xsl:attribute>
+								</input>
+							</xsl:when>
+							<xsl:otherwise>
+								<input type="checkbox" name="values[location_form]" value="1">
+									<xsl:attribute name="title">
+										<xsl:value-of select="lang_location_form_statustext"/>
+									</xsl:attribute>
+								</input>
+							</xsl:otherwise>
+						</xsl:choose>
+					</div>
+
+					<div class="pure-control-group">
+						<label>
+							<xsl:value-of select="lang_documentation"/>
+						</label>
+						<xsl:choose>
+							<xsl:when test="value_documentation = 1">
+								<input type="checkbox" name="values[documentation]" value="1" checked="checked">
+									<xsl:attribute name="title">
+										<xsl:value-of select="lang_documentation_statustext"/>
+									</xsl:attribute>
+								</input>
+							</xsl:when>
+							<xsl:otherwise>
+								<input type="checkbox" name="values[documentation]" value="1">
+									<xsl:attribute name="title">
+										<xsl:value-of select="lang_documentation_statustext"/>
+									</xsl:attribute>
+								</input>
+							</xsl:otherwise>
+						</xsl:choose>
+					</div>
+
+
+					<xsl:choose>
+						<xsl:when test="value_location_form = 1">
+							<div class="pure-control-group">
+								<label>
+									<xsl:value-of select="lang_include_in_location_form"/>
+								</label>
+								<div class="pure-custom" >
+									<xsl:call-template name="include_list"/>
+								</div>
+							</div>
+							<div class="pure-control-group">
+								<label>
+									<xsl:value-of select="lang_include_this_entity"/>
+								</label>
+								<div class="pure-custom" >
+									<xsl:call-template name="include_list_2"/>
+								</div>
+							</div>
+							<div class="pure-control-group">
+								<label>
+									<xsl:value-of select="lang_start_this_entity"/>
+								</label>
+								<div class="pure-custom" >
+									<xsl:call-template name="include_list_3"/>
+								</div>
+							</div>
+						</xsl:when>
+					</xsl:choose>
+
+					<div class="pure-controls">
+						<input type="hidden" name="template_attrib" value=""/>
+						<input type="button" class="pure-button pure-button-primary" name="values[save]" value="{lang_save}" onClick="onActionsClick();">
+							<xsl:attribute name="title">
+								<xsl:value-of select="php:function('lang', 'save')"/>
+							</xsl:attribute>
+						</input>
+					</div>
+				</fieldset>
+			</div>
+		</div>
+	</form>
+	<table>
+		<tr>
+			<td>
+				<xsl:variable name="done_action">
+					<xsl:value-of select="done_action"/>
+				</xsl:variable>
+				<xsl:variable name="lang_done">
+					<xsl:value-of select="lang_done"/>
+				</xsl:variable>
+				<form method="post" action="{$done_action}">
+					<div class="pure-controls">
+						<input type="submit" class="pure-button pure-button-primary" name="done" value="{$lang_done}">
+							<xsl:attribute name="title">
+								<xsl:value-of select="lang_done_standardtext"/>
+							</xsl:attribute>
+						</input>
+					</div>
+				</form>
+			</td>
+		</tr>
+	</table>
+</xsl:template>
+
+<!-- add category / edit category -->
+<xsl:template 
+	xmlns:php="http://php.net/xsl" match="edit_category">
+	<script type="text/javascript"> self.name="first_Window";		
+		<xsl:value-of select="lookup_functions"/>		var base_java_url = 
+		<xsl:value-of select="base_java_url"/>;	
+	</script>
+	<xsl:choose>
+		<xsl:when test="msgbox_data != ''">
+			<dl>
+				<dt>
+					<xsl:call-template name="msgbox"/>
+				</dt>
+			</dl>
+		</xsl:when>
+	</xsl:choose>
+	<xsl:variable name="form_action">
+		<xsl:value-of select="form_action"/>
+	</xsl:variable>
+	<form name="form" class="pure-form pure-form-aligned" method="post" id="form" action="{$form_action}">
+		<div id="tab-content">
+			<xsl:value-of disable-output-escaping="yes" select="tabs"/>
+			<div id="general">
+				<fieldset>
+					<div class="pure-control-group">
+						<label>
+							<xsl:value-of select="lang_entity"/>
+						</label>
+						<label>
+							<xsl:value-of select="entity_name"/>
+						</label>
+					</div>
 					<xsl:choose>
 						<xsl:when test="parent_list != ''">
 							<div class="pure-control-group">
@@ -502,13 +682,11 @@
 						<label>
 							<xsl:value-of select="php:function('lang', 'name')"/>
 						</label>
-
 						<input type="text" data-validation="required" name="values[name]" value="{value_name}" class="pure-input-3-4">
 							<xsl:attribute name="title">
 								<xsl:value-of select="lang_name_standardtext"/>
 							</xsl:attribute>
 						</input>
-
 					</div>
 					<div class="pure-control-group">
 						<label>
@@ -607,7 +785,6 @@
 							</div>
 						</xsl:when>
 					</xsl:choose>
-
 					<xsl:choose>
 						<xsl:when test="lookup_tenant != ''">
 							<div class="pure-control-group">
@@ -722,7 +899,85 @@
 							</div>
 						</xsl:when>
 					</xsl:choose>
-
+					<xsl:choose>
+						<xsl:when test="start_ticket != ''">
+							<div class="pure-control-group">
+								<label>
+									<xsl:value-of select="php:function('lang', 'start ticket')"/>
+								</label>
+								<input type="checkbox" name="values[start_ticket]" value="1">
+									<xsl:attribute name="title">
+										<xsl:value-of select="php:function('lang', 'Enable start ticket from this category')"/>
+									</xsl:attribute>
+									<xsl:if test="value_start_ticket = '1'">
+										<xsl:attribute name="checked">
+											<xsl:text>checked</xsl:text>
+										</xsl:attribute>
+									</xsl:if>
+								</input>
+							</div>
+						</xsl:when>
+					</xsl:choose>
+					<div class="pure-control-group">
+						<label>
+							<xsl:value-of select="php:function('lang', 'is eav')"/>
+						</label>
+						<input type="checkbox" name="values[is_eav]" value="1">
+							<xsl:attribute name="title">
+								<xsl:value-of select="php:function('lang', 'This category is modelled in the database as a xml adapted entity attribute value model')"/>
+							</xsl:attribute>
+							<xsl:if test="value_is_eav = '1'">
+								<xsl:attribute name="checked">
+									<xsl:text>checked</xsl:text>
+								</xsl:attribute>
+							</xsl:if>
+							<xsl:if test="value_is_eav = '1' or value_id > 0">
+								<xsl:attribute name="disabled">
+									<xsl:text>disabled</xsl:text>
+								</xsl:attribute>
+							</xsl:if>
+						</input>
+						<xsl:choose>
+							<xsl:when test="value_is_eav = '1'">
+								<input type="hidden" name="values[is_eav]" value="1"/>
+							</xsl:when>
+						</xsl:choose>
+					</div>
+					<div class="pure-control-group">
+						<label>
+							<xsl:value-of select="php:function('lang', 'enable bulk')"/>
+						</label>
+						<input type="checkbox" name="values[enable_bulk]" value="1">
+							<xsl:attribute name="title">
+								<xsl:value-of select="php:function('lang', 'This category is allowed to reperesent bulk entities')"/>
+							</xsl:attribute>
+							<xsl:if test="value_enable_bulk = '1'">
+								<xsl:attribute name="checked">
+									<xsl:text>checked</xsl:text>
+								</xsl:attribute>
+							</xsl:if>
+						</input>
+					</div>
+					<div class="pure-control-group">
+						<label>
+							<xsl:value-of select="php:function('lang', 'enable controller')"/>
+						</label>
+						<input type="checkbox" name="values[enable_controller]" value="1">
+							<xsl:attribute name="title">
+								<xsl:value-of select="php:function('lang', 'This category is allowed to link to controller')"/>
+							</xsl:attribute>
+							<xsl:if test="value_enable_controller > '0'">
+								<xsl:attribute name="checked">
+									<xsl:text>checked</xsl:text>
+								</xsl:attribute>
+							</xsl:if>
+							<xsl:if test="value_enable_controller > '1'">
+								<xsl:attribute name="disabled">
+									<xsl:text>disabled</xsl:text>
+								</xsl:attribute>
+							</xsl:if>
+						</input>
+					</div>
 					<xsl:choose>
 						<xsl:when test="lang_location_level != ''">
 							<div class="pure-control-group">
@@ -772,7 +1027,7 @@
 								<label>
 									<xsl:value-of select="lang_include_in_location_form"/>
 								</label>
-								<div class="pure-custom" >
+								<div class="pure-custom">
 									<xsl:call-template name="include_list"/>
 								</div>
 							</div>
@@ -780,7 +1035,7 @@
 								<label>
 									<xsl:value-of select="lang_include_this_entity"/>
 								</label>
-								<div class="pure-custom" >
+								<div class="pure-custom">
 									<xsl:call-template name="include_list_2"/>
 								</div>
 							</div>
@@ -788,13 +1043,12 @@
 								<label>
 									<xsl:value-of select="lang_start_this_entity"/>
 								</label>
-								<div class="pure-custom" >
+								<div class="pure-custom">
 									<xsl:call-template name="include_list_3"/>
 								</div>
 							</div>
 						</xsl:when>
 					</xsl:choose>
-
 					<xsl:choose>
 						<xsl:when test="category_list != '' and value_id = ''">
 							<div class="pure-control-group">
@@ -860,7 +1114,6 @@
 		</tr>
 	</table>
 </xsl:template>
-
 <!-- add / edit checklist  -->
 <xsl:template xmlns:php="http://php.net/xsl" match="edit_checklist">
 	<script type="text/javascript">

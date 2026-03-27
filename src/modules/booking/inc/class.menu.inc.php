@@ -437,6 +437,13 @@ class booking_menu
 							'type' => 'e_lock_system'
 						)),
 					),
+					'resource_activity_entityform' => array(
+						'text' => lang('Resource Activity Entity Forms'),
+						'url' => phpgw::link('/index.php', array(
+							'menuaction' => 'booking.uiresource_activity_entityform.index'
+						)),
+					),
+
 					'office' => array(
 						'text' => lang('office'),
 						'url' => phpgw::link('/index.php', array(

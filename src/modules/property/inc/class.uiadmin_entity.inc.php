@@ -1081,7 +1081,7 @@
 			self::add_javascript('property', 'base', 'admin_entity.edit_category.js');
 
 			self::render_template_xsl(array('admin_entity', 'datatable_inline', 'nextmatchs'), array(
-				'edit' => $data));
+				'edit_category' => $data));
 		}
 
 		function get_template_attributes()

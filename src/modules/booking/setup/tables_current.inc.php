@@ -340,6 +340,25 @@ $phpgw_baseline = array(
 		'ix' => array(),
 		'uc' => array(),
 	),
+	//bb_resource_activity_entityform is used to link resources to activity specific entityforms, to be used when applying for a resource. This allows different activities to have different application forms for the same resource.
+	'bb_resource_activity_entityform' => array(
+		'fd' => array(
+			'id' => array('type' => 'auto', 'nullable' => false),
+			'name' => array('type' => 'varchar', 'precision' => 150, 'nullable' => False),
+			'active' => array('type' => 'int', 'nullable' => true, 'precision' => 2, 'default' => 1),
+			'building_id' => array('type' => 'int', 'precision' => 4, 'nullable' => False),
+			'resources' => array('type' => 'jsonb',  'nullable' => False),
+			'activities' => array('type' => 'jsonb',  'nullable' => True),
+			'location_id' => array('type' => 'int', 'precision' => 4, 'nullable' => False),
+		),
+		'pk' => array('id'),
+		'fk' => array(
+			'phpgw_locations' => array('location_id' => 'location_id'),
+			'bb_building' => array('building_id' => 'id'),
+		),
+		'ix' => array(),
+		'uc' => array(),
+	),
 	'bb_building_resource' => array(
 		'fd' => array(
 			'building_id' => array('type' => 'int', 'precision' => '4', 'nullable' => False),

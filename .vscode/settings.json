@@ -1,5 +1,31 @@
 {
 	"[yaml]": {
 		"editor.tabSize": 4
-	}
+	},
+	"files.associations": {
+		"*.xsl": "xsl",
+		"*.xslt": "xsl"
+	},
+	"[xsl]": {
+		"editor.defaultFormatter": "redhat.vscode-xml",
+		"editor.formatOnSave": false
+	},
+	"[xml]": {
+		"editor.defaultFormatter": "redhat.vscode-xml"
+	},
+	"xml.format.maxLineWidth": 0,
+	"xml.format.preserveSpace": [
+		"script",
+		"xsl:text",
+		"xsl:comment",
+		"xsl:processing-instruction",
+		"literallayout",
+		"programlisting",
+		"screen",
+		"synopsis",
+		"pre",
+		"xd:pre"
+	],
+	"xml.format.preserveEmptyContent": true,
+	"xml.format.splitAttributes": false
 }

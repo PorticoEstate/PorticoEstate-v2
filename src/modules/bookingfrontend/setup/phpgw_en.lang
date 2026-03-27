@@ -946,3 +946,4 @@ rooms_and_premises	bookingfrontend	en	Rooms and premises
 building_title	bookingfrontend	en	Building
 resource_title	bookingfrontend	en	Room
 show_all_resources	bookingfrontend	en	Show all rooms
+select_resource_before_application	bookingfrontend	en	You must select a resource before creating an application

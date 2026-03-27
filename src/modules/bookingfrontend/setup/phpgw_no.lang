@@ -947,3 +947,4 @@ rooms_and_premises	bookingfrontend	no	Rom og lokaler
 building_title	bookingfrontend	no	Bygg
 resource_title	bookingfrontend	no	Rom
 show_all_resources	bookingfrontend	no	Se alle rom
+select_resource_before_application	bookingfrontend	no	Du må velge en ressurs før du kan opprette en søknad

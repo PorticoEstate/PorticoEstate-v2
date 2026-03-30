@@ -438,7 +438,7 @@ class booking_menu
 						)),
 					),
 					'resource_activity_entityform' => array(
-						'text' => lang('Resource Activity Entity Forms'),
+						'text' => lang('resource_activity_entityform'),
 						'url' => phpgw::link('/index.php', array(
 							'menuaction' => 'booking.uiresource_activity_entityform.index'
 						)),

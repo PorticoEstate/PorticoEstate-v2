@@ -131,6 +131,57 @@
 	</script>
 </xsl:template>
 
+<xsl:template match="show" xmlns:php="http://php.net/xsl">
+	<xsl:call-template name="msgbox" />
+	<div class="pure-g">
+		<div class="pure-u-1 pure-u-md-1-2">
+			<table class="pure-table pure-table-bordered">
+				<tbody>
+					<tr>
+						<th><xsl:value-of select="php:function('lang', 'Name')" /></th>
+						<td><xsl:value-of select="entityform/name" /></td>
+					</tr>
+					<tr>
+						<th><xsl:value-of select="php:function('lang', 'Active')" /></th>
+						<td>
+							<xsl:choose>
+								<xsl:when test="entityform/active = 1">
+									<xsl:value-of select="php:function('lang', 'yes')" />
+								</xsl:when>
+								<xsl:otherwise>
+									<xsl:value-of select="php:function('lang', 'no')" />
+								</xsl:otherwise>
+							</xsl:choose>
+						</td>
+					</tr>
+					<tr>
+						<th><xsl:value-of select="php:function('lang', 'Building')" /></th>
+						<td><xsl:value-of select="entityform/building_name" /></td>
+					</tr>
+					<tr>
+						<th><xsl:value-of select="php:function('lang', 'Resources')" /></th>
+						<td><xsl:value-of select="entityform/resource_names" /></td>
+					</tr>
+					<tr>
+						<th><xsl:value-of select="php:function('lang', 'Activities')" /></th>
+						<td><xsl:value-of select="entityform/activity_names" /></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	<div class="form_buttons">
+		<a class="pure-button pure-button-primary">
+			<xsl:attribute name="href"><xsl:value-of select="edit_link" /></xsl:attribute>
+			<xsl:value-of select="php:function('lang', 'Edit')" />
+		</a>
+		<a class="cancel pure-button">
+			<xsl:attribute name="href"><xsl:value-of select="cancel_link" /></xsl:attribute>
+			<xsl:value-of select="php:function('lang', 'Cancel')" />
+		</a>
+	</div>
+</xsl:template>
+
 <xsl:template match="options">
 	<option value="{id}">
 		<xsl:if test="selected = 1">

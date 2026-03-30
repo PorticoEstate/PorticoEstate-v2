@@ -429,7 +429,7 @@ SQL;
 				echo '</pre>';
 				$msg = "SOAP Fault:\n faultcode: {$fault->faultcode},\n faultstring: {$fault->faultstring}";
 				echo $msg . PHP_EOL;
-				trigger_error(nl2br($msg), E_USER_ERROR);
+				throw new \RuntimeException(nl2br($msg));
 			}
 
 			//Kriterier

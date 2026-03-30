@@ -775,10 +775,6 @@ HTML;
 						$selected = ' selected ';
 					}
 
-					if (!empty($this->serverSettings['mcrypt_enabled']) && $stype == 'mcrypt')
-					{
-						$selected = ' selected ';
-					}
 
 					$crypto_options .= <<<HTML
 					<option{$selected} value="{$stype}">{$stype}</option>
@@ -805,8 +801,6 @@ HTML;
 					'db_persistent_no' => isset($this->serverSettings['db_persistent']) && $this->serverSettings['db_persistent'] ? '' : ' selected',
 					'session_options' => $session_options,
 					'crypto_options' => $crypto_options,
-					'mcrypt_enabled_yes' => isset($this->serverSettings['mcrypt_enabled']) && $this->serverSettings['mcrypt_enabled'] ? ' selected' : '',
-					'mcrypt_enabled_no' => isset($this->serverSettings['mcrypt_enabled']) && $this->serverSettings['mcrypt_enabled'] ? '' : ' selected',
 					'mcrypt_iv' => $this->serverSettings['mcrypt_iv'],
 					'setup_mcrypt_key' => $this->serverSettings['setup_mcrypt_key'],
 					'setup_acl' => !isset($this->serverSettings['setup_acl']) || !$this->serverSettings['setup_acl'] ? '127.0.0.1' : $this->serverSettings['setup_acl'],

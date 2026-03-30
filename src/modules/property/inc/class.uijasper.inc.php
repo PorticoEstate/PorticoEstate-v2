@@ -781,7 +781,7 @@ class property_uijasper extends phpgwapi_uicommon_jquery
 
 			try
 			{
-				$jasper_wrapper->execute($jasper_parameters, $output_type, $report_source);
+				$jasper_wrapper->execute($output_type, $report_source, $jasper_parameters);
 			}
 			catch (Exception $e)
 			{

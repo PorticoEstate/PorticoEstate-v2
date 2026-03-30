@@ -111,7 +111,7 @@
 			}
 			else
 			{
-				trigger_error("Can not createObject({$class}), file does not exist", E_USER_ERROR);
+				throw new \RuntimeException("Can not createObject({$class}), file does not exist");
 			}
 		}
 

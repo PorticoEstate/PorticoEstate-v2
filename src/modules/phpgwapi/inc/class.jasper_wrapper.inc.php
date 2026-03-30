@@ -113,7 +113,7 @@ class phpgwapi_jasper_wrapper
 	 *  unique
 	 */
 
-	public function execute($parameters = '', $output_type, $report_source, $return_content = false)
+	public function execute($output_type, $report_source, $parameters = '', $return_content = false)
 	{
 		if (!$parameters)
 		{

@@ -40,7 +40,10 @@ class Crypto extends Crypto_
         public static function getInstance($vars = ''): Crypto
         {
             if (null === static::$instance) {
-                static::$instance = new static($vars = '');
+				static::$instance = new static($vars);
+			} elseif (is_array($vars) && !static::$instance->enabled) {
+				// Allow first key-bearing call to initialize an existing singleton.
+				static::$instance->init($vars);
             }
             return static::$instance;
         }
@@ -55,7 +58,7 @@ class Crypto extends Crypto_
         /**
          * Prevent from being unserialized (which would create a second instance of it)
          */
-        private function __wakeup()
+		public function __wakeup()
         {
         }
 
@@ -64,9 +67,18 @@ class Crypto extends Crypto_
 	{
 		$serverSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('server');
 
-		$key = $vars[0];
+		$key = isset($vars[0]) ? (string) $vars[0] : '';
 
-		if ($serverSettings['enable_crypto'] == 'libsodium' && extension_loaded('sodium') && !$this->enabled) {
+		if (
+			isset($serverSettings['enable_crypto'])
+			&& $serverSettings['enable_crypto'] == 'libsodium'
+			&& extension_loaded('sodium')
+			&& !$this->enabled
+		) {
+			if ($key === '') {
+				return;
+			}
+
 			$this->enabled = true;
 
 			$keysize = SODIUM_CRYPTO_SECRETBOX_KEYBYTES;

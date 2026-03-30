@@ -1,0 +1,2105 @@
+<?php
+
+namespace App\modules\property\helpers;
+
+use App\Database\Db;
+
+/**
+ * Location Hierarchy Analyzer - rewritten to strictly follow the rules.
+ */
+class LocationHierarchyAnalyzer
+{
+	private $db;
+	private $locationData = [];
+	private $loc2Refs = [];
+	private $loc3Refs = [];
+	private $issues = [];
+	private $suggestions = [];
+	private $sqlStatements = [];
+	private $loc3Names = []; // loc1 => loc2 => loc3 => loc3_name
+	private $loc2Names = []; // loc1 => loc2 => loc2_name
+	private $entryToBygningsnrMap = [];
+	private $processedLocationCodes = [];
+	private $currentFilterLoc1 = null;
+	private $bygningsnrToLoc2Map = []; // loc1 => bygningsnr => loc2
+	private $streetToLoc3Map = []; // loc1 => loc2 => streetkey => loc3
+	private $debugMode = true;
+
+	public function __construct()
+	{
+		$this->db = Db::getInstance();
+	}
+
+	private function debug($msg)
+	{
+		if ($this->debugMode)
+		{
+			error_log("[LocationHierarchyAnalyzer] " . $msg);
+		}
+	}
+
+	private function normalizeLoc2($loc2)
+	{
+		$loc2 = trim((string)$loc2);
+		if ($loc2 === '')
+		{
+			return $loc2;
+		}
+		if (ctype_digit($loc2) && strlen($loc2) < 2)
+		{
+			$loc2 = str_pad($loc2, 2, '0', STR_PAD_LEFT);
+		}
+		return $loc2;
+	}
+
+	/**
+	 * Main entry: analyze a single loc1 or all loc1s.
+	 */
+	public function analyze($filterLoc1 = null)
+	{
+		$this->resetState();
+		$this->currentFilterLoc1 = $filterLoc1;
+		$this->loadData($filterLoc1);
+
+		// 1. Assign synthetic bygningsnr where missing
+		$this->assignSyntheticBygningsnr();
+
+		// 2. Build reverse maps from actual database data (more reliable than parsing names)
+		// Build street-to-loc3 first so bygningsnr mapping can leverage it as a fallback
+		$this->buildStreetToLoc3MapFromLocation4();
+		$this->buildBygningsnrToLoc2MapFromDatabase($filterLoc1);
+
+		// DEBUG: Log what we loaded
+		$this->debug("streetToLoc3Map: " . json_encode($this->streetToLoc3Map));
+		$this->debug("loc3Refs keys: " . json_encode(array_keys($this->loc3Refs)));
+		foreach ($this->loc3Refs as $loc1 => $loc2s)
+		{
+			foreach ($loc2s as $loc2 => $loc3s)
+			{
+				$this->debug("  loc3Refs[$loc1][$loc2]: " . implode(", ", array_keys($loc3s)));
+			}
+		}
+
+		// 3. Build required loc2/loc3 sets
+		$requiredLoc2 = []; // loc1 => bygningsnr => loc2
+		$requiredLoc3 = []; // loc1 => loc2 => streetkey => loc3
+
+		// Build maps for counting
+		$bygningsnrIndex = []; // loc1 => [bygningsnr values]
+		$bygningsnrCount = []; // loc1 => bygningsnr => count
+		foreach ($this->locationData as $row)
+		{
+			$loc1 = $row['loc1'];
+			$bygningsnr = $row['bygningsnr'];
+			if (!isset($bygningsnrIndex[$loc1]))
+			{
+				$bygningsnrIndex[$loc1] = [];
+			}
+			if (!in_array($bygningsnr, $bygningsnrIndex[$loc1]))
+			{
+				$bygningsnrIndex[$loc1][] = $bygningsnr;
+			}
+			if (!isset($bygningsnrCount[$loc1][$bygningsnr]))
+			{
+				$bygningsnrCount[$loc1][$bygningsnr] = 0;
+			}
+			if (!empty($bygningsnr))
+			{
+				$bygningsnrCount[$loc1][$bygningsnr]++;
+			}
+		}
+
+		// Identify dominant bygningsnr in mixed loc2 values
+		$dominantBygningsnrInLoc2 = []; // loc1 => loc2 => bygningsnr (the dominant one in mixed loc2)
+		foreach ($this->loc2Refs as $loc1 => $loc2s)
+		{
+			foreach ($loc2s as $loc2 => $exists)
+			{
+				if (!$exists)
+				{
+					continue;
+				}
+
+				$maxCount = 0;
+				$dominantBygningsnr = null;
+				foreach ($this->locationData as $row)
+				{
+					if ($row['loc1'] === $loc1 && $row['loc2'] === $loc2 && !empty($row['bygningsnr']))
+					{
+						if (isset($bygningsnrCount[$loc1][$row['bygningsnr']]) && $bygningsnrCount[$loc1][$row['bygningsnr']] > $maxCount)
+						{
+							$maxCount = $bygningsnrCount[$loc1][$row['bygningsnr']];
+							$dominantBygningsnr = $row['bygningsnr'];
+						}
+					}
+				}
+
+				if ($dominantBygningsnr)
+				{
+					$dominantBygningsnrInLoc2[$loc1][$loc2] = $dominantBygningsnr;
+				}
+			}
+		}
+
+		// Assign loc2 for each bygningsnr (one bygningsnr per loc2)
+		$assignedLoc2PerLoc1 = []; // Track which loc2 are already assigned to avoid duplicates
+		foreach ($bygningsnrIndex as $loc1 => $bygningsnrs)
+		{
+			if (!isset($assignedLoc2PerLoc1[$loc1]))
+			{
+				$assignedLoc2PerLoc1[$loc1] = [];
+			}
+
+			foreach ($bygningsnrs as $bygningsnr)
+			{
+				$loc2 = null;
+
+				// 1) First, prefer an existing unused loc2 from fm_location2 (lowest number first)
+				if (isset($this->loc2Refs[$loc1]) && is_array($this->loc2Refs[$loc1]))
+				{
+					$existingLoc2List = array_keys($this->loc2Refs[$loc1]);
+					$existingLoc2List = array_filter($existingLoc2List, fn($loc2) => $loc2 !== '00');
+					sort($existingLoc2List, SORT_STRING);
+					foreach ($existingLoc2List as $existingLoc2)
+					{
+						if (!in_array($existingLoc2, $assignedLoc2PerLoc1[$loc1]))
+						{
+							$loc2 = $existingLoc2;
+							break;
+						}
+					}
+				}
+
+				// 2) If database maps this bygningsnr to one or more loc2 values, try to reuse one (if not already claimed)
+				if (!$loc2 && isset($this->bygningsnrToLoc2Map[$loc1][$bygningsnr]))
+				{
+					$candidate_loc2s = $this->bygningsnrToLoc2Map[$loc1][$bygningsnr];
+					// bygningsnrToLoc2Map now stores an array of loc2 values
+					if (is_array($candidate_loc2s))
+					{
+						// Sort candidates numerically to prefer lower numbers (01, 02, 03 over 08)
+						sort($candidate_loc2s, SORT_STRING);
+						// Try each loc2 in order until we find one that's not claimed
+						foreach ($candidate_loc2s as $candidate_loc2)
+						{
+							if (!in_array($candidate_loc2, $assignedLoc2PerLoc1[$loc1]))
+							{
+								$loc2 = $candidate_loc2;
+								break;
+							}
+						}
+					}
+				}
+
+				// 3) If this bygningsnr is dominant for an existing loc2, try to reuse that loc2 (if not already claimed)
+				if (!$loc2 && isset($dominantBygningsnrInLoc2[$loc1]))
+				{
+					foreach ($dominantBygningsnrInLoc2[$loc1] as $loc2Candidate => $dominantBygningsnr)
+					{
+						if ($dominantBygningsnr === $bygningsnr && !in_array($loc2Candidate, $assignedLoc2PerLoc1[$loc1]))
+						{
+							$loc2 = $loc2Candidate;
+							break;
+						}
+					}
+				}
+
+				// 4) Otherwise, allocate the first available loc2 number (each bygningsnr gets its own loc2)
+				if (!$loc2)
+				{
+					for ($newLoc2 = 1; $newLoc2 <= 99; $newLoc2++)
+					{
+						$new_loc2_str = str_pad($newLoc2, 2, '0', STR_PAD_LEFT);
+						// Use first loc2 that doesn't exist in database AND hasn't been assigned in this run
+						if (!isset($this->loc2Refs[$loc1][$new_loc2_str]) && !in_array($new_loc2_str, $assignedLoc2PerLoc1[$loc1]))
+						{
+							$loc2 = $new_loc2_str;
+							break;
+						}
+					}
+				}
+
+				$loc2 = $this->normalizeLoc2($loc2);
+				$requiredLoc2[$loc1][$bygningsnr] = $loc2;
+				if (!in_array($loc2, $assignedLoc2PerLoc1[$loc1]))
+				{
+					$assignedLoc2PerLoc1[$loc1][] = $loc2;
+				}
+			}
+		}
+
+		// For each loc2, assign loc3 for each unique (street_id, street_number)
+		$loc2StreetCombos = []; // loc1 => loc2 => [streetkey]
+		foreach ($this->locationData as $row)
+		{
+			$loc1 = $row['loc1'];
+			$bygningsnr = $row['bygningsnr'];
+			$loc2 = $requiredLoc2[$loc1][$bygningsnr];
+			$normalized_street_number = trim(preg_replace('/\s+/', ' ', $row['street_number']));
+			$streetkey = "{$row['street_id']}" . '_' . $normalized_street_number;
+			if (!isset($loc2StreetCombos[$loc1][$loc2]))
+			{
+				$loc2StreetCombos[$loc1][$loc2] = [];
+			}
+			if (!in_array($streetkey, $loc2StreetCombos[$loc1][$loc2]))
+			{
+				$loc2StreetCombos[$loc1][$loc2][] = $streetkey;
+			}
+		}
+
+		// Build map of dominant loc3 placement for each streetkey in each loc2
+		// (majority placement = most records currently in that loc3)
+		$dominantLoc3PerStreet = []; // loc1 => loc2 => streetkey => dominant_loc3
+		foreach ($this->locationData as $row)
+		{
+			$loc1 = $row['loc1'];
+			$loc2 = $row['loc2'];
+			$loc3 = $row['loc3'];
+			// Normalize street_number: trim and collapse multiple spaces to single space
+			$normalized_street_number = trim(preg_replace('/\s+/', ' ', $row['street_number']));
+			$streetkey = "{$row['street_id']}" . '_' . $normalized_street_number;
+			
+			if (!isset($dominantLoc3PerStreet[$loc1][$loc2][$streetkey]))
+			{
+				$dominantLoc3PerStreet[$loc1][$loc2][$streetkey] = [];
+			}
+			if (!isset($dominantLoc3PerStreet[$loc1][$loc2][$streetkey][$loc3]))
+			{
+				$dominantLoc3PerStreet[$loc1][$loc2][$streetkey][$loc3] = 0;
+			}
+			$dominantLoc3PerStreet[$loc1][$loc2][$streetkey][$loc3]++;
+		}
+
+		// Find the most common loc3 for each street in each loc2
+		foreach ($dominantLoc3PerStreet as $loc1 => $loc2s)
+		{
+			foreach ($loc2s as $loc2 => $streets)
+			{
+				foreach ($streets as $streetkey => $loc3Counts)
+				{
+					arsort($loc3Counts); // Sort by count descending
+					$dominantLoc3 = key($loc3Counts); // Get the loc3 with the highest count
+					$dominantLoc3PerStreet[$loc1][$loc2][$streetkey] = $dominantLoc3;
+				}
+			}
+		}
+
+		$requiredLoc3 = []; // loc1 => loc2 => streetkey => loc3
+		foreach ($loc2StreetCombos as $loc1 => $loc2s)
+		{
+			foreach ($loc2s as $loc2 => $streetkeys)
+			{
+				$assignedLoc3InLoc2 = [];
+				
+				$existingLoc3List = [];
+				if (isset($this->loc3Refs[$loc1][$loc2]) && is_array($this->loc3Refs[$loc1][$loc2]))
+				{
+					$existingLoc3List = array_keys($this->loc3Refs[$loc1][$loc2]);
+					sort($existingLoc3List, SORT_STRING);
+				}
+
+				$this->debug("Processing loc1=$loc1, loc2=$loc2 with " . count($streetkeys) . " streetkeys");
+				$this->debug("existingLoc3List: " . json_encode($existingLoc3List));
+
+				// First pass: assign loc3 based on dominant placement to minimize moves
+				$tempLoc3Assignments = []; // streetkey => assigned_loc3
+				foreach ($streetkeys as $streetkey)
+				{
+					$loc3 = null;
+
+					// PRIORITY 1: Use the dominant (majority) current placement for this street in this loc2
+					// BUT ONLY if this loc3 hasn't already been assigned to another streetkey
+					if (isset($dominantLoc3PerStreet[$loc1][$loc2][$streetkey]))
+					{
+						$candidate_loc3 = $dominantLoc3PerStreet[$loc1][$loc2][$streetkey];
+						// Only use dominant placement if this loc3 is not already taken
+						if (!in_array($candidate_loc3, $assignedLoc3InLoc2))
+						{
+							$loc3 = $candidate_loc3;
+							$this->debug("  streetkey=$streetkey: using dominant loc3=$loc3");
+						}
+						else
+						{
+							$this->debug("  streetkey=$streetkey: dominant loc3=$candidate_loc3 already assigned, skipping");
+						}
+					}
+					// PRIORITY 2: Check streetToLoc3Map (from fm_location3)
+					// BUT ONLY if this loc3 hasn't already been assigned to another streetkey
+					if (!$loc3 && isset($this->streetToLoc3Map[$loc1][$loc2][$streetkey]))
+					{
+						$candidate_loc3_from_map = $this->streetToLoc3Map[$loc1][$loc2][$streetkey];
+						if (!in_array($candidate_loc3_from_map, $assignedLoc3InLoc2))
+						{
+							$loc3 = $candidate_loc3_from_map;
+							$this->debug("  streetkey=$streetkey: using streetToLoc3Map loc3=$loc3");
+						}
+						else
+						{
+							$this->debug("  streetkey=$streetkey: streetToLoc3Map loc3=$candidate_loc3_from_map already assigned, skipping");
+						}
+					}
+					// PRIORITY 3: Reuse existing loc3 that hasn't been assigned yet
+					if (!$loc3 && count($existingLoc3List) > 0)
+					{
+						foreach ($existingLoc3List as $existingLoc3)
+						{
+							if (!in_array($existingLoc3, $assignedLoc3InLoc2))
+							{
+								$loc3 = $existingLoc3;
+								$this->debug("  streetkey=$streetkey: reusing existing loc3=$loc3");
+								break;
+							}
+						}
+					}
+
+					if (!$loc3)
+					{
+						for ($newLoc3 = 1; $newLoc3 <= 99; $newLoc3++)
+						{
+							$new_loc3_str = str_pad($newLoc3, 2, '0', STR_PAD_LEFT);
+							if (!isset($this->loc3Refs[$loc1][$loc2][$new_loc3_str]) &&
+								!in_array($new_loc3_str, $assignedLoc3InLoc2))
+							{
+								$loc3 = $new_loc3_str;
+								$this->debug("  streetkey=$streetkey: creating new loc3=$loc3");
+								break;
+							}
+						}
+					}
+
+					if ($loc3 && !in_array($loc3, $assignedLoc3InLoc2))
+					{
+						$assignedLoc3InLoc2[] = $loc3;
+					}
+
+					$tempLoc3Assignments[$streetkey] = $loc3;
+				}
+
+				// Second pass: renumber loc3 values to be sequential starting from 01
+				// This ensures we use 01-06 for 6 addresses, not 01,02,04,06,08,10
+				$uniqueLoc3Values = array_unique(array_values($tempLoc3Assignments));
+				sort($uniqueLoc3Values, SORT_STRING);
+				$loc3Renumbering = []; // old_loc3 => new_sequential_loc3
+				$nextSequentialLoc3 = 1;
+				foreach ($uniqueLoc3Values as $oldLoc3)
+				{
+					$loc3Renumbering[$oldLoc3] = str_pad($nextSequentialLoc3, 2, '0', STR_PAD_LEFT);
+					$nextSequentialLoc3++;
+				}
+
+				// Apply renumbering to final assignments
+				foreach ($tempLoc3Assignments as $streetkey => $oldLoc3)
+				{
+					$requiredLoc3[$loc1][$loc2][$streetkey] = $loc3Renumbering[$oldLoc3];
+					$this->debug("  final: streetkey=$streetkey: loc3={$oldLoc3} renumbered to {$loc3Renumbering[$oldLoc3]}");
+				}
+			}
+		}
+
+		// 4. Check and create missing loc2/loc3
+		$this->debug("requiredLoc2: " . json_encode($requiredLoc2));
+		$this->debug("requiredLoc3: " . json_encode($requiredLoc3));
+		if (isset($this->loc2Refs) && !empty($this->loc2Refs))
+		{
+			$this->debug("loc2Refs sample: " . json_encode(array_slice($this->loc2Refs, 0, 3, true)));
+		}
+
+		$this->sqlStatements['missing_loc2'] = [];
+		foreach ($requiredLoc2 as $loc1 => $bygningsnrs)
+		{
+			foreach ($bygningsnrs as $bygningsnr => $loc2)
+			{
+				$loc2 = $this->normalizeLoc2($loc2);
+				if (empty($this->loc2Refs[trim((string)$loc1)][$loc2]))
+				{
+					$this->debug("CREATING missing_loc2: loc1=$loc1, loc2=$loc2, bygningsnr=$bygningsnr (not found in loc2Refs)");
+					$this->sqlStatements['missing_loc2'][] =
+						"INSERT INTO fm_location2 (location_code, loc1, loc2, loc2_name) VALUES ('{$loc1}-{$loc2}', '{$loc1}', '{$loc2}', 'Bygningsnr:{$bygningsnr}') ON CONFLICT (loc1, loc2) DO NOTHING;";
+					$this->issues[] = [
+						'type' => 'missing_loc2',
+						'loc1' => $loc1,
+						'loc2' => $loc2,
+						'bygningsnr' => $bygningsnr
+					];
+				}
+			}
+		}
+
+		$this->sqlStatements['missing_loc3'] = [];
+		foreach ($requiredLoc3 as $loc1 => $loc2s)
+		{
+			foreach ($loc2s as $loc2 => $streetkeys)
+			{
+				foreach ($streetkeys as $streetkey => $loc3)
+				{
+					if (empty($this->loc3Refs[$loc1][$loc2][$loc3]))
+					{
+						list($street_id, $street_number) = explode('_', $streetkey, 2);
+						$street_name = $this->get_street_name($street_id);
+						$loc3_name = "{$street_name} {$street_number}";
+						$this->debug("CREATING missing_loc3: loc1=$loc1, loc2=$loc2, loc3=$loc3, streetkey=$streetkey (not found in loc3Refs)");
+						$this->sqlStatements['missing_loc3'][] =
+							"INSERT INTO fm_location3 (location_code, loc1, loc2, loc3, loc3_name) VALUES ('{$loc1}-{$loc2}-{$loc3}', '{$loc1}', '{$loc2}', '{$loc3}', '{$loc3_name}') ON CONFLICT (loc1, loc2, loc3) DO NOTHING;";
+						$this->issues[] = [
+							'type' => 'missing_loc3',
+							'loc1' => $loc1,
+							'loc2' => $loc2,
+							'loc3' => $loc3,
+							'street_id' => $street_id,
+							'street_number' => $street_number
+						];
+					}
+				}
+			}
+		}
+
+		// 4b. Prepare loc3_name update statements (ensure loc3_name matches street address)
+		$this->sqlStatements['loc3_name_updates'] = [];
+		foreach ($requiredLoc3 as $loc1 => $loc2s)
+		{
+			foreach ($loc2s as $loc2 => $streetkeys)
+			{
+				foreach ($streetkeys as $streetkey => $loc3)
+				{
+					list($street_id, $street_number) = explode('_', $streetkey, 2);
+					$street_name = $this->get_street_name($street_id);
+					$expected_loc3_name = trim("{$street_name} {$street_number}");
+					$current_loc3_name = $this->loc3Names[$loc1][$loc2][$loc3] ?? null;
+					if ($current_loc3_name === null)
+					{
+						continue;
+					}
+					if (trim((string)$current_loc3_name) !== $expected_loc3_name)
+					{
+						$this->sqlStatements['loc3_name_updates'][] =
+							"UPDATE fm_location3 SET loc3_name = '" . addslashes($expected_loc3_name) . "' WHERE loc1 = '{$loc1}' AND loc2 = '{$loc2}' AND loc3 = '{$loc3}' AND loc3_name IS DISTINCT FROM '" . addslashes($expected_loc3_name) . "';";
+						$this->issues[] = [
+							'type' => 'loc3_name_mismatch',
+							'loc1' => $loc1,
+							'loc2' => $loc2,
+							'loc3' => $loc3,
+							'expected_loc3_name' => $expected_loc3_name,
+							'current_loc3_name' => $current_loc3_name
+						];
+					}
+				}
+			}
+		}
+
+		// 4c. Prepare loc2_name update statements (summarize addresses for each building)
+		$this->sqlStatements['loc2_name_updates'] = [];
+		foreach ($requiredLoc2 as $loc1 => $bygningsnrs)
+		{
+			foreach ($bygningsnrs as $bygningsnr => $loc2)
+			{
+				$loc2 = $this->normalizeLoc2($loc2);
+				
+				// Collect all addresses for this loc2
+				$addresses = []; // street_name => [street_numbers]
+				foreach ($requiredLoc3 as $l1 => $loc2s)
+				{
+					if ($l1 !== $loc1)
+					{
+						continue;
+					}
+					foreach ($loc2s as $l2 => $streetkeys)
+					{
+						if ($l2 != $loc2)
+						{
+							continue;
+						}
+						foreach ($streetkeys as $streetkey => $loc3)
+						{
+							list($street_id, $street_number) = explode('_', $streetkey, 2);
+							$street_name = $this->get_street_name($street_id);
+							if (!isset($addresses[$street_name]))
+							{
+								$addresses[$street_name] = [];
+							}
+							if (!in_array($street_number, $addresses[$street_name]))
+							{
+								$addresses[$street_name][] = $street_number;
+							}
+						}
+					}
+				}
+				
+				// Generate loc2_name from collected addresses
+				if (!empty($addresses))
+				{
+					$generated_loc2_name = $this->generateLoc2Name($addresses);
+					$current_loc2_name = $this->loc2Names[$loc1][$loc2] ?? null;
+					
+					if ($current_loc2_name === null || trim((string)$current_loc2_name) !== $generated_loc2_name)
+					{
+						$this->sqlStatements['loc2_name_updates'][] =
+							"UPDATE fm_location2 SET loc2_name = '" . addslashes($generated_loc2_name) . "' WHERE loc1 = '{$loc1}' AND loc2 = '{$loc2}' AND loc2_name IS DISTINCT FROM '" . addslashes($generated_loc2_name) . "';";
+						$this->issues[] = [
+							'type' => 'loc2_name_mismatch',
+							'loc1' => $loc1,
+							'loc2' => $loc2,
+							'bygningsnr' => $bygningsnr,
+							'expected_loc2_name' => $generated_loc2_name,
+							'current_loc2_name' => $current_loc2_name
+						];
+					}
+				}
+			}
+		}
+
+		// 5. Prepare location4 move statements
+		$this->sqlStatements['location4_updates'] = [];
+		$this->sqlStatements['corrections'] = [];
+		$inserted_mappings = []; // Track all inserted mappings to avoid duplicates: "old_code->new_code->type" => true
+		$loc3MappingCounts = []; // old loc3 code => new loc3 code => count
+		$loc4CountByLoc3 = []; // loc1-loc2-loc3 => loc4 count
+		$loc2MappingCounts = []; // old loc2 code => new loc2 code => count
+		$loc4CountByLoc2 = []; // loc1-loc2 => loc4 count
+		foreach ($this->locationData as $row)
+		{
+			$loc1 = $row['loc1'];
+			$loc2_actual = $row['loc2'];
+			$loc3_actual = $row['loc3'];
+			$bygningsnr = $row['bygningsnr'];
+			$loc2_expected = $requiredLoc2[$loc1][$bygningsnr];
+			$normalized_street_number = trim(preg_replace('/\s+/', ' ', $row['street_number']));
+			$streetkey = "{$row['street_id']}" . '_' . $normalized_street_number;
+			$loc3_expected = $requiredLoc3[$loc1][$loc2_expected][$streetkey];
+			$loc4 = $row['loc4'];
+			$old_code = "{$loc1}-{$loc2_actual}-{$loc3_actual}-{$loc4}";
+			$new_code = "{$loc1}-{$loc2_expected}-{$loc3_expected}-{$loc4}";
+			
+			// Normalize for comparison to avoid type mismatches
+			$loc2_actual_normalized = $this->normalizeLoc2($loc2_actual);
+			$loc2_expected_normalized = $this->normalizeLoc2($loc2_expected);
+			$loc3_actual_normalized = $this->normalizeLoc2($loc3_actual);
+			$loc3_expected_normalized = $this->normalizeLoc2($loc3_expected);
+
+			$actual_loc3_code = "{$loc1}-{$loc2_actual_normalized}-{$loc3_actual_normalized}";
+			if (!isset($loc4CountByLoc3[$actual_loc3_code]))
+			{
+				$loc4CountByLoc3[$actual_loc3_code] = 0;
+			}
+			$loc4CountByLoc3[$actual_loc3_code]++;
+
+			$actual_loc2_code = "{$loc1}-{$loc2_actual_normalized}";
+			if (!isset($loc4CountByLoc2[$actual_loc2_code]))
+			{
+				$loc4CountByLoc2[$actual_loc2_code] = 0;
+			}
+			$loc4CountByLoc2[$actual_loc2_code]++;
+			
+			if ($loc2_actual_normalized != $loc2_expected_normalized || $loc3_actual_normalized != $loc3_expected_normalized)
+			{
+				$this->sqlStatements['location4_updates'][] =
+					"-- Move {$old_code} to {$new_code}\nUPDATE fm_location4 SET location_code='{$new_code}', loc2='{$loc2_expected}', loc3='{$loc3_expected}' WHERE location_code='{$old_code}';";
+				
+				$mapping_key = "{$old_code}->{$new_code}->location_hierarchy_update";
+				if (!isset($inserted_mappings[$mapping_key]))
+				{
+					$this->sqlStatements['corrections'][] =
+						"INSERT INTO location_mapping (old_location_code, new_location_code, loc1, old_loc2, new_loc2, old_loc3, new_loc3, loc4, bygningsnr, street_id, street_number, change_type) VALUES ('{$old_code}', '{$new_code}', '{$loc1}', '{$loc2_actual}', '{$loc2_expected}', '{$loc3_actual}', '{$loc3_expected}', '{$loc4}', '{$bygningsnr}', '{$row['street_id']}', '{$row['street_number']}', 'location_hierarchy_update');";
+					$inserted_mappings[$mapping_key] = true;
+				}
+
+				$old_loc3_code = "{$loc1}-{$loc2_actual_normalized}-{$loc3_actual_normalized}";
+				$new_loc3_code = "{$loc1}-{$loc2_expected_normalized}-{$loc3_expected_normalized}";
+				if ($old_loc3_code !== $new_loc3_code)
+				{
+					if (!isset($loc3MappingCounts[$old_loc3_code]))
+					{
+						$loc3MappingCounts[$old_loc3_code] = [];
+					}
+					if (!isset($loc3MappingCounts[$old_loc3_code][$new_loc3_code]))
+					{
+						$loc3MappingCounts[$old_loc3_code][$new_loc3_code] = 0;
+					}
+					$loc3MappingCounts[$old_loc3_code][$new_loc3_code]++;
+				}
+
+				if ($loc2_actual_normalized != $loc2_expected_normalized)
+				{
+					$old_loc2_code = "{$loc1}-{$loc2_actual_normalized}";
+					$new_loc2_code = "{$loc1}-{$loc2_expected_normalized}";
+					if (!isset($loc2MappingCounts[$old_loc2_code]))
+					{
+						$loc2MappingCounts[$old_loc2_code] = [];
+					}
+					if (!isset($loc2MappingCounts[$old_loc2_code][$new_loc2_code]))
+					{
+						$loc2MappingCounts[$old_loc2_code][$new_loc2_code] = 0;
+					}
+					$loc2MappingCounts[$old_loc2_code][$new_loc2_code]++;
+				}
+				$this->issues[] = [
+					'type' => 'misplaced_loc4',
+					'loc1' => $loc1,
+					'loc2' => $loc2_actual,
+					'loc3' => $loc3_actual,
+					'loc4' => $loc4,
+					'expected_loc2' => $loc2_expected,
+					'expected_loc3' => $loc3_expected
+				];
+			}
+		}
+
+		$processed_loc3_codes = []; // Additional safeguard to ensure each old_loc3_code is only processed once
+		foreach ($loc3MappingCounts as $old_loc3_code => $newTargets)
+		{
+			// Skip if we've already processed this old_loc3_code
+			if (isset($processed_loc3_codes[$old_loc3_code]))
+			{
+				continue;
+			}
+			
+			arsort($newTargets); // Highest count first
+			$best_new_code = array_key_first($newTargets);
+			if ($best_new_code === null)
+			{
+				continue;
+			}
+
+			$old_loc4_count = $loc4CountByLoc3[$old_loc3_code] ?? 0;
+			$total_moved_from_old = array_sum($newTargets);
+			if ($total_moved_from_old !== $old_loc4_count)
+			{
+				// Only move loc3 when all loc4 entries move away from the source.
+				continue;
+			}
+
+			$mapping_key = "{$old_loc3_code}->{$best_new_code}->location3_loc3_update";
+			if (isset($inserted_mappings[$mapping_key]))
+			{
+				continue; // Skip duplicate mapping
+			}
+
+			list($loc1, $old_loc2, $old_loc3) = explode('-', $old_loc3_code);
+			list($_loc1_unused, $new_loc2, $new_loc3) = explode('-', $best_new_code);
+
+			$this->sqlStatements['corrections'][] =
+				"INSERT INTO location_mapping (old_location_code, new_location_code, loc1, old_loc2, new_loc2, old_loc3, new_loc3, change_type) VALUES ('{$old_loc3_code}', '{$best_new_code}', '{$loc1}', '{$old_loc2}', '{$new_loc2}', '{$old_loc3}', '{$new_loc3}', 'location3_loc3_update');";
+			
+			$inserted_mappings[$mapping_key] = true;
+			$processed_loc3_codes[$old_loc3_code] = true;
+		}
+
+		$processed_loc2_codes = []; // Ensure each old_loc2_code is only processed once
+		foreach ($loc2MappingCounts as $old_loc2_code => $newTargets)
+		{
+			if (isset($processed_loc2_codes[$old_loc2_code]))
+			{
+				continue;
+			}
+
+			arsort($newTargets); // Highest count first
+			$best_new_code = array_key_first($newTargets);
+			if ($best_new_code === null)
+			{
+				continue;
+			}
+
+			$old_loc4_count = $loc4CountByLoc2[$old_loc2_code] ?? 0;
+			$total_moved_from_old = array_sum($newTargets);
+			if ($total_moved_from_old !== $old_loc4_count)
+			{
+				// Only move loc2 when all loc4 entries move away from the source.
+				continue;
+			}
+
+			$mapping_key = "{$old_loc2_code}->{$best_new_code}->location2_loc2_update";
+			if (isset($inserted_mappings[$mapping_key]))
+			{
+				continue; // Skip duplicate mapping
+			}
+
+			list($loc1, $old_loc2) = explode('-', $old_loc2_code);
+			list($_loc1_unused, $new_loc2) = explode('-', $best_new_code);
+
+			$this->sqlStatements['corrections'][] =
+				"INSERT INTO location_mapping (old_location_code, new_location_code, loc1, old_loc2, new_loc2, change_type) VALUES ('{$old_loc2_code}', '{$best_new_code}', '{$loc1}', '{$old_loc2}', '{$new_loc2}', 'location2_loc2_update');";
+
+			$inserted_mappings[$mapping_key] = true;
+			$processed_loc2_codes[$old_loc2_code] = true;
+		}
+
+
+		// 5b. Prepare fm_location3 loc2 updates (ensure parent records match fm_location4 loc2 changes)
+		$this->sqlStatements['location3_loc2_updates'] = [];
+		$loc3Loc2UpdateCounts = []; // old loc3 code => new loc3 code => count
+		
+		foreach ($this->locationData as $row)
+		{
+			$loc1 = $row['loc1'];
+			$bygningsnr = $row['bygningsnr'];
+			$loc2_expected = $requiredLoc2[$loc1][$bygningsnr];
+			$normalized_street_number = trim(preg_replace('/\s+/', ' ', $row['street_number']));
+			$streetkey = "{$row['street_id']}" . '_' . $normalized_street_number;
+			$loc3_expected = $requiredLoc3[$loc1][$loc2_expected][$streetkey];
+
+			$loc2_actual = $row['loc2'];
+			$loc3_actual = $row['loc3'];
+			
+			// Normalize for comparison
+			$loc2_actual_normalized = $this->normalizeLoc2($loc2_actual);
+			$loc2_expected_normalized = $this->normalizeLoc2($loc2_expected);
+			$loc3_actual_normalized = $this->normalizeLoc2($loc3_actual);
+			$loc3_expected_normalized = $this->normalizeLoc2($loc3_expected);
+			
+			// Only update fm_location3 when the current loc3 exists in the database
+			if (($loc2_actual_normalized != $loc2_expected_normalized || $loc3_actual_normalized != $loc3_expected_normalized)
+				&& !empty($this->loc3Refs[$loc1][$loc2_actual_normalized][$loc3_actual_normalized]))
+			{
+				$old_loc3_code = "{$loc1}-{$loc2_actual_normalized}-{$loc3_actual_normalized}";
+				$new_loc3_code = "{$loc1}-{$loc2_expected_normalized}-{$loc3_expected_normalized}";
+				if (!isset($loc3Loc2UpdateCounts[$old_loc3_code]))
+				{
+					$loc3Loc2UpdateCounts[$old_loc3_code] = [];
+				}
+				if (!isset($loc3Loc2UpdateCounts[$old_loc3_code][$new_loc3_code]))
+				{
+					$loc3Loc2UpdateCounts[$old_loc3_code][$new_loc3_code] = 0;
+				}
+				$loc3Loc2UpdateCounts[$old_loc3_code][$new_loc3_code]++;
+			}
+		}
+		
+		// Generate UPDATE statements for fm_location3 entries that need loc2 updates
+		foreach ($loc3Loc2UpdateCounts as $old_loc3_code => $newTargets)
+		{
+			arsort($newTargets); // Highest count first
+			$best_new_code = array_key_first($newTargets);
+			if ($best_new_code === null)
+			{
+				continue;
+			}
+
+			$old_loc4_count = $loc4CountByLoc3[$old_loc3_code] ?? 0;
+			$moved_to_best_count = $newTargets[$best_new_code] ?? 0;
+			if ($moved_to_best_count !== $old_loc4_count)
+			{
+				// Only move loc3 when all loc4 entries move to the target.
+				continue;
+			}
+
+			list($loc1, $old_loc2, $old_loc3) = explode('-', $old_loc3_code);
+			list($_loc1_unused, $new_loc2, $new_loc3) = explode('-', $best_new_code);
+			$old_code = $old_loc3_code;
+			$new_code = $best_new_code;
+			
+			// Update fm_location3 location_code, loc2, and loc3 only when target does not already exist
+			$this->sqlStatements['location3_loc2_updates'][] =
+				"UPDATE fm_location3 SET location_code = '{$new_code}', loc2 = '{$new_loc2}', loc3 = '{$new_loc3}' WHERE location_code = '{$old_code}' AND NOT EXISTS (SELECT 1 FROM fm_location3 WHERE loc1 = '{$loc1}' AND loc2 = '{$new_loc2}' AND loc3 = '{$new_loc3}');";
+			
+			// Add mapping entry for reference
+			$mapping_key = "{$old_code}->{$new_code}->location3_loc2_update";
+			$loc3_mapping_key = "{$old_code}->{$new_code}->location3_loc3_update";
+			if (isset($inserted_mappings[$loc3_mapping_key]))
+			{
+				// Prefer the loc3-level mapping when both would be identical old/new codes.
+				continue;
+			}
+			if (!isset($inserted_mappings[$mapping_key]))
+			{
+				$this->sqlStatements['corrections'][] =
+					"INSERT INTO location_mapping (old_location_code, new_location_code, loc1, old_loc2, new_loc2, old_loc3, new_loc3, change_type) VALUES ('{$old_code}', '{$new_code}', '{$loc1}', '{$old_loc2}', '{$new_loc2}', '{$old_loc3}', '{$new_loc3}', 'location3_loc2_update');";
+				$inserted_mappings[$mapping_key] = true;
+			}
+		}
+
+		// 6. Add update statements for all tables with location_code and loc1, loc2, loc3, loc4 columns
+		$this->createUpdateStatements();
+
+		// 7. Statistics
+		$level1Values = array_values(array_unique(array_filter(array_map(fn($e) => trim((string)$e['loc1']), $this->locationData), fn($v) => $v !== '')));
+		$statistics = [
+			'level1_count' => count($level1Values),
+			'level2_count' => count(array_unique(array_map(fn($e) => "{$e['loc1']}-{$e['loc2']}", $this->locationData))),
+			'level3_count' => count(array_unique(array_map(fn($e) => "{$e['loc1']}-{$e['loc2']}-{$e['loc3']}", $this->locationData))),
+			'level4_count' => count($this->locationData),
+			'unique_buildings' => count(array_unique(array_column($this->locationData, 'bygningsnr'))),
+			'unique_addresses' => count(array_unique(array_map(fn($e) => "{$e['street_id']}" . '-' . trim($e['street_number']), $this->locationData))),
+			'total_issues' => count($this->issues),
+			'issues_by_type' => array_count_values(array_column($this->issues, 'type')),
+		];
+
+		if (!empty($this->sqlStatements['corrections']))
+		{
+			$this->sqlStatements['corrections'] = $this->sanitizeCorrectionMappings($this->sqlStatements['corrections']);
+		}
+
+		$this->sqlStatements['delete_redundant_locations'] = $this->createDeleteRedundantLocationsStatements();
+
+		return [
+			'statistics' => $statistics,
+			'issues' => $this->issues,
+			'suggestions' => $this->suggestions,
+			'sql_statements' => $this->sqlStatements,
+		];
+	}
+
+	public function analyzeAllLoc1Separately()
+	{
+		$loc1s = $this->getAllLoc1Values();
+		$all = [
+			'statistics' => [
+				'level1_count' => count($loc1s),
+				'level2_count' => 0,
+				'level3_count' => 0,
+				'level4_count' => 0,
+				'unique_buildings' => 0,
+				'unique_addresses' => 0,
+				'total_issues' => 0,
+				'issues_by_type' => [],
+			],
+			'issues' => [],
+			'suggestions' => [],
+			'sql_statements' => [
+				'missing_loc2' => [],
+				'missing_loc3' => [],
+				'loc3_name_updates' => [],
+				'loc2_name_updates' => [],
+				'location3_loc2_updates' => [],
+				'location4_updates' => [],
+				'corrections' => [],
+				'delete_redundant_locations' => [],
+				],
+		];
+		foreach ($loc1s as $loc1)
+		{
+			$res = $this->analyze($loc1);
+			foreach ($all['statistics'] as $k => $v)
+			{
+				if ($k === 'issues_by_type')
+				{
+					foreach ($res['statistics']['issues_by_type'] as $type => $cnt)
+					{
+						if (!isset($all['statistics']['issues_by_type'][$type]))
+						{
+							$all['statistics']['issues_by_type'][$type] = 0;
+						}
+						$all['statistics']['issues_by_type'][$type] += $cnt;
+					}
+				}
+				elseif ($k === 'level1_count')
+				{
+					// already counted once as count($loc1s); per-loc1 analyze always returns 1, so skip summing
+					continue;
+				}
+				else
+				{
+					$all['statistics'][$k] += $res['statistics'][$k];
+				}
+			}
+			$all['issues'] = array_merge($all['issues'], $res['issues']);
+			$all['suggestions'] = array_merge($all['suggestions'], $res['suggestions']);
+			foreach ($all['sql_statements'] as $k => $v)
+			{
+				$all['sql_statements'][$k] = array_merge($all['sql_statements'][$k], $res['sql_statements'][$k] ?? []);
+			}
+		}
+		if (!empty($all['sql_statements']['corrections']))
+		{
+			$all['sql_statements']['corrections'] = $this->sanitizeCorrectionMappings($all['sql_statements']['corrections']);
+		}
+		$all['sql_statements']['update_location_from_mapping'] = $this->createUpdateStatements();
+		$all['sql_statements']['delete_redundant_locations'] = $this->createDeleteRedundantLocationsStatements();
+		return $all;
+	}
+
+	/**
+	 * create update statements for all tables with location_code
+	 * and loc1, loc2, loc3, loc4 columns using the mapping table
+	 */
+	private function createUpdateStatements()
+	{
+		$sqlStatements = []; // Removed static to fix caching bug
+		$tables = $this->findLocationCodeTables();
+		foreach ($tables as $table => $columns)
+		{
+			// Skip tables with dedicated update handling.
+			if ($table === 'fm_gab_location' || $table === 'fm_bim_item')
+			{
+				continue;
+			}
+			
+			$updatefields = [];
+			$filterfields = [];
+			$level = 0;
+			if (in_array('location_code', $columns))
+			{
+				$updatefields[] = "location_code = location_mapping.new_location_code";
+			}
+			
+			if (in_array('loc1', $columns))
+			{
+				$level = 1;
+				$filterfields[] = "{$table}.loc1 = location_mapping.loc1";
+			}
+			if (in_array('loc2', $columns))
+			{
+				$level = 2;
+				$updatefields[] = "loc2 = location_mapping.new_loc2";
+				$filterfields[] = "{$table}.loc2 = location_mapping.old_loc2";
+			}
+			if (in_array('loc3', $columns))
+			{
+				$level = 3;
+				$updatefields[] = "loc3 = location_mapping.new_loc3";
+				$filterfields[] = "{$table}.loc3 = location_mapping.old_loc3";
+			}
+			if (in_array('loc4', $columns))
+			{
+				$level = 4;
+				$filterfields[] = "{$table}.loc4 = location_mapping.loc4";
+			}
+
+			if($level === 1 && !in_array('location_code', $columns))
+			{
+				// skip
+				continue;
+			}
+
+			$sql = "UPDATE {$table} SET " . implode(', ', $updatefields);
+
+			if (in_array('location_code', $columns))
+			{
+				$sql .= " FROM location_mapping WHERE {$table}.location_code = location_mapping.old_location_code;";
+			}
+			else
+			{
+			 // If there's no location_code column, we need to join on loc1, loc2, loc3, loc4 to identify the correct records to update	
+				$sql .= " FROM location_mapping WHERE " . implode(' AND ', $filterfields) . ";";
+			}
+			$sqlStatements[] = $sql;
+		}
+
+		$sqlStatements2 = $this->updateFmLocationsFromMapping();
+		$sqlStatements = array_merge($sqlStatements, $sqlStatements2);
+		
+		$sqlStatements3 = $this->updateFmGabLocationFromMapping();
+		$sqlStatements = array_merge($sqlStatements, $sqlStatements3);
+
+		$sqlStatements4 = $this->updateFmBimItemFromMapping();
+		$sqlStatements = array_merge($sqlStatements, $sqlStatements4);
+		
+		$this->sqlStatements['update_location_from_mapping'] = $sqlStatements;
+		return $sqlStatements; // Add explicit return
+	}
+
+	/**
+	 * update_fm_locations_from_mapping: Generate separate UPDATE queries for each level.
+	 * For levels 2-4, also update the name column with loc<level>_name from the corresponding fm_location<level> table.
+	 * This should be run after all mapping entries have been inserted to ensure all location_code and name updates are captured.
+	 */
+	private function updateFmLocationsFromMapping()
+	{
+		$sqlStatements = [];
+
+		// Drop dependent foreign key before dropping the referenced unique constraint.
+		$sqlStatements[] = "ALTER TABLE public.fm_location_contact DROP CONSTRAINT IF EXISTS fm_location_contact_location_code_fkey;";
+
+		// Temporarily drop uniqueness to allow many-to-one remapping.
+		$sqlStatements[] = "ALTER TABLE public.fm_locations DROP CONSTRAINT IF EXISTS fm_locations_location_code_key;";
+
+		// Level 1: Update location_code and name from fm_location1.loc1_name.
+		$sqlStatements[] = "UPDATE fm_locations SET "
+			. "location_code = location_mapping.new_location_code, "
+			. "name = fm_location1.loc1_name "
+			. "FROM location_mapping "
+			. "JOIN fm_location1 ON location_mapping.new_location_code = fm_location1.location_code "
+			. "WHERE fm_locations.level = 1 AND fm_locations.location_code = location_mapping.old_location_code;";
+
+		// Level 2: Update location_code and name from fm_location2.loc2_name
+		$sqlStatements[] = "UPDATE fm_locations SET "
+			. "location_code = location_mapping.new_location_code, "
+			. "name = fm_location2.loc2_name "
+			. "FROM location_mapping "
+			. "JOIN fm_location2 ON location_mapping.new_location_code = fm_location2.location_code "
+			. "WHERE fm_locations.level = 2 AND fm_locations.location_code = location_mapping.old_location_code;";
+
+		$sqlStatements[] = "UPDATE fm_locations SET "
+			. "name = fm_location2.loc2_name "
+			. "FROM fm_location2 "
+			. "WHERE fm_locations.location_code = fm_location2.location_code "
+			. "AND fm_locations.level = 2;";
+
+		// Level 3: Update location_code and name from fm_location3.loc3_name
+		$sqlStatements[] = "UPDATE fm_locations SET "
+			. "location_code = location_mapping.new_location_code, "
+			. "name = fm_location3.loc3_name "
+			. "FROM location_mapping "
+			. "JOIN fm_location3 ON location_mapping.new_location_code = fm_location3.location_code "
+			. "WHERE fm_locations.level = 3 AND fm_locations.location_code = location_mapping.old_location_code;";
+
+		$sqlStatements[] = "UPDATE fm_locations SET "
+			. "name = fm_location3.loc3_name "
+			. "FROM fm_location3 "
+			. "WHERE fm_locations.location_code = fm_location3.location_code "
+			. "AND fm_locations.level = 3;";
+
+		// Level 4: Update location_code and name from parent level (fm_location3.loc3_name)
+		$sqlStatements[] = "UPDATE fm_locations SET "
+			. "location_code = location_mapping.new_location_code, "
+			. "name = fm_location3.loc3_name "
+			. "FROM location_mapping "
+			. "JOIN fm_location3 ON location_mapping.loc1 = fm_location3.loc1 "
+			. "  AND location_mapping.new_loc2 = fm_location3.loc2 "
+			. "  AND location_mapping.new_loc3 = fm_location3.loc3 "
+			. "WHERE fm_locations.level = 4 AND fm_locations.location_code = location_mapping.old_location_code;";
+
+		$sqlStatements[] = "UPDATE fm_locations SET "
+			. "name = CASE "
+			. "  WHEN fm_location4.etasje IS NOT NULL AND TRIM(fm_location4.etasje) <> '' "
+			. "    THEN CONCAT(fm_location3.loc3_name, ' - ', fm_location4.etasje) "
+			. "  ELSE fm_location3.loc3_name "
+			. "END "
+			. "FROM fm_location4 "
+			. "JOIN fm_location3 "
+			. "  ON fm_location4.loc3 = fm_location3.loc3 "
+			. "  AND fm_location4.loc2 = fm_location3.loc2 "
+			. "  AND fm_location4.loc1 = fm_location3.loc1 "
+			. "WHERE fm_locations.location_code = fm_location4.location_code "
+			. "AND fm_locations.level = 4;";
+
+
+		// Remove duplicates on level 2, preferring rows where mapping.id matches fm_location2.id.
+		$sqlStatements[] = "WITH ranked AS ("
+			. " SELECT fl.id, ROW_NUMBER() OVER (PARTITION BY fl.location_code ORDER BY "
+			. " CASE WHEN EXISTS ("
+			. "   SELECT 1 FROM location_mapping lm"
+			. "   JOIN fm_location2 f2 ON f2.id = lm.id"
+			. "   WHERE lm.new_location_code = fl.location_code"
+			. " ) THEN 0 ELSE 1 END, fl.id"
+			. " ) AS rn"
+			. " FROM fm_locations fl"
+			. " WHERE fl.level = 2"
+			. ")"
+			. " DELETE FROM fm_locations fl"
+			. " USING ranked r"
+			. " WHERE fl.id = r.id AND r.rn > 1;";
+
+		// Remove duplicates on level 3, preferring rows where mapping.id matches fm_location3.id.
+		$sqlStatements[] = "WITH ranked AS ("
+			. " SELECT fl.id, ROW_NUMBER() OVER (PARTITION BY fl.location_code ORDER BY "
+			. " CASE WHEN EXISTS ("
+			. "   SELECT 1 FROM location_mapping lm"
+			. "   JOIN fm_location3 f3 ON f3.id = lm.id"
+			. "   WHERE lm.new_location_code = fl.location_code"
+			. " ) THEN 0 ELSE 1 END, fl.id"
+			. " ) AS rn"
+			. " FROM fm_locations fl"
+			. " WHERE fl.level = 3"
+			. ")"
+			. " DELETE FROM fm_locations fl"
+			. " USING ranked r"
+			. " WHERE fl.id = r.id AND r.rn > 1;";
+
+
+
+		// Restore uniqueness after deduplication.
+		$sqlStatements[] = "ALTER TABLE public.fm_locations ADD CONSTRAINT fm_locations_location_code_key UNIQUE (location_code);";
+
+		// Restore the foreign key dependency after unique constraint is back.
+		$sqlStatements[] = "ALTER TABLE public.fm_location_contact ADD CONSTRAINT fm_location_contact_location_code_fkey FOREIGN KEY (location_code) REFERENCES public.fm_locations (location_code);";
+
+		return $sqlStatements;
+	}
+
+	/**
+	 * update_fm_gab_location_from_mapping: Handle fm_gab_location updates with composite primary key.
+	 * Drop PK, update location_code, remove duplicates, restore PK.
+	 */
+	private function updateFmGabLocationFromMapping()
+	{
+		$sqlStatements = [];
+
+		// Drop composite primary key before updates that could create duplicates.
+		$sqlStatements[] = "ALTER TABLE public.fm_gab_location DROP CONSTRAINT IF EXISTS fm_gab_location_pkey;";
+
+		// Update location_code and loc2/loc3 from location_mapping.
+		$sqlStatements[] = "UPDATE fm_gab_location SET "
+			. "location_code = location_mapping.new_location_code, "
+			. "loc2 = location_mapping.new_loc2, "
+			. "loc3 = location_mapping.new_loc3 "
+			. "FROM location_mapping "
+			. "WHERE fm_gab_location.location_code = location_mapping.old_location_code;";
+
+		$sqlStatements[] = "UPDATE fm_gab_location SET "
+			. "address = fm_location3.loc3_name "
+			. "FROM fm_location3 "
+			. "WHERE fm_gab_location.location_code = fm_location3.location_code;";
+
+		// Remove duplicates, keeping the row with the most recent entry_date (or earliest if NULL).
+		// Priority: prefer rows with higher entry_date (most recent), then lower gab_id alphabetically.
+		$sqlStatements[] = "WITH ranked AS ("
+			. " SELECT ctid, ROW_NUMBER() OVER ("
+			. "   PARTITION BY gab_id, location_code "
+			. "   ORDER BY entry_date DESC NULLS LAST, gab_id"
+			. " ) AS rn"
+			. " FROM fm_gab_location"
+			. ")"
+			. " DELETE FROM fm_gab_location "
+			. " WHERE ctid IN (SELECT ctid FROM ranked WHERE rn > 1);";
+
+		// Restore composite primary key after deduplication.
+		$sqlStatements[] = "ALTER TABLE public.fm_gab_location ADD CONSTRAINT fm_gab_location_pkey PRIMARY KEY (gab_id, location_code);";
+
+		return $sqlStatements;
+	}
+
+	/**
+	 * update_fm_bim_item_from_mapping: Handle fm_bim_item updates including JSONB payload.
+	 * Keep location fields in json_representation aligned with mapped location_code.
+	 */
+	private function updateFmBimItemFromMapping()
+	{
+		$sqlStatements = [];
+
+		// Update scalar location columns and mirrored JSONB location fields.
+		// Only touch JSON keys that already exist to avoid injecting location payload into unrelated objects.
+		$sqlStatements[] = "UPDATE fm_bim_item SET "
+			. "location_code = location_mapping.new_location_code, "
+			. "loc1 = split_part(location_mapping.new_location_code, '-', 1), "
+			. "json_representation = CASE "
+			. "  WHEN jsonb_exists_any(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), ARRAY['location_code', 'loc1', 'loc2', 'loc3', 'loc4']) THEN "
+			. "    CASE "
+			. "      WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'loc4') "
+			. "        AND array_length(regexp_split_to_array(location_mapping.new_location_code, '-'), 1) >= 4 THEN "
+			. "        jsonb_set("
+			. "          jsonb_set("
+			. "            jsonb_set("
+			. "              jsonb_set("
+			. "                jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{location_code}', to_jsonb(location_mapping.new_location_code::text), false), "
+			. "                '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false" 
+			. "              ), "
+			. "              '{loc2}', to_jsonb(split_part(location_mapping.new_location_code, '-', 2)::text), false" 
+			. "            ), "
+			. "            '{loc3}', to_jsonb(split_part(location_mapping.new_location_code, '-', 3)::text), false" 
+			. "          ), "
+			. "          '{loc4}', to_jsonb(split_part(location_mapping.new_location_code, '-', 4)::text), false" 
+			. "        ) "
+			. "      WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'loc3') "
+			. "        AND array_length(regexp_split_to_array(location_mapping.new_location_code, '-'), 1) >= 3 THEN "
+			. "        jsonb_set("
+			. "          jsonb_set("
+			. "            jsonb_set("
+			. "              jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{location_code}', to_jsonb(location_mapping.new_location_code::text), false), "
+			. "              '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false" 
+			. "            ), "
+			. "            '{loc2}', to_jsonb(split_part(location_mapping.new_location_code, '-', 2)::text), false" 
+			. "          ), "
+			. "          '{loc3}', to_jsonb(split_part(location_mapping.new_location_code, '-', 3)::text), false" 
+			. "        ) "
+			. "      WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'loc2') "
+			. "        AND array_length(regexp_split_to_array(location_mapping.new_location_code, '-'), 1) >= 2 THEN "
+			. "        jsonb_set("
+			. "          jsonb_set("
+			. "            jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{location_code}', to_jsonb(location_mapping.new_location_code::text), false), "
+			. "            '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false" 
+			. "          ), "
+			. "          '{loc2}', to_jsonb(split_part(location_mapping.new_location_code, '-', 2)::text), false" 
+			. "        ) "
+			. "      WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'loc1') "
+			. "        AND array_length(regexp_split_to_array(location_mapping.new_location_code, '-'), 1) >= 1 THEN "
+			. "        jsonb_set("
+			. "          jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{location_code}', to_jsonb(location_mapping.new_location_code::text), false), "
+			. "          '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false" 
+			. "        ) "
+			. "      WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'location_code') THEN "
+			. "        jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{location_code}', to_jsonb(location_mapping.new_location_code::text), false) "
+			. "      ELSE fm_bim_item.json_representation "
+			. "    END "
+			. "  ELSE fm_bim_item.json_representation "
+			. "END "
+			. "FROM location_mapping "
+			. "WHERE fm_bim_item.location_code = location_mapping.old_location_code;";
+
+		// Keep the denormalized address in sync with fm_locations level 4 name.
+		$sqlStatements[] = "UPDATE fm_bim_item SET "
+			. "address = fm_locations.name, "
+			. "json_representation = CASE "
+			. "  WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'address') "
+			. "    THEN jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{address}', to_jsonb(fm_locations.name::text), false) "
+			. "  ELSE fm_bim_item.json_representation "
+			. "END "
+			. "FROM fm_locations "
+			. "WHERE fm_bim_item.location_code = fm_locations.location_code "
+			. "AND fm_locations.level IN (3, 4) "
+			. "AND fm_bim_item.address IS DISTINCT FROM fm_locations.name;";
+
+		return $sqlStatements;
+	}
+
+	/**
+	 * Generate DELETE statements to remove orphaned fm_location3, fm_location2
+	 * and fm_locations entries that have no matching children.
+	 */
+	private function createDeleteRedundantLocationsStatements(): array
+	{
+		$sql = [];
+
+		// Remove fm_location3 rows with no child in fm_location4
+		$sql[] = "DELETE FROM fm_location3
+ WHERE NOT EXISTS (
+   SELECT 1 FROM fm_location4 AS l4
+   WHERE l4.loc1 = fm_location3.loc1
+     AND l4.loc2 = fm_location3.loc2
+     AND l4.loc3 = fm_location3.loc3
+);";
+
+		// Remove fm_location2 rows with no child in fm_location3
+		$sql[] = "DELETE FROM fm_location2
+ WHERE NOT EXISTS (
+   SELECT 1 FROM fm_location3 AS l3
+   WHERE l3.loc1 = fm_location2.loc1
+     AND l3.loc2 = fm_location2.loc2
+);";
+
+		// Remove fm_locations level-3 rows with no matching fm_location3
+		$sql[] = "DELETE FROM fm_locations
+ WHERE level = 3
+   AND NOT EXISTS (
+     SELECT 1 FROM fm_location3 AS l3
+     WHERE l3.location_code = fm_locations.location_code
+);";
+
+		// Remove fm_locations level-2 rows with no matching fm_location2
+		$sql[] = "DELETE FROM fm_locations
+ WHERE level = 2
+   AND NOT EXISTS (
+     SELECT 1 FROM fm_location2 AS l2
+     WHERE l2.location_code = fm_locations.location_code
+);";
+
+		return $sql;
+	}
+
+	/**
+	 * Remove duplicate location_mapping inserts and prevent circular reverse pairs.
+	 * For A->B and B->A of the same change_type, keep a deterministic direction.
+	 */
+	private function sanitizeCorrectionMappings(array $statements): array
+	{
+		$uniqueStatements = array_values(array_unique($statements));
+		$groups = [];
+		$passthrough = [];
+
+		foreach ($uniqueStatements as $sql)
+		{
+			$parsed = $this->parseLocationMappingInsert($sql);
+			if ($parsed === null)
+			{
+				$passthrough[] = $sql;
+				continue;
+			}
+
+			$old = $parsed['old'];
+			$new = $parsed['new'];
+			$type = $parsed['type'];
+			$level = substr_count($old, '-');
+			$loc1 = explode('-', $old, 2)[0] ?? '';
+			$pairMin = strcmp($old, $new) <= 0 ? $old : $new;
+			$pairMax = strcmp($old, $new) <= 0 ? $new : $old;
+			$groupKey = $type . '|' . $level . '|' . $loc1 . '|' . $pairMin . '|' . $pairMax;
+
+			if (!isset($groups[$groupKey]))
+			{
+				$groups[$groupKey] = [];
+			}
+			$groups[$groupKey][] = [
+				'sql' => $sql,
+				'old' => $old,
+				'new' => $new,
+				'type' => $type,
+				'level' => $level,
+				'loc1' => $loc1,
+			];
+		}
+
+		$result = $passthrough;
+		$canonical = [];
+
+		foreach ($groups as $entries)
+		{
+			if (count($entries) === 1)
+			{
+				$entry = $entries[0];
+				$sourceKey = $entry['type'] . '|' . $entry['level'] . '|' . $entry['loc1'] . '|' . $entry['old'];
+				if (!isset($canonical[$sourceKey]))
+				{
+					$canonical[$sourceKey] = [
+						'type' => $entry['type'],
+						'level' => $entry['level'],
+						'loc1' => $entry['loc1'],
+						'old' => $entry['old'],
+						'new' => $entry['new'],
+						'sql' => $entry['sql'],
+					];
+				}
+				continue;
+			}
+
+			// Prefer the deterministic direction where old < new if both directions exist.
+			$chosen = null;
+			$chosenEntry = null;
+			foreach ($entries as $entry)
+			{
+				if (strcmp($entry['old'], $entry['new']) < 0)
+				{
+					$chosen = $entry['sql'];
+					$chosenEntry = $entry;
+					break;
+				}
+			}
+
+			if ($chosen === null)
+			{
+				$chosen = $entries[0]['sql'];
+				$chosenEntry = $entries[0];
+			}
+
+			$sourceKey = $chosenEntry['type'] . '|' . $chosenEntry['level'] . '|' . $chosenEntry['loc1'] . '|' . $chosenEntry['old'];
+			if (!isset($canonical[$sourceKey]))
+			{
+				$canonical[$sourceKey] = [
+					'type' => $chosenEntry['type'],
+					'level' => $chosenEntry['level'],
+					'loc1' => $chosenEntry['loc1'],
+					'old' => $chosenEntry['old'],
+					'new' => $chosenEntry['new'],
+					'sql' => $chosen,
+				];
+			}
+		}
+
+		$resolved = $this->resolveMappingChains(array_values($canonical));
+		foreach ($resolved as $entry)
+		{
+			if ($entry['old'] === $entry['new'])
+			{
+				continue;
+			}
+			$result[] = $this->rewriteLocationMappingInsert($entry['sql'], $entry['old'], $entry['new']);
+		}
+
+		return array_values(array_unique($result));
+	}
+
+	/**
+	 * Flatten chained mappings (A->B->C becomes A->C) and break cycles deterministically.
+	 */
+	private function resolveMappingChains(array $entries): array
+	{
+		$bucketed = []; // type|level|loc1 => old => entry
+		foreach ($entries as $entry)
+		{
+			$bucketKey = $entry['type'] . '|' . $entry['level'] . '|' . $entry['loc1'];
+			if (!isset($bucketed[$bucketKey]))
+			{
+				$bucketed[$bucketKey] = [];
+			}
+			if (!isset($bucketed[$bucketKey][$entry['old']]))
+			{
+				$bucketed[$bucketKey][$entry['old']] = $entry;
+			}
+			elseif (strcmp($entry['new'], $bucketed[$bucketKey][$entry['old']]['new']) < 0)
+			{
+				// Deterministic target when multiple candidates exist.
+				$bucketed[$bucketKey][$entry['old']] = $entry;
+			}
+		}
+
+		$result = [];
+		foreach ($bucketed as $byOld)
+		{
+			$next = [];
+			foreach ($byOld as $old => $entry)
+			{
+				$next[$old] = $entry['new'];
+			}
+
+			$memo = [];
+			foreach ($byOld as $old => $entry)
+			{
+				$final = $this->resolveFinalTarget($old, $next, $memo);
+				$entry['new'] = $final;
+				$result[] = $entry;
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Follow old->new links to terminal node; when a cycle is detected, pick the lexicographically smallest node.
+	 */
+	private function resolveFinalTarget(string $start, array $next, array &$memo): string
+	{
+		if (isset($memo[$start]))
+		{
+			return $memo[$start];
+		}
+
+		$path = [];
+		$indexByNode = [];
+		$current = $start;
+
+		while (isset($next[$current]))
+		{
+			if (isset($memo[$current]))
+			{
+				$target = $memo[$current];
+				foreach ($path as $node)
+				{
+					$memo[$node] = $target;
+				}
+				$memo[$start] = $target;
+				return $target;
+			}
+
+			if (isset($indexByNode[$current]))
+			{
+				$cycle = array_slice($path, $indexByNode[$current]);
+				$cycle[] = $current;
+				$canonical = min($cycle);
+				foreach ($cycle as $node)
+				{
+					$memo[$node] = $canonical;
+				}
+				foreach ($path as $node)
+				{
+					if (!isset($memo[$node]))
+					{
+						$memo[$node] = $canonical;
+					}
+				}
+				$memo[$start] = $canonical;
+				return $canonical;
+			}
+
+			$indexByNode[$current] = count($path);
+			$path[] = $current;
+			$current = $next[$current];
+		}
+
+		$target = $current;
+		foreach ($path as $node)
+		{
+			$memo[$node] = $target;
+		}
+		$memo[$start] = $target;
+		return $target;
+	}
+
+	/**
+	 * Rewrite old/new location codes in a location_mapping INSERT statement.
+	 */
+	private function rewriteLocationMappingInsert(string $sql, string $old, string $new): string
+	{
+		$oldEscaped = str_replace("'", "''", $old);
+		$newEscaped = str_replace("'", "''", $new);
+		$pattern = "/^(INSERT\\s+INTO\\s+location_mapping\\s*\\([^)]*\\)\\s*VALUES\\s*\\(\\s*)'[^']*'\\s*,\\s*'[^']*'(.*)$/i";
+		if (!preg_match($pattern, $sql, $matches))
+		{
+			return $sql;
+		}
+
+		return $matches[1] . "'{$oldEscaped}', '{$newEscaped}'" . $matches[2];
+	}
+
+	/**
+	 * Parse a location_mapping INSERT SQL and extract old/new codes and change_type.
+	 */
+	private function parseLocationMappingInsert(string $sql): ?array
+	{
+		$pattern = "/INSERT\\s+INTO\\s+location_mapping\\s*\\([^)]*\\)\\s*VALUES\\s*\\(\\s*'([^']*)'\\s*,\\s*'([^']*)'.*,\\s*'([^']*)'\\s*\\)\\s*;?\\s*$/i";
+		if (!preg_match($pattern, $sql, $matches))
+		{
+			return null;
+		}
+
+		return [
+			'old' => $matches[1],
+			'new' => $matches[2],
+			'type' => $matches[3],
+		];
+	}
+
+	/**
+	 * Assign synthetic bygningsnr for missing bygningsnr in loc4.
+	 */
+	private function assignSyntheticBygningsnr()
+	{
+		$synthetic = -1;
+		$seen = [];
+		foreach ($this->locationData as $i => &$row)
+		{
+			if (empty($row['bygningsnr']))
+			{
+				$street_number = trim(preg_replace('/\s+/', ' ', (string)$row['street_number']));
+				$street_number = preg_replace('/\s*[A-Za-z]$/', '', $street_number);
+				$key = "{$row['loc1']}_{$row['street_id']}_{$street_number}";
+				if (!isset($seen[$key]))
+				{
+					$seen[$key] = "synthetic_{$synthetic}";
+					$synthetic--;
+				}
+				$row['bygningsnr'] = $seen[$key];
+			}
+			$this->entryToBygningsnrMap[$i] = $row['bygningsnr'];
+		}
+		unset($row);
+	}
+
+	/**
+	 * Load all data for loc4, loc2, loc3.
+	 */
+	private function loadData($filterLoc1 = null)
+	{
+		$this->locationData = [];
+		$this->loc2Refs = [];
+		$this->loc3Refs = [];
+		$this->loc3Names = [];
+		$sql = "SELECT loc1, loc2, loc3, loc4, bygningsnr, street_id, street_number FROM fm_location4 WHERE loc1 !='0000'";
+		if ($filterLoc1) 
+		{
+			$sql .= " AND loc1 = '{$filterLoc1}'";
+		}
+		$sql .= " ORDER BY loc1, loc4, loc2, loc3";
+		$this->db->query($sql, __LINE__, __FILE__);
+		while ($this->db->next_record())
+		{
+			$this->locationData[] = [
+				'loc1' => $this->db->f('loc1'),
+				'loc2' => $this->db->f('loc2'),
+				'loc3' => $this->db->f('loc3'),
+				'loc4' => $this->db->f('loc4'),
+				'bygningsnr' => $this->db->f('bygningsnr'),
+				'street_id' => $this->db->f('street_id'),
+				'street_number' => $this->db->f('street_number'),
+			];
+		}
+		$sql = "SELECT loc1, loc2, loc2_name FROM fm_location2";
+		if ($filterLoc1)
+		{
+			$sql .= " WHERE loc1 = '{$filterLoc1}'";
+		}
+		$sql .= " ORDER BY loc1, loc2";
+		$this->db->query($sql, __LINE__, __FILE__);
+		while ($this->db->next_record())
+		{
+			$loc1_value = trim((string)$this->db->f('loc1'));
+			$loc2_value = $this->normalizeLoc2($this->db->f('loc2'));
+			$this->loc2Refs[$loc1_value][$loc2_value] = true;
+			$this->loc2Names[$loc1_value][$loc2_value] = $this->db->f('loc2_name');
+		}
+		$sql = "SELECT loc1, loc2, loc3, loc3_name FROM fm_location3";
+		if ($filterLoc1)
+		{
+			$sql .= " WHERE loc1 = '{$filterLoc1}'";
+		}
+		$sql .= " ORDER BY loc1, loc2, loc3";
+		$this->db->query($sql, __LINE__, __FILE__);
+		while ($this->db->next_record())
+		{
+			$loc1_value = $this->db->f('loc1');
+			$loc2_value = $this->db->f('loc2');
+			$loc3_value = $this->db->f('loc3');
+			$this->loc3Refs[$loc1_value][$loc2_value][$loc3_value] = true;
+			$this->loc3Names[$loc1_value][$loc2_value][$loc3_value] = $this->db->f('loc3_name');
+		}
+	}
+
+	/**
+	 * Optionally create the location_mapping table if it does not exist.
+	 */
+	private function createLocationMappingTableIfNotExists()
+	{
+		$sql = "CREATE TABLE IF NOT EXISTS location_mapping (
+			id SERIAL PRIMARY KEY,
+			old_location_code VARCHAR(50),
+			new_location_code VARCHAR(50),
+			loc1 VARCHAR(6),
+			old_loc2 VARCHAR(2),
+			new_loc2 VARCHAR(2),
+			old_loc3 VARCHAR(2),
+			new_loc3 VARCHAR(2),
+			loc4 VARCHAR(3),
+			bygningsnr VARCHAR(15),
+			street_id INTEGER,
+			street_number VARCHAR(10),
+			change_type VARCHAR(100),
+			update_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			files_to_move smallint,
+			files_moved smallint
+		)";
+		$this->db->query($sql, __LINE__, __FILE__);
+	}
+
+	/**
+	 * Get all unique loc1 values.
+	 */
+	public function getAllLoc1Values()
+	{
+		$loc1s = [];
+		$sql = "SELECT DISTINCT loc1 FROM fm_location4 WHERE loc1 IS NOT NULL AND trim(loc1) <> '' ORDER BY loc1";
+		$this->db->query($sql, __LINE__, __FILE__);
+		while ($this->db->next_record())
+		{
+			$loc1_value = trim($this->db->f('loc1'));
+			if ($loc1_value !== '')
+			{
+				$loc1s[] = $loc1_value;
+			}
+		}
+		return $loc1s;
+	}
+
+	/**
+	 * Build bygningsnr to loc2 map by analyzing which loc2/loc3 combinations already exist in the database
+	 * and matching them to bygningsnr based on street_id and street_number combinations.
+	 * 
+	 * Logic:
+	 * 1. First, check fm_location3 to see which bygningsnr are already correctly placed
+	 * 2. For each bygningsnr in fm_location3, extract the streets from the loc3_name
+	 * 3. Match those to bygningsnr from fm_location4 data
+	 * 4. If a match is found, map the bygningsnr to that loc2
+	 */
+	private function buildBygningsnrToLoc2MapFromDatabase($filterLoc1 = null)
+	{
+		$this->bygningsnrToLoc2Map = [];
+		
+		// DEBUG: Show what bygningsnr exist in locationData
+		$bygningsnrSample = [];
+		foreach ($this->locationData as $row)
+		{
+			if (!empty($row['bygningsnr']) && count($bygningsnrSample) < 5)
+			{
+				$bygningsnrSample[] = $row['bygningsnr'];
+			}
+		}
+		$this->debug("locationData sample bygningsnr: " . json_encode(array_unique($bygningsnrSample)));
+		
+		// First, try to infer bygningsnr from fm_location3 names
+		// by matching streets in loc3_name to streets in fm_location4
+		$bygningsnrFromLoc3 = []; // loc1 => loc2 => loc3 => [streetkeys that should be here]
+		$sql = "SELECT loc1, loc2, loc3, loc3_name FROM fm_location3";
+		if ($filterLoc1)
+		{
+			$sql .= " WHERE loc1 = '{$filterLoc1}'";
+		}
+		$this->db->query($sql, __LINE__, __FILE__);
+		
+		// Extract streets from loc3_name (format: "Street Number A" or similar)
+		while ($this->db->next_record())
+		{
+			$loc1 = $this->db->f('loc1');
+			$loc2 = $this->db->f('loc2');
+			$loc3 = $this->db->f('loc3');
+			$loc3_name = $this->db->f('loc3_name');
+			
+			// Try to extract street_number from loc3_name
+			// Common patterns: "Street N A", "Street NA", etc.
+			preg_match('/\s+([0-9]+\s*[A-Z]?)$/i', $loc3_name, $matches);
+			if (!empty($matches[1]))
+			{
+				$street_number = trim($matches[1]);
+				if (!isset($bygningsnrFromLoc3[$loc1][$loc2][$loc3]))
+				{
+					$bygningsnrFromLoc3[$loc1][$loc2][$loc3] = [];
+				}
+				$bygningsnrFromLoc3[$loc1][$loc2][$loc3][] = $street_number;
+			}
+		}
+		
+		// Now match these streets to bygningsnr in fm_location4
+		// For each loc2 in fm_location3, find which bygningsnr has streets matching its loc3 entries
+		foreach ($bygningsnrFromLoc3 as $loc1 => $loc2s)
+		{
+			foreach ($loc2s as $loc2 => $loc3s)
+			{
+				// Collect all street_numbers for this loc2
+				$loc2StreetNumbers = [];
+				foreach ($loc3s as $loc3 => $streetNumbers)
+				{
+					$loc2StreetNumbers = array_merge($loc2StreetNumbers, $streetNumbers);
+				}
+				
+				// Find which bygningsnr in fm_location4 has these street_numbers
+				if (!empty($loc2StreetNumbers))
+				{
+					foreach ($this->locationData as $row)
+					{
+						if ($row['loc1'] === $loc1 && !empty($row['bygningsnr']))
+						{
+							$street_number = trim($row['street_number']);
+							// If this bygningsnr has a street_number that belongs in this loc2, map it there
+							if (in_array($street_number, $loc2StreetNumbers))
+							{
+								if (!isset($this->bygningsnrToLoc2Map[$loc1]))
+								{
+									$this->bygningsnrToLoc2Map[$loc1] = [];
+								}
+								if (!isset($this->bygningsnrToLoc2Map[$loc1][$row['bygningsnr']]))
+								{
+									$this->bygningsnrToLoc2Map[$loc1][$row['bygningsnr']] = [];
+								}
+								// Add this loc2 to the list for this bygningsnr (if not already there)
+								if (!in_array($loc2, $this->bygningsnrToLoc2Map[$loc1][$row['bygningsnr']]))
+								{
+									$this->bygningsnrToLoc2Map[$loc1][$row['bygningsnr']][] = $loc2;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		// Fallback: if fm_location3 doesn't help, build map from fm_location4
+		// Build map of ALL loc2 values where each bygningsnr currently exists
+		$bygningsnrInLoc2 = []; // loc1 => bygningsnr => [loc2 values]
+		foreach ($this->locationData as $row)
+		{
+			$loc1 = $row['loc1'];
+			$loc2 = $row['loc2'];
+			$bygningsnr = $row['bygningsnr'];
+			
+			if (!empty($bygningsnr))
+			{
+				// Only use fm_location4 mapping if not already found from fm_location3
+				if (!isset($this->bygningsnrToLoc2Map[$loc1][$bygningsnr]) || empty($this->bygningsnrToLoc2Map[$loc1][$bygningsnr]))
+				{
+					if (!isset($bygningsnrInLoc2[$loc1][$bygningsnr]))
+					{
+						$bygningsnrInLoc2[$loc1][$bygningsnr] = [];
+					}
+					if (!in_array($loc2, $bygningsnrInLoc2[$loc1][$bygningsnr]))
+					{
+						$bygningsnrInLoc2[$loc1][$bygningsnr][] = $loc2;
+					}
+				}
+			}
+		}
+		
+		// Store fallback loc2 values (sorted) for each bygningsnr
+		foreach ($bygningsnrInLoc2 as $loc1 => $bygningsnrs)
+		{
+			foreach ($bygningsnrs as $bygningsnr => $loc2Values)
+			{
+				// Sort to get consistent ordering
+				sort($loc2Values, SORT_STRING);
+				
+				if (!isset($this->bygningsnrToLoc2Map[$loc1]))
+				{
+					$this->bygningsnrToLoc2Map[$loc1] = [];
+				}
+				$this->bygningsnrToLoc2Map[$loc1][$bygningsnr] = $loc2Values;
+			}
+		}
+		
+		// Ensure all entries in bygningsnrToLoc2Map are arrays and sorted
+		foreach ($this->bygningsnrToLoc2Map as $loc1 => $bygningsnrs)
+		{
+			foreach ($bygningsnrs as $bygningsnr => $loc2Values)
+			{
+				if (!is_array($loc2Values))
+				{
+					$this->bygningsnrToLoc2Map[$loc1][$bygningsnr] = [$loc2Values];
+				} else {
+					// Sort to get consistent ordering (prefer lower loc2 numbers)
+					sort($loc2Values, SORT_STRING);
+					$this->bygningsnrToLoc2Map[$loc1][$bygningsnr] = $loc2Values;
+				}
+			}
+		}
+
+		// FALLBACK: If still not mapped, use streetToLoc3Map (from fm_location3) to choose the best loc2
+		$bygningsnrIndexLocal = [];
+		foreach ($this->locationData as $row)
+		{
+			$loc1 = $row['loc1'];
+			$bygningsnr = $row['bygningsnr'];
+			if (!isset($bygningsnrIndexLocal[$loc1]))
+			{
+				$bygningsnrIndexLocal[$loc1] = [];
+			}
+			if (!in_array($bygningsnr, $bygningsnrIndexLocal[$loc1]))
+			{
+				$bygningsnrIndexLocal[$loc1][] = $bygningsnr;
+			}
+		}
+
+		foreach ($bygningsnrIndexLocal as $loc1 => $bygningsnrs)
+		{
+			foreach ($bygningsnrs as $bygningsnr)
+			{
+				// Collect streetkeys for this bygningsnr from locationData
+				$streetkeysForBygning = [];
+				$rowsFound = 0;
+				$this->debug("Searching for bygningsnr={$bygningsnr} (type=" . gettype($bygningsnr) . ") in loc1={$loc1}");
+				$this->debug("  locationData has " . count($this->locationData) . " rows");
+				foreach ($this->locationData as $row)
+				{
+					if ($row['loc1'] == $loc1 && $row['bygningsnr'] == $bygningsnr)  // Use == for both to handle type differences
+					{
+						$rowsFound++;
+						$normalized_street_number = trim(preg_replace('/\s+/', ' ', $row['street_number']));
+						$sk = $row['street_id'] . '_' . $normalized_street_number;
+						$this->debug("  row matched: street_id={$row['street_id']}, street_number={$row['street_number']}, streetkey={$sk}");
+						if (!empty($row['street_id']) && !empty($row['street_number']))
+						{
+							$streetkeysForBygning[] = $sk;
+						}
+					}
+				}
+				if ($rowsFound === 0)
+				{
+					$this->debug("  NO MATCHES for bygningsnr={$bygningsnr} in loc1={$loc1}. Checking first 3 rows:");
+					$checkCount = 0;
+					foreach ($this->locationData as $row)
+					{
+						if ($checkCount++ < 3)
+						{
+							$this->debug("    row loc1={$row['loc1']} bygningsnr={$row['bygningsnr']} (type=" . gettype($row['bygningsnr']) . ")");
+						}
+					}
+				}
+				$streetkeysForBygning = array_values(array_unique($streetkeysForBygning));
+				$this->debug("bygningsnr={$bygningsnr} rowsFound={$rowsFound} streetkeys=" . json_encode($streetkeysForBygning));
+
+				// Score each loc2 based on how many of these streetkeys exist in streetToLoc3Map.
+				// Tie-breaker: prefer loc2 with fewer total streets (more specific group), then lower loc2 number.
+				$bestLoc2 = null;
+				$bestScore = 0;
+				$bestTotalStreets = PHP_INT_MAX;
+				if (isset($this->streetToLoc3Map[$loc1]))
+				{
+					foreach ($this->streetToLoc3Map[$loc1] as $loc2Candidate => $streets)
+					{
+						$score = 0;
+						foreach ($streetkeysForBygning as $sk)
+						{
+							if (isset($streets[$sk]))
+							{
+								$score++;
+							}
+						}
+						$totalStreetsHere = count($streets);
+						$this->debug("  loc2Candidate={$loc2Candidate} score={$score} totalStreetsHere={$totalStreetsHere}");
+						if ($score > $bestScore || ($score === $bestScore && $totalStreetsHere < $bestTotalStreets) || ($score === $bestScore && $totalStreetsHere === $bestTotalStreets && $loc2Candidate < $bestLoc2))
+						{
+							$bestScore = $score;
+							$bestLoc2 = $loc2Candidate;
+							$bestTotalStreets = $totalStreetsHere;
+						}
+					}
+				}
+
+				if ($bestLoc2 !== null && $bestScore > 0)
+				{
+					$this->debug("bygningsnrToLoc2 fallback matched bygningsnr={$bygningsnr} to loc2={$bestLoc2} (score={$bestScore}) via streetToLoc3Map");
+					// Always prefer the bestLoc2 from fm_location3 street mapping
+					$this->bygningsnrToLoc2Map[$loc1][$bygningsnr] = [$bestLoc2];
+				}
+			}
+		}
+
+		$this->debug("bygningsnrToLoc2Map: " . json_encode($this->bygningsnrToLoc2Map));
+	}
+
+	/**
+	 * Build street to loc3 map by analyzing fm_location4 directly.
+	 * This identifies which streets are currently assigned to each loc3,
+	 * regardless of whether the data is misplaced or not.
+	 */
+	private function buildStreetToLoc3MapFromLocation4()
+	{
+		$this->streetToLoc3Map = [];
+		
+		// FIRST: Build authoritative street-to-loc3 mapping from fm_location4
+		// Use the first loc4 entry for each loc1/loc2/loc3 to derive streetkey
+		$sql = "SELECT loc1, loc2, loc3, street_id, street_number FROM fm_location4";
+		if ($this->currentFilterLoc1)
+		{
+			$sql .= " WHERE loc1 = '{$this->currentFilterLoc1}'";
+		}
+		$sql .= " ORDER BY loc1, loc2, loc3, loc4";
+		
+		$this->db->query($sql, __LINE__, __FILE__);
+		
+		// Track first streetkey per loc3
+		$firstStreetKeyByLoc3 = []; // loc1 => loc2 => loc3 => streetkey
+		while ($this->db->next_record())
+		{
+			$loc1 = $this->db->f('loc1');
+			$loc2 = $this->db->f('loc2');
+			$loc3 = $this->db->f('loc3');
+			$street_id = $this->db->f('street_id');
+			$street_number = $this->db->f('street_number');
+			
+			if ($street_id && $street_number)
+			{
+				$normalized_street_number = trim(preg_replace('/\s+/', ' ', $street_number));
+				$streetkey = "{$street_id}_" . $normalized_street_number;
+				if (!isset($firstStreetKeyByLoc3[$loc1][$loc2][$loc3]))
+				{
+					$firstStreetKeyByLoc3[$loc1][$loc2][$loc3] = $streetkey;
+				}
+			}
+		}
+		
+		// Build streetToLoc3Map from firstStreetKeyByLoc3
+		foreach ($firstStreetKeyByLoc3 as $loc1 => $loc2s)
+		{
+			if (!isset($this->streetToLoc3Map[$loc1]))
+			{
+				$this->streetToLoc3Map[$loc1] = [];
+			}
+			foreach ($loc2s as $loc2 => $loc3s)
+			{
+				if (!isset($this->streetToLoc3Map[$loc1][$loc2]))
+				{
+					$this->streetToLoc3Map[$loc1][$loc2] = [];
+				}
+				foreach ($loc3s as $loc3 => $streetkey)
+				{
+					$this->streetToLoc3Map[$loc1][$loc2][$streetkey] = $loc3;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Generate loc2_name from addresses summary.
+	 * If single street: "Street Name 15A, 15B"
+	 * If multiple streets: "Street1 15A, 15B, Street2 20, 22"
+	 * Maximum 256 characters.
+	 */
+	private function generateLoc2Name($addresses)
+	{
+		$name_parts = [];
+		
+		foreach ($addresses as $street_name => $street_numbers)
+		{
+			// Sort street numbers naturally (15, 15A, 15B, 16, etc.)
+			usort($street_numbers, 'strnatcmp');
+			$address_str = "{$street_name} " . implode(", ", $street_numbers);
+			$name_parts[] = $address_str;
+		}
+		
+		$loc2_name = trim(implode(", ", $name_parts));
+		
+		// Truncate to 256 characters
+		if (strlen($loc2_name) > 256)
+		{
+			$loc2_name = substr($loc2_name, 0, 253) . "...";
+		}
+		
+		return $loc2_name;
+	}
+
+	/**
+	 * Get street name from street_id.
+	 */
+	private function get_street_name($street_id)
+	{
+		static $cache = [];
+		if (isset($cache[$street_id]))
+		{
+			return $cache[$street_id];
+		}
+		$sql = "SELECT descr FROM fm_streetaddress WHERE id = {$street_id}";
+		$this->db->query($sql, __LINE__, __FILE__);
+		$cache[$street_id] = $this->db->next_record() ? $this->db->f('descr') : 'Unknown Street';
+		return $cache[$street_id];
+	}
+
+	/**
+	 * Execute selected SQL statements.
+	 */
+	public function executeSqlStatements($loc1, $sqlTypes, $sqlStatements)
+	{
+		$results = [];
+
+		$this->db->transaction_begin();
+
+		// Only create location_mapping table if requested
+		if (in_array('schema', $sqlTypes)) {
+			$this->createLocationMappingTableIfNotExists();
+			$results['schema'] = 'Location mapping table created.';
+		}
+
+		foreach ($sqlTypes as $sqlType)
+		{
+			if (!isset($sqlStatements[$sqlType]))
+			{
+				continue;
+			}
+			$count = 0;
+			foreach ($sqlStatements[$sqlType] as $sql)
+			{
+				// if (strpos($sql, '--') === 0) 
+				// {
+				// 	continue;
+				// }
+				try
+				{
+					$this->db->query($sql, __LINE__, __FILE__);
+					$count++;
+				}
+				catch (\Exception $e)
+				{
+					error_log("Error executing SQL: " . $e->getMessage());
+					$this->db->transaction_abort();
+					break 2; // exit both loops on error
+				}
+			}
+			$results[$sqlType] = $count;
+		}
+		
+		if ($this->db->get_transaction())
+		{
+			$this->db->transaction_commit();
+		}
+		
+		return $results;
+	}
+
+	/**
+	 * Reset state for a new analysis.
+	 */
+	public function resetState()
+	{
+		$this->locationData = [];
+		$this->loc2Refs = [];
+		$this->loc3Refs = [];
+		$this->issues = [];
+		$this->suggestions = [];
+		$this->sqlStatements = [];
+		$this->entryToBygningsnrMap = [];
+		$this->processedLocationCodes = [];
+		$this->currentFilterLoc1 = null;
+		$this->bygningsnrToLoc2Map = [];
+		$this->streetToLoc3Map = [];
+		$this->loc3Names = [];
+		$this->loc2Names = [];
+	}
+
+	/**
+	 * Find all tables that have a location_code column.
+	 */
+	private function findLocationCodeTables()
+	{
+		$tables = [];
+		$sql = "SELECT table_name, column_name FROM information_schema.columns
+		 WHERE column_name IN ('location_code', 'loc1', 'loc2', 'loc3', 'loc4')
+		 AND table_name NOT IN ('fm_location4', 'fm_location3', 'fm_location2', 'fm_location1','fm_gab_location', 'location_mapping', 'fm_locations')";
+		$this->db->query($sql, __LINE__, __FILE__);
+		while ($this->db->next_record())
+		{
+			$tables[$this->db->f('table_name')][] = $this->db->f('column_name');
+		}
+		return $tables;
+	}
+}

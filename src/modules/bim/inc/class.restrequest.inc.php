@@ -77,12 +77,10 @@
 		}
 			catch(InvalidArgumentException $e)
 		{
-			curl_close($ch);
 			throw $e;
 		}
 			catch(Exception $e)
 		{
-			curl_close($ch);
 			throw $e;
 		}
 	}
@@ -165,7 +163,6 @@
 			{
 			$this->error = false;
 		}
-		curl_close($curlHandle);
 	}
 	
 		protected function setCurlOpts(&$curlHandle)

@@ -946,6 +946,10 @@ rooms_and_premises	bookingfrontend	nn	Rom og lokalar
 building_title	bookingfrontend	nn	Bygg
 resource_title	bookingfrontend	nn	Rom
 show_all_resources	bookingfrontend	nn	Sjå alle rom
+activity_and_organizer	bookingfrontend	nn	Aktivitet og arrangør
+title_help_text	bookingfrontend	nn	Vert vist offentleg i kalender og på infoskjerm. Skriv kva som skjer og kven som brukar rommet. Unngå sensitiv informasjon.
+title_placeholder	bookingfrontend	nn	T.d. "Trening – IL Brodd" eller "Bursdag – Kari Hansen"
+select_resource_before_application	bookingfrontend	nn	Du må velje ein ressurs før du kan opprette ein søknad
 hospitality	bookingfrontend	nn	Bevertning
 add_hospitality_order	bookingfrontend	nn	Legg til bevertning
 select_serving_date	bookingfrontend	nn	Velg dato

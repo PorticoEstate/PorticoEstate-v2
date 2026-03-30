@@ -34,7 +34,10 @@
 		"twig/twig": "^3.23"
 	},
 	"require-dev": {
-		"phpunit/phpunit": "^9.0"
+		"phpunit/phpunit": "^9.0",
+		"squizlabs/php_codesniffer": "4.0.1",
+		"phpcompatibility/php-compatibility": "10.0.0-alpha2",
+		"dealerdirect/phpcodesniffer-composer-installer": "1.2.0"
 	},
 	"autoload": {
 		"psr-4": {
@@ -50,10 +53,14 @@
 	"config": {
 		"allow-plugins": {
 			"php-http/discovery": true,
-			"tbachert/spi": true
+			"tbachert/spi": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
 		},
 		"platform": {
 			"ext-zend-opcache": "8.4"
 		}
+	},
+	"scripts": {
+		"phpcompat": "phpcs -p"
 	}
 }

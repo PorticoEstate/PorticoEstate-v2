@@ -92,7 +92,13 @@
 		{
 			// open connection to dictionary backend
 			// see: http://rock.earthlink.net/manual/mod/mod_php4/function.pspell-new.html
-			return pspell_new($language, $spelling, $jargon, $encoding, $mode);
+			if (!function_exists('pspell_new'))
+			{
+				$this->can_spell = false;
+				return false;
+			}
+			$fn = 'pspell_new';
+			return $fn($language, $spelling, $jargon, $encoding, $mode);
 		}
 		
 		
@@ -106,7 +112,12 @@
 		*/
 		function pgw_pspell_check($dictionary_link, $word)
 		{
-			return pspell_check($dictionary_link, $word);
+			if (!function_exists('pspell_check'))
+			{
+				return false;
+			}
+			$fn = 'pspell_check';
+			return $fn($dictionary_link, $word);
 		}
 
 		/*!
@@ -120,6 +131,11 @@
 		function pgw_pspell_suggest($dictionary_link, $word)
 		{
 			// http://rock.earthlink.net/manual/mod/mod_php4/function.pspell-suggest.html
-			return pspell_suggest($dictionary_link, $word);
+			if (!function_exists('pspell_suggest'))
+			{
+				return [];
+			}
+			$fn = 'pspell_suggest';
+			return $fn($dictionary_link, $word);
 		}
 	}

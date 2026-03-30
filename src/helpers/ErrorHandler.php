@@ -37,7 +37,7 @@ if (isset($serverSettings['log_levels']['global_level']))
 			break;
 
 		case 'S': // Strict
-			error_reporting(E_STRICT | E_PARSE);
+			error_reporting(E_PARSE);
 			break;
 
 		case 'DP': // Deprecated
@@ -179,7 +179,7 @@ class ErrorHandler
 					break;
 
 				case 'S': // Strict
-					$error_reporting = E_STRICT | E_PARSE;
+					$error_reporting = E_PARSE;
 					break;
 
 				case 'DP': // Deprecated

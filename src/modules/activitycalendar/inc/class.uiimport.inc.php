@@ -846,7 +846,7 @@ class activitycalendar_uiimport extends activitycalendar_uicommon
 	 */
 	protected function getcsv($handle)
 	{
-		return fgetcsv($handle, 1000, self::DELIMITER, self::ENCLOSING);
+		return fgetcsv($handle, 1000, self::DELIMITER, self::ENCLOSING, "\\");
 	}
 
 	/**

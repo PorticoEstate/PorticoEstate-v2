@@ -18,7 +18,9 @@ define('PHPGW_TEMPLATE_DIR', SRC_ROOT_PATH . '/modules/phpgwapi/templates/bootst
 
 
 // Scan only for annotations without trying to load the classes
-$openapi = \OpenApi\Generator::scan([
+$generator = new \OpenApi\Generator();
+
+$scanSources = [
 	SRC_ROOT_PATH . '/modules/bookingfrontend/controllers',
 	SRC_ROOT_PATH . '/modules/bookingfrontend/models',
 	SRC_ROOT_PATH . '/modules/bookingfrontend/helpers',
@@ -26,12 +28,34 @@ $openapi = \OpenApi\Generator::scan([
 	SRC_ROOT_PATH . '/modules/phpgwapi/controllers/DatabaseController.php',
 	SRC_ROOT_PATH . '/controllers/GenericRegistryController.php',
 	SRC_ROOT_PATH . '/modules/booking/controllers/EventController.php',
-], [
-	'exclude' => [
-//		SRC_ROOT_PATH . '/modules/bookingfrontend/controllers/LoginController.php'
-	],
-	'validate' => false
-]);
+];
+
+$exclude = [
+//	SRC_ROOT_PATH . '/modules/bookingfrontend/controllers/LoginController.php'
+];
+
+$finder = new \Symfony\Component\Finder\Finder();
+$finder->files()->followLinks()->name('*.php')->sortByName();
+
+foreach ($scanSources as $source)
+{
+	if (is_file($source))
+	{
+		$finder->append([$source]);
+	}
+	else
+	{
+		$finder->in($source);
+	}
+}
+
+foreach ($exclude as $path)
+{
+	$relativePath = trim(str_replace(SRC_ROOT_PATH . '/', '', $path), '/');
+	$finder->notPath($relativePath);
+}
+
+$openapi = $generator->generate([$finder], null, false);
 
 // Parse to array for manipulation
 $spec = json_decode($openapi->toJson(), true);

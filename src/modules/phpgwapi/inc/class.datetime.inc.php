@@ -681,7 +681,7 @@ class phpgwapi_datetime
 	 */
 	public static function days_between($m1, $d1, $y1, $m2, $d2, $y2)
 	{
-		return (mktime(0, 0, 0, $m2, $d2, $y2, 0) - mktime(13, 0, 0, $m1, $d1, $y1, 0)) / self::SECONDS_IN_DAY;
+		return (mktime(0, 0, 0, $m2, $d2, $y2) - mktime(13, 0, 0, $m1, $d1, $y1)) / self::SECONDS_IN_DAY;
 	}
 
 	/**

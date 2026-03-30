@@ -17,10 +17,10 @@ class FakePDOOCI
 		$connection_string = $parsedDsn['connection_string'];
 		$encoding = $parsedDsn['encoding'];
 
-		$this->connection = oci_pconnect($username, $password, $connection_string, $encoding);
+		$this->connection = $this->callOci('oci_pconnect', [$username, $password, $connection_string, $encoding]);
 		if (!$this->connection)
 		{
-			$e = oci_error();
+			$e = $this->callOci('oci_error');
 			throw new Exception($e['message']);
 		}
 	}
@@ -43,10 +43,10 @@ class FakePDOOCI
 
 	public function prepare($query)
 	{
-		$statement = oci_parse($this->connection, $query);
+		$statement = $this->callOci('oci_parse', [$this->connection, $query]);
 		if (!$statement)
 		{
-			$e = oci_error($this->connection);
+			$e = $this->callOci('oci_error', [$this->connection]);
 			throw new Exception($e['message']);
 		}
 		return new FakePDOOCIStatement($statement);
@@ -61,6 +61,19 @@ class FakePDOOCI
 
 	public function close()
 	{
-		oci_close($this->connection);
+		$this->callOci('oci_close', [$this->connection]);
+	}
+
+	/**
+	 * Call an OCI function when available and fail with a clear message otherwise.
+	 */
+	private function callOci($function, array $args = [])
+	{
+		if (!function_exists($function))
+		{
+			throw new Exception(sprintf('Required OCI function %s() is not available', $function));
+		}
+
+		return call_user_func_array($function, $args);
 	}
 }

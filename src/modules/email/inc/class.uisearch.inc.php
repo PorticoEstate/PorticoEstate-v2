@@ -437,7 +437,7 @@
 					$msg_link = phpgw::link('/index.php', array('menuaction'=>'email.uimessage.message','msgball[msgnum]'=>$search_results[$i],'msgball[folder]'=>$search_vars['fldball']['folder'],'msgball[acctnum]'=>$search_vars['fldball']['acctnum']));
 					$t->set_var("msg_link", $msg_link);
 					$t->set_var("subject", $header_info->subject);
-					$t->set_var("date", strftime("%D", $header_info->udate));
+					$t->set_var("date", date('m/d/y', $header_info->udate));
 					$t->set_var("size", $header_info->Size);
 
 					$t->parse("search_results", "search_result", True);

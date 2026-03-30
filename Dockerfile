@@ -1,5 +1,5 @@
 # Use an official PHP-FPM base image
-FROM php:8.4-fpm-bookworm
+FROM php:8.5-fpm-bookworm
 
 LABEL maintainer="Sigurd Nes <sigurdne@gmail.com>"
 
@@ -90,8 +90,7 @@ RUN echo "apc.shm_size=64M" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini
     && echo "apc.enable_cli=1" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini
 
 
-# Install OPcache
-RUN docker-php-ext-install opcache
+# OPcache is included in PHP 8.5, so we just need to enable it and configure it for optimal performance.
 
 # Add OPcache configuration
 RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \

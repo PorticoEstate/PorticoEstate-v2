@@ -14,11 +14,11 @@ namespace App\modules\phpgwapi\services;
 	
  $serverSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('server');
 
-if (!empty($serverSettings['mcrypt_enabled']) || (isset($serverSettings['enable_crypto']) && $serverSettings['enable_crypto'] == 'mcrypt')) {
-	require_once SRC_ROOT_PATH . '/modules/phpgwapi/services/CryptoMcrypt.php';
-} else if (isset($serverSettings['enable_crypto']) && $serverSettings['enable_crypto'] == 'libsodium') {
+if (isset($serverSettings['enable_crypto']) && $serverSettings['enable_crypto'] == 'libsodium') {
 	require_once SRC_ROOT_PATH . '/modules/phpgwapi/services/CryptoLibsodium.php';
-} else {
+}
+else
+{
 	//Fall back
 	class Crypto extends Crypto_
 	{

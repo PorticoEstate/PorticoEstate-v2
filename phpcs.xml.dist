@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<ruleset name="PorticoEstate PHP 8.5 Compatibility">
+  <description>Detect code incompatible with PHP 8.5</description>
+
+  <file>src</file>
+
+  <exclude-pattern>*/vendor/*</exclude-pattern>
+  <exclude-pattern>*/src/cache/*</exclude-pattern>
+  <exclude-pattern>*/src/modules/phpgwapi/js/*</exclude-pattern>
+
+  <rule ref="PHPCompatibility"/>
+  <config name="testVersion" value="8.5-8.5"/>
+</ruleset>

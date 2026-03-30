@@ -226,6 +226,10 @@ class InterLink
 		{
 			$link = array('menuaction' => "{$appname}.uitts.view", 'id' => $id);
 		}
+		else if ($type == '.application')
+		{
+			$link = array('menuaction' => "{$appname}.uiapplication.view", 'id' => $id);
+		}
 		else if ($type == '.s_agreement')
 		{
 			$link = array('menuaction' => 'property.uis_agreement.edit', 'id' => $id);

@@ -21,7 +21,9 @@ import styles from './hospitality.module.scss';
 interface HospitalityOrderModalProps {
     open: boolean;
     onClose: () => void;
-    hospitality: IHospitality;
+    hospitalities: IHospitality[];
+    selectedHospitality: IHospitality | null;
+    onHospitalitySelect: (hospitality: IHospitality) => void;
     applicationId: number;
     applications: IApplication[];
     existingOrder?: IHospitalityOrder;
@@ -79,15 +81,19 @@ function buildDateOptions(applications: IApplication[]) {
 const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     open,
     onClose,
-    hospitality,
+    hospitalities,
+    selectedHospitality,
+    onHospitalitySelect,
     applicationId,
     applications,
     existingOrder,
 }) => {
     const t = useTrans();
-    const {data: menu, isLoading: menuLoading} = useHospitalityMenu(open ? hospitality.id : undefined);
+    const hospitality = selectedHospitality;
+    const {data: menu, isLoading: menuLoading} = useHospitalityMenu(open && hospitality ? hospitality.id : undefined);
     const createMutation = useCreateHospitalityOrder(applicationId);
     const updateMutation = useUpdateHospitalityOrder(applicationId);
+    const needsHospitalitySelection = hospitalities.length > 1 && !existingOrder;
 
     const [selectedDateKey, setSelectedDateKey] = useState('');
     const [selectedTime, setSelectedTime] = useState('');
@@ -110,10 +116,11 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
 
     // Filter delivery locations: main (on-site) always included, remote only if resource is booked
     const availableLocations = useMemo(() => {
+        if (!hospitality) return [];
         return hospitality.delivery_locations.filter(loc =>
             loc.location_type === 'main' || appResourceIds.has(loc.id)
         );
-    }, [hospitality.delivery_locations, appResourceIds]);
+    }, [hospitality, appResourceIds]);
 
     const selectedDateOption = useMemo(
         () => dateOptions.find(d => d.key === selectedDateKey),
@@ -132,7 +139,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
 
     // Cutoff check
     const cutoffCheck = useMemo(() => {
-        if (!selectedDateOption || !selectedTime) return {valid: true, message: ''};
+        if (!selectedDateOption || !selectedTime || !hospitality) return {valid: true, message: ''};
         const cutoffMs = getCutoffMs(hospitality);
         if (!cutoffMs) return {valid: true, message: ''};
 
@@ -218,7 +225,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
 
     const hasItems = Object.values(quantities).some(q => q > 0);
     const dateSelected = !!selectedDateKey;
-    const menuEnabled = dateSelected && !!locationId && !!selectedTime && cutoffCheck.valid;
+    const menuEnabled = !!hospitality && dateSelected && !!locationId && !!selectedTime && cutoffCheck.valid;
     const canSave = hasItems && menuEnabled;
 
     const increment = (id: number) =>
@@ -231,7 +238,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         });
 
     const handleSave = async () => {
-        if (!canSave || !selectedDateOption) return;
+        if (!canSave || !selectedDateOption || !hospitality) return;
 
         const dateStr = selectedDateOption.from.toISOString().split('T')[0];
         const servingTimeIso = new Date(`${dateStr}T${selectedTime}:00`).toISOString();
@@ -293,7 +300,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         const commentText = comments[article.id] || '';
         const commentVisible = visibleComments.has(article.id);
         return (
-            <div key={article.id} className={`${styles.menuItem} ${qty === 0 ? styles.dimmed : ''}`}>
+            <div key={article.id} className={styles.menuItem}>
                 <div className={styles.menuRow}>
                     <span className={styles.menuName}>
                         {article.article_name}
@@ -375,15 +382,18 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         );
     };
 
+    const dialogTitle = existingOrder && hospitality
+        ? `${t('bookingfrontend.edit')} - ${hospitality.name}`
+        : hospitality
+            ? `${t('bookingfrontend.add_hospitality_order')} - ${hospitality.name}`
+            : t('bookingfrontend.add_hospitality_order');
+
     return (
         <Dialog
             open={open}
             onClose={onClose}
-            dialogId={`hospitality-order-${hospitality.id}`}
-            title={existingOrder
-                ? `${t('bookingfrontend.edit')} - ${hospitality.name}`
-                : `${t('bookingfrontend.add_hospitality_order')} - ${hospitality.name}`
-            }
+            dialogId={`hospitality-order-modal`}
+            title={dialogTitle}
             stickyFooter
             footer={(attemptClose) => (
                 <div className={styles.modalFooter}>
@@ -399,14 +409,52 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                 </div>
             )}
         >
-            {menuLoading ? (
+            {/* Hospitality selection step when multiple are available */}
+            {needsHospitalitySelection && !hospitality && (
+                <div className={styles.modalContent}>
+                    <Field>
+                        <Label>{t('bookingfrontend.select_hospitality')}</Label>
+                        <div className={styles.hospitalitySelectList}>
+                            {hospitalities.map(h => (
+                                <Button
+                                    key={h.id}
+                                    variant="secondary"
+                                    onClick={() => onHospitalitySelect(h)}
+                                    className={styles.hospitalitySelectButton}
+                                >
+                                    {h.name}
+                                </Button>
+                            ))}
+                        </div>
+                    </Field>
+                </div>
+            )}
+
+            {/* Main order form - shown when a hospitality is selected */}
+            {hospitality && menuLoading ? (
                 <div style={{padding: '2rem', textAlign: 'center'}}>
                     {t('common.loading')}
                 </div>
-            ) : (
+            ) : hospitality ? (
                 <div className={styles.modalContent}>
                     {/* Top row: Date | Location | Time */}
                     <div className={styles.topRow}>
+                        {needsHospitalitySelection && (
+                            <Field className={styles.topRowField}>
+                                <Label>{t('bookingfrontend.hospitality')}</Label>
+                                <Select
+                                    value={String(hospitality.id)}
+                                    onChange={(e) => {
+                                        const h = hospitalities.find(h => h.id === parseInt(e.target.value));
+                                        if (h) onHospitalitySelect(h);
+                                    }}
+                                >
+                                    {hospitalities.map(h => (
+                                        <option key={h.id} value={String(h.id)}>{h.name}</option>
+                                    ))}
+                                </Select>
+                            </Field>
+                        )}
                         <Field className={styles.topRowField}>
                             <Label>{t('bookingfrontend.select_serving_date')}</Label>
                             <Select
@@ -499,7 +547,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         </div>
                     </div>
                 </div>
-            )}
+            ) : null}
         </Dialog>
     );
 };

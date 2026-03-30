@@ -107,6 +107,9 @@
     align-items: center;
     gap: 2rem;
     font-size: 1.25rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--ds-color-neutral-border-default);
 }
 
 .formFields {

@@ -91,6 +91,9 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
 
     const grandTotal = calculateTotal(applications);
 
+    const sectionCount = regularApplicationsByBuilding.length + (recurringApplications.length > 0 ? 1 : 0);
+    const showSectionTotals = sectionCount > 1;
+
     return (
         <div>
             {/* Regular Applications Sections - Grouped by Building */}
@@ -114,7 +117,7 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                             applicationIds={buildingGroup.applications.map(a => a.id)}
                             applications={buildingGroup.applications}
                         />
-                        {sectionTotal > 0 && (
+                        {showSectionTotals && sectionTotal > 0 && (
                             <div className={styles.sectionTotal}>
                                 <strong>{t('bookingfrontend.total')}:</strong>
                                 <strong>{formatCurrency(sectionTotal)}</strong>
@@ -140,7 +143,7 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                             selectedParentId={undefined}
                             onParentIdChange={undefined}
                         />
-                        {recurringTotal > 0 && (
+                        {showSectionTotals && recurringTotal > 0 && (
                             <div className={styles.sectionTotal}>
                                 <strong>{t('bookingfrontend.total')}:</strong>
                                 <strong>{formatCurrency(recurringTotal)}</strong>
@@ -151,9 +154,9 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
             })()}
 
             {/* Grand Total */}
-            {grandTotal > 0 && (regularApplicationsByBuilding.length > 0 || recurringApplications.length > 0) && (
+            {grandTotal > 0 && (
                 <div className={styles.grandTotal}>
-                    <strong>{t('bookingfrontend.grand_total')}:</strong>
+                    <strong>{t('bookingfrontend.total')}:</strong>
                     <strong>{formatCurrency(grandTotal)}</strong>
                 </div>
             )}

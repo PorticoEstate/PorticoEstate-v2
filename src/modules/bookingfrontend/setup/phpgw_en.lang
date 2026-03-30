@@ -961,3 +961,4 @@ special_requirements	bookingfrontend	en	Special requirements
 order_total	bookingfrontend	en	Order total
 article	bookingfrontend	en	article
 serving_at	bookingfrontend	en	Serving at
+select_hospitality	bookingfrontend	en	Select hospitality

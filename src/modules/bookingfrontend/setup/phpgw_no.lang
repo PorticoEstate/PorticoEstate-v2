@@ -962,3 +962,4 @@ special_requirements	bookingfrontend	no	Spesielle krav
 order_total	bookingfrontend	no	Ordretotal
 article	bookingfrontend	no	artikkel
 serving_at	bookingfrontend	no	Servering i
+select_hospitality	bookingfrontend	no	Velg servering

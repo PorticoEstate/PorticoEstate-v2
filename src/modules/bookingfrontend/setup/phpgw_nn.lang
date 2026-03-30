@@ -961,3 +961,4 @@ special_requirements	bookingfrontend	nn	Spesielle krav
 order_total	bookingfrontend	nn	Ordretotal
 article	bookingfrontend	nn	artikkel
 serving_at	bookingfrontend	nn	Servering i
+select_hospitality	bookingfrontend	nn	Vel servering

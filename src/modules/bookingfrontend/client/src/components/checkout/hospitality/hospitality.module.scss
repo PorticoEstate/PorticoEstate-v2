@@ -330,3 +330,15 @@
     font-size: 0.875rem;
     color: var(--ds-color-neutral-text-subtle);
 }
+
+.hospitalitySelectList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.hospitalitySelectButton {
+    width: 100%;
+    justify-content: flex-start;
+}

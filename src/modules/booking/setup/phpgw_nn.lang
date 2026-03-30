@@ -486,6 +486,7 @@ focal_point_instructions	booking	nn	Klikk eller dra for å setje fokuspunktet. B
 follows_season	booking	nn	Følgjer sesong
 follows_season_end	booking	nn	Følgjer sesongslutt
 For rent	booking	nn	Til leie
+Form	booking	nn	Skjema
 Format	booking	nn	Format
 forward	booking	nn	Vidaresend
 found %1 results	booking	nn	%1 treff

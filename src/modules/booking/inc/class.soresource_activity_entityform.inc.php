@@ -91,15 +91,40 @@ class booking_soresource_activity_entityform extends booking_socommon
 	}
 
 
-	public function get_entity_forms_by_resource_and_activity($resource_id, $activity_id)
+	/**
+	 * Get the entity form location_id for a given resource and activity
+	 *
+	 * Retrieves the location_id of an active entity form that matches the given resource and activity.
+	 * The query checks for active entity forms that have overlapping resources and activities with the given
+	 * resource_id and activity_id, and returns the location_id of the first matching entity form it finds.
+	 *
+	 * The resources and activities are stored as JSON arrays in the database, so the query uses the PostgreSQL
+	 * @> (contains) operator to check for overlap. The resource_id and activity_id are converted to JSON arrays
+	 * with a single element for the query.
+	 *
+	 * @param int $resource_id The ID of the resource to search for
+	 * @param int $activity_id The ID of the activity to search for
+	 *
+	 * @return int|null The location_id of the matching entity form, or null if no matching entity form is found
+	 *
+	 * @note This method assumes that there should be at most one active entity form for a given combination
+	 *       of resource and activity, as enforced by the validation in doValidate().
+	 */
+	public function get_entity_form_by_resource_and_activity($resource_id, $activity_id)
 	{
+		$sql = "SELECT location_id FROM public.bb_resource_activity_entityform "
+			. "WHERE active = 1 "
+			. "AND resources @> :resource_json::jsonb "
+			. "AND activities @> :activity_json::jsonb "
+			. "LIMIT 1";
 
-		// approach using the read method with filters:
-		/*
-			SELECT * FROM public.bb_resource_activity_entityform 
-			WHERE active = 1
-			AND resources  @> '["{$resource_id}"]'::jsonb
-			AND activities   @> '["{$activity_id}"]'::jsonb
-		*/
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(
+			':resource_json' => json_encode(array((string)$resource_id)),
+			':activity_json' => json_encode(array((string)$activity_id)),
+		));
+
+		$location_id = $stmt->fetchColumn();
+		return $location_id !== false ? $location_id : null;
 	}
 }

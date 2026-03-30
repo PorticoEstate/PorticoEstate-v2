@@ -81,7 +81,7 @@
 				</div>
 				<div class="pure-control-group">
 					<label>
-						<xsl:value-of select="php:function('lang', 'Entities')" />
+						<xsl:value-of select="php:function('lang', 'type')" />
 					</label>
 					<select id="field_entities" name="entities" class="pure-u-1 pure-u-sm-1-2 pure-u-md-1">
 						<option>
@@ -92,7 +92,7 @@
 				</div>
 				<div class="pure-control-group">
 					<label>
-						<xsl:value-of select="php:function('lang', 'Categories')" />
+						<xsl:value-of select="php:function('lang', 'Form')" />
 					</label>
 					<div id="categories_container">
 						<span class="select_first_text">
@@ -166,8 +166,45 @@
 						<th><xsl:value-of select="php:function('lang', 'Activities')" /></th>
 						<td><xsl:value-of select="entityform/activity_names" /></td>
 					</tr>
+					<tr>
+						<th><xsl:value-of select="php:function('lang', 'Form')" /></th>
+						<td><xsl:value-of select="entityform/location_name" /></td>
+					</tr>
 				</tbody>
 			</table>
+		</div>
+	</div>
+
+	<div class="pure-g" style="margin-top:1em;">
+		<div class="pure-u-1">
+			<h3><xsl:value-of select="php:function('lang', 'Attribute definitions')" /></h3>
+			<xsl:choose>
+				<xsl:when test="count(attribute_definitions) &gt; 0">
+					<table class="pure-table pure-table-bordered">
+						<thead>
+							<tr>
+								<th><xsl:value-of select="php:function('lang', 'Group relation')" /></th>
+								<th><xsl:value-of select="php:function('lang', 'Attribute')" /></th>
+								<th><xsl:value-of select="php:function('lang', 'Datatype')" /></th>
+								<th><xsl:value-of select="php:function('lang', 'Possible choices')" /></th>
+							</tr>
+						</thead>
+						<tbody>
+							<xsl:for-each select="attribute_definitions">
+								<tr>
+									<td><xsl:value-of select="group_relation" /></td>
+									<td><xsl:value-of select="name" /></td>
+									<td><xsl:value-of select="datatype" /></td>
+									<td><xsl:value-of select="choices" /></td>
+								</tr>
+							</xsl:for-each>
+						</tbody>
+					</table>
+				</xsl:when>
+				<xsl:otherwise>
+					<div><xsl:value-of select="php:function('lang', 'No attribute definitions found')" /></div>
+				</xsl:otherwise>
+			</xsl:choose>
 		</div>
 	</div>
 	<div class="form_buttons">

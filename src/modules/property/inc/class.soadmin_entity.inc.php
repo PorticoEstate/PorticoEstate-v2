@@ -1182,9 +1182,11 @@
 		 *
 		 * @return bool true on success
 		 */
-		function convert_to_eav()
+		function convert_to_eav($locations)
 		{
-//			die('vent litt med denne');
+
+		_debug_array($locations);
+			die('vent litt med denne');
 
 			phpgw::import_class('phpgwapi.xmlhelper');
 			$this->type	 = 'entity';
@@ -1201,10 +1203,16 @@
 					if (!$category['is_eav'])
 					{
 
-						$location_id	 = $this->locations->get_id('property', ".{$this->type}.{$category['entity_id']}.{$category['id']}");
+						$location = ".{$this->type}.{$category['entity_id']}.{$category['id']}";
+
+						if(!in_array($location, $locations))
+						{
+							continue;
+						}
+						$location_id	 = $this->locations->get_id('property', $location);
 						$values_insert	 = array(
 							'location_id'	 => $location_id,
-							'name'			 => ".{$this->type}.{$category['entity_id']}.{$category['id']}::{$category['name']}",
+							'name'			 => "{$location}::{$category['name']}",
 							'description'	 => $category['descr'],
 							'is_ifc'		 => 0
 						);

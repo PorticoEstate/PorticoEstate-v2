@@ -198,79 +198,11 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 			$errors = $this->bo->validate($entityform);
 			if (!$errors)
 			{
-				$receipt = $this->bo->update($entityform);
+				$this->bo->update($entityform);
 				self::redirect(array('menuaction' => 'booking.uiresource_activity_entityform.index'));
 			}
 		}
-//		$this->flash_form_errors($errors);
-
-		foreach ($errors as $error)
-		{
-			Cache::message_set(implode("<br/>", $error), 'error');
-		}
-
-		$tabs = array();
-		$tabs['generic'] = array('label' => lang('Entityform New'), 'link' => '#entityform_new');
-		$active_tab = 'generic';
-		$activities = $this->activity_bo->fetch_activities();
-		$activities = $activities['results'];
-		foreach ($activities as &$activity)
-		{
-			$activity['selected'] = in_array($activity['id'], $entityform['activities']);
-		}
-
-		if (!empty($entityform['building_id']))
-		{
-			$building = $this->building_bo->read_single($entityform['building_id']);
-			if ($building)
-			{
-				$entityform['building_name'] = $building['name'];
-			}
-		}
-
-		$location_obj = new Locations();
-		$location = $location_obj->get_location($entityform['location_id']);
-		$entity_id = explode('.', $location)[2];
-
-		$entities = $this->boadmin_entity->read();
-
-		foreach ($entities as &$entity)
-		{
-			$entity['selected'] = $entity['id'] == $entity_id ? 1 : 0;
-		}
-
-		if ($entity_id)
-		{
-			$categories = $this->boadmin_entity->read_category(['entity_id' => $entity_id], ['allrows' => true]);
-			foreach ($categories as &$category)
-			{
-				$category['id'] = $category['location_id'];
-				$category['selected'] = $category['location_id'] == $entityform['location_id'] ? 1 : 0;
-			}
-		}
-
-		$data = array(
-			'tabs' => phpgwapi_jquery::tabview_generate($tabs, $active_tab),
-			'entityform' => $entityform,
-			'activities' => array('options' => $activities),
-			'entities' => array('options' => $entities),
-			'resources_json' => json_encode($entityform['resources']),
-			'categories' => array('options' => $categories),
-			'cancel_link' => self::link(array('menuaction' => 'booking.uiresource_activity_entityform.index')),
-			'validator' => phpgwapi_jquery::formvalidator_generate(array(
-				'location',
-				'date',
-				'security',
-				'file'
-			))
-		);
-
-		phpgwapi_jquery::load_widget('select2');
-		self::add_javascript('booking', 'base', 'resource_activity_entityform.js');
-
-		self::render_template_xsl(array('resource_activity_entityform'), array(
-			'edit' => $data
-		));
+		$this->_render_form($entityform, $errors);
 	}
 
 	public function add()
@@ -293,25 +225,29 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 			$errors = $this->bo->validate($entityform);
 			if (!$errors)
 			{
-				$receipt = $this->bo->add($entityform);
+				$this->bo->add($entityform);
 				self::redirect(array('menuaction' => 'booking.uiresource_activity_entityform.index'));
 			}
 		}
-		//		$this->flash_form_errors($errors);
+		$this->_render_form($entityform, $errors);
+	}
 
+	private function _render_form(array $entityform, array $errors = array())
+	{
 		foreach ($errors as $error)
 		{
-			Cache::message_set(implode("<br/>", $error), 'error');
+			Cache::message_set(implode("<br/>", (array)$error), 'error');
 		}
 
 		$tabs = array();
 		$tabs['generic'] = array('label' => lang('Entityform New'), 'link' => '#entityform_new');
 		$active_tab = 'generic';
+
 		$activities = $this->activity_bo->fetch_activities();
 		$activities = $activities['results'];
 		foreach ($activities as &$activity)
 		{
-			$activity['selected'] = in_array($activity['id'], $entityform['activities']);
+			$activity['selected'] = in_array($activity['id'], (array)$entityform['activities']);
 		}
 
 		if (!empty($entityform['building_id']))
@@ -324,6 +260,7 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 		}
 
 		$entities = $this->boadmin_entity->read();
+		$categories = array();
 
 		if (!empty($entityform['location_id']))
 		{
@@ -333,7 +270,7 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 
 			foreach ($entities as &$entity)
 			{
-				$entity['selected'] = $entity['id'] == $entity_id;
+				$entity['selected'] = $entity['id'] == $entity_id ? 1 : 0;
 			}
 
 			if ($entity_id)

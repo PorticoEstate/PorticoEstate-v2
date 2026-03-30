@@ -1248,10 +1248,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 							control={control}
 							render={({field}) => (
 								<Textfield
-									label={t('bookingfrontend.title')}
+									label={t('bookingfrontend.activity_and_organizer')}
+									description={t('bookingfrontend.title_help_text')}
 									{...field}
 									error={errors.title?.message ? t(errors.title.message) : undefined}
-									placeholder={t('bookingfrontend.enter_title')}
+									placeholder={t('bookingfrontend.title_placeholder')}
 									required
 								/>
 							)}

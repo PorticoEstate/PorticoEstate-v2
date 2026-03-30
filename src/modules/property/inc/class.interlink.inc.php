@@ -30,6 +30,7 @@
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Locations;
 use App\Database\Db;
+use App\modules\phpgwapi\services\InterLink as InterLinkService;
 
 /**
  * interlink - handles information of relations of items across locations.
@@ -45,7 +46,7 @@ class property_interlink
 	 * @var object $_db Database connection
 	 */
 	protected $_db, $_join;
-	var $boadmin_entity, $soadmin_entity, $locations_obj;
+	var $boadmin_entity, $soadmin_entity, $locations_obj, $interLinkService;
 
 	/**
 	 * Constructor
@@ -61,6 +62,7 @@ class property_interlink
 		$this->soadmin_entity->type_app	 = &$this->boadmin_entity->type_app;
 
 		$this->_join = $this->_db->join;
+		$this->interLinkService = new InterLinkService();
 	}
 
 	/**
@@ -139,26 +141,9 @@ class property_interlink
 	 */
 	public function get_specific_relation($appname, $location1, $location2, $id, $role = 'origin')
 	{
-		$location1_id	 = $this->locations_obj->get_id($appname, $location1);
-		$location2_id	 = $this->locations_obj->get_id($appname, $location2);
-		$id				 = (int)$id;
-		$targets		 = array();
-
-		switch ($role)
-		{
-			case 'target':
-				$sql = "SELECT location2_item_id as item_id FROM phpgw_interlink WHERE location1_id = {$location1_id} AND location2_id = {$location2_id} AND location1_item_id = {$id}";
-				break;
-			default:
-				$sql = "SELECT location1_item_id as item_id FROM phpgw_interlink WHERE location1_id = {$location1_id} AND location2_id = {$location2_id} AND location2_item_id = {$id}";
-		}
-
-		$this->_db->query($sql, __LINE__, __FILE__);
-		while ($this->_db->next_record())
-		{
-			$targets[] = $this->_db->f('item_id');
-		}
-		return $targets;
+		
+		return $this->interLinkService->get_specific_relation($appname, $location1, $location2, $id, $role);
+	
 	}
 
 	/**
@@ -249,106 +234,7 @@ class property_interlink
 	 */
 	public function get_relation_link($linkend_location, $id, $function = 'edit', $external = false)
 	{
-		$link = array();
-
-		if (is_array($linkend_location))
-		{
-			$type = $linkend_location['location'];
-		}
-		else
-		{
-			$type = $linkend_location;
-		}
-		$appname = !empty($linkend_location['appname']) ? $linkend_location['appname'] : 'property';
-		if ($type == '.tenant_claim')
-		{
-			$link = array('menuaction' => "{$appname}.uitenant_claim.edit", 'claim_id' => $id);
-		}
-		if ($type == '.ticket')
-		{
-			$link = array('menuaction' => "{$appname}.uitts.view", 'id' => $id);
-		}
-		else if ($type == '.s_agreement')
-		{
-			$link = array('menuaction' => 'property.uis_agreement.edit', 'id' => $id);
-		}
-		else if ($type == '.agreement')
-		{
-			$link = array('menuaction' => 'property.uiagreement.edit', 'id' => $id);
-		}
-		else if ($type == '.document')
-		{
-			$link = array('menuaction' => 'property.uidocument.edit', 'id' => $id);
-		}
-		else if ($type == '.project.workorder')
-		{
-			$link = array('menuaction' => "property.uiworkorder.{$function}", 'id' => $id);
-		}
-		else if ($type == '.project.request')
-		{
-			$link = array('menuaction' => "property.uirequest.{$function}", 'id' => $id);
-		}
-		else if ($type == '.project.condition_survey')
-		{
-			$link = array('menuaction' => "property.uicondition_survey.{$function}", 'id' => $id);
-		}
-		else if ($type == '.project')
-		{
-			$link = array('menuaction' => "property.uiproject.{$function}", 'id' => $id);
-		}
-		else if (substr($type, 1, 6) == 'entity')
-		{
-			$type		 = explode('.', $type);
-			$entity_id	 = $type[2];
-			$cat_id		 = $type[3];
-			$link		 = array(
-				'menuaction' => "property.uientity.{$function}",
-				'entity_id'	 => $entity_id,
-				'cat_id'	 => $cat_id,
-				'id'		 => $id
-			);
-		}
-		else if (substr($type, 1, 5) == 'catch')
-		{
-			$type		 = explode('.', $type);
-			$entity_id	 = $type[2];
-			$cat_id		 = $type[3];
-			$link		 = array(
-				'menuaction' => "property.uientity.{$function}",
-				'type'		 => 'catch',
-				'entity_id'	 => $entity_id,
-				'cat_id'	 => $cat_id,
-				'id'		 => $id
-			);
-		}
-		else if ($type == '.checklist')
-		{
-			$link = array('menuaction' => 'controller.uicheck_list.view_control_info', 'check_list_id' => $id);
-		}
-		else if ($type == '.activity')
-		{
-			$link = array(
-				'menuaction'	 => 'logistic.uiactivity.view_resource_allocation',
-				'activity_id'	 => $id
-			);
-		}
-		else if (substr($type, 1, 8) == 'location')
-		{
-			$type	 = explode('.', $type);
-			$link	 = array(
-				'menuaction'	 => "property.uilocation.{$function}",
-				'location_code'	 => $id,
-			);
-		}
-
-		if ($external)
-		{
-			return phpgw::link('/index.php', $link, false, true);
-		}
-		else
-		{
-			return phpgw::link('/index.php', $link);
-		}
+		return $this->interLinkService->get_relation_link($linkend_location, $id, $function, $external);
 	}
 
 	/**
@@ -546,22 +432,8 @@ class property_interlink
 	 */
 	public function add($data, $db = '')
 	{
-		if (!$db)
-		{
-			$db = $this->_db;
-		}
-		$location1_id		 = $data['location1_id'];
-		$location1_item_id	 = $data['location1_item_id'];
-		$location2_id		 = $data['location2_id'];
-		$location2_item_id	 = $data['location2_item_id'];
-		$account_id			 = $data['account_id'];
-		$entry_date			 = time();
-		$is_private			 = isset($data['is_private']) && $data['is_private'] ? $data['is_private'] : -1;
-		$start_date			 = isset($data['start_date']) && $data['start_date'] ? $data['start_date'] : -1;
-		$end_date			 = isset($data['end_date']) && $data['end_date'] ? $data['end_date'] : -1;
+		return $this->interLinkService->add($data, $db);
 
-		$db->query('INSERT INTO phpgw_interlink (location1_id,location1_item_id,location2_id,location2_item_id,account_id,entry_date,is_private,start_date,end_date) '
-			. "VALUES ({$location1_id},{$location1_item_id},{$location2_id},{$location2_item_id},{$account_id},{$entry_date},{$is_private},{$start_date},{$end_date})", __LINE__, __FILE__);
 	}
 
 	/**
@@ -577,18 +449,7 @@ class property_interlink
 	 */
 	public function delete_at_origin($appname, $location1, $location2, $id, $db = '')
 	{
-		if (!$db)
-		{
-			$db = $this->_db;
-		}
-
-		$location1_id	 = $this->locations_obj->get_id($appname, $location1);
-		$location2_id	 = $this->locations_obj->get_id($appname, $location2);
-		//			$id				= (int) $id;
-
-		$sql = "DELETE FROM phpgw_interlink WHERE location1_id = {$location1_id} AND location2_id = {$location2_id} AND location1_item_id = '{$id}'";
-
-		$db->query($sql, __LINE__, __FILE__);
+		return $this->interLinkService->delete_at_origin($appname, $location1, $location2, $id, $db);
 	}
 
 	/**
@@ -603,17 +464,7 @@ class property_interlink
 	 */
 	public function delete_at_target($appname, $location, $id, $db = '')
 	{
-		if (!$db)
-		{
-			$db = $this->_db;
-		}
-
-		$location_id = $this->locations_obj->get_id($appname, $location);
-		//			$id 		 = (int) $id;
-
-		$sql = "DELETE FROM phpgw_interlink WHERE location1_id = {$location_id} AND location1_item_id = '{$id}'";
-
-		$db->query($sql, __LINE__, __FILE__);
+		return $this->interLinkService->delete_at_target($appname, $location, $id, $db);
 	}
 
 	/**
@@ -628,16 +479,6 @@ class property_interlink
 	 */
 	public function delete_from_target($appname, $location, $id, $db = '')
 	{
-		if (!$db)
-		{
-			$db = $this->_db;
-		}
-
-		$location_id = $this->locations_obj->get_id($appname, $location);
-		$id			 = (int)$id;
-
-		$sql = "DELETE FROM phpgw_interlink WHERE location2_id = {$location_id} AND location2_item_id = {$id}";
-
-		$db->query($sql, __LINE__, __FILE__);
+		return $this->interLinkService->delete_from_target($appname, $location, $id, $db);
 	}
 }

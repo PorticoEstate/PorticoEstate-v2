@@ -5,6 +5,12 @@ namespace App\modules\phpgwapi\services;
 use App\Database\Db;
 use App\modules\phpgwapi\controllers\Locations;
 
+require_once SRC_ROOT_PATH . '/modules/property/inc/class.soentity.inc.php';
+require_once SRC_ROOT_PATH . '/modules/helpdesk/inc/class.botts.inc.php';
+require_once SRC_ROOT_PATH . '/modules/property/inc/class.botts.inc.php';
+require_once SRC_ROOT_PATH . '/modules/property/inc/class.solocation.inc.php';
+require_once SRC_ROOT_PATH . '/modules/phpgwapi/inc/class.datetime.inc.php';
+
 
 class InterLink
 {
@@ -18,10 +24,10 @@ class InterLink
 	{
 		$this->db = Db::getInstance();
 		$this->locations_obj = new Locations();
-		$this->property_soentity = createObject('property.soentity');
-		$this->helpdesk_botts = createObject('helpdesk.botts');
-		$this->property_botts = createObject('property.botts');
-		$this->property_solocation = createObject('property.solocation');
+		$this->property_soentity = new \property_soentity();
+		$this->helpdesk_botts = new \helpdesk_botts();
+		$this->property_botts = new \property_botts();
+		$this->property_solocation = new \property_solocation();
 
 	}
 
@@ -176,8 +182,8 @@ class InterLink
 		else if (substr($type, 1, 6) == 'entity')
 		{
 			$type		 = explode('.', $type);
-			$entity_id	 = $type[2];
-			$cat_id		 = $type[3];
+			$entity_id	 = (int)$type[2];
+			$cat_id		 = (int)$type[3];
 			$location_id = $this->locations_obj->get_id('property', ".entity.{$entity_id}.{$cat_id}");
 			if ($location_id)
 			{
@@ -223,8 +229,8 @@ class InterLink
 		else if (substr($type, 1, 5) == 'catch')
 		{
 			$type		 = explode('.', $type);
-			$entity_id	 = $type[2];
-			$cat_id		 = $type[3];
+			$entity_id	 = (int)$type[2];
+			$cat_id		 = (int)$type[3];
 			// Not set
 		}
 	}

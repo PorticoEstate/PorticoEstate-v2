@@ -93,7 +93,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     const {data: menu, isLoading: menuLoading} = useHospitalityMenu(open && hospitality ? hospitality.id : undefined);
     const createMutation = useCreateHospitalityOrder(applicationId);
     const updateMutation = useUpdateHospitalityOrder(applicationId);
-    const needsHospitalitySelection = hospitalities.length > 1 && !existingOrder;
+    const showHospitalitySelector = hospitalities.length > 1 && !existingOrder;
 
     const [selectedDateKey, setSelectedDateKey] = useState('');
     const [selectedTime, setSelectedTime] = useState('');
@@ -409,28 +409,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                 </div>
             )}
         >
-            {/* Hospitality selection step when multiple are available */}
-            {needsHospitalitySelection && !hospitality && (
-                <div className={styles.modalContent}>
-                    <Field>
-                        <Label>{t('bookingfrontend.select_hospitality')}</Label>
-                        <div className={styles.hospitalitySelectList}>
-                            {hospitalities.map(h => (
-                                <Button
-                                    key={h.id}
-                                    variant="secondary"
-                                    onClick={() => onHospitalitySelect(h)}
-                                    className={styles.hospitalitySelectButton}
-                                >
-                                    {h.name}
-                                </Button>
-                            ))}
-                        </div>
-                    </Field>
-                </div>
-            )}
-
-            {/* Main order form - shown when a hospitality is selected */}
+            {/* Main order form */}
             {hospitality && menuLoading ? (
                 <div style={{padding: '2rem', textAlign: 'center'}}>
                     {t('common.loading')}
@@ -439,7 +418,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                 <div className={styles.modalContent}>
                     {/* Top row: Date | Location | Time */}
                     <div className={styles.topRow}>
-                        {needsHospitalitySelection && (
+                        {showHospitalitySelector && (
                             <Field className={styles.topRowField}>
                                 <Label>{t('bookingfrontend.hospitality')}</Label>
                                 <Select

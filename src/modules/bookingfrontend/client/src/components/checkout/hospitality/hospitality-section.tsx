@@ -92,11 +92,7 @@ const HospitalitySection: FC<HospitalitySectionProps> = ({applicationIds, applic
     }
 
     const handleAddOrder = () => {
-        if (hospitalities.length === 1) {
-            setActiveHospitality(hospitalities[0]);
-        } else {
-            setActiveHospitality(null);
-        }
+        setActiveHospitality(hospitalities[0]);
         setEditingOrder(undefined);
         setModalOpen(true);
     };

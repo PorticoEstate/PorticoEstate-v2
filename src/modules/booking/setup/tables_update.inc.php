@@ -8379,12 +8379,27 @@ function booking_upgrade0_2_124($oProc)
 	}
 }
 
-/**
- * Add table bb_resource_activity_entityform
- * update from 0.2.125 to 0.2.126
- */
+
 $test[] = '0.2.125';
 function booking_upgrade0_2_125($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$oProc->m_odb->query("ALTER TABLE bb_hospitality ADD COLUMN include_in_checkout_payment SMALLINT NOT NULL DEFAULT 0");
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.126';
+		return $currentver;
+	}
+}
+
+/**
+ * Add table bb_resource_activity_entityform
+ * update from 0.2.126 to 0.2.127
+ */
+$test[] = '0.2.126';
+function booking_upgrade0_2_126($oProc)
 {
 	$oProc->m_odb->transaction_begin();
 
@@ -8412,7 +8427,7 @@ function booking_upgrade0_2_125($oProc)
 
 	if ($oProc->m_odb->transaction_commit())
 	{
-		$currentver = '0.2.126';
+		$currentver = '0.2.127';
 		return $currentver;
 	}
 }

@@ -8374,13 +8374,14 @@ function booking_upgrade0_2_124($oProc)
 
 	if ($oProc->m_odb->transaction_commit())
 	{
-		$currentver = '0.2.124';
+		$currentver = '0.2.125';
 		return $currentver;
 	}
 }
 
-$test[] = '0.2.124';
-function booking_upgrade0_2_124($oProc)
+
+$test[] = '0.2.125';
+function booking_upgrade0_2_125($oProc)
 {
 	$oProc->m_odb->transaction_begin();
 
@@ -8388,7 +8389,45 @@ function booking_upgrade0_2_124($oProc)
 
 	if ($oProc->m_odb->transaction_commit())
 	{
-		$currentver = '0.2.125';
+		$currentver = '0.2.126';
+		return $currentver;
+	}
+}
+
+/**
+ * Add table bb_resource_activity_entityform
+ * update from 0.2.126 to 0.2.127
+ */
+$test[] = '0.2.126';
+function booking_upgrade0_2_126($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$oProc->CreateTable(
+		'bb_resource_activity_entityform',
+		array(
+			'fd' => array(
+				'id' => array('type' => 'auto', 'nullable' => false),
+				'name' => array('type' => 'varchar', 'precision' => 150, 'nullable' => False),
+				'active' => array('type' => 'int', 'nullable' => true, 'precision' => 2, 'default' => 1),
+				'building_id' => array('type' => 'int', 'precision' => 4, 'nullable' => False),
+				'resources' => array('type' => 'jsonb', 'nullable' => False),
+				'activities' => array('type' => 'jsonb',  'nullable' => True),
+				'location_id' => array('type' => 'int', 'precision' => 4, 'nullable' => False),
+			),
+			'pk' => array('id'),
+			'fk' => array(
+				'phpgw_locations' => array('location_id' => 'location_id'),
+				'bb_building' => array('building_id' => 'id'),
+			),
+			'ix' => array(),
+			'uc' => array()
+		)
+	);
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.127';
 		return $currentver;
 	}
 }

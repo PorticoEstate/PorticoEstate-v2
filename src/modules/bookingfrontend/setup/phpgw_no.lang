@@ -951,3 +951,15 @@ activity_and_organizer	bookingfrontend	no	Aktivitet og arrangør
 title_help_text	bookingfrontend	no	Vises offentlig i kalender og på infoskjerm. Skriv hva som skjer og hvem som bruker rommet. Unngå sensitiv informasjon.
 title_placeholder	bookingfrontend	no	F.eks. "Trening – IL Brodd" eller "Bursdag – Kari Hansen"
 select_resource_before_application	bookingfrontend	no	Du må velge en ressurs før du kan opprette en søknad
+hospitality	bookingfrontend	no	Bevertning
+add_hospitality_order	bookingfrontend	no	Legg til bevertning
+select_serving_date	bookingfrontend	no	Velg dato
+select_serving_time	bookingfrontend	no	Velg tid
+serving_time	bookingfrontend	no	Serveringstid
+delivery_location	bookingfrontend	no	Leveringssted
+order_cutoff_warning	bookingfrontend	no	Bestillingen må legges inn minst %1 %2 før serveringstidspunkt
+special_requirements	bookingfrontend	no	Spesielle krav
+order_total	bookingfrontend	no	Ordretotal
+article	bookingfrontend	no	artikkel
+serving_at	bookingfrontend	no	Servering i
+select_hospitality	bookingfrontend	no	Velg servering

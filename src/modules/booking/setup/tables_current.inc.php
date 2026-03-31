@@ -1716,6 +1716,7 @@ $phpgw_baseline = array(
 			'active' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 1),
 			'remote_serving_enabled' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 0),
 			'allow_on_site_hospitality' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 0),
+			'include_in_checkout_payment' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 0),
 			'order_by_time_value' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
 			'order_by_time_unit' => array('type' => 'varchar', 'precision' => '10', 'nullable' => true),
 			'created' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),

@@ -58,9 +58,11 @@ class HospitalityRepository
     {
         $sql = "INSERT INTO bb_hospitality
                 (resource_id, name, description, active, remote_serving_enabled,
-                 allow_on_site_hospitality, order_by_time_value, order_by_time_unit, created_by, modified_by)
+                 allow_on_site_hospitality, include_in_checkout_payment,
+                 order_by_time_value, order_by_time_unit, created_by, modified_by)
                 VALUES (:resource_id, :name, :description, :active, :remote_serving_enabled,
-                        :allow_on_site_hospitality, :order_by_time_value, :order_by_time_unit, :created_by, :modified_by)";
+                        :allow_on_site_hospitality, :include_in_checkout_payment,
+                        :order_by_time_value, :order_by_time_unit, :created_by, :modified_by)";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             ':resource_id' => $data['resource_id'],
@@ -69,6 +71,7 @@ class HospitalityRepository
             ':active' => $data['active'] ?? 1,
             ':remote_serving_enabled' => $data['remote_serving_enabled'] ?? 0,
             ':allow_on_site_hospitality' => $data['allow_on_site_hospitality'] ?? 0,
+            ':include_in_checkout_payment' => $data['include_in_checkout_payment'] ?? 0,
             ':order_by_time_value' => $data['order_by_time_value'] ?? null,
             ':order_by_time_unit' => $data['order_by_time_unit'] ?? null,
             ':created_by' => $data['created_by'],
@@ -84,7 +87,8 @@ class HospitalityRepository
 
         $allowedFields = [
             'resource_id', 'name', 'description', 'active',
-            'remote_serving_enabled', 'allow_on_site_hospitality', 'order_by_time_value', 'order_by_time_unit',
+            'remote_serving_enabled', 'allow_on_site_hospitality', 'include_in_checkout_payment',
+            'order_by_time_value', 'order_by_time_unit',
         ];
 
         foreach ($allowedFields as $field) {
@@ -237,7 +241,8 @@ class HospitalityRepository
         $placeholders = implode(',', $ids);
 
         $sql = "SELECT DISTINCT h.id, h.name, h.resource_id, r.name AS resource_name,
-                       h.remote_serving_enabled, h.allow_on_site_hospitality
+                       h.remote_serving_enabled, h.allow_on_site_hospitality,
+                       h.include_in_checkout_payment
                 FROM bb_hospitality h
                 LEFT JOIN bb_resource r ON h.resource_id = r.id
                 WHERE h.active = 1

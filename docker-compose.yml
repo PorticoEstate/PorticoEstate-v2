@@ -134,4 +134,4 @@ services:
 networks:
     internal:
         name: portico_internal
-        external: true
+#        external: true

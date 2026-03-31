@@ -73,6 +73,7 @@ class HospitalityController
 	 *         @OA\Property(property="description", type="string"),
 	 *         @OA\Property(property="active", type="integer"),
 	 *         @OA\Property(property="remote_serving_enabled", type="integer"),
+	 *         @OA\Property(property="include_in_checkout_payment", type="integer"),
 	 *         @OA\Property(property="order_by_time_value", type="integer"),
 	 *         @OA\Property(property="order_by_time_unit", type="string", enum={"hours", "days"})
 	 *     )),

@@ -843,9 +843,9 @@ use App\modules\phpgwapi\services\Cache;
 			return $this->so->get_children2($entity_id, $parent, $level, $reset);
 		}
 
-		function convert_to_eav()
+		function convert_to_eav($locations)
 		{
-			return $this->so->convert_to_eav();
+			return $this->so->convert_to_eav($locations);
 		}
 		
 		function add_choice_value($location_id, $attribute_id, $new_value)

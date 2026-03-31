@@ -440,6 +440,7 @@ focal_point_instructions	booking	en	Click or drag to set the focal point. Use ar
 follows_season	booking	en	Follows season
 follows_season_end	booking	en	Follows season end
 For rent	booking	en	For rent
+Form	booking	en	Form
 Format	booking	en	Format
 forward	booking	en	Forward
 found %1 results	booking	en	Found %1 results
@@ -801,6 +802,7 @@ resource id	booking	en	Resource id
 resource name	booking	en	Resource name
 resource schedule	booking	en	Resource schedule
 resource type	booking	en	Resource type
+resource_activity_entityform	booking	en	Dynamic application form
 resource_category	booking	en	Resource category
 Resourcenumber is wrong, 5 or 6 characters long	booking	en	Resourcenumber is wrong, 5 or 6 characters long
 resources	booking	en	Resources

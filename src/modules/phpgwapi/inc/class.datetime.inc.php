@@ -1212,4 +1212,49 @@ class phpgwapi_datetime
 			return (implode(' ', $dlarr));
 		}
 	}
+
+	/**
+	 * Show current date
+	 *
+	 * @param integer $t Time, defaults to user preferences
+	 * @param string $format Date format, defaults to user preferences
+	 * @return string Formated date
+	 */
+	public static function show_date($t = '', $format = '')
+	{
+		if (!$t || (substr(php_uname(), 0, 7) == "Windows" && intval($t) <= 0))
+		{
+			return ''; // return nothing if not valid input
+		}
+
+		try
+		{
+			$date = new DateTime(date('Y-m-d H:i:s', $t));
+		}
+		catch (Exception $exc)
+		{
+			return 'invalid date';
+		}
+
+		$userSettings = Settings::getInstance()->get('user');
+	
+		$timezone	 = !empty($userSettings['preferences']['common']['timezone']) ? $userSettings['preferences']['common']['timezone'] : 'UTC';
+		$DateTimeZone	 = new DateTimeZone($timezone);
+		$date->setTimezone($DateTimeZone);
+
+		if (!$format)
+		{
+			$format = $userSettings['preferences']['common']['dateformat'] . ' - ';
+			if ($userSettings['preferences']['common']['timeformat'] == '12')
+			{
+				$format .= 'h:i a';
+			}
+			else
+			{
+				$format .= 'H:i';
+			}
+		}
+
+		return $date->format($format);
+	}
 }

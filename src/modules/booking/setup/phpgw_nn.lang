@@ -486,6 +486,7 @@ focal_point_instructions	booking	nn	Klikk eller dra for å setje fokuspunktet. B
 follows_season	booking	nn	Følgjer sesong
 follows_season_end	booking	nn	Følgjer sesongslutt
 For rent	booking	nn	Til leie
+Form	booking	nn	Skjema
 Format	booking	nn	Format
 forward	booking	nn	Vidaresend
 found %1 results	booking	nn	%1 treff
@@ -885,6 +886,7 @@ resource id	booking	nn	Ressurs ID
 resource name	booking	nn	Namn på ressurs
 resource schedule	booking	nn	Ressurskalender
 resource type	booking	nn	Type
+resource_activity_entityform	booking	nn	Dynamisk søknadsskjema
 resource_category	booking	nn	Ressurskategori
 Resourcenumber is wrong, 5 or 6 characters long	booking	nn	Ressursnummer er feil, skal vere 5 eller 6 tegn langt.
 resources	booking	nn	Ressursar

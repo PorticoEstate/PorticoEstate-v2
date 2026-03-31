@@ -2314,7 +2314,7 @@
 				'location_id' => array('type' => 'int', 'precision' => '4', 'nullable' => False),
 				'id' => array('type' => 'int', 'precision' => '4', 'nullable' => False),
 				'name' => array('type' => 'varchar', 'precision' => '20', 'nullable' => False),
-				'descr' => array('type' => 'varchar', 'precision' => '50', 'nullable' => True),
+				'descr' => array('type' => 'text', 'nullable' => True),
 				'location_form' => array('type' => 'int', 'precision' => '4', 'nullable' => True),
 				'documentation' => array('type' => 'int', 'precision' => '4', 'nullable' => True),
 				'lookup_entity' => array('type' => 'text', 'nullable' => True)

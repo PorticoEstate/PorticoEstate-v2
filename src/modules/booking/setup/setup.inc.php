@@ -1,6 +1,6 @@
 <?php
 $setup_info['booking']['name'] = 'booking';
-$setup_info['booking']['version'] = '0.2.125';
+$setup_info['booking']['version'] = '0.2.127';
 $setup_info['booking']['app_order'] = 9;
 $setup_info['booking']['enable'] = 1;
 $setup_info['booking']['app_group'] = 'office';
@@ -75,6 +75,7 @@ $setup_info['booking']['tables'] = [
 	'bb_resource_activity',
 	'bb_resource_facility',
 	'bb_resource_e_lock',
+	'bb_resource_activity_entityform',
 	'bb_building_resource',
 	'bb_document_building',
 	'bb_document_resource',

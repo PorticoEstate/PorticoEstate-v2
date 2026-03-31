@@ -84,7 +84,7 @@ abstract class phpgwapi_uicommon_jquery
 			self::add_javascript('phpgwapi', $yui, 'common.js');
 		}
 
-		$this->url_prefix = str_replace('_', '.', get_class($this));
+		$this->url_prefix = preg_replace('/_/', '.', get_class($this), 1);
 
 		$this->dateFormat = $this->userSettings['preferences']['common']['dateformat'];
 

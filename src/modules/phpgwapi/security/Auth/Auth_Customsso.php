@@ -85,9 +85,10 @@ class Auth extends Auth_
 		$headers = array_change_key_case(getallheaders(), CASE_LOWER);
 		$ssn = !empty($headers['uid']) ? $headers['uid'] : false;
 		$ssn = !empty($_SERVER['HTTP_UID']) ? $_SERVER['HTTP_UID'] : $ssn;
+		$ssn = !empty($_SERVER['HTTP_X_OIDC_CLAIM_PID']) ? $_SERVER['HTTP_X_OIDC_CLAIM_PID'] : $ssn;
 
 		//ID-porten, Bergen kommune, portalen
-		$oidc_claim_pid = !empty($headers['oidc_claim_pid']) ? $headers['oidc_claim_pid'] : false;
+		$oidc_claim_pid = !empty($headers['x-oidc-claim-pid']) ? $headers['x-oidc-claim-pid'] : false;
 
 		if ($oidc_claim_pid)
 		{

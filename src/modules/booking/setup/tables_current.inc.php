@@ -350,11 +350,16 @@ $phpgw_baseline = array(
 			'resources' => array('type' => 'jsonb',  'nullable' => False),
 			'activities' => array('type' => 'jsonb',  'nullable' => True),
 			'location_id' => array('type' => 'int', 'precision' => 4, 'nullable' => False),
+			'owner_id' => array('type' => 'int', 'precision' => 4, 'nullable' => False), // system user that is the owner of the entityform, used for filter access permissions to specific group of case officers in the application process
+			'modified_on' => array('type' => 'timestamp', 'nullable' => False, 'default' => 'current_timestamp'),
+			'modified_by' => array('type' => 'int', 'precision' => '4', 'nullable' => False),
 		),
 		'pk' => array('id'),
 		'fk' => array(
 			'phpgw_locations' => array('location_id' => 'location_id'),
 			'bb_building' => array('building_id' => 'id'),
+			'phpgw_accounts' => array('owner_id' => 'account_id'),
+			'phpgw_accounts' => array('modified_by' => 'account_id'),
 		),
 		'ix' => array(),
 		'uc' => array(),

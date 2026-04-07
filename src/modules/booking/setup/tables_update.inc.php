@@ -8436,3 +8436,19 @@ function booking_upgrade0_2_126($oProc)
 		return $currentver;
 	}
 }
+
+$test[] = '0.2.127';
+function booking_upgrade0_2_127($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	$oProc->AddColumn('bb_resource_activity_entityform', 'owner_id', array('type' => 'int', 'precision' => 4, 'nullable' => false));
+	$oProc->AddColumn('bb_resource_activity_entityform', 'modified_on', array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'));
+	$oProc->AddColumn('bb_resource_activity_entityform', 'modified_by', array('type' => 'int', 'precision' => 4, 'nullable' => false));
+	$oProc->m_odb->query("ALTER TABLE bb_resource_activity_entityform ADD CONSTRAINT fk_entityform_owner FOREIGN KEY (owner_id) REFERENCES phpgw_accounts(account_id)");
+	$oProc->m_odb->query("ALTER TABLE bb_resource_activity_entityform ADD CONSTRAINT fk_entityform_modified_by FOREIGN KEY (modified_by) REFERENCES phpgw_accounts(account_id)");
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.128';
+		return $currentver;
+	}
+}	

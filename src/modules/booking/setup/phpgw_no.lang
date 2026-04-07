@@ -758,6 +758,7 @@ override	booking	no	Overstyring
 override dim	booking	no	Overstyr Dimensjon
 override_price	booking	no	Overstyrpris
 overwrite_with_mine	booking	no	Overskriv med mine
+Owner	booking	no	Eier
 owner_id	booking	no	Eier
 parent activity	booking	no	Overordnet kategori
 parent group	booking	no	Overordnet gruppe

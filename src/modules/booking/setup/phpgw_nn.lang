@@ -769,6 +769,7 @@ override	booking	nn	Overstyring
 override dim	booking	nn	Overstyr Dimensjon
 override_price	booking	nn	Overstyrpris
 overwrite_with_mine	booking	nn	Overskriv med mine
+Owner	booking	nn	Eigar
 owner_id	booking	nn	Eigar
 parent activity	booking	nn	Overordna kategori
 parent group	booking	nn	Overordna gruppe

@@ -5,6 +5,8 @@ use App\modules\phpgwapi\controllers\Locations;
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\CustomFields;
+use App\modules\phpgwapi\controllers\Accounts\Accounts;
+
 
 phpgw::import_class('booking.uicommon');
 
@@ -23,7 +25,7 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 
 	);
 
-	var $bo, $display_name, $activity_bo, $resource_bo, $building_bo, $boadmin_entity;
+	var $bo, $display_name, $activity_bo, $resource_bo, $building_bo, $boadmin_entity, $accounts_obj;
 
 
 
@@ -43,6 +45,7 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 		$this->resource_bo = CreateObject('booking.boresource');
 		$this->building_bo		 = CreateObject('booking.bobuilding');
 		$this->boadmin_entity			 = CreateObject('property.boadmin_entity');
+		$this->accounts_obj = new Accounts();
 
 		$this->display_name = lang('resource_activity_entityform');
 
@@ -60,7 +63,7 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 		$lang_yes = lang('yes');
 		$lang_no = lang('no');
 		$location_obj = new Locations();
-		
+
 
 		array_walk($entityforms["results"], array($this, "_add_links"), "booking.uiresource_activity_entityform.show");
 		foreach ($entityforms["results"] as &$entityform)
@@ -239,7 +242,7 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 		);
 		if ($_SERVER['REQUEST_METHOD'] == 'POST')
 		{
-			$_values = extract_values($_POST, array('name', 'active', 'activities', 'building_id', 'resources', 'location_id'));
+			$_values = extract_values($_POST, array('name', 'active', 'activities', 'building_id', 'resources', 'location_id', 'owner_id'));
 			$entityform = array_merge($entityform, $_values);
 			$entityform['active'] = !empty($_values['active']) ? 1 : 0;
 			$errors = $this->bo->validate($entityform);
@@ -274,7 +277,7 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 		$errors = array();
 		if ($_SERVER['REQUEST_METHOD'] == 'POST')
 		{
-			$_values = extract_values($_POST, array('name', 'active', 'activities', 'building_id', 'resources', 'location_id'));
+			$_values = extract_values($_POST, array('name', 'active', 'activities', 'building_id', 'resources', 'location_id', 'owner_id'));
 			$entityform = array_merge($entityform, $_values);
 			$entityform['active'] = !empty($_values['active']) ? 1 : 0;
 			$errors = $this->bo->validate($entityform);
@@ -309,7 +312,7 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 			phpgw::no_access('booking', lang('missing entry. Id %1 is invalid', $id));
 		}
 
-		if($this->bo->delete($id))
+		if ($this->bo->delete($id))
 		{
 			$status['deleted'] = true;
 		}
@@ -332,6 +335,12 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 		{
 			phpgw::no_access('booking', lang('missing entry. Id %1 is invalid', $id));
 		}
+
+		$owner = $this->accounts_obj->get($entityform['owner_id']);
+		$owner_name = $owner->__toString();
+		$owner_lid = $owner->lid;
+	
+		$entityform['owner_name'] = "$owner_name ($owner_lid)";
 
 		$activities = $this->activity_bo->fetch_activities();
 		$activities = $activities['results'];
@@ -470,8 +479,24 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 			Cache::message_set(implode("<br/>", (array)$error), 'error');
 		}
 
-		$tabs = array();
+		if (!empty($entityform['owner_id']))
+		{
+			$owner = $this->accounts_obj->get($entityform['owner_id']);
+			$owner_name = $owner->__toString();
+			$owner_lid = $owner->lid;
+			$owners = array(
+				'options' => array(
+					'id' => $entityform['owner_id'] ?? 0,
+					'name' => "$owner_name ($owner_lid)"
+				)
+			);
+		}
+		else
+		{
+			$owners = array('options' => array());
+		}
 
+		$tabs = array();
 		$tab_label = empty($entityform['id']) ? lang('Add') : lang('Edit');
 		$tabs['generic'] = array('label' => $tab_label, 'link' => '#entityform_new');
 		$active_tab = 'generic';
@@ -520,17 +545,12 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 		$data = array(
 			'tabs' => phpgwapi_jquery::tabview_generate($tabs, $active_tab),
 			'entityform' => $entityform,
+			'owners' => $owners,
 			'activities' => array('options' => $activities),
 			'entities' => array('options' => $entities),
 			'categories' => array('options' => $categories),
 			'resources_json' => json_encode($entityform['resources']),
 			'cancel_link' => self::link(array('menuaction' => 'booking.uiresource_activity_entityform.index')),
-			'validator' => phpgwapi_jquery::formvalidator_generate(array(
-				'location',
-				'date',
-				'security',
-				'file'
-			))
 		);
 
 		phpgwapi_jquery::load_widget('select2');
@@ -541,7 +561,7 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 		));
 	}
 
-	
+
 	public function get_categories()
 	{
 		$entity_id = Sanitizer::get_var('entity_id', 'int');
@@ -561,26 +581,6 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 	 */
 	public function get_attributes($location_id)
 	{
-		$CustomFields = new CustomFields('property');
-		$attrib_data = $CustomFields->find2(
-			$location_id,
-			$start = 0,
-			$query = '',
-			$sort = 'ASC',
-			$order = 'attrib_sort',
-			$allrows = true,
-			$inc_choices = true,
-			$filter = array(),
-			$results = 0
-		);
-
-		$location_obj = new Locations();
-		$location = $location_obj->get_location($location_id);
-		$group_data = $CustomFields->find_group('property', $location, 0, '', '', '', true);
-
-		return array(
-			'attributes' => $attrib_data,
-			'groups' => $group_data
-		);
+		return $this->bo->get_attribute_data($location_id);
 	}
 }

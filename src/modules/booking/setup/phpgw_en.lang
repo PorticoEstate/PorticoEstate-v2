@@ -696,6 +696,7 @@ override	booking	en	Override
 override dim	booking	en	Override Dimension
 override_price	booking	en	Override price
 overwrite_with_mine	booking	en	Overwrite with mine
+Owner	booking	en	Owner
 owner_id	booking	en	Owner_id
 parent activity	booking	en	Parent activity
 parent group	booking	en	Parent group

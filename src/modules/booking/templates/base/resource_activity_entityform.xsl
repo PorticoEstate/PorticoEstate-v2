@@ -41,11 +41,33 @@
 						<xsl:value-of select="php:function('lang', 'Active')" />
 					</label>
 				</div>
+
+				<div class="pure-control-group">
+					<label>
+						<xsl:value-of select="php:function('lang', 'owner_id')" />
+					</label>
+
+					<select id="field_owner_id" name="owner_id" required="required" class="pure-u-1 pure-u-sm-1-2 pure-u-md-1">
+						<xsl:attribute name="data-validation">
+							<xsl:text>required</xsl:text>
+						</xsl:attribute>
+						<xsl:attribute name="data-validation-error-msg">
+							<xsl:value-of select="php:function('lang', 'Please enter a name')" />
+						</xsl:attribute>
+						<xsl:apply-templates select="owners/options" />
+					</select>
+				</div>
 				<div class="pure-control-group">
 					<label>
 						<xsl:value-of select="php:function('lang', 'Activities')" />
 					</label>
 					<select id="field_activities" name="activities[]" multiple="" required="required" class="pure-u-1 pure-u-sm-1-2 pure-u-md-1">
+						<xsl:attribute name="data-validation">
+							<xsl:text>required</xsl:text>
+						</xsl:attribute>
+						<xsl:attribute name="data-validation-error-msg">
+							<xsl:value-of select="php:function('lang', 'Please choose at least 1 activity')" />
+						</xsl:attribute>
 						<xsl:apply-templates select="activities/options" />
 					</select>
 				</div>
@@ -98,7 +120,7 @@
 						<span class="select_first_text">
 							<xsl:value-of select="php:function('lang', 'Select an entity type first')" />
 						</span>
-						<select id="field_category" name="location_id" class="pure-u-1 pure-u-sm-1-2 pure-u-md-1">
+						<select id="field_category" name="location_id" required="required" class="pure-u-1 pure-u-sm-1-2 pure-u-md-1">
 							<xsl:attribute name="data-validation">
 								<xsl:text>required</xsl:text>
 							</xsl:attribute>
@@ -126,7 +148,7 @@
 	<script type="text/javascript">
 		var template_set = '<xsl:value-of select="php:function('get_phpgw_info', 'user|preferences|common|template_set')" />';
 		var date_format = '<xsl:value-of select="php:function('get_phpgw_info', 'user|preferences|common|dateformat')" />';
-		var lang = 	<xsl:value-of select="php:function('js_lang', 'Name', 'From', 'To', 'Resource Type', 'Select', 'Selected', 'Delete', 'Activities')"/>;
+		var lang = 	<xsl:value-of select="php:function('js_lang', 'Name', 'From', 'To', 'Resource Type', 'Select', 'Selected', 'Delete', 'Activities', 'Owner')"/>;
 		var initialSelection =<xsl:value-of select="resources_json"/>;
 	</script>
 </xsl:template>
@@ -153,6 +175,10 @@
 								</xsl:otherwise>
 							</xsl:choose>
 						</td>
+					</tr>
+					<tr>
+						<th><xsl:value-of select="php:function('lang', 'Owner')" /></th>
+						<td><xsl:value-of select="entityform/owner_name" /></td>
 					</tr>
 					<tr>
 						<th><xsl:value-of select="php:function('lang', 'Building')" /></th>

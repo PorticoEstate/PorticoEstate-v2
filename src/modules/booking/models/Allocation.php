@@ -62,7 +62,7 @@ class Allocation extends BaseModel
 	/**
 	 * @Expose
 	 */
-	public string $additional_invoice_information = '';
+	public ?string $additional_invoice_information = '';
 
 	/**
 	 * @Expose

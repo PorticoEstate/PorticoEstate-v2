@@ -328,6 +328,13 @@ trait SerializableTrait
         // First decode any HTML entities
         $decoded = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
+        // Mirror the Db::stripslashes() replacements for common encoded characters
+        $decoded = str_replace(
+            ['&amp;', '&#40;', '&#41;', '&#61;', '&#8722;&#8722;', '&#59;'],
+            ['&', '(', ')', '=', '--', ';'],
+            $decoded
+        );
+
         // Handle any remaining special character sequences
         $decoded = preg_replace_callback(
             '/&#(\d+);/',
@@ -338,13 +345,15 @@ trait SerializableTrait
             $decoded
         );
 
+        $decoded = stripslashes($decoded);
+
         // Clean up any double-encoded entities
         if (strpos($decoded, '&amp;') !== false)
         {
             $decoded = html_entity_decode($decoded, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         }
 
-        return $decoded;
+        return html_entity_decode($decoded, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 
     private function serializeAs($value, array $serializeAsAnnotation): mixed

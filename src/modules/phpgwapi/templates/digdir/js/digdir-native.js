@@ -146,19 +146,16 @@
 			const selectedTemplate = this.value;
 
 			// Save to preferences via API
-			fetch('/?menuaction=preferences.uisettings.save_preference', {
+			fetch('/preferences/section?appname=preferences&type=user&phpgw_return_as=json', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({
-					app: 'common',
-					name: 'template_set',
-					value: selectedTemplate
-				})
+				body: JSON.stringify({user: {template_set: selectedTemplate}, submit: true})
 			})
 			.then(response => response.json())
 			.then(data => {
+				console.log('Template preference saved:', data.status);
 				// Reload page to apply new template
 				window.location.reload();
 			})

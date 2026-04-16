@@ -2518,13 +2518,17 @@ class booking_socompleted_reservation_export extends booking_socommon
 				if ($type == 'internal')
 				{
 					$header['tekst4'] = str_pad(substr($this->config_data['organization_value'], 0, 12), 12, ' ');
+					//referansenr/customer_number
+					$ext_ord_ref = !empty($customer_number) ? $customer_number : $contact_name;
 				}
 				else
 				{
 					$header['tekst4'] = str_pad(substr($this->get_customer_identifier_value_for($reservation), 0, 12), 12, ' ');
+					//kontaktperson
+					$ext_ord_ref = !empty($contact_name) ? $contact_name : $customer_number;
 				}
-				//referansenr/customer_number
-				$header['ext_ord_ref'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $contact_name), 0, 15), 15, ' ');
+
+				$header['ext_ord_ref'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $ext_ord_ref), 0, 15), 15, ' ');
 
 				/**
 				 * Skille mellom hoved-organisasjonen og betalende underliggende organisasjon
@@ -3333,13 +3337,16 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 			if ($type == 'internal')
 			{
 				$header['tekst4'] = str_pad(substr($this->config_data['organization_value'], 0, 100), 100, ' ');
+				//referansenr/customer_number
+				$ext_ord_ref = !empty($customer_number) ? $customer_number : $contact_name;	
 			}
 			else
 			{
 				$header['tekst4'] = str_pad(substr($this->get_customer_identifier_value_for($reservation), 0, 100), 100, ' ');
+				//kontaktperson
+				$ext_ord_ref = !empty($contact_name) ? $contact_name : $customer_number;
 			}
-			//referansenr/customer_number
-			$header['ext_ord_ref'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $contact_name), 0, 100), 100, ' ');
+			$header['ext_ord_ref'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $ext_ord_ref), 0, 100), 100, ' ');
 
 			/**
 			 * Skille mellom hoved-organisasjonen og betalende underliggende organisasjon

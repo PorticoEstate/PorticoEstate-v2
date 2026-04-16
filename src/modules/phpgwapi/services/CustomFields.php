@@ -83,6 +83,11 @@ class CustomFields
 
 	private $_db2, $_dateformat, $_datetimeformat, $_oProc, $locations, $userSettings, $serverSettings;
 
+	/**
+	 * Constructor
+	 *
+	 * @param string|null $appname the application name; defaults to the current app if null
+	 */
 	public function __construct(?string $appname = null)
 	{
 		$flags = Settings::getInstance()->get('flags');
@@ -150,6 +155,13 @@ class CustomFields
 		return null;
 	}
 
+	/**
+	 * Uppercase the first character of a multibyte string
+	 *
+	 * @param string $string the input string
+	 *
+	 * @return string the string with the first character uppercased
+	 */
 	private function mb_ucfirst($string)
 	{
 		$encoding = 'UTF-8';
@@ -161,9 +173,9 @@ class CustomFields
 	/**
 	 * Add a group for custom fields/attributes
 	 *
-	 * @param array $attrib the field data
+	 * @param array $group the group data (keys: appname, location, location_id, id, group_name, descr, remark, group_sort, parent_id)
 	 *
-	 * @return int the the new custom field db pk
+	 * @return int the new group db pk, or 0 on failure
 	 */
 	public function add_group($group)
 	{
@@ -575,12 +587,13 @@ class CustomFields
 	/**
 	 * Delete a custom field/attribute
 	 *
-	 * @param string $location within an application
-	 * @param string $appname where to delete the attrib
-	 * @param integer $attrib_id id of attrib to delete
-	 * @param bool $doubled sometimes the attribute fits into a history-table as a double
+	 * @param string  $appname    the name of the application
+	 * @param string  $location   within an application
+	 * @param integer $attrib_id  id of attrib to delete
+	 * @param string  $table      the table the attribute column lives in; resolved from location if empty
+	 * @param bool    $doubled    set true when the attribute also exists in a history-table
 	 *
-	 * @return boolean was the record deleted?
+	 * @return bool true on success, false on failure
 	 */
 	public function delete($appname, $location, $attrib_id, $table = '', $doubled = false)
 	{
@@ -1003,11 +1016,15 @@ class CustomFields
 
 	/**
 	 * Insert a new value for a list-attribute
-	 * @param integer $location_id
-	 * @param integer $attrib_id
-	 * @param string $value
-	 * @param integer $choice_id
-
+	 *
+	 * @param integer      $location_id the location the attribute belongs to
+	 * @param integer      $attrib_id   the attribute to add the choice to
+	 * @param string       $value       the stored choice value
+	 * @param integer      $choice_id   explicit choice id; auto-assigned if 0
+	 * @param string       $title       optional display title for the choice
+	 * @param integer|null $choice_sort sort order; auto-assigned if null
+	 *
+	 * @return int|false the choice id on success, false if the value already exists
 	 */
 	public function add_choice($location_id, $attrib_id, $value, $choice_id = 0, $title = '', $choice_sort = null)
 	{
@@ -1071,6 +1088,19 @@ class CustomFields
 		}
 	}
 
+	/**
+	 * Delete a choice value from a list-attribute
+	 *
+	 * If the choice is in use and a replacement id is provided, existing references
+	 * are updated to point to the replacement before deletion.
+	 *
+	 * @param integer      $location_id    the location the attribute belongs to
+	 * @param integer      $attrib_id      the attribute the choice belongs to
+	 * @param integer      $choice_id      the id of the choice to delete
+	 * @param integer|null $replacement_id optional id to replace references to the deleted choice
+	 *
+	 * @return bool|null true on successful deletion, false if in use without a replacement, null if replacement equals choice
+	 */
 	public function delete_choice($location_id, $attrib_id, $choice_id, $replacement_id = null)
 	{
 
@@ -1153,19 +1183,20 @@ class CustomFields
 	}
 
 	/**
-	 * Get a list of attributes
+	 * Get a list of attributes for a named application location
 	 *
-	 * @param string $appname      the name of the application
-	 * @param string $location     the name of the location
-	 * @param integer $start
-	 * @param string query
-	 * @param string $sort
-	 * @param string $order
-	 * @param bool   $allrows
-	 * @param bool   $inc_choices
-	 * @param array $filtermethod
+	 * @param string  $appname     the name of the application
+	 * @param string  $location    the name of the location
+	 * @param integer $start       pagination offset
+	 * @param string  $query       search string to filter results
+	 * @param string  $sort        sort direction [ASC|DESC]
+	 * @param string  $order       column to sort by
+	 * @param bool    $allrows     return all rows, ignoring pagination
+	 * @param bool    $inc_choices include choice values for lookup-type fields
+	 * @param array   $filter      additional column => value filter conditions
+	 * @param integer $results     maximum number of results (0 = use default limit)
 	 *
-	 * @return array attributes at location
+	 * @return array list of attribute records
 	 */
 	public function find(
 		$appname,
@@ -1185,20 +1216,20 @@ class CustomFields
 	}
 
 	/**
-	 * Get a list of attributes
+	 * Get a list of attributes for a location id
 	 *
-	 * @param integer $location_id   the system location
-	 * @param integer $start
-	 * @param string query
-	 * @param string $sort
-	 * @param string $order
-	 * @param bool   $allrows
-	 * @param bool   $inc_choices
-	 * @param array $filtermethod
+	 * @param integer $location_id the numeric system location id
+	 * @param integer $start       pagination offset
+	 * @param string  $query       search string to filter results
+	 * @param string  $sort        sort direction [ASC|DESC]
+	 * @param string  $order       column to sort by
+	 * @param bool    $allrows     return all rows, ignoring pagination
+	 * @param bool    $inc_choices include choice values for lookup-type fields
+	 * @param array   $filter      additional column => value filter conditions
+	 * @param integer $results     maximum number of results (0 = use default limit)
 	 *
-	 * @return array attributes at location
+	 * @return array list of attribute records
 	 */
-
 	public function find2(
 		$location_id,
 		$start = 0,
@@ -1350,17 +1381,17 @@ class CustomFields
 
 
 	/**
-	 * Get a list of groups availlable for attributes within a location
+	 * Get a list of groups available for attributes within a location
 	 *
-	 * @param string $appname      the name of the application
-	 * @param string $location     the name of the location
-	 * @param ?????? $start        ask sigurd
-	 * @param ?????? $query        ask sigurd
-	 * @param ?????? $sort         ask sigurd
-	 * @param ?????? $order        ask sigurd
-	 * @param ?????? $allrows      ask sigurd
+	 * @param string  $appname  the name of the application
+	 * @param string  $location the name of the location
+	 * @param integer $start    pagination offset
+	 * @param string  $query    search string to filter group names
+	 * @param string  $sort     sort direction [ASC|DESC]
+	 * @param string  $order    column to sort by
+	 * @param bool    $allrows  return all rows, ignoring pagination
 	 *
-	 * @return ???? something
+	 * @return array list of group records, each with id, name, descr, remark, group_sort, parent_id
 	 */
 
 	public function find_group(
@@ -1461,6 +1492,17 @@ class CustomFields
 	}
 
 
+	/**
+	 * Recursively populate the attribute group tree with children of a parent group
+	 *
+	 * @param integer $location_id the numeric system location id
+	 * @param integer $parent      the parent group id whose children are fetched
+	 * @param mixed   $parent_sort the sort key of the parent (used to build hierarchical sort text)
+	 * @param integer $level       the current nesting depth (used for indentation)
+	 * @param bool    $reset       if true, clears the internal tree before building
+	 *
+	 * @return array the accumulated attribute group tree
+	 */
 	function get_attribute_group_children($location_id, $parent, $parent_sort, $level, $reset = false)
 	{
 		if ($reset)
@@ -1632,6 +1674,16 @@ class CustomFields
 	 * @return array the grouped attributes
 	 */
 
+	/**
+	 * Arrange attributes within their groups
+	 *
+	 * @param string $appname       the name of the module for the attribute
+	 * @param string $location      the name of the location of the attribute
+	 * @param array  $attributes    the array of attribute records to be grouped
+	 * @param bool   $skip_no_group if true, omit the implicit ungrouped (group_id=0) bucket
+	 *
+	 * @return array groups, each containing a nested 'attributes' key
+	 */
 	public function get_attribute_groups($appname, $location, $attributes = array(), $skip_no_group = false)
 	{
 		$no_group = array(
@@ -1661,11 +1713,14 @@ class CustomFields
 	}
 
 	/**
+	 * Build a hierarchical tree of attribute groups and their attributes for use in tree-view widgets
 	 *
-	 * @param type $appname
-	 * @param type $location
-	 * @param type $parent_id
-	 * @return type
+	 * @param string  $appname   the name of the application
+	 * @param string  $location  the name of the location
+	 * @param integer $parent_id the parent group id to start from; 0 for top-level
+	 * @param integer $cat_id    optional category id to attach to each node
+	 *
+	 * @return array nested tree structure of group and attribute nodes
 	 */
 	public function get_attribute_tree($appname, $location, $parent_id = 0, $cat_id = 0)
 	{
@@ -1746,11 +1801,14 @@ class CustomFields
 	}
 
 	/**
+	 * Recursively fetch child groups for a parent group node
 	 *
-	 * @param type $location_id
-	 * @param type $parent_id
-	 * @param type $parent
-	 * @return type
+	 * @param integer $location_id the numeric system location id
+	 * @param integer $parent_id   the id of the group whose children are fetched
+	 * @param mixed   $parent      the tree node id of the parent (used to link children)
+	 * @param integer $cat_id      optional category id to attach to each node
+	 *
+	 * @return array nested array of child group tree nodes
 	 */
 	public function get_group_children($location_id, $parent_id, $parent, $cat_id = 0)
 	{
@@ -1790,11 +1848,14 @@ class CustomFields
 	}
 
 	/**
+	 * Fetch attribute leaf nodes belonging to a group, including their choices as sub-nodes
 	 *
-	 * @param type $location_id
-	 * @param type $parent
-	 * @param type $group_id
-	 * @return type
+	 * @param integer $location_id the numeric system location id
+	 * @param mixed   $parent      the tree node id of the parent group node
+	 * @param integer $group_id    the group id whose attributes are fetched
+	 * @param integer $cat_id      optional category id to attach to each node
+	 *
+	 * @return array array of attribute tree nodes, each with an optional 'children' key for choices
 	 */
 	public function get_attribute_children($location_id, $parent, $group_id, $cat_id = 0)
 	{
@@ -1846,12 +1907,12 @@ class CustomFields
 
 
 	/**
-	 * Get the definition of a table
+	 * Get the definition of a table in SchemaProc format
 	 *
-	 * @param string $table     the name of the table to look up
-	 * @param array  $table_def ask sigurd
+	 * @param string $table     the name of the database table to look up
+	 * @param array  $table_def existing table definition array to merge into; used when combining multi-table definitions
 	 *
-	 * @return array the table structure
+	 * @return array the table structure keyed by table name, with fd/pk/fk/ix/uc sub-keys
 	 */
 	public function get_table_def($table = '', $table_def = array())
 	{
@@ -1941,10 +2002,14 @@ class CustomFields
 
 
 	/**
-	 * Resort an attribute's position in relation to other attributes
+	 * Move a group up or down relative to its siblings
 	 *
-	 * @param int $id the attribute db pk
-	 * @param string $resort the direction to move the field [up|down]
+	 * @param int    $id      the group db pk
+	 * @param string $resort  the direction to move the group [up|down]
+	 * @param string $appname the name of the application
+	 * @param string $location the name of the location
+	 *
+	 * @return bool true on success
 	 */
 	public function resort_group($id, $resort, $appname, $location)
 	{
@@ -2024,10 +2089,14 @@ class CustomFields
 	}
 
 	/**
-	 * Resort an attribute's position in relation to other attributes
+	 * Move an attribute up or down relative to its siblings within the same group
 	 *
-	 * @param int $id the attribute db pk
-	 * @param string $resort the direction to move the field [up|down]
+	 * @param int    $id       the attribute db pk
+	 * @param string $resort   the direction to move the field [up|down]
+	 * @param string $appname  the name of the application
+	 * @param string $location the name of the location
+	 *
+	 * @return bool true on success
 	 */
 	public function resort($id, $resort, $appname, $location)
 	{
@@ -2123,6 +2192,8 @@ class CustomFields
 	 *
 	 * @param integer $location_id the location for the attribute
 	 * @param integer $attrib_id   the field being looked up
+	 *
+	 * @return array list of choices, each with keys: id, text, value, title, order
 	 */
 	protected function _get_choices($location_id, $attrib_id)
 	{
@@ -2199,11 +2270,11 @@ class CustomFields
 	}
 
 	/**
-	 * Preapre a datatype for insert
+	 * Translate a custom field datatype code to its SQL column type for insert
 	 *
-	 * @param string $datatype the datatype being used
+	 * @param string $datatype the custom field datatype code (e.g. 'V', 'I', 'D')
 	 *
-	 * @return string the converted datatype or empty string is invalid
+	 * @return string the SQL column type string, or empty string if the datatype is unrecognised
 	 */
 	protected function _translate_datatype_insert($datatype)
 	{

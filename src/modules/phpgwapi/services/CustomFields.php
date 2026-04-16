@@ -488,7 +488,7 @@ class CustomFields
 	{
 		if (!is_array($values_attribute))
 		{
-			return '';
+			return [];
 		}
 
 		$ret = array();

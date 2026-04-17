@@ -87,7 +87,7 @@ use App\modules\phpgwapi\services\Cache;
 		 *
 		 * @return array Associative array mapping type identifiers to application names.
 		 */
-		public function get_type_app()
+		public function get_type_app(): array
 		{
 			return $this->type_app;
 		}
@@ -105,7 +105,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param float $lng          Longitude value.
 		 * @return bool True on success, false if the location is not a 4-part entity path.
 		 */
-		function set_geolocation($location_id, $component_id, $lat, $lng)
+		function set_geolocation($location_id, $component_id, $lat, $lng): bool
 		{
 			//check for eav
 			$location_info	 = $this->locations->get_name($location_id);
@@ -174,11 +174,11 @@ use App\modules\phpgwapi\services\Cache;
 		 * @return array|void Array of associative arrays with 'id' and 'name' keys,
 		 *                    or void if entity_id or cat_id are missing.
 		 */
-		function select_status_list( $entity_id, $cat_id )
+		function select_status_list( $entity_id, $cat_id ): ?array
 		{
 			if (!$entity_id || !$cat_id)
 			{
-				return;
+				return null;
 			}
 
 			$location_id = $this->locations->get_id($this->type_app[$this->type], ".{$this->type}.{$entity_id}.{$cat_id}");
@@ -214,7 +214,7 @@ use App\modules\phpgwapi\services\Cache;
 		 *                    'filter', 'query', 'sort', 'order', and 'allrows'.
 		 * @return array|void Array of records with 'id' and 'name', or void on missing params.
 		 */
-		function get_list( $data )
+		function get_list( $data ): ?array
 		{
 			$start				 = isset($data['start']) && $data['start'] ? $data['start'] : 0;
 			$filter				 = isset($data['filter']) && $data['filter'] ? $data['filter'] : 'all';
@@ -240,7 +240,7 @@ use App\modules\phpgwapi\services\Cache;
 
 			if (!$entity_id || !$cat_id || !$this->type)
 			{
-				return;
+				return null;
 			}
 
 			$acl	 = Acl::getInstance();
@@ -358,7 +358,7 @@ use App\modules\phpgwapi\services\Cache;
 		 *                    'results', 'parent_location_id', and 'parent_id'.
 		 * @return array Array of entity item records with translated custom-field values.
 		 */
-		public function get_eav_list( $data = array() )
+		public function get_eav_list( $data = array() ): array
 		{
 			$start				 = isset($data['start']) && $data['start'] ? (int)$data['start'] : 0;
 			$results			 = isset($data['results']) && $data['results'] ? (int)$data['results'] : 0;
@@ -601,7 +601,7 @@ use App\modules\phpgwapi\services\Cache;
 		 *                    'org_units', 'check_for_control', 'control_id', etc.).
 		 * @return array Array of entity item records formatted for the list view.
 		 */
-		protected function read_eav( $data )
+		protected function read_eav( $data ): array
 		{
 			$start				 = isset($data['start']) && $data['start'] ? $data['start'] : 0;
 			$results			 = isset($data['results']) && $data['results'] ? $data['results'] : 0;
@@ -683,7 +683,7 @@ use App\modules\phpgwapi\services\Cache;
 
 			if (!$cat_id > 0)
 			{
-				return;
+				return [];
 			}
 
 			//_debug_array($cols_return_extra);
@@ -1419,7 +1419,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param int    $location_id ACL/attribute location ID.
 		 * @return void Column metadata is stored in $this->uicols, $this->cols_return, etc.
 		 */
-		function get_cols( $category, $entity_id, $cat_id, $lookup, $location_id )
+		function get_cols( $category, $entity_id, $cat_id, $lookup, $location_id ): void
 		{
 
 			if ($category['is_eav'])
@@ -1713,7 +1713,7 @@ use App\modules\phpgwapi\services\Cache;
 		 *                    (array of location IDs to skip) and all parameters accepted by read().
 		 * @return array Merged list of entity records from all matching locations.
 		 */
-		function read_entity_group( $data )
+		function read_entity_group( $data ): array
 		{
 			$entity_group_id = (int)$data['entity_group_id'];
 
@@ -1749,7 +1749,7 @@ use App\modules\phpgwapi\services\Cache;
 		 *                    'start', 'results', 'allrows', and custom attribute filters.
 		 * @return array Array of entity records with translated custom-field values.
 		 */
-		function read( $data )
+		function read( $data ): array
 		{
 			$start				 = isset($data['start']) && $data['start'] ? $data['start'] : 0;
 			$results			 = isset($data['results']) && $data['results'] ? $data['results'] : 0;
@@ -1829,7 +1829,7 @@ use App\modules\phpgwapi\services\Cache;
 
 			if (!$cat_id > 0)
 			{
-				return;
+				return [];
 			}
 
 			$acl	 = Acl::getInstance();
@@ -2295,7 +2295,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param array $values Pre-populated values to merge into (e.g. attributes from bo layer).
 		 * @return array Entity record with all field values and populated attribute values.
 		 */
-		function read_single( $data, $values = array() )
+		function read_single( $data, $values = array() ): array
 		{
 			$entity_id	 = isset($data['entity_id']) && $data['entity_id'] ? (int)$data['entity_id'] : $this->entity_id;
 			$cat_id		 = isset($data['cat_id']) && $data['cat_id'] ? (int)$data['cat_id'] : $this->cat_id;
@@ -2361,7 +2361,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param array $values Pre-populated values to merge into.
 		 * @return array Entity record with JSON attribute values expanded.
 		 */
-		function read_single_eav( $data, $values = array() )
+		function read_single_eav( $data, $values = array() ): array
 		{
 
 			if (!$values)
@@ -2435,7 +2435,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @return string Comma-separated short description string.
 		 * @throws Exception If location_id/id are missing or the location is not an entity.
 		 */
-		public function get_short_description( $data = array() )
+		public function get_short_description( $data = array() ): string
 		{
 			static $system_location	 = array();
 			static $cache_attributes = array();
@@ -2521,7 +2521,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param string $num       The num value to check for uniqueness.
 		 * @return bool|null True if a matching record exists, null otherwise.
 		 */
-		function check_entity( $entity_id, $cat_id, $num )
+		function check_entity( $entity_id, $cat_id, $num ): ?bool
 		{
 			$table = "fm_{$this->type}_{$entity_id}_{$cat_id}";
 			$this->db->query("SELECT count(*) as cnt FROM $table where num='$num'");
@@ -2532,6 +2532,7 @@ use App\modules\phpgwapi\services\Cache;
 			{
 				return true;
 			}
+			return null;
 		}
 
 		/**
@@ -2540,7 +2541,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param array $data Must contain 'entity_id' and 'cat_id'.
 		 * @return int Next available ID (max existing + 1).
 		 */
-		function generate_id( $data )
+		function generate_id( $data ): int
 		{
 			$table	 = "fm_{$this->type}_{$data['entity_id']}_{$data['cat_id']}";
 			$this->db->query("select max(id) as id from $table");
@@ -2560,7 +2561,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param int $id        Raw numeric ID to format.
 		 * @return string Formatted entity number (e.g. 'ENT0042').
 		 */
-		function generate_num( $entity_id, $cat_id, $id )
+		function generate_num( $entity_id, $cat_id, $id ): string
 		{
 			$this->db->query("select prefix from fm_{$this->type}_category WHERE entity_id=$entity_id AND id=$cat_id ");
 			$this->db->next_record();
@@ -2593,7 +2594,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param int   $cat_id           Category ID within the entity.
 		 * @return array Receipt array with 'id' and 'message' on success.
 		 */
-		public function add( $values, $values_attribute, $entity_id, $cat_id )
+		public function add( $values, $values_attribute, $entity_id, $cat_id ): array
 		{
 			$values_insert = array();
 
@@ -2775,7 +2776,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param int   $location_id ACL/type location ID used to resolve the fm_bim_type row.
 		 * @return int ID of the newly inserted fm_bim_item row.
 		 */
-		public function _save_eav( array $data, $location_id )
+		public function _save_eav( array $data, $location_id ): int
 		{
 			$location_id = (int)$location_id;
 
@@ -2834,7 +2835,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param int    $id            ID of the fm_bim_item row to update.
 		 * @return bool Result of the UPDATE query.
 		 */
-		protected function _edit_eav( array $data, $location_id, $location_name, $id )
+		protected function _edit_eav( array $data, $location_id, $location_name, $id ): bool
 		{
 			$location_id = (int)$location_id;
 			$id			 = (int)$id;
@@ -2884,7 +2885,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param int   $cat_id           Category ID within the entity.
 		 * @return array Receipt array with 'id' and 'message' on success.
 		 */
-		function edit( $values, $values_attribute, $entity_id, $cat_id )
+		function edit( $values, $values_attribute, $entity_id, $cat_id ): array
 		{
 			$receipt	 = array();
 			$value_set	 = array();
@@ -3107,7 +3108,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param int $id        ID of the entity record to delete.
 		 * @return void
 		 */
-		function delete( $entity_id, $cat_id, $id )
+		function delete( $entity_id, $cat_id, $id ): void
 		{
 			$entity_id	 = (int)$entity_id;
 			$cat_id		 = (int)$cat_id;
@@ -3148,7 +3149,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param array $data Must contain 'entity_id', 'cat_id', and 'attrib_id'.
 		 * @return string|void Help message string, or void if required parameters are missing.
 		 */
-		function read_attrib_help( $data )
+		function read_attrib_help( $data ): ?string
 		{
 			$entity_id	 = (isset($data['entity_id']) ? $data['entity_id'] : '');
 			$cat_id		 = (isset($data['cat_id']) ? $data['cat_id'] : '');
@@ -3156,7 +3157,7 @@ use App\modules\phpgwapi\services\Cache;
 
 			if (!$entity_id || !$cat_id || !$attrib_id)
 			{
-				return;
+				return null;
 			}
 
 			$location_id = $this->locations->get_id($this->type_app[$this->type], ".{$this->type}.{$entity_id}.{$cat_id}");
@@ -3176,7 +3177,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @return array List of linked entity records.
 		 * @throws Exception If any required key is missing from $data.
 		 */
-		function read_entity_to_link( $data )
+		function read_entity_to_link( $data ): array
 		{
 			if (!isset($data['cat_id']) || !$data['cat_id'] || !isset($data['entity_id']) || !$data['entity_id'] || !isset($data['id']) || !$data['id'])
 			{
@@ -3377,7 +3378,7 @@ use App\modules\phpgwapi\services\Cache;
 		 *                    and optionally 'inventory_id'.
 		 * @return array List of inventory entry arrays.
 		 */
-		public function get_inventory( $data = array() )
+		public function get_inventory( $data = array() ): array
 		{
 			$location_id	 = isset($data['location_id']) && $data['location_id'] ? (int)$data['location_id'] : 0;
 			$id				 = (int)$data['id'];
@@ -3461,7 +3462,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @return bool Result of the INSERT query.
 		 * @throws Exception If the location_code cannot be resolved to a valid location.
 		 */
-		public function add_inventory( $values )
+		public function add_inventory( $values ): mixed
 		{
 			$p_location_id = $this->locations->get_id('property', '.location.' . count(explode('-', $values['location_code'])));
 
@@ -3508,7 +3509,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @return bool Result of the database transaction commit.
 		 * @throws Exception If inventory_id is missing or invalid.
 		 */
-		public function edit_inventory( $values )
+		public function edit_inventory( $values ): bool
 		{
 			$inventory_id = (int)$values['inventory_id'];
 			if (!$inventory_id)
@@ -3571,7 +3572,7 @@ use App\modules\phpgwapi\services\Cache;
 		 *                    Optionally 'type' (defaults to 'entity').
 		 * @return int Integer ID derived from the num string, or empty string if num is absent.
 		 */
-		public function convert_num_to_id( $data = array() )
+		public function convert_num_to_id( $data = array() ): int|string
 		{
 			$entity_id	 = (int)$data['entity_id'];
 			$cat_id		 = (int)$data['cat_id'];
@@ -3596,7 +3597,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param int $item_id     ID of the fm_bim_item row.
 		 * @return string|null The location_code value, or null if not found.
 		 */
-		function get_location_code( $location_id, $item_id )
+		function get_location_code( $location_id, $item_id ): ?string
 		{
 			$sql = 'SELECT location_code from fm_bim_item WHERE location_id = ' . (int)$location_id;
 			$sql .= ' AND id = ' . (int)$item_id;
@@ -3619,7 +3620,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param string $value       New value for the attribute.
 		 * @return void
 		 */
-		function update_json_attribute( $location_id, $item_id , $attribute, $value )
+		function update_json_attribute( $location_id, $item_id , $attribute, $value ): void
 		{
 			$location_id = (int) $location_id;
 			$item_id = (int) $item_id;
@@ -3640,7 +3641,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param string $attribute   JSON key name to retrieve.
 		 * @return string|null The attribute value, or null if the row is not found.
 		 */
-		function get_json_attribute( $location_id, $item_id, $attribute )
+		function get_json_attribute( $location_id, $item_id, $attribute ): ?string
 		{
 			$location_id = (int) $location_id;
 			$item_id = (int) $item_id;
@@ -3661,7 +3662,7 @@ use App\modules\phpgwapi\services\Cache;
 		 *
 		 * @return array Associative array keyed by column_name, values are arrays of location IDs.
 		 */
-		function get_QR_attributes( )
+		function get_QR_attributes( ): array
 		{
 			$sql = "SELECT DISTINCT location_id, column_name FROM phpgw_cust_attribute WHERE datatype = 'QR_code'";
 
@@ -3685,7 +3686,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param array $attrib_filter Array of SQL condition strings (JSON attribute comparisons).
 		 * @return array List of matching records with 'id', 'location_id', 'location_code', 'address'.
 		 */
-		function get_items_per_qr( $location_ids, $attrib_filter )
+		function get_items_per_qr( $location_ids, $attrib_filter ): array
 		{
 			$filtermethod	 = 'location_id IN(' . implode(',', $location_ids) . ')';
 			$filtermethod	 .= ' AND (' . implode(' OR ', $attrib_filter) . ')';
@@ -3720,7 +3721,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param array &$receipt         Receipt array updated by reference (unused currently).
 		 * @return void
 		 */
-		function save_checklist( $item_id, $stage_id, $values_attribute, &$receipt )
+		function save_checklist( $item_id, $stage_id, $values_attribute, &$receipt ): void
 		{
 		
 			// get stage from soadmin_entity
@@ -3786,7 +3787,7 @@ use App\modules\phpgwapi\services\Cache;
 		 * @param int $item_id          ID of the entity item.
 		 * @return array Associative array keyed by stage_id, values are decoded JSON attribute arrays.
 		 */
-		function get_checklist_data($type_location_id, $item_id )
+		function get_checklist_data($type_location_id, $item_id ): array
 		{
 			$type_location_id = (int) $type_location_id;
 			$item_id = (int) $item_id;

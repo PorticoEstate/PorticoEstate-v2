@@ -92,8 +92,10 @@ class property_boentity
 	 */
 	function __construct($session = false, $type = '', $entity_id = 0, $cat_id = 0)
 	{
-		$this->solocation	 = CreateObject('property.solocation');
-		$this->bocommon		 = CreateObject('property.bocommon');
+		include_class('property', 'solocation');
+		$this->solocation	 = new property_solocation();
+		include_class('property', 'bocommon');
+		$this->bocommon		 = new property_bocommon();
 		$this->acl = Acl::getInstance();
 		$this->userSettings = Settings::getInstance()->get('user');
 
@@ -138,7 +140,8 @@ class property_boentity
 		$this->criteria_id = isset($criteria_id) && $criteria_id ? $criteria_id : '';
 
 		$location_code	 = Sanitizer::get_var('location_code');
-		$this->so		 = CreateObject('property.soentity', $entity_id, $cat_id);
+		include_class('property', 'soentity');
+		$this->so		 = new property_soentity($entity_id, $cat_id);
 		$this->type_app	 = $this->so->get_type_app();
 
 		$this->type = isset($type) && $type && $this->type_app[$type] ? $type : 'entity';
@@ -147,7 +150,8 @@ class property_boentity
 
 		$this->location_code = isset($location_code) && $location_code ? $location_code : '';
 
-		$this->soadmin_entity			 = CreateObject('property.soadmin_entity', $entity_id, $cat_id);
+		include_class('property', 'soadmin_entity');
+		$this->soadmin_entity			 = new property_soadmin_entity($entity_id, $cat_id);
 		$this->custom					 = &$this->so->custom;
 		$this->soadmin_entity->type		 = $this->type;
 		$this->soadmin_entity->type_app	 = $this->type_app;
@@ -239,7 +243,7 @@ class property_boentity
 	 * @param array $data Associative array of state values to store.
 	 * @return void
 	 */
-	function save_sessiondata($data)
+	function save_sessiondata(array $data): void
 	{
 		if ($this->use_session)
 		{
@@ -252,7 +256,7 @@ class property_boentity
 	 *
 	 * @return void
 	 */
-	function read_sessiondata()
+	function read_sessiondata(): void
 	{
 		$data = Cache::session_get($this->category_dir, 'session_data');
 
@@ -278,7 +282,7 @@ class property_boentity
 	 *
 	 * @return array Associative array with key 'status' set to 'ok' or 'error'.
 	 */
-	function set_geolocation()
+	function set_geolocation(): array
 	{
 		$location_id = Sanitizer::get_var('location_id', 'int');
 		$component_id = Sanitizer::get_var('component_id', 'int');
@@ -306,7 +310,7 @@ class property_boentity
 	 * @param bool         $allrows   Whether all rows are being shown (unused).
 	 * @return array Formatted list suitable for a multi-select UI widget.
 	 */
-	function column_list($selected = '', $entity_id = '', $cat_id = '', $allrows = '')
+	function column_list($selected = '', $entity_id = '', $cat_id = '', $allrows = ''): array
 	{
 		if (!$cat_id)
 		{
@@ -335,7 +339,7 @@ class property_boentity
 	 *
 	 * @return array Indexed array of column definition arrays.
 	 */
-	function get_column_list()
+	function get_column_list(): array
 	{
 		$columns = array();
 
@@ -389,7 +393,7 @@ class property_boentity
 	 * @param bool   $required Whether the field should be marked as required.
 	 * @return array Formatted options list for use with bocommon::select_list().
 	 */
-	function select_category_list($format = '', $selected = '', $required = '')
+	function select_category_list($format = '', $selected = '', $required = ''): array
 	{
 		switch ($format)
 		{
@@ -419,7 +423,7 @@ class property_boentity
 	 * @param mixed  $selected Currently selected status ID.
 	 * @return array Formatted options list for use with bocommon::select_list().
 	 */
-	function select_status_list($format = '', $selected = '')
+	function select_status_list($format = '', $selected = ''): array
 	{
 		switch ($format)
 		{
@@ -444,7 +448,7 @@ class property_boentity
 	 * @param mixed $selected Currently selected criteria ID.
 	 * @return array Formatted options list for use with bocommon::select_list().
 	 */
-	function get_criteria_list($selected = '')
+	function get_criteria_list($selected = ''): array
 	{
 		$criteria = array(
 			array(
@@ -471,7 +475,7 @@ class property_boentity
 	 * @param array $data Array of org-unit tree nodes, each optionally containing a 'children' key.
 	 * @return void
 	 */
-	private function _get_children($data = array())
+	private function _get_children(array $data = []): void
 	{
 		foreach ($data as $entry)
 		{
@@ -492,12 +496,13 @@ class property_boentity
 	 * @param array $data Optional overrides for filter, query, start, and order parameters.
 	 * @return array List of entity records with translated custom-field values.
 	 */
-	function read($data = array())
+	function read(array $data = []): array
 	{
 		if ($this->org_unit_id && !$this->org_units)
 		{
 			$_org_unit_id		 = (int)$this->org_unit_id;
-			$_subs				 = execMethod('property.sogeneric.read_tree', array(
+			include_class('property', 'sogeneric');
+			$_subs				 = (new property_sogeneric())->read_tree(array(
 				'node_id'	 => $_org_unit_id,
 				'type'		 => 'org_unit'
 			));
@@ -520,7 +525,7 @@ class property_boentity
 			$data['allrows'] = true;
 		}
 
-		$custom		 = createObject('phpgwapi.custom_fields');
+		$custom		 = new \App\modules\phpgwapi\services\CustomFields();
 		$attrib_data = $custom->find($this->type_app[$this->type], ".{$this->type}.{$this->entity_id}.{$this->cat_id}", 0, '', '', '', true, true);
 
 		$category = $this->soadmin_entity->read_single_category($this->entity_id, $this->cat_id);
@@ -551,7 +556,7 @@ class property_boentity
 				{
 					if ($_attrib_filter_value = Sanitizer::get_var($attrib['column_name'], 'int'))
 					{
-						$db = CreateObject('phpgwapi.db');
+						$db = \App\Database\Db::getInstance();
 						if ($category['is_eav'])
 						{
 							$attrib_filter[] = "json_representation->>'{$attrib['column_name']}' {$db->like} '%,{$_attrib_filter_value},%'";
@@ -649,7 +654,8 @@ JS;
 			}
 		}
 
-		$sogeneric = CreateObject('property.sogeneric');
+		include_class('property', 'sogeneric');
+		$sogeneric = new property_sogeneric();
 		$sogeneric->get_location_info('org_unit');
 
 		foreach ($entity as &$entry)
@@ -714,7 +720,7 @@ JS;
 	 *
 	 * @return array Indexed array of attribute definition arrays, ordered by attrib_sort ASC.
 	 */
-	function get_attributes()
+	function get_attributes(): array
 	{
 		return $this->custom->find($this->type_app[$this->type], ".{$this->type}.{$this->entity_id}.{$this->cat_id}", 0, '', 'ASC', 'attrib_sort', true, true);
 	}
@@ -725,7 +731,7 @@ JS;
 	 * @param array &$values_attribute Attribute values keyed by attrib_id; merged in place.
 	 * @return void
 	 */
-	function get_attribute_information(&$values_attribute)
+	function get_attribute_information(array &$values_attribute): void
 	{
 		$_attributes = $this->get_attributes();
 
@@ -748,7 +754,7 @@ JS;
 	 * @param array $values Optional initial values to merge with the retrieved record.
 	 * @return array Full entity record including attributes, location data, files, and relations.
 	 */
-	function read_single($data, $values = array())
+	function read_single(array $data, array $values = []): array
 	{
 		$values['attributes'] = $this->custom->find($this->type_app[$this->type], ".{$this->type}.{$data['entity_id']}.{$data['cat_id']}", 0, '', 'ASC', 'attrib_sort', true, true);
 		if (isset($data['id']) && $data['id'])
@@ -759,7 +765,8 @@ JS;
 
 		if ($values['org_unit_id'])
 		{
-			$bogeneric						 = CreateObject('property.sogeneric');
+			include_class('property', 'sogeneric');
+			$bogeneric						 = new property_sogeneric();
 			$bogeneric->get_location_info('org_unit');
 			$org_unit						 = $bogeneric->read_single(array('id' => $values['org_unit_id']));
 			$values['org_unit_name']		 = $org_unit['name'];
@@ -790,7 +797,8 @@ JS;
 		//old
 		if ($values['p_num'])
 		{
-			$soadmin_entity										 = CreateObject('property.soadmin_entity');
+			include_class('property', 'soadmin_entity');
+			$soadmin_entity										 = new property_soadmin_entity();
 			$soadmin_entity->type								 = 'entity';
 			$soadmin_entity->type_app							 = 'property';
 			$category											 = $soadmin_entity->read_single_category($values['p_entity_id'], $values['p_cat_id']);
@@ -818,7 +826,7 @@ JS;
 			}
 		}
 
-		$vfs				 = CreateObject('phpgwapi.vfs');
+		$vfs				 = new \App\modules\phpgwapi\services\Vfs\Vfs();
 		$vfs->override_acl	 = 1;
 
 		$loc1 = isset($values['location_data']['loc1']) && $values['location_data']['loc1'] ? $values['location_data']['loc1'] : 'dummy';
@@ -856,7 +864,8 @@ JS;
 			}
 		}
 
-		$interlink				 = CreateObject('property.interlink');
+		include_class('property', 'interlink');
+		$interlink				 = new property_interlink();
 		$values['origin_data']	 = $interlink->get_relation($this->type_app[$this->type], ".{$this->type}.{$data['entity_id']}.{$data['cat_id']}", $data['id'], 'origin');
 		$values['target']		 = $interlink->get_relation($this->type_app[$this->type], ".{$this->type}.{$data['entity_id']}.{$data['cat_id']}", $data['id'], 'target');
 		return $values;
@@ -870,7 +879,7 @@ JS;
 	 *
 	 * @return array the grouped attributes
 	 */
-	public function get_attribute_groups($location, $attributes = array())
+	public function get_attribute_groups(string $location, array $attributes = []): array
 	{
 		return $this->custom->get_attribute_groups($this->type_app[$this->type], $location, $attributes);
 	}
@@ -883,7 +892,7 @@ JS;
 	 * @param array &$receipt               Receipt array updated with errors or confirmations.
 	 * @return void
 	 */
-	function save_checklist($item_id, $values_checklist_stage, &$receipt)
+	function save_checklist(int $item_id, array $values_checklist_stage, &$receipt): void
 	{
 		foreach ($values_checklist_stage as $stage_id => $values_attribute)
 		{
@@ -905,7 +914,7 @@ JS;
 	 * @param int    $cat_id           Category ID within the entity.
 	 * @return array Receipt array with 'id' and optional 'error' keys.
 	 */
-	function save($values, $values_attribute, $action, $entity_id, $cat_id)
+	function save(array $values, array $values_attribute, string $action, int $entity_id, int $cat_id): array
 	{
 		if (is_array($values['location']))
 		{
@@ -939,7 +948,8 @@ JS;
 		);
 
 
-		$custom_functions = createObject('phpgwapi.custom_functions')->find($criteria);
+		include_class('phpgwapi', 'custom_functions');
+		$custom_functions = (new phpgwapi_custom_functions())->find($criteria);
 
 		foreach ($custom_functions as $entry)
 		{
@@ -994,7 +1004,7 @@ JS;
 	 * @param int $id ID of the record to delete.
 	 * @return void
 	 */
-	function delete($id)
+	function delete(int $id): void
 	{
 		$this->so->delete($this->entity_id, $this->cat_id, $id);
 	}
@@ -1005,7 +1015,7 @@ JS;
 	 * @param array $data Must include 'cat_id'.
 	 * @return mixed Generated ID, or null if cat_id is missing.
 	 */
-	function generate_id($data)
+	function generate_id(array $data): mixed
 	{
 		if ($data['cat_id'])
 		{
@@ -1020,7 +1030,7 @@ JS;
 	 * @throws Exception If the location does not map to a known history type.
 	 * @return string History type string used to construct a historylog object.
 	 */
-	function get_history_type_for_location($acl_location)
+	function get_history_type_for_location(string $acl_location): string
 	{
 		switch ($acl_location)
 		{
@@ -1066,11 +1076,12 @@ JS;
 	 * @param array $data Must include 'acl_location', 'attrib_id', 'id', and 'detail_id'.
 	 * @return array Array of history entries; also sets $this->total_records.
 	 */
-	function read_attrib_history($data)
+	function read_attrib_history(array $data): array
 	{
 		$attrib_data	 = $this->custom->get($this->type_app[$this->type], $data['acl_location'], $data['attrib_id'], $inc_choices	 = true);
 		$history_type	 = $this->get_history_type_for_location($data['acl_location']);
-		$historylog		 = CreateObject('property.historylog', $history_type);
+		include_class('property', 'historylog');
+		$historylog		 = new property_historylog($history_type);
 		$history_values	 = $historylog->return_array(array(), array('SO'), 'history_timestamp', 'DESC', $data['id'], $data['attrib_id'], $data['detail_id']);
 
 		if ($attrib_data['column_info']['type'] == 'LB')
@@ -1107,10 +1118,11 @@ JS;
 	 * @param array $data Must include 'acl_location' and 'history_id'.
 	 * @return void
 	 */
-	function delete_history_item($data)
+	function delete_history_item(array $data): void
 	{
 		$history_type	 = $this->get_history_type_for_location($data['acl_location']);
-		$historylog		 = CreateObject('property.historylog', $history_type);
+		include_class('property', 'historylog');
+		$historylog		 = new property_historylog($history_type);
 		$historylog->delete_single_record($data['history_id']);
 	}
 
@@ -1120,7 +1132,7 @@ JS;
 	 * @param array $data Must include the attribute identifier expected by soentity.
 	 * @return array Attribute help data.
 	 */
-	function read_attrib_help($data)
+	function read_attrib_help($data): array
 	{
 		return $this->so->read_attrib_help($data);
 	}
@@ -1131,7 +1143,7 @@ JS;
 	 * @param array $data Query parameters forwarded to soentity.
 	 * @return array Entity records for linking.
 	 */
-	function read_entity_to_link($data)
+	function read_entity_to_link($data): array
 	{
 		return $this->so->read_entity_to_link($data);
 	}
@@ -1142,11 +1154,12 @@ JS;
 	 * @param array $data Must include 'id' and 'location_id'; optionally 'inventory_id'.
 	 * @return array Inventory entries with 'where' (HTML link) and 'where_name' fields added.
 	 */
-	public function get_inventory($data)
+	public function get_inventory(array $data): array
 	{
 		$values = $this->so->get_inventory($data);
 
-		$interlink = CreateObject('property.interlink');
+		include_class('property', 'interlink');
+		$interlink = new property_interlink();
 
 		foreach ($values as &$entry)
 		{
@@ -1168,7 +1181,7 @@ JS;
 	 * @param array $values Inventory field values including 'active_from' and 'active_to'.
 	 * @return mixed Insert result from soentity.
 	 */
-	public function add_inventory($values)
+	public function add_inventory(array $values): mixed
 	{
 		$values['active_from']	 = $this->bocommon->date_to_timestamp($values['active_from']);
 		$values['active_to']	 = $this->bocommon->date_to_timestamp($values['active_to']);
@@ -1183,7 +1196,7 @@ JS;
 	 * @param array $values Inventory field values including 'active_from' and 'active_to'.
 	 * @return mixed Update result from soentity.
 	 */
-	public function edit_inventory($values)
+	public function edit_inventory(array $values): mixed
 	{
 		$values['active_from']	 = $this->bocommon->date_to_timestamp($values['active_from']);
 		$values['active_to']	 = $this->bocommon->date_to_timestamp($values['active_to']);
@@ -1198,7 +1211,7 @@ JS;
 	 *
 	 * @return array Result array with 'status_kode', 'status', and 'msg' keys.
 	 */
-	public function add_control()
+	public function add_control(): array
 	{
 		$entity_id		 = Sanitizer::get_var('entity_id', 'int');
 		$cat_id			 = Sanitizer::get_var('cat_id', 'int');
@@ -1248,7 +1261,8 @@ JS;
 			{
 				$location_id = $this->locations_obj->get_id($this->type_app[$type], ".{$type}.{$entity_id}.{$cat_id}");
 
-				$so_control	 = CreateObject('controller.socontrol');
+				include_class('controller', 'socontrol');
+				$so_control	 = new controller_socontrol();
 				$values		 = array(
 					'register_component' => array("{$control_id}_{$location_id}_{$id}"),
 					'assigned_to'		 => $assigned_to,
@@ -1294,7 +1308,7 @@ JS;
 	 *                    'assigned_to', 'start_date', and 'location_code'.
 	 * @return int|false New check-list ID on success, false on validation failure.
 	 */
-	function add_check_list($data = array())
+	function add_check_list(array $data = []): int|false
 	{
 		phpgw::import_class('controller.socheck_list');
 		include_class('controller', 'check_list', 'inc/model/');
@@ -1324,7 +1338,8 @@ JS;
 		$check_list->set_assigned_to($assigned_to);
 		$check_list->set_billable_hours($billable_hours);
 
-		$socheck_list = CreateObject('controller.socheck_list');
+		include_class('controller', 'socheck_list');
+		$socheck_list = new controller_socheck_list();
 
 		if ($check_list->validate() && $check_list_id = $socheck_list->store($check_list))
 		{
@@ -1344,7 +1359,7 @@ JS;
 	 *
 	 * @return array Result array with 'status_kode', 'status', and 'msg' keys.
 	 */
-	function update_control_serie()
+	function update_control_serie(): array
 	{
 		if ($start_date = Sanitizer::get_var('control_start_date', 'string'))
 		{
@@ -1352,7 +1367,8 @@ JS;
 			$start_date = phpgwapi_datetime::date_to_timestamp($start_date);
 		}
 
-		$so_control = CreateObject('controller.socontrol');
+		include_class('controller', 'socontrol');
+		$so_control = new controller_socontrol();
 
 		$values	 = array(
 			'ids'				 => Sanitizer::get_var('ids', 'int'),
@@ -1395,7 +1411,7 @@ JS;
 	 * @param string $qr_code The QR code value to search for.
 	 * @return array DataTables-compatible ResultSet array.
 	 */
-	public function get_items_per_qr($qr_code)
+	public function get_items_per_qr(string $qr_code): array
 	{
 
 		$attributes = $this->so->get_QR_attributes();
@@ -1478,7 +1494,7 @@ JS;
 	 * @param int $item_id          Entity item ID.
 	 * @return array Checklist data from soentity.
 	 */
-	function get_checklist_data($type_location_id, $item_id)
+	function get_checklist_data(int $type_location_id, int $item_id): array
 	{
 		return $this->so->get_checklist_data($type_location_id, $item_id);
 	}

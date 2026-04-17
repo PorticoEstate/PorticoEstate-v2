@@ -210,7 +210,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * @param array $data Pre-existing entity record values (e.g. from bo->read_single()).
 	 * @return array Merged array of core field values and 'attributes' sub-array.
 	 */
-	private function _populate($data = array())
+	private function _populate($data = array()): array
 	{
 		$values				 = Sanitizer::get_var('values');
 		$values_attribute	 = Sanitizer::get_var('values_attribute');
@@ -348,7 +348,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * @return void
 	 * @throws Exception If the entity ID is missing from $values.
 	 */
-	private function _handle_files($values)
+	private function _handle_files($values): void
 	{
 		$id = (int)$values['id'];
 		if (empty($id))
@@ -453,7 +453,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return void Output is written directly.
 	 */
-	public function handle_multi_upload_file()
+	public function handle_multi_upload_file(): void
 	{
 		$id			 = Sanitizer::get_var('id', 'int', 'GET');
 		$entity_id	 = Sanitizer::get_var('entity_id');
@@ -520,7 +520,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return void Output is rendered directly via XSL template.
 	 */
-	public function build_multi_upload_file()
+	public function build_multi_upload_file(): void
 	{
 		phpgwapi_jquery::init_multi_upload_file();
 
@@ -558,7 +558,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * @param mixed $selected Currently selected filter value.
 	 * @return array Formatted options list for use in a combo-box widget.
 	 */
-	private function _get_filters($selected = 0)
+	private function _get_filters($selected = 0): array
 	{
 		$values_combo_box	 = array();
 		$combos				 = array();
@@ -705,7 +705,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
 	 */
-	public function get_documents()
+	public function get_documents(): array
 	{
 		$search		 = Sanitizer::get_var('search');
 		$order		 = Sanitizer::get_var('order');
@@ -783,7 +783,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return array|void DataTables result array, or void when outputting directly.
 	 */
-	public function query()
+	public function query(): array
 	{
 		$start_date	 = $this->start_date;
 		$end_date	 = $this->end_date;
@@ -910,7 +910,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return array|void JSON status array if phpgw_return_as=json, otherwise redirects or renders.
 	 */
-	public function save()
+	public function save(): mixed
 	{
 		if (!$_POST)
 		{
@@ -957,6 +957,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			else
 			{
 				$this->edit($values);
+				return null;
 			}
 		}
 		else
@@ -1000,7 +1001,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 					Cache::message_set($e->getMessage(), 'error');
 					$this->edit($values);
-					return;
+					return null;
 				}
 			}
 
@@ -1023,7 +1024,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				}
 
 				$this->edit($values);
-				return;
+				return null;
 			}
 			phpgw::redirect_link('/index.php', array(
 				'menuaction' => 'property.uientity.index',
@@ -1031,6 +1032,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				'cat_id'	 => $this->cat_id,
 				'type'		 => $this->type
 			));
+			return null;
 		}
 	}
 
@@ -1039,7 +1041,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return void
 	 */
-	function save_sessiondata()
+	function save_sessiondata(): void
 	{
 		$data = array(
 			'start'				 => $this->start,
@@ -1067,7 +1069,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return void Output is written directly.
 	 */
-	function download()
+	function download(): void
 	{
 		$this->flags['noheader']	 = true;
 		$this->flags['nofooter']	 = true;
@@ -1139,7 +1141,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
 	 */
-	function get_related()
+	function get_related(): array
 	{
 		$id		 = Sanitizer::get_var('id', 'REQUEST', 'int');
 		$draw	 = Sanitizer::get_var('draw', 'int');
@@ -1203,7 +1205,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
 	 */
-	function get_target()
+	function get_target(): array
 	{
 		$id		 = Sanitizer::get_var('id', 'int');
 		$draw	 = Sanitizer::get_var('draw', 'int');
@@ -1293,7 +1295,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
 	 */
-	function get_files()
+	function get_files(): array
 	{
 		$id		 = Sanitizer::get_var('id', 'REQUEST', 'int');
 		$draw	 = Sanitizer::get_var('draw', 'int');
@@ -1389,7 +1391,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return void Output is rendered via XSL template.
 	 */
-	function columns()
+	function columns(): void
 	{
 		//cramirez: necesary for windows.open . Avoid error JS
 		$this->flags['xslt_app'] = true;
@@ -1450,7 +1452,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return void Output is written directly.
 	 */
-	function view_file()
+	function view_file(): void
 	{
 		if (!$this->acl_read)
 		{
@@ -1474,9 +1476,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * Redirects to the first accessible category if no cat_id is set. Returns
 	 * a DataTables JSON response when phpgw_return_as=json is set.
 	 *
-	 * @return void Output is rendered via XSL template or redirected.
+	 * @return mixed Output is rendered via XSL template or redirected.
 	 */
-	function index()
+	function index(): mixed
 	{
 		//redirect. If selected the title of module.
 		if ($this->entity_id && !$this->cat_id)
@@ -1840,6 +1842,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
 
 		self::render_template_xsl('datatable2', $data);
+		return null;
 	}
 
 	/**
@@ -1852,7 +1855,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * @param string     $mode   'edit' (default) or 'view' for read-only rendering.
 	 * @return void Output is rendered via XSL template.
 	 */
-	function edit($values = array(), $mode = 'edit')
+	function edit($values = array(), $mode = 'edit'): void
 	{
 		$id		 = isset($values['id']) && $values['id'] ? $values['id'] : Sanitizer::get_var('id', 'int');
 		$_lean	 = Sanitizer::get_var('lean', 'bool');
@@ -3036,7 +3039,7 @@ JS;
 	 *
 	 * @return void Output is rendered directly.
 	 */
-	function attrib_help()
+	function attrib_help(): void
 	{
 		$t = createObject('phpgwapi.template');
 		$t->set_root(PHPGW_APP_TPL);
@@ -3083,7 +3086,7 @@ JS;
 	 *
 	 * @return string|void Confirmation string in JSON mode; otherwise redirects.
 	 */
-	function delete()
+	function delete(): mixed
 	{
 		$id = Sanitizer::get_var('id', 'int');
 
@@ -3154,7 +3157,7 @@ JS;
 	 *
 	 * @return void Output is rendered via XSL template.
 	 */
-	function view()
+	function view(): void
 	{
 		if (!$this->acl_read)
 		{
@@ -3226,7 +3229,7 @@ JS;
 	 *
 	 * @return array|string|void DataTables array, 'ok' on delete, or renders XSL template.
 	 */
-	function attrib_history()
+	function attrib_history(): mixed
 	{
 		$this->flags['noframework'] = true;
 		Settings::getInstance()->update('flags', ['noframework' => true]);
@@ -3396,7 +3399,7 @@ JS;
 	 *
 	 * @return void Output is written directly.
 	 */
-	function print_pdf()
+	function print_pdf(): void
 	{
 		if (!$this->acl_read)
 		{
@@ -3616,7 +3619,7 @@ JS;
 	 *
 	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
 	 */
-	public function get_inventory()
+	public function get_inventory(): array
 	{
 		$id		 = Sanitizer::get_var('id', 'int');
 		$draw	 = Sanitizer::get_var('draw', 'int');
@@ -3685,7 +3688,7 @@ JS;
 	 *
 	 * @return array|void JSON status array in JSON mode, otherwise renders XSL template.
 	 */
-	public function edit_inventory()
+	public function edit_inventory(): mixed
 	{
 		$location_id	 = Sanitizer::get_var('location_id', 'int');
 		$id				 = Sanitizer::get_var('id', 'int');
@@ -3810,6 +3813,7 @@ JS;
 
 		$this->flags['app_header'] = $system_location['appname'] . '::' . $system_location['descr'] . '::' . $function_msg;
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header'], 'noframework' => true]);
+		return null;
 	}
 
 	/**
@@ -3817,7 +3821,7 @@ JS;
 	 *
 	 * @return void
 	 */
-	public function add()
+	public function add(): void
 	{
 		$this->edit();
 	}
@@ -3830,7 +3834,7 @@ JS;
 	 *
 	 * @return void Output is rendered via XSL template.
 	 */
-	public function add_inventory()
+	public function add_inventory(): void
 	{
 		$location_id	 = Sanitizer::get_var('location_id', 'int');
 		$id				 = Sanitizer::get_var('id', 'int');
@@ -3948,7 +3952,7 @@ JS;
 	 *
 	 * @return void Output is written directly.
 	 */
-	public function inventory_calendar()
+	public function inventory_calendar(): void
 	{
 		$location_id	 = Sanitizer::get_var('location_id', 'int');
 		$id				 = Sanitizer::get_var('id', 'int');
@@ -3975,7 +3979,7 @@ JS;
 	 *
 	 * @return array ResultSet array with 'totalRecords', 'recordsReturned', and 'Result'.
 	 */
-	public function get_items_per_qr()
+	public function get_items_per_qr(): array
 	{
 		if (!$this->acl_read)
 		{
@@ -3995,7 +3999,7 @@ JS;
 	 *
 	 * @return void Output is rendered via XSL template or written directly as XLSX.
 	 */
-	public function summary()
+	public function summary(): void
 	{
 		if (!$this->acl_read)
 		{
@@ -4062,7 +4066,7 @@ JS;
 	 * @param string $location_code Location code filter to apply when reading items.
 	 * @return void Output is written directly.
 	 */
-	private function writetospreadsheet($location_code)
+	private function writetospreadsheet($location_code): void
 	{
 		set_time_limit(500);
 		$this->flags['noheader']	 = true;
@@ -4166,7 +4170,7 @@ JS;
 	 * @param bool $skip_json   Whether to skip JSON encoding of the result.
 	 * @return array|string Controller controls data.
 	 */
-	public function get_controls_at_component($location_id = 0, $id = 0, $skip_json = false)
+	public function get_controls_at_component($location_id = 0, $id = 0, $skip_json = false): array|string
 	{
 		return $this->controller_helper->get_controls_at_component($location_id, $id, $skip_json);
 	}
@@ -4179,7 +4183,7 @@ JS;
 	 * @param int $year        Year filter (0 for all years).
 	 * @return array Cases data.
 	 */
-	public function get_cases($location_id = 0, $id = 0, $year = 0)
+	public function get_cases($location_id = 0, $id = 0, $year = 0): array
 	{
 		return $this->controller_helper->get_cases($location_id, $id, $year);
 	}
@@ -4191,7 +4195,7 @@ JS;
 	 *
 	 * @return array Cases data for the checklist.
 	 */
-	public function get_cases_for_checklist()
+	public function get_cases_for_checklist(): array
 	{
 		return $this->controller_helper->get_cases_for_checklist();
 	}
@@ -4204,7 +4208,7 @@ JS;
 	 * @param int $year        Year filter (0 for all years).
 	 * @return array Checklists data.
 	 */
-	public function get_checklists($location_id = 0, $id = 0, $year = 0)
+	public function get_checklists($location_id = 0, $id = 0, $year = 0): array
 	{
 		return $this->controller_helper->get_checklists($location_id, $id, $year);
 	}
@@ -4216,7 +4220,7 @@ JS;
 	 *
 	 * @return array Assignment history data.
 	 */
-	function get_assigned_history()
+	function get_assigned_history(): array
 	{
 		return $this->controller_helper->get_assigned_history();
 	}
@@ -4233,7 +4237,7 @@ JS;
 	 * @param string $mode        Rendering mode (e.g. 'view' or 'edit').
 	 * @return void Output is rendered via XSL template.
 	 */
-	function get_location_checklists($location_id, $item_id, $mode)
+	function get_location_checklists($location_id, $item_id, $mode): array
 	{
 
 		$checklist_data = $this->bo->get_checklist_data($location_id, $item_id);

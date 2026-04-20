@@ -34,6 +34,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\controllers\Locations;
 use App\modules\property\inc\EntityAclGuard;
+use App\modules\property\inc\property_soentity;
 
 /**
  * Description

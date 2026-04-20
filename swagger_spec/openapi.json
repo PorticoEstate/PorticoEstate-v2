@@ -6736,6 +6736,391 @@
                     }
                 }
             }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "List entity items",
+                "description": "Returns a paginated list of entity items for the given type\/entity\/category combination.",
+                "operationId": "0a1a9d4798c972b67bb86f47bc1a819d",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "description": "Pagination offset",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "description": "Free-text search",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "description": "Status\/category filter",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Column to sort by",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "dir",
+                        "in": "query",
+                        "description": "Sort direction",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "ASC",
+                            "enum": [
+                                "ASC",
+                                "DESC"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "allrows",
+                        "in": "query",
+                        "description": "Return all rows without pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of entity items",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#\/components\/schemas\/EntityItem"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Create a new entity item",
+                "description": "Creates a new entity item with optional EAV attribute values.",
+                "operationId": "b61d565c242ddd7c9a4f2e17d4db918b",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "values": {
+                                        "description": "Core field values",
+                                        "type": "object"
+                                    },
+                                    "values_attribute": {
+                                        "description": "EAV attribute values keyed by attribute ID",
+                                        "type": "object"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Item created",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/EntityReceipt"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get a single entity item",
+                "description": "Returns a single entity item with its full set of EAV attributes.",
+                "operationId": "7a1735e9de0120768a2e3b879abac186",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Entity item with attributes",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/EntityItem"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid id"
+                    },
+                    "404": {
+                        "description": "Entity item not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Update an entity item",
+                "description": "Updates core fields and\/or EAV attribute values of an existing entity item.",
+                "operationId": "d79a8b477b1e7f9d62d451f33160e089",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "values": {
+                                        "description": "Core field values",
+                                        "type": "object"
+                                    },
+                                    "values_attribute": {
+                                        "description": "EAV attribute values keyed by attribute ID",
+                                        "type": "object"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Item updated",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/EntityReceipt"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid id"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Delete an entity item",
+                "description": "Permanently deletes the specified entity item.",
+                "operationId": "3c7cbd09d4d951f333399f9b0d233416",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Deleted successfully"
+                    },
+                    "400": {
+                        "description": "Invalid id"
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -8224,6 +8609,49 @@
             },
             "Date": {
                 "description": "Backward-compatible alias \u2014 canonical model lives in booking module."
+            },
+            "EntityItem": {
+                "description": "A single entity item (EAV record)",
+                "properties": {
+                    "id": {
+                        "description": "Item ID",
+                        "type": "integer"
+                    },
+                    "entity_id": {
+                        "description": "Entity definition ID",
+                        "type": "integer"
+                    },
+                    "cat_id": {
+                        "description": "Category ID within the entity",
+                        "type": "integer"
+                    }
+                },
+                "type": "object",
+                "additionalProperties": []
+            },
+            "EntityReceipt": {
+                "description": "Save operation receipt",
+                "properties": {
+                    "id": {
+                        "description": "ID of the saved item",
+                        "type": "integer"
+                    },
+                    "message": {
+                        "description": "Success messages",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "error": {
+                        "description": "Error messages",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
             }
         },
         "securitySchemes": {
@@ -8286,6 +8714,10 @@
         {
             "name": "Checkout",
             "description": "API Endpoints for Application Checkout and Payment"
+        },
+        {
+            "name": "Entity",
+            "description": "REST API for EAV-based entity item records"
         },
         {
             "name": "Relationships",

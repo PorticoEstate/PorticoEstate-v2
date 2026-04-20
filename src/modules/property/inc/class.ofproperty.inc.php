@@ -58,6 +58,12 @@ class property_ofproperty extends phpgwapi_object_factory
 				include_class($appname, $classname);
 				return \property_soworkorder::getInstance();
 
+			case 'soentity':
+				$entity_id = ($p1 !== '_UNDEF_') ? $p1 : '.';
+				$cat_id = ($p2 !== '_UNDEF_') ? $p2 : null;
+				include_class($appname, $classname);
+				return new property_soentity($entity_id, $cat_id);
+
 			default:
 				return parent::createObject(
 					$class,

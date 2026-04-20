@@ -9,6 +9,7 @@ use Slim\Exception\HttpBadRequestException;
 use Slim\Exception\HttpNotFoundException;
 use Sanitizer;
 use OpenApi\Annotations as OA;
+use function include_class;
 
 /**
  * @OA\Tag(
@@ -39,7 +40,10 @@ class EntityController
 {
 	public function __construct(ContainerInterface $container)
 	{
-		// Container available for future DI needs (ACL, settings, etc.)
+		if (defined('SRC_ROOT_PATH') && !function_exists('include_class'))
+		{
+			require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
+		}
 	}
 
 	/**

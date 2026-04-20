@@ -34,7 +34,32 @@ use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\Database\Db;
 
 /**
- * Description
+ * Legacy UI layer for the property entity module.
+ *
+ * @deprecated Since 2026-04 — superseded by the REST API in
+ *             {@see \App\modules\property\controllers\EntityController}.
+ *
+ * Replacement routes (all under /property/entity/{type}/{entity_id}/{cat_id}):
+ *   - GET    /               → index()   replaces query()
+ *   - GET    /{id}           → show()    replaces view()
+ *   - POST   /               → store()   replaces save() in add mode
+ *   - PUT    /{id}           → update()  replaces save() in edit mode
+ *   - DELETE /{id}           → destroy() replaces delete()
+ *   - GET    /{id}/files     → getFiles()          replaces get_files()
+ *   - GET    /{id}/related   → getRelated()        replaces get_related()
+ *   - GET    /{id}/inventory → getInventory()      replaces get_inventory()
+ *   - GET    /items-per-qr   → getItemsPerQr()     replaces get_items_per_qr()
+ *   - GET    /cases          → getCases()          replaces get_cases()
+ *   - GET    /checklists     → getChecklists()     replaces get_checklists()
+ *   - GET    /controls       → getControlsAtComponent() replaces get_controls_at_component()
+ *   - GET    /cases-for-checklist → getCasesForChecklist() replaces get_cases_for_checklist()
+ *
+ * HTML-rendering methods (summary, view, edit, add, columns, download, print_pdf,
+ * view_file, handle_multi_upload_file, build_multi_upload_file, index, attrib_history,
+ * get_documents, get_target, add_inventory, edit_inventory, inventory_calendar,
+ * get_assigned_history) remain accessible via legacy menuaction dispatch until
+ * the XSL/React frontend is replaced.
+ *
  * @package property
  */
 phpgw::import_class('phpgwapi.uicommon_jquery');
@@ -120,6 +145,11 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 */
 	function __construct()
 	{
+		trigger_error(
+			'property_uientity is deprecated. Use App\\modules\\property\\controllers\\EntityController REST routes instead.',
+			E_USER_DEPRECATED
+		);
+
 		parent::__construct();
 
 		$this->flags['xslt_app'] = true;

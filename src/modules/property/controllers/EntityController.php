@@ -48,7 +48,7 @@ class EntityController
 	 * @param array $args Slim route args containing type, entity_id, cat_id.
 	 * @return \property_boentity
 	 */
-	private function bo(array $args): \property_boentity
+	protected function bo(array $args): \property_boentity
 	{
 		include_class('property', 'boentity');
 		return \property_boentity::forType(

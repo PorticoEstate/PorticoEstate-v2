@@ -6,6 +6,7 @@ use App\modules\phpgwapi\security\AccessVerifier;
 use App\modules\property\helpers\RedirectHelper;
 use App\modules\property\controllers\TenantController;
 use App\modules\property\controllers\TicketController;
+use App\modules\property\controllers\EntityController;
 use App\controllers\GenericRegistryController;
 use Slim\Routing\RouteCollectorProxy;
 use App\modules\property\models\PropertyGenericRegistry;
@@ -60,6 +61,24 @@ $app->group('/property/registry', function (RouteCollectorProxy $group) use ($co
 		$typeGroup->get('/{id:[0-9]+}', [$controller, 'show']); // Get single item
 		$typeGroup->put('/{id:[0-9]+}', [$controller, 'update']); // Update item
 		$typeGroup->delete('/{id:[0-9]+}', [$controller, 'delete']); // Delete item
+	});
+})
+->addMiddleware(new AccessVerifier($container))
+->addMiddleware(new SessionsMiddleware($container));
+
+
+// Entity (EAV custom attribute records) Routes
+$app->group('/property/entity', function (RouteCollectorProxy $group) use ($container)
+{
+	$controller = new EntityController($container);
+
+	$group->group('/{type}/{entity_id:[0-9]+}/{cat_id:[0-9]+}', function (RouteCollectorProxy $g) use ($controller)
+	{
+		$g->get('',                [$controller, 'index']);
+		$g->post('',               [$controller, 'store']);
+		$g->get('/{id:[0-9]+}',    [$controller, 'show']);
+		$g->put('/{id:[0-9]+}',    [$controller, 'update']);
+		$g->delete('/{id:[0-9]+}', [$controller, 'destroy']);
 	});
 })
 ->addMiddleware(new AccessVerifier($container))

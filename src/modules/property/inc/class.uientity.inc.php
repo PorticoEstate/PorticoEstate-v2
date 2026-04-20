@@ -548,8 +548,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			'multi_upload_action' => $multi_upload_action
 		);
 
-		phpgwapi_xslttemplates::getInstance()->add_file(array('files', 'multi_upload_file'));
-		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('multi_upload' => $data));
+		self::render_template_xsl(['files', 'multi_upload_file'], $data, '', 'multi_upload');
 	}
 
 	/**
@@ -1394,12 +1393,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	function columns(): void
 	{
 		//cramirez: necesary for windows.open . Avoid error JS
-		$this->flags['xslt_app'] = true;
-		phpgwapi_xslttemplates::getInstance()->add_file(array('columns'));
-
 		$this->flags['noframework']	 = true;
 		$this->flags['nofooter']		 = true;
-		Settings::getInstance()->update('flags', array('noframework' => true, 'nofooter' => true, 'xslt_app' => true));
+		Settings::getInstance()->update('flags', array('noframework' => true, 'nofooter' => true));
 
 		$values	 = Sanitizer::get_var('values');
 		$receipt = array();
@@ -1442,7 +1438,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		$this->flags['app_header'] = $function_msg;
 		Settings::getInstance()->update('flags', array('app_header' => $function_msg));
-		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('columns' => $data));
+		self::render_template_xsl('columns', $data, '', 'columns');
 	}
 
 	/**
@@ -3123,8 +3119,6 @@ JS;
 			phpgw::redirect_link('/index.php', $link_data);
 		}
 
-		phpgwapi_xslttemplates::getInstance()->add_file(array('app_delete'));
-
 		$data = array(
 			'done_action'			 => phpgw::link('/index.php', $link_data),
 			'delete_action'			 => phpgw::link('/index.php', array(
@@ -3147,7 +3141,7 @@ JS;
 		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $appname . ': ' . $function_msg;
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
 
-		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('delete' => $data));
+		self::render_template_xsl('app_delete', $data, '', 'delete');
 	}
 
 	/**

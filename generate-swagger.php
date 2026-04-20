@@ -28,6 +28,7 @@ $scanSources = [
 	SRC_ROOT_PATH . '/modules/phpgwapi/controllers/DatabaseController.php',
 	SRC_ROOT_PATH . '/controllers/GenericRegistryController.php',
 	SRC_ROOT_PATH . '/modules/booking/controllers/EventController.php',
+	SRC_ROOT_PATH . '/modules/property/controllers/EntityController.php',
 ];
 
 $exclude = [

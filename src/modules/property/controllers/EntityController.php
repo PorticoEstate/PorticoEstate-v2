@@ -59,6 +59,36 @@ class EntityController
 	}
 
 	/**
+	 * Instantiate a property_controller_helper for the current entity context.
+	 *
+	 * @param array $args Slim route args containing type, entity_id, cat_id.
+	 * @return \property_controller_helper
+	 */
+	private function controllerHelper(array $args): \property_controller_helper
+	{
+		include_class('property', 'controller_helper');
+		$bo = $this->bo($args);
+		return new \property_controller_helper([
+			'acl_read' => true,
+			'type_app' => $bo->type_app,
+			'type'     => (string)$args['type'],
+		]);
+	}
+
+	/**
+	 * Write a JSON response.
+	 *
+	 * @param Response $response
+	 * @param mixed    $data
+	 * @return Response
+	 */
+	private function jsonResponse(Response $response, mixed $data): Response
+	{
+		$response->getBody()->write(json_encode($data, JSON_THROW_ON_ERROR));
+		return $response->withHeader('Content-Type', 'application/json');
+	}
+
+	/**
 	 * @OA\Get(
 	 *     path="/property/entity/{type}/{entity_id}/{cat_id}",
 	 *     summary="List entity items",
@@ -245,5 +275,166 @@ class EntityController
 		$this->bo($args)->delete($id);
 
 		return $response->withStatus(204);
+	}
+
+	// ── Subsidiary data endpoints ─────────────────────────────────────────────
+
+	/**
+	 * Return entity items matching a QR code.
+	 *
+	 * GET /property/entity/{type}/{entity_id}/{cat_id}/items-per-qr?qr_code=…
+	 */
+	public function getItemsPerQr(Request $request, Response $response, array $args): Response
+	{
+		$qr_code = Sanitizer::clean_value($request->getQueryParams()['qr_code'] ?? '', 'string');
+		$items   = $this->bo($args)->get_items_per_qr($qr_code);
+		return $this->jsonResponse($response, $items);
+	}
+
+	/**
+	 * Return related entity links for a given item.
+	 *
+	 * GET /property/entity/{type}/{entity_id}/{cat_id}/{id}/related
+	 */
+	public function getRelated(Request $request, Response $response, array $args): Response
+	{
+		$params  = $request->getQueryParams();
+		$id      = (int)$args['id'];
+		$draw    = (int)($params['draw'] ?? 0);
+		$bo      = $this->bo($args);
+
+		$related = $bo->read_entity_to_link([
+			'entity_id' => (int)$args['entity_id'],
+			'cat_id'    => (int)$args['cat_id'],
+			'id'        => $id,
+		]);
+
+		$values = [];
+		foreach ($related as $related_data)
+		{
+			if (is_array($related_data))
+			{
+				foreach ($related_data as $entry)
+				{
+					$values[] = [
+						'name'        => $entry['name'] ?? '',
+						'entity_link' => $entry['entity_link'] ?? '',
+					];
+				}
+			}
+		}
+
+		return $this->jsonResponse($response, [
+			'data'            => $values,
+			'recordsTotal'    => count($values),
+			'recordsFiltered' => count($values),
+			'draw'            => $draw,
+		]);
+	}
+
+	/**
+	 * Return attached files for a given item.
+	 *
+	 * GET /property/entity/{type}/{entity_id}/{cat_id}/{id}/files
+	 */
+	public function getFiles(Request $request, Response $response, array $args): Response
+	{
+		$params = $request->getQueryParams();
+		$id     = (int)$args['id'];
+		$draw   = (int)($params['draw'] ?? 0);
+		$bo     = $this->bo($args);
+
+		$item  = $bo->read_single([
+			'entity_id' => (int)$args['entity_id'],
+			'cat_id'    => (int)$args['cat_id'],
+			'type'      => (string)$args['type'],
+			'id'        => $id,
+		]);
+
+		$files = array_values($item['files'] ?? []);
+
+		return $this->jsonResponse($response, [
+			'data'            => $files,
+			'recordsTotal'    => count($files),
+			'recordsFiltered' => count($files),
+			'draw'            => $draw,
+		]);
+	}
+
+	/**
+	 * Return inventory records for a given item.
+	 *
+	 * GET /property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory
+	 */
+	public function getInventory(Request $request, Response $response, array $args): Response
+	{
+		$params      = $request->getQueryParams();
+		$id          = (int)$args['id'];
+		$draw        = (int)($params['draw'] ?? 0);
+		$bo          = $this->bo($args);
+
+		// Resolve the system location_id for this entity/category path.
+		$type_app    = $bo->type_app[$bo->type] ?? '';
+		$location_id = $bo->locations_obj->get_id(
+			$type_app,
+			".{$args['type']}.{$args['entity_id']}.{$args['cat_id']}"
+		);
+
+		$values = $bo->get_inventory(['id' => $id, 'location_id' => (int)$location_id]);
+
+		return $this->jsonResponse($response, [
+			'data'            => array_values($values),
+			'recordsTotal'    => count($values),
+			'recordsFiltered' => count($values),
+			'draw'            => $draw,
+		]);
+	}
+
+	/**
+	 * Return controller cases linked to this entity item.
+	 *
+	 * GET /property/entity/{type}/{entity_id}/{cat_id}/cases?id=…&location_id=…&year=…
+	 */
+	public function getCases(Request $request, Response $response, array $args): Response
+	{
+		$_GET['phpgw_return_as'] = 'json';
+		$result = $this->controllerHelper($args)->get_cases();
+		return $this->jsonResponse($response, $result);
+	}
+
+	/**
+	 * Return controller checklists linked to this entity item.
+	 *
+	 * GET /property/entity/{type}/{entity_id}/{cat_id}/checklists?id=…&location_id=…&year=…
+	 */
+	public function getChecklists(Request $request, Response $response, array $args): Response
+	{
+		$_GET['phpgw_return_as'] = 'json';
+		$result = $this->controllerHelper($args)->get_checklists();
+		return $this->jsonResponse($response, $result);
+	}
+
+	/**
+	 * Return controller controls attached to this entity component.
+	 *
+	 * GET /property/entity/{type}/{entity_id}/{cat_id}/controls?id=…&location_id=…
+	 */
+	public function getControlsAtComponent(Request $request, Response $response, array $args): Response
+	{
+		$_GET['phpgw_return_as'] = 'json';
+		$result = $this->controllerHelper($args)->get_controls_at_component();
+		return $this->jsonResponse($response, $result);
+	}
+
+	/**
+	 * Return cases belonging to a specific checklist.
+	 *
+	 * GET /property/entity/{type}/{entity_id}/{cat_id}/cases-for-checklist?check_list_id=…
+	 */
+	public function getCasesForChecklist(Request $request, Response $response, array $args): Response
+	{
+		$_GET['phpgw_return_as'] = 'json';
+		$result = $this->controllerHelper($args)->get_cases_for_checklist();
+		return $this->jsonResponse($response, $result);
 	}
 }

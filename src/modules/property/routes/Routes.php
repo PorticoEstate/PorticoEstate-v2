@@ -74,11 +74,24 @@ $app->group('/property/entity', function (RouteCollectorProxy $group) use ($cont
 
 	$group->group('/{type}/{entity_id:[0-9]+}/{cat_id:[0-9]+}', function (RouteCollectorProxy $g) use ($controller)
 	{
+		// Core CRUD
 		$g->get('',                [$controller, 'index']);
 		$g->post('',               [$controller, 'store']);
 		$g->get('/{id:[0-9]+}',    [$controller, 'show']);
 		$g->put('/{id:[0-9]+}',    [$controller, 'update']);
 		$g->delete('/{id:[0-9]+}', [$controller, 'destroy']);
+
+		// Item sub-resources (id in path)
+		$g->get('/{id:[0-9]+}/files',     [$controller, 'getFiles']);
+		$g->get('/{id:[0-9]+}/related',   [$controller, 'getRelated']);
+		$g->get('/{id:[0-9]+}/inventory', [$controller, 'getInventory']);
+
+		// Category-level data queries (id/location_id as query params)
+		$g->get('/items-per-qr',        [$controller, 'getItemsPerQr']);
+		$g->get('/cases',               [$controller, 'getCases']);
+		$g->get('/checklists',          [$controller, 'getChecklists']);
+		$g->get('/controls',            [$controller, 'getControlsAtComponent']);
+		$g->get('/cases-for-checklist', [$controller, 'getCasesForChecklist']);
 	});
 })
 ->addMiddleware(new AccessVerifier($container))

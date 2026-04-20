@@ -27,12 +27,15 @@
 	 * @version $Id$
 	 */
 
+namespace App\modules\property\inc;
+
 use App\modules\phpgwapi\services\Settings;
 use App\Database\Db;
 use App\Database\Db2;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\controllers\Locations;
 use App\modules\phpgwapi\services\Cache;
+use App\traits\DbRowTrait;
 
 
 	/**
@@ -41,6 +44,7 @@ use App\modules\phpgwapi\services\Cache;
 	 */
 	class property_soentity
 	{
+		use DbRowTrait;
 
 		var $entity_id, $db, $db2,$bocommon, $custom, $join, $left_join, $like, $cols_return;
 		var $cat_id;
@@ -121,7 +125,7 @@ use App\modules\phpgwapi\services\Cache;
 			$category = CreateObject('property.soadmin_entity')->read_single_category($entity_id, $cat_id);
 
 			$this->db->query("SELECT column_name FROM phpgw_cust_attribute WHERE location_id = {$location_id} AND column_name = 'geolocation'", __LINE__, __FILE__);
-			if (!$this->db->next_record())
+			if (empty($this->db->resultSet))
 			{
 				//return false;
 				$boadmin_entity = CreateObject('property.boadmin_entity');
@@ -193,12 +197,12 @@ use App\modules\phpgwapi\services\Cache;
 			$this->db->query($sql, __LINE__, __FILE__);
 
 			$status = array();
-			while ($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
 				$status[] = array
 					(
-					'id'	 => $this->db->f('id'),
-					'name'	 => stripslashes($this->db->f('value'))
+					'id'	 => $row['id'],
+					'name'	 => stripslashes($row['value'])
 				);
 			}
 			return $status;
@@ -335,13 +339,13 @@ use App\modules\phpgwapi\services\Cache;
 				. " {$filtermethod}";
 
 			$this->db->query($sql, __LINE__, __FILE__);
-			while ($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
 
 				$values[] = array
 					(
-					'id'	 => $this->db->f('id'),
-					'name'	 => $this->db->f('name', true)
+					'id'	 => $row['id'],
+					'name'	 => $this->dbStrip($row['name'])
 				);
 			}
 			return $values;
@@ -389,17 +393,17 @@ use App\modules\phpgwapi\services\Cache;
 			foreach ($conditions as $condition)
 			{
 				$this->db->query("SELECT * FROM phpgw_cust_attribute WHERE location_id = {$location_id} AND id= " . (int)$condition['attribute_id']);
-				$this->db->next_record();
-				$attribute_name = $this->db->f('column_name');
+				$row  = $this->db->resultSet[0] ?? [];
+				$attribute_name = $row['column_name'];
 
 				$attributes[$condition['attibute_id']]['name']						 = $attribute_name;
-				$attributes[$condition['attibute_id']]['datatype']					 = $this->db->f('datatype');
-				$attributes[$condition['attibute_id']]['get_list_function']			 = $this->db->f('get_list_function', true);
-				$attributes[$condition['attibute_id']]['get_list_function_input']	 = $this->db->f('get_list_function_input') ? unserialize($this->db->f('get_list_function_input', true)) : '';
-				$attributes[$condition['attibute_id']]['get_single_function']		 = $this->db->f('get_single_function', true);
-				$attributes[$condition['attibute_id']]['get_single_function_input']	 = $this->db->f('get_single_function_input') ? unserialize($this->db->f('get_single_function_input', true)) : '';
+				$attributes[$condition['attibute_id']]['datatype']					 = $row['datatype'];
+				$attributes[$condition['attibute_id']]['get_list_function']			 = $this->dbStrip($row['get_list_function']);
+				$attributes[$condition['attibute_id']]['get_list_function_input']	 = $row['get_list_function_input'] ? unserialize($this->dbStrip($row['get_list_function_input'])) : '';
+				$attributes[$condition['attibute_id']]['get_single_function']		 = $this->dbStrip($row['get_single_function']);
+				$attributes[$condition['attibute_id']]['get_single_function_input']	 = $row['get_single_function_input'] ? unserialize($this->dbStrip($row['get_single_function_input'])) : '';
 
-				switch ($this->db->f('datatype'))
+				switch ($row['datatype'])
 				{
 					case 'I':
 						switch ($condition['operator'])
@@ -423,7 +427,7 @@ use App\modules\phpgwapi\services\Cache;
 								$_querymethod[]	 = "CAST(json_representation->>'{$attribute_name}' AS integer) {$operator} {$condition['value']}";
 								break;
 							default:
-								throw new Exception('ERROR: Not a valid operator on conditions');
+								throw new \Exception('ERROR: Not a valid operator on conditions');
 						}
 						$__querymethod	 = array(); // remove block
 						break;
@@ -469,7 +473,7 @@ use App\modules\phpgwapi\services\Cache;
 			}
 
 			$_querymethod_status = '';
-			if (!Sanitizer::get_var('status', 'int'))
+			if (!\Sanitizer::get_var('status', 'int'))
 			{
 				if (!empty($cache_attribute_status[$location_id]))
 				{
@@ -489,10 +493,10 @@ use App\modules\phpgwapi\services\Cache;
 			$sql_cnt = "SELECT count(id) as cnt FROM fm_bim_item WHERE location_id = {$location_id} $querymethod";
 
 			$this->db->query($sql_cnt, __LINE__, __FILE__);
-			$this->db->next_record();
+			$row  = $this->db->resultSet[0] ?? [];
 			unset($sql_cnt);
 
-			$this->total_records = $this->db->f('cnt');
+			$this->total_records = $row['cnt'];
 //			_debug_array($sql . $ordermethod);
 			$ordermethod		 = '';
 			if (!$allrows)
@@ -506,9 +510,9 @@ use App\modules\phpgwapi\services\Cache;
 
 			$items	 = array();
 			$j		 = 0;
-			while ($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
-				$jsondata = json_decode($this->db->f('json_representation'), true);
+				$jsondata = json_decode($row['json_representation'], true);
 
 //				$xml = new DOMDocument('1.0', 'utf-8');
 //				$xml->loadXML($xmldata);
@@ -517,7 +521,7 @@ use App\modules\phpgwapi\services\Cache;
 				{
 					if (!$value = $this->db->stripslashes($jsondata[$field['name']]))
 					{
-						$value = $this->db->f($field['name'], true);
+						$value = $this->dbStrip($row[$field['name']]);
 					}
 					$dataset[$j][$field['name']] = array
 						(
@@ -533,7 +537,7 @@ use App\modules\phpgwapi\services\Cache;
 
 				$dataset[$j]['id']			 = array
 					(
-					'value'		 => $this->db->f('id'),
+					'value'		 => $row['id'],
 					'datatype'	 => false,
 					'attrib_id'	 => false,
 				);
@@ -546,28 +550,28 @@ use App\modules\phpgwapi\services\Cache;
 
 				$dataset[$j]['p_id'] = array
 					(
-					'value'		 => $this->db->f('p_id'),
+					'value'		 => $row['p_id'],
 					'datatype'	 => false,
 					'attrib_id'	 => false,
 				);
 
 				$dataset[$j]['p_location_id'] = array
 					(
-					'value'		 => $this->db->f('p_location_id'),
+					'value'		 => $row['p_location_id'],
 					'datatype'	 => false,
 					'attrib_id'	 => false,
 				);
 
 				$dataset[$j]['location_code'] = array
 					(
-					'value'		 => $this->db->f('location_code'),
+					'value'		 => $row['location_code'],
 					'datatype'	 => false,
 					'attrib_id'	 => false,
 				);
 
 				$dataset[$j]['org_unit_id'] = array
 					(
-					'value'		 => $this->db->f('org_unit_id'),
+					'value'		 => $row['org_unit_id'],
 					'datatype'	 => false,
 					'attrib_id'	 => false,
 				);
@@ -835,13 +839,13 @@ use App\modules\phpgwapi\services\Cache;
 			$_joinmethod_datatype_custom = array();
 			$custom_attribs				 = array();
 			$this->db->query("SELECT * FROM $attribute_table WHERE $attribute_filter AND search='1'");
-			while ($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
-				$custom_attribs[$this->db->f('column_name')] = array(
-					'id'			 => $this->db->f('id'),
-					'datatype'		 => $this->db->f('datatype'),
-					'location_id'	 => $this->db->f('location_id'),
-					'search'		 => $this->db->f('search'),
+				$custom_attribs[$row['column_name']] = array(
+					'id'			 => $row['id'],
+					'datatype'		 => $row['datatype'],
+					'location_id'	 => $row['location_id'],
+					'search'		 => $row['search'],
 				);
 			}
 
@@ -886,10 +890,10 @@ use App\modules\phpgwapi\services\Cache;
 
 					$this->db->query("SELECT * FROM $attribute_table WHERE $attribute_filter AND search='1'");
 
-					while ($this->db->next_record())
+					foreach ($this->db->resultSet as $row)
 					{
-						$_column_name = $this->db->f('column_name');
-						switch ($this->db->f('datatype'))
+						$_column_name = $row['column_name'];
+						switch ($row['datatype'])
 						{
 							case 'V':
 							case 'email':
@@ -914,12 +918,12 @@ use App\modules\phpgwapi\services\Cache;
 //									$_querymethod[] = "$entity_table.{$_column_name} {$this->like} '%,{$query},%'";
 									$__querymethod	 = array(); // remove block
 									// from text-search
-									$_filter_choise	 = "WHERE (phpgw_cust_choice.location_id =" . (int)$this->db->f('location_id')
-										. " AND phpgw_cust_choice.attrib_id =" . (int)$this->db->f('id')
+									$_filter_choise	 = "WHERE (phpgw_cust_choice.location_id =" . (int)$row['location_id']
+										. " AND phpgw_cust_choice.attrib_id =" . (int)$row['id']
 										. " AND phpgw_cust_choice.value {$this->like} '%{$query}%')";
 
 									$this->db2->query("SELECT phpgw_cust_choice.id FROM phpgw_cust_choice {$_filter_choise}", __LINE__, __FILE__);
-									while ($this->db2->next_record())
+									foreach ($this->db2->resultSet as $row2)
 									{
 										$_querymethod[] = "json_representation->>'{$_column_name}' {$this->like} '%,{$query},%'";
 									}
@@ -929,15 +933,15 @@ use App\modules\phpgwapi\services\Cache;
 							case 'LB':
 								if (!$criteria_id)
 								{
-									$_filter_choise = "WHERE (phpgw_cust_choice.location_id =" . (int)$this->db->f('location_id')
-										. " AND phpgw_cust_choice.attrib_id =" . (int)$this->db->f('id')
+									$_filter_choise = "WHERE (phpgw_cust_choice.location_id =" . (int)$row['location_id']
+										. " AND phpgw_cust_choice.attrib_id =" . (int)$row['id']
 										. " AND phpgw_cust_choice.value {$this->like} '%{$query}%')";
 
 									$this->db2->query("SELECT phpgw_cust_choice.id FROM phpgw_cust_choice {$_filter_choise}", __LINE__, __FILE__);
 									$__filter_choise = array();
-									while ($this->db2->next_record())
+									foreach ($this->db2->resultSet as $row2)
 									{
-										$_querymethod[] = "(NULLIF(json_representation->>'{$_column_name}', '')::integer IS NOT NULL AND CAST( json_representation->>'{$_column_name}' AS integer) = " . (int)$this->db2->f('id') . ')';
+										$_querymethod[] = "(NULLIF(json_representation->>'{$_column_name}', '')::integer IS NOT NULL AND CAST( json_representation->>'{$_column_name}' AS integer) = " . (int)$row2['id'] . ')';
 									}
 									$__querymethod = array(); // remove block
 								}
@@ -945,7 +949,7 @@ use App\modules\phpgwapi\services\Cache;
 							case 'I':
 								if (ctype_digit($query) && !$criteria_id)
 								{
-//									$_querymethod[] = "CAST( json_representation->>'". $this->db->f('column_name') ."' AS integer) = " .(int)$query;
+//									$_querymethod[] = "CAST( json_representation->>'". $row['column_name'] ."' AS integer) = " .(int)$query;
 									$_querymethod[]	 = "CAST(json_representation->>'{$_column_name}'AS text)  {$this->like} '" . (int)$query . "%'";
 									$__querymethod	 = array(); // remove block
 								}
@@ -955,11 +959,11 @@ use App\modules\phpgwapi\services\Cache;
 								{
 									$this->db2->query("SELECT id FROM fm_vendor WHERE fm_vendor.org_name {$this->like} '%{$query}%'", __LINE__, __FILE__);
 									$__filter_choise = array();
-									$_column_name	 = $this->db->f('column_name');
-									while ($this->db2->next_record())
+									$_column_name	 = $row['column_name'];
+									foreach ($this->db2->resultSet as $row2)
 									{
-//										$_querymethod[] = "CAST( json_representation->>'". $this->db->f('column_name') ."' AS integer) = " .(int)$this->db2->f('id');
-										$_querymethod[] = "(NULLIF(json_representation->>'{$_column_name}', '')::integer IS NOT NULL AND CAST( json_representation->>'{$_column_name}' AS integer) = " . (int)$this->db2->f('id') . ')';
+//										$_querymethod[] = "CAST( json_representation->>'". $row['column_name'] ."' AS integer) = " .(int)$row2['id'];
+										$_querymethod[] = "(NULLIF(json_representation->>'{$_column_name}', '')::integer IS NOT NULL AND CAST( json_representation->>'{$_column_name}' AS integer) = " . (int)$row2['id'] . ')';
 									}
 
 									$__querymethod = array(); // remove block
@@ -970,10 +974,10 @@ use App\modules\phpgwapi\services\Cache;
 								{
 									$this->db2->query("SELECT person_id as id FROM phpgw_contact_person WHERE phpgw_contact_person.first_name {$this->like} '%{$query}%' OR phpgw_contact_person.last_name {$this->like} '%{$query}%'", __LINE__, __FILE__);
 									$__filter_choise = array();
-									while ($this->db2->next_record())
+									foreach ($this->db2->resultSet as $row2)
 									{
-//										$_querymethod[] = "CAST( json_representation->>'". $this->db->f('column_name') ."' AS integer) = " .(int)$this->db2->f('id');
-										$_querymethod[] = "(NULLIF(json_representation->>'{$_column_name}', '')::integer IS NOT NULL AND CAST( json_representation->>'{$_column_name}' AS integer) = " . (int)$this->db2->f('id') . ')';
+//										$_querymethod[] = "CAST( json_representation->>'". $row['column_name'] ."' AS integer) = " .(int)$row2['id'];
+										$_querymethod[] = "(NULLIF(json_representation->>'{$_column_name}', '')::integer IS NOT NULL AND CAST( json_representation->>'{$_column_name}' AS integer) = " . (int)$row2['id'] . ')';
 									}
 
 									$__querymethod = array(); // remove block
@@ -984,10 +988,10 @@ use App\modules\phpgwapi\services\Cache;
 								{
 									$this->db2->query("SELECT org_id as id FROM phpgw_contact_org WHERE name {$this->like} '%{$query}%'", __LINE__, __FILE__);
 									$__filter_choise = array();
-									while ($this->db2->next_record())
+									foreach ($this->db2->resultSet as $row2)
 									{
-//										$_querymethod[] = "CAST( json_representation->>'". $this->db->f('column_name') ."' AS integer) = " .(int)$this->db2->f('id');
-										$_querymethod[] = "(NULLIF(json_representation->>'{$_column_name}', '')::integer IS NOT NULL AND CAST( json_representation->>'{$_column_name}' AS integer) = " . (int)$this->db2->f('id') . ')';
+//										$_querymethod[] = "CAST( json_representation->>'". $row['column_name'] ."' AS integer) = " .(int)$row2['id'];
+										$_querymethod[] = "(NULLIF(json_representation->>'{$_column_name}', '')::integer IS NOT NULL AND CAST( json_representation->>'{$_column_name}' AS integer) = " . (int)$row2['id'] . ')';
 									}
 									$__querymethod = array(); // remove block
 								}
@@ -1037,7 +1041,7 @@ use App\modules\phpgwapi\services\Cache;
 			}
 
 			$_querymethod_status = '';
-			if (!Sanitizer::get_var('status', 'int'))
+			if (!\Sanitizer::get_var('status', 'int'))
 			{
 				if (!empty($cache_attribute_status[$location_id]))
 				{
@@ -1145,12 +1149,12 @@ use App\modules\phpgwapi\services\Cache;
 				$sql2	 = "SELECT count(*) as cnt FROM ({$sql_cnt}) as t";
 
 				$this->db->query($sql2, __LINE__, __FILE__);
-				$this->db->next_record();
+				$row  = $this->db->resultSet[0] ?? [];
 				unset($sql2);
 				unset($sql_cnt);
 
 				$cache_info = array(
-					'total_records'	 => $this->db->f('cnt'),
+					'total_records'	 => $row['cnt'],
 					'sql_hash'		 => md5($_sql)
 				);
 				Cache::session_set($this->type_app[$this->type], "{$location_id}_listing_metadata", $cache_info);
@@ -1226,10 +1230,10 @@ use App\modules\phpgwapi\services\Cache;
 
 			$ids	 = array();
 			$types	 = array();
-			while ($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
-				$ids[]	 = (int)$this->db->f('id');
-				$types[] = (int)$this->db->f('type');
+				$ids[]	 = (int)$row['id'];
+				$types[] = (int)$row['type'];
 			}
 
 			if (!$ids)
@@ -1256,19 +1260,19 @@ use App\modules\phpgwapi\services\Cache;
 //			$cols_return = $this->cols_return;
 			$dataset	 = array();
 //_debug_array($uicols);
-			while ($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
-//				$xmldata = $this->db->f('xml_representation');
+//				$xmldata = $row['xml_representation'];
 //				$xml = new DOMDocument('1.0', 'utf-8');
 //				$xml->loadXML($xmldata);
-				$jsondata = json_decode($this->db->f('json_representation'), true);
+				$jsondata = json_decode($row['json_representation'], true);
 
 				foreach ($cols_return as $key => $field)
 				{
 					//		if (!$value = $xml->getElementsByTagName($field)->item(0)->nodeValue)
 					if (!$value = $this->db->stripslashes($jsondata[$field]))
 					{
-						$value = $this->db->f($field, true);
+						$value = $this->dbStrip($row[$field]);
 					}
 					$dataset[$j][$field] = array(
 						'value'						 => $value,
@@ -1284,7 +1288,7 @@ use App\modules\phpgwapi\services\Cache;
 
 				$dataset[$j]['user_id'] = array
 					(
-					'value'		 => $this->db->f('user_id'),
+					'value'		 => $row['user_id'],
 					'datatype'	 => false,
 					'attrib_id'	 => false
 				);
@@ -1358,14 +1362,14 @@ use App\modules\phpgwapi\services\Cache;
 				);
 				$dataset[$j]['p_id']	 = array
 					(
-					'value'		 => $this->db->f('p_id'),
+					'value'		 => $row['p_id'],
 					'datatype'	 => false,
 					'attrib_id'	 => false,
 				);
 
 				$dataset[$j]['p_location_id'] = array
 					(
-					'value'		 => $this->db->f('p_location_id'),
+					'value'		 => $row['p_location_id'],
 					'datatype'	 => false,
 					'attrib_id'	 => false,
 				);
@@ -1374,7 +1378,7 @@ use App\modules\phpgwapi\services\Cache;
 				{
 					$dataset[$j]["entity_num_{$entity_id}"] = array
 						(
-						'value'		 => $this->db->f('id'),
+						'value'		 => $row['id'],
 						'datatype'	 => false,
 						'attrib_id'	 => false,
 					);
@@ -1647,17 +1651,17 @@ use App\modules\phpgwapi\services\Cache;
 				$this->db->query("SELECT * FROM {$attribute_table} WHERE list=1 AND {$attribute_filter} {$user_column_filter} ORDER BY group_id, attrib_sort ASC");
 
 				$i = count($uicols['name']);
-				while ($this->db->next_record())
+				foreach ($this->db->resultSet as $row)
 				{
 					$uicols['input_type'][]					 = 'text';
-					$uicols['name'][]						 = $this->db->f('column_name');
-					$uicols['descr'][]						 = $this->db->f('input_text');
-					$uicols['statustext'][]					 = $this->db->f('statustext');
-					$uicols['datatype'][$i]					 = $this->db->f('datatype');
-					$uicols['get_list_function'][$i]		 = $this->db->f('get_list_function', true);
-					$uicols['get_list_function_input'][$i]	 = $this->db->f('get_list_function_input') ? unserialize($this->db->f('get_list_function_input', true)) : '';
-					$uicols['get_single_function'][$i]		 = $this->db->f('get_single_function', true);
-					$uicols['get_single_function_input'][$i] = $this->db->f('get_single_function_input') ? unserialize($this->db->f('get_single_function_input', true)) : '';
+					$uicols['name'][]						 = $row['column_name'];
+					$uicols['descr'][]						 = $row['input_text'];
+					$uicols['statustext'][]					 = $row['statustext'];
+					$uicols['datatype'][$i]					 = $row['datatype'];
+					$uicols['get_list_function'][$i]		 = $this->dbStrip($row['get_list_function']);
+					$uicols['get_list_function_input'][$i]	 = $row['get_list_function_input'] ? unserialize($this->dbStrip($row['get_list_function_input'])) : '';
+					$uicols['get_single_function'][$i]		 = $this->dbStrip($row['get_single_function']);
+					$uicols['get_single_function_input'][$i] = $row['get_single_function_input'] ? unserialize($this->dbStrip($row['get_single_function_input'])) : '';
 					$uicols['sortable'][$i]					 = true;
 					$uicols['exchange'][$i]					 = false;
 					$uicols['formatter'][$i]				 = '';
@@ -1665,11 +1669,11 @@ use App\modules\phpgwapi\services\Cache;
 
 					$uicols['cols_return_extra'][$i] = array
 						(
-						'name'		 => $this->db->f('column_name'),
-						'datatype'	 => $this->db->f('datatype'),
-						'attrib_id'	 => $this->db->f('id')
+						'name'		 => $row['column_name'],
+						'datatype'	 => $row['datatype'],
+						'attrib_id'	 => $row['id']
 					);
-					$this->cols_return[]			 = $this->db->f('column_name');
+					$this->cols_return[]			 = $row['column_name'];
 
 					$i++;
 				}
@@ -1723,9 +1727,9 @@ use App\modules\phpgwapi\services\Cache;
 			$location_filter	 = array();
 			$sql				 = "SELECT DISTINCT location_id FROM fm_entity_category WHERE entity_group_id = {$entity_group_id} AND location_id NOT IN ({$exclude_filter})";
 			$this->db->query($sql);
-			while ($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
-				$location_filter[] = $this->db->f('location_id');
+				$location_filter[] = $row['location_id'];
 			}
 			$components = array();
 			foreach ($location_filter as $location_id)
@@ -2047,16 +2051,16 @@ use App\modules\phpgwapi\services\Cache;
 
 					$this->db->query("SELECT * FROM $attribute_table WHERE $attribute_filter AND search='1'");
 
-					while ($this->db->next_record())
+					foreach ($this->db->resultSet as $row)
 					{
-						switch ($this->db->f('datatype'))
+						switch ($row['datatype'])
 						{
 							case 'V':
 							case 'email':
 							case 'T':
 								if (!$criteria_id)
 								{
-									$_querymethod[]	 = "$entity_table." . $this->db->f('column_name') . " {$this->like} '%{$query}%'";
+									$_querymethod[]	 = "$entity_table." . $row['column_name'] . " {$this->like} '%{$query}%'";
 									$__querymethod	 = array(); // remove block
 								}
 								break;
@@ -2064,17 +2068,17 @@ use App\modules\phpgwapi\services\Cache;
 								if (!$criteria_id)
 								{
 									// from filter
-									$_querymethod[]	 = "$entity_table." . $this->db->f('column_name') . " {$this->like} '%,{$query},%'";
+									$_querymethod[]	 = "$entity_table." . $row['column_name'] . " {$this->like} '%,{$query},%'";
 									$__querymethod	 = array(); // remove block
 									// from text-search
-									$_filter_choise	 = "WHERE (phpgw_cust_choice.location_id =" . (int)$this->db->f('location_id')
-										. " AND phpgw_cust_choice.attrib_id =" . (int)$this->db->f('id')
+									$_filter_choise	 = "WHERE (phpgw_cust_choice.location_id =" . (int)$row['location_id']
+										. " AND phpgw_cust_choice.attrib_id =" . (int)$row['id']
 										. " AND phpgw_cust_choice.value {$this->like} '%{$query}%')";
 
 									$this->db2->query("SELECT phpgw_cust_choice.id FROM phpgw_cust_choice {$_filter_choise}", __LINE__, __FILE__);
-									while ($this->db2->next_record())
+									foreach ($this->db2->resultSet as $row2)
 									{
-										$_querymethod[] = "$entity_table." . $this->db->f('column_name') . " {$this->like} '%," . $this->db2->f('id') . ",%'";
+										$_querymethod[] = "$entity_table." . $row['column_name'] . " {$this->like} '%," . $row2['id'] . ",%'";
 									}
 								}
 								break;
@@ -2082,20 +2086,20 @@ use App\modules\phpgwapi\services\Cache;
 							case 'LB':
 								if (!$criteria_id)
 								{
-									$_filter_choise = "WHERE (phpgw_cust_choice.location_id =" . (int)$this->db->f('location_id')
-										. " AND phpgw_cust_choice.attrib_id =" . (int)$this->db->f('id')
+									$_filter_choise = "WHERE (phpgw_cust_choice.location_id =" . (int)$row['location_id']
+										. " AND phpgw_cust_choice.attrib_id =" . (int)$row['id']
 										. " AND phpgw_cust_choice.value {$this->like} '%{$query}%')";
 
 									$this->db2->query("SELECT phpgw_cust_choice.id FROM phpgw_cust_choice {$_filter_choise}", __LINE__, __FILE__);
 									$__filter_choise = array();
-									while ($this->db2->next_record())
+									foreach ($this->db2->resultSet as $row2)
 									{
-										$__filter_choise[] = $this->db2->f('id');
+										$__filter_choise[] = $row2['id'];
 									}
 
 									if ($__filter_choise)
 									{
-										$_querymethod[] = "$entity_table." . $this->db->f('column_name') . ' IN (' . implode(',', $__filter_choise) . ')';
+										$_querymethod[] = "$entity_table." . $row['column_name'] . ' IN (' . implode(',', $__filter_choise) . ')';
 									}
 
 									$__querymethod = array(); // remove block
@@ -2104,35 +2108,35 @@ use App\modules\phpgwapi\services\Cache;
 							case 'I':
 								if (ctype_digit($query) && !$criteria_id)
 								{
-									$_querymethod[]	 = "$entity_table." . $this->db->f('column_name') . " = " . (int)$query;
+									$_querymethod[]	 = "$entity_table." . $row['column_name'] . " = " . (int)$query;
 									$__querymethod	 = array(); // remove block
 								}
 								break;
 							case 'VENDOR':
 								if ($criteria_id == 'vendor')
 								{
-									$_joinmethod_datatype[]	 = "{$this->join} fm_vendor ON ({$entity_table}." . $this->db->f('column_name') . " = fm_vendor.id AND fm_vendor.org_name {$this->like} '%{$query}%') ";
+									$_joinmethod_datatype[]	 = "{$this->join} fm_vendor ON ({$entity_table}." . $row['column_name'] . " = fm_vendor.id AND fm_vendor.org_name {$this->like} '%{$query}%') ";
 									$__querymethod			 = array(); // remove block
 								}
 								break;
 							case 'AB':
 								if ($criteria_id == 'ab')
 								{
-									$_joinmethod_datatype[]	 = "{$this->join} phpgw_contact_person ON ({$entity_table}." . $this->db->f('column_name') . " = pphpgw_contact_person.person_id AND (phpgw_contact_person.first_name {$this->like} '%{$query}%' OR phpgw_contact_person.last_name {$this->like} '%{$query}%'))";
+									$_joinmethod_datatype[]	 = "{$this->join} phpgw_contact_person ON ({$entity_table}." . $row['column_name'] . " = pphpgw_contact_person.person_id AND (phpgw_contact_person.first_name {$this->like} '%{$query}%' OR phpgw_contact_person.last_name {$this->like} '%{$query}%'))";
 									$__querymethod			 = array(); // remove block
 								}
 								break;
 							case 'ABO':
 								if ($criteria_id == 'abo')
 								{
-									$_joinmethod_datatype[]	 = "{$this->join} phpgw_contact_org ON ({$entity_table}." . $this->db->f('column_name') . " = phpgw_contact_org.org_id AND phpgw_contact_org.name {$this->like} '%{$query}%')";
+									$_joinmethod_datatype[]	 = "{$this->join} phpgw_contact_org ON ({$entity_table}." . $row['column_name'] . " = phpgw_contact_org.org_id AND phpgw_contact_org.name {$this->like} '%{$query}%')";
 									$__querymethod			 = array(); // remove block
 								}
 								break;
 							default:
 								if (!$criteria_id)
 								{
-									$_querymethod[]	 = "$entity_table." . $this->db->f('column_name') . " = '{$query}'";
+									$_querymethod[]	 = "$entity_table." . $row['column_name'] . " = '{$query}'";
 									$__querymethod	 = array(); // remove block
 								}
 						}
@@ -2174,13 +2178,13 @@ use App\modules\phpgwapi\services\Cache;
 				$sql2	 = "SELECT count(*) as cnt FROM ({$sql_cnt}) as t";
 
 				$this->db->query($sql2, __LINE__, __FILE__);
-				$this->db->next_record();
+				$row  = $this->db->resultSet[0] ?? [];
 				unset($sql2);
 				unset($sql_cnt);
 
 				$cache_info = array
 					(
-					'total_records'	 => $this->db->f('cnt'),
+					'total_records'	 => $row['cnt'],
 					'sql_hash'		 => md5($sql)
 				);
 				Cache::session_set($this->type_app[$this->type], "{$entity_table}_listing_metadata", $cache_info);
@@ -2209,13 +2213,13 @@ use App\modules\phpgwapi\services\Cache;
 //			$cols_return = $this->cols_return;
 
 			$dataset = array();
-			while ($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
 				foreach ($cols_return as $key => $field)
 				{
 					$dataset[$j][$field] = array
 						(
-						'value'						 => $this->db->f($field),
+						'value'						 => $row[$field],
 						'datatype'					 => $uicols['datatype'][$key],
 						'attrib_id'					 => $uicols['cols_return_extra'][$key]['attrib_id'],
 						'get_list_function'			 => $uicols['get_list_function'][$key],
@@ -2226,7 +2230,7 @@ use App\modules\phpgwapi\services\Cache;
 				}
 				$dataset[$j]['user_id']		 = array
 					(
-					'value'		 => $this->db->f('user_id'),
+					'value'		 => $row['user_id'],
 					'datatype'	 => false,
 					'attrib_id'	 => false
 				);
@@ -2325,26 +2329,26 @@ use App\modules\phpgwapi\services\Cache;
 
 			$this->db->query("SELECT * FROM {$table} {$filtermethod}");
 
-			if ($this->db->next_record())
+			if (!empty($this->db->resultSet) && ($row = $this->db->resultSet[0]))
 			{
 				$values['id']			 = $id;
-				$values['num']			 = $this->db->f('num');
-				$values['p_num']		 = $this->db->f('p_num');
-				$values['p_entity_id']	 = $this->db->f('p_entity_id');
-				$values['p_cat_id']		 = $this->db->f('p_cat_id');
-				$values['location_code'] = $this->db->f('location_code');
-				$values['tenant_id']	 = $this->db->f('tenant_id');
-				$values['contact_phone'] = $this->db->f('contact_phone');
-				$values['status']		 = $this->db->f('status');
-				$values['user_id']		 = $this->db->f('user_id');
-				$values['entry_date']	 = $this->db->f('entry_date');
-				$values['org_unit_id']	 = $this->db->f('org_unit_id');
+				$values['num']			 = $row['num'];
+				$values['p_num']		 = $row['p_num'];
+				$values['p_entity_id']	 = $row['p_entity_id'];
+				$values['p_cat_id']		 = $row['p_cat_id'];
+				$values['location_code'] = $row['location_code'];
+				$values['tenant_id']	 = $row['tenant_id'];
+				$values['contact_phone'] = $row['contact_phone'];
+				$values['status']		 = $row['status'];
+				$values['user_id']		 = $row['user_id'];
+				$values['entry_date']	 = $row['entry_date'];
+				$values['org_unit_id']	 = $row['org_unit_id'];
 
 				if (isset($values['attributes']) && is_array($values['attributes']))
 				{
 					foreach ($values['attributes'] as &$attr)
 					{
-						$attr['value'] = $this->db->f($attr['column_name'], true);
+						$attr['value'] = $this->dbStrip($row[$attr['column_name']]);
 					}
 				}
 			}
@@ -2394,23 +2398,23 @@ use App\modules\phpgwapi\services\Cache;
 
 			$this->db->query($sql, __LINE__, __FILE__);
 
-			if ($this->db->next_record())
+			if (!empty($this->db->resultSet) && ($row = $this->db->resultSet[0]))
 			{
 				$values['id']				 = $id;
 				$values['num']				 = $id;
-				$values['p_id']				 = $this->db->f('p_id');
-				$values['p_location_id']	 = $this->db->f('p_location_id');
-				$values['location_code']	 = $this->db->f('location_code');
-				$values['user_id']			 = $this->db->f('user_id');
-				$values['entry_date']		 = $this->db->f('entry_date');
-				$values['org_unit_id']		 = $this->db->f('org_unit_id');
-				$values['entity_group_id']	 = $this->db->f('entity_group_id');
+				$values['p_id']				 = $row['p_id'];
+				$values['p_location_id']	 = $row['p_location_id'];
+				$values['location_code']	 = $row['location_code'];
+				$values['user_id']			 = $row['user_id'];
+				$values['entry_date']		 = $row['entry_date'];
+				$values['org_unit_id']		 = $row['org_unit_id'];
+				$values['entity_group_id']	 = $row['entity_group_id'];
 
-//				$xmldata = $this->db->f('xml_representation', true);
+//				$xmldata = $this->dbStrip($row['xml_representation']);
 //				$xml = new DOMDocument('1.0', 'utf-8');
 //				$xml->loadXML($xmldata);
 
-				$jsondata = json_decode($this->db->f('json_representation'), true);
+				$jsondata = json_decode($row['json_representation'], true);
 
 				if (isset($values['attributes']) && is_array($values['attributes']))
 				{
@@ -2444,7 +2448,7 @@ use App\modules\phpgwapi\services\Cache;
 
 			if (!$location_id && !$id)
 			{
-				throw new Exception("property_soentity::get_short_description() - Missing entity information info in input");
+				throw new \Exception("property_soentity::get_short_description() - Missing entity information info in input");
 			}
 
 			if (!isset($system_location[$location_id]))
@@ -2472,7 +2476,7 @@ use App\modules\phpgwapi\services\Cache;
 			}
 			else
 			{
-				throw new Exception("property_soentity::get_short_description() - entity not found");
+				throw new \Exception("property_soentity::get_short_description() - entity not found");
 			}
 
 			$prop_array = $this->read_single($params, $cache_attributes[$location_id]);
@@ -2526,9 +2530,9 @@ use App\modules\phpgwapi\services\Cache;
 			$table = "fm_{$this->type}_{$entity_id}_{$cat_id}";
 			$this->db->query("SELECT count(*) as cnt FROM $table where num='$num'");
 
-			$this->db->next_record();
+			$row  = $this->db->resultSet[0] ?? [];
 
-			if ($this->db->f('cnt'))
+			if ($row['cnt'])
 			{
 				return true;
 			}
@@ -2545,8 +2549,8 @@ use App\modules\phpgwapi\services\Cache;
 		{
 			$table	 = "fm_{$this->type}_{$data['entity_id']}_{$data['cat_id']}";
 			$this->db->query("select max(id) as id from $table");
-			$this->db->next_record();
-			$id		 = (int) $this->db->f('id') + 1;
+			$row  = $this->db->resultSet[0] ?? [];
+			$id		 = (int) $row['id'] + 1;
 
 			return $id;
 		}
@@ -2564,8 +2568,8 @@ use App\modules\phpgwapi\services\Cache;
 		function generate_num( $entity_id, $cat_id, $id ): string
 		{
 			$this->db->query("select prefix from fm_{$this->type}_category WHERE entity_id=$entity_id AND id=$cat_id ");
-			$this->db->next_record();
-			$prefix = $this->db->f('prefix');
+			$row  = $this->db->resultSet[0] ?? [];
+			$prefix = $row['prefix'];
 
 			if (strlen($id) == 4)
 				$return	 = $id;
@@ -2781,8 +2785,8 @@ use App\modules\phpgwapi\services\Cache;
 			$location_id = (int)$location_id;
 
 			$this->db->query("SELECT id as type FROM fm_bim_type WHERE location_id = {$location_id}", __LINE__, __FILE__);
-			$this->db->next_record();
-			$type	 = $this->db->f('type');
+			$row  = $this->db->resultSet[0] ?? [];
+			$type	 = $row['type'];
 			$id		 = $this->db->next_id('fm_bim_item', array('type' => $type));
 
 			if (function_exists('com_create_guid') === true)
@@ -2841,14 +2845,14 @@ use App\modules\phpgwapi\services\Cache;
 			$id			 = (int)$id;
 
 			$this->db->query("SELECT id as type FROM fm_bim_type WHERE location_id = {$location_id}", __LINE__, __FILE__);
-			$this->db->next_record();
-			$type = (int)$this->db->f('type');
+			$row  = $this->db->resultSet[0] ?? [];
+			$type = (int)$row['type'];
 
 			$location_name = str_replace('.', '_', $location_name);
 
 			$this->db->query("SELECT json_representation FROM fm_bim_item WHERE fm_bim_item.id = {$id} AND location_id = $location_id", __LINE__, __FILE__);
-			$this->db->next_record();
-			$jsondata = json_decode($this->db->f('json_representation'), true);
+			$row  = $this->db->resultSet[0] ?? [];
+			$jsondata = json_decode($row['json_representation'], true);
 
 			foreach ($data as $key => $value)
 			{
@@ -2994,8 +2998,8 @@ use App\modules\phpgwapi\services\Cache;
 						if (!$category['is_eav'])
 						{
 							$this->db->query("SELECT {$entry['name']} FROM {$table} WHERE id = '{$values['id']}'", __LINE__, __FILE__);
-							$this->db->next_record();
-							$old_value = $this->db->f($entry['name'], true);
+							$row  = $this->db->resultSet[0] ?? [];
+							$old_value = $this->dbStrip($row[$entry['name']]);
 						}
 						else
 						{
@@ -3003,12 +3007,12 @@ use App\modules\phpgwapi\services\Cache;
 
 							$this->db->query($sql, __LINE__, __FILE__);
 
-							$this->db->next_record();
-//							$xmldata = $this->db->f('xml_representation');
+							$row  = $this->db->resultSet[0] ?? [];
+//							$xmldata = $row['xml_representation'];
 //							$xml = new DOMDocument('1.0', 'utf-8');
 //							$xml->loadXML($xmldata);
 //							$old_value = $xml->getElementsByTagName($entry['name'])->item(0)->nodeValue;
-							$jsondata	 = json_decode($this->db->f('json_representation'), true);
+							$jsondata	 = json_decode($row['json_representation'], true);
 							$old_value	 = $this->db->stripslashes($jsondata[$entry['name']]);
 						}
 
@@ -3127,8 +3131,8 @@ use App\modules\phpgwapi\services\Cache;
 			if ($category['is_eav'])
 			{
 				$this->db->query("SELECT id as type FROM fm_bim_type WHERE location_id = {$location_id}", __LINE__, __FILE__);
-				$this->db->next_record();
-				$type = (int)$this->db->f('type');
+				$row  = $this->db->resultSet[0] ?? [];
+				$type = (int)$row['type'];
 				$this->db->query("DELETE FROM fm_bim_item WHERE id = $id AND type = {$type}", __LINE__, __FILE__);
 			}
 			else
@@ -3164,9 +3168,9 @@ use App\modules\phpgwapi\services\Cache;
 
 			$this->db->query("SELECT helpmsg FROM fphpgw_cust_attribute WHERE location_id = {$location_id} AND id =" . (int)$attrib_id);
 
-			$this->db->next_record();
-//			$helpmsg = str_replace("\n","<br>",stripslashes($this->db->f('helpmsg')));
-			$helpmsg = stripslashes($this->db->f('helpmsg'));
+			$row  = $this->db->resultSet[0] ?? [];
+//			$helpmsg = str_replace("\n","<br>",stripslashes($row['helpmsg']));
+			$helpmsg = stripslashes($row['helpmsg']);
 			return $helpmsg;
 		}
 
@@ -3181,7 +3185,7 @@ use App\modules\phpgwapi\services\Cache;
 		{
 			if (!isset($data['cat_id']) || !$data['cat_id'] || !isset($data['entity_id']) || !$data['entity_id'] || !isset($data['id']) || !$data['id'])
 			{
-				throw new Exception("property_soentity::read_entity_to_link - Missing entity information info in input");
+				throw new \Exception("property_soentity::read_entity_to_link - Missing entity information info in input");
 			}
 
 			$cat_id			 = (int)$data['cat_id'];
@@ -3203,15 +3207,15 @@ use App\modules\phpgwapi\services\Cache;
 				$this->db->query($sql, __LINE__, __FILE__);
 
 				$category = array();
-				while ($this->db->next_record())
+				foreach ($this->db->resultSet as $row)
 				{
 					$category[] = array(
-						'location_id'=> (int)$this->db->f('location_id'),
-						'entity_id'	 => (int)$this->db->f('entity_id'),
-						'cat_id'	 => (int)$this->db->f('id'),
-						'name'		 => $this->db->f('name', true),
-						'descr'		 => $this->db->f('descr', true),
-						'is_eav'	 => $this->db->f('is_eav')
+						'location_id'=> (int)$row['location_id'],
+						'entity_id'	 => (int)$row['entity_id'],
+						'cat_id'	 => (int)$row['id'],
+						'name'		 => $this->dbStrip($row['name']),
+						'descr'		 => $this->dbStrip($row['descr']),
+						'is_eav'	 => $row['is_eav']
 					);
 				}
 
@@ -3219,9 +3223,9 @@ use App\modules\phpgwapi\services\Cache;
 				$sql = "SELECT DISTINCT location_id FROM fm_bim_item WHERE p_location_id = {$p_location_id} AND p_id = '{$p_id}'";
 				$this->db->query($sql, __LINE__, __FILE__);
 				$location_ids = array();
-				while ($this->db->next_record())
+				foreach ($this->db->resultSet as $row)
 				{
-					$location_ids[] = (int)$this->db->f('location_id');
+					$location_ids[] = (int)$row['location_id'];
 					
 				}
 
@@ -3241,12 +3245,12 @@ use App\modules\phpgwapi\services\Cache;
 
 						$sql = "SELECT count(*) as hits FROM fm_bim_item WHERE location_id = {$entry['location_id']} AND p_location_id = {$p_location_id} AND p_id = '{$p_id}'";
 						$this->db2->query($sql, __LINE__, __FILE__);
-						$this->db2->next_record();
-						if ($this->db2->f('hits'))
+						$row2 = $this->db2->resultSet[0] ?? [];
+						if ($row2['hits'])
 						{
 							$entity['related'][] = array
 								(
-								'entity_link'	 => phpgw::link('/index.php', array
+								'entity_link'	 => \phpgw::link('/index.php', array
 									(
 									'menuaction'	 => "property.uientity.index",
 									'entity_id'		 => $entry['entity_id'],
@@ -3257,7 +3261,7 @@ use App\modules\phpgwapi\services\Cache;
 									'type'			 => $type
 									)
 								),
-								'name'			 => $entry['name'] . ' [' . $this->db2->f('hits') . ']',
+								'name'			 => $entry['name'] . ' [' . $row2['hits'] . ']',
 								'descr'			 => $entry['descr']
 							);
 						}
@@ -3269,12 +3273,12 @@ use App\modules\phpgwapi\services\Cache;
 					{
 						$sql = "SELECT count(*) as hits FROM fm_{$type}_{$entry['entity_id']}_{$entry['cat_id']} WHERE p_entity_id = {$entity_id} AND p_cat_id = {$cat_id} AND p_num = '{$p_id}'";
 						$this->db->query($sql, __LINE__, __FILE__);
-						$this->db->next_record();
-						if ($this->db->f('hits'))
+						$row  = $this->db->resultSet[0] ?? [];
+						if ($row['hits'])
 						{
 							$entity['related'][] = array
 								(
-								'entity_link'	 => phpgw::link('/index.php', array
+								'entity_link'	 => \phpgw::link('/index.php', array
 									(
 									'menuaction'	 => "property.uientity.index",
 									'entity_id'		 => $entry['entity_id'],
@@ -3285,7 +3289,7 @@ use App\modules\phpgwapi\services\Cache;
 									'type'			 => $type
 									)
 								),
-								'name'			 => $entry['name'] . ' [' . $this->db->f('hits') . ']',
+								'name'			 => $entry['name'] . ' [' . $row['hits'] . ']',
 								'descr'			 => $entry['descr']
 							);
 						}
@@ -3297,13 +3301,13 @@ use App\modules\phpgwapi\services\Cache;
 
 			$sql = "SELECT DISTINCT id, subject FROM fm_tts_tickets WHERE p_entity_id = {$entity_id} AND p_cat_id = {$cat_id} AND p_num = '{$p_id}'";
 			$this->db->query($sql, __LINE__, __FILE__);
-			while ($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
-				$subject				 = $this->db->f('subject', true);
+				$subject				 = $this->dbStrip($row['subject']);
 				$entity['related'][] = array
 					(
-					'entity_link'	 => phpgw::link('/index.php', array('menuaction' => 'property.uitts.view',
-						'id'		 => $this->db->f('id'),
+					'entity_link'	 => \phpgw::link('/index.php', array('menuaction' => 'property.uitts.view',
+						'id'		 => $row['id'],
 //						'p_num'		 => $p_id,
 //						'query'		 => "entity.{$entity_id}.{$cat_id}.{$p_id}"
 						)),
@@ -3314,13 +3318,13 @@ use App\modules\phpgwapi\services\Cache;
 
 			$sql = "SELECT DISTINCT id, title AS subject FROM fm_request WHERE p_entity_id = {$entity_id} AND p_cat_id = {$cat_id} AND p_num = '{$p_id}'";
 			$this->db->query($sql, __LINE__, __FILE__);
-			while ($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
-				$subject				 = $this->db->f('subject', true);
+				$subject				 = $this->dbStrip($row['subject']);
 				$entity['related'][] = array
 					(
-					'entity_link'	 => phpgw::link('/index.php', array('menuaction' => 'property.uirequest.view',
-						'id'		 => $this->db->f('id'),
+					'entity_link'	 => \phpgw::link('/index.php', array('menuaction' => 'property.uirequest.view',
+						'id'		 => $row['id'],
 						//	'p_entity_id'	=> $entity_id,
 						//	'p_cat_id' 		=> $cat_id,
 //						'p_num'		 => $p_id,
@@ -3333,13 +3337,13 @@ use App\modules\phpgwapi\services\Cache;
 
 			$sql = "SELECT DISTINCT id, name AS subject  FROM fm_project WHERE p_entity_id = {$entity_id} AND p_cat_id = {$cat_id} AND p_num = '{$p_id}'";
 			$this->db->query($sql, __LINE__, __FILE__);
-			while ($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
-				$subject				 = $this->db->f('subject', true);
+				$subject				 = $this->dbStrip($row['subject']);
 				$entity['related'][] = array
 					(
-					'entity_link'	 => phpgw::link('/index.php', array('menuaction'	 => 'property.uiproject.view',
-						'id'		 => $this->db->f('id'),
+					'entity_link'	 => \phpgw::link('/index.php', array('menuaction'	 => 'property.uiproject.view',
+						'id'		 => $row['id'],
 //						'query'			 => "entity.{$entity_id}.{$cat_id}.{$p_id}",
 //						'criteria_id'	 => 6
 						)), //FIXME: criteria 6 is for entities should be altered to locations
@@ -3350,13 +3354,13 @@ use App\modules\phpgwapi\services\Cache;
 
 			$sql = "SELECT DISTINCT fm_s_agreement.id, fm_s_agreement.name AS subject FROM fm_s_agreement {$this->join} fm_s_agreement_detail ON fm_s_agreement.id = fm_s_agreement_detail.agreement_id WHERE p_entity_id = {$entity_id} AND p_cat_id = {$cat_id} AND p_num = '{$p_id}'";
 			$this->db->query($sql, __LINE__, __FILE__);
-			while ($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
-				$subject				 = $this->db->f('subject', true);
+				$subject				 = $this->dbStrip($row['subject']);
 				$entity['related'][] = array
 					(
-					'entity_link'	 => phpgw::link('/index.php', array('menuaction' => 'property.uis_agreement.view',
-						'id'		 => $this->db->f('id'),
+					'entity_link'	 => \phpgw::link('/index.php', array('menuaction' => 'property.uis_agreement.view',
+						'id'		 => $row['id'],
 //						'query'		 => "entity.{$entity_id}.{$cat_id}.{$p_id}",
 //						'p_num'		 => $p_id
 						)),
@@ -3407,22 +3411,22 @@ use App\modules\phpgwapi\services\Cache;
 
 			$this->db->query($sql, __LINE__, __FILE__);
 			$inventory = array();
-			while ($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
 				$inventory[] = array
 					(
-					'inventory_id'	 => $this->db->f('id'),
-					'inventory'		 => $this->db->f('inventory'),
+					'inventory_id'	 => $row['id'],
+					'inventory'		 => $row['inventory'],
 					'allocated'		 => 0,
-					'unit_id'		 => $this->db->f('unit_id'),
-					'unit'			 => $this->db->f('unit', true),
-					'remark'		 => $this->db->f('remark', true),
-					'p_location_id'	 => $this->db->f('p_location_id'),
-					'p_id'			 => $this->db->f('p_id'),
-					'bookable'		 => $this->db->f('bookable'),
-					'active_from'	 => $this->db->f('active_from'),
-					'active_to'		 => $this->db->f('active_to'),
-					'bookable'		 => $this->db->f('bookable'),
+					'unit_id'		 => $row['unit_id'],
+					'unit'			 => $this->dbStrip($row['unit']),
+					'remark'		 => $this->dbStrip($row['remark']),
+					'p_location_id'	 => $row['p_location_id'],
+					'p_id'			 => $row['p_id'],
+					'bookable'		 => $row['bookable'],
+					'active_from'	 => $row['active_from'],
+					'active_to'		 => $row['active_to'],
+					'bookable'		 => $row['bookable'],
 				);
 			}
 
@@ -3443,8 +3447,8 @@ use App\modules\phpgwapi\services\Cache;
 
 					$this->db->query($sql, __LINE__, __FILE__);
 
-					$this->db->next_record();
-					$entry['allocated'] = (int)$this->db->f('allocated');
+					$row  = $this->db->resultSet[0] ?? [];
+					$entry['allocated'] = (int)$row['allocated'];
 				}
 			}
 
@@ -3470,7 +3474,7 @@ use App\modules\phpgwapi\services\Cache;
 
 			if (!$p_location_id && !$p_id)
 			{
-				throw new Exception('ERROR: Not a valid location');
+				throw new \Exception('ERROR: Not a valid location');
 			}
 
 			$table = 'fm_bim_item_inventory';
@@ -3514,7 +3518,7 @@ use App\modules\phpgwapi\services\Cache;
 			$inventory_id = (int)$values['inventory_id'];
 			if (!$inventory_id)
 			{
-				throw new Exception('ERROR: Not a valid id');
+				throw new \Exception('ERROR: Not a valid id');
 			}
 
 			$this->db->transaction_begin();
@@ -3538,15 +3542,15 @@ use App\modules\phpgwapi\services\Cache;
 			$sql = "SELECT * FROM fm_bim_item_inventory WHERE id = {$inventory_id}";
 
 			$this->db->query($sql, __LINE__, __FILE__);
-			$this->db->next_record();
+			$row  = $this->db->resultSet[0] ?? [];
 
 			$value_set = array
 				(
-				'location_id'	 => $this->db->f('location_id'),
-				'item_id'		 => $this->db->f('item_id'),
-				'p_location_id'	 => $this->db->f('p_location_id'),
-				'p_id'			 => $this->db->f('p_id'),
-				'unit_id'		 => $this->db->f('unit_id'),
+				'location_id'	 => $row['location_id'],
+				'item_id'		 => $row['item_id'],
+				'p_location_id'	 => $row['p_location_id'],
+				'p_id'			 => $row['p_id'],
+				'unit_id'		 => $row['unit_id'],
 				'inventory'		 => (int)$values['inventory'],
 				'write_off'		 => (int)$values['write_off'],
 				'bookable'		 => (int)$values['bookable'],
@@ -3603,8 +3607,8 @@ use App\modules\phpgwapi\services\Cache;
 			$sql .= ' AND id = ' . (int)$item_id;
 
 			$this->db->query($sql, __LINE__, __FILE__);
-			$this->db->next_record();
-			$location_code = $this->db->f('location_code');
+			$row  = $this->db->resultSet[0] ?? [];
+			$location_code = $row['location_code'];
 			return $location_code;
 		}
 
@@ -3651,8 +3655,8 @@ use App\modules\phpgwapi\services\Cache;
 				. " WHERE location_id = {$location_id}"
 				. " AND id={$item_id}";
 			$this->db->query($sql, __LINE__, __FILE__);
-			$this->db->next_record();
-			return $this->db->f('value');
+			$row  = $this->db->resultSet[0] ?? [];
+			return $row['value'];
 		}
 
 		/**
@@ -3669,10 +3673,10 @@ use App\modules\phpgwapi\services\Cache;
 			$values= array();
 
 			$this->db->query($sql, __LINE__, __FILE__);
-			while($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
-				$column_name =  $this->db->f('column_name');
-				$location_id =  $this->db->f('location_id');
+				$column_name =  $row['column_name'];
+				$location_id =  $row['location_id'];
 				$values[$column_name][] = $location_id;
 			}
 
@@ -3695,13 +3699,13 @@ use App\modules\phpgwapi\services\Cache;
 			$values	 = array();
 
 			$this->db->query($sql, __LINE__, __FILE__);
-			while ($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
 				$values[] = array(
-					'id'			 => $this->db->f('id'),
-					'location_id'	 => $this->db->f('location_id'),
-					'location_code'	 => $this->db->f('location_code'),
-					'address'		 => $this->db->f('address', true),
+					'id'			 => $row['id'],
+					'location_id'	 => $row['location_id'],
+					'location_code'	 => $row['location_code'],
+					'address'		 => $this->dbStrip($row['address']),
 				);
 			}
 
@@ -3737,12 +3741,12 @@ use App\modules\phpgwapi\services\Cache;
 			. " WHERE item_id = {$item_id} AND stage_id = {$stage_id} AND type_location_id = {$type_location_id}";
 			$this->db->query($sql, __LINE__, __FILE__);
 
-			if ($this->db->next_record())
+			if (!empty($this->db->resultSet) && ($row = $this->db->resultSet[0]))
 			{
 				//update
-				$id = (int)$this->db->f('id');
+				$id = (int)$row['id'];
 
-				$jsondata = json_decode($this->db->f('json_representation'), true);
+				$jsondata = json_decode($row['json_representation'], true);
 
 				foreach ($values_attribute as $entry)
 				{
@@ -3795,10 +3799,12 @@ use App\modules\phpgwapi\services\Cache;
 			. " WHERE item_id = {$item_id} AND type_location_id = {$type_location_id}";
 			$this->db->query($sql, __LINE__, __FILE__);
 			$values = array();
-			while($this->db->next_record())
+			foreach ($this->db->resultSet as $row)
 			{
-				$values[$this->db->f('stage_id')] = (array)json_decode($this->db->f('json_representation'), true);
+				$values[$row['stage_id']] = (array)json_decode($row['json_representation'], true);
 			}
 			return $values;
 		}
 	}
+
+class_alias('App\modules\property\inc\property_soentity', 'property_soentity');

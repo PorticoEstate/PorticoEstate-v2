@@ -33,6 +33,7 @@ use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\controllers\Locations;
+use App\modules\property\inc\EntityAclGuard;
 
 /**
  * Description
@@ -79,8 +80,22 @@ class property_boentity
 	);
 	var $type_app				 = array();
 	var $type, $locations_obj, $acl;
+	protected EntityAclGuard $aclGuard;
 	protected $userSettings;
 	private $location_relation_data	 = array();
+
+	/**
+	 * Create an instance for a specific type/entity/category without relying on request globals.
+	 * Mirrors the GenericRegistry::forType() factory pattern for programmatic use (REST handlers, tests).
+	 *
+	 * @param string $type      Entity type key (e.g. 'entity').
+	 * @param int    $entity_id Entity definition ID.
+	 * @param int    $cat_id    Category ID within the entity.
+	 */
+	public static function forType(string $type, int $entity_id, int $cat_id = 0): static
+	{
+		return new static(false, $type, $entity_id, $cat_id);
+	}
 
 	/**
 	 * Constructor. Initialises ACL, session state, entity/category context, and helper objects.
@@ -97,6 +112,7 @@ class property_boentity
 		include_class('property', 'bocommon');
 		$this->bocommon		 = new property_bocommon();
 		$this->acl = Acl::getInstance();
+		$this->aclGuard = new EntityAclGuard($this->acl);
 		$this->userSettings = Settings::getInstance()->get('user');
 
 		if (!$type)
@@ -291,7 +307,7 @@ class property_boentity
 
 		$ok = false;
 
-		if ($this->acl->check($this->acl_location, ACL_EDIT, 'property'))
+		if ($this->aclGuard->canEdit($this->acl_location))
 		{
 			$ok = $this->so->set_geolocation($location_id, $component_id, $latitude, $longitude);
 		}
@@ -1021,6 +1037,7 @@ JS;
 		{
 			return $this->so->generate_id($data);
 		}
+		return null;
 	}
 
 	/**
@@ -1130,9 +1147,9 @@ JS;
 	 * Read help text for a custom attribute.
 	 *
 	 * @param array $data Must include the attribute identifier expected by soentity.
-	 * @return array Attribute help data.
+	 * @return ?string Attribute help text, or null if not found.
 	 */
-	function read_attrib_help($data): array
+	function read_attrib_help($data): ?string
 	{
 		return $this->so->read_attrib_help($data);
 	}
@@ -1248,7 +1265,7 @@ JS;
 
 		if ($control_id && $assigned_to && $id)
 		{
-			if (!$this->acl->check('.admin', ACL_EDIT, 'property'))
+			if (!$this->aclGuard->isAdmin())
 			{
 				$receipt['error'][]	 = true;
 				$result				 = array(

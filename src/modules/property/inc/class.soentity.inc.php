@@ -73,7 +73,7 @@ use App\traits\DbRowTrait;
 			$this->userSettings = Settings::getInstance()->get('user');
 			$this->account	 = $this->userSettings['account_id'];
 			$this->bocommon	 = CreateObject('property.bocommon');
-			$this->custom	 = createObject('property.custom_fields');
+			$this->custom	 = \property_custom_fields::getInstance();
 			$this->db		 = Db::getInstance();
 			$this->db2		 = new Db2();
 			$this->join		 = $this->db->join;
@@ -82,7 +82,7 @@ use App\traits\DbRowTrait;
 			$this->entity_id = $entity_id;
 			$this->cat_id	 = $cat_id;
 			$this->locations = new Locations();
-			$this->custom_fields = CreateObject('phpgwapi.custom_fields');
+			$this->custom_fields = \property_custom_fields::getInstance();
 
 		}
 

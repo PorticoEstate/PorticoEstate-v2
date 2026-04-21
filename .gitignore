@@ -38,4 +38,5 @@ Thumbs.db
 
 # Test scripts
 test_scripts/
-/node_modules/i/
+/node_modules/
+/i/

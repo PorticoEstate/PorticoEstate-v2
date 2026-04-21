@@ -118,15 +118,58 @@ class EntityController
 	{
 		$bo = $this->bo($args);
 
-		$params = $request->getQueryParams();
-		$bo->start      = isset($params['start'])   ? (int)$params['start']   : 0;
-		$bo->query      = Sanitizer::clean_value($params['query']  ?? '', 'string');
-		$bo->filter     = Sanitizer::clean_value($params['filter'] ?? '', 'string');
-		$bo->sort       = Sanitizer::clean_value($params['sort']   ?? '', 'string');
-		$bo->order      = Sanitizer::clean_value($params['dir']    ?? '', 'string');
-		$bo->allrows    = isset($params['allrows']) && $params['allrows'] === 'true';
+		$body = (array)($request->getParsedBody() ?? []);
 
-		$items = $bo->read();
+		// DataTables server-side POST protocol
+		if (isset($body['draw']))
+		{
+			$draw    = (int)$body['draw'];
+			$search  = is_array($body['search'] ?? null) ? $body['search'] : [];
+			$order   = is_array($body['order']  ?? null) ? $body['order']  : [];
+			$columns = is_array($body['columns'] ?? null) ? $body['columns'] : [];
+			$length  = isset($body['length']) ? (int)$body['length'] : 0;
+
+			$colIdx  = isset($order[0]['column']) ? (int)$order[0]['column'] : 0;
+			$sortCol = isset($columns[$colIdx]['data'])
+				? Sanitizer::clean_value($columns[$colIdx]['data'], 'string')
+				: '';
+
+			$readParams = [
+				'start'   => isset($body['start']) ? (int)$body['start'] : 0,
+				'results' => $length,
+				'query'   => Sanitizer::clean_value($search['value'] ?? '', 'string'),
+				'order'   => $sortCol,
+				'sort'    => Sanitizer::clean_value($order[0]['dir'] ?? 'asc', 'string'),
+				'allrows' => $length === -1,
+				'filter'  => Sanitizer::clean_value($body['filter'] ?? '', 'string'),
+			];
+
+			$bo->allrows = $readParams['allrows'];
+			$items = $bo->read($readParams);
+
+			$payload = [
+				'draw'            => $draw,
+				'recordsTotal'    => (int)$bo->total_records,
+				'recordsFiltered' => (int)$bo->total_records,
+				'data'            => (array)$items,
+			];
+			$response->getBody()->write(json_encode($payload, JSON_THROW_ON_ERROR));
+			return $response->withHeader('Content-Type', 'application/json');
+		}
+
+		// Plain GET: flat query params
+		$params = $request->getQueryParams();
+		$readParams = [
+			'start'   => isset($params['start'])  ? (int)$params['start']  : 0,
+			'query'   => Sanitizer::clean_value($params['query']  ?? '', 'string'),
+			'filter'  => Sanitizer::clean_value($params['filter'] ?? '', 'string'),
+			'order'   => Sanitizer::clean_value($params['sort']   ?? '', 'string'),
+			'sort'    => Sanitizer::clean_value($params['dir']    ?? '', 'string'),
+			'allrows' => isset($params['allrows']) && $params['allrows'] === 'true',
+		];
+
+		$bo->allrows = $readParams['allrows'];
+		$items = $bo->read($readParams);
 
 		$response->getBody()->write(json_encode($items, JSON_THROW_ON_ERROR));
 		return $response->withHeader('Content-Type', 'application/json');

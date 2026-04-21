@@ -1542,11 +1542,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			$this->district_id		 = $default_district;
 		}
 
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			return $this->query();
-		}
-
 		if ($this->cat_id)
 		{
 			$category = $this->soadmin_entity->read_single_category($this->entity_id, $this->cat_id);
@@ -1608,15 +1603,11 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				)
 			),
 			'datatable'		 => array(
-				'source'		 => self::link(array(
-					'menuaction'		 => 'property.uientity.index',
-					'entity_id'			 => $this->entity_id,
-					'cat_id'			 => $this->cat_id,
-					'type'				 => $this->type,
-					'district_id'		 => $this->district_id,
-					'p_num'				 => $this->p_num,
-					'phpgw_return_as'	 => 'json'
-				)),
+				'source'		 => '/property/entity/' . urlencode($this->type)
+					. '/' . (int)$this->entity_id
+					. '/' . (int)$this->cat_id,
+				'district_id'		 => $this->district_id,
+				'p_num'				 => $this->p_num,
 				'download'		 => self::link(array(
 					'menuaction'	 => 'property.uientity.download',
 					'entity_id'		 => $this->entity_id,

@@ -539,7 +539,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				$upload_handler->delete_file();
 				break;
 			default:
-				$upload_handler->header('HTTP/1.1 405 Method Not Allowed');
+				header('HTTP/1.1 405 Method Not Allowed');
 		}
 
 		$this->phpgwapi_common->phpgw_exit();
@@ -1947,7 +1947,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			{
 				$values['location_data'] = $bolocation->read_single($location_code, array(
 					'tenant_id'	 => $tenant_id,
-					'p_num'		 => $p_num,
+					'p_num'		 => Sanitizer::get_var('p_num'),
 					'view'		 => true
 				));
 			}
@@ -3172,6 +3172,7 @@ JS;
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
 
 		self::render_template_xsl('app_delete', $data, '', 'delete');
+		return null;
 	}
 
 	/**
@@ -3402,6 +3403,9 @@ JS;
 			'img_path'		 => $this->phpgwapi_common->get_image_path('phpgwapi', 'default')
 		);
 
+		$location_arr = explode('.', $acl_location);
+		$entity_id	 = isset($location_arr[2]) ? $location_arr[2] : 0;
+		$cat_id		 = isset($location_arr[3]) ? $location_arr[3] : 0;
 		$custom			 = createObject('phpgwapi.custom_fields');
 		$attrib_data	 = $custom->get($this->type_app[$this->type], ".{$this->type}.{$entity_id}.{$cat_id}", $attrib_id);
 		$appname		 = $attrib_data['input_text'];
@@ -3413,6 +3417,7 @@ JS;
 		self::render_template_xsl(array('attrib_history', 'datatable_inline'), array(
 			'attrib_history' => $data
 		));
+		return null;
 	}
 
 	/**
@@ -3796,9 +3801,9 @@ JS;
 			'values'		 => $values['location_data'],
 			'type_id'		 => 5,
 			'no_link'		 => false,
-			'lookup_type'	 => 'view',
+			'lookup_type'	 => 'form',
 			'tenant'		 => false,
-			'lookup_entity'	 => $lookup_entity,
+//			'lookup_entity'	 => $lookup_entity,
 			'entity_data'	 => isset($values['p']) ? $values['p'] : ''
 		));
 
@@ -3892,13 +3897,13 @@ JS;
 			$values['item_id']		 = $id;
 			$insert_record			 = Cache::session_get('property', 'insert_record');
 
-			if (is_array($insert_record_entity))
-			{
-				for ($j = 0; $j < count($insert_record_entity); $j++)
-				{
-					$insert_record['extra'][$insert_record_entity[$j]] = $insert_record_entity[$j];
-				}
-			}
+			// if (is_array($insert_record_entity))
+			// {
+			// 	for ($j = 0; $j < count($insert_record_entity); $j++)
+			// 	{
+			// 		$insert_record['extra'][$insert_record_entity[$j]] = $insert_record_entity[$j];
+			// 	}
+			// }
 
 			$values = $this->bocommon->collect_locationdata($values, $insert_record);
 
@@ -3932,7 +3937,7 @@ JS;
 			'no_link'		 => false,
 			'lookup_type'	 => 'form',
 			'tenant'		 => false,
-			'lookup_entity'	 => $lookup_entity,
+//			'lookup_entity'	 => $lookup_entity,
 			'entity_data'	 => isset($values['p']) ? $values['p'] : ''
 		));
 
@@ -4063,8 +4068,6 @@ JS;
 			'cancel_url'				 => phpgw::link('/home/'),
 			'value_type'				 => $this->type,
 			'value_entity_id'			 => $this->entity_id,
-			'vendor_data'				 => $vendor_data,
-			'contact_data'				 => $contact_data,
 			'tabs'						 => phpgwapi_jquery::tabview_generate($tabs, 0),
 			'value_active_tab'			 => 0,
 		);
@@ -4128,16 +4131,9 @@ JS;
 		{
 			$items	 =  $soentity->read(
 				array(
-					//				'entity_group_id' => (int)$entity_group_id,
 					'location_id' => $category['location_id'],
-					//				'control_id' => $control_id,
-					'district_id' => $district_id,
-					'part_of_town_id' => $part_of_town_id,
 					'location_code'	=> $location_code,
-					//				'org_units' => $this->org_units,
 					'allrows' => true,
-					//				'control_registered' => true,
-					//				'check_for_control' => true
 				)
 			);
 
@@ -4145,8 +4141,6 @@ JS;
 			{
 				continue;
 			}
-
-			//				_debug_array($items);	die();
 
 
 			$header = array();
@@ -4177,7 +4171,7 @@ JS;
 			}
 		}
 
-		if (!$row)
+		if (!isset($row))
 		{
 			$writer->writeSheetHeader('Sheet1', array('' => 'string'));
 		}

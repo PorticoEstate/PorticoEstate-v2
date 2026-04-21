@@ -305,6 +305,31 @@
 	opacity: 0.85;
 }
 
+.hosp-show__article-row--header {
+	background: var(--ds-color-background-subtle, #f3f4f6);
+	font-weight: 600;
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	color: var(--ds-color-text-subtle, #6b7280);
+	border-color: var(--ds-color-border-subtle, #e5e7eb);
+}
+
+.hosp-show__article-row--header > span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.hosp-show__article-row--header:hover {
+	box-shadow: none;
+	cursor: default;
+}
+
+.hosp-show__drag-handle--placeholder {
+	visibility: hidden;
+}
+
 /* Building group highlight (when scrolling to existing group) */
 .hosp-show__highlight {
 	animation: hosp-highlight 1.5s ease;
@@ -316,7 +341,7 @@
 }
 
 .hosp-show__article-name {
-	flex: 2;
+	flex: 3 1 8rem;
 	font-weight: 500;
 	min-width: 0;
 	overflow: hidden;
@@ -326,12 +351,12 @@
 
 .hosp-show__article-unit,
 .hosp-show__article-active {
-	flex: 0 0 4rem;
+	flex: 1 1 4rem;
 	text-align: center;
 }
 
 .hosp-show__article-price {
-	flex: 0 0 5rem;
+	flex: 1 1 5rem;
 	text-align: right;
 	font-variant-numeric: tabular-nums;
 }
@@ -343,7 +368,7 @@
 .hosp-show__article-actions {
 	display: flex;
 	gap: 0.25rem;
-	flex-shrink: 0;
+	flex: 0 0 5.75rem;
 }
 
 .hosp-show__article-empty {

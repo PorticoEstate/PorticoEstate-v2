@@ -70,7 +70,7 @@
 AppDatatable.init({
 		id: 'app-datatable',
 		newItem: CFG.permissions.create
-			? {label: L.add + ' ' + L.name, url: CFG.editBaseUrl + 'add'}
+			? {label: L.create_hospitality_settings, url: CFG.editBaseUrl + 'add'}
 			: undefined,
 		ajax: {url: CFG.dataUrl, dataSrc: ''},
 		columns: columns,

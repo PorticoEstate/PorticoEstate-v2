@@ -279,7 +279,7 @@
 			'</div></div>';
 
 		html += '<div class="app-show__meta">';
-		html += '<span class="app-show__meta-item">' + lang('resource') + ': ' + esc(h.resource_name) + '</span>';
+		html += '<span class="app-show__meta-item">' + lang('main_resource') + ': ' + esc(h.resource_name) + '</span>';
 		html += '<span class="app-show__meta-item">' + lang('created') + ': ' + fmtDate(h.created) + '</span>';
 		if (h.modified) {
 			html += '<span class="app-show__meta-item">' + lang('modified') + ': ' + fmtDate(h.modified) + '</span>';
@@ -494,7 +494,7 @@
 		coreHtml += editableField(lang('name'), h.name, 'name', 'text');
 		coreHtml += editableField(lang('description'), h.description, 'description', 'textarea');
 		coreHtml += editableField(lang('active'), h.active, 'active', 'checkbox');
-		coreHtml += field(lang('resource'), h.resource_name);
+		coreHtml += field(lang('main_resource'), h.resource_name);
 		html += section(lang('details'), coreHtml);
 
 		// Service configuration
@@ -508,6 +508,16 @@
 		svcHtml += deadlineField(lang('orderDeadline'), h.order_by_time_value, h.order_by_time_unit, {
 			description: lang('orderDeadlineDesc')
 		});
+
+		// Cancellation deadline (read-only, sourced from main resource)
+		var cancelValue = h.resource_cancellation_deadline_value;
+		var cancelUnit = h.resource_cancellation_deadline_unit;
+		var cancelDisplay = (cancelValue && cancelUnit)
+			? esc(cancelValue) + ' ' + esc(lang(cancelUnit))
+			: '&mdash;';
+		var cancelDescHtml = '<div class="hosp-show__field-desc">' + esc(lang('cancellationDeadlineFromResource')) + '</div>';
+		svcHtml += fieldHtml(lang('cancellationDeadline'), cancelDisplay + cancelDescHtml);
+
 		html += section(lang('serviceConfiguration'), svcHtml);
 
 		// Metadata
@@ -713,7 +723,7 @@
 		}
 
 		// Main resource (read-only)
-		html += section(lang('mainResource'), field(lang('resource'), h.resource_name));
+		html += section(lang('mainResource'), field(lang('main_resource'), h.resource_name));
 
 		// Inline building search (top, where add button used to be)
 		if (canWrite) {
@@ -901,12 +911,30 @@
 		root.dispatchEvent(new CustomEvent('hospitality:articles-rendered', { bubbles: true }));
 	}
 
+	function renderArticleHeader(groupId) {
+		var html = '<div class="hosp-show__article-row hosp-show__article-row--header">';
+		if (canWrite && groupId) {
+			html += '<span class="hosp-show__drag-handle hosp-show__drag-handle--placeholder"></span>';
+		}
+		html += '<span class="hosp-show__article-name">' + esc(lang('name')) + '</span>';
+		html += '<span class="hosp-show__article-unit">' + esc(lang('unit')) + '</span>';
+		html += '<span class="hosp-show__article-price">' + esc(lang('basePrice')) + '</span>';
+		html += '<span class="hosp-show__article-price">' + esc(lang('overridePrice')) + '</span>';
+		html += '<span class="hosp-show__article-price hosp-show__article-price--effective">' + esc(lang('effectivePrice')) + '</span>';
+		html += '<span class="hosp-show__article-active">' + esc(lang('active')) + '</span>';
+		if (canWrite) {
+			html += '<span class="hosp-show__article-actions"></span>';
+		}
+		html += '</div>';
+		return html;
+	}
+
 	function renderArticleRows(articles, groupId) {
 		if (!articles || articles.length === 0) {
 			return '<div class="hosp-show__article-empty">' + esc(lang('noArticles')) + '</div>';
 		}
 
-		var html = '';
+		var html = renderArticleHeader(groupId);
 		articles.forEach(function (a, i) {
 			var activeTag = a.active
 				? '<span class="ds-tag" data-color="success">' + esc(lang('yes')) + '</span>'

@@ -110,6 +110,18 @@ class Hospitality
     public $resource_name;
 
     /**
+     * @OA\Property(type="integer", nullable=true)
+     * @Expose
+     */
+    public $resource_cancellation_deadline_value;
+
+    /**
+     * @OA\Property(type="string", nullable=true)
+     * @Expose
+     */
+    public $resource_cancellation_deadline_unit;
+
+    /**
      * @OA\Property(type="array", @OA\Items(ref="#/components/schemas/HospitalityRemoteLocation"))
      * @Expose
      * @SerializeAs(type="array", of="App\modules\booking\models\HospitalityRemoteLocation")

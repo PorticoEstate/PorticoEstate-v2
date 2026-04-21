@@ -214,6 +214,9 @@ Cancelation of booking and allocation from	booking	no	Avbestilling av interntild
 Cancelation of booking from	booking	no	Avbestilling av interntildeling fra
 Cancelation of bookings and allocations from	booking	no	Avbestilling av interntildelinger og tildelinger fra
 Cancelation of bookings from	booking	no	Avbestilling av interntildelinger fra
+cancellation_deadline	booking	no	Avbestillingsfrist
+cancellation_deadline_desc	booking	no	Hvor lang tid før arrangementet en bestilling kan avbestilles
+cancellation_deadline_from_resource	booking	no	Hentet fra hovedressursen
 cancelled	booking	no	Avbestilt
 Cannot generate files from empty list	booking	no	Kan ikke generere filer fra en tom liste
 capacity	booking	no	Kapasitet
@@ -300,6 +303,7 @@ Create new booking	booking	no	Lag ny interntildeling
 Create report	booking	no	Lag rapport
 create_all_allocations	booking	no	Opprett alle tildelinger
 create_hospitality	booking	no	Opprett bevertning
+create_hospitality_settings	booking	no	Opprett sett med innstillinger for bevertning
 create_internal_note	booking	no	Opprett internt notat
 create_new_article	booking	no	Opprett ny artikkel
 create_non_conflicting_allocations	booking	no	Opprett tildelinger uten konflikt

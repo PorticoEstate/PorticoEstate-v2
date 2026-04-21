@@ -194,6 +194,9 @@ Cancelation of booking and allocation from	booking	en	Cancelation of booking and
 Cancelation of booking from	booking	en	Cancelation of booking from
 Cancelation of bookings and allocations from	booking	en	Cancelation of bookings and allocations from
 Cancelation of bookings from	booking	en	Cancelation of bookings from
+cancellation_deadline	booking	en	Cancellation deadline
+cancellation_deadline_desc	booking	en	How far in advance of the event a booking may be cancelled
+cancellation_deadline_from_resource	booking	en	Inherited from the main resource
 cancelled	booking	en	Cancelled
 Cannot generate files from empty list	booking	en	Cannot generate files from empty list
 capacity	booking	en	Capacity
@@ -272,6 +275,7 @@ Create new booking	booking	en	Create new booking
 Create report	booking	en	Create report
 create_all_allocations	booking	en	Create all allocations
 create_hospitality	booking	en	Create hospitality
+create_hospitality_settings	booking	en	Create hospitality settings
 create_internal_note	booking	en	Create internal note
 create_new_article	booking	en	Create new article
 create_non_conflicting_allocations	booking	en	Create non-conflicting allocations

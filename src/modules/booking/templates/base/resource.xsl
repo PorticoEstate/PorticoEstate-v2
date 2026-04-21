@@ -318,6 +318,13 @@
 
 				<div class="pure-control-group">
 					<label>
+						<xsl:value-of select="php:function('lang', 'cancellation_deadline')"/>
+					</label>
+					<xsl:value-of select="resource/cancellation_deadline_value"/>&nbsp;<xsl:value-of select="resource/cancellation_deadline_unit"/>
+				</div>
+
+				<div class="pure-control-group">
+					<label>
 						<xsl:value-of select="php:function('lang', 'limit number')"/>
 					</label>
 					<xsl:value-of select="resource/booking_limit_number"/>

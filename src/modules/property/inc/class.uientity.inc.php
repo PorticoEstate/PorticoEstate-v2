@@ -3183,58 +3183,6 @@ JS;
 		$this->edit(null, $mode = 'view');
 	}
 
-	//		function get_assigned_history()
-	//		{
-	//			$this->flags['noframework'] = true;
-	//			$this->flags['xslt_app'] = false;
-	//
-	//			if ($this->acl_read)
-	//			{
-	//				$this->bocommon->no_access();
-	//				return;
-	//			}
-	//			$serie_id = Sanitizer::get_var('serie_id', 'int');
-	//			$history = execMethod('controller.socontrol.get_assigned_history', array('serie_id' => $serie_id));
-	//			$lang_user = lang('user');
-	//			$lang_date = lang('date');
-	//
-	//			$ret = <<<HTML
-	//			<html>
-	//				<head>
-	//				</head>
-	//				<body>
-	//					<table style="width:90%" align = 'center'>
-	//						<tr align = 'left'>
-	//							<th>
-	//								{$lang_user}
-	//							</th>
-	//							<th>
-	//								{$lang_date}
-	//							</th>
-	//						</tr>
-	//
-	//HTML;
-	//			foreach ($history as $entry)
-	//			{
-	//				$date = $this->phpgwapi_common->show_date($entry['assigned_date']);
-	//				$ret .= <<<HTML
-	//						<tr align = 'left'>
-	//							<td>
-	//								{$entry['assigned_to_name']}
-	//							</td>
-	//							<td>
-	//								{$date}
-	//							</td>
-	//						</tr>
-	//HTML;
-	//			}
-	//			$ret .= <<<HTML
-	//					</table>
-	//				</body>
-	//			</html>
-	//HTML;
-	//			echo $ret;
-	//		}
 
 	/**
 	 * Render the attribute change history panel, or handle a delete-history-entry request.

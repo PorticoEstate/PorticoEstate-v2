@@ -93,6 +93,97 @@ class EntityController
 	}
 
 	/**
+	 * Enrich a list of entity rows with image thumbnails and view links,
+	 * mirroring the post-processing done in uientity::query().
+	 *
+	 * @param array            $rows         Rows returned by boentity::read().
+	 * @param \property_boentity $bo         Loaded boentity instance.
+	 * @return array                         Rows with file_name, img_id, img_url,
+	 *                                       thumbnail_flag, and link added where applicable.
+	 */
+	private function enrichRows(array $rows, \property_boentity $bo): array
+	{
+		$img_types = ['image/jpeg', 'image/png', 'image/gif'];
+
+		// Remote-image config (per-category admin setting)
+		include_class('admin', 'soconfig');
+		$locations       = new \App\modules\phpgwapi\controllers\Locations();
+		$location_id     = $locations->get_id($bo->type_app[$bo->type], $bo->acl_location);
+		$custom_config   = new \admin_soconfig($location_id);
+		$config          = isset($custom_config->config_data) && $custom_config->config_data
+			? $custom_config->config_data
+			: [];
+
+		$remote_image_in_table    = false;
+		$remote_image_config      = [];
+		foreach ($config as $_section_data)
+		{
+			if (!empty($_section_data['image_in_table']))
+			{
+				$remote_image_in_table = true;
+				$remote_image_config   = $_section_data;
+				break;
+			}
+		}
+
+		if (!$remote_image_in_table)
+		{
+			$vfs              = new \App\modules\phpgwapi\services\Vfs\Vfs();
+			$vfs->override_acl = 1;
+		}
+
+		$link_base = [
+			'menuaction' => 'property.uientity.view',
+			'entity_id'  => $bo->entity_id,
+			'cat_id'     => $bo->cat_id,
+			'type'       => $bo->type,
+		];
+
+		foreach ($rows as &$entry)
+		{
+			$loc1 = !empty($entry['loc1']) ? $entry['loc1'] : 'dummy';
+
+			if ($remote_image_in_table)
+			{
+				$key                      = $remote_image_config['img_key_local'] ?? '';
+				$entry['file_name']       = $entry[$key] ?? '';
+				$entry['img_id']          = $entry[$key] ?? '';
+				$entry['img_url']         = ($remote_image_config['url'] ?? '')
+					. '&' . ($remote_image_config['img_key_remote'] ?? '')
+					. '=' . $entry['img_id'];
+				$entry['thumbnail_flag']  = $remote_image_config['thumbnail_flag'] ?? '';
+			}
+			else
+			{
+				$_files = $vfs->ls([
+					'string'      => "/property/{$bo->category_dir}/{$loc1}/{$entry['id']}",
+					'checksubdirs' => false,
+					'relatives'    => [RELATIVE_NONE],
+				]);
+
+				if (!empty($_files[0]) && in_array($_files[0]['mime_type'], $img_types, true))
+				{
+					$entry['file_name']      = $_files[0]['name'];
+					$entry['img_id']         = $_files[0]['file_id'];
+					$entry['directory']      = $_files[0]['directory'];
+					$entry['img_url']        = \phpgw::link('index.php',[
+						'menuaction' => 'property.uigallery.view_file',
+						'file'       => $entry['directory'] . '/' . $entry['file_name'],
+					]);
+					$entry['thumbnail_flag'] = 'thumb=1';
+				}
+			}
+
+			$entry['link'] = \phpgw::link('index.php',
+				array_merge($link_base, ['id' => $entry['id']])
+			);
+		}
+		unset($entry);
+
+		return $rows;
+	}
+
+	/**
 	 * @OA\Get(
 	 *     path="/property/entity/{type}/{entity_id}/{cat_id}",
 	 *     summary="List entity items",
@@ -146,12 +237,13 @@ class EntityController
 
 			$bo->allrows = $readParams['allrows'];
 			$items = $bo->read($readParams);
+			$items = $this->enrichRows((array)$items, $bo);
 
 			$payload = [
 				'draw'            => $draw,
 				'recordsTotal'    => (int)$bo->total_records,
 				'recordsFiltered' => (int)$bo->total_records,
-				'data'            => (array)$items,
+				'data'            => $items,
 			];
 			$response->getBody()->write(json_encode($payload, JSON_THROW_ON_ERROR));
 			return $response->withHeader('Content-Type', 'application/json');
@@ -170,6 +262,7 @@ class EntityController
 
 		$bo->allrows = $readParams['allrows'];
 		$items = $bo->read($readParams);
+		$items = $this->enrichRows((array)$items, $bo);
 
 		$response->getBody()->write(json_encode($items, JSON_THROW_ON_ERROR));
 		return $response->withHeader('Content-Type', 'application/json');

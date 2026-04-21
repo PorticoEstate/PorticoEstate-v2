@@ -40,6 +40,8 @@ use App\traits\DbRowTrait;
 use function CreateObject;
 use function lang;
 
+require_once SRC_ROOT_PATH . '/modules/property/inc/class.custom_fields.inc.php';
+
 
 /**
  * Description

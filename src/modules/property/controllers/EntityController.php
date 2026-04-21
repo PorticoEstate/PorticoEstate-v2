@@ -577,4 +577,36 @@ class EntityController
 		$result = $this->controllerHelper($args)->get_cases_for_checklist();
 		return $this->jsonResponse($response, $result);
 	}
+
+	/**
+	 * Download the current entity list as a file using property_bocommon::download().
+	 *
+	 * GET /property/entity/{type}/{entity_id}/{cat_id}/download
+	 *
+	 * This will output CSV, Excel, or ODS depending on user preference, matching the legacy UI.
+	 *
+	 * @param Request $request
+	 * @param Response $response (unused)
+	 * @param array $args
+	 * @return void
+	 */
+	public function download(Request $request, Response $response, array $args): void
+	{
+		include_class('property', 'bocommon');
+		$bo = $this->bo($args);
+		$bo->allrows = true;
+		$list = $bo->read(['allrows' => true]);
+		$list = $this->enrichRows((array)$list, $bo);
+		$uicols = $bo->uicols;
+		$bocommon = new \property_bocommon();
+		$bocommon->download(
+			$list,
+			$uicols['name'],
+			$uicols['descr'],
+			$uicols['input_type'] ?? [],
+			[],
+			''
+		);
+		exit;
+	}
 }

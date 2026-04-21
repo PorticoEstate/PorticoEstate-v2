@@ -106,7 +106,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		'summary'					 => true,
 		'columns'					 => true,
 		'query'						 => true,
-		'download'					 => true,
+		'download'					 => false,
 		'view'						 => true,
 		'edit'						 => true,
 		'save'						 => true,
@@ -809,118 +809,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * Also used internally by download() to produce a full record set. Adds image
 	 * and view-link data to each record for table rendering.
+	 * 
+	 * NOTE: This method is now handled by the EntityController
 	 *
 	 * @return array|void DataTables result array, or void when outputting directly.
 	 */
 	public function query(): array
 	{
-		$start_date	 = $this->start_date;
-		$end_date	 = $this->end_date;
-
-		if ($start_date && empty($end_date))
-		{
-			$dateformat	 = $this->userSettings['preferences']['common']['dateformat'];
-			$end_date	 = urlencode($this->phpgwapi_common->show_date(mktime(0, 0, 0, date("m"), date("d"), date("Y")), $dateformat));
-		}
-
-		$search	 = Sanitizer::get_var('search');
-		$order	 = Sanitizer::get_var('order');
-		$draw	 = Sanitizer::get_var('draw', 'int');
-		$columns = Sanitizer::get_var('columns');
-		$export	 = Sanitizer::get_var('export', 'bool');
-
-		$params = array(
-			'start'		 => Sanitizer::get_var('start', 'int', 'REQUEST', 0),
-			'results'	 => Sanitizer::get_var('length', 'int', 'REQUEST', 0),
-			'query'		 => $search['value'],
-			'order'		 => $columns[$order[0]['column']]['data'],
-			'sort'		 => $order[0]['dir'],
-			'allrows'	 => Sanitizer::get_var('length', 'int') == -1 || $export,
-			'start_date' => $start_date ? urldecode($start_date) : '',
-			'end_date' 	 => $end_date ? urldecode($end_date) : '',
-			'parent_location_id' => Sanitizer::get_var('parent_location_id', 'int'),
-			'parent_id' => Sanitizer::get_var('parent_id', 'int')
-		);
-
-		$values = $this->bo->read($params);
-		if ($export)
-		{
-			return $values;
-		}
-
-		$location_id	 = $this->locations->get_id($this->type_app[$this->type], $this->acl_location);
-		$custom_config	 = CreateObject('admin.soconfig', $location_id);
-		$_config		 = isset($custom_config->config_data) && $custom_config->config_data ? $custom_config->config_data : array();
-
-		$remote_image_in_table = false;
-		foreach ($_config as $_config_section => $_config_section_data)
-		{
-			if ($_config_section_data['image_in_table'])
-			{
-				$remote_image_in_table = true;
-				break;
-			}
-		}
-
-		$vfs				 = CreateObject('phpgwapi.vfs');
-		$vfs->override_acl	 = 1;
-
-		$img_types = array(
-			'image/jpeg',
-			'image/png',
-			'image/gif'
-		);
-
-		$link_data = array(
-			'menuaction' => 'property.uientity.view',
-			'entity_id'	 => $this->entity_id,
-			'cat_id'	 => $this->cat_id,
-			'type'		 => $this->type
-		);
-
-		foreach ($values as &$entity_entry)
-		{
-			$_loc1 = isset($entity_entry['loc1']) && $entity_entry['loc1'] ? $entity_entry['loc1'] : 'dummy';
-
-			if ($remote_image_in_table)
-			{
-				$entity_entry['file_name']		 = $entity_entry[$_config_section_data['img_key_local']];
-				$entity_entry['img_id']			 = $entity_entry[$_config_section_data['img_key_local']];
-				$entity_entry['img_url']		 = $_config_section_data['url'] . '&' . $_config_section_data['img_key_remote'] . '=' . $entity_entry['img_id'];
-				$entity_entry['thumbnail_flag']	 = $_config_section_data['thumbnail_flag'];
-			}
-			else
-			{
-				$_files = $vfs->ls(array(
-					'string'	 => "/property/{$this->category_dir}/{$_loc1}/{$entity_entry['id']}",
-					'checksubdirs'	=> false,
-					'relatives'	 => array(RELATIVE_NONE)
-				));
-
-				$mime_in_array = in_array($_files[0]['mime_type'], $img_types);
-				if (!empty($_files[0]) && $mime_in_array)
-				{
-					$entity_entry['file_name']		 = $_files[0]['name'];
-					$entity_entry['img_id']			 = $_files[0]['file_id'];
-					$entity_entry['directory']		 = $_files[0]['directory'];
-					$entity_entry['img_url']		 = self::link(array(
-						'menuaction' => 'property.uigallery.view_file',
-						'file'		 => $entity_entry['directory'] . '/' . $entity_entry['file_name']
-					));
-					$entity_entry['thumbnail_flag']	 = 'thumb=1';
-				}
-			}
-
-			$link_data['id']		 = $entity_entry['id'];
-			$entity_entry['link']	 = self::link($link_data);
-		}
-
-		$result_data = array('results' => $values);
-
-		$result_data['total_records']	 = $this->bo->total_records;
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
+		return [];
 	}
 
 	/**
@@ -1090,77 +986,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		$this->bo->save_sessiondata($data);
 	}
 
-	/**
-	 * Download the current entity list as a file using bocommon::download().
-	 *
-	 * Suppresses the HTML header/footer and delegates to query() for the data
-	 * and bo->uicols for the column metadata.
-	 *
-	 * @return void Output is written directly.
-	 */
-	function download(): void
-	{
-		$this->flags['noheader']	 = true;
-		$this->flags['nofooter']	 = true;
-		$this->flags['xslt_app']	 = false;
-		Settings::getInstance()->update('flags', ['noheader' => true, 'nofooter' => true, 'xslt_app' => false]);
-
-		//$start_date 	= urldecode($this->start_date);
-		//$end_date 	= urldecode($this->end_date);
-		//$list = $this->bo->read(array('entity_id'=>$this->entity_id,'cat_id'=>$this->cat_id,'allrows'=>true,'start_date'=>$start_date,'end_date'=>$end_date, 'type' => $this->type));
-		$list	 = $this->query();
-		$uicols	 = $this->bo->uicols;
-
-		$this->bocommon->download($list, $uicols['name'], $uicols['descr'], $uicols['input_type']);
-	}
-	/*
-		  function addfiles()
-		  {
-		  $this->flags['xslt_app'] = false;
-		  $this->flags['noframework'] = true;
-		  $this->flags['nofooter'] = true;
-
-		  $id = Sanitizer::get_var('id', 'int');
-		  $jasperfile = Sanitizer::get_var('jasperfile', 'bool');
-
-		  $fileuploader = CreateObject('property.fileuploader');
-
-
-		  if (!$this->acl_add && !$this->acl_edit)
-		  {
-		  $this->phpgwapi_common->phpgw_exit();
-		  }
-
-		  if (!$id)
-		  {
-		  $this->phpgwapi_common->phpgw_exit();
-		  }
-
-		  $test = false;//true;
-		  if ($test)
-		  {
-		  if (!empty($_FILES))
-		  {
-		  $tempFile = $_FILES['Filedata']['tmp_name'];
-		  $targetPath = "{$this->serverSettings['temp_dir']}/";
-		  $targetFile = str_replace('//', '/', $targetPath) . $_FILES['Filedata']['name'];
-		  move_uploaded_file($tempFile, $targetFile);
-		  echo str_replace($this->serverSettings['temp_dir'], '', $targetFile);
-		  }
-		  $this->phpgwapi_common->phpgw_exit();
-		  }
-
-		  $values = $this->bo->read_single(array('entity_id' => $this->entity_id, 'cat_id' => $this->cat_id,
-		  'id' => $id));
-
-		  $loc1 = isset($values['location_data']['loc1']) && $values['location_data']['loc1'] ? $values['location_data']['loc1'] : 'dummy';
-		  if ($this->type_app[$this->type] == 'catch')
-		  {
-		  $loc1 = 'dummy';
-		  }
-
-		  $fileuploader->upload("{$this->category_dir}/{$loc1}/{$id}");
-		  } */
 
 	/**
 	 * Return a DataTables-compatible JSON list of entity records linked to the given item.
@@ -1608,16 +1433,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 					. '/' . (int)$this->cat_id,
 				'district_id'		 => $this->district_id,
 				'p_num'				 => $this->p_num,
-				'download'		 => self::link(array(
-					'menuaction'	 => 'property.uientity.download',
-					'entity_id'		 => $this->entity_id,
-					'cat_id'		 => $this->cat_id,
-					'type'			 => $this->type,
-					'district_id'	 => $this->district_id,
-					'p_num'			 => $this->p_num,
-					'export'		 => true,
-					'allrows'		 => true
-				)),
+				'download'		 => phpgw::link('/property/entity/' . urlencode($this->type)
+					. '/' . (int)$this->entity_id
+					. '/' . (int)$this->cat_id . '/download', []),
 				"columns"		 => array('onclick' => "JqueryPortico.openPopup({menuaction:'property.uientity.columns', entity_id:'{$this->entity_id}', cat_id:'{$this->cat_id}', type:'{$this->type}'}, {closeAction:'reload'})"),
 				'new_item'		 => self::link(array(
 					'menuaction' => 'property.uientity.edit',

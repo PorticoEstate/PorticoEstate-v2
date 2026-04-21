@@ -78,6 +78,7 @@ $app->group('/property/entity', function (RouteCollectorProxy $group) use ($cont
 		$g->get('',                [$controller, 'index']);
 		$g->post('',               [$controller, 'index']); // DataTables server-side POST
 		$g->post('/create',        [$controller, 'store']);
+		$g->get('/download',       [$controller, 'download']);
 		$g->get('/{id:[0-9]+}',    [$controller, 'show']);
 		$g->put('/{id:[0-9]+}',    [$controller, 'update']);
 		$g->delete('/{id:[0-9]+}', [$controller, 'destroy']);

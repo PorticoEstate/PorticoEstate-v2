@@ -1498,6 +1498,9 @@ class ApplicationService
             // Add the date to the application
             $this->applicationRepository->saveApplicationDates($id, [['from_' => $from, 'to_' => $to]]);
 
+            // Auto-generate purchase orders from mandatory resource articles
+            $this->autoAssignMandatoryArticles($id, $resourceId, $from, $to);
+
             // Update ID string
             $this->applicationRepository->updateIdString();
 
@@ -1548,6 +1551,41 @@ class ApplicationService
             }
 
             throw $e;
+        }
+    }
+
+    /**
+     * Auto-assign mandatory resource articles for a simple booking.
+     * Calculates quantity based on booking duration and article unit.
+     */
+    private function autoAssignMandatoryArticles(int $applicationId, int $resourceId, string $from, string $to): void
+    {
+        $articleRepository = new ArticleRepository();
+        $articles = $articleRepository->getArticlesByResources([$resourceId]);
+
+        $mandatoryArticles = [];
+        foreach ($articles as $article) {
+            if (empty($article['mandatory']) || empty($article['id'])) {
+                continue;
+            }
+
+            $quantity = 1;
+            if ($article['unit'] === 'hour') {
+                $fromTime = new \DateTime($from);
+                $toTime = new \DateTime($to);
+                $diffHours = ($toTime->getTimestamp() - $fromTime->getTimestamp()) / 3600;
+                $quantity = max(1, (int)ceil($diffHours));
+            }
+
+            $mandatoryArticles[] = [
+                'id' => (int)$article['id'],
+                'quantity' => $quantity,
+                'parent_id' => null
+            ];
+        }
+
+        if (!empty($mandatoryArticles)) {
+            $articleRepository->saveArticlesForApplication($applicationId, $mandatoryArticles);
         }
     }
 

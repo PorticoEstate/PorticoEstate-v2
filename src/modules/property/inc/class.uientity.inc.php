@@ -2354,14 +2354,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 				$datatable_def[] = array(
 					'container'	 => 'datatable-container_0',
-					'requestUrl' => json_encode(self::link(array(
-						'menuaction'		 => 'property.uientity.get_files',
-						'entity_id'			 => $this->entity_id,
-						'cat_id'			 => $this->cat_id,
-						'id'				 => $id,
-						'type'				 => $this->type,
-						'phpgw_return_as'	 => 'json'
-					))),
+					'requestUrl' => json_encode('/property/entity/' . urlencode($this->type)
+						. '/' . (int)$this->entity_id
+						. '/' . (int)$this->cat_id
+						. '/' . (int)$id . '/files'),
 					'ColumnDefs' => $file_def,
 					'config'	 => array(
 						array('disableFilter' => true),
@@ -2416,13 +2412,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 			$datatable_def[] = array(
 				'container'	 => 'datatable-container_2',
-				'requestUrl' => json_encode(self::link(array(
-					'menuaction'		 => 'property.uientity.get_related',
-					'entity_id'			 => $this->entity_id,
-					'cat_id'			 => $this->cat_id,
-					'id'				 => $id,
-					'phpgw_return_as'	 => 'json'
-				))),
+				'requestUrl' => json_encode('/property/entity/' . urlencode($this->type)
+					. '/' . (int)$this->entity_id
+					. '/' . (int)$this->cat_id
+					. '/' . (int)$id . '/related'),
 				'ColumnDefs' => $related_def,
 				'config'	 => array(
 					array('disableFilter' => true),
@@ -2478,14 +2471,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 				$datatable_def[] = array(
 					'container'	 => 'datatable-container_3',
-					'requestUrl' => json_encode(self::link(array(
-						'menuaction'		 => 'property.uientity.get_inventory',
-						'id'				 => $id,
-						'entity_id'			 => $this->entity_id,
-						'cat_id'			 => $this->cat_id,
-						'type'				 => $this->type,
-						'phpgw_return_as'	 => 'json'
-					))),
+					'requestUrl' => json_encode('/property/entity/' . urlencode($this->type)
+						. '/' . (int)$this->entity_id
+						. '/' . (int)$this->cat_id
+						. '/' . (int)$id . '/inventory'),
 					'ColumnDefs' => $inventory_def,
 					'config'	 => array(
 						array('disableFilter' => true),

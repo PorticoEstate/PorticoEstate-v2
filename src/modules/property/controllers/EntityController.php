@@ -166,7 +166,7 @@ class EntityController
 					$entry['file_name']      = $_files[0]['name'];
 					$entry['img_id']         = $_files[0]['file_id'];
 					$entry['directory']      = $_files[0]['directory'];
-					$entry['img_url']        = \phpgw::link('index.php',[
+					$entry['img_url']        = \phpgw::link('/index.php',[
 						'menuaction' => 'property.uigallery.view_file',
 						'file'       => $entry['directory'] . '/' . $entry['file_name'],
 					]);
@@ -174,7 +174,7 @@ class EntityController
 				}
 			}
 
-			$entry['link'] = \phpgw::link('index.php',
+			$entry['link'] = \phpgw::link('/index.php',
 				array_merge($link_base, ['id' => $entry['id']])
 			);
 		}
@@ -214,7 +214,7 @@ class EntityController
 		// DataTables server-side POST protocol
 		if (isset($body['draw']))
 		{
-			$draw    = (int)$body['draw'];
+			$draw    = (int)($body['draw'] ?? 1);
 			$search  = is_array($body['search'] ?? null) ? $body['search'] : [];
 			$order   = is_array($body['order']  ?? null) ? $body['order']  : [];
 			$columns = is_array($body['columns'] ?? null) ? $body['columns'] : [];
@@ -440,7 +440,7 @@ class EntityController
 	{
 		$params  = $request->getQueryParams();
 		$id      = (int)$args['id'];
-		$draw    = (int)($params['draw'] ?? 0);
+		$draw    = (int)($params['draw'] ?? 1);
 		$bo      = $this->bo($args);
 
 		$related = $bo->read_entity_to_link([
@@ -473,30 +473,71 @@ class EntityController
 	}
 
 	/**
-	 * Return attached files for a given item.
+	 * Return attached files for a given item, with HTML file_link / delete_file cells
+	 * and image enrichment (img_id, img_url) for image/* mime types.
 	 *
 	 * GET /property/entity/{type}/{entity_id}/{cat_id}/{id}/files
 	 */
 	public function getFiles(Request $request, Response $response, array $args): Response
 	{
-		$params = $request->getQueryParams();
-		$id     = (int)$args['id'];
-		$draw   = (int)($params['draw'] ?? 0);
-		$bo     = $this->bo($args);
+		$params     = $request->getQueryParams();
+		$id         = (int)$args['id'];
+		$draw       = (int)($params['draw'] ?? 1);
+		$entity_id  = (int)$args['entity_id'];
+		$cat_id     = (int)$args['cat_id'];
+		$type       = (string)$args['type'];
+		$bo         = $this->bo($args);
 
-		$item  = $bo->read_single([
-			'entity_id' => (int)$args['entity_id'],
-			'cat_id'    => (int)$args['cat_id'],
-			'type'      => (string)$args['type'],
+		$item = $bo->read_single([
+			'entity_id' => $entity_id,
+			'cat_id'    => $cat_id,
+			'type'      => $type,
 			'id'        => $id,
 		]);
 
-		$files = array_values($item['files'] ?? []);
+		$loc1            = $item['location_data']['loc1'] ?? '';
+		$view_file_base  = '/index.php?' . http_build_query([
+			'menuaction' => 'property.uientity.view_file',
+			'loc1'       => $loc1,
+			'id'         => $id,
+			'cat_id'     => $cat_id,
+			'entity_id'  => $entity_id,
+			'type'       => $type,
+		]);
+
+		$img_types = ['image/jpeg', 'image/png', 'image/gif'];
+
+		$lang_view   = lang('click to view file');
+		$lang_delete = lang('Check to delete file');
+
+		$content_files = [];
+		foreach ((array)($item['files'] ?? []) as $_entry)
+		{
+			$file_url = $view_file_base . '&file_id=' . (int)$_entry['file_id'];
+
+			$row = [
+				'file_link'   => "<a href='" . htmlspecialchars($file_url, ENT_QUOTES, 'UTF-8') . "'"
+					. " target='_blank' title='" . htmlspecialchars($lang_view, ENT_QUOTES, 'UTF-8') . "'>"
+					. htmlspecialchars($_entry['name'] ?? '', ENT_QUOTES, 'UTF-8') . '</a>',
+				'delete_file' => "<input type='checkbox' name='values[file_action][]'"
+					. " value='" . (int)$_entry['file_id'] . "'"
+					. " title='" . htmlspecialchars($lang_delete, ENT_QUOTES, 'UTF-8') . "'>",
+			];
+
+			if (in_array($_entry['mime_type'] ?? '', $img_types, true))
+			{
+				$row['file_name'] = $_entry['name'] ?? '';
+				$row['img_id']    = (int)$_entry['file_id'];
+				$row['img_url']   = $file_url;
+			}
+
+			$content_files[] = $row;
+		}
 
 		return $this->jsonResponse($response, [
-			'data'            => $files,
-			'recordsTotal'    => count($files),
-			'recordsFiltered' => count($files),
+			'data'            => $content_files,
+			'recordsTotal'    => count($content_files),
+			'recordsFiltered' => count($content_files),
 			'draw'            => $draw,
 		]);
 	}
@@ -510,7 +551,7 @@ class EntityController
 	{
 		$params      = $request->getQueryParams();
 		$id          = (int)$args['id'];
-		$draw        = (int)($params['draw'] ?? 0);
+		$draw        = (int)($params['draw'] ?? 1);
 		$bo          = $this->bo($args);
 
 		// Resolve the system location_id for this entity/category path.

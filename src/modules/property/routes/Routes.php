@@ -84,9 +84,9 @@ $app->group('/property/entity', function (RouteCollectorProxy $group) use ($cont
 		$g->delete('/{id:[0-9]+}', [$controller, 'destroy']);
 
 		// Item sub-resources (id in path)
-		$g->get('/{id:[0-9]+}/files',     [$controller, 'getFiles']);
-		$g->get('/{id:[0-9]+}/related',   [$controller, 'getRelated']);
-		$g->get('/{id:[0-9]+}/inventory', [$controller, 'getInventory']);
+		$g->post('/{id:[0-9]+}/files',     [$controller, 'getFiles']);
+		$g->post('/{id:[0-9]+}/related',   [$controller, 'getRelated']);
+		$g->post('/{id:[0-9]+}/inventory', [$controller, 'getInventory']);
 
 		// Category-level data queries (id/location_id as query params)
 		$g->get('/items-per-qr',        [$controller, 'getItemsPerQr']);

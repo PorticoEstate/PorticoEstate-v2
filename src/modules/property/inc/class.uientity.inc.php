@@ -763,12 +763,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				}
 			}
 
+			$errors = (array) ($this->receipt['error'] ?? []);
 			$save_service->handleFiles(
 				$values,
 				$this->category_dir,
 				$this->type_app[$this->type],
-				$this->receipt['error']
+				$errors
 			);
+			$this->receipt['error'] = $errors;
 
 			return $this->applySaveResponse($response_builder->success(
 				$is_json,

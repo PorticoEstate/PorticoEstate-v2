@@ -1818,91 +1818,20 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		{
 			$location_id = $this->locations->get_id($this->type_app[$this->type], $this->acl_location);
 
-			$check_doc = $this->bocommon->get_lookup_entity('document');
-			foreach ($check_doc as $_check)
-			{
-				if ($_check['id'] == $this->entity_id)
-				{
-					$get_docs = true;
-					break;
-				}
-			}
-
-			if ($get_docs || !empty($entity['documentation']))
-			{
-				$get_docs = true;
-
-				$tabs['document'] = array(
-					'label'		 => lang('document'),
-					'link'		 => '#document',
-					'disable'	 => 0
-				);
-
-				$cats				 = CreateObject('phpgwapi.categories', -1, 'property', '.document');
-				$cats->supress_info	 = true;
-				$categories			 = $cats->formatted_xslt_list(array(
-					'format'	 => 'filter',
-					'selected'	 => '',
-					'globals'	 => true,
-					'use_acl'	 => true
-				));
-				$default_value		 = array(
-					'cat_id'	 => '',
-					'name'		 => lang('no document type'),
-					'selected'	 => 'selected'
-				);
-				array_unshift($categories['cat_list'], $default_value);
-
-				foreach ($categories['cat_list'] as &$_category)
-				{
-					$_category['id'] = $_category['cat_id'];
-				}
-				$doc_type_filter = $categories['cat_list'];
-
-				$documents_tabletools = array(
-					'my_name'		 => 'add',
-					'text'			 => lang('add new document'),
-					'type'			 => 'custom',
-					'className'		 => 'add',
-					'custom_code'	 => "
-								var oArgs = " . json_encode(array(
-						'menuaction'	 => 'property.uidocument.edit',
-						'p_entity_id'	 => $this->entity_id,
-						'p_cat_id'		 => $this->cat_id,
-						'p_num'			 => $values['num']
-					)) . ";
-								newDocument(oArgs);
-							"
-				);
-
-				$documents_def = array(
-					array(
-						'key'		 => 'document_name',
-						'label'		 => lang('name'),
-						'sortable'	 => false,
-						'resizeable' => true
-					),
-					array('key' => 'title', 'label' => lang('title'), 'sortable' => false, 'resizeable' => true)
-				);
-
-				$datatable_def[] = array(
-					'container'	 => 'datatable-container_7',
-					'requestUrl' => json_encode(self::link(array(
-						'menuaction'		 => 'property.uientity.get_documents',
-						'location_id'		 => $location_id,
-						'entity_id'			 => $this->entity_id,
-						'cat_id'			 => $this->cat_id,
-						'item_id'			 => $id,
-						'phpgw_return_as'	 => 'json'
-					))),
-					'data'		 => "",
-					'tabletools' => ($mode == 'edit') ? $documents_tabletools : array(),
-					'ColumnDefs' => $documents_def,
-					'config'	 => array(
-						array('disableFilter' => true)
-					)
-				);
-			}
+			$documents_context = $this->build_edit_documents_context(array(
+				'get_docs' => $get_docs ?? false,
+				'entity' => $entity,
+				'tabs' => $tabs,
+				'datatable_def' => $datatable_def,
+				'location_id' => $location_id,
+				'id' => $id,
+				'mode' => $mode,
+				'values' => $values,
+			));
+			$get_docs = $documents_context['get_docs'];
+			$tabs = $documents_context['tabs'];
+			$datatable_def = $documents_context['datatable_def'];
+			$doc_type_filter = $documents_context['doc_type_filter'];
 
 			if ($category['fileupload'] || (isset($values['files']) && $values['files']))
 			{
@@ -2507,6 +2436,115 @@ JS;
 		return array(
 			'tabs' => $tabs,
 			'location_checklists' => $location_checklists,
+		);
+	}
+
+	/**
+	 * Build document-tab context and datatable definition for edit/view rendering.
+	 */
+	private function build_edit_documents_context(array $context): array
+	{
+		$get_docs = !empty($context['get_docs']);
+		$entity = $context['entity'] ?? array();
+		$tabs = $context['tabs'] ?? array();
+		$datatable_def = $context['datatable_def'] ?? array();
+		$location_id = $context['location_id'] ?? 0;
+		$id = $context['id'] ?? 0;
+		$mode = $context['mode'] ?? 'edit';
+		$values = $context['values'] ?? array();
+		$doc_type_filter = array();
+
+		$check_doc = $this->bocommon->get_lookup_entity('document');
+		foreach ($check_doc as $_check)
+		{
+			if ($_check['id'] == $this->entity_id)
+			{
+				$get_docs = true;
+				break;
+			}
+		}
+
+		if ($get_docs || !empty($entity['documentation']))
+		{
+			$get_docs = true;
+
+			$tabs['document'] = array(
+				'label'      => lang('document'),
+				'link'       => '#document',
+				'disable'    => 0
+			);
+
+			$cats                = CreateObject('phpgwapi.categories', -1, 'property', '.document');
+			$cats->supress_info  = true;
+			$categories          = $cats->formatted_xslt_list(array(
+				'format'    => 'filter',
+				'selected'  => '',
+				'globals'   => true,
+				'use_acl'   => true
+			));
+			$default_value       = array(
+				'cat_id'    => '',
+				'name'      => lang('no document type'),
+				'selected'  => 'selected'
+			);
+			array_unshift($categories['cat_list'], $default_value);
+
+			foreach ($categories['cat_list'] as &$_category)
+			{
+				$_category['id'] = $_category['cat_id'];
+			}
+			$doc_type_filter = $categories['cat_list'];
+
+			$documents_tabletools = array(
+				'my_name'      => 'add',
+				'text'         => lang('add new document'),
+				'type'         => 'custom',
+				'className'    => 'add',
+				'custom_code'  => "
+							var oArgs = " . json_encode(array(
+					'menuaction'   => 'property.uidocument.edit',
+					'p_entity_id'  => $this->entity_id,
+					'p_cat_id'     => $this->cat_id,
+					'p_num'        => $values['num']
+				)) . ";
+							newDocument(oArgs);
+						"
+			);
+
+			$documents_def = array(
+				array(
+					'key'        => 'document_name',
+					'label'      => lang('name'),
+					'sortable'   => false,
+					'resizeable' => true
+				),
+				array('key' => 'title', 'label' => lang('title'), 'sortable' => false, 'resizeable' => true)
+			);
+
+			$datatable_def[] = array(
+				'container'  => 'datatable-container_7',
+				'requestUrl' => json_encode(self::link(array(
+					'menuaction'       => 'property.uientity.get_documents',
+					'location_id'      => $location_id,
+					'entity_id'        => $this->entity_id,
+					'cat_id'           => $this->cat_id,
+					'item_id'          => $id,
+					'phpgw_return_as'  => 'json'
+				))),
+				'data'       => "",
+				'tabletools' => ($mode == 'edit') ? $documents_tabletools : array(),
+				'ColumnDefs' => $documents_def,
+				'config'     => array(
+					array('disableFilter' => true)
+				)
+			);
+		}
+
+		return array(
+			'get_docs' => $get_docs,
+			'tabs' => $tabs,
+			'datatable_def' => $datatable_def,
+			'doc_type_filter' => $doc_type_filter,
 		);
 	}
 

@@ -2231,29 +2231,11 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			}
 		}
 
-		if ($category['checklist_count'])
-		{
-			$tabs['checklist'] = array('label' => lang('checklist'), 'link' => '#checklist', 'disable' => 0);
+		$checklist_context = $this->build_edit_checklist_context($category, $tabs, $id, $mode);
+		$tabs = $checklist_context['tabs'];
+		$location_checklists = $checklist_context['location_checklists'];
 
-			$location_checklists = $this->get_location_checklists($category['location_id'], $id, $mode);
-		}
-
-		//$category['org_unit'] =1;
-		if ($category['org_unit'] && $mode == 'edit')
-		{
-			phpgwapi_jquery::load_widget('autocomplete');
-
-			$_autocomplete = <<<JS
-
-					$(document).ready(function ()
-					{
-						var oArgs = {menuaction:'property.bogeneric.get_autocomplete', type:'org_unit'};
-						var strURL = phpGWLink('index.php', oArgs, true);
-						JqueryPortico.autocompleteHelper(strURL, 'org_unit_name', 'org_unit_id', 'org_unit_container');
-					});
-JS;
-			phpgwapi_js::getInstance()->add_code('', $_autocomplete);
-		}
+		$this->load_edit_org_unit_autocomplete($category, $mode);
 
 		$display_context = $this->build_edit_display_context($values, $category);
 		$msgbox_data = $display_context['msgbox_data'];
@@ -2482,6 +2464,49 @@ JS;
 			'repeat_types' => $repeat_types,
 			'entity_group_list' => $entity_group_list,
 			'entity_group_name' => $entity_group_name,
+		);
+	}
+
+	/**
+	 * Load org unit autocomplete client script when category settings require it.
+	 */
+	private function load_edit_org_unit_autocomplete(array $category, string $mode): void
+	{
+		//$category['org_unit'] =1;
+		if ($category['org_unit'] && $mode == 'edit')
+		{
+			phpgwapi_jquery::load_widget('autocomplete');
+
+			$_autocomplete = <<<JS
+
+					$(document).ready(function ()
+					{
+						var oArgs = {menuaction:'property.bogeneric.get_autocomplete', type:'org_unit'};
+						var strURL = phpGWLink('index.php', oArgs, true);
+						JqueryPortico.autocompleteHelper(strURL, 'org_unit_name', 'org_unit_id', 'org_unit_container');
+					});
+JS;
+			phpgwapi_js::getInstance()->add_code('', $_autocomplete);
+		}
+	}
+
+	/**
+	 * Build checklist tab and checklist data context for edit/view rendering.
+	 */
+	private function build_edit_checklist_context(array $category, array $tabs, int $id, string $mode): array
+	{
+		$location_checklists = null;
+
+		if ($category['checklist_count'])
+		{
+			$tabs['checklist'] = array('label' => lang('checklist'), 'link' => '#checklist', 'disable' => 0);
+
+			$location_checklists = $this->get_location_checklists($category['location_id'], $id, $mode);
+		}
+
+		return array(
+			'tabs' => $tabs,
+			'location_checklists' => $location_checklists,
 		);
 	}
 

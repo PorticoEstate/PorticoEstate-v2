@@ -32,6 +32,10 @@ use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\Database\Db;
+use App\modules\property\inc\EntityFormInputMapper;
+use App\modules\property\inc\EntityFormRehydrateService;
+use App\modules\property\inc\EntityFormSaveService;
+use App\modules\property\inc\EntityFormValidationService;
 
 /**
  * Legacy UI layer for the property entity module.
@@ -241,29 +245,16 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 */
 	private function _populate($data = array()): array
 	{
-		$values				 = Sanitizer::get_var('values');
-		$values_attribute	 = Sanitizer::get_var('values_attribute');
-		$bypass				 = Sanitizer::get_var('bypass', 'bool');
+		$input_mapper = new EntityFormInputMapper();
+		$input = $input_mapper->map(
+			$this->type_app[$this->type],
+			$this->type,
+			$this->acl_location,
+			$this->bocommon
+		);
 
-		$values['vendor_id']	 = Sanitizer::get_var('vendor_id', 'int', 'POST');
-		$values['vendor_name']	 = Sanitizer::get_var('vendor_name', 'string', 'POST');
-		$values['date']			 = Sanitizer::get_var('date');
-
-		if (!$bypass)
-		{
-			$insert_record	=	Cache::session_get('property',	'insert_record');
-			$insert_record_entity = (array)Cache::session_get($this->type_app[$this->type],	'insert_record_values' . $this->acl_location);
-
-			if (is_array($insert_record_entity))
-			{
-				for ($j = 0; $j < count($insert_record_entity); $j++)
-				{
-					$insert_record['extra'][$insert_record_entity[$j]] = $insert_record_entity[$j];
-				}
-			}
-
-			$values = $this->bocommon->collect_locationdata($values, $insert_record);
-		}
+		$values = $input['values'];
+		$values_attribute = $input['values_attribute'];
 
 		if (isset($values['origin']) && $values['origin'])
 		{
@@ -290,68 +281,29 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		if (isset($values['save']) && $values['save'])
 		{
+			$validation_service = new EntityFormValidationService();
+			$validation = $validation_service->validate(
+				$values,
+				$values_attribute,
+				(int) $this->cat_id,
+				(int) $this->entity_id,
+				$this->soadmin_entity,
+				$this->bo
+			);
+
+			$values = $validation['values'];
+			$values_attribute = $validation['values_attribute'];
+			$this->receipt['error'] = array_merge((array) $this->receipt['error'], $validation['errors']);
+
 			if (!$this->cat_id)
 			{
-				$this->receipt['error'][] = array('msg' => lang('Please select entity type !'));
-
 				return $values;
-			}
-			$category = $this->soadmin_entity->read_single_category($this->entity_id, $this->cat_id);
-
-			if ($category['org_unit'])
-			{
-				$values['extra']['org_unit_id']	 = Sanitizer::get_var('org_unit_id', 'int');
-				$values['org_unit_id']			 = $values['extra']['org_unit_id'];
-				$values['org_unit_name']		 = Sanitizer::get_var('org_unit_name', 'string');
-			}
-			if (phpgw::is_repost())
-			{
-				$this->receipt['error'][] = array('msg' => lang('Hmm... looks like a repost!'));
-			}
-
-			if ((!$values['location'] && !$values['p']) && isset($category['location_level']) && $category['location_level'])
-			{
-				$this->receipt['error'][] = array('msg' => lang('Please select a location !'));
-			}
-
-			if (isset($values_attribute) && is_array($values_attribute))
-			{
-				$first_attribute = current($values_attribute);
-				if (empty($first_attribute['datatype']))
-				{
-					$this->bo->get_attribute_information($values_attribute);
-				}
-
-				foreach ($values_attribute as $attribute)
-				{
-					if ($attribute['nullable'] != 1 && (!$attribute['value'] && !$values['extra'][$attribute['name']]))
-					{
-						$this->receipt['error'][] = array('msg' => lang('Please enter value for attribute %1', $attribute['input_text']));
-					}
-
-					if (isset($attribute['value']) && $attribute['value'] && $attribute['datatype'] == 'I' && !ctype_digit($attribute['value']))
-					{
-						$this->receipt['error'][] = array('msg' => lang('Please enter integer for attribute %1', $attribute['input_text']));
-					}
-				}
 			}
 
 			if ($this->receipt['error'])
 			{
-				if ($values['location'])
-				{
-					$bolocation				 = CreateObject('property.bolocation');
-					$location_code			 = implode("-", $values['location']);
-					$values['extra']['view'] = true;
-					$values['location_data'] = $bolocation->read_single($location_code, $values['extra']);
-				}
-				if ($values['extra']['p_num'])
-				{
-					$values['p'][$values['extra']['p_entity_id']]['p_num']		 = $values['extra']['p_num'];
-					$values['p'][$values['extra']['p_entity_id']]['p_entity_id'] = $values['extra']['p_entity_id'];
-					$values['p'][$values['extra']['p_entity_id']]['p_cat_id']	 = $values['extra']['p_cat_id'];
-					$values['p'][$values['extra']['p_entity_id']]['p_cat_name']	 = Sanitizer::get_var('entity_cat_name_' . $values['extra']['p_entity_id']);
-				}
+				$rehydrate_service = new EntityFormRehydrateService();
+				$values = $rehydrate_service->rehydrate($values);
 			}
 		}
 
@@ -888,16 +840,18 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		{
 			try
 			{
-				Db::getInstance()->transaction_begin();
-				$receipt		 = $this->bo->save($values, $attributes, $action, $this->entity_id, $this->cat_id);
-				$values['id']	 = $receipt['id'];
-				$values_checklist_stage = Sanitizer::get_var('values_checklist_stage');
+				$save_service = new EntityFormSaveService();
+				$persisted = $save_service->save(
+					$values,
+					$attributes,
+					$action,
+					(int) $this->entity_id,
+					(int) $this->cat_id,
+					$this->bo
+				);
 
-				if ($values_checklist_stage)
-				{
-					$this->bo->save_checklist($receipt['id'], $values_checklist_stage, $receipt);
-				}
-				Db::getInstance()->transaction_commit();
+				$receipt = $persisted['receipt'];
+				$values = $persisted['values'];
 
 				$this->receipt	 = $receipt;
 				if (Sanitizer::get_var('phpgw_return_as') == 'json')

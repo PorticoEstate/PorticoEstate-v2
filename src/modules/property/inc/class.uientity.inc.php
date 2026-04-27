@@ -2470,7 +2470,6 @@ JS;
 			'repeat_types'					 => array('options' => $repeat_types),
 			'controller'					 => $_enable_controller && $id,
 			'check_lst_time_span'			 => array('options' => $check_lst_time_span),
-			'cancel_url'					 => phpgw::link('/index.php', $link_index),
 			'enable_bulk'					 => $category['enable_bulk'],
 			'org_unit'						 => $category['org_unit'],
 			'value_org_unit_id'				 => $values['org_unit_id'],
@@ -2530,12 +2529,6 @@ JS;
 			'lookup_type'					 => $lookup_type,
 			'mode'							 => $mode,
 			'form_action'					 => phpgw::link('/index.php', $link_data),
-			'done_action'					 => phpgw::link('/index.php', array(
-				'menuaction' => 'property.uientity.index',
-				'entity_id'	 => $this->entity_id,
-				'cat_id'	 => $this->cat_id,
-				'type'		 => $this->type
-			)),
 			'lang_id'						 => lang('ID'),
 			'value_id'						 => $values['id'],
 			'value_num'						 => $values['num'],
@@ -2570,6 +2563,7 @@ JS;
 			'entity_id' => $this->entity_id,
 			'cat_id' => $this->cat_id,
 			'id' => $id,
+			'link_index' => $link_index,
 		));
 
 		//print_r($data['location_data2']);die;

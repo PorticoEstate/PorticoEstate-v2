@@ -16,6 +16,22 @@ class EntityEditPagePresenter
 	 */
 	public function present(array $payload, array $context = array()): array
 	{
+		if (!isset($payload['cancel_url']) && isset($context['link_index']))
+		{
+			$payload['cancel_url'] = \phpgw::link('/index.php', $context['link_index']);
+		}
+
+		if (!isset($payload['done_action'])
+			&& isset($context['entity_id'], $context['cat_id'], $context['type']))
+		{
+			$payload['done_action'] = \phpgw::link('/index.php', array(
+				'menuaction' => 'property.uientity.index',
+				'entity_id' => $context['entity_id'],
+				'cat_id' => $context['cat_id'],
+				'type' => $context['type']
+			));
+		}
+
 		if (!isset($payload['get_files_java_url'])
 			&& isset($context['type'], $context['entity_id'], $context['cat_id'], $context['id']))
 		{

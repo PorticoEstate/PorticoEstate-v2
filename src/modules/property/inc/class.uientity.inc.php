@@ -1673,51 +1673,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			'type'		 => $this->type
 		);
 
-		$project_link_data = array(
-			'menuaction'	 => 'property.uiproject.edit',
-			'bypass'		 => true,
-			'location_code'	 => $values['location_code'],
-			'p_num'			 => $id,
-			'p_entity_id'	 => $this->entity_id,
-			'p_cat_id'		 => $this->cat_id,
-			'tenant_id'		 => $values['tenant_id'],
-			'origin'		 => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
-			'origin_id'		 => $id
-		);
-
-		$add_to_project_link_data = array(
-			'menuaction' => 'property.uiproject.index',
-			'from'		 => 'workorder',
-			'lookup'	 => true,
-			'query'		 => isset($values['location_data']['loc1']) ? $values['location_data']['loc1'] : '',
-			//		'p_num'				=> $id,
-			//		'p_entity_id'		=> $this->entity_id,
-			//		'p_cat_id'			=> $this->cat_id,
-			'tenant_id'	 => $values['tenant_id'],
-			'origin'	 => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
-			'origin_id'	 => $id
-		);
-
-		$ticket_link_data = array(
-			'menuaction'	 => 'property.uitts.add',
-			'bypass'		 => true,
-			'location_code'	 => $values['location_code'],
-			'p_num'			 => $id,
-			'p_entity_id'	 => $this->entity_id,
-			'p_cat_id'		 => $this->cat_id,
-			'tenant_id'		 => $values['tenant_id'],
-			'origin'		 => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
-			'origin_id'		 => $id
-		);
-
-		$pdf_data = array(
-			'menuaction' => 'property.uientity.print_pdf',
-			'id'		 => $id,
-			'entity_id'	 => $this->entity_id,
-			'cat_id'	 => $this->cat_id,
-			'type'		 => $this->type
-		);
-
 		$tabs		 = array();
 		$active_tab	 = Sanitizer::get_var('active_tab');
 
@@ -2063,35 +2018,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 			if ($category['fileupload'] || (isset($values['files']) && $values['files']))
 			{
-
-				$link_file_data = array(
-					'menuaction' => 'property.uientity.view_file',
-					'loc1'		 => $values['location_data']['loc1'],
-					'id'		 => $id,
-					'cat_id'	 => $this->cat_id,
-					'entity_id'	 => $this->entity_id,
-					'type'		 => $this->type
-				);
-				$link_view_file	 = phpgw::link('/index.php', $link_file_data);
-
-				$img_types = array(
-					'image/jpeg',
-					'image/png',
-					'image/gif'
-				);
-
-				$content_images = array();
-				foreach ($values['files'] as $_entry)
-				{
-					if (in_array($_entry['mime_type'], $img_types))
-					{
-						$content_images[] = array(
-							'file_name' => $_entry['name'],
-							'img_id' => $_entry['file_id'],
-							'img_url' => "{$link_view_file}&file_id={$_entry['file_id']}"
-						);
-					}
-				}
 
 				$tabs['files'] = array('label' => lang('files'), 'link' => '#files', 'disable' => 0);
 
@@ -2499,12 +2425,7 @@ JS;
 			'tabs' => $tabs,
 			'active_tab' => $active_tab,
 			'integration' => $integration,
-			'content_images' => $content_images,
-			'pdf_data' => $pdf_data,
-			'project_link_data' => $project_link_data,
-			'add_to_project_link_data' => $add_to_project_link_data,
-			'ticket_link_data' => $ticket_link_data,
-			'link_file_data' => $link_file_data,
+
 		)));
 
 
@@ -2665,7 +2586,9 @@ JS;
 	 */
 	private function build_edit_presenter_context(array $input): array
 	{
-		$values = $input['values'] ?? array();
+		$id       = $input['id'] ?? 0;
+		$values   = $input['values'] ?? array();
+		$category = $input['category'] ?? array();
 		$lookup_functions = isset($values['lookup_functions']) ? $values['lookup_functions'] : '';
 		$files = isset($values['files']) ? $values['files'] : '';
 		$textareacols = isset($this->userSettings['preferences']['property']['textareacols'])
@@ -2677,11 +2600,83 @@ JS;
 			? $this->userSettings['preferences']['property']['textarearows']
 			: 6;
 
+		$pdf_data = array(
+			'menuaction' => 'property.uientity.print_pdf',
+			'id'         => $id,
+			'entity_id'  => $this->entity_id,
+			'cat_id'     => $this->cat_id,
+			'type'       => $this->type
+		);
+
+		$project_link_data = array(
+			'menuaction'    => 'property.uiproject.edit',
+			'bypass'        => true,
+			'location_code' => isset($values['location_code']) ? $values['location_code'] : '',
+			'p_num'         => $id,
+			'p_entity_id'   => $this->entity_id,
+			'p_cat_id'      => $this->cat_id,
+			'tenant_id'     => isset($values['tenant_id']) ? $values['tenant_id'] : '',
+			'origin'        => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
+			'origin_id'     => $id
+		);
+
+		$add_to_project_link_data = array(
+			'menuaction' => 'property.uiproject.index',
+			'from'       => 'workorder',
+			'lookup'     => true,
+			'query'      => isset($values['location_data']['loc1']) ? $values['location_data']['loc1'] : '',
+			'tenant_id'  => isset($values['tenant_id']) ? $values['tenant_id'] : '',
+			'origin'     => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
+			'origin_id'  => $id
+		);
+
+		$ticket_link_data = array(
+			'menuaction'    => 'property.uitts.add',
+			'bypass'        => true,
+			'location_code' => isset($values['location_code']) ? $values['location_code'] : '',
+			'p_num'         => $id,
+			'p_entity_id'   => $this->entity_id,
+			'p_cat_id'      => $this->cat_id,
+			'tenant_id'     => isset($values['tenant_id']) ? $values['tenant_id'] : '',
+			'origin'        => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
+			'origin_id'     => $id
+		);
+
+		$link_file_data = array();
+		$content_images = array();
+		if ($category['fileupload'] || (isset($values['files']) && $values['files']))
+		{
+			$link_file_data = array(
+				'menuaction' => 'property.uientity.view_file',
+				'loc1'       => isset($values['location_data']['loc1']) ? $values['location_data']['loc1'] : '',
+				'id'         => $id,
+				'cat_id'     => $this->cat_id,
+				'entity_id'  => $this->entity_id,
+				'type'       => $this->type
+			);
+			$link_view_file = phpgw::link('/index.php', $link_file_data);
+			$img_types = array('image/jpeg', 'image/png', 'image/gif');
+			if (is_array($values['files']))
+			{
+				foreach ($values['files'] as $_entry)
+				{
+					if (in_array($_entry['mime_type'], $img_types))
+					{
+						$content_images[] = array(
+							'file_name' => $_entry['name'],
+							'img_id'    => $_entry['file_id'],
+							'img_url'   => "{$link_view_file}&file_id={$_entry['file_id']}"
+						);
+					}
+				}
+			}
+		}
+
 		return array(
 			'type' => $this->type,
 			'entity_id' => $this->entity_id,
 			'cat_id' => $this->cat_id,
-			'id' => $input['id'] ?? 0,
+			'id' => $id,
 			'link_index' => $input['link_index'] ?? array(),
 			'get_docs' => !empty($input['get_docs']),
 			'lean' => !empty($input['lean']),
@@ -2690,7 +2685,7 @@ JS;
 			'doc_type_filter' => $input['doc_type_filter'] ?? array(),
 			'entity_group_list' => $input['entity_group_list'] ?? array(),
 			'entity' => $input['entity'] ?? array(),
-			'category' => $input['category'] ?? array(),
+			'category' => $category,
 			'values' => $values,
 			'error_id' => $input['error_id'] ?? '',
 			'origin' => $input['origin'] ?? '',
@@ -2718,13 +2713,13 @@ JS;
 				'security',
 				'file'
 			)),
-			'content_images' => $input['content_images'] ?? array(),
+			'content_images' => $content_images,
 			'value_location_id' => $this->locations->get_id($this->type_app[$this->type], $this->acl_location),
-			'link_pdf' => phpgw::link('/index.php', $input['pdf_data'] ?? array()),
-			'project_link' => phpgw::link('/index.php', $input['project_link_data'] ?? array()),
-			'add_to_project_link' => phpgw::link('/index.php', $input['add_to_project_link_data'] ?? array()),
-			'ticket_link' => phpgw::link('/index.php', $input['ticket_link_data'] ?? array()),
-			'link_view_file' => phpgw::link('/index.php', $input['link_file_data'] ?? array()),
+			'link_pdf' => phpgw::link('/index.php', $pdf_data),
+			'project_link' => phpgw::link('/index.php', $project_link_data),
+			'add_to_project_link' => phpgw::link('/index.php', $add_to_project_link_data),
+			'ticket_link' => phpgw::link('/index.php', $ticket_link_data),
+			'link_view_file' => phpgw::link('/index.php', $link_file_data),
 			'files' => $files,
 		);
 	}

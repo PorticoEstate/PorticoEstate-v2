@@ -2249,11 +2249,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			'controller'          => $_enable_controller && $id,
 		);
 
-		$presenter = new EntityEditPagePresenter();
-		$data = $presenter->present($data, $this->build_edit_presenter_context(array(
+		$presenter_input = $this->build_edit_presenter_input(array(
 			'id' => $id,
 			'link_index' => $link_index,
-			'get_docs' => !empty($get_docs),
+			'get_docs' => $get_docs ?? false,
 			'lean' => $_lean,
 			'repeat_types' => $repeat_types,
 			'check_lst_time_span' => $check_lst_time_span,
@@ -2279,8 +2278,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			'tabs' => $tabs,
 			'active_tab' => $active_tab,
 			'integration' => $integration,
+		));
 
-		)));
+		$presenter = new EntityEditPagePresenter();
+		$data = $presenter->present($data, $this->build_edit_presenter_context($presenter_input));
 
 
 		//print_r($data['location_data2']);die;
@@ -2507,6 +2508,43 @@ JS;
 		return array(
 			'tabs' => $tabs,
 			'location_checklists' => $location_checklists,
+		);
+	}
+
+	/**
+	 * Build the input array passed from edit() into presenter context shaping.
+	 */
+	private function build_edit_presenter_input(array $input): array
+	{
+		return array(
+			'id' => $input['id'] ?? 0,
+			'link_index' => $input['link_index'] ?? array(),
+			'get_docs' => !empty($input['get_docs']),
+			'lean' => !empty($input['lean']),
+			'repeat_types' => $input['repeat_types'] ?? array(),
+			'check_lst_time_span' => $input['check_lst_time_span'] ?? array(),
+			'doc_type_filter' => $input['doc_type_filter'] ?? array(),
+			'entity_group_list' => $input['entity_group_list'] ?? array(),
+			'entity' => $input['entity'] ?? array(),
+			'category' => $input['category'] ?? array(),
+			'values' => $input['values'] ?? array(),
+			'error_id' => $input['error_id'] ?? '',
+			'origin' => $input['origin'] ?? '',
+			'origin_id' => $input['origin_id'] ?? '',
+			'cat_list' => $input['cat_list'] ?? '',
+			'location_code' => $input['location_code'] ?? '',
+			'lookup_tenant' => !empty($input['lookup_tenant']),
+			'msgbox_data' => $input['msgbox_data'] ?? array(),
+			'entity_group_name' => $input['entity_group_name'] ?? '',
+			'attributes' => $input['attributes'] ?? array(),
+			'attributes_general' => $input['attributes_general'] ?? array(),
+			'location_data' => $input['location_data'] ?? array(),
+			'lookup_type' => $input['lookup_type'] ?? '',
+			'mode' => $input['mode'] ?? 'edit',
+			'link_data' => $input['link_data'] ?? array(),
+			'tabs' => $input['tabs'] ?? array(),
+			'active_tab' => $input['active_tab'] ?? '',
+			'integration' => $input['integration'] ?? array(),
 		);
 	}
 

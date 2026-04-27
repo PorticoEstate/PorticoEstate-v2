@@ -14,12 +14,12 @@
  *
  * phpGroupWare is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with phpGroupWare; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA	02110-1301	USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA    02110-1301     USA
  *
  * @license http://www.gnu.org/licenses/gpl.html GNU General Public License
  * @internal Development of this application was funded by http://www.bergen.kommune.no/bbb_/ekstern/
@@ -32,6 +32,7 @@ use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\Database\Db;
+use App\modules\property\inc\EntityEditPagePresenter;
 use App\modules\property\inc\EntityFormInputMapper;
 use App\modules\property\inc\EntityFormRehydrateService;
 use App\modules\property\inc\EntityFormSaveResponse;
@@ -74,7 +75,7 @@ phpgw::import_class('phpgwapi.jquery');
 class property_uientity extends phpgwapi_uicommon_jquery
 {
 
-	private $receipt			 = array();
+	private $receipt				 = array();
 	private $acl_read, $acl_add, $acl_edit, $acl_delete, $entity_id;
 	var $grants;
 	var $cat_id;
@@ -164,31 +165,31 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		$this->account = $this->userSettings['account_id'];
 
-		$this->bo				 = CreateObject('property.boentity', true);
-		$this->bocommon			 = &$this->bo->bocommon;
+		$this->bo								 = CreateObject('property.boentity', true);
+		$this->bocommon					 = &$this->bo->bocommon;
 		$this->soadmin_entity	 = &$this->bo->soadmin_entity;
 
 		$this->entity_id = $this->bo->entity_id;
 		$this->cat_id	 = $this->bo->cat_id;
 
-		$this->start			 = $this->bo->start;
-		$this->query			 = $this->bo->query;
-		$this->sort				 = $this->bo->sort;
-		$this->order			 = $this->bo->order;
-		$this->filter			 = $this->bo->filter;
+		$this->start					 = $this->bo->start;
+		$this->query					 = $this->bo->query;
+		$this->sort						 = $this->bo->sort;
+		$this->order					 = $this->bo->order;
+		$this->filter					 = $this->bo->filter;
 		$this->part_of_town_id	 = $this->bo->part_of_town_id;
-		$this->district_id		 = $this->bo->district_id;
-		$this->status			 = $this->bo->status;
-		$this->location_code	 = $this->bo->location_code;
-		$this->p_num			 = $this->bo->p_num;
-		$this->category_dir		 = $this->bo->category_dir;
+		$this->district_id			 = $this->bo->district_id;
+		$this->status					 = $this->bo->status;
+		$this->location_code		 = $this->bo->location_code;
+		$this->p_num					 = $this->bo->p_num;
+		$this->category_dir			 = $this->bo->category_dir;
 		Cache::session_set('property', 'entity_id', $this->entity_id);
-		$this->start_date		 = $this->bo->start_date;
-		$this->end_date			 = $this->bo->end_date;
-		$this->allrows			 = $this->bo->allrows;
-		$this->type				 = $this->bo->type;
-		$this->type_app			 = $this->bo->type_app;
-		$this->custom			 = $this->bo->custom;
+		$this->start_date			 = $this->bo->start_date;
+		$this->end_date				 = $this->bo->end_date;
+		$this->allrows				 = $this->bo->allrows;
+		$this->type						 = $this->bo->type;
+		$this->type_app				 = $this->bo->type_app;
+		$this->custom					 = $this->bo->custom;
 
 		$this->acl_location = ".{$this->type}.$this->entity_id";
 		if ($this->cat_id)
@@ -221,7 +222,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		$this->flags['menu_selection'] = "{$this->type_app[$this->type]}::entity_{$this->entity_id}";
 		if ($this->cat_id > 0)
 		{
-			//				$this->flags['menu_selection'] .= "::{$this->cat_id}";
 			$location_id = $this->locations->get_id($this->type_app[$this->type], $this->acl_location);
 			$this->flags['menu_selection'] = "navbar#{$location_id}";
 		}
@@ -2567,6 +2567,9 @@ JS;
 				. '/' . (int)$this->cat_id
 				. '/' . (int)$id . '/files',
 		);
+
+		$presenter = new EntityEditPagePresenter();
+		$data = $presenter->present($data);
 
 		//print_r($data['location_data2']);die;
 

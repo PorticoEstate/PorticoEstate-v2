@@ -2280,8 +2280,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			'integration' => $integration,
 		));
 
-		$presenter = new EntityEditPagePresenter();
-		$data = $presenter->present($data, $this->build_edit_presenter_context($presenter_input));
+		$data = $this->apply_edit_presenter($data, $presenter_input);
 
 
 		//print_r($data['location_data2']);die;
@@ -2546,6 +2545,15 @@ JS;
 			'active_tab' => $input['active_tab'] ?? '',
 			'integration' => $input['integration'] ?? array(),
 		);
+	}
+
+	/**
+	 * Apply presenter shaping to edit payload using normalized presenter input.
+	 */
+	private function apply_edit_presenter(array $data, array $presenter_input): array
+	{
+		$presenter = new EntityEditPagePresenter();
+		return $presenter->present($data, $this->build_edit_presenter_context($presenter_input));
 	}
 
 	/**

@@ -16,6 +16,36 @@ class EntityEditPagePresenter
 	 */
 	public function present(array $payload, array $context = array()): array
 	{
+		if (!isset($payload['multiple_uploader']) && isset($context['id']))
+		{
+			$payload['multiple_uploader'] = $context['id'] ? true : '';
+		}
+
+		if (!isset($payload['multi_upload_parans'])
+			&& isset($context['id'], $context['entity_id'], $context['cat_id'], $context['type']))
+		{
+			$payload['multi_upload_parans'] = "{menuaction:'property.uientity.build_multi_upload_file',"
+				. "id:'{$context['id']}',"
+				. "_entity_id:'{$context['entity_id']}',"
+				. "_cat_id:'{$context['cat_id']}',"
+				. "_type:'{$context['type']}'}";
+		}
+
+		if (!isset($payload['multi_upload_action'])
+			&& isset($context['id'], $context['entity_id'], $context['cat_id'], $context['type']))
+		{
+			$payload['multi_upload_action'] = \phpgw::link(
+				'/index.php',
+				array(
+					'menuaction' => 'property.uientity.handle_multi_upload_file',
+					'id' => $context['id'],
+					'entity_id' => $context['entity_id'],
+					'cat_id' => $context['cat_id'],
+					'type' => $context['type']
+				)
+			);
+		}
+
 		if (!isset($payload['cancel_url']) && isset($context['link_index']))
 		{
 			$payload['cancel_url'] = \phpgw::link('/index.php', $context['link_index']);

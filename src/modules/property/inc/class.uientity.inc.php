@@ -2491,22 +2491,6 @@ JS;
 			//		'link_to_files'					=> $link_to_files,
 			'files'							 => isset($values['files']) ? $values['files'] : '',
 			//		'jasperfiles'					=> isset($values['jasperfiles'])?$values['jasperfiles']:'',
-			'multiple_uploader'				 => $id ? true : '',
-			'multi_upload_parans'			 => "{menuaction:'property.uientity.build_multi_upload_file',"
-				. "id:'{$id}',"
-				. "_entity_id:'{$this->entity_id}',"
-				. "_cat_id:'{$this->cat_id}',"
-				. "_type:'{$this->type}'}",
-			'multi_upload_action'			 => phpgw::link(
-				'/index.php',
-				array(
-					'menuaction' => 'property.uientity.handle_multi_upload_file',
-					'id'		 => $id,
-					'entity_id'	 => $this->entity_id,
-					'cat_id'	 => $this->cat_id,
-					'type'		 => $this->type
-				)
-			),
 			'value_origin'					 => isset($values['origin_data']) ? $values['origin_data'] : '',
 			'value_origin_type'				 => isset($origin) ? $origin : '',
 			'value_origin_id'				 => isset($origin_id) ? $origin_id : '',

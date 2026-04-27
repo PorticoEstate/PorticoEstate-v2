@@ -1026,6 +1026,18 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			$receipt['message'][] = array('msg' => lang('columns is updated'));
 		}
 
+		if (!$this->cat_id)
+		{
+			$receipt['error'][] = array('msg' => lang('Choose a category'));
+		}
+		$function_msg = lang('Select Column');
+
+		$link_data = array(
+			'menuaction' => 'property.uientity.columns',
+			'entity_id'	 => $this->entity_id,
+			'cat_id'	 => $this->cat_id,
+			'type'		 => $this->type
+		);
 
 		$msgbox_data = $this->bocommon->msgbox_data($receipt);
 

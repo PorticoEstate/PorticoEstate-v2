@@ -16,6 +16,46 @@ class EntityEditPagePresenter
 	 */
 	public function present(array $payload, array $context = array()): array
 	{
+		if (!isset($payload['value_origin']) && isset($context['values']['origin_data']))
+		{
+			$payload['value_origin'] = $context['values']['origin_data'];
+		}
+
+		if (!isset($payload['value_origin_type']) && array_key_exists('origin', $context))
+		{
+			$payload['value_origin_type'] = $context['origin'] ?? '';
+		}
+
+		if (!isset($payload['value_origin_id']) && array_key_exists('origin_id', $context))
+		{
+			$payload['value_origin_id'] = $context['origin_id'] ?? '';
+		}
+
+		if (!isset($payload['cat_list']) && array_key_exists('cat_list', $context))
+		{
+			$payload['cat_list'] = $context['cat_list'] ?? '';
+		}
+
+		if (!isset($payload['location_code']) && array_key_exists('location_code', $context))
+		{
+			$payload['location_code'] = $context['location_code'] ?? '';
+		}
+
+		if (!isset($payload['lookup_tenant']) && array_key_exists('lookup_tenant', $context))
+		{
+			$payload['lookup_tenant'] = $context['lookup_tenant'];
+		}
+
+		if (!isset($payload['msgbox_data']) && array_key_exists('msgbox_html', $context))
+		{
+			$payload['msgbox_data'] = $context['msgbox_html'] ?? '';
+		}
+
+		if (!isset($payload['entity_group_name']) && array_key_exists('entity_group_name', $context))
+		{
+			$payload['entity_group_name'] = $context['entity_group_name'] ?? '';
+		}
+
 		if (!isset($payload['select_name']))
 		{
 			$payload['select_name'] = 'cat_id';

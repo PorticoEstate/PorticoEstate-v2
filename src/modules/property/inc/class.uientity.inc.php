@@ -2489,13 +2489,6 @@ JS;
 			//		'link_to_files'					=> $link_to_files,
 			'files'							 => isset($values['files']) ? $values['files'] : '',
 			//		'jasperfiles'					=> isset($values['jasperfiles'])?$values['jasperfiles']:'',
-			'value_origin'					 => isset($values['origin_data']) ? $values['origin_data'] : '',
-			'value_origin_type'				 => isset($origin) ? $origin : '',
-			'value_origin_id'				 => isset($origin_id) ? $origin_id : '',
-			'cat_list'						 => isset($cat_list) ? $cat_list : '',
-			'location_code'					 => isset($location_code) ? $location_code : '',
-			'lookup_tenant'					 => $lookup_tenant,
-			'msgbox_data'					 => $this->phpgwapi_common->msgbox($msgbox_data),
 			'attributes_group'				 => $attributes,
 			'attributes_general'			 => array('attributes' => $attributes_general),
 			'lookup_functions'				 => isset($values['lookup_functions']) ? $values['lookup_functions'] : '',
@@ -2509,7 +2502,6 @@ JS;
 			'active_tab'					 => $active_tab,
 			'integration'					 => $integration,
 			/* 'requestUrlDoc' => $requestUrlDoc ? $requestUrlDoc : '', */
-			'entity_group_name'				 => $entity_group_name,
 			'validator'						 => phpgwapi_jquery::formvalidator_generate(array(
 				'location',
 				'date',
@@ -2536,6 +2528,13 @@ JS;
 			'category' => $category,
 			'values' => $values,
 			'error_id' => $error_id ?? '',
+			'origin' => $origin ?? '',
+			'origin_id' => $origin_id ?? '',
+			'cat_list' => $cat_list ?? '',
+			'location_code' => $location_code ?? '',
+			'lookup_tenant' => $lookup_tenant,
+			'msgbox_html' => $this->phpgwapi_common->msgbox($msgbox_data),
+			'entity_group_name' => $entity_group_name,
 		));
 
 		//print_r($data['location_data2']);die;

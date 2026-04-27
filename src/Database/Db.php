@@ -932,58 +932,6 @@ class Db
 	}
 
 	/**
-	 * Prepare and execute a parameterised query, storing all rows in resultSet.
-	 *
-	 * Replaces the pattern of concatenating values directly into an SQL string
-	 * with proper PDO prepared-statement binding, eliminating SQL-injection risk.
-	 *
-	 * Usage:
-	 *   $this->db->queryWithParams(
-	 *       'SELECT * FROM fm_entity WHERE id = :id AND status = :status',
-	 *       [':id' => $id, ':status' => $status]
-	 *   );
-	 *
-	 * @param string $sql    SQL with named placeholders (:name) or positional (?)
-	 * @param array  $params Bound parameter values (named or positional array)
-	 * @return bool true on success
-	 * @throws PDOException on query failure (respects Halt_On_Error / Exception_On_Error)
-	 */
-	public function queryWithParams(string $sql, array $params = []): bool
-	{
-		$this->_get_fetchmode();
-
-		try
-		{
-			$stmt = $this->db->prepare($sql);
-			$stmt->execute($params);
-			$this->affected_rows = $stmt->rowCount();
-
-			// Only fetch rows for SELECT-like statements
-			if (!preg_match('/^\s*(INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)\s/i', $sql))
-			{
-				$this->resultSet = $stmt->fetchAll($this->pdo_fetchmode);
-			}
-		}
-		catch (PDOException $e)
-		{
-			if ($e && !$this->Exception_On_Error && $this->Halt_On_Error == 'yes')
-			{
-				$this->transaction_abort();
-				$this->failWithError("queryWithParams: {$sql}\n" . $e->getMessage());
-			}
-			else if ($this->Exception_On_Error)
-			{
-				$this->transaction_abort();
-				throw $e;
-			}
-		}
-
-		$this->delayPointer = true;
-		return true;
-	}
-
-
-	/**
 	 * Execute a query with limited result set
 	 *
 	 * @param string $sql the query to be executed

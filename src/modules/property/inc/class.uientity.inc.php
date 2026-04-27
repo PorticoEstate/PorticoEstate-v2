@@ -614,14 +614,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			'allrows'			 => Sanitizer::get_var('length', 'int') == -1 || $export,
 			'doc_type'			 => $doc_type,
 			'entity_id'			 => $entity_id,
-			'cat_id'			 => $cat_id,
+			'cat_id'				 => $cat_id,
 			'p_num'				 => $item_id,
 			'location_item_id'	 => $item_id,
 		);
 
-		$document		 = CreateObject('property.sodocument');
-		$documents		 = $document->read_at_location($params);
-		$total_records	 = $document->total_records;
+		$document			 = CreateObject('property.sodocument');
+		$documents			 = $document->read_at_location($params);
+		$total_records		 = $document->total_records;
 
 		foreach ($documents as $item)
 		{
@@ -1025,19 +1025,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 			$receipt['message'][] = array('msg' => lang('columns is updated'));
 		}
-
-		if (!$this->cat_id)
-		{
-			$receipt['error'][] = array('msg' => lang('Choose a category'));
-		}
-		$function_msg = lang('Select Column');
-
-		$link_data = array(
-			'menuaction' => 'property.uientity.columns',
-			'entity_id'	 => $this->entity_id,
-			'cat_id'	 => $this->cat_id,
-			'type'		 => $this->type
-		);
 
 
 		$msgbox_data = $this->bocommon->msgbox_data($receipt);
@@ -2489,26 +2476,7 @@ JS;
 			//		'link_to_files'					=> $link_to_files,
 			'files'							 => isset($values['files']) ? $values['files'] : '',
 			//		'jasperfiles'					=> isset($values['jasperfiles'])?$values['jasperfiles']:'',
-			'attributes_group'				 => $attributes,
-			'attributes_general'			 => array('attributes' => $attributes_general),
-			'lookup_functions'				 => isset($values['lookup_functions']) ? $values['lookup_functions'] : '',
-			'location_data2'				 => $location_data,
-			'lookup_type'					 => $lookup_type,
-			'mode'							 => $mode,
-			'form_action'					 => phpgw::link('/index.php', $link_data),
-			'textareacols'					 => isset($this->userSettings['preferences']['property']['textareacols']) && $this->userSettings['preferences']['property']['textareacols'] ? $this->userSettings['preferences']['property']['textareacols'] : 40,
-			'textarearows'					 => isset($this->userSettings['preferences']['property']['textarearows']) && $this->userSettings['preferences']['property']['textarearows'] ? $this->userSettings['preferences']['property']['textarearows'] : 6,
-			'tabs'							 => phpgwapi_jquery::tabview_generate($tabs, $active_tab),
-			'active_tab'					 => $active_tab,
-			'integration'					 => $integration,
 			/* 'requestUrlDoc' => $requestUrlDoc ? $requestUrlDoc : '', */
-			'validator'						 => phpgwapi_jquery::formvalidator_generate(array(
-				'location',
-				'date',
-				'security',
-				'file'
-			)),
-			'content_images'				 => $content_images,
 		);
 
 		$presenter = new EntityEditPagePresenter();
@@ -2535,6 +2503,32 @@ JS;
 			'lookup_tenant' => $lookup_tenant,
 			'msgbox_html' => $this->phpgwapi_common->msgbox($msgbox_data),
 			'entity_group_name' => $entity_group_name,
+			'attributes' => $attributes,
+			'attributes_general' => $attributes_general,
+			'lookup_functions' => isset($values['lookup_functions']) ? $values['lookup_functions'] : '',
+			'location_data' => $location_data,
+			'lookup_type' => $lookup_type,
+			'mode' => $mode,
+			'form_action' => phpgw::link('/index.php', $link_data),
+			'textareacols' => isset($this->userSettings['preferences']['property']['textareacols']) && $this->userSettings['preferences']['property']['textareacols'] ? $this->userSettings['preferences']['property']['textareacols'] : 40,
+			'textarearows' => isset($this->userSettings['preferences']['property']['textarearows']) && $this->userSettings['preferences']['property']['textarearows'] ? $this->userSettings['preferences']['property']['textarearows'] : 6,
+			'tabs' => phpgwapi_jquery::tabview_generate($tabs, $active_tab),
+			'active_tab' => $active_tab,
+			'integration' => $integration,
+			'validator' => phpgwapi_jquery::formvalidator_generate(array(
+				'location',
+				'date',
+				'security',
+				'file'
+			)),
+			'content_images' => $content_images,
+			'value_location_id' => $this->locations->get_id($this->type_app[$this->type], $this->acl_location),
+			'link_pdf' => phpgw::link('/index.php', $pdf_data),
+			'project_link' => phpgw::link('/index.php', $project_link_data),
+			'add_to_project_link' => phpgw::link('/index.php', $add_to_project_link_data),
+			'ticket_link' => phpgw::link('/index.php', $ticket_link_data),
+			'link_view_file' => phpgw::link('/index.php', $link_file_data),
+			'files' => isset($values['files']) ? $values['files'] : '',
 		));
 
 		//print_r($data['location_data2']);die;

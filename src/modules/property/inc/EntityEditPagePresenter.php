@@ -16,6 +16,156 @@ class EntityEditPagePresenter
 	 */
 	public function present(array $payload, array $context = array()): array
 	{
+		if (!isset($payload['enable_bulk']) && isset($context['category']['enable_bulk']))
+		{
+			$payload['enable_bulk'] = $context['category']['enable_bulk'];
+		}
+
+		if (!isset($payload['org_unit']) && isset($context['category']['org_unit']))
+		{
+			$payload['org_unit'] = $context['category']['org_unit'];
+		}
+
+		if (!isset($payload['value_org_unit_id']) && isset($context['values']['org_unit_id']))
+		{
+			$payload['value_org_unit_id'] = $context['values']['org_unit_id'];
+		}
+
+		if (!isset($payload['value_org_unit_name']) && isset($context['values']['org_unit_name']))
+		{
+			$payload['value_org_unit_name'] = $context['values']['org_unit_name'];
+		}
+
+		if (!isset($payload['value_org_unit_name_path']) && isset($context['values']['org_unit_name_path']))
+		{
+			$payload['value_org_unit_name_path'] = $context['values']['org_unit_name_path'];
+		}
+
+		if (!isset($payload['value_location_id']) && array_key_exists('value_location_id', $context))
+		{
+			$payload['value_location_id'] = $context['value_location_id'];
+		}
+
+		if (!isset($payload['link_pdf']) && array_key_exists('link_pdf', $context))
+		{
+			$payload['link_pdf'] = $context['link_pdf'];
+		}
+
+		if (!isset($payload['start_project']) && isset($context['category']['start_project']))
+		{
+			$payload['start_project'] = $context['category']['start_project'];
+		}
+
+		if (!isset($payload['project_link']) && array_key_exists('project_link', $context))
+		{
+			$payload['project_link'] = $context['project_link'];
+		}
+
+		if (!isset($payload['add_to_project_link']) && array_key_exists('add_to_project_link', $context))
+		{
+			$payload['add_to_project_link'] = $context['add_to_project_link'];
+		}
+
+		if (!isset($payload['start_ticket']) && isset($context['category']['start_ticket']))
+		{
+			$payload['start_ticket'] = $context['category']['start_ticket'];
+		}
+
+		if (!isset($payload['ticket_link']) && array_key_exists('ticket_link', $context))
+		{
+			$payload['ticket_link'] = $context['ticket_link'];
+		}
+
+		if (!isset($payload['fileupload']) && isset($context['category']['fileupload']))
+		{
+			$payload['fileupload'] = $context['category']['fileupload'];
+		}
+
+		if (!isset($payload['checklist_count']) && isset($context['category']['checklist_count']))
+		{
+			$payload['checklist_count'] = $context['category']['checklist_count'];
+		}
+
+		if (!isset($payload['link_view_file']) && array_key_exists('link_view_file', $context))
+		{
+			$payload['link_view_file'] = $context['link_view_file'];
+		}
+
+		if (!isset($payload['files']) && array_key_exists('files', $context))
+		{
+			$payload['files'] = $context['files'];
+		}
+
+		if (!isset($payload['attributes_group']) && array_key_exists('attributes', $context))
+		{
+			$payload['attributes_group'] = $context['attributes'];
+		}
+
+		if (!isset($payload['attributes_general']) && array_key_exists('attributes_general', $context))
+		{
+			$payload['attributes_general'] = array('attributes' => $context['attributes_general']);
+		}
+
+		if (!isset($payload['lookup_functions']) && array_key_exists('lookup_functions', $context))
+		{
+			$payload['lookup_functions'] = $context['lookup_functions'];
+		}
+
+		if (!isset($payload['location_data2']) && array_key_exists('location_data', $context))
+		{
+			$payload['location_data2'] = $context['location_data'];
+		}
+
+		if (!isset($payload['lookup_type']) && array_key_exists('lookup_type', $context))
+		{
+			$payload['lookup_type'] = $context['lookup_type'];
+		}
+
+		if (!isset($payload['mode']) && array_key_exists('mode', $context))
+		{
+			$payload['mode'] = $context['mode'];
+		}
+
+		if (!isset($payload['form_action']) && array_key_exists('form_action', $context))
+		{
+			$payload['form_action'] = $context['form_action'];
+		}
+
+		if (!isset($payload['textareacols']) && array_key_exists('textareacols', $context))
+		{
+			$payload['textareacols'] = $context['textareacols'];
+		}
+
+		if (!isset($payload['textarearows']) && array_key_exists('textarearows', $context))
+		{
+			$payload['textarearows'] = $context['textarearows'];
+		}
+
+		if (!isset($payload['tabs']) && array_key_exists('tabs', $context))
+		{
+			$payload['tabs'] = $context['tabs'];
+		}
+
+		if (!isset($payload['active_tab']) && array_key_exists('active_tab', $context))
+		{
+			$payload['active_tab'] = $context['active_tab'];
+		}
+
+		if (!isset($payload['integration']) && array_key_exists('integration', $context))
+		{
+			$payload['integration'] = $context['integration'];
+		}
+
+		if (!isset($payload['validator']) && array_key_exists('validator', $context))
+		{
+			$payload['validator'] = $context['validator'];
+		}
+
+		if (!isset($payload['content_images']) && array_key_exists('content_images', $context))
+		{
+			$payload['content_images'] = $context['content_images'];
+		}
+
 		if (!isset($payload['value_origin']) && isset($context['values']['origin_data']))
 		{
 			$payload['value_origin'] = $context['values']['origin_data'];

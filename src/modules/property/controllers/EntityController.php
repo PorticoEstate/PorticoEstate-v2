@@ -6,6 +6,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpBadRequestException;
+use Slim\Exception\HttpForbiddenException;
 use Slim\Exception\HttpNotFoundException;
 use Sanitizer;
 use OpenApi\Annotations as OA;
@@ -412,7 +413,14 @@ class EntityController
 			throw new HttpBadRequestException($request, 'Invalid id');
 		}
 
-		$this->bo($args)->delete($id);
+		$bo = $this->bo($args);
+		$app = $bo->type_app[$bo->type] ?? 'property';
+		if (!$bo->acl->check($bo->acl_location, ACL_DELETE, $app))
+		{
+			throw new HttpForbiddenException($request, 'No delete access for this entity category');
+		}
+
+		$bo->delete($id);
 
 		return $response->withStatus(204);
 	}

@@ -8,13 +8,23 @@ namespace App\modules\property\inc;
 class EntityEditPagePresenter
 {
 	/**
-	 * Pass-through seam for incremental extraction from property_uientity::edit().
+	 * Incremental presenter seam for property_uientity::edit().
 	 *
 	 * @param array $payload Existing legacy payload.
+	 * @param array $context Minimal context used for derived values.
 	 * @return array
 	 */
-	public function present(array $payload): array
+	public function present(array $payload, array $context = array()): array
 	{
+		if (!isset($payload['get_files_java_url'])
+			&& isset($context['type'], $context['entity_id'], $context['cat_id'], $context['id']))
+		{
+			$payload['get_files_java_url'] = '/property/entity/' . urlencode($context['type'])
+				. '/' . (int) $context['entity_id']
+				. '/' . (int) $context['cat_id']
+				. '/' . (int) $context['id'] . '/files';
+		}
+
 		return $payload;
 	}
 

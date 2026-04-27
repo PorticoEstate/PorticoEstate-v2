@@ -2562,14 +2562,15 @@ JS;
 				'file'
 			)),
 			'content_images'				 => $content_images,
-			'get_files_java_url'			=> '/property/entity/' . urlencode($this->type)
-				. '/' . (int)$this->entity_id
-				. '/' . (int)$this->cat_id
-				. '/' . (int)$id . '/files',
 		);
 
 		$presenter = new EntityEditPagePresenter();
-		$data = $presenter->present($data);
+		$data = $presenter->present($data, array(
+			'type' => $this->type,
+			'entity_id' => $this->entity_id,
+			'cat_id' => $this->cat_id,
+			'id' => $id,
+		));
 
 		//print_r($data['location_data2']);die;
 

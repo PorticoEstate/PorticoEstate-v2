@@ -2492,12 +2492,9 @@ JS;
 			'value_origin'					 => isset($values['origin_data']) ? $values['origin_data'] : '',
 			'value_origin_type'				 => isset($origin) ? $origin : '',
 			'value_origin_id'				 => isset($origin_id) ? $origin_id : '',
-			'select_name'					 => 'cat_id',
 			'cat_list'						 => isset($cat_list) ? $cat_list : '',
 			'location_code'					 => isset($location_code) ? $location_code : '',
 			'lookup_tenant'					 => $lookup_tenant,
-			'entity_name'					 => $entity['name'],
-			'category_name'					 => $category['name'],
 			'msgbox_data'					 => $this->phpgwapi_common->msgbox($msgbox_data),
 			'attributes_group'				 => $attributes,
 			'attributes_general'			 => array('attributes' => $attributes_general),
@@ -2506,9 +2503,6 @@ JS;
 			'lookup_type'					 => $lookup_type,
 			'mode'							 => $mode,
 			'form_action'					 => phpgw::link('/index.php', $link_data),
-			'value_id'						 => $values['id'],
-			'value_num'						 => $values['num'],
-			'error_flag'					 => isset($error_id) ? $error_id : '',
 			'textareacols'					 => isset($this->userSettings['preferences']['property']['textareacols']) && $this->userSettings['preferences']['property']['textareacols'] ? $this->userSettings['preferences']['property']['textareacols'] : 40,
 			'textarearows'					 => isset($this->userSettings['preferences']['property']['textarearows']) && $this->userSettings['preferences']['property']['textarearows'] ? $this->userSettings['preferences']['property']['textarearows'] : 6,
 			'tabs'							 => phpgwapi_jquery::tabview_generate($tabs, $active_tab),
@@ -2538,6 +2532,10 @@ JS;
 			'check_lst_time_span' => $check_lst_time_span,
 			'doc_type_filter' => $doc_type_filter,
 			'entity_group_list' => $entity_group_list,
+			'entity' => $entity,
+			'category' => $category,
+			'values' => $values,
+			'error_id' => $error_id ?? '',
 		));
 
 		//print_r($data['location_data2']);die;

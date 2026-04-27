@@ -16,6 +16,36 @@ class EntityEditPagePresenter
 	 */
 	public function present(array $payload, array $context = array()): array
 	{
+		if (!isset($payload['select_name']))
+		{
+			$payload['select_name'] = 'cat_id';
+		}
+
+		if (!isset($payload['entity_name']) && isset($context['entity']['name']))
+		{
+			$payload['entity_name'] = $context['entity']['name'];
+		}
+
+		if (!isset($payload['category_name']) && isset($context['category']['name']))
+		{
+			$payload['category_name'] = $context['category']['name'];
+		}
+
+		if (!isset($payload['value_id']) && isset($context['values']['id']))
+		{
+			$payload['value_id'] = $context['values']['id'];
+		}
+
+		if (!isset($payload['value_num']) && isset($context['values']['num']))
+		{
+			$payload['value_num'] = $context['values']['num'];
+		}
+
+		if (!isset($payload['error_flag']) && array_key_exists('error_id', $context))
+		{
+			$payload['error_flag'] = $context['error_id'] ?? '';
+		}
+
 		if (!isset($payload['repeat_types']) && array_key_exists('repeat_types', $context))
 		{
 			$payload['repeat_types'] = array('options' => $context['repeat_types']);

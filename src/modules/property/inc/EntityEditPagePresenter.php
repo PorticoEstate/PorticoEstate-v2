@@ -16,6 +16,26 @@ class EntityEditPagePresenter
 	 */
 	public function present(array $payload, array $context = array()): array
 	{
+		if (!isset($payload['repeat_types']) && array_key_exists('repeat_types', $context))
+		{
+			$payload['repeat_types'] = array('options' => $context['repeat_types']);
+		}
+
+		if (!isset($payload['check_lst_time_span']) && array_key_exists('check_lst_time_span', $context))
+		{
+			$payload['check_lst_time_span'] = array('options' => $context['check_lst_time_span']);
+		}
+
+		if (!isset($payload['doc_type_filter']) && array_key_exists('doc_type_filter', $context))
+		{
+			$payload['doc_type_filter'] = array('options' => $context['doc_type_filter']);
+		}
+
+		if (!isset($payload['entity_group_list']) && array_key_exists('entity_group_list', $context))
+		{
+			$payload['entity_group_list'] = array('options' => $context['entity_group_list']);
+		}
+
 		if (!isset($payload['lang_no_cat']))
 		{
 			$payload['lang_no_cat'] = lang('no category');

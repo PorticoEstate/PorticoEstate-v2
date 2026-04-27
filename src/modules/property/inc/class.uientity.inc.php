@@ -2467,9 +2467,7 @@ JS;
 		$data = array(
 			'location_checklists'			 => $location_checklists,
 			'datatable_def'					 => $datatable_def,
-			'repeat_types'					 => array('options' => $repeat_types),
 			'controller'					 => $_enable_controller && $id,
-			'check_lst_time_span'			 => array('options' => $check_lst_time_span),
 			'enable_bulk'					 => $category['enable_bulk'],
 			'org_unit'						 => $category['org_unit'],
 			'value_org_unit_id'				 => $values['org_unit_id'],
@@ -2516,9 +2514,7 @@ JS;
 			'tabs'							 => phpgwapi_jquery::tabview_generate($tabs, $active_tab),
 			'active_tab'					 => $active_tab,
 			'integration'					 => $integration,
-			'doc_type_filter'				 => array('options' => $doc_type_filter),
 			/* 'requestUrlDoc' => $requestUrlDoc ? $requestUrlDoc : '', */
-			'entity_group_list'				 => array('options' => $entity_group_list),
 			'entity_group_name'				 => $entity_group_name,
 			'validator'						 => phpgwapi_jquery::formvalidator_generate(array(
 				'location',
@@ -2538,6 +2534,10 @@ JS;
 			'link_index' => $link_index,
 			'get_docs' => !empty($get_docs),
 			'lean' => $_lean,
+			'repeat_types' => $repeat_types,
+			'check_lst_time_span' => $check_lst_time_span,
+			'doc_type_filter' => $doc_type_filter,
+			'entity_group_list' => $entity_group_list,
 		));
 
 		//print_r($data['location_data2']);die;

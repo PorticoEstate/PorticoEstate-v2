@@ -2492,10 +2492,7 @@ JS;
 		);
 
 		$presenter = new EntityEditPagePresenter();
-		$data = $presenter->present($data, array(
-			'type' => $this->type,
-			'entity_id' => $this->entity_id,
-			'cat_id' => $this->cat_id,
+		$data = $presenter->present($data, $this->build_edit_presenter_context(array(
 			'id' => $id,
 			'link_index' => $link_index,
 			'get_docs' => !empty($get_docs),
@@ -2513,85 +2510,29 @@ JS;
 			'cat_list' => $cat_list ?? '',
 			'location_code' => $location_code ?? '',
 			'lookup_tenant' => $lookup_tenant,
-			'msgbox_html' => $this->phpgwapi_common->msgbox($msgbox_data),
+			'msgbox_data' => $msgbox_data,
 			'entity_group_name' => $entity_group_name,
 			'attributes' => $attributes,
 			'attributes_general' => $attributes_general,
-			'lookup_functions' => isset($values['lookup_functions']) ? $values['lookup_functions'] : '',
 			'location_data' => $location_data,
 			'lookup_type' => $lookup_type,
 			'mode' => $mode,
-			'form_action' => phpgw::link('/index.php', $link_data),
-			'textareacols' => isset($this->userSettings['preferences']['property']['textareacols']) && $this->userSettings['preferences']['property']['textareacols'] ? $this->userSettings['preferences']['property']['textareacols'] : 40,
-			'textarearows' => isset($this->userSettings['preferences']['property']['textarearows']) && $this->userSettings['preferences']['property']['textarearows'] ? $this->userSettings['preferences']['property']['textarearows'] : 6,
-			'tabs' => phpgwapi_jquery::tabview_generate($tabs, $active_tab),
+			'link_data' => $link_data,
+			'tabs' => $tabs,
 			'active_tab' => $active_tab,
 			'integration' => $integration,
-			'validator' => phpgwapi_jquery::formvalidator_generate(array(
-				'location',
-				'date',
-				'security',
-				'file'
-			)),
 			'content_images' => $content_images,
-			'value_location_id' => $this->locations->get_id($this->type_app[$this->type], $this->acl_location),
-			'link_pdf' => phpgw::link('/index.php', $pdf_data),
-			'project_link' => phpgw::link('/index.php', $project_link_data),
-			'add_to_project_link' => phpgw::link('/index.php', $add_to_project_link_data),
-			'ticket_link' => phpgw::link('/index.php', $ticket_link_data),
-			'link_view_file' => phpgw::link('/index.php', $link_file_data),
-			'files' => isset($values['files']) ? $values['files'] : '',
-		));
+			'pdf_data' => $pdf_data,
+			'project_link_data' => $project_link_data,
+			'add_to_project_link_data' => $add_to_project_link_data,
+			'ticket_link_data' => $ticket_link_data,
+			'link_file_data' => $link_file_data,
+		)));
+
 
 		//print_r($data['location_data2']);die;
 
-		$appname = $entity['name'];
-
-		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $appname . ': ' . $function_msg;
-		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
-
-		self::add_javascript('property', 'base', 'entity.edit.js');
-		phpgwapi_jquery::load_widget('glider');
-
-		$attribute_template = 'attributes_form';
-		if ($mode == 'view')
-		{
-			$attribute_template = 'attributes_view';
-		}
-
-		phpgwapi_jquery::load_widget('file-upload-minimum');
-
-		$criteria = array(
-			'appname'	 => $this->type_app[$this->type],
-			'location'	 => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
-			'allrows'	 => true
-		);
-
-		$custom_functions = createObject('phpgwapi.custom_functions')->find($criteria);
-
-		foreach ($custom_functions as $entry)
-		{
-			// prevent path traversal
-			if (preg_match('/\.\./', $entry['file_name']))
-			{
-				continue;
-			}
-
-			$file = PHPGW_SERVER_ROOT . "/{$this->type_app[$this->type]}/inc/custom/{$this->userSettings['domain']}/{$entry['file_name']}";
-
-			if ($entry['active'] && $entry['client_side'] && is_file($file))
-			{
-				phpgwapi_js::getInstance()->add_external_file("{$this->type_app[$this->type]}/inc/custom/{$this->userSettings['domain']}/{$entry['file_name']}");
-			}
-		}
-
-		self::render_template_xsl(array(
-			'entity',
-			'datatable_inline',
-			$attribute_template,
-			'files',
-			'multi_upload_file_inline'
-		), array('edit' => $data));
+		$this->render_edit_view($data, $mode, $entity, $function_msg);
 	}
 
 	/**
@@ -2738,6 +2679,134 @@ JS;
 		$this->edit($values, 'view');
 	}
 
+	/**
+	 * Build the context consumed by EntityEditPagePresenter::present().
+	 *
+	 * @param array $input Precomputed edit/view values.
+	 * @return array
+	 */
+	private function build_edit_presenter_context(array $input): array
+	{
+		$values = $input['values'] ?? array();
+		$lookup_functions = isset($values['lookup_functions']) ? $values['lookup_functions'] : '';
+		$files = isset($values['files']) ? $values['files'] : '';
+		$textareacols = isset($this->userSettings['preferences']['property']['textareacols'])
+			&& $this->userSettings['preferences']['property']['textareacols']
+			? $this->userSettings['preferences']['property']['textareacols']
+			: 40;
+		$textarearows = isset($this->userSettings['preferences']['property']['textarearows'])
+			&& $this->userSettings['preferences']['property']['textarearows']
+			? $this->userSettings['preferences']['property']['textarearows']
+			: 6;
+
+		return array(
+			'type' => $this->type,
+			'entity_id' => $this->entity_id,
+			'cat_id' => $this->cat_id,
+			'id' => $input['id'] ?? 0,
+			'link_index' => $input['link_index'] ?? array(),
+			'get_docs' => !empty($input['get_docs']),
+			'lean' => !empty($input['lean']),
+			'repeat_types' => $input['repeat_types'] ?? array(),
+			'check_lst_time_span' => $input['check_lst_time_span'] ?? array(),
+			'doc_type_filter' => $input['doc_type_filter'] ?? array(),
+			'entity_group_list' => $input['entity_group_list'] ?? array(),
+			'entity' => $input['entity'] ?? array(),
+			'category' => $input['category'] ?? array(),
+			'values' => $values,
+			'error_id' => $input['error_id'] ?? '',
+			'origin' => $input['origin'] ?? '',
+			'origin_id' => $input['origin_id'] ?? '',
+			'cat_list' => $input['cat_list'] ?? '',
+			'location_code' => $input['location_code'] ?? '',
+			'lookup_tenant' => $input['lookup_tenant'] ?? false,
+			'msgbox_html' => $this->phpgwapi_common->msgbox($input['msgbox_data'] ?? array()),
+			'entity_group_name' => $input['entity_group_name'] ?? '',
+			'attributes' => $input['attributes'] ?? array(),
+			'attributes_general' => $input['attributes_general'] ?? array(),
+			'lookup_functions' => $lookup_functions,
+			'location_data' => $input['location_data'] ?? array(),
+			'lookup_type' => $input['lookup_type'] ?? '',
+			'mode' => $input['mode'] ?? 'edit',
+			'form_action' => phpgw::link('/index.php', $input['link_data'] ?? array()),
+			'textareacols' => $textareacols,
+			'textarearows' => $textarearows,
+			'tabs' => phpgwapi_jquery::tabview_generate($input['tabs'] ?? array(), $input['active_tab'] ?? ''),
+			'active_tab' => $input['active_tab'] ?? '',
+			'integration' => $input['integration'] ?? array(),
+			'validator' => phpgwapi_jquery::formvalidator_generate(array(
+				'location',
+				'date',
+				'security',
+				'file'
+			)),
+			'content_images' => $input['content_images'] ?? array(),
+			'value_location_id' => $this->locations->get_id($this->type_app[$this->type], $this->acl_location),
+			'link_pdf' => phpgw::link('/index.php', $input['pdf_data'] ?? array()),
+			'project_link' => phpgw::link('/index.php', $input['project_link_data'] ?? array()),
+			'add_to_project_link' => phpgw::link('/index.php', $input['add_to_project_link_data'] ?? array()),
+			'ticket_link' => phpgw::link('/index.php', $input['ticket_link_data'] ?? array()),
+			'link_view_file' => phpgw::link('/index.php', $input['link_file_data'] ?? array()),
+			'files' => $files,
+		);
+	}
+
+	/**
+	 * Set page header, load JS/widgets, include custom client-side functions, and render
+	 * the XSL template for the entity edit/view page.
+	 *
+	 * @param array  $data         Fully-shaped payload array (output of presenter->present()).
+	 * @param string $mode         'edit' or 'view'.
+	 * @param array  $entity       Entity definition row (must contain 'name').
+	 * @param string $function_msg Localised action label for the page title bar.
+	 * @return void Output rendered directly.
+	 */
+	private function render_edit_view(array $data, string $mode, array $entity, string $function_msg): void
+	{
+		$appname = $entity['name'];
+
+		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $appname . ': ' . $function_msg;
+		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
+
+		self::add_javascript('property', 'base', 'entity.edit.js');
+		phpgwapi_jquery::load_widget('glider');
+
+		$attribute_template = ($mode == 'view') ? 'attributes_view' : 'attributes_form';
+
+		phpgwapi_jquery::load_widget('file-upload-minimum');
+
+		$criteria = array(
+			'appname'  => $this->type_app[$this->type],
+			'location' => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
+			'allrows'  => true
+		);
+
+		$custom_functions = createObject('phpgwapi.custom_functions')->find($criteria);
+
+		foreach ($custom_functions as $entry)
+		{
+			// prevent path traversal
+			if (preg_match('/\.\./', $entry['file_name']))
+			{
+				continue;
+			}
+
+			$file = PHPGW_SERVER_ROOT . "/{$this->type_app[$this->type]}/inc/custom/{$this->userSettings['domain']}/{$entry['file_name']}";
+
+			if ($entry['active'] && $entry['client_side'] && is_file($file))
+			{
+				phpgwapi_js::getInstance()->add_external_file("{$this->type_app[$this->type]}/inc/custom/{$this->userSettings['domain']}/{$entry['file_name']}");
+			}
+		}
+
+		self::render_template_xsl(array(
+			'entity',
+			'datatable_inline',
+			$attribute_template,
+			'files',
+			'multi_upload_file_inline'
+		), array('edit' => $data));
+	}
 
 	/**
 	 * Render the attribute change history panel, or handle a delete-history-entry request.

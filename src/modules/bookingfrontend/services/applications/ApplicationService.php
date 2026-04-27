@@ -586,14 +586,29 @@ class ApplicationService
      * @return array Updated applications
      * @throws Exception If update fails
      */
-    public function checkoutPartials(string $session_id, array $data): array
+    public function checkoutPartials(string $session_id, array $data, ?array $onlyApplicationIds = null, bool $skipContactUpdate = false): array
     {
         try
         {
             $this->db->beginTransaction();
 
-            // First update all applications with contact info and validate limits
-            $updatedApplications = $this->updateApplicationsWithContactInfo($session_id, $data);
+            if ($skipContactUpdate) {
+                // Contact info already saved — just fetch the current partials and clear session_id to finalize
+                $updatedApplications = $this->getPartialApplications($session_id);
+                foreach ($updatedApplications as $app) {
+                    $this->patchApplicationMainData(['session_id' => null], $app['id']);
+                }
+            } else {
+                // First update all applications with contact info and validate limits
+                $updatedApplications = $this->updateApplicationsWithContactInfo($session_id, $data);
+            }
+
+            // If filtering by specific application IDs, only process those
+            if ($onlyApplicationIds !== null) {
+                $updatedApplications = array_values(array_filter($updatedApplications, function ($app) use ($onlyApplicationIds) {
+                    return in_array($app['id'], $onlyApplicationIds);
+                }));
+            }
 
             // Handle parent_id selection per building (same logic as updateApplicationsWithContactInfo)
             $buildingParentIds = $data['building_parent_ids'] ?? [];

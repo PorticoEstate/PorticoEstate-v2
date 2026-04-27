@@ -207,7 +207,7 @@ const BillingForm: FC<BillingFormProps> = ({
 	useEffect(() => {
 		const currentValues = getValues();
 		const customerType = currentValues.customerType;
-		
+
 		// Only refill fields if they are currently blank and user has the data
 		// Also only refill personal fields when customerType is 'ssn' (private)
 		if (customerType === 'ssn') {
@@ -660,6 +660,7 @@ const BillingForm: FC<BillingFormProps> = ({
 					{/* Show two options when user has both Vipps and normal applications */}
 					{paymentEligibility?.eligible ? (
 						<>
+
 							<div className={styles.checkoutButtons}>
 								{/* Vipps Payment Button */}
 								{paymentEligibility.payment_methods?.map((method) => {
@@ -693,6 +694,12 @@ const BillingForm: FC<BillingFormProps> = ({
 									{t('bookingfrontend.pay_later_with_invoice')}
 								</Button>
 							</div>
+							{normalApplications.length > 0 && directApplications.length > 0 &&
+								paymentEligibility.payment_methods?.some(m => m.method.toLowerCase() === 'vipps') && (
+								<Paragraph className={styles.mixedBookingNote}>
+									{t('bookingfrontend.vipps_only_for_direct_bookings')}
+								</Paragraph>
+							)}
 						</>
 					) : (
 						/* Show single submit button when no Vipps eligibility */

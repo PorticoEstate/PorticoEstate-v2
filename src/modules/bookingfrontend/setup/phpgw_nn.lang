@@ -949,6 +949,7 @@ show_all_resources	bookingfrontend	nn	Sjå alle rom
 activity_and_organizer	bookingfrontend	nn	Aktivitet og arrangør
 title_help_text	bookingfrontend	nn	Vert vist offentleg i kalender og på infoskjerm. Skriv kva som skjer og kven som brukar rommet. Unngå sensitiv informasjon.
 title_placeholder	bookingfrontend	nn	T.d. "Trening – IL Brodd" eller "Bursdag – Kari Hansen"
+vipps_only_for_direct_bookings	bookingfrontend	nn	Vipps-betaling gjeld berre for direktebookingar. Søknader som krev saksbehandling vert sende inn til godkjenning.
 select_resource_before_application	bookingfrontend	nn	Du må velje ein ressurs før du kan opprette ein søknad
 hospitality	bookingfrontend	nn	Bevertning
 add_hospitality_order	bookingfrontend	nn	Legg til bevertning

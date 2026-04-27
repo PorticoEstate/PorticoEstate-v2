@@ -165,7 +165,11 @@ RUN mkdir -p /run/php && chown www-data:www-data /run/php
 
 # Update PHP-FPM configuration to use Unix socket
 RUN sed -i 's|^listen = .*|listen = /run/php/php-fpm.sock|' /usr/local/etc/php-fpm.d/www.conf \
-    && sed -i 's|^pm.max_children.*|pm.max_children = 20|' /usr/local/etc/php-fpm.d/www.conf \
+    && sed -i 's|^pm.max_children.*|pm.max_children = 40|' /usr/local/etc/php-fpm.d/www.conf \
+    && sed -i 's|^pm.start_servers.*|pm.start_servers = 10|' /usr/local/etc/php-fpm.d/www.conf \
+    && sed -i 's|^pm.min_spare_servers.*|pm.min_spare_servers = 6|' /usr/local/etc/php-fpm.d/www.conf \
+    && sed -i 's|^pm.max_spare_servers.*|pm.max_spare_servers = 16|' /usr/local/etc/php-fpm.d/www.conf \
+    && sed -i 's|^pm.max_requests.*|pm.max_requests = 500|' /usr/local/etc/php-fpm.d/www.conf \
     && echo 'listen.owner = www-data' >> /usr/local/etc/php-fpm.d/www.conf \
     && echo 'listen.group = www-data' >> /usr/local/etc/php-fpm.d/www.conf \
     && echo 'listen.mode = 0660' >> /usr/local/etc/php-fpm.d/www.conf

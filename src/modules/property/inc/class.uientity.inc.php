@@ -2464,31 +2464,9 @@ JS;
 		}
 
 		$data = array(
-			'location_checklists'			 => $location_checklists,
-			'datatable_def'					 => $datatable_def,
-			'controller'					 => $_enable_controller && $id,
-			'enable_bulk'					 => $category['enable_bulk'],
-			'org_unit'						 => $category['org_unit'],
-			'value_org_unit_id'				 => $values['org_unit_id'],
-			'value_org_unit_name'			 => $values['org_unit_name'],
-			'value_org_unit_name_path'		 => $values['org_unit_name_path'],
-			'value_location_id'				 => $this->locations->get_id($this->type_app[$this->type], $this->acl_location),
-			'link_pdf'						 => phpgw::link('/index.php', $pdf_data),
-			'start_project'					 => $category['start_project'],
-			'lang_start_project'			 => lang('start project'),
-			'project_link'					 => phpgw::link('/index.php', $project_link_data),
-			'add_to_project_link'			 => phpgw::link('/index.php', $add_to_project_link_data),
-			'start_ticket'					 => $category['start_ticket'],
-			'lang_start_ticket'				 => lang('start ticket'),
-			'ticket_link'					 => phpgw::link('/index.php', $ticket_link_data),
-			'fileupload'					 => $category['fileupload'],
-			'checklist_count'				 => $category['checklist_count'],
-			//		'jasperupload'					=> $category['jasperupload'],
-			'link_view_file'				 => phpgw::link('/index.php', $link_file_data),
-			//		'link_to_files'					=> $link_to_files,
-			'files'							 => isset($values['files']) ? $values['files'] : '',
-			//		'jasperfiles'					=> isset($values['jasperfiles'])?$values['jasperfiles']:'',
-			/* 'requestUrlDoc' => $requestUrlDoc ? $requestUrlDoc : '', */
+			'location_checklists' => $location_checklists,
+			'datatable_def'       => $datatable_def,
+			'controller'          => $_enable_controller && $id,
 		);
 
 		$presenter = new EntityEditPagePresenter();

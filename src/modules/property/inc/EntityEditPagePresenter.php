@@ -16,6 +16,76 @@ class EntityEditPagePresenter
 	 */
 	public function present(array $payload, array $context = array()): array
 	{
+		if (!isset($payload['lang_no_cat']))
+		{
+			$payload['lang_no_cat'] = lang('no category');
+		}
+
+		if (!isset($payload['lang_cat_statustext']))
+		{
+			$payload['lang_cat_statustext'] = lang('Select the category. To do not use a category select NO CATEGORY');
+		}
+
+		if (!isset($payload['lang_entity']))
+		{
+			$payload['lang_entity'] = lang('entity');
+		}
+
+		if (!isset($payload['lang_category']))
+		{
+			$payload['lang_category'] = lang('category');
+		}
+
+		if (!isset($payload['lang_none']))
+		{
+			$payload['lang_none'] = lang('None');
+		}
+
+		if (!isset($payload['lang_id']))
+		{
+			$payload['lang_id'] = lang('ID');
+		}
+
+		if (!isset($payload['lang_history']))
+		{
+			$payload['lang_history'] = lang('history');
+		}
+
+		if (!isset($payload['lang_history_help']))
+		{
+			$payload['lang_history_help'] = lang('history of this attribute');
+		}
+
+		if (!isset($payload['lang_history_date_statustext']))
+		{
+			$payload['lang_history_date_statustext'] = lang('Enter the date for this reading');
+		}
+
+		if (!isset($payload['lang_date']))
+		{
+			$payload['lang_date'] = lang('date');
+		}
+
+		if (!isset($payload['lang_start_project']))
+		{
+			$payload['lang_start_project'] = lang('start project');
+		}
+
+		if (!isset($payload['lang_start_ticket']))
+		{
+			$payload['lang_start_ticket'] = lang('start ticket');
+		}
+
+		if (!isset($payload['documents']) && array_key_exists('get_docs', $context))
+		{
+			$payload['documents'] = $context['get_docs'] ? 1 : 0;
+		}
+
+		if (!isset($payload['lean']) && array_key_exists('lean', $context))
+		{
+			$payload['lean'] = $context['lean'] ? 1 : 0;
+		}
+
 		if (!isset($payload['multiple_uploader']) && isset($context['id']))
 		{
 			$payload['multiple_uploader'] = $context['id'] ? true : '';

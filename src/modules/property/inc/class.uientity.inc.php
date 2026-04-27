@@ -2715,7 +2715,8 @@ JS;
 	/**
 	 * Render the entity record in read-only view mode.
 	 *
-	 * Requires ACL_READ. Delegates to edit() with mode='view'.
+	 * Requires ACL_READ. Builds a minimal value bag and invokes the shared
+	 * edit/view rendering pipeline in view mode.
 	 *
 	 * @return void Output is rendered via XSL template.
 	 */
@@ -2726,7 +2727,15 @@ JS;
 			$this->bocommon->no_access();
 			return;
 		}
-		$this->edit(null, $mode = 'view');
+
+		$id = Sanitizer::get_var('id', 'int');
+		$values = array();
+		if ($id)
+		{
+			$values['id'] = $id;
+		}
+
+		$this->edit($values, 'view');
 	}
 
 

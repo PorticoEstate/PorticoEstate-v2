@@ -1806,121 +1806,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		}
 		//			_debug_array($attributes);
 		// ---- START INTEGRATION -------------------------
-
-		$custom_config	 = CreateObject('admin.soconfig', $this->locations->get_id($this->type_app[$this->type], $this->acl_location));
-		$_config		 = isset($custom_config->config_data) && $custom_config->config_data ? $custom_config->config_data : array();
-
-		$integration = array();
-		foreach ($_config as $_config_section => $_config_section_data)
-		{
-			if (isset($_config_section_data['tab']) && $values['id'])
-			{
-				if (!isset($_config_section_data['url']))
-				{
-					Cache::message_set("'url' is a required setting for integrations, '{$_config_section}' is disabled", 'error');
-					break;
-				}
-
-				//get session key from remote system
-				$arguments	 = array($_config_section_data['auth_hash_name'] => $_config_section_data['auth_hash_value']);
-				$query		 = http_build_query($arguments);
-				$auth_url	 = $_config_section_data['auth_url'];
-				$request	 = "{$auth_url}?{$query}";
-
-				$aContext = array(
-					'http' => array(
-						'request_fulluri' => true,
-					),
-				);
-
-				if (isset($this->serverSettings['httpproxy_server']))
-				{
-					$aContext['http']['proxy'] = "{$this->serverSettings['httpproxy_server']}:{$this->serverSettings['httpproxy_port']}";
-				}
-
-				$cxContext	 = stream_context_create($aContext);
-				$response	 = trim(file_get_contents($request, False, $cxContext));
-
-				$integration[] = array(
-					'section'	 => $_config_section,
-					'height'	 => isset($_config_section_data['height']) && $_config_section_data['height'] ? $_config_section_data['height'] : 500
-				);
-
-				$_config_section_data['url']		 = htmlspecialchars_decode($_config_section_data['url']);
-				$_config_section_data['parametres']	 = htmlspecialchars_decode($_config_section_data['parametres']);
-
-				parse_str($_config_section_data['parametres'], $output);
-
-				foreach ($output as $_dummy => $_substitute)
-				{
-					$_keys[] = $_substitute;
-
-					$__value = false;
-					if (!$__value = urlencode($values[str_replace(array('__', '*'), array('', ''), $_substitute)]))
-					{
-						foreach ($values['attributes'] as $_attribute)
-						{
-							if (str_replace(array('__', '*'), array('', ''), $_substitute) == $_attribute['name'])
-							{
-								$__value = urlencode($_attribute['value']);
-								break;
-							}
-						}
-					}
-
-					if ($__value)
-					{
-						$_values[] = $__value;
-					}
-				}
-
-				unset($output);
-				unset($__value);
-				$_sep = '?';
-				if (stripos($_config_section_data['url'], '?'))
-				{
-					$_sep = '&';
-				}
-				$_param			 = str_replace($_keys, $_values, $_config_section_data['parametres']);
-				unset($_keys);
-				unset($_values);
-				//				$integration_src = phpgw::safe_redirect("{$_config_section_data['url']}{$_sep}{$_param}");
-				$integration_src = "{$_config_section_data['url']}{$_sep}{$_param}";
-				if ($_config_section_data['action'])
-				{
-					$_sep = '?';
-					if (stripos($integration_src, '?'))
-					{
-						$_sep = '&';
-					}
-					$integration_src .= "{$_sep}{$_config_section_data['action']}=" . $_config_section_data["action_{$mode}"];
-				}
-
-				$arguments = array($_config_section_data['auth_key_name'] => $response);
-
-				if (isset($_config_section_data['location_data']) && $_config_section_data['location_data'])
-				{
-					$_config_section_data['location_data'] = htmlspecialchars_decode($_config_section_data['location_data']);
-					parse_str($_config_section_data['location_data'], $output);
-					foreach ($output as $_dummy => $_substitute)
-					{
-						$_keys[]	 = $_substitute;
-						$_values[]	 = urlencode($values['location_data'][trim($_substitute, '_')]);
-					}
-					$integration_src .= '&' . str_replace($_keys, $_values, $_config_section_data['location_data']);
-				}
-
-				$integration_src .= "&{$_config_section_data['auth_key_name']}={$response}";
-
-				$tabs[$_config_section] = array(
-					'label'		 => $_config_section_data['tab'],
-					'link'		 => "#{$_config_section}",
-					'disable'	 => 0,
-					'function'	 => "document.getElementById('{$_config_section}_content').src = '{$integration_src}';"
-				);
-			}
-		}
-
+		$integration_data = $this->build_edit_integration_tabs($values, $tabs, $mode);
+		$tabs = $integration_data['tabs'];
+		$integration = $integration_data['integration'];
 		// ---- END INTEGRATION -------------------------
 
 		unset($values['attributes']);
@@ -2367,27 +2255,11 @@ JS;
 			phpgwapi_js::getInstance()->add_code('', $_autocomplete);
 		}
 
-		$msgbox_data = $this->bocommon->msgbox_data($this->receipt);
-
-		$repeat_types	 = array();
-		//			$repeat_types[] = array('id'=> -1, 'name' => lang('day'));
-		//			$repeat_types[] = array('id'=> 1, 'name' => lang('weekly'));
-		$repeat_types[]	 = array('id' => 2, 'name' => lang('month'));
-		$repeat_types[]	 = array('id' => 3, 'name' => lang('year'));
-
-		$entity_group_name	 = '';
-		$entity_group_list	 = execMethod('property.bogeneric.get_list', array(
-			'type'		 => 'entity_group',
-			'selected'	 => $values['entity_group_id'],
-			'add_empty'	 => true
-		));
-		foreach ($entity_group_list as $entity_group)
-		{
-			if ($category['entity_group_id'] && $entity_group['id'] == $category['entity_group_id'])
-			{
-				$entity_group_name = $entity_group['name'];
-			}
-		}
+		$display_context = $this->build_edit_display_context($values, $category);
+		$msgbox_data = $display_context['msgbox_data'];
+		$repeat_types = $display_context['repeat_types'];
+		$entity_group_list = $display_context['entity_group_list'];
+		$entity_group_name = $display_context['entity_group_name'];
 
 		$data = array(
 			'location_checklists' => $location_checklists,
@@ -2576,6 +2448,41 @@ JS;
 		}
 
 		$this->edit($values, 'view');
+	}
+
+	/**
+	 * Build message and selection context used by edit presenter rendering.
+	 */
+	private function build_edit_display_context(array $values, array $category): array
+	{
+		$msgbox_data = $this->bocommon->msgbox_data($this->receipt);
+
+		$repeat_types	 = array();
+		//			$repeat_types[] = array('id'=> -1, 'name' => lang('day'));
+		//			$repeat_types[] = array('id'=> 1, 'name' => lang('weekly'));
+		$repeat_types[]	 = array('id' => 2, 'name' => lang('month'));
+		$repeat_types[]	 = array('id' => 3, 'name' => lang('year'));
+
+		$entity_group_name	 = '';
+		$entity_group_list	 = execMethod('property.bogeneric.get_list', array(
+			'type'		 => 'entity_group',
+			'selected'	 => $values['entity_group_id'],
+			'add_empty'	 => true
+		));
+		foreach ($entity_group_list as $entity_group)
+		{
+			if ($category['entity_group_id'] && $entity_group['id'] == $category['entity_group_id'])
+			{
+				$entity_group_name = $entity_group['name'];
+			}
+		}
+
+		return array(
+			'msgbox_data' => $msgbox_data,
+			'repeat_types' => $repeat_types,
+			'entity_group_list' => $entity_group_list,
+			'entity_group_name' => $entity_group_name,
+		);
 	}
 
 	/**
@@ -2779,6 +2686,131 @@ JS;
 			'files',
 			'multi_upload_file_inline'
 		), array('edit' => $data));
+	}
+
+	/**
+	 * Build integration tabs and iframe metadata for entity edit/view.
+	 */
+	private function build_edit_integration_tabs(array $values, array $tabs, string $mode): array
+	{
+		$custom_config	 = CreateObject('admin.soconfig', $this->locations->get_id($this->type_app[$this->type], $this->acl_location));
+		$_config		 = isset($custom_config->config_data) && $custom_config->config_data ? $custom_config->config_data : array();
+
+		$integration = array();
+		foreach ($_config as $_config_section => $_config_section_data)
+		{
+			if (isset($_config_section_data['tab']) && $values['id'])
+			{
+				if (!isset($_config_section_data['url']))
+				{
+					Cache::message_set("'url' is a required setting for integrations, '{$_config_section}' is disabled", 'error');
+					break;
+				}
+
+				//get session key from remote system
+				$arguments	 = array($_config_section_data['auth_hash_name'] => $_config_section_data['auth_hash_value']);
+				$query		 = http_build_query($arguments);
+				$auth_url	 = $_config_section_data['auth_url'];
+				$request	 = "{$auth_url}?{$query}";
+
+				$aContext = array(
+					'http' => array(
+						'request_fulluri' => true,
+					),
+				);
+
+				if (isset($this->serverSettings['httpproxy_server']))
+				{
+					$aContext['http']['proxy'] = "{$this->serverSettings['httpproxy_server']}:{$this->serverSettings['httpproxy_port']}";
+				}
+
+				$cxContext	 = stream_context_create($aContext);
+				$response	 = trim(file_get_contents($request, False, $cxContext));
+
+				$integration[] = array(
+					'section'	 => $_config_section,
+					'height'	 => isset($_config_section_data['height']) && $_config_section_data['height'] ? $_config_section_data['height'] : 500
+				);
+
+				$_config_section_data['url']		 = htmlspecialchars_decode($_config_section_data['url']);
+				$_config_section_data['parametres']	 = htmlspecialchars_decode($_config_section_data['parametres']);
+
+				parse_str($_config_section_data['parametres'], $output);
+
+				foreach ($output as $_dummy => $_substitute)
+				{
+					$_keys[] = $_substitute;
+
+					$__value = false;
+					if (!$__value = urlencode($values[str_replace(array('__', '*'), array('', ''), $_substitute)]))
+					{
+						foreach ($values['attributes'] as $_attribute)
+						{
+							if (str_replace(array('__', '*'), array('', ''), $_substitute) == $_attribute['name'])
+							{
+								$__value = urlencode($_attribute['value']);
+								break;
+							}
+						}
+					}
+
+					if ($__value)
+					{
+						$_values[] = $__value;
+					}
+				}
+
+				unset($output);
+				unset($__value);
+				$_sep = '?';
+				if (stripos($_config_section_data['url'], '?'))
+				{
+					$_sep = '&';
+				}
+				$_param			 = str_replace($_keys, $_values, $_config_section_data['parametres']);
+				unset($_keys);
+				unset($_values);
+				//				$integration_src = phpgw::safe_redirect("{$_config_section_data['url']}{$_sep}{$_param}");
+				$integration_src = "{$_config_section_data['url']}{$_sep}{$_param}";
+				if ($_config_section_data['action'])
+				{
+					$_sep = '?';
+					if (stripos($integration_src, '?'))
+					{
+						$_sep = '&';
+					}
+					$integration_src .= "{$_sep}{$_config_section_data['action']}=" . $_config_section_data["action_{$mode}"];
+				}
+
+				$arguments = array($_config_section_data['auth_key_name'] => $response);
+
+				if (isset($_config_section_data['location_data']) && $_config_section_data['location_data'])
+				{
+					$_config_section_data['location_data'] = htmlspecialchars_decode($_config_section_data['location_data']);
+					parse_str($_config_section_data['location_data'], $output);
+					foreach ($output as $_dummy => $_substitute)
+					{
+						$_keys[]	 = $_substitute;
+						$_values[]	 = urlencode($values['location_data'][trim($_substitute, '_')]);
+					}
+					$integration_src .= '&' . str_replace($_keys, $_values, $_config_section_data['location_data']);
+				}
+
+				$integration_src .= "&{$_config_section_data['auth_key_name']}={$response}";
+
+				$tabs[$_config_section] = array(
+					'label'		 => $_config_section_data['tab'],
+					'link'		 => "#{$_config_section}",
+					'disable'	 => 0,
+					'function'	 => "document.getElementById('{$_config_section}_content').src = '{$integration_src}';"
+				);
+			}
+		}
+
+		return array(
+			'tabs' => $tabs,
+			'integration' => $integration,
+		);
 	}
 
 	/**

@@ -34,6 +34,8 @@ use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\Database\Db;
 use App\modules\property\inc\EntityFormInputMapper;
 use App\modules\property\inc\EntityFormRehydrateService;
+use App\modules\property\inc\EntityFormSaveResponse;
+use App\modules\property\inc\EntityFormSaveResponseBuilder;
 use App\modules\property\inc\EntityFormSaveService;
 use App\modules\property\inc\EntityFormValidationService;
 
@@ -329,103 +331,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * @return void
 	 * @throws Exception If the entity ID is missing from $values.
 	 */
-	private function _handle_files($values): void
-	{
-		$id = (int)$values['id'];
-		if (empty($id))
-		{
-			throw new Exception('uientity::_handle_files() - missing id');
-		}
-
-		$loc1 = isset($values['location']['loc1']) && $values['location']['loc1'] ? $values['location']['loc1'] : 'dummy';
-		if ($this->type_app[$this->type] == 'catch')
-		{
-			$loc1 = 'dummy';
-		}
-
-		$bofiles = CreateObject('property.bofiles');
-		if (isset($values['file_action']) && is_array($values['file_action']))
-		{
-			$bofiles->delete_file("/{$this->category_dir}/{$loc1}/{$id}/", $values);
-		}
-
-		if (isset($values['file_jasperaction']) && is_array($values['file_jasperaction']))
-		{
-			$values['file_action'] = $values['file_jasperaction'];
-			$bofiles->delete_file("{$this->category_dir}/{$loc1}/{$id}/", $values);
-		}
-
-		$files = array();
-		if (isset($_FILES['file']['name']) && $_FILES['file']['name'])
-		{
-			$file_name	 = str_replace(' ', '_', $_FILES['file']['name']);
-			$to_file	 = "{$bofiles->fakebase}/{$this->category_dir}/{$loc1}/{$id}/{$file_name}";
-
-			if ($bofiles->vfs->file_exists(array(
-				'string'	 => $to_file,
-				'relatives'	 => array(RELATIVE_NONE)
-			)))
-			{
-				$this->receipt['error'][] = array('msg' => lang('This file already exists !'));
-			}
-			else
-			{
-				$files[] = array(
-					'from_file'	 => $_FILES['file']['tmp_name'],
-					'to_file'	 => $to_file
-				);
-			}
-
-			unset($to_file);
-			unset($file_name);
-		}
-
-		if (isset($_FILES['jasperfile']['name']) && $_FILES['jasperfile']['name'])
-		{
-			$file_name	 = 'jasper::' . str_replace(' ', '_', $_FILES['jasperfile']['name']);
-			$to_file	 = "{$bofiles->fakebase}/{$this->category_dir}/{$loc1}/{$id}/{$file_name}";
-
-			if ($bofiles->vfs->file_exists(array(
-				'string'	 => $to_file,
-				'relatives'	 => array(RELATIVE_NONE)
-			)))
-			{
-				$this->receipt['error'][] = array('msg' => lang('This file already exists !'));
-			}
-			else
-			{
-				$files[] = array(
-					'from_file'	 => $_FILES['jasperfile']['tmp_name'],
-					'to_file'	 => $to_file
-				);
-			}
-
-			unset($to_file);
-			unset($file_name);
-		}
-
-
-		foreach ($files as $file)
-		{
-			$bofiles->create_document_dir("{$this->category_dir}/{$loc1}/{$id}");
-			$bofiles->vfs->override_acl = 1;
-
-			if (!$bofiles->vfs->cp(array(
-				'from'		 => $file['from_file'],
-				'to'		 => $file['to_file'],
-				'relatives'	 => array(RELATIVE_NONE | VFS_REAL, RELATIVE_ALL)
-			)))
-			{
-				$this->receipt['error'][] = array('msg' => lang('Failed to upload file !'));
-			}
-			$bofiles->vfs->override_acl = 0;
-		}
-
-		unset($loc1);
-		unset($files);
-		unset($file);
-	}
-
 	/**
 	 * Handle a multi-file upload for an entity item (AJAX endpoint).
 	 *
@@ -793,6 +698,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			return $this->edit();
 		}
 
+		$response_builder = new EntityFormSaveResponseBuilder();
+		$is_json = Sanitizer::get_var('phpgw_return_as') == 'json';
+
 		$id = Sanitizer::get_var('id', 'int');
 
 		if ($id)
@@ -823,18 +731,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		if ($this->receipt['error'])
 		{
-			if (Sanitizer::get_var('phpgw_return_as') == 'json')
-			{
-				return array(
-					'status' => 'error',
-					'receipt'	=> $this->receipt
-				);
-			}
-			else
-			{
-				$this->edit($values);
-				return null;
-			}
+			return $this->applySaveResponse($response_builder->error($is_json, $this->receipt, $values));
 		}
 		else
 		{
@@ -850,18 +747,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 					$this->bo
 				);
 
-				$receipt = $persisted['receipt'];
-				$values = $persisted['values'];
+				$receipt = $persisted->receipt;
+				$values = $persisted->values;
 
 				$this->receipt	 = $receipt;
-				if (Sanitizer::get_var('phpgw_return_as') == 'json')
-				{
-					return array(
-						'status' 	=> 'saved',
-						'id'		=> $receipt['id'],
-						'receipt'	=> $this->receipt,
-					);
-				}
 			}
 			catch (Exception $e)
 			{
@@ -869,49 +758,62 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				{
 					Db::getInstance()->transaction_abort();
 
-					if (Sanitizer::get_var('phpgw_return_as') == 'json')
-					{
-						return array(
-							'status' => 'error',
-							'receipt'	=> $this->receipt
-						);
-					}
-
 					Cache::message_set($e->getMessage(), 'error');
-					$this->edit($values);
-					return null;
+					return $this->applySaveResponse($response_builder->error($is_json, $this->receipt, $values));
 				}
 			}
 
-			$this->_handle_files($values);
+			$save_service->handleFiles(
+				$values,
+				$this->category_dir,
+				$this->type_app[$this->type],
+				$this->receipt['error']
+			);
 
-			//Cache::message_set($receipt, 'message');
-			if ($values['apply'])
-			{
-				if ($id || (isset($receipt['id']) && $receipt['id']))
-				{
-					$_id = isset($receipt['id']) && $receipt['id'] ? $receipt['id'] : $id;
-					self::message_set($this->receipt);
-					self::redirect(array(
-						'menuaction' => 'property.uientity.edit',
-						'id'		 => $_id,
-						'entity_id'	 => $this->entity_id,
-						'cat_id'	 => $this->cat_id,
-						'type'		 => $this->type
-					));
-				}
-
-				$this->edit($values);
-				return null;
-			}
-			phpgw::redirect_link('/index.php', array(
-				'menuaction' => 'property.uientity.index',
-				'entity_id'	 => $this->entity_id,
-				'cat_id'	 => $this->cat_id,
-				'type'		 => $this->type
+			return $this->applySaveResponse($response_builder->success(
+				$is_json,
+				$this->receipt,
+				$values,
+				(int) $id,
+				(int) $this->entity_id,
+				(int) $this->cat_id,
+				$this->type
 			));
+		}
+	}
+
+	/**
+	 * Execute the legacy UI side effect selected for a save response.
+	 *
+	 * @param EntityFormSaveResponse $response Save response decision.
+	 * @return array|void
+	 */
+	private function applySaveResponse(EntityFormSaveResponse $response): mixed
+	{
+		if ($response->type === 'json')
+		{
+			return $response->payload;
+		}
+
+		if ($response->type === 'edit')
+		{
+			$this->edit($response->values);
 			return null;
 		}
+
+		if ($response->type === 'redirect-edit')
+		{
+			self::message_set($this->receipt);
+			self::redirect(array_merge([
+				'menuaction' => 'property.uientity.edit',
+			], $response->payload));
+			return null;
+		}
+
+		phpgw::redirect_link('/index.php', array_merge([
+			'menuaction' => 'property.uientity.index',
+		], $response->payload));
+		return null;
 	}
 
 	/**

@@ -14,8 +14,7 @@ this.fileuploader = function ()
 
 this.refresh_files = function ()
 {
-	var oArgs = get_files_java_url;
-	var strURL = phpGWLink('index.php', oArgs, true);
+	var strURL = get_files_java_url;
 
 	refresh_glider(strURL);
 

@@ -119,7 +119,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		'index'						 => true,
 		//'addfiles' => true,
 		'get_documents'				 => true,
-		'get_files'					 => true,
 		'get_target'				 => true,
 		'get_related'				 => true,
 		'get_inventory'				 => true,
@@ -1130,102 +1129,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			else
 			{
 				$out = $values;
-			}
-		}
-
-		$result_data = array('results' => $out);
-
-		$result_data['total_records']	 = $total_records;
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
-	}
-
-	/**
-	 * Return a DataTables-compatible JSON list of files attached to an entity item.
-	 *
-	 * Fetches file metadata from bo->read_single() and returns rendered link and
-	 * checkbox columns (with thumbnail info for image files).
-	 *
-	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
-	 */
-	function get_files(): array
-	{
-		$id		 = Sanitizer::get_var('id', 'REQUEST', 'int');
-		$draw	 = Sanitizer::get_var('draw', 'int');
-		$allrows = Sanitizer::get_var('length', 'int') == -1;
-
-		$values = $this->bo->read_single(array(
-			'entity_id'	 => $this->entity_id,
-			'cat_id'	 => $this->cat_id,
-			'type'		 => $this->type,
-			'id'		 => $id
-		));
-
-		$link_file_data = array(
-			'menuaction' => 'property.uientity.view_file',
-			'loc1'		 => $values['location_data']['loc1'],
-			'id'		 => $id,
-			'cat_id'	 => $this->cat_id,
-			'entity_id'	 => $this->entity_id,
-			'type'		 => $this->type
-		);
-		$link_view_file	 = phpgw::link('/index.php', $link_file_data);
-
-		if (isset($values['files']) && is_array($values['files']))
-		{
-			$j = count($values['files']);
-			for ($i = 0; $i < $j; $i++)
-			{
-				$values['files'][$i]['file_name'] = urlencode($values['files'][$i]['name']);
-			}
-		}
-
-		$img_types = array(
-			'image/jpeg',
-			'image/png',
-			'image/gif'
-		);
-
-		$lang_view = lang('click to view file');
-		$lang_delete = lang('Check to delete file');
-		$content_files = array();
-		$z = 0;
-		foreach ($values['files'] as $_entry)
-		{
-			$content_files[] = array(
-				'file_link'		 => "<a href='{$link_view_file}&amp;file_id={$_entry['file_id']}' target='_blank' title='{$lang_view}'>{$_entry['name']}</a>",
-				'delete_file'	 => "<input type='checkbox' name='values[file_action][]' value='{$_entry['file_id']}' title='{$lang_delete}'>"
-			);
-			if (in_array($_entry['mime_type'], $img_types))
-			{
-				$content_files[$z]['file_name'] = $_entry['name'];
-				$content_files[$z]['img_id'] = $_entry['file_id'];
-				$content_files[$z]['img_url'] = "{$link_view_file}&file_id={$_entry['file_id']}";
-			}
-			$z++;
-		}
-
-		$start			 = Sanitizer::get_var('startIndex', 'REQUEST', 'int', 0);
-		$total_records	 = count($content_files);
-
-		$num_rows = Sanitizer::get_var('length', 'int', 'REQUEST', 0);
-
-		if ($allrows)
-		{
-			$out = $content_files;
-		}
-		else
-		{
-			if ($total_records > $num_rows)
-			{
-				$page		 = ceil(($start / $total_records) * ($total_records / $num_rows));
-				$values_part = array_chunk($content_files, $num_rows);
-				$out		 = $values_part[$page];
-			}
-			else
-			{
-				$out = $content_files;
 			}
 		}
 
@@ -2801,7 +2704,10 @@ JS;
 				'file'
 			)),
 			'content_images'				 => $content_images,
-			'get_files_java_url'			=> "{menuaction:'property.uientity.get_files',id:'{$id}',entity_id:{$this->entity_id},cat_id:{$this->cat_id},type:'{$this->type}',length:-1}",
+			'get_files_java_url'			=> '/property/entity/' . urlencode($this->type)
+				. '/' . (int)$this->entity_id
+				. '/' . (int)$this->cat_id
+				. '/' . (int)$id . '/files',
 		);
 
 		//print_r($data['location_data2']);die;

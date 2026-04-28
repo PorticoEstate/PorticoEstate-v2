@@ -48,6 +48,13 @@ mkdir -p /var/log/supervisor
 # Clean up stale Apache2 PID files to prevent startup issues
 rm -f /var/run/apache2/apache2.pid
 
+# Sync PHP-FPM pool overrides from the mounted workspace.
+# This makes php-fpm.d/zz-portico.conf changes effective on container restart
+# without rebuilding the image.
+if [ -f /var/www/html/php-fpm.d/zz-portico.conf ]; then
+    cp /var/www/html/php-fpm.d/zz-portico.conf /usr/local/etc/php-fpm.d/zz-portico.conf
+fi
+
 # Enable required modules for WebSocket
 a2enmod proxy proxy_http proxy_wstunnel rewrite
 

@@ -1062,8 +1062,8 @@ class UserHelper
 			return; // Nothing to update
 		}
 
-		$params[':updated'] = date('Y-m-d H:i:s');
-		$fields_to_update[] = "updated = :updated";
+//		$params[':updated'] = date('Y-m-d H:i:s');
+//		$fields_to_update[] = "updated = :updated";
 
 		$sql = "UPDATE bb_user SET " . implode(', ', $fields_to_update) . " WHERE id = :id";
 		

@@ -33,7 +33,6 @@ use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\controllers\Locations;
-use App\modules\property\inc\EntityAclGuard;
 use App\modules\property\inc\property_soentity;
 
 /**
@@ -81,7 +80,6 @@ class property_boentity
 	);
 	var $type_app				 = array();
 	var $type, $locations_obj, $acl;
-	protected EntityAclGuard $aclGuard;
 	protected $userSettings;
 	private $location_relation_data	 = array();
 
@@ -113,7 +111,6 @@ class property_boentity
 		include_class('property', 'bocommon');
 		$this->bocommon		 = new property_bocommon();
 		$this->acl = Acl::getInstance();
-		$this->aclGuard = new EntityAclGuard($this->acl);
 		$this->userSettings = Settings::getInstance()->get('user');
 
 		if (!$type)
@@ -308,7 +305,7 @@ class property_boentity
 
 		$ok = false;
 
-		if ($this->aclGuard->canEdit($this->acl_location))
+		if ($this->acl->check($this->acl_location, ACL_EDIT, 'property'))
 		{
 			$ok = $this->so->set_geolocation($location_id, $component_id, $latitude, $longitude);
 		}
@@ -1266,7 +1263,7 @@ JS;
 
 		if ($control_id && $assigned_to && $id)
 		{
-			if (!$this->aclGuard->isAdmin())
+			if (!$this->acl->check('.admin', ACL_EDIT, 'property'))
 			{
 				$receipt['error'][]	 = true;
 				$result				 = array(

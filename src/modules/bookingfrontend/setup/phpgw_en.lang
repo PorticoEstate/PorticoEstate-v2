@@ -949,6 +949,7 @@ show_all_resources	bookingfrontend	en	Show all rooms
 activity_and_organizer	bookingfrontend	en	Activity and organizer
 title_help_text	bookingfrontend	en	Shown publicly in the calendar and on info screens. Describe what is happening and who is using the room. Avoid sensitive information.
 title_placeholder	bookingfrontend	en	E.g. "Training – IL Brodd" or "Birthday – Kari Hansen"
+vipps_only_for_direct_bookings	bookingfrontend	en	Vipps payment only applies to direct bookings. Applications requiring case processing will be submitted for approval.
 select_resource_before_application	bookingfrontend	en	You must select a resource before creating an application
 hospitality	bookingfrontend	en	Hospitality
 add_hospitality_order	bookingfrontend	en	Add catering order

@@ -9,6 +9,7 @@ import Image from "next/image";
 // Shopping cart FAB is now managed by the toast system
 import Link from "next/link";
 import VersionSwitcher from "@/app/i18n/version-switcher";
+import DeploymentIndicator from "@/components/layout/header/deployment-indicator/deployment-indicator";
 
 
 interface HeaderProps {
@@ -39,6 +40,7 @@ const Header = async (props: HeaderProps) => {
             {/*${baseUrl}*/}
             <HeaderMenuContent>
 				{/*<VersionSwitcher/>*/}
+				<DeploymentIndicator/>
                 <LanguageSwitcher/>
                 <ShoppingCartButton/>
                 <UserMenu/>

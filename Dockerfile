@@ -230,8 +230,10 @@ COPY composer.json composer.lock* ./
 # Install all dependencies during build time
 RUN XDEBUG_MODE=off composer install --no-dev --optimize-autoloader
 
-# Install Node.js and npm
-RUN apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/*
+# Install Node.js 22 LTS and npm via NodeSource
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy npm files and install dependencies
 COPY package.json package-lock.json ./

@@ -401,64 +401,41 @@ class CheckoutController
                     }
                 }
 
-                $updatedApplications = $this->applicationService->updateApplicationsWithContactInfo($session_id, $data, false);
-
                 // 2. Separate applications into direct bookings and normal applications
-                $directApplications = [];
-                $normalApplications = [];
-
+                $directApplicationIds = [];
+                $normalApplicationIds = [];
                 $currentUnixTime = time();
 
-                foreach ($updatedApplications as $application) {
+                foreach ($applications as $application) {
                     $isDirectBooking = false;
                     if (isset($application['resources']) && is_array($application['resources'])) {
                         foreach ($application['resources'] as $resource) {
-                            if (isset($resource['direct_booking']) && !empty($resource['direct_booking'])) {
-                                // Check if current time is past the direct booking start time
-                                if ($currentUnixTime > $resource['direct_booking']) {
-                                    $isDirectBooking = true;
-                                    break;
-                                }
+                            if (!empty($resource['direct_booking']) && $currentUnixTime > $resource['direct_booking']) {
+                                $isDirectBooking = true;
+                                break;
                             }
                         }
                     }
 
                     if ($isDirectBooking) {
-                        $directApplications[] = $application;
+                        $directApplicationIds[] = $application['id'];
                     } else {
-                        $normalApplications[] = $application;
+                        $normalApplicationIds[] = $application['id'];
                     }
                 }
 
-                // 3. Submit normal applications immediately if any exist
-                if (!empty($normalApplications)) {
-                    // We need to submit only normal applications by updating their session temporarily
-                    // Store current partial applications and restore only normal ones for checkout
-                    $session = Sessions::getInstance();
-                    $originalPartials = $this->applicationService->getPartialApplications($session_id);
+                // 3. Update ALL applications with contact info but don't finalize any yet.
+                //    Everything stays as partials until Vipps payment succeeds.
+                //    On success, the callback will checkout normal apps and approve direct ones.
+                $this->applicationService->updateApplicationsWithContactInfo($session_id, $data, false);
 
-                    // Temporarily clear partials and add only normal applications
-                    $uiApplication = CreateObject('booking.uiapplication');
-                    foreach ($originalPartials as $original) {
-                        if (!in_array($original['id'], array_column($normalApplications, 'id'))) {
-                            // Remove non-normal applications temporarily
-                            $uiApplication->remove_partial($session_id, $original['id']);
-                        }
-                    }
+                // 4. Handle Vipps payment for direct applications
+                if (!empty($directApplicationIds)) {
 
-                    // Submit normal applications
-                    $normalResult = $this->applicationService->checkoutPartials($session_id, $data);
-
-                    // Restore direct applications to partial state for payment
-                    foreach ($directApplications as $directApp) {
-                        $uiApplication->add_partial($directApp, $session_id);
-                    }
-                }
-
-                // 4. Handle Vipps payment for direct applications (if eligible)
-                if (!empty($directApplications)) {
-                    // Calculate total amount for Vipps payment
-                    $totalAmount = $this->applicationService->calculateTotalSum($directApplications);
+                    $directApplications = array_filter($applications, function ($app) use ($directApplicationIds) {
+                        return in_array($app['id'], $directApplicationIds);
+                    });
+                    $totalAmount = $this->applicationService->calculateTotalSum(array_values($directApplications));
 
                     if ($totalAmount <= 0) {
                         return ResponseHelper::sendErrorResponse(
@@ -474,22 +451,18 @@ class CheckoutController
                         ], 500);
                     }
 
-                    // Initialize Vipps payment using VippsService
-                    $direct_application_ids = array_column($directApplications, 'id');
-
                     try {
-                        $paymentResult = $this->vippsService->initiatePayment($direct_application_ids);
+                        $paymentResult = $this->vippsService->initiatePayment($directApplicationIds);
 
                         if (isset($paymentResult['url'])) {
                             return ResponseHelper::sendJSONResponse([
                                 'success' => true,
                                 'redirect_url' => $paymentResult['url'],
                                 'orderId' => $paymentResult['orderId'] ?? null,
-                                'normal_applications_submitted' => count($normalApplications),
-                                'direct_applications_count' => count($directApplications)
+                                'normal_applications_submitted' => count($normalApplicationIds),
+                                'direct_applications_count' => count($directApplicationIds)
                             ]);
                         } else {
-                            // Handle Vipps initiation failure
                             return ResponseHelper::sendErrorResponse([
                                 'error' => lang('vipps_init_failed'),
                                 'details' => is_array($paymentResult) ? json_encode($paymentResult) : 'Unknown error'
@@ -502,11 +475,11 @@ class CheckoutController
                         ], 500);
                     }
                 } else {
-                    // Only normal applications - redirect to success page
+                    // Only normal applications - checkout already handled above, redirect
                     return ResponseHelper::sendJSONResponse([
                         'success' => true,
                         'redirect_url' => '/user/applications',
-                        'normal_applications_submitted' => count($normalApplications),
+                        'normal_applications_submitted' => count($normalApplicationIds),
                         'direct_applications_count' => 0
                     ]);
                 }
@@ -582,6 +555,25 @@ class CheckoutController
 
             // Process payment status with business logic
             $result = $this->vippsService->processPaymentStatus($payment_order_id);
+
+            // If payment succeeded, also checkout any remaining normal (application-based) partials
+            if (in_array($result['status'] ?? '', ['completed', 'captured'])) {
+                $session = Sessions::getInstance();
+                $session_id = $session->get_session_id();
+
+                if (!empty($session_id)) {
+                    $remainingPartials = $this->applicationService->getPartialApplications($session_id);
+                    if (!empty($remainingPartials)) {
+                        try {
+                            // Contact info was already saved during initiateVippsPayment.
+                            // Skip contact update validation and just finalize the remaining apps.
+                            $this->applicationService->checkoutPartials($session_id, [], null, true);
+                        } catch (Exception $e) {
+                            error_log("Failed to checkout remaining partials after Vipps success: " . $e->getMessage());
+                        }
+                    }
+                }
+            }
 
             return ResponseHelper::sendJSONResponse($result);
 

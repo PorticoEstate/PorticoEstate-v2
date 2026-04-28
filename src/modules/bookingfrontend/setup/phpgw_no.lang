@@ -950,3 +950,4 @@ show_all_resources	bookingfrontend	no	Se alle rom
 activity_and_organizer	bookingfrontend	no	Aktivitet og arrangør
 title_help_text	bookingfrontend	no	Vises offentlig i kalender og på infoskjerm. Skriv hva som skjer og hvem som bruker rommet. Unngå sensitiv informasjon.
 title_placeholder	bookingfrontend	no	F.eks. "Trening – IL Brodd" eller "Bursdag – Kari Hansen"
+vipps_only_for_direct_bookings	bookingfrontend	no	Vipps-betaling gjelder kun for direktebookinger. Søknader som krever saksbehandling sendes inn til godkjenning.

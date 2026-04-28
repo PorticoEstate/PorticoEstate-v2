@@ -946,3 +946,7 @@ rooms_and_premises	bookingfrontend	nn	Rom og lokalar
 building_title	bookingfrontend	nn	Bygg
 resource_title	bookingfrontend	nn	Rom
 show_all_resources	bookingfrontend	nn	Sjå alle rom
+activity_and_organizer	bookingfrontend	nn	Aktivitet og arrangør
+title_help_text	bookingfrontend	nn	Vert vist offentleg i kalender og på infoskjerm. Skriv kva som skjer og kven som brukar rommet. Unngå sensitiv informasjon.
+title_placeholder	bookingfrontend	nn	T.d. "Trening – IL Brodd" eller "Bursdag – Kari Hansen"
+vipps_only_for_direct_bookings	bookingfrontend	nn	Vipps-betaling gjeld berre for direktebookingar. Søknader som krev saksbehandling vert sende inn til godkjenning.

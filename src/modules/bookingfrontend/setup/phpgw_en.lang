@@ -946,3 +946,7 @@ rooms_and_premises	bookingfrontend	en	Rooms and premises
 building_title	bookingfrontend	en	Building
 resource_title	bookingfrontend	en	Room
 show_all_resources	bookingfrontend	en	Show all rooms
+activity_and_organizer	bookingfrontend	en	Activity and organizer
+title_help_text	bookingfrontend	en	Shown publicly in the calendar and on info screens. Describe what is happening and who is using the room. Avoid sensitive information.
+title_placeholder	bookingfrontend	en	E.g. "Training – IL Brodd" or "Birthday – Kari Hansen"
+vipps_only_for_direct_bookings	bookingfrontend	en	Vipps payment only applies to direct bookings. Applications requiring case processing will be submitted for approval.

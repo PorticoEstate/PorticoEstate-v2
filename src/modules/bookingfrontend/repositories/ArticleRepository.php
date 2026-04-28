@@ -23,12 +23,14 @@ class ArticleRepository
      */
     public function getArticleMappingById(int $mappingId): ?array
     {
-        // Query the mapping and also join price information
-        $sql = "SELECT am.*, p.price, am.tax_code
+        // Query the mapping and also join price information and tax percent
+        // Priority: default price first, then most recent by date; only prices valid today or earlier
+        $sql = "SELECT am.*, p.price, am.tax_code, e.percent_ AS tax_percent
                 FROM bb_article_mapping am
-                LEFT JOIN bb_article_price p ON p.article_mapping_id = am.id
+                LEFT JOIN bb_article_price p ON p.article_mapping_id = am.id AND p.active = 1 AND p.from_ <= CURRENT_DATE
+                LEFT JOIN fm_ecomva e ON am.tax_code = e.id
                 WHERE am.id = :id
-                ORDER BY p.from_ DESC
+                ORDER BY p.default_ ASC, p.from_ DESC
                 LIMIT 1";
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['id' => $mappingId]);
@@ -103,7 +105,8 @@ class ArticleRepository
                     'quantity' => $article['quantity'],
                     'parent_mapping_id' => $article['parent_id'] ?? null,
                     'ex_tax_price' => $mapping['price'] ?? 0, // Using price from mapping
-                    'tax_code' => $mapping['tax_code'] ?? null
+                    'tax_code' => $mapping['tax_code'] ?? null,
+                    'tax_percent' => (float)($mapping['tax_percent'] ?? 0)
                 ];
 
                 $this->savePurchaseOrderLine($purchase_order_id, $line);
@@ -180,14 +183,9 @@ class ArticleRepository
         $quantity = $line['quantity'] ?? 0;
         $amount = $unitPrice * $quantity;
 
-        // Get tax rate information (assuming 25% if not specified)
-        $taxRate = 0.25; // Default tax rate
-        if (!empty($line['tax_code'])) {
-            // Could look up actual tax rate here if needed
-        }
-
-        // Calculate tax amount
-        $tax = $amount * $taxRate;
+        // Calculate tax using the article's actual tax percent
+        $taxPercent = $line['tax_percent'] ?? 0;
+        $tax = $amount * ($taxPercent / 100);
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
@@ -322,7 +320,8 @@ class ArticleRepository
             $sql = "SELECT price, remark FROM bb_article_price
                 WHERE article_mapping_id = ?
                 AND active = 1
-                ORDER BY default_ ASC";
+                AND from_ <= CURRENT_DATE
+                ORDER BY default_ ASC, from_ DESC";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$articleData['id']]);

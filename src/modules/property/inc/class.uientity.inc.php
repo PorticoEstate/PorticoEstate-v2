@@ -33,12 +33,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\Database\Db;
 use App\modules\property\inc\EntityEditPagePresenter;
-use App\modules\property\inc\EntityFormInputMapper;
-use App\modules\property\inc\EntityFormRehydrateService;
-use App\modules\property\inc\EntityFormSaveResponse;
-use App\modules\property\inc\EntityFormSaveResponseBuilder;
-use App\modules\property\inc\EntityFormSaveService;
-use App\modules\property\inc\EntityFormValidationService;
+use App\modules\property\inc\EntityFormHelper;
 
 /**
  * Legacy UI layer for the property entity module.
@@ -151,10 +146,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 */
 	function __construct()
 	{
-		trigger_error(
-			'property_uientity is deprecated. Use App\\modules\\property\\controllers\\EntityController REST routes instead.',
-			E_USER_DEPRECATED
-		);
 
 		parent::__construct();
 
@@ -247,8 +238,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 */
 	private function _populate($data = array()): array
 	{
-		$input_mapper = new EntityFormInputMapper();
-		$input = $input_mapper->map(
+		$helper = new EntityFormHelper();
+
+		$input = $helper->mapInput(
 			$this->type_app[$this->type],
 			$this->type,
 			$this->acl_location,
@@ -283,8 +275,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		if (isset($values['save']) && $values['save'])
 		{
-			$validation_service = new EntityFormValidationService();
-			$validation = $validation_service->validate(
+			$validation = $helper->validate(
 				$values,
 				$values_attribute,
 				(int) $this->cat_id,
@@ -304,8 +295,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 			if ($this->receipt['error'])
 			{
-				$rehydrate_service = new EntityFormRehydrateService();
-				$values = $rehydrate_service->rehydrate($values);
+				$values = $helper->rehydrate($values);
 			}
 		}
 
@@ -698,7 +688,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			return $this->edit();
 		}
 
-		$response_builder = new EntityFormSaveResponseBuilder();
+		$helper = new EntityFormHelper();
 		$is_json = Sanitizer::get_var('phpgw_return_as') == 'json';
 
 		$id = Sanitizer::get_var('id', 'int');
@@ -731,14 +721,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		if ($this->receipt['error'])
 		{
-			return $this->applySaveResponse($response_builder->error($is_json, $this->receipt, $values));
+			$response = $helper->buildSaveResponse($is_json, $this->receipt, $values, 'error');
+			return $this->applySaveResponse($response);
 		}
 		else
 		{
 			try
 			{
-				$save_service = new EntityFormSaveService();
-				$persisted = $save_service->save(
+				$persisted = $helper->persistSave(
 					$values,
 					$attributes,
 					$action,
@@ -747,8 +737,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 					$this->bo
 				);
 
-				$receipt = $persisted->receipt;
-				$values = $persisted->values;
+				$receipt = $persisted['receipt'];
+				$values = $persisted['values'];
 
 				$this->receipt	 = $receipt;
 			}
@@ -759,12 +749,13 @@ class property_uientity extends phpgwapi_uicommon_jquery
 					Db::getInstance()->transaction_abort();
 
 					Cache::message_set($e->getMessage(), 'error');
-					return $this->applySaveResponse($response_builder->error($is_json, $this->receipt, $values));
+					$response = $helper->buildSaveResponse($is_json, $this->receipt, $values, 'error');
+					return $this->applySaveResponse($response);
 				}
 			}
 
 			$errors = (array) ($this->receipt['error'] ?? []);
-			$save_service->handleFiles(
+			$helper->handleFiles(
 				$values,
 				$this->category_dir,
 				$this->type_app[$this->type],
@@ -772,49 +763,51 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			);
 			$this->receipt['error'] = $errors;
 
-			return $this->applySaveResponse($response_builder->success(
+			$response = $helper->buildSaveResponse(
 				$is_json,
 				$this->receipt,
 				$values,
+				'success',
 				(int) $id,
 				(int) $this->entity_id,
 				(int) $this->cat_id,
 				$this->type
-			));
+			);
+			return $this->applySaveResponse($response);
 		}
 	}
 
 	/**
 	 * Execute the legacy UI side effect selected for a save response.
 	 *
-	 * @param EntityFormSaveResponse $response Save response decision.
+	 * @param array $response Save response decision: {type, payload, values}.
 	 * @return array|void
 	 */
-	private function applySaveResponse(EntityFormSaveResponse $response): mixed
+	private function applySaveResponse(array $response): mixed
 	{
-		if ($response->type === 'json')
+		if ($response['type'] === 'json')
 		{
-			return $response->payload;
+			return $response['payload'];
 		}
 
-		if ($response->type === 'edit')
+		if ($response['type'] === 'edit')
 		{
-			$this->edit($response->values);
+			$this->edit($response['values']);
 			return null;
 		}
 
-		if ($response->type === 'redirect-edit')
+		if ($response['type'] === 'redirect-edit')
 		{
 			self::message_set($this->receipt);
 			self::redirect(array_merge([
 				'menuaction' => 'property.uientity.edit',
-			], $response->payload));
+			], $response['payload']));
 			return null;
 		}
 
 		phpgw::redirect_link('/index.php', array_merge([
 			'menuaction' => 'property.uientity.index',
-		], $response->payload));
+		], $response['payload']));
 		return null;
 	}
 

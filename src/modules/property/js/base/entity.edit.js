@@ -378,13 +378,20 @@ function buildEntityRestUrl(form)
 	var entityId = query.entity_id || '';
 	var catId = query.cat_id || '';
 	var id = (query.id || item_id || '').toString();
+	var bypass = query.bypass;
 
 	if (!type || !entityId || !catId || !id)
 	{
 		return null;
 	}
 
-	return '/property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId + '/' + id;
+	var url = '/property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId + '/' + id;
+	if (typeof bypass !== 'undefined' && bypass !== null && bypass !== '')
+	{
+		url += '?bypass=' + encodeURIComponent(bypass);
+	}
+
+	return url;
 }
 
 function hasSelectedFileUpload(form)

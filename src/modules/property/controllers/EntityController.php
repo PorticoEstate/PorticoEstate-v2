@@ -4,6 +4,7 @@ namespace App\modules\property\controllers;
 
 use App\Database\Db;
 use App\modules\property\inc\EntityFormHelper;
+use App\modules\phpgwapi\services\Cache;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -198,7 +199,257 @@ class EntityController
 		}
 
 		$decoded = json_decode($rawBody, true);
-		return is_array($decoded) ? $decoded : [];
+		if (!is_array($decoded))
+		{
+			throw new HttpBadRequestException($request, 'Invalid JSON request body');
+		}
+
+		return $decoded;
+	}
+
+	/**
+	 * Recursively sanitize scalar payload values while preserving array structure.
+	 */
+	private function sanitizePayloadValue(mixed $value): mixed
+	{
+		if (is_array($value))
+		{
+			$clean = [];
+			foreach ($value as $key => $item)
+			{
+				$clean[$key] = $this->sanitizePayloadValue($item);
+			}
+			return $clean;
+		}
+
+		if (is_string($value))
+		{
+			return Sanitizer::clean_value($value, 'string');
+		}
+
+		if (is_int($value) || is_float($value) || is_bool($value) || $value === null)
+		{
+			return $value;
+		}
+
+		return Sanitizer::clean_value((string)$value, 'string');
+	}
+
+	/**
+	 * Validate and sanitize REST save payload shape.
+	 *
+	 * @return array{values: array, values_attribute: array, values_checklist_stage: mixed}
+	 */
+	private function normalizedSavePayload(Request $request): array
+	{
+		$body = $this->requestBodyArray($request);
+
+		if (isset($body['values']) && !is_array($body['values']))
+		{
+			throw new HttpBadRequestException($request, 'Invalid payload: values must be an object');
+		}
+
+		if (isset($body['values_attribute']) && !is_array($body['values_attribute']))
+		{
+			throw new HttpBadRequestException($request, 'Invalid payload: values_attribute must be an object');
+		}
+
+		if (isset($body['values_checklist_stage'])
+			&& !is_array($body['values_checklist_stage'])
+			&& $body['values_checklist_stage'] !== null)
+		{
+			throw new HttpBadRequestException($request, 'Invalid payload: values_checklist_stage must be an object');
+		}
+
+		$values = $this->sanitizePayloadValue((array)($body['values'] ?? []));
+		$valuesAttribute = $this->sanitizePayloadValue((array)($body['values_attribute'] ?? []));
+		$valuesChecklistStage = $this->sanitizePayloadValue($body['values_checklist_stage'] ?? null);
+
+		return [
+			'values' => is_array($values) ? $values : [],
+			'values_attribute' => is_array($valuesAttribute) ? $valuesAttribute : [],
+			'values_checklist_stage' => $valuesChecklistStage,
+		];
+	}
+
+	/**
+	 * Apply legacy session-backed location enrichment via collect_locationdata().
+	 */
+	private function applyLegacyCollectLocationData(array $values, \property_boentity $bo, Request $request): array
+	{
+		$body = $this->requestBodyArray($request);
+		$queryParams = $request->getQueryParams();
+		$bypassRaw = $queryParams['bypass'] ?? ($values['bypass'] ?? false);
+		$bypass = filter_var($bypassRaw, FILTER_VALIDATE_BOOLEAN);
+		if ($bypass)
+		{
+			return $values;
+		}
+
+		if (!function_exists('CreateObject'))
+		{
+			return $values;
+		}
+
+		$app = $bo->type_app[$bo->type] ?? 'property';
+		$aclLocation = $bo->acl_location;
+
+		$config = CreateObject('phpgwapi.config', 'property')->read();
+		if (!empty($config['bypass_acl_at_entity'])
+			&& is_array($config['bypass_acl_at_entity'])
+			&& in_array($bo->entity_id, $config['bypass_acl_at_entity']))
+		{
+			$aclLocation = ".{$bo->type}.{$bo->entity_id}";
+		}
+
+		$insertRecord = Cache::session_get('property', 'insert_record');
+		if (!is_array($insertRecord))
+		{
+			$insertRecord = [];
+		}
+
+		$insertRecordEntity = (array) Cache::session_get($app, 'insert_record_values' . $aclLocation);
+		foreach ($insertRecordEntity as $insertValue)
+		{
+			$insertRecord['extra'][$insertValue] = $insertValue;
+		}
+
+		include_class('property', 'bocommon');
+		$bocommon = CreateObject('property.bocommon');
+		if (!is_object($bocommon) || !method_exists($bocommon, 'collect_locationdata'))
+		{
+			return $values;
+		}
+
+		// collect_locationdata() reads from $_POST; hydrate a temporary POST view for REST payloads.
+		$legacyPost = $this->buildLegacyCollectLocationPost($values, $insertRecord, $body);
+		$previousPost = $_POST ?? [];
+		$_POST = array_merge($previousPost, $legacyPost);
+
+		try
+		{
+			return $bocommon->collect_locationdata($values, $insertRecord);
+		}
+		finally
+		{
+			$_POST = $previousPost;
+		}
+	}
+
+	/**
+	 * Build the subset of POST fields expected by property_bocommon::collect_locationdata().
+	 */
+	private function buildLegacyCollectLocationPost(array $values, array $insertRecord, array $body = []): array
+	{
+		$post = [];
+
+		if (!empty($insertRecord['location']) && is_array($insertRecord['location']))
+		{
+			foreach ($insertRecord['location'] as $locationKey)
+			{
+				if (isset($body[$locationKey]) && $body[$locationKey] !== '')
+				{
+					$post[$locationKey] = $body[$locationKey];
+				}
+				else if (isset($values['location'][$locationKey]) && $values['location'][$locationKey] !== '')
+				{
+					$post[$locationKey] = $values['location'][$locationKey];
+				}
+			}
+		}
+
+		if (!empty($insertRecord['extra']) && is_array($insertRecord['extra']))
+		{
+			foreach ($insertRecord['extra'] as $postKey => $column)
+			{
+				if (isset($body[$postKey]) && $body[$postKey] !== '')
+				{
+					$post[$postKey] = $body[$postKey];
+				}
+				else if (isset($values['extra'][$column]) && $values['extra'][$column] !== '')
+				{
+					$post[$postKey] = $values['extra'][$column];
+				}
+			}
+		}
+
+		if (!empty($insertRecord['additional_info']) && is_array($insertRecord['additional_info'])
+			&& !empty($values['additional_info']) && is_array($values['additional_info']))
+		{
+			foreach ($insertRecord['additional_info'] as $additionalInfo)
+			{
+				$inputName = $additionalInfo['input_name'] ?? '';
+				$inputText = $additionalInfo['input_text'] ?? '';
+				if ($inputName && isset($body[$inputName]) && $body[$inputName] !== '')
+				{
+					$post[$inputName] = $body[$inputName];
+				}
+				else if ($inputName && $inputText && isset($values['additional_info'][$inputText])
+					&& $values['additional_info'][$inputText] !== '')
+				{
+					$post[$inputName] = $values['additional_info'][$inputText];
+				}
+			}
+		}
+
+		if (isset($body['street_name']) && $body['street_name'] !== '')
+		{
+			$post['street_name'] = $body['street_name'];
+		}
+		else if (isset($values['street_name']) && $values['street_name'] !== '')
+		{
+			$post['street_name'] = $values['street_name'];
+		}
+
+		if (isset($body['street_number']) && $body['street_number'] !== '')
+		{
+			$post['street_number'] = $body['street_number'];
+		}
+		else if (isset($values['street_number']) && $values['street_number'] !== '')
+		{
+			$post['street_number'] = $values['street_number'];
+		}
+
+		if (!empty($insertRecord['location']) && is_array($insertRecord['location']))
+		{
+			foreach ($insertRecord['location'] as $index => $locationKey)
+			{
+				$locationNameKey = 'loc' . ($index + 1) . '_name';
+				if (isset($body[$locationNameKey]) && $body[$locationNameKey] !== '')
+				{
+					$post[$locationNameKey] = $body[$locationNameKey];
+				}
+			}
+		}
+
+		if (!empty($values['location']) && is_array($values['location'])
+			&& !isset($post['loc' . count($values['location']) . '_name'])
+			&& isset($values['location_name']) && $values['location_name'] !== '')
+		{
+			$post['loc' . count($values['location']) . '_name'] = $values['location_name'];
+		}
+
+		foreach ($body as $key => $value)
+		{
+			if (is_string($key) && strpos($key, 'entity_cat_name_') === 0 && $value !== '')
+			{
+				$post[$key] = $value;
+			}
+		}
+
+		if (!empty($values['p']) && is_array($values['p']))
+		{
+			foreach ($values['p'] as $pEntityId => $pData)
+			{
+				$key = 'entity_cat_name_' . $pEntityId;
+				if (!isset($post[$key]) && isset($pData['p_cat_name']) && $pData['p_cat_name'] !== '')
+				{
+					$post[$key] = $pData['p_cat_name'];
+				}
+			}
+		}
+
+		return $post;
 	}
 
 	/**
@@ -446,10 +697,11 @@ class EntityController
 		$bo = $this->assertEntityAcl($request, $args, ACL_ADD, 'No add access for this entity category');
 		$helper = $this->formHelper();
 
-		$body = $this->requestBodyArray($request);
-		$values           = (array)($body['values']           ?? []);
-		$values_attribute = (array)($body['values_attribute'] ?? []);
-		$valuesChecklistStage = $body['values_checklist_stage'] ?? null;
+		$payload = $this->normalizedSavePayload($request);
+		$values = $payload['values'];
+		$values_attribute = $payload['values_attribute'];
+		$valuesChecklistStage = $payload['values_checklist_stage'];
+		$values = $this->applyLegacyCollectLocationData($values, $bo, $request);
 
 		try
 		{
@@ -525,10 +777,11 @@ class EntityController
 			throw new HttpBadRequestException($request, 'Invalid id');
 		}
 
-		$body = $this->requestBodyArray($request);
-		$values           = (array)($body['values']           ?? []);
-		$values_attribute = (array)($body['values_attribute'] ?? []);
-		$valuesChecklistStage = $body['values_checklist_stage'] ?? null;
+		$payload = $this->normalizedSavePayload($request);
+		$values = $payload['values'];
+		$values_attribute = $payload['values_attribute'];
+		$valuesChecklistStage = $payload['values_checklist_stage'];
+		$values = $this->applyLegacyCollectLocationData($values, $bo, $request);
 		$values['id']     = $id;
 
 		try

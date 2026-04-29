@@ -484,6 +484,70 @@ class EntityControllerTest extends TestCase
 		$this->assertSame('Failed to upload file !', $decoded['error'][0]['msg']);
 	}
 
+	public function testBuildLegacyCollectLocationPostPrefersTopLevelRequestBodyFields(): void
+	{
+		$bo = $this->createMock(\property_boentity::class);
+		$controller = $this->makeController($bo);
+
+		$values = [
+			'location' => ['loc1' => 'fallback-100', 'loc2' => 'fallback-200'],
+			'extra' => [
+				'p_entity_id' => 'fallback-5',
+				'p_cat_id' => 'fallback-3',
+			],
+			'additional_info' => [
+				'Building' => 'fallback-A',
+			],
+			'street_name' => 'Fallback St',
+			'street_number' => '99',
+			'location_name' => 'Parent Name',
+			'p' => [
+				5 => ['p_cat_name' => 'Fallback category'],
+			],
+		];
+
+		$body = [
+			'loc1' => '100',
+			'loc2' => '200',
+			'loc1_name' => 'Object name',
+			'loc2_name' => 'Building name',
+			'p_entity_id' => '5',
+			'p_cat_id' => '3',
+			'building_input' => 'A',
+			'street_name' => 'Main St',
+			'street_number' => '10',
+			'entity_cat_name_5' => 'Child category',
+		];
+
+		$insertRecord = [
+			'location' => ['loc1', 'loc2'],
+			'extra' => [
+				'p_entity_id' => 'p_entity_id',
+				'p_cat_id' => 'p_cat_id',
+			],
+			'additional_info' => [
+				['input_name' => 'building_input', 'input_text' => 'Building'],
+			],
+		];
+
+		$method = new \ReflectionMethod(EntityController::class, 'buildLegacyCollectLocationPost');
+		$method->setAccessible(true);
+
+		/** @var array<string, mixed> $post */
+		$post = $method->invoke($controller, $values, $insertRecord, $body);
+
+		$this->assertSame('100', $post['loc1']);
+		$this->assertSame('200', $post['loc2']);
+		$this->assertSame('Object name', $post['loc1_name']);
+		$this->assertSame('Building name', $post['loc2_name']);
+		$this->assertSame('5', $post['p_entity_id']);
+		$this->assertSame('3', $post['p_cat_id']);
+		$this->assertSame('A', $post['building_input']);
+		$this->assertSame('Main St', $post['street_name']);
+		$this->assertSame('10', $post['street_number']);
+		$this->assertSame('Child category', $post['entity_cat_name_5']);
+	}
+
 	public function testStoreAbortsTransactionAndRethrowsWhenPersistSaveFails(): void
 	{
 		$bo = $this->createMock(\property_boentity::class);

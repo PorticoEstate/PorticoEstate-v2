@@ -3399,8 +3399,7 @@ JS;
 
 		if (!$this->acl_add)
 		{
-			echo lang('No Access');
-			$this->phpgwapi_common->phpgw_exit();
+			phpgw::no_access();
 		}
 		$unit_id	 = '';
 		if ($inventory	 = $this->bo->get_inventory(array(
@@ -3543,8 +3542,7 @@ JS;
 
 		if (!$this->acl_add)
 		{
-			echo lang('No Access');
-			$this->phpgwapi_common->phpgw_exit();
+			phpgw::no_access();
 		}
 
 		$unit_id	 = '';
@@ -3663,11 +3661,9 @@ JS;
 
 		if (!$this->acl_add)
 		{
-			echo lang('No Access');
-			$this->phpgwapi_common->phpgw_exit();
+			echo "Planlagt: Visning av kalenderoppføringer for ressursen";
+			phpgw::no_access();
 		}
-		echo "Planlagt: Visning av kalenderoppføringer for ressursen";
-		$this->phpgwapi_common->phpgw_exit();
 	}
 
 

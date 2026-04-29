@@ -72,12 +72,68 @@ class EntityController
 	private function controllerHelper(array $args): \property_controller_helper
 	{
 		include_class('property', 'controller_helper');
-		$bo = $this->bo($args);
+		$context = $this->resolveAclContext($args);
+		$bo = $context['bo'];
+		$aclCheckLocation = $context['acl_check_location'];
+		$app = $context['app'];
 		return new \property_controller_helper([
-			'acl_read' => true,
+			'acl_read' => $bo->acl->check($aclCheckLocation, ACL_READ, $app),
+			'acl_add' => $bo->acl->check($aclCheckLocation, ACL_ADD, $app),
+			'acl_edit' => $bo->acl->check($aclCheckLocation, ACL_EDIT, $app),
+			'acl_delete' => $bo->acl->check($aclCheckLocation, ACL_DELETE, $app),
 			'type_app' => $bo->type_app,
 			'type'     => (string)$args['type'],
 		]);
+	}
+
+	/**
+	 * Resolve boentity and ACL scope equivalent to legacy uientity constructor logic.
+	 *
+	 * @param array $args Slim route args containing type, entity_id, cat_id.
+	 * @return array{bo:\property_boentity, acl_check_location:string, app:string}
+	 */
+	private function resolveAclContext(array $args): array
+	{
+		$bo = $this->bo($args);
+
+		$aclCheckLocation = $bo->acl_location;
+		$config = CreateObject('phpgwapi.config', 'property')->read();
+		if (!empty($config['bypass_acl_at_entity'])
+			&& is_array($config['bypass_acl_at_entity'])
+			&& in_array($bo->entity_id, $config['bypass_acl_at_entity']))
+		{
+			$aclCheckLocation = ".{$bo->type}.{$bo->entity_id}";
+		}
+
+		$app = $bo->type_app[$bo->type] ?? 'property';
+
+		return [
+			'bo' => $bo,
+			'acl_check_location' => $aclCheckLocation,
+			'app' => $app,
+		];
+	}
+
+	/**
+	 * Enforce entity/category ACL and return the loaded boentity instance.
+	 *
+	 * @param Request $request
+	 * @param array $args
+	 * @param int $aclType ACL_READ|ACL_ADD|ACL_EDIT|ACL_DELETE
+	 * @param string $message Error message for forbidden access.
+	 * @return \property_boentity
+	 */
+	private function assertEntityAcl(Request $request, array $args, int $aclType, string $message): \property_boentity
+	{
+		$context = $this->resolveAclContext($args);
+		$bo = $context['bo'];
+
+		if (!$bo->acl->check($context['acl_check_location'], $aclType, $context['app']))
+		{
+			throw new HttpForbiddenException($request, $message);
+		}
+
+		return $bo;
 	}
 
 	/**
@@ -208,7 +264,7 @@ class EntityController
 	 */
 	public function index(Request $request, Response $response, array $args): Response
 	{
-		$bo = $this->bo($args);
+		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
 
 		$body = (array)($request->getParsedBody() ?? []);
 
@@ -290,13 +346,14 @@ class EntityController
 	 */
 	public function show(Request $request, Response $response, array $args): Response
 	{
+		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+
 		$id = (int)$args['id'];
 		if ($id <= 0)
 		{
 			throw new HttpBadRequestException($request, 'Invalid id');
 		}
 
-		$bo   = $this->bo($args);
 		$item = $bo->read_single(['id' => $id]);
 
 		if (empty($item))
@@ -334,11 +391,12 @@ class EntityController
 	 */
 	public function store(Request $request, Response $response, array $args): Response
 	{
+		$bo = $this->assertEntityAcl($request, $args, ACL_ADD, 'No add access for this entity category');
+
 		$body = (array)($request->getParsedBody() ?? []);
 		$values           = (array)($body['values']           ?? []);
 		$values_attribute = (array)($body['values_attribute'] ?? []);
 
-		$bo      = $this->bo($args);
 		$receipt = $bo->save($values, $values_attribute, 'add', (int)$args['entity_id'], (int)$args['cat_id']);
 
 		$response->getBody()->write(json_encode($receipt, JSON_THROW_ON_ERROR));
@@ -373,6 +431,8 @@ class EntityController
 	 */
 	public function update(Request $request, Response $response, array $args): Response
 	{
+		$bo = $this->assertEntityAcl($request, $args, ACL_EDIT, 'No edit access for this entity category');
+
 		$id = (int)$args['id'];
 		if ($id <= 0)
 		{
@@ -384,7 +444,6 @@ class EntityController
 		$values_attribute = (array)($body['values_attribute'] ?? []);
 		$values['id']     = $id;
 
-		$bo      = $this->bo($args);
 		$receipt = $bo->save($values, $values_attribute, 'edit', (int)$args['entity_id'], (int)$args['cat_id']);
 
 		$response->getBody()->write(json_encode($receipt, JSON_THROW_ON_ERROR));
@@ -407,17 +466,12 @@ class EntityController
 	 */
 	public function destroy(Request $request, Response $response, array $args): Response
 	{
+		$bo = $this->assertEntityAcl($request, $args, ACL_DELETE, 'No delete access for this entity category');
+
 		$id = (int)$args['id'];
 		if ($id <= 0)
 		{
 			throw new HttpBadRequestException($request, 'Invalid id');
-		}
-
-		$bo = $this->bo($args);
-		$app = $bo->type_app[$bo->type] ?? 'property';
-		if (!$bo->acl->check($bo->acl_location, ACL_DELETE, $app))
-		{
-			throw new HttpForbiddenException($request, 'No delete access for this entity category');
 		}
 
 		$bo->delete($id);
@@ -434,8 +488,10 @@ class EntityController
 	 */
 	public function getItemsPerQr(Request $request, Response $response, array $args): Response
 	{
+		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+
 		$qr_code = Sanitizer::clean_value($request->getQueryParams()['qr_code'] ?? '', 'string');
-		$items   = $this->bo($args)->get_items_per_qr($qr_code);
+		$items   = $bo->get_items_per_qr($qr_code);
 		return $this->jsonResponse($response, $items);
 	}
 
@@ -446,10 +502,11 @@ class EntityController
 	 */
 	public function getRelated(Request $request, Response $response, array $args): Response
 	{
+		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+
 		$params  = $request->getQueryParams();
 		$id      = (int)$args['id'];
 		$draw    = (int)($params['draw'] ?? 1);
-		$bo      = $this->bo($args);
 
 		$related = $bo->read_entity_to_link([
 			'entity_id' => (int)$args['entity_id'],
@@ -488,13 +545,14 @@ class EntityController
 	 */
 	public function getFiles(Request $request, Response $response, array $args): Response
 	{
+		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+
 		$params     = $request->getQueryParams();
 		$id         = (int)$args['id'];
 		$draw       = (int)($params['draw'] ?? 1);
 		$entity_id  = (int)$args['entity_id'];
 		$cat_id     = (int)$args['cat_id'];
 		$type       = (string)$args['type'];
-		$bo         = $this->bo($args);
 
 		$item = $bo->read_single([
 			'entity_id' => $entity_id,
@@ -557,10 +615,11 @@ class EntityController
 	 */
 	public function getInventory(Request $request, Response $response, array $args): Response
 	{
+		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+
 		$params      = $request->getQueryParams();
 		$id          = (int)$args['id'];
 		$draw        = (int)($params['draw'] ?? 1);
-		$bo          = $this->bo($args);
 
 		// Resolve the system location_id for this entity/category path.
 		$type_app    = $bo->type_app[$bo->type] ?? '';
@@ -586,6 +645,8 @@ class EntityController
 	 */
 	public function getCases(Request $request, Response $response, array $args): Response
 	{
+		$this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+
 		$_GET['phpgw_return_as'] = 'json';
 		$result = $this->controllerHelper($args)->get_cases();
 		return $this->jsonResponse($response, $result);
@@ -598,6 +659,8 @@ class EntityController
 	 */
 	public function getChecklists(Request $request, Response $response, array $args): Response
 	{
+		$this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+
 		$_GET['phpgw_return_as'] = 'json';
 		$result = $this->controllerHelper($args)->get_checklists();
 		return $this->jsonResponse($response, $result);
@@ -610,6 +673,8 @@ class EntityController
 	 */
 	public function getControlsAtComponent(Request $request, Response $response, array $args): Response
 	{
+		$this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+
 		$_GET['phpgw_return_as'] = 'json';
 		$result = $this->controllerHelper($args)->get_controls_at_component();
 		return $this->jsonResponse($response, $result);
@@ -622,6 +687,8 @@ class EntityController
 	 */
 	public function getCasesForChecklist(Request $request, Response $response, array $args): Response
 	{
+		$this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+
 		$_GET['phpgw_return_as'] = 'json';
 		$result = $this->controllerHelper($args)->get_cases_for_checklist();
 		return $this->jsonResponse($response, $result);
@@ -642,7 +709,7 @@ class EntityController
 	public function download(Request $request, Response $response, array $args): void
 	{
 		include_class('property', 'bocommon');
-		$bo = $this->bo($args);
+		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
 		$bo->allrows = true;
 		$list = $bo->read(['allrows' => true]);
 		$list = $this->enrichRows((array)$list, $bo);

@@ -305,3 +305,178 @@ function newDocument(oArgs)
 
 	window.open(requestUrl, '_self');
 };
+
+function parseFormKeyTokens(key)
+{
+	var tokens = [];
+	var match;
+	var regex = /([^\[\]]+)/g;
+	while ((match = regex.exec(key)) !== null)
+	{
+		tokens.push(match[1]);
+	}
+	return tokens;
+}
+
+function setNestedValue(target, key, value)
+{
+	var tokens = parseFormKeyTokens(key);
+	if (!tokens.length)
+	{
+		return;
+	}
+
+	var node = target;
+	for (var i = 0; i < tokens.length - 1; i++)
+	{
+		var token = tokens[i];
+		if (!Object.prototype.hasOwnProperty.call(node, token) || typeof node[token] !== 'object' || node[token] === null)
+		{
+			node[token] = {};
+		}
+		node = node[token];
+	}
+
+	var leaf = tokens[tokens.length - 1];
+	if (!Object.prototype.hasOwnProperty.call(node, leaf))
+	{
+		node[leaf] = value;
+		return;
+	}
+
+	if (Array.isArray(node[leaf]))
+	{
+		node[leaf].push(value);
+		return;
+	}
+
+	node[leaf] = [node[leaf], value];
+}
+
+function formDataToObject(formData)
+{
+	var payload = {};
+	formData.forEach(function (value, key)
+	{
+		setNestedValue(payload, key, value);
+	});
+	return payload;
+}
+
+function buildEntityRestUrl(form)
+{
+	var parsed = parseURL(form.action);
+	var query = parsed.searchObject || {};
+	var type = query.type || $('#field_type').val() || '';
+	var entityId = query.entity_id || '';
+	var catId = query.cat_id || '';
+	var id = (query.id || item_id || '').toString();
+
+	if (!type || !entityId || !catId || !id)
+	{
+		return null;
+	}
+
+	return '/property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId + '/' + id;
+}
+
+function hasSelectedFileUpload(form)
+{
+	var fileInput = form.querySelector('input[type="file"][name="file"]');
+	if (fileInput && fileInput.files && fileInput.files.length > 0)
+	{
+		return true;
+	}
+
+	var jasperInput = form.querySelector('input[type="file"][name="jasperfile"]');
+	if (jasperInput && jasperInput.files && jasperInput.files.length > 0)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+$(document).ready(function ()
+{
+	var form = document.getElementById('form');
+	if (!form || !window.fetch)
+	{
+		return;
+	}
+
+	var clickedSubmitter = null;
+	$(form).on('click', 'input[type="submit"], button[type="submit"]', function ()
+	{
+		clickedSubmitter = this;
+	});
+
+	$(form).on('submit', function (e)
+	{
+		if (!item_id)
+		{
+			return true;
+		}
+
+		var submitter = (e.originalEvent && e.originalEvent.submitter)
+			? e.originalEvent.submitter
+			: clickedSubmitter;
+		if (!submitter || submitter.name !== 'values[apply]')
+		{
+			return true;
+		}
+
+		if (hasSelectedFileUpload(form))
+		{
+			return true;
+		}
+
+		var requestUrl = buildEntityRestUrl(form);
+		if (!requestUrl)
+		{
+			return true;
+		}
+
+		e.preventDefault();
+
+		var formData = new FormData(form);
+		formData.set('values[apply]', submitter.value || '1');
+		var payload = formDataToObject(formData);
+
+		fetch(requestUrl, {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			credentials: 'same-origin',
+			body: JSON.stringify(payload)
+		})
+			.then(function (response)
+			{
+				if (!response.ok)
+				{
+					throw new Error('Failed to save via REST');
+				}
+				return response.json();
+			})
+			.then(function (data)
+			{
+				if (data && Array.isArray(data.error) && data.error.length)
+				{
+					alert(data.error.map(function (entry)
+					{
+						return entry.msg || '';
+					}).join('\n'));
+					return;
+				}
+
+				window.location.reload();
+			})
+			.catch(function ()
+			{
+				form.submit();
+			});
+
+		return false;
+	});
+});

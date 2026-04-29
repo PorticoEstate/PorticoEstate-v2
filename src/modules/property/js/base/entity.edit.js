@@ -16,10 +16,16 @@ this.refresh_files = function ()
 {
 	var strURL = get_files_java_url;
 
-	refresh_glider(strURL);
+	try
+	{
+		refresh_glider(strURL);
+	}
+	catch (e)
+	{
 
-	oTable0.api().draw();
-}
+	}
+	JqueryPortico.updateinlineTableHelper(oTable0, strURL);
+};
 
 this.showlightbox_add_inventory = function (location_id, id)
 {
@@ -321,6 +327,7 @@ function parseFormKeyTokens(key)
 function setNestedValue(target, key, value)
 {
 	var tokens = parseFormKeyTokens(key);
+	var forceArray = /\[\]$/.test(key);
 	if (!tokens.length)
 	{
 		return;
@@ -340,7 +347,7 @@ function setNestedValue(target, key, value)
 	var leaf = tokens[tokens.length - 1];
 	if (!Object.prototype.hasOwnProperty.call(node, leaf))
 	{
-		node[leaf] = value;
+		node[leaf] = forceArray ? [value] : value;
 		return;
 	}
 

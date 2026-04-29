@@ -413,7 +413,7 @@
 	<script type="text/javascript">
 		var location_id = '<xsl:value-of select="value_location_id"/>';
 		var item_id = '<xsl:value-of select="value_id"/>';
-		var get_files_java_url = <xsl:value-of select="get_files_java_url"/>;
+		var get_files_java_url = '<xsl:value-of select="get_files_java_url"/>';
 		function set_tab(active_tab)
 		{
 		document.form.active_tab.value = active_tab;

@@ -181,6 +181,27 @@ class EntityController
 	}
 
 	/**
+	 * Return request body as array, with JSON fallback when parsed body is empty.
+	 */
+	private function requestBodyArray(Request $request): array
+	{
+		$parsed = $request->getParsedBody();
+		if (is_array($parsed))
+		{
+			return $parsed;
+		}
+
+		$rawBody = (string)$request->getBody();
+		if ($rawBody === '')
+		{
+			return [];
+		}
+
+		$decoded = json_decode($rawBody, true);
+		return is_array($decoded) ? $decoded : [];
+	}
+
+	/**
 	 * Enrich a list of entity rows with image thumbnails and view links,
 	 * mirroring the post-processing done in uientity::query().
 	 *
@@ -297,7 +318,7 @@ class EntityController
 	{
 		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
 
-		$body = (array)($request->getParsedBody() ?? []);
+		$body = $this->requestBodyArray($request);
 
 		// DataTables server-side POST protocol
 		if (isset($body['draw']))
@@ -425,7 +446,7 @@ class EntityController
 		$bo = $this->assertEntityAcl($request, $args, ACL_ADD, 'No add access for this entity category');
 		$helper = $this->formHelper();
 
-		$body = (array)($request->getParsedBody() ?? []);
+		$body = $this->requestBodyArray($request);
 		$values           = (array)($body['values']           ?? []);
 		$values_attribute = (array)($body['values_attribute'] ?? []);
 		$valuesChecklistStage = $body['values_checklist_stage'] ?? null;
@@ -504,7 +525,7 @@ class EntityController
 			throw new HttpBadRequestException($request, 'Invalid id');
 		}
 
-		$body = (array)($request->getParsedBody() ?? []);
+		$body = $this->requestBodyArray($request);
 		$values           = (array)($body['values']           ?? []);
 		$values_attribute = (array)($body['values_attribute'] ?? []);
 		$valuesChecklistStage = $body['values_checklist_stage'] ?? null;

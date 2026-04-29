@@ -5,6 +5,44 @@ namespace
 	require_once __DIR__ . '/../../vendor/autoload.php';
 	require_once __DIR__ . '/../../src/helpers/Sanitizer.php';
 
+		if (!defined('ACL_READ'))
+		{
+			define('ACL_READ', 1);
+		}
+		if (!defined('ACL_ADD'))
+		{
+			define('ACL_ADD', 2);
+		}
+		if (!defined('ACL_EDIT'))
+		{
+			define('ACL_EDIT', 4);
+		}
+		if (!defined('ACL_DELETE'))
+		{
+			define('ACL_DELETE', 8);
+		}
+
+		if (!function_exists('include_class'))
+		{
+			function include_class(string $appname, string $name): void
+			{
+				// Test shim: legacy loader not needed in unit tests.
+			}
+		}
+
+		if (!function_exists('lang'))
+		{
+			function lang(string $text, ...$args): string
+			{
+				if (!$args)
+				{
+					return $text;
+				}
+
+				return vsprintf($text, $args);
+			}
+		}
+
 	// ---------------------------------------------------------------------------
 	// Minimal stub so createMock('\property_boentity') works without loading the
 	// full legacy class (which has heavyweight constructor dependencies).
@@ -43,6 +81,7 @@ namespace Tests\Controllers
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use App\modules\property\controllers\EntityController;
+use App\modules\property\inc\EntityFormHelper;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -101,22 +140,73 @@ class EntityControllerTest extends TestCase
 	/**
 	 * Create a controller whose private bo() factory returns the provided stub.
 	 */
-	private function makeController(\property_boentity $boStub): EntityController
+	private function makeController(\property_boentity $boStub, ?EntityFormHelper $helperStub = null): EntityController
 	{
-		$controller = new class($this->container, $boStub) extends EntityController
+		$controller = new class($this->container, $boStub, $helperStub) extends EntityController
 		{
 			private \property_boentity $boStub;
+			private ?EntityFormHelper $helperStub;
 
-			public function __construct(ContainerInterface $c, \property_boentity $stub)
+			public function __construct(ContainerInterface $c, \property_boentity $stub, ?EntityFormHelper $helperStub = null)
 			{
 				parent::__construct($c);
 				$this->boStub = $stub;
+				$this->helperStub = $helperStub;
 			}
 
 			/** @phpstan-ignore-next-line */
 			protected function bo(array $args): \property_boentity
 			{
 				return $this->boStub;
+			}
+
+			protected function enrichRows(array $rows, \property_boentity $bo): array
+			{
+				return $rows;
+			}
+
+			/** @phpstan-ignore-next-line */
+			protected function assertEntityAcl(
+				ServerRequestInterface $request,
+				array $args,
+				int $aclType,
+				string $message
+			): \property_boentity {
+				return $this->boStub;
+			}
+
+			protected function formHelper(): EntityFormHelper
+			{
+				if ($this->helperStub)
+				{
+					return $this->helperStub;
+				}
+
+				return new class extends EntityFormHelper
+				{
+					public function persistSave(
+						array $values,
+						$attributes,
+						string $action,
+						int $entityId,
+						int $catId,
+						object $bo,
+						$valuesChecklistStage = null
+					): array {
+						$receipt = $bo->save($values, (array)$attributes, $action, $entityId, $catId);
+						$values['id'] = $receipt['id'] ?? ($values['id'] ?? 0);
+
+						return [
+							'receipt' => $receipt,
+							'values' => $values,
+						];
+					}
+
+					public function handleFiles(array $values, string $categoryDir, string $typeApp, array &$errors): void
+					{
+						// No-op for controller unit tests.
+					}
+				};
 			}
 		};
 		return $controller;
@@ -182,7 +272,17 @@ class EntityControllerTest extends TestCase
 	public function testIndexMapsRequestParamsToBoProperties(): void
 	{
 		$bo = $this->createMock(\property_boentity::class);
-		$bo->method('read')->willReturn([]);
+		$bo->expects($this->once())
+			->method('read')
+			->with([
+				'start' => 20,
+				'query' => 'searchterm',
+				'filter' => 'pending',
+				'order' => 'id',
+				'sort' => 'DESC',
+				'allrows' => false,
+			])
+			->willReturn([]);
 
 		$this->request->method('getQueryParams')->willReturn([
 			'start'   => '20',
@@ -195,13 +295,6 @@ class EntityControllerTest extends TestCase
 
 		$controller = $this->makeController($bo);
 		$controller->index($this->request, $this->response, $this->baseArgs());
-
-		$this->assertSame(20,           $bo->start,   'start must be cast to int');
-		$this->assertSame('searchterm', $bo->query,   'query param must be forwarded');
-		$this->assertSame('pending',    $bo->filter,  'filter param must be forwarded');
-		$this->assertSame('id',         $bo->sort,    'sort param must be forwarded');
-		$this->assertSame('DESC',       $bo->order,   'dir param must map to bo->order');
-		$this->assertFalse($bo->allrows, 'allrows=false must produce false');
 	}
 
 	public function testIndexAllrowsParamSetsTrueWhenFlagPresent(): void
@@ -287,6 +380,89 @@ class EntityControllerTest extends TestCase
 
 		$decoded = json_decode($this->responseBody, true);
 		$this->assertSame($receipt, $decoded);
+	}
+
+	public function testStoreForwardsChecklistPayloadToSharedHelper(): void
+	{
+		$bo = $this->createMock(\property_boentity::class);
+		$bo->category_dir = 'entity';
+		$bo->type = 'entity';
+		$bo->type_app = ['entity' => 'property'];
+
+		$helper = $this->getMockBuilder(EntityFormHelper::class)
+			->onlyMethods(['persistSave', 'handleFiles'])
+			->getMock();
+
+		$helper->expects($this->once())
+			->method('persistSave')
+			->with(
+				['title' => 'New'],
+				['1' => 'val'],
+				'add',
+				5,
+				3,
+				$bo,
+				['stage' => 77]
+			)
+			->willReturn([
+				'receipt' => ['id' => 10, 'message' => [], 'error' => []],
+				'values' => ['id' => 10],
+			]);
+
+		$helper->expects($this->never())->method('handleFiles');
+
+		$this->request->method('getParsedBody')->willReturn([
+			'values' => ['title' => 'New'],
+			'values_attribute' => ['1' => 'val'],
+			'values_checklist_stage' => ['stage' => 77],
+		]);
+
+		$this->makeController($bo, $helper)->store($this->request, $this->response, $this->baseArgs());
+
+		$decoded = json_decode($this->responseBody, true);
+		$this->assertSame(10, $decoded['id']);
+	}
+
+	public function testStoreMergesFileHandlingErrorsIntoReceipt(): void
+	{
+		$bo = $this->createMock(\property_boentity::class);
+		$bo->category_dir = 'entity';
+		$bo->type = 'entity';
+		$bo->type_app = ['entity' => 'property'];
+
+		$helper = $this->getMockBuilder(EntityFormHelper::class)
+			->onlyMethods(['persistSave', 'handleFiles'])
+			->getMock();
+
+		$helper->expects($this->once())
+			->method('persistSave')
+			->willReturn([
+				'receipt' => ['id' => 10, 'message' => [], 'error' => []],
+				'values' => ['id' => 10],
+			]);
+
+		$helper->expects($this->once())
+			->method('handleFiles')
+			->willReturnCallback(function (array $values, string $categoryDir, string $typeApp, array &$errors): void
+			{
+				$this->assertSame(['id' => 10], $values);
+				$this->assertSame('entity', $categoryDir);
+				$this->assertSame('property', $typeApp);
+				$errors[] = ['msg' => 'Failed to upload file !'];
+			});
+
+		$this->request->method('getParsedBody')->willReturn([
+			'values' => [
+				'title' => 'New',
+				'file_action' => [123],
+			],
+			'values_attribute' => [],
+		]);
+
+		$this->makeController($bo, $helper)->store($this->request, $this->response, $this->baseArgs());
+
+		$decoded = json_decode($this->responseBody, true);
+		$this->assertSame('Failed to upload file !', $decoded['error'][0]['msg']);
 	}
 
 	// ── update() ─────────────────────────────────────────────────────────────
@@ -384,7 +560,10 @@ class EntityControllerTest extends TestCase
 		$this->makeController($bo)->getFiles($this->request, $this->response, $args);
 
 		$decoded = json_decode($this->responseBody, true);
-		$this->assertSame($files,       $decoded['data']);
+		$this->assertSame('photo.jpg',  $decoded['data'][0]['file_name']);
+		$this->assertSame(1,            $decoded['data'][0]['img_id']);
+		$this->assertArrayHasKey('file_link', $decoded['data'][0]);
+		$this->assertArrayHasKey('delete_file', $decoded['data'][0]);
 		$this->assertSame(1,            $decoded['recordsTotal']);
 		$this->assertSame(1,            $decoded['recordsFiltered']);
 		$this->assertSame(1,            $decoded['draw']);

@@ -2,6 +2,8 @@
 
 namespace App\modules\property\controllers;
 
+use App\Database\Db;
+use App\modules\property\inc\EntityFormHelper;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -115,6 +117,14 @@ class EntityController
 	}
 
 	/**
+	 * Build the shared helper used by legacy and REST save workflows.
+	 */
+	protected function formHelper(): EntityFormHelper
+	{
+		return new EntityFormHelper();
+	}
+
+	/**
 	 * Enforce entity/category ACL and return the loaded boentity instance.
 	 *
 	 * @param Request $request
@@ -123,7 +133,7 @@ class EntityController
 	 * @param string $message Error message for forbidden access.
 	 * @return \property_boentity
 	 */
-	private function assertEntityAcl(Request $request, array $args, int $aclType, string $message): \property_boentity
+	protected function assertEntityAcl(Request $request, array $args, int $aclType, string $message): \property_boentity
 	{
 		$context = $this->resolveAclContext($args);
 		$bo = $context['bo'];
@@ -134,6 +144,19 @@ class EntityController
 		}
 
 		return $bo;
+	}
+
+	/**
+	 * Determine if the incoming request includes file actions or uploads.
+	 */
+	private function hasFileOperations(array $values): bool
+	{
+		if (!empty($values['file_action']) || !empty($values['file_jasperaction']))
+		{
+			return true;
+		}
+
+		return (!empty($_FILES['file']['name']) || !empty($_FILES['jasperfile']['name']));
 	}
 
 	/**
@@ -158,7 +181,7 @@ class EntityController
 	 * @return array                         Rows with file_name, img_id, img_url,
 	 *                                       thumbnail_flag, and link added where applicable.
 	 */
-	private function enrichRows(array $rows, \property_boentity $bo): array
+	protected function enrichRows(array $rows, \property_boentity $bo): array
 	{
 		$img_types = ['image/jpeg', 'image/png', 'image/gif'];
 
@@ -392,12 +415,45 @@ class EntityController
 	public function store(Request $request, Response $response, array $args): Response
 	{
 		$bo = $this->assertEntityAcl($request, $args, ACL_ADD, 'No add access for this entity category');
+		$helper = $this->formHelper();
 
 		$body = (array)($request->getParsedBody() ?? []);
 		$values           = (array)($body['values']           ?? []);
 		$values_attribute = (array)($body['values_attribute'] ?? []);
+		$valuesChecklistStage = $body['values_checklist_stage'] ?? null;
 
-		$receipt = $bo->save($values, $values_attribute, 'add', (int)$args['entity_id'], (int)$args['cat_id']);
+		try
+		{
+			$persisted = $helper->persistSave(
+				$values,
+				$values_attribute,
+				'add',
+				(int)$args['entity_id'],
+				(int)$args['cat_id'],
+				$bo,
+				$valuesChecklistStage
+			);
+
+			$receipt = $persisted['receipt'];
+			$savedValues = $persisted['values'];
+		}
+		catch (\Exception $e)
+		{
+			Db::getInstance()->transaction_abort();
+			throw $e;
+		}
+
+		if ($this->hasFileOperations($values))
+		{
+			$errors = (array)($receipt['error'] ?? []);
+			$helper->handleFiles(
+				$savedValues,
+				$bo->category_dir,
+				$bo->type_app[$bo->type],
+				$errors
+			);
+			$receipt['error'] = $errors;
+		}
 
 		$response->getBody()->write(json_encode($receipt, JSON_THROW_ON_ERROR));
 		return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
@@ -432,6 +488,7 @@ class EntityController
 	public function update(Request $request, Response $response, array $args): Response
 	{
 		$bo = $this->assertEntityAcl($request, $args, ACL_EDIT, 'No edit access for this entity category');
+		$helper = $this->formHelper();
 
 		$id = (int)$args['id'];
 		if ($id <= 0)
@@ -442,9 +499,41 @@ class EntityController
 		$body = (array)($request->getParsedBody() ?? []);
 		$values           = (array)($body['values']           ?? []);
 		$values_attribute = (array)($body['values_attribute'] ?? []);
+		$valuesChecklistStage = $body['values_checklist_stage'] ?? null;
 		$values['id']     = $id;
 
-		$receipt = $bo->save($values, $values_attribute, 'edit', (int)$args['entity_id'], (int)$args['cat_id']);
+		try
+		{
+			$persisted = $helper->persistSave(
+				$values,
+				$values_attribute,
+				'edit',
+				(int)$args['entity_id'],
+				(int)$args['cat_id'],
+				$bo,
+				$valuesChecklistStage
+			);
+
+			$receipt = $persisted['receipt'];
+			$savedValues = $persisted['values'];
+		}
+		catch (\Exception $e)
+		{
+			Db::getInstance()->transaction_abort();
+			throw $e;
+		}
+
+		if ($this->hasFileOperations($values))
+		{
+			$errors = (array)($receipt['error'] ?? []);
+			$helper->handleFiles(
+				$savedValues,
+				$bo->category_dir,
+				$bo->type_app[$bo->type],
+				$errors
+			);
+			$receipt['error'] = $errors;
+		}
 
 		$response->getBody()->write(json_encode($receipt, JSON_THROW_ON_ERROR));
 		return $response->withHeader('Content-Type', 'application/json');

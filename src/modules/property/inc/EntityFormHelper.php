@@ -180,15 +180,27 @@ class EntityFormHelper
 	 * @param int $entityId Current entity id.
 	 * @param int $catId Current category id.
 	 * @param object $bo Legacy boentity helper.
+	 * @param mixed $valuesChecklistStage Optional checklist stage payload.
 	 * @return array{receipt: array, values: array}
 	 */
-	public function persistSave(array $values, $attributes, string $action, int $entityId, int $catId, object $bo): array
+	public function persistSave(
+		array $values,
+		$attributes,
+		string $action,
+		int $entityId,
+		int $catId,
+		object $bo,
+		$valuesChecklistStage = null
+	): array
 	{
 		Db::getInstance()->transaction_begin();
 
 		$receipt = $bo->save($values, $attributes, $action, $entityId, $catId);
 		$values['id'] = $receipt['id'];
-		$valuesChecklistStage = Sanitizer::get_var('values_checklist_stage');
+		if ($valuesChecklistStage === null)
+		{
+			$valuesChecklistStage = Sanitizer::get_var('values_checklist_stage');
+		}
 
 		if ($valuesChecklistStage)
 		{

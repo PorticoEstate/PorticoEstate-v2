@@ -24,6 +24,9 @@ export function getOptions(lng: ILanguage = fallbackLng, ns: string | string[] =
         fallbackNS: defaultNS,
         defaultNS: defaultNS,
         ns: ns,
+        interpolation: {
+            escapeValue: false,
+        },
         saveMissing: true,
         parseMissingKeyHandler: (key: string) => {
             return `TRANSLATION MISSING FOR "${key}"`;

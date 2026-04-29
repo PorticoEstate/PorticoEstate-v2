@@ -332,12 +332,27 @@ const BillingForm: FC<BillingFormProps> = ({
 	// Handler for Vipps payment that validates form first
 	const handleVippsPaymentClick = () => {
 		// Trigger form validation and call Vipps payment if valid
-		handleSubmit((data) => {
-			// Only called if form validation passes
-			if (onVippsPayment && !vippsLoading) {
-				onVippsPayment();
+		handleSubmit(
+			(data) => {
+				// Only called if form validation passes
+				if (onVippsPayment && !vippsLoading) {
+					onVippsPayment();
+				}
+			},
+			(errors) => {
+				// Scroll to first validation error field
+				setTimeout(() => {
+					for (const key of Object.keys(errors)) {
+						const el = document.querySelector(`[name="${key}"]`)
+							|| document.querySelector(`[data-field="${key}"]`);
+						if (el) {
+							el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+							return;
+						}
+					}
+				}, 0);
 			}
-		})();
+		)();
 	};
 
 	return (
@@ -358,6 +373,17 @@ const BillingForm: FC<BillingFormProps> = ({
 							if (process.env.NODE_ENV === 'development') {
 								console.error('🐛 BillingForm: Form validation failed with errors:', errors);
 							}
+							// Scroll to first validation error field
+							setTimeout(() => {
+								for (const key of Object.keys(errors)) {
+									const el = document.querySelector(`[name="${key}"]`)
+										|| document.querySelector(`[data-field="${key}"]`);
+									if (el) {
+										el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+										return;
+									}
+								}
+							}, 0);
 						}
 					)(e);
 				}}
@@ -404,7 +430,7 @@ const BillingForm: FC<BillingFormProps> = ({
 							name="organizationNumber"
 							control={control}
 							render={({field}) => (
-								<Field>
+								<Field data-field="organizationNumber">
 									<Label>
 										{t('bookingfrontend.organization')} <span className="required-asterisk">*</span>
 									</Label>

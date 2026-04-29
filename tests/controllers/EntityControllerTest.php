@@ -553,6 +553,91 @@ class EntityControllerTest extends TestCase
 		$this->assertSame($receipt, $decoded);
 	}
 
+	public function testUpdateForwardsChecklistPayloadToSharedHelper(): void
+	{
+		$bo = $this->createMock(\property_boentity::class);
+		$bo->category_dir = 'entity';
+		$bo->type = 'entity';
+		$bo->type_app = ['entity' => 'property'];
+
+		$helper = $this->getMockBuilder(EntityFormHelper::class)
+			->onlyMethods(['persistSave', 'handleFiles'])
+			->getMock();
+
+		$helper->expects($this->once())
+			->method('persistSave')
+			->with(
+				['title' => 'Updated', 'id' => 7],
+				['1' => 'val'],
+				'edit',
+				5,
+				3,
+				$bo,
+				['stage' => 88]
+			)
+			->willReturn([
+				'receipt' => ['id' => 7, 'message' => [], 'error' => []],
+				'values' => ['id' => 7],
+			]);
+
+		$helper->expects($this->never())->method('handleFiles');
+
+		$this->request->method('getParsedBody')->willReturn([
+			'values' => ['title' => 'Updated'],
+			'values_attribute' => ['1' => 'val'],
+			'values_checklist_stage' => ['stage' => 88],
+		]);
+
+		$args = array_merge($this->baseArgs(), ['id' => '7']);
+		$this->makeController($bo, $helper)->update($this->request, $this->response, $args);
+
+		$decoded = json_decode($this->responseBody, true);
+		$this->assertSame(7, $decoded['id']);
+	}
+
+	public function testUpdateMergesFileHandlingErrorsIntoReceipt(): void
+	{
+		$bo = $this->createMock(\property_boentity::class);
+		$bo->category_dir = 'entity';
+		$bo->type = 'entity';
+		$bo->type_app = ['entity' => 'property'];
+
+		$helper = $this->getMockBuilder(EntityFormHelper::class)
+			->onlyMethods(['persistSave', 'handleFiles'])
+			->getMock();
+
+		$helper->expects($this->once())
+			->method('persistSave')
+			->willReturn([
+				'receipt' => ['id' => 7, 'message' => [], 'error' => []],
+				'values' => ['id' => 7],
+			]);
+
+		$helper->expects($this->once())
+			->method('handleFiles')
+			->willReturnCallback(function (array $values, string $categoryDir, string $typeApp, array &$errors): void
+			{
+				$this->assertSame(['id' => 7], $values);
+				$this->assertSame('entity', $categoryDir);
+				$this->assertSame('property', $typeApp);
+				$errors[] = ['msg' => 'Failed to upload file !'];
+			});
+
+		$this->request->method('getParsedBody')->willReturn([
+			'values' => [
+				'title' => 'Updated',
+				'file_action' => [456],
+			],
+			'values_attribute' => [],
+		]);
+
+		$args = array_merge($this->baseArgs(), ['id' => '7']);
+		$this->makeController($bo, $helper)->update($this->request, $this->response, $args);
+
+		$decoded = json_decode($this->responseBody, true);
+		$this->assertSame('Failed to upload file !', $decoded['error'][0]['msg']);
+	}
+
 	public function testUpdateThrowsBadRequestForZeroId(): void
 	{
 		$this->expectException(HttpBadRequestException::class);

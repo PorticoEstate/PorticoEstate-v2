@@ -10,6 +10,7 @@ use App\modules\bookingfrontend\controllers\DataStore;
 use App\modules\bookingfrontend\controllers\BookingUserController;
 use App\modules\bookingfrontend\controllers\DebugController;
 use App\modules\bookingfrontend\controllers\EventController;
+use App\modules\bookingfrontend\controllers\FreeTimeController;
 use App\modules\bookingfrontend\controllers\LoginController;
 use App\modules\bookingfrontend\controllers\MultiDomainController;
 use App\modules\bookingfrontend\controllers\OrganizationController;
@@ -47,6 +48,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('/{id}/agegroups', BuildingController::class . ':getAgeGroups');
 		$group->get('/{id}/audience', BuildingController::class . ':getAudience');
 		$group->get('/{id}/seasons', BuildingController::class . ':getSeasons');
+		$group->get('/{id}/freetime', FreeTimeController::class . ':getBuildingFreeTime');
 	});
 
 	$group->group('/resources', function (RouteCollectorProxy $group)

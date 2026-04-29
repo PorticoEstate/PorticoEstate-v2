@@ -1062,8 +1062,9 @@ class UserHelper
 			return; // Nothing to update
 		}
 
-//		$params[':updated'] = date('Y-m-d H:i:s');
-//		$fields_to_update[] = "updated = :updated";
+		// TODO: 'updated' column does not exist in bb_user (not in tables_current or any migration)
+		// $params[':updated'] = date('Y-m-d H:i:s');
+		// $fields_to_update[] = "updated = :updated";
 
 		$sql = "UPDATE bb_user SET " . implode(', ', $fields_to_update) . " WHERE id = :id";
 		

@@ -160,6 +160,14 @@ class EntityController
 	}
 
 	/**
+	 * Abort the current transaction.
+	 */
+	protected function abortTransaction(): void
+	{
+		Db::getInstance()->transaction_abort();
+	}
+
+	/**
 	 * Write a JSON response.
 	 *
 	 * @param Response $response
@@ -439,7 +447,7 @@ class EntityController
 		}
 		catch (\Exception $e)
 		{
-			Db::getInstance()->transaction_abort();
+			$this->abortTransaction();
 			throw $e;
 		}
 
@@ -519,7 +527,7 @@ class EntityController
 		}
 		catch (\Exception $e)
 		{
-			Db::getInstance()->transaction_abort();
+			$this->abortTransaction();
 			throw $e;
 		}
 

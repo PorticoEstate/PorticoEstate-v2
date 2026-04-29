@@ -140,18 +140,29 @@ class EntityControllerTest extends TestCase
 	/**
 	 * Create a controller whose private bo() factory returns the provided stub.
 	 */
-	private function makeController(\property_boentity $boStub, ?EntityFormHelper $helperStub = null): EntityController
+	private function makeController(
+		\property_boentity $boStub,
+		?EntityFormHelper $helperStub = null,
+		?callable $onAbort = null
+	): EntityController
 	{
-		$controller = new class($this->container, $boStub, $helperStub) extends EntityController
+		$controller = new class($this->container, $boStub, $helperStub, $onAbort) extends EntityController
 		{
 			private \property_boentity $boStub;
 			private ?EntityFormHelper $helperStub;
+			private $onAbort;
 
-			public function __construct(ContainerInterface $c, \property_boentity $stub, ?EntityFormHelper $helperStub = null)
+			public function __construct(
+				ContainerInterface $c,
+				\property_boentity $stub,
+				?EntityFormHelper $helperStub = null,
+				?callable $onAbort = null
+			)
 			{
 				parent::__construct($c);
 				$this->boStub = $stub;
 				$this->helperStub = $helperStub;
+				$this->onAbort = $onAbort;
 			}
 
 			/** @phpstan-ignore-next-line */
@@ -207,6 +218,14 @@ class EntityControllerTest extends TestCase
 						// No-op for controller unit tests.
 					}
 				};
+			}
+
+			protected function abortTransaction(): void
+			{
+				if ($this->onAbort)
+				{
+					($this->onAbort)();
+				}
 			}
 		};
 		return $controller;
@@ -465,6 +484,48 @@ class EntityControllerTest extends TestCase
 		$this->assertSame('Failed to upload file !', $decoded['error'][0]['msg']);
 	}
 
+	public function testStoreAbortsTransactionAndRethrowsWhenPersistSaveFails(): void
+	{
+		$bo = $this->createMock(\property_boentity::class);
+
+		$helper = $this->getMockBuilder(EntityFormHelper::class)
+			->onlyMethods(['persistSave', 'handleFiles'])
+			->getMock();
+
+		$helper->expects($this->once())
+			->method('persistSave')
+			->willThrowException(new \RuntimeException('boom-store'));
+
+		$helper->expects($this->never())->method('handleFiles');
+
+		$this->request->method('getParsedBody')->willReturn([
+			'values' => ['title' => 'New'],
+			'values_attribute' => [],
+		]);
+
+		$abortCalls = 0;
+		$controller = $this->makeController(
+			$bo,
+			$helper,
+			function () use (&$abortCalls): void
+			{
+				$abortCalls++;
+			}
+		);
+
+		try
+		{
+			$controller->store($this->request, $this->response, $this->baseArgs());
+			$this->fail('Expected RuntimeException was not thrown');
+		}
+		catch (\RuntimeException $e)
+		{
+			$this->assertSame('boom-store', $e->getMessage());
+		}
+
+		$this->assertSame(1, $abortCalls);
+	}
+
 	// ── update() ─────────────────────────────────────────────────────────────
 
 	public function testUpdateCallsBoSaveWithEditModeAndInjectsId(): void
@@ -499,6 +560,50 @@ class EntityControllerTest extends TestCase
 		$bo = $this->createMock(\property_boentity::class);
 		$args = array_merge($this->baseArgs(), ['id' => '0']);
 		$this->makeController($bo)->update($this->request, $this->response, $args);
+	}
+
+	public function testUpdateAbortsTransactionAndRethrowsWhenPersistSaveFails(): void
+	{
+		$bo = $this->createMock(\property_boentity::class);
+
+		$helper = $this->getMockBuilder(EntityFormHelper::class)
+			->onlyMethods(['persistSave', 'handleFiles'])
+			->getMock();
+
+		$helper->expects($this->once())
+			->method('persistSave')
+			->willThrowException(new \RuntimeException('boom-update'));
+
+		$helper->expects($this->never())->method('handleFiles');
+
+		$this->request->method('getParsedBody')->willReturn([
+			'values' => ['title' => 'Updated'],
+			'values_attribute' => [],
+		]);
+
+		$abortCalls = 0;
+		$controller = $this->makeController(
+			$bo,
+			$helper,
+			function () use (&$abortCalls): void
+			{
+				$abortCalls++;
+			}
+		);
+
+		$args = array_merge($this->baseArgs(), ['id' => '7']);
+
+		try
+		{
+			$controller->update($this->request, $this->response, $args);
+			$this->fail('Expected RuntimeException was not thrown');
+		}
+		catch (\RuntimeException $e)
+		{
+			$this->assertSame('boom-update', $e->getMessage());
+		}
+
+		$this->assertSame(1, $abortCalls);
 	}
 
 	// ── destroy() ────────────────────────────────────────────────────────────

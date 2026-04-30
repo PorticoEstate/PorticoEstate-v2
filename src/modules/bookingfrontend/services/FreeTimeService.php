@@ -220,9 +220,13 @@ class FreeTimeService
 
 			// Fetch overlapping entity IDs (only for simple_booking resources)
 			if ($resource['simple_booking'] && empty($resource['skip_timeslot'])) {
+				$this->tick("resource_{$resource['id']}_event_ids_start");
 				$eventIds = array_merge($eventIds, $this->eventIdsForResource($resource['id'], $_from, $to));
+				$this->tick("resource_{$resource['id']}_event_ids_done");
 				$allocationIds = array_merge($allocationIds, $this->allocationIdsForResource($resource['id'], $from, $to));
+				$this->tick("resource_{$resource['id']}_allocation_ids_done");
 				$bookingIds = array_merge($bookingIds, $this->bookingIdsForResource($resource['id'], $from, $to));
+				$this->tick("resource_{$resource['id']}_booking_ids_done");
 			}
 
 			$resource['from'] = $from;
@@ -242,7 +246,7 @@ class FreeTimeService
 
 		// Get partials and blocks
 		$this->tick('fetch_partials_start');
-		$this->getPartials($events, $resourceIds);
+		$this->getPartials($events, $resourceIds, $_from, $_to);
 		$this->tick('fetch_partials_done');
 
 		// Combine all into events
@@ -308,20 +312,22 @@ class FreeTimeService
 		$startStr = $start->format('Y-m-d H:i');
 		$endStr = $end->format('Y-m-d H:i');
 
+		// Simplified from legacy: removed unnecessary bb_resource + bb_building_resource joins.
+		// The legacy query joined those to verify season.building_id = resource.building_id,
+		// but since we filter by resource_id in bb_allocation_resource, and seasons are already
+		// linked to allocations via season_id, the building check is redundant.
 		$sql = "SELECT DISTINCT bb_allocation.id AS id
                 FROM bb_allocation
                 JOIN bb_allocation_resource ON (allocation_id = bb_allocation.id AND resource_id = ?)
-                JOIN bb_resource AS res ON (res.id = ?)
-                JOIN bb_season ON (bb_allocation.season_id = bb_season.id AND bb_allocation.active = 1)
-                JOIN bb_building_resource ON bb_building_resource.resource_id = res.id
-                WHERE bb_season.building_id = bb_building_resource.building_id
+                JOIN bb_season ON (bb_allocation.season_id = bb_season.id)
+                WHERE bb_allocation.active = 1
                 AND bb_season.active = 1
                 AND bb_season.status = 'PUBLISHED'
                 AND ((bb_allocation.from_ >= ? AND bb_allocation.from_ < ?)
                     OR (bb_allocation.to_ > ? AND bb_allocation.to_ <= ?)
                     OR (bb_allocation.from_ < ? AND bb_allocation.to_ > ?))";
 		$stmt = $this->db->prepare($sql);
-		$stmt->execute([$resourceId, $resourceId, $startStr, $endStr, $startStr, $endStr, $startStr, $endStr]);
+		$stmt->execute([$resourceId, $startStr, $endStr, $startStr, $endStr, $startStr, $endStr]);
 
 		return array_column($stmt->fetchAll(\PDO::FETCH_ASSOC), 'id');
 	}
@@ -334,20 +340,19 @@ class FreeTimeService
 		$startStr = $start->format('Y-m-d H:i');
 		$endStr = $end->format('Y-m-d H:i');
 
+		// Simplified from legacy: same optimization as allocationIdsForResource
 		$sql = "SELECT bb_booking.id AS id
                 FROM bb_booking
                 JOIN bb_booking_resource ON (booking_id = bb_booking.id AND resource_id = ?)
-                JOIN bb_resource AS res ON (res.id = ?)
-                JOIN bb_season ON (bb_booking.season_id = bb_season.id AND bb_booking.active = 1)
-                JOIN bb_building_resource ON bb_building_resource.resource_id = res.id
-                WHERE bb_season.building_id = bb_building_resource.building_id
+                JOIN bb_season ON (bb_booking.season_id = bb_season.id)
+                WHERE bb_booking.active = 1
                 AND bb_season.active = 1
                 AND bb_season.status = 'PUBLISHED'
                 AND ((bb_booking.from_ >= ? AND bb_booking.from_ < ?)
                     OR (bb_booking.to_ > ? AND bb_booking.to_ <= ?)
                     OR (bb_booking.from_ < ? AND bb_booking.to_ > ?))";
 		$stmt = $this->db->prepare($sql);
-		$stmt->execute([$resourceId, $resourceId, $startStr, $endStr, $startStr, $endStr, $startStr, $endStr]);
+		$stmt->execute([$resourceId, $startStr, $endStr, $startStr, $endStr, $startStr, $endStr]);
 
 		return array_column($stmt->fetchAll(\PDO::FETCH_ASSOC), 'id');
 	}
@@ -418,12 +423,16 @@ class FreeTimeService
 	 * Port of bobooking::get_partials
 	 * Fetches partial applications for current session and active blocks.
 	 */
-	private function getPartials(array &$events, array $resourceIds): void
+	private function getPartials(array &$events, array $resourceIds, \DateTime $from, \DateTime $to): void
 	{
 		$sessions = Sessions::getInstance();
 		$sessionId = $sessions->get_session_id();
 
-		// Fetch partial applications for current session
+		$fromStr = $from->format('Y-m-d H:i');
+		$toStr = $to->format('Y-m-d H:i');
+
+		// Fetch partial applications for current session, filtered by date range
+		$this->tick('partials_session_query_start');
 		if (!empty($sessionId)) {
 			$sql = "SELECT a.id, a.status,
                     ad.from_, ad.to_,
@@ -432,9 +441,12 @@ class FreeTimeService
                     JOIN bb_application_date ad ON ad.application_id = a.id
                     JOIN bb_application_resource ar ON ar.application_id = a.id
                     WHERE a.status = 'NEWPARTIAL1'
-                    AND a.session_id = ?";
+                    AND a.session_id = ?
+                    AND ((ad.from_ >= ? AND ad.from_ < ?)
+                        OR (ad.to_ > ? AND ad.to_ <= ?)
+                        OR (ad.from_ < ? AND ad.to_ > ?))";
 			$stmt = $this->db->prepare($sql);
-			$stmt->execute([$sessionId]);
+			$stmt->execute([$sessionId, $fromStr, $toStr, $fromStr, $toStr, $fromStr, $toStr]);
 			$rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
 			$grouped = [];
@@ -458,15 +470,23 @@ class FreeTimeService
 			}
 		}
 
-		// Fetch active blocks for these resources
+		$this->tick('partials_session_query_done');
+		// Fetch active blocks for these resources, filtered by date range
+		$this->tick('blocks_query_start');
 		if (!empty($resourceIds)) {
 			$placeholders = implode(',', array_fill(0, count($resourceIds), '?'));
 			$sql = "SELECT id, from_, to_, resource_id, session_id
                     FROM bb_block
-                    WHERE active = 1 AND resource_id IN ($placeholders)";
+                    WHERE active = 1 AND resource_id IN ($placeholders)
+                    AND ((from_ >= ? AND from_ < ?)
+                        OR (to_ > ? AND to_ <= ?)
+                        OR (from_ < ? AND to_ > ?))";
+			$params = array_values($resourceIds);
+			array_push($params, $fromStr, $toStr, $fromStr, $toStr, $fromStr, $toStr);
 			$stmt = $this->db->prepare($sql);
-			$stmt->execute(array_values($resourceIds));
+			$stmt->execute($params);
 			$blocks = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+			$this->tick('blocks_query_done (' . count($blocks) . ' blocks)');
 
 			foreach ($blocks as $block) {
 				// Skip blocks from current session (same as legacy)

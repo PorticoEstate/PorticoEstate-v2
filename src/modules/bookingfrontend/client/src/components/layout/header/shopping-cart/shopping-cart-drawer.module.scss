@@ -42,14 +42,9 @@
   // For smaller screens (up to 767px) - fullscreen
   width: 100%;
 
-  // For medium screens (768-1023px) - 640px width
-  @media screen and (min-width: 768px) and (max-width: 1023px) {
-    width: 640px;
-  }
-
-  // For large screens (1024px and above) - 800px width
-  @media screen and (min-width: 1024px) {
-    width: 800px;
+  // For medium screens and up - 480px compact drawer
+  @media screen and (min-width: 768px) {
+    width: 480px;
   }
 }
 

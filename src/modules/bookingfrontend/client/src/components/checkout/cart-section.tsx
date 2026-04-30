@@ -78,12 +78,21 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
             groupedByBuilding.get(buildingId)!.push(app);
         });
 
+        // Sort applications within each building group by earliest date
+        const getEarliestDate = (app: IApplication) =>
+            app.dates?.length ? Math.min(...app.dates.map(d => new Date(d.from_).getTime())) : 0;
+
+        const buildingGroups = Array.from(groupedByBuilding.entries()).map(([buildingId, apps]) => ({
+            buildingId,
+            buildingName: apps[0].building_name,
+            applications: apps.sort((a, b) => getEarliestDate(a) - getEarliestDate(b))
+        }));
+
+        // Sort building groups by their earliest application date
+        buildingGroups.sort((a, b) => getEarliestDate(a.applications[0]) - getEarliestDate(b.applications[0]));
+
         return {
-            regularApplicationsByBuilding: Array.from(groupedByBuilding.entries()).map(([buildingId, apps]) => ({
-                buildingId,
-                buildingName: apps[0].building_name,
-                applications: apps
-            })),
+            regularApplicationsByBuilding: buildingGroups,
             recurringApplications: recurring
         };
     }, [applications]);

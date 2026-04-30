@@ -312,20 +312,22 @@ class FreeTimeService
 		$startStr = $start->format('Y-m-d H:i');
 		$endStr = $end->format('Y-m-d H:i');
 
+		// Simplified from legacy: removed unnecessary bb_resource + bb_building_resource joins.
+		// The legacy query joined those to verify season.building_id = resource.building_id,
+		// but since we filter by resource_id in bb_allocation_resource, and seasons are already
+		// linked to allocations via season_id, the building check is redundant.
 		$sql = "SELECT DISTINCT bb_allocation.id AS id
                 FROM bb_allocation
                 JOIN bb_allocation_resource ON (allocation_id = bb_allocation.id AND resource_id = ?)
-                JOIN bb_resource AS res ON (res.id = ?)
-                JOIN bb_season ON (bb_allocation.season_id = bb_season.id AND bb_allocation.active = 1)
-                JOIN bb_building_resource ON bb_building_resource.resource_id = res.id
-                WHERE bb_season.building_id = bb_building_resource.building_id
+                JOIN bb_season ON (bb_allocation.season_id = bb_season.id)
+                WHERE bb_allocation.active = 1
                 AND bb_season.active = 1
                 AND bb_season.status = 'PUBLISHED'
                 AND ((bb_allocation.from_ >= ? AND bb_allocation.from_ < ?)
                     OR (bb_allocation.to_ > ? AND bb_allocation.to_ <= ?)
                     OR (bb_allocation.from_ < ? AND bb_allocation.to_ > ?))";
 		$stmt = $this->db->prepare($sql);
-		$stmt->execute([$resourceId, $resourceId, $startStr, $endStr, $startStr, $endStr, $startStr, $endStr]);
+		$stmt->execute([$resourceId, $startStr, $endStr, $startStr, $endStr, $startStr, $endStr]);
 
 		return array_column($stmt->fetchAll(\PDO::FETCH_ASSOC), 'id');
 	}
@@ -338,20 +340,19 @@ class FreeTimeService
 		$startStr = $start->format('Y-m-d H:i');
 		$endStr = $end->format('Y-m-d H:i');
 
+		// Simplified from legacy: same optimization as allocationIdsForResource
 		$sql = "SELECT bb_booking.id AS id
                 FROM bb_booking
                 JOIN bb_booking_resource ON (booking_id = bb_booking.id AND resource_id = ?)
-                JOIN bb_resource AS res ON (res.id = ?)
-                JOIN bb_season ON (bb_booking.season_id = bb_season.id AND bb_booking.active = 1)
-                JOIN bb_building_resource ON bb_building_resource.resource_id = res.id
-                WHERE bb_season.building_id = bb_building_resource.building_id
+                JOIN bb_season ON (bb_booking.season_id = bb_season.id)
+                WHERE bb_booking.active = 1
                 AND bb_season.active = 1
                 AND bb_season.status = 'PUBLISHED'
                 AND ((bb_booking.from_ >= ? AND bb_booking.from_ < ?)
                     OR (bb_booking.to_ > ? AND bb_booking.to_ <= ?)
                     OR (bb_booking.from_ < ? AND bb_booking.to_ > ?))";
 		$stmt = $this->db->prepare($sql);
-		$stmt->execute([$resourceId, $resourceId, $startStr, $endStr, $startStr, $endStr, $startStr, $endStr]);
+		$stmt->execute([$resourceId, $startStr, $endStr, $startStr, $endStr, $startStr, $endStr]);
 
 		return array_column($stmt->fetchAll(\PDO::FETCH_ASSOC), 'id');
 	}

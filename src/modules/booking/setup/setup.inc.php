@@ -5,6 +5,11 @@ $setup_info['booking']['app_order'] = 9;
 $setup_info['booking']['enable'] = 1;
 $setup_info['booking']['app_group'] = 'office';
 
+// Last migration guaranteed applied on all production instances (v0.2.105).
+// On legacy→migration transition, everything up to this is seeded without running.
+// Migrations after this are run with idempotent checks (safe for already-applied DBs).
+$setup_info['booking']['migration_legacy_cutoff'] = 'm20260430_000206_add_parent_id_to_application.php';
+
 $setup_info['booking']['views'] = [
 	'bb_document_view',
 	'bb_application_association',

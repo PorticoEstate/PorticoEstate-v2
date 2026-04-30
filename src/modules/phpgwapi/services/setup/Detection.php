@@ -17,6 +17,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\Database\Db;
 use Exception;
 use App\modules\phpgwapi\services\setup\Setup;
+use App\modules\phpgwapi\services\Migration\MigrationService;
 use PDO;
 
 /**
@@ -135,12 +136,31 @@ class Detection
 		*/
 	function compare_versions($setup_info)
 	{
+		$migrationService = null;
+
 		foreach ($setup_info as $key => $value)
 		{
 			//echo '<br>'.$value['name'].'STATUS: '.$value['status'];
 			/* Only set this if it has not already failed to upgrade - Milosch */
 			if (!isset($value['status']) || (!($value['status'] == 'F' || $value['status'] == 'C')))
 			{
+				// For migration-based modules, version = migration count
+				$appname = $value['name'] ?? '';
+				if ($appname)
+				{
+					if (!$migrationService)
+					{
+						$migrationService = new MigrationService();
+					}
+
+					if ($migrationService->moduleHasMigrations($appname))
+					{
+						$setup_info[$key]['version'] = $migrationService->getTargetVersion($appname);
+						$setup_info[$key]['currentver'] = $migrationService->getCurrentVersion($appname);
+						$value = $setup_info[$key]; // refresh for comparison below
+					}
+				}
+
 				//if ($setup_info[$key]['currentver'] > $setup_info[$key]['version'])
 				if (
 					isset($value['currentver']) && isset($value['version'])
@@ -177,7 +197,8 @@ class Detection
 
 	function check_depends($setup_info)
 	{
-		//			_debug_array($setup_info);die();
+		$migrationService = null;
+
 		/* Run the list of apps */
 		foreach ($setup_info as $key => $value)
 		{
@@ -189,37 +210,59 @@ class Detection
 				{
 					/* I set this to False until we find a compatible version of this app */
 					$setup_info['depends'][$depkey]['status'] = False;
-					/* Now we loop thru the versions looking for a compatible version */
 
-					foreach ($depvalue['versions'] as $depskey => $depsvalue)
+					$depAppName = $depvalue['appname'];
+
+					// Check if the dependency target uses migrations
+					if (!$migrationService)
 					{
-						if (!isset($setup_info[$depvalue['appname']]['currentver']))
-						{
-							$setup_info[$depvalue['appname']]['currentver'] = null; //deals with undefined index notice
-						}
-						else
-						{
+						$migrationService = new MigrationService();
+					}
 
-							$major = $this->setup->get_major($setup_info[$depvalue['appname']]['currentver']);
-							if ($major == $depsvalue)
+					if ($migrationService->moduleHasMigrations($depAppName))
+					{
+						// Migration-based dependency: version is migration count
+						// Satisfied if applied count >= required count
+						$appliedCount = (int) $migrationService->getCurrentVersion($depAppName);
+
+						foreach ($depvalue['versions'] as $requiredVersion)
+						{
+							if ($appliedCount >= (int) $requiredVersion)
 							{
 								$setup_info['depends'][$depkey]['status'] = True;
+								break;
 							}
-							else	// check if majors are equal and minors greater or equal
+						}
+					}
+					else
+					{
+						// Legacy version-based dependency check
+						foreach ($depvalue['versions'] as $depskey => $depsvalue)
+						{
+							if (!isset($setup_info[$depAppName]['currentver']))
 							{
-								//the @ is used below to work around some sloppy coding, we should not always assume version #s will be X.Y.Z.AAA
-								$major_depsvalue = $this->setup->get_major($depsvalue);
-								$depsvalue_arr = explode('.', $depsvalue);
-								$minor_depsvalue = isset($depsvalue_arr[3]) ? $depsvalue_arr[3] : null;
-								//						@list(,,,$minor_depsvalue) = explode('.', $depsvalue);
-
-								$_app_version = isset($setup_info[$depvalue['appname']]['currentver']) ? $setup_info[$depvalue['appname']]['currentver'] : $setup_info[$depvalue['appname']]['version'];
-								$currentver_arr =  explode('.', $_app_version);
-								$minor = isset($currentver_arr[3]) ? $currentver_arr[3] : null;
-								//						@list(,,,$minor) = explode('.', $setup_info[$depsvalue['appname']]['currentver']);
-								if ($major == $major_depsvalue && $minor <= $minor_depsvalue)
+								$setup_info[$depAppName]['currentver'] = null;
+							}
+							else
+							{
+								$major = $this->setup->get_major($setup_info[$depAppName]['currentver']);
+								if ($major == $depsvalue)
 								{
 									$setup_info['depends'][$depkey]['status'] = True;
+								}
+								else
+								{
+									$major_depsvalue = $this->setup->get_major($depsvalue);
+									$depsvalue_arr = explode('.', $depsvalue);
+									$minor_depsvalue = isset($depsvalue_arr[3]) ? $depsvalue_arr[3] : null;
+
+									$_app_version = isset($setup_info[$depAppName]['currentver']) ? $setup_info[$depAppName]['currentver'] : $setup_info[$depAppName]['version'];
+									$currentver_arr =  explode('.', $_app_version);
+									$minor = isset($currentver_arr[3]) ? $currentver_arr[3] : null;
+									if ($major == $major_depsvalue && $minor <= $minor_depsvalue)
+									{
+										$setup_info['depends'][$depkey]['status'] = True;
+									}
 								}
 							}
 						}

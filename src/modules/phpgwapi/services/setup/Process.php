@@ -22,6 +22,7 @@ use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\controllers\Accounts\phpgwapi_account;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Locations;
+use App\modules\phpgwapi\services\Migration\MigrationService;
 
 
 /**
@@ -368,6 +369,8 @@ class Process
 		{
 			$setup_info = array();
 		}
+		$migrationService = new MigrationService();
+
 		foreach (array_keys($setup_info) as $key)
 		{
 			$enabled = False;
@@ -377,6 +380,24 @@ class Process
 			if ($DEBUG)
 			{
 				echo '<br>process->current(): Incoming status: ' . $appname . ',status: ' . $setup_info[$key]['status'];
+			}
+
+			// Modules using the new migration system skip legacy tables_current
+			if ($migrationService->moduleHasMigrations($appname))
+			{
+				if ($DEBUG)
+				{
+					echo '<br>process->current(): Module ' . $appname . ' uses migrations, skipping legacy install';
+				}
+				// Register the app so the migration runner can update it
+				if (!$this->setup->app_registered($appname))
+				{
+					$this->setup->register_app($appname);
+					$this->setup->register_hooks($appname);
+				}
+				$setup_info[$key]['status'] = 'U'; // migrations will finalize
+				$this->update_setup_info($setup_info[$key], $appname);
+				continue;
 			}
 
 			$appdir  = SRC_ROOT_PATH . "/modules/" . $appname . "/setup/";
@@ -460,6 +481,9 @@ class Process
 		{
 			$this->oProc->m_odb->transaction_commit();
 		}
+
+		// Run new-style migrations for modules that have them
+		$this->runMigrationsForApps($setup_info, $DEBUG);
 
 		/* Done, return current status */
 		return ($setup_info);
@@ -751,6 +775,8 @@ class Process
 			$setup_info = array();
 		}
 
+		$migrationService = new MigrationService();
+
 		foreach ($setup_info as $key => $ignored)
 		{
 			/* Don't try to upgrade an app that is not installed */
@@ -764,6 +790,19 @@ class Process
 					echo '<br>process->upgrade(): Application not installed: ' . $setup_info[$key]['name'] . "\n";
 				}
 				unset($setup_info[$key]);
+				continue;
+			}
+
+			// Modules using the new migration system skip legacy tables_update
+			if ($migrationService->moduleHasMigrations($setup_info[$key]['name']))
+			{
+				$appname = $setup_info[$key]['name'];
+				if ($DEBUG)
+				{
+					echo '<br>process->upgrade(): Module ' . $appname . ' uses migrations, skipping legacy upgrade';
+				}
+				// Mark as needing migration processing (handled by runMigrationsForApps)
+				$setup_info[$key]['status'] = 'U';
 				continue;
 			}
 
@@ -996,6 +1035,9 @@ class Process
 			}
 		}
 
+		// Run new-style migrations for modules that have them
+		$this->runMigrationsForApps($setup_info, $DEBUG);
+
 		/* Done, return current status */
 		return ($setup_info);
 	}
@@ -1005,6 +1047,112 @@ class Process
 		$setup_info = Settings::getInstance()->get('setup_info');
 		$setup_info[$appname] = $updated_setup_info;
 		Settings::getInstance()->set('setup_info', $setup_info);
+	}
+
+	/**
+	 * Run new-style migrations for modules in the setup_info array.
+	 *
+	 * Called after legacy install/upgrade completes. Modules without
+	 * a migrations/ directory are silently skipped.
+	 */
+	private function runMigrationsForApps(array &$setup_info, bool $DEBUG = false): void
+	{
+		$migrationService = new MigrationService();
+
+		foreach ($setup_info as $key => &$info) {
+			$appname = $info['name'] ?? '';
+			if (!$appname || !$migrationService->moduleHasMigrations($appname)) {
+				continue;
+			}
+
+			// Auto-detect legacy→migration transition:
+			// Module is registered (legacy install) but has zero tracked migrations.
+			$applied = $migrationService->getAppliedMigrations($appname);
+			$isLegacyTransition = $this->setup->app_registered($appname) && empty($applied);
+
+			if ($isLegacyTransition) {
+				// Read the current legacy version from the DB
+				$legacyVersion = $info['currentver'] ?? null;
+				$cutoff = null;
+
+				if ($legacyVersion) {
+					// Find the migration that corresponds to this legacy version.
+					// Each legacy version X upgrades TO the next version, so the migration
+					// for version X is the last one that was applied.
+					$cutoff = $migrationService->findMigrationForLegacyVersion($appname, $legacyVersion);
+				}
+
+				// Fall back to the hardcoded cutoff if no version match found
+				if (!$cutoff && isset($info['migration_legacy_cutoff'])) {
+					$cutoff = $info['migration_legacy_cutoff'];
+				}
+
+				if ($cutoff) {
+					if ($DEBUG) {
+						echo '<br>process->runMigrations(): Legacy transition for ' . $appname
+							. ' (legacy version: ' . ($legacyVersion ?? 'unknown') . ')'
+							. ', seeding up to ' . $cutoff . "\n";
+					}
+					$seeded = $migrationService->seedUpTo($appname, $cutoff, $DEBUG);
+					if ($DEBUG) {
+						echo '<br>process->runMigrations(): Seeded ' . $seeded . ' migration(s) for ' . $appname . "\n";
+					}
+				}
+			}
+
+			$pending = $migrationService->getPendingMigrations($appname);
+			if (empty($pending)) {
+				if ($DEBUG) {
+					echo '<br>process->runMigrations(): No pending migrations for ' . $appname . "\n";
+				}
+				// All migrations already applied — mark complete and sync version
+				$info['status'] = 'C';
+				$info['currentver'] = $migrationService->getTargetVersion($appname);
+				$info['version'] = $info['currentver'];
+				$this->update_setup_info($info, $appname);
+				if ($this->setup->app_registered($appname)) {
+					$this->setup->update_app($appname);
+					$this->setup->update_hooks($appname);
+				}
+				continue;
+			}
+
+			if ($DEBUG) {
+				echo '<br>process->runMigrations(): Running ' . count($pending) . ' migration(s) for ' . $appname . "\n";
+			}
+
+			$results = $migrationService->runPending($appname, $DEBUG);
+
+			$failed = false;
+			foreach ($results as $result) {
+				if ($result['status'] === 'failed') {
+					$failed = true;
+					$info['status'] = 'F';
+					if ($DEBUG) {
+						echo '<br>process->runMigrations(): Migration failed for ' . $appname
+							. ': ' . $result['name'] . ' - ' . ($result['error'] ?? 'unknown error') . "\n";
+					}
+					break;
+				}
+			}
+
+			if (!$failed) {
+				$info['status'] = 'C';
+				// Version = migration count (applied count now matches total)
+				$info['currentver'] = $migrationService->getTargetVersion($appname);
+				$info['version'] = $info['currentver'];
+				$this->update_setup_info($info, $appname);
+
+				if ($this->setup->app_registered($appname)) {
+					$this->setup->update_app($appname);
+					$this->setup->update_hooks($appname);
+				}
+
+				if ($DEBUG) {
+					echo '<br>process->runMigrations(): All migrations applied for ' . $appname . "\n";
+				}
+			}
+		}
 	}
 
 	/**

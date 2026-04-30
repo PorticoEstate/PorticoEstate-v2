@@ -1409,13 +1409,8 @@ class property_soentity
 	function get_cols($category, $entity_id, $cat_id, $lookup, $location_id): void
 	{
 
-		$builder = new EavQueryBuilder(
-			isEav: (bool)$category['is_eav'],
-			type: $this->type,
-			entityId: $entity_id,
-			catId: $cat_id
-		);
-		$entity_table = $builder->tableName();
+		$isEav = (bool)$category['is_eav'];
+		$entity_table = $isEav ? 'fm_bim_item' : "fm_{$this->type}_{$entity_id}_{$cat_id}";
 
 		$this->uicols = $this->bocommon->fm_cache("uicols_{$this->type}_{$entity_id}_{$cat_id}_{$lookup}_{$category['org_unit']}");
 
@@ -1807,18 +1802,13 @@ class property_soentity
 
 		$this->get_cols($category, $entity_id, $cat_id, $lookup, $location_id);
 
-		$builder = new EavQueryBuilder(
-			isEav: (bool)$category['is_eav'],
-			type: $this->type,
-			entityId: $entity_id,
-			catId: $cat_id
-		);
-		if ($builder->isEav())
+		$isEav = (bool)$category['is_eav'];
+		if ($isEav)
 		{
 			return $this->read_eav($data);
 		}
 
-		$entity_table		 = $builder->tableName();
+		$entity_table		 = "fm_{$this->type}_{$entity_id}_{$cat_id}";
 		$choice_table		 = 'phpgw_cust_choice';
 		$attribute_table	 = 'phpgw_cust_attribute';
 		$attribute_filter	 = " location_id = {$location_id}";
@@ -2292,20 +2282,15 @@ class property_soentity
 
 		$category = $admin_entity->read_single_category($entity_id, $cat_id);
 
-		$builder = new EavQueryBuilder(
-			isEav: (bool)$category['is_eav'],
-			type: $this->type,
-			entityId: $entity_id,
-			catId: $cat_id
-		);
-		if ($builder->isEav())
+		$isEav = (bool)$category['is_eav'];
+		if ($isEav)
 		{
 			return $this->read_single_eav($data, $values);
 		}
 
 		$id		 = (int)$data['id'];
 		$num	 = isset($data['num']) && $data['num'] ? $data['num'] : '';
-		$table	 = $builder->tableName();
+		$table	 = "fm_{$this->type}_{$entity_id}_{$cat_id}";
 
 		if ($num)
 		{

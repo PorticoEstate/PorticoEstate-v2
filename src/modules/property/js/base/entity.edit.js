@@ -394,6 +394,105 @@ function buildEntityRestUrl(form)
 	return url;
 }
 
+function clearFormAlerts(form)
+{
+	var notices = form.querySelectorAll('.rest-submit-alert');
+	for (var i = 0; i < notices.length; i++)
+	{
+		notices[i].remove();
+	}
+}
+
+function renderFormErrorAlert(form, messages)
+{
+	clearFormAlerts(form);
+
+	var alert = document.createElement('div');
+	alert.className = 'rest-submit-alert form-error alert alert-danger';
+
+	var heading = document.createElement('strong');
+	heading.textContent = 'Innsending av skjemaet feilet!';
+	alert.appendChild(heading);
+
+	var list = document.createElement('ul');
+	for (var i = 0; i < messages.length; i++)
+	{
+		var item = document.createElement('li');
+		item.textContent = messages[i];
+		list.appendChild(item);
+	}
+	alert.appendChild(list);
+
+	form.insertBefore(alert, form.firstChild);
+}
+
+function renderFormSuccessAlert(form, text)
+{
+	clearFormAlerts(form);
+
+	var alert = document.createElement('div');
+	alert.className = 'rest-submit-alert text-center alert alert-success';
+	alert.setAttribute('role', 'alert');
+	alert.textContent = text;
+
+	form.insertBefore(alert, form.firstChild);
+}
+
+function extractReceiptMessages(entries)
+{
+	if (!Array.isArray(entries))
+	{
+		return [];
+	}
+
+	return entries
+		.map(function (entry)
+		{
+			if (entry && typeof entry.msg === 'string')
+			{
+				return entry.msg;
+			}
+			if (typeof entry === 'string')
+			{
+				return entry;
+			}
+			return '';
+		})
+		.filter(function (message)
+		{
+			return !!message;
+		});
+}
+
+function getErrorMessages(data)
+{
+	var topLevel = extractReceiptMessages(data && data.error);
+	if (topLevel.length)
+	{
+		return topLevel;
+	}
+
+	return extractReceiptMessages(data && data.receipt && data.receipt.error);
+}
+
+function getSuccessMessage(data)
+{
+	var topLevel = extractReceiptMessages(data && data.message);
+	if (topLevel.length)
+	{
+		return topLevel[0];
+	}
+
+	var receipt = extractReceiptMessages(data && data.receipt && data.receipt.message);
+	if (receipt.length)
+	{
+		return receipt[0];
+	}
+
+	var id = (data && data.id) ? data.id : item_id;
+	return 'Post ' + id + ' er oppdatert';
+}
+
 function hasSelectedFileUpload(form)
 {
 	var fileInput = form.querySelector('input[type="file"][name="file"]');
@@ -409,6 +508,24 @@ function hasSelectedFileUpload(form)
 	}
 
 	return false;
+}
+
+function getMissingReadonlyRequiredMessages(form)
+{
+	var messages = [];
+	var requiredReadonlyInputs = form.querySelectorAll('input[data-validation*="required"].readonly, input[readonly][data-validation*="required"]');
+
+	for (var i = 0; i < requiredReadonlyInputs.length; i++)
+	{
+		var input = requiredReadonlyInputs[i];
+		var value = (input.value || '').trim();
+		if (!value)
+		{
+			messages.push(input.getAttribute('data-validation-error-msg') || 'Fyll ut obligatoriske felter');
+		}
+	}
+
+	return messages;
 }
 
 $(document).ready(function ()
@@ -432,6 +549,33 @@ $(document).ready(function ()
 			return true;
 		}
 
+		if (typeof $.fn.isValid === 'function')
+		{
+			var conf = $.extend({}, form.validationConfig || {}, {
+				modules: (form.validationConfig && form.validationConfig.modules) || 'location, date, security, file',
+				validateOnBlur: false,
+				scrollToTopOnError: true,
+				errorMessagePosition: 'top',
+				validateHiddenInputs: true
+			});
+
+			var test = $('form').isValid(false, conf);
+			if (!test)
+			{
+				e.preventDefault();
+				return false;
+			}
+		}
+
+		var missingReadonlyMessages = getMissingReadonlyRequiredMessages(form);
+		if (missingReadonlyMessages.length)
+		{
+			e.preventDefault();
+			renderFormErrorAlert(form, missingReadonlyMessages);
+			form.scrollIntoView({behavior: 'smooth', block: 'start'});
+			return false;
+		}
+
 		var submitter = (e.originalEvent && e.originalEvent.submitter)
 			? e.originalEvent.submitter
 			: clickedSubmitter;
@@ -452,6 +596,7 @@ $(document).ready(function ()
 		}
 
 		e.preventDefault();
+		clearFormAlerts(form);
 
 		var formData = new FormData(form);
 		formData.set('values[apply]', submitter.value || '1');
@@ -467,27 +612,46 @@ $(document).ready(function ()
 		})
 			.then(function (response)
 			{
-				if (!response.ok)
-				{
-					throw new Error('Failed to save via REST');
-				}
-				return response.json();
+				return response.json()
+					.catch(function ()
+					{
+						return null;
+					})
+					.then(function (data)
+					{
+						if (!response.ok)
+						{
+							var error = new Error('Failed to save via REST');
+							error.responseData = data;
+							throw error;
+						}
+
+						return data;
+					});
 			})
 			.then(function (data)
 			{
-				if (data && Array.isArray(data.error) && data.error.length)
+				var errors = getErrorMessages(data);
+				if (errors.length)
 				{
-					alert(data.error.map(function (entry)
-					{
-						return entry.msg || '';
-					}).join('\n'));
+					renderFormErrorAlert(form, errors);
+					form.scrollIntoView({behavior: 'smooth', block: 'start'});
 					return;
 				}
 
-				window.location.reload();
+				renderFormSuccessAlert(form, getSuccessMessage(data));
+				form.scrollIntoView({behavior: 'smooth', block: 'start'});
 			})
-			.catch(function ()
+			.catch(function (error)
 			{
+				var errors = getErrorMessages(error && error.responseData);
+				if (errors.length)
+				{
+					renderFormErrorAlert(form, errors);
+					form.scrollIntoView({behavior: 'smooth', block: 'start'});
+					return;
+				}
+
 				form.submit();
 			});
 

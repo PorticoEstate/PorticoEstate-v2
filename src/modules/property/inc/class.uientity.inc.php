@@ -1445,7 +1445,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 */
 	function edit($values = array(), $mode = 'edit'): void
 	{
-		$id		 = isset($values['id']) && $values['id'] ? $values['id'] : Sanitizer::get_var('id', 'int');
+		$id		 = (int)(isset($values['id']) && $values['id'] ? $values['id'] : Sanitizer::get_var('id', 'int'));
 		$_lean	 = Sanitizer::get_var('lean', 'bool');
 
 		if ($mode == 'edit' && (!$this->acl_add && !$this->acl_edit))
@@ -1532,7 +1532,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		if (empty($id))
 		{
-			$id = $values['id'];
+			$id = (int)($values['id'] ?? 0);
 		}
 
 		if ($id)

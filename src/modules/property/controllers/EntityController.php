@@ -972,7 +972,8 @@ class EntityController
 
 		$params     = $request->getQueryParams();
 		$id         = (int)$args['id'];
-		$draw       = (int)($params['draw'] ?? 1);
+		$draw       = (int)($params['draw']);
+		$draw ++;
 		$entity_id  = (int)$args['entity_id'];
 		$cat_id     = (int)$args['cat_id'];
 		$type       = (string)$args['type'];

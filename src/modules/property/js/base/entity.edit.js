@@ -370,28 +370,43 @@ function formDataToObject(formData)
 	return payload;
 }
 
-function buildEntityRestUrl(form)
+function buildEntityRestRequest(form)
 {
 	var parsed = parseURL(form.action);
 	var query = parsed.searchObject || {};
 	var type = query.type || $('#field_type').val() || '';
 	var entityId = query.entity_id || '';
 	var catId = query.cat_id || '';
-	var id = (query.id || item_id || '').toString();
+	var rawId = (query.id || item_id || '').toString();
+	var id = parseInt(rawId, 10);
 	var bypass = query.bypass;
 
-	if (!type || !entityId || !catId || !id)
+	if (!type || !entityId || !catId)
 	{
 		return null;
 	}
 
-	var url = '/property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId + '/' + id;
+	var isCreate = !id;
+	var url = '/property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId;
+	if (isCreate)
+	{
+		url += '/create';
+	}
+	else
+	{
+		url += '/' + id;
+	}
+
 	if (typeof bypass !== 'undefined' && bypass !== null && bypass !== '')
 	{
 		url += '?bypass=' + encodeURIComponent(bypass);
 	}
 
-	return url;
+	return {
+		url: url,
+		method: isCreate ? 'POST' : 'PUT',
+		isCreate: isCreate
+	};
 }
 
 function clearFormAlerts(form)
@@ -475,7 +490,7 @@ function getErrorMessages(data)
 	return extractReceiptMessages(data && data.receipt && data.receipt.error);
 }
 
-function getSuccessMessage(data)
+function getSuccessMessage(data, isCreate)
 {
 	var topLevel = extractReceiptMessages(data && data.message);
 	if (topLevel.length)
@@ -490,6 +505,11 @@ function getSuccessMessage(data)
 	}
 
 	var id = (data && data.id) ? data.id : item_id;
+	if (isCreate)
+	{
+		return 'Post ' + id + ' er opprettet';
+	}
+
 	return 'Post ' + id + ' er oppdatert';
 }
 
@@ -544,11 +564,6 @@ $(document).ready(function ()
 
 	$(form).on('submit', function (e)
 	{
-		if (!item_id)
-		{
-			return true;
-		}
-
 		if (typeof $.fn.isValid === 'function')
 		{
 			var conf = $.extend({}, form.validationConfig || {}, {
@@ -579,7 +594,7 @@ $(document).ready(function ()
 		var submitter = (e.originalEvent && e.originalEvent.submitter)
 			? e.originalEvent.submitter
 			: clickedSubmitter;
-		if (!submitter || submitter.name !== 'values[apply]')
+		if (!submitter || (submitter.name !== 'values[apply]' && submitter.name !== 'values[save]'))
 		{
 			return true;
 		}
@@ -589,8 +604,8 @@ $(document).ready(function ()
 			return true;
 		}
 
-		var requestUrl = buildEntityRestUrl(form);
-		if (!requestUrl)
+		var restRequest = buildEntityRestRequest(form);
+		if (!restRequest)
 		{
 			return true;
 		}
@@ -599,11 +614,14 @@ $(document).ready(function ()
 		clearFormAlerts(form);
 
 		var formData = new FormData(form);
-		formData.set('values[apply]', submitter.value || '1');
+		if (submitter.name)
+		{
+			formData.set(submitter.name, submitter.value || '1');
+		}
 		var payload = formDataToObject(formData);
 
-		fetch(requestUrl, {
-			method: 'PUT',
+		fetch(restRequest.url, {
+			method: restRequest.method,
 			headers: {
 				'Content-Type': 'application/json'
 			},
@@ -639,8 +657,29 @@ $(document).ready(function ()
 					return;
 				}
 
-				renderFormSuccessAlert(form, getSuccessMessage(data));
+				renderFormSuccessAlert(form, getSuccessMessage(data, restRequest.isCreate));
 				form.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+				if (restRequest.isCreate && data.id)
+				{
+					var sep = form.action.indexOf('?') >= 0 ? '&' : '?';
+					var redirectUrl = form.action + sep + 'id=' + encodeURIComponent(data.id);
+					setTimeout(function ()
+					{
+						window.location.href = redirectUrl;
+					}, 1200);
+				}
+				else
+				{
+					try
+					{
+						refresh_files();
+					}
+					catch (e)
+					{
+						// refresh_files not available on all entity forms
+					}
+				}
 			})
 			.catch(function (error)
 			{

@@ -220,9 +220,13 @@ class FreeTimeService
 
 			// Fetch overlapping entity IDs (only for simple_booking resources)
 			if ($resource['simple_booking'] && empty($resource['skip_timeslot'])) {
+				$this->tick("resource_{$resource['id']}_event_ids_start");
 				$eventIds = array_merge($eventIds, $this->eventIdsForResource($resource['id'], $_from, $to));
+				$this->tick("resource_{$resource['id']}_event_ids_done");
 				$allocationIds = array_merge($allocationIds, $this->allocationIdsForResource($resource['id'], $from, $to));
+				$this->tick("resource_{$resource['id']}_allocation_ids_done");
 				$bookingIds = array_merge($bookingIds, $this->bookingIdsForResource($resource['id'], $from, $to));
+				$this->tick("resource_{$resource['id']}_booking_ids_done");
 			}
 
 			$resource['from'] = $from;
@@ -424,6 +428,7 @@ class FreeTimeService
 		$sessionId = $sessions->get_session_id();
 
 		// Fetch partial applications for current session
+		$this->tick('partials_session_query_start');
 		if (!empty($sessionId)) {
 			$sql = "SELECT a.id, a.status,
                     ad.from_, ad.to_,
@@ -458,7 +463,9 @@ class FreeTimeService
 			}
 		}
 
+		$this->tick('partials_session_query_done');
 		// Fetch active blocks for these resources
+		$this->tick('blocks_query_start');
 		if (!empty($resourceIds)) {
 			$placeholders = implode(',', array_fill(0, count($resourceIds), '?'));
 			$sql = "SELECT id, from_, to_, resource_id, session_id
@@ -468,6 +475,7 @@ class FreeTimeService
 			$stmt->execute(array_values($resourceIds));
 			$blocks = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
+			$this->tick('blocks_query_done (' . count($blocks) . ' blocks)');
 			foreach ($blocks as $block) {
 				// Skip blocks from current session (same as legacy)
 				if ($block['session_id'] === $sessionId) {

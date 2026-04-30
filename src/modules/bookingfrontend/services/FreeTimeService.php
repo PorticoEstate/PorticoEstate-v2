@@ -220,9 +220,13 @@ class FreeTimeService
 
 			// Fetch overlapping entity IDs (only for simple_booking resources)
 			if ($resource['simple_booking'] && empty($resource['skip_timeslot'])) {
+				$this->tick("resource_{$resource['id']}_event_ids_start");
 				$eventIds = array_merge($eventIds, $this->eventIdsForResource($resource['id'], $_from, $to));
+				$this->tick("resource_{$resource['id']}_event_ids_done");
 				$allocationIds = array_merge($allocationIds, $this->allocationIdsForResource($resource['id'], $from, $to));
+				$this->tick("resource_{$resource['id']}_allocation_ids_done");
 				$bookingIds = array_merge($bookingIds, $this->bookingIdsForResource($resource['id'], $from, $to));
+				$this->tick("resource_{$resource['id']}_booking_ids_done");
 			}
 
 			$resource['from'] = $from;
@@ -242,7 +246,7 @@ class FreeTimeService
 
 		// Get partials and blocks
 		$this->tick('fetch_partials_start');
-		$this->getPartials($events, $resourceIds);
+		$this->getPartials($events, $resourceIds, $_from, $_to);
 		$this->tick('fetch_partials_done');
 
 		// Combine all into events
@@ -418,12 +422,16 @@ class FreeTimeService
 	 * Port of bobooking::get_partials
 	 * Fetches partial applications for current session and active blocks.
 	 */
-	private function getPartials(array &$events, array $resourceIds): void
+	private function getPartials(array &$events, array $resourceIds, \DateTime $from, \DateTime $to): void
 	{
 		$sessions = Sessions::getInstance();
 		$sessionId = $sessions->get_session_id();
 
-		// Fetch partial applications for current session
+		$fromStr = $from->format('Y-m-d H:i');
+		$toStr = $to->format('Y-m-d H:i');
+
+		// Fetch partial applications for current session, filtered by date range
+		$this->tick('partials_session_query_start');
 		if (!empty($sessionId)) {
 			$sql = "SELECT a.id, a.status,
                     ad.from_, ad.to_,
@@ -432,9 +440,12 @@ class FreeTimeService
                     JOIN bb_application_date ad ON ad.application_id = a.id
                     JOIN bb_application_resource ar ON ar.application_id = a.id
                     WHERE a.status = 'NEWPARTIAL1'
-                    AND a.session_id = ?";
+                    AND a.session_id = ?
+                    AND ((ad.from_ >= ? AND ad.from_ < ?)
+                        OR (ad.to_ > ? AND ad.to_ <= ?)
+                        OR (ad.from_ < ? AND ad.to_ > ?))";
 			$stmt = $this->db->prepare($sql);
-			$stmt->execute([$sessionId]);
+			$stmt->execute([$sessionId, $fromStr, $toStr, $fromStr, $toStr, $fromStr, $toStr]);
 			$rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
 			$grouped = [];
@@ -458,15 +469,23 @@ class FreeTimeService
 			}
 		}
 
-		// Fetch active blocks for these resources
+		$this->tick('partials_session_query_done');
+		// Fetch active blocks for these resources, filtered by date range
+		$this->tick('blocks_query_start');
 		if (!empty($resourceIds)) {
 			$placeholders = implode(',', array_fill(0, count($resourceIds), '?'));
 			$sql = "SELECT id, from_, to_, resource_id, session_id
                     FROM bb_block
-                    WHERE active = 1 AND resource_id IN ($placeholders)";
+                    WHERE active = 1 AND resource_id IN ($placeholders)
+                    AND ((from_ >= ? AND from_ < ?)
+                        OR (to_ > ? AND to_ <= ?)
+                        OR (from_ < ? AND to_ > ?))";
+			$params = array_values($resourceIds);
+			array_push($params, $fromStr, $toStr, $fromStr, $toStr, $fromStr, $toStr);
 			$stmt = $this->db->prepare($sql);
-			$stmt->execute(array_values($resourceIds));
+			$stmt->execute($params);
 			$blocks = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+			$this->tick('blocks_query_done (' . count($blocks) . ' blocks)');
 
 			foreach ($blocks as $block) {
 				// Skip blocks from current session (same as legacy)

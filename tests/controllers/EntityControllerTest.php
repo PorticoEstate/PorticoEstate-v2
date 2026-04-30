@@ -47,6 +47,17 @@ namespace
 	// Minimal stub so createMock('\property_boentity') works without loading the
 	// full legacy class (which has heavyweight constructor dependencies).
 	// ---------------------------------------------------------------------------
+	if (!class_exists('phpgw'))
+	{
+		class phpgw
+		{
+			public static function is_repost(bool $display_error = false): bool
+			{
+				return false;
+			}
+		}
+	}
+
 	if (!class_exists('property_boentity'))
 	{
 		abstract class property_boentity
@@ -143,26 +154,36 @@ class EntityControllerTest extends TestCase
 	private function makeController(
 		\property_boentity $boStub,
 		?EntityFormHelper $helperStub = null,
-		?callable $onAbort = null
+		?callable $onAbort = null,
+		?object $soadminEntityStub = null
 	): EntityController
 	{
-		$controller = new class($this->container, $boStub, $helperStub, $onAbort) extends EntityController
+		$controller = new class($this->container, $boStub, $helperStub, $onAbort, $soadminEntityStub) extends EntityController
 		{
 			private \property_boentity $boStub;
 			private ?EntityFormHelper $helperStub;
 			private $onAbort;
+			private object $soadminEntityStub;
 
 			public function __construct(
 				ContainerInterface $c,
 				\property_boentity $stub,
 				?EntityFormHelper $helperStub = null,
-				?callable $onAbort = null
+				?callable $onAbort = null,
+				?object $soadminEntityStub = null
 			)
 			{
 				parent::__construct($c);
 				$this->boStub = $stub;
 				$this->helperStub = $helperStub;
 				$this->onAbort = $onAbort;
+				$this->soadminEntityStub = $soadminEntityStub ?: new class
+				{
+					public function read_single_category(int $entityId, int $catId): array
+					{
+						return ['org_unit' => 0, 'location_level' => 0];
+					}
+				};
 			}
 
 			/** @phpstan-ignore-next-line */
@@ -195,6 +216,21 @@ class EntityControllerTest extends TestCase
 
 				return new class extends EntityFormHelper
 				{
+					public function validate(
+						array $values,
+						$valuesAttribute,
+						int $catId,
+						int $entityId,
+						object $soadminEntity,
+						object $bo
+					): array {
+						return [
+							'values' => $values,
+							'values_attribute' => $valuesAttribute,
+							'errors' => [],
+						];
+					}
+
 					public function persistSave(
 						array $values,
 						$attributes,
@@ -218,6 +254,11 @@ class EntityControllerTest extends TestCase
 						// No-op for controller unit tests.
 					}
 				};
+			}
+
+			protected function soadminEntity(): object
+			{
+				return $this->soadminEntityStub;
 			}
 
 			protected function abortTransaction(): void
@@ -409,8 +450,17 @@ class EntityControllerTest extends TestCase
 		$bo->type_app = ['entity' => 'property'];
 
 		$helper = $this->getMockBuilder(EntityFormHelper::class)
-			->onlyMethods(['persistSave', 'handleFiles'])
+			->onlyMethods(['validate', 'persistSave', 'handleFiles'])
 			->getMock();
+
+		$helper->expects($this->once())
+			->method('validate')
+			->with(['title' => 'New'], ['1' => 'val'], 3, 5, $this->isType('object'), $bo)
+			->willReturn([
+				'values' => ['title' => 'New'],
+				'values_attribute' => ['1' => 'val'],
+				'errors' => [],
+			]);
 
 		$helper->expects($this->once())
 			->method('persistSave')
@@ -450,8 +500,19 @@ class EntityControllerTest extends TestCase
 		$bo->type_app = ['entity' => 'property'];
 
 		$helper = $this->getMockBuilder(EntityFormHelper::class)
-			->onlyMethods(['persistSave', 'handleFiles'])
+			->onlyMethods(['validate', 'persistSave', 'handleFiles'])
 			->getMock();
+
+		$helper->expects($this->once())
+			->method('validate')
+			->willReturn([
+				'values' => [
+					'title' => 'New',
+					'file_action' => [123],
+				],
+				'values_attribute' => [],
+				'errors' => [],
+			]);
 
 		$helper->expects($this->once())
 			->method('persistSave')
@@ -548,13 +609,59 @@ class EntityControllerTest extends TestCase
 		$this->assertSame('Child category', $post['entity_cat_name_5']);
 	}
 
+	public function testStoreReturns400WhenValidationFails(): void
+	{
+		$bo = $this->createMock(\property_boentity::class);
+
+		$helper = $this->getMockBuilder(EntityFormHelper::class)
+			->onlyMethods(['validate', 'persistSave', 'handleFiles'])
+			->getMock();
+
+		$helper->expects($this->once())
+			->method('validate')
+			->willReturn([
+				'values' => ['title' => 'New'],
+				'values_attribute' => [],
+				'errors' => [
+					['msg' => 'Please select a location !'],
+				],
+			]);
+
+		$helper->expects($this->never())->method('persistSave');
+		$helper->expects($this->never())->method('handleFiles');
+
+		$this->request->method('getParsedBody')->willReturn([
+			'values' => ['title' => 'New'],
+			'values_attribute' => [],
+		]);
+
+		$this->response->expects($this->atLeastOnce())
+			->method('withStatus')
+			->with(400)
+			->willReturn($this->response);
+
+		$this->makeController($bo, $helper)->store($this->request, $this->response, $this->baseArgs());
+
+		$decoded = json_decode($this->responseBody, true);
+		$this->assertSame([], $decoded['message']);
+		$this->assertSame('Please select a location !', $decoded['error'][0]['msg']);
+	}
+
 	public function testStoreAbortsTransactionAndRethrowsWhenPersistSaveFails(): void
 	{
 		$bo = $this->createMock(\property_boentity::class);
 
 		$helper = $this->getMockBuilder(EntityFormHelper::class)
-			->onlyMethods(['persistSave', 'handleFiles'])
+			->onlyMethods(['validate', 'persistSave', 'handleFiles'])
 			->getMock();
+
+		$helper->expects($this->once())
+			->method('validate')
+			->willReturn([
+				'values' => ['title' => 'New'],
+				'values_attribute' => [],
+				'errors' => [],
+			]);
 
 		$helper->expects($this->once())
 			->method('persistSave')
@@ -625,8 +732,17 @@ class EntityControllerTest extends TestCase
 		$bo->type_app = ['entity' => 'property'];
 
 		$helper = $this->getMockBuilder(EntityFormHelper::class)
-			->onlyMethods(['persistSave', 'handleFiles'])
+			->onlyMethods(['validate', 'persistSave', 'handleFiles'])
 			->getMock();
+
+		$helper->expects($this->once())
+			->method('validate')
+			->with(['title' => 'Updated', 'id' => 7], ['1' => 'val'], 3, 5, $this->isType('object'), $bo)
+			->willReturn([
+				'values' => ['title' => 'Updated', 'id' => 7],
+				'values_attribute' => ['1' => 'val'],
+				'errors' => [],
+			]);
 
 		$helper->expects($this->once())
 			->method('persistSave')
@@ -667,8 +783,20 @@ class EntityControllerTest extends TestCase
 		$bo->type_app = ['entity' => 'property'];
 
 		$helper = $this->getMockBuilder(EntityFormHelper::class)
-			->onlyMethods(['persistSave', 'handleFiles'])
+			->onlyMethods(['validate', 'persistSave', 'handleFiles'])
 			->getMock();
+
+		$helper->expects($this->once())
+			->method('validate')
+			->willReturn([
+				'values' => [
+					'title' => 'Updated',
+					'file_action' => [456],
+					'id' => 7,
+				],
+				'values_attribute' => [],
+				'errors' => [],
+			]);
 
 		$helper->expects($this->once())
 			->method('persistSave')
@@ -711,13 +839,96 @@ class EntityControllerTest extends TestCase
 		$this->makeController($bo)->update($this->request, $this->response, $args);
 	}
 
+	public function testUpdateReturns400WhenValidationFails(): void
+	{
+		$bo = $this->createMock(\property_boentity::class);
+
+		$helper = $this->getMockBuilder(EntityFormHelper::class)
+			->onlyMethods(['validate', 'persistSave', 'handleFiles'])
+			->getMock();
+
+		$helper->expects($this->once())
+			->method('validate')
+			->willReturn([
+				'values' => ['title' => 'Updated', 'id' => 7],
+				'values_attribute' => [],
+				'errors' => [
+					['msg' => 'Please enter value for attribute Test'],
+				],
+			]);
+
+		$helper->expects($this->never())->method('persistSave');
+		$helper->expects($this->never())->method('handleFiles');
+
+		$this->request->method('getParsedBody')->willReturn([
+			'values' => ['title' => 'Updated'],
+			'values_attribute' => [],
+		]);
+
+		$this->response->expects($this->atLeastOnce())
+			->method('withStatus')
+			->with(400)
+			->willReturn($this->response);
+
+		$args = array_merge($this->baseArgs(), ['id' => '7']);
+		$this->makeController($bo, $helper)->update($this->request, $this->response, $args);
+
+		$decoded = json_decode($this->responseBody, true);
+		$this->assertSame([], $decoded['message']);
+		$this->assertSame('Please enter value for attribute Test', $decoded['error'][0]['msg']);
+	}
+
+	/**
+	 * Integration-style test: real EntityFormHelper::validate() must return the
+	 * "Please select a location !" error when the category has location_level > 0
+	 * but the submitted values carry no location or p key.
+	 */
+	public function testValidateReturnsLocationRequiredErrorWhenLocationLevelSetButLocationMissing(): void
+	{
+		$soadminStub = new class
+		{
+			public function read_single_category(int $entityId, int $catId): array
+			{
+				return ['location_level' => 1, 'org_unit' => 0];
+			}
+		};
+
+		$bo = $this->createMock(\property_boentity::class);
+
+		$helper = new EntityFormHelper();
+
+		$values = ['title' => 'New item'];   // no 'location', no 'p'
+
+		$result = $helper->validate(
+			$values,
+			null,   // valuesAttribute – null skips the attribute loop
+			3,      // catId
+			1,      // entityId
+			$soadminStub,
+			$bo
+		);
+
+		$this->assertNotEmpty($result['errors'], 'Expected at least one validation error');
+
+		$messages = array_column($result['errors'], 'msg');
+		$this->assertContains('Please select a location !', $messages);
+	}
+
 	public function testUpdateAbortsTransactionAndRethrowsWhenPersistSaveFails(): void
 	{
 		$bo = $this->createMock(\property_boentity::class);
 
 		$helper = $this->getMockBuilder(EntityFormHelper::class)
-			->onlyMethods(['persistSave', 'handleFiles'])
+			->onlyMethods(['validate', 'persistSave', 'handleFiles'])
 			->getMock();
+
+		$helper->expects($this->once())
+			->method('validate')
+			->willReturn([
+				'values' => ['title' => 'Updated', 'id' => 7],
+				'values_attribute' => [],
+				'errors' => [],
+			]);
 
 		$helper->expects($this->once())
 			->method('persistSave')

@@ -98,11 +98,13 @@ class EntityFormHelper
 
 		$category = $soadminEntity->read_single_category($entityId, $catId);
 
-		if ($category['org_unit'])
+		if (!empty($category['org_unit']))
 		{
-			$values['extra']['org_unit_id'] = Sanitizer::get_var('org_unit_id', 'int');
-			$values['org_unit_id'] = $values['extra']['org_unit_id'];
-			$values['org_unit_name'] = Sanitizer::get_var('org_unit_name', 'string');
+			$orgUnitId = $values['extra']['org_unit_id'] ?? Sanitizer::get_var('org_unit_id', 'int');
+			$orgUnitName = $values['org_unit_name'] ?? Sanitizer::get_var('org_unit_name', 'string');
+			$values['extra']['org_unit_id'] = $orgUnitId;
+			$values['org_unit_id'] = $orgUnitId;
+			$values['org_unit_name'] = $orgUnitName;
 		}
 
 		if (phpgw::is_repost())
@@ -110,7 +112,7 @@ class EntityFormHelper
 			$errors[] = ['msg' => lang('Hmm... looks like a repost!')];
 		}
 
-		if ((!$values['location'] && !$values['p']) && isset($category['location_level']) && $category['location_level'])
+		if (empty($values['location']) && empty($values['p']) && !empty($category['location_level']))
 		{
 			$errors[] = ['msg' => lang('Please select a location !')];
 		}
@@ -125,12 +127,13 @@ class EntityFormHelper
 
 			foreach ($valuesAttribute as $attribute)
 			{
-				if ($attribute['nullable'] != 1 && (!$attribute['value'] && !$values['extra'][$attribute['name']]))
+				$extraValue = $values['extra'][$attribute['name']] ?? null;
+				if (($attribute['nullable'] ?? null) != 1 && empty($attribute['value']) && empty($extraValue))
 				{
 					$errors[] = ['msg' => lang('Please enter value for attribute %1', $attribute['input_text'])];
 				}
 
-				if (isset($attribute['value']) && $attribute['value'] && $attribute['datatype'] == 'I' && !ctype_digit($attribute['value']))
+				if (!empty($attribute['value']) && ($attribute['datatype'] ?? null) == 'I' && !ctype_digit((string) $attribute['value']))
 				{
 					$errors[] = ['msg' => lang('Please enter integer for attribute %1', $attribute['input_text'])];
 				}

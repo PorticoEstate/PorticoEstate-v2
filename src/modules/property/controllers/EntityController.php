@@ -126,6 +126,15 @@ class EntityController
 	}
 
 	/**
+	 * Build the legacy admin entity helper used for category validation.
+	 */
+	protected function soadminEntity(): object
+	{
+		include_class('property', 'soadmin_entity');
+		return new \property_soadmin_entity();
+	}
+
+	/**
 	 * Enforce entity/category ACL and return the loaded boentity instance.
 	 *
 	 * @param Request $request
@@ -179,6 +188,17 @@ class EntityController
 	{
 		$response->getBody()->write(json_encode($data, JSON_THROW_ON_ERROR));
 		return $response->withHeader('Content-Type', 'application/json');
+	}
+
+	/**
+	 * Return a validation error response compatible with legacy receipts.
+	 */
+	private function validationErrorResponse(Response $response, array $errors): Response
+	{
+		return $this->jsonResponse($response, [
+			'message' => [],
+			'error' => array_values($errors),
+		])->withStatus(400);
 	}
 
 	/**
@@ -696,12 +716,28 @@ class EntityController
 	{
 		$bo = $this->assertEntityAcl($request, $args, ACL_ADD, 'No add access for this entity category');
 		$helper = $this->formHelper();
+		$soadminEntity = $this->soadminEntity();
 
 		$payload = $this->normalizedSavePayload($request);
 		$values = $payload['values'];
 		$values_attribute = $payload['values_attribute'];
 		$valuesChecklistStage = $payload['values_checklist_stage'];
 		$values = $this->applyLegacyCollectLocationData($values, $bo, $request);
+
+		$validation = $helper->validate(
+			$values,
+			$values_attribute,
+			(int) $args['cat_id'],
+			(int) $args['entity_id'],
+			$soadminEntity,
+			$bo
+		);
+		$values = $validation['values'];
+		$values_attribute = $validation['values_attribute'];
+		if (!empty($validation['errors']))
+		{
+			return $this->validationErrorResponse($response, (array) $validation['errors']);
+		}
 
 		try
 		{
@@ -770,6 +806,7 @@ class EntityController
 	{
 		$bo = $this->assertEntityAcl($request, $args, ACL_EDIT, 'No edit access for this entity category');
 		$helper = $this->formHelper();
+		$soadminEntity = $this->soadminEntity();
 
 		$id = (int)$args['id'];
 		if ($id <= 0)
@@ -782,7 +819,22 @@ class EntityController
 		$values_attribute = $payload['values_attribute'];
 		$valuesChecklistStage = $payload['values_checklist_stage'];
 		$values = $this->applyLegacyCollectLocationData($values, $bo, $request);
-		$values['id']     = $id;
+		$values['id'] = $id;
+
+		$validation = $helper->validate(
+			$values,
+			$values_attribute,
+			(int) $args['cat_id'],
+			(int) $args['entity_id'],
+			$soadminEntity,
+			$bo
+		);
+		$values = $validation['values'];
+		$values_attribute = $validation['values_attribute'];
+		if (!empty($validation['errors']))
+		{
+			return $this->validationErrorResponse($response, (array) $validation['errors']);
+		}
 
 		try
 		{

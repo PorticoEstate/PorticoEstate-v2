@@ -32,8 +32,8 @@ use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\Database\Db;
-use App\modules\property\inc\EntityEditPagePresenter;
-use App\modules\property\inc\EntityFormHelper;
+use App\modules\property\helpers\EntityEditPagePresenter;
+use App\modules\property\helpers\EntityFormHelper;
 
 /**
  * Legacy UI layer for the property entity module.

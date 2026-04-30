@@ -3,7 +3,7 @@
 namespace App\modules\property\controllers;
 
 use App\Database\Db;
-use App\modules\property\inc\EntityFormHelper;
+use App\modules\property\helpers\EntityFormHelper;
 use App\modules\phpgwapi\services\Cache;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;

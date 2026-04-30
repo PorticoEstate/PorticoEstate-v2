@@ -1,6 +1,6 @@
 <?php
 
-namespace App\modules\property\inc;
+namespace App\modules\property\helpers;
 
 use App\Database\Db;
 use App\modules\phpgwapi\services\Cache;

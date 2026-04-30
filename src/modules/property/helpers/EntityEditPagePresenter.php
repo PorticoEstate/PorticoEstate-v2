@@ -1,6 +1,6 @@
 <?php
 
-namespace App\modules\property\inc;
+namespace App\modules\property\helpers;
 
 /**
  * Builds the XSL view-model payload for entity edit/view pages.

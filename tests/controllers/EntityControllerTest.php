@@ -92,7 +92,7 @@ namespace Tests\Controllers
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use App\modules\property\controllers\EntityController;
-use App\modules\property\inc\EntityFormHelper;
+use App\modules\property\helpers\EntityFormHelper;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

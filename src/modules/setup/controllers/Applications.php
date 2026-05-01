@@ -239,6 +239,7 @@ class Applications
 					$header .=  '<h3>' . $this->setup->lang('Processing: %1', $this->setup->lang($appname)) . "</h3>\n<ul>";
 					$terror = array($setup_info[$appname]);
 
+					$migrationService = $migrationService ?? new \App\modules\phpgwapi\services\Migration\MigrationService();
 					if (
 						isset($setup_info[$appname]['tables'])
 						&& is_array($setup_info[$appname]['tables'])
@@ -247,8 +248,12 @@ class Applications
 						$terror = $this->process->current($terror, $DEBUG);
 						$header .=  "<li>{$setup_info[$appname]['name']} "
 							. $this->setup->lang('tables installed, unless there are errors printed above') . ".</h3>\n";
-						$terror = $this->process->default_records($terror, $DEBUG);
-						$header .=  '<li>' . $this->setup->lang('%1 default values processed', $this->setup->lang($appname)) . ".</li>\n";
+						// Skip legacy default_records for migration-based modules
+						if (!$migrationService->moduleHasMigrations($appname))
+						{
+							$terror = $this->process->default_records($terror, $DEBUG);
+							$header .=  '<li>' . $this->setup->lang('%1 default values processed', $this->setup->lang($appname)) . ".</li>\n";
+						}
 					}
 					else
 					{
@@ -261,9 +266,12 @@ class Applications
 							$this->setup->register_app($appname);
 							$header .=  '<li>' . $this->setup->lang('%1 registered', $this->setup->lang($appname)) . ".</li>\n";
 
-							// Default values has be processed - even for apps without tables - after register for locations::add to work
-							$terror = $this->process->default_records($terror, $DEBUG);
-							$header .=  '<li>' . $this->setup->lang('%1 default values processed', $this->setup->lang($appname)) . ".</li>\n";
+							// Default values - skip for migration-based modules
+							if (!$migrationService->moduleHasMigrations($appname))
+							{
+								$terror = $this->process->default_records($terror, $DEBUG);
+								$header .=  '<li>' . $this->setup->lang('%1 default values processed', $this->setup->lang($appname)) . ".</li>\n";
+							}
 						}
 						if (
 							isset($setup_info[$appname]['hooks'])
@@ -285,6 +293,57 @@ class Applications
 					$this->process->add_credential($appname);
 				}
 				$this->process->oProc->m_odb->transaction_commit();
+
+				// Run migrations AFTER the setup transaction commits
+				foreach ($install as $appname => $key)
+				{
+					if ($migrationService->moduleHasMigrations($appname))
+					{
+						$applied = $migrationService->getAppliedMigrations($appname);
+						$legacyVersion = $setup_info[$appname]['currentver'] ?? null;
+						$isLegacyTransition = $this->setup->app_registered($appname)
+							&& empty($applied)
+							&& $legacyVersion
+							&& str_contains($legacyVersion, '.');
+
+						if ($isLegacyTransition)
+						{
+							$cutoff = null;
+							if ($legacyVersion) {
+								$cutoff = $migrationService->findMigrationForLegacyVersion($appname, $legacyVersion);
+							}
+							if (!$cutoff && isset($setup_info[$appname]['migration_legacy_cutoff'])) {
+								$cutoff = $setup_info[$appname]['migration_legacy_cutoff'];
+							}
+							if ($cutoff) {
+								$migrationService->seedUpTo($appname, $cutoff);
+							}
+						}
+
+						$results = $migrationService->runPending($appname);
+						$failed = false;
+						foreach ($results as $result) {
+							if ($result['status'] === 'failed') {
+								$failed = true;
+								$header .= '<li><b>Migration failed:</b> ' . $result['name'] . ' &mdash; ' . htmlspecialchars($result['error'] ?? 'unknown') . "</li>\n";
+								break;
+							}
+						}
+
+						if (!$failed) {
+							$setup_info[$appname]['currentver'] = $migrationService->getTargetVersion($appname);
+							$setup_info[$appname]['version'] = $setup_info[$appname]['currentver'];
+							Settings::getInstance()->update('setup_info', [$appname => $setup_info[$appname]]);
+							if ($this->setup->app_registered($appname)) {
+								$this->setup->update_app($appname);
+								$this->setup->update_hooks($appname);
+							} else {
+								$this->setup->register_app($appname);
+								$this->setup->register_hooks($appname);
+							}
+						}
+					}
+				}
 			}
 
 			if (!empty($upgrade) && is_array($upgrade))
@@ -295,20 +354,67 @@ class Applications
 					$terror = array();
 					$terror[] = $setup_info[$appname];
 
-					$this->process->upgrade($terror, $DEBUG);
-					if (isset($setup_info[$appname]['tables']))
+					$migrationService = $migrationService ?? new \App\modules\phpgwapi\services\Migration\MigrationService();
+
+					if ($migrationService->moduleHasMigrations($appname))
 					{
-						$header .=  '<li>' . $this->setup->lang('%1 tables upgraded', $this->setup->lang($appname)) . ".</li>";
-						// The process_upgrade() function also handles registration
+						// Migration-based upgrade
+						$applied = $migrationService->getAppliedMigrations($appname);
+						$legacyVersion = $setup_info[$appname]['currentver'] ?? null;
+						$isLegacyTransition = $this->setup->app_registered($appname)
+							&& empty($applied)
+							&& $legacyVersion
+							&& str_contains($legacyVersion, '.');
+
+						if ($isLegacyTransition)
+						{
+							$cutoff = null;
+							if ($legacyVersion) {
+								$cutoff = $migrationService->findMigrationForLegacyVersion($appname, $legacyVersion);
+							}
+							if (!$cutoff && isset($setup_info[$appname]['migration_legacy_cutoff'])) {
+								$cutoff = $setup_info[$appname]['migration_legacy_cutoff'];
+							}
+							if ($cutoff) {
+								$migrationService->seedUpTo($appname, $cutoff);
+							}
+						}
+
+						$results = $migrationService->runPending($appname);
+						$failed = false;
+						foreach ($results as $result) {
+							if ($result['status'] === 'failed') {
+								$failed = true;
+								$header .= '<li><b>Migration failed:</b> ' . $result['name'] . ' &mdash; ' . htmlspecialchars($result['error'] ?? 'unknown') . "</li>\n";
+								break;
+							}
+						}
+
+						if (!$failed) {
+							$setup_info[$appname]['currentver'] = $migrationService->getTargetVersion($appname);
+							$setup_info[$appname]['version'] = $setup_info[$appname]['currentver'];
+							Settings::getInstance()->update('setup_info', [$appname => $setup_info[$appname]]);
+							if ($this->setup->app_registered($appname)) {
+								$this->setup->update_app($appname);
+								$this->setup->update_hooks($appname);
+							}
+							$header .= '<li>' . $this->setup->lang('%1 tables upgraded', $this->setup->lang($appname)) . ".</li>";
+						}
 					}
 					else
 					{
-						$header .=  '<li>' . $this->setup->lang('%1 upgraded', $this->setup->lang($appname)) . ".</li>";
+						// Legacy upgrade path
+						$this->process->upgrade($terror, $DEBUG);
+						if (isset($setup_info[$appname]['tables']))
+						{
+							$header .=  '<li>' . $this->setup->lang('%1 tables upgraded', $this->setup->lang($appname)) . ".</li>";
+						}
+						else
+						{
+							$header .=  '<li>' . $this->setup->lang('%1 upgraded', $this->setup->lang($appname)) . ".</li>";
+						}
 					}
 
-					// Sigurd sep 2010: very slow - run 'Manage Languages' from setup instead. 
-					//	$terror = $this->process->upgrade_langs($terror,$DEBUG);
-					//	echo '<li>' . $this->setup->lang('%1 translations upgraded', $this->setup->lang($appname)) . ".</li>\n</ul>\n";
 					$header .=  "<li>To upgrade languages - run <b>'Manage Languages'</b> from setup</li>\n</ul>\n";
 				}
 			}
@@ -583,7 +689,7 @@ class Applications
 					//		\_debug_array($value['name']);
 					$value['title'] = !isset($value['title']) || !strlen($value['title']) ? str_replace('*', '', $this->setup->lang($value['name'])) : $value['title'];
 					$this->setup_tpl->set_var('apptitle', $value['title']);
-					$this->setup_tpl->set_var('currentver', isset($value['currentver']) ? $value['currentver'] : '');
+					$this->setup_tpl->set_var('currentver', $value['currentver_display'] ?? $value['currentver'] ?? '');
 					$this->setup_tpl->set_var('version', $value['version']);
 					$this->setup_tpl->set_var('bg_class',  "row_{$row}");
 					$this->setup_tpl->set_var('row_remove', '');

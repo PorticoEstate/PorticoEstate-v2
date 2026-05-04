@@ -144,22 +144,56 @@ function splitIntoWeeks(
 	startWeek: DateTime,
 	numWeeks: number,
 ): Map<string, FreeTimeSlotsResponse> {
-	const buckets = new Map<string, FreeTimeSlotsResponse>();
+	// Build week boundaries: [weekStart, weekEnd) for each week
+	const weekRanges: Array<{key: string; startMs: number; endMs: number}> = [];
 	for (let w = 0; w < numWeeks; w++) {
-		buckets.set(weekKeyFor(startWeek.plus({weeks: w})), {});
+		const wk = startWeek.plus({weeks: w}).set({weekday: 1}).startOf('day');
+		weekRanges.push({
+			key: wk.toFormat('y-MM-dd'),
+			startMs: wk.toMillis(),
+			endMs: wk.plus({weeks: 1}).toMillis(),
+		});
 	}
+
+	const buckets = new Map<string, FreeTimeSlotsResponse>();
+	for (const wr of weekRanges) {
+		buckets.set(wr.key, {});
+	}
+
 	for (const [resourceId, slots] of Object.entries(data)) {
 		for (const slot of slots) {
-			const slotStart = DateTime.fromMillis(parseInt(slot.start, 10));
-			const key = weekKeyFor(slotStart);
-			const bucket = buckets.get(key);
-			if (bucket) {
+			const ms = parseInt(slot.start, 10);
+			// Find which week this slot's start falls into
+			const wr = weekRanges.find(w => ms >= w.startMs && ms < w.endMs);
+			if (wr) {
+				const bucket = buckets.get(wr.key)!;
 				if (!bucket[resourceId]) bucket[resourceId] = [];
 				bucket[resourceId].push(slot);
 			}
 		}
 	}
 	return buckets;
+}
+
+/**
+ * Filter slots to only include those whose start falls within [weekStart, weekEnd).
+ * Prevents multi-day slots from leaking into adjacent week caches.
+ */
+function filterSlotsToWeek(
+	data: FreeTimeSlotsResponse,
+	weekStart: DateTime,
+	weekEnd: DateTime,
+): FreeTimeSlotsResponse {
+	const startMs = weekStart.toMillis();
+	const endMs = weekEnd.toMillis();
+	const filtered: FreeTimeSlotsResponse = {};
+	for (const [resourceId, slots] of Object.entries(data)) {
+		filtered[resourceId] = slots.filter(slot => {
+			const ms = parseInt(slot.start, 10);
+			return ms >= startMs && ms < endMs;
+		});
+	}
+	return filtered;
 }
 
 /**
@@ -173,8 +207,12 @@ function patchWeekCache(
 	for (const [resourceId, timeslots] of Object.entries(affectedTimeslots)) {
 		if (!Array.isArray(timeslots) || !updated[resourceId]) continue;
 		for (const ts of timeslots) {
+			// Compare by epoch timestamp — ISO strings may differ in timezone format
+			// (PHP: +02:00, Node: Z) but epoch values are identical
+			const tsStart = String(ts.start);
+			const tsEnd = String(ts.end);
 			const idx = updated[resourceId].findIndex(
-				s => s.start_iso === ts.start_iso && s.end_iso === ts.end_iso,
+				s => String(s.start) === tsStart && String(s.end) === tsEnd,
 			);
 			if (idx >= 0) {
 				updated[resourceId][idx] = {
@@ -284,28 +322,35 @@ export function useBuildingFreeTimeSlots({
 	const fetchWeek = async (): Promise<FreeTimeSlotsResponse> => {
 		if (isPastWeek) return {};
 
-		const weekStart = viewedWeek.minus({days: 1});
-		const weekEnd = viewedWeek.plus({weeks: 1, days: 1});
+		// Use exact week boundaries — the prefetch covers the wider window,
+		// and multi-day slots are bucketed by their start date
+		const weekStart = viewedWeek;
+		const weekEnd = viewedWeek.plus({weeks: 1});
 
 		if (isWebSocketActive) {
 			try {
-				return await fetchFreeTimeViaWs(
+				const raw = await fetchFreeTimeViaWs(
 					sendMessage, building_id,
 					weekStart.toFormat('yyyy-MM-dd'),
 					weekEnd.toFormat('yyyy-MM-dd'),
 				);
+				// Only keep slots whose start falls within this week
+				return filterSlotsToWeek(raw, weekStart, weekEnd);
 			} catch {
 				// Fall back to REST
 			}
 		}
-		return await fetchFreeTimeSlotsForRange(building_id, weekStart, weekEnd, instance);
+		const raw = await fetchFreeTimeSlotsForRange(building_id, weekStart, weekEnd, instance);
+		return filterSlotsToWeek(raw, weekStart, weekEnd);
 	};
 
 	return useQuery({
 		queryKey: ['buildingFreeTime', building_id, weekKey],
 		queryFn: fetchWeek,
-		staleTime: 0,
-		refetchOnMount: 'always' as const,
+		// Prefetch sets cache data directly — give it 10s before considering stale
+		// so the per-week query doesn't immediately re-fetch on mount
+		staleTime: 10_000,
+		refetchOnMount: true,
 		refetchOnWindowFocus: true,
 		placeholderData: keepPreviousData,
 	});

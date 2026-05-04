@@ -8,6 +8,7 @@ import {
 	MutationOptions
 } from "@tanstack/react-query";
 import { useWebSocketContext } from '../websocket/websocket-context';
+import { SubscriptionManager } from '../websocket/subscription-manager';
 import {IBookingUser, IDocument, IServerSettings, IMultiDomain, IDocumentCategoryQuery} from "@/service/types/api.types";
 import {
 	fetchApplication,
@@ -43,7 +44,7 @@ import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
 import {IEvent, IFreeTimeSlot, IShortEvent, IAPIEvent, IAPIBooking, IAPIAllocation} from "@/service/pecalendar.types";
 import {DateTime} from "luxon";
-import {useCallback, useEffect} from "react";
+import {useCallback, useEffect, useRef} from "react";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
 import {IArticle} from "../types/api/order-articles.types";
@@ -71,29 +72,29 @@ function useServerMessageMutation<TData = unknown, TError = unknown, TVariables 
 	options: MutationOptions<TData, TError, TVariables, TContext>
 ) {
 	const queryClient = useQueryClient();
+	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
 	const originalOnSuccess = options.onSuccess;
 	const originalOnSettled = options.onSettled;
 
 	return useMutation<TData, TError, TVariables, TContext>({
 		...options,
 		onSuccess: (data, variables, context) => {
-			// First call the original onSuccess if it exists
 			if (originalOnSuccess) {
 				originalOnSuccess(data, variables, context);
 			}
-
-			// Then invalidate server messages
-			queryClient.invalidateQueries({queryKey: ['serverMessages']});
 		},
 		onSettled: (data, error, variables, context) => {
-			// First call the original onSettled if it exists
 			if (originalOnSettled) {
 				originalOnSettled(data, error, variables, context);
 			}
 
-			// Then invalidate server messages if not already done in onSuccess
-			// This ensures messages are refreshed even after errors
-			queryClient.invalidateQueries({queryKey: ['serverMessages']});
+			// When WS is connected, the server_message subscription keeps the cache
+			// in sync via real-time pushes — no need to re-fetch from REST.
+			// Only invalidate when WS is not available.
+			const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
+			if (!isWebSocketActive) {
+				queryClient.invalidateQueries({queryKey: ['serverMessages']});
+			}
 		}
 	});
 }
@@ -122,6 +123,119 @@ export interface FreeTimeSlotsResponse {
 }
 
 
+/**
+ * Number of weeks to prefetch ahead of the viewed week.
+ */
+const PREFETCH_WEEKS_AHEAD = 3;
+
+/**
+ * Helper: get the Monday-based week key for a DateTime.
+ */
+function weekKeyFor(dt: DateTime): string {
+	return dt.set({weekday: 1}).startOf('day').toFormat('y-MM-dd');
+}
+
+/**
+ * Split a flat freetime response into per-week buckets.
+ * Each slot is assigned to the week its start falls into.
+ */
+function splitIntoWeeks(
+	data: FreeTimeSlotsResponse,
+	startWeek: DateTime,
+	numWeeks: number,
+): Map<string, FreeTimeSlotsResponse> {
+	// Build week boundaries: [weekStart, weekEnd) for each week
+	const weekRanges: Array<{key: string; startMs: number; endMs: number}> = [];
+	for (let w = 0; w < numWeeks; w++) {
+		const wk = startWeek.plus({weeks: w}).set({weekday: 1}).startOf('day');
+		weekRanges.push({
+			key: wk.toFormat('y-MM-dd'),
+			startMs: wk.toMillis(),
+			endMs: wk.plus({weeks: 1}).toMillis(),
+		});
+	}
+
+	const buckets = new Map<string, FreeTimeSlotsResponse>();
+	for (const wr of weekRanges) {
+		buckets.set(wr.key, {});
+	}
+
+	for (const [resourceId, slots] of Object.entries(data)) {
+		for (const slot of slots) {
+			const ms = parseInt(slot.start, 10);
+			// Find which week this slot's start falls into
+			const wr = weekRanges.find(w => ms >= w.startMs && ms < w.endMs);
+			if (wr) {
+				const bucket = buckets.get(wr.key)!;
+				if (!bucket[resourceId]) bucket[resourceId] = [];
+				bucket[resourceId].push(slot);
+			}
+		}
+	}
+	return buckets;
+}
+
+/**
+ * Filter slots to only include those whose start falls within [weekStart, weekEnd).
+ * Prevents multi-day slots from leaking into adjacent week caches.
+ */
+function filterSlotsToWeek(
+	data: FreeTimeSlotsResponse,
+	weekStart: DateTime,
+	weekEnd: DateTime,
+): FreeTimeSlotsResponse {
+	const startMs = weekStart.toMillis();
+	const endMs = weekEnd.toMillis();
+	const filtered: FreeTimeSlotsResponse = {};
+	for (const [resourceId, slots] of Object.entries(data)) {
+		filtered[resourceId] = slots.filter(slot => {
+			const ms = parseInt(slot.start, 10);
+			return ms >= startMs && ms < endMs;
+		});
+	}
+	return filtered;
+}
+
+/**
+ * Patch a week's cache in-place with affected_timeslots from a WS room message.
+ */
+function patchWeekCache(
+	current: FreeTimeSlotsResponse,
+	affectedTimeslots: Record<string, any[]>,
+): FreeTimeSlotsResponse {
+	const updated: FreeTimeSlotsResponse = JSON.parse(JSON.stringify(current));
+	for (const [resourceId, timeslots] of Object.entries(affectedTimeslots)) {
+		if (!Array.isArray(timeslots) || !updated[resourceId]) continue;
+		for (const ts of timeslots) {
+			// Compare by epoch timestamp — ISO strings may differ in timezone format
+			// (PHP: +02:00, Node: Z) but epoch values are identical
+			const tsStart = String(ts.start);
+			const tsEnd = String(ts.end);
+			const idx = updated[resourceId].findIndex(
+				s => String(s.start) === tsStart && String(s.end) === tsEnd,
+			);
+			if (idx >= 0) {
+				updated[resourceId][idx] = {
+					...updated[resourceId][idx],
+					overlap: ts.overlap,
+					overlap_reason: ts.overlap_reason,
+					overlap_type: ts.overlap_type,
+					overlap_event: ts.overlap_event,
+				};
+			} else {
+				updated[resourceId].push({
+					when: ts.when, start: ts.start, end: ts.end,
+					start_iso: ts.start_iso, end_iso: ts.end_iso,
+					overlap: ts.overlap, overlap_reason: ts.overlap_reason,
+					overlap_type: ts.overlap_type, resource_id: parseInt(resourceId),
+					overlap_event: ts.overlap_event,
+				});
+			}
+		}
+	}
+	return updated;
+}
+
 export function useBuildingFreeTimeSlots({
 											 building_id,
 											 weeks,
@@ -134,129 +248,111 @@ export function useBuildingFreeTimeSlots({
 	initialFreeTime?: FreeTimeSlotsResponse;
 }) {
 	const queryClient = useQueryClient();
-	// Get just the current week that includes the first date in the array
-	const currentWeek = weeks[0].set({weekday: 1}).startOf('day');
-	const weekEnd = currentWeek.plus({weeks: 1});
-	const weekKey = currentWeek.toFormat("y-MM-dd");
+	const { status: wsStatus, sessionConnected, isReady: wsReady, sendMessage } = useWebSocketContext();
+	const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
 
-	// Set initial data if provided, but don't use cache for normal operation
+	// The week the user is currently viewing
+	const viewedWeek = weeks[0].set({weekday: 1}).startOf('day');
+	const weekKey = viewedWeek.toFormat('y-MM-dd');
+	const todayWeek = DateTime.now().set({weekday: 1}).startOf('day');
+	const isPastWeek = viewedWeek < todayWeek;
+
+	// Seed SSR initial data into the viewed week's cache
 	useEffect(() => {
 		if (initialFreeTime) {
-			// Just for initial server-side rendered data
-			queryClient.setQueryData(
-				['buildingFreeTime', building_id, weekKey],
-				initialFreeTime
-			);
+			queryClient.setQueryData(['buildingFreeTime', building_id, weekKey], initialFreeTime);
 		}
 	}, [initialFreeTime, building_id, queryClient, weekKey]);
 
-	// Create a handler function that can be used in the subscription
-	const handleBuildingUpdate = useCallback((message: WebSocketMessage) => {
-		if (message.type !== 'room_message') {
-			// console.log("Should probably be caught before this (room_message), but not sure why we got this message: ", message);
+	// --- Prefetch current + 3 weeks ahead when WS becomes active ---
+	const hasPrefetched = useRef(false);
+	useEffect(() => {
+		if (!isWebSocketActive || hasPrefetched.current) return;
+		hasPrefetched.current = true;
 
-			return;
-		}
+		const prefetchStart = todayWeek < viewedWeek ? todayWeek : viewedWeek;
+		const prefetchEnd = prefetchStart.plus({weeks: PREFETCH_WEEKS_AHEAD + 1});
+		const numWeeks = PREFETCH_WEEKS_AHEAD + 1;
 
-		if (message.entityId !== building_id || message.entityType !== 'building') {
-			console.log("Should probably be caught before this (wrong place), but not sure why we got this message: ", message);
-			return;
-		}
-		// console.log(`Received building update for ${building_id}:`, message);
-
-		switch (message.action) {
-			case 'updated': {
-				// Get the current cache data
-				const cacheKey = ['buildingFreeTime', building_id, weekKey];
-				const currentData = queryClient.getQueryData<FreeTimeSlotsResponse>(cacheKey);
-				const {affected_timeslots, application_id, change_type} = message.data;
-
-				if (currentData) {
-					// Create a copy of the current data to modify
-					const updatedData: FreeTimeSlotsResponse = JSON.parse(JSON.stringify(currentData));
-
-					// Iterate through each resource in affected_timeslots
-					Object.entries(affected_timeslots).forEach(([resourceId, timeslots]) => {
-						if (Array.isArray(timeslots) && updatedData[resourceId]) {
-							// Process each timeslot for this resource
-							timeslots.forEach(timeslot => {
-								// Find if we already have this timeslot in our cache
-								const existingIndex = updatedData[resourceId].findIndex(
-									slot => slot.start_iso === timeslot.start_iso &&
-										slot.end_iso === timeslot.end_iso
-								);
-
-								if (existingIndex >= 0) {
-									// Update the existing timeslot with the new overlap information
-									updatedData[resourceId][existingIndex] = {
-										...updatedData[resourceId][existingIndex],
-										overlap: timeslot.overlap,
-										overlap_reason: timeslot.overlap_reason,
-										overlap_type: timeslot.overlap_type,
-										overlap_event: timeslot.overlap_event
-									};
-								} else {
-									// This is a new timeslot we don't have in our cache yet
-									// Add it to the array for this resource
-									updatedData[resourceId].push({
-										when: timeslot.when,
-										start: timeslot.start,
-										end: timeslot.end,
-										start_iso: timeslot.start_iso,
-										end_iso: timeslot.end_iso,
-										overlap: timeslot.overlap,
-										overlap_reason: timeslot.overlap_reason,
-										overlap_type: timeslot.overlap_type,
-										resource_id: parseInt(resourceId),
-										overlap_event: timeslot.overlap_event
-									});
-								}
-							});
-						}
-					});
-
-					// Update the cache with our modified data
-					queryClient.setQueryData(cacheKey, updatedData);
-				} else {
-					// If we don't have the data in cache yet, just invalidate
-					queryClient.invalidateQueries({queryKey: ['buildingFreeTime', building_id]});
+		(async () => {
+			try {
+				const data = await fetchFreeTimeViaWs(
+					sendMessage, building_id,
+					prefetchStart.minus({days: 1}).toFormat('yyyy-MM-dd'),
+					prefetchEnd.plus({days: 1}).toFormat('yyyy-MM-dd'),
+				);
+				const weekBuckets = splitIntoWeeks(data, prefetchStart, numWeeks);
+				for (const [wk, weekData] of weekBuckets) {
+					queryClient.setQueryData(['buildingFreeTime', building_id, wk], weekData);
 				}
-				break;
+			} catch {
+				// Prefetch failed — individual queries will fetch on demand
 			}
-			case 'deleted': {
-				queryClient.invalidateQueries({queryKey: ['buildingFreeTime', building_id]});
-				break;
-			}
-			default: {
-				queryClient.invalidateQueries({queryKey: ['buildingFreeTime', building_id]});
-				break;
+		})();
+	}, [isWebSocketActive, building_id, sendMessage, queryClient, todayWeek, viewedWeek]);
 
+	// Reset prefetch flag on unmount so it refetches fresh on return
+	useEffect(() => {
+		return () => { hasPrefetched.current = false; };
+	}, []);
+
+	// --- WS room updates: patch ALL cached weeks for this building ---
+	const handleBuildingUpdate = useCallback((message: WebSocketMessage) => {
+		if (message.type !== 'room_message') return;
+		if (message.entityId !== building_id || message.entityType !== 'building') return;
+
+		if (message.action === 'updated' && message.data?.affected_timeslots) {
+			// Patch ALL cached weeks for this building
+			const allQueries = queryClient.getQueriesData<FreeTimeSlotsResponse>({
+				queryKey: ['buildingFreeTime', building_id],
+			});
+			for (const [qk, data] of allQueries) {
+				if (!data) continue;
+				queryClient.setQueryData(qk, patchWeekCache(data, message.data.affected_timeslots));
 			}
+		} else {
+			// For deletes or unknown actions, invalidate all weeks
+			queryClient.invalidateQueries({queryKey: ['buildingFreeTime', building_id]});
 		}
-	}, [building_id, queryClient, weekKey]);
+	}, [building_id, queryClient]);
 
-	// Use the standard useEntitySubscription hook to subscribe to building updates
-	// The service will queue this subscription if WebSocket is not ready yet
 	useEntitySubscriptionWithPing('building', building_id, handleBuildingUpdate);
 
-	const fetchFreeTimeSlots = async (): Promise<FreeTimeSlotsResponse> => {
-		// Always fetch from API for just the current week
-		// Add 1 day buffer on both ends to ensure we get overlapping timeslots
-		return await fetchFreeTimeSlotsForRange(
-			building_id,
-			currentWeek.minus({days: 1}),
-			weekEnd.plus({days: 1}),
-			instance
-		);
+	// --- Per-week query: serves from prefetch cache, fetches on demand for cache misses ---
+	const fetchWeek = async (): Promise<FreeTimeSlotsResponse> => {
+		if (isPastWeek) return {};
+
+		// Use exact week boundaries — the prefetch covers the wider window,
+		// and multi-day slots are bucketed by their start date
+		const weekStart = viewedWeek;
+		const weekEnd = viewedWeek.plus({weeks: 1});
+
+		if (isWebSocketActive) {
+			try {
+				const raw = await fetchFreeTimeViaWs(
+					sendMessage, building_id,
+					weekStart.toFormat('yyyy-MM-dd'),
+					weekEnd.toFormat('yyyy-MM-dd'),
+				);
+				// Only keep slots whose start falls within this week
+				return filterSlotsToWeek(raw, weekStart, weekEnd);
+			} catch {
+				// Fall back to REST
+			}
+		}
+		const raw = await fetchFreeTimeSlotsForRange(building_id, weekStart, weekEnd, instance);
+		return filterSlotsToWeek(raw, weekStart, weekEnd);
 	};
 
 	return useQuery({
 		queryKey: ['buildingFreeTime', building_id, weekKey],
-		queryFn: fetchFreeTimeSlots,
-		staleTime: 0, // Consider data stale immediately
-		refetchOnMount: true, // Always refetch when component mounts
-		refetchOnWindowFocus: true, // Refetch when window regains focus
-		// cacheTime: 5 * 60 * 1000 // Cache for 5 minutes max
+		queryFn: fetchWeek,
+		// Prefetch sets cache data directly — give it 10s before considering stale
+		// so the per-week query doesn't immediately re-fetch on mount
+		staleTime: 10_000,
+		refetchOnMount: true,
+		refetchOnWindowFocus: true,
+		placeholderData: keepPreviousData,
 	});
 }
 
@@ -658,41 +754,125 @@ export function useExternalUserData() {
 }
 
 
+/**
+ * Helper that requests free time data over WebSocket.
+ * Returns a Promise that rejects after 10s so the caller can fall back to REST.
+ */
+function fetchFreeTimeViaWs(
+	sendMessage: (type: string, message: string, additionalData?: Record<string, any>) => boolean,
+	buildingId: number,
+	startDate: string,
+	endDate: string,
+): Promise<FreeTimeSlotsResponse> {
+	const subscriptionManager = SubscriptionManager.getInstance();
+
+	return new Promise((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			cleanup();
+			reject(new Error('WebSocket free_time timeout'));
+		}, 10000);
+
+		const cleanup = subscriptionManager.subscribeToMessageType(
+			'free_time_response',
+			(message) => {
+				// Only handle responses for this specific request
+				if (message.data?.buildingId !== buildingId) return;
+
+				clearTimeout(timeout);
+				cleanup();
+				if (message.data.error === false && message.data.result) {
+					resolve(message.data.result as FreeTimeSlotsResponse);
+				} else {
+					reject(new Error(message.data.message || 'WebSocket free_time error'));
+				}
+			}
+		);
+
+		sendMessage('get_free_time', 'Requesting free time', {
+			buildingId,
+			startDate,
+			endDate,
+			detailedOverlap: true,
+			stopOnEndDate: true,
+		});
+	});
+}
+
+/**
+ * Helper that requests partial applications over WebSocket and resolves
+ * with the response.  Returns a Promise that rejects after `timeoutMs`
+ * so the caller can fall back to REST.
+ */
+function fetchPartialApplicationsViaWs(
+	sendMessage: (type: string, message: string, additionalData?: Record<string, any>) => boolean
+): Promise<{ list: IApplication[], total_sum: number }> {
+	const subscriptionManager = SubscriptionManager.getInstance();
+
+	return new Promise((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			cleanup();
+			reject(new Error('WebSocket partial_applications timeout'));
+		}, 5000);
+
+		const cleanup = subscriptionManager.subscribeToMessageType(
+			'partial_applications_response',
+			(message) => {
+				clearTimeout(timeout);
+				cleanup();
+				if (message.data.error === false) {
+					resolve({
+						list: message.data.applications,
+						total_sum: message.data.applications.reduce((sum: number, app: IApplication) => {
+							const orderSum = app.orders?.reduce((acc: number, order: any) => acc + (Number(order.sum) || 0), 0) || 0;
+							return sum + orderSum;
+						}, 0)
+					});
+				} else {
+					reject(new Error(message.data.message || 'WebSocket error'));
+				}
+			}
+		);
+
+		sendMessage('get_partial_applications', 'Requesting partial applications');
+	});
+}
+
 export function usePartialApplications(): UseQueryResult<{ list: IApplication[], total_sum: number }> {
 	const queryClient = useQueryClient();
-	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
+	const { status: wsStatus, sessionConnected, isReady: wsReady, sendMessage } = useWebSocketContext();
 
-	// Handle WebSocket messages with partial application updates
+	// Handle server-pushed partial application updates (e.g. after mutations in other tabs)
 	useMessageTypeSubscription('partial_applications_response', (message) => {
-		console.log('Received partial applications WebSocket update');
-
-		// Update the query cache with the new data
 		if (message.data.error === false) {
 			queryClient.setQueryData(['partialApplications'], {
 				list: message.data.applications,
-				total_sum: message.data.applications.reduce((sum, app) => {
-					// Calculate total sum from orders if they exist
-					const orderSum = app.orders?.reduce((acc, order) => acc + (Number(order.sum) || 0), 0) || 0;
+				total_sum: message.data.applications.reduce((sum: number, app: IApplication) => {
+					const orderSum = app.orders?.reduce((acc: number, order: any) => acc + (Number(order.sum) || 0), 0) || 0;
 					return sum + orderSum;
 				}, 0)
 			});
 		}
 	});
 
+	const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
+
 	return useQuery(
 		{
 			queryKey: ['partialApplications'],
-			queryFn: () => fetchPartialApplications(), // Fetch function
-			retry: 2, // Number of retry attempts if the query fails
-			refetchOnWindowFocus: false, // Do not refetch on window focus by default,
+			queryFn: async () => {
+				// Prefer WebSocket when connected — avoids HTTP round-trip
+				if (isWebSocketActive) {
+					try {
+						return await fetchPartialApplicationsViaWs(sendMessage);
+					} catch {
+						// WebSocket request failed or timed out — fall back to REST
+					}
+				}
+				return fetchPartialApplications();
+			},
+			retry: 2,
+			refetchOnWindowFocus: false,
 			refetchInterval: () => {
-				// Check if websocket connection is active
-				const isWebSocketActive = wsReady &&
-					wsStatus === 'OPEN' &&
-					sessionConnected;
-
-				// If websocket is not active, refetch every 30 seconds
-				// Otherwise rely on WebSocket updates
 				return isWebSocketActive ? false : 30000;
 			}
 		}
@@ -1238,35 +1418,38 @@ export function useCreateSimpleApplication() {
 			return response.json();
 		},
 		onSuccess: (data, variables) => {
-			// Check if websocket connection is active
 			const isWebSocketActive = wsReady &&
 				wsStatus === 'OPEN' &&
 				sessionConnected;
 
 			// Only invalidate if WebSocket is not active
-			// If WebSocket is active, the server will send messages with the updated data
+			// If WebSocket is active, the server will send:
+			// 1. partial_applications_response for updating applications
+			// 2. room_message for updating building timeslots
 			if (!isWebSocketActive) {
-				// Invalidate and refetch partial applications queries
 				queryClient.invalidateQueries({queryKey: ['partialApplications']});
-
-				// Invalidate building timeslots if needed
-				const buildingId = variables.building_id;
-				if (buildingId) {
+				if (variables.building_id) {
 					queryClient.invalidateQueries({
-						predicate: (query) => {
-							const queryKey = query.queryKey;
-							return (
-								Array.isArray(queryKey) &&
-								queryKey[0] === 'buildingFreeTime' &&
-								(queryKey[1] === buildingId || queryKey.includes(buildingId.toString()))
-							);
-						}
+						predicate: (query) =>
+							Array.isArray(query.queryKey) &&
+							query.queryKey[0] === 'buildingFreeTime' &&
+							query.queryKey[1] === variables.building_id,
 					});
 				}
 			}
-			// Note: When WebSocket is active, the server will send:
-			// 1. partial_applications_response for updating applications
-			// 2. room_message for updating building timeslots
+		},
+		onError: (_error, variables) => {
+			// Booking failed (slot already taken, conflict, etc.)
+			// Force refresh freetime data to show current availability
+			queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			if (variables.building_id) {
+				queryClient.invalidateQueries({
+					predicate: (query) =>
+						Array.isArray(query.queryKey) &&
+						query.queryKey[0] === 'buildingFreeTime' &&
+						query.queryKey[1] === variables.building_id,
+				});
+			}
 		},
 	});
 }

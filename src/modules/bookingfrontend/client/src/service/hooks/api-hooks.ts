@@ -44,7 +44,7 @@ import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
 import {IEvent, IFreeTimeSlot, IShortEvent, IAPIEvent, IAPIBooking, IAPIAllocation} from "@/service/pecalendar.types";
 import {DateTime} from "luxon";
-import {useCallback, useEffect} from "react";
+import {useCallback, useEffect, useRef} from "react";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
 import {IArticle} from "../types/api/order-articles.types";
@@ -123,6 +123,81 @@ export interface FreeTimeSlotsResponse {
 }
 
 
+/**
+ * Number of weeks to prefetch ahead of the viewed week.
+ */
+const PREFETCH_WEEKS_AHEAD = 3;
+
+/**
+ * Helper: get the Monday-based week key for a DateTime.
+ */
+function weekKeyFor(dt: DateTime): string {
+	return dt.set({weekday: 1}).startOf('day').toFormat('y-MM-dd');
+}
+
+/**
+ * Split a flat freetime response into per-week buckets.
+ * Each slot is assigned to the week its start falls into.
+ */
+function splitIntoWeeks(
+	data: FreeTimeSlotsResponse,
+	startWeek: DateTime,
+	numWeeks: number,
+): Map<string, FreeTimeSlotsResponse> {
+	const buckets = new Map<string, FreeTimeSlotsResponse>();
+	for (let w = 0; w < numWeeks; w++) {
+		buckets.set(weekKeyFor(startWeek.plus({weeks: w})), {});
+	}
+	for (const [resourceId, slots] of Object.entries(data)) {
+		for (const slot of slots) {
+			const slotStart = DateTime.fromMillis(parseInt(slot.start, 10));
+			const key = weekKeyFor(slotStart);
+			const bucket = buckets.get(key);
+			if (bucket) {
+				if (!bucket[resourceId]) bucket[resourceId] = [];
+				bucket[resourceId].push(slot);
+			}
+		}
+	}
+	return buckets;
+}
+
+/**
+ * Patch a week's cache in-place with affected_timeslots from a WS room message.
+ */
+function patchWeekCache(
+	current: FreeTimeSlotsResponse,
+	affectedTimeslots: Record<string, any[]>,
+): FreeTimeSlotsResponse {
+	const updated: FreeTimeSlotsResponse = JSON.parse(JSON.stringify(current));
+	for (const [resourceId, timeslots] of Object.entries(affectedTimeslots)) {
+		if (!Array.isArray(timeslots) || !updated[resourceId]) continue;
+		for (const ts of timeslots) {
+			const idx = updated[resourceId].findIndex(
+				s => s.start_iso === ts.start_iso && s.end_iso === ts.end_iso,
+			);
+			if (idx >= 0) {
+				updated[resourceId][idx] = {
+					...updated[resourceId][idx],
+					overlap: ts.overlap,
+					overlap_reason: ts.overlap_reason,
+					overlap_type: ts.overlap_type,
+					overlap_event: ts.overlap_event,
+				};
+			} else {
+				updated[resourceId].push({
+					when: ts.when, start: ts.start, end: ts.end,
+					start_iso: ts.start_iso, end_iso: ts.end_iso,
+					overlap: ts.overlap, overlap_reason: ts.overlap_reason,
+					overlap_type: ts.overlap_type, resource_id: parseInt(resourceId),
+					overlap_event: ts.overlap_event,
+				});
+			}
+		}
+	}
+	return updated;
+}
+
 export function useBuildingFreeTimeSlots({
 											 building_id,
 											 weeks,
@@ -135,143 +210,104 @@ export function useBuildingFreeTimeSlots({
 	initialFreeTime?: FreeTimeSlotsResponse;
 }) {
 	const queryClient = useQueryClient();
-	// Get just the current week that includes the first date in the array
-	const currentWeek = weeks[0].set({weekday: 1}).startOf('day');
-	const weekEnd = currentWeek.plus({weeks: 1});
-	const weekKey = currentWeek.toFormat("y-MM-dd");
-
-	// Set initial data if provided, but don't use cache for normal operation
-	useEffect(() => {
-		if (initialFreeTime) {
-			// Just for initial server-side rendered data
-			queryClient.setQueryData(
-				['buildingFreeTime', building_id, weekKey],
-				initialFreeTime
-			);
-		}
-	}, [initialFreeTime, building_id, queryClient, weekKey]);
-
-	// Create a handler function that can be used in the subscription
-	const handleBuildingUpdate = useCallback((message: WebSocketMessage) => {
-		if (message.type !== 'room_message') {
-			// console.log("Should probably be caught before this (room_message), but not sure why we got this message: ", message);
-
-			return;
-		}
-
-		if (message.entityId !== building_id || message.entityType !== 'building') {
-			console.log("Should probably be caught before this (wrong place), but not sure why we got this message: ", message);
-			return;
-		}
-		// console.log(`Received building update for ${building_id}:`, message);
-
-		switch (message.action) {
-			case 'updated': {
-				// Get the current cache data
-				const cacheKey = ['buildingFreeTime', building_id, weekKey];
-				const currentData = queryClient.getQueryData<FreeTimeSlotsResponse>(cacheKey);
-				const {affected_timeslots, application_id, change_type} = message.data;
-
-				if (currentData) {
-					// Create a copy of the current data to modify
-					const updatedData: FreeTimeSlotsResponse = JSON.parse(JSON.stringify(currentData));
-
-					// Iterate through each resource in affected_timeslots
-					Object.entries(affected_timeslots).forEach(([resourceId, timeslots]) => {
-						if (Array.isArray(timeslots) && updatedData[resourceId]) {
-							// Process each timeslot for this resource
-							timeslots.forEach(timeslot => {
-								// Find if we already have this timeslot in our cache
-								const existingIndex = updatedData[resourceId].findIndex(
-									slot => slot.start_iso === timeslot.start_iso &&
-										slot.end_iso === timeslot.end_iso
-								);
-
-								if (existingIndex >= 0) {
-									// Update the existing timeslot with the new overlap information
-									updatedData[resourceId][existingIndex] = {
-										...updatedData[resourceId][existingIndex],
-										overlap: timeslot.overlap,
-										overlap_reason: timeslot.overlap_reason,
-										overlap_type: timeslot.overlap_type,
-										overlap_event: timeslot.overlap_event
-									};
-								} else {
-									// This is a new timeslot we don't have in our cache yet
-									// Add it to the array for this resource
-									updatedData[resourceId].push({
-										when: timeslot.when,
-										start: timeslot.start,
-										end: timeslot.end,
-										start_iso: timeslot.start_iso,
-										end_iso: timeslot.end_iso,
-										overlap: timeslot.overlap,
-										overlap_reason: timeslot.overlap_reason,
-										overlap_type: timeslot.overlap_type,
-										resource_id: parseInt(resourceId),
-										overlap_event: timeslot.overlap_event
-									});
-								}
-							});
-						}
-					});
-
-					// Update the cache with our modified data
-					queryClient.setQueryData(cacheKey, updatedData);
-				} else {
-					// If we don't have the data in cache yet, just invalidate
-					queryClient.invalidateQueries({queryKey: ['buildingFreeTime', building_id]});
-				}
-				break;
-			}
-			case 'deleted': {
-				queryClient.invalidateQueries({queryKey: ['buildingFreeTime', building_id]});
-				break;
-			}
-			default: {
-				queryClient.invalidateQueries({queryKey: ['buildingFreeTime', building_id]});
-				break;
-
-			}
-		}
-	}, [building_id, queryClient, weekKey]);
-
-	// Use the standard useEntitySubscription hook to subscribe to building updates
-	// The service will queue this subscription if WebSocket is not ready yet
-	useEntitySubscriptionWithPing('building', building_id, handleBuildingUpdate);
-
 	const { status: wsStatus, sessionConnected, isReady: wsReady, sendMessage } = useWebSocketContext();
 	const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
 
-	const fetchFreeTimeSlots = async (): Promise<FreeTimeSlotsResponse> => {
-		// Prefer WebSocket when connected — avoids HTTP round-trip
+	// The week the user is currently viewing
+	const viewedWeek = weeks[0].set({weekday: 1}).startOf('day');
+	const weekKey = viewedWeek.toFormat('y-MM-dd');
+	const todayWeek = DateTime.now().set({weekday: 1}).startOf('day');
+	const isPastWeek = viewedWeek < todayWeek;
+
+	// Seed SSR initial data into the viewed week's cache
+	useEffect(() => {
+		if (initialFreeTime) {
+			queryClient.setQueryData(['buildingFreeTime', building_id, weekKey], initialFreeTime);
+		}
+	}, [initialFreeTime, building_id, queryClient, weekKey]);
+
+	// --- Prefetch current + 3 weeks ahead when WS becomes active ---
+	const hasPrefetched = useRef(false);
+	useEffect(() => {
+		if (!isWebSocketActive || hasPrefetched.current) return;
+		hasPrefetched.current = true;
+
+		const prefetchStart = todayWeek < viewedWeek ? todayWeek : viewedWeek;
+		const prefetchEnd = prefetchStart.plus({weeks: PREFETCH_WEEKS_AHEAD + 1});
+		const numWeeks = PREFETCH_WEEKS_AHEAD + 1;
+
+		(async () => {
+			try {
+				const data = await fetchFreeTimeViaWs(
+					sendMessage, building_id,
+					prefetchStart.minus({days: 1}).toFormat('yyyy-MM-dd'),
+					prefetchEnd.plus({days: 1}).toFormat('yyyy-MM-dd'),
+				);
+				const weekBuckets = splitIntoWeeks(data, prefetchStart, numWeeks);
+				for (const [wk, weekData] of weekBuckets) {
+					queryClient.setQueryData(['buildingFreeTime', building_id, wk], weekData);
+				}
+			} catch {
+				// Prefetch failed — individual queries will fetch on demand
+			}
+		})();
+	}, [isWebSocketActive, building_id, sendMessage, queryClient, todayWeek, viewedWeek]);
+
+	// Reset prefetch flag on unmount so it refetches fresh on return
+	useEffect(() => {
+		return () => { hasPrefetched.current = false; };
+	}, []);
+
+	// --- WS room updates: patch ALL cached weeks for this building ---
+	const handleBuildingUpdate = useCallback((message: WebSocketMessage) => {
+		if (message.type !== 'room_message') return;
+		if (message.entityId !== building_id || message.entityType !== 'building') return;
+
+		if (message.action === 'updated' && message.data?.affected_timeslots) {
+			// Patch ALL cached weeks for this building
+			const allQueries = queryClient.getQueriesData<FreeTimeSlotsResponse>({
+				queryKey: ['buildingFreeTime', building_id],
+			});
+			for (const [qk, data] of allQueries) {
+				if (!data) continue;
+				queryClient.setQueryData(qk, patchWeekCache(data, message.data.affected_timeslots));
+			}
+		} else {
+			// For deletes or unknown actions, invalidate all weeks
+			queryClient.invalidateQueries({queryKey: ['buildingFreeTime', building_id]});
+		}
+	}, [building_id, queryClient]);
+
+	useEntitySubscriptionWithPing('building', building_id, handleBuildingUpdate);
+
+	// --- Per-week query: serves from prefetch cache, fetches on demand for cache misses ---
+	const fetchWeek = async (): Promise<FreeTimeSlotsResponse> => {
+		if (isPastWeek) return {};
+
+		const weekStart = viewedWeek.minus({days: 1});
+		const weekEnd = viewedWeek.plus({weeks: 1, days: 1});
+
 		if (isWebSocketActive) {
 			try {
 				return await fetchFreeTimeViaWs(
-					sendMessage,
-					building_id,
-					currentWeek.minus({days: 1}).toFormat('yyyy-MM-dd'),
-					weekEnd.plus({days: 1}).toFormat('yyyy-MM-dd'),
+					sendMessage, building_id,
+					weekStart.toFormat('yyyy-MM-dd'),
+					weekEnd.toFormat('yyyy-MM-dd'),
 				);
 			} catch {
-				// WebSocket request failed or timed out — fall back to REST
+				// Fall back to REST
 			}
 		}
-		// Add 1 day buffer on both ends to ensure we get overlapping timeslots
-		return await fetchFreeTimeSlotsForRange(
-			building_id,
-			currentWeek.minus({days: 1}),
-			weekEnd.plus({days: 1}),
-			instance
-		);
+		return await fetchFreeTimeSlotsForRange(building_id, weekStart, weekEnd, instance);
 	};
 
 	return useQuery({
 		queryKey: ['buildingFreeTime', building_id, weekKey],
-		queryFn: fetchFreeTimeSlots,
-		staleTime: 0, // Consider data stale immediately
-		refetchOnMount: true, // Always refetch when component mounts
-		refetchOnWindowFocus: true, // Refetch when window regains focus
+		queryFn: fetchWeek,
+		staleTime: 0,
+		refetchOnMount: 'always' as const,
+		refetchOnWindowFocus: true,
+		placeholderData: keepPreviousData,
 	});
 }
 

@@ -1418,35 +1418,38 @@ export function useCreateSimpleApplication() {
 			return response.json();
 		},
 		onSuccess: (data, variables) => {
-			// Check if websocket connection is active
 			const isWebSocketActive = wsReady &&
 				wsStatus === 'OPEN' &&
 				sessionConnected;
 
 			// Only invalidate if WebSocket is not active
-			// If WebSocket is active, the server will send messages with the updated data
+			// If WebSocket is active, the server will send:
+			// 1. partial_applications_response for updating applications
+			// 2. room_message for updating building timeslots
 			if (!isWebSocketActive) {
-				// Invalidate and refetch partial applications queries
 				queryClient.invalidateQueries({queryKey: ['partialApplications']});
-
-				// Invalidate building timeslots if needed
-				const buildingId = variables.building_id;
-				if (buildingId) {
+				if (variables.building_id) {
 					queryClient.invalidateQueries({
-						predicate: (query) => {
-							const queryKey = query.queryKey;
-							return (
-								Array.isArray(queryKey) &&
-								queryKey[0] === 'buildingFreeTime' &&
-								(queryKey[1] === buildingId || queryKey.includes(buildingId.toString()))
-							);
-						}
+						predicate: (query) =>
+							Array.isArray(query.queryKey) &&
+							query.queryKey[0] === 'buildingFreeTime' &&
+							query.queryKey[1] === variables.building_id,
 					});
 				}
 			}
-			// Note: When WebSocket is active, the server will send:
-			// 1. partial_applications_response for updating applications
-			// 2. room_message for updating building timeslots
+		},
+		onError: (_error, variables) => {
+			// Booking failed (slot already taken, conflict, etc.)
+			// Force refresh freetime data to show current availability
+			queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			if (variables.building_id) {
+				queryClient.invalidateQueries({
+					predicate: (query) =>
+						Array.isArray(query.queryKey) &&
+						query.queryKey[0] === 'buildingFreeTime' &&
+						query.queryKey[1] === variables.building_id,
+				});
+			}
 		},
 	});
 }

@@ -884,7 +884,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		{
 			if ($total_records > $num_rows)
 			{
-				$page		 = ceil(($start / $total_records) * ($total_records / $num_rows));
+				$page		 = (int)ceil(($start / $total_records) * ($total_records / $num_rows));
 				$values_part = array_chunk($values, $num_rows);
 				$out		 = $values_part[$page];
 			}
@@ -973,7 +973,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		{
 			if ($total_records > $num_rows)
 			{
-				$page		 = ceil(($start / $total_records) * ($total_records / $num_rows));
+				$page		 = (int)ceil(($start / $total_records) * ($total_records / $num_rows));
 				$values_part = array_chunk($values, $num_rows);
 				$out		 = $values_part[$page];
 			}
@@ -1131,6 +1131,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		$jqcal->add_listener('filter_end_date');
 		phpgwapi_jquery::load_widget('datepicker');
 
+		$function_msg = 'Entity';
 		if ($this->entity_id && $this->cat_id)
 		{
 			$entity			 = $this->soadmin_entity->read_single($this->entity_id, false);
@@ -1247,6 +1248,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		$count_uicols_name = count($uicols['name']);
 
+		$searc_levels = array();
 		$type_id = 4;
 		for ($i = 1; $i < $type_id; $i++)
 		{
@@ -1696,6 +1698,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			$active_tab			 = $active_tab ? $active_tab : 'location';
 		}
 
+		$_enable_controller = !!$category['enable_controller'] || !!$values['entity_group_id'];
+		$attributes_general	 = array();
+		$attributes			 = array();
+
 		if (isset($values['attributes']) && is_array($values['attributes']))
 		{
 			foreach ($values['attributes'] as &$attribute)
@@ -1725,7 +1731,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				}
 			}
 
-			$_enable_controller = !!$category['enable_controller'] || !!$values['entity_group_id'];
 			if ($_enable_controller && $id)
 			{
 				$tabs['controller']	 = array(
@@ -1741,9 +1746,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			$location			 = ".{$this->type}.{$this->entity_id}.{$this->cat_id}";
 			$attributes_groups	 = $this->bo->get_attribute_groups($location, $values['attributes']);
 			//				_debug_array($attributes_groups);
-			$attributes_general	 = array();
 			$i					 = -1;
-			$attributes			 = array();
 
 			$_dummy = array(array(
 				//					'id' => 0,
@@ -2860,6 +2863,8 @@ JS;
 
 				parse_str($_config_section_data['parametres'], $output);
 
+				$_keys = array();
+				$_values = array();
 				foreach ($output as $_dummy => $_substitute)
 				{
 					$_keys[] = $_substitute;
@@ -2911,6 +2916,8 @@ JS;
 				{
 					$_config_section_data['location_data'] = htmlspecialchars_decode($_config_section_data['location_data']);
 					parse_str($_config_section_data['location_data'], $output);
+					$_keys = array();
+					$_values = array();
 					foreach ($output as $_dummy => $_substitute)
 					{
 						$_keys[]	 = $_substitute;
@@ -3021,7 +3028,7 @@ JS;
 			{
 				if ($total_records > $num_rows)
 				{
-					$page		 = ceil(($start / $total_records) * ($total_records / $num_rows));
+					$page		 = (int)ceil(($start / $total_records) * ($total_records / $num_rows));
 					$values_part = array_chunk($content, $num_rows);
 					$out		 = $values_part[$page];
 				}
@@ -3230,6 +3237,7 @@ JS;
 			'value'	 => array('justification' => 'left', 'width' => 300)
 		);
 
+		$content = array();
 		if (is_array($location_data['location']))
 		{
 			foreach ($location_data['location'] as $entry)
@@ -3382,7 +3390,7 @@ JS;
 		{
 			if ($total_records > $num_rows)
 			{
-				$page		 = ceil(($start / $total_records) * ($total_records / $num_rows));
+				$page		 = (int)ceil(($start / $total_records) * ($total_records / $num_rows));
 				$values_part = array_chunk($values, $num_rows);
 				$out		 = $values_part[$page];
 			}
@@ -3941,7 +3949,7 @@ JS;
 	 * @param int    $location_id Location ID of the entity type.
 	 * @param int    $item_id     ID of the entity item.
 	 * @param string $mode        Rendering mode (e.g. 'view' or 'edit').
-	 * @return void Output is rendered via XSL template.
+	 * @return array Output is rendered via XSL template.
 	 */
 	function get_location_checklists($location_id, $item_id, $mode): array
 	{
@@ -3959,8 +3967,6 @@ JS;
 		{
 			$location_info = $this->locations->get_name($location_id);
 		}
-
-
 
 		foreach ($checklist_list as $checklist_list_item)
 		{

@@ -197,11 +197,10 @@ export class NotificationService implements OnModuleInit {
    */
   sendServerPing() {
     if (!this.server) return;
-    const pingId = `server_ping_${Date.now()}`;
+    const pingId = `ping_${Date.now()}`;
     this.server.emit('message', {
       type: 'server_ping',
       id: pingId,
-      server_timestamp: Date.now(),
       timestamp: new Date().toISOString(),
     });
   }

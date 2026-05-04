@@ -172,7 +172,13 @@ export class PorticoGateway
       case 'get_partial_applications':
         return this.handleGetPartialApplications(client);
       case 'ping':
-        // Client ping — no action needed
+        // Respond with pong (mirrors PHP NotificationService behavior)
+        client.emit('message', {
+          type: 'pong',
+          timestamp: new Date().toISOString(),
+          id: `pong_${Date.now()}`,
+          reply_to: data.id || null,
+        });
         return;
       default:
         // Forward to all other clients (like PHP's notificationService.processMessage)

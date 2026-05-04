@@ -15,8 +15,11 @@ return new class extends Migration
 			'default' => 'changeme',
 		]);
 
-		// Populate building_name from related building via season
-		$this->sql("UPDATE bb_booking SET building_name = b2.name FROM bb_building b2 WHERE EXISTS (SELECT 1 FROM bb_booking bo, bb_season s, bb_building b WHERE bo.season_id = s.id AND s.building_id = b.id AND b2.id = b.id AND bb_booking.id = bo.id) AND bb_booking.building_name = 'changeme'");
+		// Populate building_name from related building via season (idempotent — only updates 'changeme' rows)
+		if ($this->tableExists('bb_booking') && $this->columnExists('bb_booking', 'building_name')
+			&& $this->tableExists('bb_building') && $this->tableExists('bb_season')) {
+			$this->sql("UPDATE bb_booking SET building_name = b2.name FROM bb_building b2 WHERE EXISTS (SELECT 1 FROM bb_booking bo, bb_season s, bb_building b WHERE bo.season_id = s.id AND s.building_id = b.id AND b2.id = b.id AND bb_booking.id = bo.id) AND bb_booking.building_name = 'changeme'");
+		}
 
 		$this->ensureColumn('bb_allocation', 'building_name', [
 			'type' => 'varchar',
@@ -25,7 +28,10 @@ return new class extends Migration
 			'default' => 'changeme',
 		]);
 
-		// Populate building_name from related building via season
-		$this->sql("UPDATE bb_allocation SET building_name = b2.name FROM bb_building b2 WHERE EXISTS (SELECT 1 FROM bb_allocation a, bb_season s, bb_building b WHERE s.id = a.season_id AND s.building_id = b.id AND b2.id = b.id AND bb_allocation.id = a.id) AND bb_allocation.building_name = 'changeme'");
+		// Populate building_name from related building via season (idempotent — only updates 'changeme' rows)
+		if ($this->tableExists('bb_allocation') && $this->columnExists('bb_allocation', 'building_name')
+			&& $this->tableExists('bb_building') && $this->tableExists('bb_season')) {
+			$this->sql("UPDATE bb_allocation SET building_name = b2.name FROM bb_building b2 WHERE EXISTS (SELECT 1 FROM bb_allocation a, bb_season s, bb_building b WHERE s.id = a.season_id AND s.building_id = b.id AND b2.id = b.id AND bb_allocation.id = a.id) AND bb_allocation.building_name = 'changeme'");
+		}
 	}
 };

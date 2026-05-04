@@ -14,7 +14,9 @@ return new class extends Migration
 			'nullable' => true,
 		]);
 
-		// Set default value for existing rows
-		$this->sql("UPDATE bb_resource SET sort = 0 WHERE sort IS NULL");
+		// Set default value for existing rows (idempotent — WHERE IS NULL)
+		if ($this->tableExists('bb_resource') && $this->columnExists('bb_resource', 'sort')) {
+			$this->sql("UPDATE bb_resource SET sort = 0 WHERE sort IS NULL");
+		}
 	}
 };

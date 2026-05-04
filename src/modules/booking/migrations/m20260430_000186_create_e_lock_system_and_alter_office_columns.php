@@ -31,9 +31,11 @@ return new class extends Migration
             . '<p>Apple:</p>'
             . '<a href="https://apps.apple.com/no/app/justin-mobile/id960998088" target="_blank" rel="noreferrer noopener">https://apps.apple.com/no/app/justin-mobile/id960998088</a>';
 
-        $this->sql("INSERT INTO bb_e_lock_system (id, name, sms_alert) SELECT 1, 'STANLEY', 1 WHERE NOT EXISTS (SELECT 1 FROM bb_e_lock_system WHERE id = 1)");
-        $this->sql("INSERT INTO bb_e_lock_system (id, name, sms_alert) SELECT 2, 'ARX', 1 WHERE NOT EXISTS (SELECT 1 FROM bb_e_lock_system WHERE id = 2)");
-        $this->sql("INSERT INTO bb_e_lock_system (id, name, instruction) SELECT 3, 'SALTO', " . $this->quote($saltoText) . " WHERE NOT EXISTS (SELECT 1 FROM bb_e_lock_system WHERE id = 3)");
+        if ($this->tableExists('bb_e_lock_system')) {
+            $this->sql("INSERT INTO bb_e_lock_system (id, name, sms_alert) SELECT 1, 'STANLEY', 1 WHERE NOT EXISTS (SELECT 1 FROM bb_e_lock_system WHERE id = 1)");
+            $this->sql("INSERT INTO bb_e_lock_system (id, name, sms_alert) SELECT 2, 'ARX', 1 WHERE NOT EXISTS (SELECT 1 FROM bb_e_lock_system WHERE id = 2)");
+            $this->sql("INSERT INTO bb_e_lock_system (id, name, instruction) SELECT 3, 'SALTO', " . $this->quote($saltoText) . " WHERE NOT EXISTS (SELECT 1 FROM bb_e_lock_system WHERE id = 3)");
+        }
 
         // Alter office columns to nullable
         if ($this->columnExists('bb_office', 'entry_date') && !$this->isNullable('bb_office', 'entry_date')) {

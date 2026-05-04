@@ -11,7 +11,7 @@ return new class extends Migration
         if ($this->columnExists('bb_purchase_order', 'reservation_type') && !$this->isNullable('bb_purchase_order', 'reservation_type')) {
             $this->sql("ALTER TABLE bb_purchase_order ALTER COLUMN reservation_type DROP NOT NULL");
         }
-        if ($this->columnExists('bb_purchase_order', 'reservation_type')) {
+        if ($this->columnExists('bb_purchase_order', 'reservation_type') && $this->getColumnType('bb_purchase_order', 'reservation_type') !== 'character varying') {
             $this->sql("ALTER TABLE bb_purchase_order ALTER COLUMN reservation_type TYPE varchar(70)");
         }
 

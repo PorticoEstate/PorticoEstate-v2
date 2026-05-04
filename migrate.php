@@ -17,9 +17,56 @@ if (!defined('SRC_ROOT_PATH')) {
 	define('SRC_ROOT_PATH', __DIR__ . '/src');
 }
 
+define('ACL_READ', 1);
+define('ACL_ADD', 2);
+define('ACL_EDIT', 4);
+define('ACL_DELETE', 8);
+define('ACL_PRIVATE', 16);
+define('ACL_GROUP_MANAGERS', 32);
+define('ACL_CUSTOM_1', 64);
+define('ACL_CUSTOM_2', 128);
+define('ACL_CUSTOM_3', 256);
+
 require __DIR__ . '/vendor/autoload.php';
 
-// Bootstrap minimal application context
+require_once SRC_ROOT_PATH . '/helpers/CommonFunctions.php';
+require_once SRC_ROOT_PATH . '/helpers/Sanitizer.php';
+
+// Bootstrap database connection BEFORE loading LegacyObjectHandler, which triggers
+// Settings → Db::getInstance(). We must create the singleton with the real DSN first.
+$configFile = __DIR__ . '/config/header.inc.php';
+if (!is_file($configFile)) {
+	die("Error: config/header.inc.php not found. Copy config/header.inc.php.template and configure it.\n");
+}
+
+$settings = require $configFile;
+$phpgw_domain = $settings['phpgw_domain'];
+
+// Parse --domain option, default to first configured domain
+$options_raw = [];
+foreach (array_slice($argv, 1) as $a) {
+	if (str_starts_with($a, '--')) {
+		$p = explode('=', substr($a, 2), 2);
+		$options_raw[$p[0]] = $p[1] ?? true;
+	}
+}
+
+$domain = $options_raw['domain'] ?? array_key_first($phpgw_domain);
+if (!isset($phpgw_domain[$domain])) {
+	die("Error: domain '{$domain}' not found in header.inc.php\n");
+}
+
+$dbConf = $phpgw_domain[$domain];
+$dsn = \App\Database\Db::CreateDsn($dbConf);
+$db = \App\Database\Db::getInstance($dsn, $dbConf['db_user'], $dbConf['db_pass']);
+
+if (!$db->isConnected()) {
+	die("Error: Could not connect to database for domain '{$domain}'\n");
+}
+
+echo "Connected to {$dbConf['db_name']}@{$dbConf['db_host']} (domain: {$domain})\n";
+
+// Load legacy helpers (after DB is initialized)
 require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
 
 use App\modules\phpgwapi\services\Migration\MigrationService;

@@ -40,10 +40,14 @@ return new class extends Migration
 			'default' => 'application',
 		]);
 
-		// Set type for existing rows
-		$this->sql("UPDATE bb_application SET type = 'application' WHERE type IS NULL OR type = ''");
+		// Set type for existing rows (idempotent — only touches rows without a type)
+		if ($this->tableExists('bb_application') && $this->columnExists('bb_application', 'type')) {
+			$this->sql("UPDATE bb_application SET type = 'application' WHERE type IS NULL OR type = ''");
+		}
 
-		// Update status CONFIRMED -> ACCEPTED
-		$this->sql("UPDATE bb_application SET status = 'ACCEPTED' WHERE status = 'CONFIRMED'");
+		// Update status CONFIRMED -> ACCEPTED (idempotent — no CONFIRMED rows after first run)
+		if ($this->tableExists('bb_application') && $this->columnExists('bb_application', 'status')) {
+			$this->sql("UPDATE bb_application SET status = 'ACCEPTED' WHERE status = 'CONFIRMED'");
+		}
 	}
 };

@@ -164,10 +164,36 @@ abstract class Migration
 
 	/**
 	 * Add a column if it does not exist.
+	 *
+	 * For NOT NULL columns with a default, the column is added as nullable first,
+	 * existing rows are filled with the default, then NOT NULL is applied.
+	 * This avoids PostgreSQL errors on tables that already have data.
 	 */
 	protected function addColumn(string $table, string $column, array $columnDef): void
 	{
-		if (!$this->columnExists($table, $column)) {
+		if ($this->columnExists($table, $column)) {
+			return;
+		}
+
+		$wantNotNull = isset($columnDef['nullable']) && ($columnDef['nullable'] === false || $columnDef['nullable'] === 'False');
+		$hasDefault = isset($columnDef['default']);
+
+		if ($wantNotNull && $hasDefault) {
+			// Add as nullable first to avoid NOT NULL violation on existing rows
+			$nullableDef = $columnDef;
+			$nullableDef['nullable'] = true;
+			$this->schemaProc->AddColumn($table, $column, $nullableDef);
+
+			// Fill existing rows with the default value
+			$default = $columnDef['default'];
+			if (is_string($default) && $default !== 'current_timestamp') {
+				$default = "'" . str_replace("'", "''", $default) . "'";
+			}
+			$this->sql("UPDATE {$table} SET {$column} = {$default} WHERE {$column} IS NULL");
+
+			// Now set NOT NULL
+			$this->sql("ALTER TABLE {$table} ALTER COLUMN {$column} SET NOT NULL");
+		} else {
 			$this->schemaProc->AddColumn($table, $column, $columnDef);
 		}
 	}
@@ -307,7 +333,7 @@ abstract class Migration
 	protected function ensureColumn(string $table, string $column, array $columnDef): void
 	{
 		if (!$this->columnExists($table, $column)) {
-			$this->schemaProc->AddColumn($table, $column, $columnDef);
+			$this->addColumn($table, $column, $columnDef);
 		} else {
 			$this->verifyColumn($table, $column, $columnDef);
 		}

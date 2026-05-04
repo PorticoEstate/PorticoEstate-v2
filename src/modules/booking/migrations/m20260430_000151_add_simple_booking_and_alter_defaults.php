@@ -34,15 +34,17 @@ return new class extends Migration
 			$this->sql("ALTER TABLE bb_resource ALTER COLUMN booking_time_default_end SET DEFAULT -1");
 		}
 
-		// Set null values to -1
-		$this->sql(
-			"UPDATE bb_resource SET"
-			. " booking_day_default_lenght = -1,"
-			. " booking_dow_default_start = -1,"
-			. " booking_dow_default_end = -1,"
-			. " booking_time_default_start = -1,"
-			. " booking_time_default_end = -1"
-			. " WHERE booking_time_default_start IS NULL"
-		);
+		// Set null values to -1 (idempotent — only touches rows where values are still NULL)
+		if ($this->tableExists('bb_resource') && $this->columnExists('bb_resource', 'booking_time_default_start')) {
+			$this->sql(
+				"UPDATE bb_resource SET"
+				. " booking_day_default_lenght = -1,"
+				. " booking_dow_default_start = -1,"
+				. " booking_dow_default_end = -1,"
+				. " booking_time_default_start = -1,"
+				. " booking_time_default_end = -1"
+				. " WHERE booking_time_default_start IS NULL"
+			);
+		}
 	}
 };

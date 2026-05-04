@@ -21,7 +21,9 @@ return new class extends Migration
 			'nullable' => true,
 		]);
 
-		if (!$this->constraintExists($table, "{$table}_export_file_id_fkey")) {
+		if (!$this->constraintExists($table, "{$table}_export_file_id_fkey") && $this->tableExists('bb_completed_reservation_export_file')) {
+			// Clear orphaned references before adding FK constraint
+			$this->sql("UPDATE {$table} SET export_file_id = NULL WHERE export_file_id IS NOT NULL AND export_file_id NOT IN (SELECT id FROM bb_completed_reservation_export_file)");
 			$this->sql("ALTER TABLE {$table} ADD CONSTRAINT {$table}_export_file_id_fkey FOREIGN KEY (export_file_id) REFERENCES bb_completed_reservation_export_file(id)");
 		}
 	}

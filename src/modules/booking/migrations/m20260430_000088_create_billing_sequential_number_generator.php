@@ -20,8 +20,10 @@ return new class extends Migration
 			'uc' => ['name'],
 		]);
 
-		// Insert initial rows if they don't exist
-		$this->sql("INSERT INTO bb_billing_sequential_number_generator (name, value) SELECT 'internal', 0 WHERE NOT EXISTS (SELECT 1 FROM bb_billing_sequential_number_generator WHERE name = 'internal')");
-		$this->sql("INSERT INTO bb_billing_sequential_number_generator (name, value) SELECT 'external', 34500000 WHERE NOT EXISTS (SELECT 1 FROM bb_billing_sequential_number_generator WHERE name = 'external')");
+		// Insert initial rows if they don't exist (idempotent — NOT EXISTS guard in SQL)
+		if ($this->tableExists('bb_billing_sequential_number_generator')) {
+			$this->sql("INSERT INTO bb_billing_sequential_number_generator (name, value) SELECT 'internal', 0 WHERE NOT EXISTS (SELECT 1 FROM bb_billing_sequential_number_generator WHERE name = 'internal')");
+			$this->sql("INSERT INTO bb_billing_sequential_number_generator (name, value) SELECT 'external', 34500000 WHERE NOT EXISTS (SELECT 1 FROM bb_billing_sequential_number_generator WHERE name = 'external')");
+		}
 	}
 };

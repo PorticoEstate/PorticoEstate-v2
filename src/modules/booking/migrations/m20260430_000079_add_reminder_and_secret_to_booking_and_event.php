@@ -19,8 +19,10 @@ return new class extends Migration
 			'nullable' => true,
 		]);
 
-		// Populate secret for existing rows that have NULL secret
-		$this->sql("UPDATE bb_booking SET secret = substring(md5(from_::text || id::text || group_id::text) from 0 for 11) WHERE secret IS NULL");
+		// Populate secret for existing rows that have NULL secret (idempotent — WHERE IS NULL)
+		if ($this->tableExists('bb_booking') && $this->columnExists('bb_booking', 'secret')) {
+			$this->sql("UPDATE bb_booking SET secret = substring(md5(from_::text || id::text || group_id::text) from 0 for 11) WHERE secret IS NULL");
+		}
 
 		if ($this->columnExists('bb_booking', 'secret') && $this->isNullable('bb_booking', 'secret')) {
 			$this->sql("ALTER TABLE bb_booking ALTER COLUMN secret SET NOT NULL");
@@ -37,8 +39,10 @@ return new class extends Migration
 			'nullable' => true,
 		]);
 
-		// Populate secret for existing rows that have NULL secret
-		$this->sql("UPDATE bb_event SET secret = substring(md5(from_::text || id::text || activity_id::text) from 0 for 11) WHERE secret IS NULL");
+		// Populate secret for existing rows that have NULL secret (idempotent — WHERE IS NULL)
+		if ($this->tableExists('bb_event') && $this->columnExists('bb_event', 'secret')) {
+			$this->sql("UPDATE bb_event SET secret = substring(md5(from_::text || id::text || activity_id::text) from 0 for 11) WHERE secret IS NULL");
+		}
 
 		if ($this->columnExists('bb_event', 'secret') && $this->isNullable('bb_event', 'secret')) {
 			$this->sql("ALTER TABLE bb_event ALTER COLUMN secret SET NOT NULL");

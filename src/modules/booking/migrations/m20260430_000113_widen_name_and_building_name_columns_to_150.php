@@ -8,6 +8,11 @@ return new class extends Migration
 
     public function up(): void
     {
+        // Drop views that depend on columns we're about to alter
+        $this->sql("DROP VIEW IF EXISTS bb_application_association");
+        $this->sql("DROP VIEW IF EXISTS bb_document_view");
+        $this->sql("DROP VIEW IF EXISTS bb_article_view");
+
         // Widen name columns to varchar(150)
         $nameColumns = [
             'bb_activity' => ['nullable' => false],
@@ -24,7 +29,16 @@ return new class extends Migration
 
         foreach ($nameColumns as $table => $opts) {
             if ($this->columnExists($table, 'name')) {
-                $this->sql("ALTER TABLE $table ALTER COLUMN name TYPE varchar(150)");
+                $this->db->query(
+                    "SELECT character_maximum_length FROM information_schema.columns "
+                    . "WHERE table_schema = 'public' AND table_name = '$table' AND column_name = 'name'",
+                    __LINE__, __FILE__
+                );
+                $this->db->next_record();
+                $currentLen = (int) ($this->db->Record['character_maximum_length'] ?? 0);
+                if ($currentLen < 150) {
+                    $this->sql("ALTER TABLE $table ALTER COLUMN name TYPE varchar(150)");
+                }
             }
         }
 
@@ -39,7 +53,16 @@ return new class extends Migration
 
         foreach ($buildingNameTables as $table) {
             if ($this->columnExists($table, 'building_name')) {
-                $this->sql("ALTER TABLE $table ALTER COLUMN building_name TYPE varchar(150)");
+                $this->db->query(
+                    "SELECT character_maximum_length FROM information_schema.columns "
+                    . "WHERE table_schema = 'public' AND table_name = '$table' AND column_name = 'building_name'",
+                    __LINE__, __FILE__
+                );
+                $this->db->next_record();
+                $currentLen = (int) ($this->db->Record['character_maximum_length'] ?? 0);
+                if ($currentLen < 150) {
+                    $this->sql("ALTER TABLE $table ALTER COLUMN building_name TYPE varchar(150)");
+                }
             }
         }
 

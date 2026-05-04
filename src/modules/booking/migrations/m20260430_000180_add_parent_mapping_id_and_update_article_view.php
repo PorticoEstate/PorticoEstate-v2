@@ -16,8 +16,8 @@ return new class extends Migration
 
         $this->dropColumn('bb_article_mapping', 'building_id');
 
-        // Insert missing resource article mappings (only if fm_ecomva exists — property module)
-        if ($this->tableExists('fm_ecomva')) {
+        // Insert missing resource article mappings (only if fm_ecomva and bb_article_mapping exist)
+        if ($this->tableExists('fm_ecomva') && $this->tableExists('bb_article_mapping') && $this->tableExists('bb_resource')) {
             $this->sql("
                 INSERT INTO bb_article_mapping (article_cat_id, article_id, article_code, unit, tax_code)
                 SELECT 1, bb_resource.id, 'resource_' || bb_resource.id, 'hour',
@@ -30,23 +30,26 @@ return new class extends Migration
 
         $this->sql("DROP VIEW IF EXISTS public.bb_article_view");
 
-        $this->sql("
-            CREATE OR REPLACE VIEW public.bb_article_view AS
-            SELECT bb_resource.id,
-                bb_building.name || '::' || bb_resource.name as name,
-                bb_resource.description,
-                bb_resource.active,
-                1 AS article_cat_id
-            FROM bb_resource
-            JOIN bb_building_resource ON bb_building_resource.resource_id = bb_resource.id
-            JOIN bb_building ON bb_building_resource.building_id = bb_building.id
-            UNION
-            SELECT bb_service.id,
-                bb_service.name,
-                bb_service.description,
-                bb_service.active,
-                2 AS article_cat_id
-            FROM bb_service
-        ");
+        if ($this->tableExists('bb_resource') && $this->tableExists('bb_building_resource')
+            && $this->tableExists('bb_building') && $this->tableExists('bb_service')) {
+            $this->sql("
+                CREATE OR REPLACE VIEW public.bb_article_view AS
+                SELECT bb_resource.id,
+                    bb_building.name || '::' || bb_resource.name as name,
+                    bb_resource.description,
+                    bb_resource.active,
+                    1 AS article_cat_id
+                FROM bb_resource
+                JOIN bb_building_resource ON bb_building_resource.resource_id = bb_resource.id
+                JOIN bb_building ON bb_building_resource.building_id = bb_building.id
+                UNION
+                SELECT bb_service.id,
+                    bb_service.name,
+                    bb_service.description,
+                    bb_service.active,
+                    2 AS article_cat_id
+                FROM bb_service
+            ");
+        }
     }
 };

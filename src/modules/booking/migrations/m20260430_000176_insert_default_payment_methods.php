@@ -28,15 +28,17 @@ return new class extends Migration
 			]);
 		}
 
-		$this->sql(
-			"INSERT INTO bb_payment_method (id, payment_gateway_name, payment_gateway_mode)"
-			. " SELECT 1, 'Vipps', 'live'"
-			. " WHERE NOT EXISTS (SELECT 1 FROM bb_payment_method WHERE id = 1)"
-		);
-		$this->sql(
-			"INSERT INTO bb_payment_method (id, payment_gateway_name, payment_gateway_mode, is_default)"
-			. " SELECT 2, 'Etterfakturering', 'live', 1"
-			. " WHERE NOT EXISTS (SELECT 1 FROM bb_payment_method WHERE id = 2)"
-		);
+		if ($this->tableExists('bb_payment_method')) {
+			$this->sql(
+				"INSERT INTO bb_payment_method (id, payment_gateway_name, payment_gateway_mode)"
+				. " SELECT 1, 'Vipps', 'live'"
+				. " WHERE NOT EXISTS (SELECT 1 FROM bb_payment_method WHERE id = 1)"
+			);
+			$this->sql(
+				"INSERT INTO bb_payment_method (id, payment_gateway_name, payment_gateway_mode, is_default)"
+				. " SELECT 2, 'Etterfakturering', 'live', 1"
+				. " WHERE NOT EXISTS (SELECT 1 FROM bb_payment_method WHERE id = 2)"
+			);
+		}
 	}
 };

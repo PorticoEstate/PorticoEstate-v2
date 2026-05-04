@@ -22,9 +22,15 @@ return new class extends Migration
 			'nullable' => true,
 		]);
 
-		// Set defaults for existing rows
-		$this->sql("UPDATE {$table} SET total_cost = 0.0 WHERE total_cost IS NULL");
-		$this->sql("UPDATE {$table} SET total_items = 0 WHERE total_items IS NULL");
+		// Set defaults for existing rows (idempotent — WHERE IS NULL)
+		if ($this->tableExists($table)) {
+			if ($this->columnExists($table, 'total_cost')) {
+				$this->sql("UPDATE {$table} SET total_cost = 0.0 WHERE total_cost IS NULL");
+			}
+			if ($this->columnExists($table, 'total_items')) {
+				$this->sql("UPDATE {$table} SET total_items = 0 WHERE total_items IS NULL");
+			}
+		}
 
 		// Set NOT NULL constraints
 		if ($this->columnExists($table, 'total_items') && $this->isNullable($table, 'total_items')) {

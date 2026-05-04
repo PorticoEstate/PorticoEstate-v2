@@ -8,6 +8,10 @@ return new class extends Migration
 
     public function up(): void
     {
+        if (!$this->tableExists('bb_resource_e_lock')) {
+            return;
+        }
+
         $this->sql("DELETE FROM bb_resource_e_lock WHERE e_lock_name IS NULL");
 
         if ($this->columnExists('bb_resource_e_lock', 'e_lock_resource_id')) {

@@ -88,24 +88,28 @@ return new class extends Migration
 
         // Recreate article view
         $this->sql("DROP VIEW IF EXISTS public.bb_article_view");
-        $this->sql("
-            CREATE OR REPLACE VIEW public.bb_article_view AS
-            SELECT bb_resource.id,
-                bb_building.name || '::' || bb_resource.name as name,
-                'Ressurs' || bb_resource.name as description,
-                bb_resource.active,
-                1 AS article_cat_id
-            FROM bb_resource
-            JOIN bb_building_resource ON bb_building_resource.resource_id = bb_resource.id
-            JOIN bb_building ON bb_building_resource.building_id = bb_building.id
-            UNION
-            SELECT bb_service.id,
-                bb_service.name,
-                bb_service.description,
-                bb_service.active,
-                2 AS article_cat_id
-            FROM bb_service
-        ");
+
+        if ($this->tableExists('bb_resource') && $this->tableExists('bb_building_resource')
+            && $this->tableExists('bb_building') && $this->tableExists('bb_service')) {
+            $this->sql("
+                CREATE OR REPLACE VIEW public.bb_article_view AS
+                SELECT bb_resource.id,
+                    bb_building.name || '::' || bb_resource.name as name,
+                    'Ressurs' || bb_resource.name as description,
+                    bb_resource.active,
+                    1 AS article_cat_id
+                FROM bb_resource
+                JOIN bb_building_resource ON bb_building_resource.resource_id = bb_resource.id
+                JOIN bb_building ON bb_building_resource.building_id = bb_building.id
+                UNION
+                SELECT bb_service.id,
+                    bb_service.name,
+                    bb_service.description,
+                    bb_service.active,
+                    2 AS article_cat_id
+                FROM bb_service
+            ");
+        }
 
         // Make allocation skip_bas nullable
         if ($this->columnExists('bb_allocation', 'skip_bas') && !$this->isNullable('bb_allocation', 'skip_bas')) {

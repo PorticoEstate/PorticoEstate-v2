@@ -29,7 +29,7 @@ return new class extends Migration
             if (!empty($topLevels)) {
                 // Set first top-level activity as default for all buildings without activity_id
                 $firstId = $topLevels[0];
-                $this->sql("UPDATE bb_building SET activity_id = {$firstId} WHERE activity_id IS NULL");
+                $this->sql("UPDATE bb_building SET activity_id = {$firstId} WHERE activity_id IS NULL OR activity_id = 0");
             }
 
             // Make NOT NULL after populating

@@ -35,12 +35,14 @@ return new class extends Migration
         }
 
         // Assign first top-level activity to existing records that have no activity_id
-        $db = \App\Database\Db::getInstance();
-        $db->query("SELECT id FROM bb_activity WHERE parent_id IS NULL OR parent_id = 0 ORDER BY id LIMIT 1");
-        if ($db->next_record()) {
-            $firstActivityId = (int) $db->f('id');
-            $this->sql("UPDATE bb_agegroup SET activity_id = {$firstActivityId} WHERE activity_id IS NULL");
-            $this->sql("UPDATE bb_targetaudience SET activity_id = {$firstActivityId} WHERE activity_id IS NULL");
+        if ($this->tableExists('bb_activity') && $this->tableExists('bb_agegroup') && $this->tableExists('bb_targetaudience')) {
+            $db = \App\Database\Db::getInstance();
+            $db->query("SELECT id FROM bb_activity WHERE parent_id IS NULL OR parent_id = 0 ORDER BY id LIMIT 1");
+            if ($db->next_record()) {
+                $firstActivityId = (int) $db->f('id');
+                $this->sql("UPDATE bb_agegroup SET activity_id = {$firstActivityId} WHERE activity_id IS NULL");
+                $this->sql("UPDATE bb_targetaudience SET activity_id = {$firstActivityId} WHERE activity_id IS NULL");
+            }
         }
 
         // Add actual count columns to booking and event agegroup tables

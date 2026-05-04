@@ -20,7 +20,9 @@ return new class extends Migration
             'uc' => [],
         ]);
 
-        $this->sql("INSERT INTO bb_article_group (id, name, remark) SELECT 1, 'Gruppe 1', 'Gruppering av artikler' WHERE NOT EXISTS (SELECT 1 FROM bb_article_group WHERE id = 1)");
+        if ($this->tableExists('bb_article_group')) {
+            $this->sql("INSERT INTO bb_article_group (id, name, remark) SELECT 1, 'Gruppe 1', 'Gruppering av artikler' WHERE NOT EXISTS (SELECT 1 FROM bb_article_group WHERE id = 1)");
+        }
 
         $this->ensureColumn('bb_article_mapping', 'group_id', [
             'type' => 'int',

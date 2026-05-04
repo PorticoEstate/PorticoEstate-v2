@@ -25,7 +25,11 @@ return new class extends Migration
 			'default' => 'changeme',
 		]);
 
-		// Populate building_name from related building
-		$this->sql("UPDATE bb_event SET building_name = b2.name FROM bb_building b2 WHERE EXISTS (SELECT 1 FROM bb_event e, bb_event_resource er, bb_resource r, bb_building b WHERE e.id = er.event_id AND er.resource_id = r.id AND r.building_id = b.id AND b2.id = b.id AND bb_event.id = e.id) AND bb_event.building_name = 'changeme'");
+		// Populate building_name from related building (idempotent — only updates 'changeme' rows)
+		if ($this->tableExists('bb_event') && $this->columnExists('bb_event', 'building_name')
+			&& $this->tableExists('bb_building') && $this->tableExists('bb_event_resource') && $this->tableExists('bb_resource')
+			&& $this->columnExists('bb_resource', 'building_id')) {
+			$this->sql("UPDATE bb_event SET building_name = b2.name FROM bb_building b2 WHERE EXISTS (SELECT 1 FROM bb_event e, bb_event_resource er, bb_resource r, bb_building b WHERE e.id = er.event_id AND er.resource_id = r.id AND r.building_id = b.id AND b2.id = b.id AND bb_event.id = e.id) AND bb_event.building_name = 'changeme'");
+		}
 	}
 };

@@ -54,17 +54,19 @@ return new class extends Migration
 			'uc' => [],
 		]);
 
-		// Insert default article categories
-		$this->sql(
-			"INSERT INTO bb_article_category (id, name)"
-			. " SELECT 1, 'resource'"
-			. " WHERE NOT EXISTS (SELECT 1 FROM bb_article_category WHERE id = 1)"
-		);
-		$this->sql(
-			"INSERT INTO bb_article_category (id, name)"
-			. " SELECT 2, 'service'"
-			. " WHERE NOT EXISTS (SELECT 1 FROM bb_article_category WHERE id = 2)"
-		);
+		// Insert default article categories (idempotent — NOT EXISTS guard in SQL)
+		if ($this->tableExists('bb_article_category')) {
+			$this->sql(
+				"INSERT INTO bb_article_category (id, name)"
+				. " SELECT 1, 'resource'"
+				. " WHERE NOT EXISTS (SELECT 1 FROM bb_article_category WHERE id = 1)"
+			);
+			$this->sql(
+				"INSERT INTO bb_article_category (id, name)"
+				. " SELECT 2, 'service'"
+				. " WHERE NOT EXISTS (SELECT 1 FROM bb_article_category WHERE id = 2)"
+			);
+		}
 
 		$this->createTable('bb_article_mapping', [
 			'fd' => [
@@ -168,12 +170,14 @@ return new class extends Migration
 		]);
 
 		// Create article view
-		$this->sql(
-			"CREATE OR REPLACE VIEW bb_article_view AS "
-			. "SELECT id, name, description, active, 1 AS article_cat_id FROM bb_resource "
-			. "UNION "
-			. "SELECT id, name, description, active, 2 AS article_cat_id FROM bb_service"
-		);
+		if ($this->tableExists('bb_resource') && $this->tableExists('bb_service')) {
+			$this->sql(
+				"CREATE OR REPLACE VIEW bb_article_view AS "
+				. "SELECT id, name, description, active, 1 AS article_cat_id FROM bb_resource "
+				. "UNION "
+				. "SELECT id, name, description, active, 2 AS article_cat_id FROM bb_service"
+			);
+		}
 
 		$this->createTable('bb_payment_method', [
 			'fd' => [

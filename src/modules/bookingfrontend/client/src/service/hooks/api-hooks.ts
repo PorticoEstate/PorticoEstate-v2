@@ -775,6 +775,7 @@ function fetchFreeTimeViaWs(
 		const cleanup = subscriptionManager.subscribeToMessageType(
 			'free_time_response',
 			(message) => {
+				if (message.type !== 'free_time_response') return;
 				// Only handle responses for this specific request
 				if (message.data?.buildingId !== buildingId) return;
 

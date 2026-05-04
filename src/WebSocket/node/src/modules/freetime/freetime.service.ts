@@ -669,14 +669,14 @@ export class FreeTimeService {
     return false;
   }
 
-  private generateTimeSlots(
+  private async generateTimeSlots(
     resources: Resource[],
     events: Events,
     buildingId: number,
     _to: Date,
     stopOnEndDate: boolean,
     detailedOverlap: boolean,
-  ): Record<string, TimeSlot[]> {
+  ): Promise<Record<string, TimeSlot[]>> {
     const days: Record<number, string> = {
       0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday',
       4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday',
@@ -721,7 +721,9 @@ export class FreeTimeService {
 
       const limitDate = stopOnEndDate ? new Date(_to) : new Date(resource.to!);
 
-      const activeSeasons = this.getResourceSeasonsSync(resource.id, checkDate, limitDate);
+      const activeSeasons = await this.getResourceSeasons(
+        resource.id, fmtDate(checkDate), fmtDate(limitDate),
+      );
 
       // Main slot generation loop (ported do...while)
       while (checkDate < limitDate) {
@@ -774,10 +776,10 @@ export class FreeTimeService {
         // Advance checkDate
         checkDate.setTime(endTime.getTime());
 
-        // Season validation (sync since we pre-fetched)
+        // Season validation
         let withinSeason = false;
         for (const seasonId of activeSeasons) {
-          if (this.timespanWithinSeasonSync(seasonId, startTime, endTime)) {
+          if (await this.timespanWithinSeason(seasonId, startTime, endTime)) {
             withinSeason = true;
             break;
           }

@@ -112,6 +112,9 @@ export class RoomService {
     const roomsCleaned: string[] = [];
 
     for (const [roomId, clients] of this.roomClients) {
+      // Skip session rooms — they should persist as long as the connection is alive
+      if (roomId.startsWith('session_')) continue;
+
       for (const [clientId, meta] of clients) {
         if (now - meta.lastActivity > thresholdMs) {
           clients.delete(clientId);

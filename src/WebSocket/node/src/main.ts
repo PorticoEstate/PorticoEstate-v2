@@ -5,7 +5,7 @@ import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const port = parseInt(process.env.WS_PORT || '8081', 10);
+  const port = parseInt(process.env.WS_PORT || '8080', 10);
 
   const app = await NestFactory.create(AppModule, {
     logger: process.env.WSS_DEBUG_LOG_ENABLED === 'true'

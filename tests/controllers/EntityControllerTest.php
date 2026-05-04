@@ -39,7 +39,12 @@ namespace
 					return $text;
 				}
 
-				return vsprintf($text, $args);
+				// phpGroupWare uses %1, %2 positional placeholders
+				foreach ($args as $i => $arg)
+				{
+					$text = str_replace('%' . ($i + 1), (string)$arg, $text);
+				}
+				return $text;
 			}
 		}
 

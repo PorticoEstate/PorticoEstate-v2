@@ -673,7 +673,7 @@ class property_soentity
 		$choice_table		 = 'phpgw_cust_choice';
 		$attribute_table	 = 'phpgw_cust_attribute';
 		$attribute_filter	 = " location_id = {$location_id}";
-
+		$sqlParams		 = array();
 
 
 		$this->get_cols($category, $entity_id, $cat_id, $lookup, $location_id);
@@ -766,30 +766,37 @@ class property_soentity
 
 		if ($district_id > 0 && $category['location_level'] && !$part_of_town_id)
 		{
-			$filtermethod	 .= " $where  fm_part_of_town.district_id='$district_id' ";
+			$sqlParams[':district_id_filter'] = $district_id;
+			$filtermethod	 .= " $where  fm_part_of_town.district_id = :district_id_filter ";
 			$where			 = 'AND';
 		}
 		else if ($part_of_town_id > 0 && $category['location_level'])
 		{
-			$filtermethod	 .= " $where fm_part_of_town.id='$part_of_town_id' ";
+			$sqlParams[':part_of_town_id_filter'] = $part_of_town_id;
+			$filtermethod	 .= " $where fm_part_of_town.id = :part_of_town_id_filter ";
 			$where			 = 'AND';
 		}
 
 		if ($start_date)
 		{
-			$filtermethod	 .= " $where $entity_table.entry_date >= $start_date AND $entity_table.entry_date <= $end_date ";
+			$sqlParams[':start_date_filter'] = $start_date;
+			$sqlParams[':end_date_filter'] = $end_date;
+			$filtermethod	 .= " $where $entity_table.entry_date >= :start_date_filter AND $entity_table.entry_date <= :end_date_filter ";
 			$where			 = 'AND';
 		}
 
 		if ($location_code)
 		{
-			$filtermethod	 .= " $where $entity_table.location_code $this->like '$location_code%'";
+			$sqlParams[':location_code_prefix_filter'] = $location_code . '%';
+			$filtermethod	 .= " $where $entity_table.location_code $this->like :location_code_prefix_filter";
 			$where			 = 'AND';
 		}
 
 		if ($parent_location_id && $parent_id)
 		{
-			$filtermethod .= " {$where} p_location_id = {$parent_location_id} AND p_id = {$parent_id}";
+			$sqlParams[':parent_location_id_filter'] = $parent_location_id;
+			$sqlParams[':parent_id_filter'] = $parent_id;
+			$filtermethod .= " {$where} p_location_id = :parent_location_id_filter AND p_id = :parent_id_filter";
 			$where			 = 'AND';
 		}
 
@@ -807,12 +814,14 @@ class property_soentity
 
 		if ($p_num)
 		{
-			$filtermethod	 .= " $where $entity_table.p_id='$p_num'";
+			$sqlParams[':p_id_filter'] = $p_num;
+			$filtermethod	 .= " $where $entity_table.p_id = :p_id_filter";
 			$where			 = 'AND';
 		}
 		if ($entity_group_id && $stray_entity_group)
 		{
-			$filtermethod	 .= " {$where} {$entity_table}.entity_group_id = {$entity_group_id}";
+			$sqlParams[':entity_group_id_filter'] = $entity_group_id;
+			$filtermethod	 .= " {$where} {$entity_table}.entity_group_id = :entity_group_id_filter";
 			$where			 = 'AND';
 		}
 		if ($filter_entity_group)
@@ -1142,7 +1151,14 @@ class property_soentity
 			$sql_cnt = "SELECT DISTINCT fm_bim_item.id {$sql_cnt_control_fields}" . substr($_sql, strripos($_sql, 'FROM'));
 			$sql2	 = "SELECT count(*) as cnt FROM ({$sql_cnt}) as t";
 
-			$this->db->query($sql2, __LINE__, __FILE__);
+			if ($sqlParams)
+			{
+				$this->db->limit_query_with_params($sql2, $sqlParams, 0, __LINE__, __FILE__, null);
+			}
+			else
+			{
+				$this->db->query($sql2, __LINE__, __FILE__);
+			}
 			$row  = $this->db->resultSet[0] ?? [];
 			unset($sql2);
 			unset($sql_cnt);
@@ -1215,11 +1231,25 @@ class property_soentity
 		//			_debug_array($sql_pre_run);
 		if (!$allrows)
 		{
-			$this->db->limit_query($sql_pre_run . $ordermethod, $start, __LINE__, __FILE__, $results);
+			if ($sqlParams)
+			{
+				$this->db->limit_query_with_params($sql_pre_run . $ordermethod, $sqlParams, $start, __LINE__, __FILE__, $results);
+			}
+			else
+			{
+				$this->db->limit_query($sql_pre_run . $ordermethod, $start, __LINE__, __FILE__, $results);
+			}
 		}
 		else
 		{
-			$this->db->query($sql_pre_run . $ordermethod, __LINE__, __FILE__);
+			if ($sqlParams)
+			{
+				$this->db->limit_query_with_params($sql_pre_run . $ordermethod, $sqlParams, 0, __LINE__, __FILE__, null);
+			}
+			else
+			{
+				$this->db->query($sql_pre_run . $ordermethod, __LINE__, __FILE__);
+			}
 		}
 
 		$ids	 = array();
@@ -1823,6 +1853,7 @@ class property_soentity
 		$acl	 = Acl::getInstance();
 		$acl->set_account_id($this->account);
 		$grants	 = $acl->get_grants2($this->type_app[$this->type], ".{$this->type}.{$entity_id}.{$cat_id}");
+		$sqlParams		 = array();
 
 		//_debug_array($cols_return_extra);
 
@@ -1920,30 +1951,36 @@ class property_soentity
 
 		if ($status)
 		{
-			$filtermethod	 .= " $where $entity_table.status='$status' ";
+			$sqlParams[':status_filter'] = $status;
+			$filtermethod	 .= " $where $entity_table.status = :status_filter ";
 			$where			 = 'AND';
 		}
 
 		if ($district_id > 0 && $category['location_level'] && !$part_of_town_id)
 		{
-			$filtermethod	 .= " $where  fm_part_of_town.district_id='$district_id' ";
+			$sqlParams[':district_id_filter'] = $district_id;
+			$filtermethod	 .= " $where  fm_part_of_town.district_id = :district_id_filter ";
 			$where			 = 'AND';
 		}
 		else if ($part_of_town_id > 0 && $category['location_level'])
 		{
-			$filtermethod	 .= " $where  fm_part_of_town.id='$part_of_town_id' ";
+			$sqlParams[':part_of_town_id_filter'] = $part_of_town_id;
+			$filtermethod	 .= " $where  fm_part_of_town.id = :part_of_town_id_filter ";
 			$where			 = 'AND';
 		}
 
 		if ($start_date)
 		{
-			$filtermethod	 .= " $where $entity_table.entry_date >= $start_date AND $entity_table.entry_date <= $end_date ";
+			$sqlParams[':start_date_filter'] = $start_date;
+			$sqlParams[':end_date_filter'] = $end_date;
+			$filtermethod	 .= " $where $entity_table.entry_date >= :start_date_filter AND $entity_table.entry_date <= :end_date_filter ";
 			$where			 = 'AND';
 		}
 
 		if ($location_code)
 		{
-			$filtermethod	 .= " $where $entity_table.location_code {$this->like} '$location_code%'";
+			$sqlParams[':location_code_prefix_filter'] = $location_code . '%';
+			$filtermethod	 .= " $where $entity_table.location_code {$this->like} :location_code_prefix_filter";
 			$where			 = 'AND';
 			$query			 = '';
 		}
@@ -1962,13 +1999,15 @@ class property_soentity
 
 		if ($p_num)
 		{
-			$filtermethod	 .= " $where $entity_table.p_num='$p_num'";
+			$sqlParams[':p_num_filter'] = $p_num;
+			$filtermethod	 .= " $where $entity_table.p_num = :p_num_filter";
 			$where			 = 'AND';
 		}
 
 		if ($entity_group_id && $stray_entity_group)
 		{
-			$filtermethod	 .= " {$where} {$entity_table}.entity_group_id = {$entity_group_id}";
+			$sqlParams[':entity_group_id_filter'] = $entity_group_id;
+			$filtermethod	 .= " {$where} {$entity_table}.entity_group_id = :entity_group_id_filter";
 			$where			 = 'AND';
 		}
 		if ($filter_entity_group)
@@ -1979,7 +2018,9 @@ class property_soentity
 
 		if ($parent_location_id && $parent_id)
 		{
-			$filtermethod .= " {$where} p_location_id = {$parent_location_id} AND p_id = {$parent_id}";
+			$sqlParams[':parent_location_id_filter'] = $parent_location_id;
+			$sqlParams[':parent_id_filter'] = $parent_id;
+			$filtermethod .= " {$where} p_location_id = :parent_location_id_filter AND p_id = :parent_id_filter";
 			$where			 = 'AND';
 		}
 
@@ -2160,7 +2201,14 @@ class property_soentity
 			$sql_cnt = "SELECT DISTINCT {$entity_table}.id " . substr($sql, strripos($sql, 'FROM'));
 			$sql2	 = "SELECT count(*) as cnt FROM ({$sql_cnt}) as t";
 
-			$this->db->query($sql2, __LINE__, __FILE__);
+			if ($sqlParams)
+			{
+				$this->db->limit_query_with_params($sql2, $sqlParams, 0, __LINE__, __FILE__, null);
+			}
+			else
+			{
+				$this->db->query($sql2, __LINE__, __FILE__);
+			}
 			$row  = $this->db->resultSet[0] ?? [];
 			unset($sql2);
 			unset($sql_cnt);
@@ -2182,11 +2230,25 @@ class property_soentity
 
 		if (!$allrows)
 		{
-			$this->db->limit_query($sql . $ordermethod, $start, __LINE__, __FILE__, $results);
+			if ($sqlParams)
+			{
+				$this->db->limit_query_with_params($sql . $ordermethod, $sqlParams, $start, __LINE__, __FILE__, $results);
+			}
+			else
+			{
+				$this->db->limit_query($sql . $ordermethod, $start, __LINE__, __FILE__, $results);
+			}
 		}
 		else
 		{
-			$this->db->query($sql . $ordermethod, __LINE__, __FILE__);
+			if ($sqlParams)
+			{
+				$this->db->limit_query_with_params($sql . $ordermethod, $sqlParams, 0, __LINE__, __FILE__, null);
+			}
+			else
+			{
+				$this->db->query($sql . $ordermethod, __LINE__, __FILE__);
+			}
 		}
 
 		$j			 = 0;
@@ -2292,16 +2354,19 @@ class property_soentity
 		$num	 = isset($data['num']) && $data['num'] ? $data['num'] : '';
 		$table	 = "fm_{$this->type}_{$entity_id}_{$cat_id}";
 
+		$params = array();
 		if ($num)
 		{
-			$filtermethod = "WHERE num = '{$num}'";
+			$filtermethod = "WHERE num = :num";
+			$params[':num'] = $num;
 		}
 		else
 		{
-			$filtermethod = "WHERE id = {$id}";
+			$filtermethod = "WHERE id = :id";
+			$params[':id'] = $id;
 		}
 
-		$this->db->query("SELECT * FROM {$table} {$filtermethod}");
+		$this->db->limit_query_with_params("SELECT * FROM {$table} {$filtermethod}", $params, 0, __LINE__, __FILE__, null);
 
 		if (!empty($this->db->resultSet) && ($row = $this->db->resultSet[0]))
 		{
@@ -2348,10 +2413,13 @@ class property_soentity
 		}
 
 		$sql = '';
+		$params = array();
 
 		if (isset($data['guid']) && $data['guid'])
 		{
-			$sql = "SELECT * FROM fm_bim_item WHERE guid = '{$data['guid']}'";
+			$sql = "SELECT * FROM fm_bim_item WHERE guid = :guid";
+			$params[':guid'] = $data['guid'];
+			$id = 0;
 		}
 		else if (isset($data['location_id']) && $data['location_id'])
 		{
@@ -2367,15 +2435,18 @@ class property_soentity
 		if (!$sql)
 		{
 			//				$sql = "SELECT fm_bim_item.* FROM fm_bim_item {$this->join} fm_bim_type ON fm_bim_type.id = fm_bim_item.type WHERE fm_bim_item.id = {$id} AND location_id = $location_id";
-			$sql = "SELECT * FROM fm_bim_item WHERE fm_bim_item.id = {$id} AND location_id = $location_id";
+			$sql = "SELECT * FROM fm_bim_item WHERE fm_bim_item.id = :id AND location_id = :location_id";
+			$params[':id'] = $id;
+			$params[':location_id'] = $location_id;
 		}
 
-		$this->db->query($sql, __LINE__, __FILE__);
+		$this->db->limit_query_with_params($sql, $params, 0, __LINE__, __FILE__, null);
 
 		if (!empty($this->db->resultSet) && ($row = $this->db->resultSet[0]))
 		{
-			$values['id']				 = $id;
-			$values['num']				 = $id;
+			$resolvedId = $id ?: (int)$row['id'];
+			$values['id']				 = $resolvedId;
+			$values['num']				 = $resolvedId;
 			$values['p_id']				 = $row['p_id'];
 			$values['p_location_id']	 = $row['p_location_id'];
 			$values['location_code']	 = $row['location_code'];

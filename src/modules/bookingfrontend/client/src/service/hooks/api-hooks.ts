@@ -72,6 +72,7 @@ function useServerMessageMutation<TData = unknown, TError = unknown, TVariables 
 	options: MutationOptions<TData, TError, TVariables, TContext>
 ) {
 	const queryClient = useQueryClient();
+	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
 	const originalOnSuccess = options.onSuccess;
 	const originalOnSettled = options.onSettled;
 
@@ -87,8 +88,13 @@ function useServerMessageMutation<TData = unknown, TError = unknown, TVariables 
 				originalOnSettled(data, error, variables, context);
 			}
 
-			// Invalidate server messages once after mutation completes (success or error)
-			queryClient.invalidateQueries({queryKey: ['serverMessages']});
+			// When WS is connected, the server_message subscription keeps the cache
+			// in sync via real-time pushes — no need to re-fetch from REST.
+			// Only invalidate when WS is not available.
+			const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
+			if (!isWebSocketActive) {
+				queryClient.invalidateQueries({queryKey: ['serverMessages']});
+			}
 		}
 	});
 }

@@ -14,6 +14,7 @@ import { SessionService } from '../session/session.service';
 import { RoomService } from '../session/room.service';
 import { NotificationService } from '../notification/notification.service';
 import { ApplicationService } from '../application/application.service';
+import { FreeTimeService } from '../freetime/freetime.service';
 import { PhpConfigService } from '../../config/php-config.service';
 
 @WebSocketGateway({
@@ -42,6 +43,7 @@ export class PorticoGateway
     private readonly roomService: RoomService,
     private readonly notificationService: NotificationService,
     private readonly applicationService: ApplicationService,
+    private readonly freeTimeService: FreeTimeService,
     private readonly configService: PhpConfigService,
   ) {}
 
@@ -171,6 +173,8 @@ export class PorticoGateway
         return this.handleUpdateUserInfo(client, data);
       case 'get_partial_applications':
         return this.handleGetPartialApplications(client);
+      case 'get_free_time':
+        return this.handleGetFreeTime(client, data);
       case 'ping':
         // Respond with pong (mirrors PHP NotificationService behavior)
         client.emit('message', {
@@ -398,6 +402,53 @@ export class PorticoGateway
       },
       timestamp: new Date().toISOString(),
     });
+  }
+
+  private async handleGetFreeTime(client: Socket, data: any) {
+    const { buildingId, resourceId, startDate, endDate, detailedOverlap, stopOnEndDate } = data;
+
+    if (!buildingId || !startDate || !endDate) {
+      client.emit('message', {
+        type: 'free_time_response',
+        data: { error: true, message: 'buildingId, startDate and endDate are required' },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const session = this.sessionService.getSession(client.id);
+
+    try {
+      const result = await this.freeTimeService.getFreeTime(
+        Number(buildingId),
+        resourceId ? Number(resourceId) : null,
+        startDate,
+        endDate,
+        session?.sessionId || null,
+        detailedOverlap ?? false,
+        stopOnEndDate ?? false,
+      );
+
+      client.emit('message', {
+        type: 'free_time_response',
+        data: {
+          error: false,
+          status: 'success',
+          result,
+          buildingId: Number(buildingId),
+          startDate,
+          endDate,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      this.logger.error(`FreeTime error: ${err.message}`);
+      client.emit('message', {
+        type: 'free_time_response',
+        data: { error: true, message: err.message },
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 
   // --- Helpers ---

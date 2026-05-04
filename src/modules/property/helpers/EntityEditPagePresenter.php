@@ -381,6 +381,38 @@ class EntityEditPagePresenter
 				. '/' . (int) $context['id'] . '/files';
 		}
 
+		if (!isset($payload['get_checklists_url'])
+			&& isset($context['type'], $context['entity_id'], $context['cat_id']))
+		{
+			$payload['get_checklists_url'] = '/property/entity/' . urlencode($context['type'])
+				. '/' . (int) $context['entity_id']
+				. '/' . (int) $context['cat_id'] . '/checklists';
+		}
+
+		if (!isset($payload['get_cases_url'])
+			&& isset($context['type'], $context['entity_id'], $context['cat_id']))
+		{
+			$payload['get_cases_url'] = '/property/entity/' . urlencode($context['type'])
+				. '/' . (int) $context['entity_id']
+				. '/' . (int) $context['cat_id'] . '/cases';
+		}
+
+		if (!isset($payload['get_controls_url'])
+			&& isset($context['type'], $context['entity_id'], $context['cat_id']))
+		{
+			$payload['get_controls_url'] = '/property/entity/' . urlencode($context['type'])
+				. '/' . (int) $context['entity_id']
+				. '/' . (int) $context['cat_id'] . '/controls';
+		}
+
+		if (!isset($payload['get_cases_for_checklist_url'])
+			&& isset($context['type'], $context['entity_id'], $context['cat_id']))
+		{
+			$payload['get_cases_for_checklist_url'] = '/property/entity/' . urlencode($context['type'])
+				. '/' . (int) $context['entity_id']
+				. '/' . (int) $context['cat_id'] . '/cases-for-checklist';
+		}
+
 		return $payload;
 	}
 

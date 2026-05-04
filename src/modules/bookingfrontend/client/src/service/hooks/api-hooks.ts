@@ -818,6 +818,7 @@ function fetchPartialApplicationsViaWs(
 		const cleanup = subscriptionManager.subscribeToMessageType(
 			'partial_applications_response',
 			(message) => {
+				if (message.type !== 'partial_applications_response') return;
 				clearTimeout(timeout);
 				cleanup();
 				if (message.data.error === false) {
@@ -829,7 +830,7 @@ function fetchPartialApplicationsViaWs(
 						}, 0)
 					});
 				} else {
-					reject(new Error(message.data.message || 'WebSocket error'));
+					reject(new Error('WebSocket partial_applications error'));
 				}
 			}
 		);

@@ -1,4 +1,4 @@
-FROM php:8.4-cli
+FROM node:22-alpine AS builder
 
 ARG http_proxy
 ARG https_proxy
@@ -6,59 +6,30 @@ ARG https_proxy
 ENV http_proxy=${http_proxy}
 ENV https_proxy=${https_proxy}
 
+WORKDIR /app
 
-# Configure PEAR
-RUN if [ -n "${http_proxy}" ]; then pear config-set http_proxy ${http_proxy}; fi && \
-    pear config-set php_ini $PHP_INI_DIR/php.ini
+# Copy package files and install dependencies
+COPY src/WebSocket/node/package.json src/WebSocket/node/package-lock.json* ./
+RUN npm install
 
+# Copy source and build
+COPY src/WebSocket/node/tsconfig.json src/WebSocket/node/nest-cli.json ./
+COPY src/WebSocket/node/src ./src
+RUN npx nest build
 
+# --- Production stage ---
+FROM node:22-alpine
 
-RUN apt-get update && \
-    apt-get install -y \
-    git \
-    unzip \
-    libzip-dev \
-    supervisor \
-    cron \
-    # Install PostgreSQL dependencies
-    libpq-dev \
-    # Install dependencies for other PHP extensions
-    libxml2-dev \
-    libxslt1-dev \
-    libgd-dev \
-    libicu-dev \
-    # Install any other database drivers you might need
-    && pecl install redis \
-    && docker-php-ext-enable redis \
-    # Install PostgreSQL driver
-    && docker-php-ext-install pdo_pgsql \
-    # Install missing extensions
-    && docker-php-ext-install soap xsl gd opcache intl ftp \
-    # Other extensions
-    && docker-php-ext-install zip sockets
+WORKDIR /app
 
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
 
-WORKDIR /var/www/html
+# The PHP config file is mounted via volume at /var/www/html
+# so the config parser can find it at runtime
 
-# Create directory for websocket logs
-RUN mkdir -p /var/log/websocket && \
-    chmod -R 777 /var/log/websocket
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget -qO- http://localhost:8080/ || exit 1
 
-# Create supervisor directories
-RUN mkdir -p /var/log/supervisor /etc/supervisor/conf.d
-
-# Copy supervisor configuration
-COPY supervisord-websocket.conf /etc/supervisor/supervisord.conf
-
-# Set an entrypoint to handle any initialization before running WebSocket server
-COPY docker-entrypoint-websocket.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint-websocket.sh
-
-# Setup healthcheck
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD php /var/www/html/src/WebSocket/health_check.sh || exit 1
-
-ENTRYPOINT ["docker-entrypoint-websocket.sh"]
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+CMD ["node", "dist/main.js"]

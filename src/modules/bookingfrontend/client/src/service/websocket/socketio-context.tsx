@@ -110,7 +110,7 @@ export const SocketIOProvider: React.FC<SocketIOProviderProps> = ({
       reconnectionDelay: 5000,
       reconnectionAttempts: Infinity,
       withCredentials: true,
-      path: '/wss-io/socket.io',
+      path: '/wss/socket.io',
     });
 
     socketRef.current = socket;

@@ -59,43 +59,17 @@ services:
         hostname: ${WEBSOCKET_HOST:-portico_websocket}
         build:
             context: .
-            dockerfile: Dockerfile.websocket
-            args:
-                http_proxy: ${http_proxy}
-                https_proxy: ${https_proxy}
-        working_dir: /var/www/html
-        environment:
-            <<: *common-variables
-            docker: "true"
-            WSS_LOG_ENABLED: "true"
-            WSS_DEBUG_LOG_ENABLED: "${WSS_DEBUG_LOG_ENABLED:-false}"
-            WSS_LOG_TO_DOCKER: "true"
-#        ports:
-#            - "8080:8080"  # WebSocket port
-        volumes:
-            - .:/var/www/html
-            - vendor_data:/var/www/html/vendor
-            - ./logs:/var/log/websocket
-        networks:
-            - internal
-        depends_on:
-            - redis
-            - slim
-
-    websocket-node:
-        container_name: portico_websocket_node
-        hostname: portico_websocket_node
-        build:
-            context: .
             dockerfile: Dockerfile.websocket-node
             args:
                 http_proxy: ${http_proxy}
                 https_proxy: ${https_proxy}
         environment:
             <<: *common-variables
-            WS_PORT: "8081"
+            WS_PORT: "8080"
             WSS_LOG_ENABLED: "true"
             WSS_DEBUG_LOG_ENABLED: "${WSS_DEBUG_LOG_ENABLED:-false}"
+#        ports:
+#            - "8080:8080"  # WebSocket port
         volumes:
             - ./config:/var/www/html/config:ro
         networks:

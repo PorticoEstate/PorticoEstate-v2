@@ -153,6 +153,20 @@ export interface IWSPartialApplicationsResponse extends IWebSocketMessageBase {
   };
 }
 
+// Interface for free time response
+export interface IWSFreeTimeResponse extends IWebSocketMessageBase {
+  type: 'free_time_response';
+  data: {
+    error: boolean;
+    message?: string;
+    status?: string;
+    result?: Record<string, any[]>;
+    buildingId?: number;
+    startDate?: string;
+    endDate?: string;
+  };
+}
+
 // Interface for booking user refresh message
 export interface IWSRefreshBookingUserMessage extends IWebSocketMessageBase {
   type: 'refresh_bookinguser';
@@ -186,6 +200,7 @@ export type WebSocketMessage =
   | IWSSessionIdRequiredMessage
   | IWSConnectionSuccessMessage
   | IWSPartialApplicationsResponse
+  | IWSFreeTimeResponse
   | IWSRefreshBookingUserMessage
   | IWSCacheInvalidationMessage;
   // | (IWebSocketMessageBase & { [key: string]: any }); // Catch-all for other message types

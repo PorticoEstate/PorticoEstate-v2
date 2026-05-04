@@ -29,8 +29,11 @@ export SLIM_SERVER
 export WEBSOCKET_SERVER
 
 # Pass environment variables to Apache
+# SetEnv makes them available in PHP/CGI; Define makes them available in Apache directives (ProxyPass, RewriteRule)
 echo "SetEnv NEXTJS_SERVER ${NEXTJS_SERVER}" >> /etc/apache2/conf-enabled/environment.conf
 echo "SetEnv WEBSOCKET_SERVER ${WEBSOCKET_SERVER}" >> /etc/apache2/conf-enabled/environment.conf
+echo "Define NEXTJS_SERVER ${NEXTJS_SERVER}" >> /etc/apache2/conf-enabled/environment.conf
+echo "Define WEBSOCKET_SERVER ${WEBSOCKET_SERVER}" >> /etc/apache2/conf-enabled/environment.conf
 
 # Check if composer dependencies need to be updated (development scenario with mounted volumes)
 if [ -f /var/www/html/composer.json ]; then

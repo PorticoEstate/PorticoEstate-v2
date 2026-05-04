@@ -240,8 +240,23 @@ export function useBuildingFreeTimeSlots({
 	// The service will queue this subscription if WebSocket is not ready yet
 	useEntitySubscriptionWithPing('building', building_id, handleBuildingUpdate);
 
+	const { status: wsStatus, sessionConnected, isReady: wsReady, sendMessage } = useWebSocketContext();
+	const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
+
 	const fetchFreeTimeSlots = async (): Promise<FreeTimeSlotsResponse> => {
-		// Always fetch from API for just the current week
+		// Prefer WebSocket when connected — avoids HTTP round-trip
+		if (isWebSocketActive) {
+			try {
+				return await fetchFreeTimeViaWs(
+					sendMessage,
+					building_id,
+					currentWeek.minus({days: 1}).toFormat('yyyy-MM-dd'),
+					weekEnd.plus({days: 1}).toFormat('yyyy-MM-dd'),
+				);
+			} catch {
+				// WebSocket request failed or timed out — fall back to REST
+			}
+		}
 		// Add 1 day buffer on both ends to ensure we get overlapping timeslots
 		return await fetchFreeTimeSlotsForRange(
 			building_id,
@@ -257,7 +272,6 @@ export function useBuildingFreeTimeSlots({
 		staleTime: 0, // Consider data stale immediately
 		refetchOnMount: true, // Always refetch when component mounts
 		refetchOnWindowFocus: true, // Refetch when window regains focus
-		// cacheTime: 5 * 60 * 1000 // Cache for 5 minutes max
 	});
 }
 
@@ -658,6 +672,50 @@ export function useExternalUserData() {
 	});
 }
 
+
+/**
+ * Helper that requests free time data over WebSocket.
+ * Returns a Promise that rejects after 10s so the caller can fall back to REST.
+ */
+function fetchFreeTimeViaWs(
+	sendMessage: (type: string, message: string, additionalData?: Record<string, any>) => boolean,
+	buildingId: number,
+	startDate: string,
+	endDate: string,
+): Promise<FreeTimeSlotsResponse> {
+	const subscriptionManager = SubscriptionManager.getInstance();
+
+	return new Promise((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			cleanup();
+			reject(new Error('WebSocket free_time timeout'));
+		}, 10000);
+
+		const cleanup = subscriptionManager.subscribeToMessageType(
+			'free_time_response',
+			(message) => {
+				// Only handle responses for this specific request
+				if (message.data?.buildingId !== buildingId) return;
+
+				clearTimeout(timeout);
+				cleanup();
+				if (message.data.error === false && message.data.result) {
+					resolve(message.data.result as FreeTimeSlotsResponse);
+				} else {
+					reject(new Error(message.data.message || 'WebSocket free_time error'));
+				}
+			}
+		);
+
+		sendMessage('get_free_time', 'Requesting free time', {
+			buildingId,
+			startDate,
+			endDate,
+			detailedOverlap: true,
+			stopOnEndDate: true,
+		});
+	});
+}
 
 /**
  * Helper that requests partial applications over WebSocket and resolves

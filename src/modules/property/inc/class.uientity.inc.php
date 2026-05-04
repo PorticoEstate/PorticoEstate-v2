@@ -3924,11 +3924,11 @@ JS;
 	 *
 	 * Delegates to controller_helper::get_assigned_history().
 	 *
-	 * @return array Assignment history data.
+	 * @return void Output is echoed by controller_helper::get_assigned_history().
 	 */
-	function get_assigned_history(): array
+	function get_assigned_history(): void
 	{
-		return $this->controller_helper->get_assigned_history();
+		$this->controller_helper->get_assigned_history();
 	}
 
 	/**

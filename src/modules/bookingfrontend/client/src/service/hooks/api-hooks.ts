@@ -78,22 +78,16 @@ function useServerMessageMutation<TData = unknown, TError = unknown, TVariables 
 	return useMutation<TData, TError, TVariables, TContext>({
 		...options,
 		onSuccess: (data, variables, context) => {
-			// First call the original onSuccess if it exists
 			if (originalOnSuccess) {
 				originalOnSuccess(data, variables, context);
 			}
-
-			// Then invalidate server messages
-			queryClient.invalidateQueries({queryKey: ['serverMessages']});
 		},
 		onSettled: (data, error, variables, context) => {
-			// First call the original onSettled if it exists
 			if (originalOnSettled) {
 				originalOnSettled(data, error, variables, context);
 			}
 
-			// Then invalidate server messages if not already done in onSuccess
-			// This ensures messages are refreshed even after errors
+			// Invalidate server messages once after mutation completes (success or error)
 			queryClient.invalidateQueries({queryKey: ['serverMessages']});
 		}
 	});

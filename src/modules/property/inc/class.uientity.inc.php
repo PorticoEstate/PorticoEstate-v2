@@ -3736,6 +3736,7 @@ JS;
 			'value_entity_id'			 => $this->entity_id,
 			'tabs'						 => phpgwapi_jquery::tabview_generate($tabs, 0),
 			'value_active_tab'			 => 0,
+			'get_items_per_qr_url'		 => '/property/entity/' . urlencode($this->type) . '/' . (int)$this->entity_id . '/0/items-per-qr',
 		);
 		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $entity['name'] . ' - ' . lang('summary');
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);

@@ -485,6 +485,18 @@ class EntityEditPagePresenter
 				. '/' . (int) $input['entity_id']
 				. '/' . (int) $input['cat_id']
 				. '/' . (int) $input['id'] . '/files',
+			'get_checklists_url' => '/property/entity/' . urlencode($input['type'])
+				. '/' . (int) $input['entity_id']
+				. '/' . (int) $input['cat_id'] . '/checklists',
+			'get_cases_url' => '/property/entity/' . urlencode($input['type'])
+				. '/' . (int) $input['entity_id']
+				. '/' . (int) $input['cat_id'] . '/cases',
+			'get_controls_url' => '/property/entity/' . urlencode($input['type'])
+				. '/' . (int) $input['entity_id']
+				. '/' . (int) $input['cat_id'] . '/controls',
+			'get_cases_for_checklist_url' => '/property/entity/' . urlencode($input['type'])
+				. '/' . (int) $input['entity_id']
+				. '/' . (int) $input['cat_id'] . '/cases-for-checklist',
 		);
 	}
 }

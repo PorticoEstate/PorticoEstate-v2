@@ -1412,17 +1412,34 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		if ($this->acl_delete)
 		{
+			$rest_delete_base = '/property/entity/' . urlencode($this->type)
+				. '/' . (int)$this->entity_id
+				. '/' . (int)$this->cat_id;
+
+			$delete_custom_code = "
+				var selected = fnGetSelected();
+				var numSelected = selected.length;
+				if (numSelected === 0) { return false; }
+				for (var n = 0; n < numSelected; n++) {
+					var aData = oTable.api().rows(selected[n]).data()[0];
+					var deleteUrl = '" . $rest_delete_base . "/' + aData.id;
+					fetch(deleteUrl, {method: 'DELETE', headers: {'X-Requested-With': 'XMLHttpRequest'}})
+						.then(function(resp) {
+							if (resp.ok) {
+								oTable.api().draw('page');
+							} else {
+								resp.text().then(function(t) { alert('Delete failed: ' + t); });
+							}
+						});
+				}
+			";
+
 			$data['datatable']['actions'][] = array(
-				'my_name'		 => 'delete',
+				'my_name'		 => 'rest_delete',
 				'text'			 => lang('delete'),
 				'confirm_msg'	 => lang('do you really want to delete this entry'),
-				'action'		 => phpgw::link('/index.php', array(
-					'menuaction' => 'property.uientity.delete',
-					'entity_id'	 => $this->entity_id,
-					'cat_id'	 => $this->cat_id,
-					'type'		 => $this->type
-				)),
-				'parameters'	 => json_encode($parameters)
+				'type'			 => 'custom',
+				'custom_code'	 => $delete_custom_code
 			);
 		}
 
@@ -2272,6 +2289,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		//cramirez add JsonCod for Delete
 		if (Sanitizer::get_var('phpgw_return_as') == 'json')
 		{
+			if (!$this->acl_delete)
+			{
+				return json_encode(['error' => lang('no access')]);
+			}
 			$this->bo->delete($id);
 			return "id " . $id . " " . lang("has been deleted");
 		}

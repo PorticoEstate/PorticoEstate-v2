@@ -191,47 +191,30 @@ class EntityController
 	}
 
 	/**
-	 * Ensure legacy controller-helper datatable payloads carry a valid draw token.
+	 * Resolve the current DataTables draw token from query or parsed body.
 	 */
-	private function normalizeLegacyDatatableResponse(Request $request, mixed $result): mixed
+	private function currentDraw(Request $request): int
 	{
-		if (!is_array($result))
-		{
-			return $result;
-		}
-
 		$queryParams = $request->getQueryParams();
 		$parsedBody = $request->getParsedBody();
 		$bodyDraw = is_array($parsedBody) ? ($parsedBody['draw'] ?? null) : null;
 		$draw = (int)($queryParams['draw'] ?? $bodyDraw ?? 1);
-		$normalizedDraw = $draw > 0 ? $draw : 1;
+		return $draw > 0 ? $draw : 1;
+	}
 
-		if (isset($result['data'], $result['recordsTotal'], $result['recordsFiltered']))
-		{
-			$result['draw'] = $normalizedDraw;
-			return $result;
-		}
-
-		$rows = [];
-		foreach ($result as $key => $value)
-		{
-			if (is_int($key) || ctype_digit((string)$key))
-			{
-				$rows[] = $value;
-			}
-		}
-
-		if (!$rows && !isset($result['draw']))
-		{
-			$rows = array_values($result);
-		}
-
-		return [
-			'draw' => $normalizedDraw,
+	/**
+	 * Format row data for DataTables-compatible responses used by inline form tables.
+	 *
+	 * @param array $rows
+	 */
+	private function datatableResponse(Response $response, Request $request, array $rows): Response
+	{
+		return $this->jsonResponse($response, [
+			'draw' => $this->currentDraw($request),
 			'recordsTotal' => count($rows),
 			'recordsFiltered' => count($rows),
 			'data' => $rows,
-		];
+		]);
 	}
 
 	/**
@@ -1114,10 +1097,14 @@ class EntityController
 	public function getCases(Request $request, Response $response, array $args): Response
 	{
 		$this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+		$params = $request->getQueryParams();
+		$rows = $this->controllerHelper($args)->get_cases(
+			(int)($params['location_id'] ?? 0),
+			(int)($params['id'] ?? 0),
+			(int)($params['year'] ?? 0)
+		);
 
-		$_GET['phpgw_return_as'] = 'json';
-		$result = $this->controllerHelper($args)->get_cases();
-		return $this->jsonResponse($response, $this->normalizeLegacyDatatableResponse($request, $result));
+		return $this->datatableResponse($response, $request, (array)$rows);
 	}
 
 	/**
@@ -1128,10 +1115,14 @@ class EntityController
 	public function getChecklists(Request $request, Response $response, array $args): Response
 	{
 		$this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+		$params = $request->getQueryParams();
+		$rows = $this->controllerHelper($args)->get_checklists(
+			(int)($params['location_id'] ?? 0),
+			(int)($params['id'] ?? 0),
+			(int)($params['year'] ?? 0)
+		);
 
-		$_GET['phpgw_return_as'] = 'json';
-		$result = $this->controllerHelper($args)->get_checklists();
-		return $this->jsonResponse($response, $this->normalizeLegacyDatatableResponse($request, $result));
+		return $this->datatableResponse($response, $request, (array)$rows);
 	}
 
 	/**
@@ -1142,10 +1133,14 @@ class EntityController
 	public function getControlsAtComponent(Request $request, Response $response, array $args): Response
 	{
 		$this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+		$params = $request->getQueryParams();
+		$rows = $this->controllerHelper($args)->get_controls_at_component(
+			(int)($params['location_id'] ?? 0),
+			(int)($params['id'] ?? 0),
+			true
+		);
 
-		$_GET['phpgw_return_as'] = 'json';
-		$result = $this->controllerHelper($args)->get_controls_at_component();
-		return $this->jsonResponse($response, $this->normalizeLegacyDatatableResponse($request, $result));
+		return $this->datatableResponse($response, $request, (array)$rows);
 	}
 
 	/**
@@ -1156,10 +1151,9 @@ class EntityController
 	public function getCasesForChecklist(Request $request, Response $response, array $args): Response
 	{
 		$this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+		$rows = $this->controllerHelper($args)->get_cases_for_checklist();
 
-		$_GET['phpgw_return_as'] = 'json';
-		$result = $this->controllerHelper($args)->get_cases_for_checklist();
-		return $this->jsonResponse($response, $this->normalizeLegacyDatatableResponse($request, $result));
+		return $this->datatableResponse($response, $request, (array)$rows);
 	}
 
 	/**

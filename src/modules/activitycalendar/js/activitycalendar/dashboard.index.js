@@ -45,7 +45,7 @@ $(document).ready(function ()
 	var previous_date_change;
 	$("#date_change").on('keyup change', function ()
 	{
-		if ($.trim($(this).val()) != $.trim(previous_date_change))
+		if (($(this).val() || '').trim() != (previous_date_change || '').trim())
 		{
 			filterDataActivities('date_change', $(this).val());
 			previous_date_change = $(this).val();

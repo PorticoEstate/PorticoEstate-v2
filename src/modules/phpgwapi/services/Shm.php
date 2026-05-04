@@ -242,7 +242,6 @@ class Shm
 	{
 		if ($id && version_compare(PHP_VERSION, '8.0.0', '<'))
 		{
-			shmop_close($id);
 		}
 	}
 

@@ -83,6 +83,13 @@
         }
     
         /* setup some functions */
+        var isFunction = function(value) {
+            return typeof value === 'function';
+        };
+
+        var trimString = function(value) {
+            return String(value || '').trim();
+        };
         var plugin   = $.editable.types[settings.type].plugin || function() { };
         var submit   = $.editable.types[settings.type].submit || function() { };
         var buttons  = $.editable.types[settings.type].buttons 
@@ -99,9 +106,9 @@
         var onerror  = settings.onerror  || reset;
         
         /* add custom event if it does not exist */
-        if  (!$.isFunction($(this)[settings.event])) {
+        if  (!isFunction($(this)[settings.event])) {
             $.fn[settings.event] = function(fn){
-                return fn ? this.bind(settings.event, fn) : this.trigger(settings.event);
+                return fn ? this.on(settings.event, fn) : this.trigger(settings.event);
             }
         }
           
@@ -122,7 +129,7 @@
             var savedheight = $(self).height();
             
             /* if element is empty add something clickable (if requested) */
-            if (!$.trim($(this).html())) {
+            if (!trimString($(this).html())) {
                 $(this).html(settings.placeholder);
             }
             
@@ -202,7 +209,7 @@
 
                     var loaddata = {};
                     loaddata[settings.id] = self.id;
-                    if ($.isFunction(settings.loaddata)) {
+                    if (isFunction(settings.loaddata)) {
                         $.extend(loaddata, settings.loaddata.apply(self, [self.revert, settings]));
                     } else {
                         $.extend(loaddata, settings.loaddata);
@@ -220,7 +227,7 @@
                     });
                 } else if (settings.data) {
                     input_content = settings.data;
-                    if ($.isFunction(settings.data)) {
+                    if (isFunction(settings.data)) {
                         input_content = settings.data.apply(self, [self.revert, settings]);
                     }
                 } else {
@@ -273,7 +280,7 @@
                             form.submit();
                         }, 200);
                     });
-                } else if ($.isFunction(settings.onblur)) {
+                } else if (isFunction(settings.onblur)) {
                     input.blur(function(e) {
                         settings.onblur.apply(self, [input.val(), settings]);
                     });
@@ -300,13 +307,13 @@
                         if (false !== submit.apply(form, [settings, self])) { 
 
                           /* check if given target is function */
-                          if ($.isFunction(settings.target)) {
+                          if (isFunction(settings.target)) {
                               var str = settings.target.apply(self, [input.val(), settings]);
                               $(self).html(str);
                               self.editing = false;
                               callback.apply(self, [self.innerHTML, settings]);
                               /* TODO: this is not dry */                              
-                              if (!$.trim($(self).html())) {
+                              if (!trimString($(self).html())) {
                                   $(self).html(settings.placeholder);
                               }
                           } else {
@@ -315,7 +322,7 @@
                               submitdata[settings.name] = input.val();
                               submitdata[settings.id] = self.id;
                               /* add extra data to be POST:ed */
-                              if ($.isFunction(settings.submitdata)) {
+                              if (isFunction(settings.submitdata)) {
                                   $.extend(submitdata, settings.submitdata.apply(self, [self.revert, settings]));
                               } else {
                                   $.extend(submitdata, settings.submitdata);
@@ -338,7 +345,7 @@
                                       $(self).html(result);
                                       self.editing = false;
                                       callback.apply(self, [self.innerHTML, settings]);
-                                      if (!$.trim($(self).html())) {
+                                      if (!trimString($(self).html())) {
                                           $(self).html(settings.placeholder);
                                       }
                                   },
@@ -370,7 +377,7 @@
                     if (false !== onreset.apply(form, [settings, self])) { 
                         $(self).html(self.revert);
                         self.editing   = false;
-                        if (!$.trim($(self).html())) {
+                        if (!trimString($(self).html())) {
                             $(self).html(settings.placeholder);
                         }
                         /* show tooltip again */
@@ -427,7 +434,7 @@
 
                         $(cancel).click(function(event) {
                             //original.reset();
-                            if ($.isFunction($.editable.types[settings.type].reset)) {
+                            if (isFunction($.editable.types[settings.type].reset)) {
                                 var reset = $.editable.types[settings.type].reset;                                                                
                             } else {
                                 var reset = $.editable.types['defaults'].reset;                                

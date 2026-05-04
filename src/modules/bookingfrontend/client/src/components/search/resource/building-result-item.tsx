@@ -17,18 +17,27 @@ interface BuildingResultItemProps {
 	building: ISearchDataBuilding;
 	selectedDate: Date | null;
 	resourceCount?: number;
+	// Optional props for standalone (widget) use — when provided, skip the corresponding hook
+	buildingImage?: { url: string; focalPoint?: { x: number; y: number } };
+	townName?: string;
+	lang?: string;
+	labels?: { buildingTitle: string; showAllResources: string };
 }
 
-const BuildingResultItem: FC<BuildingResultItemProps> = ({building, selectedDate, resourceCount}) => {
+const BuildingResultItem: FC<BuildingResultItemProps> = ({
+	building, selectedDate, resourceCount,
+	buildingImage: buildingImageProp, townName, lang: langProp, labels
+}) => {
 	const t = useTrans();
 	const {i18n} = useClientTranslation();
 	const {data: searchData} = useSearchData();
 	const {data: towns} = useTowns();
 	const {data: multiDomains} = useMultiDomains();
-	const isMobile = useIsMobile();
 
 	// Get building image data (URL and focal point)
 	const buildingImage = useMemo(() => {
+		if (buildingImageProp) return buildingImageProp;
+
 		const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 		const placeholderUrl = `${basePath}/resource_placeholder_bilde.png`;
 
@@ -59,7 +68,7 @@ const BuildingResultItem: FC<BuildingResultItemProps> = ({building, selectedDate
 			url: imageUrl,
 			focalPoint: picture.metadata?.focal_point
 		};
-	}, [searchData, building.id]);
+	}, [buildingImageProp, searchData, building.id]);
 
 	// Calculate CSS object-position from focal point (x and y are percentages)
 	const imageStyle = useMemo(() => {
@@ -73,9 +82,10 @@ const BuildingResultItem: FC<BuildingResultItemProps> = ({building, selectedDate
 
 	// Find the town for this building by town_id
 	const town = useMemo(() => {
+		if (townName !== undefined) return { name: townName } as { name: string; id?: number };
 		if (!towns || !building.town_id) return null;
 		return towns.find(t => t.id === building.town_id);
-	}, [towns, building.town_id]);
+	}, [townName, towns, building.town_id]);
 
 	// Find the domain for this building if it's from another domain
 	const domain = useMemo(() => {
@@ -128,11 +138,12 @@ const BuildingResultItem: FC<BuildingResultItemProps> = ({building, selectedDate
 	}, [building.street, building.city]);
 
 	// Extract short description for current language
+	const currentLang = langProp || i18n.language;
 	const shortDescription = useMemo(() => {
 		if (!building.short_description) return null;
 		try {
 			const descriptionJson = JSON.parse(building.short_description);
-			let description = descriptionJson[i18n.language];
+			let description = descriptionJson[currentLang];
 			if (!description) {
 				description = descriptionJson[fallbackLng.key];
 			}
@@ -140,7 +151,7 @@ const BuildingResultItem: FC<BuildingResultItemProps> = ({building, selectedDate
 		} catch {
 			return null;
 		}
-	}, [building.short_description, i18n.language]);
+	}, [building.short_description, currentLang]);
 
 	return (
 		<Card
@@ -164,7 +175,7 @@ const BuildingResultItem: FC<BuildingResultItemProps> = ({building, selectedDate
 			<Card.Block className={styles.contentBlock}>
 				<div className={styles.resourceTags}>
 					<Tag data-color="brand1" data-size="sm">
-						{t('bookingfrontend.building_title')}
+						{labels?.buildingTitle || t('bookingfrontend.building_title')}
 					</Tag>
 					{tags.map((tag, index) => {
 						return <Tag data-color="brand1" data-size="sm" key={index}>{tag}</Tag>;
@@ -205,7 +216,7 @@ const BuildingResultItem: FC<BuildingResultItemProps> = ({building, selectedDate
 					href={createBuildingUrl()}
 					{...(isExternalDomain ? {target: '_blank', rel: 'noopener noreferrer'} : {})}
 				>
-					{t('bookingfrontend.show_all_resources')}  <ArrowRightIcon />
+					{labels?.showAllResources || t('bookingfrontend.show_all_resources')}  <ArrowRightIcon />
 				</Link>
 			</Button>
 

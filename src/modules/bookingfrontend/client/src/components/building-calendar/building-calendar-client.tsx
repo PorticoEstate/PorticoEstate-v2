@@ -12,6 +12,7 @@ import {
 import {useCalenderViewMode, useEnabledResources, useTempEvents} from "@/components/building-calendar/calendar-context";
 import {IBuilding, Season} from "@/service/types/Building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {useToast} from "@/components/toast/toast-context";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 import {useBookingUser} from "@/service/hooks/api-hooks";
 import FullCalendarView from "@/components/building-calendar/views/calendar/full-calendar-view";
@@ -34,6 +35,7 @@ Settings.defaultLocale = "nb";
 
 const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarProps>((props, ref) => {
 	const t = useTrans();
+	const {addToast} = useToast();
 	const {events, building, buildings, readOnly = false} = props;
 	const [currentDate, setCurrentDate] = useState<DateTime>(props.initialDate);
 	const internalRef = useRef<FullCalendar | null>(null);
@@ -193,6 +195,12 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 
 		// Prevent date selection if no resources are enabled
 		if (enabledResources.size === 0) {
+			addToast({
+				type: 'info',
+				text: t('bookingfrontend.select_resource_before_application'),
+				autoHide: true,
+				messageId: 'select_resource_required'
+			});
 			return;
 		}
 
@@ -253,7 +261,7 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 		};
 		selectEvent(newEvent);
 		selectInfo?.view?.calendar.unselect(); // Clear selection
-	}, [t, enabledResources, currentBuilding?.id, currentBuilding?.deactivate_calendar, readOnly, isOrganizationMode, selectEvent, currentDate]);
+	}, [t, addToast, enabledResources, currentBuilding?.id, currentBuilding?.deactivate_calendar, readOnly, isOrganizationMode, selectEvent, currentDate]);
 
 	return (
 		<React.Fragment>

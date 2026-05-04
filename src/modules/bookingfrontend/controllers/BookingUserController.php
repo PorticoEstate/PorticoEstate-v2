@@ -3,7 +3,7 @@
 namespace App\modules\bookingfrontend\controllers;
 
 use App\Database\Db;
-use App\modules\bookingfrontend\helpers\ResponseHelper;
+use App\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\User;
 use App\modules\phpgwapi\services\Cache;

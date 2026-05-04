@@ -1669,7 +1669,7 @@ class calendar_bocalendar
 					{
 						if (!$month_before_day)
 						{
-							$range .= ' ' . lang(strftime('%B', $first['raw']));
+							$range .= ' ' . lang(date('F', $first['raw']));
 						}
 						if ($first['year'] != $last['year'] && $datefmt[0] != 'Y')
 						{
@@ -1688,7 +1688,7 @@ class calendar_bocalendar
 
 						if ($month_before_day)
 						{
-							$range .= lang(strftime('%B', $last['raw']));
+							$range .= lang(date('F', $last['raw']));
 						}
 					}
 					else
@@ -1699,7 +1699,7 @@ class calendar_bocalendar
 					break;
 				case 'm':
 				case 'M':
-					$range .= ' ' . lang(strftime('%B', $month_before_day ? $first['raw'] : $last['raw'])) . ' ';
+					$range .= ' ' . lang(date('F', $month_before_day ? $first['raw'] : $last['raw'])) . ' ';
 					break;
 				case 'Y':
 					$range .= ($datefmt[0] == 'm' ? ', ' : ' ') . ($datefmt[0] == 'Y' ? $first['year'] . ', ' : $last['year'] . ' ');

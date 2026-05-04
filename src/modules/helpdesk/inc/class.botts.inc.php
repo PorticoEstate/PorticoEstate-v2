@@ -58,7 +58,8 @@ class helpdesk_botts
 	var $group_id;
 	var $total_records;
 	var $use_session;
-	var $_simple, $_group_candidates, $_show_finnish_date, $account, $so, $custom, $bocommon, $historylog,
+	var $_group_candidates = array();
+	var $_simple, $_show_finnish_date, $account, $so, $custom, $bocommon, $historylog,
 		$config, $dateformat, $cats, $reported_by, $allrows, $show_finnish_date, $custom_filters,
 		$sum_budget, $sum_actual_cost, $sum_difference, $send, $order_sent_adress, $flags, $userSettings,$serverSettings,
 		$phpgwapi_common, $accounts_obj;

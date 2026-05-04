@@ -204,7 +204,7 @@
         this.multiselectId = this.generateUniqueId() + '_' + multiselectCount;
         this.internalIdCount = 0;
 
-        this.options.multiple = this.$select.attr('multiple') === "multiple";
+        this.options.multiple = true; // Force multiple mode to enable checkboxes and "Select all"
         this.options.onChange = $.proxy(this.options.onChange, this);
         this.options.onSelectAll = $.proxy(this.options.onSelectAll, this);
         this.options.onDeselectAll = $.proxy(this.options.onDeselectAll, this);
@@ -990,7 +990,7 @@
             var label = this.options.optionLabel(element);
             var classes = this.options.optionClass(element);
             var value = $element.val();
-            var inputType = this.options.multiple ? "checkbox" : "radio";
+            var inputType = "checkbox";
             var title = $element.attr('title');
 
             var $option = $(this.options.templates.option);
@@ -1453,7 +1453,7 @@
          * @param {Boolean} triggerOnChange
          */
         select: function (selectValues, triggerOnChange) {
-            if (!$.isArray(selectValues)) {
+            if (!Array.isArray(selectValues)) {
                 selectValues = [selectValues];
             }
 
@@ -1536,7 +1536,7 @@
                 return;
             }
 
-            if (!$.isArray(deselectValues)) {
+            if (!Array.isArray(deselectValues)) {
                 deselectValues = [deselectValues];
             }
 
@@ -1715,7 +1715,7 @@
             this.$select.find('option, optgroup').removeAttr('data-multiselectid');
 
             // Important to distinguish between radios and checkboxes.
-            this.options.multiple = this.$select.attr('multiple') === "multiple";
+            this.options.multiple = true; // Force multiple mode to enable checkboxes and "Select all"
 
             this.buildSelectAll();
             this.buildDropdownOptions();
@@ -1763,7 +1763,7 @@
             $.each(dataprovider, function (index, option) {
                 var $tag;
 
-                if ($.isArray(option.children)) { // create optiongroup tag
+                if (Array.isArray(option.children)) { // create optiongroup tag
                     groupCounter++;
 
                     $tag = $('<optgroup/>').attr({

@@ -256,10 +256,11 @@
 			$this->db->query($sql, __LINE__, __FILE__);
 
 			$this->category_tree = array();
+			$categories = array();
 			while ($this->db->next_record())
 			{
 				$id				 = $this->db->f('id');
-				$categories[$id] = array
+				$categories[] = array
 					(
 					'id'			 => $id,
 					'name'			 => $this->db->f('name', true),
@@ -270,7 +271,7 @@
 
 			foreach ($categories as $category)
 			{
-				$this->category_tree[$category['id']] = array
+				$this->category_tree[] = array
 					(
 					'id'			 => $category['id'],
 					'name'			 => $category['name'],
@@ -1181,9 +1182,11 @@
 		 *
 		 * @return bool true on success
 		 */
-		function convert_to_eav()
+		function convert_to_eav($locations)
 		{
-//			die('vent litt med denne');
+
+		_debug_array($locations);
+			die('vent litt med denne');
 
 			phpgw::import_class('phpgwapi.xmlhelper');
 			$this->type	 = 'entity';
@@ -1200,10 +1203,16 @@
 					if (!$category['is_eav'])
 					{
 
-						$location_id	 = $this->locations->get_id('property', ".{$this->type}.{$category['entity_id']}.{$category['id']}");
+						$location = ".{$this->type}.{$category['entity_id']}.{$category['id']}";
+
+						if(!in_array($location, $locations))
+						{
+							continue;
+						}
+						$location_id	 = $this->locations->get_id('property', $location);
 						$values_insert	 = array(
 							'location_id'	 => $location_id,
-							'name'			 => ".{$this->type}.{$category['entity_id']}.{$category['id']}::{$category['name']}",
+							'name'			 => "{$location}::{$category['name']}",
 							'description'	 => $category['descr'],
 							'is_ifc'		 => 0
 						);

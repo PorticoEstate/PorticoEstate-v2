@@ -18,7 +18,7 @@ class LegacyIMAPWrapper
             throw new Exception('PHP IMAP extension is not installed');
         }
         
-        return @imap_open($mailbox, $username, $password, $flags, $retries, $params);
+        $fn = 'imap_open'; return @$fn($mailbox, $username, $password, $flags, $retries, $params);
     }
     
     /**
@@ -30,7 +30,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_close($stream, $flags);
+        $fn = 'imap_close'; return @$fn($stream, $flags);
     }
     
     /**
@@ -42,7 +42,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_search($stream, $criteria, $flags);
+        $fn = 'imap_search'; return @$fn($stream, $criteria, $flags);
     }
     
     /**
@@ -54,7 +54,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_fetchheader($stream, $msgNum, $flags);
+        $fn = 'imap_fetchheader'; return @$fn($stream, $msgNum, $flags);
     }
     
     /**
@@ -66,7 +66,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_fetchbody($stream, $msgNum, $section, $flags);
+        $fn = 'imap_fetchbody'; return @$fn($stream, $msgNum, $section, $flags);
     }
     
     /**
@@ -78,7 +78,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_fetchstructure($stream, $msgNum, $flags);
+        $fn = 'imap_fetchstructure'; return @$fn($stream, $msgNum, $flags);
     }
     
     /**
@@ -90,7 +90,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_header($stream, $msgNum, $fromlength, $tolength, $defaulthost);
+        $fn = 'imap_header'; return @$fn($stream, $msgNum, $fromlength, $tolength, $defaulthost);
     }
     
     /**
@@ -102,7 +102,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_headerinfo($stream, $msgNum, $fromlength, $tolength, $defaulthost);
+        $fn = 'imap_headerinfo'; return @$fn($stream, $msgNum, $fromlength, $tolength, $defaulthost);
     }
     
     /**
@@ -114,7 +114,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_delete($stream, $msgNums, $flags);
+        $fn = 'imap_delete'; return @$fn($stream, $msgNums, $flags);
     }
     
     /**
@@ -126,7 +126,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_expunge($stream);
+        $fn = 'imap_expunge'; return @$fn($stream);
     }
     
     /**
@@ -138,7 +138,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_num_msg($stream);
+        $fn = 'imap_num_msg'; return @$fn($stream);
     }
     
     /**
@@ -150,7 +150,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_list($stream, $ref, $pattern);
+        $fn = 'imap_list'; return @$fn($stream, $ref, $pattern);
     }
     
     /**
@@ -162,7 +162,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_listmailbox($stream, $ref, $pattern);
+        $fn = 'imap_listmailbox'; return @$fn($stream, $ref, $pattern);
     }
     
     /**
@@ -174,7 +174,7 @@ class LegacyIMAPWrapper
             return mb_convert_encoding($data, 'UTF7-IMAP', 'UTF-8');
         }
         
-        return @imap_utf7_encode($data);
+        $fn = 'imap_utf7_encode'; return @$fn($data);
     }
     
     /**
@@ -186,7 +186,7 @@ class LegacyIMAPWrapper
             return mb_convert_encoding($data, 'UTF-8', 'UTF7-IMAP');
         }
         
-        return @imap_utf7_decode($data);
+        $fn = 'imap_utf7_decode'; return @$fn($data);
     }
     
     /**
@@ -206,7 +206,7 @@ class LegacyIMAPWrapper
             return $result;
         }
         
-        return @imap_mime_header_decode($text);
+        $fn = 'imap_mime_header_decode'; return @$fn($text);
     }
     
     /**
@@ -218,7 +218,7 @@ class LegacyIMAPWrapper
             return 'IMAP extension not available';
         }
         
-        return @imap_last_error();
+        $fn = 'imap_last_error'; return @$fn();
     }
     
     /**
@@ -230,7 +230,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_ping($stream);
+        $fn = 'imap_ping'; return @$fn($stream);
     }
     
     /**
@@ -242,7 +242,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_append($stream, $folder, $message, $flags);
+        $fn = 'imap_append'; return @$fn($stream, $folder, $message, $flags);
     }
     
     /**
@@ -254,7 +254,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_body($stream, $msgNum, $flags);
+        $fn = 'imap_body'; return @$fn($stream, $msgNum, $flags);
     }
     
     /**
@@ -266,7 +266,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_createmailbox($stream, $mailbox);
+        $fn = 'imap_createmailbox'; return @$fn($stream, $mailbox);
     }
     
     /**
@@ -278,7 +278,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_deletemailbox($stream, $mailbox);
+        $fn = 'imap_deletemailbox'; return @$fn($stream, $mailbox);
     }
     
     /**
@@ -290,7 +290,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_renamemailbox($stream, $old_name, $new_name);
+        $fn = 'imap_renamemailbox'; return @$fn($stream, $old_name, $new_name);
     }
     
     /**
@@ -302,7 +302,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_status($stream, $mailbox, $options);
+        $fn = 'imap_status'; return @$fn($stream, $mailbox, $options);
     }
     
     /**
@@ -314,7 +314,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_mailboxmsginfo($stream);
+        $fn = 'imap_mailboxmsginfo'; return @$fn($stream);
     }
     
     /**
@@ -326,7 +326,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_mail_copy($stream, $msgList, $mailbox, $flags);
+        $fn = 'imap_mail_copy'; return @$fn($stream, $msgList, $mailbox, $flags);
     }
     
     /**
@@ -338,7 +338,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_mail_move($stream, $msgList, $mailbox, $flags);
+        $fn = 'imap_mail_move'; return @$fn($stream, $msgList, $mailbox, $flags);
     }
     
     /**
@@ -350,7 +350,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_setflag_full($stream, $msgNum, $flag, $options);
+        $fn = 'imap_setflag_full'; return @$fn($stream, $msgNum, $flag, $options);
     }
     
     /**
@@ -362,7 +362,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_sort($stream, $criteria, $reverse, $options);
+        $fn = 'imap_sort'; return @$fn($stream, $criteria, $reverse, $options);
     }
     
     /**
@@ -374,7 +374,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_reopen($stream, $mailbox, $flags);
+        $fn = 'imap_reopen'; return @$fn($stream, $mailbox, $flags);
     }
     
     /**
@@ -386,7 +386,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_msgno($stream, $uid);
+        $fn = 'imap_msgno'; return @$fn($stream, $uid);
     }
     
     /**
@@ -398,7 +398,7 @@ class LegacyIMAPWrapper
             return base64_decode($data);
         }
         
-        return @imap_base64($data);
+        $fn = 'imap_base64'; return @$fn($data);
     }
     
     /**
@@ -410,7 +410,7 @@ class LegacyIMAPWrapper
             return quoted_printable_decode($data);
         }
         
-        return @imap_qprint($data);
+        $fn = 'imap_qprint'; return @$fn($data);
     }
     
     // Add more legacy functions as needed...
@@ -424,7 +424,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_getmailboxes($stream, $ref, $pattern);
+        $fn = 'imap_getmailboxes'; return @$fn($stream, $ref, $pattern);
     }
     
     /**
@@ -436,7 +436,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_subscribe($stream, $mailbox);
+        $fn = 'imap_subscribe'; return @$fn($stream, $mailbox);
     }
     
     /**
@@ -448,7 +448,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_unsubscribe($stream, $mailbox);
+        $fn = 'imap_unsubscribe'; return @$fn($stream, $mailbox);
     }
     
     /**
@@ -461,7 +461,7 @@ class LegacyIMAPWrapper
             return quoted_printable_encode($data);
         }
         
-        return @imap_8bit($data);
+        $fn = 'imap_8bit'; return @$fn($data);
     }
     
     /**
@@ -478,7 +478,7 @@ class LegacyIMAPWrapper
             return $address;
         }
         
-        return @imap_rfc822_write_address($mailbox, $host, $personal);
+        $fn = 'imap_rfc822_write_address'; return @$fn($mailbox, $host, $personal);
     }
     
     /**
@@ -519,7 +519,7 @@ class LegacyIMAPWrapper
             return $results;
         }
         
-        return @imap_rfc822_parse_adrlist($address, $default_host);
+        $fn = 'imap_rfc822_parse_adrlist'; return @$fn($address, $default_host);
     }
     
     /**
@@ -531,7 +531,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        return @imap_headers($stream);
+        $fn = 'imap_headers'; return @$fn($stream);
     }
     
     /**

@@ -1,0 +1,224 @@
+{# Config template #}
+{% block header %}
+<form method="POST" action="{{ action_url }}">
+	<table class="pure-table pure-table-bordered pure-table-striped pure-form">
+		<thead>
+			<tr>
+				<th colspan="2">{{ title }}</th>
+			</tr>
+		</thead>
+		{% endblock %}
+		{% block body %}
+		<tbody>
+			<tr>
+				<td colspan="2">&nbsp;</td>
+			</tr>
+			<tr>
+				<td colspan="2">&nbsp;<b>{{ lang('rental') }}</b></td>
+			</tr>
+
+			<tr>
+				<td>{{ lang('organization_for_billing_config') }}, (default: Bergen):</td>
+				<td>
+					<select name="newsettings[organization]" class="pure-u-1">
+						<option value="" {{ selected_organization_|raw }}> Bergen kommune </option>
+						<option value="nlsh" {{ selected_organization_nlsh|raw }}> NLSH</option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>{{ lang('area_suffix') }}:</td>
+				<td><input name="newsettings[area_suffix]" value="{{ value_area_suffix|raw }}" class="pure-u-1"/></td>
+			</tr>
+			<tr>
+				<td>{{ lang('currency_prefix') }}:</td>
+				<td><input name="newsettings[currency_prefix]" value="{{ value_currency_prefix|raw }}" class="pure-u-1"/></td>
+			</tr>
+			<tr>
+				<td>{{ lang('currency_suffix') }}:</td>
+				<td><input name="newsettings[currency_suffix]" value="{{ value_currency_suffix|raw }}" class="pure-u-1"/></td>
+			</tr>
+			<tr>
+				<td>{{ lang('serial_start') }}:</td>
+				<td><input name="newsettings[serial_start]" value="{{ value_serial_start|raw }}" class="pure-u-1"/></td>
+			</tr>
+			<tr>
+				<td>{{ lang('serial_stop') }}:</td>
+				<td><input name="newsettings[serial_stop]" value="{{ value_serial_stop|raw }}" class="pure-u-1"/></td>
+			</tr>
+			<tr>
+				<td>{{ lang('billing_time_limit') }}:</td>
+				<td><input name="newsettings[billing_time_limit]" value="{{ value_billing_time_limit|raw }}" class="pure-u-1"/></td>
+			</tr>
+			<tr>
+				<td>{{ lang('from_email_setting') }}:</td>
+				<td><input name="newsettings[from_email_setting]" value="{{ value_from_email_setting|raw }}" class="pure-u-1"/></td>
+			</tr>
+			<tr>
+				<td>{{ lang('http_address_for_external_users') }}:</td>
+				<td><input name="newsettings[http_address_for_external_users]" value="{{ value_http_address_for_external_users|raw }}" class="pure-u-1"/></td>
+			</tr>
+			<tr>
+				<td>{{ lang('create_user_based_on_email_group') }}:</td>
+				<td>
+					<select name="newsettings[create_user_based_on_email_group]" class="pure-u-1">
+						{{ hook_create_user_based_on_email_group|raw }}
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>{{ lang('entity_config_move_in') }}:</td>
+				<td>
+					{{ hook_entity_config_move_in|raw }}
+				</td>
+			</tr>
+
+			<tr>
+				<td>{{ lang('category_config_move_in') }}:</td>
+				<td>
+					<select name="newsettings[category_config_move_in]" class="pure-u-1">
+						{{ hook_category_config_move_in|raw }}
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>{{ lang('entity_config_move_out') }}:</td>
+				<td>
+					{{ hook_entity_config_move_out|raw }}
+				</td>
+			</tr>
+			<tr>
+				<td>{{ lang('category_config_move_out') }}:</td>
+				<td>
+					<select name="newsettings[category_config_move_out]" class="pure-u-1">
+						{{ hook_category_config_move_out|raw }}
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>{{ lang('contract_future_info') }}:</td>
+				<td>
+					<select name="newsettings[contract_future_info]" class="pure-u-1">
+						<option value="" {{ selected_contract_future_info_|raw }}> {{ lang('NO') }} </option>
+						<option value="1" {{ selected_contract_future_info_1|raw }}> {{ lang('YES') }} </option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>{{ lang('contract_furnished_status') }}:</td>
+				<td>
+					<select name="newsettings[contract_furnished_status]" class="pure-u-1">
+						<option value="" {{ selected_contract_furnished_status_|raw }}> {{ lang('NO') }} </option>
+						<option value="1" {{ selected_contract_furnished_status_1|raw }}> {{ lang('YES') }} </option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>{{ lang('use_fellesdata') }}:</td>
+				<td>
+					<select name="newsettings[use_fellesdata]" class="pure-u-1">
+						<option value="" {{ selected_use_fellesdata_|raw }}> {{ lang('NO') }} </option>
+						<option value="1" {{ selected_use_fellesdata_1|raw }}> {{ lang('YES') }} </option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">&nbsp;<b>{{ lang('external_db') }}</b></td>
+			</tr>
+			<tr>
+				<td>{{ lang('Debug') }}:</td>
+				<td>
+					<select name="newsettings[external_db_debug]" class="pure-u-1">
+						<option value="" {{ selected_external_db_debug_|raw }}> {{ lang('NO') }} </option>
+						<option value="1" {{ selected_external_db_debug_1|raw }}> {{ lang('YES') }} </option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>{{ lang('login_external_db_host') }}:</td>
+				<td><input name="newsettings[external_db_host]" value="{{ value_external_db_host|raw }}" class="pure-u-1"/></td>
+			</tr>
+			<tr>
+				<td>{{ lang('login_external_db_port') }}:</td>
+				<td><input name="newsettings[external_db_port]" value="{{ value_external_db_port|raw }}" class="pure-u-1"/></td>
+			</tr>
+			<tr>
+				<td>{{ lang('type') }}:</td>
+				<td>
+					<select name="newsettings[external_db_type]" class="pure-u-1">
+						<option value="" {{ selected_external_db_type_|raw }}> {{ lang('None') }} </option>
+						<option value="mssql" {{ selected_external_db_type_mssql|raw }}>mssql</option>
+						<option value="mysql" {{ selected_external_db_type_mysql|raw }}>mysql</option>
+						<option value="oracle" {{ selected_external_db_type_oracle|raw }}>oracle</option>
+						<option value="postgres" {{ selected_external_db_type_postgres|raw }}>postgres</option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>{{ lang('login_external_db_name') }}:</td>
+				<td><input name="newsettings[external_db_name]" value="{{ value_external_db_name|raw }}" class="pure-u-1"/></td>
+			</tr>
+			<tr>
+				<td>{{ lang('login_external_db_user') }}:</td>
+				<td><input name="newsettings[external_db_user]" value="{{ value_external_db_user|raw }}" class="pure-u-1"/></td>
+			</tr>
+
+
+			<tr>
+				<td>{{ lang('login_external_db_password') }}:</td>
+				<td><input type ="password" name="newsettings[external_db_password]" value="{{ value_external_db_password|raw }}" autocomplete="off"
+						   readonly="readonly" onfocus="this.removeAttribute('readonly');" class="pure-u-1"/></td>
+			</tr>
+
+			<tr>
+				<td>{{ lang('path_to_wkhtmltopdf') }}:</td>
+				<td><input name="newsettings[path_to_wkhtmltopdf]" value="{{ value_path_to_wkhtmltopdf|raw }}" class="pure-u-1"/></td>
+			</tr>
+			<tr>
+				<td valign = 'top'>{{ lang('contract_types') }}:</td>
+				<td>
+					<!--to be able to blank the setting - need an empty value-->
+					<input type = 'hidden' name="newsettings[contract_types][]" value="">
+					<table>
+						{{ hook_contract_types|raw }}
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td valign = 'top'>{{ lang('default_billing_term') }}:</td>
+				<td>
+					<!--to be able to blank the setting - need an empty value-->
+					<!--input type = 'hidden' name="newsettings[default_billing_term]" value=""-->
+					<table>
+						{{ hook_default_billing_term|raw }}
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td>{{ lang('notify_on_expire_email') }}:</td>
+				<td><input name="newsettings[notify_on_expire_email]" value="{{ value_notify_on_expire_email|raw }}" class="pure-u-1"/></td>
+			</tr>
+			<tr>
+				<td>{{ lang('notify_reminder_days') }}:</td>
+				<td><input name="newsettings[notify_reminder_days]" value="{{ value_notify_reminder_days|raw }}" class="pure-u-1"/></td>
+			</tr>
+		</tbody>
+
+		{% endblock %}
+		{% block footer %}
+		<tfoot>
+			<tr>
+				<td colspan="2">
+					&nbsp;
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2" align="center">
+					<input type="submit" name="submit" value="{{ lang('submit') }}" class="pure-button"/>
+					<input type="submit" name="cancel" value="{{ lang('cancel') }}" class="pure-button"/>
+				</td>
+			</tr>
+		</tfoot>
+	</table>
+</form>
+{% endblock %}

@@ -409,7 +409,7 @@ class WebSocketHelper
 	 * @param string|null $sessionId The session ID to update or default to current session
 	 * @return bool Success status
 	 */
-    public static function triggerPartialApplicationsUpdate(string $sessionId = null): bool
+    public static function triggerPartialApplicationsUpdate(?string $sessionId = null): bool
     {
 
 		if(!isset($sessionId))
@@ -452,7 +452,7 @@ class WebSocketHelper
      * @param string|null $sessionId The session ID to update or default to current session
      * @return bool Success status
      */
-    public static function triggerBookingUserUpdate(string $sessionId = null): bool
+    public static function triggerBookingUserUpdate(?string $sessionId = null): bool
     {
         if (!isset($sessionId)) {
             $session = Sessions::getInstance();

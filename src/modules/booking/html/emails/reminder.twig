@@ -1,0 +1,15 @@
+Informasjon om kommende arrangement:
+Hvor: {{ where }}
+Når:  {{ when }}
+{% if who %}Hvem: {{ who }}
+{% endif %}
+{% if author %}
+{{ author }}
+{%- else %}
+Aktivby
+{%- endif %} fører statistikk på bruk av lokaler og ber derfor om at dere
+
+etter arrangementet melder inn korrekt deltakertall til oss.
+Du kan gjøre dette ved å klikke på linken nedenfor.
+
+{{ report_url }}

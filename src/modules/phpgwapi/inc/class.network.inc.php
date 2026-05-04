@@ -78,7 +78,7 @@ class phpgwapi_network
 		$this->socket = @fsockopen($server, $port, $errcode, $errmsg, $timeout);
 		if ($this->socket)
 		{
-			socket_set_timeout($this->socket, $timeout, 0);
+			stream_set_timeout($this->socket, $timeout, 0);
 		}
 		if (!$this->socket)
 		{

@@ -1,0 +1,23 @@
+{% extends '@views/emails/_email_layout.twig' %}
+
+{% block content %}
+<p>{{ mail_created|safe_html }}</p>
+
+{% include '@views/emails/_partials/application_details.twig' with {
+    application_name: application_name,
+    organizer: organizer,
+    resourcename: resourcename,
+    building_name: building_name
+} %}
+
+{% if dates is not empty %}
+<p><strong>Ønskede tider:</strong></p>
+<pre>
+{%- for date in dates %}
+	{{ date }}
+{%- endfor %}
+</pre>
+{% endif %}
+
+{% include '@views/emails/_partials/application_link.twig' %}
+{% endblock %}

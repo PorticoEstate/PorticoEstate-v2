@@ -1,0 +1,43 @@
+{# Config template #}
+{% block header %}
+<form method="POST" action="{{ action_url }}">
+	<table class="pure-table pure-table-bordered pure-table-striped pure-form">
+		<tr class="th">
+			<td colspan="2"><font color="{{ th_text }}">&nbsp;<b>{{ title }}</b></font></td>
+		</tr>
+		{% endblock %}
+		{% block body %}
+		<tbody>
+			<tr>
+				<td colspan="2">&nbsp;</td>
+			</tr>
+			<tr>
+				<td colspan="2">&nbsp;<b>{{ lang('sms') }}</b></td>
+			</tr>
+			<tr>
+				<td>{{ lang('receipt_on_code_miss') }}:</td>
+				<td>
+					<textarea cols="60" rows="10" name="newsettings[receipt_on_code_miss]" wrap="virtual">{{ value_receipt_on_code_miss|raw }}</textarea>
+				</td>
+			</tr>
+		</tbody>
+		{% endblock %}
+
+		{% block footer %}
+		<tfoot>
+			<tr class="th">
+				<td colspan="2">
+					&nbsp;
+				</td>
+			</tr>
+
+			<tr>
+				<td colspan="2" align="center">
+					<input type="submit" name="submit" value="{{ lang('submit') }}" class="pure-button"/>
+					<input type="submit" name="cancel" value="{{ lang('cancel') }}" class="pure-button"/>
+				</td>
+			</tr>
+		</tfoot>
+	</table>
+</form>
+{% endblock %}

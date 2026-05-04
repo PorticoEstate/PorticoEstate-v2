@@ -1,0 +1,18 @@
+{# Kill session confirmation template #}
+
+{% block form %}
+	<b>{{ lang_title }}</b>
+	<hr><p>
+
+		<table border="0" with="65%" align="center">
+			<tr colspan="2">
+				<td align="center">{{ lang_message }}</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>{{ link_no|raw }}</td>
+				<td>{{ link_yes|raw }}</td>
+			</tr>
+		</table>
+	{% endblock %}
+</p>

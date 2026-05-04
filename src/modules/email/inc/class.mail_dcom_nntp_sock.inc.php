@@ -16,6 +16,15 @@
 	* @package email
 	* @ignore
 	*/	
+	defined('PE_IMAP_SA_ALL') || define('PE_IMAP_SA_ALL', 31);
+	defined('PE_IMAP_SORTDATE') || define('PE_IMAP_SORTDATE', 0);
+	defined('PE_IMAP_SORTARRIVAL') || define('PE_IMAP_SORTARRIVAL', 1);
+	defined('PE_IMAP_SORTFROM') || define('PE_IMAP_SORTFROM', 2);
+	defined('PE_IMAP_SORTSUBJECT') || define('PE_IMAP_SORTSUBJECT', 3);
+	defined('PE_IMAP_SORTTO') || define('PE_IMAP_SORTTO', 4);
+	defined('PE_IMAP_SORTCC') || define('PE_IMAP_SORTCC', 5);
+	defined('PE_IMAP_SORTSIZE') || define('PE_IMAP_SORTSIZE', 6);
+
   class mail_dcom extends mail_dcom_base
   {
 	var $db;
@@ -240,14 +249,14 @@
 		return $field_element;
 	}
 
-	function status($folder='',$options=SA_ALL)
+	function status($folder='',$options=PE_IMAP_SA_ALL)
 	{
 		$info = new mailbox_status;
 		$info->messages = $this->num_msg($folder);
 		return $info;
 	}
 
-	function sort($folder='',$criteria=SORTDATE,$reverse=False,$options='')
+	function sort($folder='',$criteria=PE_IMAP_SORTDATE,$reverse=False,$options='')
 	{
 		if($folder == '' || $folder == $this->mailbox)
 		{
@@ -264,29 +273,29 @@
 		
 		switch($criteria)
 		{
-			case SORTDATE:
+			case PE_IMAP_SORTDATE:
 				$old_list = $this->fetch_field($start_msg,$end_msg,'Date');
 				$field_list = $this->convert_date_array($old_list);
 				break;
-			case SORTARRIVAL:
+			case PE_IMAP_SORTARRIVAL:
 				break;
-			case SORTFROM:
+			case PE_IMAP_SORTFROM:
 				$field_list = $this->fetch_field($start_msg,$end_msg,'From');
 				break;
-			case SORTSUBJECT:
+			case PE_IMAP_SORTSUBJECT:
 				$field_list = $this->fetch_field($start_msg,$end_msg,'Subject');
 				break;
-			case SORTTO:
+			case PE_IMAP_SORTTO:
 				$field_list = $this->fetch_field($start_msg,$end_msg,'To');
 				break;
-			case SORTCC:
+			case PE_IMAP_SORTCC:
 				$field_list = $this->fetch_field($start_msg,$end_msg,'cc');
 				break;
-			case SORTSIZE:
+			case PE_IMAP_SORTSIZE:
 				break;
 		}
 		@reset($field_list);
-		if($criteria == SORTSUBJECT)
+		if($criteria == PE_IMAP_SORTSUBJECT)
 		{
 			if(!$reverse)
 			{

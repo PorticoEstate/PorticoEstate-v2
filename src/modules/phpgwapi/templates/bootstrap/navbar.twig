@@ -1,0 +1,19 @@
+{# twig #}
+<body class="{{ menu_state }}">
+	{{ top_panel|raw }}
+
+	<!-- Page Content  -->
+	<div id="layoutSidenav">
+		<div
+			id="layoutSidenav_nav">
+			<!-- Sidebar  -->
+			{{ sidebar|raw }}
+
+		</div>
+		<div id="layoutSidenav_content">
+			<main id="page_content">
+				<div class="container-fluid">
+					<h1 class="mt-2">{{ current_app_title }}</h1>
+					{{ breadcrumb|raw }}
+					<div class="card mb-2 shadow">
+						<div class="card-body pt-2">

@@ -1,0 +1,26 @@
+{# Button component with Designsystemet support #}
+{% if is_designsystemet %}
+    {# Use Designsystemet web component #}
+    <ds-button
+        {% if variant %}variant="{{ variant }}"{% endif %}
+        {% if size %}size="{{ size }}"{% endif %}
+        {% if disabled %}disabled{% endif %}
+        {% if type %}type="{{ type }}"{% endif %}
+        {% if id %}id="{{ id }}"{% endif %}
+        {% if class %}class="{{ class }}"{% endif %}
+        {% if onclick %}onclick="{{ onclick }}"{% endif %}
+    >
+        {{ content|raw }}
+    </ds-button>
+{% else %}
+    {# Fallback to Bootstrap #}
+    <button
+        type="{{ type|default('button') }}"
+        class="btn btn-{{ variant|default('primary') }}{% if size %} btn-{{ size }}{% endif %}{% if class %} {{ class }}{% endif %}"
+        {% if id %}id="{{ id }}"{% endif %}
+        {% if disabled %}disabled{% endif %}
+        {% if onclick %}onclick="{{ onclick }}"{% endif %}
+    >
+        {{ content|raw }}
+    </button>
+{% endif %}

@@ -417,6 +417,7 @@ class booking_uibooking extends booking_uicommon
 
 	public function add()
 	{
+		$isJsonRequest = self::handleJsonPost();
 		$errors = array();
 		$booking = array();
 		$booking['cost'] = 0;
@@ -568,6 +569,13 @@ class booking_uibooking extends booking_uicommon
 				{
 					$booking['secret'] = $this->generate_secret();
 					$receipt = $this->bo->add($booking);
+				}
+				if ($isJsonRequest) {
+					self::sendJsonResponse([
+						'id' => $receipt['id'],
+						'type' => 'booking',
+						'edit_url' => '/?menuaction=booking.uibooking.show&id=' . $receipt['id'],
+					], 201);
 				}
 				self::redirect(array('menuaction' => 'booking.uimassbooking.schedule', 'id' => $booking['building_id']));
 			}

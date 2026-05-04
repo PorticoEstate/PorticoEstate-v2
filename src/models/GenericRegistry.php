@@ -225,6 +225,12 @@ abstract class GenericRegistry extends BaseModel
 		return $instance->findWhereInstance($conditions, $options);
 	}
 
+	public static function countWhereByType(string $type, array $conditions = []): int
+	{
+		$instance = static::forType($type);
+		return $instance->countWhereInstance($conditions);
+	}
+
 	/**
 	 * Instance-level findWhere that uses the registry type's table
 	 */
@@ -241,8 +247,24 @@ abstract class GenericRegistry extends BaseModel
 		{
 			if (is_array($value))
 			{
+				// Multi-field OR search: ['_multi_search', 'LIKE', $query, 'fields' => [...]]
+				if (isset($value['fields']) && is_array($value['fields']))
+				{
+					$orParts = [];
+					foreach ($value['fields'] as $i => $searchField)
+					{
+						$searchField = preg_replace('/[^a-zA-Z0-9_]/', '', $searchField);
+						$placeholder = ":search_{$i}";
+						$orParts[] = "{$searchField} ILIKE {$placeholder}";
+						$params[$placeholder] = "%{$value[2]}%";
+					}
+					if (!empty($orParts))
+					{
+						$whereParts[] = '(' . implode(' OR ', $orParts) . ')';
+					}
+				}
 				// Handle array conditions like ['field', 'operator', 'value']
-				if (count($value) === 3)
+				elseif (count($value) === 3)
 				{
 					[$field, $operator, $val] = $value;
 					$placeholder = ":{$field}_" . count($params);
@@ -305,6 +327,66 @@ abstract class GenericRegistry extends BaseModel
 		}
 
 		return $results;
+	}
+
+	/**
+	 * Instance-level count with same WHERE-building as findWhereInstance
+	 */
+	public function countWhereInstance(array $conditions = []): int
+	{
+		$db = Db::getInstance();
+		$tableName = $this->getInstanceTableName();
+
+		// Build WHERE clause (same logic as findWhereInstance)
+		$whereParts = [];
+		$params = [];
+
+		foreach ($conditions as $key => $value)
+		{
+			if (is_array($value))
+			{
+				// Multi-field OR search
+				if (isset($value['fields']) && is_array($value['fields']))
+				{
+					$orParts = [];
+					foreach ($value['fields'] as $i => $searchField)
+					{
+						$searchField = preg_replace('/[^a-zA-Z0-9_]/', '', $searchField);
+						$placeholder = ":search_{$i}";
+						$orParts[] = "{$searchField} ILIKE {$placeholder}";
+						$params[$placeholder] = "%{$value[2]}%";
+					}
+					if (!empty($orParts))
+					{
+						$whereParts[] = '(' . implode(' OR ', $orParts) . ')';
+					}
+				}
+				elseif (count($value) === 3)
+				{
+					[$field, $operator, $val] = $value;
+					$placeholder = ":{$field}_" . count($params);
+					$whereParts[] = "{$field} {$operator} {$placeholder}";
+					$params[$placeholder] = $val;
+				}
+			}
+			else
+			{
+				$placeholder = ":{$key}_" . count($params);
+				$whereParts[] = "{$key} = {$placeholder}";
+				$params[$placeholder] = $value;
+			}
+		}
+
+		$sql = "SELECT COUNT(*) FROM {$tableName}";
+		if (!empty($whereParts))
+		{
+			$sql .= " WHERE " . implode(' AND ', $whereParts);
+		}
+
+		$stmt = $db->prepare($sql);
+		$stmt->execute($params);
+
+		return (int)$stmt->fetchColumn();
 	}
 
 	/**
@@ -826,27 +908,24 @@ abstract class GenericRegistry extends BaseModel
 			foreach ($this->registryConfig['fields'] as $field)
 			{
 				$fieldName = $field['name'];
+				$value = null;
 
-				// Try to get the field value - first check if it exists as a property
 				if (property_exists($this, $fieldName))
 				{
 					$value = $this->$fieldName;
-					// Include the field even if it's null - the API consumer decides how to handle nulls
-					$data[$fieldName] = $value;
 				}
-				else
+				else if (isset($this->$fieldName))
 				{
-					// Check if the property exists but is dynamically set
-					if (isset($this->$fieldName))
-					{
-						$data[$fieldName] = $this->$fieldName;
-					}
-					else
-					{
-						// Field is defined in config but not set - include as null
-						$data[$fieldName] = null;
-					}
+					$value = $this->$fieldName;
 				}
+
+				// Decode HTML entities for html/text fields (legacy data stored encoded)
+				if ($value !== null && is_string($value) && in_array($field['type'], ['html', 'text']))
+				{
+					$value = $this->sanitizeString($value);
+				}
+
+				$data[$fieldName] = $value;
 			}
 		}
 
@@ -927,6 +1006,30 @@ abstract class GenericRegistry extends BaseModel
 		}
 
 		return $this;
+	}
+
+	/**
+	 * Decode HTML entities from legacy encoded data.
+	 * Mirrors SerializableTrait::sanitizeString() used by models like Building.
+	 */
+	protected function sanitizeString(string $value): string
+	{
+		$decoded = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+		$decoded = preg_replace_callback(
+			'/&#(\d+);/',
+			function ($matches) {
+				return chr((int)$matches[1]);
+			},
+			$decoded
+		);
+
+		if (strpos($decoded, '&amp;') !== false)
+		{
+			$decoded = html_entity_decode($decoded, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		}
+
+		return $decoded;
 	}
 
 	/**

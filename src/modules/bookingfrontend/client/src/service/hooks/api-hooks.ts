@@ -8,6 +8,7 @@ import {
 	MutationOptions
 } from "@tanstack/react-query";
 import { useWebSocketContext } from '../websocket/websocket-context';
+import { SubscriptionManager } from '../websocket/subscription-manager';
 import {IBookingUser, IDocument, IServerSettings, IMultiDomain, IDocumentCategoryQuery} from "@/service/types/api.types";
 import {
 	fetchApplication,
@@ -658,41 +659,81 @@ export function useExternalUserData() {
 }
 
 
+/**
+ * Helper that requests partial applications over WebSocket and resolves
+ * with the response.  Returns a Promise that rejects after `timeoutMs`
+ * so the caller can fall back to REST.
+ */
+function fetchPartialApplicationsViaWs(
+	sendMessage: (type: string, message: string, additionalData?: Record<string, any>) => boolean
+): Promise<{ list: IApplication[], total_sum: number }> {
+	const subscriptionManager = SubscriptionManager.getInstance();
+
+	return new Promise((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			cleanup();
+			reject(new Error('WebSocket partial_applications timeout'));
+		}, 5000);
+
+		const cleanup = subscriptionManager.subscribeToMessageType(
+			'partial_applications_response',
+			(message) => {
+				clearTimeout(timeout);
+				cleanup();
+				if (message.data.error === false) {
+					resolve({
+						list: message.data.applications,
+						total_sum: message.data.applications.reduce((sum: number, app: IApplication) => {
+							const orderSum = app.orders?.reduce((acc: number, order: any) => acc + (Number(order.sum) || 0), 0) || 0;
+							return sum + orderSum;
+						}, 0)
+					});
+				} else {
+					reject(new Error(message.data.message || 'WebSocket error'));
+				}
+			}
+		);
+
+		sendMessage('get_partial_applications', 'Requesting partial applications');
+	});
+}
+
 export function usePartialApplications(): UseQueryResult<{ list: IApplication[], total_sum: number }> {
 	const queryClient = useQueryClient();
-	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
+	const { status: wsStatus, sessionConnected, isReady: wsReady, sendMessage } = useWebSocketContext();
 
-	// Handle WebSocket messages with partial application updates
+	// Handle server-pushed partial application updates (e.g. after mutations in other tabs)
 	useMessageTypeSubscription('partial_applications_response', (message) => {
-		console.log('Received partial applications WebSocket update');
-
-		// Update the query cache with the new data
 		if (message.data.error === false) {
 			queryClient.setQueryData(['partialApplications'], {
 				list: message.data.applications,
-				total_sum: message.data.applications.reduce((sum, app) => {
-					// Calculate total sum from orders if they exist
-					const orderSum = app.orders?.reduce((acc, order) => acc + (Number(order.sum) || 0), 0) || 0;
+				total_sum: message.data.applications.reduce((sum: number, app: IApplication) => {
+					const orderSum = app.orders?.reduce((acc: number, order: any) => acc + (Number(order.sum) || 0), 0) || 0;
 					return sum + orderSum;
 				}, 0)
 			});
 		}
 	});
 
+	const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
+
 	return useQuery(
 		{
 			queryKey: ['partialApplications'],
-			queryFn: () => fetchPartialApplications(), // Fetch function
-			retry: 2, // Number of retry attempts if the query fails
-			refetchOnWindowFocus: false, // Do not refetch on window focus by default,
+			queryFn: async () => {
+				// Prefer WebSocket when connected — avoids HTTP round-trip
+				if (isWebSocketActive) {
+					try {
+						return await fetchPartialApplicationsViaWs(sendMessage);
+					} catch {
+						// WebSocket request failed or timed out — fall back to REST
+					}
+				}
+				return fetchPartialApplications();
+			},
+			retry: 2,
+			refetchOnWindowFocus: false,
 			refetchInterval: () => {
-				// Check if websocket connection is active
-				const isWebSocketActive = wsReady &&
-					wsStatus === 'OPEN' &&
-					sessionConnected;
-
-				// If websocket is not active, refetch every 30 seconds
-				// Otherwise rely on WebSocket updates
 				return isWebSocketActive ? false : 30000;
 			}
 		}

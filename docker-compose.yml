@@ -82,6 +82,28 @@ services:
             - redis
             - slim
 
+    websocket-node:
+        container_name: portico_websocket_node
+        hostname: portico_websocket_node
+        build:
+            context: .
+            dockerfile: Dockerfile.websocket-node
+            args:
+                http_proxy: ${http_proxy}
+                https_proxy: ${https_proxy}
+        environment:
+            <<: *common-variables
+            WS_PORT: "8081"
+            WSS_LOG_ENABLED: "true"
+            WSS_DEBUG_LOG_ENABLED: "${WSS_DEBUG_LOG_ENABLED:-false}"
+        volumes:
+            - ./config:/var/www/html/config:ro
+        networks:
+            - internal
+        depends_on:
+            - redis
+            - slim
+
     redis:
         image: redis:alpine
         container_name: ${REDIS_HOST:-portico_redis}

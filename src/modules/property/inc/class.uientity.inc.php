@@ -3501,7 +3501,6 @@ JS;
 			'no_link'		 => false,
 			'lookup_type'	 => 'form',
 			'tenant'		 => false,
-//			'lookup_entity'	 => $lookup_entity,
 			'entity_data'	 => isset($values['p']) ? $values['p'] : ''
 		));
 
@@ -3634,7 +3633,7 @@ JS;
 			'no_link'		 => false,
 			'lookup_type'	 => 'form',
 			'tenant'		 => false,
-//			'lookup_entity'	 => $lookup_entity,
+			//			'lookup_entity'	 => $lookup_entity,
 			'entity_data'	 => isset($values['p']) ? $values['p'] : ''
 		));
 

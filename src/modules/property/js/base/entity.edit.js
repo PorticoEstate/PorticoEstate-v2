@@ -453,14 +453,23 @@ function renderFormErrorAlert(form, messages)
 	form.insertBefore(alert, form.firstChild);
 }
 
-function renderFormSuccessAlert(form, text)
+function renderFormSuccessAlert(form, messages)
 {
 	clearFormAlerts(form);
 
 	var alert = document.createElement('div');
 	alert.className = 'rest-submit-alert text-center alert alert-success';
 	alert.setAttribute('role', 'alert');
-	alert.textContent = text;
+
+	var lines = Array.isArray(messages) ? messages : [messages];
+	for (var i = 0; i < lines.length; i++)
+	{
+		if (i > 0)
+		{
+			alert.appendChild(document.createElement('br'));
+		}
+		alert.appendChild(document.createTextNode(lines[i]));
+	}
 
 	form.insertBefore(alert, form.firstChild);
 }
@@ -507,22 +516,22 @@ function getSuccessMessage(data, isCreate)
 	var topLevel = extractReceiptMessages(data && data.message);
 	if (topLevel.length)
 	{
-		return topLevel[0];
+		return topLevel;
 	}
 
 	var receipt = extractReceiptMessages(data && data.receipt && data.receipt.message);
 	if (receipt.length)
 	{
-		return receipt[0];
+		return receipt;
 	}
 
 	var id = (data && data.id) ? data.id : item_id;
 	if (isCreate)
 	{
-		return 'Post ' + id + ' er opprettet';
+		return ['Post ' + id + ' er opprettet'];
 	}
 
-	return 'Post ' + id + ' er oppdatert';
+	return ['Post ' + id + ' er oppdatert'];
 }
 
 function hasSelectedFileUpload(form)

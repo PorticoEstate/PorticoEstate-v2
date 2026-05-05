@@ -34,6 +34,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\controllers\Locations;
 use App\modules\property\inc\property_soentity;
+use App\modules\phpgwapi\services\InterLink;
 
 /**
  * Description
@@ -878,8 +879,7 @@ JS;
 			}
 		}
 
-		include_class('property', 'interlink');
-		$interlink				 = new property_interlink();
+		$interlink				 = new InterLink();
 		$values['origin_data']	 = $interlink->get_relation($this->type_app[$this->type], ".{$this->type}.{$data['entity_id']}.{$data['cat_id']}", $data['id'], 'origin');
 		$values['target']		 = $interlink->get_relation($this->type_app[$this->type], ".{$this->type}.{$data['entity_id']}.{$data['cat_id']}", $data['id'], 'target');
 		return $values;
@@ -1173,8 +1173,7 @@ JS;
 	{
 		$values = $this->so->get_inventory($data);
 
-		include_class('property', 'interlink');
-		$interlink = new property_interlink();
+		$interlink = new InterLink();
 
 		foreach ($values as &$entry)
 		{

@@ -46,6 +46,10 @@ class property_ofproperty extends phpgwapi_object_factory
 				include_class($appname, $classname);
 				return \property_botts::getInstance();
 
+			case 'interlink':
+				include_class($appname, $classname);
+				return new \App\modules\phpgwapi\services\InterLink();
+
 			case 'sotts':
 				include_class($appname, $classname);
 				return \property_sotts::getInstance();

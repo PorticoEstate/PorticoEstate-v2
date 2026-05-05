@@ -2146,7 +2146,7 @@ class property_bocommon
 	 *
 	 * @param array $values array with data fom post
 	 * @param array $insert_record array containing fields to collect from post
-	 * @return updated values
+	 * @return array $values
 	 */
 	function collect_locationdata($values = array(), $insert_record = array())
 	{

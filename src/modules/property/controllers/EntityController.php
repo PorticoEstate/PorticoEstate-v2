@@ -362,7 +362,7 @@ class EntityController
 		}
 
 		include_class('property', 'bocommon');
-		$bocommon = CreateObject('property.bocommon');
+		$bocommon = new \property_bocommon();
 		if (!is_object($bocommon) || !method_exists($bocommon, 'collect_locationdata'))
 		{
 			return $values;
@@ -809,7 +809,10 @@ class EntityController
 				$bo->type_app[$bo->type],
 				$errors
 			);
-			$receipt['error'] = $errors;
+
+			$messages = Cache::message_get(true);
+			$receipt['error'] = array_merge($errors, (array)($messages['error'] ?? []));
+			$receipt['message'] = array_merge((array)($receipt['message'] ?? []), (array)($messages['message'] ?? []));
 		}
 
 		$response->getBody()->write(json_encode($receipt, JSON_THROW_ON_ERROR));
@@ -906,7 +909,10 @@ class EntityController
 				$bo->type_app[$bo->type],
 				$errors
 			);
-			$receipt['error'] = $errors;
+
+			$messages = Cache::message_get(true);
+			$receipt['error'] = array_merge($errors, (array)($messages['error'] ?? []));
+			$receipt['message'] = array_merge((array)($receipt['message'] ?? []), (array)($messages['message'] ?? []));
 		}
 
 		$response->getBody()->write(json_encode($receipt, JSON_THROW_ON_ERROR));

@@ -717,19 +717,32 @@ class EntityController
 
 	/**
 	 * @OA\Post(
-	 *     path="/property/entity/{type}/{entity_id}/{cat_id}",
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/create",
 	 *     summary="Create a new entity item",
-	 *     description="Creates a new entity item with optional EAV attribute values.",
+	 *     description="Creates a new entity item with optional EAV attribute values. Accepts JSON or multipart/form-data (required when uploading a file attachment).",
 	 *     tags={"Entity"},
 	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
 	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
 	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
 	 *     @OA\RequestBody(
 	 *         required=true,
-	 *         @OA\JsonContent(
-	 *             type="object",
-	 *             @OA\Property(property="values", type="object", description="Core field values"),
-	 *             @OA\Property(property="values_attribute", type="object", description="EAV attribute values keyed by attribute ID")
+	 *         @OA\MediaType(
+	 *             mediaType="application/json",
+	 *             @OA\Schema(
+	 *                 type="object",
+	 *                 @OA\Property(property="values", type="object", description="Core field values"),
+	 *                 @OA\Property(property="values_attribute", type="object", description="EAV attribute values keyed by attribute ID")
+	 *             )
+	 *         ),
+	 *         @OA\MediaType(
+	 *             mediaType="multipart/form-data",
+	 *             @OA\Schema(
+	 *                 type="object",
+	 *                 @OA\Property(property="values", type="object", description="Core field values"),
+	 *                 @OA\Property(property="values_attribute", type="object", description="EAV attribute values keyed by attribute ID"),
+	 *                 @OA\Property(property="file", type="string", format="binary", description="Optional file attachment"),
+	 *                 @OA\Property(property="jasperfile", type="string", format="binary", description="Optional Jasper report attachment")
+	 *             )
 	 *         )
 	 *     ),
 	 *     @OA\Response(
@@ -934,7 +947,17 @@ class EntityController
 	/**
 	 * Return entity items matching a QR code.
 	 *
-	 * GET /property/entity/{type}/{entity_id}/{cat_id}/items-per-qr?qr_code=…
+	 * @OA\Get(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/items-per-qr",
+	 *     summary="Get items by QR code",
+	 *     description="Returns entity items whose QR code matches the given value.",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="qr_code", in="query", required=false, description="QR code value to search", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="Matching items", @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/EntityItem")))
+	 * )
 	 */
 	public function getItemsPerQr(Request $request, Response $response, array $args): Response
 	{
@@ -948,7 +971,18 @@ class EntityController
 	/**
 	 * Return related entity links for a given item.
 	 *
-	 * GET /property/entity/{type}/{entity_id}/{cat_id}/{id}/related
+	 * @OA\Post(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}/related",
+	 *     summary="Get related entity links",
+	 *     description="Returns interlinked entity records for the given item. Called via DataTables POST.",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Item ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="draw", in="query", required=false, description="DataTables draw counter", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="DataTables response with related records")
+	 * )
 	 */
 	public function getRelated(Request $request, Response $response, array $args): Response
 	{
@@ -991,7 +1025,18 @@ class EntityController
 	 * Return attached files for a given item, with HTML file_link / delete_file cells
 	 * and image enrichment (img_id, img_url) for image/* mime types.
 	 *
-	 * GET /property/entity/{type}/{entity_id}/{cat_id}/{id}/files
+	 * @OA\Post(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}/files",
+	 *     summary="Get attached files",
+	 *     description="Returns file attachments for the given item as a DataTables-compatible response. Includes HTML link and delete-checkbox cells, plus img_id/img_url for image types.",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Item ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="draw", in="query", required=false, description="DataTables draw counter", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="DataTables response with file rows")
+	 * )
 	 */
 	public function getFiles(Request $request, Response $response, array $args): Response
 	{
@@ -1062,7 +1107,18 @@ class EntityController
 	/**
 	 * Return inventory records for a given item.
 	 *
-	 * GET /property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory
+	 * @OA\Post(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory",
+	 *     summary="Get inventory for item",
+	 *     description="Returns inventory records associated with the given entity item.",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Item ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="draw", in="query", required=false, description="DataTables draw counter", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="DataTables response with inventory rows")
+	 * )
 	 */
 	public function getInventory(Request $request, Response $response, array $args): Response
 	{
@@ -1092,7 +1148,19 @@ class EntityController
 	/**
 	 * Return controller cases linked to this entity item.
 	 *
-	 * GET /property/entity/{type}/{entity_id}/{cat_id}/cases?id=…&location_id=…&year=…
+	 * @OA\Get(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/cases",
+	 *     summary="Get controller cases",
+	 *     description="Returns controller cases linked to the given entity item.",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="query", required=false, description="Item ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="location_id", in="query", required=false, description="Location ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="year", in="query", required=false, description="Year filter", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="DataTables response with case rows")
+	 * )
 	 */
 	public function getCases(Request $request, Response $response, array $args): Response
 	{
@@ -1110,7 +1178,19 @@ class EntityController
 	/**
 	 * Return controller checklists linked to this entity item.
 	 *
-	 * GET /property/entity/{type}/{entity_id}/{cat_id}/checklists?id=…&location_id=…&year=…
+	 * @OA\Get(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/checklists",
+	 *     summary="Get controller checklists",
+	 *     description="Returns controller checklists linked to the given entity item.",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="query", required=false, description="Item ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="location_id", in="query", required=false, description="Location ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="year", in="query", required=false, description="Year filter", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="DataTables response with checklist rows")
+	 * )
 	 */
 	public function getChecklists(Request $request, Response $response, array $args): Response
 	{
@@ -1128,7 +1208,18 @@ class EntityController
 	/**
 	 * Return controller controls attached to this entity component.
 	 *
-	 * GET /property/entity/{type}/{entity_id}/{cat_id}/controls?id=…&location_id=…
+	 * @OA\Get(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/controls",
+	 *     summary="Get controls at component",
+	 *     description="Returns controller inspection controls attached to this entity item/component.",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="query", required=false, description="Item ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="location_id", in="query", required=false, description="Location ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="DataTables response with control rows")
+	 * )
 	 */
 	public function getControlsAtComponent(Request $request, Response $response, array $args): Response
 	{
@@ -1146,7 +1237,17 @@ class EntityController
 	/**
 	 * Return cases belonging to a specific checklist.
 	 *
-	 * GET /property/entity/{type}/{entity_id}/{cat_id}/cases-for-checklist?check_list_id=…
+	 * @OA\Get(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/cases-for-checklist",
+	 *     summary="Get cases for checklist",
+	 *     description="Returns controller cases belonging to a specific checklist linked to this entity.",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="check_list_id", in="query", required=false, description="Checklist ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="DataTables response with case rows")
+	 * )
 	 */
 	public function getCasesForChecklist(Request $request, Response $response, array $args): Response
 	{
@@ -1159,7 +1260,22 @@ class EntityController
 	/**
 	 * Download the current entity list as a file using property_bocommon::download().
 	 *
-	 * GET /property/entity/{type}/{entity_id}/{cat_id}/download
+	 * @OA\Get(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/download",
+	 *     summary="Download entity list",
+	 *     description="Streams the full entity list as CSV, Excel, or ODS depending on user preference.",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="File download",
+	 *         @OA\MediaType(mediaType="text/csv"),
+	 *         @OA\MediaType(mediaType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+	 *         @OA\MediaType(mediaType="application/vnd.oasis.opendocument.spreadsheet")
+	 *     )
+	 * )
 	 *
 	 * This will output CSV, Excel, or ODS depending on user preference, matching the legacy UI.
 	 *

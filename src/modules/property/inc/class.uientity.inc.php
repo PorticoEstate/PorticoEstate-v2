@@ -684,7 +684,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	{
 		if (!$_POST)
 		{
-			return $this->edit();
+			$this->edit();
+			return null;
 		}
 
 		$helper = new EntityFormHelper();
@@ -1481,7 +1482,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		{
 			if (!$this->acl_read)
 			{
-				$this->bocommon->no_access();
+				phpgw::no_access();
 				return;
 			}
 		}
@@ -1489,7 +1490,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		{
 			if (!$this->acl_add && !$this->acl_edit)
 			{
-				$this->bocommon->no_access();
+				phpgw::no_access();
 				return;
 			}
 		}
@@ -2363,7 +2364,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	{
 		if (!$this->acl_read)
 		{
-			$this->bocommon->no_access();
+			phpgw::no_access();
 			return;
 		}
 

@@ -11,6 +11,7 @@ use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\repositories\ApplicationRepository;
 use App\modules\bookingfrontend\repositories\ArticleRepository;
 use App\modules\bookingfrontend\services\applications\ApplicationService;
+use App\modules\bookingfrontend\services\FreeTimeService;
 use App\modules\phpgwapi\security\Sessions;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Container\ContainerInterface;
@@ -1399,32 +1400,15 @@ class ApplicationController extends DocumentController
      */
     protected function getAffectedTimeslots(int $buildingId, int $resourceId, \DateTime $startDate, \DateTime $endDate): array
     {
-        // Create a booking business object to access the get_free_events method
-        $bo = \CreateObject('booking.bobooking');
-
-        // Format dates for the get_free_events method
-        $formattedStartDate = $startDate->format('d/m-Y');
-        $formattedEndDate = $endDate->format('d/m-Y');
-
-        // Save current request parameters
-        $originalRequest = $_REQUEST;
-
-        // Set up the request parameters for get_freetime
-        $_REQUEST['building_id'] = $buildingId;
-        $_REQUEST['resource_id'] = $resourceId;
-        $_REQUEST['start_date'] = $formattedStartDate;
-        $_REQUEST['end_date'] = $formattedEndDate;
-        $_REQUEST['detailed_overlap'] = true;
-        $_REQUEST['stop_on_end_date'] = true;
-
-        // Use the existing logic to get timeslots
-        $uibooking = \CreateObject('bookingfrontend.uibooking');
-        $timeslots = $uibooking->get_freetime();
-
-        // Restore original request parameters
-        $_REQUEST = $originalRequest;
-
-        // Return the timeslots for this resource
+        $freeTimeService = new FreeTimeService();
+        $timeslots = $freeTimeService->getFreeTime(
+            $buildingId,
+            $resourceId,
+            $startDate->format('Y-m-d'),
+            $endDate->format('Y-m-d'),
+            true,  // detailed_overlap
+            true   // stop_on_end_date
+        );
         return isset($timeslots[$resourceId]) ? $timeslots[$resourceId] : [];
     }
 

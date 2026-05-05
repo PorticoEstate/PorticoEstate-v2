@@ -114,15 +114,12 @@ export async function fetchBuildingSeasons(building_id: number, instance?: strin
 
 
 export async function fetchFreeTimeSlotsForRange(building_id: number, start: DateTime, end: DateTime, instance?: string): Promise<Record<string, IFreeTimeSlot[]>> {
-	const url = phpGWLink('bookingfrontend/', {
-		menuaction: 'bookingfrontend.uibooking.get_freetime',
-		building_id,
-		start_date: start.toFormat('dd/LL-yyyy'),
-		end_date: end.toFormat('dd/LL-yyyy'),
-		detailed_overlap: true,
-		stop_on_end_date: true
-	}, true, instance);
-	console.log("FETCHING FREE TIME SLOTS FOR RANGE", url);
+	const url = phpGWLink(['bookingfrontend', 'buildings', building_id, 'freetime'], {
+		start_date: start.toFormat('yyyy-MM-dd'),
+		end_date: end.toFormat('yyyy-MM-dd'),
+		detailed_overlap: 'true',
+		stop_on_end_date: 'true'
+	}, false, instance);
 	const response = await fetch(url);
 	const result = await response.json();
 	return result;

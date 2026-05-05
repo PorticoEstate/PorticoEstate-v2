@@ -344,6 +344,11 @@ class booking_sobooking extends booking_socommon
 			$resource_ids = array((int)$resource_id);
 		}
 
+		if (!$resource_ids)
+		{
+			return array();
+		}
+
 		$start = $start->format('Y-m-d H:i');
 		$end = $end->format('Y-m-d H:i');
 
@@ -388,6 +393,11 @@ class booking_sobooking extends booking_socommon
 		else
 		{
 			$resource_ids = array((int)$resource_id);
+		}
+
+		if (!$resource_ids)
+		{
+			return array();
 		}
 
 		$start = $start->format('Y-m-d H:i');
@@ -512,6 +522,11 @@ class booking_sobooking extends booking_socommon
 			$resource_ids = array((int)$resource_id);
 		}
 
+		if (!$resource_ids)
+		{
+			return array();
+		}
+
 		$start = $start->format('Y-m-d H:i');
 		$end = $end->format('Y-m-d H:i');
 		$results = array();
@@ -544,6 +559,11 @@ class booking_sobooking extends booking_socommon
 		else
 		{
 			$resource_ids = array((int)$resource_id);
+		}
+
+		if (!$resource_ids)
+		{
+			return array();
 		}
 
 		$start = $start->format('Y-m-d H:i');

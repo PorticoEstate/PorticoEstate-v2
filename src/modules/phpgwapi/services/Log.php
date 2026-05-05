@@ -251,7 +251,7 @@ class Log
 
 		$values = array(
 			date('Y-m-d H:i:s'),
-			$flags['currentapp'],
+			mb_substr($flags['currentapp'], 0, 25, 'UTF-8'),
 			isset($user['id']) && $user['id'] ? $user['id'] : -1,
 			isset($user['lid']) && $user['lid'] ? $user['lid'] : 'not authenticated',
 			$err->severity,

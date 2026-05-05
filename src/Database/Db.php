@@ -329,6 +329,38 @@ class Db
 		return $value;
 	}
 
+	public function marshal($value, $type)
+	{
+		$type = strtolower($type);
+		if ($value === null)
+		{
+			return '';
+		}
+		else if (in_array($type, array('int', 'integer', 'smallint', 'bigint')))
+		{
+			return intval($value);
+		}
+		else if (in_array($type, array('decimal', 'float', 'double')))
+		{
+			return floatval($value);
+		}
+		else if ($type == 'json')
+		{
+			return json_encode($value, JSON_THROW_ON_ERROR);
+		}
+		else if (in_array($type, array('string', 'text', 'varchar', 'char')))
+		{
+			return $this->db_addslashes($value);
+		}
+
+		if (!$this->valid_field_type($type))
+		{
+			throw new Exception(sprintf('Invalid type "%s"', $type));
+		}
+
+		return $value;
+	}
+
 	function valid_field_type($type)
 	{
 		$valid_types = array('int', 'decimal', 'string', 'json');

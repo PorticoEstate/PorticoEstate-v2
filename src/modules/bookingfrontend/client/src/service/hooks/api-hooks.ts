@@ -1390,14 +1390,78 @@ export function useDeletePartialApplication() {
 }
 
 
+/**
+ * Create a simple application via WebSocket.
+ * Returns a promise that resolves with the response or rejects on error/timeout.
+ */
+function createSimpleApplicationViaWs(
+	sendMessage: (type: string, message: string, additionalData?: Record<string, any>) => boolean,
+	timeslot: IFreeTimeSlot,
+	buildingId: number,
+): Promise<{ id: number; status: string; message: string }> {
+	const subscriptionManager = SubscriptionManager.getInstance();
+
+	return new Promise((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			cleanup();
+			reject(new Error('WebSocket booking timeout'));
+		}, 15000);
+
+		const cleanup = subscriptionManager.subscribeToMessageType(
+			'create_application_response',
+			(message) => {
+				if (message.type !== 'create_application_response') return;
+				clearTimeout(timeout);
+				cleanup();
+				if (message.data.error === false) {
+					resolve({
+						id: message.data.id!,
+						status: message.data.status || 'NEWPARTIAL1',
+						message: message.data.message || 'Created',
+					});
+				} else if ((message.data as any).useRestFallback) {
+					// Server says PHP source changed — fall back to REST
+					reject(new Error('WS booking timeout'));
+				} else {
+					reject(new Error(message.data.message || 'Booking failed'));
+				}
+			},
+		);
+
+		sendMessage('create_simple_application', 'Creating simple application', {
+			resourceId: timeslot.resource_id,
+			buildingId,
+			from: timeslot.start,
+			to: timeslot.end,
+		});
+	});
+}
+
 export function useCreateSimpleApplication() {
 	const queryClient = useQueryClient();
-	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
+	const { status: wsStatus, sessionConnected, isReady: wsReady, sendMessage } = useWebSocketContext();
 
 	return useServerMessageMutation({
 		mutationFn: async (params: { timeslot: IFreeTimeSlot, building_id: number }) => {
-			const url = phpGWLink(['bookingfrontend', 'applications', 'simple']);
+			const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
 
+			// Prefer WebSocket — avoids HTTP round-trip and gets atomic Redis lock + DB transaction
+			if (isWebSocketActive) {
+				try {
+					return await createSimpleApplicationViaWs(
+						sendMessage, params.timeslot, params.building_id,
+					);
+				} catch (err) {
+					// If the WS error is a real booking error (not a timeout), throw it
+					if (err instanceof Error && !err.message.includes('timeout')) {
+						throw err;
+					}
+					// Timeout — fall back to REST
+				}
+			}
+
+			// REST fallback
+			const url = phpGWLink(['bookingfrontend', 'applications', 'simple']);
 			const response = await fetch(url, {
 				method: 'POST',
 				body: JSON.stringify({
@@ -1406,28 +1470,18 @@ export function useCreateSimpleApplication() {
 					resource_id: params.timeslot.resource_id,
 					building_id: params.building_id,
 				}),
-				headers: {
-					'Content-Type': 'application/json',
-				},
+				headers: { 'Content-Type': 'application/json' },
 			});
 
 			if (!response.ok) {
-				// Parse error message from response if available
 				const errorData = await response.json().catch(() => ({}));
 				throw new Error(errorData.error || 'Failed to create simple application');
 			}
 
 			return response.json();
 		},
-		onSuccess: (data, variables) => {
-			const isWebSocketActive = wsReady &&
-				wsStatus === 'OPEN' &&
-				sessionConnected;
-
-			// Only invalidate if WebSocket is not active
-			// If WebSocket is active, the server will send:
-			// 1. partial_applications_response for updating applications
-			// 2. room_message for updating building timeslots
+		onSuccess: (_data, variables) => {
+			const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
 			if (!isWebSocketActive) {
 				queryClient.invalidateQueries({queryKey: ['partialApplications']});
 				if (variables.building_id) {
@@ -1441,8 +1495,6 @@ export function useCreateSimpleApplication() {
 			}
 		},
 		onError: (_error, variables) => {
-			// Booking failed (slot already taken, conflict, etc.)
-			// Force refresh freetime data to show current availability
 			queryClient.invalidateQueries({queryKey: ['partialApplications']});
 			if (variables.building_id) {
 				queryClient.invalidateQueries({

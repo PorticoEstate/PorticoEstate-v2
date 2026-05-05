@@ -5,6 +5,7 @@ import { SessionModule } from './modules/session/session.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { ApplicationModule } from './modules/application/application.module';
 import { FreeTimeModule } from './modules/freetime/freetime.module';
+import { BookingModule } from './modules/booking/booking.module';
 import { GatewayModule } from './modules/gateway/gateway.module';
 
 @Module({
@@ -15,6 +16,7 @@ import { GatewayModule } from './modules/gateway/gateway.module';
     NotificationModule,
     ApplicationModule,
     FreeTimeModule,
+    BookingModule,
     GatewayModule,
   ],
 })

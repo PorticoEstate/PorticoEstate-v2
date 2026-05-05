@@ -15,6 +15,7 @@ import { RoomService } from '../session/room.service';
 import { NotificationService } from '../notification/notification.service';
 import { ApplicationService } from '../application/application.service';
 import { FreeTimeService } from '../freetime/freetime.service';
+import { BookingService } from '../booking/booking.service';
 import { PhpConfigService } from '../../config/php-config.service';
 
 @WebSocketGateway({
@@ -44,6 +45,7 @@ export class PorticoGateway
     private readonly notificationService: NotificationService,
     private readonly applicationService: ApplicationService,
     private readonly freeTimeService: FreeTimeService,
+    private readonly bookingService: BookingService,
     private readonly configService: PhpConfigService,
   ) {}
 
@@ -175,6 +177,8 @@ export class PorticoGateway
         return this.handleGetPartialApplications(client);
       case 'get_free_time':
         return this.handleGetFreeTime(client, data);
+      case 'create_simple_application':
+        return this.handleCreateSimpleApplication(client, data);
       case 'ping':
         // Respond with pong (mirrors PHP NotificationService behavior)
         client.emit('message', {
@@ -404,6 +408,119 @@ export class PorticoGateway
     });
   }
 
+  private async handleCreateSimpleApplication(client: Socket, data: any) {
+    // Safety check: if PHP source files have changed, refuse WS booking
+    // and tell client to use REST fallback
+    if (!this.bookingService.isEnabled()) {
+      client.emit('message', {
+        type: 'create_application_response',
+        data: {
+          error: true,
+          message: 'WS booking disabled — PHP source changed. Use REST endpoint.',
+          useRestFallback: true,
+        },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const { resourceId, buildingId, from, to, ownerId: clientOwnerId } = data;
+
+    if (!resourceId || !buildingId || !from || !to) {
+      client.emit('message', {
+        type: 'create_application_response',
+        data: { error: true, message: 'resourceId, buildingId, from, and to are required' },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const session = this.sessionService.getSession(client.id);
+    if (!session?.sessionId) {
+      client.emit('message', {
+        type: 'create_application_response',
+        data: { error: true, message: 'No session' },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Convert timestamps (ms) to date strings if needed
+    let fromStr = String(from);
+    let toStr = String(to);
+    if (/^\d{13,}$/.test(fromStr)) {
+      const d = new Date(parseInt(fromStr, 10));
+      fromStr = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+    }
+    if (/^\d{13,}$/.test(toStr)) {
+      const d = new Date(parseInt(toStr, 10));
+      toStr = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+    }
+
+    try {
+      const result = await this.bookingService.createSimpleBooking(
+        Number(resourceId),
+        Number(buildingId),
+        fromStr,
+        toStr,
+        session.sessionId,
+        session.userInfo?.userId || (clientOwnerId ? Number(clientOwnerId) : undefined),
+      );
+
+      // Send success response immediately
+      client.emit('message', {
+        type: 'create_application_response',
+        data: {
+          error: false,
+          id: result.id,
+          status: result.status,
+          message: 'Simple application created successfully',
+        },
+        timestamp: new Date().toISOString(),
+      });
+
+      // Publish notifications asynchronously (don't block the response)
+      this.bookingService
+        .publishBookingNotifications(
+          session.sessionId,
+          Number(buildingId),
+          Number(resourceId),
+          fromStr,
+          toStr,
+        )
+        .catch((err) =>
+          this.logger.error(`Booking notification error: ${err.message}`),
+        );
+    } catch (err: any) {
+      this.logger.warn(`Booking failed: ${err.message}`);
+
+      // Send error response — client shows this as a toast
+      client.emit('message', {
+        type: 'create_application_response',
+        data: {
+          error: true,
+          message: err.message,
+        },
+        timestamp: new Date().toISOString(),
+      });
+
+      // Also send as server_message for toast display
+      const roomId = this.roomService.sessionRoomId(session.sessionId);
+      this.server.to(roomId).emit('message', {
+        type: 'server_message',
+        action: 'new',
+        messages: [
+          {
+            id: `err_${Date.now()}`,
+            type: 'error',
+            text: err.message,
+          },
+        ],
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
   private async handleGetFreeTime(client: Socket, data: any) {
     const { buildingId, resourceId, startDate, endDate, detailedOverlap, stopOnEndDate } = data;
 
@@ -472,4 +589,8 @@ export class PorticoGateway
       websocket_host: config.hosts.websocket,
     };
   }
+}
+
+function pad2(n: number): string {
+  return n < 10 ? '0' + n : String(n);
 }

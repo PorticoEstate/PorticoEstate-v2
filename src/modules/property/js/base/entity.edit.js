@@ -369,9 +369,23 @@ function buildEntityRestRequest(form)
 {
 	var parsed = parseURL(form.action);
 	var query = parsed.searchObject || {};
-	var type = query.type || $('#field_type').val() || '';
+	var type = query.type || '';
 	var entityId = query.entity_id || '';
 	var catId = query.cat_id || '';
+
+	if (!type || !entityId || !catId)
+	{
+		var pathMatch = parsed.pathname.match(/\/property\/entity\/([^\/]+)\/(\d+)\/(\d+)/);
+		if (pathMatch)
+		{
+			if (!type) { type = decodeURIComponent(pathMatch[1]); }
+			if (!entityId) { entityId = pathMatch[2]; }
+			if (!catId) { catId = pathMatch[3]; }
+		}
+	}
+
+	if (!type) { type = $('#field_type').val() || ''; }
+
 	var rawId = (query.id || item_id || '').toString();
 	var id = parseInt(rawId, 10);
 	var bypass = query.bypass;
@@ -400,7 +414,10 @@ function buildEntityRestRequest(form)
 	return {
 		url: url,
 		method: isCreate ? 'POST' : 'PUT',
-		isCreate: isCreate
+		isCreate: isCreate,
+		type: type,
+		entityId: entityId,
+		catId: catId
 	};
 }
 
@@ -594,11 +611,6 @@ $(document).ready(function ()
 			return true;
 		}
 
-		if (hasSelectedFileUpload(form))
-		{
-			return true;
-		}
-
 		var restRequest = buildEntityRestRequest(form);
 		if (!restRequest)
 		{
@@ -613,16 +625,29 @@ $(document).ready(function ()
 		{
 			formData.set(submitter.name, submitter.value || '1');
 		}
-		var payload = formDataToObject(formData);
 
-		fetch(restRequest.url, {
-			method: restRequest.method,
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			credentials: 'same-origin',
-			body: JSON.stringify(payload)
-		})
+		var fetchOptions;
+		if (hasSelectedFileUpload(form))
+		{
+			// Let the browser set Content-Type: multipart/form-data with boundary.
+			// Slim's getParsedBody() + $_FILES will handle it on the server side.
+			fetchOptions = {
+				method: restRequest.method,
+				credentials: 'same-origin',
+				body: formData
+			};
+		}
+		else
+		{
+			fetchOptions = {
+				method: restRequest.method,
+				headers: {'Content-Type': 'application/json'},
+				credentials: 'same-origin',
+				body: JSON.stringify(formDataToObject(formData))
+			};
+		}
+
+		fetch(restRequest.url, fetchOptions)
 			.then(function (response)
 			{
 				return response.json()
@@ -657,11 +682,24 @@ $(document).ready(function ()
 
 				if (restRequest.isCreate && data.id)
 				{
-					var sep = form.action.indexOf('?') >= 0 ? '&' : '?';
-					var redirectUrl = form.action + sep + 'id=' + encodeURIComponent(data.id);
+					var redirectUrl = '/property/entity/' + encodeURIComponent(restRequest.type)
+						+ '/' + encodeURIComponent(restRequest.entityId)
+						+ '/' + encodeURIComponent(restRequest.catId)
+						+ '?id=' + encodeURIComponent(data.id);
 					setTimeout(function ()
 					{
 						window.location.href = redirectUrl;
+					}, 1200);
+				}
+				else if (submitter && submitter.name === 'values[save]')
+				{
+					var indexUrl = 'index.php?menuaction=property.uientity.index'
+						+ '&entity_id=' + encodeURIComponent(restRequest.entityId)
+						+ '&cat_id=' + encodeURIComponent(restRequest.catId)
+						+ '&type=' + encodeURIComponent(restRequest.type);
+					setTimeout(function ()
+					{
+						window.location.href = indexUrl;
 					}, 1200);
 				}
 				else
@@ -676,18 +714,16 @@ $(document).ready(function ()
 					}
 				}
 			})
-			.catch(function (error)
+		.catch(function (error)
+		{
+			var errors = getErrorMessages(error && error.responseData);
+			if (!errors.length)
 			{
-				var errors = getErrorMessages(error && error.responseData);
-				if (errors.length)
-				{
-					renderFormErrorAlert(form, errors);
-					form.scrollIntoView({behavior: 'smooth', block: 'start'});
-					return;
-				}
-
-				form.submit();
-			});
+				errors = ['Feil ved lagring. Vennligst prøv igjen.'];
+			}
+			renderFormErrorAlert(form, errors);
+			form.scrollIntoView({behavior: 'smooth', block: 'start'});
+		});
 
 		return false;
 	});

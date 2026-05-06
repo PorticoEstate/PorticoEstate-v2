@@ -34,9 +34,11 @@ export const useWebSocketSession = () => {
 
     wsLog('Updating WebSocket session ID');
 
-    // Send the update_session message with the current session ID
+    // Send the update_session message with the current session ID + auth info
     wsService.sendMessage('update_session', 'Updating session ID', {
-      sessionId: sessionData.sessionId
+      sessionId: sessionData.sessionId,
+      ...(sessionData.accountId && { accountId: sessionData.accountId }),
+      ...(sessionData.ssn && { ssn: sessionData.ssn }),
     });
 
     // Update the last update timestamp

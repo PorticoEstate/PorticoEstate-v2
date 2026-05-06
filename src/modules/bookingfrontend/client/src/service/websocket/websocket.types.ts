@@ -105,6 +105,8 @@ export interface IWSRoomMessage extends IWebSocketMessageBase {
 export interface IWSSessionUpdateMessage extends IWebSocketMessageBase {
   type: 'update_session';
   sessionId: string;
+  accountId?: number;
+  ssn?: string;
 }
 
 // Interface for session update confirmation message
@@ -167,6 +169,17 @@ export interface IWSFreeTimeResponse extends IWebSocketMessageBase {
   };
 }
 
+// Interface for create application response
+export interface IWSCreateApplicationResponse extends IWebSocketMessageBase {
+  type: 'create_application_response';
+  data: {
+    error: boolean;
+    message?: string;
+    id?: number;
+    status?: string;
+  };
+}
+
 // Interface for booking user refresh message
 export interface IWSRefreshBookingUserMessage extends IWebSocketMessageBase {
   type: 'refresh_bookinguser';
@@ -201,6 +214,7 @@ export type WebSocketMessage =
   | IWSConnectionSuccessMessage
   | IWSPartialApplicationsResponse
   | IWSFreeTimeResponse
+  | IWSCreateApplicationResponse
   | IWSRefreshBookingUserMessage
   | IWSCacheInvalidationMessage;
   // | (IWebSocketMessageBase & { [key: string]: any }); // Catch-all for other message types

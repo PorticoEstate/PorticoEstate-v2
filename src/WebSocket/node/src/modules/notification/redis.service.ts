@@ -80,4 +80,42 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       return false;
     }
   }
+
+  /**
+   * Atomic SETNX with TTL — same as PHP Cache::acquire_atomic_lock.
+   */
+  async setnx(key: string, value: string, ttlSeconds: number): Promise<boolean> {
+    if (!this.publisher || !this.connected) return false;
+    try {
+      const result = await this.publisher.set(key, value, 'EX', ttlSeconds, 'NX');
+      return result === 'OK';
+    } catch (err: any) {
+      this.logger.error(`Redis SETNX error: ${err.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Atomic lock release — same Lua script as PHP RedisCache::release_lock.
+   * Only deletes the key if the value matches (prevents releasing another session's lock).
+   */
+  async releaseLock(key: string, value: string): Promise<boolean> {
+    if (!this.publisher || !this.connected) return false;
+    try {
+      const result = await this.publisher.eval(
+        `if redis.call('GET', KEYS[1]) == ARGV[1] then
+           return redis.call('DEL', KEYS[1])
+         else
+           return 0
+         end`,
+        1,
+        key,
+        value,
+      );
+      return (result as number) > 0;
+    } catch (err: any) {
+      this.logger.error(`Redis release lock error: ${err.message}`);
+      return false;
+    }
+  }
 }

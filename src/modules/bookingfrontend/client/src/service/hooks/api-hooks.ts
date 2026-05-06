@@ -215,8 +215,19 @@ function patchWeekCache(
 				s => String(s.start) === tsStart && String(s.end) === tsEnd,
 			);
 			if (idx >= 0) {
+				const existing = updated[resourceId][idx];
+				// Don't downgrade: if cached data already has an application-level
+				// overlap, don't overwrite it with a block-level overlap from
+				// a session-agnostic room_message
+				if (
+					existing.overlap_event?.type === 'application' &&
+					ts.overlap_event?.type === 'block' &&
+					ts.overlap
+				) {
+					continue;
+				}
 				updated[resourceId][idx] = {
-					...updated[resourceId][idx],
+					...existing,
 					overlap: ts.overlap,
 					overlap_reason: ts.overlap_reason,
 					overlap_type: ts.overlap_type,
@@ -301,7 +312,7 @@ export function useBuildingFreeTimeSlots({
 		if (message.type !== 'room_message') return;
 		if (message.entityId !== building_id || message.entityType !== 'building') return;
 
-		if (message.action === 'updated' && message.data?.affected_timeslots) {
+		if (message.data?.affected_timeslots && (message.action === 'updated' || message.action === 'deleted')) {
 			// Patch ALL cached weeks for this building
 			const allQueries = queryClient.getQueriesData<FreeTimeSlotsResponse>({
 				queryKey: ['buildingFreeTime', building_id],
@@ -322,16 +333,18 @@ export function useBuildingFreeTimeSlots({
 	const fetchWeek = async (): Promise<FreeTimeSlotsResponse> => {
 		if (isPastWeek) return {};
 
-		// Use exact week boundaries — the prefetch covers the wider window,
-		// and multi-day slots are bucketed by their start date
+		// Use exact week boundaries for filtering, but fetch 1 day earlier
+		// to catch multi-day slots that start within the week but need a
+		// prior-day seed in the FreeTimeService generation loop
 		const weekStart = viewedWeek;
 		const weekEnd = viewedWeek.plus({weeks: 1});
+		const fetchStart = weekStart.minus({days: 1});
 
 		if (isWebSocketActive) {
 			try {
 				const raw = await fetchFreeTimeViaWs(
 					sendMessage, building_id,
-					weekStart.toFormat('yyyy-MM-dd'),
+					fetchStart.toFormat('yyyy-MM-dd'),
 					weekEnd.toFormat('yyyy-MM-dd'),
 				);
 				// Only keep slots whose start falls within this week
@@ -340,7 +353,7 @@ export function useBuildingFreeTimeSlots({
 				// Fall back to REST
 			}
 		}
-		const raw = await fetchFreeTimeSlotsForRange(building_id, weekStart, weekEnd, instance);
+		const raw = await fetchFreeTimeSlotsForRange(building_id, fetchStart, weekEnd, instance);
 		return filterSlotsToWeek(raw, weekStart, weekEnd);
 	};
 
@@ -601,7 +614,7 @@ export function useBookingUser() {
  * @returns A query result containing the session ID
  */
 export function useSessionId() {
-	return useQuery<{ sessionId: string }>({
+	return useQuery<{ sessionId: string; accountId?: number; ssn?: string }>({
 		queryKey: ['sessionId'],
 		queryFn: fetchSessionId,
 		staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
@@ -842,16 +855,64 @@ function fetchPartialApplicationsViaWs(
 export function usePartialApplications(): UseQueryResult<{ list: IApplication[], total_sum: number }> {
 	const queryClient = useQueryClient();
 	const { status: wsStatus, sessionConnected, isReady: wsReady, sendMessage } = useWebSocketContext();
+	const lastSeqRef = useRef(0);
 
-	// Handle server-pushed partial application updates (e.g. after mutations in other tabs)
+	const calcTotalSum = (apps: IApplication[]) =>
+		apps.reduce((sum: number, app: IApplication) => {
+			const orderSum = app.orders?.reduce((acc: number, order: any) => acc + (Number(order.sum) || 0), 0) || 0;
+			return sum + orderSum;
+		}, 0);
+
+	// Handle server-pushed partial application updates
 	useMessageTypeSubscription('partial_applications_response', (message) => {
-		if (message.data.error === false) {
+		if (message.data.error !== false) return;
+
+		const seq = message.data.seq ?? 0;
+		const diff = message.data.diff;
+
+		// If this message has a seq older than what we've already processed, try diff only
+		if (seq > 0 && seq < lastSeqRef.current && !diff) {
+			return; // Reject stale full update without diff
+		}
+
+		if (seq > lastSeqRef.current) {
+			lastSeqRef.current = seq;
+		}
+
+		// Apply diff for fast incremental update (even if seq is stale,
+		// diffs are safe to apply — they add/remove specific IDs)
+		if (diff) {
+			queryClient.setQueryData<{ list: IApplication[], total_sum: number }>(
+				['partialApplications'],
+				(prev) => {
+					if (!prev) return prev;
+					let list = [...prev.list];
+
+					// Remove deleted apps
+					if (diff.removed?.length) {
+						list = list.filter((app: IApplication) => !diff.removed.includes(app.id));
+					}
+
+					// Add new apps (from full response, avoiding duplicates)
+					if (diff.added?.length && message.data.applications) {
+						const existingIds = new Set(list.map((a: IApplication) => a.id));
+						for (const app of message.data.applications) {
+							if (diff.added.includes(app.id) && !existingIds.has(app.id)) {
+								list.push(app);
+							}
+						}
+					}
+
+					return { list, total_sum: calcTotalSum(list) };
+				}
+			);
+		}
+
+		// Also set the full list if seq is newest (authoritative update)
+		if (seq >= lastSeqRef.current) {
 			queryClient.setQueryData(['partialApplications'], {
 				list: message.data.applications,
-				total_sum: message.data.applications.reduce((sum: number, app: IApplication) => {
-					const orderSum = app.orders?.reduce((acc: number, order: any) => acc + (Number(order.sum) || 0), 0) || 0;
-					return sum + orderSum;
-				}, 0)
+				total_sum: calcTotalSum(message.data.applications),
 			});
 		}
 	});
@@ -1374,30 +1435,85 @@ export function useDeletePartialApplication() {
 			}
 		},
 		onSettled: () => {
-			// Check if websocket connection is active
-			const isWebSocketActive = wsReady &&
-				wsStatus === 'OPEN' &&
-				sessionConnected;
-
-			// Only invalidate if WebSocket is not active
-			// If WebSocket is active, the server will send a message with the updated data
-			if (!isWebSocketActive) {
-				// Always refetch after error or success to ensure data is correct
-				queryClient.invalidateQueries({queryKey: ['partialApplications']});
-			}
+			// Always invalidate to ensure correctness after delete
+			queryClient.invalidateQueries({queryKey: ['partialApplications']});
 		},
 	});
 }
 
 
+/**
+ * Create a simple application via WebSocket.
+ * Returns a promise that resolves with the response or rejects on error/timeout.
+ */
+function createSimpleApplicationViaWs(
+	sendMessage: (type: string, message: string, additionalData?: Record<string, any>) => boolean,
+	timeslot: IFreeTimeSlot,
+	buildingId: number,
+): Promise<{ id: number; status: string; message: string }> {
+	const subscriptionManager = SubscriptionManager.getInstance();
+
+	return new Promise((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			cleanup();
+			reject(new Error('WebSocket booking timeout'));
+		}, 15000);
+
+		const cleanup = subscriptionManager.subscribeToMessageType(
+			'create_application_response',
+			(message) => {
+				if (message.type !== 'create_application_response') return;
+				clearTimeout(timeout);
+				cleanup();
+				if (message.data.error === false) {
+					resolve({
+						id: message.data.id!,
+						status: message.data.status || 'NEWPARTIAL1',
+						message: message.data.message || 'Created',
+					});
+				} else if ((message.data as any).useRestFallback) {
+					// Server says PHP source changed — fall back to REST
+					reject(new Error('WS booking timeout'));
+				} else {
+					reject(new Error(message.data.message || 'Booking failed'));
+				}
+			},
+		);
+
+		sendMessage('create_simple_application', 'Creating simple application', {
+			resourceId: timeslot.resource_id,
+			buildingId,
+			from: timeslot.start,
+			to: timeslot.end,
+		});
+	});
+}
+
 export function useCreateSimpleApplication() {
 	const queryClient = useQueryClient();
-	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
+	const { status: wsStatus, sessionConnected, isReady: wsReady, sendMessage } = useWebSocketContext();
 
 	return useServerMessageMutation({
 		mutationFn: async (params: { timeslot: IFreeTimeSlot, building_id: number }) => {
-			const url = phpGWLink(['bookingfrontend', 'applications', 'simple']);
+			const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
 
+			// Prefer WebSocket — avoids HTTP round-trip and gets atomic Redis lock + DB transaction
+			if (isWebSocketActive) {
+				try {
+					return await createSimpleApplicationViaWs(
+						sendMessage, params.timeslot, params.building_id,
+					);
+				} catch (err) {
+					// If the WS error is a real booking error (not a timeout), throw it
+					if (err instanceof Error && !err.message.includes('timeout')) {
+						throw err;
+					}
+					// Timeout — fall back to REST
+				}
+			}
+
+			// REST fallback
+			const url = phpGWLink(['bookingfrontend', 'applications', 'simple']);
 			const response = await fetch(url, {
 				method: 'POST',
 				body: JSON.stringify({
@@ -1406,28 +1522,20 @@ export function useCreateSimpleApplication() {
 					resource_id: params.timeslot.resource_id,
 					building_id: params.building_id,
 				}),
-				headers: {
-					'Content-Type': 'application/json',
-				},
+				headers: { 'Content-Type': 'application/json' },
 			});
 
 			if (!response.ok) {
-				// Parse error message from response if available
 				const errorData = await response.json().catch(() => ({}));
 				throw new Error(errorData.error || 'Failed to create simple application');
 			}
 
 			return response.json();
 		},
-		onSuccess: (data, variables) => {
-			const isWebSocketActive = wsReady &&
-				wsStatus === 'OPEN' &&
-				sessionConnected;
-
-			// Only invalidate if WebSocket is not active
-			// If WebSocket is active, the server will send:
-			// 1. partial_applications_response for updating applications
-			// 2. room_message for updating building timeslots
+		onSuccess: (_data, variables) => {
+			const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
+			// When WS is active, server pushes handle updates (partial_apps_response
+			// + room_message). Only invalidate when WS is not available.
 			if (!isWebSocketActive) {
 				queryClient.invalidateQueries({queryKey: ['partialApplications']});
 				if (variables.building_id) {
@@ -1441,8 +1549,6 @@ export function useCreateSimpleApplication() {
 			}
 		},
 		onError: (_error, variables) => {
-			// Booking failed (slot already taken, conflict, etc.)
-			// Force refresh freetime data to show current availability
 			queryClient.invalidateQueries({queryKey: ['partialApplications']});
 			if (variables.building_id) {
 				queryClient.invalidateQueries({

@@ -794,8 +794,8 @@ export class FreeTimeService {
             start: `${Math.floor(startTime.getTime() / 1000)}000`,
             end: `${Math.floor(endTime.getTime() / 1000)}000`,
             overlap: overlapStatus,
-            start_iso: startTime.toISOString(),
-            end_iso: endTime.toISOString(),
+            start_iso: toOsloISO(startTime),
+            end_iso: toOsloISO(endTime),
           };
 
           if (detailedOverlap) {
@@ -978,6 +978,25 @@ function fmtDateLocale(d: Date): string {
 
 function pad2(n: number): string {
   return n < 10 ? '0' + n : String(n);
+}
+
+/**
+ * Format a Date as ISO 8601 with Oslo timezone offset, matching PHP's format('c').
+ * Example: 2026-05-31T15:00:00+02:00
+ */
+function toOsloISO(d: Date): string {
+  const Y = d.getFullYear();
+  const M = pad2(d.getMonth() + 1);
+  const D = pad2(d.getDate());
+  const h = pad2(d.getHours());
+  const m = pad2(d.getMinutes());
+  const s = pad2(d.getSeconds());
+  // getTimezoneOffset() returns minutes, negative for east of UTC
+  const offset = -d.getTimezoneOffset();
+  const sign = offset >= 0 ? '+' : '-';
+  const oh = pad2(Math.floor(Math.abs(offset) / 60));
+  const om = pad2(Math.abs(offset) % 60);
+  return `${Y}-${M}-${D}T${h}:${m}:${s}${sign}${oh}:${om}`;
 }
 
 function isoWeekday(d: Date): number {

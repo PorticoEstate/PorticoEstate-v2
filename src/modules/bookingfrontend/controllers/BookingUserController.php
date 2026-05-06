@@ -7,6 +7,7 @@ use App\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\User;
 use App\modules\phpgwapi\services\Cache;
+use App\modules\phpgwapi\services\Settings;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -457,10 +458,22 @@ class BookingUserController
 				);
 			}
 
-			// Return the session ID
-			return ResponseHelper::sendJSONResponse([
+			$result = [
 				'sessionId' => $sessionId
-			], 200);
+			];
+
+			// Include auth info if user is authenticated (for WebSocket session sync)
+			$userSettings = Settings::getInstance()->get('user');
+			$accountId = $userSettings['account_id'] ?? 0;
+			if ($accountId > 0) {
+				$result['accountId'] = (int)$accountId;
+				$bouser = new UserHelper();
+				if ($bouser->is_logged_in() && $bouser->ssn) {
+					$result['ssn'] = $bouser->ssn;
+				}
+			}
+
+			return ResponseHelper::sendJSONResponse($result, 200);
 
 		} catch (Exception $e)
 		{

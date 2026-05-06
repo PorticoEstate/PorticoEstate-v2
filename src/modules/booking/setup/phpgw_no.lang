@@ -1150,3 +1150,41 @@ changelog_comment_placeholder	booking	no	Beskriv hva som endres og hvorfor
 no_changes	booking	no	Ingen endringer registrert
 exit_edit_mode	booking	no	Avslutt redigering
 hospitality_orders	booking	no	Bevertningsbestillinger
+regular	booking	no	Vanlig
+repeating	booking	no	Gjentagende
+send_email_to_applicant	booking	no	Send e-post til søker
+confirm_approve_after_allocation	booking	no	Tildelinger er opprettet. Vil du godkjenne denne søknaden nå?
+allocations_cannot_be_created_conflicts	booking	no	Tildelinger som ikke kan opprettes grunnet konflikter
+recurring_allocations_summary	booking	no	Sammendrag av gjentakende tildelinger
+combined_application	booking	no	Kombinert søknad
+timeslots	booking	no	Tidsrom
+timeslot	booking	no	Tidsrom
+confirm_application_approval	booking	no	Bekreft godkjenning av søknad
+approval_description	booking	no	Du er i ferd med å godkjenne denne søknaden. Arrangøren får en e-post med oppsummering og eventuell kommentar du legger til her.
+comment_to_organizer	booking	no	Kommentar til arrangør
+comment_placeholder	booking	no	Skriv en kort melding til arrangøren om godkjenning, f.eks. praktisk info eller viktige avklaringer. Meldingen legges ved oppsummeringen.
+send_email_organizer_summary	booking	no	Send e-post til arrangør med oppsummering og kommentar
+invoicing_only	booking	no	Kun fakturering
+invoicing_changes_apply_to_all	booking	no	Endringer i fakturering vil gjelde for alle kombinerte søknader
+combined_view	booking	no	Kombinert visning
+all_allocations_created	booking	no	Alle tildelinger opprettet
+no_allocations_to_create	booking	no	Ingen tildelinger å opprette
+allocations_created_with_conflicts	booking	no	Tildelinger opprettet (noen med konflikt)
+use_edit_to_modify_allocations	booking	no	Bruk Endre for å gjøre endringer på eksisterende tildelinger
+Leave empty to use password authentication	booking	no	La stå tomt for å bruke passordautentisering
+SSH Private Key	booking	no	SSH privat nøkkel
+focal_point	booking	no	Fokuspunkt
+edit_focal_point	booking	no	Rediger fokuspunkt
+set_focal_point	booking	no	Sett fokuspunkt
+previews	booking	no	Forhåndsvisninger
+focal_point_instructions	booking	no	Klikk eller dra for å sette fokuspunktet. Bruk piltastene for fininnstillinger.
+reset_to_center	booking	no	Tilbakestill til senter
+remove_focal_point	booking	no	Fjern fokuspunkt
+card_preview	booking	no	Kort
+square_preview	booking	no	200x200 (kvadrat)
+portrait_preview	booking	no	200x411 (portrett)
+apply_focal_point	booking	no	Bruk
+
+short_description	booking	no	Kort beskrivelse
+no_active_season_found_for_this_date	booking	no	Ingen aktiv sesong funnet for denne datoen
+missing_organization	booking	no	Manglende organisasjon

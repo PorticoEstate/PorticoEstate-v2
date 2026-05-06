@@ -890,7 +890,7 @@ export function usePartialApplications(): UseQueryResult<{ list: IApplication[],
 
 					// Remove deleted apps
 					if (diff.removed?.length) {
-						list = list.filter((app: IApplication) => !diff.removed.includes(app.id));
+						list = list.filter((app: IApplication) => !diff.removed!.includes(app.id));
 					}
 
 					// Add new apps (from full response, avoiding duplicates)

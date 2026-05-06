@@ -385,13 +385,9 @@ function buildEntityRestRequest(form)
 	}
 
 	if (!type) { type = $('#field_type').val() || ''; }
-	if (!catId || $catId === '0')
+	if (!catId || catId === '0')
 	{
-		var catField = form.querySelector('select#cat_id, select[name="cat_id"], input#cat_id, input[name="cat_id"]');
-		if (catField && typeof catField.value !== 'undefined')
-		{
-			catId = (catField.value || '').trim();
-		}
+		catId = $('#cat_id').val() || '';
 	}
 
 	var rawId = (query.id || item_id || '').toString();
@@ -699,10 +695,11 @@ $(document).ready(function ()
 
 				if (restRequest.isCreate && data.id)
 				{
-					var redirectUrl = '/property/entity/' + encodeURIComponent(restRequest.type)
-						+ '/' + encodeURIComponent(restRequest.entityId)
-						+ '/' + encodeURIComponent(restRequest.catId)
-						+ '?id=' + encodeURIComponent(data.id);
+					var redirectUrl = 'index.php?menuaction=property.uientity.edit'
+						+ '&type=' + encodeURIComponent(restRequest.type)
+						+ '&entity_id=' + encodeURIComponent(restRequest.entityId)
+						+ '&cat_id=' + encodeURIComponent(restRequest.catId)
+						+ '&id=' + encodeURIComponent(data.id);
 					setTimeout(function ()
 					{
 						window.location.href = redirectUrl;

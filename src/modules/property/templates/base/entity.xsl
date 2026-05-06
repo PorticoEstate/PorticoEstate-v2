@@ -521,7 +521,9 @@
 								<xsl:value-of select="category_name"/>
 							</xsl:when>
 							<xsl:otherwise>
-								<xsl:call-template name="cat_select"/>
+								<xsl:call-template name="cat_select">
+									<xsl:with-param name="id" select="'cat_id'"/>
+								</xsl:call-template>
 							</xsl:otherwise>
 						</xsl:choose>
 					</td>

@@ -385,6 +385,14 @@ function buildEntityRestRequest(form)
 	}
 
 	if (!type) { type = $('#field_type').val() || ''; }
+	if (!catId || $catId === '0')
+	{
+		var catField = form.querySelector('select#cat_id, select[name="cat_id"], input#cat_id, input[name="cat_id"]');
+		if (catField && typeof catField.value !== 'undefined')
+		{
+			catId = (catField.value || '').trim();
+		}
+	}
 
 	var rawId = (query.id || item_id || '').toString();
 	var id = parseInt(rawId, 10);

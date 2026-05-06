@@ -149,9 +149,14 @@ export interface IWSPartialApplicationsResponse extends IWebSocketMessageBase {
   data: {
     error: boolean;
     status: string;
-    applications: IApplication[]; // Array of partial applications
+    applications: IApplication[];
     count: number;
     sessionId: string;
+    seq?: number;
+    diff?: {
+      added?: number[];
+      removed?: number[];
+    };
   };
 }
 

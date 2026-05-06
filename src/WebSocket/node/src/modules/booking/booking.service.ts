@@ -11,13 +11,13 @@ import { FreeTimeService } from '../freetime/freetime.service';
  * If any source file has changed, the WS booking endpoint is DISABLED and clients
  * must fall back to the PHP REST endpoint.
  *
- * Ported from commit: 46900f8e (Cross approval better for vipps)
+ * Ported from commit: a488d135 (timeslots better detection if you own them)
  */
 const PHP_SOURCE_CHECKSUMS: Record<string, string> = {
   '/var/www/html/src/modules/bookingfrontend/services/applications/ApplicationService.php':
-    'f299fe80568ba28e13ea3171432fa2a1',
+    '19543bdc20cb7e8223d53708d8684724',
   '/var/www/html/src/modules/bookingfrontend/repositories/ApplicationRepository.php':
-    '0316a204e511eee6bb24fde3a4e9a64f',
+    '33c4bb700ca06e5ee6a078a0aabc344e',
   '/var/www/html/src/modules/bookingfrontend/repositories/ArticleRepository.php':
     'f865e0ea6667e68224b4be81efff56dd',
 };

@@ -16,6 +16,8 @@ export interface UserInfo {
   sessionId: string;
   sessionType: 'booking' | 'standard';
   userId?: number;
+  accountId?: number;
+  ssn?: string;
 }
 
 @Injectable()
@@ -132,6 +134,14 @@ export class SessionService {
     const session = this.sessions.get(clientId);
     if (!session || !session.userInfo) return false;
     session.userInfo.userId = userId;
+    return true;
+  }
+
+  updateAuthInfo(clientId: string, accountId?: number, ssn?: string): boolean {
+    const session = this.sessions.get(clientId);
+    if (!session || !session.userInfo) return false;
+    if (accountId !== undefined) session.userInfo.accountId = accountId;
+    if (ssn !== undefined) session.userInfo.ssn = ssn;
     return true;
   }
 

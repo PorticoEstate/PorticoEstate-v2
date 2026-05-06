@@ -215,8 +215,19 @@ function patchWeekCache(
 				s => String(s.start) === tsStart && String(s.end) === tsEnd,
 			);
 			if (idx >= 0) {
+				const existing = updated[resourceId][idx];
+				// Don't downgrade: if cached data already has an application-level
+				// overlap, don't overwrite it with a block-level overlap from
+				// a session-agnostic room_message
+				if (
+					existing.overlap_event?.type === 'application' &&
+					ts.overlap_event?.type === 'block' &&
+					ts.overlap
+				) {
+					continue;
+				}
 				updated[resourceId][idx] = {
-					...updated[resourceId][idx],
+					...existing,
 					overlap: ts.overlap,
 					overlap_reason: ts.overlap_reason,
 					overlap_type: ts.overlap_type,
@@ -301,7 +312,7 @@ export function useBuildingFreeTimeSlots({
 		if (message.type !== 'room_message') return;
 		if (message.entityId !== building_id || message.entityType !== 'building') return;
 
-		if (message.action === 'updated' && message.data?.affected_timeslots) {
+		if (message.data?.affected_timeslots && (message.action === 'updated' || message.action === 'deleted')) {
 			// Patch ALL cached weeks for this building
 			const allQueries = queryClient.getQueriesData<FreeTimeSlotsResponse>({
 				queryKey: ['buildingFreeTime', building_id],
@@ -322,16 +333,18 @@ export function useBuildingFreeTimeSlots({
 	const fetchWeek = async (): Promise<FreeTimeSlotsResponse> => {
 		if (isPastWeek) return {};
 
-		// Use exact week boundaries — the prefetch covers the wider window,
-		// and multi-day slots are bucketed by their start date
+		// Use exact week boundaries for filtering, but fetch 1 day earlier
+		// to catch multi-day slots that start within the week but need a
+		// prior-day seed in the FreeTimeService generation loop
 		const weekStart = viewedWeek;
 		const weekEnd = viewedWeek.plus({weeks: 1});
+		const fetchStart = weekStart.minus({days: 1});
 
 		if (isWebSocketActive) {
 			try {
 				const raw = await fetchFreeTimeViaWs(
 					sendMessage, building_id,
-					weekStart.toFormat('yyyy-MM-dd'),
+					fetchStart.toFormat('yyyy-MM-dd'),
 					weekEnd.toFormat('yyyy-MM-dd'),
 				);
 				// Only keep slots whose start falls within this week
@@ -340,7 +353,7 @@ export function useBuildingFreeTimeSlots({
 				// Fall back to REST
 			}
 		}
-		const raw = await fetchFreeTimeSlotsForRange(building_id, weekStart, weekEnd, instance);
+		const raw = await fetchFreeTimeSlotsForRange(building_id, fetchStart, weekEnd, instance);
 		return filterSlotsToWeek(raw, weekStart, weekEnd);
 	};
 
@@ -601,7 +614,7 @@ export function useBookingUser() {
  * @returns A query result containing the session ID
  */
 export function useSessionId() {
-	return useQuery<{ sessionId: string }>({
+	return useQuery<{ sessionId: string; accountId?: number; ssn?: string }>({
 		queryKey: ['sessionId'],
 		queryFn: fetchSessionId,
 		staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
@@ -1484,14 +1497,17 @@ export function useCreateSimpleApplication() {
 			const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
 			if (!isWebSocketActive) {
 				queryClient.invalidateQueries({queryKey: ['partialApplications']});
-				if (variables.building_id) {
-					queryClient.invalidateQueries({
-						predicate: (query) =>
-							Array.isArray(query.queryKey) &&
-							query.queryKey[0] === 'buildingFreeTime' &&
-							query.queryKey[1] === variables.building_id,
-					});
-				}
+			}
+			// Always invalidate building free time — the WS room_message gives
+			// instant "Reservert" feedback (via block), but a refetch is needed
+			// to get the full application data for the "Slett" button
+			if (variables.building_id) {
+				queryClient.invalidateQueries({
+					predicate: (query) =>
+						Array.isArray(query.queryKey) &&
+						query.queryKey[0] === 'buildingFreeTime' &&
+						query.queryKey[1] === variables.building_id,
+				});
 			}
 		},
 		onError: (_error, variables) => {

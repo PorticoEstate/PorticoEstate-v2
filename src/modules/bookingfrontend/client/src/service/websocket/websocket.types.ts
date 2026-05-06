@@ -105,6 +105,8 @@ export interface IWSRoomMessage extends IWebSocketMessageBase {
 export interface IWSSessionUpdateMessage extends IWebSocketMessageBase {
   type: 'update_session';
   sessionId: string;
+  accountId?: number;
+  ssn?: string;
 }
 
 // Interface for session update confirmation message

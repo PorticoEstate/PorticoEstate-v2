@@ -54,7 +54,7 @@ const ServerMessageToastHandler: FC = () => {
         addToast({
           type: toastType,
           title: message.title ? t(message.title) : undefined,
-          text: message.text,
+          text: message.translatable ? t(message.text) : message.text,
           autoHide: autoHide,
           messageId: `server-message-${message.id}` // Use messageId for deduplication
         });

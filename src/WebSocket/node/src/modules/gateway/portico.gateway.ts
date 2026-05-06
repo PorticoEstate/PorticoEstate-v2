@@ -281,7 +281,7 @@ export class PorticoGateway
   }
 
   private handleUpdateSession(client: Socket, data: any) {
-    const { sessionId } = data;
+    const { sessionId, accountId, ssn } = data;
     if (!sessionId || typeof sessionId !== 'string') {
       client.emit('message', {
         type: 'error',
@@ -300,6 +300,15 @@ export class PorticoGateway
       sessionId,
       this.roomService,
     );
+
+    // Store auth info if provided (accountId + SSN from authenticated sessions)
+    if (result.success && (accountId || ssn)) {
+      this.sessionService.updateAuthInfo(
+        client.id,
+        accountId ? Number(accountId) : undefined,
+        ssn ? String(ssn) : undefined,
+      );
+    }
 
     if (result.success && result.roomJoined && result.roomId) {
       client.emit('message', {
@@ -464,7 +473,8 @@ export class PorticoGateway
         fromStr,
         toStr,
         session.sessionId,
-        session.userInfo?.userId || (clientOwnerId ? Number(clientOwnerId) : undefined),
+        session.userInfo?.accountId ?? 0,
+        session.userInfo?.ssn ?? null,
       );
 
       // Send success response immediately
@@ -479,14 +489,18 @@ export class PorticoGateway
         timestamp: new Date().toISOString(),
       });
 
-      // Publish notifications asynchronously (don't block the response)
-      this.bookingService
-        .publishBookingNotifications(
-          session.sessionId,
-          Number(buildingId),
-          Number(resourceId),
-          fromStr,
-          toStr,
+      // Send partial apps update first (must arrive before timeslot update
+      // so the client can match overlap_event.id to the shopping cart)
+      this.sendPartialApplicationsUpdate(session.sessionId!)
+        .then(() =>
+          this.bookingService.publishBookingNotifications(
+            session.sessionId!,
+            Number(buildingId),
+            Number(resourceId),
+            fromStr,
+            toStr,
+            result.id,
+          ),
         )
         .catch((err) =>
           this.logger.error(`Booking notification error: ${err.message}`),
@@ -506,6 +520,7 @@ export class PorticoGateway
 
       // Also send as server_message for toast display
       const roomId = this.roomService.sessionRoomId(session.sessionId);
+      const isTranslatable = err.translationKey != null;
       this.server.to(roomId).emit('message', {
         type: 'server_message',
         action: 'new',
@@ -513,7 +528,8 @@ export class PorticoGateway
           {
             id: `err_${Date.now()}`,
             type: 'error',
-            text: err.message,
+            text: isTranslatable ? err.translationKey : err.message,
+            translatable: isTranslatable,
           },
         ],
         timestamp: new Date().toISOString(),

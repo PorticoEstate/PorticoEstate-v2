@@ -145,7 +145,7 @@ function generateUUID(): string {
  * Fetch the authenticated user's session ID
  * @returns An object containing the sessionId
  */
-export async function fetchSessionId(): Promise<{ sessionId: string }> {
+export async function fetchSessionId(): Promise<{ sessionId: string; accountId?: number; ssn?: string }> {
 	const clickHistory = generateUUID();
 	const url = phpGWLink(['bookingfrontend', 'user', 'session'], {
 		click_history: clickHistory

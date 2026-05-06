@@ -416,6 +416,24 @@ export class BookingService implements OnModuleInit {
         buildingId, resourceId, queryStartStr, queryEndStr, null, true, true,
       );
       if (timeslots[resourceId]) {
+        // Enrich block overlap_events with the application ID when the
+        // block's time range matches the just-created booking. This lets
+        // the client show the "Slett" button without a separate refetch.
+        for (const ts of timeslots[resourceId]) {
+          if (
+            ts.overlap_event?.type === 'block' &&
+            ts.overlap_event.from === from &&
+            ts.overlap_event.to === to
+          ) {
+            ts.overlap_event = {
+              id: applicationId,
+              type: 'application',
+              status: 'NEWPARTIAL1',
+              from,
+              to,
+            };
+          }
+        }
         affectedTimeslots[resourceId] = timeslots[resourceId];
       }
     } catch (err: any) {

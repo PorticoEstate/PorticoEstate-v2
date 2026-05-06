@@ -397,10 +397,14 @@ export class PorticoGateway
   /**
    * Push partial applications update to a session room (called from Redis handler).
    */
-  private async sendPartialApplicationsUpdate(sessionId: string) {
+  private async sendPartialApplicationsUpdate(
+    sessionId: string,
+    diff?: { added?: number[]; removed?: number[] },
+  ) {
     const applications =
       await this.applicationService.getPartialApplications(sessionId);
 
+    const seq = Date.now();
     const roomId = this.roomService.sessionRoomId(sessionId);
     this.server.to(roomId).emit('message', {
       type: 'partial_applications_response',
@@ -411,6 +415,8 @@ export class PorticoGateway
         count: applications.length,
         sessionId: sessionId.substring(0, 8) + '...',
         source: 'server_push',
+        seq,
+        diff: diff ?? null,
         timestamp: new Date().toISOString(),
       },
       timestamp: new Date().toISOString(),
@@ -491,7 +497,7 @@ export class PorticoGateway
 
       // Send partial apps update first (must arrive before timeslot update
       // so the client can match overlap_event.id to the shopping cart)
-      this.sendPartialApplicationsUpdate(session.sessionId!)
+      this.sendPartialApplicationsUpdate(session.sessionId!, { added: [result.id] })
         .then(() =>
           this.bookingService.publishBookingNotifications(
             session.sessionId!,

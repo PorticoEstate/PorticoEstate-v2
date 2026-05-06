@@ -1001,3 +1001,5 @@ portrait_preview	booking	no	200x411 (portrett)
 apply_focal_point	booking	no	Bruk
 
 short_description	booking	no	Kort beskrivelse
+no_active_season_found_for_this_date	booking	no	Ingen aktiv sesong funnet for denne datoen
+missing_organization	booking	no	Manglende organisasjon

@@ -5412,6 +5412,35 @@ JS;
 				continue;
 			}
 
+			// Resolve organization_id - required field
+			$org_id = null;
+			if (!empty($application['customer_organization_id'])) {
+				$org_id = $application['customer_organization_id'];
+			} elseif (!empty($application['customer_organization_number'])) {
+				$organizations = createObject('booking.soorganization')->read(array(
+					'results' => -1,
+					'filters' => array(
+						'organization_number' => $application['customer_organization_number'],
+						'active' => 1
+					)
+				));
+				if (!empty($organizations['results'][0])) {
+					$org_id = $organizations['results'][0]['id'];
+				}
+			}
+
+			if (empty($org_id)) {
+				$summary['failed'][] = array(
+					'date' => $preview_item['date_display'],
+					'time' => $preview_item['time_display'],
+					'resources' => $resource_display,
+					'reason' => lang('missing_organization'),
+					'from' => $preview_item['from'],
+					'to' => $preview_item['to']
+				);
+				continue;
+			}
+
 			// Build allocation data
 			$allocation = array(
 				'application_id' => $application['id'],
@@ -5422,11 +5451,11 @@ JS;
 				'active' => '1',
 				'completed' => '0',
 				'cost' => '0',
-				'organization_id' => $application['customer_organization_id'] ?? '',
+				'organization_id' => $org_id,
 				'skip_bas' => 0
 			);
 
-			// Add season info if available
+			// Add season info - required for allocation creation
 			$season_bo = createObject('booking.boseason');
 			$app_date = date('Y-m-d', strtotime($preview_item['from']));
 			$seasons = $season_bo->read(array(
@@ -5443,6 +5472,17 @@ JS;
 
 			if (!empty($seasons['results'][0])) {
 				$allocation['season_id'] = $seasons['results'][0]['id'];
+			} else {
+				// No active season covers this date - skip allocation
+				$summary['failed'][] = array(
+					'date' => $preview_item['date_display'],
+					'time' => $preview_item['time_display'],
+					'resources' => $resource_display,
+					'reason' => lang('no_active_season_found_for_this_date'),
+					'from' => $preview_item['from'],
+					'to' => $preview_item['to']
+				);
+				continue;
 			}
 
 			// Try to create the allocation

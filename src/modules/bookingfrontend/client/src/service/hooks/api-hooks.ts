@@ -1387,17 +1387,8 @@ export function useDeletePartialApplication() {
 			}
 		},
 		onSettled: () => {
-			// Check if websocket connection is active
-			const isWebSocketActive = wsReady &&
-				wsStatus === 'OPEN' &&
-				sessionConnected;
-
-			// Only invalidate if WebSocket is not active
-			// If WebSocket is active, the server will send a message with the updated data
-			if (!isWebSocketActive) {
-				// Always refetch after error or success to ensure data is correct
-				queryClient.invalidateQueries({queryKey: ['partialApplications']});
-			}
+			// Always invalidate to ensure correctness after delete
+			queryClient.invalidateQueries({queryKey: ['partialApplications']});
 		},
 	});
 }
@@ -1494,13 +1485,10 @@ export function useCreateSimpleApplication() {
 			return response.json();
 		},
 		onSuccess: (_data, variables) => {
-			const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
-			if (!isWebSocketActive) {
-				queryClient.invalidateQueries({queryKey: ['partialApplications']});
-			}
-			// Always invalidate building free time — the WS room_message gives
-			// instant "Reservert" feedback (via block), but a refetch is needed
-			// to get the full application data for the "Slett" button
+			// Always invalidate both caches on success — WS pushes give instant
+			// feedback, but invalidation guarantees correctness (especially
+			// during rapid clicks where WS messages can arrive out of order)
+			queryClient.invalidateQueries({queryKey: ['partialApplications']});
 			if (variables.building_id) {
 				queryClient.invalidateQueries({
 					predicate: (query) =>

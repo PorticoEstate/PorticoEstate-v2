@@ -88,6 +88,8 @@ interface Resource {
     activate_prepayment: number;
     deactivate_calendar: number;
     booking_buffer_deadline: number;
+    cancellation_deadline_value: number | null;
+    cancellation_deadline_unit: 'hours' | 'days' | 'weeks' | null;
     description_json: string;
 }
 

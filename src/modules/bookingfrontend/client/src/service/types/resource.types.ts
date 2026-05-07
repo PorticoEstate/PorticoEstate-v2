@@ -30,6 +30,8 @@ export interface IResource {
     hidden_in_frontend: boolean | null;
     activate_prepayment: number | null;
     booking_buffer_deadline: number | null;
+    cancellation_deadline_value: number | null;
+    cancellation_deadline_unit: 'hours' | 'days' | 'weeks' | null;
     deny_application_if_booked: 0 | 1 | null;
     building_id: number | null;
 	description_json?: string;

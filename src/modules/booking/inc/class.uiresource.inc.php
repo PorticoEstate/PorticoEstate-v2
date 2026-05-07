@@ -76,6 +76,8 @@ class booking_uiresource extends booking_uicommon
 			'booking_time_default_end'		 => 'int',
 			'booking_time_minutes'			 => 'int',
 			'booking_buffer_deadline'		 => 'int',
+			'cancellation_deadline_value'	 => 'int',
+			'cancellation_deadline_unit'	 => 'string',
 			'booking_limit_number'			 => 'int',
 			'booking_limit_number_horizont'	 => 'int',
 			'simple_booking_start_date'		 => 'string',

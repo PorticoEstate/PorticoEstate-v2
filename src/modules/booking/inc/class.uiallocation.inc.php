@@ -1226,6 +1226,32 @@
 			$jqcal2 = createObject('phpgwapi.jqcal2');
 			$jqcal2->add_listener('field_repeat_until', 'date');
 
+			// Check if allocation is inside a cancellation deadline window
+			$cancellation_warning = '';
+			if (!empty($allocation['resources']) && !empty($allocation['from_']))
+			{
+				$from = new \DateTime($allocation['from_'], new \DateTimeZone('Europe/Oslo'));
+				$now = new \DateTime('now', new \DateTimeZone('Europe/Oslo'));
+				$db = \App\Database\Db::getInstance();
+				$resourceIds = array_map('intval', $allocation['resources']);
+				$placeholders = implode(',', $resourceIds);
+				$stmt = $db->prepare("SELECT name, cancellation_deadline_value, cancellation_deadline_unit FROM bb_resource WHERE id IN ({$placeholders})");
+				$stmt->execute();
+				while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
+				{
+					$seconds = self::deadlineToSeconds((int)$row['cancellation_deadline_value'], $row['cancellation_deadline_unit']);
+					if ($seconds > 0)
+					{
+						$cutoff = (clone $from)->modify("-{$seconds} seconds");
+						if ($now > $cutoff)
+						{
+							$cancellation_warning = lang('cancellation_deadline_warning', $row['name']);
+							break;
+						}
+					}
+				}
+			}
+
 			if ($step < 2)
 			{
 				self::render_template_xsl('allocation_delete', array('allocation' => $allocation,
@@ -1233,6 +1259,7 @@
 					'outseason' => $outseason,
 					'interval' => $field_interval,
 					'repeat_until' => $repeat_until,
+					'cancellation_warning' => $cancellation_warning,
 				));
 			}
 			elseif ($step == 2)
@@ -1448,5 +1475,16 @@
 			}
 
 			return $conflicts;
+		}
+
+		private static function deadlineToSeconds(int $value, ?string $unit): int
+		{
+			if (!$value || !$unit) return 0;
+			switch ($unit) {
+				case 'hours': return $value * 3600;
+				case 'days': return $value * 86400;
+				case 'weeks': return $value * 604800;
+				default: return 0;
+			}
 		}
 	}

@@ -87,8 +87,8 @@ Allocations with still existing bookings (%1)	booking	nn	Tildelingar som ikkje v
 allocations_cannot_be_created_conflicts	booking	nn	Tildelingar som ikkje kan opprettast grunna konfliktar
 allocations_created_with_conflicts	booking	nn	Tildelingar oppretta (nokre med konflikt)
 allocations_to_be_created	booking	nn	Tildelingar som vil bli oppretta
-allow_on_site_hospitality	booking	nn	Tillat bevertning på staden
-allow_on_site_hospitality_desc	booking	nn	Tillat førehandsbestilling til hovudressursen utan ein reservasjon
+allow_on_site_hospitality	booking	nn	{{%1}} tillèt bestilling på staden
+allow_on_site_hospitality_desc	booking	nn	Tilknytte ressursar kan bestille servering i {{%1}}
 alternative article code	booking	nn	Alternativ artikkelkode
 amount	booking	nn	Beløp
 and	booking	nn	og
@@ -216,6 +216,9 @@ Cancelation of booking and allocation from	booking	nn	Avbestilling av interntild
 Cancelation of booking from	booking	nn	Avbestilling av interntildeling frå
 Cancelation of bookings and allocations from	booking	nn	Avbestilling av interntildelingar og tildelingar frå
 Cancelation of bookings from	booking	nn	Avbestilling av interntildelingar frå
+cancellation_deadline	booking	nn	Avbestillingsfrist
+cancellation_deadline_desc	booking	nn	Kor lang tid før arrangementet ei bestilling kan avbestillast
+cancellation_deadline_from_resource	booking	nn	Henta frå hovudressursen
 cancelled	booking	nn	Avbestilt
 Cannot generate files from empty list	booking	nn	Kan ikkje generere filer frå ei tom liste
 capacity	booking	nn	Kapasitet
@@ -302,6 +305,7 @@ Create new booking	booking	nn	Lag ny interntildeling
 Create report	booking	nn	Lag rapport
 create_all_allocations	booking	nn	Opprett alle tildelingar
 create_hospitality	booking	nn	Opprett bevertning
+create_hospitality_settings	booking	nn	Opprett sett med innstillingar for bevertning
 create_internal_note	booking	nn	Opprett internt notat
 create_new_article	booking	nn	Opprett ny artikkel
 create_non_conflicting_allocations	booking	nn	Opprett tildelingar utan konflikt
@@ -864,8 +868,8 @@ related_applications	booking	nn	Relaterte søknader
 remark	booking	nn	Merknad
 Reminder sent. Not responded to	booking	nn	Purring sendt. Ikkje besvart
 remote_locations	booking	nn	Eksterne lokasjonar
-remote_serving	booking	nn	Fjernservering
-remote_serving_desc	booking	nn	Tillat bestillingar levert til tilknytte eksterne ressursar
+remote_serving	booking	nn	{{%1}} kan levere
+remote_serving_desc	booking	nn	{{%1}} kan levere til alle tilknytte ressursar
 remote_serving_disabled	booking	nn	Ekstern servering er deaktivert for denne bevertinga. Aktiver det i Detaljar-fana for å administrere eksterne lokasjonar.
 remove	booking	nn	Fjern
 remove_focal_point	booking	nn	Fjern fokuspunkt
@@ -1162,3 +1166,4 @@ changelog_comment_placeholder	booking	nn	Beskriv kva som blir endra og kvifor
 no_changes	booking	nn	Ingen endringar registrert
 exit_edit_mode	booking	nn	Avslutt redigering
 hospitality_orders	booking	nn	Bevertningsbestillingar
+cancellation_deadline_warning	booking	nn	Denne bestillinga er innanfor avbestillingsfristen for ressurs %1. Avbestilling kan påverke kunden.

@@ -18,7 +18,9 @@ class HospitalityRepository
 
     public function getById(int $id): ?array
     {
-        $sql = "SELECT h.*, r.name AS resource_name
+        $sql = "SELECT h.*, r.name AS resource_name,
+                       r.cancellation_deadline_value AS resource_cancellation_deadline_value,
+                       r.cancellation_deadline_unit AS resource_cancellation_deadline_unit
                 FROM bb_hospitality h
                 LEFT JOIN bb_resource r ON h.resource_id = r.id
                 WHERE h.id = :id";
@@ -30,7 +32,9 @@ class HospitalityRepository
 
     public function getAll(bool $activeOnly = false): array
     {
-        $sql = "SELECT h.*, r.name AS resource_name
+        $sql = "SELECT h.*, r.name AS resource_name,
+                       r.cancellation_deadline_value AS resource_cancellation_deadline_value,
+                       r.cancellation_deadline_unit AS resource_cancellation_deadline_unit
                 FROM bb_hospitality h
                 LEFT JOIN bb_resource r ON h.resource_id = r.id";
         if ($activeOnly) {
@@ -44,7 +48,9 @@ class HospitalityRepository
 
     public function getByResourceId(int $resourceId): array
     {
-        $sql = "SELECT h.*, r.name AS resource_name
+        $sql = "SELECT h.*, r.name AS resource_name,
+                       r.cancellation_deadline_value AS resource_cancellation_deadline_value,
+                       r.cancellation_deadline_unit AS resource_cancellation_deadline_unit
                 FROM bb_hospitality h
                 LEFT JOIN bb_resource r ON h.resource_id = r.id
                 WHERE h.resource_id = :resource_id
@@ -242,7 +248,10 @@ class HospitalityRepository
 
         $sql = "SELECT DISTINCT h.id, h.name, h.resource_id, r.name AS resource_name,
                        h.remote_serving_enabled, h.allow_on_site_hospitality,
-                       h.include_in_checkout_payment
+                       h.include_in_checkout_payment,
+                       h.order_by_time_value, h.order_by_time_unit,
+                       r.cancellation_deadline_value AS resource_cancellation_deadline_value,
+                       r.cancellation_deadline_unit AS resource_cancellation_deadline_unit
                 FROM bb_hospitality h
                 LEFT JOIN bb_resource r ON h.resource_id = r.id
                 WHERE h.active = 1

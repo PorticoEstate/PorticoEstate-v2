@@ -439,12 +439,13 @@ export class PorticoGateway
       return;
     }
 
-    const { resourceId, buildingId, from, to, ownerId: clientOwnerId } = data;
+    const { resourceId, buildingId, from, to, ownerId: clientOwnerId, requestId } = data;
 
     if (!resourceId || !buildingId || !from || !to) {
       client.emit('message', {
         type: 'create_application_response',
         data: { error: true, message: 'resourceId, buildingId, from, and to are required' },
+        ...(requestId && { requestId }),
         timestamp: new Date().toISOString(),
       });
       return;
@@ -455,6 +456,7 @@ export class PorticoGateway
       client.emit('message', {
         type: 'create_application_response',
         data: { error: true, message: 'No session' },
+        ...(requestId && { requestId }),
         timestamp: new Date().toISOString(),
       });
       return;
@@ -473,7 +475,7 @@ export class PorticoGateway
     }
 
     try {
-      const result = await this.bookingService.createSimpleBooking(
+      const result = await this.bookingService.enqueueBooking(
         Number(resourceId),
         Number(buildingId),
         fromStr,
@@ -492,6 +494,7 @@ export class PorticoGateway
           status: result.status,
           message: 'Simple application created successfully',
         },
+        ...(requestId && { requestId }),
         timestamp: new Date().toISOString(),
       });
 
@@ -521,6 +524,7 @@ export class PorticoGateway
           error: true,
           message: err.message,
         },
+        ...(requestId && { requestId }),
         timestamp: new Date().toISOString(),
       });
 

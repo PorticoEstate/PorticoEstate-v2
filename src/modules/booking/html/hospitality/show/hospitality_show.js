@@ -31,7 +31,9 @@
 		}
 		var args = Array.prototype.slice.call(arguments, 1);
 		args.forEach(function (val, i) {
-			result = result.replace('%' + (i + 1), val);
+			var n = i + 1;
+			result = result.replace('{{%' + n + '}}', val);
+			result = result.replace('%' + n, val);
 		});
 		return result;
 	}

@@ -320,9 +320,17 @@ class Translation
 
 		foreach ($vars as $key => $val)
 		{
-			if ((string)$val !== '')
+			$strVal = (string)$val;
+			// {{%N}} — deferred placeholder: replaced with arg if provided, otherwise unwrapped to %N
+			$hasDeferred = preg_match("/\\{\\{%$ndx\\}\\}/", $ret);
+			if ($hasDeferred)
 			{
-				$ret = preg_replace("/%$ndx/", (string)$val, $ret);
+				$ret = preg_replace("/\\{\\{%$ndx\\}\\}/", $strVal !== '' ? $strVal : "%$ndx", $ret);
+			}
+			else
+			{
+				// %N — standard placeholder: always replaced
+				$ret = preg_replace("/%$ndx/", $strVal, $ret);
 			}
 			++$ndx;
 		}

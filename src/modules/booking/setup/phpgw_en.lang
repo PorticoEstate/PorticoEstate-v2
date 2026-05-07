@@ -81,8 +81,8 @@ Allocations with still existing bookings (%1)	booking	en	Allocations with still 
 allocations_cannot_be_created_conflicts	booking	en	Allocations that cannot be created due to conflicts
 allocations_created_with_conflicts	booking	en	Allocations created (some with conflicts)
 allocations_to_be_created	booking	en	Allocations to be created
-allow_on_site_hospitality	booking	en	%1 allows ordering on-site
-allow_on_site_hospitality_desc	booking	en	Connected resources can order serving in %1
+allow_on_site_hospitality	booking	en	{{%1}} allows ordering on-site
+allow_on_site_hospitality_desc	booking	en	Connected resources can order serving in {{%1}}
 amount	booking	en	Amount
 and	booking	en	And
 application	booking	en	Application
@@ -784,8 +784,8 @@ related_applications	booking	en	Related applications
 remark	booking	en	Remark
 Reminder sent. Not responded to	booking	en	Reminder sent. Not responded to
 remote_locations	booking	en	Remote locations
-remote_serving	booking	en	%1 can deliver
-remote_serving_desc	booking	en	%1 can deliver to all connected resources
+remote_serving	booking	en	{{%1}} can deliver
+remote_serving_desc	booking	en	{{%1}} can deliver to all connected resources
 remote_serving_disabled	booking	en	Remote serving is disabled for this hospitality. Enable it in the Details tab to manage remote locations.
 remove	booking	en	Remove
 remove_focal_point	booking	en	Remove Focal Point

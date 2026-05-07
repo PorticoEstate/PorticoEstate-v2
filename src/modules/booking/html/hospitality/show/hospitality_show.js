@@ -22,11 +22,18 @@
 
 	function lang(key) {
 		var el = root.dataset;
-		if (el['lang' + key]) return el['lang' + key];
-		var camelKey = 'lang' + key.split(/[-_]/).map(function (w) {
-			return w.charAt(0).toUpperCase() + w.slice(1);
-		}).join('');
-		return el[camelKey] || key;
+		var result = el['lang' + key];
+		if (!result) {
+			var camelKey = 'lang' + key.split(/[-_]/).map(function (w) {
+				return w.charAt(0).toUpperCase() + w.slice(1);
+			}).join('');
+			result = el[camelKey] || key;
+		}
+		var args = Array.prototype.slice.call(arguments, 1);
+		args.forEach(function (val, i) {
+			result = result.replace('%' + (i + 1), val);
+		});
+		return result;
 	}
 
 	function esc(str) {
@@ -494,16 +501,16 @@
 		coreHtml += editableField(lang('name'), h.name, 'name', 'text');
 		coreHtml += editableField(lang('description'), h.description, 'description', 'textarea');
 		coreHtml += editableField(lang('active'), h.active, 'active', 'checkbox');
-		coreHtml += field(lang('main_resource'), h.resource_name);
 		html += section(lang('details'), coreHtml);
 
 		// Service configuration
 		var svcHtml = '';
-		svcHtml += editableField(lang('remoteServing'), h.remote_serving_enabled, 'remote_serving_enabled', 'checkbox', {
-			description: lang('remoteServingDesc')
+		svcHtml += field(lang('main_resource'), h.resource_name);
+		svcHtml += editableField(lang('remoteServing', h.resource_name), h.remote_serving_enabled, 'remote_serving_enabled', 'checkbox', {
+			description: lang('remoteServingDesc', h.resource_name)
 		});
-		svcHtml += editableField(lang('allowOnSiteHospitality'), h.allow_on_site_hospitality, 'allow_on_site_hospitality', 'checkbox', {
-			description: lang('allowOnSiteHospitalityDesc')
+		svcHtml += editableField(lang('allowOnSiteHospitality', h.resource_name), h.allow_on_site_hospitality, 'allow_on_site_hospitality', 'checkbox', {
+			description: lang('allowOnSiteHospitalityDesc', h.resource_name)
 		});
 		svcHtml += deadlineField(lang('orderDeadline'), h.order_by_time_value, h.order_by_time_unit, {
 			description: lang('orderDeadlineDesc')

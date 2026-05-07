@@ -320,7 +320,10 @@ class Translation
 
 		foreach ($vars as $key => $val)
 		{
-			$ret = preg_replace("/%$ndx/", (string)$val, $ret);
+			if ((string)$val !== '')
+			{
+				$ret = preg_replace("/%$ndx/", (string)$val, $ret);
+			}
 			++$ndx;
 		}
 		return $ret;

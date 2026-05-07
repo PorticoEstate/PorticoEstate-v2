@@ -87,8 +87,8 @@ Allocations with still existing bookings (%1)	booking	nn	Tildelingar som ikkje v
 allocations_cannot_be_created_conflicts	booking	nn	Tildelingar som ikkje kan opprettast grunna konfliktar
 allocations_created_with_conflicts	booking	nn	Tildelingar oppretta (nokre med konflikt)
 allocations_to_be_created	booking	nn	Tildelingar som vil bli oppretta
-allow_on_site_hospitality	booking	nn	Tillat bevertning på staden
-allow_on_site_hospitality_desc	booking	nn	Tillat førehandsbestilling til hovudressursen utan ein reservasjon
+allow_on_site_hospitality	booking	nn	%1 tillèt bestilling på staden
+allow_on_site_hospitality_desc	booking	nn	Tilknytte ressursar kan bestille servering i %1
 alternative article code	booking	nn	Alternativ artikkelkode
 amount	booking	nn	Beløp
 and	booking	nn	og
@@ -868,8 +868,8 @@ related_applications	booking	nn	Relaterte søknader
 remark	booking	nn	Merknad
 Reminder sent. Not responded to	booking	nn	Purring sendt. Ikkje besvart
 remote_locations	booking	nn	Eksterne lokasjonar
-remote_serving	booking	nn	Fjernservering
-remote_serving_desc	booking	nn	Tillat bestillingar levert til tilknytte eksterne ressursar
+remote_serving	booking	nn	%1 kan levere
+remote_serving_desc	booking	nn	%1 kan levere til alle tilknytte ressursar
 remote_serving_disabled	booking	nn	Ekstern servering er deaktivert for denne bevertinga. Aktiver det i Detaljar-fana for å administrere eksterne lokasjonar.
 remove	booking	nn	Fjern
 remove_focal_point	booking	nn	Fjern fokuspunkt

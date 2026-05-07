@@ -15,7 +15,7 @@ import { FreeTimeService } from '../freetime/freetime.service';
  */
 const PHP_SOURCE_CHECKSUMS: Record<string, string> = {
   '/var/www/html/src/modules/bookingfrontend/services/applications/ApplicationService.php':
-    'f299fe80568ba28e13ea3171432fa2a1',
+    '887359fc4d52e17b049d4515d6653ab0',
   '/var/www/html/src/modules/bookingfrontend/repositories/ApplicationRepository.php':
     '0316a204e511eee6bb24fde3a4e9a64f',
   '/var/www/html/src/modules/bookingfrontend/repositories/ArticleRepository.php':
@@ -76,11 +76,34 @@ interface OverlapResult {
  *  12. COMMIT
  *  13. Release lock
  */
+interface QueuedBooking {
+  resourceId: number;
+  buildingId: number;
+  from: string;
+  to: string;
+  sessionId: string;
+  ownerId: number;
+  ssn: string | null;
+  resolve: (result: BookingResult) => void;
+  reject: (err: Error) => void;
+  enqueuedAt: number;
+}
+
+interface ResourceWorker {
+  queue: QueuedBooking[];
+  processing: boolean;
+  client: any | null;
+  lastUsed: number;
+}
+
 @Injectable()
 export class BookingService implements OnModuleInit {
   private readonly logger = new Logger(BookingService.name);
   private installId: string | null = null;
+  private guestAccountId: number | null = null;
   private sourceVerified = false;
+  private readonly workers = new Map<number, ResourceWorker>();
+  private workerCleanupInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private readonly db: DatabaseService,
@@ -101,6 +124,34 @@ export class BookingService implements OnModuleInit {
       }
     } catch (err: any) {
       this.logger.error(`Failed to load install_id: ${err.message}`);
+    }
+
+    try {
+      const { rows } = await this.db.query(
+        "SELECT account_id FROM phpgw_accounts WHERE account_lid = 'bookingguest' LIMIT 1",
+      );
+      this.guestAccountId = rows[0]?.account_id ?? null;
+      if (this.guestAccountId) {
+        this.logger.log(`Loaded guest account ID: ${this.guestAccountId}`);
+      } else {
+        this.logger.warn('No bookingguest account found — anonymous bookings will fail');
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to load guest account: ${err.message}`);
+    }
+
+    // Clean up idle worker DB connections every 30s
+    this.workerCleanupInterval = setInterval(() => this.cleanupIdleWorkers(), 30_000);
+  }
+
+  private cleanupIdleWorkers() {
+    const now = Date.now();
+    for (const [resourceId, worker] of this.workers) {
+      if (!worker.processing && worker.queue.length === 0 && worker.client && now - worker.lastUsed > 30_000) {
+        worker.client.release();
+        worker.client = null;
+        this.workers.delete(resourceId);
+      }
     }
   }
 
@@ -133,6 +184,271 @@ export class BookingService implements OnModuleInit {
   }
 
   /**
+   * Public entry point: enqueue a booking request for FIFO processing.
+   * Each resource gets its own queue with a dedicated DB connection,
+   * so bookings for different resources run in parallel while bookings
+   * for the same resource are serialized (no deadlocks, no row locks needed).
+   */
+  enqueueBooking(
+    resourceId: number,
+    buildingId: number,
+    from: string,
+    to: string,
+    sessionId: string,
+    ownerId: number,
+    ssn: string | null,
+  ): Promise<BookingResult> {
+    // Resolve owner early so callers get a fast rejection
+    if (!ownerId && this.guestAccountId) {
+      ownerId = this.guestAccountId;
+    }
+    if (!ownerId) {
+      return Promise.reject(
+        new TranslatableError('No valid owner account available', 'no_valid_owner'),
+      );
+    }
+
+    return new Promise<BookingResult>((resolve, reject) => {
+      let worker = this.workers.get(resourceId);
+      if (!worker) {
+        worker = { queue: [], processing: false, client: null, lastUsed: Date.now() };
+        this.workers.set(resourceId, worker);
+      }
+
+      worker.queue.push({
+        resourceId, buildingId, from, to, sessionId, ownerId, ssn,
+        resolve, reject, enqueuedAt: Date.now(),
+      });
+
+      if (!worker.processing) {
+        this.processQueue(resourceId);
+      }
+    });
+  }
+
+  private async processQueue(resourceId: number) {
+    const worker = this.workers.get(resourceId);
+    if (!worker || worker.processing) return;
+    worker.processing = true;
+
+    try {
+      // Get or reuse a dedicated DB connection for this resource
+      if (!worker.client) {
+        worker.client = await this.db.getClient();
+      }
+
+      while (worker.queue.length > 0) {
+        const job = worker.queue.shift()!;
+        const waitMs = Date.now() - job.enqueuedAt;
+        if (waitMs > 120_000) {
+          job.reject(new TranslatableError('Booking request timed out in queue', 'queue_timeout'));
+          continue;
+        }
+
+        try {
+          const result = await this.processBooking(worker.client, job);
+          job.resolve(result);
+        } catch (err: any) {
+          job.reject(err);
+        }
+        worker.lastUsed = Date.now();
+      }
+    } catch (err: any) {
+      // DB connection failed — reject all pending jobs and release
+      this.logger.error(`Worker for resource ${resourceId} failed: ${err.message}`);
+      for (const job of worker.queue) {
+        job.reject(new Error('Booking service temporarily unavailable'));
+      }
+      worker.queue = [];
+      if (worker.client) {
+        worker.client.release();
+        worker.client = null;
+      }
+    } finally {
+      worker.processing = false;
+    }
+  }
+
+  /**
+   * Process a single booking within a transaction on the worker's connection.
+   * No Redis lock or FOR UPDATE needed — the queue serializes access per resource.
+   */
+  private async processBooking(client: any, job: QueuedBooking): Promise<BookingResult> {
+    const { resourceId, buildingId, from, to, sessionId, ownerId, ssn } = job;
+
+    await client.query('BEGIN');
+    try {
+      // Overlap check (no FOR UPDATE — we're serialized by the queue)
+      const overlapResult = await client.query(
+        `SELECT a.id, a.status, ad.from_, ad.to_
+         FROM bb_application a
+         JOIN bb_application_resource ar ON a.id = ar.application_id
+         JOIN bb_application_date ad ON a.id = ad.application_id
+         WHERE ar.resource_id = $1
+         AND a.status NOT IN ('REJECTED')
+         AND a.active = 1
+         AND ((ad.from_ < $2 AND ad.to_ > $3)
+           AND NOT (ad.from_ = $2 OR ad.to_ = $3))
+         LIMIT 1`,
+        [resourceId, to, from],
+      );
+
+      if (overlapResult.rows.length > 0) {
+        await client.query('ROLLBACK');
+        throw new TranslatableError('Resource is already booked for this time slot', 'resource_already_booked');
+      }
+
+      // Check resource supports simple booking
+      const resourceResult = await client.query(
+        `SELECT r.*, br.building_id
+         FROM bb_resource r
+         JOIN bb_building_resource br ON r.id = br.resource_id
+         WHERE r.id = $1 AND r.active = 1 AND r.simple_booking = 1`,
+        [resourceId],
+      );
+      if (resourceResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        throw new Error('Resource does not support simple booking');
+      }
+      const resource = resourceResult.rows[0];
+
+      // Check month horizon
+      if (resource.booking_month_horizon > 0) {
+        const horizon = new Date();
+        horizon.setMonth(horizon.getMonth() + resource.booking_month_horizon);
+        const bookingEnd = new Date(to);
+        if (bookingEnd > horizon) {
+          await client.query('ROLLBACK');
+          throw new TranslatableError('Booking is outside the allowed time horizon', 'booking_outside_horizon');
+        }
+      }
+
+      // Check availability
+      const availability = await this.checkSimpleBookingAvailability(
+        client, resourceId, from, to, sessionId, resource, ssn,
+      );
+      if (!availability.available) {
+        await client.query('ROLLBACK');
+        const message = availability.message ?? 'Timeslot is not available';
+        throw new Error(message);
+      }
+
+      // Booking limits
+      if (
+        ssn &&
+        resource.booking_limit_number > 0 &&
+        resource.booking_limit_number_horizont > 0
+      ) {
+        const countResult = await client.query(
+          `SELECT COUNT(*) as count FROM bb_application a
+           JOIN bb_application_resource ar ON a.id = ar.application_id
+           WHERE ar.resource_id = $1
+           AND a.customer_ssn = $2
+           AND a.created >= NOW() - (INTERVAL '1 day' * $3)
+           AND a.status != 'REJECTED'
+           AND a.active = 1`,
+          [resourceId, ssn, resource.booking_limit_number_horizont],
+        );
+        if (parseInt(countResult.rows[0].count, 10) >= resource.booking_limit_number) {
+          await client.query('ROLLBACK');
+          throw new Error(
+            `Booking limit exceeded: max ${resource.booking_limit_number} per ${resource.booking_limit_number_horizont} days`,
+          );
+        }
+      }
+
+      // Create block
+      const blockCreated = await this.createBlock(client, sessionId, resourceId, from, to);
+      if (!blockCreated) {
+        await client.query('ROLLBACK');
+        throw new Error('Failed to create block for timeslot');
+      }
+
+      // Get building name
+      const buildingResult = await client.query(
+        'SELECT name FROM bb_building WHERE id = $1',
+        [buildingId],
+      );
+      if (buildingResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        throw new Error('Building not found');
+      }
+      const buildingName = buildingResult.rows[0].name;
+
+      // Insert application
+      const secret = randomBytes(16).toString('hex');
+      const insertResult = await client.query(
+        `INSERT INTO bb_application (
+          status, session_id, building_name, building_id,
+          activity_id, contact_name, contact_email, contact_phone,
+          responsible_street, responsible_zip_code, responsible_city,
+          customer_identifier_type, customer_organization_number,
+          created, modified, secret, owner_id, name, organizer,
+          recurring_info, homepage, description, equipment
+        ) VALUES (
+          'NEWPARTIAL1', $1, $2, $3,
+          $4, 'dummy', 'dummy@example.com', 'dummy',
+          'dummy', '0000', 'dummy',
+          'organization_number', '',
+          NOW(), NOW(), $5, $6, $7, 'dummy',
+          NULL, NULL, NULL, NULL
+        ) RETURNING id`,
+        [
+          sessionId, buildingName, buildingId,
+          resource.activity_id, secret, ownerId,
+          resource.name + ' (simple booking)',
+        ],
+      );
+      const applicationId = insertResult.rows[0].id;
+
+      // Add resource
+      await client.query(
+        `DELETE FROM bb_application_resource WHERE application_id = $1`,
+        [applicationId],
+      );
+      await client.query(
+        `INSERT INTO bb_application_resource (application_id, resource_id) VALUES ($1, $2)`,
+        [applicationId, resourceId],
+      );
+
+      // Add date
+      await client.query(
+        `DELETE FROM bb_application_date WHERE application_id = $1`,
+        [applicationId],
+      );
+      const formattedFrom = this.formatDateForDatabase(from);
+      const formattedTo = this.formatDateForDatabase(to);
+      await client.query(
+        `INSERT INTO bb_application_date (application_id, from_, to_) VALUES ($1, $2, $3)`,
+        [applicationId, formattedFrom, formattedTo],
+      );
+
+      // Auto-assign mandatory articles
+      await this.autoAssignMandatoryArticles(client, applicationId, resourceId, from, to);
+
+      // Update id_string
+      await client.query(
+        "UPDATE bb_application SET id_string = cast(id AS varchar) WHERE id = $1",
+        [applicationId],
+      );
+
+      await client.query('COMMIT');
+
+      this.logger.log(
+        `Simple booking created: app #${applicationId}, resource ${resourceId}`,
+      );
+
+      return { id: applicationId, status: 'NEWPARTIAL1' };
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      // Clear blocks on failure
+      await this.clearBlocks(client, sessionId, resourceId, from, to).catch(() => {});
+      throw err;
+    }
+  }
+
+  /**
+   * @deprecated Use enqueueBooking() instead. Kept for reference / PHP parity.
    * 1:1 port of PHP ApplicationService::createSimpleBooking
    * (src/modules/bookingfrontend/services/applications/ApplicationService.php:1277)
    */
@@ -145,6 +461,14 @@ export class BookingService implements OnModuleInit {
     ownerId: number,
     ssn: string | null,
   ): Promise<BookingResult> {
+    // Resolve owner: use provided ID, fall back to guest account (mirrors PHP behaviour)
+    if (!ownerId && this.guestAccountId) {
+      ownerId = this.guestAccountId;
+    }
+    if (!ownerId) {
+      throw new TranslatableError('No valid owner account available', 'no_valid_owner');
+    }
+
     const lockKey = `booking_lock_${resourceId}_${from}_${to}`;
     const lockTtl = 30;
     let lockAcquired = false;
@@ -339,7 +663,8 @@ export class BookingService implements OnModuleInit {
       // 11. Update id_string
       // PHP: $this->applicationRepository->updateIdString()
       await client.query(
-        "UPDATE bb_application SET id_string = cast(id AS varchar)",
+        "UPDATE bb_application SET id_string = cast(id AS varchar) WHERE id = $1",
+        [applicationId],
       );
 
       // 12. Commit

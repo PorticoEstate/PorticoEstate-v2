@@ -1491,7 +1491,7 @@ class ApplicationService
                 'customer_organization_number' => '',
                 'name' => $resource['name'] . ' (simple booking)',
                 'organizer' => 'dummy',
-                'owner_id' => $this->userSettings['account_id'] ?? 0,
+                'owner_id' => $this->userSettings['account_id'],
                 'active' => 1
             ];
 

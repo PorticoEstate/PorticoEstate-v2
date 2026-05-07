@@ -15,7 +15,7 @@ import { FreeTimeService } from '../freetime/freetime.service';
  */
 const PHP_SOURCE_CHECKSUMS: Record<string, string> = {
   '/var/www/html/src/modules/bookingfrontend/services/applications/ApplicationService.php':
-    '19543bdc20cb7e8223d53708d8684724',
+    '365b9843acb9eb2a6e8ec0b53b7386e6',
   '/var/www/html/src/modules/bookingfrontend/repositories/ApplicationRepository.php':
     '33c4bb700ca06e5ee6a078a0aabc344e',
   '/var/www/html/src/modules/bookingfrontend/repositories/ArticleRepository.php':

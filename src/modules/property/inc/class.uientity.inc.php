@@ -1595,10 +1595,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		}
 
 		$lookup_entity = array();
+		$lookup_entity_id = array();
 
 		if (isset($entity['lookup_entity']) && is_array($entity['lookup_entity']))
 		{
-			$lookup_entity_id = array_values($entity['lookup_entity']);
+			foreach ($entity['lookup_entity'] as $lookup_id)
+			{
+				$lookup_entity_id[$lookup_id] = '';
+			}
 		}
 		else
 		{

@@ -1,26 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { createHash, randomBytes } from 'crypto';
-import * as fs from 'fs';
 import { DatabaseService } from '../../database/database.service';
 import { RedisService } from '../notification/redis.service';
 import { FreeTimeService } from '../freetime/freetime.service';
-
-/**
- * Source file verification.
- * This Node booking service was ported from these PHP files at the commit/MD5s below.
- * If any source file has changed, the WS booking endpoint is DISABLED and clients
- * must fall back to the PHP REST endpoint.
- *
- * Ported from commit: 46900f8e (Cross approval better for vipps)
- */
-const PHP_SOURCE_CHECKSUMS: Record<string, string> = {
-  '/var/www/html/src/modules/bookingfrontend/services/applications/ApplicationService.php':
-    '887359fc4d52e17b049d4515d6653ab0',
-  '/var/www/html/src/modules/bookingfrontend/repositories/ApplicationRepository.php':
-    '0316a204e511eee6bb24fde3a4e9a64f',
-  '/var/www/html/src/modules/bookingfrontend/repositories/ArticleRepository.php':
-    'f865e0ea6667e68224b4be81efff56dd',
-};
 
 export class TranslatableError extends Error {
   translationKey: string;
@@ -101,7 +83,6 @@ export class BookingService implements OnModuleInit {
   private readonly logger = new Logger(BookingService.name);
   private installId: string | null = null;
   private guestAccountId: number | null = null;
-  private sourceVerified = false;
   private readonly workers = new Map<number, ResourceWorker>();
   private workerCleanupInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -112,8 +93,6 @@ export class BookingService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    this.sourceVerified = this.verifySourceChecksums();
-
     try {
       const { rows } = await this.db.query(
         "SELECT config_value FROM phpgw_config WHERE config_name = 'install_id' LIMIT 1",
@@ -155,31 +134,10 @@ export class BookingService implements OnModuleInit {
     }
   }
 
+  /**
+   * Always enabled — PHP REST now forwards bookings through this queue via Redis.
+   */
   isEnabled(): boolean {
-    return this.sourceVerified;
-  }
-
-  private verifySourceChecksums(): boolean {
-    for (const [filePath, expectedMd5] of Object.entries(PHP_SOURCE_CHECKSUMS)) {
-      try {
-        if (!fs.existsSync(filePath)) {
-          this.logger.warn(`Source verification: ${filePath} not found — booking WS DISABLED`);
-          return false;
-        }
-        const content = fs.readFileSync(filePath);
-        const actualMd5 = createHash('md5').update(content).digest('hex');
-        if (actualMd5 !== expectedMd5) {
-          this.logger.warn(
-            `Source verification FAILED: ${filePath} changed (expected ${expectedMd5}, got ${actualMd5}) — booking WS DISABLED`,
-          );
-          return false;
-        }
-      } catch (err: any) {
-        this.logger.warn(`Source verification error: ${err.message} — booking WS DISABLED`);
-        return false;
-      }
-    }
-    this.logger.log('Source verification passed — booking WS endpoint ENABLED');
     return true;
   }
 

@@ -4,12 +4,14 @@ import { RedisService } from './redis.service';
 import { RoomService } from '../session/room.service';
 
 export type PartialApplicationsUpdateHandler = (sessionId: string) => Promise<void>;
+export type BookingRequestHandler = (requestData: any) => Promise<void>;
 
 @Injectable()
 export class NotificationService implements OnModuleInit {
   private readonly logger = new Logger(NotificationService.name);
   private server: Server | null = null;
   private partialAppsHandler: PartialApplicationsUpdateHandler | null = null;
+  private bookingRequestHandler: BookingRequestHandler | null = null;
 
   constructor(
     private readonly redisService: RedisService,
@@ -22,6 +24,10 @@ export class NotificationService implements OnModuleInit {
    */
   onPartialApplicationsUpdate(handler: PartialApplicationsUpdateHandler) {
     this.partialAppsHandler = handler;
+  }
+
+  onBookingRequest(handler: BookingRequestHandler) {
+    this.bookingRequestHandler = handler;
   }
 
   onModuleInit() {
@@ -50,6 +56,16 @@ export class NotificationService implements OnModuleInit {
     }
 
     const messageType = data.type ?? 'unknown';
+
+    // --- booking_requests channel (from PHP REST fallback) ---
+    if (channel === 'booking_requests') {
+      if (this.bookingRequestHandler) {
+        this.bookingRequestHandler(data).catch((err) =>
+          this.logger.error(`Booking request handler error: ${err.message}`),
+        );
+      }
+      return;
+    }
 
     // --- room_messages channel ---
     if (channel === 'room_messages') {

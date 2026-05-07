@@ -1576,8 +1576,6 @@ function createSimpleApplicationViaWs(
 						status: message.data.status || 'NEWPARTIAL1',
 						message: message.data.message || 'Created',
 					});
-				} else if ((message.data as any).useRestFallback) {
-					reject(new Error('WS booking timeout'));
 				} else {
 					reject(new Error(message.data.message || 'Booking failed'));
 				}

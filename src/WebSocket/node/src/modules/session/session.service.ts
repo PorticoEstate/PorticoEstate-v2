@@ -98,7 +98,6 @@ export class SessionService {
     if (oldSessionId) {
       const oldRoomId = roomService.sessionRoomId(oldSessionId);
       client.leave(oldRoomId);
-      roomService.untrackClient(oldRoomId, client.id);
     }
 
     // Update session data
@@ -114,7 +113,6 @@ export class SessionService {
     // Join new session room
     const newRoomId = roomService.sessionRoomId(newSessionId);
     client.join(newRoomId);
-    roomService.trackClient(newRoomId, client.id);
 
     this.logger.log(
       `Session updated for ${client.id}: ${oldSessionId ? oldSessionId.substring(0, 8) + '...' : 'none'} -> ${newSessionId.substring(0, 8)}...`,

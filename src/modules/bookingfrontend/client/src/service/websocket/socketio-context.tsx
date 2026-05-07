@@ -14,10 +14,17 @@ import { WebSocketService } from './websocket-service';
 import { SubscriptionManager } from './subscription-manager';
 import { useWebSocketSession } from '../hooks/use-websocket-session';
 import { useCacheInvalidation } from '@/service/hooks/use-cache-invalidation';
-import { wsLog as wslogbase } from './util';
+import { wsLog as wslogbase, SOCKETIO_TRAFFIC_DEBUG } from './util';
 
 const wsLog = (message: string, ...args: any[]) =>
   wslogbase('SocketIO', message, ...args);
+
+const trafficLog = (direction: 'TX' | 'RX', type: string, data: any) => {
+  if (!SOCKETIO_TRAFFIC_DEBUG) return;
+  const ts = new Date().toISOString().split('T')[1].substring(0, 12);
+  const arrow = direction === 'TX' ? '\x1b[36m>>>\x1b[0m' : '\x1b[33m<<<\x1b[0m';
+  console.log(`[SIO ${ts}] ${arrow} ${type}`, data);
+};
 
 interface SocketIOProviderProps {
   children: ReactNode;
@@ -73,13 +80,16 @@ export const SocketIOProvider: React.FC<SocketIOProviderProps> = ({
         wsLog('Session ID required');
         break;
 
-      case 'server_ping':
-        socketRef.current?.emit('message', {
+      case 'server_ping': {
+        const pong = {
           type: 'pong',
           timestamp: new Date().toISOString(),
           reply_to: data.id || null,
-        });
+        };
+        trafficLog('TX', 'pong', pong);
+        socketRef.current?.emit('message', pong);
         break;
+      }
 
       case 'reconnect_required':
         wsLog('Server requested reconnection');
@@ -129,6 +139,7 @@ export const SocketIOProvider: React.FC<SocketIOProviderProps> = ({
 
     const directMessageHandler = (event: any) => {
       if (socket.connected && event.data) {
+        trafficLog('TX', event.data.type || 'direct', event.data);
         socket.emit('message', event.data);
       }
     };
@@ -143,13 +154,15 @@ export const SocketIOProvider: React.FC<SocketIOProviderProps> = ({
       const subs = subscriptionManager.current.getActiveEntitySubscriptions();
       subs.forEach((sub, i) => {
         setTimeout(() => {
-          socket.emit('message', {
+          const payload = {
             type: 'subscribe',
             message: `Subscribing to ${sub.entityType} ${sub.entityId}`,
             entityType: sub.entityType,
             entityId: sub.entityId,
             timestamp: new Date().toISOString(),
-          });
+          };
+          trafficLog('TX', 'subscribe', payload);
+          socket.emit('message', payload);
         }, i * 50);
       });
     });
@@ -179,6 +192,7 @@ export const SocketIOProvider: React.FC<SocketIOProviderProps> = ({
     });
 
     socket.on('message', (data: WebSocketMessage) => {
+      trafficLog('RX', data.type || 'unknown', data);
       handleMessage(data);
     });
 
@@ -202,12 +216,14 @@ export const SocketIOProvider: React.FC<SocketIOProviderProps> = ({
         return false;
       }
 
-      socket.emit('message', {
+      const payload = {
         type,
         message,
         ...additionalData,
         timestamp: new Date().toISOString(),
-      });
+      };
+      trafficLog('TX', type, payload);
+      socket.emit('message', payload);
       return true;
     },
     [],

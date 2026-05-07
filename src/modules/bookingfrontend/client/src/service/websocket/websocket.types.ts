@@ -177,6 +177,7 @@ export interface IWSFreeTimeResponse extends IWebSocketMessageBase {
 // Interface for create application response
 export interface IWSCreateApplicationResponse extends IWebSocketMessageBase {
   type: 'create_application_response';
+  requestId?: string;
   data: {
     error: boolean;
     message?: string;

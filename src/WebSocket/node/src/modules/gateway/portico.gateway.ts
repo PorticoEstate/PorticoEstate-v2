@@ -20,10 +20,10 @@ import { PhpConfigService } from '../../config/php-config.service';
 
 @WebSocketGateway({
   cors: { origin: '*' },
-  // Serve on all paths — Apache proxies /wss to us
   namespace: '/',
-  // Allow both websocket and polling transports for Socket.IO
   transports: ['websocket', 'polling'],
+  pingInterval: 60_000,
+  pingTimeout: 30_000,
 })
 export class PorticoGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -34,10 +34,6 @@ export class PorticoGateway
   server!: Server;
 
   private connectionCount = 0;
-  private pingInterval!: ReturnType<typeof setInterval>;
-  private entityPingInterval!: ReturnType<typeof setInterval>;
-  private cleanupInterval!: ReturnType<typeof setInterval>;
-  private fileCheckInterval!: ReturnType<typeof setInterval>;
 
   constructor(
     private readonly sessionService: SessionService,
@@ -52,26 +48,6 @@ export class PorticoGateway
   afterInit(server: Server) {
     this.roomService.setServer(server);
     this.notificationService.setServer(server);
-
-    // Server ping every 60s
-    this.pingInterval = setInterval(() => {
-      this.notificationService.sendServerPing();
-    }, 60_000);
-
-    // Entity room ping every 4min
-    this.entityPingInterval = setInterval(() => {
-      this.roomService.pingEntityRooms();
-    }, 240_000);
-
-    // Cleanup inactive connections every 8min
-    this.cleanupInterval = setInterval(() => {
-      this.roomService.cleanupInactiveConnections(480_000);
-    }, 480_000);
-
-    // File-based notification fallback every 1s
-    this.fileCheckInterval = setInterval(() => {
-      this.notificationService.checkNotificationFiles();
-    }, 1_000);
 
     // Register handler for partial application update requests from Redis
     this.notificationService.onPartialApplicationsUpdate(
@@ -107,7 +83,6 @@ export class PorticoGateway
     if (session.sessionId) {
       const roomId = this.roomService.sessionRoomId(session.sessionId);
       client.join(roomId);
-      this.roomService.trackClient(roomId, client.id);
 
       client.emit('message', {
         type: 'room_joined',
@@ -124,7 +99,7 @@ export class PorticoGateway
         message: 'Successfully connected to WebSocket server',
         roomId,
         timestamp: new Date().toISOString(),
-        rooms: this.getClientRoomsInfo(client.id),
+        rooms: this.getClientRoomsInfo(client),
         environment: this.getEnvironmentInfo(),
       });
     }
@@ -140,7 +115,7 @@ export class PorticoGateway
       `Disconnect: ${client.id} (remaining: ${this.connectionCount}, duration: ${duration}s)`,
     );
 
-    this.roomService.untrackClientFromAll(client.id);
+    // Socket.IO automatically removes client from all rooms on disconnect
     this.sessionService.removeSession(client.id);
   }
 
@@ -168,9 +143,8 @@ export class PorticoGateway
       case 'update_session':
         return this.handleUpdateSession(client, data);
       case 'room_ping_response':
-        return this.handleRoomPingResponse(client, data);
       case 'pong':
-        return this.handlePong(client, data);
+        return; // No-op: Socket.IO's built-in heartbeat handles liveness
       case 'update_user_info':
         return this.handleUpdateUserInfo(client, data);
       case 'get_partial_applications':
@@ -180,14 +154,7 @@ export class PorticoGateway
       case 'create_simple_application':
         return this.handleCreateSimpleApplication(client, data);
       case 'ping':
-        // Respond with pong (mirrors PHP NotificationService behavior)
-        client.emit('message', {
-          type: 'pong',
-          timestamp: new Date().toISOString(),
-          id: `pong_${Date.now()}`,
-          reply_to: data.id || null,
-        });
-        return;
+        return; // No-op: Socket.IO handles heartbeat natively
       default:
         // Forward to all other clients (like PHP's notificationService.processMessage)
         client.broadcast.emit('message', data);
@@ -200,7 +167,6 @@ export class PorticoGateway
 
     const roomId = this.roomService.entityRoomId(entityType, entityId);
     client.join(roomId);
-    this.roomService.trackClient(roomId, client.id);
 
     this.logger.debug(
       `${client.id} subscribed to ${entityType}:${entityId}`,
@@ -232,7 +198,6 @@ export class PorticoGateway
 
     const roomId = this.roomService.entityRoomId(entityType, entityId);
     client.leave(roomId);
-    this.roomService.untrackClient(roomId, client.id);
 
     client.emit('message', {
       type: 'subscription_confirmation',
@@ -247,8 +212,7 @@ export class PorticoGateway
     const { roomId } = data;
     if (!roomId) return;
 
-    const clientRooms = this.roomService.getClientRooms(client.id);
-    if (clientRooms.includes(roomId)) {
+    if (client.rooms.has(roomId)) {
       client.to(roomId).emit('message', data);
     } else {
       client.emit('message', {
@@ -275,9 +239,7 @@ export class PorticoGateway
     if (!entityType || !entityId) return;
 
     const roomId = this.roomService.entityRoomId(entityType, entityId);
-    if (this.roomService.roomExists(roomId)) {
-      client.to(roomId).emit('message', data);
-    }
+    client.to(roomId).emit('message', data);
   }
 
   private handleUpdateSession(client: Socket, data: any) {
@@ -331,23 +293,9 @@ export class PorticoGateway
       wasRequired,
       sessionId: sessionId.substring(0, 8) + '...',
       timestamp: new Date().toISOString(),
-      rooms: this.getClientRoomsInfo(client.id),
+      rooms: this.getClientRoomsInfo(client),
       environment: this.getEnvironmentInfo(),
     });
-  }
-
-  private handleRoomPingResponse(client: Socket, data: any) {
-    if (data.roomId) {
-      this.roomService.updateActivity(data.roomId, client.id);
-    }
-  }
-
-  private handlePong(client: Socket, data: any) {
-    // Log round-trip time if available
-    if (data.client_timestamp) {
-      const rtt = Date.now() - data.client_timestamp;
-      this.logger.debug(`Pong from ${client.id}: RTT ${rtt}ms`);
-    }
   }
 
   private handleUpdateUserInfo(client: Socket, data: any) {
@@ -597,13 +545,15 @@ export class PorticoGateway
   // --- Helpers ---
 
   private getClientRoomsInfo(
-    clientId: string,
+    client: Socket,
   ): Array<{ id: string; size: number; type: string }> {
-    return this.roomService.getClientRooms(clientId).map((roomId) => ({
-      id: roomId,
-      size: this.roomService.getRoomSize(roomId),
-      type: roomId.startsWith('session_') ? 'session' : 'entity',
-    }));
+    return Array.from(client.rooms)
+      .filter((roomId) => roomId !== client.id) // exclude the default self-room
+      .map((roomId) => ({
+        id: roomId,
+        size: this.roomService.getRoomSize(roomId),
+        type: roomId.startsWith('session_') ? 'session' : 'entity',
+      }));
   }
 
   private getEnvironmentInfo() {

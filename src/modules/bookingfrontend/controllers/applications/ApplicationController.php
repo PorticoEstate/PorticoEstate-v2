@@ -310,6 +310,37 @@ class ApplicationController extends DocumentController
             $dates = $this->applicationService->applicationRepository->fetchDates($id);
             $resources = $this->applicationService->applicationRepository->fetchResources($id);
 
+            // Enforce cancellation deadline for submitted applications (not drafts)
+            $status = $application['status'] ?? '';
+            if ($status !== 'NEWPARTIAL1' && !empty($dates) && !empty($resources)) {
+                $earliestFrom = null;
+                foreach ($dates as $date) {
+                    $from = new \DateTime($date['from_'], new \DateTimeZone('Europe/Oslo'));
+                    if ($earliestFrom === null || $from < $earliestFrom) {
+                        $earliestFrom = $from;
+                    }
+                }
+
+                if ($earliestFrom) {
+                    $now = new \DateTime('now', new \DateTimeZone('Europe/Oslo'));
+                    foreach ($resources as $resource) {
+                        $deadlineSeconds = self::deadlineToSeconds(
+                            $resource['cancellation_deadline_value'] ?? null,
+                            $resource['cancellation_deadline_unit'] ?? null
+                        );
+                        if ($deadlineSeconds > 0) {
+                            $cutoff = (clone $earliestFrom)->modify("-{$deadlineSeconds} seconds");
+                            if ($now > $cutoff) {
+                                return ResponseHelper::sendErrorResponse(
+                                    ['error' => 'Cancellation deadline has passed for this booking'],
+                                    409
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+
             // Store building and resource data for notifications before deletion
             $buildingId = $application['building_id'] ?? null;
             $resourceIds = array_column($resources, 'id');
@@ -1493,4 +1524,24 @@ class ApplicationController extends DocumentController
         }
     }
 
+    /**
+     * Convert a deadline value + unit pair to seconds.
+     * Returns 0 if no deadline is configured.
+     */
+    public static function deadlineToSeconds(?int $value, ?string $unit): int
+    {
+        if (!$value || !$unit) {
+            return 0;
+        }
+        switch ($unit) {
+            case 'hours':
+                return $value * 3600;
+            case 'days':
+                return $value * 86400;
+            case 'weeks':
+                return $value * 604800;
+            default:
+                return 0;
+        }
+    }
 }

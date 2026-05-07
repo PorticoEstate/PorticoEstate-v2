@@ -1,62 +1,41 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { plainToInstance, instanceToPlain } from 'class-transformer';
 import { DatabaseService } from '../../database/database.service';
+import { ApplicationDto, OrderDto, OrderLineDto } from './dto';
 
-interface ApplicationDate {
-  id: number;
-  from_: string;
-  to_: string;
+/**
+ * Remove keys whose value is null/undefined, matching PHP SerializableTrait
+ * which skips properties where `$value !== null`.
+ */
+function stripNulls(obj: any): any {
+  if (Array.isArray(obj)) return obj.map(stripNulls);
+  if (obj && typeof obj === 'object') {
+    const out: any = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (v === null || v === undefined) continue;
+      out[k] = stripNulls(v);
+    }
+    return out;
+  }
+  return obj;
 }
 
-interface ApplicationResource {
-  id: number;
-  name: string;
-  building_id: number | null;
-  [key: string]: any;
-}
-
-interface OrderLine {
-  order_id: number;
-  article_mapping_id: number;
-  quantity: number;
-  unit_price: number;
-  name: string;
-  unit: string;
-  [key: string]: any;
-}
-
-interface Order {
-  order_id: number;
-  sum: number;
-  lines: OrderLine[];
-}
-
-interface ArticleOrder {
-  id: number;
-  quantity: number;
-  parent_id: number | null;
-  name: string;
-  unit: string;
-  article_cat_id: number;
-  article_id: number;
-  unit_price: number;
-  tax_code: number | null;
-  tax_percent: number | null;
-}
-
-interface AgeGroup {
-  id: number;
-  name: string;
-  sort: number;
-  male: number;
-  female: number;
-  [key: string]: any;
-}
-
-interface Document {
-  id: number;
-  name: string;
-  category: number;
-  [key: string]: any;
+/**
+ * Convert Date objects to raw DB-style strings (e.g. "2026-05-07 11:31:28.717852").
+ * The pg driver auto-parses timestamp columns into JS Date objects, but PHP
+ * passes them through as raw strings since there's no @Timestamp on these fields.
+ */
+function dateToDbString(value: any): string {
+  if (!(value instanceof Date)) return value;
+  const pad = (n: number, len = 2) => String(n).padStart(len, '0');
+  const y = value.getFullYear();
+  const mo = pad(value.getMonth() + 1);
+  const d = pad(value.getDate());
+  const h = pad(value.getHours());
+  const mi = pad(value.getMinutes());
+  const s = pad(value.getSeconds());
+  const ms = pad(value.getMilliseconds(), 3);
+  return `${y}-${mo}-${d} ${h}:${mi}:${s}.${ms}`;
 }
 
 @Injectable()
@@ -91,8 +70,24 @@ export class ApplicationService {
               this.fetchDocuments(app.id),
             ]);
 
-          return {
-            ...app,
+          // Pre-process fields that pg driver auto-converts but PHP keeps as raw strings
+          const preprocessed: Record<string, any> = { ...app };
+          if (preprocessed.created instanceof Date) {
+            preprocessed.created = dateToDbString(preprocessed.created);
+          }
+          if (preprocessed.modified instanceof Date) {
+            preprocessed.modified = dateToDbString(preprocessed.modified);
+          }
+          if (preprocessed.frontend_modified instanceof Date) {
+            preprocessed.frontend_modified = dateToDbString(preprocessed.frontend_modified);
+          }
+          // pg driver auto-parses JSON/JSONB — PHP keeps it as a raw string
+          if (preprocessed.recurring_info != null && typeof preprocessed.recurring_info !== 'string') {
+            preprocessed.recurring_info = JSON.stringify(preprocessed.recurring_info);
+          }
+
+          const plain = {
+            ...preprocessed,
             dates,
             resources,
             orders,
@@ -101,6 +96,12 @@ export class ApplicationService {
             audience,
             documents,
           };
+
+          const dto = plainToInstance(ApplicationDto, plain, {
+            excludeExtraneousValues: true,
+          });
+          const serialized = instanceToPlain(dto, { excludeExtraneousValues: true });
+          return stripNulls(serialized);
         }),
       );
 
@@ -116,7 +117,7 @@ export class ApplicationService {
     }
   }
 
-  private async fetchDates(applicationId: number): Promise<ApplicationDate[]> {
+  private async fetchDates(applicationId: number): Promise<any[]> {
     const { rows } = await this.db.query(
       `SELECT * FROM bb_application_date
        WHERE application_id = $1
@@ -126,9 +127,7 @@ export class ApplicationService {
     return rows;
   }
 
-  private async fetchResources(
-    applicationId: number,
-  ): Promise<ApplicationResource[]> {
+  private async fetchResources(applicationId: number): Promise<any[]> {
     const { rows } = await this.db.query(
       `SELECT r.*, br.building_id
        FROM bb_resource r
@@ -140,7 +139,16 @@ export class ApplicationService {
     return rows;
   }
 
-  private async fetchOrders(applicationId: number): Promise<Order[]> {
+  /**
+   * Fetch and group order lines into Order objects.
+   *
+   * PHP quirk: `SELECT po.*, pol.*` causes `pol.id` to overwrite `po.id`,
+   * then PHP groups by `$row['id']` — effectively grouping by the line's PK,
+   * so each line becomes its own "order". We replicate this behavior.
+   *
+   * PHP sum: $line->amount + $line->tax per line.
+   */
+  private async fetchOrders(applicationId: number): Promise<any[]> {
     const { rows } = await this.db.query(
       `SELECT po.*, pol.*, am.unit,
               CASE WHEN r.name IS NULL THEN s.name ELSE r.name END AS name
@@ -154,49 +162,52 @@ export class ApplicationService {
       [applicationId],
     );
 
-    // Group lines by order
-    const orderMap = new Map<number, Order>();
+    // PHP groups by $row['id'] which is pol.id (line PK) due to column collision.
+    // Each line becomes its own "order" with order_id = pol.id.
+    const orderMap = new Map<number, { order_id: number; sum: number; lines: any[] }>();
     for (const row of rows) {
-      const orderId = row.order_id;
-      if (!orderMap.has(orderId)) {
-        orderMap.set(orderId, {
-          order_id: orderId,
-          sum: 0,
-          lines: [],
-        });
+      // pol.id overwrites po.id in PHP's SELECT po.*, pol.*
+      const lineId = row.id;
+      if (!orderMap.has(lineId)) {
+        orderMap.set(lineId, { order_id: lineId, sum: 0, lines: [] });
       }
-      const order = orderMap.get(orderId)!;
-      order.lines.push(row);
-      order.sum += parseFloat(row.amount || '0');
+      const order = orderMap.get(lineId)!;
+
+      // Serialize line through OrderLineDto
+      const lineDto = plainToInstance(OrderLineDto, row, { excludeExtraneousValues: true });
+      order.lines.push(instanceToPlain(lineDto, { excludeExtraneousValues: true }));
+
+      order.sum += (parseFloat(row.amount || '0')) + (parseFloat(row.tax || '0'));
     }
 
-    return Array.from(orderMap.values());
+    // Serialize each order through OrderDto, strip nulls
+    return Array.from(orderMap.values()).map((order) => {
+      const dto = plainToInstance(OrderDto, order, { excludeExtraneousValues: true });
+      return stripNulls(instanceToPlain(dto, { excludeExtraneousValues: true }));
+    });
   }
 
-  private async fetchArticles(
-    applicationId: number,
-  ): Promise<ArticleOrder[]> {
+  /**
+   * Fetch articles matching PHP ArticleRepository::fetchArticlesForApplication —
+   * returns only {id, quantity, parent_id} with int casting.
+   */
+  private async fetchArticles(applicationId: number): Promise<any[]> {
     const { rows } = await this.db.query(
-      `SELECT pol.article_mapping_id as id, pol.quantity, pol.parent_mapping_id as parent_id,
-              CASE WHEN r.name IS NULL THEN s.name ELSE r.name END AS name,
-              am.unit, am.article_cat_id, am.article_id, pol.unit_price,
-              pol.tax_code, e.percent_ AS tax_percent
+      `SELECT pol.article_mapping_id as id, pol.quantity, pol.parent_mapping_id as parent_id
        FROM bb_purchase_order po
        JOIN bb_purchase_order_line pol ON po.id = pol.order_id
-       JOIN bb_article_mapping am ON pol.article_mapping_id = am.id
-       LEFT JOIN fm_ecomva e ON pol.tax_code = e.id
-       LEFT JOIN bb_service s ON (am.article_id = s.id AND am.article_cat_id = 2)
-       LEFT JOIN bb_resource r ON (am.article_id = r.id AND am.article_cat_id = 1)
        WHERE po.cancelled IS NULL AND po.application_id = $1
        ORDER BY pol.id`,
       [applicationId],
     );
-    return rows;
+    return rows.map((row) => ({
+      id: parseInt(row.id, 10),
+      quantity: parseInt(row.quantity, 10),
+      parent_id: row.parent_id ? parseInt(row.parent_id, 10) : null,
+    }));
   }
 
-  private async fetchAgeGroups(
-    applicationId: number,
-  ): Promise<AgeGroup[]> {
+  private async fetchAgeGroups(applicationId: number): Promise<any[]> {
     const { rows } = await this.db.query(
       `SELECT ag.*, aag.male, aag.female
        FROM bb_application_agegroup aag
@@ -208,9 +219,7 @@ export class ApplicationService {
     return rows;
   }
 
-  private async fetchTargetAudience(
-    applicationId: number,
-  ): Promise<number[]> {
+  private async fetchTargetAudience(applicationId: number): Promise<number[]> {
     const { rows } = await this.db.query(
       `SELECT ta.id
        FROM bb_application_targetaudience ata
@@ -222,9 +231,7 @@ export class ApplicationService {
     return rows.map((r) => r.id);
   }
 
-  private async fetchDocuments(
-    applicationId: number,
-  ): Promise<Document[]> {
+  private async fetchDocuments(applicationId: number): Promise<any[]> {
     const { rows } = await this.db.query(
       `SELECT * FROM bb_document_application
        WHERE owner_id = $1`,

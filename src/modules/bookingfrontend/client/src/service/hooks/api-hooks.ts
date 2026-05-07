@@ -1576,8 +1576,6 @@ function createSimpleApplicationViaWs(
 						status: message.data.status || 'NEWPARTIAL1',
 						message: message.data.message || 'Created',
 					});
-				} else if ((message.data as any).useRestFallback) {
-					reject(new Error('WS booking timeout'));
 				} else {
 					reject(new Error(message.data.message || 'Booking failed'));
 				}
@@ -1617,9 +1615,9 @@ export function useCreateSimpleApplication() {
 				}
 			}
 
-			// REST fallback
+			// REST fallback — queue via Redis, poll for result
 			const url = phpGWLink(['bookingfrontend', 'applications', 'simple']);
-			const response = await fetch(url, {
+			const postResponse = await fetch(url, {
 				method: 'POST',
 				body: JSON.stringify({
 					from: params.timeslot.start,
@@ -1630,12 +1628,36 @@ export function useCreateSimpleApplication() {
 				headers: { 'Content-Type': 'application/json' },
 			});
 
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({}));
-				throw new Error(errorData.error || 'Failed to create simple application');
+			if (postResponse.status !== 202) {
+				const errorData = await postResponse.json().catch(() => ({}));
+				throw new Error(errorData.error || 'Failed to queue booking');
 			}
 
-			return response.json();
+			const { requestId } = await postResponse.json();
+
+			// Poll for result from Node FIFO queue
+			const statusUrl = phpGWLink(['bookingfrontend', 'applications', 'simple', 'status', requestId]);
+			const maxAttempts = 30; // 15 seconds at 500ms intervals
+			for (let attempt = 0; attempt < maxAttempts; attempt++) {
+				await new Promise(r => setTimeout(r, 500));
+
+				const statusResponse = await fetch(statusUrl);
+				const statusData = await statusResponse.json();
+
+				if (statusData.status === 'pending') continue;
+
+				if (statusData.error) {
+					throw new Error(statusData.message || 'Booking failed');
+				}
+
+				return {
+					id: statusData.id,
+					status: statusData.status,
+					message: statusData.message || 'Created',
+				};
+			}
+
+			throw new Error('Booking timed out');
 		},
 		onSuccess: (_data, variables) => {
 			const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;

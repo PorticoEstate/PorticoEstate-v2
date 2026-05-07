@@ -116,6 +116,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	{
 		$group->get('', ApplicationController::class . ':getApplications');
 		$group->post('/simple', ApplicationController::class . ':createSimpleApplication');
+		$group->get('/simple/status/{requestId}', ApplicationController::class . ':getSimpleApplicationStatus');
 		$group->get('/partials', ApplicationController::class . ':getPartials');
 		$group->post('/partials', ApplicationController::class . ':createPartial');
 		$group->post('/partials/checkout', CheckoutController::class . ':checkout');

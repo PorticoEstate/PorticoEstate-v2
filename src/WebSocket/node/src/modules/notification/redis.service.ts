@@ -47,6 +47,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         'notifications',
         'session_messages',
         'room_messages',
+        'booking_requests',
       );
 
       this.connected = true;
@@ -99,6 +100,33 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
    * Atomic lock release — same Lua script as PHP RedisCache::release_lock.
    * Only deletes the key if the value matches (prevents releasing another session's lock).
    */
+  /**
+   * SET with TTL — used to store booking results for PHP polling.
+   */
+  async set(key: string, value: string, ttlSeconds: number): Promise<boolean> {
+    if (!this.publisher || !this.connected) return false;
+    try {
+      await this.publisher.set(key, value, 'EX', ttlSeconds);
+      return true;
+    } catch (err: any) {
+      this.logger.error(`Redis SET error: ${err.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * GET a key value — used by gateway to check results if needed.
+   */
+  async get(key: string): Promise<string | null> {
+    if (!this.publisher || !this.connected) return null;
+    try {
+      return await this.publisher.get(key);
+    } catch (err: any) {
+      this.logger.error(`Redis GET error: ${err.message}`);
+      return null;
+    }
+  }
+
   async releaseLock(key: string, value: string): Promise<boolean> {
     if (!this.publisher || !this.connected) return false;
     try {

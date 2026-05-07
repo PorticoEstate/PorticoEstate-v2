@@ -17,6 +17,7 @@ use App\modules\phpgwapi\services\Settings;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use App\WebSocket\Services\RedisService;
 use Exception;
 use OpenApi\Annotations as OA;
 
@@ -1257,59 +1258,89 @@ class ApplicationController extends DocumentController
             $to = $toDate->format('Y-m-d H:i:s');
 
 
-            // Check if resource supports simple booking and is available
-            $result = $this->applicationService->createSimpleBooking(
-                (int)$data['resource_id'],
-                (int)$data['building_id'],
-                $from,
-                $to,
-                $session_id
-            );
+            // Generate unique request ID for Redis request-reply
+            $requestId = bin2hex(random_bytes(16));
 
+            // Get owner info for the booking
+            $bouser = new UserHelper();
+            $ownerId = $this->userSettings['account_id'] ?? 0;
+            $ssn = $bouser->ssn ?? null;
 
-            $responseData = [
-                'id' => $result['id'],
-                'message' => 'Simple application created successfully',
-                'status' => $result['status']
+            // Forward booking request to Node FIFO queue via Redis
+            $bookingRequest = [
+                'requestId' => $requestId,
+                'resourceId' => (int)$data['resource_id'],
+                'buildingId' => (int)$data['building_id'],
+                'from' => $from,
+                'to' => $to,
+                'sessionId' => $session_id,
+                'ownerId' => $ownerId,
+                'ssn' => $ssn,
             ];
 
-            // Offload WebSocket notifications to a separate process
-            WebSocketHelper::forkNotification(function() use ($data, $from, $to, $result) {
-                try {
-                    // Notify about the timeslot change to update overlap status
-                    $this->notifyTimeslotChanged(
-                        (int)$data['building_id'],
-                        (int)$data['resource_id'],
-                        $from,
-                        $to,
-                        $result['id']
-                    );
-                    error_log("WebSocket notifications for application creation #{$result['id']} completed in forked process");
-                } catch (Exception $innerException) {
-                    error_log("Error in forked WebSocket notification process: " . $innerException->getMessage());
-                }
-            });
+            RedisService::sendNotification($bookingRequest, 'booking_requests');
 
-            WebSocketHelper::triggerPartialApplicationsUpdate($session_id);
-
-            // Performance logging (in production, this should be conditional based on debug flag)
-            $endTime = microtime(true);
-            $executionTime = round(($endTime - $startTime) * 1000, 2); // convert to ms
-            error_log("Simple application creation for resource {$data['resource_id']} took {$executionTime}ms (API processing time, excludes forked operations)");
+            $responseData = [
+                'requestId' => $requestId,
+                'status' => 'queued',
+            ];
 
             $response->getBody()->write(json_encode($responseData));
-            return $response->withStatus(201)
+            return $response->withStatus(202)
                 ->withHeader('Content-Type', 'application/json');
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
-                ['error' => "Error creating simple application: " . $e->getMessage()],
+                ['error' => "Error queuing booking: " . $e->getMessage()],
                 500
             );
         }
     }
 
+    /**
+     * Poll for the result of a queued simple booking request.
+     * The Node WS server writes the result to Redis after processing.
+     */
+    public function getSimpleApplicationStatus(Request $request, Response $response, array $args): Response
+    {
+        $requestId = $args['requestId'] ?? null;
+        if (!$requestId || !preg_match('/^[a-f0-9]{32}$/', $requestId)) {
+            return ResponseHelper::sendErrorResponse(['error' => 'Invalid request ID'], 400);
+        }
 
+        try {
+            $host = getenv('REDIS_HOST') ?: 'redis';
+            $port = (int)(getenv('REDIS_PORT') ?: 6379);
 
+            $redis = new \Predis\Client([
+                'scheme' => 'tcp',
+                'host' => $host,
+                'port' => $port,
+            ]);
+
+            $result = $redis->get("booking_result:{$requestId}");
+
+            if ($result === null) {
+                $response->getBody()->write(json_encode([
+                    'requestId' => $requestId,
+                    'status' => 'pending',
+                ]));
+                return $response->withStatus(200)
+                    ->withHeader('Content-Type', 'application/json');
+            }
+
+            $data = json_decode($result, true);
+            $statusCode = ($data['error'] ?? false) ? 409 : 200;
+
+            $response->getBody()->write($result);
+            return $response->withStatus($statusCode)
+                ->withHeader('Content-Type', 'application/json');
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Failed to check booking status: ' . $e->getMessage()],
+                500
+            );
+        }
+    }
 
     /**
      * @OA\Get(

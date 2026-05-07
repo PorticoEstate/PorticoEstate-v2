@@ -17,6 +17,7 @@ import { ApplicationService } from '../application/application.service';
 import { FreeTimeService } from '../freetime/freetime.service';
 import { BookingService } from '../booking/booking.service';
 import { PhpConfigService } from '../../config/php-config.service';
+import { RedisService } from '../notification/redis.service';
 
 @WebSocketGateway({
   cors: { origin: '*' },
@@ -43,6 +44,7 @@ export class PorticoGateway
     private readonly freeTimeService: FreeTimeService,
     private readonly bookingService: BookingService,
     private readonly configService: PhpConfigService,
+    private readonly redisService: RedisService,
   ) {}
 
   afterInit(server: Server) {
@@ -52,6 +54,11 @@ export class PorticoGateway
     // Register handler for partial application update requests from Redis
     this.notificationService.onPartialApplicationsUpdate(
       (sessionId) => this.sendPartialApplicationsUpdate(sessionId),
+    );
+
+    // Register handler for booking requests from PHP REST fallback
+    this.notificationService.onBookingRequest(
+      (data) => this.handleRedisBookingRequest(data),
     );
 
     this.logger.log('WebSocket gateway initialized');
@@ -373,21 +380,78 @@ export class PorticoGateway
     });
   }
 
-  private async handleCreateSimpleApplication(client: Socket, data: any) {
-    // Safety check: if PHP source files have changed, refuse WS booking
-    // and tell client to use REST fallback
-    if (!this.bookingService.isEnabled()) {
-      client.emit('message', {
-        type: 'create_application_response',
-        data: {
-          error: true,
-          message: 'WS booking disabled — PHP source changed. Use REST endpoint.',
-          useRestFallback: true,
-        },
-        timestamp: new Date().toISOString(),
-      });
+  /**
+   * Handle a booking request forwarded from PHP REST via Redis.
+   * Feeds into the same FIFO queue as WebSocket bookings.
+   */
+  private async handleRedisBookingRequest(data: any): Promise<void> {
+    const { requestId, resourceId, buildingId, from, to, sessionId, ownerId, ssn } = data;
+
+    if (!requestId || !resourceId || !buildingId || !from || !to || !sessionId) {
+      this.logger.warn('Invalid booking request from Redis: missing fields');
+      if (requestId) {
+        await this.redisService.set(
+          `booking_result:${requestId}`,
+          JSON.stringify({ error: true, message: 'Invalid booking request data' }),
+          30,
+        );
+      }
       return;
     }
+
+    try {
+      const result = await this.bookingService.enqueueBooking(
+        Number(resourceId),
+        Number(buildingId),
+        from,
+        to,
+        sessionId,
+        Number(ownerId) || 0,
+        ssn || null,
+      );
+
+      // Write success to Redis for PHP polling endpoint
+      await this.redisService.set(
+        `booking_result:${requestId}`,
+        JSON.stringify({
+          error: false,
+          id: result.id,
+          status: result.status,
+          message: 'Simple application created successfully',
+        }),
+        30,
+      );
+
+      // Send WS notifications (same as handleCreateSimpleApplication)
+      this.sendPartialApplicationsUpdate(sessionId, { added: [result.id] })
+        .then(() =>
+          this.bookingService.publishBookingNotifications(
+            sessionId,
+            Number(buildingId),
+            Number(resourceId),
+            from,
+            to,
+            result.id,
+          ),
+        )
+        .catch((err) =>
+          this.logger.error(`Redis booking notification error: ${err.message}`),
+        );
+    } catch (err: any) {
+      this.logger.warn(`Redis booking request failed: ${err.message}`);
+      await this.redisService.set(
+        `booking_result:${requestId}`,
+        JSON.stringify({
+          error: true,
+          message: err.message,
+          translationKey: err.translationKey ?? null,
+        }),
+        30,
+      );
+    }
+  }
+
+  private async handleCreateSimpleApplication(client: Socket, data: any) {
 
     const { resourceId, buildingId, from, to, ownerId: clientOwnerId, requestId } = data;
 

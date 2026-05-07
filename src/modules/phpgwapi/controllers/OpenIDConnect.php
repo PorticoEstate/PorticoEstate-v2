@@ -216,13 +216,13 @@ class OpenIDConnect
 			// Extract the kid from the JWT header
 			$jwtHeader = json_decode(base64_decode(explode('.', self::$idToken)[0]), true);
 			$kid = $jwtHeader['kid'];
-			if ($this->debug)
-			{
-				echo "JWKS URI: $jwksUri<br>";
-				echo "JWKS:<br>";
-				_debug_array($jwks);
-				echo "kid: $kid<br>";
-			}
+			// if ($this->debug)
+			// {
+			// 	echo "JWKS URI: $jwksUri<br>";
+			// 	echo "JWKS:<br>";
+			// 	_debug_array($jwks);
+			// 	echo "kid: $kid<br>";
+			// }
 			// Find the correct key (usually only one for Azure AD)
 			$publicKey = null;
 			foreach ($jwks['keys'] as $key)
@@ -234,13 +234,13 @@ class OpenIDConnect
 					break;
 				}
 			}
-			if ($this->debug)
-			{
-				echo "PublicKey:<br>";
-				_debug_array($publicKey);
-				echo "idToken:<br>";
-				_debug_array(self::$idToken);
-			}
+			// if ($this->debug)
+			// {
+			// 	echo "PublicKey:<br>";
+			// 	_debug_array($publicKey);
+			// 	echo "idToken:<br>";
+			// 	_debug_array(self::$idToken);
+			// }
 			// 2. Decode and validate the ID token
 			try
 			{
@@ -343,8 +343,9 @@ class OpenIDConnect
 		$userInfo = $this->get_userinfo();
 		if ($this->debug)
 		{
+			error_log(print_r($userInfo, true));
 			_debug_array($userInfo);
-			die();
+//			die();
 		}
 
 		$response_variable = $this->config['response_variable'] ?? 'upn';

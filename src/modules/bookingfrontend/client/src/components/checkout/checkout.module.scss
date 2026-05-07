@@ -184,6 +184,15 @@
 			}
 		}
 	}
+    .mixedBookingNote {
+        //padding: 0.75rem 1rem;
+        //background-color: var(--ds-color-info-surface-default, #e6f4ff);
+        //border-left: 3px solid var(--ds-color-info-border-default, #0072c6);
+        border-radius: 2px;
+        font-size: 0.875rem;
+        max-width: 440px;
+    }
+
     .submitSection {
         display: flex;
         flex-direction: column;

@@ -10,7 +10,7 @@ import { SubscriptionManager } from './subscription-manager';
 import { useWebSocketSession } from '../hooks/use-websocket-session';
 import {useCacheInvalidation} from "@/service/hooks/use-cache-invalidation";
 
-interface WebSocketContextValue {
+export interface WebSocketContextValue {
   status: WebSocketStatus;
   lastMessage: WebSocketMessage | null;
   sendMessage: (type: string, message: string, additionalData?: Record<string, any>) => boolean;
@@ -22,7 +22,7 @@ interface WebSocketContextValue {
 
 const wsLog = (message: string, ...optionalParams: any[]) => wslogbase('WSContext', message, optionalParams)
 
-const WebSocketContext = createContext<WebSocketContextValue | undefined>(undefined);
+export const WebSocketContext = createContext<WebSocketContextValue | undefined>(undefined);
 
 interface WebSocketProviderProps {
   children: ReactNode;

@@ -656,10 +656,10 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 				'name'	 => lang('ticket'),
 				'disabled' => true
 			),
-			// array(
-			// 	'id'	 => 'rental',
-			// 	'name'	 => lang('rental')
-			// ),
+			 array(
+			 	'id'	 => 'rental',
+			 	'name'	 => 'Utleie lokaler'
+			 ),
 			array(
 				'id'	 => 'key_order',
 				'name'	 => lang('key order')

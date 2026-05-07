@@ -36,8 +36,11 @@ export SLIM_SERVER
 export WEBSOCKET_SERVER
 
 # Pass environment variables to Apache
+# SetEnv makes them available in PHP/CGI; Define makes them available in Apache directives (ProxyPass, RewriteRule)
 echo "SetEnv NEXTJS_SERVER ${NEXTJS_SERVER}" >> /etc/apache2/conf-enabled/environment.conf
 echo "SetEnv WEBSOCKET_SERVER ${WEBSOCKET_SERVER}" >> /etc/apache2/conf-enabled/environment.conf
+echo "Define NEXTJS_SERVER ${NEXTJS_SERVER}" >> /etc/apache2/conf-enabled/environment.conf
+echo "Define WEBSOCKET_SERVER ${WEBSOCKET_SERVER}" >> /etc/apache2/conf-enabled/environment.conf
 
 # Check if composer dependencies need to be updated (development scenario with mounted volumes)
 if [ -f /var/www/html/composer.json ]; then
@@ -92,6 +95,13 @@ mkdir -p /var/log/supervisor
 
 # Clean up stale Apache2 PID files to prevent startup issues
 rm -f /var/run/apache2/apache2.pid
+
+# Sync PHP-FPM pool overrides from the mounted workspace.
+# This makes php-fpm.d/zz-portico.conf changes effective on container restart
+# without rebuilding the image.
+if [ -f /var/www/html/php-fpm.d/zz-portico.conf ]; then
+    cp /var/www/html/php-fpm.d/zz-portico.conf /usr/local/etc/php-fpm.d/zz-portico.conf
+fi
 
 # Enable required modules for WebSocket
 a2enmod proxy proxy_http proxy_wstunnel rewrite

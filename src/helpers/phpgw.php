@@ -395,7 +395,7 @@ class phpgw
 	 */
 	public static function no_access($appname = '', $message = '')
 	{
-		$phpgwapi_common = new phpgwapi_common();
+		$phpgwapi_common = new \phpgwapi_common();
 		$flags = Settings::getInstance()->get('flags');
 		$message = $message ? $message : lang('no access');
 		if (\Sanitizer::get_var('phpgw_return_as') == 'json')

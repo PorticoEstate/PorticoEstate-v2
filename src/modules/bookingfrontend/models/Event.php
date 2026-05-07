@@ -40,6 +40,7 @@ class Event extends BaseScheduleEntity
 	 *  "customer_identifier_type=ssn&&customer_ssn=$user_ssn",
 	 *  "customer_identifier_type=organization_number&&customer_organization_number=$organization_number"
 	 * })
+	 * @EscapeString(mode="default")
 	 */
 	public $description;
 
@@ -50,6 +51,7 @@ class Event extends BaseScheduleEntity
 	 *  "customer_identifier_type=ssn&&customer_ssn=$user_ssn",
 	 *  "customer_identifier_type=organization_number&&customer_organization_number=$organization_number"
 	 * })
+	 * @EscapeString(mode="default")
 	 */
 	public $contact_name;
 
@@ -76,6 +78,7 @@ class Event extends BaseScheduleEntity
 	/**
 	 * @OA\Property(type="integer")
 	 * @Expose
+	 * @EscapeString(mode="default")
 	 */
 	public $reminder;
 
@@ -145,6 +148,7 @@ class Event extends BaseScheduleEntity
 	 *  "customer_identifier_type=ssn&&customer_ssn=$user_ssn",
 	 *  "customer_identifier_type=organization_number&&customer_organization_number=$organization_number"
 	 * })
+	 * @EscapeString(mode="default")
 	 * @Short
 	 */
 	public $customer_organization_name;
@@ -166,6 +170,7 @@ class Event extends BaseScheduleEntity
 	 * @OA\Property(type="string")
 	 * @Expose(when={
 	 *  "is_public=1",
+	 *  "$expose_name=1",
 	 *  "customer_identifier_type=ssn && customer_ssn=$user_ssn",
 	 *  "customer_identifier_type=organization_number && customer_organization_number=$organization_number"
 	 * })
@@ -204,6 +209,7 @@ class Event extends BaseScheduleEntity
 	 *  "customer_identifier_type=ssn&&customer_ssn=$user_ssn",
 	 *  "customer_identifier_type=organization_number&&customer_organization_number=$organization_number"
 	 * })
+	 * @EscapeString(mode="default")
 	 */
 	public $equipment;
 

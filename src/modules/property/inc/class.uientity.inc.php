@@ -111,6 +111,13 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		'get_items_per_qr'			 => true
 	);
 
+	/**
+	 * Constructor — initialises ACL, session state, entity/category context, and helpers.
+	 *
+	 * Reads entity_id, cat_id, type, start/end dates, filter, and ordering from the request.
+	 * Restores session data if available, sets up boentity, ACL checks, soadmin_entity,
+	 * controller_helper, and category directory path.
+	 */
 	function __construct()
 	{
 		parent::__construct();
@@ -194,6 +201,15 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		 * Overrides with incoming data from POST
 		 */
 
+	/**
+	 * Merge incoming POST values with the pre-existing entity record.
+	 *
+	 * Validates attribute values (required, integer types), resolves location
+	 * data from location_code, and merges POST values over existing record values.
+	 *
+	 * @param array $data Pre-existing entity record values (e.g. from bo->read_single()).
+	 * @return array Merged array of core field values and 'attributes' sub-array.
+	 */
 	private function _populate($data = array())
 	{
 		$values				 = Sanitizer::get_var('values');
@@ -322,6 +338,16 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		return $values;
 	}
 
+	/**
+	 * Process file uploads and deletions for an entity item after save.
+	 *
+	 * Deletes files listed in 'file_action' and 'file_jasperaction', then
+	 * uploads any new 'file' or 'jasperfile' from $_FILES to the VFS.
+	 *
+	 * @param array $values Entity values array including 'id', 'location', and file action lists.
+	 * @return void
+	 * @throws Exception If the entity ID is missing from $values.
+	 */
 	private function _handle_files($values)
 	{
 		$id = (int)$values['id'];
@@ -419,6 +445,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		unset($file);
 	}
 
+	/**
+	 * Handle a multi-file upload for an entity item (AJAX endpoint).
+	 *
+	 * Reads id, entity_id, cat_id, and type from GET. Stores uploaded files
+	 * in the entity category VFS directory and returns a JSON status response.
+	 *
+	 * @return void Output is written directly.
+	 */
 	public function handle_multi_upload_file()
 	{
 		$id			 = Sanitizer::get_var('id', 'int', 'GET');
@@ -481,6 +515,11 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		$this->phpgwapi_common->phpgw_exit();
 	}
 
+	/**
+	 * Render the multi-file upload widget for an entity item (noframework popup).
+	 *
+	 * @return void Output is rendered directly via XSL template.
+	 */
 	public function build_multi_upload_file()
 	{
 		phpgwapi_jquery::init_multi_upload_file();
@@ -513,6 +552,12 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('multi_upload' => $data));
 	}
 
+	/**
+	 * Build a select-list of available attribute filter choices for the entity list view.
+	 *
+	 * @param mixed $selected Currently selected filter value.
+	 * @return array Formatted options list for use in a combo-box widget.
+	 */
 	private function _get_filters($selected = 0)
 	{
 		$values_combo_box	 = array();
@@ -652,6 +697,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		return $combos;
 	}
 
+	/**
+	 * Return a DataTables-compatible JSON list of documents linked to an entity item.
+	 *
+	 * Queries both sodocument (classic document store) and sogeneric_document,
+	 * combining the results into a single paginated response.
+	 *
+	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
+	 */
 	public function get_documents()
 	{
 		$search		 = Sanitizer::get_var('search');
@@ -722,6 +775,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		return $this->jquery_results($result_data);
 	}
 
+	/**
+	 * Return a DataTables-compatible JSON list of entity records for the current list view.
+	 *
+	 * Also used internally by download() to produce a full record set. Adds image
+	 * and view-link data to each record for table rendering.
+	 *
+	 * @return array|void DataTables result array, or void when outputting directly.
+	 */
 	public function query()
 	{
 		$start_date	 = $this->start_date;
@@ -839,6 +900,15 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * @param int  $id  entity id - no id means 'new'
 	 *
 	 * @return void
+	 */
+	/**
+	 * Process the entity add/edit form submission.
+	 *
+	 * Determines add/edit based on presence of 'id'. Reads existing data,
+	 * merges POST values via _populate(), calls bo->save() inside a transaction,
+	 * saves checklist stages, handles file uploads, and redirects or returns JSON.
+	 *
+	 * @return array|void JSON status array if phpgw_return_as=json, otherwise redirects or renders.
 	 */
 	public function save()
 	{
@@ -964,6 +1034,11 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		}
 	}
 
+	/**
+	 * Persist current filter/pagination state to the business-object session cache.
+	 *
+	 * @return void
+	 */
 	function save_sessiondata()
 	{
 		$data = array(
@@ -984,6 +1059,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		$this->bo->save_sessiondata($data);
 	}
 
+	/**
+	 * Download the current entity list as a file using bocommon::download().
+	 *
+	 * Suppresses the HTML header/footer and delegates to query() for the data
+	 * and bo->uicols for the column metadata.
+	 *
+	 * @return void Output is written directly.
+	 */
 	function download()
 	{
 		$this->flags['noheader']	 = true;
@@ -1049,8 +1132,12 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		  } */
 
 	/**
-	 * Function to get related via Ajax-call
+	 * Return a DataTables-compatible JSON list of entity records linked to the given item.
 	 *
+	 * Reads interlinks via bo->read_entity_to_link() and returns an array of
+	 * HTML anchor elements as rows.
+	 *
+	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
 	 */
 	function get_related()
 	{
@@ -1110,8 +1197,11 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	}
 
 	/**
-	 * Function to get related via Ajax-call
+	 * Return a DataTables-compatible JSON list of interlink targets and related workorders.
 	 *
+	 * Combines results from the interlink module and soworkorder::get_entity_relation().
+	 *
+	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
 	 */
 	function get_target()
 	{
@@ -1195,6 +1285,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		return $this->jquery_results($result_data);
 	}
 
+	/**
+	 * Return a DataTables-compatible JSON list of files attached to an entity item.
+	 *
+	 * Fetches file metadata from bo->read_single() and returns rendered link and
+	 * checkbox columns (with thumbnail info for image files).
+	 *
+	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
+	 */
 	function get_files()
 	{
 		$id		 = Sanitizer::get_var('id', 'REQUEST', 'int');
@@ -1283,6 +1381,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		return $this->jquery_results($result_data);
 	}
 
+	/**
+	 * Render the column visibility configuration page.
+	 *
+	 * If form is submitted with 'save', persists the selected column IDs to user
+	 * preferences for the current entity/category combination.
+	 *
+	 * @return void Output is rendered via XSL template.
+	 */
 	function columns()
 	{
 		//cramirez: necesary for windows.open . Avoid error JS
@@ -1337,6 +1443,13 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('columns' => $data));
 	}
 
+	/**
+	 * Serve a file attached to an entity item for download or inline viewing.
+	 *
+	 * Requires ACL_READ. Delegates to bofiles::get_file().
+	 *
+	 * @return void Output is written directly.
+	 */
 	function view_file()
 	{
 		if (!$this->acl_read)
@@ -1355,6 +1468,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		$bofiles->get_file($file_id, $jasper);
 	}
 
+	/**
+	 * Render the entity list view.
+	 *
+	 * Redirects to the first accessible category if no cat_id is set. Returns
+	 * a DataTables JSON response when phpgw_return_as=json is set.
+	 *
+	 * @return void Output is rendered via XSL template or redirected.
+	 */
 	function index()
 	{
 		//redirect. If selected the title of module.
@@ -1721,6 +1842,16 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		self::render_template_xsl('datatable2', $data);
 	}
 
+	/**
+	 * Render the entity add/edit form (or view form if mode is 'view').
+	 *
+	 * Loads the entity record, sets up location, attribute, interlink, inventory,
+	 * and controller/checklist data, then renders via XSL template.
+	 *
+	 * @param array|null $values Pre-populated values (e.g. on validation failure from save()).
+	 * @param string     $mode   'edit' (default) or 'view' for read-only rendering.
+	 * @return void Output is rendered via XSL template.
+	 */
 	function edit($values = array(), $mode = 'edit')
 	{
 		$id		 = isset($values['id']) && $values['id'] ? $values['id'] : Sanitizer::get_var('id', 'int');
@@ -2897,6 +3028,14 @@ JS;
 		), array('edit' => $data));
 	}
 
+	/**
+	 * Render the help text for a custom attribute in a lightweight popup page.
+	 *
+	 * Suppresses the standard XSLT frame and renders the help message using a
+	 * standalone template.
+	 *
+	 * @return void Output is rendered directly.
+	 */
 	function attrib_help()
 	{
 		$t = createObject('phpgwapi.template');
@@ -2936,6 +3075,14 @@ JS;
 		$t->pfp('out', 'help');
 	}
 
+	/**
+	 * Delete an entity record.
+	 *
+	 * Requires ACL_DELETE. Returns a plain-text confirmation string when
+	 * phpgw_return_as=json, otherwise redirects after deletion.
+	 *
+	 * @return string|void Confirmation string in JSON mode; otherwise redirects.
+	 */
 	function delete()
 	{
 		$id = Sanitizer::get_var('id', 'int');
@@ -3000,6 +3147,13 @@ JS;
 		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('delete' => $data));
 	}
 
+	/**
+	 * Render the entity record in read-only view mode.
+	 *
+	 * Requires ACL_READ. Delegates to edit() with mode='view'.
+	 *
+	 * @return void Output is rendered via XSL template.
+	 */
 	function view()
 	{
 		if (!$this->acl_read)
@@ -3063,6 +3217,15 @@ JS;
 	//			echo $ret;
 	//		}
 
+	/**
+	 * Render the attribute change history panel, or handle a delete-history-entry request.
+	 *
+	 * When phpgw_return_as=json, returns a paginated DataTables result of history entries.
+	 * When 'delete' param is set, deletes the specified history entry and returns 'ok'.
+	 * Otherwise renders the full history page with an optional delete toolbar.
+	 *
+	 * @return array|string|void DataTables array, 'ok' on delete, or renders XSL template.
+	 */
 	function attrib_history()
 	{
 		$this->flags['noframework'] = true;
@@ -3225,6 +3388,14 @@ JS;
 		));
 	}
 
+	/**
+	 * Generate and serve a PDF of the current entity record.
+	 *
+	 * Requires ACL_READ. Renders attribute and location data using phpgwapi.pdf
+	 * and sends the result as an attachment with a Content-Type of application/pdf.
+	 *
+	 * @return void Output is written directly.
+	 */
 	function print_pdf()
 	{
 		if (!$this->acl_read)
@@ -3437,6 +3608,14 @@ JS;
 		echo $document;
 	}
 
+	/**
+	 * Return a DataTables-compatible JSON list of inventory entries for an entity item.
+	 *
+	 * Reads location_id and id from the request (or resolves location_id from the
+	 * item's location if not provided directly).
+	 *
+	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
+	 */
 	public function get_inventory()
 	{
 		$id		 = Sanitizer::get_var('id', 'int');
@@ -3498,6 +3677,14 @@ JS;
 		return $this->jquery_results($result_data);
 	}
 
+	/**
+	 * Render the inventory edit form for an entity item.
+	 *
+	 * Requires ACL_ADD on the inventory location. If phpgw_return_as=json and
+	 * 'save' is posted, calls bo->edit_inventory() and returns a JSON status response.
+	 *
+	 * @return array|void JSON status array in JSON mode, otherwise renders XSL template.
+	 */
 	public function edit_inventory()
 	{
 		$location_id	 = Sanitizer::get_var('location_id', 'int');
@@ -3625,11 +3812,24 @@ JS;
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header'], 'noframework' => true]);
 	}
 
+	/**
+	 * Alias for edit() — renders the entity add form.
+	 *
+	 * @return void
+	 */
 	public function add()
 	{
 		$this->edit();
 	}
 
+	/**
+	 * Render the inventory add form for an entity item.
+	 *
+	 * Requires ACL_ADD on the inventory location. On form submit, calls
+	 * bo->add_inventory() after collecting and validating location and unit data.
+	 *
+	 * @return void Output is rendered via XSL template.
+	 */
 	public function add_inventory()
 	{
 		$location_id	 = Sanitizer::get_var('location_id', 'int');
@@ -3741,6 +3941,13 @@ JS;
 		));
 	}
 
+	/**
+	 * Placeholder for displaying booking calendar entries for an inventory resource.
+	 *
+	 * Requires ACL_ADD. Currently outputs a placeholder message and exits.
+	 *
+	 * @return void Output is written directly.
+	 */
 	public function inventory_calendar()
 	{
 		$location_id	 = Sanitizer::get_var('location_id', 'int');
@@ -3761,6 +3968,13 @@ JS;
 	}
 
 
+	/**
+	 * Return a paginated ResultSet of entity items matching a QR code value.
+	 *
+	 * Requires ACL_READ. Delegates to bo->get_items_per_qr().
+	 *
+	 * @return array ResultSet array with 'totalRecords', 'recordsReturned', and 'Result'.
+	 */
 	public function get_items_per_qr()
 	{
 		if (!$this->acl_read)
@@ -3773,6 +3987,14 @@ JS;
 		return $this->bo->get_items_per_qr($qr_code);
 	}
 
+	/**
+	 * Render the entity summary page.
+	 *
+	 * Displays a summary view with a QR scanner tab. If a location_code is POSTed,
+	 * delegates to writetospreadsheet() to produce an XLSX download.
+	 *
+	 * @return void Output is rendered via XSL template or written directly as XLSX.
+	 */
 	public function summary()
 	{
 		if (!$this->acl_read)
@@ -3831,6 +4053,15 @@ JS;
 		self::render_template_xsl(array('entity'), array('summary' => $data));
 	}
 
+	/**
+	 * Write all entity items for the current entity across all categories to an XLSX file.
+	 *
+	 * Iterates all categories, reads entity items filtered by location_code, and
+	 * writes each category to a separate sheet. Sends the file directly as a download.
+	 *
+	 * @param string $location_code Location code filter to apply when reading items.
+	 * @return void Output is written directly.
+	 */
 	private function writetospreadsheet($location_code)
 	{
 		set_time_limit(500);
@@ -3927,31 +4158,81 @@ JS;
 	}
 
 
+	/**
+	 * Return controller controls registered at a given entity component.
+	 *
+	 * @param int  $location_id Location ID of the entity type.
+	 * @param int  $id          ID of the entity item.
+	 * @param bool $skip_json   Whether to skip JSON encoding of the result.
+	 * @return array|string Controller controls data.
+	 */
 	public function get_controls_at_component($location_id = 0, $id = 0, $skip_json = false)
 	{
 		return $this->controller_helper->get_controls_at_component($location_id, $id, $skip_json);
 	}
 
+	/**
+	 * Return cases (deviations) related to a given entity component.
+	 *
+	 * @param int $location_id Location ID of the entity type.
+	 * @param int $id          ID of the entity item.
+	 * @param int $year        Year filter (0 for all years).
+	 * @return array Cases data.
+	 */
 	public function get_cases($location_id = 0, $id = 0, $year = 0)
 	{
 		return $this->controller_helper->get_cases($location_id, $id, $year);
 	}
 
+	/**
+	 * Return cases related to a checklist stage from the current request context.
+	 *
+	 * Delegates to controller_helper::get_cases_for_checklist().
+	 *
+	 * @return array Cases data for the checklist.
+	 */
 	public function get_cases_for_checklist()
 	{
 		return $this->controller_helper->get_cases_for_checklist();
 	}
 
+	/**
+	 * Return checklists associated with a given entity component.
+	 *
+	 * @param int $location_id Location ID of the entity type.
+	 * @param int $id          ID of the entity item.
+	 * @param int $year        Year filter (0 for all years).
+	 * @return array Checklists data.
+	 */
 	public function get_checklists($location_id = 0, $id = 0, $year = 0)
 	{
 		return $this->controller_helper->get_checklists($location_id, $id, $year);
 	}
 
+	/**
+	 * Return the assignment history for a controller series.
+	 *
+	 * Delegates to controller_helper::get_assigned_history().
+	 *
+	 * @return array Assignment history data.
+	 */
 	function get_assigned_history()
 	{
 		return $this->controller_helper->get_assigned_history();
 	}
 
+	/**
+	 * Return checklist data merged with the list of defined checklists for an entity item.
+	 *
+	 * Fetches saved checklist data (stage answers) from the BO layer, then loads
+	 * the full checklist/stage definitions via soadmin_entity to produce a
+	 * complete structure for rendering.
+	 *
+	 * @param int    $location_id Location ID of the entity type.
+	 * @param int    $item_id     ID of the entity item.
+	 * @param string $mode        Rendering mode (e.g. 'view' or 'edit').
+	 * @return void Output is rendered via XSL template.
+	 */
 	function get_location_checklists($location_id, $item_id, $mode)
 	{
 

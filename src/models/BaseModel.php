@@ -561,6 +561,8 @@ abstract class BaseModel
 				return (float)$value;
 			case 'bool':
 				return (bool)$value;
+			case 'string':
+				return (string)$this->db->stripslashes($value);
 			case 'array':
 			case 'json':
 				return is_string($value) ? json_decode($value, true) : $value;

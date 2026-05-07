@@ -1003,7 +1003,7 @@ class UserHelper
 			'street' => $external_data['street'] ?? '',
 			'zip_code' => $external_data['zip_code'] ?? '',
 			'city' => $external_data['city'] ?? '',
-			'created' => date('Y-m-d H:i:s')
+//			'created' => date('Y-m-d H:i:s')
 		];
 
 		// Filter out empty values
@@ -1062,8 +1062,9 @@ class UserHelper
 			return; // Nothing to update
 		}
 
-		$params[':updated'] = date('Y-m-d H:i:s');
-		$fields_to_update[] = "updated = :updated";
+		// TODO: 'updated' column does not exist in bb_user (not in tables_current or any migration)
+		// $params[':updated'] = date('Y-m-d H:i:s');
+		// $fields_to_update[] = "updated = :updated";
 
 		$sql = "UPDATE bb_user SET " . implode(', ', $fields_to_update) . " WHERE id = :id";
 		

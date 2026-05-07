@@ -457,8 +457,10 @@
 							$organizations = createObject('booking.soorganization')->read(array('results' => -1, 'filters' => array('organization_number' => $organization_number,
 								'active' => 1)));
 
-							$_POST['organization_id'] = $organizations['results'][0]['id'];
-							$_POST['organization_name'] = $organizations['results'][0]['name'];
+							if (!empty($organizations['results'][0])) {
+								$_POST['organization_id'] = $organizations['results'][0]['id'];
+								$_POST['organization_name'] = $organizations['results'][0]['name'];
+							}
 						}
 					}
 
@@ -638,11 +640,32 @@
 					// the form from step 1 should validate and if we encounter any errors they are caused by double bookings.
 					while (($max_dato + ($interval * $i)) <= $repeat_until)
 					{
+						// Clear id from previous iteration to avoid updating instead of inserting
+						unset($allocation['id']);
+
 						$fromdate = date('Y-m-d H:i', strtotime($_POST['from_']) + ($interval * $i));
 						$todate = date('Y-m-d H:i', strtotime($_POST['to_']) + ($interval * $i));
 						$allocation['from_'] = $fromdate;
 						$allocation['to_'] = $todate;
-						
+
+						// Update season_id for each date - it may span different seasons
+						$iter_date = date('Y-m-d', strtotime($fromdate));
+						$iter_seasons = $this->season_bo->read(array(
+							'filters' => array(
+								'active' => 1,
+								'building_id' => $allocation['building_id'],
+								'where' => array(
+									"%%table%%.from_ <= '{$iter_date}'",
+									"%%table%%.to_ >= '{$iter_date}'"
+								)
+							),
+							'results' => 1
+						));
+						if (!empty($iter_seasons['results'][0])) {
+							$allocation['season_id'] = $iter_seasons['results'][0]['id'];
+						}
+						// If no season found, keep the previous season_id and let validation catch it
+
 						$err = $this->bo->validate($allocation);
 						if ($err)
 						{

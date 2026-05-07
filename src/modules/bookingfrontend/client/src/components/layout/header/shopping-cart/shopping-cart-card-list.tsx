@@ -60,6 +60,9 @@ const formatDateRange = (fromDate: DateTime, toDate?: DateTime, i18n?: any): [st
 };
 
 // Wrapper component to handle seasons query for each card
+const sortedDates = (dates: IApplication['dates']) =>
+    [...(dates || [])].sort((a, b) => a.from_.localeCompare(b.from_));
+
 const CartCardWithSeasons: FC<{
     item: IApplication;
     expandedId: number | null;
@@ -71,6 +74,7 @@ const CartCardWithSeasons: FC<{
 }> = ({ item, expandedId, setExpandedId, openEdit, onLinkClick, t, i18n }) => {
     // Call the hook at the top level for this specific item
     const { data: seasons } = useBuildingSeasons(item.building_id);
+    const dates = sortedDates(item.dates);
 
     return (
 				<div
@@ -102,23 +106,23 @@ const CartCardWithSeasons: FC<{
 							{RecurringInfoUtils.isRecurring(item) ? (
 								<span>
 									{formatDateRange(
-										applicationTimeToLux(item.dates[0].from_),
-										applicationTimeToLux(item.dates[0].to_),
+										applicationTimeToLux(dates[0].from_),
+										applicationTimeToLux(dates[0].to_),
 										i18n
 									).join(' | ')}
 								</span>
-							) : (item.dates?.length || 0) === 1 ? (
+							) : dates.length === 1 ? (
 								<span>
 									{formatDateRange(
-										applicationTimeToLux(item.dates[0].from_),
-										applicationTimeToLux(item.dates[0].to_),
+										applicationTimeToLux(dates[0].from_),
+										applicationTimeToLux(dates[0].to_),
 										i18n
 									).join(' | ')}
 								</span>
 							) : (
 								<span className={styles.multipleDates}>
 									<span className={styles.badge}>
-										{item.dates?.length || 0}
+										{dates.length}
 									</span>
 									<span>{t('bookingfrontend.multiple_time_slots')}</span>
 								</span>
@@ -267,13 +271,13 @@ const CartCardWithSeasons: FC<{
 							<TrashIcon aria-hidden/>
 						</Button>
 					</div>
-					{expandedId === item.id && (item.dates?.length || 0) > 1 && (
+					{expandedId === item.id && dates.length > 1 && (
 						<div className={styles.datesAccordion}>
 							<div className={styles.datesHeader}>
 								{t('bookingfrontend.all_dates')}
 							</div>
 							<ul className={styles.datesList}>
-								{item.dates?.map((date) => {
+								{dates.map((date) => {
 									const [dateStr, timeStr] = formatDateRange(
 										applicationTimeToLux(date.from_),
 										applicationTimeToLux(date.to_),
@@ -297,9 +301,16 @@ const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openE
     const { t, i18n } = useClientTranslation();
     const [expandedId, setExpandedId] = useState<number | null>(null);
 
+    // Sort applications by earliest date
+    const sortedBasketData = [...basketData].sort((a, b) => {
+        const aEarliest = a.dates?.length ? Math.min(...a.dates.map(d => new Date(d.from_).getTime())) : 0;
+        const bEarliest = b.dates?.length ? Math.min(...b.dates.map(d => new Date(d.from_).getTime())) : 0;
+        return aEarliest - bEarliest;
+    });
+
     return (
         <div className={styles.cartListContainer}>
-            {basketData.map((item) => (
+            {sortedBasketData.map((item) => (
 				<CartCardWithSeasons
 					key={item.id}
 					item={item}

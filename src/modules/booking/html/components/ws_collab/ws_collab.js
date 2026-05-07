@@ -1,8 +1,10 @@
 /**
- * CollabClient — Lightweight WebSocket collaborative editing client.
+ * CollabClient — Lightweight Socket.IO collaborative editing client.
  *
- * Connects to the Ratchet WS server via /wss (Apache proxy) and provides
+ * Connects to the Node.js WS server via Socket.IO and provides
  * presence, edit indicators, and live-update hooks for entity pages.
+ *
+ * Requires: Socket.IO client loaded (served by the WS server at /wss/socket.io/socket.io.js)
  *
  * Usage:
  *   var collab = new CollabClient({ entityType: 'hospitality', entityId: 42, userName: 'Ola', userId: 7 });
@@ -31,12 +33,9 @@ class CollabClient {
 		this.peerId = crypto.randomUUID();
 		this.roomId = 'entity_' + this.entityType + '_' + this.entityId;
 
-		this._ws = null;
+		this._socket = null;
 		this._connected = false;
 		this._destroyed = false;
-		this._reconnectAttempt = 0;
-		this._reconnectTimer = null;
-		this._heartbeatTimer = null;
 		this._presenceTimer = null;
 		this._activeScopes = new Set();
 
@@ -72,10 +71,10 @@ class CollabClient {
 		this._destroyed = true;
 		window.removeEventListener('beforeunload', this._boundBeforeUnload);
 		this._clearTimers();
-		if (this._ws) {
+		if (this._socket) {
 			this._sendLeave();
-			this._ws.close(1000, 'disconnect');
-			this._ws = null;
+			this._socket.disconnect();
+			this._socket = null;
 		}
 		this._connected = false;
 		this._peers.clear();
@@ -124,23 +123,30 @@ class CollabClient {
 	// ── Connection management ─────────────────────────────────────
 
 	_deriveWsUrl() {
-		var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-		return proto + '//' + location.host + '/wss';
+		var proto = location.protocol === 'https:' ? 'https:' : 'http:';
+		return proto + '//' + location.host;
 	}
 
 	_setupConnection() {
 		if (this._destroyed) return;
 
-		try {
-			this._ws = new WebSocket(this.wsUrl);
-		} catch (e) {
-			this._scheduleReconnect();
+		if (typeof io === 'undefined') {
+			console.error('[CollabClient] Socket.IO client not loaded. Include /wss/socket.io/socket.io.js');
 			return;
 		}
 
-		this._ws.onopen = function () {
+		this._socket = io(this.wsUrl, {
+			path: '/wss/socket.io',
+			transports: ['polling', 'websocket'],
+			reconnection: true,
+			reconnectionDelay: 1000,
+			reconnectionDelayMax: 30000,
+			reconnectionAttempts: Infinity,
+			withCredentials: true,
+		});
+
+		this._socket.on('connect', function () {
 			this._connected = true;
-			this._reconnectAttempt = 0;
 			this._notifyConnectionChange(true);
 
 			// Subscribe to entity room
@@ -154,70 +160,43 @@ class CollabClient {
 				this._sendToRoom('edit_start', { peerId: this.peerId, userName: this.userName, scope: scope });
 			}.bind(this));
 
-			// Start heartbeats
-			this._startHeartbeat();
+			// Start presence heartbeat (Socket.IO handles connection keepalive)
 			this._startPresenceHeartbeat();
-		}.bind(this);
+		}.bind(this));
 
-		this._ws.onmessage = function (event) {
-			this._handleMessage(event.data);
-		}.bind(this);
+		this._socket.on('message', function (data) {
+			this._handleMessage(data);
+		}.bind(this));
 
-		this._ws.onclose = function () {
+		this._socket.on('disconnect', function () {
 			this._connected = false;
 			this._notifyConnectionChange(false);
-			this._clearHeartbeats();
-			if (!this._destroyed) {
-				this._scheduleReconnect();
-			}
-		}.bind(this);
+			this._clearPresenceHeartbeat();
+			// Socket.IO handles reconnection automatically
+		}.bind(this));
 
-		this._ws.onerror = function () {
-			// onclose will fire after this
-		};
-	}
-
-	_scheduleReconnect() {
-		if (this._destroyed || this._reconnectTimer) return;
-
-		var baseDelay = Math.min(1000 * Math.pow(2, this._reconnectAttempt), 30000);
-		var jitter = Math.random() * 1000;
-		var delay = baseDelay + jitter;
-
-		this._reconnectAttempt++;
-		this._reconnectTimer = setTimeout(function () {
-			this._reconnectTimer = null;
-			this._setupConnection();
-		}.bind(this), delay);
-	}
-
-	_startHeartbeat() {
-		this._clearHeartbeats();
-		this._heartbeatTimer = setInterval(function () {
-			if (this._ws && this._ws.readyState === WebSocket.OPEN) {
-				this._send({ type: 'ping' });
-			}
-		}.bind(this), 30000);
+		this._socket.on('connect_error', function () {
+			// Socket.IO will retry automatically
+		});
 	}
 
 	_startPresenceHeartbeat() {
+		this._clearPresenceHeartbeat();
 		this._presenceTimer = setInterval(function () {
 			this._sendPresence();
 		}.bind(this), 30000);
 	}
 
-	_clearHeartbeats() {
-		if (this._heartbeatTimer) { clearInterval(this._heartbeatTimer); this._heartbeatTimer = null; }
+	_clearPresenceHeartbeat() {
 		if (this._presenceTimer) { clearInterval(this._presenceTimer); this._presenceTimer = null; }
 	}
 
 	_clearTimers() {
-		this._clearHeartbeats();
-		if (this._reconnectTimer) { clearTimeout(this._reconnectTimer); this._reconnectTimer = null; }
+		this._clearPresenceHeartbeat();
 		if (this._peerCleanupTimer) { clearInterval(this._peerCleanupTimer); this._peerCleanupTimer = null; }
 		Object.keys(this._sectionDebounceTimers).forEach(function (k) {
 			clearTimeout(this._sectionDebounceTimers[k]);
-		});
+		}.bind(this));
 		this._sectionDebounceTimers = {};
 	}
 
@@ -240,8 +219,8 @@ class CollabClient {
 	// ── Sending ───────────────────────────────────────────────────
 
 	_send(data) {
-		if (this._ws && this._ws.readyState === WebSocket.OPEN) {
-			this._ws.send(JSON.stringify(data));
+		if (this._socket && this._socket.connected) {
+			this._socket.emit('message', data);
 		}
 	}
 
@@ -272,24 +251,22 @@ class CollabClient {
 	}
 
 	_handleBeforeUnload() {
-		if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+		if (this._socket && this._socket.connected) {
 			this._sendLeave();
 		}
 	}
 
 	// ── Receiving ─────────────────────────────────────────────────
 
-	_handleMessage(raw) {
-		var msg;
-		try { msg = JSON.parse(raw); } catch (e) { return; }
+	_handleMessage(msg) {
+		if (typeof msg === 'string') {
+			try { msg = JSON.parse(msg); } catch (e) { return; }
+		}
 
 		if (COLLAB_DEBUG) console.log('[CollabClient] WS ←', msg.type, msg.action || '', msg);
 
 		// Subscription confirmation
 		if (msg.type === 'subscription_confirmation') return;
-
-		// Pong
-		if (msg.type === 'pong') return;
 
 		// Room messages (our collab protocol)
 		if (msg.type === 'room_message') {

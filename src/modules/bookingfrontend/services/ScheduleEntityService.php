@@ -425,7 +425,17 @@ class ScheduleEntityService
      */
     public function getResourceSchedule(int $resource_id, DateTime $start_date, DateTime $end_date): array
     {
-        // Get resource info
+        $route = ServerRequest::fromGlobals()->getUri()->getPath();
+
+        if(preg_match('/\/booking\//', $route))
+        {
+            $expose_name = 1;
+        }
+        else
+        {
+            $expose_name = 0;
+        }
+         // Get resource info
         $resource = $this->getResourceById($resource_id);
 
         if (empty($resource)) {
@@ -500,7 +510,7 @@ class ScheduleEntityService
                 }
             }
 
-            $results[] = $event->serialize(['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]);
+            $results[] = $event->serialize(['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs, 'expose_name' => $expose_name]);
         }
 
         return $results;

@@ -82,6 +82,14 @@ class property_boentity
 	protected $userSettings;
 	private $location_relation_data	 = array();
 
+	/**
+	 * Constructor. Initialises ACL, session state, entity/category context, and helper objects.
+	 *
+	 * @param bool   $session   Whether to restore list state from session cache.
+	 * @param string $type      Entity type key (e.g. 'entity').
+	 * @param int    $entity_id Entity definition ID.
+	 * @param int    $cat_id    Category ID within the entity.
+	 */
 	function __construct($session = false, $type = '', $entity_id = 0, $cat_id = 0)
 	{
 		$this->solocation	 = CreateObject('property.solocation');
@@ -225,6 +233,12 @@ class property_boentity
 		$this->xsl_rootdir = PHPGW_SERVER_ROOT . '/property/templates/base';
 	}
 
+	/**
+	 * Persist list state (pagination, filters, ordering) to the session cache.
+	 *
+	 * @param array $data Associative array of state values to store.
+	 * @return void
+	 */
 	function save_sessiondata($data)
 	{
 		if ($this->use_session)
@@ -233,6 +247,11 @@ class property_boentity
 		}
 	}
 
+	/**
+	 * Restore list state (pagination, filters, ordering) from the session cache.
+	 *
+	 * @return void
+	 */
 	function read_sessiondata()
 	{
 		$data = Cache::session_get($this->category_dir, 'session_data');
@@ -252,8 +271,12 @@ class property_boentity
 	}
 
 	/**
-	 * Public function for set_geolocation
-	 * @return array
+	 * Read geolocation coordinates from the request and delegate to the storage layer.
+	 *
+	 * Reads location_id, component_id, latitude, and longitude from the current
+	 * request. Requires ACL_EDIT permission on the entity ACL location.
+	 *
+	 * @return array Associative array with key 'status' set to 'ok' or 'error'.
 	 */
 	function set_geolocation()
 	{
@@ -274,7 +297,15 @@ class property_boentity
 		);
 	}
 
-
+	/**
+	 * Build a multi-select column visibility list for the entity list view.
+	 *
+	 * @param array|string $selected  Previously selected column IDs.
+	 * @param int          $entity_id Entity definition ID.
+	 * @param int          $cat_id    Category ID within the entity.
+	 * @param bool         $allrows   Whether all rows are being shown (unused).
+	 * @return array Formatted list suitable for a multi-select UI widget.
+	 */
 	function column_list($selected = '', $entity_id = '', $cat_id = '', $allrows = '')
 	{
 		if (!$cat_id)
@@ -297,6 +328,13 @@ class property_boentity
 		return $column_list;
 	}
 
+	/**
+	 * Return the list of built-in (non-custom) columns available for the entity list view.
+	 *
+	 * Includes location-relation columns from the system cache and a 'user_name' column.
+	 *
+	 * @return array Indexed array of column definition arrays.
+	 */
 	function get_column_list()
 	{
 		$columns = array();
@@ -343,6 +381,14 @@ class property_boentity
 		return $columns;
 	}
 
+	/**
+	 * Build an HTML select or filter widget listing available entity categories.
+	 *
+	 * @param string $format   Widget format: 'select' or 'filter'.
+	 * @param mixed  $selected Currently selected category ID.
+	 * @param bool   $required Whether the field should be marked as required.
+	 * @return array Formatted options list for use with bocommon::select_list().
+	 */
 	function select_category_list($format = '', $selected = '', $required = '')
 	{
 		switch ($format)
@@ -366,6 +412,13 @@ class property_boentity
 		return $this->bocommon->select_list($selected, $categories);
 	}
 
+	/**
+	 * Build an HTML select or filter widget listing available entity statuses.
+	 *
+	 * @param string $format   Widget format: 'select' or 'filter'.
+	 * @param mixed  $selected Currently selected status ID.
+	 * @return array Formatted options list for use with bocommon::select_list().
+	 */
 	function select_status_list($format = '', $selected = '')
 	{
 		switch ($format)
@@ -383,6 +436,14 @@ class property_boentity
 		return $this->bocommon->select_list($selected, $status_entries);
 	}
 
+	/**
+	 * Build a select widget listing the available search-criteria types.
+	 *
+	 * Available criteria: 'vendor', 'contact' (ab), and 'organisation' (abo).
+	 *
+	 * @param mixed $selected Currently selected criteria ID.
+	 * @return array Formatted options list for use with bocommon::select_list().
+	 */
 	function get_criteria_list($selected = '')
 	{
 		$criteria = array(
@@ -403,7 +464,12 @@ class property_boentity
 	}
 
 	/**
-	 * Get the sublevels of the org tree into one arry
+	 * Recursively collect all descendant org-unit IDs from a tree node.
+	 *
+	 * Results are accumulated into $this->org_units.
+	 *
+	 * @param array $data Array of org-unit tree nodes, each optionally containing a 'children' key.
+	 * @return void
 	 */
 	private function _get_children($data = array())
 	{
@@ -417,6 +483,15 @@ class property_boentity
 		}
 	}
 
+	/**
+	 * Read a paginated list of entities from the storage layer.
+	 *
+	 * Resolves org-unit subtrees when an org_unit_id filter is active, then
+	 * delegates to soentity::read_eav() or soentity::read() based on category type.
+	 *
+	 * @param array $data Optional overrides for filter, query, start, and order parameters.
+	 * @return array List of entity records with translated custom-field values.
+	 */
 	function read($data = array())
 	{
 		if ($this->org_unit_id && !$this->org_units)
@@ -634,11 +709,22 @@ JS;
 		return $entity;
 	}
 
+	/**
+	 * Return all custom attributes defined for the current entity/category.
+	 *
+	 * @return array Indexed array of attribute definition arrays, ordered by attrib_sort ASC.
+	 */
 	function get_attributes()
 	{
 		return $this->custom->find($this->type_app[$this->type], ".{$this->type}.{$this->entity_id}.{$this->cat_id}", 0, '', 'ASC', 'attrib_sort', true, true);
 	}
 
+	/**
+	 * Merge full attribute metadata into an array of attribute values.
+	 *
+	 * @param array &$values_attribute Attribute values keyed by attrib_id; merged in place.
+	 * @return void
+	 */
 	function get_attribute_information(&$values_attribute)
 	{
 		$_attributes = $this->get_attributes();
@@ -655,6 +741,13 @@ JS;
 		}
 	}
 
+	/**
+	 * Read a single entity record with custom attributes, location, files, and interlinks.
+	 *
+	 * @param array $data   Must include 'entity_id', 'cat_id', 'id', and 'view'.
+	 * @param array $values Optional initial values to merge with the retrieved record.
+	 * @return array Full entity record including attributes, location data, files, and relations.
+	 */
 	function read_single($data, $values = array())
 	{
 		$values['attributes'] = $this->custom->find($this->type_app[$this->type], ".{$this->type}.{$data['entity_id']}.{$data['cat_id']}", 0, '', 'ASC', 'attrib_sort', true, true);
@@ -782,6 +875,14 @@ JS;
 		return $this->custom->get_attribute_groups($this->type_app[$this->type], $location, $attributes);
 	}
 
+	/**
+	 * Save checklist stage attribute values for an entity item.
+	 *
+	 * @param int   $item_id                 ID of the entity item.
+	 * @param array $values_checklist_stage  Attribute values keyed by stage_id.
+	 * @param array &$receipt               Receipt array updated with errors or confirmations.
+	 * @return void
+	 */
 	function save_checklist($item_id, $values_checklist_stage, &$receipt)
 	{
 		foreach ($values_checklist_stage as $stage_id => $values_attribute)
@@ -791,7 +892,19 @@ JS;
 		}
 	}
 
-
+	/**
+	 * Save (add or edit) an entity record with custom attributes.
+	 *
+	 * Converts location arrays, timestamps, and attribute values before persisting.
+	 * Runs pre- and post-commit custom functions if configured.
+	 *
+	 * @param array  $values           Core entity field values.
+	 * @param array  $values_attribute Custom attribute values keyed by attrib_id.
+	 * @param string $action           'add' or 'edit'.
+	 * @param int    $entity_id        Entity definition ID.
+	 * @param int    $cat_id           Category ID within the entity.
+	 * @return array Receipt array with 'id' and optional 'error' keys.
+	 */
 	function save($values, $values_attribute, $action, $entity_id, $cat_id)
 	{
 		if (is_array($values['location']))
@@ -875,11 +988,23 @@ JS;
 		return $receipt;
 	}
 
+	/**
+	 * Delete an entity record by ID.
+	 *
+	 * @param int $id ID of the record to delete.
+	 * @return void
+	 */
 	function delete($id)
 	{
 		$this->so->delete($this->entity_id, $this->cat_id, $id);
 	}
 
+	/**
+	 * Generate a new sequential ID for an entity category record.
+	 *
+	 * @param array $data Must include 'cat_id'.
+	 * @return mixed Generated ID, or null if cat_id is missing.
+	 */
 	function generate_id($data)
 	{
 		if ($data['cat_id'])
@@ -888,6 +1013,13 @@ JS;
 		}
 	}
 
+	/**
+	 * Resolve the history-log type string for a given ACL location.
+	 *
+	 * @param string $acl_location ACL location string (e.g. '.entity.1.2').
+	 * @throws Exception If the location does not map to a known history type.
+	 * @return string History type string used to construct a historylog object.
+	 */
 	function get_history_type_for_location($acl_location)
 	{
 		switch ($acl_location)
@@ -926,6 +1058,14 @@ JS;
 		return $history_type;
 	}
 
+	/**
+	 * Return the change history for a single attribute on an entity record.
+	 *
+	 * Translates listbox and date values to human-readable form.
+	 *
+	 * @param array $data Must include 'acl_location', 'attrib_id', 'id', and 'detail_id'.
+	 * @return array Array of history entries; also sets $this->total_records.
+	 */
 	function read_attrib_history($data)
 	{
 		$attrib_data	 = $this->custom->get($this->type_app[$this->type], $data['acl_location'], $data['attrib_id'], $inc_choices	 = true);
@@ -961,6 +1101,12 @@ JS;
 		return $history_values;
 	}
 
+	/**
+	 * Delete a single attribute history record.
+	 *
+	 * @param array $data Must include 'acl_location' and 'history_id'.
+	 * @return void
+	 */
 	function delete_history_item($data)
 	{
 		$history_type	 = $this->get_history_type_for_location($data['acl_location']);
@@ -968,18 +1114,33 @@ JS;
 		$historylog->delete_single_record($data['history_id']);
 	}
 
+	/**
+	 * Read help text for a custom attribute.
+	 *
+	 * @param array $data Must include the attribute identifier expected by soentity.
+	 * @return array Attribute help data.
+	 */
 	function read_attrib_help($data)
 	{
 		return $this->so->read_attrib_help($data);
 	}
 
+	/**
+	 * Return entity records suitable for use as interlink targets.
+	 *
+	 * @param array $data Query parameters forwarded to soentity.
+	 * @return array Entity records for linking.
+	 */
 	function read_entity_to_link($data)
 	{
 		return $this->so->read_entity_to_link($data);
 	}
 
 	/**
-	 *  array('id' => $id, 'location_id' => $location_id, 'inventory_id' => $inventory_id)
+	 * Return inventory entries for an entity item, enriched with interlink location links.
+	 *
+	 * @param array $data Must include 'id' and 'location_id'; optionally 'inventory_id'.
+	 * @return array Inventory entries with 'where' (HTML link) and 'where_name' fields added.
 	 */
 	public function get_inventory($data)
 	{
@@ -999,6 +1160,14 @@ JS;
 		return $values;
 	}
 
+	/**
+	 * Add a new inventory entry for an entity item.
+	 *
+	 * Converts active_from and active_to date strings to timestamps before saving.
+	 *
+	 * @param array $values Inventory field values including 'active_from' and 'active_to'.
+	 * @return mixed Insert result from soentity.
+	 */
 	public function add_inventory($values)
 	{
 		$values['active_from']	 = $this->bocommon->date_to_timestamp($values['active_from']);
@@ -1006,6 +1175,14 @@ JS;
 		return $this->so->add_inventory($values);
 	}
 
+	/**
+	 * Edit an existing inventory entry for an entity item.
+	 *
+	 * Converts active_from and active_to date strings to timestamps before saving.
+	 *
+	 * @param array $values Inventory field values including 'active_from' and 'active_to'.
+	 * @return mixed Update result from soentity.
+	 */
 	public function edit_inventory($values)
 	{
 		$values['active_from']	 = $this->bocommon->date_to_timestamp($values['active_from']);
@@ -1013,6 +1190,14 @@ JS;
 		return $this->so->edit_inventory($values);
 	}
 
+	/**
+	 * Register a maintenance control on an entity item from the current request.
+	 *
+	 * Reads all parameters from the request, validates ACL_EDIT on '.admin',
+	 * and delegates to socontrol::register_control_to_component().
+	 *
+	 * @return array Result array with 'status_kode', 'status', and 'msg' keys.
+	 */
 	public function add_control()
 	{
 		$entity_id		 = Sanitizer::get_var('entity_id', 'int');
@@ -1102,6 +1287,13 @@ JS;
 		return $result;
 	}
 
+	/**
+	 * Create a new check-list entry linked to a control and entity item.
+	 *
+	 * @param array $data Must include 'control_id', 'location_id', 'component_id',
+	 *                    'assigned_to', 'start_date', and 'location_code'.
+	 * @return int|false New check-list ID on success, false on validation failure.
+	 */
 	function add_check_list($data = array())
 	{
 		phpgw::import_class('controller.socheck_list');
@@ -1144,6 +1336,14 @@ JS;
 		}
 	}
 
+	/**
+	 * Bulk-update a series of control schedule entries from the current request.
+	 *
+	 * Reads ids, action, assigned_to, start_date, repeat_interval, controle_time,
+	 * and service_time from the request and delegates to socontrol.
+	 *
+	 * @return array Result array with 'status_kode', 'status', and 'msg' keys.
+	 */
 	function update_control_serie()
 	{
 		if ($start_date = Sanitizer::get_var('control_start_date', 'string'))
@@ -1186,6 +1386,15 @@ JS;
 		return $result;
 	}
 
+	/**
+	 * Return a paginated ResultSet of entity items matching a QR code value.
+	 *
+	 * Queries all EAV attributes that store QR codes, filters matching items,
+	 * and enriches each entry with a view link and register name.
+	 *
+	 * @param string $qr_code The QR code value to search for.
+	 * @return array DataTables-compatible ResultSet array.
+	 */
 	public function get_items_per_qr($qr_code)
 	{
 
@@ -1262,6 +1471,13 @@ JS;
 		);
 	}
 
+	/**
+	 * Return checklist data for an entity item at a specific location type.
+	 *
+	 * @param int $type_location_id Location type ID.
+	 * @param int $item_id          Entity item ID.
+	 * @return array Checklist data from soentity.
+	 */
 	function get_checklist_data($type_location_id, $item_id)
 	{
 		return $this->so->get_checklist_data($type_location_id, $item_id);

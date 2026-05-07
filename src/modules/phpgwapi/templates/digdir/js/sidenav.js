@@ -224,26 +224,29 @@ var sideNav = new SideNav();
 
 $(document).ready(function ()
 {
-	$("#template_selector").change(function ()
-	{
+	/**
+	 * Template selector - moved to digdir-native.js and rewritten to use fetch instead of jQuery.ajax, but left here as comment for reference
+	 */
+	// $("#template_selector").change(function ()
+	// {
 
-		var template = $(this).val();
-		//user[template_set] = template;
-		var oArgs = { appname: 'preferences', type: 'user' };
-		var requestUrl = phpGWLink('preferences/section', oArgs, true);
-		$.ajax({
-			type: 'POST',
-			dataType: 'json',
-			data: { user: { template_set: template }, submit: true },
-			url: requestUrl,
-			success: function (data)
-			{
-				//		console.log(data);
-				localStorage.removeItem('menu_tree_' + sessionid);
-				location.reload(true);
-			}
-		});
-	});
+	// 	var template = $(this).val();
+	// 	//user[template_set] = template;
+	// 	var oArgs = { appname: 'preferences', type: 'user' };
+	// 	var requestUrl = phpGWLink('preferences/section', oArgs, true);
+	// 	$.ajax({
+	// 		type: 'POST',
+	// 		dataType: 'json',
+	// 		data: { user: { template_set: template }, submit: true },
+	// 		url: requestUrl,
+	// 		success: function (data)
+	// 		{
+	// 			//		console.log(data);
+	// 			localStorage.removeItem('menu_tree_' + sessionid);
+	// 			location.reload(true);
+	// 		}
+	// 	});
+	// });
 });
 
 function strip_html(originalString)

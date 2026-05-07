@@ -207,7 +207,7 @@ const BillingForm: FC<BillingFormProps> = ({
 	useEffect(() => {
 		const currentValues = getValues();
 		const customerType = currentValues.customerType;
-		
+
 		// Only refill fields if they are currently blank and user has the data
 		// Also only refill personal fields when customerType is 'ssn' (private)
 		if (customerType === 'ssn') {
@@ -332,12 +332,27 @@ const BillingForm: FC<BillingFormProps> = ({
 	// Handler for Vipps payment that validates form first
 	const handleVippsPaymentClick = () => {
 		// Trigger form validation and call Vipps payment if valid
-		handleSubmit((data) => {
-			// Only called if form validation passes
-			if (onVippsPayment && !vippsLoading) {
-				onVippsPayment();
+		handleSubmit(
+			(data) => {
+				// Only called if form validation passes
+				if (onVippsPayment && !vippsLoading) {
+					onVippsPayment();
+				}
+			},
+			(errors) => {
+				// Scroll to first validation error field
+				setTimeout(() => {
+					for (const key of Object.keys(errors)) {
+						const el = document.querySelector(`[name="${key}"]`)
+							|| document.querySelector(`[data-field="${key}"]`);
+						if (el) {
+							el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+							return;
+						}
+					}
+				}, 0);
 			}
-		})();
+		)();
 	};
 
 	return (
@@ -358,6 +373,17 @@ const BillingForm: FC<BillingFormProps> = ({
 							if (process.env.NODE_ENV === 'development') {
 								console.error('🐛 BillingForm: Form validation failed with errors:', errors);
 							}
+							// Scroll to first validation error field
+							setTimeout(() => {
+								for (const key of Object.keys(errors)) {
+									const el = document.querySelector(`[name="${key}"]`)
+										|| document.querySelector(`[data-field="${key}"]`);
+									if (el) {
+										el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+										return;
+									}
+								}
+							}, 0);
 						}
 					)(e);
 				}}
@@ -404,7 +430,7 @@ const BillingForm: FC<BillingFormProps> = ({
 							name="organizationNumber"
 							control={control}
 							render={({field}) => (
-								<Field>
+								<Field data-field="organizationNumber">
 									<Label>
 										{t('bookingfrontend.organization')} <span className="required-asterisk">*</span>
 									</Label>
@@ -660,6 +686,7 @@ const BillingForm: FC<BillingFormProps> = ({
 					{/* Show two options when user has both Vipps and normal applications */}
 					{paymentEligibility?.eligible ? (
 						<>
+
 							<div className={styles.checkoutButtons}>
 								{/* Vipps Payment Button */}
 								{paymentEligibility.payment_methods?.map((method) => {
@@ -693,6 +720,12 @@ const BillingForm: FC<BillingFormProps> = ({
 									{t('bookingfrontend.pay_later_with_invoice')}
 								</Button>
 							</div>
+							{normalApplications.length > 0 && directApplications.length > 0 &&
+								paymentEligibility.payment_methods?.some(m => m.method.toLowerCase() === 'vipps') && (
+								<Paragraph className={styles.mixedBookingNote}>
+									{t('bookingfrontend.vipps_only_for_direct_bookings')}
+								</Paragraph>
+							)}
 						</>
 					) : (
 						/* Show single submit button when no Vipps eligibility */

@@ -58,6 +58,12 @@ use App\modules\phpgwapi\services\Cache;
 		);
 		private $account, $userSettings, $locations, $custom_fields;
 
+		/**
+		 * Constructor — initialises database connections, helpers, and entity context.
+		 *
+		 * @param string|int $entity_id Entity definition ID (optional).
+		 * @param string|int $cat_id    Category ID within the entity (optional).
+		 */
 		function __construct( $entity_id = '', $cat_id = '' )
 		{
 			$this->userSettings = Settings::getInstance()->get('user');
@@ -76,18 +82,28 @@ use App\modules\phpgwapi\services\Cache;
 
 		}
 
+		/**
+		 * Return the type-to-application mapping array.
+		 *
+		 * @return array Associative array mapping type identifiers to application names.
+		 */
 		public function get_type_app()
 		{
 			return $this->type_app;
 		}
 
 		/**
-		 * Method for setting geolocation on an entity
-		 * @param $location_id int location id
-		 * @param $component_id int component id
-		 * @param $lat float latitude
-		 * @param $lng float longitude
-		 * @return bool
+		 * Method for setting geolocation on an entity component.
+		 *
+		 * Creates the 'geolocation' custom attribute if it does not yet exist for
+		 * the category. Updates the attribute value in either the EAV (fm_bim_item)
+		 * or the legacy entity table depending on category configuration.
+		 *
+		 * @param int   $location_id  Location ID identifying the entity type.
+		 * @param int   $component_id ID of the entity item to update.
+		 * @param float $lat          Latitude value.
+		 * @param float $lng          Longitude value.
+		 * @return bool True on success, false if the location is not a 4-part entity path.
 		 */
 		function set_geolocation($location_id, $component_id, $lat, $lng)
 		{
@@ -147,6 +163,17 @@ use App\modules\phpgwapi\services\Cache;
 		}
 
 
+		/**
+		 * Retrieve the list of available status choices for an entity category.
+		 *
+		 * Reads choices from the phpgw_cust_choice table for the attribute
+		 * named 'status' in the given entity/category location.
+		 *
+		 * @param int $entity_id Entity definition ID.
+		 * @param int $cat_id    Category ID within the entity.
+		 * @return array|void Array of associative arrays with 'id' and 'name' keys,
+		 *                    or void if entity_id or cat_id are missing.
+		 */
 		function select_status_list( $entity_id, $cat_id )
 		{
 			if (!$entity_id || !$cat_id)
@@ -177,6 +204,16 @@ use App\modules\phpgwapi\services\Cache;
 			return $status;
 		}
 
+		/**
+		 * Retrieve a flat list of entities for use in lookup selects.
+		 *
+		 * Used by legacy (non-EAV) categories to populate relation pickers.
+		 * Returns only id and title; does not support full column rendering.
+		 *
+		 * @param array $data Filter parameters including 'entity_id', 'cat_id', 'type',
+		 *                    'filter', 'query', 'sort', 'order', and 'allrows'.
+		 * @return array|void Array of records with 'id' and 'name', or void on missing params.
+		 */
 		function get_list( $data )
 		{
 			$start				 = isset($data['start']) && $data['start'] ? $data['start'] : 0;
@@ -311,10 +348,15 @@ use App\modules\phpgwapi\services\Cache;
 		}
 
 		/**
-		 * Method for retreiving sublevels of a hierarchy.
+		 * Retrieve a paginated list of EAV-based entity items (fm_bim_item).
 		 *
-		 * @param $data array array holding input parametres
-		 * @return array of entities
+		 * Supports filtering by location_code, parent item, and arbitrary JSON
+		 * attribute conditions. Automatically excludes items with status ≥ 90.
+		 *
+		 * @param array $data Filter and pagination parameters including 'location_id',
+		 *                    'conditions', 'location_code', 'query', 'allrows', 'start',
+		 *                    'results', 'parent_location_id', and 'parent_id'.
+		 * @return array Array of entity item records with translated custom-field values.
 		 */
 		public function get_eav_list( $data = array() )
 		{
@@ -547,6 +589,18 @@ use App\modules\phpgwapi\services\Cache;
 			return $values;
 		}
 
+		/**
+		 * Read a paginated, filtered list of EAV entity items with full column resolution.
+		 *
+		 * Handles ACL filtering, district/location filtering, custom attribute queries,
+		 * org-unit filtering, status filtering, and short-description resolution.
+		 * Dispatched internally from read().
+		 *
+		 * @param array $data Filter and pagination parameters (see get_eav_list for common keys;
+		 *                    additionally supports 'filter', 'sort', 'order', 'district_id',
+		 *                    'org_units', 'check_for_control', 'control_id', etc.).
+		 * @return array Array of entity item records formatted for the list view.
+		 */
 		protected function read_eav( $data )
 		{
 			$start				 = isset($data['start']) && $data['start'] ? $data['start'] : 0;
@@ -1352,6 +1406,19 @@ use App\modules\phpgwapi\services\Cache;
 			return $values;
 		}
 
+		/**
+		 * Build the uicols column metadata and SQL for a given entity category.
+		 *
+		 * Results are cached via bocommon::fm_cache(). For EAV categories the SQL
+		 * is not cached since the table is always fm_bim_item.
+		 *
+		 * @param array  $category   Category definition array from soadmin_entity.
+		 * @param int    $entity_id  Entity definition ID.
+		 * @param int    $cat_id     Category ID within the entity.
+		 * @param string $lookup     Whether the caller is a lookup (non-empty = lookup mode).
+		 * @param int    $location_id ACL/attribute location ID.
+		 * @return void Column metadata is stored in $this->uicols, $this->cols_return, etc.
+		 */
 		function get_cols( $category, $entity_id, $cat_id, $lookup, $location_id )
 		{
 
@@ -1637,9 +1704,14 @@ use App\modules\phpgwapi\services\Cache;
 		}
 
 		/**
-		 * FIXME
-		 * @param type $data
-		 * @return type
+		 * Read all entity items belonging to an entity group across multiple categories.
+		 *
+		 * Iterates over all non-excluded entity locations that belong to the given
+		 * entity_group_id and merges their read() results into one array.
+		 *
+		 * @param array $data Must contain 'entity_group_id'. May contain 'exclude_locations'
+		 *                    (array of location IDs to skip) and all parameters accepted by read().
+		 * @return array Merged list of entity records from all matching locations.
 		 */
 		function read_entity_group( $data )
 		{
@@ -1666,6 +1738,17 @@ use App\modules\phpgwapi\services\Cache;
 			return $components;
 		}
 
+		/**
+		 * Read a paginated, filtered list of entity items from the appropriate storage table.
+		 *
+		 * Dispatches to read_eav() for EAV (fm_bim_item) categories or to a
+		 * legacy table query for standard categories.
+		 *
+		 * @param array $data Filter and pagination parameters including 'entity_id', 'cat_id',
+		 *                    'type', 'location_id', 'filter', 'query', 'sort', 'order',
+		 *                    'start', 'results', 'allrows', and custom attribute filters.
+		 * @return array Array of entity records with translated custom-field values.
+		 */
 		function read( $data )
 		{
 			$start				 = isset($data['start']) && $data['start'] ? $data['start'] : 0;
@@ -2201,6 +2284,17 @@ use App\modules\phpgwapi\services\Cache;
 			return $values;
 		}
 
+		/**
+		 * Read a single entity record from the legacy (non-EAV) entity table or from EAV.
+		 *
+		 * Dispatches to read_single_eav() for EAV categories. For legacy tables,
+		 * retrieves the row and populates custom attribute values from the same table.
+		 *
+		 * @param array $data   Must contain 'entity_id' and 'cat_id'. For legacy categories
+		 *                      also requires 'id' or 'num'.
+		 * @param array $values Pre-populated values to merge into (e.g. attributes from bo layer).
+		 * @return array Entity record with all field values and populated attribute values.
+		 */
 		function read_single( $data, $values = array() )
 		{
 			$entity_id	 = isset($data['entity_id']) && $data['entity_id'] ? (int)$data['entity_id'] : $this->entity_id;
@@ -2258,6 +2352,15 @@ use App\modules\phpgwapi\services\Cache;
 			return $values;
 		}
 
+		/**
+		 * Read a single entity record from the EAV store (fm_bim_item).
+		 *
+		 * Populates custom attribute values from the JSON representation column.
+		 *
+		 * @param array $data   Must contain 'entity_id', 'cat_id', and 'id'.
+		 * @param array $values Pre-populated values to merge into.
+		 * @return array Entity record with JSON attribute values expanded.
+		 */
 		function read_single_eav( $data, $values = array() )
 		{
 
@@ -2321,6 +2424,17 @@ use App\modules\phpgwapi\services\Cache;
 			return $values;
 		}
 
+		/**
+		 * Build a human-readable short description for a single entity item.
+		 *
+		 * Resolves the attributes marked as 'short_description' for the entity
+		 * category, translating choice-list values to their labels. Falls back
+		 * to "{location description} # {id}" if no short description is configured.
+		 *
+		 * @param array $data Must contain 'location_id' and 'id'.
+		 * @return string Comma-separated short description string.
+		 * @throws Exception If location_id/id are missing or the location is not an entity.
+		 */
 		public function get_short_description( $data = array() )
 		{
 			static $system_location	 = array();
@@ -2399,6 +2513,14 @@ use App\modules\phpgwapi\services\Cache;
 			return $short_description;
 		}
 
+		/**
+		 * Check whether a record with the given 'num' already exists in the entity table.
+		 *
+		 * @param int    $entity_id Entity definition ID.
+		 * @param int    $cat_id    Category ID within the entity.
+		 * @param string $num       The num value to check for uniqueness.
+		 * @return bool|null True if a matching record exists, null otherwise.
+		 */
 		function check_entity( $entity_id, $cat_id, $num )
 		{
 			$table = "fm_{$this->type}_{$entity_id}_{$cat_id}";
@@ -2412,6 +2534,12 @@ use App\modules\phpgwapi\services\Cache;
 			}
 		}
 
+		/**
+		 * Generate the next sequential integer ID for a legacy entity category table.
+		 *
+		 * @param array $data Must contain 'entity_id' and 'cat_id'.
+		 * @return int Next available ID (max existing + 1).
+		 */
 		function generate_id( $data )
 		{
 			$table	 = "fm_{$this->type}_{$data['entity_id']}_{$data['cat_id']}";
@@ -2422,6 +2550,16 @@ use App\modules\phpgwapi\services\Cache;
 			return $id;
 		}
 
+		/**
+		 * Generate a formatted entity number string from a raw integer ID.
+		 *
+		 * Zero-pads the ID to four digits and prepends the category prefix.
+		 *
+		 * @param int $entity_id Entity definition ID.
+		 * @param int $cat_id    Category ID within the entity.
+		 * @param int $id        Raw numeric ID to format.
+		 * @return string Formatted entity number (e.g. 'ENT0042').
+		 */
 		function generate_num( $entity_id, $cat_id, $id )
 		{
 			$this->db->query("select prefix from fm_{$this->type}_category WHERE entity_id=$entity_id AND id=$cat_id ");
@@ -2442,6 +2580,19 @@ use App\modules\phpgwapi\services\Cache;
 			return $prefix . strtoupper($return);
 		}
 
+		/**
+		 * Insert a new entity record into the appropriate storage table.
+		 *
+		 * Handles both EAV (fm_bim_item via _save_eav()) and legacy table inserts.
+		 * Generates a num, resolves the location code and address, saves custom
+		 * attribute values, and runs history logging.
+		 *
+		 * @param array $values           Core field values for the entity record.
+		 * @param array $values_attribute Custom attribute values keyed by attribute ID.
+		 * @param int   $entity_id        Entity definition ID.
+		 * @param int   $cat_id           Category ID within the entity.
+		 * @return array Receipt array with 'id' and 'message' on success.
+		 */
 		public function add( $values, $values_attribute, $entity_id, $cat_id )
 		{
 			$values_insert = array();
@@ -2612,6 +2763,18 @@ use App\modules\phpgwapi\services\Cache;
 			return $receipt;
 		}
 
+		/**
+		 * Insert a new EAV entity item row into fm_bim_item.
+		 *
+		 * Allocates the next sequence ID for the fm_bim_type, generates a GUID,
+		 * and stores all attribute values as a JSON blob.
+		 *
+		 * @param array $data        Flat associative array of attribute key/value pairs plus
+		 *                           structural fields ('location_code', 'loc1', 'address',
+		 *                           'p_location_id', 'p_id').
+		 * @param int   $location_id ACL/type location ID used to resolve the fm_bim_type row.
+		 * @return int ID of the newly inserted fm_bim_item row.
+		 */
 		public function _save_eav( array $data, $location_id )
 		{
 			$location_id = (int)$location_id;
@@ -2658,6 +2821,19 @@ use App\modules\phpgwapi\services\Cache;
 			return $id;
 		}
 
+		/**
+		 * Update an existing EAV entity item row in fm_bim_item.
+		 *
+		 * Merges the supplied data into the existing JSON representation and
+		 * updates structural columns (location_code, loc1, address, org_unit_id, etc.).
+		 *
+		 * @param array  $data          Flat associative array of attribute key/value pairs plus
+		 *                              structural fields.
+		 * @param int    $location_id   ACL/type location ID used to resolve the fm_bim_type row.
+		 * @param string $location_name Location name string (dots are replaced with underscores).
+		 * @param int    $id            ID of the fm_bim_item row to update.
+		 * @return bool Result of the UPDATE query.
+		 */
 		protected function _edit_eav( array $data, $location_id, $location_name, $id )
 		{
 			$location_id = (int)$location_id;
@@ -2696,6 +2872,18 @@ use App\modules\phpgwapi\services\Cache;
 			return $this->db->query("UPDATE fm_bim_item SET $value_set WHERE id = $id AND type = {$type}", __LINE__, __FILE__);
 		}
 
+		/**
+		 * Update an existing entity record in the appropriate storage table.
+		 *
+		 * Handles both EAV (fm_bim_item via _edit_eav()) and legacy table updates.
+		 * Updates core fields, custom attribute values, and history log entries.
+		 *
+		 * @param array $values           Updated core field values including 'id' and 'num'.
+		 * @param array $values_attribute Custom attribute values keyed by attribute ID.
+		 * @param int   $entity_id        Entity definition ID.
+		 * @param int   $cat_id           Category ID within the entity.
+		 * @return array Receipt array with 'id' and 'message' on success.
+		 */
 		function edit( $values, $values_attribute, $entity_id, $cat_id )
 		{
 			$receipt	 = array();
@@ -2908,6 +3096,17 @@ use App\modules\phpgwapi\services\Cache;
 			return $receipt;
 		}
 
+		/**
+		 * Delete an entity record and all related data within a database transaction.
+		 *
+		 * Removes checklist data, the entity item row (EAV or legacy table),
+		 * and all interlink relations for the deleted item.
+		 *
+		 * @param int $entity_id Entity definition ID.
+		 * @param int $cat_id    Category ID within the entity.
+		 * @param int $id        ID of the entity record to delete.
+		 * @return void
+		 */
 		function delete( $entity_id, $cat_id, $id )
 		{
 			$entity_id	 = (int)$entity_id;
@@ -2943,6 +3142,12 @@ use App\modules\phpgwapi\services\Cache;
 			$this->db->transaction_commit();
 		}
 
+		/**
+		 * Read the help message text for a custom attribute.
+		 *
+		 * @param array $data Must contain 'entity_id', 'cat_id', and 'attrib_id'.
+		 * @return string|void Help message string, or void if required parameters are missing.
+		 */
 		function read_attrib_help( $data )
 		{
 			$entity_id	 = (isset($data['entity_id']) ? $data['entity_id'] : '');
@@ -2964,6 +3169,13 @@ use App\modules\phpgwapi\services\Cache;
 			return $helpmsg;
 		}
 
+		/**
+		 * Read the list of other entity items linked to the given entity record.
+		 *
+		 * @param array $data Must contain 'entity_id', 'cat_id', and 'id'.
+		 * @return array List of linked entity records.
+		 * @throws Exception If any required key is missing from $data.
+		 */
 		function read_entity_to_link( $data )
 		{
 			if (!isset($data['cat_id']) || !$data['cat_id'] || !isset($data['entity_id']) || !$data['entity_id'] || !isset($data['id']) || !$data['id'])
@@ -3156,10 +3368,14 @@ use App\modules\phpgwapi\services\Cache;
 		}
 
 		/**
-		 * Method for retreiving inventory of bulk items.
+		 * Retrieve inventory entries for an entity item from fm_bim_item_inventory.
 		 *
-		 * @param $data array array holding input parametres
-		 * @return array of entities
+		 * Optionally includes booking allocation data from lg_calendar if the
+		 * logistic app is available.
+		 *
+		 * @param array $data Associative array with keys 'location_id', 'id',
+		 *                    and optionally 'inventory_id'.
+		 * @return array List of inventory entry arrays.
 		 */
 		public function get_inventory( $data = array() )
 		{
@@ -3234,6 +3450,17 @@ use App\modules\phpgwapi\services\Cache;
 			return $inventory;
 		}
 
+		/**
+		 * Insert a new inventory entry into fm_bim_item_inventory.
+		 *
+		 * Resolves the location code to a p_location_id and p_id via solocation.
+		 *
+		 * @param array $values Inventory data including 'location_id', 'item_id', 'location_code',
+		 *                      'unit_id', 'inventory', 'write_off', 'bookable',
+		 *                      'active_from', 'active_to', and 'remark'.
+		 * @return bool Result of the INSERT query.
+		 * @throws Exception If the location_code cannot be resolved to a valid location.
+		 */
 		public function add_inventory( $values )
 		{
 			$p_location_id = $this->locations->get_id('property', '.location.' . count(explode('-', $values['location_code'])));
@@ -3270,6 +3497,17 @@ use App\modules\phpgwapi\services\Cache;
 					. $this->db->validate_insert(array_values($value_set)) . ')', __LINE__, __FILE__);
 		}
 
+		/**
+		 * Update an inventory entry by expiring the old row and inserting a replacement.
+		 *
+		 * If the new inventory value is zero, only the expiry is applied. Otherwise,
+		 * the existing row is expired and a new row with the updated values is inserted.
+		 *
+		 * @param array $values Must contain 'inventory_id' and updated inventory fields
+		 *                      ('inventory', 'write_off', 'bookable', 'active_from', 'active_to', 'remark').
+		 * @return bool Result of the database transaction commit.
+		 * @throws Exception If inventory_id is missing or invalid.
+		 */
 		public function edit_inventory( $values )
 		{
 			$inventory_id = (int)$values['inventory_id'];
@@ -3324,6 +3562,15 @@ use App\modules\phpgwapi\services\Cache;
 			return $this->db->transaction_commit();
 		}
 
+		/**
+		 * Convert a formatted entity number string back to its integer ID.
+		 *
+		 * Strips the category prefix from the num string and casts the remainder to int.
+		 *
+		 * @param array $data Must contain 'entity_id', 'cat_id', and 'num'.
+		 *                    Optionally 'type' (defaults to 'entity').
+		 * @return int Integer ID derived from the num string, or empty string if num is absent.
+		 */
 		public function convert_num_to_id( $data = array() )
 		{
 			$entity_id	 = (int)$data['entity_id'];
@@ -3342,6 +3589,13 @@ use App\modules\phpgwapi\services\Cache;
 			return $id;
 		}
 
+		/**
+		 * Retrieve the location_code for a specific EAV entity item.
+		 *
+		 * @param int $location_id Location ID identifying the entity type.
+		 * @param int $item_id     ID of the fm_bim_item row.
+		 * @return string|null The location_code value, or null if not found.
+		 */
 		function get_location_code( $location_id, $item_id )
 		{
 			$sql = 'SELECT location_code from fm_bim_item WHERE location_id = ' . (int)$location_id;
@@ -3353,6 +3607,18 @@ use App\modules\phpgwapi\services\Cache;
 			return $location_code;
 		}
 
+		/**
+		 * Set a single JSON attribute value on an EAV entity item.
+		 *
+		 * Uses PostgreSQL's jsonb_set to update only the targeted key in the
+		 * json_representation column.
+		 *
+		 * @param int    $location_id Location ID identifying the entity type.
+		 * @param int    $item_id     ID of the fm_bim_item row to update.
+		 * @param string $attribute   JSON key name to set.
+		 * @param string $value       New value for the attribute.
+		 * @return void
+		 */
 		function update_json_attribute( $location_id, $item_id , $attribute, $value )
 		{
 			$location_id = (int) $location_id;
@@ -3366,6 +3632,14 @@ use App\modules\phpgwapi\services\Cache;
 				$this->db->query($sql, __LINE__, __FILE__);
 		}
 
+		/**
+		 * Retrieve a single JSON attribute value from an EAV entity item.
+		 *
+		 * @param int    $location_id Location ID identifying the entity type.
+		 * @param int    $item_id     ID of the fm_bim_item row.
+		 * @param string $attribute   JSON key name to retrieve.
+		 * @return string|null The attribute value, or null if the row is not found.
+		 */
 		function get_json_attribute( $location_id, $item_id, $attribute )
 		{
 			$location_id = (int) $location_id;
@@ -3380,6 +3654,13 @@ use App\modules\phpgwapi\services\Cache;
 			return $this->db->f('value');
 		}
 
+		/**
+		 * Retrieve all custom attribute definitions of type 'QR_code' across all entity locations.
+		 *
+		 * Returns a map of column_name → array of location IDs that define that QR attribute.
+		 *
+		 * @return array Associative array keyed by column_name, values are arrays of location IDs.
+		 */
 		function get_QR_attributes( )
 		{
 			$sql = "SELECT DISTINCT location_id, column_name FROM phpgw_cust_attribute WHERE datatype = 'QR_code'";
@@ -3397,6 +3678,13 @@ use App\modules\phpgwapi\services\Cache;
 			return $values;
 		}
 
+		/**
+		 * Retrieve all EAV entity items that match any of the given QR attribute filters.
+		 *
+		 * @param array $location_ids  Array of location IDs to search within.
+		 * @param array $attrib_filter Array of SQL condition strings (JSON attribute comparisons).
+		 * @return array List of matching records with 'id', 'location_id', 'location_code', 'address'.
+		 */
 		function get_items_per_qr( $location_ids, $attrib_filter )
 		{
 			$filtermethod	 = 'location_id IN(' . implode(',', $location_ids) . ')';
@@ -3419,6 +3707,19 @@ use App\modules\phpgwapi\services\Cache;
 			return $values;
 		}
 
+		/**
+		 * Save (insert or update) checklist attribute values for a single stage and item.
+		 *
+		 * If a row already exists for the given item_id + stage_id + type_location_id,
+		 * merges the new values into the existing JSON representation. Otherwise,
+		 * inserts a new row.
+		 *
+		 * @param int   $item_id          ID of the entity item.
+		 * @param int   $stage_id         ID of the checklist stage.
+		 * @param array $values_attribute Array of attribute value arrays (each with 'name' and 'value').
+		 * @param array &$receipt         Receipt array updated by reference (unused currently).
+		 * @return void
+		 */
 		function save_checklist( $item_id, $stage_id, $values_attribute, &$receipt )
 		{
 		
@@ -3478,6 +3779,13 @@ use App\modules\phpgwapi\services\Cache;
 
 		}
 
+		/**
+		 * Retrieve checklist data for all stages of an entity item.
+		 *
+		 * @param int $type_location_id Location ID of the entity type (checklist type).
+		 * @param int $item_id          ID of the entity item.
+		 * @return array Associative array keyed by stage_id, values are decoded JSON attribute arrays.
+		 */
 		function get_checklist_data($type_location_id, $item_id )
 		{
 			$type_location_id = (int) $type_location_id;

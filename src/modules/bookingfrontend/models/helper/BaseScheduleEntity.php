@@ -59,6 +59,7 @@ abstract class BaseScheduleEntity
     /**
      * @OA\Property(type="string")
      * @Expose
+     * @EscapeString(mode="default")
      * @Short
      */
     public $building_name;

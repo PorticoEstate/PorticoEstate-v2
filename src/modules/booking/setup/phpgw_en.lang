@@ -1099,3 +1099,4 @@ apply_focal_point	booking	en	Use
 short_description	booking	en	Short description
 no_active_season_found_for_this_date	booking	en	No active season found for this date
 missing_organization	booking	en	Missing organization
+cancellation_deadline_warning	booking	en	This booking is within the cancellation deadline for resource %1. Cancellation may affect the customer.

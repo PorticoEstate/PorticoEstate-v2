@@ -8,6 +8,8 @@ export interface IHospitality {
     include_in_checkout_payment: number;
     order_by_time_value: number | null;
     order_by_time_unit: 'hours' | 'days' | null;
+    resource_cancellation_deadline_value: number | null;
+    resource_cancellation_deadline_unit: 'hours' | 'days' | 'weeks' | null;
     delivery_locations: IDeliveryLocation[];
 }
 

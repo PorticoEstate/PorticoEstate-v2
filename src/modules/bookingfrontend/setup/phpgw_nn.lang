@@ -963,3 +963,6 @@ order_total	bookingfrontend	nn	Ordretotal
 article	bookingfrontend	nn	artikkel
 serving_at	bookingfrontend	nn	Servering i
 select_hospitality	bookingfrontend	nn	Vel servering
+cancellation_deadline_info	bookingfrontend	nn	Kan avbestillast innan %1
+cancellation_deadline_passed	bookingfrontend	nn	Avbestillingsfristen har gått ut
+cancellation_deadline_passed_warning	bookingfrontend	nn	Avbestillingsfristen har gått ut. Viss du bestiller vil du ikkje kunne avbestille.

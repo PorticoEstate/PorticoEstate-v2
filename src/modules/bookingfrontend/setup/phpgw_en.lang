@@ -963,3 +963,6 @@ order_total	bookingfrontend	en	Order total
 article	bookingfrontend	en	article
 serving_at	bookingfrontend	en	Serving at
 select_hospitality	bookingfrontend	en	Select hospitality
+cancellation_deadline_info	bookingfrontend	en	Can be cancelled until %1
+cancellation_deadline_passed	bookingfrontend	en	The cancellation deadline has passed
+cancellation_deadline_passed_warning	bookingfrontend	en	The cancellation deadline has passed. If you order you will not be able to cancel.

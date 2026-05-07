@@ -1,6 +1,6 @@
 'use client';
 import {FC, useMemo, useState} from 'react';
-import {Button, Heading, Table} from '@digdir/designsystemet-react';
+import {Alert, Button, Heading, Paragraph, Table} from '@digdir/designsystemet-react';
 import {PlusIcon, PencilIcon, TrashIcon} from '@navikt/aksel-icons';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {IApplication} from '@/service/types/api/application.types';
@@ -9,6 +9,17 @@ import {useApplicationGroupHospitalities, useDeleteHospitalityOrder} from '../ho
 import {formatCurrency} from '@/utils/cost-utils';
 import HospitalityOrderModal from './hospitality-order-modal';
 import styles from './hospitality.module.scss';
+
+function getCancellationCutoffMs(hospitality: IHospitality): number | null {
+    if (!hospitality.resource_cancellation_deadline_value || !hospitality.resource_cancellation_deadline_unit) return null;
+    const value = hospitality.resource_cancellation_deadline_value;
+    switch (hospitality.resource_cancellation_deadline_unit) {
+        case 'hours': return value * 3600000;
+        case 'days': return value * 86400000;
+        case 'weeks': return value * 604800000;
+        default: return null;
+    }
+}
 
 interface HospitalitySectionProps {
     applicationIds: number[];
@@ -87,6 +98,44 @@ const HospitalitySection: FC<HospitalitySectionProps> = ({applicationIds, applic
         return orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
     }, [orders]);
 
+    // Calculate cancellation deadline info only for ordered hospitalities
+    const cancellationInfo = useMemo(() => {
+        if (orders.length === 0 || applications.length === 0) return null;
+
+        // Find the earliest booking date across all applications
+        let earliestFrom: Date | null = null;
+        for (const app of applications) {
+            for (const d of (app.dates || [])) {
+                const from = new Date(d.from_);
+                if (!earliestFrom || from < earliestFrom) earliestFrom = from;
+            }
+        }
+        if (!earliestFrom) return null;
+
+        // Only consider hospitalities that have been ordered
+        const orderedHospitalityIds = new Set(orders.map(o => o.hospitality_id));
+        const orderedHospitalities = hospitalities.filter(h => orderedHospitalityIds.has(h.id));
+
+        // Find the strictest cancellation deadline across ordered hospitalities
+        let strictestCutoffMs: number | null = null;
+        let strictestValue: number | null = null;
+        let strictestUnit: string | null = null;
+        for (const h of orderedHospitalities) {
+            const cutoffMs = getCancellationCutoffMs(h);
+            if (cutoffMs && (strictestCutoffMs === null || cutoffMs > strictestCutoffMs)) {
+                strictestCutoffMs = cutoffMs;
+                strictestValue = h.resource_cancellation_deadline_value;
+                strictestUnit = h.resource_cancellation_deadline_unit;
+            }
+        }
+        if (!strictestCutoffMs) return null;
+
+        const cancelBy = new Date(earliestFrom.getTime() - strictestCutoffMs);
+        const isPastDeadline = Date.now() > cancelBy.getTime();
+
+        return {cancelBy, value: strictestValue, unit: strictestUnit, isPastDeadline};
+    }, [orders, hospitalities, applications]);
+
     if (isLoading || hospitalities.length === 0) {
         return null;
     }
@@ -135,6 +184,19 @@ const HospitalitySection: FC<HospitalitySectionProps> = ({applicationIds, applic
                     {t('bookingfrontend.add_hospitality_order')}
                 </Button>
             </div>
+
+            {cancellationInfo && (
+                <Alert data-color="warning" data-size="sm" style={{marginBottom: '0.75rem'}}>
+                    {cancellationInfo.isPastDeadline
+                        ? t('bookingfrontend.cancellation_deadline_passed_warning')
+                        : t('bookingfrontend.cancellation_deadline_info')
+                            .replace('%1', cancellationInfo.cancelBy.toLocaleDateString('nb-NO', {
+                                day: '2-digit', month: 'short', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
+                            }))
+                    }
+                </Alert>
+            )}
 
             {orders.length > 0 && (
                 <Table hover data-size="md" zebra>

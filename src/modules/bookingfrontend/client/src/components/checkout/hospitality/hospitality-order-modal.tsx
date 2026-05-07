@@ -1,6 +1,6 @@
 'use client';
 import {FC, useEffect, useMemo, useState} from 'react';
-import {Button, Details, Field, Label, Select} from '@digdir/designsystemet-react';
+import {Alert, Button, Details, Field, Label, Select} from '@digdir/designsystemet-react';
 import {MinusCircleIcon, PlusCircleIcon, ChatElipsisIcon} from '@navikt/aksel-icons';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import Dialog from '@/components/dialog/mobile-dialog';
@@ -160,6 +160,32 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         }
         return {valid: true, message: ''};
     }, [selectedDateOption, selectedTime, hospitality, t]);
+
+    // Cancellation deadline warning (informational, does not block ordering)
+    const cancellationWarning = useMemo(() => {
+        if (!selectedDateOption || !hospitality) return null;
+        const val = hospitality.resource_cancellation_deadline_value;
+        const unit = hospitality.resource_cancellation_deadline_unit;
+        if (!val || !unit) return null;
+
+        let cutoffMs: number;
+        switch (unit) {
+            case 'hours': cutoffMs = val * 3600000; break;
+            case 'days': cutoffMs = val * 86400000; break;
+            case 'weeks': cutoffMs = val * 604800000; break;
+            default: return null;
+        }
+
+        const cancelBy = new Date(selectedDateOption.from.getTime() - cutoffMs);
+        if (Date.now() > cancelBy.getTime()) {
+            return t('bookingfrontend.cancellation_deadline_passed_warning');
+        }
+        return t('bookingfrontend.cancellation_deadline_info')
+            .replace('%1', cancelBy.toLocaleDateString('nb-NO', {
+                day: '2-digit', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            }));
+    }, [selectedDateOption, hospitality, t]);
 
     // Initialize state on open / edit
     useEffect(() => {
@@ -482,11 +508,18 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         </Field>
                     </div>
 
-                    {/* Cutoff warning */}
+                    {/* Cutoff warning (blocks ordering) */}
                     {selectedTime && !cutoffCheck.valid && (
-                        <div className={styles.cutoffWarning}>
+                        <Alert data-color="danger" data-size="sm">
                             {cutoffCheck.message}
-                        </div>
+                        </Alert>
+                    )}
+
+                    {/* Cancellation deadline warning (informational) */}
+                    {cancellationWarning && (
+                        <Alert data-color="warning" data-size="sm">
+                            {cancellationWarning}
+                        </Alert>
                     )}
 
                     {/* Article menu */}

@@ -1,7 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Server } from 'socket.io';
-import * as fs from 'fs';
-import * as path from 'path';
 import { RedisService } from './redis.service';
 import { RoomService } from '../session/room.service';
 
@@ -140,68 +138,5 @@ export class NotificationService implements OnModuleInit {
     }
   }
 
-  /**
-   * Check for file-based notification fallback (same as PHP).
-   */
-  checkNotificationFiles() {
-    if (!this.server) return;
 
-    // General notifications
-    this.processFilePattern('/tmp/websocket_notification_*.json', (data) => {
-      this.server!.emit('message', data);
-    });
-
-    // Session-specific notifications
-    this.processFilePattern('/tmp/websocket_session_*.json', (data) => {
-      if (data.sessionId) {
-        const roomId = this.roomService.sessionRoomId(data.sessionId);
-        this.server!.to(roomId).emit('message', data);
-      }
-    });
-  }
-
-  private processFilePattern(
-    pattern: string,
-    handler: (data: any) => void,
-  ) {
-    // Convert glob pattern to a directory + prefix scan
-    const dir = path.dirname(pattern);
-    const prefix = path.basename(pattern).replace('*.json', '');
-
-    let files: string[];
-    try {
-      files = fs
-        .readdirSync(dir)
-        .filter((f) => f.startsWith(prefix) && f.endsWith('.json'));
-    } catch {
-      return;
-    }
-
-    for (const file of files) {
-      const fullPath = path.join(dir, file);
-      try {
-        const content = fs.readFileSync(fullPath, 'utf-8');
-        const data = JSON.parse(content);
-        handler(data);
-        fs.unlinkSync(fullPath);
-      } catch (err: any) {
-        this.logger.error(
-          `Error processing notification file ${file}: ${err.message}`,
-        );
-      }
-    }
-  }
-
-  /**
-   * Send server ping to all connected clients.
-   */
-  sendServerPing() {
-    if (!this.server) return;
-    const pingId = `ping_${Date.now()}`;
-    this.server.emit('message', {
-      type: 'server_ping',
-      id: pingId,
-      timestamp: new Date().toISOString(),
-    });
-  }
 }

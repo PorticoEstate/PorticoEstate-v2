@@ -1450,8 +1450,10 @@ function createSimpleApplicationViaWs(
 	sendMessage: (type: string, message: string, additionalData?: Record<string, any>) => boolean,
 	timeslot: IFreeTimeSlot,
 	buildingId: number,
+	queryClient: ReturnType<typeof useQueryClient>,
 ): Promise<{ id: number; status: string; message: string }> {
 	const subscriptionManager = SubscriptionManager.getInstance();
+	const requestId = `booking_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 	return new Promise((resolve, reject) => {
 		const timeout = setTimeout(() => {
@@ -1463,16 +1465,62 @@ function createSimpleApplicationViaWs(
 			'create_application_response',
 			(message) => {
 				if (message.type !== 'create_application_response') return;
+				// Only match our request
+				if (message.requestId !== requestId) return;
 				clearTimeout(timeout);
 				cleanup();
 				if (message.data.error === false) {
+					const appId = message.data.id!;
+
+					// Optimistically patch the timeslot cache immediately —
+					// don't wait for the slower partial_applications_response + room_message
+					const resourceId = String(timeslot.resource_id);
+					const allQueries = queryClient.getQueriesData<FreeTimeSlotsResponse>({
+						queryKey: ['buildingFreeTime', buildingId],
+					});
+					for (const [qk, data] of allQueries) {
+						if (!data?.[resourceId]) continue;
+						queryClient.setQueryData(qk, patchWeekCache(data, {
+							[resourceId]: [{
+								start: timeslot.start,
+								end: timeslot.end,
+								when: timeslot.when,
+								start_iso: timeslot.start_iso,
+								end_iso: timeslot.end_iso,
+								overlap: 2,
+								overlap_reason: 'complete_overlap',
+								overlap_type: 'complete',
+								overlap_event: {
+									id: appId,
+									type: 'application',
+									status: 'NEWPARTIAL1',
+									from: timeslot.start,
+									to: timeslot.end,
+								},
+							}],
+						}));
+					}
+
+					// Optimistically add to partial applications so the delete button shows
+					queryClient.setQueryData<{ list: IApplication[], total_sum: number }>(
+						['partialApplications'],
+						(prev) => {
+							if (!prev) return prev;
+							// Add a minimal placeholder — the full data arrives with partial_applications_response
+							const placeholder = { id: appId, status: 'NEWPARTIAL1' } as IApplication;
+							return {
+								list: [...prev.list, placeholder],
+								total_sum: prev.total_sum,
+							};
+						},
+					);
+
 					resolve({
 						id: message.data.id!,
 						status: message.data.status || 'NEWPARTIAL1',
 						message: message.data.message || 'Created',
 					});
 				} else if ((message.data as any).useRestFallback) {
-					// Server says PHP source changed — fall back to REST
 					reject(new Error('WS booking timeout'));
 				} else {
 					reject(new Error(message.data.message || 'Booking failed'));
@@ -1485,6 +1533,7 @@ function createSimpleApplicationViaWs(
 			buildingId,
 			from: timeslot.start,
 			to: timeslot.end,
+			requestId,
 		});
 	});
 }
@@ -1501,7 +1550,7 @@ export function useCreateSimpleApplication() {
 			if (isWebSocketActive) {
 				try {
 					return await createSimpleApplicationViaWs(
-						sendMessage, params.timeslot, params.building_id,
+						sendMessage, params.timeslot, params.building_id, queryClient,
 					);
 				} catch (err) {
 					// If the WS error is a real booking error (not a timeout), throw it

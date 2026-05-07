@@ -288,7 +288,7 @@
 			'</div></div>';
 
 		html += '<div class="app-show__meta">';
-		html += '<span class="app-show__meta-item">' + lang('main_resource') + ': ' + esc(h.resource_name) + '</span>';
+		html += '<span class="app-show__meta-item">' + lang('main_resource') + ': <a href="/?menuaction=booking.uiresource.show&id=' + esc(h.resource_id) + '">' + esc(h.resource_name) + '</a></span>';
 		html += '<span class="app-show__meta-item">' + lang('created') + ': ' + fmtDate(h.created) + '</span>';
 		if (h.modified) {
 			html += '<span class="app-show__meta-item">' + lang('modified') + ': ' + fmtDate(h.modified) + '</span>';
@@ -507,7 +507,8 @@
 
 		// Service configuration
 		var svcHtml = '';
-		svcHtml += field(lang('main_resource'), h.resource_name);
+		var resourceLink = '<a href="/?menuaction=booking.uiresource.show&id=' + esc(h.resource_id) + '">' + esc(h.resource_name) + '</a>';
+		svcHtml += fieldHtml(lang('main_resource'), resourceLink);
 		svcHtml += editableField(lang('remoteServing', h.resource_name), h.remote_serving_enabled, 'remote_serving_enabled', 'checkbox', {
 			description: lang('remoteServingDesc', h.resource_name)
 		});
@@ -732,7 +733,7 @@
 		}
 
 		// Main resource (read-only)
-		html += section(lang('mainResource'), field(lang('main_resource'), h.resource_name));
+		html += section(lang('mainResource'), fieldHtml(lang('main_resource'), '<a href="/?menuaction=booking.uiresource.show&id=' + esc(h.resource_id) + '">' + esc(h.resource_name) + '</a>'));
 
 		// Inline building search (top, where add button used to be)
 		if (canWrite) {

@@ -186,6 +186,16 @@ export interface IWSCreateApplicationResponse extends IWebSocketMessageBase {
   };
 }
 
+export interface IWSDeleteApplicationResponse extends IWebSocketMessageBase {
+  type: 'delete_application_response';
+  requestId?: string;
+  data: {
+    error: boolean;
+    message?: string;
+    id?: number;
+  };
+}
+
 // Interface for booking user refresh message
 export interface IWSRefreshBookingUserMessage extends IWebSocketMessageBase {
   type: 'refresh_bookinguser';
@@ -221,6 +231,7 @@ export type WebSocketMessage =
   | IWSPartialApplicationsResponse
   | IWSFreeTimeResponse
   | IWSCreateApplicationResponse
+  | IWSDeleteApplicationResponse
   | IWSRefreshBookingUserMessage
   | IWSCacheInvalidationMessage;
   // | (IWebSocketMessageBase & { [key: string]: any }); // Catch-all for other message types

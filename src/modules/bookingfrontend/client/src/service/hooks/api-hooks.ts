@@ -62,6 +62,7 @@ import {
 	useEntitySubscriptionWithPing
 } from './use-websocket-subscriptions';
 import {IWSServerDeletedMessage, IWSServerNewMessage, WebSocketMessage} from '../websocket/websocket.types';
+import { pendingDeletions } from './pending-deletions';
 
 /**
  * Custom hook that wraps useMutation and adds server message invalidation
@@ -910,9 +911,13 @@ export function usePartialApplications(): UseQueryResult<{ list: IApplication[],
 
 		// Also set the full list if seq is newest (authoritative update)
 		if (seq >= lastSeqRef.current) {
+			// Filter out any apps that are pending deletion client-side
+			const apps = pendingDeletions.size > 0
+				? message.data.applications.filter((a: IApplication) => !pendingDeletions.has(a.id))
+				: message.data.applications;
 			queryClient.setQueryData(['partialApplications'], {
-				list: message.data.applications,
-				total_sum: calcTotalSum(message.data.applications),
+				list: apps,
+				total_sum: calcTotalSum(apps),
 			});
 		}
 	});
@@ -1391,52 +1396,103 @@ export function useUpdatePartialApplication() {
 	});
 }
 
+function deletePartialViaWs(
+	sendMessage: (type: string, message: string, additionalData?: Record<string, any>) => boolean,
+	applicationId: number,
+): Promise<number> {
+	const subscriptionManager = SubscriptionManager.getInstance();
+	const requestId = `delete_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+	return new Promise((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			cleanup();
+			reject(new Error('WebSocket delete timeout'));
+		}, 15000);
+
+		const cleanup = subscriptionManager.subscribeToMessageType(
+			'delete_application_response',
+			(message) => {
+				if (message.type !== 'delete_application_response') return;
+				if ((message as any).requestId !== requestId) return;
+				clearTimeout(timeout);
+				cleanup();
+				if (message.data.error === false) {
+					resolve(applicationId);
+				} else {
+					reject(new Error(message.data.message || 'Delete failed'));
+				}
+			},
+		);
+
+		sendMessage('delete_partial_application', 'Deleting partial application', {
+			applicationId,
+			requestId,
+		});
+	});
+}
+
 export function useDeletePartialApplication() {
 	const queryClient = useQueryClient();
-	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
+	const { status: wsStatus, sessionConnected, isReady: wsReady, sendMessage } = useWebSocketContext();
 
 	return useServerMessageMutation({
 		mutationFn: async (id: number) => {
+			const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
+
+			if (isWebSocketActive) {
+				try {
+					return await deletePartialViaWs(sendMessage, id);
+				} catch (err) {
+					if (err instanceof Error && !err.message.includes('timeout')) {
+						throw err;
+					}
+				}
+			}
+
+			// REST fallback
 			const url = phpGWLink(['bookingfrontend', 'applications', id]);
 			const response = await fetch(url, {method: 'DELETE'});
-
 			if (!response.ok) {
 				throw new Error('Failed to delete partial application');
 			}
-
-			return id
+			return id;
 		},
 		onMutate: async (id: number) => {
-			// Cancel any outgoing refetches to avoid overwriting optimistic update
+			pendingDeletions.add(id);
 			await queryClient.cancelQueries({queryKey: ['partialApplications']});
 
-			// Snapshot current applications
 			const previousApplications = queryClient.getQueryData<{
 				list: IApplication[],
 				total_sum: number
 			}>(['partialApplications']);
 
-			// Optimistically update applications list
 			if (previousApplications) {
 				queryClient.setQueryData(['partialApplications'], {
 					...previousApplications,
-					list: previousApplications.list.filter(app =>
-						app.id !== id
-					),
+					list: previousApplications.list.filter(app => app.id !== id),
 				});
 			}
 
 			return {previousApplications};
 		},
-		onError: (err, variables, context) => {
-			// On error, rollback to previous state
+		onError: (_err, variables, context) => {
+			pendingDeletions.delete(variables);
 			if (context?.previousApplications) {
 				queryClient.setQueryData(['partialApplications'], context.previousApplications);
 			}
 		},
+		onSuccess: (_data, variables) => {
+			pendingDeletions.delete(variables);
+			const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
+			if (!isWebSocketActive) {
+				queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			}
+		},
 		onSettled: () => {
-			// Always invalidate to ensure correctness after delete
-			queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
+			if (!isWebSocketActive) {
+				queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			}
 		},
 	});
 }

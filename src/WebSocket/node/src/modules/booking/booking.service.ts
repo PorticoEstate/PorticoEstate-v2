@@ -802,6 +802,201 @@ export class BookingService implements OnModuleInit {
     });
   }
 
+  /**
+   * Delete a partial application. Port of PHP ApplicationController::deletePartial.
+   * Verifies the session owns the application, deletes all associated data,
+   * clears blocks, and publishes notifications.
+   */
+  /**
+   * Delete a partial application. Port of PHP ApplicationController::deletePartial.
+   * Verifies the session owns the application, deletes all associated data,
+   * clears blocks/locks for ALL resource+date combos, and publishes notifications.
+   */
+  async deletePartialApplication(
+    applicationId: number,
+    sessionId: string,
+  ): Promise<{
+    deleted: boolean;
+    buildingId: number | null;
+    resourceIds: number[];
+    dates: Array<{ from_: string; to_: string }>;
+  }> {
+    let client: any = null;
+    try {
+      client = await this.db.getClient();
+      await client.query('BEGIN');
+
+      // PHP: $application = $this->applicationService->getApplicationById($id)
+      const appResult = await client.query(
+        `SELECT a.id, a.session_id, a.building_id, a.status
+         FROM bb_application a
+         WHERE a.id = $1 AND a.status = 'NEWPARTIAL1'`,
+        [applicationId],
+      );
+      if (appResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        throw new TranslatableError('Application not found or not a partial application', 'application_not_found');
+      }
+      const app = appResult.rows[0];
+
+      // PHP: $this->applicationHelper->canModifyApplication($application, $request)
+      // For NEWPARTIAL1, the check is session_id match
+      if (app.session_id !== sessionId) {
+        await client.query('ROLLBACK');
+        throw new TranslatableError('Unauthorized to delete this application', 'unauthorized');
+      }
+
+      // PHP: $dates = $this->applicationService->applicationRepository->fetchDates($id)
+      const { rows: dates } = await client.query(
+        `SELECT from_, to_ FROM bb_application_date WHERE application_id = $1`,
+        [applicationId],
+      );
+      // PHP: $resources = $this->applicationService->applicationRepository->fetchResources($id)
+      const { rows: resources } = await client.query(
+        `SELECT resource_id FROM bb_application_resource WHERE application_id = $1`,
+        [applicationId],
+      );
+
+      const buildingId = app.building_id;
+      const resourceIds = resources.map((r: any) => r.resource_id);
+
+      // PHP: $this->applicationService->deletePartial($id)
+      // Which calls deleteAssociatedData then deletes the application
+      // Note: PHP also deletes bb_document_application via DocumentService
+      // (skipped here — simple bookings don't have documents)
+      await client.query(
+        `DELETE FROM bb_purchase_order_line WHERE order_id IN
+         (SELECT id FROM bb_purchase_order WHERE application_id = $1)`,
+        [applicationId],
+      );
+      await client.query(`DELETE FROM bb_purchase_order WHERE application_id = $1`, [applicationId]);
+      await client.query(`DELETE FROM bb_application_comment WHERE application_id = $1`, [applicationId]);
+      await client.query(`DELETE FROM bb_application_date WHERE application_id = $1`, [applicationId]);
+      await client.query(`DELETE FROM bb_application_resource WHERE application_id = $1`, [applicationId]);
+      await client.query(`DELETE FROM bb_application_targetaudience WHERE application_id = $1`, [applicationId]);
+      await client.query(`DELETE FROM bb_application_agegroup WHERE application_id = $1`, [applicationId]);
+      await client.query(`DELETE FROM bb_application WHERE id = $1`, [applicationId]);
+
+      await client.query('COMMIT');
+
+      // PHP: Clear blocks for EACH resource and date (nested foreach)
+      // Done after commit, matching PHP which does it after deletePartial returns
+      for (const resource of resources) {
+        for (const date of dates) {
+          // PHP: clearBlocksAndLocks — clears DB blocks + Redis cache keys
+          try {
+            await client.query(
+              `UPDATE bb_block SET active = 0
+               WHERE session_id = $1 AND resource_id = $2 AND from_ = $3 AND to_ = $4`,
+              [sessionId, resource.resource_id, date.from_, date.to_],
+            );
+
+            // PHP: Cache::system_clear('booking', "timeslot_lock_{$resourceId}_{$from}_{$to}")
+            const lockKey = this.genRedisKey('booking', `timeslot_lock_${resource.resource_id}_${date.from_}_${date.to_}`);
+            await this.redisService.releaseLock(lockKey, sessionId).catch(() => {});
+          } catch (err: any) {
+            this.logger.error(`Error clearing blocks for resource ${resource.resource_id}: ${err.message}`);
+          }
+        }
+      }
+
+      this.logger.log(`Partial application #${applicationId} deleted`);
+
+      return {
+        deleted: true,
+        buildingId,
+        resourceIds,
+        dates: dates.map((d: any) => ({ from_: String(d.from_), to_: String(d.to_) })),
+      };
+    } catch (err) {
+      if (client) await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      if (client) client.release();
+    }
+  }
+
+  /**
+   * Publish notifications after deleting a partial application.
+   */
+  /**
+   * Publish notifications after deleting a partial application.
+   * Matches PHP: fetches affected timeslots per resource, notifies building + each resource room.
+   */
+  async publishDeletionNotifications(
+    buildingId: number,
+    resourceIds: number[],
+    dates: Array<{ from_: string; to_: string }>,
+    applicationId: number,
+  ): Promise<void> {
+    if (dates.length === 0 || resourceIds.length === 0) return;
+
+    // PHP: uses first date's from/to for the query range
+    const from = dates[0].from_;
+    const to = dates[0].to_;
+    const fromDate = new Date(from.includes('T') ? from : from.replace(' ', 'T'));
+    const toDate = new Date(to.includes('T') ? to : to.replace(' ', 'T'));
+    const queryStart = new Date(fromDate);
+    queryStart.setDate(queryStart.getDate() - 1);
+    const queryEnd = new Date(toDate);
+    queryEnd.setDate(queryEnd.getDate() + 1);
+
+    const queryStartStr = queryStart.toISOString().slice(0, 10);
+    const queryEndStr = queryEnd.toISOString().slice(0, 10);
+
+    // PHP: foreach resourceIds, get affected timeslots
+    const affectedTimeslots: Record<string, any[]> = {};
+    for (const resId of resourceIds) {
+      try {
+        const timeslots = await this.freeTimeService.getFreeTime(
+          buildingId, resId, queryStartStr, queryEndStr, null, true, true,
+        );
+        if (timeslots[resId]) {
+          affectedTimeslots[resId] = timeslots[resId];
+        }
+      } catch (err: any) {
+        this.logger.error(`Failed to get affected timeslots for resource ${resId}: ${err.message}`);
+      }
+    }
+
+    const eventData = {
+      application_id: applicationId,
+      from, to,
+      change_type: 'deletion',
+      affected_timeslots: affectedTimeslots,
+    };
+
+    // PHP: WebSocketHelper::sendEntityNotification('building', ...)
+    await this.redisService.publish('room_messages', {
+      type: 'room_message',
+      roomId: `entity_building_${buildingId}`,
+      entityType: 'building',
+      entityId: buildingId,
+      action: 'deleted',
+      message: 'Application deleted',
+      data: eventData,
+      timestamp: new Date().toISOString(),
+    });
+
+    // PHP: foreach resourceIds, notify each resource room
+    for (const resId of resourceIds) {
+      await this.redisService.publish('room_messages', {
+        type: 'room_message',
+        roomId: `entity_resource_${resId}`,
+        entityType: 'resource',
+        entityId: resId,
+        action: 'deleted',
+        message: 'Application deleted',
+        data: {
+          ...eventData,
+          resource_id: resId,
+          affected_timeslots: affectedTimeslots[resId] ?? [],
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
   // --- Private helpers (1:1 ports of PHP methods) ---
 
   /**

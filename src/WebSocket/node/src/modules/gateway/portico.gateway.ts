@@ -153,6 +153,8 @@ export class PorticoGateway
         return this.handleGetFreeTime(client, data);
       case 'create_simple_application':
         return this.handleCreateSimpleApplication(client, data);
+      case 'delete_partial_application':
+        return this.handleDeletePartialApplication(client, data);
       case 'ping':
         return; // No-op: Socket.IO handles heartbeat natively
       default:
@@ -490,6 +492,77 @@ export class PorticoGateway
             translatable: isTranslatable,
           },
         ],
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  private async handleDeletePartialApplication(client: Socket, data: any) {
+    const { applicationId, requestId } = data;
+
+    if (!applicationId) {
+      client.emit('message', {
+        type: 'delete_application_response',
+        data: { error: true, message: 'applicationId is required' },
+        ...(requestId && { requestId }),
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const session = this.sessionService.getSession(client.id);
+    if (!session?.sessionId) {
+      client.emit('message', {
+        type: 'delete_application_response',
+        data: { error: true, message: 'No session' },
+        ...(requestId && { requestId }),
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    try {
+      const result = await this.bookingService.deletePartialApplication(
+        Number(applicationId),
+        session.sessionId,
+      );
+
+      client.emit('message', {
+        type: 'delete_application_response',
+        data: {
+          error: false,
+          id: applicationId,
+          message: 'Application deleted successfully',
+        },
+        ...(requestId && { requestId }),
+        timestamp: new Date().toISOString(),
+      });
+
+      // Push updated partial applications (with diff) then publish timeslot notifications
+      this.sendPartialApplicationsUpdate(session.sessionId!, { removed: [Number(applicationId)] })
+        .then(() => {
+          if (result.buildingId && result.resourceIds.length > 0 && result.dates.length > 0) {
+            return this.bookingService.publishDeletionNotifications(
+              result.buildingId,
+              result.resourceIds,
+              result.dates,
+              Number(applicationId),
+            );
+          }
+        })
+        .catch((err) =>
+          this.logger.error(`Deletion notification error: ${err.message}`),
+        );
+    } catch (err: any) {
+      this.logger.warn(`Delete failed: ${err.message}`);
+
+      client.emit('message', {
+        type: 'delete_application_response',
+        data: {
+          error: true,
+          message: err.message,
+        },
+        ...(requestId && { requestId }),
         timestamp: new Date().toISOString(),
       });
     }

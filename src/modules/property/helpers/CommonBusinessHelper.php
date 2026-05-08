@@ -819,6 +819,20 @@ class CommonBusinessHelper
 		return array('ResultSet' => array('Result' => $values));
 	}
 
+	public function getEcodimb($query)
+	{
+		$sogeneric = CreateObject('property.sogeneric', 'dimb');
+		$filter = array('active' => 1);
+		$values = $sogeneric->read(array('filter' => $filter, 'query' => $query));
+
+		foreach ($values as &$value)
+		{
+			$value['name'] = "{$value['id']} {$value['descr']}";
+		}
+
+		return array('ResultSet' => array('Result' => $values));
+	}
+
 	public function getExternalProjectName($id)
 	{
 		$ret = $id;

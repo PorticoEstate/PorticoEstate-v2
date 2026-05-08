@@ -661,6 +661,18 @@ class CommonBusinessHelper
 		}
 	}
 
+	public function addConditionalViewFormTemplate($entity_type, $type, $xsl_rootdir)
+	{
+		if (isset($type) && $type == 'view')
+		{
+			\phpgwapi_xslttemplates::getInstance()->add_file(array("{$entity_type}_view"), $xsl_rootdir);
+		}
+		else
+		{
+			\phpgwapi_xslttemplates::getInstance()->add_file(array("{$entity_type}_form"), $xsl_rootdir);
+		}
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

@@ -634,13 +634,9 @@ class property_bocommon
 			{
 				return $external_project;
 			}
+		}
 
-			phpgwapi_xslttemplates::getInstance()->add_file(array('external_project_view'), $this->xsl_rootdir);
-		}
-		else
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('external_project_form'), $this->xsl_rootdir);
-		}
+		$this->common_business_helper->addConditionalViewFormTemplate('external_project', isset($data['type']) ? $data['type'] : 'form', $this->xsl_rootdir);
 
 		$external_project['value_external_project_id']			 = $data['external_project_id'];
 		$external_project['value_external_project_name']		 = $data['external_project_name'];
@@ -672,13 +668,9 @@ class property_bocommon
 			{
 				return $ecodimb;
 			}
+		}
 
-			phpgwapi_xslttemplates::getInstance()->add_file(array('ecodimb_view'), $this->xsl_rootdir);
-		}
-		else
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('ecodimb_form'), $this->xsl_rootdir);
-		}
+		$this->common_business_helper->addConditionalViewFormTemplate('ecodimb', isset($data['type']) ? $data['type'] : 'form', $this->xsl_rootdir);
 
 		$ecodimb['value_ecodimb']			 = $data['ecodimb'];
 		$ecodimb['value_ecodimb_descr']		 = $data['ecodimb_descr'];

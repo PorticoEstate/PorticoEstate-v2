@@ -454,7 +454,7 @@ class property_bocommon
 		$vendor['value_vendor_id']	 = $data['vendor_id'];
 		$vendor['value_vendor_name'] = $data['vendor_name'];
 
-		if (isset($data['vendor_id']) && $data['vendor_id'] && !$data['vendor_name'])
+		if ($this->common_business_helper->hasLookupIdWithoutDisplayValue($data, 'vendor_id', 'vendor_name'))
 		{
 			$vendor_data = $this->common_business_helper->readSingleFromSogenericWithAttributes('vendor', '.vendor', $data['vendor_id']);
 			if (is_array($vendor_data))
@@ -487,7 +487,7 @@ class property_bocommon
 		$contact['value_contact_id'] = $data['contact_id'];
 		//			$contact['value_contact_name']		= $data['contact_name'];
 
-		if (isset($data['contact_id']) && $data['contact_id'] && !$data['contact_name'])
+		if ($this->common_business_helper->hasLookupIdWithoutDisplayValue($data, 'contact_id', 'contact_name'))
 		{
 			$contact_entry = $this->common_business_helper->readContactEntry($data['contact_id']);
 			$contact = array_merge($contact, $contact_entry);
@@ -514,7 +514,7 @@ class property_bocommon
 		$this->common_business_helper->addEntityLabels($tenant, 'tenant', $data);
 
 
-		if ($data['tenant_id'] && !$data['tenant_name'])
+		if ($this->common_business_helper->hasLookupIdWithoutDisplayValue($data, 'tenant_id', 'tenant_name'))
 		{
 			$tenant_data = $this->common_business_helper->readSingleFromSogenericWithAttributes('tenant', '.tenant', $data['tenant_id']);
 			if (is_array($tenant_data['attributes']))
@@ -555,7 +555,7 @@ class property_bocommon
 			'parent'	 => isset($data['parent']) && $data['parent'] ? $data['parent'] : '',
 		));
 		$this->common_business_helper->addEntityLabels($b_account, 'b_account', $data);
-		if ($data['b_account_id'] && !$data['b_account_name'])
+		if ($this->common_business_helper->hasLookupIdWithoutDisplayValue($data, 'b_account_id', 'b_account_name'))
 		{
 			$location = (isset($data['role']) && $data['role'] == 'group') ? 'b_account' : 'budget_account';
 			$b_account_data = $this->common_business_helper->readSingleFromSogeneric($location, $data['b_account_id']);

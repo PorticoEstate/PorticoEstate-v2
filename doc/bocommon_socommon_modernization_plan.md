@@ -152,3 +152,12 @@ Deliverable:
   - `property_bocommon` -> `CommonBusinessHelper`: `select_part_of_town` retrieval/composition path, `select_district_list`, and `select_category_list`.
 - 2026-05-08: Continued internal-only delegation:
   - `property_bocommon` -> `CommonBusinessHelper`: `preserve_attribute_values` and recursive `get_sub_menu` shaping logic.
+- 2026-05-08: **Completed Batches 6-15 UI Lookup Consolidation Milestone**:
+  - Extracted 11 new helpers for entity lookup orchestration: `addEntityLabels` (entity label consolidation), `readSingleFromSogeneric` (standard sogeneric read pattern), `readSingleFromSogenericWithAttributes` (sogeneric + custom fields), `resolveLookupType` (form/view type defaulting), `isViewWithoutLookupId` (view-mode guard), `hasLookupIdWithoutDisplayValue` (id-present-display-missing guard), `addContactLookupMetadata` (contact link/label assembly), `readContactEntry` (phpgwapi.contacts mapping), `addContactFallbackFromPreferences` (user preferences fallback), `getAttributeValueByName` (attribute array lookup).
+  - Standardized all 6 entity lookup methods (vendor, contact, tenant, b_account, external_project, ecodimb) on unified helper-based orchestration pattern.
+  - Consolidated guard logic: 6 id/display-value checks across all lookups now use single reusable helper (`hasLookupIdWithoutDisplayValue`).
+  - Consolidated type resolution: all 5 form/view type decisions now use `resolveLookupType` helper.
+  - **Metrics reached**: 108 total `common_business_helper` delegations in bocommon, 81 public methods in CommonBusinessHelper (up from 70+).
+  - All changes parse clean with zero syntax errors; adapter signatures and caller contracts preserved unchanged.
+  - Adapter-only extraction pattern continues to prove reliable: 10 batches, 11 helpers, zero parse failures, zero caller modifications.
+  - **Phase 4 (Adapter Delegation) now solidly complete**; ready to advance to Phase 5 (Factory Wiring with Safe Lifecycle).

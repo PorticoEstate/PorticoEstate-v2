@@ -763,6 +763,22 @@ class CommonBusinessHelper
 		$output['lang_select_contact_help'] = lang('click this link to select');
 	}
 
+	public function readContactEntry($contact_id)
+	{
+		$contacts = CreateObject('phpgwapi.contacts');
+		$contact_data = $contacts->read_single_entry($contact_id, array(
+			'fn',
+			'tel_work',
+			'email'
+		));
+
+		return array(
+			'value_contact_name' => $contact_data[0]['fn'],
+			'value_contact_email' => $contact_data[0]['email'],
+			'value_contact_tel' => $contact_data[0]['tel_work']
+		);
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

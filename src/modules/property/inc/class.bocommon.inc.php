@@ -492,17 +492,8 @@ class property_bocommon
 
 		if (isset($data['contact_id']) && $data['contact_id'] && !$data['contact_name'])
 		{
-			$contacts						 = CreateObject('phpgwapi.contacts');
-			$contact_data					 = $contacts->read_single_entry($data['contact_id'], array(
-				'fn',
-				'tel_work',
-				'email'
-			));
-			$contact['value_contact_name']	 = $contact_data[0]['fn'];
-			$contact['value_contact_email']	 = $contact_data[0]['email'];
-			$contact['value_contact_tel']	 = $contact_data[0]['tel_work'];
-
-			unset($contacts);
+			$contact_entry = $this->common_business_helper->readContactEntry($data['contact_id']);
+			$contact = array_merge($contact, $contact_entry);
 
 			if (!$contact['value_contact_email'])
 			{

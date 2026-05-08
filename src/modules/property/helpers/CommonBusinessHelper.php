@@ -691,6 +691,46 @@ class CommonBusinessHelper
 		return \phpgw::link('/index.php', array_merge($base_params, $params));
 	}
 
+	public function addEntityLabels(&$output, $entity_type, $data = array())
+	{
+		switch ($entity_type)
+		{
+			case 'vendor':
+				$output['lang_vendor'] = lang('Vendor');
+				$output['lang_select_vendor_help'] = lang('click this link to select vendor');
+				$output['lang_vendor_name'] = lang('Vendor Name');
+				break;
+
+			case 'tenant':
+				if (isset($data['role']) && $data['role'] == 'customer')
+				{
+					$output['lang_select_tenant_help'] = lang('click this link to select customer');
+					$output['lang_tenant'] = lang('Customer');
+				}
+				else
+				{
+					$output['lang_select_tenant_help'] = lang('click this link to select tenant');
+					$output['lang_tenant'] = lang('Tenant');
+				}
+				break;
+
+			case 'b_account':
+				$output['lang_select_b_account_help'] = lang('click this link to select budget account');
+				$output['lang_b_account'] = isset($data['role']) && $data['role'] == 'group' ? lang('budget account group') : lang('Budget account');
+				break;
+
+			case 'external_project':
+				$output['lang_select_external_project_help'] = lang('click to select external project');
+				$output['lang_external_project'] = lang('external project');
+				break;
+
+			case 'ecodimb':
+				$output['lang_select_ecodimb_help'] = lang('click to select dimb');
+				$output['lang_ecodimb'] = lang('dimb');
+				break;
+		}
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

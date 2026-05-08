@@ -477,10 +477,8 @@ class property_bocommon
 			unset($contacts);
 		}
 
-		$vendor['vendor_link']				 = $this->common_business_helper->buildLookupUrl('vendor');
-		$vendor['lang_vendor']				 = lang('Vendor');
-		$vendor['lang_select_vendor_help']	 = lang('click this link to select vendor');
-		$vendor['lang_vendor_name']			 = lang('Vendor Name');
+		$vendor['vendor_link'] = $this->common_business_helper->buildLookupUrl('vendor');
+		$this->common_business_helper->addEntityLabels($vendor, 'vendor', $data);
 		$this->common_business_helper->addFormFlags($vendor, $data);
 		//_debug_array($vendor);
 		return $vendor;
@@ -541,17 +539,8 @@ class property_bocommon
 		$tenant['value_tenant_id']	 = $data['tenant_id'];
 		$tenant['value_first_name']	 = $data['first_name'];
 		$tenant['value_last_name']	 = $data['last_name'];
-		$tenant['tenant_link']		 = $this->common_business_helper->buildLookupUrl('tenant');
-		if ($data['role'] == 'customer')
-		{
-			$tenant['lang_select_tenant_help']	 = lang('click this link to select customer');
-			$tenant['lang_tenant']				 = lang('Customer');
-		}
-		else
-		{
-			$tenant['lang_select_tenant_help']	 = lang('click this link to select tenant');
-			$tenant['lang_tenant']				 = lang('Tenant');
-		}
+		$tenant['tenant_link'] = $this->common_business_helper->buildLookupUrl('tenant');
+		$this->common_business_helper->addEntityLabels($tenant, 'tenant', $data);
 
 
 		if ($data['tenant_id'] && !$data['tenant_name'])
@@ -597,12 +586,11 @@ class property_bocommon
 
 		$b_account['value_b_account_id']		 = $data['b_account_id'];
 		$b_account['value_b_account_name']		 = $data['b_account_name'];
-		$b_account['b_account_link']			 = $this->common_business_helper->buildLookupUrl('b_account', array(
+		$b_account['b_account_link'] = $this->common_business_helper->buildLookupUrl('b_account', array(
 			'role'		 => isset($data['role']) && $data['role'] ? $data['role'] : '',
 			'parent'	 => isset($data['parent']) && $data['parent'] ? $data['parent'] : '',
 		));
-		$b_account['lang_select_b_account_help'] = lang('click this link to select budget account');
-		$b_account['lang_b_account']			 = isset($data['role']) && $data['role'] == 'group' ? lang('budget account group') : lang('Budget account');
+		$this->common_business_helper->addEntityLabels($b_account, 'b_account', $data);
 		if ($data['b_account_id'] && !$data['b_account_name'])
 		{
 			$b_account_object = CreateObject('property.sogeneric');
@@ -638,9 +626,8 @@ class property_bocommon
 
 		$external_project['value_external_project_id']			 = $data['external_project_id'];
 		$external_project['value_external_project_name']		 = $data['external_project_name'];
-		$external_project['external_project_url']				 = $this->common_business_helper->buildLookupUrl('external_project');
-		$external_project['lang_select_external_project_help']	 = lang('click to select external project');
-		$external_project['lang_external_project']				 = lang('external project');
+		$external_project['external_project_url'] = $this->common_business_helper->buildLookupUrl('external_project');
+		$this->common_business_helper->addEntityLabels($external_project, 'external_project', $data);
 		if ($data['external_project_id'] && (!isset($data['external_project_name']) || !$data['external_project_name']))
 		{
 			$external_project_object							 = CreateObject('property.sogeneric');
@@ -670,9 +657,8 @@ class property_bocommon
 
 		$ecodimb['value_ecodimb']			 = $data['ecodimb'];
 		$ecodimb['value_ecodimb_descr']		 = $data['ecodimb_descr'];
-		$ecodimb['ecodimb_url']				 = $this->common_business_helper->buildLookupUrl('ecodimb');
-		$ecodimb['lang_select_ecodimb_help'] = lang('click to select dimb');
-		$ecodimb['lang_ecodimb']			 = lang('dimb');
+		$ecodimb['ecodimb_url'] = $this->common_business_helper->buildLookupUrl('ecodimb');
+		$this->common_business_helper->addEntityLabels($ecodimb, 'ecodimb', $data);
 		if ($data['ecodimb'] && (!isset($data['ecodimb_descr']) || !$data['ecodimb_descr']))
 		{
 			$ecodimb_object					 = CreateObject('property.sogeneric');

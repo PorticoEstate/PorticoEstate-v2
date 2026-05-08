@@ -2064,81 +2064,11 @@ class property_bocommon
 
 	public function get_top_level_categories($data)
 	{
-		$selected = array();
-		if (!empty($data['selected']))
-		{
-			if (is_array($data['selected']))
-			{
-				$selected = $data['selected'];
-			}
-			else if (preg_match('/^\,|&\,/', $data['selected']))
-			{
-				$selected = explode(',', trim($data['selected'], ','));
-			}
-			else
-			{
-				$selected[] = $data['selected'];
-			}
-		}
-
-		$cats				 = CreateObject('phpgwapi.categories', -1, 'property', $data['acl_location']);
-		$cats->supress_info	 = true;
-		$_cats				 = $cats->return_sorted_array(0, false, '', '', '', false, false);
-		$values = array();
-		foreach ($_cats as $_cat)
-		{
-			if ($_cat['level'] == 0 && $_cat['active'] != 2)
-			{
-				$_cat['selected']	= in_array($_cat['id'], $selected) ? 1 : 0;
-
-				$values[] = $_cat;
-			}
-		}
-
-		return $values;
+		return $this->common_business_helper->getTopLevelCategories($data);
 	}
 	public function get_top_level_category_names($data)
 	{
-		static $_cats = array();
-
-		$selected = array();
-		if (!empty($data['id']))
-		{
-			if (is_array($data['id']))
-			{
-				$selected = $data['id'];
-			}
-			else if (preg_match('/^\,|&\,/', $data['id']))
-			{
-				$selected = explode(',', trim($data['id'], ','));
-			}
-			else
-			{
-				$selected[] = $data['id'];
-			}
-		}
-
-		if (!isset($_cats[$data['acl_location']]))
-		{
-			$cats							 = CreateObject('phpgwapi.categories', -1, 'property', $data['acl_location']);
-			$cats->supress_info				 = true;
-			$_cats[$data['acl_location']]	 = $cats->return_sorted_array(0, false, '', '', '', false, false);
-		}
-
-		$names = array();
-
-		if (is_array($_cats[$data['acl_location']]))
-		{
-			foreach ($_cats[$data['acl_location']] as $_cat)
-			{
-				if ($_cat['level'] == 0 && $_cat['active'] != 2 && in_array($_cat['id'], $selected))
-				{
-					$names[] = $_cat['name'];
-				}
-			}
-		}
-
-		return implode(', ', $names);
+		return $this->common_business_helper->getTopLevelCategoryNames($data);
 	}
 
 	public function get_categories($data)

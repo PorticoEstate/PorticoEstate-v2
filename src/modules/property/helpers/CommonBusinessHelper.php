@@ -685,6 +685,12 @@ class CommonBusinessHelper
 		}
 	}
 
+	public function buildLookupUrl($entity_name, $params = array())
+	{
+		$base_params = array('menuaction' => 'property.uilookup.' . $entity_name);
+		return \phpgw::link('/index.php', array_merge($base_params, $params));
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

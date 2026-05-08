@@ -477,7 +477,7 @@ class property_bocommon
 			unset($contacts);
 		}
 
-		$vendor['vendor_link']				 = phpgw::link('/index.php', array('menuaction' => 'property.uilookup.vendor'));
+		$vendor['vendor_link']				 = $this->common_business_helper->buildLookupUrl('vendor');
 		$vendor['lang_vendor']				 = lang('Vendor');
 		$vendor['lang_select_vendor_help']	 = lang('click this link to select vendor');
 		$vendor['lang_vendor_name']			 = lang('Vendor Name');
@@ -541,7 +541,7 @@ class property_bocommon
 		$tenant['value_tenant_id']	 = $data['tenant_id'];
 		$tenant['value_first_name']	 = $data['first_name'];
 		$tenant['value_last_name']	 = $data['last_name'];
-		$tenant['tenant_link']		 = phpgw::link('/index.php', array('menuaction' => 'property.uilookup.tenant'));
+		$tenant['tenant_link']		 = $this->common_business_helper->buildLookupUrl('tenant');
 		if ($data['role'] == 'customer')
 		{
 			$tenant['lang_select_tenant_help']	 = lang('click this link to select customer');
@@ -597,8 +597,7 @@ class property_bocommon
 
 		$b_account['value_b_account_id']		 = $data['b_account_id'];
 		$b_account['value_b_account_name']		 = $data['b_account_name'];
-		$b_account['b_account_link']			 = phpgw::link('/index.php', array(
-			'menuaction' => 'property.uilookup.b_account',
+		$b_account['b_account_link']			 = $this->common_business_helper->buildLookupUrl('b_account', array(
 			'role'		 => isset($data['role']) && $data['role'] ? $data['role'] : '',
 			'parent'	 => isset($data['parent']) && $data['parent'] ? $data['parent'] : '',
 		));
@@ -639,9 +638,7 @@ class property_bocommon
 
 		$external_project['value_external_project_id']			 = $data['external_project_id'];
 		$external_project['value_external_project_name']		 = $data['external_project_name'];
-		$external_project['external_project_url']				 = phpgw::link('/index.php', array(
-			'menuaction' => 'property.uilookup.external_project'
-		));
+		$external_project['external_project_url']				 = $this->common_business_helper->buildLookupUrl('external_project');
 		$external_project['lang_select_external_project_help']	 = lang('click to select external project');
 		$external_project['lang_external_project']				 = lang('external project');
 		if ($data['external_project_id'] && (!isset($data['external_project_name']) || !$data['external_project_name']))
@@ -673,7 +670,7 @@ class property_bocommon
 
 		$ecodimb['value_ecodimb']			 = $data['ecodimb'];
 		$ecodimb['value_ecodimb_descr']		 = $data['ecodimb_descr'];
-		$ecodimb['ecodimb_url']				 = phpgw::link('/index.php', array('menuaction' => 'property.uilookup.ecodimb'));
+		$ecodimb['ecodimb_url']				 = $this->common_business_helper->buildLookupUrl('ecodimb');
 		$ecodimb['lang_select_ecodimb_help'] = lang('click to select dimb');
 		$ecodimb['lang_ecodimb']			 = lang('dimb');
 		if ($data['ecodimb'] && (!isset($data['ecodimb_descr']) || !$data['ecodimb_descr']))

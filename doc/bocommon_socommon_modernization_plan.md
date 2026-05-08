@@ -146,3 +146,9 @@ Deliverable:
   - `property_bocommon` -> `CommonBusinessHelper`: `check_perms`, `check_perms2`, `date_to_timestamp`, `select_datatype`, `select_nullable`.
 - 2026-05-08: Continued internal-only delegation:
   - `property_bocommon` thin wrappers now delegated via `CommonBusinessHelper` for socommon-forwarded methods (`create_preferences`, `get_lookup_entity`, `get_start_entity`, `read_single_tenant`, `check_location`, `fm_cache`, `reset_fm_cache`, `reset_fm_cache_userlist`, `next_id`, `increment_id`, `new_db`, `get_max_location_level`, `get_location_list`, `set_pending_action`).
+- 2026-05-08: Continued internal-only delegation:
+  - `property_bocommon` -> `CommonBusinessHelper`: `read_location_data` wrapper and `select_part_of_town` list-shaping logic.
+- 2026-05-08: Continued internal-only delegation:
+  - `property_bocommon` -> `CommonBusinessHelper`: `select_part_of_town` retrieval/composition path, `select_district_list`, and `select_category_list`.
+- 2026-05-08: Continued internal-only delegation:
+  - `property_bocommon` -> `CommonBusinessHelper`: `preserve_attribute_values` and recursive `get_sub_menu` shaping logic.

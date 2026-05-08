@@ -128,6 +128,22 @@ Batch 2e (bocommon thin-wrapper delegation via CommonBusinessHelper):
 - `get_location_list`
 - `set_pending_action`
 
+Batch 2f (bocommon additional low-risk adapter extraction):
+
+- `read_location_data`
+- `select_part_of_town` (list shaping logic)
+
+Batch 2g (bocommon additional low-risk list extraction):
+
+- `select_part_of_town` (data retrieval + list composition delegation)
+- `select_district_list`
+- `select_category_list`
+
+Batch 2h (bocommon pure transformation extraction):
+
+- `preserve_attribute_values`
+- `get_sub_menu` (recursive menu shaping)
+
 ## Sample bocommon Callers
 
 - `src/modules/property/inc/class.borequest.inc.php`

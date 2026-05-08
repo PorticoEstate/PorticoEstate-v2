@@ -480,4 +480,254 @@ class CommonBusinessHelper
 	{
 		return $socommon->set_pending_action($action_params);
 	}
+
+	public function readLocationData($socommon, $location_code)
+	{
+		$soadmin_location = CreateObject('property.soadmin_location');
+
+		$location_types = $soadmin_location->select_location_type();
+		unset($soadmin_location);
+
+		return $socommon->read_location_data($location_code, $location_types);
+	}
+
+	public function buildPartOfTownList($parts, $selected = '')
+	{
+		$part_of_town_list = array();
+
+		if (is_array($parts) && (count($parts)))
+		{
+			foreach ($parts as $entry)
+			{
+				$part_of_town_list[] = array(
+					'id' => $entry['id'],
+					'name' => $entry['name'],
+					'district_id' => $entry['district_id'],
+					'selected' => $entry['id'] == $selected ? 1 : 0
+				);
+			}
+		}
+
+		return $part_of_town_list;
+	}
+
+	public function selectPartOfTown($socommon, $district_id = '', $selected = '')
+	{
+		$parts = $socommon->select_part_of_town($district_id);
+		return $this->buildPartOfTownList($parts, $selected);
+	}
+
+	public function selectDistrictList($socommon, $selected = '')
+	{
+		$districts = $socommon->select_district_list();
+		return $this->selectList($selected, $districts);
+	}
+
+	public function selectCategoryList($data = array())
+	{
+		$categories = execMethod('property.sogeneric.get_list', $data);
+		$selected = isset($data['selected']) ? $data['selected'] : '';
+		return $this->selectList($selected, $categories);
+	}
+
+	public function preserveAttributeValues($values, $values_attributes)
+	{
+		if (!is_array($values_attributes))
+		{
+			return array();
+		}
+
+		foreach ($values_attributes as $attribute)
+		{
+			foreach ($values['attributes'] as &$val_attrib)
+			{
+				if ($val_attrib['id'] != $attribute['attrib_id'])
+				{
+					continue;
+				}
+
+				if (!isset($attribute['value']) && !isset($values['extra'][$val_attrib['name']]))
+				{
+					continue;
+				}
+
+				if (is_array($attribute['value']))
+				{
+					foreach ($val_attrib['choice'] as &$choice)
+					{
+						foreach ($attribute['value'] as $selected)
+						{
+							if ($selected == $choice['id'])
+							{
+								$choice['checked'] = 'checked';
+							}
+						}
+					}
+				}
+				else if (isset($val_attrib['choice']) && is_array($val_attrib['choice']))
+				{
+					foreach ($val_attrib['choice'] as &$choice)
+					{
+						if ($choice['id'] == $attribute['value'])
+						{
+							$choice['checked'] = 'checked';
+						}
+					}
+				}
+				else if (isset($values['extra'][$val_attrib['name']]))
+				{
+					$val_attrib['value'] = $values['extra'][$val_attrib['name']];
+				}
+				else
+				{
+					$val_attrib['value'] = $attribute['value'];
+				}
+			}
+		}
+		return $values;
+	}
+
+	public function getSubMenu($children = array(), $selection = array(), $level = '')
+	{
+		$level++;
+		$i = 0;
+		foreach ($children as $key => $vals)
+		{
+			$menu[] = $vals;
+			if ($key == $selection[$level])
+			{
+				$menu[$i]['this'] = true;
+				if (isset($menu[$i]['children']))
+				{
+					$menu[$i]['children'] = $this->getSubMenu($menu[$i]['children'], $selection, $level);
+				}
+			}
+			else
+			{
+				if (isset($menu[$i]['children']))
+				{
+					unset($menu[$i]['children']);
+				}
+			}
+			$i++;
+		}
+		return $menu;
+	}
+
+	public function getTopLevelCategories($data)
+	{
+		$selected = array();
+		if (!empty($data['selected']))
+		{
+			if (is_array($data['selected']))
+			{
+				$selected = $data['selected'];
+			}
+			else if (preg_match('/^\,|&,/', $data['selected']))
+			{
+				$selected = explode(',', trim($data['selected'], ','));
+			}
+			else
+			{
+				$selected[] = $data['selected'];
+			}
+		}
+
+		$cats = CreateObject('phpgwapi.categories', -1, 'property', $data['acl_location']);
+		$cats->supress_info = true;
+		$_cats = $cats->return_sorted_array(0, false, '', '', '', false, false);
+		$values = array();
+		foreach ($_cats as $_cat)
+		{
+			if ($_cat['level'] == 0 && $_cat['active'] != 2)
+			{
+				$_cat['selected'] = in_array($_cat['id'], $selected) ? 1 : 0;
+				$values[] = $_cat;
+			}
+		}
+
+		return $values;
+	}
+
+	public function getTopLevelCategoryNames($data)
+	{
+		static $_cats = array();
+
+		$selected = array();
+		if (!empty($data['id']))
+		{
+			if (is_array($data['id']))
+			{
+				$selected = $data['id'];
+			}
+			else if (preg_match('/^\,|&,/', $data['id']))
+			{
+				$selected = explode(',', trim($data['id'], ','));
+			}
+			else
+			{
+				$selected[] = $data['id'];
+			}
+		}
+
+		if (!isset($_cats[$data['acl_location']]))
+		{
+			$cats = CreateObject('phpgwapi.categories', -1, 'property', $data['acl_location']);
+			$cats->supress_info = true;
+			$_cats[$data['acl_location']] = $cats->return_sorted_array(0, false, '', '', '', false, false);
+		}
+
+		$names = array();
+
+		if (is_array($_cats[$data['acl_location']]))
+		{
+			foreach ($_cats[$data['acl_location']] as $_cat)
+			{
+				if ($_cat['level'] == 0 && $_cat['active'] != 2 && in_array($_cat['id'], $selected))
+				{
+					$names[] = $_cat['name'];
+				}
+			}
+		}
+
+		return implode(', ', $names);
+	}
+
+	public function getCategories($data)
+	{
+		$cats = CreateObject('phpgwapi.categories', -1, 'property', $data['acl_location']);
+		$cats->supress_info = true;
+		$values = $cats->formatted_xslt_list(array(
+			'selected' => $data['selected'],
+			'globals' => true,
+			'link_data' => array()
+		));
+		$ret = array();
+
+		$level = !empty($data['level']) ? $data['level'] : 0;
+
+		foreach ($values['cat_list'] as $category)
+		{
+			$ret[] = array(
+				'id' => $category['cat_id'],
+				'name' => $category['name'],
+				'selected' => $category['selected'] ? 1 : 0
+			);
+		}
+		return $ret;
+	}
+
+	public function getVendorContract($vendor_id = 0, $selected = '')
+	{
+		$contract_list = createObject('property.soagreement')->get_vendor_contract($vendor_id, $selected);
+		if ($selected)
+		{
+			foreach ($contract_list as &$contract)
+			{
+				$contract['selected'] = $selected == $contract['id'] ? 1 : 0;
+			}
+		}
+
+		return $contract_list;
+	}
 }

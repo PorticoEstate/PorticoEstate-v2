@@ -907,11 +907,11 @@ class property_bocommon
 		}
 
 		$alarm['header'][] = array(
-			'lang_time'		 => lang('Time'),
-			'lang_text'		 => lang('Text'),
-			'lang_user'		 => lang('User'),
-			'lang_enabled'	 => lang('Enabled'),
-			'lang_select'	 => lang('Select')
+			'lang_time' => lang('Time'),
+			'lang_text' => lang('Text'),
+			'lang_user' => lang('User'),
+			'lang_enabled' => lang('Enabled'),
+			'lang_select' => lang('Select')
 		);
 
 		$alarm['values'] = $boalarm->read_alarms($data['alarm_type'], $data['id'], $data['text']);
@@ -919,47 +919,47 @@ class property_bocommon
 		if ($data['type'] == 'form')
 		{
 			$alarm['alter_alarm'][] = array(
-				'lang_enable'	 => lang('Enable'),
-				'lang_disable'	 => lang('Disable'),
-				'lang_delete'	 => lang('Delete')
+				'lang_enable' => lang('Enable'),
+				'lang_disable' => lang('Disable'),
+				'lang_delete' => lang('Delete')
 			);
 
 			for ($i = 1; $i <= 31; $i++)
 			{
 				$alarm['add_alarm']['day_list'][($i - 1)]['id'] = $i;
-				if($i == 14)
+				if ($i == 14)
 				{
 					$alarm['add_alarm']['day_list'][($i - 1)]['selected'] = 'selected';
 				}
 			}
-			$alarm['add_alarm']['lang_day']				 = lang('Day');
-			$alarm['add_alarm']['lang_day_statustext']	 = lang('Day');
+
+			$alarm['add_alarm']['lang_day'] = lang('Day');
+			$alarm['add_alarm']['lang_day_statustext'] = lang('Day');
 
 			for ($i = 1; $i <= 24; $i++)
 			{
 				$alarm['add_alarm']['hour_list'][($i - 1)]['id'] = $i;
 			}
-			$alarm['add_alarm']['lang_hour']			 = lang('Hour');
-			$alarm['add_alarm']['lang_hour_statustext']	 = lang('Hour');
+			$alarm['add_alarm']['lang_hour'] = lang('Hour');
+			$alarm['add_alarm']['lang_hour_statustext'] = lang('Hour');
 
 			for ($i = 1; $i <= 60; $i++)
 			{
 				$alarm['add_alarm']['minute_list'][($i - 1)]['id'] = $i;
 			}
-			$alarm['add_alarm']['lang_minute']				 = lang('Minutes before the event');
-			$alarm['add_alarm']['lang_minute_statustext']	 = lang('Minutes before the event');
+			$alarm['add_alarm']['lang_minute'] = lang('Minutes before the event');
+			$alarm['add_alarm']['lang_minute_statustext'] = lang('Minutes before the event');
 
-			$alarm['add_alarm']['user_list'] = $this->get_user_list_right2('select', 4, false, $data['acl_location'], false, $default						 = $this->account);
+			$alarm['add_alarm']['user_list'] = $this->get_user_list_right2('select', 4, false, $data['acl_location'], false, $default = $this->account);
 
-			$alarm['add_alarm']['lang_user']			 = lang('User');
-			$alarm['add_alarm']['lang_user_statustext']	 = lang('Select the user the alarm belongs to.');
-			$alarm['add_alarm']['lang_no_user']			 = lang('No user');
-			$alarm['add_alarm']['lang_add']				 = lang('Add');
-			$alarm['add_alarm']['lang_add_alarm']		 = lang('Add alarm');
-			$alarm['add_alarm']['lang_add_statustext']	 = lang('Add alarm for selected user');
+			$alarm['add_alarm']['lang_user'] = lang('User');
+			$alarm['add_alarm']['lang_user_statustext'] = lang('Select the user the alarm belongs to.');
+			$alarm['add_alarm']['lang_no_user'] = lang('No user');
+			$alarm['add_alarm']['lang_add'] = lang('Add');
+			$alarm['add_alarm']['lang_add_alarm'] = lang('Add alarm');
+			$alarm['add_alarm']['lang_add_statustext'] = lang('Add alarm for selected user');
 		}
 
-		//_debug_array($alarm['values']);
 		return $alarm;
 	}
 
@@ -1002,12 +1002,7 @@ class property_bocommon
 
 	function read_location_data($location_code)
 	{
-		$soadmin_location = CreateObject('property.soadmin_location');
-
-		$location_types = $soadmin_location->select_location_type();
-		unset($soadmin_location);
-
-		return $this->socommon->read_location_data($location_code, $location_types);
+		return $this->common_business_helper->readLocationData($this->socommon, $location_code);
 	}
 
 	function read_single_tenant($tenant_id)
@@ -1295,23 +1290,7 @@ class property_bocommon
 				break;
 		}
 
-		$parts				 = $this->socommon->select_part_of_town($district_id);
-		$part_of_town_list	 = array();
-
-		if (is_array($parts) && (count($parts)))
-		{
-			foreach ($parts as $entry)
-			{
-				$part_of_town_list[] = array(
-					'id'			 => $entry['id'],
-					'name'			 => $entry['name'],
-					'district_id'	 => $entry['district_id'],
-					'selected'		 => $entry['id'] == $selected ? 1 : 0
-				);
-			}
-		}
-
-		return $part_of_town_list;
+		return $this->common_business_helper->selectPartOfTown($this->socommon, $district_id, $selected);
 	}
 
 	function select_district_list($format = '', $selected = '')
@@ -1326,9 +1305,7 @@ class property_bocommon
 				break;
 		}
 
-		$districts = $this->socommon->select_district_list();
-
-		return $this->select_list($selected, $districts);
+		return $this->common_business_helper->selectDistrictList($this->socommon, $selected);
 	}
 
 	function select_category_list($data)
@@ -1343,8 +1320,7 @@ class property_bocommon
 				break;
 		}
 
-		$categories = execMethod('property.sogeneric.get_list', $data);
-		return $this->select_list($data['selected'], $categories);
+		return $this->common_business_helper->selectCategoryList($data);
 	}
 
 	function fm_cache($name = '', $value = '')
@@ -1833,61 +1809,7 @@ class property_bocommon
 	 */
 	public function preserve_attribute_values($values, $values_attributes)
 	{
-
-		if (!is_array($values_attributes))
-		{
-			return array();
-		}
-
-		foreach ($values_attributes as $attribute)
-		{
-			foreach ($values['attributes'] as &$val_attrib)
-			{
-
-				if ($val_attrib['id'] != $attribute['attrib_id'])
-				{
-					continue;
-				}
-
-				if (!isset($attribute['value']) && !isset($values['extra'][$val_attrib['name']]))
-				{
-					continue;
-				}
-
-				if (is_array($attribute['value']))
-				{
-					foreach ($val_attrib['choice'] as &$choice)
-					{
-						foreach ($attribute['value'] as $selected)
-						{
-							if ($selected == $choice['id'])
-							{
-								$choice['checked'] = 'checked';
-							}
-						}
-					}
-				}
-				else if (isset($val_attrib['choice']) && is_array($val_attrib['choice']))
-				{
-					foreach ($val_attrib['choice'] as &$choice)
-					{
-						if ($choice['id'] == $attribute['value'])
-						{
-							$choice['checked'] = 'checked';
-						}
-					}
-				}
-				else if (isset($values['extra'][$val_attrib['name']]))
-				{
-					$val_attrib['value'] = $values['extra'][$val_attrib['name']];
-				}
-				else
-				{
-					$val_attrib['value'] = $attribute['value'];
-				}
-			}
-		}
-		return $values;
+		return $this->common_business_helper->preserveAttributeValues($values, $values_attributes);
 	}
 
 	/**
@@ -2065,29 +1987,7 @@ class property_bocommon
 
 	function get_sub_menu($children = array(), $selection = array(), $level = '')
 	{
-		$level++;
-		$i = 0;
-		foreach ($children as $key => $vals)
-		{
-			$menu[] = $vals;
-			if ($key == $selection[$level])
-			{
-				$menu[$i]['this'] = true;
-				if (isset($menu[$i]['children']))
-				{
-					$menu[$i]['children'] = $this->get_sub_menu($menu[$i]['children'], $selection, $level);
-				}
-			}
-			else
-			{
-				if (isset($menu[$i]['children']))
-				{
-					unset($menu[$i]['children']);
-				}
-			}
-			$i++;
-		}
-		return $menu;
+		return $this->common_business_helper->getSubMenu($children, $selection, $level);
 	}
 
 	function no_access()
@@ -2243,26 +2143,7 @@ class property_bocommon
 
 	public function get_categories($data)
 	{
-		$cats				 = CreateObject('phpgwapi.categories', -1, 'property', $data['acl_location']);
-		$cats->supress_info	 = true;
-		$values				 = $cats->formatted_xslt_list(array(
-			'selected'	 => $data['selected'],
-			'globals'	 => true,
-			'link_data'	 => array()
-		));
-		$ret				 = array();
-
-		$level = !empty($data['level']) ? $data['level'] : 0;
-
-		foreach ($values['cat_list'] as $category)
-		{
-			$ret[] = array(
-				'id'		 => $category['cat_id'],
-				'name'		 => $category['name'],
-				'selected'	 => $category['selected'] ? 1 : 0
-			);
-		}
-		return $ret;
+		return $this->common_business_helper->getCategories($data);
 	}
 
 	public function get_vendor_email($vendor_id = 0, $field_name = '')
@@ -2328,16 +2209,7 @@ class property_bocommon
 			$vendor_id = Sanitizer::get_var('vendor_id', 'int');
 		}
 
-		$contract_list = createObject('property.soagreement')->get_vendor_contract($vendor_id, $selected);
-		if ($selected)
-		{
-			foreach ($contract_list as &$contract)
-			{
-				$contract['selected'] = $selected == $contract['id'] ? 1 : 0;
-			}
-		}
-
-		return $contract_list;
+		return $this->common_business_helper->getVendorContract($vendor_id, $selected);
 	}
 
 	/**

@@ -743,4 +743,20 @@ class CommonBusinessHelper
 
 		return $ret;
 	}
+
+	public function getUnspscCodeName($id)
+	{
+		$ret = '';
+		if ($id)
+		{
+			$sogeneric = CreateObject('property.sogeneric', 'unspsc_code');
+			$sogeneric_data = $sogeneric->read_single(array('id' => $id));
+			if ($sogeneric_data)
+			{
+				$ret = $sogeneric_data['name'];
+			}
+		}
+
+		return $ret;
+	}
 }

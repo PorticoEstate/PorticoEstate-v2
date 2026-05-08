@@ -2182,17 +2182,7 @@ class property_bocommon
 
 	public function get_unspsc_code_name($id)
 	{
-		$ret = '';
-		if ($id)
-		{
-			$sogeneric		 = CreateObject('property.sogeneric', 'unspsc_code');
-			$sogeneric_data	 = $sogeneric->read_single(array('id' => $id));
-			if ($sogeneric_data)
-			{
-				$ret = $sogeneric_data['name'];
-			}
-		}
-		return $ret;
+		return $this->common_business_helper->getUnspscCodeName($id);
 	}
 
 	public function get_b_account()

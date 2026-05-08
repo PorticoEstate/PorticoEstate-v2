@@ -320,6 +320,167 @@ class EntityController
 	}
 
 	/**
+	 * Apply RelationInfo-based enrichment for location and relation fields.
+	 *
+	 * This replaces the legacy collect_locationdata() bridge for REST saves.
+	 */
+	private function applyRelationInfoPayload(array $values, \property_boentity $bo, Request $request): array
+	{
+		$body = $this->requestBodyArray($request);
+
+		$relationInfo = [];
+		if (isset($body['RelationInfo']) && is_array($body['RelationInfo']))
+		{
+			$relationInfo = $this->sanitizePayloadValue($body['RelationInfo']);
+		}
+
+		$values['extra'] = isset($values['extra']) && is_array($values['extra']) ? $values['extra'] : [];
+
+		if (!empty($relationInfo['location_code']))
+		{
+			$locationCode = Sanitizer::clean_value((string)$relationInfo['location_code'], 'string');
+			$values['location_code'] = $locationCode;
+
+			$parts = array_values(array_filter(explode('-', $locationCode), static function ($part)
+			{
+				return $part !== '';
+			}));
+			if (!empty($parts))
+			{
+				$values['location'] = [];
+				for ($i = 0; $i < count($parts); $i++)
+				{
+					$values['location']['loc' . ($i + 1)] = $parts[$i];
+				}
+
+				$locationNameKey = 'loc' . count($parts) . '_name';
+				if (!empty($body[$locationNameKey]))
+				{
+					$values['location_name'] = Sanitizer::clean_value((string)$body[$locationNameKey], 'string');
+				}
+			}
+		}
+
+		if (!empty($body['street_name']))
+		{
+			$values['street_name'] = Sanitizer::clean_value((string)$body['street_name'], 'string');
+		}
+
+		if (!empty($body['street_number']))
+		{
+			$values['street_number'] = Sanitizer::clean_value((string)$body['street_number'], 'string');
+		}
+
+		if (!empty($relationInfo['tenant_id']))
+		{
+			$values['extra']['tenant_id'] = Sanitizer::clean_value((string)$relationInfo['tenant_id'], 'string');
+		}
+
+		$pEntityId = !empty($relationInfo['p_entity_id']) ? (int)$relationInfo['p_entity_id'] : 0;
+		$pCatId = !empty($relationInfo['p_cat_id']) ? (int)$relationInfo['p_cat_id'] : 0;
+		$pNum = !empty($relationInfo['p_num']) ? Sanitizer::clean_value((string)$relationInfo['p_num'], 'string') : '';
+
+		if ($pEntityId > 0 && $pCatId > 0 && $pNum !== '')
+		{
+			$values['extra']['type'] = $values['extra']['type'] ?? $bo->type;
+			$values['extra']['p_entity_id'] = $pEntityId;
+			$values['extra']['p_cat_id'] = $pCatId;
+
+			$convertedPNum = execMethod(
+				'property.soentity.convert_num_to_id',
+				[
+					'type' => $values['extra']['type'],
+					'entity_id' => $pEntityId,
+					'cat_id' => $pCatId,
+					'num' => $pNum,
+				]
+			);
+
+			$values['extra']['p_num'] = $convertedPNum;
+			$values['p'][$pEntityId]['p_entity_id'] = $pEntityId;
+			$values['p'][$pEntityId]['p_cat_id'] = $pCatId;
+			$values['p'][$pEntityId]['p_num'] = $convertedPNum;
+
+			$pCatNameKey = "entity_cat_name_{$pEntityId}";
+			if (!empty($body[$pCatNameKey]))
+			{
+				$values['p'][$pEntityId]['p_cat_name'] = Sanitizer::clean_value((string)$body[$pCatNameKey], 'string');
+			}
+		}
+
+		if (!empty($relationInfo['origin']))
+		{
+			$values['origin'] = Sanitizer::clean_value((string)$relationInfo['origin'], 'string');
+		}
+
+		if (!empty($relationInfo['origin_id']))
+		{
+			$values['origin_id'] = (int)$relationInfo['origin_id'];
+		}
+
+		if (!empty($values['location_code']))
+		{
+			$bolocation = CreateObject('property.bolocation');
+			$values['location_data'] = $bolocation->read_single(
+				$values['location_code'],
+				array_merge($values['extra'], [
+					'view' => true,
+					'noattrib' => true,
+				])
+			);
+		}
+
+		if (empty($values['location']) && !empty($values['location_code']) && !empty($values['location_data']))
+		{
+			$values['location'] = [];
+			foreach (explode('-', (string)$values['location_code']) as $index => $_)
+			{
+				$key = 'loc' . ($index + 1);
+				if (isset($values['location_data'][$key]))
+				{
+					$values['location'][$key] = $values['location_data'][$key];
+				}
+			}
+		}
+
+		$origin = $values['origin'] ?? false;
+		$originId = $values['origin_id'] ?? false;
+
+		if ($origin === '.ticket' && $originId && empty($values['descr']))
+		{
+			$boticket = CreateObject('property.botts');
+			$ticket = $boticket->read_single((int)$originId);
+			$values['descr'] = strip_tags($ticket['details'] ?? '');
+			$values['name'] = !empty($ticket['subject']) ? $ticket['subject'] : ($ticket['category_name'] ?? '');
+			$ticketNotes = $boticket->read_additional_notes((int)$originId);
+			$i = is_array($ticketNotes) ? count($ticketNotes) - 1 : -1;
+			if ($i >= 0 && !empty($ticketNotes[$i]['value_note']))
+			{
+				$values['descr'] .= ': ' . $ticketNotes[$i]['value_note'];
+			}
+			if (!empty($ticket['contact_id']))
+			{
+				$values['contact_id'] = $ticket['contact_id'];
+			}
+		}
+
+		if (!empty($origin))
+		{
+			$interlink = CreateObject('property.interlink');
+			$values['origin_data'][] = [
+				'location' => $origin,
+				'descr' => $interlink->get_location_name($origin),
+				'data' => [[
+					'id' => $originId,
+					'link' => $interlink->get_relation_link(['location' => $origin], (int)$originId),
+				]],
+			];
+		}
+
+		return $values;
+	}
+
+	/**
 	 * Apply legacy session-backed location enrichment via collect_locationdata().
 	 */
 	private function applyLegacyCollectLocationData(array $values, \property_boentity $bo, Request $request): array
@@ -762,7 +923,7 @@ class EntityController
 		$values = $payload['values'];
 		$values_attribute = $payload['values_attribute'];
 		$valuesChecklistStage = $payload['values_checklist_stage'];
-		$values = $this->applyLegacyCollectLocationData($values, $bo, $request);
+		$values = $this->applyRelationInfoPayload($values, $bo, $request);
 
 		$validation = $helper->validate(
 			$values,
@@ -861,7 +1022,7 @@ class EntityController
 		$values = $payload['values'];
 		$values_attribute = $payload['values_attribute'];
 		$valuesChecklistStage = $payload['values_checklist_stage'];
-		$values = $this->applyLegacyCollectLocationData($values, $bo, $request);
+		$values = $this->applyRelationInfoPayload($values, $bo, $request);
 		$values['id'] = $id;
 
 		$validation = $helper->validate(

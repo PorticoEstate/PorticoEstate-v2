@@ -365,6 +365,144 @@ function formDataToObject(formData)
 	return payload;
 }
 
+function getFieldValue(form, selector)
+{
+	var el = form.querySelector(selector);
+	if (!el)
+	{
+		return '';
+	}
+	return (el.value || '').trim();
+}
+
+function buildLocationCodeFromLocationForm(form)
+{
+	var explicitLocationCode = getFieldValue(form, 'input[name="location_code"]');
+	if (explicitLocationCode)
+	{
+		return explicitLocationCode;
+	}
+
+	var loc1 = getFieldValue(form, 'input[name="loc1"]');
+	var loc2 = getFieldValue(form, 'input[name="loc2"]');
+	var loc3 = getFieldValue(form, 'input[name="loc3"]');
+	var loc4 = getFieldValue(form, 'input[name="loc4"]');
+
+	if (loc1 && loc2 && loc3 && loc4)
+	{
+		return [loc1, loc2, loc3, loc4].join('-');
+	}
+
+	return '';
+}
+
+function extractPrimaryRelationFromLocationForm(form)
+{
+	var relation = {
+		p_num: '',
+		p_entity_id: '',
+		p_cat_id: ''
+	};
+
+	var relationNumInputs = form.querySelectorAll('input[name^="entity_num_"]');
+	for (var i = 0; i < relationNumInputs.length; i++)
+	{
+		var numInput = relationNumInputs[i];
+		var pNum = (numInput.value || '').trim();
+		if (!pNum)
+		{
+			continue;
+		}
+
+		var suffix = (numInput.name || '').replace('entity_num_', '');
+		relation.p_num = pNum;
+		relation.p_entity_id = getFieldValue(form, 'input[name="entity_id_' + suffix + '"]');
+		relation.p_cat_id = getFieldValue(form, 'input[name="cat_id_' + suffix + '"]');
+		break;
+	}
+
+	return relation;
+}
+
+function buildRelationInfo(form)
+{
+	var relationInfo = {};
+	var locationCode = buildLocationCodeFromLocationForm(form);
+	if (locationCode)
+	{
+		relationInfo.location_code = locationCode;
+	}
+
+	var relation = extractPrimaryRelationFromLocationForm(form);
+	if (relation.p_num)
+	{
+		relationInfo.p_num = relation.p_num;
+	}
+	if (relation.p_entity_id)
+	{
+		relationInfo.p_entity_id = relation.p_entity_id;
+	}
+	if (relation.p_cat_id)
+	{
+		relationInfo.p_cat_id = relation.p_cat_id;
+	}
+
+	var tenantId = getFieldValue(form, 'input[name="tenant_id"]');
+	if (tenantId)
+	{
+		relationInfo.tenant_id = tenantId;
+	}
+
+	var origin = getFieldValue(form, 'input[name="values[origin]"]');
+	if (origin)
+	{
+		relationInfo.origin = origin;
+	}
+
+	var originId = getFieldValue(form, 'input[name="values[origin_id]"]');
+	if (originId)
+	{
+		relationInfo.origin_id = originId;
+	}
+
+	return relationInfo;
+}
+
+function appendRelationInfoToFormData(formData, form)
+{
+	var relationInfo = buildRelationInfo(form);
+	var keys = Object.keys(relationInfo);
+	for (var i = 0; i < keys.length; i++)
+	{
+		var key = keys[i];
+		formData.set('RelationInfo[' + key + ']', relationInfo[key]);
+	}
+}
+
+function logRelationInfoDebug(formData)
+{
+	if (typeof window === 'undefined' || !window.PORTICO_DEBUG_RELATION_INFO)
+	{
+		return;
+	}
+
+	var relationInfo = {};
+	formData.forEach(function (value, key)
+	{
+		var match = key.match(/^RelationInfo\[(.+)\]$/);
+		if (!match)
+		{
+			return;
+		}
+		relationInfo[match[1]] = value;
+	});
+
+	if (window.console && typeof window.console.log === 'function')
+	{
+		window.console.log('RelationInfo payload:', relationInfo);
+	}
+}
+
 function buildEntityRestRequest(form)
 {
 	var parsed = parseURL(form.action);
@@ -638,6 +776,8 @@ $(document).ready(function ()
 		{
 			formData.set(submitter.name, submitter.value || '1');
 		}
+		appendRelationInfoToFormData(formData, form);
+		logRelationInfoDebug(formData);
 
 		var fetchOptions;
 		if (hasSelectedFileUpload(form))

@@ -751,6 +751,18 @@ class CommonBusinessHelper
 		return $sogeneric->read_single(array('id' => $id), $entity_data);
 	}
 
+	public function addContactLookupMetadata(&$output, $field)
+	{
+		$output['field'] = $field;
+		$output['contact_link'] = \phpgw::link('/index.php', array(
+			'menuaction' => 'property.uilookup.addressbook',
+			'column' => $field,
+			'clear_state' => 1
+		));
+		$output['lang_contact'] = lang('contact');
+		$output['lang_select_contact_help'] = lang('click this link to select');
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

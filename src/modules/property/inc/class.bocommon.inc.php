@@ -513,14 +513,7 @@ class property_bocommon
 			}
 		}
 
-		$contact['field']					 = $field;
-		$contact['contact_link']			 = phpgw::link('/index.php', array(
-			'menuaction'	 => 'property.uilookup.addressbook',
-			'column'		 => $field,
-			'clear_state'	 => 1
-		));
-		$contact['lang_contact']			 = lang('contact');
-		$contact['lang_select_contact_help'] = lang('click this link to select');
+		$this->common_business_helper->addContactLookupMetadata($contact, $field);
 		//_debug_array($contact);
 		return $contact;
 	}

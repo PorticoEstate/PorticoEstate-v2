@@ -673,6 +673,18 @@ class CommonBusinessHelper
 		}
 	}
 
+	public function addFormFlags(&$output, $data)
+	{
+		if (isset($data['disabled']))
+		{
+			$output['disabled'] = $data['disabled'] ? true : false;
+		}
+		if (isset($data['required']))
+		{
+			$output['required'] = $data['required'] ? true : false;
+		}
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

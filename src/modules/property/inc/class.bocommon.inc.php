@@ -481,7 +481,7 @@ class property_bocommon
 		$vendor['lang_vendor']				 = lang('Vendor');
 		$vendor['lang_select_vendor_help']	 = lang('click this link to select vendor');
 		$vendor['lang_vendor_name']			 = lang('Vendor Name');
-		$vendor['required']					 = isset($data['required']) && $data['required'] ? true : false;
+		$this->common_business_helper->addFormFlags($vendor, $data);
 		//_debug_array($vendor);
 		return $vendor;
 	}
@@ -619,8 +619,7 @@ class property_bocommon
 			$b_account['value_b_account_name']	 = $b_account_data['descr'];
 		}
 
-		$b_account['disabled']	 = isset($data['disabled']) && $data['disabled'] ? true : false;
-		$b_account['required']	 = isset($data['required']) && $data['required'] ? true : false;
+		$this->common_business_helper->addFormFlags($b_account, $data);
 		return $b_account;
 	}
 
@@ -684,8 +683,7 @@ class property_bocommon
 			$ecodimb_data					 = $ecodimb_object->read_single(array('id' => $data['ecodimb']));
 			$ecodimb['value_ecodimb_descr']	 = $ecodimb_data['descr'];
 		}
-		$ecodimb['disabled'] = isset($data['disabled']) && $data['disabled'] ? true : false;
-		$ecodimb['required'] = isset($data['required']) && $data['required'] ? true : false;
+		$this->common_business_helper->addFormFlags($ecodimb, $data);
 
 		return $ecodimb;
 	}

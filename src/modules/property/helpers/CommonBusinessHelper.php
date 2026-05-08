@@ -590,6 +590,12 @@ class CommonBusinessHelper
 		return $users_extra;
 	}
 
+	public function addViewFormTemplate($entity_type, $type, $xsl_rootdir)
+	{
+		$template = ($type === 'view') ? "{$entity_type}_view" : "{$entity_type}_form";
+		\phpgwapi_xslttemplates::getInstance()->add_file(array($template), $xsl_rootdir);
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

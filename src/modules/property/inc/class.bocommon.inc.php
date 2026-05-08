@@ -457,14 +457,7 @@ class property_bocommon
 	{
 		//_debug_array($data);
 
-		if (isset($data['type']) && $data['type'] == 'view')
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('vendor_view'), $this->xsl_rootdir);
-		}
-		else
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('vendor_form'), $this->xsl_rootdir);
-		}
+		$this->common_business_helper->addViewFormTemplate('vendor', isset($data['type']) ? $data['type'] : 'form', $this->xsl_rootdir);
 
 		$vendor['value_vendor_id']	 = $data['vendor_id'];
 		$vendor['value_vendor_name'] = $data['vendor_name'];
@@ -561,14 +554,7 @@ class property_bocommon
 
 	function initiate_ui_tenant_lookup($data)
 	{
-		if ($data['type'] == 'view')
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('tenant_view'), $this->xsl_rootdir);
-		}
-		else
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('tenant_form'), $this->xsl_rootdir);
-		}
+		$this->common_business_helper->addViewFormTemplate('tenant', isset($data['type']) ? $data['type'] : 'form', $this->xsl_rootdir);
 
 		$tenant['value_tenant_id']	 = $data['tenant_id'];
 		$tenant['value_first_name']	 = $data['first_name'];
@@ -625,14 +611,7 @@ class property_bocommon
 	 */
 	function initiate_ui_budget_account_lookup($data)
 	{
-		if (isset($data['type']) && $data['type'] == 'view')
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('b_account_view'), $this->xsl_rootdir);
-		}
-		else
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('b_account_form'), $this->xsl_rootdir);
-		}
+		$this->common_business_helper->addViewFormTemplate('b_account', isset($data['type']) ? $data['type'] : 'form', $this->xsl_rootdir);
 
 		$b_account['value_b_account_id']		 = $data['b_account_id'];
 		$b_account['value_b_account_name']		 = $data['b_account_name'];
@@ -744,7 +723,7 @@ class property_bocommon
 		$event['event_name'] = $data['event_name']; // Human readable description
 		if (isset($data['type']) && $data['type'] == 'view')
 		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('event_view'), $this->xsl_rootdir);
+			$this->common_business_helper->addViewFormTemplate('event', 'view', $this->xsl_rootdir);
 			if (!isset($data['event']) || !$data['event'])
 			{
 				//		return $event;
@@ -752,7 +731,7 @@ class property_bocommon
 		}
 		else
 		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('event_form'), $this->xsl_rootdir);
+			$this->common_business_helper->addViewFormTemplate('event', 'form', $this->xsl_rootdir);
 		}
 
 		// If the record is not saved - issue a warning
@@ -851,14 +830,7 @@ class property_bocommon
 	{
 		$boalarm = CreateObject('property.boalarm');
 
-		if ($data['type'] == 'view')
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('alarm_view'), $this->xsl_rootdir);
-		}
-		else
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('alarm_form'), $this->xsl_rootdir);
-		}
+		$this->common_business_helper->addViewFormTemplate('alarm', $data['type'], $this->xsl_rootdir);
 
 		$alarm['header'][] = array(
 			'lang_time' => lang('Time'),

@@ -459,13 +459,10 @@ class property_bocommon
 			$vendor_data = $this->common_business_helper->readSingleFromSogenericWithAttributes('vendor', '.vendor', $data['vendor_id']);
 			if (is_array($vendor_data))
 			{
-				foreach ($vendor_data['attributes'] as $attribute)
+				$org_name = $this->common_business_helper->getAttributeValueByName(isset($vendor_data['attributes']) ? $vendor_data['attributes'] : null, 'org_name');
+				if ($org_name !== null)
 				{
-					if ($attribute['name'] == 'org_name')
-					{
-						$vendor['value_vendor_name'] = $attribute['value'];
-						break;
-					}
+					$vendor['value_vendor_name'] = $org_name;
 				}
 			}
 		}
@@ -522,18 +519,16 @@ class property_bocommon
 			$tenant_data = $this->common_business_helper->readSingleFromSogenericWithAttributes('tenant', '.tenant', $data['tenant_id']);
 			if (is_array($tenant_data['attributes']))
 			{
-				//_debug_array($tenant_data);
-				foreach ($tenant_data['attributes'] as $entry)
+				$first_name = $this->common_business_helper->getAttributeValueByName($tenant_data['attributes'], 'first_name');
+				if ($first_name !== null)
 				{
+					$tenant['value_first_name'] = $first_name;
+				}
 
-					if ($entry['name'] == 'first_name')
-					{
-						$tenant['value_first_name'] = $entry['value'];
-					}
-					if ($entry['name'] == 'last_name')
-					{
-						$tenant['value_last_name'] = $entry['value'];
-					}
+				$last_name = $this->common_business_helper->getAttributeValueByName($tenant_data['attributes'], 'last_name');
+				if ($last_name !== null)
+				{
+					$tenant['value_last_name'] = $last_name;
 				}
 			}
 		}

@@ -806,6 +806,24 @@ class CommonBusinessHelper
 		$contact['value_contact_tel'] = $prefs['cellphone'];
 	}
 
+	public function getAttributeValueByName($attributes, $attribute_name, $default = null)
+	{
+		if (!is_array($attributes))
+		{
+			return $default;
+		}
+
+		foreach ($attributes as $attribute)
+		{
+			if (isset($attribute['name']) && $attribute['name'] == $attribute_name)
+			{
+				return isset($attribute['value']) ? $attribute['value'] : $default;
+			}
+		}
+
+		return $default;
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

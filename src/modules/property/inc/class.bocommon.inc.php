@@ -1188,45 +1188,21 @@ class property_bocommon
 
 	function select_part_of_town($format = '', $selected = '', $district_id = '')
 	{
-		switch ($format)
-		{
-			case 'select':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('select_part_of_town'), $this->xsl_rootdir);
-				break;
-			case 'filter':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('filter_part_of_town'), $this->xsl_rootdir);
-				break;
-		}
+		$this->common_business_helper->addPartOfTownTemplate($format, $this->xsl_rootdir);
 
 		return $this->common_business_helper->selectPartOfTown($this->socommon, $district_id, $selected);
 	}
 
 	function select_district_list($format = '', $selected = '')
 	{
-		switch ($format)
-		{
-			case 'select':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('select_district'), $this->xsl_rootdir);
-				break;
-			case 'filter':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('filter_district'), $this->xsl_rootdir);
-				break;
-		}
+		$this->common_business_helper->addDistrictTemplate($format, $this->xsl_rootdir);
 
 		return $this->common_business_helper->selectDistrictList($this->socommon, $selected);
 	}
 
 	function select_category_list($data)
 	{
-		switch ($data['format'])
-		{
-			case 'select':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('cat_select'), $this->xsl_rootdir);
-				break;
-			case 'filter':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('cat_filter'), $this->xsl_rootdir);
-				break;
-		}
+		$this->common_business_helper->addCategoryTemplate($data['format'], $this->xsl_rootdir);
 
 		return $this->common_business_helper->selectCategoryList($data);
 	}

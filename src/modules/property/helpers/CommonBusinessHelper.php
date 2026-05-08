@@ -622,6 +622,45 @@ class CommonBusinessHelper
 		\phpgwapi_xslttemplates::getInstance()->add_file(array($template), $xsl_rootdir);
 	}
 
+	public function addPartOfTownTemplate($format, $xsl_rootdir)
+	{
+		switch ($format)
+		{
+			case 'select':
+				\phpgwapi_xslttemplates::getInstance()->add_file(array('select_part_of_town'), $xsl_rootdir);
+				break;
+			case 'filter':
+				\phpgwapi_xslttemplates::getInstance()->add_file(array('filter_part_of_town'), $xsl_rootdir);
+				break;
+		}
+	}
+
+	public function addDistrictTemplate($format, $xsl_rootdir)
+	{
+		switch ($format)
+		{
+			case 'select':
+				\phpgwapi_xslttemplates::getInstance()->add_file(array('select_district'), $xsl_rootdir);
+				break;
+			case 'filter':
+				\phpgwapi_xslttemplates::getInstance()->add_file(array('filter_district'), $xsl_rootdir);
+				break;
+		}
+	}
+
+	public function addCategoryTemplate($format, $xsl_rootdir)
+	{
+		switch ($format)
+		{
+			case 'select':
+				\phpgwapi_xslttemplates::getInstance()->add_file(array('cat_select'), $xsl_rootdir);
+				break;
+			case 'filter':
+				\phpgwapi_xslttemplates::getInstance()->add_file(array('cat_filter'), $xsl_rootdir);
+				break;
+		}
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

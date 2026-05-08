@@ -2233,14 +2233,7 @@ class property_bocommon
 
 	public function get_eco_service_name($id)
 	{
-		$ret = $id;
-		if ($id	 = (int)$id)
-		{
-			$sogeneric		 = CreateObject('property.sogeneric', 'eco_service');
-			$sogeneric_data	 = $sogeneric->read_single(array('id' => $id));
-			$ret			 = $sogeneric_data['name'];
-		}
-		return $ret;
+		return $this->common_business_helper->getEcoServiceName($id);
 	}
 
 	public function get_unspsc_code()

@@ -730,4 +730,17 @@ class CommonBusinessHelper
 
 		return $contract_list;
 	}
+
+	public function getEcoServiceName($id)
+	{
+		$ret = $id;
+		if ($id = (int)$id)
+		{
+			$sogeneric = CreateObject('property.sogeneric', 'eco_service');
+			$sogeneric_data = $sogeneric->read_single(array('id' => $id));
+			$ret = $sogeneric_data['name'];
+		}
+
+		return $ret;
+	}
 }

@@ -578,12 +578,9 @@ class property_bocommon
 	{
 		$external_project = array();
 
-		if (isset($data['type']) && $data['type'] == 'view')
+		if ($this->common_business_helper->isViewWithoutLookupId($data, 'external_project_id'))
 		{
-			if (!isset($data['external_project_id']) || !$data['external_project_id'])
-			{
-				return $external_project;
-			}
+			return $external_project;
 		}
 
 		$this->common_business_helper->addConditionalViewFormTemplate('external_project', isset($data['type']) ? $data['type'] : 'form', $this->xsl_rootdir);
@@ -605,12 +602,9 @@ class property_bocommon
 	{
 		$ecodimb = array();
 
-		if (isset($data['type']) && $data['type'] == 'view')
+		if ($this->common_business_helper->isViewWithoutLookupId($data, 'ecodimb'))
 		{
-			if (!isset($data['ecodimb']) || !$data['ecodimb'])
-			{
-				return $ecodimb;
-			}
+			return $ecodimb;
 		}
 
 		$this->common_business_helper->addConditionalViewFormTemplate('ecodimb', isset($data['type']) ? $data['type'] : 'form', $this->xsl_rootdir);

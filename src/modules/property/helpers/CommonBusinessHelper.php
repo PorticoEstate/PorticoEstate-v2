@@ -673,6 +673,13 @@ class CommonBusinessHelper
 		}
 	}
 
+	public function isViewWithoutLookupId($data, $id_key)
+	{
+		return isset($data['type'])
+			&& $data['type'] == 'view'
+			&& (!isset($data[$id_key]) || !$data[$id_key]);
+	}
+
 	public function addFormFlags(&$output, $data)
 	{
 		if (isset($data['disabled']))

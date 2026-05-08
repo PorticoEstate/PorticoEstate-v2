@@ -383,14 +383,40 @@ function buildLocationCodeFromLocationForm(form)
 		return explicitLocationCode;
 	}
 
-	var loc1 = getFieldValue(form, 'input[name="loc1"]');
-	var loc2 = getFieldValue(form, 'input[name="loc2"]');
-	var loc3 = getFieldValue(form, 'input[name="loc3"]');
-	var loc4 = getFieldValue(form, 'input[name="loc4"]');
-
-	if (loc1 && loc2 && loc3 && loc4)
+	var locationParts = [];
+	var locationInputs = form.querySelectorAll('input[name]');
+	for (var i = 0; i < locationInputs.length; i++)
 	{
-		return [loc1, loc2, loc3, loc4].join('-');
+		var input = locationInputs[i];
+		var name = input.getAttribute('name') || '';
+		var match = name.match(/^loc(\d+)$/);
+		if (!match)
+		{
+			continue;
+		}
+
+		var value = (input.value || '').trim();
+		if (!value)
+		{
+			continue;
+		}
+
+		locationParts.push({
+			level: parseInt(match[1], 10),
+			value: value
+		});
+	}
+
+	if (locationParts.length)
+	{
+		locationParts.sort(function (a, b)
+		{
+			return a.level - b.level;
+		});
+		return locationParts.map(function (part)
+		{
+			return part.value;
+		}).join('-');
 	}
 
 	return '';

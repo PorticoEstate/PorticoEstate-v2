@@ -2182,17 +2182,7 @@ class property_bocommon
 	public function get_external_project()
 	{
 		$query = Sanitizer::get_var('query');
-
-		$sogeneric	 = CreateObject('property.sogeneric', 'external_project');
-		$filter		 = array('active' => 1);
-		$values		 = $sogeneric->read(array('filter' => $filter, 'query' => $query));
-
-		//			foreach ($values as &$value)
-		//			{
-		//				$value['name'] = "{$value['id']} {$value['name']}";
-		//			}
-
-		return array('ResultSet' => array('Result' => $values));
+		return $this->common_business_helper->getExternalProject($query);
 	}
 
 	public function get_external_project_name($id)

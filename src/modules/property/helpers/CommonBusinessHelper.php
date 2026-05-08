@@ -810,6 +810,15 @@ class CommonBusinessHelper
 		return array('ResultSet' => array('Result' => $values));
 	}
 
+	public function getExternalProject($query)
+	{
+		$sogeneric = CreateObject('property.sogeneric', 'external_project');
+		$filter = array('active' => 1);
+		$values = $sogeneric->read(array('filter' => $filter, 'query' => $query));
+
+		return array('ResultSet' => array('Result' => $values));
+	}
+
 	public function getExternalProjectName($id)
 	{
 		$ret = $id;

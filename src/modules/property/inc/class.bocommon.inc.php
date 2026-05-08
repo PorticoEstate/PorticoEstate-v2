@@ -2176,30 +2176,7 @@ class property_bocommon
 		$query	 = Sanitizer::get_var('query');
 		$role	 = Sanitizer::get_var('role');
 
-		$type = 'budget_account';
-
-		if ($role == 'group')
-		{
-			$type = 'b_account_category';
-		}
-
-		$sogeneric	 = CreateObject('property.sogeneric', $type);
-		$filter		 = array('active' => 1);
-		$values		 = $sogeneric->read(array('filter' => $filter, 'query' => $query));
-
-		foreach ($values as &$value)
-		{
-			if (!preg_match("/^{$value['id']}/", $value['descr']))
-			{
-				$value['name'] = "{$value['id']} {$value['descr']}";
-			}
-			else
-			{
-				$value['name'] = $value['descr'];
-			}
-		}
-
-		return array('ResultSet' => array('Result' => $values));
+		return $this->common_business_helper->getBAccount($query, $role);
 	}
 
 	public function get_external_project()

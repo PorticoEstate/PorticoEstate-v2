@@ -553,6 +553,43 @@ class CommonBusinessHelper
 		return $selected;
 	}
 
+	public function buildUsersExtraListRight($extra)
+	{
+		$users_extra = array();
+
+		if (is_array($extra))
+		{
+			foreach ($extra as $extra_user)
+			{
+				$users_extra[] = array(
+					'account_lid'		 => $extra_user,
+					'account_firstname'	 => lang($extra_user),
+					'account_lastname'	 => ''
+				);
+			}
+		}
+
+		return $users_extra;
+	}
+
+	public function buildUsersExtraList($extra)
+	{
+		$users_extra = array();
+
+		if (isset($extra) and is_array($extra))
+		{
+			foreach ($extra as $extra_user)
+			{
+				$users_extra[] = array(
+					'account_id'		 => $extra_user,
+					'account_firstname'	 => lang($extra_user)
+				);
+			}
+		}
+
+		return $users_extra;
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

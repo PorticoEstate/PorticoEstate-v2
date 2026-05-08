@@ -274,17 +274,7 @@ class property_bocommon
 			$rights = array($rights);
 		}
 
-		if (is_array($extra))
-		{
-			foreach ($extra as $extra_user)
-			{
-				$users_extra[] = array(
-					'account_lid'		 => $extra_user,
-					'account_firstname'	 => lang($extra_user),
-					'account_lastname'	 => ''
-				);
-			}
-		}
+		$users_extra = $this->common_business_helper->buildUsersExtraListRight($extra);
 
 		$right_index = 0;
 
@@ -414,16 +404,7 @@ class property_bocommon
 		$this->common_business_helper->addUserListTemplate($format, $this->xsl_rootdir);
 		$selected = $this->common_business_helper->resolveSelectedDefault($selected, $default);
 
-		if (isset($extra) and is_array($extra))
-		{
-			foreach ($extra as $extra_user)
-			{
-				$users_extra[] = array(
-					'account_id'		 => $extra_user,
-					'account_firstname'	 => lang($extra_user)
-				);
-			}
-		}
+		$users_extra = $this->common_business_helper->buildUsersExtraList($extra);
 
 		$acl = Acl::getInstance();
 

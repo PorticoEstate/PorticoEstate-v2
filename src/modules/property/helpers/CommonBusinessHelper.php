@@ -685,6 +685,13 @@ class CommonBusinessHelper
 		return isset($data['type']) ? $data['type'] : $default;
 	}
 
+	public function hasLookupIdWithoutDisplayValue($data, $id_key, $display_key)
+	{
+		return isset($data[$id_key])
+			&& $data[$id_key]
+			&& (!isset($data[$display_key]) || !$data[$display_key]);
+	}
+
 	public function addFormFlags(&$output, $data)
 	{
 		if (isset($data['disabled']))

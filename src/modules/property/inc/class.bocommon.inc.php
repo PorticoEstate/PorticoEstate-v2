@@ -586,7 +586,7 @@ class property_bocommon
 		$external_project['value_external_project_name']		 = $data['external_project_name'];
 		$external_project['external_project_url'] = $this->common_business_helper->buildLookupUrl('external_project');
 		$this->common_business_helper->addEntityLabels($external_project, 'external_project', $data);
-		if ($data['external_project_id'] && (!isset($data['external_project_name']) || !$data['external_project_name']))
+		if ($this->common_business_helper->hasLookupIdWithoutDisplayValue($data, 'external_project_id', 'external_project_name'))
 		{
 			$external_project_data = $this->common_business_helper->readSingleFromSogeneric('external_project', $data['external_project_id']);
 			$external_project['value_external_project_name']	 = $external_project_data['name'];
@@ -610,7 +610,7 @@ class property_bocommon
 		$ecodimb['value_ecodimb_descr']		 = $data['ecodimb_descr'];
 		$ecodimb['ecodimb_url'] = $this->common_business_helper->buildLookupUrl('ecodimb');
 		$this->common_business_helper->addEntityLabels($ecodimb, 'ecodimb', $data);
-		if ($data['ecodimb'] && (!isset($data['ecodimb_descr']) || !$data['ecodimb_descr']))
+		if ($this->common_business_helper->hasLookupIdWithoutDisplayValue($data, 'ecodimb', 'ecodimb_descr'))
 		{
 			$ecodimb_data = $this->common_business_helper->readSingleFromSogeneric('dimb', $data['ecodimb']);
 			$ecodimb['value_ecodimb_descr']	 = $ecodimb_data['descr'];

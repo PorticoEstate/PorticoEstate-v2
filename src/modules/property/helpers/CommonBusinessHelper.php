@@ -543,6 +543,16 @@ class CommonBusinessHelper
 		}
 	}
 
+	public function resolveSelectedDefault($selected, $default)
+	{
+		if (!$selected && $default)
+		{
+			$selected = $default;
+		}
+
+		return $selected;
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

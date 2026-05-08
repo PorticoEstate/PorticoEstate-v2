@@ -163,11 +163,7 @@ class property_bocommon
 		$order = $order ? $order : 'account_lastname';
 
 		$this->common_business_helper->addUserListTemplate($format, $this->xsl_rootdir);
-
-		if (!$selected && $default)
-		{
-			$selected = $default;
-		}
+		$selected = $this->common_business_helper->resolveSelectedDefault($selected, $default);
 
 		$all_users = array();
 
@@ -271,10 +267,7 @@ class property_bocommon
 
 	function get_user_list_right($rights, $selected = '', $acl_location = '', $extra = '', $default = '')
 	{
-		if (!$selected && $default)
-		{
-			$selected = $default;
-		}
+		$selected = $this->common_business_helper->resolveSelectedDefault($selected, $default);
 
 		if (!is_array($rights))
 		{
@@ -419,11 +412,7 @@ class property_bocommon
 		}
 
 		$this->common_business_helper->addUserListTemplate($format, $this->xsl_rootdir);
-
-		if (!$selected && $default)
-		{
-			$selected = $default;
-		}
+		$selected = $this->common_business_helper->resolveSelectedDefault($selected, $default);
 
 		if (isset($extra) and is_array($extra))
 		{

@@ -2086,50 +2086,19 @@ class property_bocommon
 
 		$preselect = Sanitizer::get_var('preselect', 'bool');
 		$preselect_one = Sanitizer::get_var('preselect_one', 'bool');
+		$as_json = Sanitizer::get_var('phpgw_return_as') == 'json';
+		$draw = Sanitizer::get_var('draw', 'int');
 
 		$vendor_email = execMethod('property.sowo_hour.get_email', $vendor_id);
 
-		if (!$field_name)
-		{
-			$field_name = 'values[vendor_email][]';
-		}
-		else
-		{
-			$field_name .= '[]';
-		}
-
-		$content_email	 = array();
-		$title			 = lang('The address to which this order will be sendt');
-
-		$checked = $preselect ? 'checked="checked"' : '';
-
-		$count_email = count($vendor_email);
-		if ($count_email == 1 && $preselect_one)
-		{
-			$checked = 'checked="checked"';
-		}
-
-		foreach ($vendor_email as $_entry)
-		{
-			$content_email[] = array(
-				'value_email'	 => $_entry['email'],
-				'value_select'	 => "<input type='checkbox' name='{$field_name}' value='{$_entry['email']}' title='{$title}' {$checked}>"
-			);
-		}
-
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			$total_records = count($content_email);
-
-			return array(
-				'data'				 => $content_email,
-				'total_records'		 => $total_records,
-				'draw'				 => Sanitizer::get_var('draw', 'int'),
-				'recordsTotal'		 => $total_records,
-				'recordsFiltered'	 => $total_records
-			);
-		}
-		return $content_email;
+		return $this->common_business_helper->getVendorEmailContent(
+			$vendor_email,
+			$field_name,
+			$preselect,
+			$preselect_one,
+			$as_json,
+			$draw
+		);
 	}
 
 	public function get_vendor_contract($vendor_id = 0, $selected = '')

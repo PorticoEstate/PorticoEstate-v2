@@ -731,6 +731,52 @@ class CommonBusinessHelper
 		return $contract_list;
 	}
 
+	public function getVendorEmailContent($vendor_email, $field_name = '', $preselect = false, $preselect_one = false, $as_json = false, $draw = 0)
+	{
+		if (!$field_name)
+		{
+			$field_name = 'values[vendor_email][]';
+		}
+		else
+		{
+			$field_name .= '[]';
+		}
+
+		$content_email = array();
+		$title = lang('The address to which this order will be sendt');
+
+		$checked = $preselect ? 'checked="checked"' : '';
+
+		$count_email = count($vendor_email);
+		if ($count_email == 1 && $preselect_one)
+		{
+			$checked = 'checked="checked"';
+		}
+
+		foreach ($vendor_email as $_entry)
+		{
+			$content_email[] = array(
+				'value_email' => $_entry['email'],
+				'value_select' => "<input type='checkbox' name='{$field_name}' value='{$_entry['email']}' title='{$title}' {$checked}>"
+			);
+		}
+
+		if ($as_json)
+		{
+			$total_records = count($content_email);
+
+			return array(
+				'data' => $content_email,
+				'total_records' => $total_records,
+				'draw' => $draw,
+				'recordsTotal' => $total_records,
+				'recordsFiltered' => $total_records
+			);
+		}
+
+		return $content_email;
+	}
+
 	public function getEcoServiceName($id)
 	{
 		$ret = $id;

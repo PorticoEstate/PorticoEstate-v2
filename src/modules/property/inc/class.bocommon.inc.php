@@ -223,15 +223,7 @@ class property_bocommon
 
 	function get_group_list($format = '', $selected = '', $start = '', $sort = '', $order = '', $query = '', $offset = '')
 	{
-		switch ($format)
-		{
-			case 'select':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('group_select'), $this->xsl_rootdir);
-				break;
-			case 'filter':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('group_filter'), $this->xsl_rootdir);
-				break;
-		}
+		$this->common_business_helper->addGroupListTemplate($format, $this->xsl_rootdir);
 
 		$users = $this->accounts->get_list('groups', $start, $sort, $order, $query, $offset);
 		if (isset($users) and is_array($users))
@@ -501,17 +493,7 @@ class property_bocommon
 		$field = $data['field'];
 		if (!empty($data['type']))
 		{
-			switch ($data['type'])
-			{
-				case 'view':
-					phpgwapi_xslttemplates::getInstance()->add_file(array('contact_view'), $this->xsl_rootdir);
-					break;
-				case 'form':
-					phpgwapi_xslttemplates::getInstance()->add_file(array('contact_form'), $this->xsl_rootdir);
-					break;
-				default:
-					break;
-			}
+			$this->common_business_helper->addContactTemplate($data['type'], $this->xsl_rootdir);
 		}
 
 		$contact['value_contact_id'] = $data['contact_id'];

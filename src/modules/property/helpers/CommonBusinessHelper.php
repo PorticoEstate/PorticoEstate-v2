@@ -543,6 +543,32 @@ class CommonBusinessHelper
 		}
 	}
 
+	public function addGroupListTemplate($format, $xsl_rootdir)
+	{
+		switch ($format)
+		{
+			case 'select':
+				\phpgwapi_xslttemplates::getInstance()->add_file(array('group_select'), $xsl_rootdir);
+				break;
+			case 'filter':
+				\phpgwapi_xslttemplates::getInstance()->add_file(array('group_filter'), $xsl_rootdir);
+				break;
+		}
+	}
+
+	public function addContactTemplate($type, $xsl_rootdir)
+	{
+		switch ($type)
+		{
+			case 'view':
+				\phpgwapi_xslttemplates::getInstance()->add_file(array('contact_view'), $xsl_rootdir);
+				break;
+			case 'form':
+				\phpgwapi_xslttemplates::getInstance()->add_file(array('contact_form'), $xsl_rootdir);
+				break;
+		}
+	}
+
 	public function resolveSelectedDefault($selected, $default)
 	{
 		if (!$selected && $default)

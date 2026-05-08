@@ -593,16 +593,8 @@ class property_bocommon
 		$this->common_business_helper->addEntityLabels($b_account, 'b_account', $data);
 		if ($data['b_account_id'] && !$data['b_account_name'])
 		{
-			$b_account_object = CreateObject('property.sogeneric');
-			if (isset($data['role']) && $data['role'] == 'group')
-			{
-				$b_account_object->get_location_info('b_account', false);
-			}
-			else
-			{
-				$b_account_object->get_location_info('budget_account', false);
-			}
-			$b_account_data						 = $b_account_object->read_single(array('id' => $data['b_account_id']));
+			$location = (isset($data['role']) && $data['role'] == 'group') ? 'b_account' : 'budget_account';
+			$b_account_data = $this->common_business_helper->readSingleFromSogeneric($location, $data['b_account_id']);
 			$b_account['value_b_account_name']	 = $b_account_data['descr'];
 		}
 
@@ -630,11 +622,7 @@ class property_bocommon
 		$this->common_business_helper->addEntityLabels($external_project, 'external_project', $data);
 		if ($data['external_project_id'] && (!isset($data['external_project_name']) || !$data['external_project_name']))
 		{
-			$external_project_object							 = CreateObject('property.sogeneric');
-			$external_project_object->get_location_info('external_project', false);
-			$external_project_data								 = $external_project_object->read_single(array(
-				'id' => $data['external_project_id']
-			));
+			$external_project_data = $this->common_business_helper->readSingleFromSogeneric('external_project', $data['external_project_id']);
 			$external_project['value_external_project_name']	 = $external_project_data['name'];
 			$external_project['value_external_project_budget']	 = $external_project_data['budget'];
 		}
@@ -661,9 +649,7 @@ class property_bocommon
 		$this->common_business_helper->addEntityLabels($ecodimb, 'ecodimb', $data);
 		if ($data['ecodimb'] && (!isset($data['ecodimb_descr']) || !$data['ecodimb_descr']))
 		{
-			$ecodimb_object					 = CreateObject('property.sogeneric');
-			$ecodimb_object->get_location_info('dimb', false);
-			$ecodimb_data					 = $ecodimb_object->read_single(array('id' => $data['ecodimb']));
+			$ecodimb_data = $this->common_business_helper->readSingleFromSogeneric('dimb', $data['ecodimb']);
 			$ecodimb['value_ecodimb_descr']	 = $ecodimb_data['descr'];
 		}
 		$this->common_business_helper->addFormFlags($ecodimb, $data);

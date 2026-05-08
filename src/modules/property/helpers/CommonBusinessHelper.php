@@ -731,6 +731,14 @@ class CommonBusinessHelper
 		}
 	}
 
+	public function readSingleFromSogeneric($location, $id)
+	{
+		$sogeneric = CreateObject('property.sogeneric');
+		$sogeneric->get_location_info($location, false);
+
+		return $sogeneric->read_single(array('id' => $id));
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

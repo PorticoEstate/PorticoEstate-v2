@@ -34,6 +34,7 @@ use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Config;
 use App\modules\phpgwapi\services\Cache;
+use App\modules\property\helpers\CommonBusinessHelper;
 
 /**
  * Description
@@ -58,6 +59,7 @@ class property_bocommon
 	var $flags;
 	var $accounts;
 	var $phpgwapi_common;
+	var $common_business_helper;
 	protected $join;
 	protected $left_join;
 	protected $like;
@@ -77,6 +79,7 @@ class property_bocommon
 		$this->account	= isset($this->userSettings['account_id']) ? (int)$this->userSettings['account_id'] : -1;
 		$this->accounts = new Accounts();
 		$this->phpgwapi_common = new \phpgwapi_common();
+		$this->common_business_helper = new CommonBusinessHelper();
 
 
 
@@ -92,7 +95,7 @@ class property_bocommon
 
 	function check_perms($rights, $required)
 	{
-		return ($rights & $required);
+		return $this->common_business_helper->checkPerms($rights, $required);
 	}
 
 	/**
@@ -104,61 +107,28 @@ class property_bocommon
 	 */
 	function check_perms2($owner_id, $grants, $required)
 	{
-		if (isset($grants['accounts'][$owner_id]) && ($grants['accounts'][$owner_id] & $required))
-		{
-			return true;
-		}
-
 		$equalto = $this->accounts->membership($owner_id);
-		foreach ($grants['groups'] as $group => $_right)
-		{
-			if (isset($equalto[$group]) && ($_right & $required))
-			{
-				return true;
-			}
-		}
-
-		return false;
+		return $this->common_business_helper->checkPerms2($owner_id, $grants, $required, $equalto);
 	}
 
 	function create_preferences($app = '', $user_id = '')
 	{
-		return $this->socommon->create_preferences($app, $user_id);
+		return $this->common_business_helper->createPreferences($this->socommon, $app, $user_id);
 	}
 
 	function get_lookup_entity($location = '')
 	{
-		return $this->socommon->get_lookup_entity($location);
+		return $this->common_business_helper->getLookupEntity($this->socommon, $location);
 	}
 
 	function get_start_entity($location = '')
 	{
-		return $this->socommon->get_start_entity($location);
+		return $this->common_business_helper->getStartEntity($this->socommon, $location);
 	}
 
 	function msgbox_data($receipt)
 	{
-		$msgbox_data_error	 = array();
-		$msgbox_data_message = array();
-		if (isset($receipt['error']) and is_array($receipt['error']))
-		{
-			foreach ($receipt['error'] as $dummy => $error)
-			{
-				$msgbox_data_error[$error['msg']] = false;
-			}
-		}
-
-		if (isset($receipt['message']) and is_array($receipt['message']))
-		{
-			foreach ($receipt['message'] as $dummy => $message)
-			{
-				$msgbox_data_message[$message['msg']] = true;
-			}
-		}
-
-		$msgbox_data = array_merge($msgbox_data_error, $msgbox_data_message);
-
-		return $msgbox_data;
+		return $this->common_business_helper->msgboxData($receipt);
 	}
 
 	function confirm_session()
@@ -175,69 +145,25 @@ class property_bocommon
 
 	function date_to_timestamp($date = array())
 	{
-		return phpgwapi_datetime::date_to_timestamp($date);
+		return $this->common_business_helper->dateToTimestamp($date);
 	}
 
 	function select_multi_list($selected = '', $input_list = array())
 	{
-		$j = 0;
-		if (isset($input_list) and is_array($input_list))
-		{
-			foreach ($input_list as $entry)
-			{
-				$output_list[$j]['id']	 = $entry['id'];
-				$output_list[$j]['name'] = $entry['name'];
-
-				if (isset($selected) && is_array($selected))
-				{
-					for ($i = 0; $i < count($selected); $i++)
-					{
-						if ($selected[$i] == $entry['id'])
-						{
-							$output_list[$j]['selected'] = 'selected';
-						}
-					}
-				}
-				$j++;
-			}
-		}
-		return $output_list;
+		return $this->common_business_helper->selectMultiList($selected, $input_list);
 	}
 
 	function select_list($selected = '', $list = array())
 	{
-		if (is_array($list))
-		{
-			foreach ($list as &$entry)
-			{
-				if ((string)$entry['id'] === (string)$selected) // in case the value is '0'
-				{
-					$entry['selected'] = 1;
-					break;
-				}
-			}
-			return $list;
-		}
+		return $this->common_business_helper->selectList($selected, $list);
 	}
 
 	function get_user_list($format = '', $selected = '', $extra = '', $default = '', $start = '', $sort = 'ASC', $order = 'account_lastname', $query = '', $offset = '', $enabled = false)
 	{
 		$order = $order ? $order : 'account_lastname';
 
-		switch ($format)
-		{
-			case 'select':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('user_id_select'), $this->xsl_rootdir);
-				break;
-			case 'filter':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('user_id_filter'), $this->xsl_rootdir);
-				break;
-		}
-
-		if (!$selected && $default)
-		{
-			$selected = $default;
-		}
+		$this->common_business_helper->addUserListTemplate($format, $this->xsl_rootdir);
+		$selected = $this->common_business_helper->resolveSelectedDefault($selected, $default);
 
 		$all_users = array();
 
@@ -297,15 +223,7 @@ class property_bocommon
 
 	function get_group_list($format = '', $selected = '', $start = '', $sort = '', $order = '', $query = '', $offset = '')
 	{
-		switch ($format)
-		{
-			case 'select':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('group_select'), $this->xsl_rootdir);
-				break;
-			case 'filter':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('group_filter'), $this->xsl_rootdir);
-				break;
-		}
+		$this->common_business_helper->addGroupListTemplate($format, $this->xsl_rootdir);
 
 		$users = $this->accounts->get_list('groups', $start, $sort, $order, $query, $offset);
 		if (isset($users) and is_array($users))
@@ -341,27 +259,14 @@ class property_bocommon
 
 	function get_user_list_right($rights, $selected = '', $acl_location = '', $extra = '', $default = '')
 	{
-		if (!$selected && $default)
-		{
-			$selected = $default;
-		}
+		$selected = $this->common_business_helper->resolveSelectedDefault($selected, $default);
 
 		if (!is_array($rights))
 		{
 			$rights = array($rights);
 		}
 
-		if (is_array($extra))
-		{
-			foreach ($extra as $extra_user)
-			{
-				$users_extra[] = array(
-					'account_lid'		 => $extra_user,
-					'account_firstname'	 => lang($extra_user),
-					'account_lastname'	 => ''
-				);
-			}
-		}
+		$users_extra = $this->common_business_helper->buildUsersExtraListRight($extra);
 
 		$right_index = 0;
 
@@ -488,31 +393,10 @@ class property_bocommon
 			$default		 = isset($data['default']) ? $data['default'] : '';
 		}
 
-		switch ($format)
-		{
-			case 'select':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('user_id_select'), $this->xsl_rootdir);
-				break;
-			case 'filter':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('user_id_filter'), $this->xsl_rootdir);
-				break;
-		}
+		$this->common_business_helper->addUserListTemplate($format, $this->xsl_rootdir);
+		$selected = $this->common_business_helper->resolveSelectedDefault($selected, $default);
 
-		if (!$selected && $default)
-		{
-			$selected = $default;
-		}
-
-		if (isset($extra) and is_array($extra))
-		{
-			foreach ($extra as $extra_user)
-			{
-				$users_extra[] = array(
-					'account_id'		 => $extra_user,
-					'account_firstname'	 => lang($extra_user)
-				);
-			}
-		}
+		$users_extra = $this->common_business_helper->buildUsersExtraList($extra);
 
 		$acl = Acl::getInstance();
 
@@ -565,46 +449,27 @@ class property_bocommon
 	{
 		//_debug_array($data);
 
-		if (isset($data['type']) && $data['type'] == 'view')
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('vendor_view'), $this->xsl_rootdir);
-		}
-		else
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('vendor_form'), $this->xsl_rootdir);
-		}
+		$this->common_business_helper->addViewFormTemplate('vendor', $this->common_business_helper->resolveLookupType($data), $this->xsl_rootdir);
 
 		$vendor['value_vendor_id']	 = $data['vendor_id'];
 		$vendor['value_vendor_name'] = $data['vendor_name'];
 
-		if (isset($data['vendor_id']) && $data['vendor_id'] && !$data['vendor_name'])
+		if ($this->common_business_helper->hasLookupIdWithoutDisplayValue($data, 'vendor_id', 'vendor_name'))
 		{
-			$contacts = CreateObject('property.sogeneric');
-			$contacts->get_location_info('vendor', false);
-
-			$custom						 = createObject('property.custom_fields');
-			$vendor_data['attributes']	 = $custom->find('property', '.vendor', 0, '', 'ASC', 'attrib_sort', true, true);
-
-			$vendor_data = $contacts->read_single(array('id' => $data['vendor_id']), $vendor_data);
+			$vendor_data = $this->common_business_helper->readSingleFromSogenericWithAttributes('vendor', '.vendor', $data['vendor_id']);
 			if (is_array($vendor_data))
 			{
-				foreach ($vendor_data['attributes'] as $attribute)
+				$org_name = $this->common_business_helper->getAttributeValueByName(isset($vendor_data['attributes']) ? $vendor_data['attributes'] : null, 'org_name');
+				if ($org_name !== null)
 				{
-					if ($attribute['name'] == 'org_name')
-					{
-						$vendor['value_vendor_name'] = $attribute['value'];
-						break;
-					}
+					$vendor['value_vendor_name'] = $org_name;
 				}
 			}
-			unset($contacts);
 		}
 
-		$vendor['vendor_link']				 = phpgw::link('/index.php', array('menuaction' => 'property.uilookup.vendor'));
-		$vendor['lang_vendor']				 = lang('Vendor');
-		$vendor['lang_select_vendor_help']	 = lang('click this link to select vendor');
-		$vendor['lang_vendor_name']			 = lang('Vendor Name');
-		$vendor['required']					 = isset($data['required']) && $data['required'] ? true : false;
+		$vendor['vendor_link'] = $this->common_business_helper->buildLookupUrl('vendor');
+		$this->common_business_helper->addEntityLabels($vendor, 'vendor', $data);
+		$this->common_business_helper->addFormFlags($vendor, $data);
 		//_debug_array($vendor);
 		return $vendor;
 	}
@@ -616,106 +481,54 @@ class property_bocommon
 		$field = $data['field'];
 		if (!empty($data['type']))
 		{
-			switch ($data['type'])
-			{
-				case 'view':
-					phpgwapi_xslttemplates::getInstance()->add_file(array('contact_view'), $this->xsl_rootdir);
-					break;
-				case 'form':
-					phpgwapi_xslttemplates::getInstance()->add_file(array('contact_form'), $this->xsl_rootdir);
-					break;
-				default:
-					break;
-			}
+			$this->common_business_helper->addContactTemplate($data['type'], $this->xsl_rootdir);
 		}
 
 		$contact['value_contact_id'] = $data['contact_id'];
 		//			$contact['value_contact_name']		= $data['contact_name'];
 
-		if (isset($data['contact_id']) && $data['contact_id'] && !$data['contact_name'])
+		if ($this->common_business_helper->hasLookupIdWithoutDisplayValue($data, 'contact_id', 'contact_name'))
 		{
-			$contacts						 = CreateObject('phpgwapi.contacts');
-			$contact_data					 = $contacts->read_single_entry($data['contact_id'], array(
-				'fn',
-				'tel_work',
-				'email'
-			));
-			$contact['value_contact_name']	 = $contact_data[0]['fn'];
-			$contact['value_contact_email']	 = $contact_data[0]['email'];
-			$contact['value_contact_tel']	 = $contact_data[0]['tel_work'];
-
-			unset($contacts);
+			$contact_entry = $this->common_business_helper->readContactEntry($data['contact_id']);
+			$contact = array_merge($contact, $contact_entry);
 
 			if (!$contact['value_contact_email'])
 			{
-				$user_id						 = createObject('property.soresponsible')->get_contact_user_id($data['contact_id']);
-				$prefs							 = $this->create_preferences('common', $user_id);
-				$contact['value_contact_email']	 = $prefs['email'];
-				$contact['value_contact_tel']	 = $prefs['cellphone'];
+				$this->common_business_helper->addContactFallbackFromPreferences($contact, $data['contact_id'], $this->socommon);
 			}
 		}
 
-		$contact['field']					 = $field;
-		$contact['contact_link']			 = phpgw::link('/index.php', array(
-			'menuaction'	 => 'property.uilookup.addressbook',
-			'column'		 => $field,
-			'clear_state'	 => 1
-		));
-		$contact['lang_contact']			 = lang('contact');
-		$contact['lang_select_contact_help'] = lang('click this link to select');
+		$this->common_business_helper->addContactLookupMetadata($contact, $field);
 		//_debug_array($contact);
 		return $contact;
 	}
 
 	function initiate_ui_tenant_lookup($data)
 	{
-		if ($data['type'] == 'view')
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('tenant_view'), $this->xsl_rootdir);
-		}
-		else
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('tenant_form'), $this->xsl_rootdir);
-		}
+		$this->common_business_helper->addViewFormTemplate('tenant', $this->common_business_helper->resolveLookupType($data), $this->xsl_rootdir);
 
 		$tenant['value_tenant_id']	 = $data['tenant_id'];
 		$tenant['value_first_name']	 = $data['first_name'];
 		$tenant['value_last_name']	 = $data['last_name'];
-		$tenant['tenant_link']		 = phpgw::link('/index.php', array('menuaction' => 'property.uilookup.tenant'));
-		if ($data['role'] == 'customer')
-		{
-			$tenant['lang_select_tenant_help']	 = lang('click this link to select customer');
-			$tenant['lang_tenant']				 = lang('Customer');
-		}
-		else
-		{
-			$tenant['lang_select_tenant_help']	 = lang('click this link to select tenant');
-			$tenant['lang_tenant']				 = lang('Tenant');
-		}
+		$tenant['tenant_link'] = $this->common_business_helper->buildLookupUrl('tenant');
+		$this->common_business_helper->addEntityLabels($tenant, 'tenant', $data);
 
 
-		if ($data['tenant_id'] && !$data['tenant_name'])
+		if ($this->common_business_helper->hasLookupIdWithoutDisplayValue($data, 'tenant_id', 'tenant_name'))
 		{
-			$tenant_object = CreateObject('property.sogeneric');
-			$tenant_object->get_location_info('tenant', false);
-
-			$custom						 = createObject('property.custom_fields');
-			$tenant_data['attributes']	 = $custom->find('property', '.tenant', 0, '', 'ASC', 'attrib_sort', true, true);
-			$tenant_data				 = $tenant_object->read_single(array('id' => $data['tenant_id']), $tenant_data);
+			$tenant_data = $this->common_business_helper->readSingleFromSogenericWithAttributes('tenant', '.tenant', $data['tenant_id']);
 			if (is_array($tenant_data['attributes']))
 			{
-				//_debug_array($tenant_data);
-				foreach ($tenant_data['attributes'] as $entry)
+				$first_name = $this->common_business_helper->getAttributeValueByName($tenant_data['attributes'], 'first_name');
+				if ($first_name !== null)
 				{
+					$tenant['value_first_name'] = $first_name;
+				}
 
-					if ($entry['name'] == 'first_name')
-					{
-						$tenant['value_first_name'] = $entry['value'];
-					}
-					if ($entry['name'] == 'last_name')
-					{
-						$tenant['value_last_name'] = $entry['value'];
-					}
+				$last_name = $this->common_business_helper->getAttributeValueByName($tenant_data['attributes'], 'last_name');
+				if ($last_name !== null)
+				{
+					$tenant['value_last_name'] = $last_name;
 				}
 			}
 		}
@@ -733,41 +546,23 @@ class property_bocommon
 	 */
 	function initiate_ui_budget_account_lookup($data)
 	{
-		if (isset($data['type']) && $data['type'] == 'view')
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('b_account_view'), $this->xsl_rootdir);
-		}
-		else
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('b_account_form'), $this->xsl_rootdir);
-		}
+		$this->common_business_helper->addViewFormTemplate('b_account', $this->common_business_helper->resolveLookupType($data), $this->xsl_rootdir);
 
 		$b_account['value_b_account_id']		 = $data['b_account_id'];
 		$b_account['value_b_account_name']		 = $data['b_account_name'];
-		$b_account['b_account_link']			 = phpgw::link('/index.php', array(
-			'menuaction' => 'property.uilookup.b_account',
+		$b_account['b_account_link'] = $this->common_business_helper->buildLookupUrl('b_account', array(
 			'role'		 => isset($data['role']) && $data['role'] ? $data['role'] : '',
 			'parent'	 => isset($data['parent']) && $data['parent'] ? $data['parent'] : '',
 		));
-		$b_account['lang_select_b_account_help'] = lang('click this link to select budget account');
-		$b_account['lang_b_account']			 = isset($data['role']) && $data['role'] == 'group' ? lang('budget account group') : lang('Budget account');
-		if ($data['b_account_id'] && !$data['b_account_name'])
+		$this->common_business_helper->addEntityLabels($b_account, 'b_account', $data);
+		if ($this->common_business_helper->hasLookupIdWithoutDisplayValue($data, 'b_account_id', 'b_account_name'))
 		{
-			$b_account_object = CreateObject('property.sogeneric');
-			if (isset($data['role']) && $data['role'] == 'group')
-			{
-				$b_account_object->get_location_info('b_account', false);
-			}
-			else
-			{
-				$b_account_object->get_location_info('budget_account', false);
-			}
-			$b_account_data						 = $b_account_object->read_single(array('id' => $data['b_account_id']));
+			$location = (isset($data['role']) && $data['role'] == 'group') ? 'b_account' : 'budget_account';
+			$b_account_data = $this->common_business_helper->readSingleFromSogeneric($location, $data['b_account_id']);
 			$b_account['value_b_account_name']	 = $b_account_data['descr'];
 		}
 
-		$b_account['disabled']	 = isset($data['disabled']) && $data['disabled'] ? true : false;
-		$b_account['required']	 = isset($data['required']) && $data['required'] ? true : false;
+		$this->common_business_helper->addFormFlags($b_account, $data);
 		return $b_account;
 	}
 
@@ -775,34 +570,20 @@ class property_bocommon
 	{
 		$external_project = array();
 
-		if (isset($data['type']) && $data['type'] == 'view')
+		if ($this->common_business_helper->isViewWithoutLookupId($data, 'external_project_id'))
 		{
-			if (!isset($data['external_project_id']) || !$data['external_project_id'])
-			{
-				return $external_project;
-			}
+			return $external_project;
+		}
 
-			phpgwapi_xslttemplates::getInstance()->add_file(array('external_project_view'), $this->xsl_rootdir);
-		}
-		else
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('external_project_form'), $this->xsl_rootdir);
-		}
+		$this->common_business_helper->addConditionalViewFormTemplate('external_project', $this->common_business_helper->resolveLookupType($data), $this->xsl_rootdir);
 
 		$external_project['value_external_project_id']			 = $data['external_project_id'];
 		$external_project['value_external_project_name']		 = $data['external_project_name'];
-		$external_project['external_project_url']				 = phpgw::link('/index.php', array(
-			'menuaction' => 'property.uilookup.external_project'
-		));
-		$external_project['lang_select_external_project_help']	 = lang('click to select external project');
-		$external_project['lang_external_project']				 = lang('external project');
-		if ($data['external_project_id'] && (!isset($data['external_project_name']) || !$data['external_project_name']))
+		$external_project['external_project_url'] = $this->common_business_helper->buildLookupUrl('external_project');
+		$this->common_business_helper->addEntityLabels($external_project, 'external_project', $data);
+		if ($this->common_business_helper->hasLookupIdWithoutDisplayValue($data, 'external_project_id', 'external_project_name'))
 		{
-			$external_project_object							 = CreateObject('property.sogeneric');
-			$external_project_object->get_location_info('external_project', false);
-			$external_project_data								 = $external_project_object->read_single(array(
-				'id' => $data['external_project_id']
-			));
+			$external_project_data = $this->common_business_helper->readSingleFromSogeneric('external_project', $data['external_project_id']);
 			$external_project['value_external_project_name']	 = $external_project_data['name'];
 			$external_project['value_external_project_budget']	 = $external_project_data['budget'];
 		}
@@ -813,34 +594,23 @@ class property_bocommon
 	{
 		$ecodimb = array();
 
-		if (isset($data['type']) && $data['type'] == 'view')
+		if ($this->common_business_helper->isViewWithoutLookupId($data, 'ecodimb'))
 		{
-			if (!isset($data['ecodimb']) || !$data['ecodimb'])
-			{
-				return $ecodimb;
-			}
+			return $ecodimb;
+		}
 
-			phpgwapi_xslttemplates::getInstance()->add_file(array('ecodimb_view'), $this->xsl_rootdir);
-		}
-		else
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('ecodimb_form'), $this->xsl_rootdir);
-		}
+		$this->common_business_helper->addConditionalViewFormTemplate('ecodimb', $this->common_business_helper->resolveLookupType($data), $this->xsl_rootdir);
 
 		$ecodimb['value_ecodimb']			 = $data['ecodimb'];
 		$ecodimb['value_ecodimb_descr']		 = $data['ecodimb_descr'];
-		$ecodimb['ecodimb_url']				 = phpgw::link('/index.php', array('menuaction' => 'property.uilookup.ecodimb'));
-		$ecodimb['lang_select_ecodimb_help'] = lang('click to select dimb');
-		$ecodimb['lang_ecodimb']			 = lang('dimb');
-		if ($data['ecodimb'] && (!isset($data['ecodimb_descr']) || !$data['ecodimb_descr']))
+		$ecodimb['ecodimb_url'] = $this->common_business_helper->buildLookupUrl('ecodimb');
+		$this->common_business_helper->addEntityLabels($ecodimb, 'ecodimb', $data);
+		if ($this->common_business_helper->hasLookupIdWithoutDisplayValue($data, 'ecodimb', 'ecodimb_descr'))
 		{
-			$ecodimb_object					 = CreateObject('property.sogeneric');
-			$ecodimb_object->get_location_info('dimb', false);
-			$ecodimb_data					 = $ecodimb_object->read_single(array('id' => $data['ecodimb']));
+			$ecodimb_data = $this->common_business_helper->readSingleFromSogeneric('dimb', $data['ecodimb']);
 			$ecodimb['value_ecodimb_descr']	 = $ecodimb_data['descr'];
 		}
-		$ecodimb['disabled'] = isset($data['disabled']) && $data['disabled'] ? true : false;
-		$ecodimb['required'] = isset($data['required']) && $data['required'] ? true : false;
+		$this->common_business_helper->addFormFlags($ecodimb, $data);
 
 		return $ecodimb;
 	}
@@ -852,7 +622,7 @@ class property_bocommon
 		$event['event_name'] = $data['event_name']; // Human readable description
 		if (isset($data['type']) && $data['type'] == 'view')
 		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('event_view'), $this->xsl_rootdir);
+			$this->common_business_helper->addViewFormTemplate('event', 'view', $this->xsl_rootdir);
 			if (!isset($data['event']) || !$data['event'])
 			{
 				//		return $event;
@@ -860,7 +630,7 @@ class property_bocommon
 		}
 		else
 		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('event_form'), $this->xsl_rootdir);
+			$this->common_business_helper->addViewFormTemplate('event', 'form', $this->xsl_rootdir);
 		}
 
 		// If the record is not saved - issue a warning
@@ -959,21 +729,14 @@ class property_bocommon
 	{
 		$boalarm = CreateObject('property.boalarm');
 
-		if ($data['type'] == 'view')
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('alarm_view'), $this->xsl_rootdir);
-		}
-		else
-		{
-			phpgwapi_xslttemplates::getInstance()->add_file(array('alarm_form'), $this->xsl_rootdir);
-		}
+		$this->common_business_helper->addViewFormTemplate('alarm', $data['type'], $this->xsl_rootdir);
 
 		$alarm['header'][] = array(
-			'lang_time'		 => lang('Time'),
-			'lang_text'		 => lang('Text'),
-			'lang_user'		 => lang('User'),
-			'lang_enabled'	 => lang('Enabled'),
-			'lang_select'	 => lang('Select')
+			'lang_time' => lang('Time'),
+			'lang_text' => lang('Text'),
+			'lang_user' => lang('User'),
+			'lang_enabled' => lang('Enabled'),
+			'lang_select' => lang('Select')
 		);
 
 		$alarm['values'] = $boalarm->read_alarms($data['alarm_type'], $data['id'], $data['text']);
@@ -981,135 +744,68 @@ class property_bocommon
 		if ($data['type'] == 'form')
 		{
 			$alarm['alter_alarm'][] = array(
-				'lang_enable'	 => lang('Enable'),
-				'lang_disable'	 => lang('Disable'),
-				'lang_delete'	 => lang('Delete')
+				'lang_enable' => lang('Enable'),
+				'lang_disable' => lang('Disable'),
+				'lang_delete' => lang('Delete')
 			);
 
 			for ($i = 1; $i <= 31; $i++)
 			{
 				$alarm['add_alarm']['day_list'][($i - 1)]['id'] = $i;
-				if($i == 14)
+				if ($i == 14)
 				{
 					$alarm['add_alarm']['day_list'][($i - 1)]['selected'] = 'selected';
 				}
 			}
-			$alarm['add_alarm']['lang_day']				 = lang('Day');
-			$alarm['add_alarm']['lang_day_statustext']	 = lang('Day');
+
+			$alarm['add_alarm']['lang_day'] = lang('Day');
+			$alarm['add_alarm']['lang_day_statustext'] = lang('Day');
 
 			for ($i = 1; $i <= 24; $i++)
 			{
 				$alarm['add_alarm']['hour_list'][($i - 1)]['id'] = $i;
 			}
-			$alarm['add_alarm']['lang_hour']			 = lang('Hour');
-			$alarm['add_alarm']['lang_hour_statustext']	 = lang('Hour');
+			$alarm['add_alarm']['lang_hour'] = lang('Hour');
+			$alarm['add_alarm']['lang_hour_statustext'] = lang('Hour');
 
 			for ($i = 1; $i <= 60; $i++)
 			{
 				$alarm['add_alarm']['minute_list'][($i - 1)]['id'] = $i;
 			}
-			$alarm['add_alarm']['lang_minute']				 = lang('Minutes before the event');
-			$alarm['add_alarm']['lang_minute_statustext']	 = lang('Minutes before the event');
+			$alarm['add_alarm']['lang_minute'] = lang('Minutes before the event');
+			$alarm['add_alarm']['lang_minute_statustext'] = lang('Minutes before the event');
 
-			$alarm['add_alarm']['user_list'] = $this->get_user_list_right2('select', 4, false, $data['acl_location'], false, $default						 = $this->account);
+			$alarm['add_alarm']['user_list'] = $this->get_user_list_right2('select', 4, false, $data['acl_location'], false, $default = $this->account);
 
-			$alarm['add_alarm']['lang_user']			 = lang('User');
-			$alarm['add_alarm']['lang_user_statustext']	 = lang('Select the user the alarm belongs to.');
-			$alarm['add_alarm']['lang_no_user']			 = lang('No user');
-			$alarm['add_alarm']['lang_add']				 = lang('Add');
-			$alarm['add_alarm']['lang_add_alarm']		 = lang('Add alarm');
-			$alarm['add_alarm']['lang_add_statustext']	 = lang('Add alarm for selected user');
+			$alarm['add_alarm']['lang_user'] = lang('User');
+			$alarm['add_alarm']['lang_user_statustext'] = lang('Select the user the alarm belongs to.');
+			$alarm['add_alarm']['lang_no_user'] = lang('No user');
+			$alarm['add_alarm']['lang_add'] = lang('Add');
+			$alarm['add_alarm']['lang_add_alarm'] = lang('Add alarm');
+			$alarm['add_alarm']['lang_add_statustext'] = lang('Add alarm for selected user');
 		}
 
-		//_debug_array($alarm['values']);
 		return $alarm;
 	}
 
 	function select_multi_list_2($selected = '', $list = array(), $input_type = '')
 	{
-		if (isset($list) and is_array($list))
-		{
-			foreach ($list as &$choice)
-			{
-				$choice['input_type'] = $input_type;
-				if (isset($selected) && is_array($selected))
-				{
-					foreach ($selected as &$sel)
-					{
-						if ($sel == $choice['id'])
-						{
-							$choice['checked'] = 'checked';
-						}
-					}
-				}
-			}
-		}
-		return $list;
+		return $this->common_business_helper->selectMultiList2($selected, $list, $input_type);
 	}
 
 	function translate_datatype($datatype)
 	{
-		$datatype_text = array(
-			'V'		 => 'Varchar',
-			'I'		 => 'Integer',
-			'C'		 => 'char',
-			'N'		 => 'Float',
-			'D'		 => 'Date',
-			'T'		 => 'Memo',
-			'R'		 => 'Muliple radio',
-			'CH'	 => 'Muliple checkbox',
-			'LB'	 => 'Listbox',
-			'AB'	 => 'Contact',
-			'VENDOR' => 'Vendor',
-			'email'	 => 'Email',
-			'link'	 => 'Link',
-			'pwd'	 => 'Password',
-			'user'	 => 'phpgw user'
-		);
-
-		$datatype = lang($datatype_text[$datatype]);
-
-		return $datatype;
+		return $this->common_business_helper->translateDatatype($datatype);
 	}
 
 	function translate_datatype_insert($datatype)
 	{
-		$datatype_text = array(
-			'V'		 => 'varchar',
-			'I'		 => 'int',
-			'C'		 => 'char',
-			'N'		 => 'decimal',
-			'D'		 => 'timestamp',
-			'T'		 => 'text',
-			'R'		 => 'int',
-			'CH'	 => 'text',
-			'LB'	 => 'int',
-			'AB'	 => 'int',
-			'VENDOR' => 'int',
-			'email'	 => 'varchar',
-			'link'	 => 'varchar',
-			'pwd'	 => 'varchar',
-			'user'	 => 'int'
-		);
-
-		return $datatype_text[$datatype];
+		return $this->common_business_helper->translateDatatypeInsert($datatype);
 	}
 
 	function translate_datatype_precision($datatype)
 	{
-		$datatype_precision = array(
-			'I'		 => 4,
-			'R'		 => 4,
-			'LB'	 => 4,
-			'AB'	 => 4,
-			'VENDOR' => 4,
-			'email'	 => 64,
-			'link'	 => 255,
-			'pwd'	 => 32,
-			'user'	 => 4
-		);
-
-		return (isset($datatype_precision[$datatype]) ? $datatype_precision[$datatype] : '');
+		return $this->common_business_helper->translateDatatypePrecision($datatype);
 	}
 
 	/**
@@ -1121,77 +817,27 @@ class property_bocommon
 	 */
 	function translate_datatype_format($datatype)
 	{
-		$datatype_text = array(
-			'V'		 => 'varchar',
-			'I'		 => 'integer',
-			'C'		 => 'char',
-			'N'		 => 'float',
-			'D'		 => 'date',
-			'T'		 => 'memo',
-			'R'		 => 'radio',
-			'CH'	 => 'checkbox',
-			'LB'	 => 'listbox',
-			'AB'	 => 'contact',
-			'VENDOR' => 'vendor',
-			'email'	 => 'email',
-			'link'	 => 'link',
-			'pwd'	 => 'password',
-			'user'	 => 'phpgw_user'
-		);
-
-
-		if (isset($datatype_text[$datatype]))
-		{
-			return $datatype_text[$datatype];
-		}
-		return $datatype;
+		return $this->common_business_helper->translateDatatypeFormat($datatype);
 	}
 
 	function add_leading_zero($num, $id_type = '')
 	{
-		if ($id_type == "hex")
-		{
-			$num = hexdec($num);
-			$num++;
-			$num = dechex($num);
-		}
-		else
-		{
-			$num++;
-		}
-
-		if (strlen($num) == 4)
-			$return	 = $num;
-		if (strlen($num) == 3)
-			$return	 = "0$num";
-		if (strlen($num) == 2)
-			$return	 = "00$num";
-		if (strlen($num) == 1)
-			$return	 = "000$num";
-		if (strlen($num) == 0)
-			$return	 = "0001";
-
-		return strtoupper($return);
+		return $this->common_business_helper->addLeadingZero($num, $id_type);
 	}
 
 	function read_location_data($location_code)
 	{
-		$soadmin_location = CreateObject('property.soadmin_location');
-
-		$location_types = $soadmin_location->select_location_type();
-		unset($soadmin_location);
-
-		return $this->socommon->read_location_data($location_code, $location_types);
+		return $this->common_business_helper->readLocationData($this->socommon, $location_code);
 	}
 
 	function read_single_tenant($tenant_id)
 	{
-		return $this->socommon->read_single_tenant($tenant_id);
+		return $this->common_business_helper->readSingleTenant($this->socommon, $tenant_id);
 	}
 
 	function check_location($location_code = '', $type_id = '')
 	{
-		return $this->socommon->check_location($location_code, $type_id);
+		return $this->common_business_helper->checkLocation($this->socommon, $location_code, $type_id);
 	}
 
 	function generate_sql($data)
@@ -1459,71 +1105,28 @@ class property_bocommon
 
 	function select_part_of_town($format = '', $selected = '', $district_id = '')
 	{
-		switch ($format)
-		{
-			case 'select':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('select_part_of_town'), $this->xsl_rootdir);
-				break;
-			case 'filter':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('filter_part_of_town'), $this->xsl_rootdir);
-				break;
-		}
+		$this->common_business_helper->addPartOfTownTemplate($format, $this->xsl_rootdir);
 
-		$parts				 = $this->socommon->select_part_of_town($district_id);
-		$part_of_town_list	 = array();
-
-		if (is_array($parts) && (count($parts)))
-		{
-			foreach ($parts as $entry)
-			{
-				$part_of_town_list[] = array(
-					'id'			 => $entry['id'],
-					'name'			 => $entry['name'],
-					'district_id'	 => $entry['district_id'],
-					'selected'		 => $entry['id'] == $selected ? 1 : 0
-				);
-			}
-		}
-
-		return $part_of_town_list;
+		return $this->common_business_helper->selectPartOfTown($this->socommon, $district_id, $selected);
 	}
 
 	function select_district_list($format = '', $selected = '')
 	{
-		switch ($format)
-		{
-			case 'select':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('select_district'), $this->xsl_rootdir);
-				break;
-			case 'filter':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('filter_district'), $this->xsl_rootdir);
-				break;
-		}
+		$this->common_business_helper->addDistrictTemplate($format, $this->xsl_rootdir);
 
-		$districts = $this->socommon->select_district_list();
-
-		return $this->select_list($selected, $districts);
+		return $this->common_business_helper->selectDistrictList($this->socommon, $selected);
 	}
 
 	function select_category_list($data)
 	{
-		switch ($data['format'])
-		{
-			case 'select':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('cat_select'), $this->xsl_rootdir);
-				break;
-			case 'filter':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('cat_filter'), $this->xsl_rootdir);
-				break;
-		}
+		$this->common_business_helper->addCategoryTemplate($data['format'], $this->xsl_rootdir);
 
-		$categories = execMethod('property.sogeneric.get_list', $data);
-		return $this->select_list($data['selected'], $categories);
+		return $this->common_business_helper->selectCategoryList($data);
 	}
 
 	function fm_cache($name = '', $value = '')
 	{
-		return $this->socommon->fm_cache($name, $value);
+		return $this->common_business_helper->fmCache($this->socommon, $name, $value);
 	}
 
 	/**
@@ -1532,7 +1135,7 @@ class property_bocommon
 	 */
 	function reset_fm_cache()
 	{
-		$this->socommon->reset_fm_cache();
+		$this->common_business_helper->resetFmCache($this->socommon);
 	}
 
 	/**
@@ -1542,36 +1145,26 @@ class property_bocommon
 	 */
 	function reset_fm_cache_userlist()
 	{
-		return $this->socommon->reset_fm_cache_userlist();
+		return $this->common_business_helper->resetFmCacheUserlist($this->socommon);
 	}
 
 	function next_id($table, $key = '')
 	{
-		return $this->socommon->next_id($table, $key);
+		return $this->common_business_helper->nextId($this->socommon, $table, $key);
 	}
 
 	function select_datatype($selected = '', $sub_module = '')
 	{
 
 		$custom = createObject('phpgwapi.custom_fields');
-
-		foreach ($custom->datatype_text as $key => $name)
-		{
-			$datatypes[] = array(
-				'id'	 => $key,
-				'name'	 => $name,
-			);
-		}
+		$datatypes = $this->common_business_helper->buildDatatypeList($custom->datatype_text);
 
 		return $this->select_list($selected, $datatypes);
 	}
 
 	function select_nullable($selected = '')
 	{
-		$nullable[0]['id']	 = 'True';
-		$nullable[0]['name'] = lang('true');
-		$nullable[1]['id']	 = 'False';
-		$nullable[1]['name'] = lang('false');
+		$nullable = $this->common_business_helper->buildNullableList();
 
 		return $this->select_list($selected, $nullable);
 	}
@@ -1989,46 +1582,22 @@ class property_bocommon
 
 	function increment_id($name)
 	{
-		return $this->socommon->increment_id($name);
+		return $this->common_business_helper->incrementId($this->socommon, $name);
 	}
 
 	function get_origin_link($type)
 	{
-		if ($type == 'tts')
-		{
-			$link = array('menuaction' => 'property.uitts.view');
-		}
-		else if ($type == 'request')
-		{
-			$link = array('menuaction' => 'property.uirequest.view');
-		}
-		else if ($type == 'project')
-		{
-			$link = array('menuaction' => 'property.uiproject.view');
-		}
-		else if (substr($type, 0, 6) == 'entity')
-		{
-			$type		 = explode("_", $type);
-			$entity_id	 = $type[1];
-			$cat_id		 = $type[2];
-			$link		 = array(
-				'menuaction' => 'property.uientity.view',
-				'entity_id'	 => $entity_id,
-				'cat_id'	 => $cat_id
-			);
-		}
-
-		return (isset($link) ? $link : '');
+		return $this->common_business_helper->getOriginLink($type);
 	}
 
 	function new_db($db = '')
 	{
-		return $this->socommon->new_db($db);
+		return $this->common_business_helper->newDb($this->socommon, $db);
 	}
 
 	function get_max_location_level()
 	{
-		return $this->socommon->get_max_location_level();
+		return $this->common_business_helper->getMaxLocationLevel($this->socommon);
 	}
 
 	/**
@@ -2041,61 +1610,7 @@ class property_bocommon
 	 */
 	public function preserve_attribute_values($values, $values_attributes)
 	{
-
-		if (!is_array($values_attributes))
-		{
-			return array();
-		}
-
-		foreach ($values_attributes as $attribute)
-		{
-			foreach ($values['attributes'] as &$val_attrib)
-			{
-
-				if ($val_attrib['id'] != $attribute['attrib_id'])
-				{
-					continue;
-				}
-
-				if (!isset($attribute['value']) && !isset($values['extra'][$val_attrib['name']]))
-				{
-					continue;
-				}
-
-				if (is_array($attribute['value']))
-				{
-					foreach ($val_attrib['choice'] as &$choice)
-					{
-						foreach ($attribute['value'] as $selected)
-						{
-							if ($selected == $choice['id'])
-							{
-								$choice['checked'] = 'checked';
-							}
-						}
-					}
-				}
-				else if (isset($val_attrib['choice']) && is_array($val_attrib['choice']))
-				{
-					foreach ($val_attrib['choice'] as &$choice)
-					{
-						if ($choice['id'] == $attribute['value'])
-						{
-							$choice['checked'] = 'checked';
-						}
-					}
-				}
-				else if (isset($values['extra'][$val_attrib['name']]))
-				{
-					$val_attrib['value'] = $values['extra'][$val_attrib['name']];
-				}
-				else
-				{
-					$val_attrib['value'] = $attribute['value'];
-				}
-			}
-		}
-		return $values;
+		return $this->common_business_helper->preserveAttributeValues($values, $values_attributes);
 	}
 
 	/**
@@ -2106,21 +1621,7 @@ class property_bocommon
 	 */
 	function utf2ascii($text = '')
 	{
-		if (!isset($this->serverSettings['charset']) || $this->serverSettings['charset'] == 'utf-8')
-		{
-			if ($text == mb_convert_encoding($text, 'ISO-8859-1', 'UTF-8'))
-			{
-				return $text;
-			}
-			else
-			{
-				return mb_convert_encoding($text, 'ISO-8859-1', 'UTF-8');
-			}
-		}
-		else
-		{
-			return $text;
-		}
+		return $this->common_business_helper->utf2ascii($text, $this->serverSettings['charset'] ?? null);
 	}
 
 	/**
@@ -2131,14 +1632,7 @@ class property_bocommon
 	 */
 	function ascii2utf($text = '')
 	{
-		if (!isset($this->serverSettings['charset']) || $this->serverSettings['charset'] == 'utf-8')
-		{
-			return mb_convert_encoding($text, 'UTF-8', 'ISO-8859-1');
-		}
-		else
-		{
-			return $text;
-		}
+		return $this->common_business_helper->ascii2utf($text, $this->serverSettings['charset'] ?? null);
 	}
 
 	/**
@@ -2146,7 +1640,7 @@ class property_bocommon
 	 *
 	 * @param array $values array with data fom post
 	 * @param array $insert_record array containing fields to collect from post
-	 * @return updated values
+	 * @return array $values
 	 */
 	function collect_locationdata($values = array(), $insert_record = array())
 	{
@@ -2294,29 +1788,7 @@ class property_bocommon
 
 	function get_sub_menu($children = array(), $selection = array(), $level = '')
 	{
-		$level++;
-		$i = 0;
-		foreach ($children as $key => $vals)
-		{
-			$menu[] = $vals;
-			if ($key == $selection[$level])
-			{
-				$menu[$i]['this'] = true;
-				if (isset($menu[$i]['children']))
-				{
-					$menu[$i]['children'] = $this->get_sub_menu($menu[$i]['children'], $selection, $level);
-				}
-			}
-			else
-			{
-				if (isset($menu[$i]['children']))
-				{
-					unset($menu[$i]['children']);
-				}
-			}
-			$i++;
-		}
-		return $menu;
+		return $this->common_business_helper->getSubMenu($children, $selection, $level);
 	}
 
 	function no_access()
@@ -2349,87 +1821,27 @@ class property_bocommon
 	 */
 	public function get_location_list($required)
 	{
-		return $this->socommon->get_location_list($required);
+		return $this->common_business_helper->getLocationList($this->socommon, $required);
 	}
 
 	public function select2String($array_values, $id = 'id', $name = 'name', $name2 = '')
 	{
-		$str_array_values = "";
-		for ($i = 0; $i < count($array_values); $i++)
-		{
-			foreach ($array_values[$i] as $key => $value)
-			{
-				if ($key == $id)
-				{
-					$str_array_values	 .= $value;
-					$str_array_values	 .= "#";
-				}
-				if ($key == $name)
-				{
-					$str_array_values	 .= $value;
-					$str_array_values	 .= "@";
-				}
-				if ($key == $name2)
-				{
-					// eliminate hte last @ in $str_array_values
-					$str_array_values	 = substr($str_array_values, 0, strrpos($str_array_values, '@'));
-					$str_array_values	 .= " " . $value;
-					$str_array_values	 .= "@";
-				}
-			}
-		}
-
-		return $str_array_values;
+		return $this->common_business_helper->select2String($array_values, $id, $name, $name2);
 	}
 
 	public function make_menu_date($array, $id_buttons, $name_hidden)
 	{
-		$split_values = array();
-		foreach ($array as $value)
-		{
-			array_push($split_values, array(
-				'text'		 => "{$value['id']}",
-				'value'		 => $value['id'],
-				'onclick'	 => array('fn'	 => 'onDateClick', 'obj'	 => array(
-					'id_button'		 => $id_buttons,
-					'opt'			 => $value['id'],
-					'hidden_name'	 => $name_hidden
-				))
-			));
-		}
-		return $split_values;
+		return $this->common_business_helper->makeMenuDate($array, $id_buttons, $name_hidden);
 	}
 
 	public function make_menu_user($array, $id_buttons, $name_hidden)
 	{
-		$split_values = array();
-		foreach ($array as $value)
-		{
-			array_push($split_values, array(
-				'text'		 => $value['name'],
-				'value'		 => $value['id'],
-				'onclick'	 => array('fn'	 => 'onUserClick', 'obj'	 => array(
-					'id_button'		 => $id_buttons,
-					'id'			 => $value['id'],
-					'name'			 => $value['name'],
-					'hidden_name'	 => $name_hidden
-				))
-			));
-		}
-		return $split_values;
+		return $this->common_business_helper->makeMenuUser($array, $id_buttons, $name_hidden);
 	}
 
 	public function choose_select($array, $index_return)
 	{
-		foreach ($array as $value)
-		{
-			if ($value["selected"] == "selected")
-			{
-				return $value[$index_return];
-			}
-		}
-		//for avoid erros, return the last value
-		return $array[count($array) - 1][$index_return];
+		return $this->common_business_helper->chooseSelect($array, $index_return);
 	}
 
 	/**
@@ -2448,110 +1860,21 @@ class property_bocommon
 	 */
 	public function set_pending_action($action_params)
 	{
-		return $this->socommon->set_pending_action($action_params);
+		return $this->common_business_helper->setPendingAction($this->socommon, $action_params);
 	}
 
 	public function get_top_level_categories($data)
 	{
-		$selected = array();
-		if (!empty($data['selected']))
-		{
-			if (is_array($data['selected']))
-			{
-				$selected = $data['selected'];
-			}
-			else if (preg_match('/^\,|&\,/', $data['selected']))
-			{
-				$selected = explode(',', trim($data['selected'], ','));
-			}
-			else
-			{
-				$selected[] = $data['selected'];
-			}
-		}
-
-		$cats				 = CreateObject('phpgwapi.categories', -1, 'property', $data['acl_location']);
-		$cats->supress_info	 = true;
-		$_cats				 = $cats->return_sorted_array(0, false, '', '', '', false, false);
-		$values = array();
-		foreach ($_cats as $_cat)
-		{
-			if ($_cat['level'] == 0 && $_cat['active'] != 2)
-			{
-				$_cat['selected']	= in_array($_cat['id'], $selected) ? 1 : 0;
-
-				$values[] = $_cat;
-			}
-		}
-
-		return $values;
+		return $this->common_business_helper->getTopLevelCategories($data);
 	}
 	public function get_top_level_category_names($data)
 	{
-		static $_cats = array();
-
-		$selected = array();
-		if (!empty($data['id']))
-		{
-			if (is_array($data['id']))
-			{
-				$selected = $data['id'];
-			}
-			else if (preg_match('/^\,|&\,/', $data['id']))
-			{
-				$selected = explode(',', trim($data['id'], ','));
-			}
-			else
-			{
-				$selected[] = $data['id'];
-			}
-		}
-
-		if (!isset($_cats[$data['acl_location']]))
-		{
-			$cats							 = CreateObject('phpgwapi.categories', -1, 'property', $data['acl_location']);
-			$cats->supress_info				 = true;
-			$_cats[$data['acl_location']]	 = $cats->return_sorted_array(0, false, '', '', '', false, false);
-		}
-
-		$names = array();
-
-		if (is_array($_cats[$data['acl_location']]))
-		{
-			foreach ($_cats[$data['acl_location']] as $_cat)
-			{
-				if ($_cat['level'] == 0 && $_cat['active'] != 2 && in_array($_cat['id'], $selected))
-				{
-					$names[] = $_cat['name'];
-				}
-			}
-		}
-
-		return implode(', ', $names);
+		return $this->common_business_helper->getTopLevelCategoryNames($data);
 	}
 
 	public function get_categories($data)
 	{
-		$cats				 = CreateObject('phpgwapi.categories', -1, 'property', $data['acl_location']);
-		$cats->supress_info	 = true;
-		$values				 = $cats->formatted_xslt_list(array(
-			'selected'	 => $data['selected'],
-			'globals'	 => true,
-			'link_data'	 => array()
-		));
-		$ret				 = array();
-
-		$level = !empty($data['level']) ? $data['level'] : 0;
-
-		foreach ($values['cat_list'] as $category)
-		{
-			$ret[] = array(
-				'id'		 => $category['cat_id'],
-				'name'		 => $category['name'],
-				'selected'	 => $category['selected'] ? 1 : 0
-			);
-		}
-		return $ret;
+		return $this->common_business_helper->getCategories($data);
 	}
 
 	public function get_vendor_email($vendor_id = 0, $field_name = '')
@@ -2564,50 +1887,17 @@ class property_bocommon
 
 		$preselect = Sanitizer::get_var('preselect', 'bool');
 		$preselect_one = Sanitizer::get_var('preselect_one', 'bool');
+		$as_json = Sanitizer::get_var('phpgw_return_as') == 'json';
+		$draw = Sanitizer::get_var('draw', 'int');
 
-		$vendor_email = execMethod('property.sowo_hour.get_email', $vendor_id);
-
-		if (!$field_name)
-		{
-			$field_name = 'values[vendor_email][]';
-		}
-		else
-		{
-			$field_name .= '[]';
-		}
-
-		$content_email	 = array();
-		$title			 = lang('The address to which this order will be sendt');
-
-		$checked = $preselect ? 'checked="checked"' : '';
-
-		$count_email = count($vendor_email);
-		if ($count_email == 1 && $preselect_one)
-		{
-			$checked = 'checked="checked"';
-		}
-
-		foreach ($vendor_email as $_entry)
-		{
-			$content_email[] = array(
-				'value_email'	 => $_entry['email'],
-				'value_select'	 => "<input type='checkbox' name='{$field_name}' value='{$_entry['email']}' title='{$title}' {$checked}>"
-			);
-		}
-
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			$total_records = count($content_email);
-
-			return array(
-				'data'				 => $content_email,
-				'total_records'		 => $total_records,
-				'draw'				 => Sanitizer::get_var('draw', 'int'),
-				'recordsTotal'		 => $total_records,
-				'recordsFiltered'	 => $total_records
-			);
-		}
-		return $content_email;
+		return $this->common_business_helper->getVendorEmail(
+			$vendor_id,
+			$field_name,
+			$preselect,
+			$preselect_one,
+			$as_json,
+			$draw
+		);
 	}
 
 	public function get_vendor_contract($vendor_id = 0, $selected = '')
@@ -2617,16 +1907,7 @@ class property_bocommon
 			$vendor_id = Sanitizer::get_var('vendor_id', 'int');
 		}
 
-		$contract_list = createObject('property.soagreement')->get_vendor_contract($vendor_id, $selected);
-		if ($selected)
-		{
-			foreach ($contract_list as &$contract)
-			{
-				$contract['selected'] = $selected == $contract['id'] ? 1 : 0;
-			}
-		}
-
-		return $contract_list;
+		return $this->common_business_helper->getVendorContract($vendor_id, $selected);
 	}
 
 	/**
@@ -2639,54 +1920,23 @@ class property_bocommon
 	public function get_eco_service()
 	{
 		$query = Sanitizer::get_var('query');
-
-		$sogeneric = CreateObject('property.sogeneric', 'eco_service');
-
-		$filter	 = array('active' => 1);
-		$values	 = $sogeneric->read(array('filter' => $filter, 'query' => $query));
-
-		return array('ResultSet' => array('Result' => $values));
+		return $this->common_business_helper->getEcoService($query);
 	}
 
 	public function get_eco_service_name($id)
 	{
-		$ret = $id;
-		if ($id	 = (int)$id)
-		{
-			$sogeneric		 = CreateObject('property.sogeneric', 'eco_service');
-			$sogeneric_data	 = $sogeneric->read_single(array('id' => $id));
-			$ret			 = $sogeneric_data['name'];
-		}
-		return $ret;
+		return $this->common_business_helper->getEcoServiceName($id);
 	}
 
 	public function get_unspsc_code()
 	{
 		$query = Sanitizer::get_var('query');
-
-		$sogeneric	 = CreateObject('property.sogeneric', 'unspsc_code');
-		$values		 = $sogeneric->read(array('query' => $query, 'allrows' => true));
-		foreach ($values as &$value)
-		{
-			$value['name'] = "{$value['id']} {$value['name']}";
-		}
-
-		return array('ResultSet' => array('Result' => $values));
+		return $this->common_business_helper->getUnspscCode($query);
 	}
 
 	public function get_unspsc_code_name($id)
 	{
-		$ret = '';
-		if ($id)
-		{
-			$sogeneric		 = CreateObject('property.sogeneric', 'unspsc_code');
-			$sogeneric_data	 = $sogeneric->read_single(array('id' => $id));
-			if ($sogeneric_data)
-			{
-				$ret = $sogeneric_data['name'];
-			}
-		}
-		return $ret;
+		return $this->common_business_helper->getUnspscCodeName($id);
 	}
 
 	public function get_b_account()
@@ -2694,121 +1944,38 @@ class property_bocommon
 		$query	 = Sanitizer::get_var('query');
 		$role	 = Sanitizer::get_var('role');
 
-		$type = 'budget_account';
-
-		if ($role == 'group')
-		{
-			$type = 'b_account_category';
-		}
-
-		$sogeneric	 = CreateObject('property.sogeneric', $type);
-		$filter		 = array('active' => 1);
-		$values		 = $sogeneric->read(array('filter' => $filter, 'query' => $query));
-
-		foreach ($values as &$value)
-		{
-			if (!preg_match("/^{$value['id']}/", $value['descr']))
-			{
-				$value['name'] = "{$value['id']} {$value['descr']}";
-			}
-			else
-			{
-				$value['name'] = $value['descr'];
-			}
-		}
-
-		return array('ResultSet' => array('Result' => $values));
+		return $this->common_business_helper->getBAccount($query, $role);
 	}
 
 	public function get_external_project()
 	{
 		$query = Sanitizer::get_var('query');
-
-		$sogeneric	 = CreateObject('property.sogeneric', 'external_project');
-		$filter		 = array('active' => 1);
-		$values		 = $sogeneric->read(array('filter' => $filter, 'query' => $query));
-
-		//			foreach ($values as &$value)
-		//			{
-		//				$value['name'] = "{$value['id']} {$value['name']}";
-		//			}
-
-		return array('ResultSet' => array('Result' => $values));
+		return $this->common_business_helper->getExternalProject($query);
 	}
 
 	public function get_external_project_name($id)
 	{
-		$ret = $id;
-		if ($id)
-		{
-			$sogeneric		 = CreateObject('property.sogeneric', 'external_project');
-			$sogeneric_data	 = $sogeneric->read_single(array('id' => $id));
-			if ($sogeneric_data)
-			{
-				$ret = $sogeneric_data['name'];
-			}
-		}
-		return $ret;
+		return $this->common_business_helper->getExternalProjectName($id);
 	}
 
 	public function get_ecodimb()
 	{
 		$query = Sanitizer::get_var('query');
-
-		$sogeneric	 = CreateObject('property.sogeneric', 'dimb');
-		$filter		 = array('active' => 1);
-		$values		 = $sogeneric->read(array('filter' => $filter, 'query' => $query));
-
-		foreach ($values as &$value)
-		{
-			$value['name'] = "{$value['id']} {$value['descr']}";
-		}
-
-		return array('ResultSet' => array('Result' => $values));
+		return $this->common_business_helper->getEcodimb($query);
 	}
 
 	public function get_documentation_url($id)
 	{
-
-		$order_info = $this->socommon->get_order_type($id);
-		$secret = $order_info['secret'];
-
-		$config_frontend = createobject('phpgwapi.config', 'mobilefrontend')->read();
-
-		$documentation_url = !empty($config_frontend['external_site_address'])  ? rtrim($config_frontend['external_site_address'], '/') : rtrim($this->serverSettings['webserver_url'], '/');
-
-		$documentation_url .= '/mobilefrontend/';
-
-		$documentation_url .= '?' . http_build_query(array(
-			'menuaction' => 'property.uiimport_documents.step_1_import',
-			'id'		 => $id,
-			'secret'	 => $secret,
-			'domain'	 => $this->userSettings['domain']
-		));
-
-		return $documentation_url;
+		return $this->common_business_helper->getDocumentationUrl(
+			$this->socommon,
+			$id,
+			$this->serverSettings,
+			$this->userSettings
+		);
 	}
 
 	public function get_users($query)
 	{
-		if (!$this->acl_read)
-		{
-			return;
-		}
-
-		$accounts = $this->accounts->get_list('accounts');
-
-		$values = array();
-		foreach ($accounts as $account)
-		{
-			if ($account->enabled)
-			{
-				$values[] = array(
-					'id'	 => $account->id,
-					'name'	 => $account->__toString(),
-				);
-			}
-		}
-		return array('ResultSet' => array('Result' => $values));
+		return $this->common_business_helper->getUsers($this->accounts, $this->acl_read);
 	}
 }

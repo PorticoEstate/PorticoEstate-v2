@@ -33,6 +33,7 @@
 
 	use App\Database\Db;
 	use \App\Database\Db2;
+	use App\modules\property\helpers\CommonDataHelper;
 	use App\modules\phpgwapi\security\Acl;
 
 	use App\modules\phpgwapi\services\Settings;
@@ -52,6 +53,7 @@
 		 */
 		var $like = 'LIKE';
 		var $db, $account, $left_join, $userSettings;
+		protected $commonDataHelper;
 
 		function __construct()
 		{
@@ -77,53 +79,12 @@
 			}
 
 			$this->left_join = " LEFT JOIN ";
+			$this->commonDataHelper = new CommonDataHelper($this->db, $this->join);
 		}
 
 		function fm_cache( $name = '', $value = '' )
 		{
-			if ($name && $value)
-			{
-				$value = serialize($value);
-
-				if (function_exists('gzcompress'))
-				{
-					$value = base64_encode(gzcompress($value, 9));
-				}
-				else
-				{
-					$value = $this->db->db_addslashes($value);
-				}
-
-				$this->db->query("SELECT value FROM fm_cache WHERE name='{$name}'");
-
-				if ($this->db->next_record())
-				{
-					$this->db->query("UPDATE fm_cache SET value = '{$value}' WHERE name='{$name}'", __LINE__, __FILE__);
-				}
-				else
-				{
-					$this->db->query("INSERT INTO fm_cache (name,value)VALUES ('$name','$value')", __LINE__, __FILE__);
-				}
-			}
-			else
-			{
-				$this->db->query("SELECT value FROM fm_cache where name='$name'");
-				if ($this->db->next_record())
-				{
-					$ret = $this->db->f('value');
-
-					if (function_exists('gzcompress'))
-					{
-						$ret = gzuncompress(base64_decode($ret));
-					}
-					else
-					{
-						$ret = stripslashes($ret);
-					}
-
-					return unserialize($ret);
-				}
-			}
+			return $this->commonDataHelper->fmCache($name, $value);
 		}
 
 		/**
@@ -132,7 +93,7 @@
 		 */
 		function reset_fm_cache()
 		{
-			$this->db->query("DELETE FROM fm_cache ", __LINE__, __FILE__);
+			$this->commonDataHelper->resetFmCache();
 		}
 
 		/**
@@ -142,8 +103,7 @@
 		 */
 		function reset_fm_cache_userlist()
 		{
-			$this->db->query("DELETE FROM fm_cache WHERE name {$this->like} 'acl_userlist_%'", __LINE__, __FILE__, true);
-			return $this->db->affected_rows();
+			return $this->commonDataHelper->resetFmCacheUserlist($this->like);
 		}
 
 		/**
@@ -153,144 +113,32 @@
 		 */
 		public function unquote( &$arr )
 		{
-			if (!is_array($arr))
-			{
-				$arr = stripslashes($arr);
-				return;
-			}
-			foreach ($arr as $key => $value)
-			{
-				if (is_array($value))
-				{
-					$this->unquote($arr[$key]);
-				}
-				else
-				{
-					$arr[$key] = stripslashes($value);
-				}
-			}
+			$this->commonDataHelper->unquote($arr);
 		}
 
 		function create_preferences( $app = '', $user_id = '' )
 		{
-			$this->db->query("SELECT preference_json, preference_owner FROM phpgw_preferences where preference_app = '{$app}'"
-				. " AND preference_owner IN (-1,-2," . (int)$user_id . ')', __LINE__, __FILE__);
-			$forced	 = $default = $user	 = array();
-			while ($this->db->next_record())
-			{
-				$value = json_decode($this->db->f('preference_json'), true);
-				$this->unquote($value);
-				if (!is_array($value))
-				{
-					continue;
-				}
-				switch ($this->db->f('preference_owner'))
-				{
-					case -1: // forced
-						$forced[$app]	 = $value;
-						break;
-					case -2: // default
-						$default[$app]	 = $value;
-						break;
-					default: // user
-						$user[$app]		 = $value;
-						break;
-				}
-			}
-			$data = $user;
-
-			// now use defaults if needed (user-value unset or empty)
-			//
-			foreach ($default as $app => $values)
-			{
-				foreach ($values as $var => $value)
-				{
-					if (!isset($data[$app][$var]) || $data[$app][$var] === '')
-					{
-						$data[$app][$var] = $value;
-					}
-				}
-			}
-			// now set/force forced values
-			//
-			foreach ($forced as $app => $values)
-			{
-				foreach ($values as $var => $value)
-				{
-					$data[$app][$var] = $value;
-				}
-			}
-
-			return $data[$app];
+			return $this->commonDataHelper->createPreferences($app, $user_id);
 		}
 
 		function read_single_tenant( $id )
 		{
-			$this->db->query("SELECT * FROM fm_tenant WHERE id = " . (int)$id, __LINE__, __FILE__);
-			
-			if(!$this->db->next_record())
-			{
-				return array();
-			}
-
-			$tenant_data = array
-				(
-				'first_name'	 => $this->db->f('first_name'),
-				'last_name'		 => $this->db->f('last_name'),
-				'contact_phone'	 => $this->db->f('contact_phone')
-			);
-
-			//_debug_array($tenant_data);
-
-			return $tenant_data;
+			return $this->commonDataHelper->readSingleTenant($id);
 		}
 
 		function check_location( $location_code = '', $type_id = '' )
 		{
-			$this->db->query("SELECT count(*) as cnt FROM fm_location$type_id where location_code='$location_code'");
-			$this->db->next_record();
-
-			if ($this->db->f('cnt'))
-			{
-				return true;
-			}
+			return $this->commonDataHelper->checkLocation($location_code, $type_id);
 		}
 
 		function select_part_of_town( $district_id = 0 )
 		{
-			$filter			 = '';
-			$part_of_town	 = array();
-			if ($district_id)
-			{
-				$filter = 'WHERE district_id = ' . (int)$district_id;
-			}
-			$this->db->query("SELECT name, id, district_id FROM fm_part_of_town $filter ORDER BY name ", __LINE__, __FILE__);
-
-			while ($this->db->next_record())
-			{
-				$part_of_town[] = array(
-					'id'			 => $this->db->f('id'),
-					'name'			 => $this->db->f('name', true),
-					'district_id'	 => $this->db->f('district_id')
-				);
-			}
-
-			return $part_of_town;
+			return $this->commonDataHelper->selectPartOfTown($district_id);
 		}
 
 		function select_district_list()
 		{
-			$this->db->query("SELECT id, descr FROM fm_district where id >'0' ORDER BY id ");
-
-			$i = 0;
-			while ($this->db->next_record())
-			{
-				$district[$i]['id']		 = $this->db->f('id');
-				$district[$i]['name']	 = stripslashes($this->db->f('descr'));
-				$i++;
-			}
-
-			return $district;
+			return $this->commonDataHelper->selectDistrictList();
 		}
 
 		/**
@@ -302,107 +150,32 @@
 		 */
 		function next_id( $table = '', $key = '' )
 		{
-			$where = '';
-			if (is_array($key))
-			{
-				//	while (is_array($key) && list($column,$value) = each($key))
-				foreach ($key as $column => $value)
-				{
-					if ($value)
-					{
-						$condition[] = $column . "='" . $value;
-					}
-				}
-
-				$where = 'WHERE ' . implode("' AND ", $condition) . "'";
-			}
-
-			$this->db->query("SELECT max(id) as maximum FROM $table $where", __LINE__, __FILE__);
-			$this->db->next_record();
-			$next_id = (int)$this->db->f('maximum') + 1;
-			return $next_id;
+			return $this->commonDataHelper->nextId($table, $key);
 		}
 
 		function get_lookup_entity( $location )
 		{
-			$this->db->query("SELECT entity_id,name FROM fm_entity_lookup {$this->join} fm_entity on fm_entity_lookup.entity_id=fm_entity.id WHERE type='lookup' AND location='{$location}'  ");
-			$entity = array();
-			while ($this->db->next_record())
-			{
-				$entity[] = array
-					(
-					'id'	 => $this->db->f('entity_id'),
-					'name'	 => $this->db->f('name', true)
-				);
-			}
-			return $entity;
+			return $this->commonDataHelper->getLookupEntity($location);
 		}
 
 		function get_start_entity( $location )
 		{
-			$this->db->query("SELECT entity_id,name FROM fm_entity_lookup {$this->join} fm_entity on fm_entity_lookup.entity_id=fm_entity.id WHERE type='start' AND location='{$location}'  ");
-
-			$entity = array();
-			while ($this->db->next_record())
-			{
-				$entity[] = array
-					(
-					'id'	 => $this->db->f('entity_id'),
-					'name'	 => $this->db->f('name', true)
-				);
-			}
-			return $entity;
+			return $this->commonDataHelper->getStartEntity($location);
 		}
 
 		function increment_id( $name )
 		{
-			if (!$name)
-			{
-				throw new Exception("property_socommon::increment_id() - Missing name");
-			}
-
-			if ($name == 'order') // FIXME: temporary hack
-			{
-				$name = 'workorder';
-			}
-			else if ($name == 'helpdesk')
-			{
-				$name = 'workorder';
-			}
-
-			$this->db->query("SELECT name FROM fm_idgenerator WHERE name='{$name}'");
-			$this->db->next_record();
-			if (!$this->db->f('name'))
-			{
-				throw new Exception("property_socommon::increment_id() - not a valid name: '{$name}'");
-			}
-
-			$now		 = time();
-			$this->db->query("SELECT value, start_date FROM fm_idgenerator WHERE name='{$name}' AND start_date < {$now} ORDER BY start_date DESC");
-			$this->db->next_record();
-			$next_id	 = $this->db->f('value') + 1;
-			$start_date	 = (int)$this->db->f('start_date');
-			$this->db->query("UPDATE fm_idgenerator SET value = $next_id WHERE name = '{$name}' AND start_date = {$start_date}");
-			return $next_id;
+			return $this->commonDataHelper->incrementId($name);
 		}
 
 		function new_db( $db = null )
 		{
-			if (is_object($db))
-			{
-				return new Db2();
-			}
-			else
-			{
-				return Db::getInstance();
-			}
+			return $this->commonDataHelper->newDb($db);
 		}
 
 		function get_max_location_level()
 		{
-			$this->db->query("SELECT count(*) as level FROM fm_location_type ");
-			$this->db->next_record();
-			return $this->db->f('level');
+			return $this->commonDataHelper->getMaxLocationLevel();
 		}
 
 		/**
@@ -414,21 +187,7 @@
 		 */
 		public function get_location_list( $required )
 		{
-			$acl = Acl::getInstance();
-			$access_list = $acl->get_location_list('property', $required);
-
-			$needle			 = ".location.1.";
-			$needle_len		 = strlen($needle);
-			$access_location = array();
-			foreach ($access_list as $location)
-			{
-				if (strrpos($location, $needle) === 0)
-				{
-					$target_len			 = strlen($location) - $needle_len;
-					$access_location[]	 = substr($location, -$target_len);
-				}
-			}
-			return $access_location;
+			return $this->commonDataHelper->getLocationList($required);
 		}
 
 		/**
@@ -438,12 +197,6 @@
 		 */
 		public function get_order_type( $id )
 		{
-			$id = (int)$id;
-			$this->db->query("SELECT type, secret FROM fm_orders WHERE id={$id}", __LINE__, __FILE__);
-			$this->db->next_record();
-			return array(
-				'type' => $this->db->f('type'),
-				'secret' => $this->db->f('secret')
-				);
+			return $this->commonDataHelper->getOrderType($id);
 		}
 	}

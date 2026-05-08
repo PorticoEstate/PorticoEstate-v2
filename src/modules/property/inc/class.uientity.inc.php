@@ -14,12 +14,12 @@
  *
  * phpGroupWare is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with phpGroupWare; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA	02110-1301	USA
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA    02110-1301     USA
  *
  * @license http://www.gnu.org/licenses/gpl.html GNU General Public License
  * @internal Development of this application was funded by http://www.bergen.kommune.no/bbb_/ekstern/
@@ -32,9 +32,36 @@ use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\Database\Db;
+use App\modules\property\helpers\EntityEditPagePresenter;
+use App\modules\property\helpers\EntityFormHelper;
 
 /**
- * Description
+ * Legacy UI layer for the property entity module.
+ *
+ * @deprecated Since 2026-04 — superseded by the REST API in
+ *             {@see \App\modules\property\controllers\EntityController}.
+ *
+ * Replacement routes (all under /property/entity/{type}/{entity_id}/{cat_id}):
+ *   - GET    /               → index()   replaces query()
+ *   - GET    /{id}           → show()    replaces view()
+ *   - POST   /               → store()   replaces save() in add mode
+ *   - PUT    /{id}           → update()  replaces save() in edit mode
+ *   - DELETE /{id}           → destroy() replaces delete()
+ *   - GET    /{id}/files     → getFiles()          replaces get_files()
+ *   - GET    /{id}/related   → getRelated()        replaces get_related()
+ *   - GET    /{id}/inventory → getInventory()      replaces get_inventory()
+ *   - GET    /items-per-qr   → getItemsPerQr()     replaces get_items_per_qr()
+ *   - GET    /cases          → getCases()          replaces get_cases()
+ *   - GET    /checklists     → getChecklists()     replaces get_checklists()
+ *   - GET    /controls       → getControlsAtComponent() replaces get_controls_at_component()
+ *   - GET    /cases-for-checklist → getCasesForChecklist() replaces get_cases_for_checklist()
+ *
+ * HTML-rendering methods (summary, view, edit, add, columns, download, print_pdf,
+ * view_file, handle_multi_upload_file, build_multi_upload_file, index, attrib_history,
+ * get_documents, get_target, add_inventory, edit_inventory, inventory_calendar,
+ * get_assigned_history) remain accessible via legacy menuaction dispatch until
+ * the XSL/React frontend is replaced.
+ *
  * @package property
  */
 phpgw::import_class('phpgwapi.uicommon_jquery');
@@ -43,7 +70,7 @@ phpgw::import_class('phpgwapi.jquery');
 class property_uientity extends phpgwapi_uicommon_jquery
 {
 
-	private $receipt			 = array();
+	private $receipt				 = array();
 	private $acl_read, $acl_add, $acl_edit, $acl_delete, $entity_id;
 	var $grants;
 	var $cat_id;
@@ -81,10 +108,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		'summary'					 => true,
 		'columns'					 => true,
 		'query'						 => true,
-		'download'					 => true,
+		'download'					 => false,
 		'view'						 => true,
 		'edit'						 => true,
-		'save'						 => true,
 		'add'						 => true,
 		'delete'					 => true,
 		'view_file'					 => true,
@@ -94,7 +120,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		'index'						 => true,
 		//'addfiles' => true,
 		'get_documents'				 => true,
-		'get_files'					 => true,
 		'get_target'				 => true,
 		'get_related'				 => true,
 		'get_inventory'				 => true,
@@ -120,6 +145,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 */
 	function __construct()
 	{
+
 		parent::__construct();
 
 		$this->flags['xslt_app'] = true;
@@ -129,31 +155,31 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		$this->account = $this->userSettings['account_id'];
 
-		$this->bo				 = CreateObject('property.boentity', true);
-		$this->bocommon			 = &$this->bo->bocommon;
+		$this->bo								 = CreateObject('property.boentity', true);
+		$this->bocommon					 = &$this->bo->bocommon;
 		$this->soadmin_entity	 = &$this->bo->soadmin_entity;
 
 		$this->entity_id = $this->bo->entity_id;
 		$this->cat_id	 = $this->bo->cat_id;
 
-		$this->start			 = $this->bo->start;
-		$this->query			 = $this->bo->query;
-		$this->sort				 = $this->bo->sort;
-		$this->order			 = $this->bo->order;
-		$this->filter			 = $this->bo->filter;
+		$this->start					 = $this->bo->start;
+		$this->query					 = $this->bo->query;
+		$this->sort						 = $this->bo->sort;
+		$this->order					 = $this->bo->order;
+		$this->filter					 = $this->bo->filter;
 		$this->part_of_town_id	 = $this->bo->part_of_town_id;
-		$this->district_id		 = $this->bo->district_id;
-		$this->status			 = $this->bo->status;
-		$this->location_code	 = $this->bo->location_code;
-		$this->p_num			 = $this->bo->p_num;
-		$this->category_dir		 = $this->bo->category_dir;
+		$this->district_id			 = $this->bo->district_id;
+		$this->status					 = $this->bo->status;
+		$this->location_code		 = $this->bo->location_code;
+		$this->p_num					 = $this->bo->p_num;
+		$this->category_dir			 = $this->bo->category_dir;
 		Cache::session_set('property', 'entity_id', $this->entity_id);
-		$this->start_date		 = $this->bo->start_date;
-		$this->end_date			 = $this->bo->end_date;
-		$this->allrows			 = $this->bo->allrows;
-		$this->type				 = $this->bo->type;
-		$this->type_app			 = $this->bo->type_app;
-		$this->custom			 = $this->bo->custom;
+		$this->start_date			 = $this->bo->start_date;
+		$this->end_date				 = $this->bo->end_date;
+		$this->allrows				 = $this->bo->allrows;
+		$this->type						 = $this->bo->type;
+		$this->type_app				 = $this->bo->type_app;
+		$this->custom					 = $this->bo->custom;
 
 		$this->acl_location = ".{$this->type}.$this->entity_id";
 		if ($this->cat_id)
@@ -186,7 +212,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		$this->flags['menu_selection'] = "{$this->type_app[$this->type]}::entity_{$this->entity_id}";
 		if ($this->cat_id > 0)
 		{
-			//				$this->flags['menu_selection'] .= "::{$this->cat_id}";
 			$location_id = $this->locations->get_id($this->type_app[$this->type], $this->acl_location);
 			$this->flags['menu_selection'] = "navbar#{$location_id}";
 		}
@@ -210,31 +235,19 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * @param array $data Pre-existing entity record values (e.g. from bo->read_single()).
 	 * @return array Merged array of core field values and 'attributes' sub-array.
 	 */
-	private function _populate($data = array())
+	private function _populate($data = array()): array
 	{
-		$values				 = Sanitizer::get_var('values');
-		$values_attribute	 = Sanitizer::get_var('values_attribute');
-		$bypass				 = Sanitizer::get_var('bypass', 'bool');
+		$helper = new EntityFormHelper();
 
-		$values['vendor_id']	 = Sanitizer::get_var('vendor_id', 'int', 'POST');
-		$values['vendor_name']	 = Sanitizer::get_var('vendor_name', 'string', 'POST');
-		$values['date']			 = Sanitizer::get_var('date');
+		$input = $helper->mapInput(
+			$this->type_app[$this->type],
+			$this->type,
+			$this->acl_location,
+			$this->bocommon
+		);
 
-		if (!$bypass)
-		{
-			$insert_record	=	Cache::session_get('property',	'insert_record');
-			$insert_record_entity = (array)Cache::session_get($this->type_app[$this->type],	'insert_record_values' . $this->acl_location);
-
-			if (is_array($insert_record_entity))
-			{
-				for ($j = 0; $j < count($insert_record_entity); $j++)
-				{
-					$insert_record['extra'][$insert_record_entity[$j]] = $insert_record_entity[$j];
-				}
-			}
-
-			$values = $this->bocommon->collect_locationdata($values, $insert_record);
-		}
+		$values = $input['values'];
+		$values_attribute = $input['values_attribute'];
 
 		if (isset($values['origin']) && $values['origin'])
 		{
@@ -261,68 +274,27 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		if (isset($values['save']) && $values['save'])
 		{
+			$validation = $helper->validate(
+				$values,
+				$values_attribute,
+				(int) $this->cat_id,
+				(int) $this->entity_id,
+				$this->soadmin_entity,
+				$this->bo
+			);
+
+			$values = $validation['values'];
+			$values_attribute = $validation['values_attribute'];
+			$this->receipt['error'] = array_merge((array) $this->receipt['error'], $validation['errors']);
+
 			if (!$this->cat_id)
 			{
-				$this->receipt['error'][] = array('msg' => lang('Please select entity type !'));
-
 				return $values;
-			}
-			$category = $this->soadmin_entity->read_single_category($this->entity_id, $this->cat_id);
-
-			if ($category['org_unit'])
-			{
-				$values['extra']['org_unit_id']	 = Sanitizer::get_var('org_unit_id', 'int');
-				$values['org_unit_id']			 = $values['extra']['org_unit_id'];
-				$values['org_unit_name']		 = Sanitizer::get_var('org_unit_name', 'string');
-			}
-			if (phpgw::is_repost())
-			{
-				$this->receipt['error'][] = array('msg' => lang('Hmm... looks like a repost!'));
-			}
-
-			if ((!$values['location'] && !$values['p']) && isset($category['location_level']) && $category['location_level'])
-			{
-				$this->receipt['error'][] = array('msg' => lang('Please select a location !'));
-			}
-
-			if (isset($values_attribute) && is_array($values_attribute))
-			{
-				$first_attribute = current($values_attribute);
-				if (empty($first_attribute['datatype']))
-				{
-					$this->bo->get_attribute_information($values_attribute);
-				}
-
-				foreach ($values_attribute as $attribute)
-				{
-					if ($attribute['nullable'] != 1 && (!$attribute['value'] && !$values['extra'][$attribute['name']]))
-					{
-						$this->receipt['error'][] = array('msg' => lang('Please enter value for attribute %1', $attribute['input_text']));
-					}
-
-					if (isset($attribute['value']) && $attribute['value'] && $attribute['datatype'] == 'I' && !ctype_digit($attribute['value']))
-					{
-						$this->receipt['error'][] = array('msg' => lang('Please enter integer for attribute %1', $attribute['input_text']));
-					}
-				}
 			}
 
 			if ($this->receipt['error'])
 			{
-				if ($values['location'])
-				{
-					$bolocation				 = CreateObject('property.bolocation');
-					$location_code			 = implode("-", $values['location']);
-					$values['extra']['view'] = true;
-					$values['location_data'] = $bolocation->read_single($location_code, $values['extra']);
-				}
-				if ($values['extra']['p_num'])
-				{
-					$values['p'][$values['extra']['p_entity_id']]['p_num']		 = $values['extra']['p_num'];
-					$values['p'][$values['extra']['p_entity_id']]['p_entity_id'] = $values['extra']['p_entity_id'];
-					$values['p'][$values['extra']['p_entity_id']]['p_cat_id']	 = $values['extra']['p_cat_id'];
-					$values['p'][$values['extra']['p_entity_id']]['p_cat_name']	 = Sanitizer::get_var('entity_cat_name_' . $values['extra']['p_entity_id']);
-				}
+				$values = $helper->rehydrate($values);
 			}
 		}
 
@@ -348,103 +320,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * @return void
 	 * @throws Exception If the entity ID is missing from $values.
 	 */
-	private function _handle_files($values)
-	{
-		$id = (int)$values['id'];
-		if (empty($id))
-		{
-			throw new Exception('uientity::_handle_files() - missing id');
-		}
-
-		$loc1 = isset($values['location']['loc1']) && $values['location']['loc1'] ? $values['location']['loc1'] : 'dummy';
-		if ($this->type_app[$this->type] == 'catch')
-		{
-			$loc1 = 'dummy';
-		}
-
-		$bofiles = CreateObject('property.bofiles');
-		if (isset($values['file_action']) && is_array($values['file_action']))
-		{
-			$bofiles->delete_file("/{$this->category_dir}/{$loc1}/{$id}/", $values);
-		}
-
-		if (isset($values['file_jasperaction']) && is_array($values['file_jasperaction']))
-		{
-			$values['file_action'] = $values['file_jasperaction'];
-			$bofiles->delete_file("{$this->category_dir}/{$loc1}/{$id}/", $values);
-		}
-
-		$files = array();
-		if (isset($_FILES['file']['name']) && $_FILES['file']['name'])
-		{
-			$file_name	 = str_replace(' ', '_', $_FILES['file']['name']);
-			$to_file	 = "{$bofiles->fakebase}/{$this->category_dir}/{$loc1}/{$id}/{$file_name}";
-
-			if ($bofiles->vfs->file_exists(array(
-				'string'	 => $to_file,
-				'relatives'	 => array(RELATIVE_NONE)
-			)))
-			{
-				$this->receipt['error'][] = array('msg' => lang('This file already exists !'));
-			}
-			else
-			{
-				$files[] = array(
-					'from_file'	 => $_FILES['file']['tmp_name'],
-					'to_file'	 => $to_file
-				);
-			}
-
-			unset($to_file);
-			unset($file_name);
-		}
-
-		if (isset($_FILES['jasperfile']['name']) && $_FILES['jasperfile']['name'])
-		{
-			$file_name	 = 'jasper::' . str_replace(' ', '_', $_FILES['jasperfile']['name']);
-			$to_file	 = "{$bofiles->fakebase}/{$this->category_dir}/{$loc1}/{$id}/{$file_name}";
-
-			if ($bofiles->vfs->file_exists(array(
-				'string'	 => $to_file,
-				'relatives'	 => array(RELATIVE_NONE)
-			)))
-			{
-				$this->receipt['error'][] = array('msg' => lang('This file already exists !'));
-			}
-			else
-			{
-				$files[] = array(
-					'from_file'	 => $_FILES['jasperfile']['tmp_name'],
-					'to_file'	 => $to_file
-				);
-			}
-
-			unset($to_file);
-			unset($file_name);
-		}
-
-
-		foreach ($files as $file)
-		{
-			$bofiles->create_document_dir("{$this->category_dir}/{$loc1}/{$id}");
-			$bofiles->vfs->override_acl = 1;
-
-			if (!$bofiles->vfs->cp(array(
-				'from'		 => $file['from_file'],
-				'to'		 => $file['to_file'],
-				'relatives'	 => array(RELATIVE_NONE | VFS_REAL, RELATIVE_ALL)
-			)))
-			{
-				$this->receipt['error'][] = array('msg' => lang('Failed to upload file !'));
-			}
-			$bofiles->vfs->override_acl = 0;
-		}
-
-		unset($loc1);
-		unset($files);
-		unset($file);
-	}
-
 	/**
 	 * Handle a multi-file upload for an entity item (AJAX endpoint).
 	 *
@@ -453,7 +328,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return void Output is written directly.
 	 */
-	public function handle_multi_upload_file()
+	public function handle_multi_upload_file(): void
 	{
 		$id			 = Sanitizer::get_var('id', 'int', 'GET');
 		$entity_id	 = Sanitizer::get_var('entity_id');
@@ -509,7 +384,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				$upload_handler->delete_file();
 				break;
 			default:
-				$upload_handler->header('HTTP/1.1 405 Method Not Allowed');
+				header('HTTP/1.1 405 Method Not Allowed');
 		}
 
 		$this->phpgwapi_common->phpgw_exit();
@@ -520,7 +395,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return void Output is rendered directly via XSL template.
 	 */
-	public function build_multi_upload_file()
+	public function build_multi_upload_file(): void
 	{
 		phpgwapi_jquery::init_multi_upload_file();
 
@@ -548,8 +423,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			'multi_upload_action' => $multi_upload_action
 		);
 
-		phpgwapi_xslttemplates::getInstance()->add_file(array('files', 'multi_upload_file'));
-		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('multi_upload' => $data));
+		self::render_template_xsl(['files', 'multi_upload_file'], $data, '', 'multi_upload');
 	}
 
 	/**
@@ -558,7 +432,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * @param mixed $selected Currently selected filter value.
 	 * @return array Formatted options list for use in a combo-box widget.
 	 */
-	private function _get_filters($selected = 0)
+	private function _get_filters($selected = 0): array
 	{
 		$values_combo_box	 = array();
 		$combos				 = array();
@@ -705,7 +579,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
 	 */
-	public function get_documents()
+	public function get_documents(): array
 	{
 		$search		 = Sanitizer::get_var('search');
 		$order		 = Sanitizer::get_var('order');
@@ -729,14 +603,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			'allrows'			 => Sanitizer::get_var('length', 'int') == -1 || $export,
 			'doc_type'			 => $doc_type,
 			'entity_id'			 => $entity_id,
-			'cat_id'			 => $cat_id,
+			'cat_id'				 => $cat_id,
 			'p_num'				 => $item_id,
 			'location_item_id'	 => $item_id,
 		);
 
-		$document		 = CreateObject('property.sodocument');
-		$documents		 = $document->read_at_location($params);
-		$total_records	 = $document->total_records;
+		$document			 = CreateObject('property.sodocument');
+		$documents			 = $document->read_at_location($params);
+		$total_records		 = $document->total_records;
 
 		foreach ($documents as $item)
 		{
@@ -780,118 +654,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * Also used internally by download() to produce a full record set. Adds image
 	 * and view-link data to each record for table rendering.
+	 * 
+	 * NOTE: This method is now handled by the EntityController
 	 *
 	 * @return array|void DataTables result array, or void when outputting directly.
 	 */
-	public function query()
+	public function query(): array
 	{
-		$start_date	 = $this->start_date;
-		$end_date	 = $this->end_date;
-
-		if ($start_date && empty($end_date))
-		{
-			$dateformat	 = $this->userSettings['preferences']['common']['dateformat'];
-			$end_date	 = urlencode($this->phpgwapi_common->show_date(mktime(0, 0, 0, date("m"), date("d"), date("Y")), $dateformat));
-		}
-
-		$search	 = Sanitizer::get_var('search');
-		$order	 = Sanitizer::get_var('order');
-		$draw	 = Sanitizer::get_var('draw', 'int');
-		$columns = Sanitizer::get_var('columns');
-		$export	 = Sanitizer::get_var('export', 'bool');
-
-		$params = array(
-			'start'		 => Sanitizer::get_var('start', 'int', 'REQUEST', 0),
-			'results'	 => Sanitizer::get_var('length', 'int', 'REQUEST', 0),
-			'query'		 => $search['value'],
-			'order'		 => $columns[$order[0]['column']]['data'],
-			'sort'		 => $order[0]['dir'],
-			'allrows'	 => Sanitizer::get_var('length', 'int') == -1 || $export,
-			'start_date' => $start_date ? urldecode($start_date) : '',
-			'end_date' 	 => $end_date ? urldecode($end_date) : '',
-			'parent_location_id' => Sanitizer::get_var('parent_location_id', 'int'),
-			'parent_id' => Sanitizer::get_var('parent_id', 'int')
-		);
-
-		$values = $this->bo->read($params);
-		if ($export)
-		{
-			return $values;
-		}
-
-		$location_id	 = $this->locations->get_id($this->type_app[$this->type], $this->acl_location);
-		$custom_config	 = CreateObject('admin.soconfig', $location_id);
-		$_config		 = isset($custom_config->config_data) && $custom_config->config_data ? $custom_config->config_data : array();
-
-		$remote_image_in_table = false;
-		foreach ($_config as $_config_section => $_config_section_data)
-		{
-			if ($_config_section_data['image_in_table'])
-			{
-				$remote_image_in_table = true;
-				break;
-			}
-		}
-
-		$vfs				 = CreateObject('phpgwapi.vfs');
-		$vfs->override_acl	 = 1;
-
-		$img_types = array(
-			'image/jpeg',
-			'image/png',
-			'image/gif'
-		);
-
-		$link_data = array(
-			'menuaction' => 'property.uientity.view',
-			'entity_id'	 => $this->entity_id,
-			'cat_id'	 => $this->cat_id,
-			'type'		 => $this->type
-		);
-
-		foreach ($values as &$entity_entry)
-		{
-			$_loc1 = isset($entity_entry['loc1']) && $entity_entry['loc1'] ? $entity_entry['loc1'] : 'dummy';
-
-			if ($remote_image_in_table)
-			{
-				$entity_entry['file_name']		 = $entity_entry[$_config_section_data['img_key_local']];
-				$entity_entry['img_id']			 = $entity_entry[$_config_section_data['img_key_local']];
-				$entity_entry['img_url']		 = $_config_section_data['url'] . '&' . $_config_section_data['img_key_remote'] . '=' . $entity_entry['img_id'];
-				$entity_entry['thumbnail_flag']	 = $_config_section_data['thumbnail_flag'];
-			}
-			else
-			{
-				$_files = $vfs->ls(array(
-					'string'	 => "/property/{$this->category_dir}/{$_loc1}/{$entity_entry['id']}",
-					'checksubdirs'	=> false,
-					'relatives'	 => array(RELATIVE_NONE)
-				));
-
-				$mime_in_array = in_array($_files[0]['mime_type'], $img_types);
-				if (!empty($_files[0]) && $mime_in_array)
-				{
-					$entity_entry['file_name']		 = $_files[0]['name'];
-					$entity_entry['img_id']			 = $_files[0]['file_id'];
-					$entity_entry['directory']		 = $_files[0]['directory'];
-					$entity_entry['img_url']		 = self::link(array(
-						'menuaction' => 'property.uigallery.view_file',
-						'file'		 => $entity_entry['directory'] . '/' . $entity_entry['file_name']
-					));
-					$entity_entry['thumbnail_flag']	 = 'thumb=1';
-				}
-			}
-
-			$link_data['id']		 = $entity_entry['id'];
-			$entity_entry['link']	 = self::link($link_data);
-		}
-
-		$result_data = array('results' => $values);
-
-		$result_data['total_records']	 = $this->bo->total_records;
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
+		return [];
 	}
 
 	/**
@@ -910,12 +680,16 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return array|void JSON status array if phpgw_return_as=json, otherwise redirects or renders.
 	 */
-	public function save()
+	public function save(): mixed
 	{
 		if (!$_POST)
 		{
-			return $this->edit();
+			$this->edit();
+			return null;
 		}
+
+		$helper = new EntityFormHelper();
+		$is_json = Sanitizer::get_var('phpgw_return_as') == 'json';
 
 		$id = Sanitizer::get_var('id', 'int');
 
@@ -947,42 +721,26 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		if ($this->receipt['error'])
 		{
-			if (Sanitizer::get_var('phpgw_return_as') == 'json')
-			{
-				return array(
-					'status' => 'error',
-					'receipt'	=> $this->receipt
-				);
-			}
-			else
-			{
-				$this->edit($values);
-			}
+			$response = $helper->buildSaveResponse($is_json, $this->receipt, $values, 'error');
+			return $this->applySaveResponse($response);
 		}
 		else
 		{
 			try
 			{
-				Db::getInstance()->transaction_begin();
-				$receipt		 = $this->bo->save($values, $attributes, $action, $this->entity_id, $this->cat_id);
-				$values['id']	 = $receipt['id'];
-				$values_checklist_stage = Sanitizer::get_var('values_checklist_stage');
+				$persisted = $helper->persistSave(
+					$values,
+					$attributes,
+					$action,
+					(int) $this->entity_id,
+					(int) $this->cat_id,
+					$this->bo
+				);
 
-				if ($values_checklist_stage)
-				{
-					$this->bo->save_checklist($receipt['id'], $values_checklist_stage, $receipt);
-				}
-				Db::getInstance()->transaction_commit();
+				$receipt = $persisted['receipt'];
+				$values = $persisted['values'];
 
 				$this->receipt	 = $receipt;
-				if (Sanitizer::get_var('phpgw_return_as') == 'json')
-				{
-					return array(
-						'status' 	=> 'saved',
-						'id'		=> $receipt['id'],
-						'receipt'	=> $this->receipt,
-					);
-				}
 			}
 			catch (Exception $e)
 			{
@@ -990,48 +748,67 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				{
 					Db::getInstance()->transaction_abort();
 
-					if (Sanitizer::get_var('phpgw_return_as') == 'json')
-					{
-						return array(
-							'status' => 'error',
-							'receipt'	=> $this->receipt
-						);
-					}
-
 					Cache::message_set($e->getMessage(), 'error');
-					$this->edit($values);
-					return;
+					$response = $helper->buildSaveResponse($is_json, $this->receipt, $values, 'error');
+					return $this->applySaveResponse($response);
 				}
 			}
 
-			$this->_handle_files($values);
+			$errors = (array) ($this->receipt['error'] ?? []);
+			$helper->handleFiles(
+				$values,
+				$this->category_dir,
+				$this->type_app[$this->type],
+				$errors
+			);
+			$this->receipt['error'] = $errors;
 
-			//Cache::message_set($receipt, 'message');
-			if ($values['apply'])
-			{
-				if ($id || (isset($receipt['id']) && $receipt['id']))
-				{
-					$_id = isset($receipt['id']) && $receipt['id'] ? $receipt['id'] : $id;
-					self::message_set($this->receipt);
-					self::redirect(array(
-						'menuaction' => 'property.uientity.edit',
-						'id'		 => $_id,
-						'entity_id'	 => $this->entity_id,
-						'cat_id'	 => $this->cat_id,
-						'type'		 => $this->type
-					));
-				}
-
-				$this->edit($values);
-				return;
-			}
-			phpgw::redirect_link('/index.php', array(
-				'menuaction' => 'property.uientity.index',
-				'entity_id'	 => $this->entity_id,
-				'cat_id'	 => $this->cat_id,
-				'type'		 => $this->type
-			));
+			$response = $helper->buildSaveResponse(
+				$is_json,
+				$this->receipt,
+				$values,
+				'success',
+				(int) $id,
+				(int) $this->entity_id,
+				(int) $this->cat_id,
+				$this->type
+			);
+			return $this->applySaveResponse($response);
 		}
+	}
+
+	/**
+	 * Execute the legacy UI side effect selected for a save response.
+	 *
+	 * @param array $response Save response decision: {type, payload, values}.
+	 * @return array|void
+	 */
+	private function applySaveResponse(array $response): mixed
+	{
+		if ($response['type'] === 'json')
+		{
+			return $response['payload'];
+		}
+
+		if ($response['type'] === 'edit')
+		{
+			$this->edit($response['values']);
+			return null;
+		}
+
+		if ($response['type'] === 'redirect-edit')
+		{
+			self::message_set($this->receipt);
+			self::redirect(array_merge([
+				'menuaction' => 'property.uientity.edit',
+			], $response['payload']));
+			return null;
+		}
+
+		phpgw::redirect_link('/index.php', array_merge([
+			'menuaction' => 'property.uientity.index',
+		], $response['payload']));
+		return null;
 	}
 
 	/**
@@ -1039,7 +816,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return void
 	 */
-	function save_sessiondata()
+	function save_sessiondata(): void
 	{
 		$data = array(
 			'start'				 => $this->start,
@@ -1059,77 +836,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		$this->bo->save_sessiondata($data);
 	}
 
-	/**
-	 * Download the current entity list as a file using bocommon::download().
-	 *
-	 * Suppresses the HTML header/footer and delegates to query() for the data
-	 * and bo->uicols for the column metadata.
-	 *
-	 * @return void Output is written directly.
-	 */
-	function download()
-	{
-		$this->flags['noheader']	 = true;
-		$this->flags['nofooter']	 = true;
-		$this->flags['xslt_app']	 = false;
-		Settings::getInstance()->update('flags', ['noheader' => true, 'nofooter' => true, 'xslt_app' => false]);
-
-		//$start_date 	= urldecode($this->start_date);
-		//$end_date 	= urldecode($this->end_date);
-		//$list = $this->bo->read(array('entity_id'=>$this->entity_id,'cat_id'=>$this->cat_id,'allrows'=>true,'start_date'=>$start_date,'end_date'=>$end_date, 'type' => $this->type));
-		$list	 = $this->query();
-		$uicols	 = $this->bo->uicols;
-
-		$this->bocommon->download($list, $uicols['name'], $uicols['descr'], $uicols['input_type']);
-	}
-	/*
-		  function addfiles()
-		  {
-		  $this->flags['xslt_app'] = false;
-		  $this->flags['noframework'] = true;
-		  $this->flags['nofooter'] = true;
-
-		  $id = Sanitizer::get_var('id', 'int');
-		  $jasperfile = Sanitizer::get_var('jasperfile', 'bool');
-
-		  $fileuploader = CreateObject('property.fileuploader');
-
-
-		  if (!$this->acl_add && !$this->acl_edit)
-		  {
-		  $this->phpgwapi_common->phpgw_exit();
-		  }
-
-		  if (!$id)
-		  {
-		  $this->phpgwapi_common->phpgw_exit();
-		  }
-
-		  $test = false;//true;
-		  if ($test)
-		  {
-		  if (!empty($_FILES))
-		  {
-		  $tempFile = $_FILES['Filedata']['tmp_name'];
-		  $targetPath = "{$this->serverSettings['temp_dir']}/";
-		  $targetFile = str_replace('//', '/', $targetPath) . $_FILES['Filedata']['name'];
-		  move_uploaded_file($tempFile, $targetFile);
-		  echo str_replace($this->serverSettings['temp_dir'], '', $targetFile);
-		  }
-		  $this->phpgwapi_common->phpgw_exit();
-		  }
-
-		  $values = $this->bo->read_single(array('entity_id' => $this->entity_id, 'cat_id' => $this->cat_id,
-		  'id' => $id));
-
-		  $loc1 = isset($values['location_data']['loc1']) && $values['location_data']['loc1'] ? $values['location_data']['loc1'] : 'dummy';
-		  if ($this->type_app[$this->type] == 'catch')
-		  {
-		  $loc1 = 'dummy';
-		  }
-
-		  $fileuploader->upload("{$this->category_dir}/{$loc1}/{$id}");
-		  } */
 
 	/**
 	 * Return a DataTables-compatible JSON list of entity records linked to the given item.
@@ -1139,7 +845,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
 	 */
-	function get_related()
+	function get_related(): array
 	{
 		$id		 = Sanitizer::get_var('id', 'REQUEST', 'int');
 		$draw	 = Sanitizer::get_var('draw', 'int');
@@ -1178,7 +884,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		{
 			if ($total_records > $num_rows)
 			{
-				$page		 = ceil(($start / $total_records) * ($total_records / $num_rows));
+				$page		 = (int)ceil(($start / $total_records) * ($total_records / $num_rows));
 				$values_part = array_chunk($values, $num_rows);
 				$out		 = $values_part[$page];
 			}
@@ -1203,7 +909,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
 	 */
-	function get_target()
+	function get_target(): array
 	{
 		$id		 = Sanitizer::get_var('id', 'int');
 		$draw	 = Sanitizer::get_var('draw', 'int');
@@ -1267,109 +973,13 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		{
 			if ($total_records > $num_rows)
 			{
-				$page		 = ceil(($start / $total_records) * ($total_records / $num_rows));
+				$page		 = (int)ceil(($start / $total_records) * ($total_records / $num_rows));
 				$values_part = array_chunk($values, $num_rows);
 				$out		 = $values_part[$page];
 			}
 			else
 			{
 				$out = $values;
-			}
-		}
-
-		$result_data = array('results' => $out);
-
-		$result_data['total_records']	 = $total_records;
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
-	}
-
-	/**
-	 * Return a DataTables-compatible JSON list of files attached to an entity item.
-	 *
-	 * Fetches file metadata from bo->read_single() and returns rendered link and
-	 * checkbox columns (with thumbnail info for image files).
-	 *
-	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
-	 */
-	function get_files()
-	{
-		$id		 = Sanitizer::get_var('id', 'REQUEST', 'int');
-		$draw	 = Sanitizer::get_var('draw', 'int');
-		$allrows = Sanitizer::get_var('length', 'int') == -1;
-
-		$values = $this->bo->read_single(array(
-			'entity_id'	 => $this->entity_id,
-			'cat_id'	 => $this->cat_id,
-			'type'		 => $this->type,
-			'id'		 => $id
-		));
-
-		$link_file_data = array(
-			'menuaction' => 'property.uientity.view_file',
-			'loc1'		 => $values['location_data']['loc1'],
-			'id'		 => $id,
-			'cat_id'	 => $this->cat_id,
-			'entity_id'	 => $this->entity_id,
-			'type'		 => $this->type
-		);
-		$link_view_file	 = phpgw::link('/index.php', $link_file_data);
-
-		if (isset($values['files']) && is_array($values['files']))
-		{
-			$j = count($values['files']);
-			for ($i = 0; $i < $j; $i++)
-			{
-				$values['files'][$i]['file_name'] = urlencode($values['files'][$i]['name']);
-			}
-		}
-
-		$img_types = array(
-			'image/jpeg',
-			'image/png',
-			'image/gif'
-		);
-
-		$lang_view = lang('click to view file');
-		$lang_delete = lang('Check to delete file');
-		$content_files = array();
-		$z = 0;
-		foreach ($values['files'] as $_entry)
-		{
-			$content_files[] = array(
-				'file_link'		 => "<a href='{$link_view_file}&amp;file_id={$_entry['file_id']}' target='_blank' title='{$lang_view}'>{$_entry['name']}</a>",
-				'delete_file'	 => "<input type='checkbox' name='values[file_action][]' value='{$_entry['file_id']}' title='{$lang_delete}'>"
-			);
-			if (in_array($_entry['mime_type'], $img_types))
-			{
-				$content_files[$z]['file_name'] = $_entry['name'];
-				$content_files[$z]['img_id'] = $_entry['file_id'];
-				$content_files[$z]['img_url'] = "{$link_view_file}&file_id={$_entry['file_id']}";
-			}
-			$z++;
-		}
-
-		$start			 = Sanitizer::get_var('startIndex', 'REQUEST', 'int', 0);
-		$total_records	 = count($content_files);
-
-		$num_rows = Sanitizer::get_var('length', 'int', 'REQUEST', 0);
-
-		if ($allrows)
-		{
-			$out = $content_files;
-		}
-		else
-		{
-			if ($total_records > $num_rows)
-			{
-				$page		 = ceil(($start / $total_records) * ($total_records / $num_rows));
-				$values_part = array_chunk($content_files, $num_rows);
-				$out		 = $values_part[$page];
-			}
-			else
-			{
-				$out = $content_files;
 			}
 		}
 
@@ -1389,15 +999,12 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return void Output is rendered via XSL template.
 	 */
-	function columns()
+	function columns(): void
 	{
 		//cramirez: necesary for windows.open . Avoid error JS
-		$this->flags['xslt_app'] = true;
-		phpgwapi_xslttemplates::getInstance()->add_file(array('columns'));
-
 		$this->flags['noframework']	 = true;
 		$this->flags['nofooter']		 = true;
-		Settings::getInstance()->update('flags', array('noframework' => true, 'nofooter' => true, 'xslt_app' => true));
+		Settings::getInstance()->update('flags', array('noframework' => true, 'nofooter' => true));
 
 		$values	 = Sanitizer::get_var('values');
 		$receipt = array();
@@ -1425,7 +1032,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			'type'		 => $this->type
 		);
 
-
 		$msgbox_data = $this->bocommon->msgbox_data($receipt);
 
 		$data = array(
@@ -1440,7 +1046,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		$this->flags['app_header'] = $function_msg;
 		Settings::getInstance()->update('flags', array('app_header' => $function_msg));
-		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('columns' => $data));
+		self::render_template_xsl('columns', $data, '', 'columns');
 	}
 
 	/**
@@ -1450,7 +1056,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 *
 	 * @return void Output is written directly.
 	 */
-	function view_file()
+	function view_file(): void
 	{
 		if (!$this->acl_read)
 		{
@@ -1474,9 +1080,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * Redirects to the first accessible category if no cat_id is set. Returns
 	 * a DataTables JSON response when phpgw_return_as=json is set.
 	 *
-	 * @return void Output is rendered via XSL template or redirected.
+	 * @return mixed Output is rendered via XSL template or redirected.
 	 */
-	function index()
+	function index(): mixed
 	{
 		//redirect. If selected the title of module.
 		if ($this->entity_id && !$this->cat_id)
@@ -1514,11 +1120,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			$this->district_id		 = $default_district;
 		}
 
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			return $this->query();
-		}
-
 		if ($this->cat_id)
 		{
 			$category = $this->soadmin_entity->read_single_category($this->entity_id, $this->cat_id);
@@ -1530,6 +1131,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		$jqcal->add_listener('filter_end_date');
 		phpgwapi_jquery::load_widget('datepicker');
 
+		$function_msg = 'Entity';
 		if ($this->entity_id && $this->cat_id)
 		{
 			$entity			 = $this->soadmin_entity->read_single($this->entity_id, false);
@@ -1580,25 +1182,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				)
 			),
 			'datatable'		 => array(
-				'source'		 => self::link(array(
-					'menuaction'		 => 'property.uientity.index',
-					'entity_id'			 => $this->entity_id,
-					'cat_id'			 => $this->cat_id,
-					'type'				 => $this->type,
-					'district_id'		 => $this->district_id,
-					'p_num'				 => $this->p_num,
-					'phpgw_return_as'	 => 'json'
-				)),
-				'download'		 => self::link(array(
-					'menuaction'	 => 'property.uientity.download',
-					'entity_id'		 => $this->entity_id,
-					'cat_id'		 => $this->cat_id,
-					'type'			 => $this->type,
-					'district_id'	 => $this->district_id,
-					'p_num'			 => $this->p_num,
-					'export'		 => true,
-					'allrows'		 => true
-				)),
+				'source'		 => '/property/entity/' . urlencode($this->type)
+					. '/' . (int)$this->entity_id
+					. '/' . (int)$this->cat_id,
+				'district_id'		 => $this->district_id,
+				'p_num'				 => $this->p_num,
+				'download'		 => phpgw::link('/property/entity/' . urlencode($this->type)
+					. '/' . (int)$this->entity_id
+					. '/' . (int)$this->cat_id . '/download', []),
 				"columns"		 => array('onclick' => "JqueryPortico.openPopup({menuaction:'property.uientity.columns', entity_id:'{$this->entity_id}', cat_id:'{$this->cat_id}', type:'{$this->type}'}, {closeAction:'reload'})"),
 				'new_item'		 => self::link(array(
 					'menuaction' => 'property.uientity.edit',
@@ -1657,6 +1248,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		$count_uicols_name = count($uicols['name']);
 
+		$searc_levels = array();
 		$type_id = 4;
 		for ($i = 1; $i < $type_id; $i++)
 		{
@@ -1822,17 +1414,34 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		if ($this->acl_delete)
 		{
+			$rest_delete_base = '/property/entity/' . urlencode($this->type)
+				. '/' . (int)$this->entity_id
+				. '/' . (int)$this->cat_id;
+
+			$delete_custom_code = "
+				var selected = fnGetSelected();
+				var numSelected = selected.length;
+				if (numSelected === 0) { return false; }
+				for (var n = 0; n < numSelected; n++) {
+					var aData = oTable.api().rows(selected[n]).data()[0];
+					var deleteUrl = '" . $rest_delete_base . "/' + aData.id;
+					fetch(deleteUrl, {method: 'DELETE', headers: {'X-Requested-With': 'XMLHttpRequest'}})
+						.then(function(resp) {
+							if (resp.ok) {
+								oTable.api().draw('page');
+							} else {
+								resp.text().then(function(t) { alert('Delete failed: ' + t); });
+							}
+						});
+				}
+			";
+
 			$data['datatable']['actions'][] = array(
-				'my_name'		 => 'delete',
+				'my_name'		 => 'rest_delete',
 				'text'			 => lang('delete'),
 				'confirm_msg'	 => lang('do you really want to delete this entry'),
-				'action'		 => phpgw::link('/index.php', array(
-					'menuaction' => 'property.uientity.delete',
-					'entity_id'	 => $this->entity_id,
-					'cat_id'	 => $this->cat_id,
-					'type'		 => $this->type
-				)),
-				'parameters'	 => json_encode($parameters)
+				'type'			 => 'custom',
+				'custom_code'	 => $delete_custom_code
 			);
 		}
 
@@ -1840,6 +1449,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
 
 		self::render_template_xsl('datatable2', $data);
+		return null;
 	}
 
 	/**
@@ -1852,9 +1462,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * @param string     $mode   'edit' (default) or 'view' for read-only rendering.
 	 * @return void Output is rendered via XSL template.
 	 */
-	function edit($values = array(), $mode = 'edit')
+	function edit($values = array(), $mode = 'edit'): void
 	{
-		$id		 = isset($values['id']) && $values['id'] ? $values['id'] : Sanitizer::get_var('id', 'int');
+		$id		 = (int)(isset($values['id']) && $values['id'] ? $values['id'] : Sanitizer::get_var('id', 'int'));
 		$_lean	 = Sanitizer::get_var('lean', 'bool');
 
 		if ($mode == 'edit' && (!$this->acl_add && !$this->acl_edit))
@@ -1872,7 +1482,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		{
 			if (!$this->acl_read)
 			{
-				$this->bocommon->no_access();
+				phpgw::no_access();
 				return;
 			}
 		}
@@ -1880,7 +1490,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		{
 			if (!$this->acl_add && !$this->acl_edit)
 			{
-				$this->bocommon->no_access();
+				phpgw::no_access();
 				return;
 			}
 		}
@@ -1918,7 +1528,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			{
 				$values['location_data'] = $bolocation->read_single($location_code, array(
 					'tenant_id'	 => $tenant_id,
-					'p_num'		 => $p_num,
+					'p_num'		 => Sanitizer::get_var('p_num'),
 					'view'		 => true
 				));
 			}
@@ -1941,7 +1551,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		if (empty($id))
 		{
-			$id = $values['id'];
+			$id = (int)($values['id'] ?? 0);
 		}
 
 		if ($id)
@@ -1985,10 +1595,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		}
 
 		$lookup_entity = array();
+		$lookup_entity_id = array();
 
 		if (isset($entity['lookup_entity']) && is_array($entity['lookup_entity']))
 		{
-			$lookup_entity_id = array_values($entity['lookup_entity']);
+			foreach ($entity['lookup_entity'] as $lookup_id)
+			{
+				$lookup_entity_id[$lookup_id] = '';
+			}
 		}
 		else
 		{
@@ -2075,51 +1689,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			'type'		 => $this->type
 		);
 
-		$project_link_data = array(
-			'menuaction'	 => 'property.uiproject.edit',
-			'bypass'		 => true,
-			'location_code'	 => $values['location_code'],
-			'p_num'			 => $id,
-			'p_entity_id'	 => $this->entity_id,
-			'p_cat_id'		 => $this->cat_id,
-			'tenant_id'		 => $values['tenant_id'],
-			'origin'		 => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
-			'origin_id'		 => $id
-		);
-
-		$add_to_project_link_data = array(
-			'menuaction' => 'property.uiproject.index',
-			'from'		 => 'workorder',
-			'lookup'	 => true,
-			'query'		 => isset($values['location_data']['loc1']) ? $values['location_data']['loc1'] : '',
-			//		'p_num'				=> $id,
-			//		'p_entity_id'		=> $this->entity_id,
-			//		'p_cat_id'			=> $this->cat_id,
-			'tenant_id'	 => $values['tenant_id'],
-			'origin'	 => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
-			'origin_id'	 => $id
-		);
-
-		$ticket_link_data = array(
-			'menuaction'	 => 'property.uitts.add',
-			'bypass'		 => true,
-			'location_code'	 => $values['location_code'],
-			'p_num'			 => $id,
-			'p_entity_id'	 => $this->entity_id,
-			'p_cat_id'		 => $this->cat_id,
-			'tenant_id'		 => $values['tenant_id'],
-			'origin'		 => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
-			'origin_id'		 => $id
-		);
-
-		$pdf_data = array(
-			'menuaction' => 'property.uientity.print_pdf',
-			'id'		 => $id,
-			'entity_id'	 => $this->entity_id,
-			'cat_id'	 => $this->cat_id,
-			'type'		 => $this->type
-		);
-
 		$tabs		 = array();
 		$active_tab	 = Sanitizer::get_var('active_tab');
 
@@ -2132,6 +1701,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			);
 			$active_tab			 = $active_tab ? $active_tab : 'location';
 		}
+
+		$_enable_controller = !!$category['enable_controller'] || !!$values['entity_group_id'];
+		$attributes_general	 = array();
+		$attributes			 = array();
 
 		if (isset($values['attributes']) && is_array($values['attributes']))
 		{
@@ -2162,7 +1735,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				}
 			}
 
-			$_enable_controller = !!$category['enable_controller'] || !!$values['entity_group_id'];
 			if ($_enable_controller && $id)
 			{
 				$tabs['controller']	 = array(
@@ -2178,9 +1750,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			$location			 = ".{$this->type}.{$this->entity_id}.{$this->cat_id}";
 			$attributes_groups	 = $this->bo->get_attribute_groups($location, $values['attributes']);
 			//				_debug_array($attributes_groups);
-			$attributes_general	 = array();
 			$i					 = -1;
-			$attributes			 = array();
 
 			$_dummy = array(array(
 				//					'id' => 0,
@@ -2253,121 +1823,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		}
 		//			_debug_array($attributes);
 		// ---- START INTEGRATION -------------------------
-
-		$custom_config	 = CreateObject('admin.soconfig', $this->locations->get_id($this->type_app[$this->type], $this->acl_location));
-		$_config		 = isset($custom_config->config_data) && $custom_config->config_data ? $custom_config->config_data : array();
-
-		$integration = array();
-		foreach ($_config as $_config_section => $_config_section_data)
-		{
-			if (isset($_config_section_data['tab']) && $values['id'])
-			{
-				if (!isset($_config_section_data['url']))
-				{
-					Cache::message_set("'url' is a required setting for integrations, '{$_config_section}' is disabled", 'error');
-					break;
-				}
-
-				//get session key from remote system
-				$arguments	 = array($_config_section_data['auth_hash_name'] => $_config_section_data['auth_hash_value']);
-				$query		 = http_build_query($arguments);
-				$auth_url	 = $_config_section_data['auth_url'];
-				$request	 = "{$auth_url}?{$query}";
-
-				$aContext = array(
-					'http' => array(
-						'request_fulluri' => true,
-					),
-				);
-
-				if (isset($this->serverSettings['httpproxy_server']))
-				{
-					$aContext['http']['proxy'] = "{$this->serverSettings['httpproxy_server']}:{$this->serverSettings['httpproxy_port']}";
-				}
-
-				$cxContext	 = stream_context_create($aContext);
-				$response	 = trim(file_get_contents($request, False, $cxContext));
-
-				$integration[] = array(
-					'section'	 => $_config_section,
-					'height'	 => isset($_config_section_data['height']) && $_config_section_data['height'] ? $_config_section_data['height'] : 500
-				);
-
-				$_config_section_data['url']		 = htmlspecialchars_decode($_config_section_data['url']);
-				$_config_section_data['parametres']	 = htmlspecialchars_decode($_config_section_data['parametres']);
-
-				parse_str($_config_section_data['parametres'], $output);
-
-				foreach ($output as $_dummy => $_substitute)
-				{
-					$_keys[] = $_substitute;
-
-					$__value = false;
-					if (!$__value = urlencode($values[str_replace(array('__', '*'), array('', ''), $_substitute)]))
-					{
-						foreach ($values['attributes'] as $_attribute)
-						{
-							if (str_replace(array('__', '*'), array('', ''), $_substitute) == $_attribute['name'])
-							{
-								$__value = urlencode($_attribute['value']);
-								break;
-							}
-						}
-					}
-
-					if ($__value)
-					{
-						$_values[] = $__value;
-					}
-				}
-
-				unset($output);
-				unset($__value);
-				$_sep = '?';
-				if (stripos($_config_section_data['url'], '?'))
-				{
-					$_sep = '&';
-				}
-				$_param			 = str_replace($_keys, $_values, $_config_section_data['parametres']);
-				unset($_keys);
-				unset($_values);
-				//				$integration_src = phpgw::safe_redirect("{$_config_section_data['url']}{$_sep}{$_param}");
-				$integration_src = "{$_config_section_data['url']}{$_sep}{$_param}";
-				if ($_config_section_data['action'])
-				{
-					$_sep = '?';
-					if (stripos($integration_src, '?'))
-					{
-						$_sep = '&';
-					}
-					$integration_src .= "{$_sep}{$_config_section_data['action']}=" . $_config_section_data["action_{$mode}"];
-				}
-
-				$arguments = array($_config_section_data['auth_key_name'] => $response);
-
-				if (isset($_config_section_data['location_data']) && $_config_section_data['location_data'])
-				{
-					$_config_section_data['location_data'] = htmlspecialchars_decode($_config_section_data['location_data']);
-					parse_str($_config_section_data['location_data'], $output);
-					foreach ($output as $_dummy => $_substitute)
-					{
-						$_keys[]	 = $_substitute;
-						$_values[]	 = urlencode($values['location_data'][trim($_substitute, '_')]);
-					}
-					$integration_src .= '&' . str_replace($_keys, $_values, $_config_section_data['location_data']);
-				}
-
-				$integration_src .= "&{$_config_section_data['auth_key_name']}={$response}";
-
-				$tabs[$_config_section] = array(
-					'label'		 => $_config_section_data['tab'],
-					'link'		 => "#{$_config_section}",
-					'disable'	 => 0,
-					'function'	 => "document.getElementById('{$_config_section}_content').src = '{$integration_src}';"
-				);
-			}
-		}
-
+		$integration_data = $this->build_edit_integration_tabs($values, $tabs, $mode);
+		$tabs = $integration_data['tabs'];
+		$integration = $integration_data['integration'];
 		// ---- END INTEGRATION -------------------------
 
 		unset($values['attributes']);
@@ -2377,123 +1835,23 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		{
 			$location_id = $this->locations->get_id($this->type_app[$this->type], $this->acl_location);
 
-			$check_doc = $this->bocommon->get_lookup_entity('document');
-			foreach ($check_doc as $_check)
-			{
-				if ($_check['id'] == $this->entity_id)
-				{
-					$get_docs = true;
-					break;
-				}
-			}
-
-			if ($get_docs || !empty($entity['documentation']))
-			{
-				$get_docs = true;
-
-				$tabs['document'] = array(
-					'label'		 => lang('document'),
-					'link'		 => '#document',
-					'disable'	 => 0
-				);
-
-				$cats				 = CreateObject('phpgwapi.categories', -1, 'property', '.document');
-				$cats->supress_info	 = true;
-				$categories			 = $cats->formatted_xslt_list(array(
-					'format'	 => 'filter',
-					'selected'	 => '',
-					'globals'	 => true,
-					'use_acl'	 => true
-				));
-				$default_value		 = array(
-					'cat_id'	 => '',
-					'name'		 => lang('no document type'),
-					'selected'	 => 'selected'
-				);
-				array_unshift($categories['cat_list'], $default_value);
-
-				foreach ($categories['cat_list'] as &$_category)
-				{
-					$_category['id'] = $_category['cat_id'];
-				}
-				$doc_type_filter = $categories['cat_list'];
-
-				$documents_tabletools = array(
-					'my_name'		 => 'add',
-					'text'			 => lang('add new document'),
-					'type'			 => 'custom',
-					'className'		 => 'add',
-					'custom_code'	 => "
-								var oArgs = " . json_encode(array(
-						'menuaction'	 => 'property.uidocument.edit',
-						'p_entity_id'	 => $this->entity_id,
-						'p_cat_id'		 => $this->cat_id,
-						'p_num'			 => $values['num']
-					)) . ";
-								newDocument(oArgs);
-							"
-				);
-
-				$documents_def = array(
-					array(
-						'key'		 => 'document_name',
-						'label'		 => lang('name'),
-						'sortable'	 => false,
-						'resizeable' => true
-					),
-					array('key' => 'title', 'label' => lang('title'), 'sortable' => false, 'resizeable' => true)
-				);
-
-				$datatable_def[] = array(
-					'container'	 => 'datatable-container_7',
-					'requestUrl' => json_encode(self::link(array(
-						'menuaction'		 => 'property.uientity.get_documents',
-						'location_id'		 => $location_id,
-						'entity_id'			 => $this->entity_id,
-						'cat_id'			 => $this->cat_id,
-						'item_id'			 => $id,
-						'phpgw_return_as'	 => 'json'
-					))),
-					'data'		 => "",
-					'tabletools' => ($mode == 'edit') ? $documents_tabletools : array(),
-					'ColumnDefs' => $documents_def,
-					'config'	 => array(
-						array('disableFilter' => true)
-					)
-				);
-			}
+			$documents_context = $this->build_edit_documents_context(array(
+				'get_docs' => $get_docs ?? false,
+				'entity' => $entity,
+				'tabs' => $tabs,
+				'datatable_def' => $datatable_def,
+				'location_id' => $location_id,
+				'id' => $id,
+				'mode' => $mode,
+				'values' => $values,
+			));
+			$get_docs = $documents_context['get_docs'];
+			$tabs = $documents_context['tabs'];
+			$datatable_def = $documents_context['datatable_def'];
+			$doc_type_filter = $documents_context['doc_type_filter'];
 
 			if ($category['fileupload'] || (isset($values['files']) && $values['files']))
 			{
-
-				$link_file_data = array(
-					'menuaction' => 'property.uientity.view_file',
-					'loc1'		 => $values['location_data']['loc1'],
-					'id'		 => $id,
-					'cat_id'	 => $this->cat_id,
-					'entity_id'	 => $this->entity_id,
-					'type'		 => $this->type
-				);
-				$link_view_file	 = phpgw::link('/index.php', $link_file_data);
-
-				$img_types = array(
-					'image/jpeg',
-					'image/png',
-					'image/gif'
-				);
-
-				$content_images = array();
-				foreach ($values['files'] as $_entry)
-				{
-					if (in_array($_entry['mime_type'], $img_types))
-					{
-						$content_images[] = array(
-							'file_name' => $_entry['name'],
-							'img_id' => $_entry['file_id'],
-							'img_url' => "{$link_view_file}&file_id={$_entry['file_id']}"
-						);
-					}
-				}
 
 				$tabs['files'] = array('label' => lang('files'), 'link' => '#files', 'disable' => 0);
 
@@ -2516,14 +1874,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 				$datatable_def[] = array(
 					'container'	 => 'datatable-container_0',
-					'requestUrl' => json_encode(self::link(array(
-						'menuaction'		 => 'property.uientity.get_files',
-						'entity_id'			 => $this->entity_id,
-						'cat_id'			 => $this->cat_id,
-						'id'				 => $id,
-						'type'				 => $this->type,
-						'phpgw_return_as'	 => 'json'
-					))),
+					'requestUrl' => json_encode('/property/entity/' . urlencode($this->type)
+						. '/' . (int)$this->entity_id
+						. '/' . (int)$this->cat_id
+						. '/' . (int)$id . '/files'),
 					'ColumnDefs' => $file_def,
 					'config'	 => array(
 						array('disableFilter' => true),
@@ -2578,13 +1932,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 			$datatable_def[] = array(
 				'container'	 => 'datatable-container_2',
-				'requestUrl' => json_encode(self::link(array(
-					'menuaction'		 => 'property.uientity.get_related',
-					'entity_id'			 => $this->entity_id,
-					'cat_id'			 => $this->cat_id,
-					'id'				 => $id,
-					'phpgw_return_as'	 => 'json'
-				))),
+				'requestUrl' => json_encode('/property/entity/' . urlencode($this->type)
+					. '/' . (int)$this->entity_id
+					. '/' . (int)$this->cat_id
+					. '/' . (int)$id . '/related'),
 				'ColumnDefs' => $related_def,
 				'config'	 => array(
 					array('disableFilter' => true),
@@ -2640,14 +1991,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 				$datatable_def[] = array(
 					'container'	 => 'datatable-container_3',
-					'requestUrl' => json_encode(self::link(array(
-						'menuaction'		 => 'property.uientity.get_inventory',
-						'id'				 => $id,
-						'entity_id'			 => $this->entity_id,
-						'cat_id'			 => $this->cat_id,
-						'type'				 => $this->type,
-						'phpgw_return_as'	 => 'json'
-					))),
+					'requestUrl' => json_encode('/property/entity/' . urlencode($this->type)
+						. '/' . (int)$this->entity_id
+						. '/' . (int)$this->cat_id
+						. '/' . (int)$id . '/inventory'),
 					'ColumnDefs' => $inventory_def,
 					'config'	 => array(
 						array('disableFilter' => true),
@@ -2830,202 +2177,61 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			}
 		}
 
-		if ($category['checklist_count'])
-		{
-			$tabs['checklist'] = array('label' => lang('checklist'), 'link' => '#checklist', 'disable' => 0);
+		$checklist_context = $this->build_edit_checklist_context($category, $tabs, $id, $mode);
+		$tabs = $checklist_context['tabs'];
+		$location_checklists = $checklist_context['location_checklists'];
 
-			$location_checklists = $this->get_location_checklists($category['location_id'], $id, $mode);
-		}
+		$this->load_edit_org_unit_autocomplete($category, $mode);
 
-		//$category['org_unit'] =1;
-		if ($category['org_unit'] && $mode == 'edit')
-		{
-			phpgwapi_jquery::load_widget('autocomplete');
-
-			$_autocomplete = <<<JS
-
-					$(document).ready(function ()
-					{
-						var oArgs = {menuaction:'property.bogeneric.get_autocomplete', type:'org_unit'};
-						var strURL = phpGWLink('index.php', oArgs, true);
-						JqueryPortico.autocompleteHelper(strURL, 'org_unit_name', 'org_unit_id', 'org_unit_container');
-					});
-JS;
-			phpgwapi_js::getInstance()->add_code('', $_autocomplete);
-		}
-
-		$msgbox_data = $this->bocommon->msgbox_data($this->receipt);
-
-		$repeat_types	 = array();
-		//			$repeat_types[] = array('id'=> -1, 'name' => lang('day'));
-		//			$repeat_types[] = array('id'=> 1, 'name' => lang('weekly'));
-		$repeat_types[]	 = array('id' => 2, 'name' => lang('month'));
-		$repeat_types[]	 = array('id' => 3, 'name' => lang('year'));
-
-		$entity_group_name	 = '';
-		$entity_group_list	 = execMethod('property.bogeneric.get_list', array(
-			'type'		 => 'entity_group',
-			'selected'	 => $values['entity_group_id'],
-			'add_empty'	 => true
-		));
-		foreach ($entity_group_list as $entity_group)
-		{
-			if ($category['entity_group_id'] && $entity_group['id'] == $category['entity_group_id'])
-			{
-				$entity_group_name = $entity_group['name'];
-			}
-		}
+		$display_context = $this->build_edit_display_context($values, $category);
+		$msgbox_data = $display_context['msgbox_data'];
+		$repeat_types = $display_context['repeat_types'];
+		$entity_group_list = $display_context['entity_group_list'];
+		$entity_group_name = $display_context['entity_group_name'];
 
 		$data = array(
-			'location_checklists'			 => $location_checklists,
-			'datatable_def'					 => $datatable_def,
-			'repeat_types'					 => array('options' => $repeat_types),
-			'controller'					 => $_enable_controller && $id,
-			'check_lst_time_span'			 => array('options' => $check_lst_time_span),
-			'cancel_url'					 => phpgw::link('/index.php', $link_index),
-			'enable_bulk'					 => $category['enable_bulk'],
-			'org_unit'						 => $category['org_unit'],
-			'value_org_unit_id'				 => $values['org_unit_id'],
-			'value_org_unit_name'			 => $values['org_unit_name'],
-			'value_org_unit_name_path'		 => $values['org_unit_name_path'],
-			'value_location_id'				 => $this->locations->get_id($this->type_app[$this->type], $this->acl_location),
-			'link_pdf'						 => phpgw::link('/index.php', $pdf_data),
-			'start_project'					 => $category['start_project'],
-			'lang_start_project'			 => lang('start project'),
-			'project_link'					 => phpgw::link('/index.php', $project_link_data),
-			'add_to_project_link'			 => phpgw::link('/index.php', $add_to_project_link_data),
-			'start_ticket'					 => $category['start_ticket'],
-			'lang_start_ticket'				 => lang('start ticket'),
-			'ticket_link'					 => phpgw::link('/index.php', $ticket_link_data),
-			'fileupload'					 => $category['fileupload'],
-			'checklist_count'				 => $category['checklist_count'],
-			//		'jasperupload'					=> $category['jasperupload'],
-			'link_view_file'				 => phpgw::link('/index.php', $link_file_data),
-			//		'link_to_files'					=> $link_to_files,
-			'files'							 => isset($values['files']) ? $values['files'] : '',
-			//		'jasperfiles'					=> isset($values['jasperfiles'])?$values['jasperfiles']:'',
-			'multiple_uploader'				 => $id ? true : '',
-			'multi_upload_parans'			 => "{menuaction:'property.uientity.build_multi_upload_file',"
-				. "id:'{$id}',"
-				. "_entity_id:'{$this->entity_id}',"
-				. "_cat_id:'{$this->cat_id}',"
-				. "_type:'{$this->type}'}",
-			'multi_upload_action'			 => phpgw::link(
-				'/index.php',
-				array(
-					'menuaction' => 'property.uientity.handle_multi_upload_file',
-					'id'		 => $id,
-					'entity_id'	 => $this->entity_id,
-					'cat_id'	 => $this->cat_id,
-					'type'		 => $this->type
-				)
-			),
-			'value_origin'					 => isset($values['origin_data']) ? $values['origin_data'] : '',
-			'value_origin_type'				 => isset($origin) ? $origin : '',
-			'value_origin_id'				 => isset($origin_id) ? $origin_id : '',
-			'lang_no_cat'					 => lang('no category'),
-			'lang_cat_statustext'			 => lang('Select the category. To do not use a category select NO CATEGORY'),
-			'select_name'					 => 'cat_id',
-			'cat_list'						 => isset($cat_list) ? $cat_list : '',
-			'location_code'					 => isset($location_code) ? $location_code : '',
-			'lookup_tenant'					 => $lookup_tenant,
-			'lang_entity'					 => lang('entity'),
-			'entity_name'					 => $entity['name'],
-			'lang_category'					 => lang('category'),
-			'category_name'					 => $category['name'],
-			'msgbox_data'					 => $this->phpgwapi_common->msgbox($msgbox_data),
-			'attributes_group'				 => $attributes,
-			'attributes_general'			 => array('attributes' => $attributes_general),
-			'lookup_functions'				 => isset($values['lookup_functions']) ? $values['lookup_functions'] : '',
-			'lang_none'						 => lang('None'),
-			'location_data2'				 => $location_data,
-			'lookup_type'					 => $lookup_type,
-			'mode'							 => $mode,
-			'form_action'					 => phpgw::link('/index.php', $link_data),
-			'done_action'					 => phpgw::link('/index.php', array(
-				'menuaction' => 'property.uientity.index',
-				'entity_id'	 => $this->entity_id,
-				'cat_id'	 => $this->cat_id,
-				'type'		 => $this->type
-			)),
-			'lang_id'						 => lang('ID'),
-			'value_id'						 => $values['id'],
-			'value_num'						 => $values['num'],
-			'error_flag'					 => isset($error_id) ? $error_id : '',
-			'lang_history'					 => lang('history'),
-			'lang_history_help'				 => lang('history of this attribute'),
-			'lang_history_date_statustext'	 => lang('Enter the date for this reading'),
-			'lang_date'						 => lang('date'),
-			'textareacols'					 => isset($this->userSettings['preferences']['property']['textareacols']) && $this->userSettings['preferences']['property']['textareacols'] ? $this->userSettings['preferences']['property']['textareacols'] : 40,
-			'textarearows'					 => isset($this->userSettings['preferences']['property']['textarearows']) && $this->userSettings['preferences']['property']['textarearows'] ? $this->userSettings['preferences']['property']['textarearows'] : 6,
-			'tabs'							 => phpgwapi_jquery::tabview_generate($tabs, $active_tab),
-			'active_tab'					 => $active_tab,
-			'integration'					 => $integration,
-			'doc_type_filter'				 => array('options' => $doc_type_filter),
-			'documents'						 => $get_docs ? 1 : 0,
-			/* 'requestUrlDoc' => $requestUrlDoc ? $requestUrlDoc : '', */
-			'lean'							 => $_lean ? 1 : 0,
-			'entity_group_list'				 => array('options' => $entity_group_list),
-			'entity_group_name'				 => $entity_group_name,
-			'validator'						 => phpgwapi_jquery::formvalidator_generate(array(
-				'location',
-				'date',
-				'security',
-				'file'
-			)),
-			'content_images'				 => $content_images,
-			'get_files_java_url'			=> "{menuaction:'property.uientity.get_files',id:'{$id}',entity_id:{$this->entity_id},cat_id:{$this->cat_id},type:'{$this->type}',length:-1}",
+			'location_checklists' => $location_checklists,
+			'datatable_def'       => $datatable_def,
+			'controller'          => $_enable_controller && $id,
 		);
+
+		$presenter_input = $this->build_edit_presenter_input(array(
+			'id' => $id,
+			'link_index' => $link_index,
+			'get_docs' => $get_docs ?? false,
+			'lean' => $_lean,
+			'repeat_types' => $repeat_types,
+			'check_lst_time_span' => $check_lst_time_span,
+			'doc_type_filter' => $doc_type_filter,
+			'entity_group_list' => $entity_group_list,
+			'entity' => $entity,
+			'category' => $category,
+			'values' => $values,
+			'error_id' => $error_id ?? '',
+			'origin' => $origin ?? '',
+			'origin_id' => $origin_id ?? '',
+			'cat_list' => $cat_list ?? '',
+			'location_code' => $location_code ?? '',
+			'lookup_tenant' => $lookup_tenant,
+			'msgbox_data' => $msgbox_data,
+			'entity_group_name' => $entity_group_name,
+			'attributes' => $attributes,
+			'attributes_general' => $attributes_general,
+			'location_data' => $location_data,
+			'lookup_type' => $lookup_type,
+			'mode' => $mode,
+			'link_data' => $link_data,
+			'tabs' => $tabs,
+			'active_tab' => $active_tab,
+			'integration' => $integration,
+		));
+
+		$data = $this->apply_edit_presenter($data, $presenter_input);
+
 
 		//print_r($data['location_data2']);die;
 
-		$appname = $entity['name'];
-
-		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $appname . ': ' . $function_msg;
-		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
-
-		self::add_javascript('property', 'base', 'entity.edit.js');
-		phpgwapi_jquery::load_widget('glider');
-
-		$attribute_template = 'attributes_form';
-		if ($mode == 'view')
-		{
-			$attribute_template = 'attributes_view';
-		}
-
-		phpgwapi_jquery::load_widget('file-upload-minimum');
-
-		$criteria = array(
-			'appname'	 => $this->type_app[$this->type],
-			'location'	 => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
-			'allrows'	 => true
-		);
-
-		$custom_functions = createObject('phpgwapi.custom_functions')->find($criteria);
-
-		foreach ($custom_functions as $entry)
-		{
-			// prevent path traversal
-			if (preg_match('/\.\./', $entry['file_name']))
-			{
-				continue;
-			}
-
-			$file = PHPGW_SERVER_ROOT . "/{$this->type_app[$this->type]}/inc/custom/{$this->userSettings['domain']}/{$entry['file_name']}";
-
-			if ($entry['active'] && $entry['client_side'] && is_file($file))
-			{
-				phpgwapi_js::getInstance()->add_external_file("{$this->type_app[$this->type]}/inc/custom/{$this->userSettings['domain']}/{$entry['file_name']}");
-			}
-		}
-
-		self::render_template_xsl(array(
-			'entity',
-			'datatable_inline',
-			$attribute_template,
-			'files',
-			'multi_upload_file_inline'
-		), array('edit' => $data));
+		$this->render_edit_view($data, $mode, $entity, $function_msg);
 	}
 
 	/**
@@ -3036,7 +2242,7 @@ JS;
 	 *
 	 * @return void Output is rendered directly.
 	 */
-	function attrib_help()
+	function attrib_help(): void
 	{
 		$t = createObject('phpgwapi.template');
 		$t->set_root(PHPGW_APP_TPL);
@@ -3083,13 +2289,17 @@ JS;
 	 *
 	 * @return string|void Confirmation string in JSON mode; otherwise redirects.
 	 */
-	function delete()
+	function delete(): mixed
 	{
 		$id = Sanitizer::get_var('id', 'int');
 
 		//cramirez add JsonCod for Delete
 		if (Sanitizer::get_var('phpgw_return_as') == 'json')
 		{
+			if (!$this->acl_delete)
+			{
+				return json_encode(['error' => lang('no access')]);
+			}
 			$this->bo->delete($id);
 			return "id " . $id . " " . lang("has been deleted");
 		}
@@ -3120,8 +2330,6 @@ JS;
 			phpgw::redirect_link('/index.php', $link_data);
 		}
 
-		phpgwapi_xslttemplates::getInstance()->add_file(array('app_delete'));
-
 		$data = array(
 			'done_action'			 => phpgw::link('/index.php', $link_data),
 			'delete_action'			 => phpgw::link('/index.php', array(
@@ -3144,78 +2352,600 @@ JS;
 		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $appname . ': ' . $function_msg;
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
 
-		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('delete' => $data));
+		self::render_template_xsl('app_delete', $data, '', 'delete');
+		return null;
 	}
 
 	/**
 	 * Render the entity record in read-only view mode.
 	 *
-	 * Requires ACL_READ. Delegates to edit() with mode='view'.
+	 * Requires ACL_READ. Builds a minimal value bag and invokes the shared
+	 * edit/view rendering pipeline in view mode.
 	 *
 	 * @return void Output is rendered via XSL template.
 	 */
-	function view()
+	function view(): void
 	{
 		if (!$this->acl_read)
 		{
-			$this->bocommon->no_access();
+			phpgw::no_access();
 			return;
 		}
-		$this->edit(null, $mode = 'view');
+
+		$id = Sanitizer::get_var('id', 'int');
+		$values = array();
+		if ($id)
+		{
+			$values['id'] = $id;
+		}
+
+		$this->edit($values, 'view');
 	}
 
-	//		function get_assigned_history()
-	//		{
-	//			$this->flags['noframework'] = true;
-	//			$this->flags['xslt_app'] = false;
-	//
-	//			if ($this->acl_read)
-	//			{
-	//				$this->bocommon->no_access();
-	//				return;
-	//			}
-	//			$serie_id = Sanitizer::get_var('serie_id', 'int');
-	//			$history = execMethod('controller.socontrol.get_assigned_history', array('serie_id' => $serie_id));
-	//			$lang_user = lang('user');
-	//			$lang_date = lang('date');
-	//
-	//			$ret = <<<HTML
-	//			<html>
-	//				<head>
-	//				</head>
-	//				<body>
-	//					<table style="width:90%" align = 'center'>
-	//						<tr align = 'left'>
-	//							<th>
-	//								{$lang_user}
-	//							</th>
-	//							<th>
-	//								{$lang_date}
-	//							</th>
-	//						</tr>
-	//
-	//HTML;
-	//			foreach ($history as $entry)
-	//			{
-	//				$date = $this->phpgwapi_common->show_date($entry['assigned_date']);
-	//				$ret .= <<<HTML
-	//						<tr align = 'left'>
-	//							<td>
-	//								{$entry['assigned_to_name']}
-	//							</td>
-	//							<td>
-	//								{$date}
-	//							</td>
-	//						</tr>
-	//HTML;
-	//			}
-	//			$ret .= <<<HTML
-	//					</table>
-	//				</body>
-	//			</html>
-	//HTML;
-	//			echo $ret;
-	//		}
+	/**
+	 * Build message and selection context used by edit presenter rendering.
+	 */
+	private function build_edit_display_context(array $values, array $category): array
+	{
+		$msgbox_data = $this->bocommon->msgbox_data($this->receipt);
+
+		$repeat_types	 = array();
+		//			$repeat_types[] = array('id'=> -1, 'name' => lang('day'));
+		//			$repeat_types[] = array('id'=> 1, 'name' => lang('weekly'));
+		$repeat_types[]	 = array('id' => 2, 'name' => lang('month'));
+		$repeat_types[]	 = array('id' => 3, 'name' => lang('year'));
+
+		$entity_group_name	 = '';
+		$entity_group_list	 = execMethod('property.bogeneric.get_list', array(
+			'type'		 => 'entity_group',
+			'selected'	 => $values['entity_group_id'],
+			'add_empty'	 => true
+		));
+		foreach ($entity_group_list as $entity_group)
+		{
+			if ($category['entity_group_id'] && $entity_group['id'] == $category['entity_group_id'])
+			{
+				$entity_group_name = $entity_group['name'];
+			}
+		}
+
+		return array(
+			'msgbox_data' => $msgbox_data,
+			'repeat_types' => $repeat_types,
+			'entity_group_list' => $entity_group_list,
+			'entity_group_name' => $entity_group_name,
+		);
+	}
+
+	/**
+	 * Load org unit autocomplete client script when category settings require it.
+	 */
+	private function load_edit_org_unit_autocomplete(array $category, string $mode): void
+	{
+		//$category['org_unit'] =1;
+		if ($category['org_unit'] && $mode == 'edit')
+		{
+			phpgwapi_jquery::load_widget('autocomplete');
+
+			$_autocomplete = <<<JS
+
+					$(document).ready(function ()
+					{
+						var oArgs = {menuaction:'property.bogeneric.get_autocomplete', type:'org_unit'};
+						var strURL = phpGWLink('index.php', oArgs, true);
+						JqueryPortico.autocompleteHelper(strURL, 'org_unit_name', 'org_unit_id', 'org_unit_container');
+					});
+JS;
+			phpgwapi_js::getInstance()->add_code('', $_autocomplete);
+		}
+	}
+
+	/**
+	 * Build checklist tab and checklist data context for edit/view rendering.
+	 */
+	private function build_edit_checklist_context(array $category, array $tabs, int $id, string $mode): array
+	{
+		$location_checklists = null;
+
+		if ($category['checklist_count'])
+		{
+			$tabs['checklist'] = array('label' => lang('checklist'), 'link' => '#checklist', 'disable' => 0);
+
+			$location_checklists = $this->get_location_checklists($category['location_id'], $id, $mode);
+		}
+
+		return array(
+			'tabs' => $tabs,
+			'location_checklists' => $location_checklists,
+		);
+	}
+
+	/**
+	 * Build document-tab context and datatable definition for edit/view rendering.
+	 */
+	private function build_edit_documents_context(array $context): array
+	{
+		$get_docs = !empty($context['get_docs']);
+		$entity = $context['entity'] ?? array();
+		$tabs = $context['tabs'] ?? array();
+		$datatable_def = $context['datatable_def'] ?? array();
+		$location_id = $context['location_id'] ?? 0;
+		$id = $context['id'] ?? 0;
+		$mode = $context['mode'] ?? 'edit';
+		$values = $context['values'] ?? array();
+		$doc_type_filter = array();
+
+		$check_doc = $this->bocommon->get_lookup_entity('document');
+		foreach ($check_doc as $_check)
+		{
+			if ($_check['id'] == $this->entity_id)
+			{
+				$get_docs = true;
+				break;
+			}
+		}
+
+		if ($get_docs || !empty($entity['documentation']))
+		{
+			$get_docs = true;
+
+			$tabs['document'] = array(
+				'label'      => lang('document'),
+				'link'       => '#document',
+				'disable'    => 0
+			);
+
+			$cats                = CreateObject('phpgwapi.categories', -1, 'property', '.document');
+			$cats->supress_info  = true;
+			$categories          = $cats->formatted_xslt_list(array(
+				'format'    => 'filter',
+				'selected'  => '',
+				'globals'   => true,
+				'use_acl'   => true
+			));
+			$default_value       = array(
+				'cat_id'    => '',
+				'name'      => lang('no document type'),
+				'selected'  => 'selected'
+			);
+			array_unshift($categories['cat_list'], $default_value);
+
+			foreach ($categories['cat_list'] as &$_category)
+			{
+				$_category['id'] = $_category['cat_id'];
+			}
+			$doc_type_filter = $categories['cat_list'];
+
+			$documents_tabletools = array(
+				'my_name'      => 'add',
+				'text'         => lang('add new document'),
+				'type'         => 'custom',
+				'className'    => 'add',
+				'custom_code'  => "
+							var oArgs = " . json_encode(array(
+					'menuaction'   => 'property.uidocument.edit',
+					'p_entity_id'  => $this->entity_id,
+					'p_cat_id'     => $this->cat_id,
+					'p_num'        => $values['num']
+				)) . ";
+							newDocument(oArgs);
+						"
+			);
+
+			$documents_def = array(
+				array(
+					'key'        => 'document_name',
+					'label'      => lang('name'),
+					'sortable'   => false,
+					'resizeable' => true
+				),
+				array('key' => 'title', 'label' => lang('title'), 'sortable' => false, 'resizeable' => true)
+			);
+
+			$datatable_def[] = array(
+				'container'  => 'datatable-container_7',
+				'requestUrl' => json_encode(self::link(array(
+					'menuaction'       => 'property.uientity.get_documents',
+					'location_id'      => $location_id,
+					'entity_id'        => $this->entity_id,
+					'cat_id'           => $this->cat_id,
+					'item_id'          => $id,
+					'phpgw_return_as'  => 'json'
+				))),
+				'data'       => "",
+				'tabletools' => ($mode == 'edit') ? $documents_tabletools : array(),
+				'ColumnDefs' => $documents_def,
+				'config'     => array(
+					array('disableFilter' => true)
+				)
+			);
+		}
+
+		return array(
+			'get_docs' => $get_docs,
+			'tabs' => $tabs,
+			'datatable_def' => $datatable_def,
+			'doc_type_filter' => $doc_type_filter,
+		);
+	}
+
+	/**
+	 * Build the input array passed from edit() into presenter context shaping.
+	 */
+	private function build_edit_presenter_input(array $input): array
+	{
+		return array(
+			'id' => $input['id'] ?? 0,
+			'link_index' => $input['link_index'] ?? array(),
+			'get_docs' => !empty($input['get_docs']),
+			'lean' => !empty($input['lean']),
+			'repeat_types' => $input['repeat_types'] ?? array(),
+			'check_lst_time_span' => $input['check_lst_time_span'] ?? array(),
+			'doc_type_filter' => $input['doc_type_filter'] ?? array(),
+			'entity_group_list' => $input['entity_group_list'] ?? array(),
+			'entity' => $input['entity'] ?? array(),
+			'category' => $input['category'] ?? array(),
+			'values' => $input['values'] ?? array(),
+			'error_id' => $input['error_id'] ?? '',
+			'origin' => $input['origin'] ?? '',
+			'origin_id' => $input['origin_id'] ?? '',
+			'cat_list' => $input['cat_list'] ?? '',
+			'location_code' => $input['location_code'] ?? '',
+			'lookup_tenant' => !empty($input['lookup_tenant']),
+			'msgbox_data' => $input['msgbox_data'] ?? array(),
+			'entity_group_name' => $input['entity_group_name'] ?? '',
+			'attributes' => $input['attributes'] ?? array(),
+			'attributes_general' => $input['attributes_general'] ?? array(),
+			'location_data' => $input['location_data'] ?? array(),
+			'lookup_type' => $input['lookup_type'] ?? '',
+			'mode' => $input['mode'] ?? 'edit',
+			'link_data' => $input['link_data'] ?? array(),
+			'tabs' => $input['tabs'] ?? array(),
+			'active_tab' => $input['active_tab'] ?? '',
+			'integration' => $input['integration'] ?? array(),
+		);
+	}
+
+	/**
+	 * Apply presenter shaping to edit payload using normalized presenter input.
+	 */
+	private function apply_edit_presenter(array $data, array $presenter_input): array
+	{
+		$presenter = new EntityEditPagePresenter();
+		return $presenter->present($data, $this->build_edit_presenter_context($presenter_input));
+	}
+
+	/**
+	 * Build the context consumed by EntityEditPagePresenter::present().
+	 *
+	 * @param array $input Precomputed edit/view values.
+	 * @return array
+	 */
+	private function build_edit_presenter_context(array $input): array
+	{
+		$id       = $input['id'] ?? 0;
+		$values   = $input['values'] ?? array();
+		$category = $input['category'] ?? array();
+		$lookup_functions = isset($values['lookup_functions']) ? $values['lookup_functions'] : '';
+		$files = isset($values['files']) ? $values['files'] : '';
+		$textareacols = isset($this->userSettings['preferences']['property']['textareacols'])
+			&& $this->userSettings['preferences']['property']['textareacols']
+			? $this->userSettings['preferences']['property']['textareacols']
+			: 40;
+		$textarearows = isset($this->userSettings['preferences']['property']['textarearows'])
+			&& $this->userSettings['preferences']['property']['textarearows']
+			? $this->userSettings['preferences']['property']['textarearows']
+			: 6;
+
+		$pdf_data = array(
+			'menuaction' => 'property.uientity.print_pdf',
+			'id'         => $id,
+			'entity_id'  => $this->entity_id,
+			'cat_id'     => $this->cat_id,
+			'type'       => $this->type
+		);
+
+		$project_link_data = array(
+			'menuaction'    => 'property.uiproject.edit',
+			'bypass'        => true,
+			'location_code' => isset($values['location_code']) ? $values['location_code'] : '',
+			'p_num'         => $id,
+			'p_entity_id'   => $this->entity_id,
+			'p_cat_id'      => $this->cat_id,
+			'tenant_id'     => isset($values['tenant_id']) ? $values['tenant_id'] : '',
+			'origin'        => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
+			'origin_id'     => $id
+		);
+
+		$add_to_project_link_data = array(
+			'menuaction' => 'property.uiproject.index',
+			'from'       => 'workorder',
+			'lookup'     => true,
+			'query'      => isset($values['location_data']['loc1']) ? $values['location_data']['loc1'] : '',
+			'tenant_id'  => isset($values['tenant_id']) ? $values['tenant_id'] : '',
+			'origin'     => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
+			'origin_id'  => $id
+		);
+
+		$ticket_link_data = array(
+			'menuaction'    => 'property.uitts.add',
+			'bypass'        => true,
+			'location_code' => isset($values['location_code']) ? $values['location_code'] : '',
+			'p_num'         => $id,
+			'p_entity_id'   => $this->entity_id,
+			'p_cat_id'      => $this->cat_id,
+			'tenant_id'     => isset($values['tenant_id']) ? $values['tenant_id'] : '',
+			'origin'        => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
+			'origin_id'     => $id
+		);
+
+		$link_file_data = array();
+		$content_images = array();
+		if ($category['fileupload'] || (isset($values['files']) && $values['files']))
+		{
+			$link_file_data = array(
+				'menuaction' => 'property.uientity.view_file',
+				'loc1'       => isset($values['location_data']['loc1']) ? $values['location_data']['loc1'] : '',
+				'id'         => $id,
+				'cat_id'     => $this->cat_id,
+				'entity_id'  => $this->entity_id,
+				'type'       => $this->type
+			);
+			$link_view_file = phpgw::link('/index.php', $link_file_data);
+			$img_types = array('image/jpeg', 'image/png', 'image/gif');
+			if (is_array($values['files']))
+			{
+				foreach ($values['files'] as $_entry)
+				{
+					if (in_array($_entry['mime_type'], $img_types))
+					{
+						$content_images[] = array(
+							'file_name' => $_entry['name'],
+							'img_id'    => $_entry['file_id'],
+							'img_url'   => "{$link_view_file}&file_id={$_entry['file_id']}"
+						);
+					}
+				}
+			}
+		}
+
+		return array(
+			'type' => $this->type,
+			'entity_id' => $this->entity_id,
+			'cat_id' => $this->cat_id,
+			'id' => $id,
+			'link_index' => $input['link_index'] ?? array(),
+			'get_docs' => !empty($input['get_docs']),
+			'lean' => !empty($input['lean']),
+			'repeat_types' => $input['repeat_types'] ?? array(),
+			'check_lst_time_span' => $input['check_lst_time_span'] ?? array(),
+			'doc_type_filter' => $input['doc_type_filter'] ?? array(),
+			'entity_group_list' => $input['entity_group_list'] ?? array(),
+			'entity' => $input['entity'] ?? array(),
+			'category' => $category,
+			'values' => $values,
+			'error_id' => $input['error_id'] ?? '',
+			'origin' => $input['origin'] ?? '',
+			'origin_id' => $input['origin_id'] ?? '',
+			'cat_list' => $input['cat_list'] ?? '',
+			'location_code' => $input['location_code'] ?? '',
+			'lookup_tenant' => $input['lookup_tenant'] ?? false,
+			'msgbox_html' => $this->phpgwapi_common->msgbox($input['msgbox_data'] ?? array()),
+			'entity_group_name' => $input['entity_group_name'] ?? '',
+			'attributes' => $input['attributes'] ?? array(),
+			'attributes_general' => $input['attributes_general'] ?? array(),
+			'lookup_functions' => $lookup_functions,
+			'location_data' => $input['location_data'] ?? array(),
+			'lookup_type' => $input['lookup_type'] ?? '',
+			'mode' => $input['mode'] ?? 'edit',
+			'form_action' => '/property/entity/' . urlencode($this->type) . '/' . (int)$this->entity_id . '/' . (int)$this->cat_id . ($id ? '?id=' . (int)$id : ''),
+			'textareacols' => $textareacols,
+			'textarearows' => $textarearows,
+			'tabs' => phpgwapi_jquery::tabview_generate($input['tabs'] ?? array(), $input['active_tab'] ?? ''),
+			'active_tab' => $input['active_tab'] ?? '',
+			'integration' => $input['integration'] ?? array(),
+			'validator' => phpgwapi_jquery::formvalidator_generate(array(
+				'location',
+				'date',
+				'security',
+				'file'
+			)),
+			'content_images' => $content_images,
+			'value_location_id' => $this->locations->get_id($this->type_app[$this->type], $this->acl_location),
+			'link_pdf' => phpgw::link('/index.php', $pdf_data),
+			'project_link' => phpgw::link('/index.php', $project_link_data),
+			'add_to_project_link' => phpgw::link('/index.php', $add_to_project_link_data),
+			'ticket_link' => phpgw::link('/index.php', $ticket_link_data),
+			'link_view_file' => phpgw::link('/index.php', $link_file_data),
+			'files' => $files,
+		);
+	}
+
+	/**
+	 * Set page header, load JS/widgets, include custom client-side functions, and render
+	 * the XSL template for the entity edit/view page.
+	 *
+	 * @param array  $data         Fully-shaped payload array (output of presenter->present()).
+	 * @param string $mode         'edit' or 'view'.
+	 * @param array  $entity       Entity definition row (must contain 'name').
+	 * @param string $function_msg Localised action label for the page title bar.
+	 * @return void Output rendered directly.
+	 */
+	private function render_edit_view(array $data, string $mode, array $entity, string $function_msg): void
+	{
+		$appname = $entity['name'];
+
+		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $appname . ': ' . $function_msg;
+		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
+
+		self::add_javascript('property', 'base', 'entity.edit.js');
+		phpgwapi_jquery::load_widget('glider');
+
+		$attribute_template = ($mode == 'view') ? 'attributes_view' : 'attributes_form';
+
+		phpgwapi_jquery::load_widget('file-upload-minimum');
+
+		$criteria = array(
+			'appname'  => $this->type_app[$this->type],
+			'location' => ".{$this->type}.{$this->entity_id}.{$this->cat_id}",
+			'allrows'  => true
+		);
+
+		$custom_functions = createObject('phpgwapi.custom_functions')->find($criteria);
+
+		foreach ($custom_functions as $entry)
+		{
+			// prevent path traversal
+			if (preg_match('/\.\./', $entry['file_name']))
+			{
+				continue;
+			}
+
+			$file = PHPGW_SERVER_ROOT . "/{$this->type_app[$this->type]}/inc/custom/{$this->userSettings['domain']}/{$entry['file_name']}";
+
+			if ($entry['active'] && $entry['client_side'] && is_file($file))
+			{
+				phpgwapi_js::getInstance()->add_external_file("{$this->type_app[$this->type]}/inc/custom/{$this->userSettings['domain']}/{$entry['file_name']}");
+			}
+		}
+
+		self::render_template_xsl(array(
+			'entity',
+			'datatable_inline',
+			$attribute_template,
+			'files',
+			'multi_upload_file_inline'
+		), array('edit' => $data));
+	}
+
+	/**
+	 * Build integration tabs and iframe metadata for entity edit/view.
+	 */
+	private function build_edit_integration_tabs(array $values, array $tabs, string $mode): array
+	{
+		$custom_config	 = CreateObject('admin.soconfig', $this->locations->get_id($this->type_app[$this->type], $this->acl_location));
+		$_config		 = isset($custom_config->config_data) && $custom_config->config_data ? $custom_config->config_data : array();
+
+		$integration = array();
+		foreach ($_config as $_config_section => $_config_section_data)
+		{
+			if (isset($_config_section_data['tab']) && $values['id'])
+			{
+				if (!isset($_config_section_data['url']))
+				{
+					Cache::message_set("'url' is a required setting for integrations, '{$_config_section}' is disabled", 'error');
+					break;
+				}
+
+				//get session key from remote system
+				$arguments	 = array($_config_section_data['auth_hash_name'] => $_config_section_data['auth_hash_value']);
+				$query		 = http_build_query($arguments);
+				$auth_url	 = $_config_section_data['auth_url'];
+				$request	 = "{$auth_url}?{$query}";
+
+				$aContext = array(
+					'http' => array(
+						'request_fulluri' => true,
+					),
+				);
+
+				if (isset($this->serverSettings['httpproxy_server']))
+				{
+					$aContext['http']['proxy'] = "{$this->serverSettings['httpproxy_server']}:{$this->serverSettings['httpproxy_port']}";
+				}
+
+				$cxContext	 = stream_context_create($aContext);
+				$response	 = trim(file_get_contents($request, False, $cxContext));
+
+				$integration[] = array(
+					'section'	 => $_config_section,
+					'height'	 => isset($_config_section_data['height']) && $_config_section_data['height'] ? $_config_section_data['height'] : 500
+				);
+
+				$_config_section_data['url']		 = htmlspecialchars_decode($_config_section_data['url']);
+				$_config_section_data['parametres']	 = htmlspecialchars_decode($_config_section_data['parametres']);
+
+				parse_str($_config_section_data['parametres'], $output);
+
+				$_keys = array();
+				$_values = array();
+				foreach ($output as $_dummy => $_substitute)
+				{
+					$_keys[] = $_substitute;
+
+					$__value = false;
+					if (!$__value = urlencode($values[str_replace(array('__', '*'), array('', ''), $_substitute)]))
+					{
+						foreach ($values['attributes'] as $_attribute)
+						{
+							if (str_replace(array('__', '*'), array('', ''), $_substitute) == $_attribute['name'])
+							{
+								$__value = urlencode($_attribute['value']);
+								break;
+							}
+						}
+					}
+
+					if ($__value)
+					{
+						$_values[] = $__value;
+					}
+				}
+
+				unset($output);
+				unset($__value);
+				$_sep = '?';
+				if (stripos($_config_section_data['url'], '?'))
+				{
+					$_sep = '&';
+				}
+				$_param			 = str_replace($_keys, $_values, $_config_section_data['parametres']);
+				unset($_keys);
+				unset($_values);
+				//				$integration_src = phpgw::safe_redirect("{$_config_section_data['url']}{$_sep}{$_param}");
+				$integration_src = "{$_config_section_data['url']}{$_sep}{$_param}";
+				if ($_config_section_data['action'])
+				{
+					$_sep = '?';
+					if (stripos($integration_src, '?'))
+					{
+						$_sep = '&';
+					}
+					$integration_src .= "{$_sep}{$_config_section_data['action']}=" . $_config_section_data["action_{$mode}"];
+				}
+
+				$arguments = array($_config_section_data['auth_key_name'] => $response);
+
+				if (isset($_config_section_data['location_data']) && $_config_section_data['location_data'])
+				{
+					$_config_section_data['location_data'] = htmlspecialchars_decode($_config_section_data['location_data']);
+					parse_str($_config_section_data['location_data'], $output);
+					$_keys = array();
+					$_values = array();
+					foreach ($output as $_dummy => $_substitute)
+					{
+						$_keys[]	 = $_substitute;
+						$_values[]	 = urlencode($values['location_data'][trim($_substitute, '_')]);
+					}
+					$integration_src .= '&' . str_replace($_keys, $_values, $_config_section_data['location_data']);
+				}
+
+				$integration_src .= "&{$_config_section_data['auth_key_name']}={$response}";
+
+				$tabs[$_config_section] = array(
+					'label'		 => $_config_section_data['tab'],
+					'link'		 => "#{$_config_section}",
+					'disable'	 => 0,
+					'function'	 => "document.getElementById('{$_config_section}_content').src = '{$integration_src}';"
+				);
+			}
+		}
+
+		return array(
+			'tabs' => $tabs,
+			'integration' => $integration,
+		);
+	}
 
 	/**
 	 * Render the attribute change history panel, or handle a delete-history-entry request.
@@ -3226,7 +2956,7 @@ JS;
 	 *
 	 * @return array|string|void DataTables array, 'ok' on delete, or renders XSL template.
 	 */
-	function attrib_history()
+	function attrib_history(): mixed
 	{
 		$this->flags['noframework'] = true;
 		Settings::getInstance()->update('flags', ['noframework' => true]);
@@ -3302,7 +3032,7 @@ JS;
 			{
 				if ($total_records > $num_rows)
 				{
-					$page		 = ceil(($start / $total_records) * ($total_records / $num_rows));
+					$page		 = (int)ceil(($start / $total_records) * ($total_records / $num_rows));
 					$values_part = array_chunk($content, $num_rows);
 					$out		 = $values_part[$page];
 				}
@@ -3375,6 +3105,9 @@ JS;
 			'img_path'		 => $this->phpgwapi_common->get_image_path('phpgwapi', 'default')
 		);
 
+		$location_arr = explode('.', $acl_location);
+		$entity_id	 = isset($location_arr[2]) ? $location_arr[2] : 0;
+		$cat_id		 = isset($location_arr[3]) ? $location_arr[3] : 0;
 		$custom			 = createObject('phpgwapi.custom_fields');
 		$attrib_data	 = $custom->get($this->type_app[$this->type], ".{$this->type}.{$entity_id}.{$cat_id}", $attrib_id);
 		$appname		 = $attrib_data['input_text'];
@@ -3386,6 +3119,7 @@ JS;
 		self::render_template_xsl(array('attrib_history', 'datatable_inline'), array(
 			'attrib_history' => $data
 		));
+		return null;
 	}
 
 	/**
@@ -3396,7 +3130,7 @@ JS;
 	 *
 	 * @return void Output is written directly.
 	 */
-	function print_pdf()
+	function print_pdf(): void
 	{
 		if (!$this->acl_read)
 		{
@@ -3507,6 +3241,7 @@ JS;
 			'value'	 => array('justification' => 'left', 'width' => 300)
 		);
 
+		$content = array();
 		if (is_array($location_data['location']))
 		{
 			foreach ($location_data['location'] as $entry)
@@ -3616,7 +3351,7 @@ JS;
 	 *
 	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
 	 */
-	public function get_inventory()
+	public function get_inventory(): array
 	{
 		$id		 = Sanitizer::get_var('id', 'int');
 		$draw	 = Sanitizer::get_var('draw', 'int');
@@ -3659,7 +3394,7 @@ JS;
 		{
 			if ($total_records > $num_rows)
 			{
-				$page		 = ceil(($start / $total_records) * ($total_records / $num_rows));
+				$page		 = (int)ceil(($start / $total_records) * ($total_records / $num_rows));
 				$values_part = array_chunk($values, $num_rows);
 				$out		 = $values_part[$page];
 			}
@@ -3685,7 +3420,7 @@ JS;
 	 *
 	 * @return array|void JSON status array in JSON mode, otherwise renders XSL template.
 	 */
-	public function edit_inventory()
+	public function edit_inventory(): mixed
 	{
 		$location_id	 = Sanitizer::get_var('location_id', 'int');
 		$id				 = Sanitizer::get_var('id', 'int');
@@ -3697,8 +3432,7 @@ JS;
 
 		if (!$this->acl_add)
 		{
-			echo lang('No Access');
-			$this->phpgwapi_common->phpgw_exit();
+			phpgw::no_access();
 		}
 		$unit_id	 = '';
 		if ($inventory	 = $this->bo->get_inventory(array(
@@ -3769,9 +3503,8 @@ JS;
 			'values'		 => $values['location_data'],
 			'type_id'		 => 5,
 			'no_link'		 => false,
-			'lookup_type'	 => 'view',
+			'lookup_type'	 => 'form',
 			'tenant'		 => false,
-			'lookup_entity'	 => $lookup_entity,
 			'entity_data'	 => isset($values['p']) ? $values['p'] : ''
 		));
 
@@ -3810,6 +3543,7 @@ JS;
 
 		$this->flags['app_header'] = $system_location['appname'] . '::' . $system_location['descr'] . '::' . $function_msg;
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header'], 'noframework' => true]);
+		return null;
 	}
 
 	/**
@@ -3817,7 +3551,7 @@ JS;
 	 *
 	 * @return void
 	 */
-	public function add()
+	public function add(): void
 	{
 		$this->edit();
 	}
@@ -3830,7 +3564,7 @@ JS;
 	 *
 	 * @return void Output is rendered via XSL template.
 	 */
-	public function add_inventory()
+	public function add_inventory(): void
 	{
 		$location_id	 = Sanitizer::get_var('location_id', 'int');
 		$id				 = Sanitizer::get_var('id', 'int');
@@ -3840,8 +3574,7 @@ JS;
 
 		if (!$this->acl_add)
 		{
-			echo lang('No Access');
-			$this->phpgwapi_common->phpgw_exit();
+			phpgw::no_access();
 		}
 
 		$unit_id	 = '';
@@ -3864,13 +3597,13 @@ JS;
 			$values['item_id']		 = $id;
 			$insert_record			 = Cache::session_get('property', 'insert_record');
 
-			if (is_array($insert_record_entity))
-			{
-				for ($j = 0; $j < count($insert_record_entity); $j++)
-				{
-					$insert_record['extra'][$insert_record_entity[$j]] = $insert_record_entity[$j];
-				}
-			}
+			// if (is_array($insert_record_entity))
+			// {
+			// 	for ($j = 0; $j < count($insert_record_entity); $j++)
+			// 	{
+			// 		$insert_record['extra'][$insert_record_entity[$j]] = $insert_record_entity[$j];
+			// 	}
+			// }
 
 			$values = $this->bocommon->collect_locationdata($values, $insert_record);
 
@@ -3904,7 +3637,7 @@ JS;
 			'no_link'		 => false,
 			'lookup_type'	 => 'form',
 			'tenant'		 => false,
-			'lookup_entity'	 => $lookup_entity,
+			//			'lookup_entity'	 => $lookup_entity,
 			'entity_data'	 => isset($values['p']) ? $values['p'] : ''
 		));
 
@@ -3948,7 +3681,7 @@ JS;
 	 *
 	 * @return void Output is written directly.
 	 */
-	public function inventory_calendar()
+	public function inventory_calendar(): void
 	{
 		$location_id	 = Sanitizer::get_var('location_id', 'int');
 		$id				 = Sanitizer::get_var('id', 'int');
@@ -3960,11 +3693,9 @@ JS;
 
 		if (!$this->acl_add)
 		{
-			echo lang('No Access');
-			$this->phpgwapi_common->phpgw_exit();
+			echo "Planlagt: Visning av kalenderoppføringer for ressursen";
+			phpgw::no_access();
 		}
-		echo "Planlagt: Visning av kalenderoppføringer for ressursen";
-		$this->phpgwapi_common->phpgw_exit();
 	}
 
 
@@ -3975,7 +3706,7 @@ JS;
 	 *
 	 * @return array ResultSet array with 'totalRecords', 'recordsReturned', and 'Result'.
 	 */
-	public function get_items_per_qr()
+	public function get_items_per_qr(): array
 	{
 		if (!$this->acl_read)
 		{
@@ -3995,7 +3726,7 @@ JS;
 	 *
 	 * @return void Output is rendered via XSL template or written directly as XLSX.
 	 */
-	public function summary()
+	public function summary(): void
 	{
 		if (!$this->acl_read)
 		{
@@ -4035,10 +3766,9 @@ JS;
 			'cancel_url'				 => phpgw::link('/home/'),
 			'value_type'				 => $this->type,
 			'value_entity_id'			 => $this->entity_id,
-			'vendor_data'				 => $vendor_data,
-			'contact_data'				 => $contact_data,
 			'tabs'						 => phpgwapi_jquery::tabview_generate($tabs, 0),
 			'value_active_tab'			 => 0,
+			'get_items_per_qr_url'		 => '/property/entity/' . urlencode($this->type) . '/' . (int)$this->entity_id . '/0/items-per-qr',
 		);
 		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $entity['name'] . ' - ' . lang('summary');
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
@@ -4062,7 +3792,7 @@ JS;
 	 * @param string $location_code Location code filter to apply when reading items.
 	 * @return void Output is written directly.
 	 */
-	private function writetospreadsheet($location_code)
+	private function writetospreadsheet($location_code): void
 	{
 		set_time_limit(500);
 		$this->flags['noheader']	 = true;
@@ -4100,16 +3830,9 @@ JS;
 		{
 			$items	 =  $soentity->read(
 				array(
-					//				'entity_group_id' => (int)$entity_group_id,
 					'location_id' => $category['location_id'],
-					//				'control_id' => $control_id,
-					'district_id' => $district_id,
-					'part_of_town_id' => $part_of_town_id,
 					'location_code'	=> $location_code,
-					//				'org_units' => $this->org_units,
 					'allrows' => true,
-					//				'control_registered' => true,
-					//				'check_for_control' => true
 				)
 			);
 
@@ -4117,8 +3840,6 @@ JS;
 			{
 				continue;
 			}
-
-			//				_debug_array($items);	die();
 
 
 			$header = array();
@@ -4149,7 +3870,7 @@ JS;
 			}
 		}
 
-		if (!$row)
+		if (!isset($row))
 		{
 			$writer->writeSheetHeader('Sheet1', array('' => 'string'));
 		}
@@ -4166,7 +3887,7 @@ JS;
 	 * @param bool $skip_json   Whether to skip JSON encoding of the result.
 	 * @return array|string Controller controls data.
 	 */
-	public function get_controls_at_component($location_id = 0, $id = 0, $skip_json = false)
+	public function get_controls_at_component($location_id = 0, $id = 0, $skip_json = false): array|string
 	{
 		return $this->controller_helper->get_controls_at_component($location_id, $id, $skip_json);
 	}
@@ -4179,7 +3900,7 @@ JS;
 	 * @param int $year        Year filter (0 for all years).
 	 * @return array Cases data.
 	 */
-	public function get_cases($location_id = 0, $id = 0, $year = 0)
+	public function get_cases($location_id = 0, $id = 0, $year = 0): array
 	{
 		return $this->controller_helper->get_cases($location_id, $id, $year);
 	}
@@ -4191,7 +3912,7 @@ JS;
 	 *
 	 * @return array Cases data for the checklist.
 	 */
-	public function get_cases_for_checklist()
+	public function get_cases_for_checklist(): array
 	{
 		return $this->controller_helper->get_cases_for_checklist();
 	}
@@ -4204,7 +3925,7 @@ JS;
 	 * @param int $year        Year filter (0 for all years).
 	 * @return array Checklists data.
 	 */
-	public function get_checklists($location_id = 0, $id = 0, $year = 0)
+	public function get_checklists($location_id = 0, $id = 0, $year = 0): array
 	{
 		return $this->controller_helper->get_checklists($location_id, $id, $year);
 	}
@@ -4214,11 +3935,11 @@ JS;
 	 *
 	 * Delegates to controller_helper::get_assigned_history().
 	 *
-	 * @return array Assignment history data.
+	 * @return void Output is echoed by controller_helper::get_assigned_history().
 	 */
-	function get_assigned_history()
+	function get_assigned_history(): void
 	{
-		return $this->controller_helper->get_assigned_history();
+		$this->controller_helper->get_assigned_history();
 	}
 
 	/**
@@ -4231,9 +3952,9 @@ JS;
 	 * @param int    $location_id Location ID of the entity type.
 	 * @param int    $item_id     ID of the entity item.
 	 * @param string $mode        Rendering mode (e.g. 'view' or 'edit').
-	 * @return void Output is rendered via XSL template.
+	 * @return array Output is rendered via XSL template.
 	 */
-	function get_location_checklists($location_id, $item_id, $mode)
+	function get_location_checklists($location_id, $item_id, $mode): array
 	{
 
 		$checklist_data = $this->bo->get_checklist_data($location_id, $item_id);
@@ -4249,8 +3970,6 @@ JS;
 		{
 			$location_info = $this->locations->get_name($location_id);
 		}
-
-
 
 		foreach ($checklist_list as $checklist_list_item)
 		{

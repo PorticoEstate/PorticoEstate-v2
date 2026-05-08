@@ -15,10 +15,10 @@ require_once SRC_ROOT_PATH . '/modules/phpgwapi/inc/class.datetime.inc.php';
 class InterLink
 {
 
-	var $db;
-	var $locations_obj;
-	private $_join = ' JOIN ';
-	private $property_soentity, $helpdesk_botts, $property_botts, $property_solocation;
+	var Db $db;
+	var Locations $locations_obj;
+	private string $_join = ' JOIN ';
+	private object $property_soentity, $helpdesk_botts, $property_botts, $property_solocation;
 
 	public function __construct()
 	{

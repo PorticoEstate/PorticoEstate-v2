@@ -6,9 +6,13 @@ use App\modules\phpgwapi\security\AccessVerifier;
 use App\modules\property\helpers\RedirectHelper;
 use App\modules\property\controllers\TenantController;
 use App\modules\property\controllers\TicketController;
+use App\modules\property\controllers\EntityController;
 use App\controllers\GenericRegistryController;
 use Slim\Routing\RouteCollectorProxy;
 use App\modules\property\models\PropertyGenericRegistry;
+
+/** @var \Slim\App $app */
+/** @var \Psr\Container\ContainerInterface $container */
 
 
 $app->get('/property/inc/soap_client/bra5/soap.php', Bra5Controller::class . ':process');
@@ -60,6 +64,39 @@ $app->group('/property/registry', function (RouteCollectorProxy $group) use ($co
 		$typeGroup->get('/{id:[0-9]+}', [$controller, 'show']); // Get single item
 		$typeGroup->put('/{id:[0-9]+}', [$controller, 'update']); // Update item
 		$typeGroup->delete('/{id:[0-9]+}', [$controller, 'delete']); // Delete item
+	});
+})
+->addMiddleware(new AccessVerifier($container))
+->addMiddleware(new SessionsMiddleware($container));
+
+
+// Entity (EAV custom attribute records) Routes
+$app->group('/property/entity', function (RouteCollectorProxy $group) use ($container)
+{
+	$controller = new EntityController($container);
+
+	$group->group('/{type}/{entity_id:[0-9]+}/{cat_id:[0-9]+}', function (RouteCollectorProxy $g) use ($controller)
+	{
+		// Core CRUD
+		$g->get('',                [$controller, 'index']);
+		$g->post('',               [$controller, 'index']); // DataTables server-side POST
+		$g->post('/create',        [$controller, 'store']);
+		$g->get('/download',       [$controller, 'download']);
+		$g->get('/{id:[0-9]+}',    [$controller, 'show']);
+		$g->put('/{id:[0-9]+}',    [$controller, 'update']);
+		$g->delete('/{id:[0-9]+}', [$controller, 'destroy']);
+
+		// Item sub-resources (id in path)
+		$g->post('/{id:[0-9]+}/files',     [$controller, 'getFiles']);
+		$g->post('/{id:[0-9]+}/related',   [$controller, 'getRelated']);
+		$g->post('/{id:[0-9]+}/inventory', [$controller, 'getInventory']);
+
+		// Category-level data queries (id/location_id as query params)
+		$g->get('/items-per-qr',        [$controller, 'getItemsPerQr']);
+		$g->get('/cases',               [$controller, 'getCases']);
+		$g->get('/checklists',          [$controller, 'getChecklists']);
+		$g->get('/controls',            [$controller, 'getControlsAtComponent']);
+		$g->get('/cases-for-checklist', [$controller, 'getCasesForChecklist']);
 	});
 })
 ->addMiddleware(new AccessVerifier($container))

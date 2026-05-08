@@ -6736,6 +6736,1006 @@
                     }
                 }
             }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "List entity items",
+                "description": "Returns a paginated list of entity items for the given type\/entity\/category combination.",
+                "operationId": "0a1a9d4798c972b67bb86f47bc1a819d",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "description": "Pagination offset",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "description": "Free-text search",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "description": "Status\/category filter",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Column to sort by",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "dir",
+                        "in": "query",
+                        "description": "Sort direction",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "ASC",
+                            "enum": [
+                                "ASC",
+                                "DESC"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "allrows",
+                        "in": "query",
+                        "description": "Return all rows without pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of entity items",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#\/components\/schemas\/EntityItem"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get a single entity item",
+                "description": "Returns a single entity item with its full set of EAV attributes.",
+                "operationId": "7a1735e9de0120768a2e3b879abac186",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Entity item with attributes",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/EntityItem"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid id"
+                    },
+                    "404": {
+                        "description": "Entity item not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Update an entity item",
+                "description": "Updates core fields and\/or EAV attribute values of an existing entity item.",
+                "operationId": "d79a8b477b1e7f9d62d451f33160e089",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/EntitySaveRequest"
+                            },
+                            "examples": {
+                                "ticketUpdateExample": {
+                                    "summary": "Update with ticket relation context",
+                                    "value": {
+                                        "values": {
+                                            "name": "R\u00f8ykvarsler oppdatert",
+                                            "descr": "Oppdatert fra ticket"
+                                        },
+                                        "values_attribute": {
+                                            "123": "Serienummer-001"
+                                        },
+                                        "RelationInfo": {
+                                            "location_code": "5436-01-01-001",
+                                            "p_num": "7",
+                                            "p_entity_id": 1,
+                                            "p_cat_id": 15,
+                                            "tenant_id": 1000,
+                                            "origin": ".ticket",
+                                            "origin_id": 34844
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Item updated",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/EntityReceipt"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid id"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Delete an entity item",
+                "description": "Permanently deletes the specified entity item.",
+                "operationId": "3c7cbd09d4d951f333399f9b0d233416",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Deleted successfully"
+                    },
+                    "400": {
+                        "description": "Invalid id"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/create": {
+            "post": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Create a new entity item",
+                "description": "Creates a new entity item with optional EAV attribute values. Accepts JSON or multipart\/form-data (required when uploading a file attachment).",
+                "operationId": "05b18c8ff312589be372ba882853fb44",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/EntitySaveRequest"
+                            },
+                            "examples": {
+                                "ticketCreateExample": {
+                                    "summary": "Create with ticket relation context",
+                                    "value": {
+                                        "values": {
+                                            "name": "R\u00f8ykvarsler",
+                                            "descr": "Opprettet fra ticket"
+                                        },
+                                        "values_attribute": {
+                                            "123": "Serienummer-001"
+                                        },
+                                        "RelationInfo": {
+                                            "location_code": "5436-01-01-001",
+                                            "p_num": "7",
+                                            "p_entity_id": 1,
+                                            "p_cat_id": 15,
+                                            "tenant_id": 1000,
+                                            "origin": ".ticket",
+                                            "origin_id": 34844
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "multipart\/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "values": {
+                                        "description": "Core field values",
+                                        "type": "object"
+                                    },
+                                    "values_attribute": {
+                                        "description": "EAV attribute values keyed by attribute ID",
+                                        "type": "object"
+                                    },
+                                    "values_checklist_stage": {
+                                        "description": "Checklist stage values",
+                                        "type": "object"
+                                    },
+                                    "RelationInfo": {
+                                        "$ref": "#\/components\/schemas\/RelationInfo"
+                                    },
+                                    "file": {
+                                        "description": "Optional file attachment",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "jasperfile": {
+                                        "description": "Optional Jasper report attachment",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Item created",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/EntityReceipt"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/items-per-qr": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get items by QR code",
+                "description": "Returns entity items whose QR code matches the given value.",
+                "operationId": "20ba33ab51aecb5237361c0aef68f632",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "qr_code",
+                        "in": "query",
+                        "description": "QR code value to search",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Matching items",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#\/components\/schemas\/EntityItem"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/related": {
+            "post": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get related entity links",
+                "description": "Returns interlinked entity records for the given item. Called via DataTables POST.",
+                "operationId": "cf55b9378d64e7972819e4c2211593f1",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "draw",
+                        "in": "query",
+                        "description": "DataTables draw counter",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DataTables response with related records"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/files": {
+            "post": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get attached files",
+                "description": "Returns file attachments for the given item as a DataTables-compatible response. Includes HTML link and delete-checkbox cells, plus img_id\/img_url for image types.",
+                "operationId": "90d39ea3dd60b4583dcb4db8ca628fa2",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "draw",
+                        "in": "query",
+                        "description": "DataTables draw counter",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DataTables response with file rows"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/inventory": {
+            "post": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get inventory for item",
+                "description": "Returns inventory records associated with the given entity item.",
+                "operationId": "c24e4cf75fa8fc8f29884781bb49ca5f",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "draw",
+                        "in": "query",
+                        "description": "DataTables draw counter",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DataTables response with inventory rows"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/cases": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get controller cases",
+                "description": "Returns controller cases linked to the given entity item.",
+                "operationId": "70f184ac24befba2db20cbcddcddaab0",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Item ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "location_id",
+                        "in": "query",
+                        "description": "Location ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "description": "Year filter",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DataTables response with case rows"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/checklists": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get controller checklists",
+                "description": "Returns controller checklists linked to the given entity item.",
+                "operationId": "794f5687c102270cc6ab98d6a31effaf",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Item ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "location_id",
+                        "in": "query",
+                        "description": "Location ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "description": "Year filter",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DataTables response with checklist rows"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/controls": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get controls at component",
+                "description": "Returns controller inspection controls attached to this entity item\/component.",
+                "operationId": "5a392284b88629608488005bc90d2587",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Item ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "location_id",
+                        "in": "query",
+                        "description": "Location ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DataTables response with control rows"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/cases-for-checklist": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get cases for checklist",
+                "description": "Returns controller cases belonging to a specific checklist linked to this entity.",
+                "operationId": "325089650560fb1ac103f97c883d33e8",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "check_list_id",
+                        "in": "query",
+                        "description": "Checklist ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DataTables response with case rows"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/download": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Download entity list",
+                "description": "Streams the full entity list as CSV, Excel, or ODS depending on user preference.",
+                "operationId": "cf33f970d4d54d02c409d9363c7a6dba",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File download",
+                        "content": {
+                            "text\/csv": [],
+                            "application\/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [],
+                            "application\/vnd.oasis.opendocument.spreadsheet": []
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -8224,6 +9224,103 @@
             },
             "Date": {
                 "description": "Backward-compatible alias \u2014 canonical model lives in booking module."
+            },
+            "EntityItem": {
+                "description": "A single entity item (EAV record)",
+                "properties": {
+                    "id": {
+                        "description": "Item ID",
+                        "type": "integer"
+                    },
+                    "entity_id": {
+                        "description": "Entity definition ID",
+                        "type": "integer"
+                    },
+                    "cat_id": {
+                        "description": "Category ID within the entity",
+                        "type": "integer"
+                    }
+                },
+                "type": "object",
+                "additionalProperties": []
+            },
+            "EntityReceipt": {
+                "description": "Save operation receipt",
+                "properties": {
+                    "id": {
+                        "description": "ID of the saved item",
+                        "type": "integer"
+                    },
+                    "message": {
+                        "description": "Success messages",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "error": {
+                        "description": "Error messages",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "RelationInfo": {
+                "description": "Relation metadata used to enrich entity payloads with location and origin context.",
+                "properties": {
+                    "location_code": {
+                        "type": "string",
+                        "example": "5436-01-01-001"
+                    },
+                    "p_num": {
+                        "type": "string",
+                        "example": "7"
+                    },
+                    "p_entity_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "p_cat_id": {
+                        "type": "integer",
+                        "example": 15
+                    },
+                    "tenant_id": {
+                        "type": "integer",
+                        "example": 1000
+                    },
+                    "origin": {
+                        "type": "string",
+                        "example": ".ticket"
+                    },
+                    "origin_id": {
+                        "type": "integer",
+                        "example": 34844
+                    }
+                },
+                "type": "object"
+            },
+            "EntitySaveRequest": {
+                "properties": {
+                    "values": {
+                        "description": "Core field values",
+                        "type": "object"
+                    },
+                    "values_attribute": {
+                        "description": "EAV attribute values keyed by attribute ID",
+                        "type": "object"
+                    },
+                    "values_checklist_stage": {
+                        "description": "Checklist stage values",
+                        "type": "object"
+                    },
+                    "RelationInfo": {
+                        "$ref": "#\/components\/schemas\/RelationInfo"
+                    }
+                },
+                "type": "object"
             }
         },
         "securitySchemes": {
@@ -8286,6 +9383,10 @@
         {
             "name": "Checkout",
             "description": "API Endpoints for Application Checkout and Payment"
+        },
+        {
+            "name": "Entity",
+            "description": "REST API for EAV-based entity item records"
         },
         {
             "name": "Relationships",

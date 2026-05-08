@@ -2255,24 +2255,12 @@ class property_bocommon
 
 	public function get_documentation_url($id)
 	{
-
-		$order_info = $this->socommon->get_order_type($id);
-		$secret = $order_info['secret'];
-
-		$config_frontend = createobject('phpgwapi.config', 'mobilefrontend')->read();
-
-		$documentation_url = !empty($config_frontend['external_site_address'])  ? rtrim($config_frontend['external_site_address'], '/') : rtrim($this->serverSettings['webserver_url'], '/');
-
-		$documentation_url .= '/mobilefrontend/';
-
-		$documentation_url .= '?' . http_build_query(array(
-			'menuaction' => 'property.uiimport_documents.step_1_import',
-			'id'		 => $id,
-			'secret'	 => $secret,
-			'domain'	 => $this->userSettings['domain']
-		));
-
-		return $documentation_url;
+		return $this->common_business_helper->getDocumentationUrl(
+			$this->socommon,
+			$id,
+			$this->serverSettings,
+			$this->userSettings
+		);
 	}
 
 	public function get_users($query)

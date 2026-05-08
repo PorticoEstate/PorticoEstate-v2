@@ -775,4 +775,27 @@ class CommonBusinessHelper
 
 		return $ret;
 	}
+
+	public function getDocumentationUrl($socommon, $id, $serverSettings = array(), $userSettings = array())
+	{
+		$order_info = $socommon->get_order_type($id);
+		$secret = $order_info['secret'];
+
+		$config_frontend = createobject('phpgwapi.config', 'mobilefrontend')->read();
+
+		$documentation_url = !empty($config_frontend['external_site_address'])
+			? rtrim($config_frontend['external_site_address'], '/')
+			: rtrim($serverSettings['webserver_url'], '/');
+
+		$documentation_url .= '/mobilefrontend/';
+
+		$documentation_url .= '?' . http_build_query(array(
+			'menuaction' => 'property.uiimport_documents.step_1_import',
+			'id' => $id,
+			'secret' => $secret,
+			'domain' => $userSettings['domain']
+		));
+
+		return $documentation_url;
+	}
 }

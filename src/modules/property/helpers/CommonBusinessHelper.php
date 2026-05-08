@@ -759,4 +759,20 @@ class CommonBusinessHelper
 
 		return $ret;
 	}
+
+	public function getExternalProjectName($id)
+	{
+		$ret = $id;
+		if ($id)
+		{
+			$sogeneric = CreateObject('property.sogeneric', 'external_project');
+			$sogeneric_data = $sogeneric->read_single(array('id' => $id));
+			if ($sogeneric_data)
+			{
+				$ret = $sogeneric_data['name'];
+			}
+		}
+
+		return $ret;
+	}
 }

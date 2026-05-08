@@ -2234,17 +2234,7 @@ class property_bocommon
 
 	public function get_external_project_name($id)
 	{
-		$ret = $id;
-		if ($id)
-		{
-			$sogeneric		 = CreateObject('property.sogeneric', 'external_project');
-			$sogeneric_data	 = $sogeneric->read_single(array('id' => $id));
-			if ($sogeneric_data)
-			{
-				$ret = $sogeneric_data['name'];
-			}
-		}
-		return $ret;
+		return $this->common_business_helper->getExternalProjectName($id);
 	}
 
 	public function get_ecodimb()

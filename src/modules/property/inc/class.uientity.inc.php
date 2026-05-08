@@ -1200,6 +1200,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				'allrows'		 => true,
 				'editor_action'	 => '',
 				'field'			 => array(),
+				'sorted_by' => array('key' => 0, 'dir' => 'desc'), //id
 				'query'			 => Sanitizer::get_var('location_code')
 			)
 		);

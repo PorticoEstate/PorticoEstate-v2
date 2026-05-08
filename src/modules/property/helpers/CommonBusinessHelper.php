@@ -530,6 +530,19 @@ class CommonBusinessHelper
 		return $this->selectList($selected, $categories);
 	}
 
+	public function addUserListTemplate($format, $xsl_rootdir)
+	{
+		switch ($format)
+		{
+			case 'select':
+				\phpgwapi_xslttemplates::getInstance()->add_file(array('user_id_select'), $xsl_rootdir);
+				break;
+			case 'filter':
+				\phpgwapi_xslttemplates::getInstance()->add_file(array('user_id_filter'), $xsl_rootdir);
+				break;
+		}
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

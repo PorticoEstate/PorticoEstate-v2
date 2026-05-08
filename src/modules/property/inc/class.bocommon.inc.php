@@ -162,15 +162,7 @@ class property_bocommon
 	{
 		$order = $order ? $order : 'account_lastname';
 
-		switch ($format)
-		{
-			case 'select':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('user_id_select'), $this->xsl_rootdir);
-				break;
-			case 'filter':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('user_id_filter'), $this->xsl_rootdir);
-				break;
-		}
+		$this->common_business_helper->addUserListTemplate($format, $this->xsl_rootdir);
 
 		if (!$selected && $default)
 		{
@@ -426,15 +418,7 @@ class property_bocommon
 			$default		 = isset($data['default']) ? $data['default'] : '';
 		}
 
-		switch ($format)
-		{
-			case 'select':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('user_id_select'), $this->xsl_rootdir);
-				break;
-			case 'filter':
-				phpgwapi_xslttemplates::getInstance()->add_file(array('user_id_filter'), $this->xsl_rootdir);
-				break;
-		}
+		$this->common_business_helper->addUserListTemplate($format, $this->xsl_rootdir);
 
 		if (!$selected && $default)
 		{

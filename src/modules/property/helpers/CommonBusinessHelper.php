@@ -791,6 +791,14 @@ class CommonBusinessHelper
 		);
 	}
 
+	public function addContactFallbackFromPreferences(&$contact, $contact_id, $socommon)
+	{
+		$user_id = createObject('property.soresponsible')->get_contact_user_id($contact_id);
+		$prefs = $socommon->create_preferences('common', $user_id);
+		$contact['value_contact_email'] = $prefs['email'];
+		$contact['value_contact_tel'] = $prefs['cellphone'];
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

@@ -6967,17 +6967,30 @@
                     "content": {
                         "application\/json": {
                             "schema": {
-                                "properties": {
-                                    "values": {
-                                        "description": "Core field values",
-                                        "type": "object"
-                                    },
-                                    "values_attribute": {
-                                        "description": "EAV attribute values keyed by attribute ID",
-                                        "type": "object"
+                                "$ref": "#\/components\/schemas\/EntitySaveRequest"
+                            },
+                            "examples": {
+                                "ticketUpdateExample": {
+                                    "summary": "Update with ticket relation context",
+                                    "value": {
+                                        "values": {
+                                            "name": "R\u00f8ykvarsler oppdatert",
+                                            "descr": "Oppdatert fra ticket"
+                                        },
+                                        "values_attribute": {
+                                            "123": "Serienummer-001"
+                                        },
+                                        "RelationInfo": {
+                                            "location_code": "5436-01-01-001",
+                                            "p_num": "7",
+                                            "p_entity_id": 1,
+                                            "p_cat_id": 15,
+                                            "tenant_id": 1000,
+                                            "origin": ".ticket",
+                                            "origin_id": 34844
+                                        }
                                     }
-                                },
-                                "type": "object"
+                                }
                             }
                         }
                     }
@@ -7095,17 +7108,30 @@
                     "content": {
                         "application\/json": {
                             "schema": {
-                                "properties": {
-                                    "values": {
-                                        "description": "Core field values",
-                                        "type": "object"
-                                    },
-                                    "values_attribute": {
-                                        "description": "EAV attribute values keyed by attribute ID",
-                                        "type": "object"
+                                "$ref": "#\/components\/schemas\/EntitySaveRequest"
+                            },
+                            "examples": {
+                                "ticketCreateExample": {
+                                    "summary": "Create with ticket relation context",
+                                    "value": {
+                                        "values": {
+                                            "name": "R\u00f8ykvarsler",
+                                            "descr": "Opprettet fra ticket"
+                                        },
+                                        "values_attribute": {
+                                            "123": "Serienummer-001"
+                                        },
+                                        "RelationInfo": {
+                                            "location_code": "5436-01-01-001",
+                                            "p_num": "7",
+                                            "p_entity_id": 1,
+                                            "p_cat_id": 15,
+                                            "tenant_id": 1000,
+                                            "origin": ".ticket",
+                                            "origin_id": 34844
+                                        }
                                     }
-                                },
-                                "type": "object"
+                                }
                             }
                         },
                         "multipart\/form-data": {
@@ -7118,6 +7144,13 @@
                                     "values_attribute": {
                                         "description": "EAV attribute values keyed by attribute ID",
                                         "type": "object"
+                                    },
+                                    "values_checklist_stage": {
+                                        "description": "Checklist stage values",
+                                        "type": "object"
+                                    },
+                                    "RelationInfo": {
+                                        "$ref": "#\/components\/schemas\/RelationInfo"
                                     },
                                     "file": {
                                         "description": "Optional file attachment",
@@ -9231,6 +9264,60 @@
                         "items": {
                             "type": "object"
                         }
+                    }
+                },
+                "type": "object"
+            },
+            "RelationInfo": {
+                "description": "Relation metadata used to enrich entity payloads with location and origin context.",
+                "properties": {
+                    "location_code": {
+                        "type": "string",
+                        "example": "5436-01-01-001"
+                    },
+                    "p_num": {
+                        "type": "string",
+                        "example": "7"
+                    },
+                    "p_entity_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "p_cat_id": {
+                        "type": "integer",
+                        "example": 15
+                    },
+                    "tenant_id": {
+                        "type": "integer",
+                        "example": 1000
+                    },
+                    "origin": {
+                        "type": "string",
+                        "example": ".ticket"
+                    },
+                    "origin_id": {
+                        "type": "integer",
+                        "example": 34844
+                    }
+                },
+                "type": "object"
+            },
+            "EntitySaveRequest": {
+                "properties": {
+                    "values": {
+                        "description": "Core field values",
+                        "type": "object"
+                    },
+                    "values_attribute": {
+                        "description": "EAV attribute values keyed by attribute ID",
+                        "type": "object"
+                    },
+                    "values_checklist_stage": {
+                        "description": "Checklist stage values",
+                        "type": "object"
+                    },
+                    "RelationInfo": {
+                        "$ref": "#\/components\/schemas\/RelationInfo"
                     }
                 },
                 "type": "object"

@@ -39,6 +39,28 @@ use function include_class;
  *     @OA\Property(property="message", type="array", @OA\Items(type="object"), description="Success messages"),
  *     @OA\Property(property="error", type="array", @OA\Items(type="object"), description="Error messages")
  * )
+ *
+ * @OA\Schema(
+ *     schema="RelationInfo",
+ *     type="object",
+ *     description="Relation metadata used to enrich entity payloads with location and origin context.",
+ *     @OA\Property(property="location_code", type="string", example="5436-01-01-001"),
+ *     @OA\Property(property="p_num", type="string", example="7"),
+ *     @OA\Property(property="p_entity_id", type="integer", example=1),
+ *     @OA\Property(property="p_cat_id", type="integer", example=15),
+ *     @OA\Property(property="tenant_id", type="integer", example=1000),
+ *     @OA\Property(property="origin", type="string", example=".ticket"),
+ *     @OA\Property(property="origin_id", type="integer", example=34844)
+ * )
+ *
+ * @OA\Schema(
+ *     schema="EntitySaveRequest",
+ *     type="object",
+ *     @OA\Property(property="values", type="object", description="Core field values"),
+ *     @OA\Property(property="values_attribute", type="object", description="EAV attribute values keyed by attribute ID"),
+ *     @OA\Property(property="values_checklist_stage", type="object", description="Checklist stage values"),
+ *     @OA\Property(property="RelationInfo", ref="#/components/schemas/RelationInfo")
+ * )
  */
 class EntityController
 {
@@ -418,246 +440,7 @@ class EntityController
 			$values['origin_id'] = (int)$relationInfo['origin_id'];
 		}
 
-		if (!empty($values['location_code']))
-		{
-			$bolocation = CreateObject('property.bolocation');
-			$values['location_data'] = $bolocation->read_single(
-				$values['location_code'],
-				array_merge($values['extra'], [
-					'view' => true,
-					'noattrib' => true,
-				])
-			);
-		}
-
-		if (empty($values['location']) && !empty($values['location_code']) && !empty($values['location_data']))
-		{
-			$values['location'] = [];
-			foreach (explode('-', (string)$values['location_code']) as $index => $_)
-			{
-				$key = 'loc' . ($index + 1);
-				if (isset($values['location_data'][$key]))
-				{
-					$values['location'][$key] = $values['location_data'][$key];
-				}
-			}
-		}
-
-		$origin = $values['origin'] ?? false;
-		$originId = $values['origin_id'] ?? false;
-
-		if ($origin === '.ticket' && $originId && empty($values['descr']))
-		{
-			$boticket = CreateObject('property.botts');
-			$ticket = $boticket->read_single((int)$originId);
-			$values['descr'] = strip_tags($ticket['details'] ?? '');
-			$values['name'] = !empty($ticket['subject']) ? $ticket['subject'] : ($ticket['category_name'] ?? '');
-			$ticketNotes = $boticket->read_additional_notes((int)$originId);
-			$i = is_array($ticketNotes) ? count($ticketNotes) - 1 : -1;
-			if ($i >= 0 && !empty($ticketNotes[$i]['value_note']))
-			{
-				$values['descr'] .= ': ' . $ticketNotes[$i]['value_note'];
-			}
-			if (!empty($ticket['contact_id']))
-			{
-				$values['contact_id'] = $ticket['contact_id'];
-			}
-		}
-
-		if (!empty($origin))
-		{
-			$interlink = CreateObject('property.interlink');
-			$values['origin_data'][] = [
-				'location' => $origin,
-				'descr' => $interlink->get_location_name($origin),
-				'data' => [[
-					'id' => $originId,
-					'link' => $interlink->get_relation_link(['location' => $origin], (int)$originId),
-				]],
-			];
-		}
-
 		return $values;
-	}
-
-	/**
-	 * Apply legacy session-backed location enrichment via collect_locationdata().
-	 */
-	private function applyLegacyCollectLocationData(array $values, \property_boentity $bo, Request $request): array
-	{
-		$body = $this->requestBodyArray($request);
-		$queryParams = $request->getQueryParams();
-		$bypassRaw = $queryParams['bypass'] ?? ($values['bypass'] ?? false);
-		$bypass = filter_var($bypassRaw, FILTER_VALIDATE_BOOLEAN);
-		if ($bypass)
-		{
-			return $values;
-		}
-
-		if (!function_exists('CreateObject'))
-		{
-			return $values;
-		}
-
-		$app = $bo->type_app[$bo->type] ?? 'property';
-		$aclLocation = $bo->acl_location;
-
-		$config = CreateObject('phpgwapi.config', 'property')->read();
-		if (!empty($config['bypass_acl_at_entity'])
-			&& is_array($config['bypass_acl_at_entity'])
-			&& in_array($bo->entity_id, $config['bypass_acl_at_entity']))
-		{
-			$aclLocation = ".{$bo->type}.{$bo->entity_id}";
-		}
-
-		$insertRecord = Cache::session_get('property', 'insert_record');
-		if (!is_array($insertRecord))
-		{
-			$insertRecord = [];
-		}
-
-		$insertRecordEntity = (array) Cache::session_get($app, 'insert_record_values' . $aclLocation);
-		foreach ($insertRecordEntity as $insertValue)
-		{
-			$insertRecord['extra'][$insertValue] = $insertValue;
-		}
-
-		include_class('property', 'bocommon');
-		$bocommon = new \property_bocommon();
-		if (!is_object($bocommon) || !method_exists($bocommon, 'collect_locationdata'))
-		{
-			return $values;
-		}
-
-		// collect_locationdata() reads from $_POST; hydrate a temporary POST view for REST payloads.
-		$legacyPost = $this->buildLegacyCollectLocationPost($values, $insertRecord, $body);
-		$previousPost = $_POST ?? [];
-		$_POST = array_merge($previousPost, $legacyPost);
-
-		try
-		{
-			return $bocommon->collect_locationdata($values, $insertRecord);
-		}
-		finally
-		{
-			$_POST = $previousPost;
-		}
-	}
-
-	/**
-	 * Build the subset of POST fields expected by property_bocommon::collect_locationdata().
-	 */
-	private function buildLegacyCollectLocationPost(array $values, array $insertRecord, array $body = []): array
-	{
-		$post = [];
-
-		if (!empty($insertRecord['location']) && is_array($insertRecord['location']))
-		{
-			foreach ($insertRecord['location'] as $locationKey)
-			{
-				if (isset($body[$locationKey]) && $body[$locationKey] !== '')
-				{
-					$post[$locationKey] = $body[$locationKey];
-				}
-				else if (isset($values['location'][$locationKey]) && $values['location'][$locationKey] !== '')
-				{
-					$post[$locationKey] = $values['location'][$locationKey];
-				}
-			}
-		}
-
-		if (!empty($insertRecord['extra']) && is_array($insertRecord['extra']))
-		{
-			foreach ($insertRecord['extra'] as $postKey => $column)
-			{
-				if (isset($body[$postKey]) && $body[$postKey] !== '')
-				{
-					$post[$postKey] = $body[$postKey];
-				}
-				else if (isset($values['extra'][$column]) && $values['extra'][$column] !== '')
-				{
-					$post[$postKey] = $values['extra'][$column];
-				}
-			}
-		}
-
-		if (!empty($insertRecord['additional_info']) && is_array($insertRecord['additional_info'])
-			&& !empty($values['additional_info']) && is_array($values['additional_info']))
-		{
-			foreach ($insertRecord['additional_info'] as $additionalInfo)
-			{
-				$inputName = $additionalInfo['input_name'] ?? '';
-				$inputText = $additionalInfo['input_text'] ?? '';
-				if ($inputName && isset($body[$inputName]) && $body[$inputName] !== '')
-				{
-					$post[$inputName] = $body[$inputName];
-				}
-				else if ($inputName && $inputText && isset($values['additional_info'][$inputText])
-					&& $values['additional_info'][$inputText] !== '')
-				{
-					$post[$inputName] = $values['additional_info'][$inputText];
-				}
-			}
-		}
-
-		if (isset($body['street_name']) && $body['street_name'] !== '')
-		{
-			$post['street_name'] = $body['street_name'];
-		}
-		else if (isset($values['street_name']) && $values['street_name'] !== '')
-		{
-			$post['street_name'] = $values['street_name'];
-		}
-
-		if (isset($body['street_number']) && $body['street_number'] !== '')
-		{
-			$post['street_number'] = $body['street_number'];
-		}
-		else if (isset($values['street_number']) && $values['street_number'] !== '')
-		{
-			$post['street_number'] = $values['street_number'];
-		}
-
-		if (!empty($insertRecord['location']) && is_array($insertRecord['location']))
-		{
-			foreach ($insertRecord['location'] as $index => $locationKey)
-			{
-				$locationNameKey = 'loc' . ($index + 1) . '_name';
-				if (isset($body[$locationNameKey]) && $body[$locationNameKey] !== '')
-				{
-					$post[$locationNameKey] = $body[$locationNameKey];
-				}
-			}
-		}
-
-		if (!empty($values['location']) && is_array($values['location'])
-			&& !isset($post['loc' . count($values['location']) . '_name'])
-			&& isset($values['location_name']) && $values['location_name'] !== '')
-		{
-			$post['loc' . count($values['location']) . '_name'] = $values['location_name'];
-		}
-
-		foreach ($body as $key => $value)
-		{
-			if (is_string($key) && strpos($key, 'entity_cat_name_') === 0 && $value !== '')
-			{
-				$post[$key] = $value;
-			}
-		}
-
-		if (!empty($values['p']) && is_array($values['p']))
-		{
-			foreach ($values['p'] as $pEntityId => $pData)
-			{
-				$key = 'entity_cat_name_' . $pEntityId;
-				if (!isset($post[$key]) && isset($pData['p_cat_name']) && $pData['p_cat_name'] !== '')
-				{
-					$post[$key] = $pData['p_cat_name'];
-				}
-			}
-		}
-
-		return $post;
 	}
 
 	/**
@@ -889,10 +672,28 @@ class EntityController
 	 *         required=true,
 	 *         @OA\MediaType(
 	 *             mediaType="application/json",
-	 *             @OA\Schema(
-	 *                 type="object",
-	 *                 @OA\Property(property="values", type="object", description="Core field values"),
-	 *                 @OA\Property(property="values_attribute", type="object", description="EAV attribute values keyed by attribute ID")
+	 *             @OA\Schema(ref="#/components/schemas/EntitySaveRequest"),
+	 *             @OA\Examples(
+	 *                 example="ticketCreateExample",
+	 *                 summary="Create with ticket relation context",
+	 *                 value={
+	 *                     "values": {
+	 *                         "name": "Røykvarsler",
+	 *                         "descr": "Opprettet fra ticket"
+	 *                     },
+	 *                     "values_attribute": {
+	 *                         "123": "Serienummer-001"
+	 *                     },
+	 *                     "RelationInfo": {
+	 *                         "location_code": "5436-01-01-001",
+	 *                         "p_num": "7",
+	 *                         "p_entity_id": 1,
+	 *                         "p_cat_id": 15,
+	 *                         "tenant_id": 1000,
+	 *                         "origin": ".ticket",
+	 *                         "origin_id": 34844
+	 *                     }
+	 *                 }
 	 *             )
 	 *         ),
 	 *         @OA\MediaType(
@@ -901,6 +702,8 @@ class EntityController
 	 *                 type="object",
 	 *                 @OA\Property(property="values", type="object", description="Core field values"),
 	 *                 @OA\Property(property="values_attribute", type="object", description="EAV attribute values keyed by attribute ID"),
+	 *                 @OA\Property(property="values_checklist_stage", type="object", description="Checklist stage values"),
+	 *                 @OA\Property(property="RelationInfo", ref="#/components/schemas/RelationInfo"),
 	 *                 @OA\Property(property="file", type="string", format="binary", description="Optional file attachment"),
 	 *                 @OA\Property(property="jasperfile", type="string", format="binary", description="Optional Jasper report attachment")
 	 *             )
@@ -992,10 +795,31 @@ class EntityController
 	 *     @OA\Parameter(name="id", in="path", required=true, description="Item ID to update", @OA\Schema(type="integer")),
 	 *     @OA\RequestBody(
 	 *         required=true,
-	 *         @OA\JsonContent(
-	 *             type="object",
-	 *             @OA\Property(property="values", type="object", description="Core field values"),
-	 *             @OA\Property(property="values_attribute", type="object", description="EAV attribute values keyed by attribute ID")
+	 *         @OA\MediaType(
+	 *             mediaType="application/json",
+	 *             @OA\Schema(ref="#/components/schemas/EntitySaveRequest"),
+	 *             @OA\Examples(
+	 *                 example="ticketUpdateExample",
+	 *                 summary="Update with ticket relation context",
+	 *                 value={
+	 *                     "values": {
+	 *                         "name": "Røykvarsler oppdatert",
+	 *                         "descr": "Oppdatert fra ticket"
+	 *                     },
+	 *                     "values_attribute": {
+	 *                         "123": "Serienummer-001"
+	 *                     },
+	 *                     "RelationInfo": {
+	 *                         "location_code": "5436-01-01-001",
+	 *                         "p_num": "7",
+	 *                         "p_entity_id": 1,
+	 *                         "p_cat_id": 15,
+	 *                         "tenant_id": 1000,
+	 *                         "origin": ".ticket",
+	 *                         "origin_id": 34844
+	 *                     }
+	 *                 }
+	 *             )
 	 *         )
 	 *     ),
 	 *     @OA\Response(

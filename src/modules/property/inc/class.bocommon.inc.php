@@ -34,6 +34,7 @@ use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Config;
 use App\modules\phpgwapi\services\Cache;
+use App\modules\property\helpers\CommonBusinessHelper;
 
 /**
  * Description
@@ -58,6 +59,7 @@ class property_bocommon
 	var $flags;
 	var $accounts;
 	var $phpgwapi_common;
+	var $common_business_helper;
 	protected $join;
 	protected $left_join;
 	protected $like;
@@ -77,6 +79,7 @@ class property_bocommon
 		$this->account	= isset($this->userSettings['account_id']) ? (int)$this->userSettings['account_id'] : -1;
 		$this->accounts = new Accounts();
 		$this->phpgwapi_common = new \phpgwapi_common();
+		$this->common_business_helper = new CommonBusinessHelper();
 
 
 
@@ -92,7 +95,7 @@ class property_bocommon
 
 	function check_perms($rights, $required)
 	{
-		return ($rights & $required);
+		return $this->common_business_helper->checkPerms($rights, $required);
 	}
 
 	/**
@@ -104,61 +107,28 @@ class property_bocommon
 	 */
 	function check_perms2($owner_id, $grants, $required)
 	{
-		if (isset($grants['accounts'][$owner_id]) && ($grants['accounts'][$owner_id] & $required))
-		{
-			return true;
-		}
-
 		$equalto = $this->accounts->membership($owner_id);
-		foreach ($grants['groups'] as $group => $_right)
-		{
-			if (isset($equalto[$group]) && ($_right & $required))
-			{
-				return true;
-			}
-		}
-
-		return false;
+		return $this->common_business_helper->checkPerms2($owner_id, $grants, $required, $equalto);
 	}
 
 	function create_preferences($app = '', $user_id = '')
 	{
-		return $this->socommon->create_preferences($app, $user_id);
+		return $this->common_business_helper->createPreferences($this->socommon, $app, $user_id);
 	}
 
 	function get_lookup_entity($location = '')
 	{
-		return $this->socommon->get_lookup_entity($location);
+		return $this->common_business_helper->getLookupEntity($this->socommon, $location);
 	}
 
 	function get_start_entity($location = '')
 	{
-		return $this->socommon->get_start_entity($location);
+		return $this->common_business_helper->getStartEntity($this->socommon, $location);
 	}
 
 	function msgbox_data($receipt)
 	{
-		$msgbox_data_error	 = array();
-		$msgbox_data_message = array();
-		if (isset($receipt['error']) and is_array($receipt['error']))
-		{
-			foreach ($receipt['error'] as $dummy => $error)
-			{
-				$msgbox_data_error[$error['msg']] = false;
-			}
-		}
-
-		if (isset($receipt['message']) and is_array($receipt['message']))
-		{
-			foreach ($receipt['message'] as $dummy => $message)
-			{
-				$msgbox_data_message[$message['msg']] = true;
-			}
-		}
-
-		$msgbox_data = array_merge($msgbox_data_error, $msgbox_data_message);
-
-		return $msgbox_data;
+		return $this->common_business_helper->msgboxData($receipt);
 	}
 
 	function confirm_session()
@@ -175,49 +145,17 @@ class property_bocommon
 
 	function date_to_timestamp($date = array())
 	{
-		return phpgwapi_datetime::date_to_timestamp($date);
+		return $this->common_business_helper->dateToTimestamp($date);
 	}
 
 	function select_multi_list($selected = '', $input_list = array())
 	{
-		$j = 0;
-		if (isset($input_list) and is_array($input_list))
-		{
-			foreach ($input_list as $entry)
-			{
-				$output_list[$j]['id']	 = $entry['id'];
-				$output_list[$j]['name'] = $entry['name'];
-
-				if (isset($selected) && is_array($selected))
-				{
-					for ($i = 0; $i < count($selected); $i++)
-					{
-						if ($selected[$i] == $entry['id'])
-						{
-							$output_list[$j]['selected'] = 'selected';
-						}
-					}
-				}
-				$j++;
-			}
-		}
-		return $output_list;
+		return $this->common_business_helper->selectMultiList($selected, $input_list);
 	}
 
 	function select_list($selected = '', $list = array())
 	{
-		if (is_array($list))
-		{
-			foreach ($list as &$entry)
-			{
-				if ((string)$entry['id'] === (string)$selected) // in case the value is '0'
-				{
-					$entry['selected'] = 1;
-					break;
-				}
-			}
-			return $list;
-		}
+		return $this->common_business_helper->selectList($selected, $list);
 	}
 
 	function get_user_list($format = '', $selected = '', $extra = '', $default = '', $start = '', $sort = 'ASC', $order = 'account_lastname', $query = '', $offset = '', $enabled = false)
@@ -1027,89 +965,22 @@ class property_bocommon
 
 	function select_multi_list_2($selected = '', $list = array(), $input_type = '')
 	{
-		if (isset($list) and is_array($list))
-		{
-			foreach ($list as &$choice)
-			{
-				$choice['input_type'] = $input_type;
-				if (isset($selected) && is_array($selected))
-				{
-					foreach ($selected as &$sel)
-					{
-						if ($sel == $choice['id'])
-						{
-							$choice['checked'] = 'checked';
-						}
-					}
-				}
-			}
-		}
-		return $list;
+		return $this->common_business_helper->selectMultiList2($selected, $list, $input_type);
 	}
 
 	function translate_datatype($datatype)
 	{
-		$datatype_text = array(
-			'V'		 => 'Varchar',
-			'I'		 => 'Integer',
-			'C'		 => 'char',
-			'N'		 => 'Float',
-			'D'		 => 'Date',
-			'T'		 => 'Memo',
-			'R'		 => 'Muliple radio',
-			'CH'	 => 'Muliple checkbox',
-			'LB'	 => 'Listbox',
-			'AB'	 => 'Contact',
-			'VENDOR' => 'Vendor',
-			'email'	 => 'Email',
-			'link'	 => 'Link',
-			'pwd'	 => 'Password',
-			'user'	 => 'phpgw user'
-		);
-
-		$datatype = lang($datatype_text[$datatype]);
-
-		return $datatype;
+		return $this->common_business_helper->translateDatatype($datatype);
 	}
 
 	function translate_datatype_insert($datatype)
 	{
-		$datatype_text = array(
-			'V'		 => 'varchar',
-			'I'		 => 'int',
-			'C'		 => 'char',
-			'N'		 => 'decimal',
-			'D'		 => 'timestamp',
-			'T'		 => 'text',
-			'R'		 => 'int',
-			'CH'	 => 'text',
-			'LB'	 => 'int',
-			'AB'	 => 'int',
-			'VENDOR' => 'int',
-			'email'	 => 'varchar',
-			'link'	 => 'varchar',
-			'pwd'	 => 'varchar',
-			'user'	 => 'int'
-		);
-
-		return $datatype_text[$datatype];
+		return $this->common_business_helper->translateDatatypeInsert($datatype);
 	}
 
 	function translate_datatype_precision($datatype)
 	{
-		$datatype_precision = array(
-			'I'		 => 4,
-			'R'		 => 4,
-			'LB'	 => 4,
-			'AB'	 => 4,
-			'VENDOR' => 4,
-			'email'	 => 64,
-			'link'	 => 255,
-			'pwd'	 => 32,
-			'user'	 => 4
-		);
-
-		return (isset($datatype_precision[$datatype]) ? $datatype_precision[$datatype] : '');
+		return $this->common_business_helper->translateDatatypePrecision($datatype);
 	}
 
 	/**
@@ -1121,57 +992,12 @@ class property_bocommon
 	 */
 	function translate_datatype_format($datatype)
 	{
-		$datatype_text = array(
-			'V'		 => 'varchar',
-			'I'		 => 'integer',
-			'C'		 => 'char',
-			'N'		 => 'float',
-			'D'		 => 'date',
-			'T'		 => 'memo',
-			'R'		 => 'radio',
-			'CH'	 => 'checkbox',
-			'LB'	 => 'listbox',
-			'AB'	 => 'contact',
-			'VENDOR' => 'vendor',
-			'email'	 => 'email',
-			'link'	 => 'link',
-			'pwd'	 => 'password',
-			'user'	 => 'phpgw_user'
-		);
-
-
-		if (isset($datatype_text[$datatype]))
-		{
-			return $datatype_text[$datatype];
-		}
-		return $datatype;
+		return $this->common_business_helper->translateDatatypeFormat($datatype);
 	}
 
 	function add_leading_zero($num, $id_type = '')
 	{
-		if ($id_type == "hex")
-		{
-			$num = hexdec($num);
-			$num++;
-			$num = dechex($num);
-		}
-		else
-		{
-			$num++;
-		}
-
-		if (strlen($num) == 4)
-			$return	 = $num;
-		if (strlen($num) == 3)
-			$return	 = "0$num";
-		if (strlen($num) == 2)
-			$return	 = "00$num";
-		if (strlen($num) == 1)
-			$return	 = "000$num";
-		if (strlen($num) == 0)
-			$return	 = "0001";
-
-		return strtoupper($return);
+		return $this->common_business_helper->addLeadingZero($num, $id_type);
 	}
 
 	function read_location_data($location_code)
@@ -1186,12 +1012,12 @@ class property_bocommon
 
 	function read_single_tenant($tenant_id)
 	{
-		return $this->socommon->read_single_tenant($tenant_id);
+		return $this->common_business_helper->readSingleTenant($this->socommon, $tenant_id);
 	}
 
 	function check_location($location_code = '', $type_id = '')
 	{
-		return $this->socommon->check_location($location_code, $type_id);
+		return $this->common_business_helper->checkLocation($this->socommon, $location_code, $type_id);
 	}
 
 	function generate_sql($data)
@@ -1523,7 +1349,7 @@ class property_bocommon
 
 	function fm_cache($name = '', $value = '')
 	{
-		return $this->socommon->fm_cache($name, $value);
+		return $this->common_business_helper->fmCache($this->socommon, $name, $value);
 	}
 
 	/**
@@ -1532,7 +1358,7 @@ class property_bocommon
 	 */
 	function reset_fm_cache()
 	{
-		$this->socommon->reset_fm_cache();
+		$this->common_business_helper->resetFmCache($this->socommon);
 	}
 
 	/**
@@ -1542,36 +1368,26 @@ class property_bocommon
 	 */
 	function reset_fm_cache_userlist()
 	{
-		return $this->socommon->reset_fm_cache_userlist();
+		return $this->common_business_helper->resetFmCacheUserlist($this->socommon);
 	}
 
 	function next_id($table, $key = '')
 	{
-		return $this->socommon->next_id($table, $key);
+		return $this->common_business_helper->nextId($this->socommon, $table, $key);
 	}
 
 	function select_datatype($selected = '', $sub_module = '')
 	{
 
 		$custom = createObject('phpgwapi.custom_fields');
-
-		foreach ($custom->datatype_text as $key => $name)
-		{
-			$datatypes[] = array(
-				'id'	 => $key,
-				'name'	 => $name,
-			);
-		}
+		$datatypes = $this->common_business_helper->buildDatatypeList($custom->datatype_text);
 
 		return $this->select_list($selected, $datatypes);
 	}
 
 	function select_nullable($selected = '')
 	{
-		$nullable[0]['id']	 = 'True';
-		$nullable[0]['name'] = lang('true');
-		$nullable[1]['id']	 = 'False';
-		$nullable[1]['name'] = lang('false');
+		$nullable = $this->common_business_helper->buildNullableList();
 
 		return $this->select_list($selected, $nullable);
 	}
@@ -1989,46 +1805,22 @@ class property_bocommon
 
 	function increment_id($name)
 	{
-		return $this->socommon->increment_id($name);
+		return $this->common_business_helper->incrementId($this->socommon, $name);
 	}
 
 	function get_origin_link($type)
 	{
-		if ($type == 'tts')
-		{
-			$link = array('menuaction' => 'property.uitts.view');
-		}
-		else if ($type == 'request')
-		{
-			$link = array('menuaction' => 'property.uirequest.view');
-		}
-		else if ($type == 'project')
-		{
-			$link = array('menuaction' => 'property.uiproject.view');
-		}
-		else if (substr($type, 0, 6) == 'entity')
-		{
-			$type		 = explode("_", $type);
-			$entity_id	 = $type[1];
-			$cat_id		 = $type[2];
-			$link		 = array(
-				'menuaction' => 'property.uientity.view',
-				'entity_id'	 => $entity_id,
-				'cat_id'	 => $cat_id
-			);
-		}
-
-		return (isset($link) ? $link : '');
+		return $this->common_business_helper->getOriginLink($type);
 	}
 
 	function new_db($db = '')
 	{
-		return $this->socommon->new_db($db);
+		return $this->common_business_helper->newDb($this->socommon, $db);
 	}
 
 	function get_max_location_level()
 	{
-		return $this->socommon->get_max_location_level();
+		return $this->common_business_helper->getMaxLocationLevel($this->socommon);
 	}
 
 	/**
@@ -2106,21 +1898,7 @@ class property_bocommon
 	 */
 	function utf2ascii($text = '')
 	{
-		if (!isset($this->serverSettings['charset']) || $this->serverSettings['charset'] == 'utf-8')
-		{
-			if ($text == mb_convert_encoding($text, 'ISO-8859-1', 'UTF-8'))
-			{
-				return $text;
-			}
-			else
-			{
-				return mb_convert_encoding($text, 'ISO-8859-1', 'UTF-8');
-			}
-		}
-		else
-		{
-			return $text;
-		}
+		return $this->common_business_helper->utf2ascii($text, $this->serverSettings['charset'] ?? null);
 	}
 
 	/**
@@ -2131,14 +1909,7 @@ class property_bocommon
 	 */
 	function ascii2utf($text = '')
 	{
-		if (!isset($this->serverSettings['charset']) || $this->serverSettings['charset'] == 'utf-8')
-		{
-			return mb_convert_encoding($text, 'UTF-8', 'ISO-8859-1');
-		}
-		else
-		{
-			return $text;
-		}
+		return $this->common_business_helper->ascii2utf($text, $this->serverSettings['charset'] ?? null);
 	}
 
 	/**
@@ -2349,87 +2120,27 @@ class property_bocommon
 	 */
 	public function get_location_list($required)
 	{
-		return $this->socommon->get_location_list($required);
+		return $this->common_business_helper->getLocationList($this->socommon, $required);
 	}
 
 	public function select2String($array_values, $id = 'id', $name = 'name', $name2 = '')
 	{
-		$str_array_values = "";
-		for ($i = 0; $i < count($array_values); $i++)
-		{
-			foreach ($array_values[$i] as $key => $value)
-			{
-				if ($key == $id)
-				{
-					$str_array_values	 .= $value;
-					$str_array_values	 .= "#";
-				}
-				if ($key == $name)
-				{
-					$str_array_values	 .= $value;
-					$str_array_values	 .= "@";
-				}
-				if ($key == $name2)
-				{
-					// eliminate hte last @ in $str_array_values
-					$str_array_values	 = substr($str_array_values, 0, strrpos($str_array_values, '@'));
-					$str_array_values	 .= " " . $value;
-					$str_array_values	 .= "@";
-				}
-			}
-		}
-
-		return $str_array_values;
+		return $this->common_business_helper->select2String($array_values, $id, $name, $name2);
 	}
 
 	public function make_menu_date($array, $id_buttons, $name_hidden)
 	{
-		$split_values = array();
-		foreach ($array as $value)
-		{
-			array_push($split_values, array(
-				'text'		 => "{$value['id']}",
-				'value'		 => $value['id'],
-				'onclick'	 => array('fn'	 => 'onDateClick', 'obj'	 => array(
-					'id_button'		 => $id_buttons,
-					'opt'			 => $value['id'],
-					'hidden_name'	 => $name_hidden
-				))
-			));
-		}
-		return $split_values;
+		return $this->common_business_helper->makeMenuDate($array, $id_buttons, $name_hidden);
 	}
 
 	public function make_menu_user($array, $id_buttons, $name_hidden)
 	{
-		$split_values = array();
-		foreach ($array as $value)
-		{
-			array_push($split_values, array(
-				'text'		 => $value['name'],
-				'value'		 => $value['id'],
-				'onclick'	 => array('fn'	 => 'onUserClick', 'obj'	 => array(
-					'id_button'		 => $id_buttons,
-					'id'			 => $value['id'],
-					'name'			 => $value['name'],
-					'hidden_name'	 => $name_hidden
-				))
-			));
-		}
-		return $split_values;
+		return $this->common_business_helper->makeMenuUser($array, $id_buttons, $name_hidden);
 	}
 
 	public function choose_select($array, $index_return)
 	{
-		foreach ($array as $value)
-		{
-			if ($value["selected"] == "selected")
-			{
-				return $value[$index_return];
-			}
-		}
-		//for avoid erros, return the last value
-		return $array[count($array) - 1][$index_return];
+		return $this->common_business_helper->chooseSelect($array, $index_return);
 	}
 
 	/**
@@ -2448,7 +2159,7 @@ class property_bocommon
 	 */
 	public function set_pending_action($action_params)
 	{
-		return $this->socommon->set_pending_action($action_params);
+		return $this->common_business_helper->setPendingAction($this->socommon, $action_params);
 	}
 
 	public function get_top_level_categories($data)

@@ -754,6 +754,18 @@ class CommonBusinessHelper
 		return array('ResultSet' => array('Result' => $values));
 	}
 
+	public function getUnspscCode($query)
+	{
+		$sogeneric = CreateObject('property.sogeneric', 'unspsc_code');
+		$values = $sogeneric->read(array('query' => $query, 'allrows' => true));
+		foreach ($values as &$value)
+		{
+			$value['name'] = "{$value['id']} {$value['name']}";
+		}
+
+		return array('ResultSet' => array('Result' => $values));
+	}
+
 	public function getUnspscCodeName($id)
 	{
 		$ret = '';

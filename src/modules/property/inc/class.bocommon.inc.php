@@ -2163,15 +2163,7 @@ class property_bocommon
 	public function get_unspsc_code()
 	{
 		$query = Sanitizer::get_var('query');
-
-		$sogeneric	 = CreateObject('property.sogeneric', 'unspsc_code');
-		$values		 = $sogeneric->read(array('query' => $query, 'allrows' => true));
-		foreach ($values as &$value)
-		{
-			$value['name'] = "{$value['id']} {$value['name']}";
-		}
-
-		return array('ResultSet' => array('Result' => $values));
+		return $this->common_business_helper->getUnspscCode($query);
 	}
 
 	public function get_unspsc_code_name($id)

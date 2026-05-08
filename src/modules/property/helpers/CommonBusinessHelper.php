@@ -744,6 +744,16 @@ class CommonBusinessHelper
 		return $ret;
 	}
 
+	public function getEcoService($query)
+	{
+		$sogeneric = CreateObject('property.sogeneric', 'eco_service');
+
+		$filter = array('active' => 1);
+		$values = $sogeneric->read(array('filter' => $filter, 'query' => $query));
+
+		return array('ResultSet' => array('Result' => $values));
+	}
+
 	public function getUnspscCodeName($id)
 	{
 		$ret = '';

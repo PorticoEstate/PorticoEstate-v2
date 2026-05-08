@@ -2089,10 +2089,8 @@ class property_bocommon
 		$as_json = Sanitizer::get_var('phpgw_return_as') == 'json';
 		$draw = Sanitizer::get_var('draw', 'int');
 
-		$vendor_email = execMethod('property.sowo_hour.get_email', $vendor_id);
-
-		return $this->common_business_helper->getVendorEmailContent(
-			$vendor_email,
+		return $this->common_business_helper->getVendorEmail(
+			$vendor_id,
 			$field_name,
 			$preselect,
 			$preselect_one,

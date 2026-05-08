@@ -777,6 +777,20 @@ class CommonBusinessHelper
 		return $content_email;
 	}
 
+	public function getVendorEmail($vendor_id, $field_name = '', $preselect = false, $preselect_one = false, $as_json = false, $draw = 0)
+	{
+		$vendor_email = execMethod('property.sowo_hour.get_email', $vendor_id);
+
+		return $this->getVendorEmailContent(
+			$vendor_email,
+			$field_name,
+			$preselect,
+			$preselect_one,
+			$as_json,
+			$draw
+		);
+	}
+
 	public function getEcoServiceName($id)
 	{
 		$ret = $id;

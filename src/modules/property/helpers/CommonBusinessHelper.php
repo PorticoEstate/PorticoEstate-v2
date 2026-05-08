@@ -680,6 +680,11 @@ class CommonBusinessHelper
 			&& (!isset($data[$id_key]) || !$data[$id_key]);
 	}
 
+	public function resolveLookupType($data, $default = 'form')
+	{
+		return isset($data['type']) ? $data['type'] : $default;
+	}
+
 	public function addFormFlags(&$output, $data)
 	{
 		if (isset($data['disabled']))

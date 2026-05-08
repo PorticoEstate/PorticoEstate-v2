@@ -449,7 +449,7 @@ class property_bocommon
 	{
 		//_debug_array($data);
 
-		$this->common_business_helper->addViewFormTemplate('vendor', isset($data['type']) ? $data['type'] : 'form', $this->xsl_rootdir);
+		$this->common_business_helper->addViewFormTemplate('vendor', $this->common_business_helper->resolveLookupType($data), $this->xsl_rootdir);
 
 		$vendor['value_vendor_id']	 = $data['vendor_id'];
 		$vendor['value_vendor_name'] = $data['vendor_name'];
@@ -511,7 +511,7 @@ class property_bocommon
 
 	function initiate_ui_tenant_lookup($data)
 	{
-		$this->common_business_helper->addViewFormTemplate('tenant', isset($data['type']) ? $data['type'] : 'form', $this->xsl_rootdir);
+		$this->common_business_helper->addViewFormTemplate('tenant', $this->common_business_helper->resolveLookupType($data), $this->xsl_rootdir);
 
 		$tenant['value_tenant_id']	 = $data['tenant_id'];
 		$tenant['value_first_name']	 = $data['first_name'];
@@ -554,7 +554,7 @@ class property_bocommon
 	 */
 	function initiate_ui_budget_account_lookup($data)
 	{
-		$this->common_business_helper->addViewFormTemplate('b_account', isset($data['type']) ? $data['type'] : 'form', $this->xsl_rootdir);
+		$this->common_business_helper->addViewFormTemplate('b_account', $this->common_business_helper->resolveLookupType($data), $this->xsl_rootdir);
 
 		$b_account['value_b_account_id']		 = $data['b_account_id'];
 		$b_account['value_b_account_name']		 = $data['b_account_name'];
@@ -583,7 +583,7 @@ class property_bocommon
 			return $external_project;
 		}
 
-		$this->common_business_helper->addConditionalViewFormTemplate('external_project', isset($data['type']) ? $data['type'] : 'form', $this->xsl_rootdir);
+		$this->common_business_helper->addConditionalViewFormTemplate('external_project', $this->common_business_helper->resolveLookupType($data), $this->xsl_rootdir);
 
 		$external_project['value_external_project_id']			 = $data['external_project_id'];
 		$external_project['value_external_project_name']		 = $data['external_project_name'];
@@ -607,7 +607,7 @@ class property_bocommon
 			return $ecodimb;
 		}
 
-		$this->common_business_helper->addConditionalViewFormTemplate('ecodimb', isset($data['type']) ? $data['type'] : 'form', $this->xsl_rootdir);
+		$this->common_business_helper->addConditionalViewFormTemplate('ecodimb', $this->common_business_helper->resolveLookupType($data), $this->xsl_rootdir);
 
 		$ecodimb['value_ecodimb']			 = $data['ecodimb'];
 		$ecodimb['value_ecodimb_descr']		 = $data['ecodimb_descr'];

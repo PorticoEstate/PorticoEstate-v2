@@ -739,6 +739,18 @@ class CommonBusinessHelper
 		return $sogeneric->read_single(array('id' => $id));
 	}
 
+	public function readSingleFromSogenericWithAttributes($location, $attribute_location, $id)
+	{
+		$sogeneric = CreateObject('property.sogeneric');
+		$sogeneric->get_location_info($location, false);
+
+		$custom = createObject('property.custom_fields');
+		$entity_data = array();
+		$entity_data['attributes'] = $custom->find('property', $attribute_location, 0, '', 'ASC', 'attrib_sort', true, true);
+
+		return $sogeneric->read_single(array('id' => $id), $entity_data);
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

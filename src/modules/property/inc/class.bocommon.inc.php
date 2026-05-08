@@ -456,13 +456,7 @@ class property_bocommon
 
 		if (isset($data['vendor_id']) && $data['vendor_id'] && !$data['vendor_name'])
 		{
-			$contacts = CreateObject('property.sogeneric');
-			$contacts->get_location_info('vendor', false);
-
-			$custom						 = createObject('property.custom_fields');
-			$vendor_data['attributes']	 = $custom->find('property', '.vendor', 0, '', 'ASC', 'attrib_sort', true, true);
-
-			$vendor_data = $contacts->read_single(array('id' => $data['vendor_id']), $vendor_data);
+			$vendor_data = $this->common_business_helper->readSingleFromSogenericWithAttributes('vendor', '.vendor', $data['vendor_id']);
 			if (is_array($vendor_data))
 			{
 				foreach ($vendor_data['attributes'] as $attribute)
@@ -474,7 +468,6 @@ class property_bocommon
 					}
 				}
 			}
-			unset($contacts);
 		}
 
 		$vendor['vendor_link'] = $this->common_business_helper->buildLookupUrl('vendor');
@@ -545,12 +538,7 @@ class property_bocommon
 
 		if ($data['tenant_id'] && !$data['tenant_name'])
 		{
-			$tenant_object = CreateObject('property.sogeneric');
-			$tenant_object->get_location_info('tenant', false);
-
-			$custom						 = createObject('property.custom_fields');
-			$tenant_data['attributes']	 = $custom->find('property', '.tenant', 0, '', 'ASC', 'attrib_sort', true, true);
-			$tenant_data				 = $tenant_object->read_single(array('id' => $data['tenant_id']), $tenant_data);
+			$tenant_data = $this->common_business_helper->readSingleFromSogenericWithAttributes('tenant', '.tenant', $data['tenant_id']);
 			if (is_array($tenant_data['attributes']))
 			{
 				//_debug_array($tenant_data);

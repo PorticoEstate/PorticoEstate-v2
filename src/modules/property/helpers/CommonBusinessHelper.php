@@ -798,4 +798,28 @@ class CommonBusinessHelper
 
 		return $documentation_url;
 	}
+
+	public function getUsers($accounts, $acl_read)
+	{
+		if (!$acl_read)
+		{
+			return;
+		}
+
+		$account_list = $accounts->get_list('accounts');
+
+		$values = array();
+		foreach ($account_list as $account)
+		{
+			if ($account->enabled)
+			{
+				$values[] = array(
+					'id' => $account->id,
+					'name' => $account->__toString(),
+				);
+			}
+		}
+
+		return array('ResultSet' => array('Result' => $values));
+	}
 }

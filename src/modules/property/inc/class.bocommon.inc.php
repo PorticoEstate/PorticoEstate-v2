@@ -2265,24 +2265,6 @@ class property_bocommon
 
 	public function get_users($query)
 	{
-		if (!$this->acl_read)
-		{
-			return;
-		}
-
-		$accounts = $this->accounts->get_list('accounts');
-
-		$values = array();
-		foreach ($accounts as $account)
-		{
-			if ($account->enabled)
-			{
-				$values[] = array(
-					'id'	 => $account->id,
-					'name'	 => $account->__toString(),
-				);
-			}
-		}
-		return array('ResultSet' => array('Result' => $values));
+		return $this->common_business_helper->getUsers($this->accounts, $this->acl_read);
 	}
 }

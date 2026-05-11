@@ -183,3 +183,8 @@ Deliverable:
   - Moved `generate_sql` implementation from `property_bocommon` to `CommonBusinessHelper` (legacy function name preserved).
   - Updated `property_bocommon::generate_sql` to delegation, while preserving legacy side effects by reassigning `type_id`, `uicols`, `cols_return`, `cols_extra`, and `cols_return_lookup` from helper result.
   - Validation: `php -l` clean for both `class.bocommon.inc.php` and `CommonBusinessHelper.php`; grep confirms helper definition + adapter delegation wiring.
+- 2026-05-11: Continued migration with export/output cluster extraction:
+  - Moved `download`, `phpspreadsheet_out`, `xslx_out`, and `csv_out` implementations from `property_bocommon` to `CommonBusinessHelper` (legacy function names preserved).
+  - Updated `property_bocommon` methods to thin delegations only.
+  - Preserved behavior for request flags in `download` by returning updated flags from helper and reassigning to adapter state.
+  - Validation: `php -l` clean for both `class.bocommon.inc.php` and `CommonBusinessHelper.php`; grep confirms helper definitions + adapter delegation wiring.

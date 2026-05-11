@@ -539,44 +539,18 @@ class property_bocommon
 	 */
 	function download($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
 	{
-		set_time_limit(500);
-		$this->flags['noheader']	 = true;
-		$this->flags['nofooter']	 = true;
-		$this->flags['xslt_app']	 = false;
-		Settings::getInstance()->set('flags', $this->flags);
-
-		$export_format	 = isset($this->userSettings['preferences']['common']['export_format']) && $this->userSettings['preferences']['common']['export_format'] ? $this->userSettings['preferences']['common']['export_format'] : 'csv';
-		$php_version	 = (float)PHP_VERSION;
-
-		$html2text			 = createObject('phpgwapi.html2text');
-		if (isset($list) && is_array($list))
-		{
-			foreach ($list as &$entry)
-			{
-				foreach ($entry as $col => &$value)
-				{
-					if ($value && !is_array($value))
-					{
-						$html2text->setHTML($value);
-						$value = trim($html2text->getText());
-					}
-				}
-			}
-		}
-		switch ($export_format)
-		{
-			case 'csv':
-				$this->csv_out($list, $name, $descr, $input_type, $identificator, $filename);
-				break;
-			case 'excel':
-				/* Experimental */
-				$this->xslx_out($list, $name, $descr, $input_type, $identificator, $filename);
-				//					$this->phpspreadsheet_out($list, $name, $descr, $input_type, $identificator, $filename, 'excel');
-				break;
-			case 'ods':
-				$this->phpspreadsheet_out($list, $name, $descr, $input_type, $identificator, $filename, 'ods');
-				break;
-		}
+		$this->flags = $this->common_business_helper->download(
+			$this->flags,
+			$this->userSettings,
+			$this->serverSettings,
+			$this->phpgwapi_common,
+			$list,
+			$name,
+			$descr,
+			$input_type,
+			$identificator,
+			$filename
+		);
 	}
 
 	/**
@@ -592,128 +566,18 @@ class property_bocommon
 	 */
 	function phpspreadsheet_out($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_format = 'excel')
 	{
-
-		if ($filename)
-		{
-			$filename_arr	 = explode('.', str_replace(' ', '_', basename($filename)));
-			$filename		 = $filename_arr[0];
-		}
-		else
-		{
-			$filename = str_replace(' ', '_', $this->userSettings['account_lid']);
-		}
-		$date_time = str_replace(array(' ', '/'), '_', $this->phpgwapi_common->show_date(time()));
-
-		switch ($export_format)
-		{
-			case 'excel':
-				$suffix	 = 'xlsx';
-				break;
-			case 'ods':
-				$suffix	 = 'ods';
-				break;
-			default:
-				$suffix	 = 'xlsx';
-				break;
-		}
-		$filename .= "_{$date_time}.{$suffix}";
-
-		$browser = CreateObject('phpgwapi.browser');
-		$browser->content_header($filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-
-		$spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
-
-		$spreadsheet->getProperties()->setCreator($this->userSettings['fullname'])
-			->setLastModifiedBy($this->userSettings['fullname'])
-			->setTitle("Download from {$this->serverSettings['system_name']}")
-			->setSubject("Office 2007 XLSX Document")
-			->setDescription("document for Office 2007 XLSX, generated using PHP classes.")
-			->setKeywords("office 2007 openxml php")
-			->setCategory("downloaded file");
-
-		// Set active sheet index to the first sheet, so Excel opens this as the first sheet
-		$spreadsheet->setActiveSheetIndex(0);
-
-		if ($identificator)
-		{
-			$_first_row	 = 2;
-			$i			 = 1;
-			foreach ($identificator as $key => $value)
-			{
-				$spreadsheet->getActiveSheet()->setCellValue([$i, 1], $value);
-				$i++;
-			}
-		}
-		else
-		{
-			$_first_row = 1;
-		}
-		$count_uicols_name = count($name);
-
-		$text_format = array();
-		$m			 = 1;
-		for ($k = 0; $k < $count_uicols_name; $k++)
-		{
-			if (!isset($input_type[$k]) || $input_type[$k] != 'hidden')
-			{
-				if (preg_match('/^loc/i', $name[$k]))
-				{
-					$text_format[$m] = true;
-				}
-				$spreadsheet->getActiveSheet()->setCellValue([$m, $_first_row], $descr[$k]);
-				$m++;
-			}
-		}
-
-		$j = 0;
-		if (isset($list) && is_array($list))
-		{
-			foreach ($list as $entry)
-			{
-				$m = 0;
-				for ($k = 0; $k < $count_uicols_name; $k++)
-				{
-					if (!isset($input_type[$k]) || $input_type[$k] != 'hidden')
-					{
-						$content[$j][$m] = str_replace("\r\n", " ", $entry[$name[$k]]);
-						$m++;
-					}
-				}
-				$j++;
-			}
-
-			$line = $_first_row;
-
-			foreach ($content as $row)
-			{
-				$col	 = 'A';
-				$line++;
-				$rows	 = count($row);
-				for ($i = 0; $i < $rows; $i++)
-				{
-					$cell = "{$col}{$line}";
-					if (isset($text_format[$i]))
-					{
-						$spreadsheet->getActiveSheet()->setCellValueExplicit($cell, $row[$i], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-					}
-					else
-					{
-						$spreadsheet->getActiveSheet()->setCellValue($cell, $row[$i]);
-					}
-					$col++;
-				}
-			}
-		}
-
-		if ($export_format = 'ods')
-		{
-			$objWriter = new PhpOffice\PhpSpreadsheet\Writer\Ods($spreadsheet);
-		}
-		else // Save Excel 2007 file
-		{
-			$objWriter = new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-		}
-		$objWriter->save('php://output');
+		return $this->common_business_helper->phpspreadsheet_out(
+			$this->userSettings,
+			$this->serverSettings,
+			$this->phpgwapi_common,
+			$list,
+			$name,
+			$descr,
+			$input_type,
+			$identificator,
+			$filename,
+			$export_format
+		);
 	}
 
 	/**
@@ -726,141 +590,17 @@ class property_bocommon
 	 */
 	function xslx_out($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
 	{
-		if ($filename)
-		{
-			$filename_arr	 = explode('.', str_replace(' ', '_', basename($filename)));
-			$filename		 = $filename_arr[0];
-		}
-		else
-		{
-			$filename = str_replace(' ', '_', $this->userSettings['account_lid']);
-		}
-		$date_time	 = str_replace(array(' ', '/'), '_', $this->phpgwapi_common->show_date(time()));
-		$filename	 .= "_{$date_time}.xlsx";
-
-		$writer = CreateObject('phpgwapi.xlsxwriter');
-
-		$browser = CreateObject('phpgwapi.browser');
-		$browser->content_header($writer::sanitize_filename($filename), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-
-		$writer->setauthor($this->userSettings['fullname']);
-		$writer->setTitle("Download from {$this->serverSettings['system_name']}");
-
-		$count_uicols_name = count($name);
-
-		$header = array();
-
-
-		$loop = 0;
-		if ($list)
-		{
-			foreach ($list as $entry)
-			{
-				for ($i = 0; $i < $count_uicols_name; ++$i)
-				{
-					if (!isset($input_type[$i]) || $input_type[$i] != 'hidden')
-					{
-						$test = $entry[$name[$i]];
-						if (ctype_digit((string)$test))
-						{
-							if (empty($header[$descr[$i]]) || (!empty($header[$descr[$i]]) && $header[$descr[$i]] !== 'string'))
-							{
-								$header[$descr[$i]] = 'integer';
-							}
-						}
-						//	else if(is_float($test))
-						//	else if(preg_match('/([0-9]{1,})\.([0-9]{2,2})/', $test))
-						else if (filter_var($test, FILTER_VALIDATE_FLOAT))
-						{
-							if (empty($header[$descr[$i]]) || (!empty($header[$descr[$i]]) && $header[$descr[$i]] !== 'string'))
-							{
-								$header[$descr[$i]] = '0.00';
-							}
-						}
-						else
-						{
-							$header[$descr[$i]] = 'string';
-						}
-					}
-				}
-
-				$loop++;
-				if ($loop > 4)
-				{
-					break;
-				}
-			}
-		}
-		else
-		{
-			for ($i = 0; $i < $count_uicols_name; $i++)
-			{
-				if (!isset($input_type[$i]) || $input_type[$i] != 'hidden')
-				{
-					$header[$descr[$i]] = 'string';
-				}
-			}
-		}
-
-		$m		 = 0;
-		$formats = array();
-		for ($k = 0; $k < $count_uicols_name; $k++)
-		{
-			if (!isset($input_type[$k]) || $input_type[$k] != 'hidden')
-			{
-				if (preg_match('/^loc/i', $name[$k]))
-				{
-					$header[$descr[$k]]	 = 'string';
-					$formats[$m]		 = 'string';
-				}
-			}
-			$m++;
-		}
-
-		$_header = array();
-		if ($identificator)
-		{
-			$_identificator	 = array_values($identificator);
-			$i				 = 0;
-			foreach ($header as $key => $format)
-			{
-				if (!empty($_identificator[$i]))
-				{
-					$_header[$_identificator[$i]] = 'string';
-				}
-				else
-				{
-					$_header[$i] = 'string';
-				}
-				$i++;
-			}
-			$writer->writeSheetHeader('Sheet1', $_header);
-
-			$writer->writeSheetRow('Sheet1', array_keys($header));
-		}
-		else
-		{
-			$writer->writeSheetHeader('Sheet1', $header);
-		}
-
-		unset($header);
-
-		if (is_array($list))
-		{
-			foreach ($list as $entry)
-			{
-				$row = array();
-				for ($i = 0; $i < $count_uicols_name; ++$i)
-				{
-					if (!isset($input_type[$i]) || $input_type[$i] != 'hidden')
-					{
-						$row[] = preg_replace("/\r\n/", ' ', (string)$entry[$name[$i]]);
-					}
-				}
-				$writer->writeSheetRow('Sheet1', $row);
-			}
-		}
-		$writer->writeToStdOut();
+		return $this->common_business_helper->xslx_out(
+			$this->userSettings,
+			$this->serverSettings,
+			$this->phpgwapi_common,
+			$list,
+			$name,
+			$descr,
+			$input_type,
+			$identificator,
+			$filename
+		);
 	}
 
 	/**
@@ -873,69 +613,16 @@ class property_bocommon
 	 */
 	function csv_out($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
 	{
-		if ($filename)
-		{
-			$filename_arr	 = explode('.', str_replace(' ', '_', basename($filename)));
-			$filename		 = $filename_arr[0];
-		}
-		else
-		{
-			$filename = str_replace(' ', '_', $this->userSettings['account_lid']);
-		}
-		$date_time	 = str_replace(array(' ', '/'), '_', $this->phpgwapi_common->show_date(time()));
-		$filename	 .= "_{$date_time}.csv";
-
-		$browser = CreateObject('phpgwapi.browser');
-		$browser->content_header($filename, 'application/csv');
-
-		if (!$fp = fopen('php://output', 'w'))
-		{
-			die('Unable to write to "php://output" - pleace notify the Administrator');
-		}
-
-		$BOM = "\xEF\xBB\xBF"; // UTF-8 BOM
-		fwrite($fp, $BOM); // NEW LINE
-
-		if ($identificator)
-		{
-			$_identificator = array();
-			foreach ($identificator as $key => $value)
-			{
-				$_identificator[] = $value;
-			}
-			fputcsv($fp, $_identificator, ';', '"', "\\");
-		}
-
-		$count_uicols_name = count($name);
-
-		$header = array();
-		for ($i = 0; $i < $count_uicols_name; ++$i)
-		{
-			if (!isset($input_type[$i]) || $input_type[$i] != 'hidden')
-			{
-				//	$header[] = $this->utf2ascii($descr[$i]);
-				$header[] = $descr[$i];
-			}
-		}
-		fputcsv($fp, $header, ';', '"', "\\");
-		unset($header);
-
-		if (is_array($list))
-		{
-			foreach ($list as $entry)
-			{
-				$row = array();
-				for ($i = 0; $i < $count_uicols_name; ++$i)
-				{
-					if (!isset($input_type[$i]) || $input_type[$i] != 'hidden')
-					{
-						$row[] = preg_replace("/\r\n/", ' ', $entry[$name[$i]]);
-					}
-				}
-				fputcsv($fp, $row, ';', '"', "\\");
-			}
-		}
-		fclose($fp);
+		return $this->common_business_helper->csv_out(
+			$this->userSettings,
+			$this->phpgwapi_common,
+			$list,
+			$name,
+			$descr,
+			$input_type,
+			$identificator,
+			$filename
+		);
 	}
 
 	function increment_id($name)

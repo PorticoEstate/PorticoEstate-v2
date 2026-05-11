@@ -1546,6 +1546,374 @@ class CommonBusinessHelper
 		);
 	}
 
+	public function download($flags, $userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
+	{
+		set_time_limit(500);
+		$flags['noheader'] = true;
+		$flags['nofooter'] = true;
+		$flags['xslt_app'] = false;
+		\App\modules\phpgwapi\services\Settings::getInstance()->set('flags', $flags);
+
+		$export_format = isset($userSettings['preferences']['common']['export_format']) && $userSettings['preferences']['common']['export_format'] ? $userSettings['preferences']['common']['export_format'] : 'csv';
+		$php_version = (float)PHP_VERSION;
+
+		$html2text = createObject('phpgwapi.html2text');
+		if (isset($list) && is_array($list))
+		{
+			foreach ($list as &$entry)
+			{
+				foreach ($entry as $col => &$value)
+				{
+					if ($value && !is_array($value))
+					{
+						$html2text->setHTML($value);
+						$value = trim($html2text->getText());
+					}
+				}
+			}
+		}
+		switch ($export_format)
+		{
+			case 'csv':
+				$this->csv_out($userSettings, $phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename);
+				break;
+			case 'excel':
+				$this->xslx_out($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename);
+				break;
+			case 'ods':
+				$this->phpspreadsheet_out($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename, 'ods');
+				break;
+		}
+
+		return $flags;
+	}
+
+	public function phpspreadsheet_out($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_format = 'excel')
+	{
+		if ($filename)
+		{
+			$filename_arr = explode('.', str_replace(' ', '_', basename($filename)));
+			$filename = $filename_arr[0];
+		}
+		else
+		{
+			$filename = str_replace(' ', '_', $userSettings['account_lid']);
+		}
+		$date_time = str_replace(array(' ', '/'), '_', $phpgwapi_common->show_date(time()));
+
+		switch ($export_format)
+		{
+			case 'excel':
+				$suffix = 'xlsx';
+				break;
+			case 'ods':
+				$suffix = 'ods';
+				break;
+			default:
+				$suffix = 'xlsx';
+				break;
+		}
+		$filename .= "_{$date_time}.{$suffix}";
+
+		$browser = CreateObject('phpgwapi.browser');
+		$browser->content_header($filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+		$spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+
+		$spreadsheet->getProperties()->setCreator($userSettings['fullname'])
+			->setLastModifiedBy($userSettings['fullname'])
+			->setTitle("Download from {$serverSettings['system_name']}")
+			->setSubject("Office 2007 XLSX Document")
+			->setDescription("document for Office 2007 XLSX, generated using PHP classes.")
+			->setKeywords("office 2007 openxml php")
+			->setCategory("downloaded file");
+
+		$spreadsheet->setActiveSheetIndex(0);
+
+		if ($identificator)
+		{
+			$_first_row = 2;
+			$i = 1;
+			foreach ($identificator as $key => $value)
+			{
+				$spreadsheet->getActiveSheet()->setCellValue([$i, 1], $value);
+				$i++;
+			}
+		}
+		else
+		{
+			$_first_row = 1;
+		}
+		$count_uicols_name = count($name);
+
+		$text_format = array();
+		$m = 1;
+		for ($k = 0; $k < $count_uicols_name; $k++)
+		{
+			if (!isset($input_type[$k]) || $input_type[$k] != 'hidden')
+			{
+				if (preg_match('/^loc/i', $name[$k]))
+				{
+					$text_format[$m] = true;
+				}
+				$spreadsheet->getActiveSheet()->setCellValue([$m, $_first_row], $descr[$k]);
+				$m++;
+			}
+		}
+
+		$j = 0;
+		if (isset($list) && is_array($list))
+		{
+			foreach ($list as $entry)
+			{
+				$m = 0;
+				for ($k = 0; $k < $count_uicols_name; $k++)
+				{
+					if (!isset($input_type[$k]) || $input_type[$k] != 'hidden')
+					{
+						$content[$j][$m] = str_replace("\r\n", " ", $entry[$name[$k]]);
+						$m++;
+					}
+				}
+				$j++;
+			}
+
+			$line = $_first_row;
+
+			foreach ($content as $row)
+			{
+				$col = 'A';
+				$line++;
+				$rows = count($row);
+				for ($i = 0; $i < $rows; $i++)
+				{
+					$cell = "{$col}{$line}";
+					if (isset($text_format[$i]))
+					{
+						$spreadsheet->getActiveSheet()->setCellValueExplicit($cell, $row[$i], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+					}
+					else
+					{
+						$spreadsheet->getActiveSheet()->setCellValue($cell, $row[$i]);
+					}
+					$col++;
+				}
+			}
+		}
+
+		if ($export_format = 'ods')
+		{
+			$objWriter = new \PhpOffice\PhpSpreadsheet\Writer\Ods($spreadsheet);
+		}
+		else
+		{
+			$objWriter = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+		}
+		$objWriter->save('php://output');
+	}
+
+	public function xslx_out($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
+	{
+		if ($filename)
+		{
+			$filename_arr = explode('.', str_replace(' ', '_', basename($filename)));
+			$filename = $filename_arr[0];
+		}
+		else
+		{
+			$filename = str_replace(' ', '_', $userSettings['account_lid']);
+		}
+		$date_time = str_replace(array(' ', '/'), '_', $phpgwapi_common->show_date(time()));
+		$filename .= "_{$date_time}.xlsx";
+
+		$writer = CreateObject('phpgwapi.xlsxwriter');
+
+		$browser = CreateObject('phpgwapi.browser');
+		$browser->content_header($writer::sanitize_filename($filename), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+		$writer->setauthor($userSettings['fullname']);
+		$writer->setTitle("Download from {$serverSettings['system_name']}");
+
+		$count_uicols_name = count($name);
+
+		$header = array();
+
+		$loop = 0;
+		if ($list)
+		{
+			foreach ($list as $entry)
+			{
+				for ($i = 0; $i < $count_uicols_name; ++$i)
+				{
+					if (!isset($input_type[$i]) || $input_type[$i] != 'hidden')
+					{
+						$test = $entry[$name[$i]];
+						if (ctype_digit((string)$test))
+						{
+							if (empty($header[$descr[$i]]) || (!empty($header[$descr[$i]]) && $header[$descr[$i]] !== 'string'))
+							{
+								$header[$descr[$i]] = 'integer';
+							}
+						}
+						else if (filter_var($test, FILTER_VALIDATE_FLOAT))
+						{
+							if (empty($header[$descr[$i]]) || (!empty($header[$descr[$i]]) && $header[$descr[$i]] !== 'string'))
+							{
+								$header[$descr[$i]] = '0.00';
+							}
+						}
+						else
+						{
+							$header[$descr[$i]] = 'string';
+						}
+					}
+				}
+
+				$loop++;
+				if ($loop > 4)
+				{
+					break;
+				}
+			}
+		}
+		else
+		{
+			for ($i = 0; $i < $count_uicols_name; $i++)
+			{
+				if (!isset($input_type[$i]) || $input_type[$i] != 'hidden')
+				{
+					$header[$descr[$i]] = 'string';
+				}
+			}
+		}
+
+		$m = 0;
+		$formats = array();
+		for ($k = 0; $k < $count_uicols_name; $k++)
+		{
+			if (!isset($input_type[$k]) || $input_type[$k] != 'hidden')
+			{
+				if (preg_match('/^loc/i', $name[$k]))
+				{
+					$header[$descr[$k]] = 'string';
+					$formats[$m] = 'string';
+				}
+			}
+			$m++;
+		}
+
+		$_header = array();
+		if ($identificator)
+		{
+			$_identificator = array_values($identificator);
+			$i = 0;
+			foreach ($header as $key => $format)
+			{
+				if (!empty($_identificator[$i]))
+				{
+					$_header[$_identificator[$i]] = 'string';
+				}
+				else
+				{
+					$_header[$i] = 'string';
+				}
+				$i++;
+			}
+			$writer->writeSheetHeader('Sheet1', $_header);
+
+			$writer->writeSheetRow('Sheet1', array_keys($header));
+		}
+		else
+		{
+			$writer->writeSheetHeader('Sheet1', $header);
+		}
+
+		unset($header);
+
+		if (is_array($list))
+		{
+			foreach ($list as $entry)
+			{
+				$row = array();
+				for ($i = 0; $i < $count_uicols_name; ++$i)
+				{
+					if (!isset($input_type[$i]) || $input_type[$i] != 'hidden')
+					{
+						$row[] = preg_replace("/\r\n/", ' ', (string)$entry[$name[$i]]);
+					}
+				}
+				$writer->writeSheetRow('Sheet1', $row);
+			}
+		}
+		$writer->writeToStdOut();
+	}
+
+	public function csv_out($userSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
+	{
+		if ($filename)
+		{
+			$filename_arr = explode('.', str_replace(' ', '_', basename($filename)));
+			$filename = $filename_arr[0];
+		}
+		else
+		{
+			$filename = str_replace(' ', '_', $userSettings['account_lid']);
+		}
+		$date_time = str_replace(array(' ', '/'), '_', $phpgwapi_common->show_date(time()));
+		$filename .= "_{$date_time}.csv";
+
+		$browser = CreateObject('phpgwapi.browser');
+		$browser->content_header($filename, 'application/csv');
+
+		if (!$fp = fopen('php://output', 'w'))
+		{
+			die('Unable to write to "php://output" - pleace notify the Administrator');
+		}
+
+		$BOM = "\xEF\xBB\xBF";
+		fwrite($fp, $BOM);
+
+		if ($identificator)
+		{
+			$_identificator = array();
+			foreach ($identificator as $key => $value)
+			{
+				$_identificator[] = $value;
+			}
+			fputcsv($fp, $_identificator, ';', '"', "\\");
+		}
+
+		$count_uicols_name = count($name);
+
+		$header = array();
+		for ($i = 0; $i < $count_uicols_name; ++$i)
+		{
+			if (!isset($input_type[$i]) || $input_type[$i] != 'hidden')
+			{
+				$header[] = $descr[$i];
+			}
+		}
+		fputcsv($fp, $header, ';', '"', "\\");
+		unset($header);
+
+		if (is_array($list))
+		{
+			foreach ($list as $entry)
+			{
+				$row = array();
+				for ($i = 0; $i < $count_uicols_name; ++$i)
+				{
+					if (!isset($input_type[$i]) || $input_type[$i] != 'hidden')
+					{
+						$row[] = preg_replace("/\r\n/", ' ', $entry[$name[$i]]);
+					}
+				}
+				fputcsv($fp, $row, ';', '"', "\\");
+			}
+		}
+		fclose($fp);
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

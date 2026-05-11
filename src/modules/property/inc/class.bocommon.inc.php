@@ -689,146 +689,20 @@ class property_bocommon
 	 */
 	function collect_locationdata($values = array(), $insert_record = array())
 	{
-		if ($insert_record)
-		{
-			if (isset($insert_record['location']) && is_array($insert_record['location']))
-			{
-				for ($i = 0; $i < count($insert_record['location']); $i++)
-				{
-					if (isset($_POST[$insert_record['location'][$i]]) && $_POST[$insert_record['location'][$i]])
-					{
-						$values['location'][$insert_record['location'][$i]] = Sanitizer::get_var($insert_record['location'][$i], 'string', 'POST');
-					}
-				}
-			}
-
-			if (isset($insert_record['extra']) && is_array($insert_record['extra']))
-			{
-				foreach ($insert_record['extra'] as $key => $column)
-				{
-					if (isset($_POST[$key]) && $_POST[$key])
-					{
-						$values['extra'][$column] = Sanitizer::get_var($key, 'string', 'POST');
-					}
-				}
-
-				if (isset($values['extra']['p_entity_id']) && $values['extra']['p_entity_id'] && isset($values['extra']['p_cat_id']) && $values['extra']['p_cat_id'] && isset($values['extra']['p_num']) && $values['extra']['p_num'])
-				{
-					//strip prefix and leading zeros
-					$values['extra']['p_num'] = execMethod(
-						'property.soentity.convert_num_to_id',
-						array(
-							'type'		 => $values['extra']['type'],
-							'entity_id'	 => $values['extra']['p_entity_id'],
-							'cat_id'	 => $values['extra']['p_cat_id'],
-							'num'		 => $values['extra']['p_num']
-						)
-					);
-
-					$p_entity_id								 = $values['extra']['p_entity_id'];
-					$p_cat_id									 = $values['extra']['p_cat_id'];
-					$p_num										 = $values['extra']['p_num'];
-					$values['p'][$p_entity_id]['p_entity_id']	 = $p_entity_id;
-					$values['p'][$p_entity_id]['p_cat_id']		 = $p_cat_id;
-					$values['p'][$p_entity_id]['p_num']			 = $p_num;
-					$values['p'][$p_entity_id]['p_cat_name']	 = Sanitizer::get_var("entity_cat_name_{$p_entity_id}");
-				}
-			}
-			if (isset($insert_record['additional_info']) && is_array($insert_record['additional_info']))
-			{
-				foreach ($insert_record['additional_info'] as $additional_info)
-				{
-					if ($additional_info_value = Sanitizer::get_var($additional_info['input_name'], 'string', 'POST'))
-					{
-						$values['additional_info'][$additional_info['input_text']] = $additional_info_value;
-					}
-				}
-			}
-		}
-
-		$values['extra']		 = isset($values['extra']) && $values['extra'] ? $values['extra'] : array();
-		$values['street_name']	 = Sanitizer::get_var('street_name');
-		$values['street_number'] = Sanitizer::get_var('street_number');
-		if (isset($values['location']) && is_array($values['location']))
-		{
-			$values['location_name'] = Sanitizer::get_var('loc' . (count($values['location'])) . '_name', 'string', 'POST'); // if not address - get the parent name as address
-			$values['location_code'] = implode('-', $values['location']);
-		}
-		if ($values['location_code'])
-		{
-			$bolocation				 = CreateObject('property.bolocation');
-			$values['location_data'] = $bolocation->read_single($values['location_code'], array_merge($values['extra'], array(
-				'view' => true,
-				'noattrib' => true
-			)));
-		}
-		if (empty($values['location']) && !empty($values['location_code']) && !empty($values['location_data']))
-		{
-			$values['location'] = array();
-			for ($i = 1; $i <= count(explode('-', $values['location_code'])); $i++)
-			{
-				$values['location']["loc{$i}"] = $values['location_data']["loc{$i}"];
-			}
-		}
-
-		$origin		 = isset($values['origin']) && $values['origin'] ? $values['origin'] : false;
-		$origin_id	 = isset($values['origin_id']) && $values['origin_id'] ? $values['origin_id'] : false;
-
-		if ($origin == '.ticket' && $origin_id && !$values['descr'])
-		{
-			$boticket		 = CreateObject('property.botts');
-			$ticket			 = $boticket->read_single($origin_id);
-			$values['descr'] = strip_tags($ticket['details']);
-			$values['name']	 = $ticket['subject'] ? $ticket['subject'] : $ticket['category_name'];
-			$ticket_notes	 = $boticket->read_additional_notes($origin_id);
-			$i				 = count($ticket_notes) - 1;
-			if (isset($ticket_notes[$i]['value_note']) && $ticket_notes[$i]['value_note'])
-			{
-				$values['descr'] .= ": " . $ticket_notes[$i]['value_note'];
-			}
-			$values['contact_id'] = $ticket['contact_id'];
-		}
-
-		if (isset($origin) && $origin)
-		{
-			$interlink				 = CreateObject('property.interlink');
-			$values['origin_data'][] = array(
-				'location'	 => $origin,
-				'descr'		 => $interlink->get_location_name($origin),
-				'data'		 => array(
-					array(
-						'id'	 => $origin_id,
-						'link'	 => $interlink->get_relation_link(array('location' => $origin), $origin_id)
-					)
-				)
-			);
-		}
-		return $values;
+		return $this->common_business_helper->collect_locationdata($values, $insert_record);
 	}
 
 	function get_menu($app = 'property')
 	{
-		$this->flags['nonavbar'] = false;
-		Settings::getInstance()->set('flags', $this->flags);
+		$menu_result = $this->common_business_helper->get_menu($this->flags, $this->userSettings, $this->xsl_rootdir, $app);
+		$this->flags = $menu_result['flags'];
 
-		if (!isset($this->userSettings['preferences']['property']['horisontal_menus']) || $this->userSettings['preferences']['property']['horisontal_menus'] == 'no')
+		if (is_null($menu_result['menu']))
 		{
 			return;
 		}
-		phpgwapi_xslttemplates::getInstance()->add_file(array('menu'), $this->xsl_rootdir);
 
-		$menu = Cache::session_get("menu_{$app}", $this->flags['menu_selection']);
-
-		if (!$menu)
-		{
-			$menu_gross			 = execMethod("{$app}.menu.get_menu", 'horisontal');
-			$selection			 = explode('::', $this->flags['menu_selection']);
-			$level				 = 0;
-			$menu['navigation']	 = $this->get_sub_menu($menu_gross['navigation'], $selection, $level);
-			Cache::session_set("menu_{$app}", isset($this->flags['menu_selection']) && $this->flags['menu_selection'] ? $this->flags['menu_selection'] : 'property_missing_selection', $menu,);
-			unset($menu_gross);
-		}
-		return $menu;
+		return $menu_result['menu'];
 	}
 
 	function get_sub_menu($children = array(), $selection = array(), $level = '')
@@ -838,23 +712,12 @@ class property_bocommon
 
 	function no_access()
 	{
-		$this->flags['xslt_app'] = true;
-		phpgwapi_xslttemplates::getInstance()->add_file(array('no_access', 'menu'), $this->xsl_rootdir);
-
-		$receipt['error'][] = array('msg' => lang('NO ACCESS'));
-
-		$msgbox_data = $this->msgbox_data($receipt);
-
-		$data = array(
-			'msgbox_data'	 => $this->phpgwapi_common->msgbox($msgbox_data),
-			'menu'			 => $this->get_menu(),
+		$this->flags = $this->common_business_helper->no_access(
+			$this->flags,
+			$this->xsl_rootdir,
+			$this->phpgwapi_common,
+			$this->userSettings
 		);
-
-		$appname = lang('No access');
-
-		$this->flags['app_header'] = lang('property') . ' - ' . $appname;
-		Settings::getInstance()->set('flags', $this->flags);
-		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('no_access' => $data));
 	}
 
 	/**

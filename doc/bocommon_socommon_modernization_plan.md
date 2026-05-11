@@ -188,3 +188,8 @@ Deliverable:
   - Updated `property_bocommon` methods to thin delegations only.
   - Preserved behavior for request flags in `download` by returning updated flags from helper and reassigning to adapter state.
   - Validation: `php -l` clean for both `class.bocommon.inc.php` and `CommonBusinessHelper.php`; grep confirms helper definitions + adapter delegation wiring.
+- 2026-05-11: Continued migration with remaining stateful adapter methods:
+  - Moved `collect_locationdata`, `get_menu`, and `no_access` implementations from `property_bocommon` to `CommonBusinessHelper` (legacy function names preserved).
+  - Updated `property_bocommon` methods to thin delegations only.
+  - Preserved behavior for adapter request flags in `get_menu`/`no_access` by returning updated flags from helper and reassigning to adapter state.
+  - Validation: `php -l` clean for both `class.bocommon.inc.php` and `CommonBusinessHelper.php`; grep confirms helper definitions + adapter delegation wiring.

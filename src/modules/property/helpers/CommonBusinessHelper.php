@@ -1294,6 +1294,258 @@ class CommonBusinessHelper
 		return $alarm;
 	}
 
+	public function generate_sql($join, $left_join, $data)
+	{
+		$cols = isset($data['cols']) ? $data['cols'] : '';
+		$entity_table = isset($data['entity_table']) ? $data['entity_table'] : '';
+		$location_table = isset($data['location_table']) ? $data['location_table'] : '';
+		$cols_return = isset($data['cols_return']) && $data['cols_return'] ? $data['cols_return'] : array();
+		$uicols = isset($data['uicols']) && $data['uicols'] ? $data['uicols'] : array();
+		$joinmethod = isset($data['joinmethod']) ? $data['joinmethod'] : '';
+		$paranthesis = isset($data['paranthesis']) ? $data['paranthesis'] : '';
+		$lookup = isset($data['lookup']) ? $data['lookup'] : '';
+		$location_level = isset($data['location_level']) && $data['location_level'] > 0 ? (int)$data['location_level'] : 0;
+		$no_address = isset($data['no_address']) ? $data['no_address'] : '';
+		$force_location = isset($data['force_location']) ? $data['force_location'] : '';
+		$cols_extra = array();
+		$cols_return_lookup = array();
+
+		$config = new \App\modules\phpgwapi\services\Config('property');
+		$config->read();
+
+		if ($location_level)
+		{
+			$list_location_level = isset($config->config_data['list_location_level']) && $config->config_data['list_location_level'] ? $config->config_data['list_location_level'] : array();
+		}
+		else
+		{
+			$list_location_level = array();
+		}
+
+		if (!$list_location_level)
+		{
+			for ($i = 0; $i < $location_level; $i++)
+			{
+				$list_location_level[] = $i + 1;
+			}
+		}
+
+		$soadmin_location = CreateObject('property.soadmin_location');
+		$location_types = $soadmin_location->select_location_type();
+		$config = $soadmin_location->read_config('');
+
+		if ($location_level || $force_location)
+		{
+			$_location_table = $location_table ? $location_table : $entity_table;
+			if ($location_level)
+			{
+				$type_id = $location_level;
+			}
+			else
+			{
+				$type_id = count($location_types);
+			}
+			$cols .= ",fm_location1.loc1_name";
+			$joinmethod .= " {$join}  fm_location1 ON ({$_location_table}.loc1 = fm_location1.loc1))";
+			$paranthesis .= '(';
+			$joinmethod .= " {$join}  fm_part_of_town ON (fm_location1.part_of_town_id = fm_part_of_town.id))";
+			$paranthesis .= '(';
+			$joinmethod .= " {$join}  fm_owner ON (fm_location1.owner_id = fm_owner.id))";
+			$paranthesis .= '(';
+		}
+		else
+		{
+			$type_id = 0;
+			$no_address = true;
+		}
+
+		$_level = 1;
+		for ($i = 0; $i < $type_id; $i++)
+		{
+			if ($_level > 1)
+			{
+				$joinmethod .= " {$left_join} fm_location{$_level}";
+				$paranthesis .= '(';
+				$on = 'ON';
+				for ($k = ($_level - 1); $k > 0; $k--)
+				{
+					$joinmethod .= " $on (fm_location{$_level}.loc{$k} = fm_location" . ($_level - 1) . ".loc{$k} AND  fm_location{$_level}.loc{$_level} = $entity_table.loc{$_level})";
+					$on = 'AND';
+					if ($k == 1)
+					{
+						$joinmethod .= ")";
+					}
+				}
+			}
+			$_level++;
+		}
+
+		unset($_level);
+
+		foreach ($list_location_level as $_key => $_level)
+		{
+			if ($_level)
+			{
+				$i = $_level - 1;
+				$uicols['input_type'][] = 'text';
+				$uicols['name'][] = 'loc' . $location_types[$i]['id'];
+				$uicols['descr'][] = $location_types[$i]['name'];
+				$uicols['statustext'][] = $location_types[$i]['descr'];
+				$uicols['exchange'][] = false;
+				$uicols['align'][] = '';
+				$uicols['datatype'][] = '';
+				$uicols['formatter'][] = '';
+				$uicols['classname'][] = '';
+				$uicols['sortable'][] = $_level == 1;
+			}
+		}
+
+		unset($soadmin_location);
+
+		for ($i = 0; $i < $type_id; $i++)
+		{
+			$cols_return[] = 'loc' . $location_types[$i]['id'];
+		}
+
+		$lang_name = lang('name');
+		$location_relation_data = array();
+		$custom = createObject('property.custom_fields');
+		for ($i = 1; $i < ($type_id + 1); $i++)
+		{
+			$cols .= ",loc{$i}_name";
+			$cols_return[] = "loc{$i}_name";
+			$cols_extra[] = "loc{$i}_name";
+			$cols_return_lookup[] = "loc{$i}_name";
+			$uicols['input_type'][] = in_array($i, $list_location_level) ? 'text' : 'hidden';
+			$uicols['name'][] = "loc{$i}_name";
+			$uicols['descr'][] = "{$location_types[($i - 1)]['name']} {$lang_name}";
+			$uicols['statustext'][] = $location_types[$i - 1]['descr'];
+			$uicols['exchange'][] = $lookup;
+			$uicols['align'][] = '';
+			$uicols['datatype'][] = '';
+			$uicols['formatter'][] = '';
+			$uicols['classname'][] = '';
+			$uicols['sortable'][] = $i == 1;
+
+			$fm_location_cols_temp = $custom->find('property', '.location.' . $i, 0, '', '', '', true);
+			foreach ($fm_location_cols_temp as $entry)
+			{
+				if ($entry['lookup_form'])
+				{
+					$location_relation_data[] = array(
+						'level' => $i,
+						'name' => $entry['name'],
+						'descr' => $entry['input_text'],
+						'status_text' => $entry['status_text'],
+						'datatype' => $entry['datatype'],
+					);
+				}
+			}
+		}
+
+		\App\modules\phpgwapi\services\Cache::system_set('property', 'location_relation_data', $location_relation_data);
+
+		if (!$no_address)
+		{
+			$cols .= ",$entity_table.address";
+			$cols_return[] = 'address';
+			$uicols['input_type'][] = 'text';
+			$uicols['name'][] = 'address';
+			$uicols['descr'][] = lang('address');
+			$uicols['statustext'][] = lang('address');
+			$uicols['exchange'][] = false;
+			$uicols['align'][] = '';
+			$uicols['datatype'][] = '';
+			$uicols['formatter'][] = '';
+			$uicols['classname'][] = '';
+			$uicols['sortable'][] = true;
+		}
+
+		$config_count = count($config);
+		for ($i = 0; $i < $config_count; $i++)
+		{
+			if (($config[$i]['location_type'] <= $type_id) && ($config[$i]['query_value'] == 1))
+			{
+				if ($config[$i]['column_name'] == 'street_id')
+				{
+					$cols_return[] = 'street_name';
+					$uicols['input_type'][] = 'hidden';
+					$uicols['name'][] = 'street_name';
+					$uicols['descr'][] = lang('street name');
+					$uicols['statustext'][] = lang('street name');
+					$uicols['exchange'][] = false;
+					$uicols['align'][] = '';
+					$uicols['datatype'][] = '';
+					$uicols['formatter'][] = '';
+					$uicols['classname'][] = '';
+					$uicols['sortable'][] = true;
+
+					$cols_return[] = 'street_number';
+					$uicols['input_type'][] = 'hidden';
+					$uicols['name'][] = 'street_number';
+					$uicols['descr'][] = lang('street number');
+					$uicols['statustext'][] = lang('street number');
+					$uicols['exchange'][] = false;
+					$uicols['align'][] = '';
+					$uicols['datatype'][] = '';
+					$uicols['formatter'][] = '';
+					$uicols['classname'][] = '';
+					$uicols['sortable'][] = '';
+
+					$cols_return[] = $config[$i]['column_name'];
+					$uicols['input_type'][] = 'hidden';
+					$uicols['name'][] = $config[$i]['column_name'];
+					$uicols['descr'][] = lang($config[$i]['input_text']);
+					$uicols['statustext'][] = lang($config[$i]['input_text']);
+					$uicols['exchange'][] = false;
+					$uicols['align'][] = '';
+					$uicols['datatype'][] = '';
+					$uicols['formatter'][] = '';
+					$uicols['classname'][] = '';
+					$uicols['sortable'][] = '';
+
+					if ($lookup)
+					{
+						$cols_extra[] = 'street_name';
+						$cols_extra[] = 'street_number';
+						$cols_extra[] = $config[$i]['column_name'];
+					}
+				}
+				else
+				{
+					$cols_return[] = $config[$i]['column_name'];
+					$uicols['input_type'][] = 'text';
+					$uicols['name'][] = $config[$i]['column_name'];
+					$uicols['descr'][] = $config[$i]['input_text'];
+					$uicols['statustext'][] = $config[$i]['input_text'];
+					$uicols['exchange'][] = false;
+					$uicols['align'][] = '';
+					$uicols['datatype'][] = '';
+					$uicols['formatter'][] = '';
+					$uicols['classname'][] = '';
+					$uicols['sortable'][] = '';
+
+					if ($lookup)
+					{
+						$cols_extra[] = $config[$i]['column_name'];
+					}
+				}
+			}
+		}
+
+		$from = " FROM $paranthesis $entity_table ";
+		$sql = "SELECT DISTINCT $cols $from $joinmethod";
+
+		return array(
+			'sql' => $sql,
+			'type_id' => $type_id,
+			'uicols' => $uicols,
+			'cols_return' => $cols_return,
+			'cols_extra' => $cols_extra,
+			'cols_return_lookup' => $cols_return_lookup,
+		);
+	}
+
 	public function preserveAttributeValues($values, $values_attributes)
 	{
 		if (!is_array($values_attributes))

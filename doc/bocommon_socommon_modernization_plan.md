@@ -179,3 +179,7 @@ Deliverable:
   - Moved `confirm_session` implementation from `property_bocommon` to `CommonBusinessHelper` (legacy function name preserved).
   - Updated `property_bocommon::confirm_session` to a thin delegation.
   - Validation: `php -l` clean for both `class.bocommon.inc.php` and `CommonBusinessHelper.php`; grep confirms helper definition + delegation wiring.
+- 2026-05-11: Continued migration with SQL builder extraction:
+  - Moved `generate_sql` implementation from `property_bocommon` to `CommonBusinessHelper` (legacy function name preserved).
+  - Updated `property_bocommon::generate_sql` to delegation, while preserving legacy side effects by reassigning `type_id`, `uicols`, `cols_return`, `cols_extra`, and `cols_return_lookup` from helper result.
+  - Validation: `php -l` clean for both `class.bocommon.inc.php` and `CommonBusinessHelper.php`; grep confirms helper definition + adapter delegation wiring.

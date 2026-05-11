@@ -153,7 +153,7 @@ class property_bocommon
 
 	function get_user_list($format = '', $selected = '', $extra = '', $default = '', $start = '', $sort = 'ASC', $order = 'account_lastname', $query = '', $offset = '', $enabled = false)
 	{
-		return $this->common_business_helper->get_user_list(
+		return $this->common_business_helper->getUserList(
 			$this->accounts,
 			$this->xsl_rootdir,
 			$format,
@@ -171,7 +171,7 @@ class property_bocommon
 
 	function get_group_list($format = '', $selected = '', $start = '', $sort = '', $order = '', $query = '', $offset = '')
 	{
-		return $this->common_business_helper->get_group_list(
+		return $this->common_business_helper->getGroupList(
 			$this->accounts,
 			$this->xsl_rootdir,
 			$format,
@@ -186,7 +186,7 @@ class property_bocommon
 
 	function get_user_list_right($rights, $selected = '', $acl_location = '', $extra = '', $default = '')
 	{
-		return $this->common_business_helper->get_user_list_right(
+		return $this->common_business_helper->getUserListRight(
 			$this->socommon,
 			$this->accounts,
 			$rights,
@@ -199,7 +199,7 @@ class property_bocommon
 
 	function get_user_list_right2($format = '', $right = '', $selected = '', $acl_location = '', $extra = '', $default = '')
 	{
-		return $this->common_business_helper->get_user_list_right2(
+		return $this->common_business_helper->getUserListRight2(
 			$this->socommon,
 			$this->accounts,
 			$this->xsl_rootdir,
@@ -384,7 +384,7 @@ class property_bocommon
 
 	function initiate_event_lookup($data)
 	{
-		return $this->common_business_helper->initiate_event_lookup(
+		return $this->common_business_helper->initiateEventLookup(
 			$this->phpgwapi_common,
 			$this->userSettings,
 			$this->xsl_rootdir,
@@ -394,7 +394,7 @@ class property_bocommon
 
 	function initiate_ui_alarm($data)
 	{
-		return $this->common_business_helper->initiate_ui_alarm($this->xsl_rootdir, $this->account, $data);
+		return $this->common_business_helper->initiateUiAlarm($this->xsl_rootdir, $this->account, $data);
 	}
 
 	function select_multi_list_2($selected = '', $list = array(), $input_type = '')
@@ -451,7 +451,7 @@ class property_bocommon
 
 	function generate_sql($data)
 	{
-		$result = $this->common_business_helper->generate_sql($this->join, $this->left_join, $data);
+		$result = $this->common_business_helper->generateSql($this->join, $this->left_join, $data);
 		$this->type_id = $result['type_id'];
 		$this->uicols = $result['uicols'];
 		$this->cols_return = $result['cols_return'];
@@ -539,7 +539,7 @@ class property_bocommon
 	 */
 	function download($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
 	{
-		$this->flags = $this->common_business_helper->download(
+		$this->flags = $this->common_business_helper->performDownload(
 			$this->flags,
 			$this->userSettings,
 			$this->serverSettings,
@@ -566,7 +566,7 @@ class property_bocommon
 	 */
 	function phpspreadsheet_out($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_format = 'excel')
 	{
-		return $this->common_business_helper->phpspreadsheet_out(
+		return $this->common_business_helper->performPhpspreadsheetOut(
 			$this->userSettings,
 			$this->serverSettings,
 			$this->phpgwapi_common,
@@ -590,7 +590,7 @@ class property_bocommon
 	 */
 	function xslx_out($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
 	{
-		return $this->common_business_helper->xslx_out(
+		return $this->common_business_helper->performXlsxOut(
 			$this->userSettings,
 			$this->serverSettings,
 			$this->phpgwapi_common,
@@ -613,7 +613,7 @@ class property_bocommon
 	 */
 	function csv_out($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
 	{
-		return $this->common_business_helper->csv_out(
+		return $this->common_business_helper->performCsvOut(
 			$this->userSettings,
 			$this->phpgwapi_common,
 			$list,
@@ -666,7 +666,7 @@ class property_bocommon
 	 */
 	function utf2ascii($text = '')
 	{
-		return $this->common_business_helper->utf2ascii($text, $this->serverSettings['charset'] ?? null);
+		return $this->common_business_helper->utf2ascii($text);
 	}
 
 	/**
@@ -677,7 +677,7 @@ class property_bocommon
 	 */
 	function ascii2utf($text = '')
 	{
-		return $this->common_business_helper->ascii2utf($text, $this->serverSettings['charset'] ?? null);
+		return $this->common_business_helper->ascii2utf($text);
 	}
 
 	/**
@@ -694,7 +694,7 @@ class property_bocommon
 
 	function get_menu($app = 'property')
 	{
-		$menu_result = $this->common_business_helper->get_menu($this->flags, $this->userSettings, $this->xsl_rootdir, $app);
+		$menu_result = $this->common_business_helper->getMenu($this->flags, $this->userSettings, $this->xsl_rootdir, $app);
 		$this->flags = $menu_result['flags'];
 
 		if (is_null($menu_result['menu']))
@@ -712,7 +712,7 @@ class property_bocommon
 
 	function no_access()
 	{
-		$this->flags = $this->common_business_helper->no_access(
+		$this->flags = $this->common_business_helper->noAccess(
 			$this->flags,
 			$this->xsl_rootdir,
 			$this->phpgwapi_common,

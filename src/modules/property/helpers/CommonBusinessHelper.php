@@ -11,6 +11,48 @@ class CommonBusinessHelper
 	public $account;
 	public $serverSettings;
 	public $flags;
+	public $accounts;
+	public $async;
+	public $start;
+	public $query;
+	public $filter;
+	public $sort;
+	public $order;
+	public $cat_id;
+	public $district_id;
+	public $join;
+	public $left_join;
+	public $like;
+	public $acl_read;
+	public $type_id;
+	public $uicols;
+	public $cols_return;
+	public $cols_extra;
+	public $cols_return_lookup;
+	public $public_functions = array(
+		'confirm_session' => true,
+		'get_vendor_email' => true
+	);
+
+	public function __construct()
+	{
+		$this->userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+		$this->serverSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('server');
+		$this->flags = \App\modules\phpgwapi\services\Settings::getInstance()->get('flags');
+
+		$this->socommon = \CreateObject('property.socommon');
+		$this->account = isset($this->userSettings['account_id']) ? (int) $this->userSettings['account_id'] : -1;
+		$this->accounts = new \App\modules\phpgwapi\controllers\Accounts\Accounts();
+		$this->phpgwapi_common = new \phpgwapi_common();
+		$this->async = \App\modules\phpgwapi\services\AsyncService::getInstance();
+
+		$this->join = $this->socommon->join;
+		$this->left_join = $this->socommon->left_join;
+		$this->like = $this->socommon->like;
+
+		$template_set = isset($this->serverSettings['template_set']) ? $this->serverSettings['template_set'] : 'base';
+		$this->xsl_rootdir = PHPGW_SERVER_ROOT . "/property/templates/{$template_set}";
+	}
 
 	public function checkPerms($rights, $required)
 	{
@@ -45,7 +87,7 @@ class CommonBusinessHelper
 		return $this->checkPerms2($owner_id, $grants, $required, array());
 	}
 
-	public function confirm_session($phpgwapi_common)
+	public function confirm_session()
 	{
 		$sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
 
@@ -53,13 +95,13 @@ class CommonBusinessHelper
 		{
 			header('Content-Type: application/json');
 			echo json_encode(array('sessionExpired' => false));
-			$phpgwapi_common->phpgw_exit();
+			$this->phpgwapi_common->phpgw_exit();
 		}
 	}
 
-	public function confirmSession($phpgwapi_common)
+	public function confirmSession()
 	{
-		return $this->confirm_session($phpgwapi_common);
+		return $this->confirm_session();
 	}
 
 	public function dateToTimestamp($date = array())
@@ -391,8 +433,9 @@ class CommonBusinessHelper
 		return $this->getOriginLink($type);
 	}
 
-	public function utf2ascii($text = '', $charset = null)
+	public function utf2ascii($text = '')
 	{
+		$charset = isset($this->serverSettings['charset']) ? $this->serverSettings['charset'] : null;
 		if (!isset($charset) || $charset == 'utf-8')
 		{
 			if ($text == mb_convert_encoding($text, 'ISO-8859-1', 'UTF-8'))
@@ -407,13 +450,14 @@ class CommonBusinessHelper
 		return $text;
 	}
 
-	public function utf2_ascii($text = '', $charset = null)
+	public function utf2_ascii($text = '')
 	{
-		return $this->utf2ascii($text, $charset);
+		return $this->utf2ascii($text);
 	}
 
-	public function ascii2utf($text = '', $charset = null)
+	public function ascii2utf($text = '')
 	{
+		$charset = isset($this->serverSettings['charset']) ? $this->serverSettings['charset'] : null;
 		if (!isset($charset) || $charset == 'utf-8')
 		{
 			return mb_convert_encoding($text, 'UTF-8', 'ISO-8859-1');
@@ -424,9 +468,9 @@ class CommonBusinessHelper
 		}
 	}
 
-	public function ascii2_utf($text = '', $charset = null)
+	public function ascii2_utf($text = '')
 	{
-		return $this->ascii2utf($text, $charset);
+		return $this->ascii2utf($text);
 	}
 
 	public function makeMenuDate($array, $id_buttons, $name_hidden)
@@ -648,49 +692,49 @@ class CommonBusinessHelper
 		return $this->selectCategoryList($data);
 	}
 
-	public function create_preferences($socommon, $app = '', $user_id = '')
+	public function create_preferences($app = '', $user_id = '')
 	{
-		return $this->createPreferences($socommon, $app, $user_id);
+		return $this->createPreferences($this->socommon, $app, $user_id);
 	}
 
-	public function get_lookup_entity($socommon, $location = '')
+	public function get_lookup_entity($location = '')
 	{
-		return $this->getLookupEntity($socommon, $location);
+		return $this->getLookupEntity($this->socommon, $location);
 	}
 
-	public function get_start_entity($socommon, $location = '')
+	public function get_start_entity($location = '')
 	{
-		return $this->getStartEntity($socommon, $location);
+		return $this->getStartEntity($this->socommon, $location);
 	}
 
-	public function read_single_tenant($socommon, $tenant_id)
+	public function read_single_tenant($tenant_id)
 	{
-		return $this->readSingleTenant($socommon, $tenant_id);
+		return $this->readSingleTenant($this->socommon, $tenant_id);
 	}
 
-	public function check_location($socommon, $location_code = '', $type_id = '')
+	public function check_location($location_code = '', $type_id = '')
 	{
-		return $this->checkLocation($socommon, $location_code, $type_id);
+		return $this->checkLocation($this->socommon, $location_code, $type_id);
 	}
 
-	public function fm_cache($socommon, $name = '', $value = '')
+	public function fm_cache($name = '', $value = '')
 	{
-		return $this->fmCache($socommon, $name, $value);
+		return $this->fmCache($this->socommon, $name, $value);
 	}
 
-	public function reset_fm_cache($socommon)
+	public function reset_fm_cache()
 	{
-		return $this->resetFmCache($socommon);
+		return $this->resetFmCache($this->socommon);
 	}
 
-	public function reset_fm_cache_userlist($socommon)
+	public function reset_fm_cache_userlist()
 	{
-		return $this->resetFmCacheUserlist($socommon);
+		return $this->resetFmCacheUserlist($this->socommon);
 	}
 
-	public function next_id($socommon, $table, $key = '')
+	public function next_id($table, $key = '')
 	{
-		return $this->nextId($socommon, $table, $key);
+		return $this->nextId($this->socommon, $table, $key);
 	}
 
 	public function select_datatype($selected = '', $sub_module = '')
@@ -720,12 +764,12 @@ class CommonBusinessHelper
 
 	public function new_db($db = '')
 	{
-		return $this->newDb($db);
+		return $this->newDb($this->socommon, $db);
 	}
 
-	public function get_max_location_level($socommon)
+	public function get_max_location_level()
 	{
-		return $this->getMaxLocationLevel($socommon);
+		return $this->getMaxLocationLevel($this->socommon);
 	}
 
 	public function get_sub_menu($children = array(), $selection = array(), $level = '')
@@ -733,9 +777,9 @@ class CommonBusinessHelper
 		return $this->getSubMenu($children, $selection, $level);
 	}
 
-	public function get_location_list($socommon, $required)
+	public function get_location_list($required)
 	{
-		return $this->getLocationList($socommon, $required);
+		return $this->getLocationList($this->socommon, $required);
 	}
 
 	public function make_menu_date($array, $id_buttons, $name_hidden)
@@ -753,9 +797,9 @@ class CommonBusinessHelper
 		return $this->chooseSelect($array, $index_return);
 	}
 
-	public function set_pending_action($socommon, $action_params)
+	public function set_pending_action($action_params)
 	{
-		return $this->setPendingAction($socommon, $action_params);
+		return $this->setPendingAction($this->socommon, $action_params);
 	}
 
 	public function get_top_level_categories($data)
@@ -773,8 +817,17 @@ class CommonBusinessHelper
 		return $this->getCategories($data);
 	}
 
-	public function get_vendor_email($vendor_id = 0, $field_name = '', $preselect = false, $preselect_one = false, $as_json = false, $draw = 0)
+	public function get_vendor_email($vendor_id = 0, $field_name = '')
 	{
+		if (!$vendor_id)
+		{
+			$vendor_id  = \Sanitizer::get_var('vendor_id', 'int', 'GET', 0);
+			$field_name = \Sanitizer::get_var('field_name', 'string', 'GET');
+		}
+		$preselect     = \Sanitizer::get_var('preselect', 'bool');
+		$preselect_one = \Sanitizer::get_var('preselect_one', 'bool');
+		$as_json       = \Sanitizer::get_var('phpgw_return_as') == 'json';
+		$draw          = \Sanitizer::get_var('draw', 'int');
 		return $this->getVendorEmail($vendor_id, $field_name, $preselect, $preselect_one, $as_json, $draw);
 	}
 
@@ -829,14 +882,14 @@ class CommonBusinessHelper
 		return $this->getEcodimb($query);
 	}
 
-	public function get_documentation_url($socommon, $id, $serverSettings = array(), $userSettings = array())
+	public function get_documentation_url($id)
 	{
-		return $this->getDocumentationUrl($socommon, $id, $serverSettings, $userSettings);
+		return $this->getDocumentationUrl($this->socommon, $id, $this->serverSettings, $this->userSettings);
 	}
 
-	public function get_users($accounts, $acl_read)
+	public function get_users($query)
 	{
-		return $this->getUsers($accounts, $acl_read);
+		return $this->getUsers($this->accounts, $this->acl_read);
 	}
 
 	public function addUserListTemplate($format, $xsl_rootdir)
@@ -865,7 +918,7 @@ class CommonBusinessHelper
 		}
 	}
 
-	public function get_user_list($accounts, $xsl_rootdir, $format = '', $selected = '', $extra = '', $default = '', $start = '', $sort = 'ASC', $order = 'account_lastname', $query = '', $offset = '', $enabled = false)
+	public function getUserList($accounts, $xsl_rootdir, $format = '', $selected = '', $extra = '', $default = '', $start = '', $sort = 'ASC', $order = 'account_lastname', $query = '', $offset = '', $enabled = false)
 	{
 		$order = $order ? $order : 'account_lastname';
 
@@ -926,7 +979,7 @@ class CommonBusinessHelper
 		return isset($user_list) ? $user_list : array();
 	}
 
-	public function get_group_list($accounts, $xsl_rootdir, $format = '', $selected = '', $start = '', $sort = '', $order = '', $query = '', $offset = '')
+	public function getGroupList($accounts, $xsl_rootdir, $format = '', $selected = '', $start = '', $sort = '', $order = '', $query = '', $offset = '')
 	{
 		$this->addGroupListTemplate($format, $xsl_rootdir);
 
@@ -962,7 +1015,7 @@ class CommonBusinessHelper
 		return $user_list;
 	}
 
-	public function get_user_list_right($socommon, $accounts, $rights, $selected = '', $acl_location = '', $extra = '', $default = '')
+	public function getUserListRight($socommon, $accounts, $rights, $selected = '', $acl_location = '', $extra = '', $default = '')
 	{
 		$selected = $this->resolveSelectedDefault($selected, $default);
 
@@ -1079,7 +1132,7 @@ class CommonBusinessHelper
 		return $user_list;
 	}
 
-	public function get_user_list_right2($socommon, $accounts, $xsl_rootdir, $format = '', $right = '', $selected = '', $acl_location = '', $extra = '', $default = '')
+	public function getUserListRight2($socommon, $accounts, $xsl_rootdir, $format = '', $right = '', $selected = '', $acl_location = '', $extra = '', $default = '')
 	{
 		if (is_array($format))
 		{
@@ -1410,7 +1463,7 @@ class CommonBusinessHelper
 		return $default;
 	}
 
-	public function initiate_event_lookup($phpgwapi_common, $userSettings, $xsl_rootdir, $data)
+	public function initiateEventLookup($phpgwapi_common, $userSettings, $xsl_rootdir, $data)
 	{
 		$event = array();
 		$event['name'] = $data['name'];
@@ -1674,7 +1727,7 @@ class CommonBusinessHelper
 		return $ecodimb;
 	}
 
-	public function initiate_ui_alarm($xsl_rootdir, $account, $data)
+	public function initiateUiAlarm($xsl_rootdir, $account, $data)
 	{
 		$boalarm = CreateObject('property.boalarm');
 
@@ -1747,7 +1800,7 @@ class CommonBusinessHelper
 		return $alarm;
 	}
 
-	public function generate_sql($join, $left_join, $data)
+	public function generateSql($join, $left_join, $data)
 	{
 		$cols = isset($data['cols']) ? $data['cols'] : '';
 		$entity_table = isset($data['entity_table']) ? $data['entity_table'] : '';
@@ -1999,7 +2052,7 @@ class CommonBusinessHelper
 		);
 	}
 
-	public function download($flags, $userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
+	public function performDownload($flags, $userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
 	{
 		set_time_limit(500);
 		$flags['noheader'] = true;
@@ -2028,20 +2081,20 @@ class CommonBusinessHelper
 		switch ($export_format)
 		{
 			case 'csv':
-				$this->csv_out($userSettings, $phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename);
+				$this->performCsvOut($userSettings, $phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename);
 				break;
 			case 'excel':
-				$this->xslx_out($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename);
+				$this->performXlsxOut($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename);
 				break;
 			case 'ods':
-				$this->phpspreadsheet_out($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename, 'ods');
+				$this->performPhpspreadsheetOut($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename, 'ods');
 				break;
 		}
 
 		return $flags;
 	}
 
-	public function phpspreadsheet_out($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_format = 'excel')
+	public function performPhpspreadsheetOut($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_format = 'excel')
 	{
 		if ($filename)
 		{
@@ -2165,7 +2218,7 @@ class CommonBusinessHelper
 		$objWriter->save('php://output');
 	}
 
-	public function xslx_out($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
+	public function performXlsxOut($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
 	{
 		if ($filename)
 		{
@@ -2301,7 +2354,7 @@ class CommonBusinessHelper
 		$writer->writeToStdOut();
 	}
 
-	public function csv_out($userSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
+	public function performCsvOut($userSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
 	{
 		if ($filename)
 		{
@@ -2485,7 +2538,7 @@ class CommonBusinessHelper
 		return $values;
 	}
 
-	public function get_menu($flags, $userSettings, $xsl_rootdir, $app = 'property')
+	public function getMenu($flags, $userSettings, $xsl_rootdir, $app = 'property')
 	{
 		$flags['nonavbar'] = false;
 		\App\modules\phpgwapi\services\Settings::getInstance()->set('flags', $flags);
@@ -2511,7 +2564,7 @@ class CommonBusinessHelper
 		return array('flags' => $flags, 'menu' => $menu);
 	}
 
-	public function no_access($flags, $xsl_rootdir, $phpgwapi_common, $userSettings)
+	public function noAccess($flags, $xsl_rootdir, $phpgwapi_common, $userSettings)
 	{
 		$flags['xslt_app'] = true;
 		\phpgwapi_xslttemplates::getInstance()->add_file(array('no_access', 'menu'), $xsl_rootdir);
@@ -2960,4 +3013,82 @@ class CommonBusinessHelper
 
 		return array('ResultSet' => array('Result' => $values));
 	}
+
+	public function get_user_list($format = '', $selected = '', $extra = '', $default = '', $start = '', $sort = 'ASC', $order = 'account_lastname', $query = '', $offset = '', $enabled = false)
+	{
+		return $this->getUserList($this->accounts, $this->xsl_rootdir, $format, $selected, $extra, $default, $start, $sort, $order, $query, $offset, $enabled);
+	}
+
+	public function get_group_list($format = '', $selected = '', $start = '', $sort = '', $order = '', $query = '', $offset = '')
+	{
+		return $this->getGroupList($this->accounts, $this->xsl_rootdir, $format, $selected, $start, $sort, $order, $query, $offset);
+	}
+
+	public function get_user_list_right($rights, $selected = '', $acl_location = '', $extra = '', $default = '')
+	{
+		return $this->getUserListRight($this->socommon, $this->accounts, $rights, $selected, $acl_location, $extra, $default);
+	}
+
+	public function get_user_list_right2($format = '', $right = '', $selected = '', $acl_location = '', $extra = '', $default = '')
+	{
+		return $this->getUserListRight2($this->socommon, $this->accounts, $this->xsl_rootdir, $format, $right, $selected, $acl_location, $extra, $default);
+	}
+
+	public function initiate_event_lookup($data)
+	{
+		return $this->initiateEventLookup($this->phpgwapi_common, $this->userSettings, $this->xsl_rootdir, $data);
+	}
+
+	public function initiate_ui_alarm($data)
+	{
+		return $this->initiateUiAlarm($this->xsl_rootdir, $this->account, $data);
+	}
+
+	public function generate_sql($data)
+	{
+		$result = $this->generateSql($this->join, $this->left_join, $data);
+		$this->type_id = $result['type_id'];
+		$this->uicols = $result['uicols'];
+		$this->cols_return = $result['cols_return'];
+		$this->cols_extra = $result['cols_extra'];
+		$this->cols_return_lookup = $result['cols_return_lookup'];
+		return $result['sql'];
+	}
+
+	public function get_menu($app = 'property')
+	{
+		$menu_result = $this->getMenu($this->flags, $this->userSettings, $this->xsl_rootdir, $app);
+		$this->flags = $menu_result['flags'];
+		if (is_null($menu_result['menu']))
+		{
+			return;
+		}
+		return $menu_result['menu'];
+	}
+
+	public function no_access()
+	{
+		$this->flags = $this->noAccess($this->flags, $this->xsl_rootdir, $this->phpgwapi_common, $this->userSettings);
+	}
+
+	public function download($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
+	{
+		$this->flags = $this->performDownload($this->flags, $this->userSettings, $this->serverSettings, $this->phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename);
+	}
+
+	public function phpspreadsheet_out($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_format = 'excel')
+	{
+		return $this->performPhpspreadsheetOut($this->userSettings, $this->serverSettings, $this->phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename, $export_format);
+	}
+
+	public function xslx_out($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
+	{
+		return $this->performXlsxOut($this->userSettings, $this->serverSettings, $this->phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename);
+	}
+
+	public function csv_out($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
+	{
+		return $this->performCsvOut($this->userSettings, $this->phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename);
+	}
+
 }

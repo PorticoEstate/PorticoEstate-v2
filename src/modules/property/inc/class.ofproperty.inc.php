@@ -42,6 +42,8 @@ class property_ofproperty extends phpgwapi_object_factory
 				$_appname   = ($p1 !== '_UNDEF_') ? $p1 : null;
 				return \property_custom_fields::getInstance($_appname);
 
+			case 'bocommon':
+				return new \App\modules\property\helpers\CommonBusinessHelper();
 			case 'botts':
 				include_class($appname, $classname);
 				return \property_botts::getInstance();

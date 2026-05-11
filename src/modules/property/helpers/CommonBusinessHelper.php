@@ -556,6 +556,283 @@ class CommonBusinessHelper
 		}
 	}
 
+	public function get_user_list($accounts, $xsl_rootdir, $format = '', $selected = '', $extra = '', $default = '', $start = '', $sort = 'ASC', $order = 'account_lastname', $query = '', $offset = '', $enabled = false)
+	{
+		$order = $order ? $order : 'account_lastname';
+
+		$this->addUserListTemplate($format, $xsl_rootdir);
+		$selected = $this->resolveSelectedDefault($selected, $default);
+
+		$all_users = array();
+
+		if (is_array($extra))
+		{
+			foreach ($extra as $extra_user)
+			{
+				$all_users[] = array(
+					'account_id' => $extra_user,
+					'account_firstname' => lang($extra_user)
+				);
+			}
+		}
+
+		$users = $accounts->get_list('accounts', $start, $sort, $order, $query, $offset);
+
+		if (is_array($users))
+		{
+			foreach ($users as $user)
+			{
+				if (($enabled && $user->enabled) || !$enabled)
+				{
+					$all_users[] = array(
+						'user_id' => $user->id,
+						'name' => $user->__toString(),
+					);
+				}
+			}
+		}
+
+		if (count($all_users) > 0)
+		{
+			foreach ($all_users as $user)
+			{
+				if ($user['user_id'] == $selected)
+				{
+					$user_list[] = array(
+						'user_id' => $user['user_id'],
+						'name' => $user['name'],
+						'selected' => 'selected'
+					);
+				}
+				else
+				{
+					$user_list[] = array(
+						'user_id' => $user['user_id'],
+						'name' => $user['name'],
+					);
+				}
+			}
+		}
+
+		return isset($user_list) ? $user_list : array();
+	}
+
+	public function get_group_list($accounts, $xsl_rootdir, $format = '', $selected = '', $start = '', $sort = '', $order = '', $query = '', $offset = '')
+	{
+		$this->addGroupListTemplate($format, $xsl_rootdir);
+
+		$users = $accounts->get_list('groups', $start, $sort, $order, $query, $offset);
+		$user_list = array();
+		if (isset($users) and is_array($users))
+		{
+			foreach ($users as $user)
+			{
+				$sel_user = '';
+				if ($user->id == $selected)
+				{
+					$sel_user = 'selected';
+				}
+
+				$user_list[] = array(
+					'id' => $user->id,
+					'name' => $user->firstname,
+					'selected' => $sel_user
+				);
+			}
+		}
+
+		$user_count = count($user_list);
+		for ($i = 0; $i < $user_count; $i++)
+		{
+			if ($user_list[$i]['selected'] != 'selected')
+			{
+				unset($user_list[$i]['selected']);
+			}
+		}
+
+		return $user_list;
+	}
+
+	public function get_user_list_right($socommon, $accounts, $rights, $selected = '', $acl_location = '', $extra = '', $default = '')
+	{
+		$selected = $this->resolveSelectedDefault($selected, $default);
+
+		if (!is_array($rights))
+		{
+			$rights = array($rights);
+		}
+
+		$users_extra = $this->buildUsersExtraListRight($extra);
+
+		$right_index = 0;
+		foreach ($rights as $right)
+		{
+			$right_index += $right;
+		}
+
+		$acl_userlist_name = "acl_userlist_{$right_index}_{$acl_location}";
+
+		reset($rights);
+		$acl = \App\modules\phpgwapi\security\Acl::getInstance();
+
+		if (!$users = $socommon->fm_cache($acl_userlist_name))
+		{
+			$users_gross = array();
+			foreach ($rights as $right)
+			{
+				$users_gross = array_merge($users_gross, $acl->get_user_list_right($right, $acl_location));
+			}
+
+			$accounts_index = array();
+			$users = array();
+
+			foreach ($users_gross as $entry => $user)
+			{
+				if (!isset($accounts_index[$user['account_id']]))
+				{
+					$users[] = $user;
+				}
+				$accounts_index[$user['account_id']] = true;
+			}
+			unset($users_gross);
+			unset($accounts_index);
+
+			foreach ($users as $key => $row)
+			{
+				$account_lastname[$key] = $row['account_lastname'];
+				$account_firstname[$key] = $row['account_firstname'];
+			}
+
+			if ($users)
+			{
+				array_multisort($account_lastname, SORT_ASC, $account_firstname, SORT_ASC, $users);
+			}
+
+			$socommon->fm_cache('acl_userlist_' . $rights[0] . '_' . $acl_location, $users);
+		}
+
+		if (isset($users_extra) && is_array($users_extra) && is_array($users))
+		{
+			$users = array_merge($users_extra, $users);
+		}
+
+		$user_list = array();
+		$selected_found = false;
+
+		foreach ($users as $user)
+		{
+			if ($user['account_lid'] == $selected)
+			{
+				$user_list[] = array(
+					'lid' => $user['account_lid'],
+					'firstname' => $user['account_firstname'],
+					'lastname' => $user['account_lastname'],
+					'selected' => 'selected'
+				);
+			}
+			else
+			{
+				$user_list[] = array(
+					'lid' => $user['account_lid'],
+					'firstname' => $user['account_firstname'],
+					'lastname' => $user['account_lastname'],
+				);
+			}
+
+			if (!$selected_found)
+			{
+				$selected_found = $user['account_lid'] == $selected ? true : false;
+			}
+		}
+
+		foreach ($user_list as &$user)
+		{
+			$user['id'] = $user['lid'];
+			$user['name'] = ltrim("{$user['lastname']}, {$user['firstname']}", ', ');
+		}
+		unset($user);
+
+		if ($selected && !$selected_found)
+		{
+			$user_id = $accounts->name2id($selected);
+			$_user = $accounts->get($user_id);
+
+			$user_list[] = array(
+				'lid' => $_user->lid,
+				'firstname' => $_user->firstname,
+				'lastname' => $_user->lastname,
+				'id' => $selected,
+				'name' => $_user->__toString(),
+				'selected' => 'selected'
+			);
+		}
+
+		return $user_list;
+	}
+
+	public function get_user_list_right2($socommon, $accounts, $xsl_rootdir, $format = '', $right = '', $selected = '', $acl_location = '', $extra = '', $default = '')
+	{
+		if (is_array($format))
+		{
+			$data = $format;
+			$format = isset($data['format']) ? $data['format'] : '';
+			$right = isset($data['right']) ? $data['right'] : '';
+			$selected = isset($data['selected']) && is_array($data['selected']) ? $data['selected'][0] : (isset($data['selected']) ? $data['selected'] : '');
+			$acl_location = isset($data['acl_location']) ? $data['acl_location'] : '';
+			$extra = isset($data['extra']) ? $data['extra'] : '';
+			$default = isset($data['default']) ? $data['default'] : '';
+		}
+
+		$this->addUserListTemplate($format, $xsl_rootdir);
+		$selected = $this->resolveSelectedDefault($selected, $default);
+
+		$users_extra = $this->buildUsersExtraList($extra);
+		$acl = \App\modules\phpgwapi\security\Acl::getInstance();
+
+		if (!$users = $socommon->fm_cache('acl_userlist_' . $right . '_' . $acl_location))
+		{
+			$users = $acl->get_user_list_right($right, $acl_location);
+			$socommon->fm_cache('acl_userlist_' . $right . '_' . $acl_location, $users);
+		}
+
+		if ((isset($users_extra) && is_array($users_extra)) && is_array($users))
+		{
+			foreach ($users as $users_entry)
+			{
+				array_push($users_extra, $users_entry);
+			}
+			$users = $users_extra;
+		}
+
+		$user_list = array();
+		$selected_found = false;
+		foreach ($users as $user)
+		{
+			$name = (isset($user['account_lastname']) ? $user['account_lastname'] . ' ' : '') . $user['account_firstname'];
+			$user_list[] = array(
+				'id' => $user['account_id'],
+				'name' => $name,
+				'selected' => $user['account_id'] == $selected ? 1 : 0
+			);
+
+			if (!$selected_found)
+			{
+				$selected_found = $user['account_id'] == $selected ? true : false;
+			}
+		}
+
+		if ($selected && !$selected_found)
+		{
+			$user_list[] = array(
+				'id' => $selected,
+				'name' => $accounts->get($selected)->__toString(),
+				'selected' => 1
+			);
+		}
+
+		return $user_list;
+	}
+
 	public function addContactTemplate($type, $xsl_rootdir)
 	{
 		switch ($type)

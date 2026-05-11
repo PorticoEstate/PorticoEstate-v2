@@ -3,7 +3,7 @@
 This plan defines a safe, staged conversion of `property_bocommon` and `property_socommon` toward modern helper/service architecture while preserving legacy behavior.
 
 Status owner: Property modernization track
-Last updated: 2026-05-08
+Last updated: 2026-05-11
 
 ## Objective
 
@@ -161,3 +161,12 @@ Deliverable:
   - All changes parse clean with zero syntax errors; adapter signatures and caller contracts preserved unchanged.
   - Adapter-only extraction pattern continues to prove reliable: 10 batches, 11 helpers, zero parse failures, zero caller modifications.
   - **Phase 4 (Adapter Delegation) now solidly complete**; ready to advance to Phase 5 (Factory Wiring with Safe Lifecycle).
+- 2026-05-11: Confirmed replacement trajectory: migrate all remaining `property_bocommon` method implementations into `CommonBusinessHelper` while preserving legacy function names/signatures at the adapter boundary.
+  - Decision: keep `property_bocommon` as a thin compatibility adapter until request-specific lifecycle/state is explicitly handled in factory wiring.
+  - Constraint preserved: no direct system-wide calls to helper/service classes during transition.
+  - Started migration batch toward full helper ownership for list-building methods while preserving adapter contracts.
+- 2026-05-11: Continued migration toward full helper ownership with legacy method names preserved:
+  - Moved `get_user_list` and `get_group_list` implementations from `property_bocommon` to `CommonBusinessHelper` (same function names in helper).
+  - Moved `get_user_list_right` and `get_user_list_right2` implementations from `property_bocommon` to `CommonBusinessHelper` (same function names in helper).
+  - Updated `property_bocommon` methods to thin delegations only, preserving external method signatures and call contracts.
+  - Validation: `php -l` clean for both `class.bocommon.inc.php` and `CommonBusinessHelper.php` after each batch.

@@ -43,7 +43,7 @@ class property_ofproperty extends phpgwapi_object_factory
 				return \property_custom_fields::getInstance($_appname);
 
 			case 'bocommon':
-				return new \App\modules\property\helpers\CommonBusinessHelper();
+				return new \App\modules\property\helpers\BoCommon();
 			case 'botts':
 				include_class($appname, $classname);
 				return \property_botts::getInstance();
@@ -53,7 +53,7 @@ class property_ofproperty extends phpgwapi_object_factory
 				return new \App\modules\phpgwapi\services\InterLink();
 
 			case 'socommon':
-				return new \App\modules\property\helpers\CommonDataHelper();
+				return new \App\modules\property\helpers\SoCommon();
 
 			case 'sotts':
 				include_class($appname, $classname);

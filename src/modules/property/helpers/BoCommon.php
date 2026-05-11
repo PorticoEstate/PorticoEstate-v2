@@ -2,7 +2,7 @@
 
 namespace App\modules\property\helpers;
 
-class CommonBusinessHelper
+class BoCommon
 {
 	public $xsl_rootdir;
 	public $socommon;

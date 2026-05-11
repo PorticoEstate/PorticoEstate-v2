@@ -7,7 +7,7 @@ use App\Database\Db2;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Settings;
 
-class CommonDataHelper
+class SoCommon
 {
 	/**
 	 * @var Db

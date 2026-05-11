@@ -1282,7 +1282,7 @@ class EntityController
 		$list = $bo->read(['allrows' => true]);
 		$list = $this->enrichRows((array)$list, $bo);
 		$uicols = $bo->uicols;
-		$bocommon = new \App\modules\property\helpers\CommonBusinessHelper();
+		$bocommon = new \App\modules\property\helpers\BoCommon();
 		$bocommon->download(
 			$list,
 			$uicols['name'],

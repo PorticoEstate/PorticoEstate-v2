@@ -27,6 +27,18 @@ class CommonBusinessHelper
 		return false;
 	}
 
+	public function confirm_session($phpgwapi_common)
+	{
+		$sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
+
+		if ($sessions->verify())
+		{
+			header('Content-Type: application/json');
+			echo json_encode(array('sessionExpired' => false));
+			$phpgwapi_common->phpgw_exit();
+		}
+	}
+
 	public function dateToTimestamp($date = array())
 	{
 		return \phpgwapi_datetime::date_to_timestamp($date);
@@ -1099,6 +1111,187 @@ class CommonBusinessHelper
 		}
 
 		return $default;
+	}
+
+	public function initiate_event_lookup($phpgwapi_common, $userSettings, $xsl_rootdir, $data)
+	{
+		$event = array();
+		$event['name'] = $data['name'];
+		$event['event_name'] = $data['event_name'];
+		if (isset($data['type']) && $data['type'] == 'view')
+		{
+			$this->addViewFormTemplate('event', 'view', $xsl_rootdir);
+			if (!isset($data['event']) || !$data['event'])
+			{
+				// Intentionally keeping legacy no-op branch for parity.
+			}
+		}
+		else
+		{
+			$this->addViewFormTemplate('event', 'form', $xsl_rootdir);
+		}
+
+		if (isset($data['item_id']) || $data['item_id'])
+		{
+			$event['item_id'] = $data['item_id'];
+		}
+		else if (isset($data['location_code']) || $data['location_code'])
+		{
+			$event['item_id'] = execMethod('property.solocation.get_item_id', $data['location_code']);
+		}
+		else
+		{
+			$event['warning'] = lang('Warning: the record has to be saved in order to plan an event');
+		}
+
+		if (isset($data['event_id']) && $data['event_id'])
+		{
+			$event['value'] = $data['event_id'];
+			$event_info = execMethod('property.soevent.read_single', $data['event_id']);
+			$event['descr'] = $event_info['descr'];
+			$event['enabled'] = $event_info['enabled'] ? lang('yes') : lang('no');
+			$event['lang_enabled'] = lang('enabled');
+
+			$job_id = "property{$data['location']}::{$data['item_id']}::{$data['name']}";
+			$job = execMethod('phpgwapi.asyncservice.read', $job_id);
+
+			$event['next'] = $phpgwapi_common->show_date($job[$job_id]['next'], $userSettings['preferences']['common']['dateformat']);
+			$event['lang_next_run'] = lang('next run');
+
+			$criteria = array(
+				'start_date' => $event_info['start_date'],
+				'end_date' => $event_info['end_date'],
+				'location_id' => $event_info['location_id'],
+				'location_item_id' => $event_info['location_item_id']
+			);
+
+			$event['count'] = 0;
+			$boevent = CreateObject('property.boevent');
+			$boevent->find_scedules($criteria);
+			$schedules = $boevent->cached_events;
+			foreach ($schedules as $day => $set)
+			{
+				foreach ($set as $entry)
+				{
+					if ($entry['enabled'] && (!isset($entry['exception']) || !$entry['exception'] == true))
+					{
+						$event['count']++;
+					}
+				}
+				$event['responsible_id'] = $entry['responsible_id'];
+			}
+			if ($event['responsible_id'])
+			{
+				$c = CreateObject('phpgwapi.contacts');
+				$qfields = array(
+					'contact_id' => 'contact_id',
+					'per_full_name' => 'per_full_name',
+				);
+
+				$criteria = array('contact_id' => $event['responsible_id']);
+				$contacts = $c->get_persons($qfields, 15, 0, '', '', $criteria);
+				$event['responsible'] = $contacts[0]['per_full_name'];
+			}
+
+			unset($event_info);
+			unset($job_id);
+			unset($job);
+		}
+
+		$event['event_link'] = \phpgw::link(
+			'/index.php',
+			array(
+				'menuaction' => 'property.uievent.edit',
+				'location' => $data['location'],
+				'attrib_id' => $event['name'],
+				'item_id' => isset($event['item_id']) ? $event['item_id'] : '',
+				'id' => isset($event['value']) && $event['value'] ? $event['value'] : ''
+			)
+		);
+
+		$event['event_link'] = "{menuaction:'property.uievent.edit',lookup:1,"
+			. "location:'{$data['location']}',"
+			. "attrib_id:'{$event['name']}'";
+		$event['event_link'] .= isset($event['item_id']) ? ",item_id:{$event['item_id']}" : '';
+		$event['event_link'] .= isset($event['value']) ? ",id:{$event['value']}" : '';
+		$event['event_link'] .= '}';
+
+		$event['function_name'] = 'lookup_' . $event['name'] . '()';
+
+		return $event;
+	}
+
+	public function initiate_ui_alarm($xsl_rootdir, $account, $data)
+	{
+		$boalarm = CreateObject('property.boalarm');
+
+		$this->addViewFormTemplate('alarm', $data['type'], $xsl_rootdir);
+
+		$alarm['header'][] = array(
+			'lang_time' => lang('Time'),
+			'lang_text' => lang('Text'),
+			'lang_user' => lang('User'),
+			'lang_enabled' => lang('Enabled'),
+			'lang_select' => lang('Select')
+		);
+
+		$alarm['values'] = $boalarm->read_alarms($data['alarm_type'], $data['id'], $data['text']);
+
+		if ($data['type'] == 'form')
+		{
+			$alarm['alter_alarm'][] = array(
+				'lang_enable' => lang('Enable'),
+				'lang_disable' => lang('Disable'),
+				'lang_delete' => lang('Delete')
+			);
+
+			for ($i = 1; $i <= 31; $i++)
+			{
+				$alarm['add_alarm']['day_list'][($i - 1)]['id'] = $i;
+				if ($i == 14)
+				{
+					$alarm['add_alarm']['day_list'][($i - 1)]['selected'] = 'selected';
+				}
+			}
+
+			$alarm['add_alarm']['lang_day'] = lang('Day');
+			$alarm['add_alarm']['lang_day_statustext'] = lang('Day');
+
+			for ($i = 1; $i <= 24; $i++)
+			{
+				$alarm['add_alarm']['hour_list'][($i - 1)]['id'] = $i;
+			}
+			$alarm['add_alarm']['lang_hour'] = lang('Hour');
+			$alarm['add_alarm']['lang_hour_statustext'] = lang('Hour');
+
+			for ($i = 1; $i <= 60; $i++)
+			{
+				$alarm['add_alarm']['minute_list'][($i - 1)]['id'] = $i;
+			}
+			$alarm['add_alarm']['lang_minute'] = lang('Minutes before the event');
+			$alarm['add_alarm']['lang_minute_statustext'] = lang('Minutes before the event');
+
+			$alarm['add_alarm']['user_list'] = $this->get_user_list_right2(
+				CreateObject('property.socommon'),
+				new \App\modules\phpgwapi\controllers\Accounts\Accounts(),
+				$xsl_rootdir,
+				'select',
+				4,
+				false,
+				$data['acl_location'],
+				false,
+				$account
+			);
+
+			$alarm['add_alarm']['lang_user'] = lang('User');
+			$alarm['add_alarm']['lang_user_statustext'] = lang('Select the user the alarm belongs to.');
+			$alarm['add_alarm']['lang_no_user'] = lang('No user');
+			$alarm['add_alarm']['lang_add'] = lang('Add');
+			$alarm['add_alarm']['lang_add_alarm'] = lang('Add alarm');
+			$alarm['add_alarm']['lang_add_statustext'] = lang('Add alarm for selected user');
+		}
+
+		return $alarm;
 	}
 
 	public function preserveAttributeValues($values, $values_attributes)

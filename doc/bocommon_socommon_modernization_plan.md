@@ -170,3 +170,12 @@ Deliverable:
   - Moved `get_user_list_right` and `get_user_list_right2` implementations from `property_bocommon` to `CommonBusinessHelper` (same function names in helper).
   - Updated `property_bocommon` methods to thin delegations only, preserving external method signatures and call contracts.
   - Validation: `php -l` clean for both `class.bocommon.inc.php` and `CommonBusinessHelper.php` after each batch.
+- 2026-05-11: Continued migration with UI event/alarm method extraction:
+  - Moved `initiate_event_lookup` implementation from `property_bocommon` to `CommonBusinessHelper` (legacy function name preserved).
+  - Moved `initiate_ui_alarm` implementation from `property_bocommon` to `CommonBusinessHelper` (legacy function name preserved).
+  - Updated `property_bocommon` methods to thin delegations only.
+  - Validation: `php -l` clean for both `class.bocommon.inc.php` and `CommonBusinessHelper.php`; grep confirms helper definitions and adapter delegations.
+- 2026-05-11: Continued migration with session validation extraction:
+  - Moved `confirm_session` implementation from `property_bocommon` to `CommonBusinessHelper` (legacy function name preserved).
+  - Updated `property_bocommon::confirm_session` to a thin delegation.
+  - Validation: `php -l` clean for both `class.bocommon.inc.php` and `CommonBusinessHelper.php`; grep confirms helper definition + delegation wiring.

@@ -1277,13 +1277,12 @@ class EntityController
 	 */
 	public function download(Request $request, Response $response, array $args): void
 	{
-		include_class('property', 'bocommon');
 		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
 		$bo->allrows = true;
 		$list = $bo->read(['allrows' => true]);
 		$list = $this->enrichRows((array)$list, $bo);
 		$uicols = $bo->uicols;
-		$bocommon = new \property_bocommon();
+		$bocommon = new \App\modules\property\helpers\CommonBusinessHelper();
 		$bocommon->download(
 			$list,
 			$uicols['name'],

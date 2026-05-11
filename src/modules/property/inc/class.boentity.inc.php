@@ -109,8 +109,7 @@ class property_boentity
 	{
 		include_class('property', 'solocation');
 		$this->solocation	 = new property_solocation();
-		include_class('property', 'bocommon');
-		$this->bocommon		 = new property_bocommon();
+		$this->bocommon		 = new \App\modules\property\helpers\CommonBusinessHelper();
 		$this->acl = Acl::getInstance();
 		$this->userSettings = Settings::getInstance()->get('user');
 

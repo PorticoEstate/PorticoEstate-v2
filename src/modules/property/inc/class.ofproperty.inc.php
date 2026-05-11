@@ -52,6 +52,9 @@ class property_ofproperty extends phpgwapi_object_factory
 				include_class($appname, $classname);
 				return new \App\modules\phpgwapi\services\InterLink();
 
+			case 'socommon':
+				return new \App\modules\property\helpers\CommonDataHelper();
+
 			case 'sotts':
 				include_class($appname, $classname);
 				return \property_sotts::getInstance();

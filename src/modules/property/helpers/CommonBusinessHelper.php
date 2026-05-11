@@ -4,9 +4,22 @@ namespace App\modules\property\helpers;
 
 class CommonBusinessHelper
 {
+	public $xsl_rootdir;
+	public $socommon;
+	public $phpgwapi_common;
+	public $userSettings;
+	public $account;
+	public $serverSettings;
+	public $flags;
+
 	public function checkPerms($rights, $required)
 	{
 		return ($rights & $required);
+	}
+
+	public function check_perms($rights, $required)
+	{
+		return $this->checkPerms($rights, $required);
 	}
 
 	public function checkPerms2($owner_id, $grants, $required, $equalto = array())
@@ -27,6 +40,11 @@ class CommonBusinessHelper
 		return false;
 	}
 
+	public function check_perms2($owner_id, $grants, $required)
+	{
+		return $this->checkPerms2($owner_id, $grants, $required, array());
+	}
+
 	public function confirm_session($phpgwapi_common)
 	{
 		$sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
@@ -39,9 +57,19 @@ class CommonBusinessHelper
 		}
 	}
 
+	public function confirmSession($phpgwapi_common)
+	{
+		return $this->confirm_session($phpgwapi_common);
+	}
+
 	public function dateToTimestamp($date = array())
 	{
 		return \phpgwapi_datetime::date_to_timestamp($date);
+	}
+
+	public function date_to_timestamp($date = array())
+	{
+		return $this->dateToTimestamp($date);
 	}
 
 	public function msgboxData($receipt)
@@ -67,6 +95,11 @@ class CommonBusinessHelper
 		return array_merge($msgbox_data_error, $msgbox_data_message);
 	}
 
+	public function msgbox_data($receipt)
+	{
+		return $this->msgboxData($receipt);
+	}
+
 	public function selectList($selected = '', $list = array())
 	{
 		if (is_array($list))
@@ -81,6 +114,11 @@ class CommonBusinessHelper
 			}
 			return $list;
 		}
+	}
+
+	public function select_list($selected = '', $list = array())
+	{
+		return $this->selectList($selected, $list);
 	}
 
 	public function selectMultiList($selected = '', $input_list = array())
@@ -109,6 +147,11 @@ class CommonBusinessHelper
 		return $output_list;
 	}
 
+	public function select_multi_list($selected = '', $input_list = array())
+	{
+		return $this->selectMultiList($selected, $input_list);
+	}
+
 	public function selectMultiList2($selected = '', $list = array(), $input_type = '')
 	{
 		if (isset($list) and is_array($list))
@@ -129,6 +172,11 @@ class CommonBusinessHelper
 			}
 		}
 		return $list;
+	}
+
+	public function select_multi_list_2($selected = '', $list = array(), $input_type = '')
+	{
+		return $this->selectMultiList2($selected, $list, $input_type);
 	}
 
 	public function translateDatatype($datatype)
@@ -156,6 +204,11 @@ class CommonBusinessHelper
 		return $datatype;
 	}
 
+	public function translate_datatype($datatype)
+	{
+		return $this->translateDatatype($datatype);
+	}
+
 	public function translateDatatypeInsert($datatype)
 	{
 		$datatype_text = array(
@@ -179,6 +232,11 @@ class CommonBusinessHelper
 		return $datatype_text[$datatype];
 	}
 
+	public function translate_datatype_insert($datatype)
+	{
+		return $this->translateDatatypeInsert($datatype);
+	}
+
 	public function translateDatatypePrecision($datatype)
 	{
 		$datatype_precision = array(
@@ -194,6 +252,11 @@ class CommonBusinessHelper
 		);
 
 		return (isset($datatype_precision[$datatype]) ? $datatype_precision[$datatype] : '');
+	}
+
+	public function translate_datatype_precision($datatype)
+	{
+		return $this->translateDatatypePrecision($datatype);
 	}
 
 	public function translateDatatypeFormat($datatype)
@@ -223,16 +286,16 @@ class CommonBusinessHelper
 		return $datatype;
 	}
 
+	public function translate_datatype_format($datatype)
+	{
+		return $this->translateDatatypeFormat($datatype);
+	}
+
 	public function addLeadingZero($num, $id_type = '')
 	{
 		if ($id_type == "hex")
 		{
 			$num = hexdec($num);
-			$num++;
-			$num = dechex($num);
-		}
-		else
-		{
 			$num++;
 		}
 
@@ -260,7 +323,12 @@ class CommonBusinessHelper
 		return strtoupper($return);
 	}
 
-	public function select2String($array_values, $id = 'id', $name = 'name', $name2 = '')
+	public function add_leading_zero($num, $id_type = '')
+	{
+		return $this->addLeadingZero($num, $id_type);
+	}
+
+	public function select2string($array_values, $id = 'id', $name = 'name', $name2 = '')
 	{
 		$str_array_values = "";
 		for ($i = 0; $i < count($array_values); $i++)
@@ -318,6 +386,11 @@ class CommonBusinessHelper
 		return (isset($link) ? $link : '');
 	}
 
+	public function get_origin_link($type)
+	{
+		return $this->getOriginLink($type);
+	}
+
 	public function utf2ascii($text = '', $charset = null)
 	{
 		if (!isset($charset) || $charset == 'utf-8')
@@ -331,10 +404,12 @@ class CommonBusinessHelper
 				return mb_convert_encoding($text, 'ISO-8859-1', 'UTF-8');
 			}
 		}
-		else
-		{
-			return $text;
-		}
+		return $text;
+	}
+
+	public function utf2_ascii($text = '', $charset = null)
+	{
+		return $this->utf2ascii($text, $charset);
 	}
 
 	public function ascii2utf($text = '', $charset = null)
@@ -347,6 +422,11 @@ class CommonBusinessHelper
 		{
 			return $text;
 		}
+	}
+
+	public function ascii2_utf($text = '', $charset = null)
+	{
+		return $this->ascii2utf($text, $charset);
 	}
 
 	public function makeMenuDate($array, $id_buttons, $name_hidden)
@@ -540,6 +620,223 @@ class CommonBusinessHelper
 		$categories = execMethod('property.sogeneric.get_list', $data);
 		$selected = isset($data['selected']) ? $data['selected'] : '';
 		return $this->selectList($selected, $categories);
+	}
+
+	public function read_location_data($location_code)
+	{
+		return $this->readLocationData($this->socommon, $location_code);
+	}
+
+	public function select_part_of_town($format = '', $selected = '', $district_id = '')
+	{
+		$this->addPartOfTownTemplate($format, $this->xsl_rootdir);
+
+		return $this->selectPartOfTown($this->socommon, $district_id, $selected);
+	}
+
+	public function select_district_list($format = '', $selected = '')
+	{
+		$this->addDistrictTemplate($format, $this->xsl_rootdir);
+
+		return $this->selectDistrictList($this->socommon, $selected);
+	}
+
+	public function select_category_list($data)
+	{
+		$this->addCategoryTemplate($data['format'], $this->xsl_rootdir);
+
+		return $this->selectCategoryList($data);
+	}
+
+	public function create_preferences($socommon, $app = '', $user_id = '')
+	{
+		return $this->createPreferences($socommon, $app, $user_id);
+	}
+
+	public function get_lookup_entity($socommon, $location = '')
+	{
+		return $this->getLookupEntity($socommon, $location);
+	}
+
+	public function get_start_entity($socommon, $location = '')
+	{
+		return $this->getStartEntity($socommon, $location);
+	}
+
+	public function read_single_tenant($socommon, $tenant_id)
+	{
+		return $this->readSingleTenant($socommon, $tenant_id);
+	}
+
+	public function check_location($socommon, $location_code = '', $type_id = '')
+	{
+		return $this->checkLocation($socommon, $location_code, $type_id);
+	}
+
+	public function fm_cache($socommon, $name = '', $value = '')
+	{
+		return $this->fmCache($socommon, $name, $value);
+	}
+
+	public function reset_fm_cache($socommon)
+	{
+		return $this->resetFmCache($socommon);
+	}
+
+	public function reset_fm_cache_userlist($socommon)
+	{
+		return $this->resetFmCacheUserlist($socommon);
+	}
+
+	public function next_id($socommon, $table, $key = '')
+	{
+		return $this->nextId($socommon, $table, $key);
+	}
+
+	public function select_datatype($selected = '', $sub_module = '')
+	{
+		$custom = createObject('phpgwapi.custom_fields');
+		$datatypes = $this->buildDatatypeList($custom->datatype_text);
+
+		return $this->selectList($selected, $datatypes);
+	}
+
+	public function select_nullable($selected = '')
+	{
+		$nullable = $this->buildNullableList();
+
+		return $this->selectList($selected, $nullable);
+	}
+
+	public function increment_id($name)
+	{
+		return $this->incrementId($this->socommon, $name);
+	}
+
+	public function preserve_attribute_values($values, $values_attributes)
+	{
+		return $this->preserveAttributeValues($values, $values_attributes);
+	}
+
+	public function new_db($db = '')
+	{
+		return $this->newDb($db);
+	}
+
+	public function get_max_location_level($socommon)
+	{
+		return $this->getMaxLocationLevel($socommon);
+	}
+
+	public function get_sub_menu($children = array(), $selection = array(), $level = '')
+	{
+		return $this->getSubMenu($children, $selection, $level);
+	}
+
+	public function get_location_list($socommon, $required)
+	{
+		return $this->getLocationList($socommon, $required);
+	}
+
+	public function make_menu_date($array, $id_buttons, $name_hidden)
+	{
+		return $this->makeMenuDate($array, $id_buttons, $name_hidden);
+	}
+
+	public function make_menu_user($array, $id_buttons, $name_hidden)
+	{
+		return $this->makeMenuUser($array, $id_buttons, $name_hidden);
+	}
+
+	public function choose_select($array, $index_return)
+	{
+		return $this->chooseSelect($array, $index_return);
+	}
+
+	public function set_pending_action($socommon, $action_params)
+	{
+		return $this->setPendingAction($socommon, $action_params);
+	}
+
+	public function get_top_level_categories($data)
+	{
+		return $this->getTopLevelCategories($data);
+	}
+
+	public function get_top_level_category_names($data)
+	{
+		return $this->getTopLevelCategoryNames($data);
+	}
+
+	public function get_categories($data)
+	{
+		return $this->getCategories($data);
+	}
+
+	public function get_vendor_email($vendor_id = 0, $field_name = '', $preselect = false, $preselect_one = false, $as_json = false, $draw = 0)
+	{
+		return $this->getVendorEmail($vendor_id, $field_name, $preselect, $preselect_one, $as_json, $draw);
+	}
+
+	public function get_vendor_contract($vendor_id = 0, $selected = '')
+	{
+		return $this->getVendorContract($vendor_id, $selected);
+	}
+
+	public function get_eco_service()
+	{
+		$query = \Sanitizer::get_var('query');
+		return $this->getEcoService($query);
+	}
+
+	public function get_eco_service_name($id)
+	{
+		return $this->getEcoServiceName($id);
+	}
+
+	public function get_unspsc_code()
+	{
+		$query = \Sanitizer::get_var('query');
+		return $this->getUnspscCode($query);
+	}
+
+	public function get_unspsc_code_name($id)
+	{
+		return $this->getUnspscCodeName($id);
+	}
+
+	public function get_b_account()
+	{
+		$query = \Sanitizer::get_var('query');
+		$role = \Sanitizer::get_var('role');
+		return $this->getBAccount($query, $role);
+	}
+
+	public function get_external_project()
+	{
+		$query = \Sanitizer::get_var('query');
+		return $this->getExternalProject($query);
+	}
+
+	public function get_external_project_name($id)
+	{
+		return $this->getExternalProjectName($id);
+	}
+
+	public function get_ecodimb()
+	{
+		$query = \Sanitizer::get_var('query');
+		return $this->getEcodimb($query);
+	}
+
+	public function get_documentation_url($socommon, $id, $serverSettings = array(), $userSettings = array())
+	{
+		return $this->getDocumentationUrl($socommon, $id, $serverSettings, $userSettings);
+	}
+
+	public function get_users($accounts, $acl_read)
+	{
+		return $this->getUsers($accounts, $acl_read);
 	}
 
 	public function addUserListTemplate($format, $xsl_rootdir)
@@ -1219,6 +1516,162 @@ class CommonBusinessHelper
 		$event['function_name'] = 'lookup_' . $event['name'] . '()';
 
 		return $event;
+	}
+
+	public function initiate_ui_vendorlookup($data)
+	{
+		$this->addViewFormTemplate('vendor', $this->resolveLookupType($data), $this->xsl_rootdir);
+
+		$vendor['value_vendor_id'] = $data['vendor_id'];
+		$vendor['value_vendor_name'] = $data['vendor_name'];
+
+		if ($this->hasLookupIdWithoutDisplayValue($data, 'vendor_id', 'vendor_name'))
+		{
+			$vendor_data = $this->readSingleFromSogenericWithAttributes('vendor', '.vendor', $data['vendor_id']);
+			if (is_array($vendor_data))
+			{
+				$org_name = $this->getAttributeValueByName(isset($vendor_data['attributes']) ? $vendor_data['attributes'] : null, 'org_name');
+				if ($org_name !== null)
+				{
+					$vendor['value_vendor_name'] = $org_name;
+				}
+			}
+		}
+
+		$vendor['vendor_link'] = $this->buildLookupUrl('vendor');
+		$this->addEntityLabels($vendor, 'vendor', $data);
+		$this->addFormFlags($vendor, $data);
+
+		return $vendor;
+	}
+
+	public function initiate_ui_contact_lookup($data)
+	{
+		$field = $data['field'];
+		if (!empty($data['type']))
+		{
+			$this->addContactTemplate($data['type'], $this->xsl_rootdir);
+		}
+
+		$contact['value_contact_id'] = $data['contact_id'];
+
+		if ($this->hasLookupIdWithoutDisplayValue($data, 'contact_id', 'contact_name'))
+		{
+			$contact_entry = $this->readContactEntry($data['contact_id']);
+			$contact = array_merge($contact, $contact_entry);
+
+			if (!$contact['value_contact_email'])
+			{
+				$this->addContactFallbackFromPreferences($contact, $data['contact_id'], $this->socommon);
+			}
+		}
+
+		$this->addContactLookupMetadata($contact, $field);
+
+		return $contact;
+	}
+
+	public function initiate_ui_tenant_lookup($data)
+	{
+		$this->addViewFormTemplate('tenant', $this->resolveLookupType($data), $this->xsl_rootdir);
+
+		$tenant['value_tenant_id'] = $data['tenant_id'];
+		$tenant['value_first_name'] = $data['first_name'];
+		$tenant['value_last_name'] = $data['last_name'];
+		$tenant['tenant_link'] = $this->buildLookupUrl('tenant');
+		$this->addEntityLabels($tenant, 'tenant', $data);
+
+		if ($this->hasLookupIdWithoutDisplayValue($data, 'tenant_id', 'tenant_name'))
+		{
+			$tenant_data = $this->readSingleFromSogenericWithAttributes('tenant', '.tenant', $data['tenant_id']);
+			if (is_array($tenant_data['attributes']))
+			{
+				$first_name = $this->getAttributeValueByName($tenant_data['attributes'], 'first_name');
+				if ($first_name !== null)
+				{
+					$tenant['value_first_name'] = $first_name;
+				}
+
+				$last_name = $this->getAttributeValueByName($tenant_data['attributes'], 'last_name');
+				if ($last_name !== null)
+				{
+					$tenant['value_last_name'] = $last_name;
+				}
+			}
+		}
+
+		return $tenant;
+	}
+
+	public function initiate_ui_budget_account_lookup($data)
+	{
+		$this->addViewFormTemplate('b_account', $this->resolveLookupType($data), $this->xsl_rootdir);
+
+		$b_account['value_b_account_id'] = $data['b_account_id'];
+		$b_account['value_b_account_name'] = $data['b_account_name'];
+		$b_account['b_account_link'] = $this->buildLookupUrl('b_account', array(
+			'role' => isset($data['role']) && $data['role'] ? $data['role'] : '',
+			'parent' => isset($data['parent']) && $data['parent'] ? $data['parent'] : '',
+		));
+		$this->addEntityLabels($b_account, 'b_account', $data);
+		if ($this->hasLookupIdWithoutDisplayValue($data, 'b_account_id', 'b_account_name'))
+		{
+			$location = (isset($data['role']) && $data['role'] == 'group') ? 'b_account' : 'budget_account';
+			$b_account_data = $this->readSingleFromSogeneric($location, $data['b_account_id']);
+			$b_account['value_b_account_name'] = $b_account_data['descr'];
+		}
+
+		$this->addFormFlags($b_account, $data);
+		return $b_account;
+	}
+
+	public function initiate_external_project_lookup($data)
+	{
+		$external_project = array();
+
+		if ($this->isViewWithoutLookupId($data, 'external_project_id'))
+		{
+			return $external_project;
+		}
+
+		$this->addConditionalViewFormTemplate('external_project', $this->resolveLookupType($data), $this->xsl_rootdir);
+
+		$external_project['value_external_project_id'] = $data['external_project_id'];
+		$external_project['value_external_project_name'] = $data['external_project_name'];
+		$external_project['external_project_url'] = $this->buildLookupUrl('external_project');
+		$this->addEntityLabels($external_project, 'external_project', $data);
+		if ($this->hasLookupIdWithoutDisplayValue($data, 'external_project_id', 'external_project_name'))
+		{
+			$external_project_data = $this->readSingleFromSogeneric('external_project', $data['external_project_id']);
+			$external_project['value_external_project_name'] = $external_project_data['name'];
+			$external_project['value_external_project_budget'] = $external_project_data['budget'];
+		}
+		return $external_project;
+	}
+
+	public function initiate_ecodimb_lookup($data)
+	{
+		$ecodimb = array();
+
+		if ($this->isViewWithoutLookupId($data, 'ecodimb'))
+		{
+			return $ecodimb;
+		}
+
+		$this->addConditionalViewFormTemplate('ecodimb', $this->resolveLookupType($data), $this->xsl_rootdir);
+
+		$ecodimb['value_ecodimb'] = $data['ecodimb'];
+		$ecodimb['value_ecodimb_descr'] = $data['ecodimb_descr'];
+		$ecodimb['ecodimb_url'] = $this->buildLookupUrl('ecodimb');
+		$this->addEntityLabels($ecodimb, 'ecodimb', $data);
+		if ($this->hasLookupIdWithoutDisplayValue($data, 'ecodimb', 'ecodimb_descr'))
+		{
+			$ecodimb_data = $this->readSingleFromSogeneric('dimb', $data['ecodimb']);
+			$ecodimb['value_ecodimb_descr'] = $ecodimb_data['descr'];
+		}
+		$this->addFormFlags($ecodimb, $data);
+
+		return $ecodimb;
 	}
 
 	public function initiate_ui_alarm($xsl_rootdir, $account, $data)

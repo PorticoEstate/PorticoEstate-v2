@@ -8,6 +8,7 @@ use App\modules\phpgwapi\services\AsyncService;
 use App\modules\phpgwapi\security\Sessions;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Cache;
+use App\modules\phpgwapi\services\Config;
 
 class BoCommon
 {
@@ -554,84 +555,84 @@ class BoCommon
 		return $nullable;
 	}
 
-	public function createPreferences($socommon, $app = '', $user_id = '')
+	public function createPreferences($app = '', $user_id = '')
 	{
-		return $socommon->create_preferences($app, $user_id);
+		return $this->socommon->create_preferences($app, $user_id);
 	}
 
-	public function getLookupEntity($socommon, $location = '')
+	public function getLookupEntity($location = '')
 	{
-		return $socommon->get_lookup_entity($location);
+		return $this->socommon->get_lookup_entity($location);
 	}
 
-	public function getStartEntity($socommon, $location = '')
+	public function getStartEntity($location = '')
 	{
-		return $socommon->get_start_entity($location);
+		return $this->socommon->get_start_entity($location);
 	}
 
-	public function readSingleTenant($socommon, $tenant_id)
+	public function readSingleTenant($tenant_id)
 	{
-		return $socommon->read_single_tenant($tenant_id);
+		return $this->socommon->read_single_tenant($tenant_id);
 	}
 
-	public function checkLocation($socommon, $location_code = '', $type_id = '')
+	public function checkLocation($location_code = '', $type_id = '')
 	{
-		return $socommon->check_location($location_code, $type_id);
+		return $this->socommon->check_location($location_code, $type_id);
 	}
 
-	public function fmCache($socommon, $name = '', $value = '')
+	public function fmCache($name = '', $value = '')
 	{
-		return $socommon->fm_cache($name, $value);
+		return $this->socommon->fm_cache($name, $value);
 	}
 
-	public function resetFmCache($socommon)
+	public function resetFmCache()
 	{
-		$socommon->reset_fm_cache();
+		$this->socommon->reset_fm_cache();
 	}
 
-	public function resetFmCacheUserlist($socommon)
+	public function resetFmCacheUserlist()
 	{
-		return $socommon->reset_fm_cache_userlist();
+		return $this->socommon->reset_fm_cache_userlist();
 	}
 
-	public function nextId($socommon, $table, $key = '')
+	public function nextId($table, $key = '')
 	{
-		return $socommon->next_id($table, $key);
+		return $this->socommon->next_id($table, $key);
 	}
 
-	public function incrementId($socommon, $name)
+	public function incrementId($name)
 	{
-		return $socommon->increment_id($name);
+		return $this->socommon->increment_id($name);
 	}
 
-	public function newDb($socommon, $db = '')
+	public function newDb($db = '')
 	{
-		return $socommon->new_db($db);
+		return $this->socommon->new_db($db);
 	}
 
-	public function getMaxLocationLevel($socommon)
+	public function getMaxLocationLevel()
 	{
-		return $socommon->get_max_location_level();
+		return $this->socommon->get_max_location_level();
 	}
 
-	public function getLocationList($socommon, $required)
+	public function getLocationList($required)
 	{
-		return $socommon->get_location_list($required);
+		return $this->socommon->get_location_list($required);
 	}
 
-	public function setPendingAction($socommon, $action_params)
+	public function setPendingAction($action_params)
 	{
-		return $socommon->set_pending_action($action_params);
+		return $this->socommon->set_pending_action($action_params);
 	}
 
-	public function readLocationData($socommon, $location_code)
+	public function readLocationData($location_code)
 	{
 		$soadmin_location = CreateObject('property.soadmin_location');
 
 		$location_types = $soadmin_location->select_location_type();
 		unset($soadmin_location);
 
-		return $socommon->read_location_data($location_code, $location_types);
+		return $this->socommon->read_location_data($location_code, $location_types);
 	}
 
 	public function buildPartOfTownList($parts, $selected = '')
@@ -654,15 +655,15 @@ class BoCommon
 		return $part_of_town_list;
 	}
 
-	public function selectPartOfTown($socommon, $district_id = '', $selected = '')
+	public function selectPartOfTown($district_id = '', $selected = '')
 	{
-		$parts = $socommon->select_part_of_town($district_id);
+		$parts = $this->socommon->select_part_of_town($district_id);
 		return $this->buildPartOfTownList($parts, $selected);
 	}
 
-	public function selectDistrictList($socommon, $selected = '')
+	public function selectDistrictList($selected = '')
 	{
-		$districts = $socommon->select_district_list();
+		$districts = $this->socommon->select_district_list();
 		return $this->selectList($selected, $districts);
 	}
 
@@ -675,21 +676,21 @@ class BoCommon
 
 	public function read_location_data($location_code)
 	{
-		return $this->readLocationData($this->socommon, $location_code);
+		return $this->readLocationData($location_code);
 	}
 
 	public function select_part_of_town($format = '', $selected = '', $district_id = '')
 	{
 		$this->addPartOfTownTemplate($format, $this->xsl_rootdir);
 
-		return $this->selectPartOfTown($this->socommon, $district_id, $selected);
+		return $this->selectPartOfTown($district_id, $selected);
 	}
 
 	public function select_district_list($format = '', $selected = '')
 	{
 		$this->addDistrictTemplate($format, $this->xsl_rootdir);
 
-		return $this->selectDistrictList($this->socommon, $selected);
+		return $this->selectDistrictList($selected);
 	}
 
 	public function select_category_list($data)
@@ -701,47 +702,47 @@ class BoCommon
 
 	public function create_preferences($app = '', $user_id = '')
 	{
-		return $this->createPreferences($this->socommon, $app, $user_id);
+		return $this->createPreferences($app, $user_id);
 	}
 
 	public function get_lookup_entity($location = '')
 	{
-		return $this->getLookupEntity($this->socommon, $location);
+		return $this->getLookupEntity($location);
 	}
 
 	public function get_start_entity($location = '')
 	{
-		return $this->getStartEntity($this->socommon, $location);
+		return $this->getStartEntity($location);
 	}
 
 	public function read_single_tenant($tenant_id)
 	{
-		return $this->readSingleTenant($this->socommon, $tenant_id);
+		return $this->readSingleTenant($tenant_id);
 	}
 
 	public function check_location($location_code = '', $type_id = '')
 	{
-		return $this->checkLocation($this->socommon, $location_code, $type_id);
+		return $this->checkLocation($location_code, $type_id);
 	}
 
 	public function fm_cache($name = '', $value = '')
 	{
-		return $this->fmCache($this->socommon, $name, $value);
+		return $this->fmCache($name, $value);
 	}
 
 	public function reset_fm_cache()
 	{
-		return $this->resetFmCache($this->socommon);
+		return $this->resetFmCache();
 	}
 
 	public function reset_fm_cache_userlist()
 	{
-		return $this->resetFmCacheUserlist($this->socommon);
+		return $this->resetFmCacheUserlist();
 	}
 
 	public function next_id($table, $key = '')
 	{
-		return $this->nextId($this->socommon, $table, $key);
+		return $this->nextId($table, $key);
 	}
 
 	public function select_datatype($selected = '', $sub_module = '')
@@ -761,7 +762,7 @@ class BoCommon
 
 	public function increment_id($name)
 	{
-		return $this->incrementId($this->socommon, $name);
+		return $this->incrementId($name);
 	}
 
 	public function preserve_attribute_values($values, $values_attributes)
@@ -771,12 +772,12 @@ class BoCommon
 
 	public function new_db($db = '')
 	{
-		return $this->newDb($this->socommon, $db);
+		return $this->newDb($db);
 	}
 
 	public function get_max_location_level()
 	{
-		return $this->getMaxLocationLevel($this->socommon);
+		return $this->getMaxLocationLevel();
 	}
 
 	public function get_sub_menu($children = array(), $selection = array(), $level = '')
@@ -786,7 +787,7 @@ class BoCommon
 
 	public function get_location_list($required)
 	{
-		return $this->getLocationList($this->socommon, $required);
+		return $this->getLocationList($required);
 	}
 
 	public function make_menu_date($array, $id_buttons, $name_hidden)
@@ -806,7 +807,7 @@ class BoCommon
 
 	public function set_pending_action($action_params)
 	{
-		return $this->setPendingAction($this->socommon, $action_params);
+		return $this->setPendingAction($action_params);
 	}
 
 	public function get_top_level_categories($data)
@@ -1022,7 +1023,7 @@ class BoCommon
 		return $user_list;
 	}
 
-	public function getUserListRight($socommon, $accounts, $rights, $selected = '', $acl_location = '', $extra = '', $default = '')
+	public function getUserListRight($accounts, $rights, $selected = '', $acl_location = '', $extra = '', $default = '')
 	{
 		$selected = $this->resolveSelectedDefault($selected, $default);
 
@@ -1044,7 +1045,7 @@ class BoCommon
 		reset($rights);
 		$acl = Acl::getInstance();
 
-		if (!$users = $socommon->fm_cache($acl_userlist_name))
+		if (!$users = $this->socommon->fm_cache($acl_userlist_name))
 		{
 			$users_gross = array();
 			foreach ($rights as $right)
@@ -1077,7 +1078,7 @@ class BoCommon
 				array_multisort($account_lastname, SORT_ASC, $account_firstname, SORT_ASC, $users);
 			}
 
-			$socommon->fm_cache('acl_userlist_' . $rights[0] . '_' . $acl_location, $users);
+			$this->socommon->fm_cache('acl_userlist_' . $rights[0] . '_' . $acl_location, $users);
 		}
 
 		if (isset($users_extra) && is_array($users_extra) && is_array($users))
@@ -1139,7 +1140,7 @@ class BoCommon
 		return $user_list;
 	}
 
-	public function getUserListRight2($socommon, $accounts, $xsl_rootdir, $format = '', $right = '', $selected = '', $acl_location = '', $extra = '', $default = '')
+	public function getUserListRight2($accounts, $xsl_rootdir, $format = '', $right = '', $selected = '', $acl_location = '', $extra = '', $default = '')
 	{
 		if (is_array($format))
 		{
@@ -1158,10 +1159,10 @@ class BoCommon
 		$users_extra = $this->buildUsersExtraList($extra);
 		$acl = Acl::getInstance();
 
-		if (!$users = $socommon->fm_cache('acl_userlist_' . $right . '_' . $acl_location))
+		if (!$users = $this->socommon->fm_cache('acl_userlist_' . $right . '_' . $acl_location))
 		{
 			$users = $acl->get_user_list_right($right, $acl_location);
-			$socommon->fm_cache('acl_userlist_' . $right . '_' . $acl_location, $users);
+			$this->socommon->fm_cache('acl_userlist_' . $right . '_' . $acl_location, $users);
 		}
 
 		if ((isset($users_extra) && is_array($users_extra)) && is_array($users))
@@ -1444,10 +1445,10 @@ class BoCommon
 		);
 	}
 
-	public function addContactFallbackFromPreferences(&$contact, $contact_id, $socommon)
+	public function addContactFallbackFromPreferences(&$contact, $contact_id)
 	{
 		$user_id = createObject('property.soresponsible')->get_contact_user_id($contact_id);
-		$prefs = $socommon->create_preferences('common', $user_id);
+		$prefs = $this->socommon->create_preferences('common', $user_id);
 		$contact['value_contact_email'] = $prefs['email'];
 		$contact['value_contact_tel'] = $prefs['cellphone'];
 	}
@@ -1622,7 +1623,7 @@ class BoCommon
 
 			if (!$contact['value_contact_email'])
 			{
-				$this->addContactFallbackFromPreferences($contact, $data['contact_id'], $this->socommon);
+				$this->addContactFallbackFromPreferences($contact, $data['contact_id']);
 			}
 		}
 
@@ -1785,9 +1786,6 @@ class BoCommon
 			$alarm['add_alarm']['lang_minute_statustext'] = lang('Minutes before the event');
 
 			$alarm['add_alarm']['user_list'] = $this->get_user_list_right2(
-				CreateObject('property.socommon'),
-				new \App\modules\phpgwapi\controllers\Accounts\Accounts(),
-				$xsl_rootdir,
 				'select',
 				4,
 				false,
@@ -1823,7 +1821,7 @@ class BoCommon
 		$cols_extra = array();
 		$cols_return_lookup = array();
 
-		$config = new \App\modules\phpgwapi\services\Config('property');
+		$config = new Config('property');
 		$config->read();
 
 		if ($location_level)

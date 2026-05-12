@@ -892,12 +892,12 @@ class BoCommon
 
 	public function get_documentation_url($id)
 	{
-		return $this->getDocumentationUrl($this->socommon, $id, $this->serverSettings, $this->userSettings);
+		return $this->getDocumentationUrl($id);
 	}
 
 	public function get_users($query)
 	{
-		return $this->getUsers($this->accounts, $this->acl_read);
+		return $this->getUsers();
 	}
 
 	public function addUserListTemplate($format, $xsl_rootdir)
@@ -926,11 +926,11 @@ class BoCommon
 		}
 	}
 
-	public function getUserList($accounts, $xsl_rootdir, $format = '', $selected = '', $extra = '', $default = '', $start = '', $sort = 'ASC', $order = 'account_lastname', $query = '', $offset = '', $enabled = false)
+	public function getUserList($format = '', $selected = '', $extra = '', $default = '', $start = '', $sort = 'ASC', $order = 'account_lastname', $query = '', $offset = '', $enabled = false)
 	{
 		$order = $order ? $order : 'account_lastname';
 
-		$this->addUserListTemplate($format, $xsl_rootdir);
+		$this->addUserListTemplate($format, $this->xsl_rootdir);
 		$selected = $this->resolveSelectedDefault($selected, $default);
 
 		$all_users = array();
@@ -946,7 +946,7 @@ class BoCommon
 			}
 		}
 
-		$users = $accounts->get_list('accounts', $start, $sort, $order, $query, $offset);
+		$users = $this->accounts->get_list('accounts', $start, $sort, $order, $query, $offset);
 
 		if (is_array($users))
 		{
@@ -987,11 +987,11 @@ class BoCommon
 		return isset($user_list) ? $user_list : array();
 	}
 
-	public function getGroupList($accounts, $xsl_rootdir, $format = '', $selected = '', $start = '', $sort = '', $order = '', $query = '', $offset = '')
+	public function getGroupList($format = '', $selected = '', $start = '', $sort = '', $order = '', $query = '', $offset = '')
 	{
-		$this->addGroupListTemplate($format, $xsl_rootdir);
+		$this->addGroupListTemplate($format, $this->xsl_rootdir);
 
-		$users = $accounts->get_list('groups', $start, $sort, $order, $query, $offset);
+		$users = $this->accounts->get_list('groups', $start, $sort, $order, $query, $offset);
 		$user_list = array();
 		if (isset($users) and is_array($users))
 		{
@@ -1023,7 +1023,7 @@ class BoCommon
 		return $user_list;
 	}
 
-	public function getUserListRight($accounts, $rights, $selected = '', $acl_location = '', $extra = '', $default = '')
+	public function getUserListRight($rights, $selected = '', $acl_location = '', $extra = '', $default = '')
 	{
 		$selected = $this->resolveSelectedDefault($selected, $default);
 
@@ -1124,8 +1124,8 @@ class BoCommon
 
 		if ($selected && !$selected_found)
 		{
-			$user_id = $accounts->name2id($selected);
-			$_user = $accounts->get($user_id);
+			$user_id = $this->accounts->name2id($selected);
+			$_user = $this->accounts->get($user_id);
 
 			$user_list[] = array(
 				'lid' => $_user->lid,
@@ -1140,7 +1140,7 @@ class BoCommon
 		return $user_list;
 	}
 
-	public function getUserListRight2($accounts, $xsl_rootdir, $format = '', $right = '', $selected = '', $acl_location = '', $extra = '', $default = '')
+	public function getUserListRight2($format = '', $right = '', $selected = '', $acl_location = '', $extra = '', $default = '')
 	{
 		if (is_array($format))
 		{
@@ -1153,7 +1153,7 @@ class BoCommon
 			$default = isset($data['default']) ? $data['default'] : '';
 		}
 
-		$this->addUserListTemplate($format, $xsl_rootdir);
+		$this->addUserListTemplate($format, $this->xsl_rootdir);
 		$selected = $this->resolveSelectedDefault($selected, $default);
 
 		$users_extra = $this->buildUsersExtraList($extra);
@@ -1195,7 +1195,7 @@ class BoCommon
 		{
 			$user_list[] = array(
 				'id' => $selected,
-				'name' => $accounts->get($selected)->__toString(),
+				'name' => $this->accounts->get($selected)->__toString(),
 				'selected' => 1
 			);
 		}
@@ -1471,14 +1471,14 @@ class BoCommon
 		return $default;
 	}
 
-	public function initiateEventLookup($phpgwapi_common, $userSettings, $xsl_rootdir, $data)
+	public function initiateEventLookup($data)
 	{
 		$event = array();
 		$event['name'] = $data['name'];
 		$event['event_name'] = $data['event_name'];
 		if (isset($data['type']) && $data['type'] == 'view')
 		{
-			$this->addViewFormTemplate('event', 'view', $xsl_rootdir);
+			$this->addViewFormTemplate('event', 'view', $this->xsl_rootdir);
 			if (!isset($data['event']) || !$data['event'])
 			{
 				// Intentionally keeping legacy no-op branch for parity.
@@ -1486,7 +1486,7 @@ class BoCommon
 		}
 		else
 		{
-			$this->addViewFormTemplate('event', 'form', $xsl_rootdir);
+			$this->addViewFormTemplate('event', 'form', $this->xsl_rootdir);
 		}
 
 		if (isset($data['item_id']) || $data['item_id'])
@@ -1513,7 +1513,7 @@ class BoCommon
 			$job_id = "property{$data['location']}::{$data['item_id']}::{$data['name']}";
 			$job = execMethod('phpgwapi.asyncservice.read', $job_id);
 
-			$event['next'] = $phpgwapi_common->show_date($job[$job_id]['next'], $userSettings['preferences']['common']['dateformat']);
+			$event['next'] = $this->phpgwapi_common->show_date($job[$job_id]['next'], $this->userSettings['preferences']['common']['dateformat']);
 			$event['lang_next_run'] = lang('next run');
 
 			$criteria = array(
@@ -1735,11 +1735,11 @@ class BoCommon
 		return $ecodimb;
 	}
 
-	public function initiateUiAlarm($xsl_rootdir, $account, $data)
+	public function initiateUiAlarm($data)
 	{
 		$boalarm = CreateObject('property.boalarm');
 
-		$this->addViewFormTemplate('alarm', $data['type'], $xsl_rootdir);
+		$this->addViewFormTemplate('alarm', $data['type'], $this->xsl_rootdir);
 
 		$alarm['header'][] = array(
 			'lang_time' => lang('Time'),
@@ -1791,7 +1791,7 @@ class BoCommon
 				false,
 				$data['acl_location'],
 				false,
-				$account
+				$this->account
 			);
 
 			$alarm['add_alarm']['lang_user'] = lang('User');
@@ -1805,7 +1805,7 @@ class BoCommon
 		return $alarm;
 	}
 
-	public function generateSql($join, $left_join, $data)
+	public function generateSql($data)
 	{
 		$cols = isset($data['cols']) ? $data['cols'] : '';
 		$entity_table = isset($data['entity_table']) ? $data['entity_table'] : '';
@@ -1857,11 +1857,11 @@ class BoCommon
 				$type_id = count($location_types);
 			}
 			$cols .= ",fm_location1.loc1_name";
-			$joinmethod .= " {$join}  fm_location1 ON ({$_location_table}.loc1 = fm_location1.loc1))";
+			$joinmethod .= " {$this->join}  fm_location1 ON ({$_location_table}.loc1 = fm_location1.loc1))";
 			$paranthesis .= '(';
-			$joinmethod .= " {$join}  fm_part_of_town ON (fm_location1.part_of_town_id = fm_part_of_town.id))";
+			$joinmethod .= " {$this->join}  fm_part_of_town ON (fm_location1.part_of_town_id = fm_part_of_town.id))";
 			$paranthesis .= '(';
-			$joinmethod .= " {$join}  fm_owner ON (fm_location1.owner_id = fm_owner.id))";
+			$joinmethod .= " {$this->join}  fm_owner ON (fm_location1.owner_id = fm_owner.id))";
 			$paranthesis .= '(';
 		}
 		else
@@ -1875,7 +1875,7 @@ class BoCommon
 		{
 			if ($_level > 1)
 			{
-				$joinmethod .= " {$left_join} fm_location{$_level}";
+				$joinmethod .= " {$this->left_join} fm_location{$_level}";
 				$paranthesis .= '(';
 				$on = 'ON';
 				for ($k = ($_level - 1); $k > 0; $k--)
@@ -2057,15 +2057,15 @@ class BoCommon
 		);
 	}
 
-	public function performDownload($flags, $userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
+	public function performDownload($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
 	{
 		set_time_limit(500);
-		$flags['noheader'] = true;
-		$flags['nofooter'] = true;
-		$flags['xslt_app'] = false;
-		Settings::getInstance()->set('flags', $flags);
+		$this->flags['noheader'] = true;
+		$this->flags['nofooter'] = true;
+		$this->flags['xslt_app'] = false;
+		Settings::getInstance()->set('flags', $this->flags);
 
-		$export_format = isset($userSettings['preferences']['common']['export_format']) && $userSettings['preferences']['common']['export_format'] ? $userSettings['preferences']['common']['export_format'] : 'csv';
+		$export_format = isset($this->userSettings['preferences']['common']['export_format']) && $this->userSettings['preferences']['common']['export_format'] ? $this->userSettings['preferences']['common']['export_format'] : 'csv';
 		$php_version = (float)PHP_VERSION;
 
 		$html2text = createObject('phpgwapi.html2text');
@@ -2086,20 +2086,20 @@ class BoCommon
 		switch ($export_format)
 		{
 			case 'csv':
-				$this->performCsvOut($userSettings, $phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename);
+				$this->performCsvOut($list, $name, $descr, $input_type, $identificator, $filename);
 				break;
 			case 'excel':
-				$this->performXlsxOut($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename);
+				$this->performXlsxOut($list, $name, $descr, $input_type, $identificator, $filename);
 				break;
 			case 'ods':
-				$this->performPhpspreadsheetOut($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename, 'ods');
+				$this->performPhpspreadsheetOut($list, $name, $descr, $input_type, $identificator, $filename, 'ods');
 				break;
 		}
 
-		return $flags;
+		return $this->flags;
 	}
 
-	public function performPhpspreadsheetOut($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_format = 'excel')
+	public function performPhpspreadsheetOut($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_format = 'excel')
 	{
 		if ($filename)
 		{
@@ -2108,9 +2108,9 @@ class BoCommon
 		}
 		else
 		{
-			$filename = str_replace(' ', '_', $userSettings['account_lid']);
+			$filename = str_replace(' ', '_', $this->userSettings['account_lid']);
 		}
-		$date_time = str_replace(array(' ', '/'), '_', $phpgwapi_common->show_date(time()));
+		$date_time = str_replace(array(' ', '/'), '_', $this->phpgwapi_common->show_date(time()));
 
 		switch ($export_format)
 		{
@@ -2131,9 +2131,9 @@ class BoCommon
 
 		$spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
 
-		$spreadsheet->getProperties()->setCreator($userSettings['fullname'])
-			->setLastModifiedBy($userSettings['fullname'])
-			->setTitle("Download from {$serverSettings['system_name']}")
+		$spreadsheet->getProperties()->setCreator($this->userSettings['fullname'])
+			->setLastModifiedBy($this->userSettings['fullname'])
+			->setTitle("Download from {$this->serverSettings['system_name']}")
 			->setSubject("Office 2007 XLSX Document")
 			->setDescription("document for Office 2007 XLSX, generated using PHP classes.")
 			->setKeywords("office 2007 openxml php")
@@ -2223,7 +2223,7 @@ class BoCommon
 		$objWriter->save('php://output');
 	}
 
-	public function performXlsxOut($userSettings, $serverSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
+	public function performXlsxOut($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
 	{
 		if ($filename)
 		{
@@ -2232,9 +2232,9 @@ class BoCommon
 		}
 		else
 		{
-			$filename = str_replace(' ', '_', $userSettings['account_lid']);
+			$filename = str_replace(' ', '_', $this->userSettings['account_lid']);
 		}
-		$date_time = str_replace(array(' ', '/'), '_', $phpgwapi_common->show_date(time()));
+		$date_time = str_replace(array(' ', '/'), '_', $this->phpgwapi_common->show_date(time()));
 		$filename .= "_{$date_time}.xlsx";
 
 		$writer = CreateObject('phpgwapi.xlsxwriter');
@@ -2242,8 +2242,8 @@ class BoCommon
 		$browser = CreateObject('phpgwapi.browser');
 		$browser->content_header($writer::sanitize_filename($filename), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
-		$writer->setauthor($userSettings['fullname']);
-		$writer->setTitle("Download from {$serverSettings['system_name']}");
+		$writer->setauthor($this->userSettings['fullname']);
+		$writer->setTitle("Download from {$this->serverSettings['system_name']}");
 
 		$count_uicols_name = count($name);
 
@@ -2359,7 +2359,7 @@ class BoCommon
 		$writer->writeToStdOut();
 	}
 
-	public function performCsvOut($userSettings, $phpgwapi_common, $list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
+	public function performCsvOut($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
 	{
 		if ($filename)
 		{
@@ -2368,9 +2368,9 @@ class BoCommon
 		}
 		else
 		{
-			$filename = str_replace(' ', '_', $userSettings['account_lid']);
+			$filename = str_replace(' ', '_', $this->userSettings['account_lid']);
 		}
-		$date_time = str_replace(array(' ', '/'), '_', $phpgwapi_common->show_date(time()));
+		$date_time = str_replace(array(' ', '/'), '_', $this->phpgwapi_common->show_date(time()));
 		$filename .= "_{$date_time}.csv";
 
 		$browser = CreateObject('phpgwapi.browser');
@@ -2543,54 +2543,54 @@ class BoCommon
 		return $values;
 	}
 
-	public function getMenu($flags, $userSettings, $xsl_rootdir, $app = 'property')
+	public function getMenu($app = 'property')
 	{
-		$flags['nonavbar'] = false;
-		Settings::getInstance()->set('flags', $flags);
+		$this->flags['nonavbar'] = false;
+		Settings::getInstance()->set('flags', $this->flags);
 
-		if (!isset($userSettings['preferences']['property']['horisontal_menus']) || $userSettings['preferences']['property']['horisontal_menus'] == 'no')
+		if (!isset($this->userSettings['preferences']['property']['horisontal_menus']) || $this->userSettings['preferences']['property']['horisontal_menus'] == 'no')
 		{
-			return array('flags' => $flags, 'menu' => null);
+			return array('flags' => $this->flags, 'menu' => null);
 		}
-		\phpgwapi_xslttemplates::getInstance()->add_file(array('menu'), $xsl_rootdir);
+		\phpgwapi_xslttemplates::getInstance()->add_file(array('menu'), $this->xsl_rootdir);
 
-		$menu = Cache::session_get("menu_{$app}", $flags['menu_selection']);
+		$menu = Cache::session_get("menu_{$app}", $this->flags['menu_selection']);
 
 		if (!$menu)
 		{
 			$menu_gross = execMethod("{$app}.menu.get_menu", 'horisontal');
-			$selection = explode('::', $flags['menu_selection']);
+			$selection = explode('::', $this->flags['menu_selection']);
 			$level = 0;
 			$menu['navigation'] = $this->getSubMenu($menu_gross['navigation'], $selection, $level);
-			Cache::session_set("menu_{$app}", isset($flags['menu_selection']) && $flags['menu_selection'] ? $flags['menu_selection'] : 'property_missing_selection', $menu);
+			Cache::session_set("menu_{$app}", isset($this->flags['menu_selection']) && $this->flags['menu_selection'] ? $this->flags['menu_selection'] : 'property_missing_selection', $menu);
 			unset($menu_gross);
 		}
 
-		return array('flags' => $flags, 'menu' => $menu);
+		return array('flags' => $this->flags, 'menu' => $menu);
 	}
 
-	public function noAccess($flags, $xsl_rootdir, $phpgwapi_common, $userSettings)
+	public function noAccess()
 	{
-		$flags['xslt_app'] = true;
-		\phpgwapi_xslttemplates::getInstance()->add_file(array('no_access', 'menu'), $xsl_rootdir);
+		$this->flags['xslt_app'] = true;
+		\phpgwapi_xslttemplates::getInstance()->add_file(array('no_access', 'menu'), $this->xsl_rootdir);
 
 		$receipt['error'][] = array('msg' => lang('NO ACCESS'));
 		$msgbox_data = $this->msgboxData($receipt);
 
-		$menu_result = $this->get_menu($flags, $userSettings, $xsl_rootdir, 'property');
-		$flags = $menu_result['flags'];
+		$menu_result = $this->get_menu('property');
+		$this->flags = $menu_result['flags'];
 
 		$data = array(
-			'msgbox_data' => $phpgwapi_common->msgbox($msgbox_data),
+			'msgbox_data' => $this->phpgwapi_common->msgbox($msgbox_data),
 			'menu' => $menu_result['menu'],
 		);
 
 		$appname = lang('No access');
-		$flags['app_header'] = lang('property') . ' - ' . $appname;
-		Settings::getInstance()->set('flags', $flags);
+		$this->flags['app_header'] = lang('property') . ' - ' . $appname;
+		Settings::getInstance()->set('flags', $this->flags);
 		\phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('no_access' => $data));
 
-		return $flags;
+		return $this->flags;
 	}
 
 	public function preserveAttributeValues($values, $values_attributes)
@@ -2972,16 +2972,16 @@ class BoCommon
 		return $ret;
 	}
 
-	public function getDocumentationUrl($socommon, $id, $serverSettings = array(), $userSettings = array())
+	public function getDocumentationUrl($id)
 	{
-		$order_info = $socommon->get_order_type($id);
+		$order_info = $this->socommon->get_order_type($id);
 		$secret = $order_info['secret'];
 
 		$config_frontend = createobject('phpgwapi.config', 'mobilefrontend')->read();
 
 		$documentation_url = !empty($config_frontend['external_site_address'])
 			? rtrim($config_frontend['external_site_address'], '/')
-			: rtrim($serverSettings['webserver_url'], '/');
+			: rtrim($this->serverSettings['webserver_url'], '/');
 
 		$documentation_url .= '/mobilefrontend/';
 
@@ -2989,20 +2989,20 @@ class BoCommon
 			'menuaction' => 'property.uiimport_documents.step_1_import',
 			'id' => $id,
 			'secret' => $secret,
-			'domain' => $userSettings['domain']
+			'domain' => $this->userSettings['domain']
 		));
 
 		return $documentation_url;
 	}
 
-	public function getUsers($accounts, $acl_read)
+	public function getUsers()
 	{
-		if (!$acl_read)
+		if (!$this->acl_read)
 		{
 			return;
 		}
 
-		$account_list = $accounts->get_list('accounts');
+		$account_list = $this->accounts->get_list('accounts');
 
 		$values = array();
 		foreach ($account_list as $account)
@@ -3021,37 +3021,37 @@ class BoCommon
 
 	public function get_user_list($format = '', $selected = '', $extra = '', $default = '', $start = '', $sort = 'ASC', $order = 'account_lastname', $query = '', $offset = '', $enabled = false)
 	{
-		return $this->getUserList($this->accounts, $this->xsl_rootdir, $format, $selected, $extra, $default, $start, $sort, $order, $query, $offset, $enabled);
+		return $this->getUserList($format, $selected, $extra, $default, $start, $sort, $order, $query, $offset, $enabled);
 	}
 
 	public function get_group_list($format = '', $selected = '', $start = '', $sort = '', $order = '', $query = '', $offset = '')
 	{
-		return $this->getGroupList($this->accounts, $this->xsl_rootdir, $format, $selected, $start, $sort, $order, $query, $offset);
+		return $this->getGroupList($format, $selected, $start, $sort, $order, $query, $offset);
 	}
 
 	public function get_user_list_right($rights, $selected = '', $acl_location = '', $extra = '', $default = '')
 	{
-		return $this->getUserListRight($this->socommon, $this->accounts, $rights, $selected, $acl_location, $extra, $default);
+		return $this->getUserListRight($rights, $selected, $acl_location, $extra, $default);
 	}
 
 	public function get_user_list_right2($format = '', $right = '', $selected = '', $acl_location = '', $extra = '', $default = '')
 	{
-		return $this->getUserListRight2($this->socommon, $this->accounts, $this->xsl_rootdir, $format, $right, $selected, $acl_location, $extra, $default);
+		return $this->getUserListRight2($format, $right, $selected, $acl_location, $extra, $default);
 	}
 
 	public function initiate_event_lookup($data)
 	{
-		return $this->initiateEventLookup($this->phpgwapi_common, $this->userSettings, $this->xsl_rootdir, $data);
+		return $this->initiateEventLookup($data);
 	}
 
 	public function initiate_ui_alarm($data)
 	{
-		return $this->initiateUiAlarm($this->xsl_rootdir, $this->account, $data);
+		return $this->initiateUiAlarm($data);
 	}
 
 	public function generate_sql($data)
 	{
-		$result = $this->generateSql($this->join, $this->left_join, $data);
+		$result = $this->generateSql($data);
 		$this->type_id = $result['type_id'];
 		$this->uicols = $result['uicols'];
 		$this->cols_return = $result['cols_return'];
@@ -3062,7 +3062,7 @@ class BoCommon
 
 	public function get_menu($app = 'property')
 	{
-		$menu_result = $this->getMenu($this->flags, $this->userSettings, $this->xsl_rootdir, $app);
+		$menu_result = $this->getMenu($app);
 		$this->flags = $menu_result['flags'];
 		if (is_null($menu_result['menu']))
 		{
@@ -3073,27 +3073,27 @@ class BoCommon
 
 	public function no_access()
 	{
-		$this->flags = $this->noAccess($this->flags, $this->xsl_rootdir, $this->phpgwapi_common, $this->userSettings);
+		$this->flags = $this->noAccess();
 	}
 
 	public function download($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
 	{
-		$this->flags = $this->performDownload($this->flags, $this->userSettings, $this->serverSettings, $this->phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename);
+		$this->flags = $this->performDownload($list, $name, $descr, $input_type, $identificator, $filename);
 	}
 
 	public function phpspreadsheet_out($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_format = 'excel')
 	{
-		return $this->performPhpspreadsheetOut($this->userSettings, $this->serverSettings, $this->phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename, $export_format);
+		return $this->performPhpspreadsheetOut($list, $name, $descr, $input_type, $identificator, $filename, $export_format);
 	}
 
 	public function xslx_out($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
 	{
-		return $this->performXlsxOut($this->userSettings, $this->serverSettings, $this->phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename);
+		return $this->performXlsxOut($list, $name, $descr, $input_type, $identificator, $filename);
 	}
 
 	public function csv_out($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
 	{
-		return $this->performCsvOut($this->userSettings, $this->phpgwapi_common, $list, $name, $descr, $input_type, $identificator, $filename);
+		return $this->performCsvOut($list, $name, $descr, $input_type, $identificator, $filename);
 	}
 
 }

@@ -2,6 +2,13 @@
 
 namespace App\modules\property\helpers;
 
+use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\controllers\Accounts\Accounts;
+use App\modules\phpgwapi\services\AsyncService;
+use App\modules\phpgwapi\security\Sessions;
+use App\modules\phpgwapi\security\Acl;
+use App\modules\phpgwapi\services\Cache;
+
 class BoCommon
 {
 	public $xsl_rootdir;
@@ -36,15 +43,15 @@ class BoCommon
 
 	public function __construct()
 	{
-		$this->userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
-		$this->serverSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('server');
-		$this->flags = \App\modules\phpgwapi\services\Settings::getInstance()->get('flags');
+		$this->userSettings = Settings::getInstance()->get('user');
+		$this->serverSettings = Settings::getInstance()->get('server');
+		$this->flags = Settings::getInstance()->get('flags');
 
 		$this->socommon = \CreateObject('property.socommon');
 		$this->account = isset($this->userSettings['account_id']) ? (int) $this->userSettings['account_id'] : -1;
-		$this->accounts = new \App\modules\phpgwapi\controllers\Accounts\Accounts();
+		$this->accounts = new Accounts();
 		$this->phpgwapi_common = new \phpgwapi_common();
-		$this->async = \App\modules\phpgwapi\services\AsyncService::getInstance();
+		$this->async = AsyncService::getInstance();
 
 		$this->join = $this->socommon->join;
 		$this->left_join = $this->socommon->left_join;
@@ -89,7 +96,7 @@ class BoCommon
 
 	public function confirm_session()
 	{
-		$sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
+		$sessions = Sessions::getInstance();
 
 		if ($sessions->verify())
 		{
@@ -1035,7 +1042,7 @@ class BoCommon
 		$acl_userlist_name = "acl_userlist_{$right_index}_{$acl_location}";
 
 		reset($rights);
-		$acl = \App\modules\phpgwapi\security\Acl::getInstance();
+		$acl = Acl::getInstance();
 
 		if (!$users = $socommon->fm_cache($acl_userlist_name))
 		{
@@ -1149,7 +1156,7 @@ class BoCommon
 		$selected = $this->resolveSelectedDefault($selected, $default);
 
 		$users_extra = $this->buildUsersExtraList($extra);
-		$acl = \App\modules\phpgwapi\security\Acl::getInstance();
+		$acl = Acl::getInstance();
 
 		if (!$users = $socommon->fm_cache('acl_userlist_' . $right . '_' . $acl_location))
 		{
@@ -1949,7 +1956,7 @@ class BoCommon
 			}
 		}
 
-		\App\modules\phpgwapi\services\Cache::system_set('property', 'location_relation_data', $location_relation_data);
+		Cache::system_set('property', 'location_relation_data', $location_relation_data);
 
 		if (!$no_address)
 		{
@@ -2058,7 +2065,7 @@ class BoCommon
 		$flags['noheader'] = true;
 		$flags['nofooter'] = true;
 		$flags['xslt_app'] = false;
-		\App\modules\phpgwapi\services\Settings::getInstance()->set('flags', $flags);
+		Settings::getInstance()->set('flags', $flags);
 
 		$export_format = isset($userSettings['preferences']['common']['export_format']) && $userSettings['preferences']['common']['export_format'] ? $userSettings['preferences']['common']['export_format'] : 'csv';
 		$php_version = (float)PHP_VERSION;
@@ -2541,7 +2548,7 @@ class BoCommon
 	public function getMenu($flags, $userSettings, $xsl_rootdir, $app = 'property')
 	{
 		$flags['nonavbar'] = false;
-		\App\modules\phpgwapi\services\Settings::getInstance()->set('flags', $flags);
+		Settings::getInstance()->set('flags', $flags);
 
 		if (!isset($userSettings['preferences']['property']['horisontal_menus']) || $userSettings['preferences']['property']['horisontal_menus'] == 'no')
 		{
@@ -2549,7 +2556,7 @@ class BoCommon
 		}
 		\phpgwapi_xslttemplates::getInstance()->add_file(array('menu'), $xsl_rootdir);
 
-		$menu = \App\modules\phpgwapi\services\Cache::session_get("menu_{$app}", $flags['menu_selection']);
+		$menu = Cache::session_get("menu_{$app}", $flags['menu_selection']);
 
 		if (!$menu)
 		{
@@ -2557,7 +2564,7 @@ class BoCommon
 			$selection = explode('::', $flags['menu_selection']);
 			$level = 0;
 			$menu['navigation'] = $this->getSubMenu($menu_gross['navigation'], $selection, $level);
-			\App\modules\phpgwapi\services\Cache::session_set("menu_{$app}", isset($flags['menu_selection']) && $flags['menu_selection'] ? $flags['menu_selection'] : 'property_missing_selection', $menu);
+			Cache::session_set("menu_{$app}", isset($flags['menu_selection']) && $flags['menu_selection'] ? $flags['menu_selection'] : 'property_missing_selection', $menu);
 			unset($menu_gross);
 		}
 
@@ -2582,7 +2589,7 @@ class BoCommon
 
 		$appname = lang('No access');
 		$flags['app_header'] = lang('property') . ' - ' . $appname;
-		\App\modules\phpgwapi\services\Settings::getInstance()->set('flags', $flags);
+		Settings::getInstance()->set('flags', $flags);
 		\phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('no_access' => $data));
 
 		return $flags;

@@ -55,7 +55,7 @@
 	}
 
 	function loadItem() {
-		if (CFG.isNew || !CFG.itemId) return Promise.resolve(null);
+		if (CFG.isNew || CFG.itemId == null) return Promise.resolve(null);
 		return fetch(CFG.dataUrl + '/' + CFG.itemId, {credentials: 'same-origin'})
 			.then(function (r) {
 				if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -315,7 +315,7 @@
 			})
 			.then(function (result) {
 				showAlert(alertSuccess, LANG.saved);
-				if (CFG.isNew && result.data && result.data.id) {
+				if (CFG.isNew && result.data && result.data.id != null) {
 					// Switch from add to edit mode with the new ID
 					var editUrl = CFG.listUrl.replace(/\/$/, '') + '/' + result.data.id;
 					window.location.href = editUrl;

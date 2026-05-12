@@ -475,14 +475,14 @@ class GenericRegistryController
 	{
 		$registryClass = $this->getRegistryClass($request);
 		$type = Sanitizer::clean_value($args['type'] ?? '', 'string');
-		$id = Sanitizer::clean_value($args['id'] ?? 0, 'int');
+		$id = isset($args['id']) ? Sanitizer::clean_value($args['id'], 'int') : null;
 
 		if (!$type)
 		{
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!$id)
+		if ($id === null)
 		{
 			throw new HttpBadRequestException($request, 'ID is required');
 		}
@@ -807,14 +807,14 @@ class GenericRegistryController
 	{
 		$registryClass = $this->getRegistryClass($request);
 		$type = Sanitizer::clean_value($args['type'] ?? '', 'string');
-		$id = Sanitizer::clean_value($args['id'] ?? 0, 'int');
+		$id = isset($args['id']) ? Sanitizer::clean_value($args['id'], 'int') : null;
 
 		if (!$type)
 		{
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!$id)
+		if ($id === null)
 		{
 			throw new HttpBadRequestException($request, 'ID is required');
 		}
@@ -975,14 +975,14 @@ class GenericRegistryController
 	{
 		$registryClass = $this->getRegistryClass($request);
 		$type = Sanitizer::clean_value($args['type'] ?? '', 'string');
-		$id = Sanitizer::clean_value($args['id'] ?? 0, 'int');
+		$id = isset($args['id']) ? Sanitizer::clean_value($args['id'], 'int') : null;
 
 		if (!$type)
 		{
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!$id)
+		if ($id === null)
 		{
 			throw new HttpBadRequestException($request, 'ID is required');
 		}

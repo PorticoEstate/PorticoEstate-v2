@@ -344,7 +344,7 @@ abstract class BaseModel
 		try {
 			$this->db->transaction_begin();
 
-			if ($this->id) {
+			if ($this->id !== null && $this->id !== '') {
 				$result = $this->update();
 			} else {
 				$result = $this->create();

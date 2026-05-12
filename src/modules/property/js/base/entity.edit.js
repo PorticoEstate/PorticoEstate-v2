@@ -529,13 +529,15 @@ function logRelationInfoDebug(formData)
 	}
 }
 
-function buildEntityRestRequest(form)
+function buildEntityRestRequest(form, submitterName)
 {
 	var parsed = parseURL(form.action);
 	var query = parsed.searchObject || {};
 	var type = query.type || '';
 	var entityId = query.entity_id || '';
 	var catId = query.cat_id || '';
+	var isApply = (submitterName === 'values[apply]');
+	var clickHistory = isApply ? '' : (query.click_history || '');
 
 	if (!type || !entityId || !catId)
 	{
@@ -574,9 +576,24 @@ function buildEntityRestRequest(form)
 		url += '/' + id;
 	}
 
+	if (!isApply && !clickHistory && typeof strBaseURL !== 'undefined' && strBaseURL)
+	{
+		var baseQuery = parseURL(strBaseURL).searchObject || {};
+		clickHistory = baseQuery.click_history || '';
+	}
+
+	var queryParts = [];
 	if (typeof bypass !== 'undefined' && bypass !== null && bypass !== '')
 	{
-		url += '?bypass=' + encodeURIComponent(bypass);
+		queryParts.push('bypass=' + encodeURIComponent(bypass));
+	}
+	if (clickHistory)
+	{
+		queryParts.push('click_history=' + encodeURIComponent(clickHistory));
+	}
+	if (queryParts.length)
+	{
+		url += '?' + queryParts.join('&');
 	}
 
 	return {
@@ -746,6 +763,17 @@ $(document).ready(function ()
 	}
 
 	var clickedSubmitter = null;
+	var isSubmitting = false;
+
+	function setSubmitButtonsDisabled(disabled)
+	{
+		var buttons = form.querySelectorAll('input[type="submit"], button[type="submit"]');
+		for (var i = 0; i < buttons.length; i++)
+		{
+			buttons[i].disabled = disabled;
+		}
+	}
+
 	$(form).on('click', 'input[type="submit"], button[type="submit"]', function ()
 	{
 		clickedSubmitter = this;
@@ -788,14 +816,22 @@ $(document).ready(function ()
 			return true;
 		}
 
-		var restRequest = buildEntityRestRequest(form);
+		var restRequest = buildEntityRestRequest(form, submitter ? submitter.name : '');
 		if (!restRequest)
 		{
 			return true;
 		}
 
+		if (isSubmitting)
+		{
+			e.preventDefault();
+			return false;
+		}
+
 		e.preventDefault();
 		clearFormAlerts(form);
+		isSubmitting = true;
+		setSubmitButtonsDisabled(true);
 
 		var formData = new FormData(form);
 		if (submitter.name)
@@ -851,6 +887,8 @@ $(document).ready(function ()
 				var errors = getErrorMessages(data);
 				if (errors.length)
 				{
+					isSubmitting = false;
+					setSubmitButtonsDisabled(false);
 					renderFormErrorAlert(form, errors);
 					form.scrollIntoView({behavior: 'smooth', block: 'start'});
 					return;
@@ -884,6 +922,8 @@ $(document).ready(function ()
 				}
 				else
 				{
+					isSubmitting = false;
+					setSubmitButtonsDisabled(false);
 					try
 					{
 						refresh_files();
@@ -896,6 +936,8 @@ $(document).ready(function ()
 			})
 		.catch(function (error)
 		{
+			isSubmitting = false;
+			setSubmitButtonsDisabled(false);
 			var errors = getErrorMessages(error && error.responseData);
 			if (!errors.length)
 			{

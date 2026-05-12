@@ -182,11 +182,73 @@ Move `apply`/`save`/`delete` actions to REST.
 - Preserve message/receipt rendering behavior.
 - Preserve upload behavior (multipart + files).
 
+### Double-submit prevention
+
+Legacy form submissions were protected server-side via `phpgw::is_repost()`, which checks a `click_history` token stored in the session. REST write paths bypass this mechanism unless the token is explicitly forwarded.
+
+**How `click_history` works**
+
+- `Sessions::generate_click_history()` computes `md5(login + time)` once per page load (lazy init). All links on the same page share the same token.
+- `phpgw::link()` appends `click_history=<hash>` to every server-rendered URL.
+- `phpgw::is_repost()` marks the token as consumed on first use; a second request with the same token returns `true`.
+
+**Client-side rule: `isSubmitting` guard**
+
+Introduce a boolean `isSubmitting` in the form submit handler:
+
+```js
+var isSubmitting = false;
+
+form.on('submit', function(e) {
+    if (isSubmitting) { e.preventDefault(); return false; }
+    isSubmitting = true;
+    setSubmitButtonsDisabled(true);
+    // ... fetch ...
+    .then(function(data) {
+        // on error:
+        isSubmitting = false; setSubmitButtonsDisabled(false);
+        // on apply success (stay on page):
+        isSubmitting = false; setSubmitButtonsDisabled(false);
+        // on save/create success (redirect): isSubmitting stays true until page reloads
+    })
+    .catch(function() {
+        isSubmitting = false; setSubmitButtonsDisabled(false);
+    });
+});
+```
+
+The guard is in JS memory and resets automatically on a full page reload — so a user who reloads and saves again is never blocked.
+
+**`click_history` forwarding rules by action**
+
+| Submit button | Forward `click_history`? | Rationale |
+|---|---|---|
+| `values[save]` | **Yes** — extract from `form.action` or `strBaseURL` | Redirects after success; token is consumed exactly once. |
+| `values[create]` (new record) | **Yes** | Same as save — redirects on success. |
+| `values[apply]` | **No** | Stays on page; same-page token would be consumed on first apply and rejected as repost on all subsequent applies. `isSubmitting` guard is sufficient. |
+
+**Implementation in `buildEntityRestRequest(form, submitterName)`**
+
+Pass the submitter button name to `buildEntityRestRequest`. Skip `click_history` when `submitterName === 'values[apply]'`:
+
+```js
+function buildEntityRestRequest(form, submitterName) {
+    var isApply = (submitterName === 'values[apply]');
+    var clickHistory = isApply ? '' : (query.click_history || '');
+    // ... fall back to strBaseURL only when !isApply ...
+}
+```
+
+**Do not** add `click_history` to apply REST calls. The `isSubmitting` guard is the sole double-submit defence for that path.
+
 ### Checklist
 
 - Intercept submit actions in JS only for intended buttons.
 - Build payload from `FormData` with nested object support.
 - Route to `POST` for create and `PUT` for update.
+- Add `isSubmitting` guard and disable submit buttons during in-flight requests.
+- Reset `isSubmitting` (and re-enable buttons) in the error path and in the apply-success path.
+- Forward `click_history` query parameter for save/create REST calls only.
 - Maintain non-JS fallback for safety.
 
 ## Phase F: Decommission Legacy Endpoints
@@ -289,7 +351,9 @@ Use this checklist per module (`uitts`, `uiproject`, `uiworkorder`, `uirequest`)
 - [ ] OpenAPI annotations + examples added
 - [ ] Shared helper/service extracted for save orchestration
 - [ ] Read-path JS switched to REST
-- [ ] Write-path JS switched to REST
+- [ ] Write-path JS switched to REST (`isSubmitting` guard added)
+- [ ] `click_history` forwarded for save/create REST calls; skipped for apply
+- [ ] `isSubmitting` reset after apply success and on error (buttons re-enabled)
 - [ ] Fallback behavior retained where required
 - [ ] Automated tests updated and passing
 - [ ] Manual smoke tests completed

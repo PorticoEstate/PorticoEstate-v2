@@ -9,7 +9,7 @@ import {
 	FCallEvent,
 	FCallTempEvent
 } from "@/components/building-calendar/building-calendar.types";
-import {useCalenderViewMode, useEnabledResources, useTempEvents} from "@/components/building-calendar/calendar-context";
+import {useCalenderViewMode, useEnabledResources, useResourceHighlight, useTempEvents} from "@/components/building-calendar/calendar-context";
 import {IBuilding, Season} from "@/service/types/Building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {useToast} from "@/components/toast/toast-context";
@@ -36,6 +36,7 @@ Settings.defaultLocale = "nb";
 const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarProps>((props, ref) => {
 	const t = useTrans();
 	const {addToast} = useToast();
+	const {triggerResourceHighlight} = useResourceHighlight();
 	const {events, building, buildings, readOnly = false} = props;
 	const [currentDate, setCurrentDate] = useState<DateTime>(props.initialDate);
 	const internalRef = useRef<FullCalendar | null>(null);
@@ -201,6 +202,7 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 				autoHide: true,
 				messageId: 'select_resource_required'
 			});
+			triggerResourceHighlight();
 			return;
 		}
 
@@ -261,7 +263,7 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 		};
 		selectEvent(newEvent);
 		selectInfo?.view?.calendar.unselect(); // Clear selection
-	}, [t, addToast, enabledResources, currentBuilding?.id, currentBuilding?.deactivate_calendar, readOnly, isOrganizationMode, selectEvent, currentDate]);
+	}, [t, addToast, triggerResourceHighlight, enabledResources, currentBuilding?.id, currentBuilding?.deactivate_calendar, readOnly, isOrganizationMode, selectEvent, currentDate]);
 
 	return (
 		<React.Fragment>

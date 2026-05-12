@@ -28,6 +28,10 @@
 
     }
 
+    &.glowNoTop {
+        animation: glowPulseNoTop 2s ease-out;
+    }
+
 
 
     //@include mobile {
@@ -151,5 +155,20 @@
 
     }
 
+}
+
+@keyframes glowPulseNoTop {
+    0% {
+        clip-path: inset(0 -16px -16px -16px);
+        box-shadow: 0 0 8px 2px color-mix(in srgb, var(--ds-color-base-active) 80%, transparent);
+    }
+    50% {
+        clip-path: inset(0 -16px -16px -16px);
+        box-shadow: 0 0 16px 4px color-mix(in srgb, var(--ds-color-base-active) 60%, transparent);
+    }
+    100% {
+        clip-path: inset(0 -16px -16px -16px);
+        box-shadow: 0 0 0 0 transparent;
+    }
 }
 

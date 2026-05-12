@@ -185,6 +185,7 @@
     border-bottom-left-radius: 0;
     margin-left: 0;
     width: 300px;
+	align-self: end;
 
 
     &.open {
@@ -207,5 +208,40 @@
         &.open {
             transform: rotate(0deg);
         }
+    }
+}
+
+.glowAll {
+    animation: glowPulseAll 2s ease-out;
+}
+
+.glowNoBottom {
+    animation: glowPulseNoBottom 2s ease-out;
+}
+
+@keyframes glowPulseAll {
+    0% {
+        box-shadow: 0 0 8px 2px color-mix(in srgb, var(--ds-color-base-active) 80%, transparent);
+    }
+    50% {
+        box-shadow: 0 0 16px 4px color-mix(in srgb, var(--ds-color-base-active) 60%, transparent);
+    }
+    100% {
+        box-shadow: 0 0 0 0 transparent;
+    }
+}
+
+@keyframes glowPulseNoBottom {
+    0% {
+        clip-path: inset(-16px -16px 0 -16px);
+        box-shadow: 0 0 8px 2px color-mix(in srgb, var(--ds-color-base-active) 80%, transparent);
+    }
+    50% {
+        clip-path: inset(-16px -16px 0 -16px);
+        box-shadow: 0 0 16px 4px color-mix(in srgb, var(--ds-color-base-active) 60%, transparent);
+    }
+    100% {
+        clip-path: inset(-16px -16px 0 -16px);
+        box-shadow: 0 0 0 0 transparent;
     }
 }

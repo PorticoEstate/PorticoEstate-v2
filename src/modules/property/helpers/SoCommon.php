@@ -5,23 +5,142 @@ namespace App\modules\property\helpers;
 use App\Database\Db;
 use App\Database\Db2;
 use App\modules\phpgwapi\security\Acl;
+use App\modules\phpgwapi\services\Settings;
 
-class CommonDataHelper
+class SoCommon
 {
 	/**
 	 * @var Db
 	 */
-	protected $db;
+	public $db;
 
 	/**
 	 * @var string
 	 */
-	protected $join;
+	public $join = ' INNER JOIN ';
 
-	public function __construct(Db $db, $join = ' INNER JOIN ')
+	/**
+	 * @var string
+	 */
+	public $like = 'LIKE';
+
+	/**
+	 * @var string
+	 */
+	public $left_join = ' LEFT JOIN ';
+
+	/**
+	 * @var int
+	 */
+	public $account;
+
+	/**
+	 * @var array
+	 */
+	public $userSettings;
+
+	public function __construct(?Db $db = null, $join = ' INNER JOIN ')
 	{
-		$this->db = $db;
+		$this->db = $db ? $db : Db::getInstance();
 		$this->join = $join;
+
+		$this->userSettings = Settings::getInstance()->get('user');
+		$this->account = isset($this->userSettings['account_id']) ? (int)$this->userSettings['account_id'] : -1;
+
+		$serverSettings = Settings::getInstance()->get('server');
+		if (isset($serverSettings['db_type']))
+		{
+			switch ($serverSettings['db_type'])
+			{
+				case 'pgsql':
+				case 'postgres':
+					$this->join = ' JOIN ';
+					$this->like = 'ILIKE';
+					break;
+				default:
+					break;
+			}
+		}
+	}
+
+	public function fm_cache($name = '', $value = '')
+	{
+		return $this->fmCache($name, $value);
+	}
+
+	public function reset_fm_cache()
+	{
+		return $this->resetFmCache();
+	}
+
+	public function reset_fm_cache_userlist()
+	{
+		return $this->resetFmCacheUserlist($this->like);
+	}
+
+	public function create_preferences($app = '', $user_id = '')
+	{
+		return $this->createPreferences($app, $user_id);
+	}
+
+	public function read_single_tenant($id)
+	{
+		return $this->readSingleTenant($id);
+	}
+
+	public function check_location($location_code = '', $type_id = '')
+	{
+		return $this->checkLocation($location_code, $type_id);
+	}
+
+	public function select_part_of_town($district_id = 0)
+	{
+		return $this->selectPartOfTown($district_id);
+	}
+
+	public function select_district_list()
+	{
+		return $this->selectDistrictList();
+	}
+
+	public function next_id($table = '', $key = '')
+	{
+		return $this->nextId($table, $key);
+	}
+
+	public function get_lookup_entity($location)
+	{
+		return $this->getLookupEntity($location);
+	}
+
+	public function get_start_entity($location)
+	{
+		return $this->getStartEntity($location);
+	}
+
+	public function increment_id($name)
+	{
+		return $this->incrementId($name);
+	}
+
+	public function new_db($db = null)
+	{
+		return $this->newDb($db);
+	}
+
+	public function get_max_location_level()
+	{
+		return $this->getMaxLocationLevel();
+	}
+
+	public function get_location_list($required)
+	{
+		return $this->getLocationList($required);
+	}
+
+	public function get_order_type($id)
+	{
+		return $this->getOrderType($id);
 	}
 
 	public function readSingleTenant($id)

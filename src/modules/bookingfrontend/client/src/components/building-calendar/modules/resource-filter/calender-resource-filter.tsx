@@ -6,6 +6,7 @@ import {
 	useCurrentBuilding,
 	useCurrentOrganization,
 	useEnabledResources, useIsOrganization,
+	useResourceHighlight,
 	useTempEvents
 } from "@/components/building-calendar/calendar-context";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
@@ -57,6 +58,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 	const t = useTrans();
 	const [popperResource, setPopperResource] = useState<CalendarResourceFilterOption | null>(null);
 	const {setEnabledResources, enabledResources} = useEnabledResources();
+	const {resourceHighlight} = useResourceHighlight();
 	const queryClient = useQueryClient();
 	const {data: building} = useBuilding(buildingId);
 	const {data: allResources} = useBuildingResources(buildingId);
@@ -214,7 +216,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 	// console.log('enabled', enabledResources, resources)
 	const content = (
 		<div
-			className={`${styles.resourceToggleContainer} ${!open ? styles.hidden : ''}  ${transparent ? styles.transparent : ''}`}
+			className={`${styles.resourceToggleContainer} ${!open ? styles.hidden : ''}  ${transparent ? styles.transparent : ''} ${resourceHighlight && open ? styles.glowNoTop : ''}`}
 		>
 
 

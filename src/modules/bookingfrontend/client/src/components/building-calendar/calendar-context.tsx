@@ -75,7 +75,7 @@ export const useCalendarContext = () => {
 	return context;
 };
 
-interface CalendarContextProps extends Omit<CalendarContextType, 'tempEvents' | 'calendarViewMode'> {
+interface CalendarContextProps extends Omit<CalendarContextType, 'tempEvents' | 'calendarViewMode' | 'resourceHighlight' | 'triggerResourceHighlight'> {
 	seasons?: Season[];
 }
 

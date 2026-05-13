@@ -36,6 +36,17 @@ export class PorticoGateway
 
   private connectionCount = 0;
 
+  getConnectionCount(): number {
+    return this.connectionCount;
+  }
+
+  /**
+   * Broadcast a message to all connected clients (used by /wss-publish HTTP endpoint).
+   */
+  broadcast(data: any) {
+    this.server.emit('message', data);
+  }
+
   constructor(
     private readonly sessionService: SessionService,
     private readonly roomService: RoomService,

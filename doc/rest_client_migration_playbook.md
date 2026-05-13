@@ -47,6 +47,57 @@ Before starting a module migration:
 3. OpenAPI annotations exist and are generated successfully.
 4. You can run syntax checks and basic tests in the target environment.
 
+## Database Access Conventions
+
+Use these rules in REST migrations to reduce SQL-injection risk and keep result handling consistent.
+
+### Prepared statements first
+
+- Prefer prepared queries for all dynamic SQL (filters, ids, search strings, date ranges, paging).
+- Avoid concatenating untrusted input into SQL strings.
+- Keep named placeholders explicit and typed in caller code when relevant.
+
+Preferred patterns:
+
+- `Db::prepare()` + `execute()` for one-off lookups and writes.
+- `Db::limit_query_with_params()` for paginated reads with named placeholders.
+
+### Use `Db::limit_query_with_params()` for REST list endpoints
+
+`Db::limit_query_with_params()` should be the default in REST list/read paths that currently use `limit_query()` plus interpolated filters.
+
+- Signature: `Db::limit_query_with_params($sql, array $params = [], $offset = 0, $line = '', $file = '', $num_rows = 0)`
+- Use `$params` with named placeholders (for example `:id`, `:query`, `:location_id`).
+- Use `$num_rows = null` when you intentionally want no `LIMIT` clause (for example count wrappers or full export flows).
+
+Example:
+
+```php
+$sql = "SELECT id, title FROM fm_request WHERE location_id = :location_id AND title ILIKE :query ORDER BY id DESC";
+$params = [
+    ':location_id' => (int)$locationId,
+    ':query' => '%' . $query . '%',
+];
+$this->db->limit_query_with_params($sql, $params, $start, __LINE__, __FILE__, $results);
+```
+
+### `DbRowTrait` guidance
+
+`DbRowTrait` is a row-value decode helper, not a query builder and not a security feature.
+
+- Use `DbRowTrait::dbStrip()` when migrating cursor-style reads (for example replacements of `$this->db->f($col, true)` patterns).
+- Keep decoding concerns separate from query construction.
+- Do not treat `dbStrip()` as input sanitization for SQL.
+
+### Review gate for DB access
+
+Before merging, verify:
+
+1. Dynamic SQL in new REST code uses prepared statements.
+2. Paginated reads use `Db::limit_query_with_params()` where practical.
+3. Parameter arrays and placeholder names match exactly.
+4. `DbRowTrait` is used only for output/value decoding compatibility.
+
 ## Generic Layout and Naming Conventions
 
 Yes, this should be explicit in the playbook. Consistent naming and placement reduce migration variance and make review/testing easier across modules.
@@ -354,6 +405,8 @@ Use this checklist per module (`uitts`, `uiproject`, `uiworkorder`, `uirequest`)
 - [ ] Write-path JS switched to REST (`isSubmitting` guard added)
 - [ ] `click_history` forwarded for save/create REST calls; skipped for apply
 - [ ] `isSubmitting` reset after apply success and on error (buttons re-enabled)
+- [ ] Dynamic SQL in migrated endpoints uses prepared statements
+- [ ] Paginated DB reads use `Db::limit_query_with_params()` where practical
 - [ ] Fallback behavior retained where required
 - [ ] Automated tests updated and passing
 - [ ] Manual smoke tests completed

@@ -389,7 +389,7 @@ class property_soentity
 		}
 
 		$attribute_table = 'phpgw_cust_attribute';
-
+		$attributes		 = array();
 		foreach ($conditions as $condition)
 		{
 			$this->db->query("SELECT * FROM phpgw_cust_attribute WHERE location_id = {$location_id} AND id= " . (int)$condition['attribute_id']);
@@ -509,6 +509,7 @@ class property_soentity
 		}
 
 		$items	 = array();
+		$dataset = array();
 		$j		 = 0;
 		foreach ($this->db->resultSet as $row)
 		{
@@ -1015,6 +1016,7 @@ class property_soentity
 			. " {$acl_group_join}";
 		$join_control	 = "controller_control_component_list ON (fm_bim_item.id = controller_control_component_list.component_id  AND controller_control_component_list.location_id = fm_bim_type.location_id)";
 
+		$sql_cnt_control_fields = '';
 		if ($control_registered)
 		{
 			$sql .= "{$this->join} {$join_control}";
@@ -1024,10 +1026,6 @@ class property_soentity
 				$filtermethod			 .= " $where  controller_control_component_list.control_id = $control_id";
 				$where					 = 'AND';
 			}
-		}
-		else
-		{
-			$sql_cnt_control_fields = '';
 		}
 
 		$sql_custom_field = '';
@@ -1080,6 +1078,7 @@ class property_soentity
 			$this->uicols['classname'][]	 = '';
 		}
 
+		$sql_custom_group = '';
 		if (isset($category['location_level']) && $category['location_level'] > 0)
 		{
 			$sql .= "{$this->join} fm_location1 ON (fm_bim_item.loc1 = fm_location1.loc1)";

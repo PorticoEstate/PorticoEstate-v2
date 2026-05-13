@@ -97,8 +97,8 @@ class InterLink
 			{
 				$data['link'] = $this->get_relation_link($linkend_location, $data['id']);
 				$relation_info = $this->get_relation_info($linkend_location, $data['id']);
-				$data['statustext'] = $relation_info['statustext'];
-				$data['title'] = $relation_info['title'];
+				$data['statustext'] = $relation_info['statustext'] ?? '';
+				$data['title'] = $relation_info['title'] ?? '';
 			}
 		}
 		return $relation;
@@ -110,7 +110,7 @@ class InterLink
 	 * @param array   $linkend_location the location
 	 * @param integer $id   the id of the referenced item
 	 *
-	 * @return string info of the linked item
+	 * @return array{statustext:string, title:string} info of the linked item
 	 */
 	public function get_relation_info($linkend_location, $id = 0)
 	{
@@ -233,6 +233,11 @@ class InterLink
 			$cat_id		 = (int)$type[3];
 			// Not set
 		}
+
+		return [
+			'statustext' => '',
+			'title' => '',
+		];
 	}
 
 
@@ -420,7 +425,7 @@ class InterLink
 	 * @param integer $location_id the location
 	 * @param integer $id			the id of the referenced item
 	 *
-	 * @return string the linkt to the the related item
+	 * @return array the linkt to the the related item
 	 */
 	public function get_location_link($location_id, $id, $action = 'view')
 	{

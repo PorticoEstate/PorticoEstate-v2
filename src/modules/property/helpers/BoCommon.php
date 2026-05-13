@@ -174,6 +174,7 @@ class BoCommon
 	public function selectMultiList($selected = '', $input_list = array())
 	{
 		$j = 0;
+		$output_list = array();
 		if (isset($input_list) and is_array($input_list))
 		{
 			foreach ($input_list as $entry)
@@ -1067,6 +1068,8 @@ class BoCommon
 			unset($users_gross);
 			unset($accounts_index);
 
+			$account_firstname = array();
+			$account_lastname = array();
 			foreach ($users as $key => $row)
 			{
 				$account_lastname[$key] = $row['account_lastname'];
@@ -2175,6 +2178,7 @@ class BoCommon
 		$j = 0;
 		if (isset($list) && is_array($list))
 		{
+			$content = array();
 			foreach ($list as $entry)
 			{
 				$m = 0;
@@ -2654,6 +2658,7 @@ class BoCommon
 	{
 		$level++;
 		$i = 0;
+		$menu = array();
 		foreach ($children as $key => $vals)
 		{
 			$menu[] = $vals;
@@ -3095,5 +3100,4 @@ class BoCommon
 	{
 		return $this->performCsvOut($list, $name, $descr, $input_type, $identificator, $filename);
 	}
-
 }

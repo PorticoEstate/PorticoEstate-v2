@@ -486,6 +486,10 @@ class EntityController
 			$vfs              = new \App\modules\phpgwapi\services\Vfs\Vfs();
 			$vfs->override_acl = 1;
 		}
+		else
+		{
+			$vfs = null;
+		}
 
 		$link_base = [
 			'menuaction' => 'property.uientity.view',

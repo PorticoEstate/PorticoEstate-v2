@@ -1474,7 +1474,7 @@ JS;
 		{
 			if ($total_records > $num_rows)
 			{
-				$page		 = ceil(($start / $total_records) * ($total_records / $num_rows));
+				$page		 = (int)ceil(($start / $total_records) * ($total_records / $num_rows));
 				$values_part = array_chunk($values, $num_rows);
 				$out		 = $values_part[$page];
 			}

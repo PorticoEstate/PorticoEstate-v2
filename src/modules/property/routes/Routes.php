@@ -6,6 +6,7 @@ use App\modules\phpgwapi\security\AccessVerifier;
 use App\modules\property\helpers\RedirectHelper;
 use App\modules\property\controllers\TenantController;
 use App\modules\property\controllers\TicketController;
+use App\modules\property\controllers\LocationController;
 use App\controllers\GenericRegistryController;
 use Slim\Routing\RouteCollectorProxy;
 use App\modules\property\models\PropertyGenericRegistry;
@@ -61,6 +62,32 @@ $app->group('/property/registry', function (RouteCollectorProxy $group) use ($co
 		$typeGroup->put('/{id:[0-9]+}', [$controller, 'update']); // Update item
 		$typeGroup->delete('/{id:[0-9]+}', [$controller, 'delete']); // Delete item
 	});
+})
+->addMiddleware(new AccessVerifier($container))
+->addMiddleware(new SessionsMiddleware($container));
+
+$app->group('/property/location', function (RouteCollectorProxy $group) use ($container) {
+	$controller = new LocationController($container);
+
+	$group->get('', [$controller, 'index']);
+	$group->post('', [$controller, 'index']);
+	$group->get('/summary', [$controller, 'summary']);
+	$group->post('/summary', [$controller, 'summary']);
+	$group->get('/responsibility-role', [$controller, 'responsibilityRole']);
+	$group->post('/responsibility-role', [$controller, 'responsibilityRole']);
+	$group->get('/part-of-town', [$controller, 'getPartOfTown']);
+	$group->get('/accounts', [$controller, 'getAccounts']);
+	$group->get('/history', [$controller, 'getHistoryData']);
+	$group->post('/history', [$controller, 'getHistoryData']);
+	$group->get('/documents', [$controller, 'getDocuments']);
+	$group->post('/documents', [$controller, 'getDocuments']);
+	$group->get('/location-data', [$controller, 'getLocationData']);
+	$group->get('/component/controls', [$controller, 'getControlsAtComponent']);
+	$group->get('/component/cases', [$controller, 'getCases']);
+	$group->get('/component/checklists', [$controller, 'getChecklists']);
+	$group->get('/component/cases-for-checklist', [$controller, 'getCasesForChecklist']);
+	$group->post('/edit-field', [$controller, 'editField']);
+	$group->delete('/{location_code:[^/]+}', [$controller, 'delete']);
 })
 ->addMiddleware(new AccessVerifier($container))
 ->addMiddleware(new SessionsMiddleware($container));

@@ -2,7 +2,7 @@ import React, {useEffect, useMemo} from 'react';
 import {useForm, Controller} from 'react-hook-form';
 import {z} from 'zod';
 import {zodResolver} from "@hookform/resolvers/zod";
-import {Button, Textfield} from "@digdir/designsystemet-react";
+import {Alert, Button, Textfield} from "@digdir/designsystemet-react";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import MobileDialog from "@/components/dialog/mobile-dialog";
 import {useCreateBookingUser, useExternalUserData} from "@/service/hooks/api-hooks";
@@ -70,6 +70,7 @@ const UserCreationModal: React.FC<UserCreationModalProps> = ({
     const { data: externalData, isLoading: isLoadingExternal } = useExternalUserData();
     const { mutateAsync: createUser } = useCreateBookingUser();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [submitError, setSubmitError] = React.useState<string | null>(null);
 
     const userCreationSchema = useMemo(() => createUserCreationSchema(t), [t]);
 
@@ -109,6 +110,7 @@ const UserCreationModal: React.FC<UserCreationModalProps> = ({
     const onSubmit = async (formData: UserCreationFormData) => {
         try {
             setIsSubmitting(true);
+            setSubmitError(null);
 
             // Convert empty strings to null for nullable fields
             const userData = {
@@ -125,10 +127,10 @@ const UserCreationModal: React.FC<UserCreationModalProps> = ({
 
             // Call success callback
             onUserCreated?.();
-            // onClose();
 
         } catch (error) {
-            console.error('Failed to create user:', error);
+            const message = error instanceof Error ? error.message : t('bookingfrontend.unknown_error');
+            setSubmitError(message);
         } finally {
             setIsSubmitting(false);
         }
@@ -183,6 +185,12 @@ const UserCreationModal: React.FC<UserCreationModalProps> = ({
             <div className={styles.modalContent}>
                 {isLoadingExternal && (
                     <p className={styles.loadingText}>{t('common.loading_external_data')}</p>
+                )}
+
+                {submitError && (
+                    <Alert data-color="danger" role="alert">
+                        {submitError}
+                    </Alert>
                 )}
 
                 <form

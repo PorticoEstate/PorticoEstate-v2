@@ -413,6 +413,77 @@ Use this checklist per module (`uitts`, `uiproject`, `uiworkorder`, `uirequest`)
 - [ ] Legacy endpoints marked deprecated
 - [ ] Legacy endpoints removed after usage gate
 
+## Appendix: `property_uilocation` Migration Guardrails
+
+Use this appendix when migrating `src/modules/property/inc/class.uilocation.inc.php`.
+
+Companion execution file: `doc/uilocation_phase_a_contract_matrix.md`.
+
+### Scope boundaries
+
+- Keep the legacy page shell, XSL rendering, and popup wiring during early phases.
+- Keep `menuaction` navigation links for `view`, `edit`, `add`, `dashboard`, and cross-module jumps until UI replacement.
+- Migrate data surfaces first (`query`, `query_role`, `query_summary`, helper JSON endpoints), then write paths.
+- Treat dashboard composition as a separate phase because it aggregates project, ticket, and gallery reads.
+
+### Contract freeze checklist (location-specific)
+
+Before code changes, freeze the request/response contracts for:
+
+- `query()` DataTables contract: paging, sorting, `column_search`, `total_records`, export mode.
+- `query_role()` contract: `user_id`, `role_id`, location filters, selectable rows, and totals.
+- `query_summary()` contract: summary grouping/columns and export behavior.
+- `download()` contract variants: default, `summary`, and `responsiblility_role`.
+- `get_part_of_town()` option list contract (including leading "no part of town" entry).
+- `get_history_data()` date formatting contract.
+- `get_documents()` merged dataset contract (document + generic document sources).
+- `get_location_data()`, `get_delivery_address()`, and `get_location_exception()` payload shapes.
+- `_populate()` validation/rehydration behavior and error receipt shape.
+
+### Hierarchical location rules
+
+- Preserve dynamic location depth (`loc1..locN`) handling.
+- Preserve `location_code` assembly and parent/sibling derivation logic.
+- Preserve lookup popup exchange behavior (`lookup`, `lookup_name`, cached lookup fields).
+- Preserve editable column behavior and per-column formatter behavior in DataTables.
+
+### Session and cache parity gates
+
+Location reads currently depend on session/cached metadata and query hashes in the storage layer.
+Before removing legacy read paths, verify parity for:
+
+- `total_records` stability across repeated queries with identical filters.
+- Paging offsets after filter/sort changes.
+- Search and `column_search` behavior after reload.
+- Default district preference behavior when request parameters are absent.
+- Export (`allrows`) behavior for each download mode.
+
+### ACL parity gates
+
+Validate that REST replacements preserve legacy ACL outcomes for:
+
+- read/add/edit/delete/manage action exposure.
+- role assignment updates (`responsiblility_role_save`).
+- inline field editing (`edit_field`).
+- document and history visibility.
+
+### Recommended migration sequence for `property_uilocation`
+
+1. Add/confirm REST read endpoints for list, role list, summary, and helper JSON endpoints.
+2. Switch DataTable read URLs to REST for index/role/summary while keeping action links legacy.
+3. Add parity tests for filters, sorting, totals, and export modes.
+4. Extract and share write workflow from `save()`/`_populate()` before REST write cutover.
+5. Move write endpoints (`save`, `delete`, `edit_field`, role save) to REST with fallback.
+6. Defer dashboard migration until project/ticket/document dependencies are explicitly covered.
+
+### Do-not-miss checks before merge
+
+- Verify all location levels still resolve correctly in lookup and form flows.
+- Verify role assignment save still updates expected records and returns expected receipt messages.
+- Verify download columns/order/format remain unchanged for all download types.
+- Verify history and document tabs render identical datasets for representative location codes.
+- Verify no regressions in cross-module links opened from location actions.
+
 ## Suggested Rollout Order for Remaining Modules
 
 1. `uirequest` (smaller surface than `uitts` and `uiworkorder`)

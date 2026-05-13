@@ -1841,7 +1841,9 @@ class property_solocation
 
 		$location_array	 = explode('-', $location_code);
 		$type_id		 = count($location_array);
-		if ($type_id < 1)
+		$location_types = $this->soadmin_location->select_location_type();
+		$max_level = is_array($location_types) ? count($location_types) : 0;
+		if ($type_id < 1 || ($max_level && $type_id > $max_level))
 		{
 			return;
 		}
@@ -2371,7 +2373,9 @@ class property_solocation
 		$location_code = array();
 
 		$location_level = (int)$this->soadmin_location->read_config_single('tenant_id');
-		if ($location_level < 1)
+		$location_types = $this->soadmin_location->select_location_type();
+		$max_level = is_array($location_types) ? count($location_types) : 0;
+		if ($location_level < 1 || ($max_level && $location_level > $max_level))
 		{
 			return $location_code;
 		}

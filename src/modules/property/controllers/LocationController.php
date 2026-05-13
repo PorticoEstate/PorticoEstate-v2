@@ -2,6 +2,7 @@
 
 namespace App\modules\property\controllers;
 
+use JsonException;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -38,8 +39,21 @@ class LocationController
 
 	private function jsonResponse(Response $response, mixed $payload): Response
 	{
-		$response->getBody()->write(json_encode($payload, JSON_THROW_ON_ERROR));
-		return $response->withHeader('Content-Type', 'application/json');
+		try
+		{
+			$encoded = json_encode($payload, JSON_THROW_ON_ERROR);
+			$response->getBody()->write($encoded);
+			return $response->withHeader('Content-Type', 'application/json');
+		}
+		catch (JsonException $e)
+		{
+			$response->getBody()->write(json_encode(array(
+				'error' => 'Unable to encode JSON response'
+			)));
+			return $response
+				->withHeader('Content-Type', 'application/json')
+				->withStatus(500);
+		}
 	}
 
 	public function index(Request $request, Response $response): Response

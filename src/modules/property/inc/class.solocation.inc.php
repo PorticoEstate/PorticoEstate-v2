@@ -1834,6 +1834,11 @@ class property_solocation
 
 	function delete($location_code)
 	{
+		if (!preg_match('/^\d+(?:-\d+)*$/', $location_code))
+		{
+			return;
+		}
+
 		$location_array	 = explode('-', $location_code);
 		$type_id		 = count($location_array);
 		$this->db->transaction_begin();

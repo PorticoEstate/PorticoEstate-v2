@@ -6,9 +6,12 @@ use App\Database\Db;
 use App\Database\Db2;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Settings;
+use App\traits\DbRowTrait;
 
 class SoCommon
 {
+	use DbRowTrait;
+
 	/**
 	 * @var Db
 	 */
@@ -153,9 +156,9 @@ class SoCommon
 		}
 
 		return array(
-			'first_name' => $this->db->f('first_name'),
-			'last_name' => $this->db->f('last_name'),
-			'contact_phone' => $this->db->f('contact_phone')
+			'first_name' => $this->db->f('first_name', true),
+			'last_name' => $this->db->f('last_name', true),
+			'contact_phone' => $this->db->f('contact_phone', true)
 		);
 	}
 
@@ -181,18 +184,24 @@ class SoCommon
 
 	public function createPreferences($app = '', $user_id = '')
 	{
-		$this->db->query("SELECT preference_json, preference_owner FROM phpgw_preferences where preference_app = '{$app}'"
-			. " AND preference_owner IN (-1,-2," . (int)$user_id . ')', __LINE__, __FILE__);
+		$sql = 'SELECT preference_json, preference_owner FROM phpgw_preferences'
+			. ' WHERE preference_app = :preference_app'
+			. ' AND preference_owner IN (-1,-2,:user_id)';
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute([
+			':preference_app' => $app,
+			':user_id' => (int)$user_id,
+		]);
 		$forced = $default = $user = array();
-		while ($this->db->next_record())
+		while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
 		{
-			$value = json_decode($this->db->f('preference_json'), true);
+			$value = json_decode($row['preference_json'], true);
 			$this->unquote($value);
 			if (!is_array($value))
 			{
 				continue;
 			}
-			switch ($this->db->f('preference_owner'))
+			switch ((int)$row['preference_owner'])
 			{
 				case -1:
 					$forced[$app] = $value;
@@ -232,19 +241,22 @@ class SoCommon
 	public function selectPartOfTown($district_id = 0)
 	{
 		$filter = '';
+		$params = [];
 		$part_of_town = array();
 		if ($district_id)
 		{
-			$filter = 'WHERE district_id = ' . (int)$district_id;
+			$filter = 'WHERE district_id = :district_id';
+			$params[':district_id'] = (int)$district_id;
 		}
-		$this->db->query("SELECT name, id, district_id FROM fm_part_of_town $filter ORDER BY name ", __LINE__, __FILE__);
+		$stmt = $this->db->prepare("SELECT name, id, district_id FROM fm_part_of_town $filter ORDER BY name");
+		$stmt->execute($params);
 
-		while ($this->db->next_record())
+		while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
 		{
 			$part_of_town[] = array(
-				'id' => $this->db->f('id'),
-				'name' => $this->db->f('name', true),
-				'district_id' => $this->db->f('district_id')
+				'id' => $row['id'],
+				'name' => $this->dbStrip($row['name']),
+				'district_id' => $row['district_id']
 			);
 		}
 
@@ -253,14 +265,15 @@ class SoCommon
 
 	public function selectDistrictList()
 	{
-		$this->db->query("SELECT id, descr FROM fm_district where id >'0' ORDER BY id ");
+		$stmt = $this->db->prepare("SELECT id, descr FROM fm_district WHERE id > :min_id ORDER BY id");
+		$stmt->execute([':min_id' => 0]);
 
 		$district = array();
 		$i = 0;
-		while ($this->db->next_record())
+		while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
 		{
-			$district[$i]['id'] = $this->db->f('id');
-			$district[$i]['name'] = stripslashes($this->db->f('descr'));
+			$district[$i]['id'] = $row['id'];
+			$district[$i]['name'] = $this->dbStrip($row['descr']);
 			$i++;
 		}
 
@@ -269,13 +282,19 @@ class SoCommon
 
 	public function getLookupEntity($location)
 	{
-		$this->db->query("SELECT entity_id,name FROM fm_entity_lookup {$this->join} fm_entity on fm_entity_lookup.entity_id=fm_entity.id WHERE type='lookup' AND location='{$location}'  ");
+		$sql = "SELECT entity_id, name FROM fm_entity_lookup {$this->join} fm_entity on fm_entity_lookup.entity_id = fm_entity.id"
+			. ' WHERE type = :type AND location = :location';
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute([
+			':type' => 'lookup',
+			':location' => $location,
+		]);
 		$entity = array();
-		while ($this->db->next_record())
+		while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
 		{
 			$entity[] = array(
-				'id' => $this->db->f('entity_id'),
-				'name' => $this->db->f('name', true)
+				'id' => $row['entity_id'],
+				'name' => $this->dbStrip($row['name'])
 			);
 		}
 		return $entity;
@@ -283,14 +302,20 @@ class SoCommon
 
 	public function getStartEntity($location)
 	{
-		$this->db->query("SELECT entity_id,name FROM fm_entity_lookup {$this->join} fm_entity on fm_entity_lookup.entity_id=fm_entity.id WHERE type='start' AND location='{$location}'  ");
+		$sql = "SELECT entity_id, name FROM fm_entity_lookup {$this->join} fm_entity on fm_entity_lookup.entity_id = fm_entity.id"
+			. ' WHERE type = :type AND location = :location';
+			$stmt = $this->db->prepare($sql);
+		$stmt->execute([
+			':type' => 'start',
+			':location' => $location,
+		]);
 
 		$entity = array();
-		while ($this->db->next_record())
+		while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
 		{
 			$entity[] = array(
-				'id' => $this->db->f('entity_id'),
-				'name' => $this->db->f('name', true)
+				'id' => $row['entity_id'],
+				'name' => $this->dbStrip($row['name'])
 			);
 		}
 		return $entity;
@@ -325,11 +350,12 @@ class SoCommon
 	public function getOrderType($id)
 	{
 		$id = (int)$id;
-		$this->db->query("SELECT type, secret FROM fm_orders WHERE id={$id}", __LINE__, __FILE__);
-		$this->db->next_record();
+		$stmt = $this->db->prepare('SELECT type, secret FROM fm_orders WHERE id = :id');
+		$stmt->execute([':id' => $id]);
+		$row = $stmt->fetch(\PDO::FETCH_ASSOC) ?: [];
 		return array(
-			'type' => $this->db->f('type'),
-			'secret' => $this->db->f('secret')
+			'type' => $row['type'] ?? '',
+			'secret' => $row['secret'] ?? ''
 		);
 	}
 
@@ -348,23 +374,27 @@ class SoCommon
 				$value = $this->db->db_addslashes($value);
 			}
 
-			$this->db->query("SELECT value FROM fm_cache WHERE name='{$name}'");
+			$stmt = $this->db->prepare('SELECT value FROM fm_cache WHERE name = :name');
+			$stmt->execute([':name' => $name]);
 
-			if ($this->db->next_record())
+			if ($stmt->fetch(\PDO::FETCH_ASSOC))
 			{
-				$this->db->query("UPDATE fm_cache SET value = '{$value}' WHERE name='{$name}'", __LINE__, __FILE__);
+				$update = $this->db->prepare('UPDATE fm_cache SET value = :value WHERE name = :name');
+				$update->execute([':value' => $value, ':name' => $name]);
 			}
 			else
 			{
-				$this->db->query("INSERT INTO fm_cache (name,value)VALUES ('$name','$value')", __LINE__, __FILE__);
+				$insert = $this->db->prepare('INSERT INTO fm_cache (name, value) VALUES (:name, :value)');
+				$insert->execute([':name' => $name, ':value' => $value]);
 			}
 		}
 		else
 		{
-			$this->db->query("SELECT value FROM fm_cache where name='$name'");
-			if ($this->db->next_record())
+			$stmt = $this->db->prepare('SELECT value FROM fm_cache WHERE name = :name');
+			$stmt->execute([':name' => $name]);
+			if ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
 			{
-				$ret = $this->db->f('value');
+				$ret = $row['value'];
 
 				if (function_exists('gzcompress'))
 				{
@@ -393,10 +423,11 @@ class SoCommon
 
 	public function checkLocation($location_code = '', $type_id = '')
 	{
-		$this->db->query("SELECT count(*) as cnt FROM fm_location$type_id where location_code='$location_code'");
-		$this->db->next_record();
+		$stmt = $this->db->prepare("SELECT count(*) as cnt FROM fm_location{$type_id} WHERE location_code = :location_code");
+		$stmt->execute([':location_code' => $location_code]);
+		$row = $stmt->fetch(\PDO::FETCH_ASSOC) ?: [];
 
-		if ($this->db->f('cnt'))
+		if (!empty($row['cnt']))
 		{
 			return true;
 		}
@@ -405,6 +436,7 @@ class SoCommon
 	public function nextId($table = '', $key = '')
 	{
 		$where = '';
+		$params = [];
 		if (is_array($key))
 		{
 			$condition = array();
@@ -412,16 +444,19 @@ class SoCommon
 			{
 				if ($value)
 				{
-					$condition[] = $column . "='" . $value;
+					$placeholder = ':' . $column;
+					$condition[] = $column . ' = ' . $placeholder;
+					$params[$placeholder] = $value;
 				}
 			}
 
-			$where = 'WHERE ' . implode("' AND ", $condition) . "'";
+			$where = 'WHERE ' . implode(' AND ', $condition);
 		}
 
-		$this->db->query("SELECT max(id) as maximum FROM $table $where", __LINE__, __FILE__);
-		$this->db->next_record();
-		$next_id = (int)$this->db->f('maximum') + 1;
+		$stmt = $this->db->prepare("SELECT max(id) as maximum FROM $table $where");
+		$stmt->execute($params);
+		$row = $stmt->fetch(\PDO::FETCH_ASSOC) ?: [];
+		$next_id = (int)($row['maximum'] ?? 0) + 1;
 		return $next_id;
 	}
 
@@ -441,19 +476,21 @@ class SoCommon
 			$name = 'workorder';
 		}
 
-		$this->db->query("SELECT name FROM fm_idgenerator WHERE name='{$name}'");
-		$this->db->next_record();
-		if (!$this->db->f('name'))
+		$stmt = $this->db->prepare('SELECT name FROM fm_idgenerator WHERE name = :name');
+		$stmt->execute([':name' => $name]);
+		if (!$stmt->fetch(\PDO::FETCH_ASSOC))
 		{
 			throw new \Exception("property_socommon::increment_id() - not a valid name: '{$name}'");
 		}
 
 		$now = time();
-		$this->db->query("SELECT value, start_date FROM fm_idgenerator WHERE name='{$name}' AND start_date < {$now} ORDER BY start_date DESC");
-		$this->db->next_record();
-		$next_id = $this->db->f('value') + 1;
-		$start_date = (int)$this->db->f('start_date');
-		$this->db->query("UPDATE fm_idgenerator SET value = $next_id WHERE name = '{$name}' AND start_date = {$start_date}");
+		$stmt = $this->db->prepare('SELECT value, start_date FROM fm_idgenerator WHERE name = :name AND start_date < :now ORDER BY start_date DESC');
+		$stmt->execute([':name' => $name, ':now' => $now]);
+		$row = $stmt->fetch(\PDO::FETCH_ASSOC) ?: [];
+		$next_id = ((int)($row['value'] ?? 0)) + 1;
+		$start_date = (int)($row['start_date'] ?? 0);
+		$update = $this->db->prepare('UPDATE fm_idgenerator SET value = :value WHERE name = :name AND start_date = :start_date');
+		$update->execute([':value' => $next_id, ':name' => $name, ':start_date' => $start_date]);
 		return $next_id;
 	}
 

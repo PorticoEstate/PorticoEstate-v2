@@ -1842,13 +1842,22 @@ class property_solocation
 		$location_array	 = explode('-', $location_code);
 		$type_id		 = count($location_array);
 		$location_types = $this->soadmin_location->select_location_type();
-		$max_level = is_array($location_types) ? count($location_types) : 0;
-		if ($type_id < 1 || ($max_level && $type_id > $max_level))
+		$allowed_tables = array();
+		foreach ((array)$location_types as $location_type)
+		{
+			$level = (int)($location_type['id'] ?? 0);
+			if ($level > 0)
+			{
+				$allowed_tables[$level] = "fm_location{$level}";
+			}
+		}
+		if ($type_id < 1 || !isset($allowed_tables[$type_id]))
 		{
 			return;
 		}
+		$location_table = $allowed_tables[$type_id];
 		$this->db->transaction_begin();
-		$stmt = $this->db->prepare("DELETE FROM fm_location{$type_id} WHERE location_code = :location_code");
+		$stmt = $this->db->prepare("DELETE FROM {$location_table} WHERE location_code = :location_code");
 		$stmt->execute(array(':location_code' => $location_code));
 		$stmt = $this->db->prepare('DELETE FROM fm_locations WHERE location_code = :location_code');
 		$stmt->execute(array(':location_code' => $location_code));
@@ -2374,13 +2383,22 @@ class property_solocation
 
 		$location_level = (int)$this->soadmin_location->read_config_single('tenant_id');
 		$location_types = $this->soadmin_location->select_location_type();
-		$max_level = is_array($location_types) ? count($location_types) : 0;
-		if ($location_level < 1 || ($max_level && $location_level > $max_level))
+		$allowed_tables = array();
+		foreach ((array)$location_types as $location_type)
+		{
+			$level = (int)($location_type['id'] ?? 0);
+			if ($level > 0)
+			{
+				$allowed_tables[$level] = "fm_location{$level}";
+			}
+		}
+		if ($location_level < 1 || !isset($allowed_tables[$location_level]))
 		{
 			return $location_code;
 		}
+		$location_table = $allowed_tables[$location_level];
 
-		$sql = "SELECT location_code FROM fm_location{$location_level} WHERE tenant_id = :tenant_id";
+		$sql = "SELECT location_code FROM {$location_table} WHERE tenant_id = :tenant_id";
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute(array(':tenant_id' => $tenant_id));
 		while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))

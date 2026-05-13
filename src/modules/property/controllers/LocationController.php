@@ -10,6 +10,8 @@ use function include_class;
 
 class LocationController
 {
+	private ?\property_uilocation $uiLocation = null;
+
 	public function __construct(ContainerInterface $container)
 	{
 		if (defined('SRC_ROOT_PATH') && !function_exists('include_class'))
@@ -33,8 +35,13 @@ class LocationController
 
 	private function ui(): \property_uilocation
 	{
-		include_class('property', 'uilocation');
-		return CreateObject('property.uilocation');
+		if ($this->uiLocation === null)
+		{
+			include_class('property', 'uilocation');
+			$this->uiLocation = CreateObject('property.uilocation');
+		}
+
+		return $this->uiLocation;
 	}
 
 	private function jsonResponse(Response $response, mixed $payload): Response

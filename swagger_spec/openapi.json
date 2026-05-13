@@ -6978,7 +6978,18 @@
                                             "descr": "Oppdatert fra ticket"
                                         },
                                         "values_attribute": {
-                                            "123": "Serienummer-001"
+                                            "7": {
+                                                "value": "2024-12-31"
+                                            },
+                                            "20": {
+                                                "value": "1"
+                                            },
+                                            "21": {
+                                                "value": [
+                                                    "1",
+                                                    "3"
+                                                ]
+                                            }
                                         },
                                         "RelationInfo": {
                                             "location_code": "5436-01-01-001",
@@ -7119,7 +7130,18 @@
                                             "descr": "Opprettet fra ticket"
                                         },
                                         "values_attribute": {
-                                            "123": "Serienummer-001"
+                                            "7": {
+                                                "value": "2024-12-31"
+                                            },
+                                            "20": {
+                                                "value": "1"
+                                            },
+                                            "21": {
+                                                "value": [
+                                                    "1",
+                                                    "3"
+                                                ]
+                                            }
                                         },
                                         "RelationInfo": {
                                             "location_code": "5436-01-01-001",
@@ -9087,6 +9109,16 @@
                     "booking_buffer_deadline": {
                         "description": "Booking buffer deadline",
                         "type": "integer",
+                        "nullable": true
+                    },
+                    "cancellation_deadline_value": {
+                        "description": "Cancellation deadline value (in the configured unit)",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "cancellation_deadline_unit": {
+                        "description": "Cancellation deadline unit (hours, days, weeks)",
+                        "type": "string",
                         "nullable": true
                     },
                     "description_json": {

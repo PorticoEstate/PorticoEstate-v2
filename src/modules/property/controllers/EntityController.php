@@ -689,7 +689,7 @@ class EntityController
 	 *                     "values_attribute": {
 	 *                        "7": { "value": "2024-12-31" },
 	 *                         "20": { "value": "1" },
-	 *                         "21": { "value": ["1", "3"] }
+	 *                         "21": { "value": {"0": "1", "1": "3"} }
 	 *                     },
 	 *                     "RelationInfo": {
 	 *                         "location_code": "5436-01-01-001",
@@ -816,7 +816,7 @@ class EntityController
 	 *                     "values_attribute": {
 	 *                         "7": { "value": "2024-12-31" },
 	 *                         "20": { "value": "1" },
-	 *                         "21": { "value": ["1", "3"] }
+	 *                         "21": { "value": {"0": "1", "1": "3"} }
 	 *                     },
 	 *                     "RelationInfo": {
 	 *                         "location_code": "5436-01-01-001",

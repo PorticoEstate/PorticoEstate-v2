@@ -114,7 +114,6 @@ $(document).ready(function ()
 
 		alert(qr_code);
 
-		var oArgs = {menuaction: 'property.uientity.get_items_per_qr', entity_id: entity_id};
 		var requestUrl = get_items_per_qr_url;
 
 		$.ajax({

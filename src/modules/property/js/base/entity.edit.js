@@ -82,8 +82,25 @@ this.showlightbox_assigned_history = function (serie_id)
 
 this.refresh_inventory = function (location_id, id)
 {
-	var oArgs = {menuaction: 'property.uientity.get_inventory', location_id: location_id, id: id};
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var type = $('#field_type').val() || '';
+	var entityId = $('#field_entity_id').val() || '';
+	var catId = $('#cat_id').val() || '';
+	var requestUrl = '';
+
+	if (type && entityId && catId && id)
+	{
+		requestUrl = '/property/entity/' + encodeURIComponent(type)
+			+ '/' + encodeURIComponent(entityId)
+			+ '/' + encodeURIComponent(catId)
+			+ '/' + encodeURIComponent(id)
+			+ '/inventory';
+	}
+	else
+	{
+		// Keep legacy fallback until all contexts provide REST route parameters.
+		var oArgs = {menuaction: 'property.uientity.get_inventory', location_id: location_id, id: id};
+		requestUrl = phpGWLink('index.php', oArgs, true);
+	}
 
 	var api = oTable3.api();
 	api.ajax.url(requestUrl).load();

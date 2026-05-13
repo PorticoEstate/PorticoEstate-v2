@@ -123,9 +123,11 @@ class EntityController
 
 		$aclCheckLocation = $bo->acl_location;
 		$config = CreateObject('phpgwapi.config', 'property')->read();
-		if (!empty($config['bypass_acl_at_entity'])
+		if (
+			!empty($config['bypass_acl_at_entity'])
 			&& is_array($config['bypass_acl_at_entity'])
-			&& in_array($bo->entity_id, $config['bypass_acl_at_entity']))
+			&& in_array($bo->entity_id, $config['bypass_acl_at_entity'])
+		)
 		{
 			$aclCheckLocation = ".{$bo->type}.{$bo->entity_id}";
 		}
@@ -323,9 +325,11 @@ class EntityController
 			throw new HttpBadRequestException($request, 'Invalid payload: values_attribute must be an object');
 		}
 
-		if (isset($body['values_checklist_stage'])
+		if (
+			isset($body['values_checklist_stage'])
 			&& !is_array($body['values_checklist_stage'])
-			&& $body['values_checklist_stage'] !== null)
+			&& $body['values_checklist_stage'] !== null
+		)
 		{
 			throw new HttpBadRequestException($request, 'Invalid payload: values_checklist_stage must be an object');
 		}
@@ -517,7 +521,7 @@ class EntityController
 					$entry['file_name']      = $_files[0]['name'];
 					$entry['img_id']         = $_files[0]['file_id'];
 					$entry['directory']      = $_files[0]['directory'];
-					$entry['img_url']        = \phpgw::link('/index.php',[
+					$entry['img_url']        = \phpgw::link('/index.php', [
 						'menuaction' => 'property.uigallery.view_file',
 						'file'       => $entry['directory'] . '/' . $entry['file_name'],
 					]);
@@ -525,7 +529,8 @@ class EntityController
 				}
 			}
 
-			$entry['link'] = \phpgw::link('/index.php',
+			$entry['link'] = \phpgw::link(
+				'/index.php',
 				array_merge($link_base, ['id' => $entry['id']])
 			);
 		}
@@ -682,7 +687,9 @@ class EntityController
 	 *                         "descr": "Opprettet fra ticket"
 	 *                     },
 	 *                     "values_attribute": {
-	 *                         "123": "Serienummer-001"
+	 *                        "7": { "value": "2024-12-31" },
+	 *                         "20": { "value": "1" },
+	 *                         "21": { "value": ["1", "3"] }
 	 *                     },
 	 *                     "RelationInfo": {
 	 *                         "location_code": "5436-01-01-001",
@@ -807,7 +814,9 @@ class EntityController
 	 *                         "descr": "Oppdatert fra ticket"
 	 *                     },
 	 *                     "values_attribute": {
-	 *                         "123": "Serienummer-001"
+	 *                         "7": { "value": "2024-12-31" },
+	 *                         "20": { "value": "1" },
+	 *                         "21": { "value": ["1", "3"] }
 	 *                     },
 	 *                     "RelationInfo": {
 	 *                         "location_code": "5436-01-01-001",
@@ -1036,7 +1045,7 @@ class EntityController
 		$params     = $request->getQueryParams();
 		$id         = (int)$args['id'];
 		$draw       = (int)($params['draw']);
-		$draw ++;
+		$draw++;
 		$entity_id  = (int)$args['entity_id'];
 		$cat_id     = (int)$args['cat_id'];
 		$type       = (string)$args['type'];

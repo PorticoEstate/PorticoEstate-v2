@@ -1841,6 +1841,10 @@ class property_solocation
 
 		$location_array	 = explode('-', $location_code);
 		$type_id		 = count($location_array);
+		if ($type_id < 1)
+		{
+			return;
+		}
 		$this->db->transaction_begin();
 		$stmt = $this->db->prepare("DELETE FROM fm_location{$type_id} WHERE location_code = :location_code");
 		$stmt->execute(array(':location_code' => $location_code));
@@ -2366,7 +2370,11 @@ class property_solocation
 	{
 		$location_code = array();
 
-		$location_level = $this->soadmin_location->read_config_single('tenant_id');
+		$location_level = (int)$this->soadmin_location->read_config_single('tenant_id');
+		if ($location_level < 1)
+		{
+			return $location_code;
+		}
 
 		$sql = "SELECT location_code FROM fm_location{$location_level} WHERE tenant_id = :tenant_id";
 		$stmt = $this->db->prepare($sql);

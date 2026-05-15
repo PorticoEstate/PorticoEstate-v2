@@ -1,5 +1,6 @@
 var location_code_selection = "";
 var html5QrcodeScanner;
+/* global get_items_per_qr_url */
 
 $(document).ready(function ()
 {
@@ -72,7 +73,7 @@ $(document).ready(function ()
 			return;
 		}
 
-		var qr_code_infoURL = phpGWLink('index.php', {menuaction: 'property.uientity.get_items_per_qr', entity_id: entity_id, qr_code: qr_code}, true);
+		var qr_code_infoURL = get_items_per_qr_url + '?qr_code=' + encodeURIComponent(qr_code);
 
 		var rqr_code_info = [{n: 'ResultSet'}, {n: 'Result'}];
 
@@ -113,8 +114,7 @@ $(document).ready(function ()
 
 		alert(qr_code);
 
-		var oArgs = {menuaction: 'property.uientity.get_items_per_qr', entity_id: entity_id};
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = get_items_per_qr_url;
 
 		$.ajax({
 			type: 'POST',

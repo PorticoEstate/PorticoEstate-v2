@@ -13,6 +13,11 @@
 							</h3>
 						<!--</legend>-->
 					</div>
+					<xsl:if test="cancellation_warning != ''">
+						<div class="pure-control-group" style="background:#fff3cd; border:1px solid #ffc107; border-radius:4px; padding:12px; margin-bottom:12px;">
+							<strong style="color:#856404;">&#9888; <xsl:value-of select="cancellation_warning"/></strong>
+						</div>
+					</xsl:if>
 					<div class="pure-control-group">
 						<h4>
 							<xsl:value-of select="php:function('lang', 'Booking Delete Information')"/>

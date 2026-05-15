@@ -78,7 +78,6 @@ class sms_sms extends sms_sms_
 		$result = curl_exec($ch);
 
 		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		curl_close($ch);
 
 		$xmlparse = CreateObject('property.XmlToArray');
 		$xmlparse->setEncoding('UTF-8');

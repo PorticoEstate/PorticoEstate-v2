@@ -204,7 +204,6 @@ phpgw::import_class('booking.socommon');
 				/* get mime-type for a specific file */
 				$mime_type = finfo_file($finfo, $_tmp_name);
 				/* close connection */
-				finfo_close($finfo);
 
 				if ($_mime_type !== $mime_type)
 				{

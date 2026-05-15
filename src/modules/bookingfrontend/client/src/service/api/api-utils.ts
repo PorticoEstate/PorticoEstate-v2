@@ -145,7 +145,7 @@ function generateUUID(): string {
  * Fetch the authenticated user's session ID
  * @returns An object containing the sessionId
  */
-export async function fetchSessionId(): Promise<{ sessionId: string }> {
+export async function fetchSessionId(): Promise<{ sessionId: string; accountId?: number; ssn?: string }> {
 	const clickHistory = generateUUID();
 	const url = phpGWLink(['bookingfrontend', 'user', 'session'], {
 		click_history: clickHistory
@@ -772,41 +772,87 @@ export async function fetchBuildingAudience(building_id: number): Promise<IAudie
     return result;
 }
 
+function deletePartialViaWsStandalone(id: number): Promise<void> {
+    // Lazy import to avoid circular deps
+    const { WebSocketService } = require('@/service/websocket/websocket-service');
+    const { SubscriptionManager } = require('@/service/websocket/subscription-manager');
+
+    const wsService = WebSocketService.getInstance();
+    if (!wsService.isReady()) return Promise.reject(new Error('WS not ready'));
+
+    const subscriptionManager = SubscriptionManager.getInstance();
+    const requestId = `delete_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            cleanup();
+            reject(new Error('WS delete timeout'));
+        }, 15000);
+
+        const cleanup = subscriptionManager.subscribeToMessageType(
+            'delete_application_response',
+            (message: any) => {
+                if (message.type !== 'delete_application_response') return;
+                if (message.requestId !== requestId) return;
+                clearTimeout(timeout);
+                cleanup();
+                if (message.data.error === false) {
+                    resolve();
+                } else {
+                    reject(new Error(message.data.message || 'Delete failed'));
+                }
+            },
+        );
+
+        wsService.sendMessage('delete_partial_application', 'Deleting partial application', {
+            applicationId: id,
+            requestId,
+        });
+    });
+}
+
 export async function deletePartialApplication(id: number): Promise<void> {
+    const { pendingDeletions } = require('@/service/hooks/pending-deletions');
     const queryClient = getQueryClient();
+    pendingDeletions.add(id);
 
     // Get current cart data before API call
     const currentData = queryClient.getQueryData<{ list: IApplication[], total_sum: number }>(['partialApplications']);
 
-    // If we have current data, update it optimistically
+    // Optimistically update
     if (currentData) {
         queryClient.setQueryData(['partialApplications'], {
             ...currentData,
             list: currentData.list.filter(item => item.id !== id),
-            total_sum: currentData.total_sum // Maintain current sum
+            total_sum: currentData.total_sum,
         });
     }
 
-    // Make the API call
-    const url = phpGWLink(['bookingfrontend', 'applications', id]);
-
     try {
+        // Try WebSocket first
+        try {
+            await deletePartialViaWsStandalone(id);
+            pendingDeletions.delete(id);
+            return;
+        } catch {
+            // Fall through to REST
+        }
+
+        // REST fallback
+        const url = phpGWLink(['bookingfrontend', 'applications', id]);
         const response = await fetch(url, {method: 'DELETE'});
         const result = await response.json();
 
-        // Refetch to ensure data consistency after successful delete
+        pendingDeletions.delete(id);
         queryClient.refetchQueries({queryKey: ['partialApplications']});
-
         return result;
     } catch (error) {
-        // If there was an error, roll back to original data
+        pendingDeletions.delete(id);
+        // Roll back on error
         if (currentData) {
             queryClient.setQueryData(['partialApplications'], currentData);
         }
-
-        // Refetch to ensure data consistency
         queryClient.refetchQueries({queryKey: ['partialApplications']});
-
         throw error;
     }
 }

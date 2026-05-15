@@ -30,8 +30,8 @@ function sendWebSocketNotification(
     string $message, 
     array $data = [], 
     string $type = 'notification',
-    string $host = null,
-    int $port = null
+    ?string $host = null,
+    ?int $port = null
 ): bool {
     // Set default notification structure
     $notification = [

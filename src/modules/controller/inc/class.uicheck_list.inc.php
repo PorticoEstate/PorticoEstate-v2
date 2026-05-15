@@ -3524,7 +3524,6 @@ HTML;
 			}
 			$tempfile = tempnam(sys_get_temp_dir(), 'img');
 			imagejpeg($image, $tempfile, 80);
-			imagedestroy($image);
 			$content = file_get_contents($tempfile);
 			unlink($tempfile);
 		}

@@ -61,7 +61,7 @@
 			foreach ($application_ids as $app_id)
 			{
 				try {
-					$documentService = new \App\modules\bookingfrontend\services\DocumentService(\App\modules\bookingfrontend\models\Document::OWNER_APPLICATION);
+					$documentService = new \App\modules\booking\services\DocumentService(\App\modules\booking\models\Document::OWNER_APPLICATION);
 					$documents = $documentService->getDocumentsForId($app_id);
 
 					// Convert Document models to array format compatible with the old UI

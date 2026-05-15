@@ -1,13 +1,12 @@
 /*!
  * 
- * Super simple WYSIWYG editor v0.8.19
+ * Super simple WYSIWYG editor v0.9.1
  * https://summernote.org
  *
- *
- * Copyright 2013- Alan Hong and contributors
+ * Copyright 2013~ Hackerwins and contributors
  * Summernote may be freely distributed under the MIT license.
  *
- * Date: 2024-05-23T13:38Z
+ * Date: 2024-10-09T10:22Z
  *
  */
 (function webpackUniversalModuleDefinition(root, factory) {
@@ -73,17 +72,17 @@ var __webpack_exports__ = {};
         edit: 'Редагувати',
         textToDisplay: 'Текст, що відображається',
         url: 'URL для переходу',
-        openInNewWindow: 'Відкривати у новому вікні'
+        openInNewWindow: 'Відкрити у новому вікні'
       },
       table: {
         table: 'Таблиця',
-        addRowAbove: 'Add row above',
-        addRowBelow: 'Add row below',
-        addColLeft: 'Add column left',
-        addColRight: 'Add column right',
-        delRow: 'Delete row',
-        delCol: 'Delete column',
-        delTable: 'Delete table'
+        addRowAbove: 'Додати рядок вище',
+        addRowBelow: 'Додати рядок нижче',
+        addColLeft: 'Додати стовпчик ліворуч',
+        addColRight: 'Додати стовпчик праворуч',
+        delRow: 'Видалити рядок',
+        delCol: 'Видалити стовпчик',
+        delTable: 'Видалити таблицю'
       },
       hr: {
         insert: 'Вставити горизонтальну лінію'

@@ -120,7 +120,6 @@ class property_uigallery extends phpgwapi_uicommon_jquery
 		curl_setopt($ch, CURLOPT_HEADER, 0);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 		$raw = curl_exec($ch);
-		curl_close($ch);
 		echo $raw;
 	}
 

@@ -3,6 +3,7 @@
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Log;
 use App\modules\booking\services\EmailService;
+use App\modules\phpgwapi\helpers\EmailTwigHelper;
 
 phpgw::import_class('booking.bocommon');
 
@@ -24,17 +25,14 @@ class booking_boapplication extends booking_bocommon
 		 */
 	function get_export_text1($application, $config)
 	{
-		$dateformat	 = $this->userSettings['preferences']['common']['dateformat'];
+		$dateformat = $this->userSettings['preferences']['common']['dateformat'];
 		$resourcename = implode(", ", $this->get_resource_name($application['resources']));
 
 		$_adates = array();
-
 		foreach ($application['dates'] as $date)
 		{
 			$_adates[] = "\t" . date("$dateformat H:i:s", strtotime($date['from_'])) . " - " . date("$dateformat H:i:s", strtotime($date['to_']));
 		}
-
-		$adates = implode("\n", $_adates);
 
 		$customer_name = !empty($application['customer_organization_name']) ? $application['customer_organization_name'] : $application['contact_name'];
 
@@ -43,47 +41,30 @@ class booking_boapplication extends booking_bocommon
 		$end_date = end($application['dates']);
 		$end_date_formatted = date($dateformat, strtotime($end_date['to_']));
 
-		if ($start_date_formatted == $end_date_formatted)
-		{
-			$timespan = $start_date_formatted;
-		}
-		else
-		{
-			$timespan = "{$start_date_formatted} - {$end_date_formatted}";
-		}
+		$timespan = ($start_date_formatted == $end_date_formatted)
+			? $start_date_formatted
+			: "{$start_date_formatted} - {$end_date_formatted}";
 
 		$title = "Forespørsel om leie av {$application['building_name']}/{$resourcename} - {$timespan} - $customer_name";
 
-		$body = "<p>" . $application['contact_name'] . " har søkt " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . '</p>';
-		if ($application['agreement_requirements'] != '')
-		{
-			$lang_additional_requirements = lang('additional requirements');
-			$body .= "{$lang_additional_requirements}:<br />" . $application['agreement_requirements'] . "<br />";
-		}
-		if ($adates)
-		{
-			$body .= "<pre>Tidsrom:\n" . $adates . "</pre><br/>";
-		}
-
-		if ($application['comment'] != '')
-		{
-			$body .= "<p>Kommentar fra saksbehandler:<br />" . ($application['comment']) . "</p>";
-		}
-
 		$attachments = $this->get_related_files($application);
-
 		$file_names = array();
 		foreach ($attachments as $attachment)
 		{
-			$file_names[] =  $attachment['name'];
+			$file_names[] = $attachment['name'];
 		}
 
-		if ($file_names)
-		{
-			$body .= "<pre>Søker har kvittert for å ha lest vedlagte dokument(er):\n";
-			$body .=  implode("\n", $file_names);
-			$body .=  "</pre>";
-		}
+		$twig = new EmailTwigHelper('booking');
+		$body = $twig->render('@views/emails/export_text_request.twig', [
+			'contact_name' => $application['contact_name'],
+			'systemname' => $config['application_mail_systemname'],
+			'resourcename' => $resourcename,
+			'building_name' => $application['building_name'],
+			'agreement_requirements' => $application['agreement_requirements'] ?? '',
+			'dates' => $_adates,
+			'comment' => $application['comment'] ?? '',
+			'file_names' => $file_names,
+		]);
 
 		return array(
 			'title' => $title,
@@ -95,104 +76,67 @@ class booking_boapplication extends booking_bocommon
 		 */
 	function get_export_text2($application, $config)
 	{
-
 		$resourcename = implode(", ", $this->get_resource_name($application['resources']));
 
 		$customer_name = !empty($application['customer_organization_name']) ? "{$application['customer_organization_name']}/{$application['contact_name']}" : $application['contact_name'];
 
-		$dateformat	 = $this->userSettings['preferences']['common']['dateformat'];
+		$dateformat = $this->userSettings['preferences']['common']['dateformat'];
 		$start_date = reset($application['dates']);
 		$start_date_formatted = date($dateformat, strtotime($start_date['from_']));
 		$end_date = end($application['dates']);
 		$end_date_formatted = date($dateformat, strtotime($end_date['to_']));
 
-		if ($start_date_formatted == $end_date_formatted)
-		{
-			$timespan = $start_date_formatted;
-		}
-		else
-		{
-			$timespan = "{$start_date_formatted} - {$end_date_formatted}";
-		}
+		$timespan = ($start_date_formatted == $end_date_formatted)
+			? $start_date_formatted
+			: "{$start_date_formatted} - {$end_date_formatted}";
 
 		$title = "Svar på forespørsel om leie av {$application['building_name']}/{$resourcename} - {$timespan}  - $customer_name";
 
-		if ($application['status'] == 'PENDING')
-		{
-			$body = "<p>" . $application['contact_name'] . " sin søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . " er " . strtolower(lang($application['status'])) . '</p>';
-			if ($application['comment'] != '')
-			{
-				$body .= '<p>Kommentar fra saksbehandler:<br />' . $application['comment'] . '</p>';
-			}
-			$body .= "<pre>" . $config['application_mail_pending'] . "</pre>";
-		}
-		elseif ($application['status'] == 'ACCEPTED')
+		// Prepare approved dates for ACCEPTED status
+		$approved_dates = [];
+		$rejected_dates = [];
+		if ($application['status'] == 'ACCEPTED')
 		{
 			$assoc_bo = new booking_boapplication_association();
 			$associations = $assoc_bo->so->read(array(
 				'filters' => array('application_id' => $application['id']),
 				'sort' => 'from_', 'dir' => 'asc', 'results' => 'all'
 			));
-			$_adates = array();
 
 			foreach ($associations['results'] as $assoc)
 			{
 				if ($assoc['active'])
 				{
-					$_adates[] = "\t" . date("$dateformat H:i:s", strtotime($assoc['from_'])) . " - " . date("$dateformat H:i:s", strtotime($assoc['to_']));
+					$approved_dates[] = "\t" . date("$dateformat H:i:s", strtotime($assoc['from_'])) . " - " . date("$dateformat H:i:s", strtotime($assoc['to_']));
 				}
 			}
 
-			$adates = implode("\n", $_adates);
-
-			//FIXME Sigurd 2. sept 2015: Something wrong with this one;
-			//				$rejected = $this->so->get_rejected($application['id']);
+			// FIXME Sigurd 2. sept 2015: Something wrong with get_rejected
 			$rejected = array();
-			$rdates = "";
 			foreach ($rejected as $key => $date)
 			{
-				if ($key === 0)
-				{
-					$rdates .= implode(" - ", $date) . "\n";
-				}
-				else
-				{
-					$rdates .= "\t" . implode(" - ", $date) . "\n";
-				}
-			}
-
-			$body = "<p>" . $application['contact_name'] . " sin søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . " er " . strtolower(lang($application['status'])) . '</p>';
-			if ($application['agreement_requirements'] != '')
-			{
-				$lang_additional_requirements = lang('additional requirements');
-				$body .= "{$lang_additional_requirements}:<br />" . $application['agreement_requirements'] . "<br />";
-			}
-			if ($application['comment'] != '')
-			{
-				$body .= "<p>Kommentar fra saksbehandler:<br />" . ($application['comment']) . "</p>";
-			}
-			$body .= "<p>{$config['application_mail_accepted']}</p>";
-			if ($adates)
-			{
-				$body .= "<pre>Godkjent:\n" . $adates . "</pre>";
-			}
-			if ($rdates)
-			{
-				$body .= "<pre>Avvist: " . $rdates . "</pre>";
+				$prefix = ($key === 0) ? '' : "\t";
+				$rejected_dates[] = $prefix . implode(" - ", $date);
 			}
 		}
-		elseif ($application['status'] == 'REJECTED')
-		{
 
-			$body = "<p>" . $application['contact_name'] . " sin søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . " er " . strtolower(lang($application['status'])) . '</p>';
-			if ($application['comment'] != '')
-			{
-				$body .= '<p>Kommentar fra saksbehandler:<br />' . ($application['comment']) . '</p>';
-			}
-			$body .= '<pre>' . $config['application_mail_rejected'] . '</pre>';
-		}
-
-		$body .= "<p>" . $config['application_mail_signature'] . "</p>";
+		$twig = new EmailTwigHelper('booking');
+		$body = $twig->render('@views/emails/export_text_response.twig', [
+			'status' => $application['status'],
+			'status_text' => strtolower(lang($application['status'])),
+			'contact_name' => $application['contact_name'],
+			'systemname' => $config['application_mail_systemname'],
+			'resourcename' => $resourcename,
+			'building_name' => $application['building_name'],
+			'comment' => $application['comment'] ?? '',
+			'agreement_requirements' => $application['agreement_requirements'] ?? '',
+			'approved_dates' => $approved_dates,
+			'rejected_dates' => $rejected_dates,
+			'mail_pending' => $config['application_mail_pending'] ?? '',
+			'mail_accepted' => $config['application_mail_accepted'] ?? '',
+			'mail_rejected' => $config['application_mail_rejected'] ?? '',
+			'signature' => $config['application_mail_signature'],
+		]);
 
 		return array(
 			'title' => $title,
@@ -253,15 +197,12 @@ class booking_boapplication extends booking_bocommon
 		try {
 			$config = CreateObject('phpgwapi.config', 'booking');
 			$config->read();
-			
-			$from = isset($config->config_data['email_sender']) && $config->config_data['email_sender'] 
-				? $config->config_data['email_sender'] 
+
+			$from = isset($config->config_data['email_sender']) && $config->config_data['email_sender']
+				? $config->config_data['email_sender']
 				: "noreply<noreply@{$this->serverSettings['hostname']}>";
 
 			$subject = "KOPI::" . $config->config_data['application_mail_subject'];
-			$external_site_address = !empty($config->config_data['external_site_address']) 
-				? $config->config_data['external_site_address'] 
-				: $this->serverSettings['webserver_url'];
 
 			// Create backend link
 			$enforce_ssl = $this->serverSettings['enforce_ssl'];
@@ -271,12 +212,16 @@ class booking_boapplication extends booking_bocommon
 
 			$resourcename = implode(", ", $this->get_resource_name($application['resources']));
 
-			$body = "<h1>NB!! KOPI av epost til {$application['contact_email']}</h1>"
-				. "<p>Ny søknad i " . $config->config_data['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . "</p>"
-				. "<p>" . $config->config_data['application_mail_created'] . "</p>"
-				. "<p>Forresten...:<br/>"
-				. "<a href=\"{$link_backend}\">Link til søknad i backend</a></p>"
-				. "<p>" . $config->config_data['application_mail_signature'] . "</p>";
+			$twig = new EmailTwigHelper('booking');
+			$body = $twig->render('@views/emails/case_officer_notification.twig', [
+				'contact_email' => $application['contact_email'],
+				'systemname' => $config->config_data['application_mail_systemname'],
+				'resourcename' => $resourcename,
+				'building_name' => $application['building_name'],
+				'mail_created' => $config->config_data['application_mail_created'],
+				'link_backend' => $link_backend,
+				'signature' => $config->config_data['application_mail_signature'],
+			]);
 
 			$send = CreateObject('phpgwapi.send');
 			$bcc = implode(';', $mail_addresses);
@@ -413,7 +358,7 @@ class booking_boapplication extends booking_bocommon
 
 
 	/**
-	 * @ Send message about comment on application to case officer.
+	 * Send message about comment on application to case officer.
 	 */
 	function send_admin_notification($application, $message = null)
 	{
@@ -428,16 +373,12 @@ class booking_boapplication extends booking_bocommon
 
 		$from = isset($config->config_data['email_sender']) && $config->config_data['email_sender'] ? $config->config_data['email_sender'] : "noreply<noreply@{$this->serverSettings['hostname']}>";
 
-		$external_site_address = !empty($config->config_data['external_site_address'])  ? $config->config_data['external_site_address'] : $this->serverSettings['webserver_url'];
-
 		$subject = $config->config_data['application_comment_mail_subject_caseofficer'];
 
 		$mailadresses = $config->config_data['emails'];
 		$mailadresses = explode("\n", $mailadresses);
 
-
 		$building_info = $this->so->get_building_info($application['id']);
-
 		$extra_mail_addresses = $this->get_mail_addresses($building_info['id'], $application['case_officer_id']);
 
 		if (!empty($mailadresses[0]))
@@ -449,76 +390,45 @@ class booking_boapplication extends booking_bocommon
 			$mailadresses = array_values($extra_mail_addresses);
 		}
 
-		//			if ($this->serverSettings['webserver_url'] != '' && $external_site_address)
-		//			{
-		//				$link = $external_site_address . $this->serverSettings['webserver_url'] . '/index.php?menuaction=booking.uiapplication.show&id=' . $application['id'];
-		//			}
-		//			else
-		//			{
-		//				$link = $external_site_address . '/index.php?menuaction=booking.uiapplication.show&id=' . $application['id'];
-		//			}
-
-		/**
-		 * Evil hack
-		 */
+		// Generate backend link with SSL enforcement
 		$enforce_ssl = $this->serverSettings['enforce_ssl'];
 		$this->serverSettings['enforce_ssl'] = true;
-		$link =  phpgw::link('/index.php', array('menuaction' => 'booking.uiapplication.show', 'id' => $application['id']), false, true, true);
-
-		/**
-		 * Text-version
-		 */
+		$link = phpgw::link('/index.php', array('menuaction' => 'booking.uiapplication.show', 'id' => $application['id']), false, true, true);
 		$link = str_replace('&amp;', '&', $link);
-
 		$this->serverSettings['enforce_ssl'] = $enforce_ssl;
-
 
 		$activity = $this->activity_bo->read_single($application['activity_id']);
 
+		// Determine organization name if applicable
+		$organization_name = '';
 		if (strlen($application['customer_organization_number']) == 9)
 		{
 			$orgid = $this->organization_bo->so->get_orgid($application['customer_organization_number']);
 			$organization = $this->organization_bo->read_single($orgid);
-			$body = '<b>Kommentar fra ' . $organization['name'] . '</b><br />' . $message . '<br /><br/>';
-			$plain_text = "Kommentar fra {$organization['name']} \n{$message}\n";
-		}
-		else
-		{
-			$body = '<b>Kommentar fra ' . $application['contact_name'] . '</b><br />' . $message . '<br /><br/>';
-			$plain_text = "Kommentar fra {$application['name']} \n{$message}\n";
+			$organization_name = $organization['name'];
 		}
 
-		$body .= '<b>Bygg: </b>' . $application['building_name'] . '<br />';
-		$body .= '<b>Aktivitet: </b>' . $activity['name'] . '<br /><br />';
-		$body .= '<b>Kontaktperson:</b> ' . $application['contact_name'] . '<br />';
-		$body .= '<b>Epost:</b> ' . $application['contact_email'] . '<br />';
-		$body .= '<b>Telefon:</b> ' . $application['contact_phone'] . '<br /><br />';
-		$body .= '<a href="' . $link . '">Lenke til søknad</a><br /><br />';
+		$twig = new EmailTwigHelper('booking');
+		$plain_text = $twig->render('@views/emails/admin_comment_notification.twig', [
+			'organization_name' => $organization_name,
+			'contact_name' => $application['contact_name'],
+			'message' => $message,
+			'building_name' => $application['building_name'],
+			'activity_name' => $activity['name'],
+			'contact_email' => $application['contact_email'],
+			'contact_phone' => $application['contact_phone'],
+			'link' => $link,
+		]);
 
-		$plain_text .= "Bygg: {$application['building_name']}\n";
-		$plain_text .= "Aktivitet: {$activity['name']}\n";
-		$plain_text .= "Kontaktperson:{$application['contact_name']}\n";
-		$plain_text .= "Epost: {$application['contact_email']}\n";
-		$plain_text .= "Telefon: {$application['contact_phone']}\n";
-		$plain_text .= "Lenke til søknad: {$link}\n";
-
-		$html = <<<HTML
-<!DOCTYPE html>
-<html lang="no">
-	<head>
-		<meta charset="utf-8">
-		<title>$subject</title>
-	</head>
-	<body>{$body}</body>
-</html>
-HTML;
+		// Strip HTML for plain text version
+		$plain_text_stripped = strip_tags(str_replace(['<br />', '<br/>', '<br>'], "\n", $plain_text));
 
 		$_mailadresses = array_unique($mailadresses);
 		foreach ($_mailadresses as $adr)
 		{
 			try
 			{
-				$send->msg('email', $adr, $subject, $plain_text, '', '', '', $from, 'AktivKommune', 'text');
+				$send->msg('email', $adr, $subject, $plain_text_stripped, '', '', '', $from, 'AktivKommune', 'text');
 
 				if ($this->flags['currentapp'] == 'booking')
 				{

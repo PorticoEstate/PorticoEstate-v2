@@ -343,34 +343,6 @@
 			<td colspan="2">&nbsp;</td>
 		</tr>
 
-		<tr class="th">
-			<td colspan="2"><b>{lang_Mcrypt_settings_(requires_mcrypt_PHP_extension)}</b></td>
-		</tr>
-
-		<tr>
-			<td>{lang_Enter_some_random_text_for_app_session_encryption}:</td>
-			<td><input name="newsettings[encryptkey]" value="{value_encryptkey}" size="40" class="pure-u-7-8">
-			</td>
-		</tr>
-
-		<tr>
-			<td>{lang_Mcrypt_algorithm_(default_TRIPLEDES)}:</td>
-			<td>
-				<select name="newsettings[mcrypt_algo]" class="pure-u-7-8">
-					{hook_encryptalgo}
-				</select>
-			</td>
-		</tr>
-
-		<tr>
-			<td>{lang_Mcrypt_mode_(default_CBC)}:</td>
-			<td>
-				<select name="newsettings[mcrypt_mode]" class="pure-u-7-8">
-					{hook_encryptmode}
-				</select>
-			</td>
-		</tr>
-
 		<tr>
 			<td colspan="2">&nbsp;</td>
 		</tr>

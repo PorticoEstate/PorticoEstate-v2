@@ -4,10 +4,10 @@
 	function get_external_generator()
 	{
 		$numberGenerator = CreateObject('booking.sobilling_sequential_number_generator');
-		assert('$numberGenerator instanceof booking_sobilling_sequential_number_generator')
+		assert($numberGenerator instanceof booking_sobilling_sequential_number_generator)
 			AND pass_test('$numberGenerator instanceof booking_sobilling_sequential_number_generator');
 		$numberGeneratorInstance = $numberGenerator->get_generator_instance('external');
-		assert('$numberGeneratorInstance instanceof booking_sobilling_sequential_number_generator_instance')
+		assert($numberGeneratorInstance instanceof booking_sobilling_sequential_number_generator_instance)
 			AND pass_test('$numberGeneratorInstance instanceof booking_sobilling_sequential_number_generator_instance');
 		return $numberGeneratorInstance;
 	}
@@ -26,7 +26,7 @@
 		{
 			$logic_exception_if_no_active_transaction = true;
 		}
-		assert('$logic_exception_if_no_active_transaction') and pass_test('logic_exception_if_no_active_transaction');
+		assert($logic_exception_if_no_active_transaction) and pass_test('logic_exception_if_no_active_transaction');
 
 		#############################################################
 		print_info("Pre Transaction");
@@ -57,7 +57,7 @@
 
 		$new_generator_is_created_post_transaction = $previousNumberGeneratorInstance != $numberGeneratorInstance;
 
-		assert('$new_generator_is_created_post_transaction') AND pass_test("new_generator_is_created_post_transaction");
+		assert($new_generator_is_created_post_transaction) AND pass_test("new_generator_is_created_post_transaction");
 
 		#############################################################
 		print_info("Start Transaction");
@@ -76,7 +76,7 @@
 			$cannotGetCurrentWithoutLock = true;
 		}
 
-		assert('$cannotGetCurrentWithoutLock') AND pass_test("Cannot get current without lock");
+		assert($cannotGetCurrentWithoutLock) AND pass_test("Cannot get current without lock");
 
 		##############################################################
 
@@ -89,7 +89,7 @@
 		assert($canGetCurrentWithLock) AND pass_test("Able to get_current with lock");
 
 		############################################################
-		assert('$numberGeneratorInstance->get_current() === $previousValue+1') AND pass_test("Incremented value by one");
+		assert($numberGeneratorInstance->get_current() === $previousValue + 1) AND pass_test("Incremented value by one");
 		############################################################
 
 		$c->getDb()->transaction_abort();
@@ -150,7 +150,4 @@
 		"Line '$line'\n" .
 		"Code '$code'\n";
 	}
-	// Set up the callback
-	assert_options(ASSERT_CALLBACK, 'my_assert_handler');
-
 	PhpgwEntry::phpgw_call('testNumberGenerator');

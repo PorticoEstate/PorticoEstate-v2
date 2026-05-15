@@ -1,5 +1,9 @@
 <?php
 require_once __DIR__ . '/imap_config.php';
+
+defined('PE_IMAP_FT_UID') || define('PE_IMAP_FT_UID', 1);
+defined('PE_IMAP_FT_PREFETCHTEXT') || define('PE_IMAP_FT_PREFETCHTEXT', 16);
+defined('PE_IMAP_SE_UID') || define('PE_IMAP_SE_UID', 1);
 	/**
 	* EMail - POP3 Mail Wrapper for Imap Enabled PHP
 	*
@@ -51,9 +55,9 @@ require_once __DIR__ . '/imap_config.php';
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & FT_UID)) )
+			&& (!($flags & PE_IMAP_FT_UID)) )
 			{
-				$flags |= FT_UID;
+				$flags |= PE_IMAP_FT_UID;
 			}
 			$retval = IMAPManager::imap_delete($stream,$msg_num,$flags);
 			// some lame pop3 servers need this extra call to expunge, but RFC says not necessary
@@ -71,9 +75,9 @@ require_once __DIR__ . '/imap_config.php';
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & FT_UID)) )
+			&& (!($flags & PE_IMAP_FT_UID)) )
 			{
-				$flags |= FT_UID;
+				$flags |= PE_IMAP_FT_UID;
 			}
 			return IMAPManager::imap_fetchbody($stream,$msgnr,$partnr,$flags);
 		}
@@ -82,21 +86,21 @@ require_once __DIR__ . '/imap_config.php';
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & FT_UID)) )
+			&& (!($flags & PE_IMAP_FT_UID)) )
 			{
-				$flags |= FT_UID;
+				$flags |= PE_IMAP_FT_UID;
 			}
 			return IMAPManager::imap_fetchheader($stream,$msg_num,$flags);
 		}
 
 		function fetch_raw_mail($stream,$msg_num,$flags=0)
 		{
-			$flags |= FT_PREFETCHTEXT;
+			$flags |= PE_IMAP_FT_PREFETCHTEXT;
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & FT_UID)) )
+			&& (!($flags & PE_IMAP_FT_UID)) )
 			{
-				$flags |= FT_UID;
+				$flags |= PE_IMAP_FT_UID;
 			}
 			return IMAPManager::imap_fetchheader($stream,$msg_num,$flags);
 		}
@@ -105,9 +109,9 @@ require_once __DIR__ . '/imap_config.php';
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & FT_UID)) )
+			&& (!($flags & PE_IMAP_FT_UID)) )
 			{
-				$flags |= FT_UID;
+				$flags |= PE_IMAP_FT_UID;
 			}
 			return IMAPManager::imap_fetchstructure($stream,$msg_num,$flags);
 		}
@@ -116,9 +120,9 @@ require_once __DIR__ . '/imap_config.php';
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & FT_UID)) )
+			&& (!($flags & PE_IMAP_FT_UID)) )
 			{
-				$flags |= FT_UID;
+				$flags |= PE_IMAP_FT_UID;
 			}
 			return IMAPManager::imap_body($stream,$msg_num,$flags);
 		}
@@ -207,9 +211,9 @@ require_once __DIR__ . '/imap_config.php';
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & SE_UID)) )
+			&& (!($flags & PE_IMAP_SE_UID)) )
 			{
-				$flags |= SE_UID;
+				$flags |= PE_IMAP_SE_UID;
 			}
 			return IMAPManager::imap_search($stream,$criteria,$flags);
 		}
@@ -219,9 +223,9 @@ require_once __DIR__ . '/imap_config.php';
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & SE_UID)) )
+			&& (!($flags & PE_IMAP_SE_UID)) )
 			{
-				$flags |= SE_UID;
+				$flags |= PE_IMAP_SE_UID;
 			}
 			return IMAPManager::imap_sort($stream,$criteria,$reverse,$flags);
 		}

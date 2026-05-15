@@ -919,7 +919,8 @@ abstract class booking_socommon
 
 	function add($entry)
 	{
-		$values = $this->marshal_field_values($this->get_table_values($entry, __FUNCTION__));
+		$table_values = $this->get_table_values($entry, __FUNCTION__);
+		$values = $this->marshal_field_values($table_values);
 
 		if ($this->db->get_transaction())
 		{

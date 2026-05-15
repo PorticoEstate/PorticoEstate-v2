@@ -316,7 +316,6 @@ class OrganizationService
 
         $result = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         $data = json_decode($result, true);
         if (!$data) {
@@ -354,7 +353,6 @@ class OrganizationService
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
         $result = curl_exec($ch);
-        curl_close($ch);
 
         $data = json_decode($result, true);
         if ($data && !isset($data['postadresse'])) {
@@ -830,7 +828,7 @@ class OrganizationService
             // Convert to Building models and return in short format
             $buildings = [];
             foreach ($results as $result) {
-                $building = new \App\modules\bookingfrontend\models\Building($result);
+                $building = new \App\modules\booking\models\Building($result);
                 $buildings[] = $building->serialize(['short' => true]);
             }
 

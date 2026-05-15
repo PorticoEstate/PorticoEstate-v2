@@ -1,0 +1,76 @@
+{# Per-application detail card for accepted/rejected group emails #}
+{# Parameters: app (with name, id, resource_names, building_name, is_approved, not_approved_dates, approved_dates, cost) #}
+{% if app.is_approved %}
+{% set border_color = '#118849' %}
+{% set bg_color = '#ecf6f1' %}
+{% set title_color = '#06331b' %}
+{% set badge_label = lang('booking.accepted')|default('Godkjent') %}
+{% set badge_bg = '#118849' %}
+{% else %}
+{% set border_color = '#dc3545' %}
+{% set bg_color = '#fdf1f2' %}
+{% set title_color = '#721c24' %}
+{% set badge_label = lang('booking.rejected')|default('Avslått') %}
+{% set badge_bg = '#dc3545' %}
+{% endif %}
+
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-left: 3px solid {{ border_color }}; background-color: {{ bg_color }}; margin-bottom: 12px; border-radius: 0 4px 4px 0;">
+<tr><td style="padding: 12px 16px;">
+
+    {# Title row with status badge #}
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+    <tr>
+        <td style="font-size: 14px; font-weight: 600; color: {{ title_color }};">
+            {{ app.name|default('Søknadsdel') }} <span style="font-weight: 400; color: #797979; font-size: 12px;">(#{{ app.id }})</span>
+        </td>
+        <td align="right">
+            <span style="display: inline-block; background-color: {{ badge_bg }}; color: #ffffff; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 3px;">{{ badge_label }}</span>
+        </td>
+    </tr>
+    </table>
+
+    {# Details #}
+    <table cellpadding="0" cellspacing="0" role="presentation" style="font-size: 13px; color: #2b2b2b; margin-top: 8px;">
+    {% if app.resource_names %}
+    <tr>
+        <td style="padding: 2px 12px 2px 0; color: #797979; vertical-align: top;">{{ lang('booking.resource')|default('Ressurs') }}</td>
+        <td style="padding: 2px 0; font-weight: 500;">{{ app.resource_names }}</td>
+    </tr>
+    {% endif %}
+    {% if app.building_name %}
+    <tr>
+        <td style="padding: 2px 12px 2px 0; color: #797979; vertical-align: top;">{{ lang('booking.building')|default('Lokasjon') }}</td>
+        <td style="padding: 2px 0; font-weight: 500;">{{ app.building_name }}</td>
+    </tr>
+    {% endif %}
+    </table>
+
+    {# Not approved dates #}
+    {% if app.not_approved_dates is defined and app.not_approved_dates is not empty %}
+    <div style="background-color: #fdf1f2; border-left: 2px solid #dc3545; padding: 8px 12px; margin-top: 10px; border-radius: 0 3px 3px 0;">
+        <p style="margin: 0 0 4px; font-size: 12px; font-weight: 600; color: #721c24;">{{ lang('booking.times_not_approved')|default('Tider du ikke fikk') }}</p>
+        <table cellpadding="0" cellspacing="0" role="presentation" style="font-size: 12px; color: #721c24;">
+        {% for date in app.not_approved_dates %}
+        <tr><td style="padding: 1px 0;">{{ date }}</td></tr>
+        {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+
+    {# Approved dates #}
+    {% if app.approved_dates is defined and app.approved_dates is not empty %}
+    <div style="background-color: #ecf6f1; border-left: 2px solid #118849; padding: 8px 12px; margin-top: 10px; border-radius: 0 3px 3px 0;">
+        <p style="margin: 0 0 4px; font-size: 12px; font-weight: 600; color: #06331b;">{{ lang('booking.approved_times')|default('Godkjente tider') }}</p>
+        <table cellpadding="0" cellspacing="0" role="presentation" style="font-size: 12px; color: #06331b;">
+        {% for date in app.approved_dates %}
+        <tr><td style="padding: 1px 0;">{{ date }}</td></tr>
+        {% endfor %}
+        </table>
+    </div>
+    {% if app.cost > 0 %}
+    <p style="margin: 8px 0 0; font-size: 13px; font-weight: 600; color: #002c54;">{{ lang('booking.cost')|default('Kostnad') }}: {{ app.cost|format_nok }}</p>
+    {% endif %}
+    {% endif %}
+
+</td></tr>
+</table>

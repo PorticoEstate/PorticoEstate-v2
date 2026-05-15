@@ -344,7 +344,7 @@ abstract class BaseModel
 		try {
 			$this->db->transaction_begin();
 
-			if ($this->id) {
+			if ($this->id !== null && $this->id !== '') {
 				$result = $this->update();
 			} else {
 				$result = $this->create();
@@ -561,6 +561,8 @@ abstract class BaseModel
 				return (float)$value;
 			case 'bool':
 				return (bool)$value;
+			case 'string':
+				return (string)$this->db->stripslashes($value);
 			case 'array':
 			case 'json':
 				return is_string($value) ? json_decode($value, true) : $value;

@@ -1,5 +1,5 @@
 # Use an official PHP-FPM base image
-FROM php:8.4-fpm
+FROM php:8.5-fpm-bookworm
 
 LABEL maintainer="Sigurd Nes <sigurdne@gmail.com>"
 
@@ -36,9 +36,9 @@ else \
 fi
 
 # Add contrib and non-free repositories
-RUN echo "deb http://deb.debian.org/debian trixie main contrib non-free" > /etc/apt/sources.list \
-    && echo "deb http://deb.debian.org/debian-security trixie-security main contrib non-free" >> /etc/apt/sources.list \
-    && echo "deb http://deb.debian.org/debian trixie-updates main contrib non-free" >> /etc/apt/sources.list
+RUN echo "deb http://deb.debian.org/debian bookworm main contrib non-free" > /etc/apt/sources.list \
+    && echo "deb http://deb.debian.org/debian-security bookworm-security main contrib non-free" >> /etc/apt/sources.list \
+    && echo "deb http://deb.debian.org/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list
 
 # Install necessary packages
 RUN apt-get update && apt-get install -y \
@@ -51,7 +51,7 @@ RUN apt-get update && apt-get install -y \
     sudo \
     gnupg \
     unzip \
-    libaio1t64 locales wget \
+    libaio1 locales wget \
     libmagickwand-dev --no-install-recommends \
     apache2 libapache2-mod-fcgid ssl-cert \
     cron \
@@ -90,8 +90,7 @@ RUN echo "apc.shm_size=64M" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini
     && echo "apc.enable_cli=1" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini
 
 
-# Install OPcache
-RUN docker-php-ext-install opcache
+# OPcache is included in PHP 8.5, so we just need to enable it and configure it for optimal performance.
 
 # Add OPcache configuration
 RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
@@ -153,7 +152,7 @@ RUN echo 'post_max_size = 55M' >> /usr/local/etc/php/php.ini
 RUN echo 'upload_max_filesize = 50M' >> /usr/local/etc/php/php.ini
 
 # Install Java
-RUN apt-get update && apt-get install -y openjdk-21-jdk
+RUN apt-get update && apt-get install -y openjdk-17-jdk
 
 ## Verify Java installation
 RUN java -version
@@ -229,7 +228,22 @@ WORKDIR /var/www/html
 COPY composer.json composer.lock* ./
 
 # Install all dependencies during build time
-RUN composer install --no-dev --optimize-autoloader
+RUN XDEBUG_MODE=off composer install --no-dev --optimize-autoloader
+
+# Install Node.js 22 LTS and npm via NodeSource
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy npm files and install dependencies
+COPY package.json package-lock.json ./
+
+RUN npm ci
+
+# Backup node_modules into the image so the entrypoint can restore them
+# into the Docker volume when the volume is stale.
+RUN cp -a node_modules /opt/node_modules_build \
+    && md5sum package-lock.json > /opt/.package-lock-hash
 
 # Clean up
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

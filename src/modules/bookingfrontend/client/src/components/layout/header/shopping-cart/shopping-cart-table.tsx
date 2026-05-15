@@ -83,10 +83,14 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({
 		seasonsMap.set(id, seasonsQueries[index]?.data);
 	});
 
+	const sortedDates = (dates: IApplication['dates']) =>
+		[...(dates || [])].sort((a, b) => a.from_.localeCompare(b.from_));
+
 	const getStartTime = (application: IApplication) => {
-		if ((application.dates?.length || 0) === 1) {
-			const from = applicationTimeToLux(application.dates[0].from_);
-			const to = applicationTimeToLux(application.dates[0].to_);
+		const dates = sortedDates(application.dates);
+		if (dates.length === 1) {
+			const from = applicationTimeToLux(dates[0].from_);
+			const to = applicationTimeToLux(dates[0].to_);
 			return formatDateRange(from, to, i18n).join(' | ');
 		}
 		if (expandedId === application.id) {
@@ -95,14 +99,14 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({
 					listStyle: 'none',
 					padding: 0
 				}}>
-				{application.dates?.map((date) => {
+				{dates.map((date) => {
 					const from = applicationTimeToLux(date.from_);
 					const to = applicationTimeToLux(date.to_);
 					return <List.Item key={date.id}>{formatDateRange(from, to, i18n).join(' | ')}</List.Item>
 				})}
 			</List.Unordered>
 		}
-		return <span><Badge count={application.dates?.length || 0}
+		return <span><Badge count={dates.length || 0}
 							color={'neutral'}/> {i18n.t('bookingfrontend.multiple_time_slots')}</span>
 	}
 

@@ -1,5 +1,9 @@
 <?php
 require_once __DIR__ . '/imap_config.php';
+
+	// Guard-defined IMAP compatibility constant (removed in PHP 8.4)
+	defined('PE_IMAP_FT_PREFETCHTEXT') || define('PE_IMAP_FT_PREFETCHTEXT', 32);
+
 	/**
 	* EMail - POP3 Mail Wrapper for Imap Enabled PHP
 	*
@@ -63,7 +67,7 @@ require_once __DIR__ . '/imap_config.php';
 
 		function fetch_raw_mail($stream,$msg_num)
 		{
-			return IMAPManager::imap_fetchheader($stream,$msg_num,FT_PREFETCHTEXT);
+			return IMAPManager::imap_fetchheader($stream,$msg_num,PE_IMAP_FT_PREFETCHTEXT);
 		}
 
 		function fetchheader($stream,$msg_num)

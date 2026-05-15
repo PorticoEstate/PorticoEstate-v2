@@ -146,7 +146,7 @@ use App\modules\bookingfrontend\helpers\UserHelper;
 				$report_source = PHPGW_SERVER_ROOT . '/booking/jasper/templates/application.jrxml';
 				try
 				{
-					$jasper_wrapper->execute($jasper_parameters, $output_type, $report_source);
+					$jasper_wrapper->execute($output_type, $report_source, $jasper_parameters);
 				}
 				catch (Exception $e)
 				{

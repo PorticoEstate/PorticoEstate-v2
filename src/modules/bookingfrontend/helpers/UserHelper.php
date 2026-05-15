@@ -1003,7 +1003,7 @@ class UserHelper
 			'street' => $external_data['street'] ?? '',
 			'zip_code' => $external_data['zip_code'] ?? '',
 			'city' => $external_data['city'] ?? '',
-			'created' => date('Y-m-d H:i:s')
+//			'created' => date('Y-m-d H:i:s')
 		];
 
 		// Filter out empty values

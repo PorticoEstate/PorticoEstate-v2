@@ -14,6 +14,7 @@
 namespace App\modules\phpgwapi\services\setup;
 
 use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\services\Twig as TwigService;
 use Sanitizer;
 use App\modules\phpgwapi\services\setup\Setup;
 use App\helpers\Template;
@@ -29,16 +30,34 @@ class Html
 {
 	protected $setup_tpl;
 	protected $crypto;
+	protected $twig;
+	protected $setup;
 
 	function __construct($crypto = null)
 	{
 		$this->crypto = $crypto;
+		$this->setup = new Setup();
+		$this->twig = TwigService::getInstance();
+		
+		// // Initialize the legacy template system for backward compatibility
+		// $tpl_dir = $this->setup_tpl_dir();
+		// $this->setup_tpl = new Template($tpl_dir);
+		// $this->setup_tpl->set_file(array(
+		// 	'T_head'	=> 'head.tpl',
+		// 	'T_login_main'	=> 'login_main.tpl',
+		// 	'T_login_stage_header'	=> 'login_stage_header.tpl',
+		// 	'T_footer'	=> 'footer.tpl',
+		// 	'T_alert_msg'	=> 'msg_alert.tpl',
+		// ));
+		// $this->setup_tpl->set_block('T_login_stage_header', 'B_multi_domain', 'V_multi_domain');
+		// $this->setup_tpl->set_block('T_login_stage_header', 'B_single_domain', 'V_single_domain');
 	}
 
 	function set_tpl($tpl)
 	{
 		$this->setup_tpl = $tpl;
 	}
+	
 	/**
 	 * generate header.inc.php file output - NOT a generic html header function
 	 *
@@ -141,66 +160,57 @@ class Html
 
 	function get_header($title = '', $nologoutbutton = False, $logoutfrom = 'config', $configdomain = '')
 	{
-		$setup = new Setup();
 		$serverSettings = Settings::getInstance()->get('server');
-		$this->setup_tpl->set_var('lang_charset', $setup->lang('charset'));
-		$style = array(
-			'th_bg'		=> '#486591',
-			'th_text'	=> '#FFFFFF',
-			'row_on'	=> '#DDDDDD',
-			'row_off'	=> '#EEEEEE',
-			'banner_bg'	=> '#4865F1',
-			'msg'		=> '#FF0000',
-		);
-		$this->setup_tpl->set_var($style);
-		if ($nologoutbutton)
+		
+		// Get logout button
+		$btn_logout = '&nbsp;';
+		if (!$nologoutbutton)
 		{
-			$btn_logout = '&nbsp;';
-		}
-		else
-		{
-			//detect the schript path
+			//detect the script path
 			$script_path = Sanitizer::get_var('REDIRECT_URL', 'string', 'SERVER');
 			//detect if we are in the setup
-			if ($script_path && preg_match('/setup\//', $script_path))
-			{
-				$prefix = '../';
-			}
-			else
-			{
-				$prefix = '';
-			}
-
-			$btn_logout = '<a href="' . $prefix . 'setup/logout?FormLogout=' . $logoutfrom . '" class="link">' . $setup->lang('Logout') . '</a>';
-		}
-
-		$this->setup_tpl->set_var('lang_version', $setup->lang('version'));
-		$this->setup_tpl->set_var('lang_setup', $setup->lang('setup'));
-		$this->setup_tpl->set_var('page_title', $title);
-		if ($configdomain == '')
-		{
-			$this->setup_tpl->set_var('configdomain', '');
-		}
-		else
-		{
-			$this->setup_tpl->set_var('configdomain', ' - ' . $setup->lang('Domain') . ': ' . $configdomain);
+			$prefix = ($script_path && preg_match('/setup\//', $script_path)) ? '../' : '';
+			$btn_logout = '<a href="' . $prefix . 'setup/logout?FormLogout=' . $logoutfrom . '" class="link">' . $this->setup->lang('Logout') . '</a>';
 		}
 
 		$api_version = isset($serverSettings['versions']['phpgwapi']) ? $serverSettings['versions']['phpgwapi'] : '';
-
 		$version = isset($serverSettings['versions']['system']) ? $serverSettings['versions']['system'] : $api_version;
 
-		$this->setup_tpl->set_var('pgw_ver', $version);
-		$this->setup_tpl->set_var('logoutbutton', $btn_logout);
-		return $this->setup_tpl->fp('out', 'T_head');
-		/* $setup_tpl->set_var('T_head',''); */
+		$css = '';
+		if (is_file(dirname(__DIR__, 3) . "/phpgwapi/templates/pure/css/version_3/pure-min.css"))
+		{
+			$css = file_get_contents(dirname(__DIR__, 3) . "/phpgwapi/templates/pure/css/version_3/pure-min.css");
+		}
+
+		// Build template data
+		$templateData = [
+			'title' => $title,
+			'page_title' => $title,
+			'css' => $css,
+			'lang_charset' => $this->setup->lang('charset'),
+			'th_bg' => '#486591',
+			'th_text' => '#FFFFFF',
+			'row_on' => '#DDDDDD',
+			'row_off' => '#EEEEEE',
+			'banner_bg' => '#4865F1',
+			'msg' => '#FF0000',
+			'lang_version' => $this->setup->lang('version'),
+			'lang_setup' => $this->setup->lang('setup'),
+			'configdomain' => $configdomain ? ' - ' . $this->setup->lang('Domain') . ': ' . $configdomain : '',
+			'pgw_ver' => $version,
+			'logoutbutton' => $btn_logout,
+		];
+		
+		// Render the header using Twig
+		return $this->twig->render('head.html.twig', $templateData);
 	}
 
 	function get_footer()
 	{
-		$footer = $this->setup_tpl->fp('out', 'T_footer');
-		return $footer;
+		// Render the footer using Twig
+		return $this->twig->render('footer.html.twig', []);
 	}
+	
 	function show_footer()
 	{
 		print $this->get_footer();
@@ -208,14 +218,18 @@ class Html
 
 	function show_alert_msg($alert_word = 'Setup alert', $alert_msg = 'setup alert (generic)')
 	{
-		$this->setup_tpl->set_var('V_alert_word', $alert_word);
-		$this->setup_tpl->set_var('V_alert_msg', $alert_msg);
-		$this->setup_tpl->pparse('out', 'T_alert_msg');
+		// Render alert using Twig's renderBlock
+		$alertData = [
+			'V_alert_word' => $alert_word,
+			'V_alert_msg' => $alert_msg
+		];
+		
+		echo $this->twig->renderBlock('msg_alert_msg.html.twig', 'alert_msg', $alertData);
 	}
 
 	function make_frm_btn_simple($pre_frm_blurb = '', $frm_method = 'POST', $frm_action = '', $input_type = 'submit', $input_value = '', $post_frm_blurb = '')
 	{
-		/* a simple form has simple components */
+		// Since this is a simple form generator that's used in many places, keeping the direct HTML version
 		$simple_form = $pre_frm_blurb  . "\n"
 			. '<form method="' . $frm_method . '" action="' . $frm_action  . '">' . "\n"
 			. '<input type="'  . $input_type . '" value="'  . $input_value . '">' . "\n"
@@ -226,7 +240,7 @@ class Html
 
 	function make_href_link_simple($pre_link_blurb = '', $href_link = '', $href_text = 'default text', $post_link_blurb = '')
 	{
-		/* a simple href link has simple components */
+		// Since this is a simple HTML generator that's used in many places, keeping the direct HTML version
 		$simple_link = $pre_link_blurb
 			. '<a href="' . $href_link . '">' . $href_text . '</a> '
 			. $post_link_blurb . "\n";
@@ -236,85 +250,64 @@ class Html
 	function login_form()
 	{
 		$setup_data = Settings::getInstance()->get('setup');
-
-		/* begin use TEMPLATE login_main.tpl */
-
-		$this->setup_tpl->set_var(
-			'ConfigLoginMSG',
-			isset($setup_data['ConfigLoginMSG'])
-				? $setup_data['ConfigLoginMSG'] : '&nbsp;'
-		);
-
-		$this->setup_tpl->set_var(
-			'HeaderLoginMSG',
-			isset($setup_data['HeaderLoginMSG'])
-				? $setup_data['HeaderLoginMSG'] : '&nbsp;'
-		);
-
+		
+		// Prepare the data structure for the Twig template
+		$loginData = [
+			'ConfigLoginMSG' => isset($setup_data['ConfigLoginMSG']) ? $setup_data['ConfigLoginMSG'] : '&nbsp;',
+			'HeaderLoginMSG' => isset($setup_data['HeaderLoginMSG']) ? $setup_data['HeaderLoginMSG'] : '&nbsp;',
+			'HeaderLoginWarning' => isset($setup_data['HeaderLoginWarning']) ? $setup_data['HeaderLoginWarning'] : '&nbsp;',
+		];
+		
+		// Add domain selection logic for stage header 10
 		if ($setup_data['stage']['header'] == '10')
 		{
-			/*
-				 Begin use SUB-TEMPLATE login_stage_header,
-				 fills V_login_stage_header used inside of login_main.tpl
-				*/
-			$this->setup_tpl->set_var('lang_select', $this->lang_select());
-
+			$loginData['lang_select'] = $this->lang_select();
+			
 			$settings = require SRC_ROOT_PATH . '/../config/header.inc.php';
 			$phpgw_domain = $settings['phpgw_domain'];
-
+			
+			// Handle multi-domain vs single domain scenarios
 			if (count($phpgw_domain) > 1)
 			{
-				$domains = '';
+				// Create domains data for the multi_domain block
+				$domainsHtml = '';
 				foreach ($phpgw_domain as $domain => $data)
 				{
-					$domains .= "<option value=\"$domain\" ";
-					if (isset($setup_data['LastDomain']) && $domain == $setup_data['LastDomain'])
+					$selected = '';
+					if ((isset($setup_data['LastDomain']) && $domain == $setup_data['LastDomain'])
+						|| (!isset($setup_data['LastDomain']) && $domain == $_SERVER['SERVER_NAME']))
 					{
-						$domains .= ' SELECTED';
+						$selected = ' SELECTED';
 					}
-					elseif ($domain == $_SERVER['SERVER_NAME'])
-					{
-						$domains .= ' SELECTED';
-					}
-					$domains .= ">$domain</option>\n";
+					$domainsHtml .= "<option value=\"$domain\"$selected>$domain</option>\n";
 				}
-				$this->setup_tpl->set_var('domains', $domains);
-
-				// use BLOCK B_multi_domain inside of login_stage_header
-				$this->setup_tpl->parse('V_multi_domain', 'B_multi_domain');
-				// in this case, the single domain block needs to be nothing
-				$this->setup_tpl->set_var('V_single_domain', '');
+				
+				// Use renderBlock to render the multi_domain block
+				$multiDomainHtml = $this->twig->renderBlock('login_stage_header.html.twig', 'B_multi_domain', [
+					'domains' => $domainsHtml,
+					'lang_select' => $loginData['lang_select']
+				]);
+				$loginData['V_login_stage_header'] = $multiDomainHtml;
 			}
 			else
 			{
 				reset($phpgw_domain);
-				//$default_domain = each($phpgw_domain);
 				$default_domain = key($phpgw_domain);
-				$this->setup_tpl->set_var('default_domain_zero', $default_domain);
-
-				/* Use BLOCK B_single_domain inside of login_stage_header */
-				$this->setup_tpl->parse('V_single_domain', 'B_single_domain');
-				/* in this case, the multi domain block needs to be nothing */
-				$this->setup_tpl->set_var('V_multi_domain', '');
+				
+				// Use renderBlock to render the single_domain block
+				$singleDomainHtml = $this->twig->renderBlock('login_stage_header.html.twig', 'B_single_domain', [
+					'default_domain_zero' => $default_domain
+				]);
+				$loginData['V_login_stage_header'] = $singleDomainHtml;
 			}
-			/*
-				 End use SUB-TEMPLATE login_stage_header
-				 put all this into V_login_stage_header for use inside login_main
-				*/
-			$this->setup_tpl->parse('V_login_stage_header', 'T_login_stage_header');
 		}
 		else
 		{
-			/* begin SKIP SUB-TEMPLATE login_stage_header */
-			$this->setup_tpl->set_var('V_multi_domain', '');
-			$this->setup_tpl->set_var('V_single_domain', '');
-			$this->setup_tpl->set_var('V_login_stage_header', '');
+			$loginData['V_login_stage_header'] = '';
 		}
-		/*
-			 end use TEMPLATE login_main.tpl
-			 now out the login_main template
-			*/
-		return $this->setup_tpl->fp('out', 'T_login_main');
+		
+		// Render the login form using Twig
+		return $this->twig->render('login_main.html.twig', $loginData);
 	}
 
 	/**
@@ -328,7 +321,6 @@ class Html
 		$ConfigLang = \Sanitizer::get_var('ConfigLang', 'string', 'POST');
 		$select = '<select name="ConfigLang"' . ($onChange ? ' onChange="this.form.submit();"' : '') . '>' . "\n";
 		$languages = $this->get_langs();
-		//while(list($null,$data) = each($languages))
 		foreach ($languages as $null => $data)
 		{
 			if ($data['available'] && !empty($data['lang']))
@@ -375,7 +367,130 @@ class Html
 		}
 		$d->close();
 
-		//		print_r($languages);
 		return $languages;
+	}
+	
+	/**
+	 * Prepare app row data for applications.html.twig
+	 * 
+	 * This method converts app data to the format expected by the Twig template
+	 * 
+	 * @param array $app Application data
+	 * @param string $row_bg_class Background class for the row
+	 * @return array Data ready for apps block in applications.html.twig
+	 */
+	function prepare_app_row_data($app, $row_bg_class)
+	{
+		$setup = new Setup();
+		
+		// Build the HTML for each action element (install, upgrade, remove checkboxes)
+		$install_html = '';
+		if (isset($app['install']) && $app['install'])
+		{
+			$install_html = '<input type="checkbox" name="install[]" value="' . $app['name'] . '">';
+		}
+		
+		$upgrade_html = '';
+		if (isset($app['upgrade']) && $app['upgrade'])
+		{
+			$upgrade_html = '<input type="checkbox" name="upgrade[]" value="' . $app['name'] . '">';
+		}
+		
+		$remove_html = '';
+		if (isset($app['remove']) && $app['remove'])
+		{
+			$remove_html = '<input type="checkbox" name="remove[]" value="' . $app['name'] . '">';
+		}
+		
+		// Determine status icon and alt text
+		$status_icon = 'completed.png';
+		$status_alt = $setup->lang('completed');
+		if (isset($app['status']) && $app['status'] != 'U')
+		{
+			$status_icon = 'incomplete.png';
+			$status_alt = $setup->lang('not completed');
+		}
+		
+		// Define row classes for the different actions
+		$row_install = isset($app['install']) && $app['install'] ? 'row_install_on' : 'row_install_off';
+		$row_upgrade = isset($app['upgrade']) && $app['upgrade'] ? 'row_upgrade_on' : 'row_upgrade_off';
+		$row_remove = isset($app['remove']) && $app['remove'] ? 'row_remove_on' : 'row_remove_off';
+		
+		// Build the full app row data for Twig
+		return [
+			'appname' => isset($app['name']) ? $app['name'] : 'unknown',
+			'bg_class' => $row_bg_class,
+			'instimg' => $status_icon,
+			'instalt' => $status_alt,
+			'appinfo' => isset($app['status_text']) ? $app['status_text'] : '',
+			'currentver' => isset($app['currentver']) ? $app['currentver'] : '',
+			'version' => isset($app['version']) ? $app['version'] : '',
+			'install' => $install_html,
+			'row_install' => $row_install,
+			'upgrade' => $upgrade_html,
+			'row_upgrade' => $row_upgrade,
+			'remove' => $remove_html,
+			'row_remove' => $row_remove,
+			'resolution' => isset($app['resolution']) ? $app['resolution'] : ''
+		];
+	}
+	
+	/**
+	 * Render applications list with Twig
+	 * 
+	 * @param array $apps Array of app data
+	 * @param array $header_data Header data for the template
+	 * @return string Rendered HTML
+	 */
+	function render_applications_list($apps, $header_data)
+	{
+		$setup = new Setup();
+		
+		// Start with the header
+		$output = $this->twig->renderBlock('applications.html.twig', 'header', [
+			'description' => $header_data['description']
+		]);
+		
+		// Add the table header
+		$output .= $this->twig->renderBlock('applications.html.twig', 'app_header', [
+			'app_info' => $setup->lang('Application'),
+			'app_status' => $setup->lang('Status'),
+			'app_currentver' => $setup->lang('Current Version'),
+			'app_version' => $setup->lang('Available'),
+			'app_install' => $setup->lang('Install'),
+			'app_upgrade' => $setup->lang('Upgrade'),
+			'app_resolve' => $setup->lang('Resolution'),
+			'app_remove' => $setup->lang('Remove'),
+			'check' => 'check.png',
+			'install_all' => $setup->lang('Check all'),
+			'upgrade_all' => $setup->lang('Check all'),
+			'remove_all' => $setup->lang('Check all')
+		]);
+		
+		// Add each app row
+		$row_bg = 'row_on';
+		foreach ($apps as $app)
+		{
+			$app_data = $this->prepare_app_row_data($app, $row_bg);
+			$output .= $this->twig->renderBlock('applications.html.twig', 'apps', $app_data);
+			$row_bg = ($row_bg == 'row_on') ? 'row_off' : 'row_on';
+		}
+		
+		// Add the footer
+		$output .= $this->twig->renderBlock('applications.html.twig', 'app_footer', [
+			'debug' => '<input type="checkbox" name="debug" value="1">',
+			'check' => 'check.png',
+			'install_all' => $setup->lang('Check all'),
+			'upgrade_all' => $setup->lang('Check all'),
+			'remove_all' => $setup->lang('Check all'),
+			'submit' => $setup->lang('Submit'),
+			'cancel' => $setup->lang('Cancel')
+		]);
+		
+		$output .= $this->twig->renderBlock('applications.html.twig', 'footer', [
+			'footer_text' => $header_data['footer_text'] ?? ''
+		]);
+		
+		return $output;
 	}
 }

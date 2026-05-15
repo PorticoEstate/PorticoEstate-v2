@@ -64,6 +64,7 @@ namespace
 			public bool $checkLocationResult = false;
 			public array $saveReceipt = [];
 			public array $readSingleResult = [];
+			public array $lastSaveValues = [];
 
 			public function __construct(array $config = [], array $types = [])
 			{
@@ -72,6 +73,7 @@ namespace
 
 			public function save($values, $valuesAttribute, $action = '', $typeId = '', $locationCodeParent = ''): array
 			{
+				$this->lastSaveValues = (array) $values;
 				return $this->saveReceipt;
 			}
 
@@ -212,6 +214,47 @@ namespace Tests\Helpers
 			$this->assertSame('success', $state['receipt']['status']);
 			$this->assertSame('A', $state['receipt']['location_code']);
 			$this->assertSame('A', $state['receipt']['receipt']['location_code']);
+		}
+
+		public function testPersistSaveStripsTransportKeysBeforeBoSave(): void
+		{
+			$bo = new \property_bolocation();
+			$bo->saveReceipt = [
+				'location_code' => '5804-01-01',
+				'error' => [],
+				'message' => [],
+			];
+			$bo->readSingleResult = ['location_code' => '5804-01-01'];
+			$GLOBALS['__location_bo_test_double'] = $bo;
+
+			$this->helper->persistSave([
+				'values' => [
+					'loc_code' => '5804-01-01',
+					'location_code' => '5804-01-01',
+					'loc1' => '5804',
+					'loc2' => '01',
+					'loc3' => '01',
+					'type_id' => 3,
+					'location_type' => 3,
+					'cat_id' => 98,
+					'change_type' => 2,
+				],
+				'values_attribute' => [],
+				'errors' => [],
+				'location_id' => 0,
+				'location_code' => '5804-01-01',
+				'type_id' => 3,
+				'location_parent' => ['5804', '01'],
+				'is_edit' => true,
+				'location_data' => null,
+			]);
+
+			$this->assertArrayNotHasKey('type_id', $bo->lastSaveValues);
+			$this->assertArrayNotHasKey('location_type', $bo->lastSaveValues);
+			$this->assertArrayNotHasKey('loc_code', $bo->lastSaveValues);
+			$this->assertSame('5804-01-01', $bo->lastSaveValues['location_code'] ?? null);
+			$this->assertSame(98, $bo->lastSaveValues['cat_id'] ?? null);
+			$this->assertSame(2, $bo->lastSaveValues['change_type'] ?? null);
 		}
 	}
 }

@@ -148,6 +148,7 @@ class LocationFormHelper
             }
 
             $values['location_code'] = $locationCode;
+            $values = $this->sanitizeSaveValues($values);
             $action = !empty($state['is_edit']) ? 'edit' : '';
             $receipt = $this->bo()->save(
                 $values,
@@ -190,6 +191,31 @@ class LocationFormHelper
         }
 
         return $state;
+    }
+
+    /**
+     * Remove transport/helper keys before delegating to legacy bo->save(),
+     * because solocation::edit() treats all keys as SQL update columns.
+     */
+    private function sanitizeSaveValues(array $values): array
+    {
+        if (empty($values['location_code']) && !empty($values['loc_code'])) {
+            $values['location_code'] = (string) $values['loc_code'];
+        }
+
+        unset(
+            $values['loc_code'],
+            $values['type_id'],
+            $values['location_type'],
+            $values['location_id'],
+            $values['is_edit'],
+            $values['location_parent'],
+            $values['location_data'],
+            $values['values_attribute'],
+            $values['errors']
+        );
+
+        return $values;
     }
 
     /**

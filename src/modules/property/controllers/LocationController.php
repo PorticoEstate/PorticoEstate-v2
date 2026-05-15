@@ -25,7 +25,7 @@ class LocationController
 
 		// Initialize form helper for write operations
 		$db = $container->get(Db::class);
-		$sanitizer = $container->get(Sanitizer::class);
+		$sanitizer = $container->get(\Sanitizer::class);
 		$this->formHelper = new LocationFormHelper($db, $sanitizer);
 	}
 

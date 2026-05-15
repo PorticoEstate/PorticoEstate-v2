@@ -383,9 +383,9 @@ class property_solocation
 		$part_of_town_id		 = isset($data['part_of_town_id']) ? (int)$data['part_of_town_id'] : 0;
 		$dry_run				 = isset($data['dry_run']) ? $data['dry_run'] : '';
 		$location_code			 = isset($data['location_code']) ? $data['location_code'] : '';
-		$filter_role_on_contact	 = $data['filter_role_on_contact'] ? (int)$data['filter_role_on_contact'] : 0;
-		$role_id				 = $data['role_id'] ? (int)$data['role_id'] : 0;
-		$results				 = $data['results'] ? (int)$data['results'] : 0;
+		$filter_role_on_contact	 = isset($data['filter_role_on_contact']) && $data['filter_role_on_contact'] ? (int)$data['filter_role_on_contact'] : 0;
+		$role_id					 = isset($data['role_id']) && $data['role_id'] ? (int)$data['role_id'] : 0;
+		$results					 = isset($data['results']) && $data['results'] ? (int)$data['results'] : 0;
 		$check_for_control		 = isset($data['check_for_control']) ? $data['check_for_control'] : false;
 		$control_registered		 = isset($data['control_registered']) ? $data['control_registered'] : '';
 		$control_id				 = isset($data['control_id']) && $data['control_id'] ? (int)$data['control_id'] : 0;
@@ -394,6 +394,8 @@ class property_solocation
 		$additional_fields		 = !empty($data['additional_fields']) ? (array)$data['additional_fields'] : array();
 		$criteria_id			 = isset($data['criteria_id']) ? $data['criteria_id'] : '';
 		$column_search			 = !empty($data['column_search']) ? (array)$data['column_search'] : array();
+
+		$filter_item = array_filter(array_map('intval', $filter_item));
 
 
 		if ($location_id && !$type_id)
@@ -947,6 +949,11 @@ class property_solocation
 		if (isset($this->config->config_data['acl_at_location']) && $this->config->config_data['acl_at_location'])
 		{
 			$access_location = $this->bocommon->get_location_list(ACL_READ);
+			foreach ($access_location as &$location)
+			{
+				$location = $this->db->db_addslashes($location);
+			}
+			unset($location);
 			$filtermethod	 = " WHERE fm_location{$type_id}.loc1 in ('" . implode("','", $access_location) . "')";
 			$where			 = 'AND';
 		}
@@ -1028,7 +1035,7 @@ class property_solocation
 							}
 							else if ($metadata[$key]->type == 'numeric')
 							{
-								$filtermethod	 .= " {$where} fm_location{$type_id}.{$key} = '" . (float)$value . "'";
+								$filtermethod	 .= " {$where} fm_location{$type_id}.{$key} = " . (float)$value;
 							}
 							if (in_array($metadata[$key]->type, array('integer', 'smallint', 'bigint', 'int2', 'int4', 'int8')))
 							{

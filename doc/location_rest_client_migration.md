@@ -35,6 +35,8 @@ Completed in `sigurd/client_migration`:
   - switched `read_single()` row extraction to fetched-row handling with `DbRowTrait::dbStrip()` for scalar text values
   - hardened `read()` filter inputs (typed ints + escaped wildcard text) for `status`, district/part-of-town filters, owner filter, `location_code`, and column-search text fragments
   - hardened `read()` ordering inputs by normalizing sort direction and rejecting non-tokenized `order` expressions
+  - hardened `read()` list filters by normalizing `filter_item` IDs and sanitizing ACL location list fragments before interpolation
+  - added defensive `isset(...)` guards for optional `read()` inputs used in role/contact filtering
 
 Notes:
 

@@ -1517,6 +1517,7 @@ class property_solocation
 		//cache result
 		static $location = array();
 		static $location_noattribs = array();
+		$id = !empty($values['id']) ? (int)$values['id'] : null;
 
 		$location_array	 = explode('-', $location_code);
 		$type_id		 = count($location_array);
@@ -1535,7 +1536,6 @@ class property_solocation
 				$type_info	 = explode('.', $location_info['location']);
 				$type_id	 = $type_info[2];
 			}
-			$id = !empty($values['id']) ? (int)$values['id'] : null;
 			if (!$id && !$location_code)
 			{
 				$type_id = false;
@@ -1615,33 +1615,40 @@ class property_solocation
 
 		//FIXME: Make sure all locations are linked to a valid category
 		$sql .= " {$this->left_join} fm_location{$type_id}_category ON (fm_location{$type_id}.category = fm_location{$type_id}_category.id)";
+		$params = array();
 
 		if ($location_code)
 		{
-			$sql .= " WHERE fm_location{$type_id}.location_code='{$location_code}' ";
+			$sql .= " WHERE fm_location{$type_id}.location_code = :location_code";
+			$params[':location_code'] = $location_code;
 		}
 		else
 		{
-			$sql .= " WHERE fm_location{$type_id}.id=" . (int)$id;
+			$sql .= " WHERE fm_location{$type_id}.id = :id";
+			$params[':id'] = (int)$id;
 		}
 
-		$this->db->query($sql, __LINE__, __FILE__);
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute($params);
+		$row = $stmt->fetch(\PDO::FETCH_ASSOC);
 
 		//			_debug_array($sql);
 		$cols_return = $this->cols_return;
 
-		if ($this->db->next_record())
+		if ($row)
 		{
 			foreach ($cols_return as $col)
 			{
-				$values[$col] = $this->db->f($col, true);
+				$rawValue = $row[$col] ?? null;
+				$values[$col] = is_scalar($rawValue) ? $this->dbStrip($rawValue) : $rawValue;
 			}
 
 			if (isset($values['attributes']) && is_array($values['attributes']))
 			{
 				foreach ($values['attributes'] as &$attr)
 				{
-					$attr['value'] = $this->db->f($attr['column_name'], true);
+					$attrRaw = $row[$attr['column_name']] ?? null;
+					$attr['value'] = is_scalar($attrRaw) ? $this->dbStrip($attrRaw) : $attrRaw;
 					if ($attr['lookup_form'])
 					{
 						$values[$attr['column_name']] = $attr['value'];
@@ -1651,7 +1658,7 @@ class property_solocation
 
 			if (!$location_code)
 			{
-				$location_code = $this->db->f('location_code');
+				$location_code = $row['location_code'] ?? '';
 			}
 		}
 

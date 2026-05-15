@@ -31,6 +31,8 @@ Completed in `sigurd/client_migration`:
   - applied `DbRowTrait::dbStrip()` for returned text values in address/district/part-of-town/zip helpers
   - parameterized wildcard filters in `get_children()` and `get_locations_by_name()`
   - applied `DbRowTrait::dbStrip()` for name fields returned by those search helpers
+  - parameterized `read_single()` lookup by `location_code`/`id`
+  - switched `read_single()` row extraction to fetched-row handling with `DbRowTrait::dbStrip()` for scalar text values
 
 Notes:
 

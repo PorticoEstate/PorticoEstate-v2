@@ -17,6 +17,12 @@ Completed in `sigurd/client_migration`:
   - `/property/location/component/update-control-serie`
 3. `LocationController` now exposes compatibility handlers for these write paths while preserving legacy business logic execution.
 4. Responsibility-role save action migrated from legacy `property.uilocation.responsiblility_role_save` menuaction URL to `/property/location/responsibility-role/save`.
+5. `class.solocation.inc.php` received the first prepared-query hardening slice:
+  - parameterized fixed-table `location_code` count queries in `read_entity_to_link()`
+  - parameterized `check_location()` lookup by `location_code`
+6. `class.solocation.inc.php` add/edit paths hardened further:
+  - parameterized `fm_locations` insert values in `add()`
+  - parameterized `location_code` updates/selects in `add()` and `edit()`
 
 Notes:
 

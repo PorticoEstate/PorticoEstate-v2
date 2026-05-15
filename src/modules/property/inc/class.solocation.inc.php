@@ -83,7 +83,10 @@ class property_solocation
 
 	function read_entity_to_link($location_code, $exact = false)
 	{
-		$condition = $exact ? "= '{$location_code}'" : "{$this->like} '{$location_code}%'";
+		$locationOperator = $exact ? '=' : $this->like;
+		$locationValue = $exact ? $location_code : "{$location_code}%";
+		$locationValueEscaped = $this->db->db_addslashes($locationValue);
+		$condition = "{$locationOperator} '{$locationValueEscaped}'";
 
 		$entity = array();
 
@@ -149,12 +152,12 @@ class property_solocation
 			}
 		}
 
-		$sql = "SELECT count(*) as hits FROM fm_tts_tickets WHERE location_code {$condition}";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
-		if ($this->db->f('hits'))
+		$sql = "SELECT count(*) as hits FROM fm_tts_tickets WHERE location_code {$locationOperator} :location_code";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':location_code' => $locationValue));
+		$hits = (int)$stmt->fetchColumn();
+		if ($hits)
 		{
-			$hits				 = $this->db->f('hits');
 			$entity['related'][] = array(
 				'entity_link'	 => phpgw::link('/index.php', array(
 					'menuaction' => 'property.uitts.index',
@@ -166,12 +169,12 @@ class property_solocation
 			);
 		}
 
-		$sql = "SELECT count(*) as hits FROM fm_request WHERE location_code {$condition}";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
-		if ($this->db->f('hits'))
+		$sql = "SELECT count(*) as hits FROM fm_request WHERE location_code {$locationOperator} :location_code";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':location_code' => $locationValue));
+		$hits = (int)$stmt->fetchColumn();
+		if ($hits)
 		{
-			$hits				 = $this->db->f('hits');
 			$entity['related'][] = array(
 				'entity_link'	 => phpgw::link('/index.php', array(
 					'menuaction' => 'property.uirequest.index',
@@ -183,12 +186,12 @@ class property_solocation
 			);
 		}
 
-		$sql = "SELECT count(*) as hits FROM fm_project WHERE location_code {$condition}";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
-		if ($this->db->f('hits'))
+		$sql = "SELECT count(*) as hits FROM fm_project WHERE location_code {$locationOperator} :location_code";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':location_code' => $locationValue));
+		$hits = (int)$stmt->fetchColumn();
+		if ($hits)
 		{
-			$hits				 = $this->db->f('hits');
 			$entity['related'][] = array(
 				'entity_link'	 => phpgw::link(
 					'/index.php',
@@ -205,12 +208,12 @@ class property_solocation
 			);
 		}
 
-		$sql = "SELECT count(*) as hits FROM fm_gab_location WHERE location_code {$condition}";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
-		if ($this->db->f('hits'))
+		$sql = "SELECT count(*) as hits FROM fm_gab_location WHERE location_code {$locationOperator} :location_code";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':location_code' => $locationValue));
+		$hits = (int)$stmt->fetchColumn();
+		if ($hits)
 		{
-			$hits			 = $this->db->f('hits');
 			$entity['gab'][] = array(
 				'entity_link'	 => phpgw::link('/index.php', array(
 					'menuaction'	 => 'property.uigab.index',
@@ -222,12 +225,12 @@ class property_solocation
 		}
 
 
-		$sql	 = "SELECT DISTINCT fm_s_agreement.id FROM fm_s_agreement"
+		$sql	 = "SELECT count(DISTINCT fm_s_agreement.id) as hits FROM fm_s_agreement"
 			. " {$this->join} fm_s_agreement_detail ON fm_s_agreement.id = fm_s_agreement_detail.agreement_id"
-			. " WHERE location_code {$condition}"
-			. " GROUP BY fm_s_agreement.id";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$hits	 = $this->db->num_rows();
+			. " WHERE location_code {$locationOperator} :location_code";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':location_code' => $locationValue));
+		$hits	 = (int)$stmt->fetchColumn();
 
 		if ($hits)
 		{
@@ -308,9 +311,12 @@ class property_solocation
 		{
 			$type_id = count(explode('-', $location_code));
 		}
-		$this->db->query("SELECT location_code FROM fm_location{$type_id} WHERE location_code='{$location_code}'");
+		$type_id = (int)$type_id;
+		$sql = "SELECT location_code FROM fm_location{$type_id} WHERE location_code = :location_code";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':location_code' => $location_code));
 
-		return $this->db->next_record();
+		return (bool)$stmt->fetchColumn();
 	}
 
 	function get_column_list($location_id)
@@ -1672,6 +1678,7 @@ class property_solocation
 
 	function add($location, $values_attribute = array(), $type_id = '')
 	{
+		$type_id = (int)$type_id;
 		$receipt = array();
 		foreach ($location as $input_name => $value)
 		{
@@ -1721,12 +1728,22 @@ class property_solocation
 		//echo $sql;
 		$this->db->query($sql, __LINE__, __FILE__);
 
-		$sql = "INSERT INTO fm_locations (level, location_code, loc1) VALUES ({$type_id}, '{$location['location_code']}', '{$location['loc1']}')";
-		$this->db->query($sql, __LINE__, __FILE__);
+		$sql = "INSERT INTO fm_locations (level, location_code, loc1) VALUES (:level, :location_code, :loc1)";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(
+			':level' => $type_id,
+			':location_code' => $location['location_code'],
+			':loc1' => $location['loc1']
+		));
 		$this->update_location_name($location['location_code']);
 
 		$id = $this->get_item_id($location['location_code']);
-		$this->db->query("UPDATE fm_location{$type_id} SET id = {$id} WHERE location_code = '{$location['location_code']}'", __LINE__, __FILE__);
+		$sql = "UPDATE fm_location{$type_id} SET id = :id WHERE location_code = :location_code";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(
+			':id' => (int)$id,
+			':location_code' => $location['location_code']
+		));
 
 		$this->db->transaction_commit();
 		$receipt['message'][] = array('msg' => lang('Location %1 has been saved', $location['location_code']));
@@ -1747,6 +1764,7 @@ class property_solocation
 
 	function edit($location, $values_attribute = array(), $type_id = '')
 	{
+		$type_id = (int)$type_id;
 		$receipt = array();
 
 		if (is_array($location))
@@ -1781,9 +1799,10 @@ class property_solocation
 
 		$value_set = $this->db->validate_update($value_set);
 
-		$sql = "SELECT * FROM fm_location{$type_id} WHERE location_code ='{$location['location_code']}'";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
+		$sql = "SELECT * FROM fm_location{$type_id} WHERE location_code = :location_code";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':location_code' => $location['location_code']));
+		$row = $stmt->fetch(\PDO::FETCH_ASSOC);
 
 		$metadata = $this->db->metadata('fm_location' . $type_id);
 
@@ -1801,13 +1820,14 @@ class property_solocation
 		{
 			$cols[] = $metadata[$i]['name'];
 
-			if (ctype_digit($this->db->f($metadata[$i]['name'])))
+			$currentValue = isset($row[$metadata[$i]['name']]) ? $row[$metadata[$i]['name']] : null;
+			if ($currentValue !== null && ctype_digit((string)$currentValue))
 			{
-				$vals[] = $this->db->f($metadata[$i]['name']);
+				$vals[] = $currentValue;
 			}
 			else
 			{
-				$vals[] = $this->db->db_addslashes($this->db->f($metadata[$i]['name'], true));
+				$vals[] = $this->db->db_addslashes((string)$currentValue);
 			}
 		}
 
@@ -1821,8 +1841,9 @@ class property_solocation
 		$sql = "INSERT INTO fm_location{$type_id}_history ($cols) VALUES ($vals)";
 		$this->db->query($sql, __LINE__, __FILE__);
 
-		$sql = "UPDATE fm_location{$type_id} SET {$value_set} WHERE location_code='{$location['location_code']}'";
-		$this->db->query($sql, __LINE__, __FILE__);
+		$sql = "UPDATE fm_location{$type_id} SET {$value_set} WHERE location_code = :location_code";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':location_code' => $location['location_code']));
 
 		$this->update_location_name($location['location_code']);
 

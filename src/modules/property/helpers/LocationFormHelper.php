@@ -193,6 +193,101 @@ class LocationFormHelper
     }
 
     /**
+     * Apply legacy uilocation save rules for required levels, category, attributes and edit/add constraints.
+     *
+     * @param array $state State from mapInput or intermediate legacy adapters.
+     * @param array $insertRecord Legacy insert record session payload.
+     * @param bool $isEdit True when editing an existing location.
+     * @return array Updated state with normalized location_code, location_parent and errors.
+     */
+    public function applyLegacyRules(array $state, array $insertRecord, bool $isEdit): array
+    {
+        $values = $state['values'] ?? [];
+        $valuesAttribute = $state['values_attribute'] ?? [];
+        $errors = $state['errors'] ?? [];
+        $typeId = (int) ($state['type_id'] ?? 0);
+
+        if ($typeId <= 0) {
+            $locationCode = (string) ($state['location_code'] ?? ($values['location_code'] ?? ''));
+            $typeId = $locationCode !== '' ? count($this->extractLocationParts($locationCode)) : 0;
+        }
+
+        $locationCodeParts = [];
+        $locationParent = [];
+        $existingParts = $this->extractLocationParts((string) ($state['location_code'] ?? ($values['location_code'] ?? '')));
+
+        for ($level = 1; $level <= $typeId; $level++) {
+            $locKey = "loc{$level}";
+            $value = isset($values[$locKey]) ? trim((string) $values[$locKey]) : '';
+            if ($value === '' && isset($existingParts[$level - 1])) {
+                $value = trim((string) $existingParts[$level - 1]);
+            }
+
+            if ($value === '') {
+                $errors[] = lang('Please select a location %1 ID !', $level);
+            }
+
+            $values[$locKey] = $value;
+            $locationCodeParts[] = $value;
+            if ($level < $typeId) {
+                $locationParent[] = $value;
+            }
+        }
+
+        if (empty($values['cat_id'])) {
+            $errors[] = lang('Please select a category');
+        }
+
+        if (is_array($valuesAttribute)) {
+            foreach ($valuesAttribute as $attribute) {
+                if (($attribute['nullable'] ?? null) != 1 && empty($attribute['value'])) {
+                    $errors[] = lang('Please enter value for attribute %1', $attribute['input_text']);
+                }
+
+                if (($attribute['datatype'] ?? null) == 'I' && !empty($attribute['value']) && !is_int((int) ($attribute['value']))) {
+                    $errors[] = lang('Please enter integer for attribute %1', $attribute['input_text']);
+                }
+            }
+        }
+
+        if (isset($insertRecord['extra']) && is_array($insertRecord['extra'])) {
+            if (array_search('street_id', $insertRecord['extra']) !== false && empty($values['street_id'])) {
+                $errors[] = lang('Please select a street');
+            }
+            if (array_search('part_of_town_id', $insertRecord['extra']) !== false && empty($values['part_of_town_id'])) {
+                $errors[] = lang('Please select a part of town');
+            }
+            if (array_search('owner_id', $insertRecord['extra']) !== false && empty($values['owner_id'])) {
+                $errors[] = lang('Please select an owner');
+            }
+        }
+
+        $values['location_code'] = implode('-', $locationCodeParts);
+
+        if (!$isEdit && !empty($values['location_code']) && $typeId > 0 && $this->bo()->check_location($values['location_code'], $typeId)) {
+            $errors[] = lang('This location is already registered!') . '[ ' . $values['location_code'] . ' ]';
+        }
+
+        if ($isEdit) {
+            $values['change_type'] = isset($values['change_type']) ? (int) $values['change_type'] : 0;
+            if (empty($values['change_type'])) {
+                $errors[] = lang('Please select change type');
+            }
+        }
+
+        $values['error_id'] = !empty($errors);
+
+        $state['values'] = $values;
+        $state['values_attribute'] = $valuesAttribute;
+        $state['type_id'] = $typeId;
+        $state['location_parent'] = $locationParent;
+        $state['location_code'] = $values['location_code'];
+        $state['errors'] = $errors;
+
+        return $state;
+    }
+
+    /**
      * Load location data for rehydration after validation errors
      * 
      * @param string $locationCode Location code to load

@@ -955,25 +955,23 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 	{
 		$change_type		 = Sanitizer::get_var('change_type', 'int', 'POST');
 		$location_code		 = Sanitizer::get_var('location_code');
-		$values_attribute	 = Sanitizer::get_var('values_attribute');
-		$location			 = explode('-', $location_code);
-		$error_id			 = false;
-		$type_id			 = $this->type_id;
 
-		if ($location_code)
+		$helper = new \App\modules\property\helpers\LocationFormHelper();
+		$input = $helper->mapInput((array) $_POST, $location_code ? 1 : null);
+		$values = $input['values'];
+		$values_attribute = $input['values_attribute'];
+		$type_id = (int) ($input['type_id'] ?? $this->type_id);
+		$errors = array();
+
+		if (!empty($input['errors']) && is_array($input['errors']))
 		{
-			$type_id = count($location);
+			foreach ($input['errors'] as $error)
+			{
+				$errors[] = (string) $error;
+			}
 		}
 
 		$insert_record = Cache::session_get('property', 'insert_record');
-
-		if (isset($insert_record['location']) && is_array($insert_record['location']))
-		{
-			for ($i = 0; $i < count($insert_record['location']); $i++)
-			{
-				$values[$insert_record['location'][$i]] = Sanitizer::get_var($insert_record['location'][$i], 'string', 'POST');
-			}
-		}
 
 		$insert_record_attributes = Cache::session_get('property', 'insert_record_values' . '.location.' . $this->type_id);
 
@@ -999,79 +997,34 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 			}
 		}
 
-		for ($i = 1; $i < ($type_id + 1); $i++)
+		$values['change_type'] = $change_type;
+		$state = array(
+			'values' => $values,
+			'values_attribute' => $values_attribute,
+			'type_id' => $type_id,
+			'location_code' => $location_code,
+			'errors' => $errors,
+		);
+
+		$state = $helper->applyLegacyRules($state, (array) $insert_record, (bool) $location_code);
+		$values = $state['values'];
+		$values_attribute = $state['values_attribute'];
+		$type_id = (int) ($state['type_id'] ?? $type_id);
+		$location_parent = $state['location_parent'] ?? '';
+
+		$this->receipt['error'] = array();
+		foreach ((array) ($state['errors'] ?? array()) as $error)
 		{
-			if ((!$values["loc{$i}"] && (!isset($location[($i - 1)]) || !$location[($i - 1)])) || !$values["loc{$i}"])
-			{
-				$this->receipt['error'][]	 = array('msg' => lang('Please select a location %1 ID !', $i));
-				$error_id					 = true;
-			}
-
-			$values['location_code'][] = $values["loc{$i}"];
-
-			if ($i < $type_id)
-			{
-				$location_parent[] = $values["loc{$i}"];
-			}
+			$this->receipt['error'][] = array('msg' => (string) $error);
 		}
 
-		if (!$values['cat_id'])
-		{
-			$this->receipt['error'][] = array('msg' => lang('Please select a category'));
-		}
-
-		if (isset($values_attribute) && is_array($values_attribute))
-		{
-			foreach ($values_attribute as $attribute)
-			{
-				if ($attribute['nullable'] != 1 && !$attribute['value'])
-				{
-					$this->receipt['error'][] = array('msg' => lang('Please enter value for attribute %1', $attribute['input_text']));
-				}
-
-				if ($attribute['datatype'] == 'I' && isset($attribute['value']) && $attribute['value'] && !is_int((int)($attribute['value'])))
-				{
-					$this->receipt['error'][] = array('msg' => lang('Please enter integer for attribute %1', $attribute['input_text']));
-				}
-			}
-		}
-
-		if (isset($insert_record['extra']) && array_search('street_id', $insert_record['extra']) && (!isset($values['street_id']) || !$values['street_id']))
-		{
-			$this->receipt['error'][] = array('msg' => lang('Please select a street'));
-		}
-		if (isset($insert_record['extra']) && array_search('part_of_town_id', $insert_record['extra']) && (!isset($values['part_of_town_id']) || !$values['part_of_town_id']))
-		{
-			$this->receipt['error'][] = array('msg' => lang('Please select a part of town'));
-		}
-		if (isset($insert_record['extra']) && array_search('owner_id', $insert_record['extra']) && (!isset($values['owner_id']) || !$values['owner_id']))
-		{
-			$this->receipt['error'][] = array('msg' => lang('Please select an owner'));
-		}
-
-		$values['location_code'] = implode("-", $values['location_code']);
-
-		if ($values['location_code'] && !$location_code)
-		{
-			if ($this->bo->check_location($values['location_code'], $type_id))
-			{
-				$this->receipt['error'][]	 = array('msg' => lang('This location is already registered!') . '[ ' . $values['location_code'] . ' ]');
-				$error_id					 = true;
-			}
-		}
-
-		if ($location_code)
-		{
-			$values['change_type'] = $change_type;
-
-			if (!$values['change_type'])
-			{
-				$this->receipt['error'][] = array('msg' => lang('Please select change type'));
-			}
-		}
-		$values['error_id'] = $error_id;
-
-		return array('values' => $values, 'type_id' => $type_id, 'location_parent' => (isset($location_parent) ? $location_parent : ''));
+		return array(
+			'values' => $values,
+			'values_attribute' => $values_attribute,
+			'type_id' => $type_id,
+			'location_parent' => $location_parent,
+			'errors' => (array) $this->receipt['error'],
+		);
 	}
 
 	function get_part_of_town()
@@ -3163,6 +3116,8 @@ JS;
 
 		$location_code		 = Sanitizer::get_var('location_code');
 		$values_attribute	 = Sanitizer::get_var('values_attribute');
+		$action = '';
+		$helper = new \App\modules\property\helpers\LocationFormHelper();
 
 		$result = $this->_populate();
 
@@ -3173,25 +3128,50 @@ JS;
 
 		$values			 = $result['values'];
 		$location_parent = $result['location_parent'];
+		$errors = (array) ($result['errors'] ?? array());
+		$values_attribute = $result['values_attribute'] ?? $values_attribute;
+		$this->receipt['error'] = $errors;
 
 		if (!$this->receipt['error'])
 		{
 			try
 			{
-				$receipt = $this->bo->save($values, $values_attribute, $action, $result['type_id'], $location_parent);
-				if (!empty($receipt['location_code']))
+				$state = array(
+					'values' => $values,
+					'values_attribute' => $values_attribute,
+					'errors' => $errors,
+					'location_id' => 0,
+					'location_code' => $location_code,
+					'type_id' => (int) $result['type_id'],
+					'location_parent' => $location_parent,
+					'is_edit' => (bool) $location_code,
+					'location_data' => null,
+				);
+
+				$state = $helper->persistSave($state);
+				$legacyReceipt = (array) ($state['receipt']['receipt'] ?? array());
+
+				if (($state['receipt']['status'] ?? '') === 'success' && !empty($legacyReceipt['location_code']))
 				{
+					$receipt = $legacyReceipt;
 					$values['saved']		 = true;
 					$values['error_id']		 = false;
 					$values['location_code'] = $receipt['location_code'];
 					$location_code			 = $receipt['location_code'];
+					$this->receipt = $receipt;
 				}
 				else
 				{
 					$values['error_id'] = true;
+					if (!empty($legacyReceipt))
+					{
+						$this->receipt = $legacyReceipt;
+					}
+					else if (!empty($state['errors']['save']))
+					{
+						$this->receipt['error'][] = array('msg' => $state['errors']['save']);
+					}
 				}
-
-				$this->receipt = $receipt;
 			}
 			catch (Exception $e)
 			{

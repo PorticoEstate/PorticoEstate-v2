@@ -919,7 +919,7 @@ JS;
 		return $values;
 	}
 
-	function read_single_old($location_code = '', $extra = '')
+	function read_single_old($location_code = '', $extra = array())
 	{
 		$location_data = $this->so->read_single($location_code);
 

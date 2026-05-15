@@ -1128,9 +1128,9 @@ class property_solocation
 			if (stristr($_query, '.'))
 			{
 				$query_part	 = explode(".", $_query);
-				if (ctype_digit($query_part[0]) && ctype_digit($query_part[1]))
+				if (isset($query_part[0]) && isset($query_part[1]) && ctype_digit(trim($query_part[0])) && ctype_digit(trim($query_part[1])))
 				{
-					$_querymethod[]	 = "(fm_location{$type_id}.loc1='{$query_part[0]}' AND fm_location{$type_id}.loc{$type_id}='{$query_part[1]}')";
+					$_querymethod[]	 = "(fm_location{$type_id}.loc1='" . (int)trim($query_part[0]) . "' AND fm_location{$type_id}.loc{$type_id}='" . (int)trim($query_part[1]) . "')";
 				}
 			}
 			//		else
@@ -1715,16 +1715,27 @@ class property_solocation
 	{
 		$type_id = (int)$type_id;
 		$receipt = array();
+
+		// Get allowed column names from table metadata
+		$metadata = $this->db->metadata("fm_location{$type_id}");
+		$allowed_cols = array_keys((array)$metadata);
+
+		$cols = array();
+		$vals = array();
+
 		foreach ($location as $input_name => $value)
 		{
-			if ($value)
+			if ($value && in_array($input_name, $allowed_cols, true))
 			{
 				if ($input_name == 'cat_id')
 				{
 					$input_name = 'category';
 				}
-				$cols[]	 = $input_name;
-				$vals[]	 = $value;
+				if (in_array($input_name, $allowed_cols, true))
+				{
+					$cols[]	 = $input_name;
+					$vals[]	 = $value;
+				}
 			}
 		}
 
@@ -1732,7 +1743,7 @@ class property_solocation
 		{
 			foreach ($values_attribute as $entry)
 			{
-				if ($entry['value'])
+				if ($entry['value'] && in_array($entry['name'], $allowed_cols, true))
 				{
 					if ($entry['datatype'] == 'C' || $entry['datatype'] == 'T' || $entry['datatype'] == 'V' || $entry['datatype'] == 'link')
 					{
@@ -1767,8 +1778,8 @@ class property_solocation
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute(array(
 			':level' => $type_id,
-			':location_code' => $location['location_code'],
-			':loc1' => $location['loc1']
+			':location_code' => isset($location['location_code']) ? $location['location_code'] : '',
+			':loc1' => isset($location['loc1']) ? $location['loc1'] : ''
 		));
 		$this->update_location_name($location['location_code']);
 
@@ -1789,7 +1800,7 @@ class property_solocation
 			$acl_location = ".location.{$type_id}." . str_replace("-", '.', $location['location_code']);
 			if (!$this->locations->get_id('property', $acl_location))
 			{
-				$this->locations->add($acl_location, $location["loc{$type_id}_name"], 'property');
+				$this->locations->add($acl_location, isset($location["loc{$type_id}_name"]) ? $location["loc{$type_id}_name"] : '', 'property');
 			}
 		}
 
@@ -2180,7 +2191,7 @@ class property_solocation
 	{
 		if (is_array($data))
 		{
-			$filter			 = isset($data['filter']) && $data['filter'] ? $data['filter'] : 0;
+			$filter			 = isset($data['filter']) && $data['filter'] ? (int)$data['filter'] : 0;
 			$type_id		 = isset($data['type_id']) && $data['type_id'] ? (int)$data['type_id'] : 0;
 			$district_id	 = isset($data['district_id']) && $data['district_id'] ? (int)$data['district_id'] : 0;
 			$part_of_town_id = isset($data['part_of_town_id']) && $data['part_of_town_id'] ? (int)$data['part_of_town_id'] : 0;
@@ -2243,11 +2254,11 @@ class property_solocation
 		{
 			if ($this->userSettings['preferences']['property']['property_filter'] == 'owner')
 			{
-				$filtermethod .= " $where fm_owner.id='$filter' ";
+				$filtermethod .= " $where fm_owner.id = {$filter} ";
 			}
 			else
 			{
-				$filtermethod .= " $where fm_owner.category='$filter' ";
+				$filtermethod .= " $where fm_owner.category = {$filter} ";
 			}
 			$where = 'AND';
 		}
@@ -2316,10 +2327,10 @@ class property_solocation
 
 		foreach ($values as  &$value)
 		{
-			$cat_id = $value['cat_id'];
+			$cat_id = (int)$value['cat_id'];
 			for ($i = ($type_id - 1); $i > 0; $i--)
 			{
-				$filtermethod2 = " {$where} fm_location{$type_id}.category = '{$cat_id}'";
+				$filtermethod2 = " {$where} fm_location{$type_id}.category = {$cat_id}";
 				$sql = "SELECT count(*) as count FROM "
 					. "(SELECT DISTINCT fm_location{$i}.location_code"
 					. " FROM {$sql_base} {$filtermethod} {$filtermethod2}) as t";
@@ -3062,10 +3073,10 @@ class property_solocation
 	{
 		$type_id	 = (int)$data['type_id'];
 		$id			 = (int)$data['id'];
-		$field_name	 = $data['field_name'];
-		$value		 = $this->db->db_addslashes($data['value']);
+		$field_name	 = isset($data['field_name']) ? (string)$data['field_name'] : '';
+		$value		 = isset($data['value']) ? $this->db->db_addslashes($data['value']) : '';
 
-		if (in_array($field_name, array('id')) || preg_match('/^loc/i', $field_name))
+		if (!$field_name || in_array($field_name, array('id')) || preg_match('/^loc/i', $field_name))
 		{
 			return false;
 		}
@@ -3080,13 +3091,13 @@ class property_solocation
 			$cols[] = $this->db->f('column_name');
 		}
 
-		if (in_array($field_name, $cols))
+		if (in_array($field_name, $cols, true))
 		{
 			$table = "fm_location{$type_id}";
 			return $this->db->query("UPDATE fm_location{$type_id} SET $field_name = '{$value}'"
 				. " WHERE id = {$id}", __LINE__, __FILE__);
 		}
-		else if ($field_name == 'contact_phone')
+		else if ($field_name === 'contact_phone')
 		{
 			$this->db->query("SELECT tenant_id FROM fm_location{$type_id}"
 				. " WHERE id = {$id}", __LINE__, __FILE__);
@@ -3103,7 +3114,7 @@ class property_solocation
 				return false;
 			}
 		}
-		else if ($field_name == 'street_name')
+		else if ($field_name === 'street_name')
 		{
 			$this->db->query("SELECT street_id FROM fm_location{$type_id}"
 				. " WHERE id = {$id}", __LINE__, __FILE__);

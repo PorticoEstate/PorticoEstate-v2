@@ -38,8 +38,10 @@ Completed in `sigurd/client_migration`:
   - hardened `read()` list filters by normalizing `filter_item` IDs and sanitizing ACL location list fragments before interpolation
   - added defensive `isset(...)` guards for optional `read()` inputs used in role/contact filtering
   - hardened `read()` category and criteria handling by normalizing category arrays and whitelisting `criteria_id` values used for query branching
-
-Notes:
+  - hardened `read()` query-part validation by checking array bounds and casting dot-notation numeric parts to integers
+  - hardened `edit_field()` by adding isset() guards and enforcing strict in_array comparison for field-name lookups
+  - hardened `add()` by whitelisting allowed column names against database metadata before INSERT interpolation, and adding defensive isset() checks for array keys
+  - hardened `read_summary()` by casting filter inputs to integers and removing quoted numeric interpolation in owner filter conditions
 
 - These are transport-level migrations (legacy logic still executes behind REST facade).
 - The canonical REST delete route `DELETE /property/location/{location_code}` remains available.

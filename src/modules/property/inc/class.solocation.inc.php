@@ -2313,14 +2313,12 @@ class property_solocation
 		}
 
 		$table = 'fm_location' . $type_id . '_history';
+		$sql = "SELECT count(*) AS cnt FROM {$table} WHERE location_code = :location_code";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':location_code' => $location_code));
+		$cnt = (int)$stmt->fetchColumn();
 
-		$sql = "SELECT count(*) AS cnt FROM $table WHERE location_code='$location_code'";
-
-		$this->db->query($sql, __LINE__, __FILE__);
-
-		$this->db->next_record();
-
-		if ($this->db->f('cnt') > 0)
+		if ($cnt > 0)
 		{
 			return true;
 		}
@@ -2391,18 +2389,19 @@ class property_solocation
 
 		$sql = "SELECT {$table}.*, {$table_category}.descr as category"
 			. " FROM {$table} {$this->left_join} {$table_category} ON {$table}.category = {$table_category}.id"
-			. " WHERE location_code='{$location_code}' ORDER BY exp_date DESC";
-		$this->db->query($sql, __LINE__, __FILE__);
+			. " WHERE location_code = :location_code ORDER BY exp_date DESC";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':location_code' => $location_code));
 
 		$j			 = 0;
 		//		$cols_return = $uicols['name'];
 		$dataset	 = array();
-		while ($this->db->next_record())
+		while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
 		{
 			foreach ($attrib as $key => $field)
 			{
 				$dataset[$j][$field['column_name']] = array(
-					'value'		 => $this->db->f($field['column_name']),
+					'value'		 => $row[$field['column_name']] ?? null,
 					'datatype'	 => $field['datatype'],
 					'attrib_id'	 => $field['attrib_id']
 				);
@@ -3091,13 +3090,16 @@ class property_solocation
 		$location_arr	 = explode('-', $location_code);
 		$zip_info = array();
 
-		$this->db->query("SELECT fm_zip_code.id AS zip_code, fm_zip_code.name AS city"
+		$sql = "SELECT fm_zip_code.id AS zip_code, fm_zip_code.name AS city"
 			. " FROM fm_zip_code $this->join fm_location1 ON fm_zip_code.id = fm_location1.zip_code"
-			. " WHERE loc1 = '{$location_arr[0]}'", __LINE__, __FILE__);
-		if ($this->db->next_record())
+			. " WHERE loc1 = :loc1";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':loc1' => $location_arr[0]));
+		$row = $stmt->fetch(\PDO::FETCH_ASSOC);
+		if ($row)
 		{
-			$zip_info['zip_code'] = $this->db->f('zip_code');
-			$zip_info['city'] = $this->db->f('city', true);
+			$zip_info['zip_code'] = $row['zip_code'];
+			$zip_info['city'] = $this->dbStrip($row['city'] ?? null) ?: '';
 		}
 
 		$zip_info_cache[$location_code] = $zip_info;

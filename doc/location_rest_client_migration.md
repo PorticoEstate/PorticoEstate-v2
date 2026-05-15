@@ -27,6 +27,8 @@ Completed in `sigurd/client_migration`:
   - parameterized `location_code` queries in `update_cat()`
   - parameterized `fm_locations` sync insert/update in `update_location()`
   - parameterized `location_code` and `loc1` filters in delivery/address/exception helper queries
+  - parameterized `check_history()`, `get_history()`, and `get_zip_info()` lookups
+  - applied `DbRowTrait::dbStrip()` for returned text values in address/district/part-of-town/zip helpers
 
 Notes:
 

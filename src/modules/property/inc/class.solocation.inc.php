@@ -1317,7 +1317,7 @@ class property_solocation
 		return $values;
 	}
 
-	function generate_sql($type_id, $cols = '', $cols_return = '', $uicols = '', $read_single = '')
+	function generate_sql($type_id, $cols = '', $cols_return = array(), $uicols = array(), $read_single = '')
 	{
 		$joinmethod = " fm_location{$type_id}";
 

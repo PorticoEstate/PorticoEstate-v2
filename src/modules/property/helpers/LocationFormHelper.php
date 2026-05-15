@@ -4,7 +4,6 @@ namespace App\Property\Helpers;
 
 use App\Database\Db;
 use App\Traits\DbRowTrait;
-use App\Sanitizer;
 use Exception;
 
 /**
@@ -20,13 +19,11 @@ class LocationFormHelper
     use DbRowTrait;
 
     private Db $db;
-    private Sanitizer $sanitizer;
     private string $module = 'property';
 
-    public function __construct(Db $db, Sanitizer $sanitizer)
+    public function __construct()
     {
-        $this->db = $db;
-        $this->sanitizer = $sanitizer;
+        $this->db = Db::getInstance();
     }
 
     /**
@@ -66,7 +63,7 @@ class LocationFormHelper
 
         foreach ($fieldsToMap as $key => $field) {
             if (isset($requestData[$key])) {
-                $normalized['values'][$field] = $this->sanitizer->sanitize($requestData[$key], 'string');
+                $normalized['values'][$field] = \Sanitizer::sanitize($requestData[$key], 'string');
             }
         }
 

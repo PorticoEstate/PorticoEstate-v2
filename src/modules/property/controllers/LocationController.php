@@ -8,7 +8,6 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Property\Helpers\LocationFormHelper;
 use App\Database\Db;
-use App\Sanitizer;
 use function include_class;
 
 class LocationController
@@ -24,9 +23,7 @@ class LocationController
 		}
 
 		// Initialize form helper for write operations
-		$db = $container->get(Db::class);
-		$sanitizer = $container->get(\Sanitizer::class);
-		$this->formHelper = new LocationFormHelper($db, $sanitizer);
+		$this->formHelper = new LocationFormHelper();
 	}
 
 	private function hydrateRequestGlobals(Request $request, array $extra = array(), bool $json = true): void

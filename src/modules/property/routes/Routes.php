@@ -73,6 +73,11 @@ $app->group('/property/registry', function (RouteCollectorProxy $group) use ($co
 $app->group('/property/location', function (RouteCollectorProxy $group) use ($container) {
 	$controller = new LocationController($container);
 
+	// Hybrid approach routes (explicit form helper orchestration)
+	$group->post('/add', [$controller, 'add']);
+	$group->put('/{location_id:[0-9]+}', [$controller, 'save']);
+
+	// Thin adapter routes (legacy UI delegation)
 	$group->get('', [$controller, 'index']);
 	$group->post('', [$controller, 'index']);
 	$group->get('/summary', [$controller, 'summary']);

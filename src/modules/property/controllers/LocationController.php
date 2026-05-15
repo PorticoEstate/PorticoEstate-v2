@@ -6,11 +6,15 @@ use JsonException;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use App\Property\Helpers\LocationFormHelper;
+use App\Database\Db;
+use App\Sanitizer;
 use function include_class;
 
 class LocationController
 {
 	private ?\property_uilocation $uiLocation = null;
+	private LocationFormHelper $formHelper;
 
 	public function __construct(ContainerInterface $container)
 	{
@@ -18,6 +22,11 @@ class LocationController
 		{
 			require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
 		}
+
+		// Initialize form helper for write operations
+		$db = $container->get(Db::class);
+		$sanitizer = $container->get(Sanitizer::class);
+		$this->formHelper = new LocationFormHelper($db, $sanitizer);
 	}
 
 	private function hydrateRequestGlobals(Request $request, array $extra = array(), bool $json = true): void
@@ -44,13 +53,13 @@ class LocationController
 		return $this->uiLocation;
 	}
 
-	private function jsonResponse(Response $response, mixed $payload): Response
+	private function jsonResponse(Response $response, mixed $payload, int $statusCode = 200): Response
 	{
 		try
 		{
 			$encoded = json_encode($payload, JSON_THROW_ON_ERROR);
 			$response->getBody()->write($encoded);
-			return $response->withHeader('Content-Type', 'application/json');
+			return $response->withHeader('Content-Type', 'application/json')->withStatus($statusCode);
 		}
 		catch (JsonException $e)
 		{
@@ -145,6 +154,60 @@ class LocationController
 	{
 		$this->hydrateRequestGlobals($request);
 		return $this->jsonResponse($response, $this->ui()->edit_field());
+	}
+
+	/**
+	 * Create new location with explicit form helper orchestration
+	 * 
+	 * Hybrid approach: Explicit validation/persistence instead of global state hydration
+	 * Supports: location creation with field validation and clear error handling
+	 * 
+	 * POST /property/location/add
+	 * Body: {loc_code, loc1, loc2, ..., location_type}
+	 */
+	public function add(Request $request, Response $response): Response
+	{
+		$bodyParams = $request->getParsedBody() ?? [];
+
+		// Map input -> validate -> persist -> build response
+		$state = $this->formHelper->mapInput($bodyParams, null);
+		$state = $this->formHelper->validate($state);
+		$state = $this->formHelper->persistSave($state);
+		$responseData = $this->formHelper->buildSaveResponse($state, 'save');
+
+		return $this->jsonResponse($response, $responseData['payload']);
+	}
+
+	/**
+	 * Save/update location with explicit form helper orchestration
+	 * 
+	 * Hybrid approach: Explicit validation/persistence instead of global state hydration
+	 * Supports: location updates with field validation, error recovery, and clear responses
+	 * 
+	 * PUT /property/location/:location_id
+	 * Body: {loc_code, loc1, loc2, ..., location_type}
+	 */
+	public function save(Request $request, Response $response, array $args): Response
+	{
+		$locationId = (int)($args['location_id'] ?? 0);
+		if ($locationId <= 0) {
+			return $this->jsonResponse($response, [
+				'status' => 'error',
+				'message' => 'Invalid location ID',
+				'location_id' => null,
+			], 400);
+		}
+
+		$bodyParams = $request->getParsedBody() ?? [];
+
+		// Map input -> validate -> persist -> build response
+		$state = $this->formHelper->mapInput($bodyParams, $locationId);
+		$state = $this->formHelper->validate($state);
+		$state = $this->formHelper->persistSave($state);
+		$responseData = $this->formHelper->buildSaveResponse($state, 'save');
+
+		$statusCode = ($responseData['payload']['status'] === 'error') ? 400 : 200;
+		return $this->jsonResponse($response, $responseData['payload'], $statusCode);
 	}
 
 	public function addControl(Request $request, Response $response): Response

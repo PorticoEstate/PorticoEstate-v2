@@ -368,19 +368,19 @@ class property_solocation
 
 	function read($data)
 	{
-		$start					 = isset($data['start']) && $data['start'] ? $data['start'] : 0;
-		$filter					 = isset($data['filter']) && $data['filter'] ? $data['filter'] : 0;
+		$start					 = isset($data['start']) && $data['start'] ? (int)$data['start'] : 0;
+		$filter					 = isset($data['filter']) && $data['filter'] ? (int)$data['filter'] : 0;
 		$query					 = isset($data['query']) ? $data['query'] : '';
-		$sort					 = isset($data['sort']) && $data['sort'] ? $data['sort'] : 'ASC';
+		$sort					 = isset($data['sort']) && $data['sort'] ? strtoupper((string)$data['sort']) : 'ASC';
 		$order					 = isset($data['order']) ? $data['order'] : '';
 		$cat_id					 = isset($data['cat_id']) && $data['cat_id'] ? $data['cat_id'] : '';
-		$type_id				 = isset($data['type_id']) ? $data['type_id'] : '';
+		$type_id				 = isset($data['type_id']) ? (int)$data['type_id'] : 0;
 		$lookup_tenant			 = isset($data['lookup_tenant']) ? $data['lookup_tenant'] : '';
-		$district_id			 = isset($data['district_id']) ? $data['district_id'] : '';
+		$district_id			 = isset($data['district_id']) ? (int)$data['district_id'] : 0;
 		$allrows				 = isset($data['allrows']) ? $data['allrows'] : '';
 		$lookup					 = isset($data['lookup']) ? $data['lookup'] : '';
-		$status					 = isset($data['status']) ? $data['status'] : '';
-		$part_of_town_id		 = isset($data['part_of_town_id']) ? $data['part_of_town_id'] : '';
+		$status					 = isset($data['status']) ? (int)$data['status'] : 0;
+		$part_of_town_id		 = isset($data['part_of_town_id']) ? (int)$data['part_of_town_id'] : 0;
 		$dry_run				 = isset($data['dry_run']) ? $data['dry_run'] : '';
 		$location_code			 = isset($data['location_code']) ? $data['location_code'] : '';
 		$filter_role_on_contact	 = $data['filter_role_on_contact'] ? (int)$data['filter_role_on_contact'] : 0;
@@ -388,7 +388,7 @@ class property_solocation
 		$results				 = $data['results'] ? (int)$data['results'] : 0;
 		$check_for_control		 = isset($data['check_for_control']) ? $data['check_for_control'] : false;
 		$control_registered		 = isset($data['control_registered']) ? $data['control_registered'] : '';
-		$control_id				 = isset($data['control_id']) && $data['control_id'] ? $data['control_id'] : 0;
+		$control_id				 = isset($data['control_id']) && $data['control_id'] ? (int)$data['control_id'] : 0;
 		$location_id			 = isset($data['location_id']) && $data['location_id'] ? (int)$data['location_id'] : 0;
 		$filter_item			 = isset($data['filter_item']) && $data['filter_item'] ? (array)$data['filter_item'] : array();
 		$additional_fields		 = !empty($data['additional_fields']) ? (array)$data['additional_fields'] : array();
@@ -413,7 +413,19 @@ class property_solocation
 			return array();
 		}
 
+		$location_code = $location_code ? $this->db->db_addslashes((string)$location_code) : '';
+
 		if ($order == 'undefined')
+		{
+			$order = '';
+		}
+
+		if ($sort !== 'ASC' && $sort !== 'DESC')
+		{
+			$sort = 'ASC';
+		}
+
+		if ($order && !preg_match('/^[A-Za-z0-9_.]+$/', (string)$order))
 		{
 			$order = '';
 		}
@@ -979,12 +991,13 @@ class property_solocation
 			$metadata = array();
 			foreach ($column_search as $key => $value)
 			{
+				$value_string = $this->db->db_addslashes((string)$value);
 				switch ($key)
 				{
 					case 'contact_phone':
 					case 'first_name':
 					case 'last_name':
-						$filtermethod	 .= " {$where} fm_tenant.{$key} $this->like '%{$value}%'";
+						$filtermethod	 .= " {$where} fm_tenant.{$key} $this->like '%{$value_string}%'";
 						break;
 					case 'boareal':
 						$filtermethod	 .= " {$where} boareal >= " . (int)$value;
@@ -993,13 +1006,13 @@ class property_solocation
 						$filtermethod	 .= " {$where} antallrom = " . (int)$value;
 						break;
 					case 'street_number':
-						$filtermethod	 .= " {$where} street_number  $this->like '%{$value}%'";
+						$filtermethod	 .= " {$where} street_number  $this->like '%{$value_string}%'";
 						break;
 					case 'street_name':
-						$filtermethod	 .= " {$where} fm_streetaddress.descr $this->like '%{$value}%'";
+						$filtermethod	 .= " {$where} fm_streetaddress.descr $this->like '%{$value_string}%'";
 						break;
 					case 'category_text':
-						$filtermethod	 .= " {$where} fm_location{$type_id}_category.descr $this->like '%{$value}%'";
+						$filtermethod	 .= " {$where} fm_location{$type_id}_category.descr $this->like '%{$value_string}%'";
 						break;
 					default:
 						if (!$metadata)
@@ -1011,7 +1024,7 @@ class property_solocation
 						{
 							if (in_array($metadata[$key]->type, array('varchar', 'text', 'character varying', 'character')))
 							{
-								$filtermethod	 .= " {$where} fm_location{$type_id}.{$key} $this->like '%{$value}%'";
+								$filtermethod	 .= " {$where} fm_location{$type_id}.{$key} $this->like '%{$value_string}%'";
 							}
 							else if ($metadata[$key]->type == 'numeric')
 							{
@@ -1036,11 +1049,11 @@ class property_solocation
 			if (isset($this->userSettings['preferences']['property']['property_filter']) && $this->userSettings['preferences']['property']['property_filter'] == 'owner')
 			//if($this->userSettings['preferences']['property']['property_filter'] == 'owner')
 			{
-				$filtermethod .= " $where fm_owner.id='$filter' ";
+				$filtermethod .= " $where fm_owner.id = {$filter} ";
 			}
 			else
 			{
-				$filtermethod .= " $where fm_owner.category='$filter' ";
+				$filtermethod .= " $where fm_owner.category = {$filter} ";
 			}
 			$where = 'AND';
 		}
@@ -1060,13 +1073,13 @@ class property_solocation
 
 		if ($district_id > 0)
 		{
-			$filtermethod	 .= " $where fm_part_of_town.district_id='$district_id' ";
+			$filtermethod	 .= " $where fm_part_of_town.district_id = {$district_id} ";
 			$where			 = 'AND';
 		}
 
 		if ($part_of_town_id > 0)
 		{
-			$filtermethod	 .= " $where fm_part_of_town.id='$part_of_town_id' ";
+			$filtermethod	 .= " $where fm_part_of_town.id = {$part_of_town_id} ";
 			$where			 = 'AND';
 		}
 

@@ -214,14 +214,10 @@ class LocationFormHelper
 
         $locationCodeParts = [];
         $locationParent = [];
-        $existingParts = $this->extractLocationParts((string) ($state['location_code'] ?? ($values['location_code'] ?? '')));
 
         for ($level = 1; $level <= $typeId; $level++) {
             $locKey = "loc{$level}";
             $value = isset($values[$locKey]) ? trim((string) $values[$locKey]) : '';
-            if ($value === '' && isset($existingParts[$level - 1])) {
-                $value = trim((string) $existingParts[$level - 1]);
-            }
 
             if ($value === '') {
                 $errors[] = lang('Please select a location %1 ID !', $level);
@@ -251,13 +247,13 @@ class LocationFormHelper
         }
 
         if (isset($insertRecord['extra']) && is_array($insertRecord['extra'])) {
-            if (array_search('street_id', $insertRecord['extra']) !== false && empty($values['street_id'])) {
+            if (array_search('street_id', $insertRecord['extra']) && empty($values['street_id'])) {
                 $errors[] = lang('Please select a street');
             }
-            if (array_search('part_of_town_id', $insertRecord['extra']) !== false && empty($values['part_of_town_id'])) {
+            if (array_search('part_of_town_id', $insertRecord['extra']) && empty($values['part_of_town_id'])) {
                 $errors[] = lang('Please select a part of town');
             }
-            if (array_search('owner_id', $insertRecord['extra']) !== false && empty($values['owner_id'])) {
+            if (array_search('owner_id', $insertRecord['extra']) && empty($values['owner_id'])) {
                 $errors[] = lang('Please select an owner');
             }
         }

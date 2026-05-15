@@ -957,7 +957,12 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		$location_code		 = Sanitizer::get_var('location_code');
 
 		$helper = new \App\modules\property\helpers\LocationFormHelper();
-		$input = $helper->mapInput((array) $_POST, $location_code ? 1 : null);
+		$requestData = (array) $_POST;
+		if (empty($requestData['type_id']) && !empty($this->type_id))
+		{
+			$requestData['type_id'] = (int) $this->type_id;
+		}
+		$input = $helper->mapInput($requestData, $location_code ? 1 : null);
 		$values = $input['values'];
 		$values_attribute = $input['values_attribute'];
 		$type_id = (int) ($input['type_id'] ?? $this->type_id);

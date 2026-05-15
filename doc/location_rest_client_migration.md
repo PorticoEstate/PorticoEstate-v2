@@ -37,6 +37,7 @@ Completed in `sigurd/client_migration`:
   - hardened `read()` ordering inputs by normalizing sort direction and rejecting non-tokenized `order` expressions
   - hardened `read()` list filters by normalizing `filter_item` IDs and sanitizing ACL location list fragments before interpolation
   - added defensive `isset(...)` guards for optional `read()` inputs used in role/contact filtering
+  - hardened `read()` category and criteria handling by normalizing category arrays and whitelisting `criteria_id` values used for query branching
 
 Notes:
 

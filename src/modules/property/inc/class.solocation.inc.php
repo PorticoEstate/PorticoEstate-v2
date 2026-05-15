@@ -396,6 +396,7 @@ class property_solocation
 		$column_search			 = !empty($data['column_search']) ? (array)$data['column_search'] : array();
 
 		$filter_item = array_filter(array_map('intval', $filter_item));
+		$criteria_id = in_array($criteria_id, array('vendor', 'ab', 'abo'), true) ? $criteria_id : '';
 
 
 		if ($location_id && !$type_id)
@@ -962,16 +963,21 @@ class property_solocation
 		{
 			if (is_array($cat_id))
 			{
+				$cat_id = array_filter(array_map('strval', $cat_id), 'strlen');
 				foreach ($cat_id as &$_cat_id)
 				{
 					$_cat_id = $this->db->db_addslashes($_cat_id);
 				}
+				unset($_cat_id);
 
-				$filtermethod .= " {$where} fm_location{$type_id}.category IN ('" . implode("','", $cat_id) . "')";
+				if ($cat_id)
+				{
+					$filtermethod .= " {$where} fm_location{$type_id}.category IN ('" . implode("','", $cat_id) . "')";
+				}
 			}
 			else
 			{
-				$cat_id			 = $this->db->db_addslashes($cat_id);
+				$cat_id			 = $this->db->db_addslashes((string)$cat_id);
 				$filtermethod	 .= " {$where} fm_location{$type_id}.category='{$cat_id}'";
 			}
 			$where = 'AND';

@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Property\Helpers;
+namespace App\modules\property\helpers;
 
-use App\Database\Db;
-use App\Traits\DbRowTrait;
 use Exception;
+use function include_class;
 
 /**
  * LocationFormHelper - Orchestrator for location form workflows
@@ -16,15 +15,7 @@ use Exception;
  */
 class LocationFormHelper
 {
-    use DbRowTrait;
-
-    private Db $db;
-    private string $module = 'property';
-
-    public function __construct()
-    {
-        $this->db = Db::getInstance();
-    }
+    private ?\property_bolocation $bo = null;
 
     /**
      * Normalize and enrich request state for location save
@@ -35,43 +26,66 @@ class LocationFormHelper
      */
     public function mapInput(array $requestData, ?int $locationId = null): array
     {
+        $locationCode = $this->resolveLocationCode($requestData);
+        $locationParts = $this->extractLocationParts($locationCode);
+        $typeId = isset($requestData['type_id']) ? (int) $requestData['type_id'] : count($locationParts);
+
         $normalized = [
             'values' => [],
+            'values_attribute' => isset($requestData['values_attribute']) && is_array($requestData['values_attribute'])
+                ? $requestData['values_attribute']
+                : [],
             'errors' => [],
-            'location_id' => (int)($locationId ?? 0),
+            'location_id' => (int) ($locationId ?? 0),
+            'location_code' => $locationCode,
+            'type_id' => $typeId,
+            'location_parent' => count($locationParts) > 1 ? array_slice($locationParts, 0, -1) : [],
+            'is_edit' => !empty($locationId),
             'location_data' => null,
         ];
 
         // Extract and normalize location fields
         $fieldsToMap = [
-            'loc_code' => 'loc_code',
-            'loc1' => 'loc1',
-            'loc2' => 'loc2',
-            'loc3' => 'loc3',
-            'loc4' => 'loc4',
-            'loc5' => 'loc5',
-            'street_name' => 'street_name',
-            'street_number' => 'street_number',
-            'zip_code' => 'zip_code',
-            'city' => 'city',
-            'district' => 'district',
-            'part_of_town' => 'part_of_town',
-            'delivery_address' => 'delivery_address',
-            'location_type' => 'location_type',
-            'loc_date' => 'loc_date',
+            'location_code' => 'string',
+            'loc_code' => 'string',
+            'loc1' => 'string',
+            'loc2' => 'string',
+            'loc3' => 'string',
+            'loc4' => 'string',
+            'loc5' => 'string',
+            'street_name' => 'string',
+            'street_number' => 'string',
+            'zip_code' => 'string',
+            'city' => 'string',
+            'district' => 'string',
+            'part_of_town' => 'string',
+            'delivery_address' => 'string',
+            'location_type' => 'int',
+            'change_type' => 'int',
+            'cat_id' => 'int',
+            'type_id' => 'int',
+            'loc_date' => 'string',
         ];
 
-        foreach ($fieldsToMap as $key => $field) {
+        foreach ($fieldsToMap as $key => $type) {
             if (isset($requestData[$key])) {
-                $normalized['values'][$field] = \Sanitizer::sanitize($requestData[$key], 'string');
+                $normalized['values'][$key] = \Sanitizer::sanitize($requestData[$key], $type);
             }
         }
 
+        if ($locationCode !== '') {
+            $normalized['values']['location_code'] = $locationCode;
+        }
+
         // Load existing location data if editing
-        if ($locationId && $locationId > 0) {
-            $normalized['location_data'] = $this->loadLocationData($locationId);
-            if (!$normalized['location_data']) {
-                $normalized['errors']['location_id'] = 'Location not found';
+        if (!empty($normalized['is_edit'])) {
+            if ($locationCode === '') {
+                $normalized['errors']['location_code'] = 'Location code is required for update';
+            } else {
+                $normalized['location_data'] = $this->loadLocationData($locationCode);
+                if (!$normalized['location_data']) {
+                    $normalized['errors']['location_code'] = 'Location not found';
+                }
             }
         }
 
@@ -88,10 +102,11 @@ class LocationFormHelper
     {
         $values = $state['values'] ?? [];
         $errors = $state['errors'] ?? [];
+        $locationCode = $values['location_code'] ?? ($state['location_code'] ?? '');
 
         // Required field validation
-        if (!isset($values['loc_code']) || trim($values['loc_code']) === '') {
-            $errors['loc_code'] = 'Location code is required';
+        if ($locationCode === '') {
+            $errors['location_code'] = 'Location code is required';
         }
 
         if (!isset($values['loc1']) || trim($values['loc1']) === '') {
@@ -99,8 +114,8 @@ class LocationFormHelper
         }
 
         // Validate location code format (alphanumeric, underscore, hyphen)
-        if (isset($values['loc_code']) && !preg_match('/^[A-Za-z0-9_-]+$/', $values['loc_code'])) {
-            $errors['loc_code'] = 'Location code must contain only alphanumeric characters, underscore, or hyphen';
+        if ($locationCode !== '' && !preg_match('/^[A-Za-z0-9_-]+(?:-[A-Za-z0-9_-]+)*$/', $locationCode)) {
+            $errors['location_code'] = 'Location code must contain only alphanumeric characters, underscore, or hyphen';
         }
 
         // Validate numeric fields if provided
@@ -116,6 +131,7 @@ class LocationFormHelper
             }
         }
 
+        $state['location_code'] = $locationCode;
         $state['errors'] = $errors;
         return $state;
     }
@@ -134,175 +150,65 @@ class LocationFormHelper
         }
 
         try {
-            $locationId = $state['location_id'] ?? 0;
             $values = $state['values'] ?? [];
+            $locationCode = (string)($values['location_code'] ?? ($state['location_code'] ?? ''));
+            $typeId = (int)($state['type_id'] ?? 0);
 
-            // Begin transaction for save operation
-            $this->db->transaction_begin();
-
-            if ($locationId > 0) {
-                // Update existing location
-                $this->updateLocation((int)$locationId, $values);
-                $state['receipt'] = [
-                    'status' => 'success',
-                    'message' => 'Location updated successfully',
-                    'location_id' => $locationId,
-                ];
-            } else {
-                // Insert new location
-                $newLocationId = $this->insertLocation($values);
-                $state['receipt'] = [
-                    'status' => 'success',
-                    'message' => 'Location created successfully',
-                    'location_id' => $newLocationId,
-                ];
-                $state['location_id'] = $newLocationId;
+            if ($locationCode === '') {
+                throw new Exception('Location code is required');
             }
 
-            $this->db->transaction_commit();
+            if ($typeId <= 0) {
+                $typeId = count($this->extractLocationParts($locationCode));
+            }
+
+            if ($typeId <= 0) {
+                throw new Exception('Location type is required');
+            }
+
+            $values['location_code'] = $locationCode;
+            $action = !empty($state['is_edit']) ? 'edit' : '';
+            $receipt = $this->bo()->save(
+                $values,
+                $state['values_attribute'] ?? [],
+                $action,
+                $typeId,
+                $state['location_parent'] ?? ''
+            );
+
+            if (!empty($receipt['error'])) {
+                $state['errors']['save'] = $this->flattenReceiptMessages($receipt['error']);
+                $state['receipt'] = [
+                    'status' => 'error',
+                    'message' => 'Failed to save location',
+                    'location_code' => $locationCode,
+                    'location_id' => $state['location_id'] ?: null,
+                    'receipt' => $receipt,
+                ];
+            } else {
+                $savedLocationCode = $receipt['location_code'] ?? $locationCode;
+                $state['location_code'] = $savedLocationCode;
+                $state['values']['location_code'] = $savedLocationCode;
+                $state['location_data'] = $this->loadLocationData($savedLocationCode);
+                $state['receipt'] = [
+                    'status' => 'success',
+                    'message' => $action === 'edit' ? 'Location updated successfully' : 'Location created successfully',
+                    'location_code' => $savedLocationCode,
+                    'location_id' => $state['location_id'] ?: null,
+                    'receipt' => $receipt,
+                ];
+            }
         } catch (Exception $e) {
-            $this->db->transaction_rollback();
             $state['errors']['save'] = $e->getMessage();
             $state['receipt'] = [
                 'status' => 'error',
                 'message' => 'Failed to save location: ' . $e->getMessage(),
+                'location_code' => $state['location_code'] ?? null,
+                'location_id' => $state['location_id'] ?? null,
             ];
         }
 
         return $state;
-    }
-
-    /**
-     * Insert new location record
-     * 
-     * @param array $values Normalized values
-     * @return int New location ID
-     */
-    private function insertLocation(array $values): int
-    {
-        $table = 'phpgw_property_location';
-        $columns = [];
-        $placeholders = [];
-        $params = [];
-
-        // Map values to table columns with type safety
-        $fieldMap = [
-            'loc_code' => ['column' => 'loc_code', 'type' => 'string'],
-            'loc1' => ['column' => 'loc1', 'type' => 'string'],
-            'loc2' => ['column' => 'loc2', 'type' => 'string'],
-            'loc3' => ['column' => 'loc3', 'type' => 'string'],
-            'loc4' => ['column' => 'loc4', 'type' => 'string'],
-            'loc5' => ['column' => 'loc5', 'type' => 'string'],
-            'street_name' => ['column' => 'street_name', 'type' => 'string'],
-            'street_number' => ['column' => 'street_number', 'type' => 'string'],
-            'zip_code' => ['column' => 'zip_code', 'type' => 'string'],
-            'city' => ['column' => 'city', 'type' => 'string'],
-            'district' => ['column' => 'district', 'type' => 'string'],
-            'part_of_town' => ['column' => 'part_of_town', 'type' => 'string'],
-            'delivery_address' => ['column' => 'delivery_address', 'type' => 'string'],
-            'location_type' => ['column' => 'location_type', 'type' => 'int'],
-            'loc_date' => ['column' => 'loc_date', 'type' => 'string'],
-        ];
-
-        // Build insert query with parameterized placeholders
-        foreach ($fieldMap as $field => $config) {
-            if (isset($values[$field]) && trim((string)$values[$field]) !== '') {
-                $columns[] = $config['column'];
-                $placeholders[] = ':' . $config['column'];
-
-                // Type-safe parameter binding
-                if ($config['type'] === 'int') {
-                    $params[$config['column']] = (int)$values[$field];
-                } else {
-                    $params[$config['column']] = $values[$field];
-                }
-            }
-        }
-
-        if (empty($columns)) {
-            throw new Exception('No valid fields to insert');
-        }
-
-        $sql = 'INSERT INTO ' . $table . ' (' . implode(',', $columns) . ') VALUES (' . implode(',', $placeholders) . ')';
-        $this->db->prepare($sql);
-
-        foreach ($params as $key => $value) {
-            $this->db->bind_param(':' . $key, $value);
-        }
-
-        if (!$this->db->execute()) {
-            throw new Exception('Failed to insert location record');
-        }
-
-        // Return the inserted ID
-        return (int)$this->db->last_insert_id('phpgw_property_location', 'loc_id');
-    }
-
-    /**
-     * Update existing location record
-     * 
-     * @param int $locationId Location ID
-     * @param array $values Normalized values
-     */
-    private function updateLocation(int $locationId, array $values): void
-    {
-        if ($locationId <= 0) {
-            throw new Exception('Invalid location ID for update');
-        }
-
-        $table = 'phpgw_property_location';
-        $updates = [];
-        $params = [];
-
-        // Map updateable fields
-        $fieldMap = [
-            'loc_code' => ['column' => 'loc_code', 'type' => 'string'],
-            'loc1' => ['column' => 'loc1', 'type' => 'string'],
-            'loc2' => ['column' => 'loc2', 'type' => 'string'],
-            'loc3' => ['column' => 'loc3', 'type' => 'string'],
-            'loc4' => ['column' => 'loc4', 'type' => 'string'],
-            'loc5' => ['column' => 'loc5', 'type' => 'string'],
-            'street_name' => ['column' => 'street_name', 'type' => 'string'],
-            'street_number' => ['column' => 'street_number', 'type' => 'string'],
-            'zip_code' => ['column' => 'zip_code', 'type' => 'string'],
-            'city' => ['column' => 'city', 'type' => 'string'],
-            'district' => ['column' => 'district', 'type' => 'string'],
-            'part_of_town' => ['column' => 'part_of_town', 'type' => 'string'],
-            'delivery_address' => ['column' => 'delivery_address', 'type' => 'string'],
-            'location_type' => ['column' => 'location_type', 'type' => 'int'],
-            'loc_date' => ['column' => 'loc_date', 'type' => 'string'],
-        ];
-
-        // Build update query with parameterized placeholders
-        foreach ($fieldMap as $field => $config) {
-            if (isset($values[$field]) && trim((string)$values[$field]) !== '') {
-                $updates[] = $config['column'] . ' = :' . $config['column'];
-
-                // Type-safe parameter binding
-                if ($config['type'] === 'int') {
-                    $params[$config['column']] = (int)$values[$field];
-                } else {
-                    $params[$config['column']] = $values[$field];
-                }
-            }
-        }
-
-        if (empty($updates)) {
-            throw new Exception('No fields to update');
-        }
-
-        $sql = 'UPDATE ' . $table . ' SET ' . implode(',', $updates) . ' WHERE loc_id = :loc_id';
-        $params['loc_id'] = $locationId;
-
-        $this->db->prepare($sql);
-
-        foreach ($params as $key => $value) {
-            $this->db->bind_param(':' . $key, $value);
-        }
-
-        if (!$this->db->execute()) {
-            throw new Exception('Failed to update location record');
-        }
     }
 
     /**
@@ -311,23 +217,76 @@ class LocationFormHelper
      * @param int $locationId Location ID
      * @return array|null Location record or null if not found
      */
-    private function loadLocationData(int $locationId): ?array
+    private function loadLocationData(string $locationCode): ?array
     {
-        $locationId = (int)$locationId;
-        if ($locationId <= 0) {
+        if ($locationCode === '') {
             return null;
         }
 
-        $sql = 'SELECT * FROM phpgw_property_location WHERE loc_id = :loc_id';
-        $this->db->prepare($sql);
-        $this->db->bind_param(':loc_id', $locationId);
+        $result = $this->bo()->read_single([
+            'location_code' => $locationCode,
+            'extra' => ['noattrib' => true],
+        ]);
 
-        if (!$this->db->execute()) {
-            return null;
+        return is_array($result) ? $result : null;
+    }
+
+    private function bo(): \property_bolocation
+    {
+        if ($this->bo === null) {
+            if (defined('SRC_ROOT_PATH') && !function_exists('include_class')) {
+                require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
+            }
+
+            include_class('property', 'bolocation');
+            $this->bo = \CreateObject('property.bolocation');
         }
 
-        $result = $this->db->fetch();
-        return $result ?: null;
+        return $this->bo;
+    }
+
+    private function resolveLocationCode(array $requestData): string
+    {
+        if (!empty($requestData['location_code'])) {
+            return trim((string) $requestData['location_code']);
+        }
+
+        if (!empty($requestData['loc_code'])) {
+            return trim((string) $requestData['loc_code']);
+        }
+
+        $parts = [];
+        for ($level = 1; $level <= 5; $level++) {
+            $key = "loc{$level}";
+            if (empty($requestData[$key])) {
+                break;
+            }
+
+            $parts[] = trim((string) $requestData[$key]);
+        }
+
+        return implode('-', $parts);
+    }
+
+    private function extractLocationParts(string $locationCode): array
+    {
+        if ($locationCode === '') {
+            return [];
+        }
+
+        return array_values(array_filter(explode('-', $locationCode), static fn($part) => $part !== ''));
+    }
+
+    private function flattenReceiptMessages(array $errors): string
+    {
+        $messages = [];
+        foreach ($errors as $error) {
+            if (is_array($error) && !empty($error['msg'])) {
+                $messages[] = $error['msg'];
+            }
+        }
+
+        return $messages ? implode(' ', $messages) : 'Failed to save location';
     }
 
     /**
@@ -345,6 +304,7 @@ class LocationFormHelper
                 'status' => $state['receipt']['status'] ?? 'unknown',
                 'message' => $state['receipt']['message'] ?? 'Operation completed',
                 'location_id' => $state['receipt']['location_id'] ?? null,
+                'location_code' => $state['receipt']['location_code'] ?? ($state['location_code'] ?? null),
                 'errors' => $state['errors'] ?? [],
             ],
         ];

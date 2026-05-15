@@ -6,8 +6,7 @@ use JsonException;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use App\Property\Helpers\LocationFormHelper;
-use App\Database\Db;
+use App\modules\property\helpers\LocationFormHelper;
 use function include_class;
 
 class LocationController

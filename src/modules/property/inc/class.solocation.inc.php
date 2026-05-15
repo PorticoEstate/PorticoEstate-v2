@@ -34,6 +34,7 @@ use App\modules\phpgwapi\controllers\Locations;
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\security\Acl;
 use App\Database\Db;
+use App\traits\DbRowTrait;
 
 /**
  * Description
@@ -41,6 +42,7 @@ use App\Database\Db;
  */
 class property_solocation
 {
+	use DbRowTrait;
 
 	var $bocommon;
 	var $total_records;
@@ -1937,21 +1939,19 @@ class property_solocation
 			$j = 0;
 			for ($i = 0; $i < count($update); $i++)
 			{
+				$sql = "SELECT status FROM {$parent_table} WHERE location_code = :location_code";
+				$stmt = $this->db->prepare($sql);
+				$stmt->execute(array(':location_code' => $update[$i]['location_code']));
+				$currentStatus = $stmt->fetchColumn();
 
-				$sql = "SELECT status  FROM $parent_table WHERE location_code= '" . $update[$i]['location_code'] . "'";
-
-				$this->db->query($sql, __LINE__, __FILE__);
-				$this->db->next_record();
-
-				if ($this->db->f('status') != 2)
+				if ((int)$currentStatus != 2)
 				{
 					$j++;
 				}
 
-				$this->db->query("UPDATE fm_location" . ($type_id - 1) . " SET"
-					. " status= 2,"
-					. " category = '99'"
-					. " WHERE location_code= '{$update[$i]['location_code']}'", __LINE__, __FILE__);
+				$sql = "UPDATE fm_location" . ($type_id - 1) . " SET status = 2, category = '99' WHERE location_code = :location_code";
+				$stmt = $this->db->prepare($sql);
+				$stmt->execute(array(':location_code' => $update[$i]['location_code']));
 			}
 
 			$receipt['message'][] = array('msg' => lang('%1 location %2 has been updated to not active of %3 already not active', $j, $location_types[($type_id - 2)]['descr'], count($update)));
@@ -2033,7 +2033,13 @@ class property_solocation
 		$receipt = array();
 		foreach ($locations as $location)
 		{
-			$this->db->query("INSERT INTO fm_locations (level, location_code, loc1) VALUES ({$location['level']}, '{$location['location_code']}', '{$location['loc1']}')");
+			$sql = "INSERT INTO fm_locations (level, location_code, loc1) VALUES (:level, :location_code, :loc1)";
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute(array(
+				':level' => (int)$location['level'],
+				':location_code' => $location['location_code'],
+				':loc1' => $location['loc1']
+			));
 
 			$receipt['message'][] = array('msg' => lang('location %1 added at level %2', $location['location_code'], $location['level']));
 		}
@@ -2094,7 +2100,13 @@ class property_solocation
 
 		foreach ($locations as $location)
 		{
-			$this->db->query("UPDATE fm_location{$location['level']} SET id = {$location['id']} WHERE location_code = '{$location['location_code']}'");
+			$level = (int)$location['level'];
+			$sql = "UPDATE fm_location{$level} SET id = :id WHERE location_code = :location_code";
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute(array(
+				':id' => (int)$location['id'],
+				':location_code' => $location['location_code']
+			));
 		}
 
 		if (!$this->global_lock)
@@ -2123,7 +2135,12 @@ class property_solocation
 			$i++;
 		}
 		$name = $this->db->db_addslashes(implode(', ', $loc_name_arr));
-		$this->db->query("UPDATE fm_locations SET name = '{$name}' WHERE location_code = '{$location_code}'");
+		$sql = 'UPDATE fm_locations SET name = :name WHERE location_code = :location_code';
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(
+			':name' => $name,
+			':location_code' => $location_code
+		));
 	}
 
 	function read_summary($data = '')
@@ -2623,25 +2640,21 @@ class property_solocation
 
 	public function get_district_name($location_code)
 	{
-		$location_code = $this->db->db_addslashes($location_code);
-
 		$sql			 = "SELECT fm_district.descr"
 			. " FROM fm_locations"
 			. " {$this->join} fm_location1 ON (fm_location1.loc1 = fm_locations.loc1)"
 			. " {$this->join} fm_part_of_town ON (fm_location1.part_of_town_id = fm_part_of_town.id)"
 			. " {$this->join} fm_district ON (fm_part_of_town.district_id = fm_district.id)"
-			. " WHERE fm_locations.location_code = '{$location_code}'";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
-		$district_name	 = $this->db->f('descr', true);
+			. " WHERE fm_locations.location_code = :location_code";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':location_code' => $location_code));
+		$district_name = $this->dbStrip($stmt->fetchColumn());
 
-		return $district_name;
+		return $district_name ?: '';
 	}
 
 	public function get_part_of_town($location_code)
 	{
-		$location_code = $this->db->db_addslashes($location_code);
-
 		$sql = "SELECT fm_district.descr AS district_name,"
 			. " fm_part_of_town.name AS part_of_town,"
 			. " fm_locations.name AS location_name"
@@ -2649,14 +2662,15 @@ class property_solocation
 			. " {$this->join} fm_location1 ON (fm_location1.loc1 = fm_locations.loc1)"
 			. " {$this->join} fm_part_of_town ON (fm_location1.part_of_town_id = fm_part_of_town.id)"
 			. " {$this->join} fm_district ON (fm_part_of_town.district_id = fm_district.id)"
-			. " WHERE fm_locations.location_code = '{$location_code}'";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
+			. " WHERE fm_locations.location_code = :location_code";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':location_code' => $location_code));
+		$row = $stmt->fetch(\PDO::FETCH_ASSOC) ?: array();
 
 		$values = array(
-			'district_name'	 => $this->db->f('district_name', true),
-			'part_of_town' => $this->db->f('part_of_town', true),
-			'location_name'	 => $this->db->f('location_name', true)
+			'district_name'	 => $this->dbStrip($row['district_name'] ?? null) ?: '',
+			'part_of_town' => $this->dbStrip($row['part_of_town'] ?? null) ?: '',
+			'location_name'	 => $this->dbStrip($row['location_name'] ?? null) ?: ''
 		);
 
 		return $values;
@@ -2851,23 +2865,23 @@ class property_solocation
 
 	function get_delivery_address($loc1 = '')
 	{
-		$loc1				 = $this->db->db_addslashes($loc1);
-		$sql				 = "SELECT delivery_address FROM fm_location1 WHERE loc1 = '$loc1'";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
-		$delivery_address	 = $this->db->f('delivery_address', true);
+		$loc1 = (string)$loc1;
+		$sql = 'SELECT delivery_address FROM fm_location1 WHERE loc1 = :loc1';
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':loc1' => $loc1));
+		$delivery_address = $this->dbStrip($stmt->fetchColumn());
 
 		if ($delivery_address)
 		{
 			return $delivery_address;
 		}
 
-		$sql				 = "SELECT fm_part_of_town.delivery_address FROM fm_location1"
+		$sql = "SELECT fm_part_of_town.delivery_address FROM fm_location1"
 			. " {$this->join} fm_part_of_town ON (fm_location1.part_of_town_id = fm_part_of_town.id)"
-			. "WHERE loc1 = '$loc1'";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
-		$delivery_address	 = $this->db->f('delivery_address', true);
+			. ' WHERE loc1 = :loc1';
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':loc1' => $loc1));
+		$delivery_address = $this->dbStrip($stmt->fetchColumn());
 
 		if ($delivery_address)
 		{
@@ -2877,12 +2891,12 @@ class property_solocation
 		$sql				 = "SELECT fm_district.delivery_address FROM fm_location1 "
 			. " {$this->join} fm_part_of_town ON (fm_location1.part_of_town_id = fm_part_of_town.id)"
 			. " {$this->join} fm_district ON (fm_part_of_town.district_id = fm_district.id)"
-			. " WHERE loc1 = '$loc1'";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
-		$delivery_address	 = $this->db->f('delivery_address', true);
+			. " WHERE loc1 = :loc1";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':loc1' => $loc1));
+		$delivery_address = $this->dbStrip($stmt->fetchColumn());
 
-		return $delivery_address;
+		return $delivery_address ?: '';
 	}
 
 	function get_location_data($location_code = '')
@@ -2923,10 +2937,10 @@ class property_solocation
 
 		if ($location_level > $current_level)
 		{
-			$sql	 = "SELECT loc{$current_level}_name AS address FROM fm_location{$current_level} WHERE location_code = '{$location_code}'";
-			$this->db->query($sql, __LINE__, __FILE__);
-			$this->db->next_record();
-			$address = $this->db->f('address', true);
+			$sql	 = "SELECT loc{$current_level}_name AS address FROM fm_location{$current_level} WHERE location_code = :location_code";
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute(array(':location_code' => $location_code));
+			$address = $this->dbStrip($stmt->fetchColumn());
 			return $address;
 		}
 
@@ -2941,10 +2955,10 @@ class property_solocation
 
 		$sql	 = "SELECT fm_streetaddress.descr || ' ' || fm_location{$location_level}.street_number AS address FROM fm_location{$location_level}"
 			. " {$this->join} fm_streetaddress ON fm_location{$location_level}.street_id = fm_streetaddress.id"
-			. " WHERE location_code = '{$search_location_code}'";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
-		$address = $this->db->f('address', true);
+			. " WHERE location_code = :location_code";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':location_code' => $search_location_code));
+		$address = $this->dbStrip($stmt->fetchColumn());
 		return $address;
 	}
 
@@ -2973,8 +2987,8 @@ class property_solocation
 				. " {$this->join} fm_location_exception_severity ON fm_location_exception.severity_id = fm_location_exception_severity.id"
 				. " {$this->join} fm_location_exception_category ON fm_location_exception.category_id = fm_location_exception_category.id"
 				. " {$this->left_join} fm_location_exception_category_text ON fm_location_exception.category_text_id = fm_location_exception_category_text.id"
-				. " WHERE location_code = '{$_location_code}'"
-				. " AND start_date < $now AND (end_date IS NULL  OR end_date = 0 OR end_date > $now)";
+				. " WHERE location_code = :location_code"
+				. " AND start_date < :now AND (end_date IS NULL OR end_date = 0 OR end_date > :now)";
 
 
 			if ($alert_vendor)
@@ -2982,16 +2996,20 @@ class property_solocation
 				$sql .= ' AND alert_vendor = 1';
 			}
 
-			$this->db->query($sql, __LINE__, __FILE__);
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute(array(
+				':location_code' => $_location_code,
+				':now' => (int)$now
+			));
 
-			while ($this->db->next_record())
+			while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
 			{
 				$exceptions[] = array(
-					'severity'		 => $this->db->f('severity', true),
-					'category'		 => $this->db->f('category', true),
-					'category_text'	 => $this->db->f('category_text', true),
-					'location_descr' => $this->db->f('location_descr', true),
-					'alert_vendor'	 => $this->db->f('alert_vendor'),
+					'severity'		 => $row['severity'],
+					'category'		 => $row['category'],
+					'category_text'	 => $row['category_text'],
+					'location_descr' => $row['location_descr'],
+					'alert_vendor'	 => $row['alert_vendor'],
 				);
 			}
 		}

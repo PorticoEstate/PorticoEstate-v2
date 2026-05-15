@@ -23,6 +23,10 @@ Completed in `sigurd/client_migration`:
 6. `class.solocation.inc.php` add/edit paths hardened further:
   - parameterized `fm_locations` insert values in `add()`
   - parameterized `location_code` updates/selects in `add()` and `edit()`
+7. `class.solocation.inc.php` maintenance/helper paths hardened:
+  - parameterized `location_code` queries in `update_cat()`
+  - parameterized `fm_locations` sync insert/update in `update_location()`
+  - parameterized `location_code` and `loc1` filters in delivery/address/exception helper queries
 
 Notes:
 

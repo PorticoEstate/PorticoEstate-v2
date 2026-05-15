@@ -81,6 +81,12 @@ class LocationController
 		return $this->jsonResponse($response, $this->ui()->responsiblility_role());
 	}
 
+	public function responsibilityRoleSave(Request $request, Response $response): Response
+	{
+		$this->hydrateRequestGlobals($request);
+		return $this->jsonResponse($response, $this->ui()->responsiblility_role_save());
+	}
+
 	public function getPartOfTown(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
@@ -141,9 +147,37 @@ class LocationController
 		return $this->jsonResponse($response, $this->ui()->edit_field());
 	}
 
+	public function addControl(Request $request, Response $response): Response
+	{
+		$this->hydrateRequestGlobals($request);
+		return $this->jsonResponse($response, $this->ui()->controller_helper->add_control());
+	}
+
+	public function updateControlSerie(Request $request, Response $response): Response
+	{
+		$this->hydrateRequestGlobals($request);
+		return $this->jsonResponse($response, $this->ui()->controller_helper->update_control_serie());
+	}
+
 	public function delete(Request $request, Response $response, array $args): Response
 	{
 		$this->hydrateRequestGlobals($request, array('location_code' => $args['location_code']));
+		return $this->jsonResponse($response, $this->ui()->delete());
+	}
+
+	public function deleteByLocationCode(Request $request, Response $response): Response
+	{
+		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
+		if ($locationCode === '')
+		{
+			$parsedBody = $request->getParsedBody();
+			if (is_array($parsedBody))
+			{
+				$locationCode = (string)($parsedBody['location_code'] ?? '');
+			}
+		}
+
+		$this->hydrateRequestGlobals($request, array('location_code' => $locationCode));
 		return $this->jsonResponse($response, $this->ui()->delete());
 	}
 }

@@ -79,6 +79,7 @@ $app->group('/property/location', function (RouteCollectorProxy $group) use ($co
 	$group->post('/summary', [$controller, 'summary']);
 	$group->get('/responsibility-role', [$controller, 'responsibilityRole']);
 	$group->post('/responsibility-role', [$controller, 'responsibilityRole']);
+	$group->post('/responsibility-role/save', [$controller, 'responsibilityRoleSave']);
 	$group->get('/part-of-town', [$controller, 'getPartOfTown']);
 	$group->get('/accounts', [$controller, 'getAccounts']);
 	$group->get('/history', [$controller, 'getHistoryData']);
@@ -90,7 +91,10 @@ $app->group('/property/location', function (RouteCollectorProxy $group) use ($co
 	$group->get('/component/cases', [$controller, 'getCases']);
 	$group->get('/component/checklists', [$controller, 'getChecklists']);
 	$group->get('/component/cases-for-checklist', [$controller, 'getCasesForChecklist']);
+	$group->post('/component/add-control', [$controller, 'addControl']);
+	$group->post('/component/update-control-serie', [$controller, 'updateControlSerie']);
 	$group->post('/edit-field', [$controller, 'editField']);
+	$group->map(['GET', 'POST'], '/delete', [$controller, 'deleteByLocationCode']);
 	$group->delete('/{location_code:[^/]+}', [$controller, 'delete']);
 })
 ->addMiddleware(new AccessVerifier($container))

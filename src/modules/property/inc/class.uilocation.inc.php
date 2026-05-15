@@ -1592,8 +1592,7 @@ JS;
 					'my_name'		 => 'delete',
 					'text'			 => lang('delete'),
 					'confirm_msg'	 => lang('do you really want to delete this entry'),
-					'action'		 => phpgw::link('/index.php', array(
-						'menuaction'	 => 'property.uilocation.delete',
+					'action'		 => phpgw::link('/property/location/delete', array(
 						'lookup_tenant'	 => $lookup_tenant
 					)),
 					'parameters'	 => json_encode($parameters)
@@ -1911,14 +1910,12 @@ JS;
 
 		if ($this->acl_edit)
 		{
-			$link = self::link(array(
-				'menuaction'		 => 'property.uilocation.responsiblility_role_save',
+			$link = phpgw::link('/property/location/responsibility-role/save', array(
 				'type_id'			 => $type_id,
 				'second_display'	 => 1,
 				'status'			 => $this->status,
 				'location_code'		 => $this->location_code,
-				'entity_id'			 => $this->entity_id,
-				'phpgw_return_as'	 => 'json'
+				'entity_id'			 => $this->entity_id
 			));
 
 			$code = '

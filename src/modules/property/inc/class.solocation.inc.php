@@ -1834,11 +1834,33 @@ class property_solocation
 
 	function delete($location_code)
 	{
+		if (!preg_match('/^\d+(?:-\d+)*$/', $location_code))
+		{
+			return;
+		}
+
 		$location_array	 = explode('-', $location_code);
 		$type_id		 = count($location_array);
+		$location_types = $this->soadmin_location->select_location_type();
+		$allowed_tables = array();
+		foreach ((array)$location_types as $location_type)
+		{
+			$level = (int)($location_type['id'] ?? 0);
+			if ($level > 0)
+			{
+				$allowed_tables[$level] = "fm_location{$level}";
+			}
+		}
+		if ($type_id < 1 || !isset($allowed_tables[$type_id]))
+		{
+			return;
+		}
+		$location_table = $allowed_tables[$type_id];
 		$this->db->transaction_begin();
-		$this->db->query("DELETE FROM fm_location$type_id WHERE location_code='{$location_code}'", __LINE__, __FILE__);
-		$this->db->query("DELETE FROM fm_locations WHERE location_code='{$location_code}'", __LINE__, __FILE__);
+		$stmt = $this->db->prepare("DELETE FROM {$location_table} WHERE location_code = :location_code");
+		$stmt->execute(array(':location_code' => $location_code));
+		$stmt = $this->db->prepare('DELETE FROM fm_locations WHERE location_code = :location_code');
+		$stmt->execute(array(':location_code' => $location_code));
 		$this->db->transaction_commit();
 	}
 
@@ -2359,12 +2381,29 @@ class property_solocation
 	{
 		$location_code = array();
 
-		$location_level = $this->soadmin_location->read_config_single('tenant_id');
-
-		$this->db->query("SELECT location_code FROM fm_location{$location_level} WHERE tenant_id='" . $tenant_id . "'", __LINE__, __FILE__);
-		while ($this->db->next_record())
+		$location_level = (int)$this->soadmin_location->read_config_single('tenant_id');
+		$location_types = $this->soadmin_location->select_location_type();
+		$allowed_tables = array();
+		foreach ((array)$location_types as $location_type)
 		{
-			$location_code[] = $this->db->f('location_code');
+			$level = (int)($location_type['id'] ?? 0);
+			if ($level > 0)
+			{
+				$allowed_tables[$level] = "fm_location{$level}";
+			}
+		}
+		if ($location_level < 1 || !isset($allowed_tables[$location_level]))
+		{
+			return $location_code;
+		}
+		$location_table = $allowed_tables[$location_level];
+
+		$sql = "SELECT location_code FROM {$location_table} WHERE tenant_id = :tenant_id";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':tenant_id' => $tenant_id));
+		while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
+		{
+			$location_code[] = $row['location_code'];
 		}
 		if (count($location_code) == 1)
 		{
@@ -2378,17 +2417,18 @@ class property_solocation
 
 	function get_item_id($location_code)
 	{
-		$this->db->query("SELECT id FROM fm_locations WHERE location_code='{$location_code}'", __LINE__, __FILE__);
-		$this->db->next_record();
-		return (int)$this->db->f('id');
+		$stmt = $this->db->prepare('SELECT id FROM fm_locations WHERE location_code = :location_code');
+		$stmt->execute(array(':location_code' => $location_code));
+		$row = $stmt->fetch(\PDO::FETCH_ASSOC);
+		return (int)($row['id'] ?? 0);
 	}
 
 	public function get_location_code($id)
 	{
-		$sql = "SELECT location_code FROM fm_locations WHERE id = '{$id}'";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
-		return $this->db->f('location_code');
+		$stmt = $this->db->prepare('SELECT location_code FROM fm_locations WHERE id = :id');
+		$stmt->execute(array(':id' => (int)$id));
+		$row = $stmt->fetch(\PDO::FETCH_ASSOC);
+		return $row['location_code'] ?? null;
 	}
 
 	function get_children($criteria = '')

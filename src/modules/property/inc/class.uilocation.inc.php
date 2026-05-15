@@ -630,10 +630,8 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		$values_combo_box	 = array();
 		$combos				 = array();
 
-		$link = self::link(array(
-			'menuaction'		 => 'property.uilocation.get_part_of_town',
-			'type_id'			 => $this->type_id,
-			'phpgw_return_as'	 => 'json'
+		$link = phpgw::link('/property/location/part-of-town', array(
+			'type_id' => $this->type_id
 		));
 
 		$code = '
@@ -716,10 +714,8 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		$values_combo_box	 = array();
 		$combos				 = array();
 
-		$link = self::link(array(
-			'menuaction'		 => 'property.uilocation.get_part_of_town',
-			'type_id'			 => $this->type_id,
-			'phpgw_return_as'	 => 'json'
+		$link = phpgw::link('/property/location/part-of-town', array(
+			'type_id' => $this->type_id
 		));
 
 		$code = '
@@ -810,10 +806,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		 *
 		 *
 		 */
-		$link = self::link(array(
-			'menuaction'		 => 'property.uilocation.get_accounts',
-			'phpgw_return_as'	 => 'json'
-		));
+		$link = phpgw::link('/property/location/accounts');
 
 		$code = '
 				var link = "' . $link . '";
@@ -900,10 +893,8 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		$values_combo_box	 = array();
 		$combos				 = array();
 
-		$link = self::link(array(
-			'menuaction'		 => 'property.uilocation.get_part_of_town',
-			'type_id'			 => $this->type_id,
-			'phpgw_return_as'	 => 'json'
+		$link = phpgw::link('/property/location/part-of-town', array(
+			'type_id' => $this->type_id
 		));
 
 		$code = '
@@ -1336,15 +1327,13 @@ JS;
 				)
 			),
 			'datatable'		 => array(
-				'source'		 => self::link(array(
-					'menuaction'		 => 'property.uilocation.index',
+				'source'		 => phpgw::link('/property/location', array(
 					'type_id'			 => $type_id,
 					'lookup'			 => $lookup,
 					'lookup_tenant'		 => $lookup_tenant,
 					'lookup_name'		 => $lookup_name,
 					'location_code'		 => $this->location_code,
-					'block_query'		 => $block_query,
-					'phpgw_return_as'	 => 'json'
+					'block_query'		 => $block_query
 				)),
 				"column_search"		 => array('onclick' => "init_column_search();"),
 				"columns"		 => array('onclick' => "JqueryPortico.openPopup({menuaction:'property.uilocation.columns', type_id:'{$type_id}',parent:'{$this->location_code}'}, {closeAction:'reload'})"),
@@ -1357,10 +1346,8 @@ JS;
 					'allrows'		 => true
 				)),
 				'allrows'		 => true,
-				'editor_action'	 => self::link(array(
-					'menuaction'		 => 'property.uilocation.edit_field',
-					'type_id'			 => $type_id,
-					'phpgw_return_as'	 => 'json'
+				'editor_action'	 => phpgw::link('/property/location/edit-field', array(
+					'type_id' => $type_id
 				)),
 				'field'			 => array()
 			)
@@ -1806,14 +1793,12 @@ JS;
 
 				$datatable_def = array(
 					'container'	 => 'datatable-container',
-					'requestUrl' => self::link(array(
-						'menuaction'		 => 'property.uilocation.responsiblility_role',
+					'requestUrl' => phpgw::link('/property/location/responsibility-role', array(
 						'type_id'			 => $type_id,
 						'second_display'	 => 1,
 						'status'			 => $this->status,
 						'location_code'		 => $this->location_code,
-						'entity_id'			 => $this->entity_id,
-						'phpgw_return_as'	 => 'json'
+						'entity_id'			 => $this->entity_id
 					)),
 					'ColumnDefs' => $entity_def,
 					'download'	 => array(
@@ -1863,14 +1848,12 @@ JS;
 				)
 			),
 			'datatable'		 => array(
-				'source'		 => self::link(array(
-					'menuaction'		 => 'property.uilocation.responsiblility_role',
+				'source'		 => phpgw::link('/property/location/responsibility-role', array(
 					'type_id'			 => $type_id,
 					'second_display'	 => 1,
 					'status'			 => $this->status,
 					'location_code'		 => $this->location_code,
-					'entity_id'			 => $this->entity_id,
-					'phpgw_return_as'	 => 'json'
+					'entity_id'			 => $this->entity_id
 				)),
 				'download'		 => self::link(array(
 					'menuaction'	 => 'property.uilocation.download',
@@ -2574,10 +2557,8 @@ JS;
 
 				$datatable_def[] = array(
 					'container'	 => 'datatable-container_0',
-					'requestUrl' => json_encode(self::link(array(
-						'menuaction'		 => 'property.uilocation.get_documents',
-						'location_code'		 => $location_code,
-						'phpgw_return_as'	 => 'json'
+					'requestUrl' => json_encode(phpgw::link('/property/location/documents', array(
+						'location_code'		 => $location_code
 					))),
 					'data'		 => "",
 					'tabletools' => ($mode == 'edit') ? $documents_tabletools : array(),
@@ -2669,10 +2650,8 @@ JS;
 					)
 				);
 
-				$link_history = json_encode(self::link(array(
-					'menuaction'		 => 'property.uilocation.get_history_data',
-					'location_code'		 => $location_code,
-					'phpgw_return_as'	 => 'json'
+				$link_history = json_encode(phpgw::link('/property/location/history', array(
+					'location_code'		 => $location_code
 				)));
 			}
 
@@ -3526,13 +3505,11 @@ JS;
 				)
 			),
 			'datatable'		 => array(
-				'source'			 => self::link(array(
-					'menuaction'		 => 'property.uilocation.summary',
+				'source'			 => phpgw::link('/property/location/summary', array(
 					'summary'			 => true,
 					'filter'			 => $this->filter,
 					'district_id'		 => $this->district_id,
-					'part_of_town_id'	 => $this->part_of_town_id,
-					'phpgw_return_as'	 => 'json'
+					'part_of_town_id'	 => $this->part_of_town_id
 				)),
 				'download'			 => self::link(array(
 					'menuaction'	 => 'property.uilocation.download',

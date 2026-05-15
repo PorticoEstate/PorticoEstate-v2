@@ -3,7 +3,6 @@
 namespace App\modules\property\helpers;
 
 use Exception;
-use function include_class;
 
 /**
  * LocationFormHelper - Orchestrator for location form workflows
@@ -16,6 +15,8 @@ use function include_class;
 class LocationFormHelper
 {
     private ?\property_bolocation $bo = null;
+    private ?array $locationConfig = null;
+    private ?array $locationTypes = null;
 
     /**
      * Normalize and enrich request state for location save
@@ -28,7 +29,7 @@ class LocationFormHelper
     {
         $locationCode = $this->resolveLocationCode($requestData);
         $locationParts = $this->extractLocationParts($locationCode);
-        $typeId = isset($requestData['type_id']) ? (int) $requestData['type_id'] : count($locationParts);
+        $typeId = $this->resolveTypeId($requestData, $locationParts);
 
         $normalized = [
             'values' => [],
@@ -44,28 +45,8 @@ class LocationFormHelper
             'location_data' => null,
         ];
 
-        // Extract and normalize location fields
-        $fieldsToMap = [
-            'location_code' => 'string',
-            'loc_code' => 'string',
-            'loc1' => 'string',
-            'loc2' => 'string',
-            'loc3' => 'string',
-            'loc4' => 'string',
-            'loc5' => 'string',
-            'street_name' => 'string',
-            'street_number' => 'string',
-            'zip_code' => 'string',
-            'city' => 'string',
-            'district' => 'string',
-            'part_of_town' => 'string',
-            'delivery_address' => 'string',
-            'location_type' => 'int',
-            'change_type' => 'int',
-            'cat_id' => 'int',
-            'type_id' => 'int',
-            'loc_date' => 'string',
-        ];
+        // Extract and normalize location fields based on DB-configured location settings.
+        $fieldsToMap = $this->buildDynamicFieldMap($typeId);
 
         foreach ($fieldsToMap as $key => $type) {
             if (isset($requestData[$key])) {
@@ -214,7 +195,7 @@ class LocationFormHelper
     /**
      * Load location data for rehydration after validation errors
      * 
-     * @param int $locationId Location ID
+     * @param string $locationCode Location code to load
      * @return array|null Location record or null if not found
      */
     private function loadLocationData(string $locationCode): ?array
@@ -238,7 +219,6 @@ class LocationFormHelper
                 require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
             }
 
-            include_class('property', 'bolocation');
             $this->bo = \CreateObject('property.bolocation');
         }
 
@@ -266,6 +246,118 @@ class LocationFormHelper
         }
 
         return implode('-', $parts);
+    }
+
+    private function resolveTypeId(array $requestData, array $locationParts): int
+    {
+        if (isset($requestData['type_id'])) {
+            $typeId = (int) $requestData['type_id'];
+            if ($typeId > 0) {
+                return $typeId;
+            }
+        }
+
+        if (!empty($locationParts)) {
+            return count($locationParts);
+        }
+
+        $maxLevel = 0;
+        for ($level = 1; $level <= 50; $level++) {
+            $key = "loc{$level}";
+            if (!empty($requestData[$key])) {
+                $maxLevel = $level;
+            }
+        }
+
+        if ($maxLevel > 0) {
+            return $maxLevel;
+        }
+
+        return count($this->getLocationTypes());
+    }
+
+    private function buildDynamicFieldMap(int $typeId): array
+    {
+        $fields = [
+            'location_code' => 'string',
+            'loc_code' => 'string',
+            'type_id' => 'int',
+            'cat_id' => 'int',
+            'change_type' => 'int',
+            'loc_date' => 'string',
+        ];
+
+        if ($typeId > 0) {
+            for ($level = 1; $level <= $typeId; $level++) {
+                $fields["loc{$level}"] = 'string';
+            }
+        }
+
+        foreach ($this->getLocationConfig() as $configEntry) {
+            $column = isset($configEntry['column_name']) ? (string) $configEntry['column_name'] : '';
+            $locationType = isset($configEntry['location_type']) ? (int) $configEntry['location_type'] : 0;
+            $lookupForm = !empty($configEntry['lookup_form']);
+
+            if ($column === '' || $locationType <= 0 || $locationType > $typeId || !$lookupForm) {
+                continue;
+            }
+
+            $fields[$column] = $this->inferSanitizerType($column);
+
+            if ($column === 'street_id') {
+                $fields['street_name'] = 'string';
+                $fields['street_number'] = 'string';
+            }
+
+            if ($column === 'tenant_id') {
+                $fields['first_name'] = 'string';
+                $fields['last_name'] = 'string';
+                $fields['contact_phone'] = 'string';
+            }
+        }
+
+        return $fields;
+    }
+
+    private function inferSanitizerType(string $column): string
+    {
+        $intColumns = [
+            'type_id',
+            'cat_id',
+            'change_type',
+            'street_id',
+            'tenant_id',
+            'owner_id',
+            'part_of_town_id',
+            'district_id',
+            'location_type',
+        ];
+
+        if (in_array($column, $intColumns, true) || preg_match('/(^|_)id$/', $column)) {
+            return 'int';
+        }
+
+        return 'string';
+    }
+
+    private function getLocationConfig(): array
+    {
+        if ($this->locationConfig === null) {
+            $config = $this->bo()->soadmin_location->read_config('');
+            $this->locationConfig = is_array($config) ? $config : [];
+        }
+
+        return $this->locationConfig;
+    }
+
+    private function getLocationTypes(): array
+    {
+        if ($this->locationTypes === null) {
+            $types = $this->bo()->soadmin_location->select_location_type();
+            $this->locationTypes = is_array($types) ? $types : [];
+        }
+
+        return $this->locationTypes;
     }
 
     private function extractLocationParts(string $locationCode): array

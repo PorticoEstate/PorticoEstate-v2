@@ -2474,11 +2474,11 @@ class property_solocation
 		$filtermethod	 = '';
 		if (is_array($criteria))
 		{
-			$location_code	 = $criteria['location_code'];
-			$child_level	 = $criteria['child_level'];
+			$location_code	 = isset($criteria['location_code']) ? (string)$criteria['location_code'] : '';
+			$child_level	 = isset($criteria['child_level']) ? (int)$criteria['child_level'] : 0;
 			$id_field		 = 'location_code';
-			$field_name		 = $criteria['field_name'];
-			$part_of_town_id = $criteria['part_of_town_id'];
+			$field_name		 = isset($criteria['field_name']) ? $criteria['field_name'] : '';
+			$part_of_town_id = isset($criteria['part_of_town_id']) ? (int)$criteria['part_of_town_id'] : 0;
 
 			if ($part_of_town_id)
 			{
@@ -2488,7 +2488,7 @@ class property_solocation
 		}
 		else
 		{
-			$location_code = $criteria;
+			$location_code = (string)$criteria;
 			if (!$location_code)
 			{
 				$level = 0;
@@ -2513,18 +2513,20 @@ class property_solocation
 		}
 
 		$location_id = $this->locations->get_id('property', ".location.{$child_level}");
-
-		$this->db->query("SELECT $id_field AS id, {$field_name} AS name, fm_location{$child_level}.id AS item_id, location_code"
-			. " FROM fm_location{$child_level} {$join_method} WHERE location_code {$this->like} '{$location_code}%' {$filtermethod} ORDER BY {$field_name} ASC", __LINE__, __FILE__);
-		while ($this->db->next_record())
+		$locationPattern = "{$location_code}%";
+		$sql = "SELECT $id_field AS id, {$field_name} AS name, fm_location{$child_level}.id AS item_id, location_code"
+			. " FROM fm_location{$child_level} {$join_method} WHERE location_code {$this->like} :location_pattern {$filtermethod} ORDER BY {$field_name} ASC";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':location_pattern' => $locationPattern));
+		while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
 		{
-			$location_code	 = $this->db->f('location_code', true);
-			$name			 = $this->db->f('name', true);
+			$location_code	 = $row['location_code'];
+			$name			 = $this->dbStrip($row['name'] ?? null);
 
 			$values[]	 = array(
-				'id'			 => $this->db->f('id'),
+				'id'			 => $row['id'],
 				'name'			 => $name ? $name : $location_code,
-				'item_id'		 => $this->db->f('item_id'),
+				'item_id'		 => $row['item_id'],
 				'location_id'	 => $location_id,
 			);
 		}
@@ -2540,21 +2542,28 @@ class property_solocation
 	 */
 	public function get_locations_by_name($data)
 	{
-		$level = isset($data['level']) && $data['level'] ? $data['level'] : 1;
+		$level = isset($data['level']) && $data['level'] ? (int)$data['level'] : 1;
+		if ($level < 1)
+		{
+			return array();
+		}
 
-		$location_name	 = isset($data['location_name']) && $data['location_name'] ? $data['location_name'] : '';
+		$location_name	 = isset($data['location_name']) && $data['location_name'] ? (string)$data['location_name'] : '';
 		$values			 = array();
 		if ($location_name)
 		{
-			$this->db->query("SELECT loc{$level}_name as name, location_code"
+			$locationPattern = "{$location_name}%";
+			$sql = "SELECT loc{$level}_name as name, location_code"
 				. " FROM fm_location{$level}"
-				. " WHERE loc{$level}_name {$this->like} '{$location_name}%'"
-				. " OR location_code {$this->like} '{$location_name}%'", __LINE__, __FILE__);
-			while ($this->db->next_record())
+				. " WHERE loc{$level}_name {$this->like} :location_pattern"
+				. " OR location_code {$this->like} :location_pattern";
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute(array(':location_pattern' => $locationPattern));
+			while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
 			{
 				$values[] = array(
-					'name'			 => $this->db->f('name', true),
-					'location_code'	 => $this->db->f('location_code'),
+					'name'			 => $this->dbStrip($row['name'] ?? null) ?: '',
+					'location_code'	 => $row['location_code'],
 				);
 			}
 		}

@@ -29,6 +29,8 @@ Completed in `sigurd/client_migration`:
   - parameterized `location_code` and `loc1` filters in delivery/address/exception helper queries
   - parameterized `check_history()`, `get_history()`, and `get_zip_info()` lookups
   - applied `DbRowTrait::dbStrip()` for returned text values in address/district/part-of-town/zip helpers
+  - parameterized wildcard filters in `get_children()` and `get_locations_by_name()`
+  - applied `DbRowTrait::dbStrip()` for name fields returned by those search helpers
 
 Notes:
 

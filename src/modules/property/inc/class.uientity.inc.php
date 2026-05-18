@@ -107,7 +107,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	var $public_functions	 = array(
 		'summary'					 => true,
 		'columns'					 => true,
-		'query'						 => true,
+		'query'						 => false,
 		'download'					 => false,
 		'view'						 => true,
 		'edit'						 => true,
@@ -121,19 +121,19 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		//'addfiles' => true,
 		'get_documents'				 => true,
 		'get_target'				 => true,
-		'get_related'				 => true,
-		'get_inventory'				 => true,
+		'get_related'				 => false,
+		'get_inventory'			 => false,
 		'add_inventory'				 => true,
 		'edit_inventory'			 => true,
-		'inventory_calendar'		 => true,
-		'get_controls_at_component'	 => true,
+		'inventory_calendar'		 => false,
+		'get_controls_at_component'	 => false,
 		'get_assigned_history'		 => true,
-		'get_cases'					 => true,
-		'get_checklists'			 => true,
-		'get_cases_for_checklist'	 => true,
+		'get_cases'					 => false,
+		'get_checklists'			 => false,
+		'get_cases_for_checklist'	 => false,
 		'handle_multi_upload_file'	 => true,
 		'build_multi_upload_file'	 => true,
-		'get_items_per_qr'			 => true
+		'get_items_per_qr'			 => false
 	);
 
 	/**
@@ -326,6 +326,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * Reads id, entity_id, cat_id, and type from GET. Stores uploaded files
 	 * in the entity category VFS directory and returns a JSON status response.
 	 *
+	 * @deprecated Use EntityController::handleMultiUploadFile() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/multi-upload.
 	 * @return void Output is written directly.
 	 */
 	public function handle_multi_upload_file(): void
@@ -390,6 +391,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	/**
 	 * Render the multi-file upload widget for an entity item (noframework popup).
 	 *
+	 * @deprecated Use EntityController::buildMultiUploadFile() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/multi-upload.
 	 * @return void Output is rendered directly via XSL template.
 	 */
 	public function build_multi_upload_file(): void
@@ -654,6 +656,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * 
 	 * NOTE: This method is now handled by the EntityController
 	 *
+	 * @deprecated Use EntityController::index() via /property/entity/{type}/{entity_id}/{cat_id}.
 	 * @return array|void DataTables result array, or void when outputting directly.
 	 */
 	public function query(): array
@@ -840,6 +843,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * Reads interlinks via bo->read_entity_to_link() and returns an array of
 	 * HTML anchor elements as rows.
 	 *
+	 * @deprecated Use EntityController::getRelated() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/related.
 	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
 	 */
 	function get_related(): array
@@ -3347,6 +3351,7 @@ JS;
 	 * Reads location_id and id from the request (or resolves location_id from the
 	 * item's location if not provided directly).
 	 *
+	 * @deprecated Use EntityController::getInventory() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory.
 	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
 	 */
 	public function get_inventory(): array
@@ -3416,6 +3421,7 @@ JS;
 	 * Requires ACL_ADD on the inventory location. If phpgw_return_as=json and
 	 * 'save' is posted, calls bo->edit_inventory() and returns a JSON status response.
 	 *
+	 * @deprecated Use EntityController::editInventoryPopup() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory/{inventory_id}/edit.
 	 * @return array|void JSON status array in JSON mode, otherwise renders XSL template.
 	 */
 	public function edit_inventory(): mixed
@@ -3560,6 +3566,7 @@ JS;
 	 * Requires ACL_ADD on the inventory location. On form submit, calls
 	 * bo->add_inventory() after collecting and validating location and unit data.
 	 *
+	 * @deprecated Use EntityController::addInventoryPopup() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory/add.
 	 * @return void Output is rendered via XSL template.
 	 */
 	public function add_inventory(): void
@@ -3677,6 +3684,7 @@ JS;
 	 *
 	 * Requires ACL_ADD. Currently outputs a placeholder message and exits.
 	 *
+	 * @deprecated Use EntityController::inventoryCalendarPopup() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory/{inventory_id}/calendar.
 	 * @return void Output is written directly.
 	 */
 	public function inventory_calendar(): void
@@ -3702,6 +3710,7 @@ JS;
 	 *
 	 * Requires ACL_READ. Delegates to bo->get_items_per_qr().
 	 *
+	 * @deprecated Use EntityController::getItemsPerQr() via /property/entity/{type}/{entity_id}/{cat_id}/items-per-qr.
 	 * @return array ResultSet array with 'totalRecords', 'recordsReturned', and 'Result'.
 	 */
 	public function get_items_per_qr(): array
@@ -3883,6 +3892,7 @@ JS;
 	 * @param int  $location_id Location ID of the entity type.
 	 * @param int  $id          ID of the entity item.
 	 * @param bool $skip_json   Whether to skip JSON encoding of the result.
+	 * @deprecated Use EntityController::getControlsAtComponent() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/controls-at-component.
 	 * @return array|string Controller controls data.
 	 */
 	public function get_controls_at_component($location_id = 0, $id = 0, $skip_json = false): array|string
@@ -3896,6 +3906,7 @@ JS;
 	 * @param int $location_id Location ID of the entity type.
 	 * @param int $id          ID of the entity item.
 	 * @param int $year        Year filter (0 for all years).
+	 * @deprecated Use EntityController::getCases() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/cases.
 	 * @return array Cases data.
 	 */
 	public function get_cases($location_id = 0, $id = 0, $year = 0): array
@@ -3908,6 +3919,7 @@ JS;
 	 *
 	 * Delegates to controller_helper::get_cases_for_checklist().
 	 *
+	 * @deprecated Use EntityController::getCasesForChecklist() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/cases-for-checklist.
 	 * @return array Cases data for the checklist.
 	 */
 	public function get_cases_for_checklist(): array
@@ -3921,6 +3933,7 @@ JS;
 	 * @param int $location_id Location ID of the entity type.
 	 * @param int $id          ID of the entity item.
 	 * @param int $year        Year filter (0 for all years).
+	 * @deprecated Use EntityController::getChecklists() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/checklists.
 	 * @return array Checklists data.
 	 */
 	public function get_checklists($location_id = 0, $id = 0, $year = 0): array
@@ -3933,6 +3946,7 @@ JS;
 	 *
 	 * Delegates to controller_helper::get_assigned_history().
 	 *
+	 * @deprecated Use EntityController::assignedHistoryPopup() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/assigned-history.
 	 * @return void Output is echoed by controller_helper::get_assigned_history().
 	 */
 	function get_assigned_history(): void

@@ -29,8 +29,24 @@ this.refresh_files = function ()
 
 this.showlightbox_add_inventory = function (location_id, id)
 {
-	var oArgs = {menuaction: 'property.uientity.add_inventory', location_id: location_id, id: id};
-	var sUrl = phpGWLink('index.php', oArgs);
+	var type = $('#field_type').val() || '';
+	var entityId = $('#field_entity_id').val() || '';
+	var catId = $('#cat_id').val() || '';
+	var sUrl;
+
+	if (type && entityId && catId && id)
+	{
+		sUrl = '/property/entity/' + encodeURIComponent(type)
+			+ '/' + encodeURIComponent(entityId)
+			+ '/' + encodeURIComponent(catId)
+			+ '/' + encodeURIComponent(id)
+			+ '/inventory/add?location_id=' + encodeURIComponent(location_id);
+	}
+	else
+	{
+		var oArgs = {menuaction: 'property.uientity.add_inventory', location_id: location_id, id: id};
+		sUrl = phpGWLink('index.php', oArgs);
+	}
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
@@ -43,8 +59,25 @@ this.showlightbox_add_inventory = function (location_id, id)
 
 this.showlightbox_edit_inventory = function (location_id, id, inventory_id)
 {
-	var oArgs = {menuaction: 'property.uientity.edit_inventory', location_id: location_id, id: id, inventory_id: inventory_id};
-	var sUrl = phpGWLink('index.php', oArgs);
+	var type = $('#field_type').val() || '';
+	var entityId = $('#field_entity_id').val() || '';
+	var catId = $('#cat_id').val() || '';
+	var sUrl;
+
+	if (type && entityId && catId && id && inventory_id)
+	{
+		sUrl = '/property/entity/' + encodeURIComponent(type)
+			+ '/' + encodeURIComponent(entityId)
+			+ '/' + encodeURIComponent(catId)
+			+ '/' + encodeURIComponent(id)
+			+ '/inventory/' + encodeURIComponent(inventory_id)
+			+ '/edit?location_id=' + encodeURIComponent(location_id);
+	}
+	else
+	{
+		var oArgs = {menuaction: 'property.uientity.edit_inventory', location_id: location_id, id: id, inventory_id: inventory_id};
+		sUrl = phpGWLink('index.php', oArgs);
+	}
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
@@ -57,8 +90,25 @@ this.showlightbox_edit_inventory = function (location_id, id, inventory_id)
 
 this.showlightbox_show_calendar = function (location_id, id, inventory_id)
 {
-	var oArgs = {menuaction: 'property.uientity.inventory_calendar', location_id: location_id, id: id, inventory_id: inventory_id};
-	var sUrl = phpGWLink('index.php', oArgs);
+	var type = $('#field_type').val() || '';
+	var entityId = $('#field_entity_id').val() || '';
+	var catId = $('#cat_id').val() || '';
+	var sUrl;
+
+	if (type && entityId && catId && id && inventory_id)
+	{
+		sUrl = '/property/entity/' + encodeURIComponent(type)
+			+ '/' + encodeURIComponent(entityId)
+			+ '/' + encodeURIComponent(catId)
+			+ '/' + encodeURIComponent(id)
+			+ '/inventory/' + encodeURIComponent(inventory_id)
+			+ '/calendar?location_id=' + encodeURIComponent(location_id);
+	}
+	else
+	{
+		var oArgs = {menuaction: 'property.uientity.inventory_calendar', location_id: location_id, id: id, inventory_id: inventory_id};
+		sUrl = phpGWLink('index.php', oArgs);
+	}
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
@@ -71,8 +121,23 @@ this.showlightbox_show_calendar = function (location_id, id, inventory_id)
 
 this.showlightbox_assigned_history = function (serie_id)
 {
-	var oArgs = {menuaction: 'property.uientity.get_assigned_history', serie_id: serie_id};
-	var sUrl = phpGWLink('index.php', oArgs);
+	var type = $('#field_type').val() || '';
+	var entityId = $('#field_entity_id').val() || '';
+	var catId = $('#cat_id').val() || '';
+	var sUrl;
+
+	if (type && entityId && catId && serie_id)
+	{
+		sUrl = '/property/entity/' + encodeURIComponent(type)
+			+ '/' + encodeURIComponent(entityId)
+			+ '/' + encodeURIComponent(catId)
+			+ '/assigned-history?serie_id=' + encodeURIComponent(serie_id);
+	}
+	else
+	{
+		var oArgs = {menuaction: 'property.uientity.get_assigned_history', serie_id: serie_id};
+		sUrl = phpGWLink('index.php', oArgs);
+	}
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,

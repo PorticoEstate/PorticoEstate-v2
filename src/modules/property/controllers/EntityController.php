@@ -1280,6 +1280,140 @@ class EntityController
 		return $response;
 	}
 
+	private function runLegacyEntityPopup(string $method, array $seed): array
+	{
+		$backupGet = $_GET;
+		$backupRequest = $_REQUEST;
+
+		try
+		{
+			foreach ($seed as $key => $value)
+			{
+				$_GET[$key] = $value;
+				$_REQUEST[$key] = $value;
+			}
+
+			include_class('property', 'uientity');
+			$ui = new \property_uientity();
+
+			ob_start();
+			$result = $ui->{$method}();
+			$html = (string)ob_get_clean();
+		}
+		finally
+		{
+			$_GET = $backupGet;
+			$_REQUEST = $backupRequest;
+		}
+
+		return ['result' => $result ?? null, 'html' => $html ?? ''];
+	}
+
+	/**
+	 * Render legacy add-inventory popup behind a REST route.
+	 */
+	public function addInventoryPopup(Request $request, Response $response, array $args): Response
+	{
+		$params = $request->getQueryParams();
+		$locationId = (int)($params['location_id'] ?? 0);
+		if (!$locationId)
+		{
+			throw new HttpBadRequestException($request, 'Missing required query parameter: location_id');
+		}
+
+		$popup = $this->runLegacyEntityPopup('add_inventory', [
+			'location_id' => $locationId,
+			'id' => (int)$args['id'],
+		]);
+
+		if (is_array($popup['result']))
+		{
+			return $this->jsonResponse($response, $popup['result']);
+		}
+
+		$response->getBody()->write($popup['html']);
+		return $response->withHeader('Content-Type', 'text/html')->withStatus(200);
+	}
+
+	/**
+	 * Render legacy edit-inventory popup behind a REST route.
+	 */
+	public function editInventoryPopup(Request $request, Response $response, array $args): Response
+	{
+		$params = $request->getQueryParams();
+		$locationId = (int)($params['location_id'] ?? 0);
+		if (!$locationId)
+		{
+			throw new HttpBadRequestException($request, 'Missing required query parameter: location_id');
+		}
+
+		$popup = $this->runLegacyEntityPopup('edit_inventory', [
+			'location_id' => $locationId,
+			'id' => (int)$args['id'],
+			'inventory_id' => (int)$args['inventory_id'],
+		]);
+
+		if (is_array($popup['result']))
+		{
+			return $this->jsonResponse($response, $popup['result']);
+		}
+
+		$response->getBody()->write($popup['html']);
+		return $response->withHeader('Content-Type', 'text/html')->withStatus(200);
+	}
+
+	/**
+	 * Render legacy inventory-calendar popup behind a REST route.
+	 */
+	public function inventoryCalendarPopup(Request $request, Response $response, array $args): Response
+	{
+		$params = $request->getQueryParams();
+		$locationId = (int)($params['location_id'] ?? 0);
+		if (!$locationId)
+		{
+			throw new HttpBadRequestException($request, 'Missing required query parameter: location_id');
+		}
+
+		$popup = $this->runLegacyEntityPopup('inventory_calendar', [
+			'location_id' => $locationId,
+			'id' => (int)$args['id'],
+			'inventory_id' => (int)$args['inventory_id'],
+		]);
+
+		if (is_array($popup['result']))
+		{
+			return $this->jsonResponse($response, $popup['result']);
+		}
+
+		$response->getBody()->write($popup['html']);
+		return $response->withHeader('Content-Type', 'text/html')->withStatus(200);
+	}
+
+	/**
+	 * Render legacy assigned-history popup behind a REST route.
+	 */
+	public function assignedHistoryPopup(Request $request, Response $response, array $args): Response
+	{
+		$params = $request->getQueryParams();
+		$serieId = (int)($params['serie_id'] ?? 0);
+		if (!$serieId)
+		{
+			throw new HttpBadRequestException($request, 'Missing required query parameter: serie_id');
+		}
+
+		$popup = $this->runLegacyEntityPopup('get_assigned_history', [
+			'serie_id' => $serieId,
+		]);
+
+		if (is_array($popup['result']))
+		{
+			return $this->jsonResponse($response, $popup['result']);
+		}
+
+		$response->getBody()->write($popup['html']);
+		return $response->withHeader('Content-Type', 'text/html')->withStatus(200);
+	}
+
 	/**
 	 * Return controller cases linked to this entity item.
 	 *

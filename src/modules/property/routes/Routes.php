@@ -128,6 +128,9 @@ $app->group('/property/entity', function (RouteCollectorProxy $group) use ($cont
 		$g->post('/{id:[0-9]+}/inventory', [$controller, 'getInventory']);
 		$g->get('/{id:[0-9]+}/multi-upload', [$controller, 'buildMultiUploadFile']);
 		$g->map(['POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'], '/{id:[0-9]+}/multi-upload', [$controller, 'handleMultiUploadFile']);
+		$g->map(['GET', 'POST'], '/{id:[0-9]+}/inventory/add', [$controller, 'addInventoryPopup']);
+		$g->map(['GET', 'POST'], '/{id:[0-9]+}/inventory/{inventory_id:[0-9]+}/edit', [$controller, 'editInventoryPopup']);
+		$g->get('/{id:[0-9]+}/inventory/{inventory_id:[0-9]+}/calendar', [$controller, 'inventoryCalendarPopup']);
 
 		// Category-level data queries (id/location_id as query params)
 		$g->get('/items-per-qr',        [$controller, 'getItemsPerQr']);
@@ -135,6 +138,7 @@ $app->group('/property/entity', function (RouteCollectorProxy $group) use ($cont
 		$g->get('/checklists',          [$controller, 'getChecklists']);
 		$g->get('/controls',            [$controller, 'getControlsAtComponent']);
 		$g->get('/cases-for-checklist', [$controller, 'getCasesForChecklist']);
+		$g->get('/assigned-history',    [$controller, 'assignedHistoryPopup']);
 	});
 })
 ->addMiddleware(new AccessVerifier($container))

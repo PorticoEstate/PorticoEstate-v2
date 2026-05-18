@@ -16,6 +16,8 @@ class LocationController
 	private const ACL_ADD = 'acl_add';
 	private const ACL_EDIT = 'acl_edit';
 	private const ACL_DELETE = 'acl_delete';
+	private \phpgwapi_common $phpgwapiCommon;
+	private $bo;
 
 	public function __construct(ContainerInterface $container)
 	{
@@ -23,9 +25,10 @@ class LocationController
 		{
 			require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
 		}
-
+		$this->bo	= CreateObject('property.bolocation', true);
 		// Initialize form helper for write operations
 		$this->formHelper = new LocationFormHelper();
+		$this->phpgwapiCommon = new \phpgwapi_common();
 	}
 
 	private function hydrateRequestGlobals(Request $request, array $extra = array(), bool $json = true): void
@@ -105,91 +108,386 @@ class LocationController
 	public function responsibilityRoleSave(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->responsiblility_role_save());
+
+		$ui = $this->ui();
+		$values = $request->getParsedBody();
+		$values = is_array($values) ? $values : array();
+		$assignOrig = \Sanitizer::get_var('assign_orig');
+		$assign = \Sanitizer::get_var('assign');
+		$roleId = \Sanitizer::get_var('role_id', 'int');
+		$userId = \Sanitizer::get_var('user_id', 'int', 'request', $ui->account);
+
+		$result = array('message' => array());
+		if (($assign || $assignOrig) && $ui->acl_edit)
+		{
+			$userId = abs($userId);
+			$account = $ui->accounts->get($userId);
+			$contactId = $account->person_id;
+
+			if (empty($roleId))
+			{
+				$result['error'][] = array('msg' => lang('missing role'));
+			}
+			else
+			{
+				$values['contact_id'] = $contactId;
+				$values['responsibility_role_id'] = $roleId;
+				$values['assign'] = $assign;
+				$values['assign_orig'] = $assignOrig;
+				$boResponsible = CreateObject('property.boresponsible');
+				$result = $boResponsible->update_role_assignment($values);
+			}
+		}
+
+		return $this->jsonResponse($response, $result);
 	}
 
 	public function getPartOfTown(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->get_part_of_town());
+		$ui = $this->ui();
+		$districtId = (int)($request->getQueryParams()['district_id'] ?? 0);
+		$bocommon = createObject('property.bocommon');
+		$values = $bocommon->select_part_of_town('filter', $ui->part_of_town_id, $districtId);
+		array_unshift($values, array('id' => '', 'name' => lang('no part of town')));
+		return $this->jsonResponse($response, $values);
 	}
 
 	public function getAccounts(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->get_accounts());
+
+		$ui = $this->ui();
+		$accountType = (string)($request->getQueryParams()['account_type'] ?? '');
+		if ($accountType === '')
+		{
+			$accountType = (string)($request->getParsedBody()['account_type'] ?? '');
+		}
+
+		switch ($accountType)
+		{
+			case 'accounts':
+				$accounts = $ui->accounts->get_list('accounts', -1, 'ASC', 'account_lastname', '', -1);
+				break;
+			case 'groups':
+				$accounts = $ui->accounts->get_list('groups', -1, 'ASC', 'account_firstname', '', -1);
+				break;
+			default:
+				$accounts = array_merge(
+					$ui->accounts->get_list('groups', -1, 'ASC', 'account_firstname', '', -1),
+					$ui->accounts->get_list('accounts', -1, 'ASC', 'account_lastname', '', -1)
+				);
+				break;
+		}
+
+		$values = array();
+		foreach ($accounts as $account)
+		{
+			$values[] = array(
+				'id' => $account->id,
+				'name' => $account->__toString(),
+			);
+		}
+		if ($accountType === 'accounts')
+		{
+			array_unshift($values, array(
+				'id' => (-1 * $ui->userSettings['account_id']),
+				'name' => lang('mine roles')
+			));
+		}
+		array_unshift($values, array('id' => '', 'name' => lang('Select')));
+
+		return $this->jsonResponse($response, $values);
 	}
 
 	public function getHistoryData(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->get_history_data());
+		$ui = $this->ui();
+		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
+		$draw = (int)($request->getQueryParams()['draw'] ?? 0);
+		$values = $this->bo->get_history($locationCode);
+		$dateFormat = $ui->userSettings['preferences']['common']['dateformat'];
+		foreach ($values as &$entry)
+		{
+			$entry['entry_date'] = $this->phpgwapiCommon->show_date($entry['entry_date'], $dateFormat);
+		}
+		unset($entry);
+		return $this->jsonResponse($response, array(
+			'results' => $values,
+			'total_records' => count($values),
+			'draw' => $draw,
+		));
 	}
 
 	public function getDocuments(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->get_documents());
+
+		$ui = $this->ui();
+		$search = $request->getQueryParams()['search'] ?? array();
+		$order = (array)($request->getQueryParams()['order'] ?? array());
+		$draw = (int)($request->getQueryParams()['draw'] ?? 0);
+		$columns = (array)($request->getQueryParams()['columns'] ?? array());
+		$docType = (int)($request->getQueryParams()['doc_type'] ?? 0);
+		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
+		$export = !empty($request->getQueryParams()['export']);
+
+		$params = array(
+			'start' => (int)($request->getQueryParams()['start'] ?? 0),
+			'results' => (int)($request->getQueryParams()['length'] ?? 0),
+			'query' => $search['value'] ?? '',
+			'order' => $columns[$order[0]['column']]['data'] ?? '',
+			'sort' => $order[0]['dir'] ?? 'ASC',
+			'dir' => $order[0]['dir'] ?? 'ASC',
+			'allrows' => ((int)($request->getQueryParams()['length'] ?? 0) == -1) || $export,
+			'doc_type' => $docType,
+			'location_code' => $locationCode,
+		);
+
+		$dateFormat = $ui->userSettings['preferences']['common']['dateformat'];
+		$document = CreateObject('property.sodocument');
+		$documents = $document->read_at_location($params);
+		$totalRecords = $document->total_records;
+		$values = array();
+		foreach ($documents as $item)
+		{
+			if ($item['link'])
+			{
+				$link = $item['link'];
+				if (!preg_match('/^HTTP/i', $link))
+				{
+					$link = 'file:///' . str_replace(':', '|', $link);
+				}
+				$values[] = array(
+					'id' => $item['id'],
+					'type' => 'location',
+					'document_name' => "<a href='{$link}'>{$item['title']}</a>",
+					'title' => $item['title'],
+					'document_date' => $this->phpgwapiCommon->show_date($item['document_date'], $dateFormat)
+				);
+				continue;
+			}
+			$documentName = '<a href="' . \phpgw::link('/index.php',array(
+				'menuaction' => 'property.uidocument.view_file',
+				'id' => $item['id']
+			)) . '" target="_blank">' . $item['document_name'] . '</a>';
+			$values[] = array(
+				'id' => $item['id'],
+				'type' => 'location',
+				'document_name' => $documentName,
+				'title' => $item['title'],
+				'document_date' => $this->phpgwapiCommon->show_date($item['document_date'], $dateFormat)
+			);
+			}
+		unset($item);
+
+		$locations = new \App\modules\phpgwapi\controllers\Locations();
+		$locationId = $locations->get_id('property', '.location.' . count(explode('-', $locationCode)));
+		$genericDocument = CreateObject('property.sogeneric_document');
+		$params['location_id'] = $locationId;
+		$params['location_item_id'] = $this->bo->get_item_id($locationCode);
+		$params['order'] = 'name';
+		$params['cat_id'] = $docType;
+		$documents2 = $genericDocument->read($params);
+		$totalRecords += $genericDocument->total_records;
+		foreach ($documents2 as $item)
+		{
+			$title = '';
+			if ($item['path'])
+			{
+				$temp = (array)json_decode($item['path']);
+				$title = implode('<br/>', $temp);
+			}
+			$documentName = '<a href="' . \phpgw::link('/index.php',array(
+				'menuaction' => 'property.uigeneric_document.view_file',
+				'file_id' => $item['id']
+			)) . '" target="_blank">' . $item['name'] . '</a>';
+			$values[] = array(
+				'id' => $item['id'],
+				'type' => 'generic',
+				'document_name' => $documentName,
+				'title' => $title,
+				'document_date' => $item['created']
+			);
+		}
+
+		return $this->jsonResponse($response, array(
+			'results' => $values,
+			'total_records' => $totalRecords,
+			'draw' => $draw,
+		));
 	}
 
 	public function getLocationData(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->get_location_data());
+		$ui = $this->ui();
+		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
+		$values = array();
+		if ($locationCode)
+		{
+			$values = $this->bo->read_single($locationCode, array('noattrib' => true));
+			$partOfTownId = $values['part_of_town_id'] ?? 0;
+			$partOfTown = createObject('property.bogeneric')->read_single(array(
+				'id' => $partOfTownId,
+				'location_info' => array('type' => 'part_of_town')
+			));
+			$values['part_of_town_name'] = $partOfTown['name'] ?? '';
+		}
+		return $this->jsonResponse($response, $values);
 	}
 
 	public function getDeliveryAddress(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->get_delivery_address());
+		$ui = $this->ui();
+		$loc1 = (string)($request->getQueryParams()['loc1'] ?? '');
+		return $this->jsonResponse($response, array(
+			'delivery_address' => $this->bo->get_delivery_address($loc1)
+		));
 	}
 
 	public function getLocationException(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->get_location_exception());
+		$ui = $this->ui();
+		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
+		$locationException = $this->bo->get_location_exception($locationCode);
+		foreach ($locationException as &$_locationException)
+		{
+			$_locationException['category_text'] = preg_replace('!(http|ftp|scp)(s)?:\/\/[a-zA-Z0-9.?%=\-&_/]+!', "<a href=\"\\0\">\\0</a>", $_locationException['category_text']);
+			$_locationException['location_descr'] = preg_replace('!(http|ftp|scp)(s)?:\/\/[a-zA-Z0-9.?%=\-&_/]+!', "<a href=\"\\0\">\\0</a>", $_locationException['location_descr']);
+		}
+		unset($_locationException);
+		return $this->jsonResponse($response, array(
+			'location_exception' => $locationException
+		));
 	}
 
 	public function queryRole(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->query_role());
+		$ui = $this->ui();
+		$lookupTenant = (bool)($request->getQueryParams()['lookup_tenant'] ?? false);
+		$userId = (int)($request->getQueryParams()['user_id'] ?? $ui->account);
+		$roleId = (int)($request->getQueryParams()['role_id'] ?? 0);
+		$search = $request->getQueryParams()['search'] ?? array();
+		$order = (array)($request->getQueryParams()['order'] ?? array());
+		$draw = (int)($request->getQueryParams()['draw'] ?? 0);
+		$columns = (array)($request->getQueryParams()['columns'] ?? array());
+
+		$params = array(
+			'start' => (int)($request->getQueryParams()['start'] ?? 0),
+			'results' => (int)($request->getQueryParams()['length'] ?? 0),
+			'query' => $search['value'] ?? '',
+			'order' => $columns[$order[0]['column']]['data'] ?? '',
+			'sort' => $order[0]['dir'] ?? 'ASC',
+			'dir' => $order[0]['dir'] ?? 'ASC',
+			'allrows' => ((int)($request->getQueryParams()['length'] ?? 0) == -1),
+			'lookup_tenant' => $lookupTenant,
+			'user_id' => $userId,
+			'role_id' => $roleId,
+		);
+
+		$values = $this->bo->get_responsible($params);
+		return $this->jsonResponse($response, array(
+			'results' => $values,
+			'total_records' => $this->bo->total_records,
+			'draw' => $draw,
+		));
 	}
 
 	public function querySummary(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->query_summary());
+		$ui = $this->ui();
+		$values = $this->bo->read_summary();
+		if (!empty($request->getQueryParams()['export']))
+		{
+			return $this->jsonResponse($response, $values);
+		}
+		return $this->jsonResponse($response, array(
+			'results' => $values,
+			'total_records' => count($values),
+			'draw' => (int)($request->getQueryParams()['draw'] ?? 0),
+		));
 	}
 
 	public function getControlsAtComponent(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->get_controls_at_component());
+		$ui = $this->ui();
+		$locationId = (int)($request->getQueryParams()['location_id'] ?? 0);
+		$id = (int)($request->getQueryParams()['id'] ?? 0);
+		$skipJson = (bool)($request->getQueryParams()['skip_json'] ?? false);
+		return $this->jsonResponse($response, $ui->controller_helper->get_controls_at_component($locationId, $id, $skipJson));
 	}
 
 	public function getCases(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->get_cases());
+		$ui = $this->ui();
+		$locationId = (int)($request->getQueryParams()['location_id'] ?? 0);
+		$id = (int)($request->getQueryParams()['id'] ?? 0);
+		$year = (int)($request->getQueryParams()['year'] ?? 0);
+		return $this->jsonResponse($response, $ui->controller_helper->get_cases($locationId, $id, $year));
 	}
 
 	public function getChecklists(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->get_checklists());
+		$ui = $this->ui();
+		$locationId = (int)($request->getQueryParams()['location_id'] ?? 0);
+		$id = (int)($request->getQueryParams()['id'] ?? 0);
+		$year = (int)($request->getQueryParams()['year'] ?? 0);
+		return $this->jsonResponse($response, $ui->controller_helper->get_checklists($locationId, $id, $year));
 	}
 
 	public function getCasesForChecklist(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->get_cases_for_checklist());
+		return $this->jsonResponse($response, $this->ui()->controller_helper->get_cases_for_checklist());
 	}
 
 	public function editField(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->edit_field());
+		$ui = $this->ui();
+		$typeId = (int)($request->getQueryParams()['type_id'] ?? 0);
+		$id = (int)($request->getParsedBody()['id'] ?? 0);
+		$fieldName = (string)($request->getQueryParams()['field_name'] ?? '');
+
+		if (!$ui->acl_edit)
+		{
+			return $this->jsonResponse($response, 'ERROR');
+		}
+		if (!$ui->acl_manage && $fieldName !== 'contact_phone')
+		{
+			return $this->jsonResponse($response, 'ERROR');
+		}
+		if (!$id || !$fieldName)
+		{
+			return $this->jsonResponse($response, 'ERROR');
+		}
+
+		$data = array(
+			'type_id' => $typeId,
+			'id' => $id,
+			'field_name' => $fieldName,
+			'value' => \Sanitizer::get_var('value'),
+		);
+
+		try
+		{
+			$ret = $this->bo->edit_field($data);
+		}
+		catch (\Exception $e)
+		{
+			$ret = false;
+		}
+
+		return $this->jsonResponse($response, $ret ? 'OK' : 'ERROR');
 	}
 
 	/**

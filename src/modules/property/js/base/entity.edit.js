@@ -1,5 +1,47 @@
 /* global get_files_java_url, get_checklists_url, get_cases_url, get_controls_url, get_cases_for_checklist_url, location_id, item_id, multi_upload_url */
 
+/**
+ * Read the current entity's type / entity_id / cat_id from the page.
+ *
+ * Sources tried in order:
+ *   1. Hidden inputs #field_type and #field_entity_id (always present in entity.xsl).
+ *   2. #cat_id select element (present when the category list has more than one entry).
+ *   3. The form's REST-style action attribute: /property/entity/{type}/{entity_id}/{cat_id}...
+ *
+ * @returns {{type: string, entityId: string, catId: string}}
+ */
+function getEntityContext()
+{
+	var type = ($('#field_type').val() || '').toString();
+	var entityId = ($('#field_entity_id').val() || '').toString();
+	var catId = ($('#cat_id').val() || '').toString();
+
+	if (!catId || catId === '0')
+	{
+		var formAction = ($('#form').attr('action') || '').toString();
+		var pathMatch = formAction.match(/\/property\/entity\/([^/]+)\/(\d+)\/(\d+)/);
+		if (pathMatch)
+		{
+			if (!type)     { type     = decodeURIComponent(pathMatch[1]); }
+			if (!entityId) { entityId = pathMatch[2]; }
+			catId = pathMatch[3];
+		}
+		else
+		{
+			var qIndex = formAction.indexOf('?');
+			if (qIndex !== -1)
+			{
+				var params = new URLSearchParams(formAction.substring(qIndex + 1));
+				if (!type)     { type     = params.get('type')      || ''; }
+				if (!entityId) { entityId = params.get('entity_id') || ''; }
+				catId = params.get('cat_id') || '';
+			}
+		}
+	}
+
+	return {type: type, entityId: entityId, catId: catId};
+}
+
 this.fileuploader = function ()
 {
 	var sUrl = multi_upload_url || phpGWLink('index.php', multi_upload_parans);
@@ -29,24 +71,17 @@ this.refresh_files = function ()
 
 this.showlightbox_add_inventory = function (location_id, id)
 {
-	var type = $('#field_type').val() || '';
-	var entityId = $('#field_entity_id').val() || '';
-	var catId = $('#cat_id').val() || '';
-	var sUrl;
+	var ctx = getEntityContext();
+	if (!ctx.type || !ctx.entityId || !ctx.catId || !id)
+	{
+		return;
+	}
 
-	if (type && entityId && catId && id)
-	{
-		sUrl = '/property/entity/' + encodeURIComponent(type)
-			+ '/' + encodeURIComponent(entityId)
-			+ '/' + encodeURIComponent(catId)
-			+ '/' + encodeURIComponent(id)
-			+ '/inventory/add?location_id=' + encodeURIComponent(location_id);
-	}
-	else
-	{
-		var oArgs = {menuaction: 'property.uientity.add_inventory', location_id: location_id, id: id};
-		sUrl = phpGWLink('index.php', oArgs);
-	}
+	var sUrl = '/property/entity/' + encodeURIComponent(ctx.type)
+		+ '/' + encodeURIComponent(ctx.entityId)
+		+ '/' + encodeURIComponent(ctx.catId)
+		+ '/' + encodeURIComponent(id)
+		+ '/inventory/add?location_id=' + encodeURIComponent(location_id);
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
@@ -59,25 +94,18 @@ this.showlightbox_add_inventory = function (location_id, id)
 
 this.showlightbox_edit_inventory = function (location_id, id, inventory_id)
 {
-	var type = $('#field_type').val() || '';
-	var entityId = $('#field_entity_id').val() || '';
-	var catId = $('#cat_id').val() || '';
-	var sUrl;
+	var ctx = getEntityContext();
+	if (!ctx.type || !ctx.entityId || !ctx.catId || !id || !inventory_id)
+	{
+		return;
+	}
 
-	if (type && entityId && catId && id && inventory_id)
-	{
-		sUrl = '/property/entity/' + encodeURIComponent(type)
-			+ '/' + encodeURIComponent(entityId)
-			+ '/' + encodeURIComponent(catId)
-			+ '/' + encodeURIComponent(id)
-			+ '/inventory/' + encodeURIComponent(inventory_id)
-			+ '/edit?location_id=' + encodeURIComponent(location_id);
-	}
-	else
-	{
-		var oArgs = {menuaction: 'property.uientity.edit_inventory', location_id: location_id, id: id, inventory_id: inventory_id};
-		sUrl = phpGWLink('index.php', oArgs);
-	}
+	var sUrl = '/property/entity/' + encodeURIComponent(ctx.type)
+		+ '/' + encodeURIComponent(ctx.entityId)
+		+ '/' + encodeURIComponent(ctx.catId)
+		+ '/' + encodeURIComponent(id)
+		+ '/inventory/' + encodeURIComponent(inventory_id)
+		+ '/edit?location_id=' + encodeURIComponent(location_id);
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
@@ -90,25 +118,18 @@ this.showlightbox_edit_inventory = function (location_id, id, inventory_id)
 
 this.showlightbox_show_calendar = function (location_id, id, inventory_id)
 {
-	var type = $('#field_type').val() || '';
-	var entityId = $('#field_entity_id').val() || '';
-	var catId = $('#cat_id').val() || '';
-	var sUrl;
+	var ctx = getEntityContext();
+	if (!ctx.type || !ctx.entityId || !ctx.catId || !id || !inventory_id)
+	{
+		return;
+	}
 
-	if (type && entityId && catId && id && inventory_id)
-	{
-		sUrl = '/property/entity/' + encodeURIComponent(type)
-			+ '/' + encodeURIComponent(entityId)
-			+ '/' + encodeURIComponent(catId)
-			+ '/' + encodeURIComponent(id)
-			+ '/inventory/' + encodeURIComponent(inventory_id)
-			+ '/calendar?location_id=' + encodeURIComponent(location_id);
-	}
-	else
-	{
-		var oArgs = {menuaction: 'property.uientity.inventory_calendar', location_id: location_id, id: id, inventory_id: inventory_id};
-		sUrl = phpGWLink('index.php', oArgs);
-	}
+	var sUrl = '/property/entity/' + encodeURIComponent(ctx.type)
+		+ '/' + encodeURIComponent(ctx.entityId)
+		+ '/' + encodeURIComponent(ctx.catId)
+		+ '/' + encodeURIComponent(id)
+		+ '/inventory/' + encodeURIComponent(inventory_id)
+		+ '/calendar?location_id=' + encodeURIComponent(location_id);
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
@@ -121,23 +142,16 @@ this.showlightbox_show_calendar = function (location_id, id, inventory_id)
 
 this.showlightbox_assigned_history = function (serie_id)
 {
-	var type = $('#field_type').val() || '';
-	var entityId = $('#field_entity_id').val() || '';
-	var catId = $('#cat_id').val() || '';
-	var sUrl;
+	var ctx = getEntityContext();
+	if (!ctx.type || !ctx.entityId || !ctx.catId || !serie_id)
+	{
+		return;
+	}
 
-	if (type && entityId && catId && serie_id)
-	{
-		sUrl = '/property/entity/' + encodeURIComponent(type)
-			+ '/' + encodeURIComponent(entityId)
-			+ '/' + encodeURIComponent(catId)
-			+ '/assigned-history?serie_id=' + encodeURIComponent(serie_id);
-	}
-	else
-	{
-		var oArgs = {menuaction: 'property.uientity.get_assigned_history', serie_id: serie_id};
-		sUrl = phpGWLink('index.php', oArgs);
-	}
+	var sUrl = '/property/entity/' + encodeURIComponent(ctx.type)
+		+ '/' + encodeURIComponent(ctx.entityId)
+		+ '/' + encodeURIComponent(ctx.catId)
+		+ '/assigned-history?serie_id=' + encodeURIComponent(serie_id);
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,

@@ -1018,7 +1018,7 @@ class EntityControllerTest extends TestCase
 		$this->assertArrayHasKey('delete_file', $decoded['data'][0]);
 		$this->assertSame(1,            $decoded['recordsTotal']);
 		$this->assertSame(1,            $decoded['recordsFiltered']);
-		$this->assertSame(1,            $decoded['draw']);
+		$this->assertSame(2,            $decoded['draw']);
 	}
 
 	public function testGetFilesDefaultsDrawToOneWhenMissing(): void

@@ -16,8 +16,8 @@ class LocationController
 	private const ACL_ADD = 'acl_add';
 	private const ACL_EDIT = 'acl_edit';
 	private const ACL_DELETE = 'acl_delete';
-	private \phpgwapi_common $phpgwapiCommon;
-	private $bo;
+	private ?\phpgwapi_common $phpgwapiCommon = null;
+	private $bo = null;
 
 	public function __construct(ContainerInterface $container)
 	{
@@ -25,10 +25,28 @@ class LocationController
 		{
 			require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
 		}
-		$this->bo	= CreateObject('property.bolocation', true);
 		// Initialize form helper for write operations
 		$this->formHelper = new LocationFormHelper();
-		$this->phpgwapiCommon = new \phpgwapi_common();
+	}
+
+	private function bo()
+	{
+		if ($this->bo === null)
+		{
+			$this->bo = CreateObject('property.bolocation', true);
+		}
+
+		return $this->bo;
+	}
+
+	private function phpgwapiCommon(): \phpgwapi_common
+	{
+		if ($this->phpgwapiCommon === null)
+		{
+			$this->phpgwapiCommon = new \phpgwapi_common();
+		}
+
+		return $this->phpgwapiCommon;
 	}
 
 	private function hydrateRequestGlobals(Request $request, array $extra = array(), bool $json = true): void
@@ -206,11 +224,11 @@ class LocationController
 		$ui = $this->ui();
 		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
 		$draw = (int)($request->getQueryParams()['draw'] ?? 0);
-		$values = $this->bo->get_history($locationCode);
+		$values = $this->bo()->get_history($locationCode);
 		$dateFormat = $ui->userSettings['preferences']['common']['dateformat'];
 		foreach ($values as &$entry)
 		{
-			$entry['entry_date'] = $this->phpgwapiCommon->show_date($entry['entry_date'], $dateFormat);
+			$entry['entry_date'] = $this->phpgwapiCommon()->show_date($entry['entry_date'], $dateFormat);
 		}
 		unset($entry);
 		return $this->jsonResponse($response, array(
@@ -264,7 +282,7 @@ class LocationController
 					'type' => 'location',
 					'document_name' => "<a href='{$link}'>{$item['title']}</a>",
 					'title' => $item['title'],
-					'document_date' => $this->phpgwapiCommon->show_date($item['document_date'], $dateFormat)
+					'document_date' => $this->phpgwapiCommon()->show_date($item['document_date'], $dateFormat)
 				);
 				continue;
 			}
@@ -277,7 +295,7 @@ class LocationController
 				'type' => 'location',
 				'document_name' => $documentName,
 				'title' => $item['title'],
-				'document_date' => $this->phpgwapiCommon->show_date($item['document_date'], $dateFormat)
+				'document_date' => $this->phpgwapiCommon()->show_date($item['document_date'], $dateFormat)
 			);
 			}
 		unset($item);
@@ -286,7 +304,7 @@ class LocationController
 		$locationId = $locations->get_id('property', '.location.' . count(explode('-', $locationCode)));
 		$genericDocument = CreateObject('property.sogeneric_document');
 		$params['location_id'] = $locationId;
-		$params['location_item_id'] = $this->bo->get_item_id($locationCode);
+		$params['location_item_id'] = $this->bo()->get_item_id($locationCode);
 		$params['order'] = 'name';
 		$params['cat_id'] = $docType;
 		$documents2 = $genericDocument->read($params);
@@ -327,7 +345,7 @@ class LocationController
 		$values = array();
 		if ($locationCode)
 		{
-			$values = $this->bo->read_single($locationCode, array('noattrib' => true));
+			$values = $this->bo()->read_single($locationCode, array('noattrib' => true));
 			$partOfTownId = $values['part_of_town_id'] ?? 0;
 			$partOfTown = createObject('property.bogeneric')->read_single(array(
 				'id' => $partOfTownId,
@@ -344,7 +362,7 @@ class LocationController
 		$ui = $this->ui();
 		$loc1 = (string)($request->getQueryParams()['loc1'] ?? '');
 		return $this->jsonResponse($response, array(
-			'delivery_address' => $this->bo->get_delivery_address($loc1)
+			'delivery_address' => $this->bo()->get_delivery_address($loc1)
 		));
 	}
 
@@ -353,7 +371,7 @@ class LocationController
 		$this->hydrateRequestGlobals($request);
 		$ui = $this->ui();
 		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
-		$locationException = $this->bo->get_location_exception($locationCode);
+		$locationException = $this->bo()->get_location_exception($locationCode);
 		foreach ($locationException as &$_locationException)
 		{
 			$_locationException['category_text'] = preg_replace('!(http|ftp|scp)(s)?:\/\/[a-zA-Z0-9.?%=\-&_/]+!', "<a href=\"\\0\">\\0</a>", $_locationException['category_text']);
@@ -390,10 +408,10 @@ class LocationController
 			'role_id' => $roleId,
 		);
 
-		$values = $this->bo->get_responsible($params);
+		$values = $this->bo()->get_responsible($params);
 		return $this->jsonResponse($response, array(
 			'results' => $values,
-			'total_records' => $this->bo->total_records,
+			'total_records' => $this->bo()->total_records,
 			'draw' => $draw,
 		));
 	}
@@ -402,7 +420,7 @@ class LocationController
 	{
 		$this->hydrateRequestGlobals($request);
 		$ui = $this->ui();
-		$values = $this->bo->read_summary();
+		$values = $this->bo()->read_summary();
 		if (!empty($request->getQueryParams()['export']))
 		{
 			return $this->jsonResponse($response, $values);
@@ -480,7 +498,7 @@ class LocationController
 
 		try
 		{
-			$ret = $this->bo->edit_field($data);
+			$ret = $this->bo()->edit_field($data);
 		}
 		catch (\Exception $e)
 		{

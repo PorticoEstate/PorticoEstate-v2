@@ -146,8 +146,8 @@ this.onActionsClick = function (action)
 		data.control_start_date = $("#control_start_date").val();
 		data.repeat_type = $("#repeat_type").val();
 
-		var oArgs = {menuaction: 'property.controller_helper.update_control_serie', location_id : location_id, id: item_id };
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var oArgs = {location_id: location_id, id: item_id };
+		var requestUrl = phpGWLink('/property/location/component/update-control-serie', oArgs, true);
 		$.ajax({
 			type: 'POST',
 			dataType: 'json',
@@ -201,7 +201,6 @@ function parseURL(url)
 add_control = function ()
 {
 	oArgs = {location_id:location_id, id: item_id};
-	oArgs.menuaction = 'property.controller_helper.add_control';
 	oArgs.control_id = $("#control_id").val();
 	oArgs.control_responsible = $("#control_responsible").val();
 	oArgs.control_start_date = $("#control_start_date").val();
@@ -215,7 +214,7 @@ add_control = function ()
 	oArgs.repeat_interval = $("#repeat_interval").val();
 	oArgs.controle_time = $("#controle_time").val();
 	oArgs.service_time = $("#service_time").val();
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var requestUrl = phpGWLink('/property/location/component/add-control', oArgs, true);
 //								alert(requestUrl);
 
 	$("#controller_receipt").html("");

@@ -273,13 +273,13 @@ class LocationFormHelper
         }
 
         if (isset($insertRecord['extra']) && is_array($insertRecord['extra'])) {
-            if (array_search('street_id', $insertRecord['extra']) && empty($values['street_id'])) {
+            if (array_search('street_id', $insertRecord['extra'], true) !== false && empty($values['street_id'])) {
                 $errors[] = lang('Please select a street');
             }
-            if (array_search('part_of_town_id', $insertRecord['extra']) && empty($values['part_of_town_id'])) {
+            if (array_search('part_of_town_id', $insertRecord['extra'], true) !== false && empty($values['part_of_town_id'])) {
                 $errors[] = lang('Please select a part of town');
             }
-            if (array_search('owner_id', $insertRecord['extra']) && empty($values['owner_id'])) {
+            if (array_search('owner_id', $insertRecord['extra'], true) !== false && empty($values['owner_id'])) {
                 $errors[] = lang('Please select an owner');
             }
         }

@@ -184,6 +184,28 @@ namespace Tests\Helpers
 			));
 		}
 
+		public function testApplyLegacyRulesRequiresStreetWhenConfiguredAtFirstExtraIndex(): void
+		{
+			$GLOBALS['__location_bo_test_double'] = new \property_bolocation();
+
+			$state = $this->helper->applyLegacyRules([
+				'values' => [
+					'loc1' => 'A',
+					'cat_id' => 1,
+				],
+				'values_attribute' => [],
+				'type_id' => 1,
+				'location_code' => 'A',
+				'errors' => [],
+			], ['extra' => ['street_id']], false);
+
+			$this->assertTrue($state['values']['error_id']);
+			$this->assertNotEmpty(array_filter(
+				$state['errors'],
+				static fn($msg) => str_contains((string) $msg, 'street')
+			));
+		}
+
 		public function testPersistSaveReturnsSuccessWithLegacyReceipt(): void
 		{
 			$bo = new \property_bolocation();

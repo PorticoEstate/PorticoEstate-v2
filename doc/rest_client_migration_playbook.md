@@ -333,9 +333,9 @@ Use this as the execution checklist for closing the parity gap identified in the
 
 ### Step 2: Location REST ACL parity
 
-- [ ] Add explicit ACL checks in `LocationController` write endpoints (`add`, `save`, `delete`).
-- [ ] Ensure ACL scope matches legacy `property_uilocation` behavior.
-- [ ] Add/extend tests for ACL deny paths (403).
+- [x] Add explicit ACL checks in `LocationController` write endpoints (`add`, `save`, `delete`).
+- [x] Ensure ACL scope matches legacy `property_uilocation` behavior.
+- [x] Add/extend tests for ACL deny paths (403).
 
 ### Step 3: Location REST payload contract hardening
 

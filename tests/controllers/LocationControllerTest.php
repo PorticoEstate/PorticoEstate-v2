@@ -46,8 +46,46 @@ namespace Tests\Controllers
 
 		private function makeControllerWithHelper(LocationFormHelper $helper): LocationController
 		{
-			$controller = new LocationController($this->container);
-			$ref = new \ReflectionClass($controller);
+			$controller = new class($this->container) extends LocationController
+			{
+				public function __construct(ContainerInterface $container)
+				{
+					parent::__construct($container);
+				}
+
+				protected function hasAcl(string $aclProperty): bool
+				{
+					return true;
+				}
+			};
+
+			$ref = new \ReflectionClass(LocationController::class);
+			$prop = $ref->getProperty('formHelper');
+			$prop->setAccessible(true);
+			$prop->setValue($controller, $helper);
+
+			return $controller;
+		}
+
+		private function makeControllerWithAclMap(LocationFormHelper $helper, array $aclMap): LocationController
+		{
+			$controller = new class($this->container, $aclMap) extends LocationController
+			{
+				private array $aclMap;
+
+				public function __construct(ContainerInterface $container, array $aclMap)
+				{
+					parent::__construct($container);
+					$this->aclMap = $aclMap;
+				}
+
+				protected function hasAcl(string $aclProperty): bool
+				{
+					return $this->aclMap[$aclProperty] ?? true;
+				}
+			};
+
+			$ref = new \ReflectionClass(LocationController::class);
 			$prop = $ref->getProperty('formHelper');
 			$prop->setAccessible(true);
 			$prop->setValue($controller, $helper);
@@ -192,6 +230,46 @@ namespace Tests\Controllers
 			$decoded = json_decode($this->responseBody, true);
 			$this->assertSame('success', $decoded['status']);
 			$this->assertSame('saved', $decoded['message']);
+		}
+
+		public function testAddReturns403WhenAclAddDenied(): void
+		{
+			$helper = new LocationFormHelper();
+			$controller = $this->makeControllerWithAclMap($helper, ['acl_add' => false]);
+
+			$this->request->method('getParsedBody')->willReturn(['loc1' => 'A']);
+			$controller->add($this->request, $this->response);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('error', $decoded['status']);
+			$this->assertSame('No add access for location', $decoded['message']);
+		}
+
+		public function testSaveReturns403WhenAclEditDenied(): void
+		{
+			$helper = new LocationFormHelper();
+			$controller = $this->makeControllerWithAclMap($helper, ['acl_edit' => false]);
+
+			$this->request->method('getParsedBody')->willReturn(['loc1' => 'A']);
+			$controller->save($this->request, $this->response, ['location_id' => '10']);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('error', $decoded['status']);
+			$this->assertSame('No edit access for location', $decoded['message']);
+		}
+
+		public function testDeleteByLocationCodeReturns403WhenAclDeleteDenied(): void
+		{
+			$helper = new LocationFormHelper();
+			$controller = $this->makeControllerWithAclMap($helper, ['acl_delete' => false]);
+
+			$this->request->method('getQueryParams')->willReturn(['location_code' => '10-01']);
+			$this->request->method('getParsedBody')->willReturn([]);
+			$controller->deleteByLocationCode($this->request, $this->response);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('error', $decoded['status']);
+			$this->assertSame('No delete access for location', $decoded['message']);
 		}
 	}
 }

@@ -13,6 +13,9 @@ class LocationController
 {
 	private ?\property_uilocation $uiLocation = null;
 	private LocationFormHelper $formHelper;
+	private const ACL_ADD = 'acl_add';
+	private const ACL_EDIT = 'acl_edit';
+	private const ACL_DELETE = 'acl_delete';
 
 	public function __construct(ContainerInterface $container)
 	{
@@ -66,6 +69,19 @@ class LocationController
 				->withHeader('Content-Type', 'application/json')
 				->withStatus(500);
 		}
+	}
+
+	protected function hasAcl(string $aclProperty): bool
+	{
+		return !empty($this->ui()->{$aclProperty});
+	}
+
+	private function forbiddenResponse(Response $response, string $message): Response
+	{
+		return $this->jsonResponse($response, [
+			'status' => 'error',
+			'message' => $message,
+		], 403);
 	}
 
 	public function index(Request $request, Response $response): Response
@@ -163,6 +179,11 @@ class LocationController
 	 */
 	public function add(Request $request, Response $response): Response
 	{
+		if (!$this->hasAcl(self::ACL_ADD))
+		{
+			return $this->forbiddenResponse($response, 'No add access for location');
+		}
+
 		$bodyParams = $request->getParsedBody() ?? [];
 
 		// Map input -> validate -> persist -> build response
@@ -185,6 +206,11 @@ class LocationController
 	 */
 	public function save(Request $request, Response $response, array $args): Response
 	{
+		if (!$this->hasAcl(self::ACL_EDIT))
+		{
+			return $this->forbiddenResponse($response, 'No edit access for location');
+		}
+
 		$locationId = (int)($args['location_id'] ?? 0);
 		if ($locationId <= 0) {
 			return $this->jsonResponse($response, [
@@ -220,12 +246,22 @@ class LocationController
 
 	public function delete(Request $request, Response $response, array $args): Response
 	{
+		if (!$this->hasAcl(self::ACL_DELETE))
+		{
+			return $this->forbiddenResponse($response, 'No delete access for location');
+		}
+
 		$this->hydrateRequestGlobals($request, array('location_code' => $args['location_code']));
 		return $this->jsonResponse($response, $this->ui()->delete());
 	}
 
 	public function deleteByLocationCode(Request $request, Response $response): Response
 	{
+		if (!$this->hasAcl(self::ACL_DELETE))
+		{
+			return $this->forbiddenResponse($response, 'No delete access for location');
+		}
+
 		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
 		if ($locationCode === '')
 		{

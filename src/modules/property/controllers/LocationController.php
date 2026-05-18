@@ -223,7 +223,7 @@ class LocationController
 		$this->hydrateRequestGlobals($request);
 		$ui = $this->ui();
 		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
-		$draw = (int)($request->getQueryParams()['draw'] ?? 0);
+		$draw = (int)($request->getQueryParams()['draw'] ?? 0) +1;
 		$values = $this->bo()->get_history($locationCode);
 		$dateFormat = $ui->userSettings['preferences']['common']['dateformat'];
 		foreach ($values as &$entry)
@@ -232,8 +232,9 @@ class LocationController
 		}
 		unset($entry);
 		return $this->jsonResponse($response, array(
-			'results' => $values,
-			'total_records' => count($values),
+			'data' => $values,
+			'recordsTotal' => count($values),
+			'recordsFiltered' => count($values),
 			'draw' => $draw,
 		));
 	}
@@ -245,7 +246,7 @@ class LocationController
 		$ui = $this->ui();
 		$search = $request->getQueryParams()['search'] ?? array();
 		$order = (array)($request->getQueryParams()['order'] ?? array());
-		$draw = (int)($request->getQueryParams()['draw'] ?? 0);
+		$draw = (int)($request->getQueryParams()['draw'] ?? 0) +1;
 		$columns = (array)($request->getQueryParams()['columns'] ?? array());
 		$docType = (int)($request->getQueryParams()['doc_type'] ?? 0);
 		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
@@ -266,7 +267,7 @@ class LocationController
 		$dateFormat = $ui->userSettings['preferences']['common']['dateformat'];
 		$document = CreateObject('property.sodocument');
 		$documents = $document->read_at_location($params);
-		$totalRecords = $document->total_records;
+		$recordsTotal = $document->total_records;
 		$values = array();
 		foreach ($documents as $item)
 		{
@@ -308,7 +309,7 @@ class LocationController
 		$params['order'] = 'name';
 		$params['cat_id'] = $docType;
 		$documents2 = $genericDocument->read($params);
-		$totalRecords += $genericDocument->total_records;
+		$recordsTotal += $genericDocument->total_records;
 		foreach ($documents2 as $item)
 		{
 			$title = '';
@@ -331,8 +332,9 @@ class LocationController
 		}
 
 		return $this->jsonResponse($response, array(
-			'results' => $values,
-			'total_records' => $totalRecords,
+			'data' => $values,
+			'recordsTotal' => $recordsTotal,
+			'recordsFiltered'=> count($values),
 			'draw' => $draw,
 		));
 	}
@@ -392,7 +394,7 @@ class LocationController
 		$roleId = (int)($request->getQueryParams()['role_id'] ?? 0);
 		$search = $request->getQueryParams()['search'] ?? array();
 		$order = (array)($request->getQueryParams()['order'] ?? array());
-		$draw = (int)($request->getQueryParams()['draw'] ?? 0);
+		$draw = (int)($request->getQueryParams()['draw'] ?? 0) +1;
 		$columns = (array)($request->getQueryParams()['columns'] ?? array());
 
 		$params = array(
@@ -410,8 +412,9 @@ class LocationController
 
 		$values = $this->bo()->get_responsible($params);
 		return $this->jsonResponse($response, array(
-			'results' => $values,
-			'total_records' => $this->bo()->total_records,
+			'data' => $values,
+			'recordsTotal' => $this->bo()->total_records,
+			'recordsFiltered' => count($values),
 			'draw' => $draw,
 		));
 	}
@@ -426,9 +429,10 @@ class LocationController
 			return $this->jsonResponse($response, $values);
 		}
 		return $this->jsonResponse($response, array(
-			'results' => $values,
-			'total_records' => count($values),
-			'draw' => (int)($request->getQueryParams()['draw'] ?? 0),
+			'data' => $values,
+			'recordsTotal' => count($values),
+			'recordsFiltered' => count($values),
+			'draw' => (int)($request->getQueryParams()['draw'] ?? 0) +1,
 		));
 	}
 

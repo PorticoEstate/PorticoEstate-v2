@@ -82,8 +82,12 @@ $app->group('/property/location', function (RouteCollectorProxy $group) use ($co
 	$group->post('', [$controller, 'index']);
 	$group->get('/summary', [$controller, 'summary']);
 	$group->post('/summary', [$controller, 'summary']);
+	$group->get('/summary/query', [$controller, 'querySummary']);
+	$group->post('/summary/query', [$controller, 'querySummary']);
 	$group->get('/responsibility-role', [$controller, 'responsibilityRole']);
 	$group->post('/responsibility-role', [$controller, 'responsibilityRole']);
+	$group->get('/responsibility-role/query', [$controller, 'queryRole']);
+	$group->post('/responsibility-role/query', [$controller, 'queryRole']);
 	$group->post('/responsibility-role/save', [$controller, 'responsibilityRoleSave']);
 	$group->get('/part-of-town', [$controller, 'getPartOfTown']);
 	$group->get('/accounts', [$controller, 'getAccounts']);
@@ -92,6 +96,10 @@ $app->group('/property/location', function (RouteCollectorProxy $group) use ($co
 	$group->get('/documents', [$controller, 'getDocuments']);
 	$group->post('/documents', [$controller, 'getDocuments']);
 	$group->get('/location-data', [$controller, 'getLocationData']);
+	$group->get('/delivery-address', [$controller, 'getDeliveryAddress']);
+	$group->post('/delivery-address', [$controller, 'getDeliveryAddress']);
+	$group->get('/location-exception', [$controller, 'getLocationException']);
+	$group->post('/location-exception', [$controller, 'getLocationException']);
 	$group->get('/component/controls', [$controller, 'getControlsAtComponent']);
 	$group->get('/component/cases', [$controller, 'getCases']);
 	$group->get('/component/checklists', [$controller, 'getChecklists']);

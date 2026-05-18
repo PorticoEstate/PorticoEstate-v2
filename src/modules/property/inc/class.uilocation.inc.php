@@ -192,6 +192,12 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		return $this->jquery_results($result_data);
 	}
 
+	/**
+	 * Return responsibility-role rows.
+	 *
+	 * @deprecated Use LocationController::queryRole() via /property/location/responsibility-role/query.
+	 * @return array
+	 */
 	public function query_role()
 	{
 		$lookup_tenant	 = Sanitizer::get_var('lookup_tenant', 'bool');
@@ -226,6 +232,12 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		return $this->jquery_results($result_data);
 	}
 
+	/**
+	 * Return summary rows.
+	 *
+	 * @deprecated Use LocationController::querySummary() via /property/location/summary/query.
+	 * @return array
+	 */
 	public function query_summary()
 	{
 		$values = $this->bo->read_summary();
@@ -3558,6 +3570,12 @@ JS;
 		self::render_template_xsl('datatable2', $data);
 	}
 
+	/**
+	 * Return a delivery address for the given location.
+	 *
+	 * @deprecated Use LocationController::getDeliveryAddress() via /property/location/delivery-address.
+	 * @return array
+	 */
 	function get_delivery_address()
 	{
 		$loc1 = Sanitizer::get_var('loc1');
@@ -3569,6 +3587,12 @@ JS;
 		);
 	}
 
+	/**
+	 * Return location exception data for the given location code.
+	 *
+	 * @deprecated Use LocationController::getLocationException() via /property/location/location-exception.
+	 * @return array
+	 */
 	function get_location_exception()
 	{
 		$location_code = Sanitizer::get_var('location_code', 'string');

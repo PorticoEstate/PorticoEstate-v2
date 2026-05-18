@@ -138,6 +138,30 @@ class LocationController
 		return $this->jsonResponse($response, $this->ui()->get_location_data());
 	}
 
+	public function getDeliveryAddress(Request $request, Response $response): Response
+	{
+		$this->hydrateRequestGlobals($request);
+		return $this->jsonResponse($response, $this->ui()->get_delivery_address());
+	}
+
+	public function getLocationException(Request $request, Response $response): Response
+	{
+		$this->hydrateRequestGlobals($request);
+		return $this->jsonResponse($response, $this->ui()->get_location_exception());
+	}
+
+	public function queryRole(Request $request, Response $response): Response
+	{
+		$this->hydrateRequestGlobals($request);
+		return $this->jsonResponse($response, $this->ui()->query_role());
+	}
+
+	public function querySummary(Request $request, Response $response): Response
+	{
+		$this->hydrateRequestGlobals($request);
+		return $this->jsonResponse($response, $this->ui()->query_summary());
+	}
+
 	public function getControlsAtComponent(Request $request, Response $response): Response
 	{
 		$this->hydrateRequestGlobals($request);

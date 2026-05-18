@@ -359,9 +359,16 @@ HTML;
 		 * Get controller cases related to this item and a spesific checklist.
 		 * @return array
 		 */
-		public function get_cases_for_checklist()
+		public function get_cases_for_checklist(?int $check_list_id = null)
 		{
-			$check_list_id		 = Sanitizer::get_var('check_list_id', 'int');
+			if ($check_list_id === null)
+			{
+				$check_list_id = Sanitizer::get_var('check_list_id', 'int');
+			}
+			else
+			{
+				$check_list_id = (int)$check_list_id;
+			}
 			$so_check_item		 = CreateObject('controller.socheck_item');
 			$controller_cases	 = $so_check_item->get_check_items_with_cases($check_list_id, $_type				 = null, 'all', null, null);
 

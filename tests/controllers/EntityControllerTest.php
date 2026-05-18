@@ -421,7 +421,7 @@ class EntityControllerTest extends TestCase
 		$bo->expects($this->once())
 			->method('save')
 			->with(
-				['title' => 'New'],
+				['title' => 'New', 'extra' => []],
 				['1' => 'val'],
 				'add',
 				5,   // entity_id
@@ -460,9 +460,9 @@ class EntityControllerTest extends TestCase
 
 		$helper->expects($this->once())
 			->method('validate')
-			->with(['title' => 'New'], ['1' => 'val'], 3, 5, $this->isType('object'), $bo)
+			->with(['title' => 'New', 'extra' => []], ['1' => 'val'], 3, 5, $this->isType('object'), $bo)
 			->willReturn([
-				'values' => ['title' => 'New'],
+				'values' => ['title' => 'New', 'extra' => []],
 				'values_attribute' => ['1' => 'val'],
 				'errors' => [],
 			]);
@@ -470,7 +470,7 @@ class EntityControllerTest extends TestCase
 		$helper->expects($this->once())
 			->method('persistSave')
 			->with(
-				['title' => 'New'],
+				['title' => 'New', 'extra' => []],
 				['1' => 'val'],
 				'add',
 				5,
@@ -513,6 +513,7 @@ class EntityControllerTest extends TestCase
 			->willReturn([
 				'values' => [
 					'title' => 'New',
+					'extra' => [],
 					'file_action' => [123],
 				],
 				'values_attribute' => [],
@@ -550,68 +551,49 @@ class EntityControllerTest extends TestCase
 		$this->assertSame('Failed to upload file !', $decoded['error'][0]['msg']);
 	}
 
-	public function testBuildLegacyCollectLocationPostPrefersTopLevelRequestBodyFields(): void
+	public function testApplyRelationInfoPayloadPrefersTopLevelRequestBodyFields(): void
 	{
 		$bo = $this->createMock(\property_boentity::class);
 		$controller = $this->makeController($bo);
 
 		$values = [
-			'location' => ['loc1' => 'fallback-100', 'loc2' => 'fallback-200'],
 			'extra' => [
-				'p_entity_id' => 'fallback-5',
-				'p_cat_id' => 'fallback-3',
-			],
-			'additional_info' => [
-				'Building' => 'fallback-A',
+				'tenant_id' => 'fallback-tenant',
 			],
 			'street_name' => 'Fallback St',
 			'street_number' => '99',
 			'location_name' => 'Parent Name',
-			'p' => [
-				5 => ['p_cat_name' => 'Fallback category'],
-			],
 		];
 
 		$body = [
-			'loc1' => '100',
-			'loc2' => '200',
-			'loc1_name' => 'Object name',
+			'RelationInfo' => [
+				'location_code' => '100-200',
+				'tenant_id' => '77',
+				'origin' => '.ticket',
+				'origin_id' => 34844,
+			],
 			'loc2_name' => 'Building name',
-			'p_entity_id' => '5',
-			'p_cat_id' => '3',
-			'building_input' => 'A',
 			'street_name' => 'Main St',
 			'street_number' => '10',
-			'entity_cat_name_5' => 'Child category',
 		];
 
-		$insertRecord = [
-			'location' => ['loc1', 'loc2'],
-			'extra' => [
-				'p_entity_id' => 'p_entity_id',
-				'p_cat_id' => 'p_cat_id',
-			],
-			'additional_info' => [
-				['input_name' => 'building_input', 'input_text' => 'Building'],
-			],
-		];
-
-		$method = new \ReflectionMethod(EntityController::class, 'buildLegacyCollectLocationPost');
+		$method = new \ReflectionMethod(EntityController::class, 'applyRelationInfoPayload');
 		$method->setAccessible(true);
 
-		/** @var array<string, mixed> $post */
-		$post = $method->invoke($controller, $values, $insertRecord, $body);
+		$this->request->method('getParsedBody')->willReturn($body);
 
-		$this->assertSame('100', $post['loc1']);
-		$this->assertSame('200', $post['loc2']);
-		$this->assertSame('Object name', $post['loc1_name']);
-		$this->assertSame('Building name', $post['loc2_name']);
-		$this->assertSame('5', $post['p_entity_id']);
-		$this->assertSame('3', $post['p_cat_id']);
-		$this->assertSame('A', $post['building_input']);
+		/** @var array<string, mixed> $post */
+		$post = $method->invoke($controller, $values, $bo, $this->request);
+
+		$this->assertSame('100-200', $post['location_code']);
+		$this->assertSame('100', $post['location']['loc1']);
+		$this->assertSame('200', $post['location']['loc2']);
+		$this->assertSame('Building name', $post['location_name']);
 		$this->assertSame('Main St', $post['street_name']);
 		$this->assertSame('10', $post['street_number']);
-		$this->assertSame('Child category', $post['entity_cat_name_5']);
+		$this->assertSame('77', $post['extra']['tenant_id']);
+		$this->assertSame('.ticket', $post['origin']);
+		$this->assertSame(34844, $post['origin_id']);
 	}
 
 	public function testStoreReturns400WhenValidationFails(): void
@@ -742,9 +724,9 @@ class EntityControllerTest extends TestCase
 
 		$helper->expects($this->once())
 			->method('validate')
-			->with(['title' => 'Updated', 'id' => 7], ['1' => 'val'], 3, 5, $this->isType('object'), $bo)
+			->with(['title' => 'Updated', 'id' => 7, 'extra' => []], ['1' => 'val'], 3, 5, $this->isType('object'), $bo)
 			->willReturn([
-				'values' => ['title' => 'Updated', 'id' => 7],
+				'values' => ['title' => 'Updated', 'id' => 7, 'extra' => []],
 				'values_attribute' => ['1' => 'val'],
 				'errors' => [],
 			]);
@@ -752,7 +734,7 @@ class EntityControllerTest extends TestCase
 		$helper->expects($this->once())
 			->method('persistSave')
 			->with(
-				['title' => 'Updated', 'id' => 7],
+				['title' => 'Updated', 'id' => 7, 'extra' => []],
 				['1' => 'val'],
 				'edit',
 				5,
@@ -855,7 +837,7 @@ class EntityControllerTest extends TestCase
 		$helper->expects($this->once())
 			->method('validate')
 			->willReturn([
-				'values' => ['title' => 'Updated', 'id' => 7],
+				'values' => ['title' => 'Updated', 'id' => 7, 'extra' => []],
 				'values_attribute' => [],
 				'errors' => [
 					['msg' => 'Please enter value for attribute Test'],
@@ -1037,6 +1019,20 @@ class EntityControllerTest extends TestCase
 		$this->assertSame(1,            $decoded['recordsTotal']);
 		$this->assertSame(1,            $decoded['recordsFiltered']);
 		$this->assertSame(1,            $decoded['draw']);
+	}
+
+	public function testGetFilesDefaultsDrawToOneWhenMissing(): void
+	{
+		$bo = $this->createMock(\property_boentity::class);
+		$bo->method('read_single')->willReturn(['id' => 3, 'files' => [], 'location_data' => []]);
+
+		$this->request->method('getQueryParams')->willReturn([]);
+
+		$args = array_merge($this->baseArgs(), ['id' => '3']);
+		$this->makeController($bo)->getFiles($this->request, $this->response, $args);
+
+		$decoded = json_decode($this->responseBody, true);
+		$this->assertSame(1, $decoded['draw']);
 	}
 
 	// ── getRelated() ─────────────────────────────────────────────────────────

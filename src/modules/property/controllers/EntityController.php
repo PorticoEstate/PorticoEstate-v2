@@ -785,7 +785,14 @@ class EntityController
 				$errors
 			);
 
-			$messages = Cache::message_get(true);
+			try
+			{
+				$messages = Cache::message_get(true);
+			}
+			catch (\Throwable $e)
+			{
+				$messages = [];
+			}
 			$receipt['error'] = array_merge($errors, (array)($messages['error'] ?? []));
 			$receipt['message'] = array_merge((array)($receipt['message'] ?? []), (array)($messages['message'] ?? []));
 		}
@@ -908,7 +915,14 @@ class EntityController
 				$errors
 			);
 
-			$messages = Cache::message_get(true);
+			try
+			{
+				$messages = Cache::message_get(true);
+			}
+			catch (\Throwable $e)
+			{
+				$messages = [];
+			}
 			$receipt['error'] = array_merge($errors, (array)($messages['error'] ?? []));
 			$receipt['message'] = array_merge((array)($receipt['message'] ?? []), (array)($messages['message'] ?? []));
 		}
@@ -1256,7 +1270,8 @@ class EntityController
 	public function getCasesForChecklist(Request $request, Response $response, array $args): Response
 	{
 		$this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
-		$rows = $this->controllerHelper($args)->get_cases_for_checklist();
+		$checkListId = (int)($request->getQueryParams()['check_list_id'] ?? 0);
+		$rows = $this->controllerHelper($args)->get_cases_for_checklist($checkListId > 0 ? $checkListId : null);
 
 		return $this->datatableResponse($response, $request, (array)$rows);
 	}
@@ -1266,8 +1281,7 @@ class EntityController
 	 *
 	 * @OA\Get(
 	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/download",
-	 *     summary="Download entity list",
-	 *     description="Streams the full entity list as CSV, Excel, or ODS depending on user preference.",
+		$draw       = (int)($params['draw'] ?? 1);
 	 *     tags={"Entity"},
 	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
 	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),

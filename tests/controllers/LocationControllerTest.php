@@ -4,6 +4,24 @@ namespace
 {
 	require_once __DIR__ . '/../../vendor/autoload.php';
 	require_once __DIR__ . '/../../src/helpers/Sanitizer.php';
+
+	if (!function_exists('lang'))
+	{
+		function lang(string $text, ...$args): string
+		{
+			if (!$args)
+			{
+				return $text;
+			}
+
+			foreach ($args as $i => $arg)
+			{
+				$text = str_replace('%' . ($i + 1), (string) $arg, $text);
+			}
+
+			return $text;
+		}
+	}
 }
 
 namespace Tests\Controllers
@@ -230,6 +248,70 @@ namespace Tests\Controllers
 			$decoded = json_decode($this->responseBody, true);
 			$this->assertSame('success', $decoded['status']);
 			$this->assertSame('saved', $decoded['message']);
+		}
+
+		public function testSaveInvokesLegacyRulesBeforePersistence(): void
+		{
+			$helper = new class extends LocationFormHelper
+			{
+				public array $callOrder = [];
+
+				public function mapInput(array $requestData, ?int $locationId = null): array
+				{
+					$this->callOrder[] = 'mapInput';
+					return [
+						'values' => ['loc1' => 'A', 'cat_id' => 1],
+						'errors' => [],
+						'location_id' => (int) $locationId,
+						'type_id' => 1,
+						'location_parent' => [],
+					];
+				}
+
+				public function applyLegacyRules(array $state, array $insertRecord, bool $isEdit): array
+				{
+					$this->callOrder[] = 'applyLegacyRules:' . ($isEdit ? 'edit' : 'add');
+					$state['values']['error_id'] = false;
+					return $state;
+				}
+
+				public function validate(array $state): array
+				{
+					$this->callOrder[] = 'validate';
+					return $state;
+				}
+
+				public function persistSave(array $state): array
+				{
+					$this->callOrder[] = 'persistSave';
+					$state['receipt'] = ['status' => 'success', 'message' => 'saved'];
+					return $state;
+				}
+
+				public function buildSaveResponse(array $state, string $userAction = 'save'): array
+				{
+					$this->callOrder[] = 'buildSaveResponse';
+					return [
+						'type' => 'json',
+						'payload' => ['status' => 'success', 'message' => 'saved', 'location_code' => 'A'],
+					];
+				}
+			};
+
+			$this->request->method('getParsedBody')->willReturn(['loc1' => 'A', 'cat_id' => 1]);
+
+			$controller = $this->makeControllerWithHelper($helper);
+			$controller->save($this->request, $this->response, ['location_id' => '10']);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('success', $decoded['status']);
+			$this->assertSame([
+				'mapInput',
+				'applyLegacyRules:edit',
+				'validate',
+				'persistSave',
+				'buildSaveResponse',
+			], $helper->callOrder);
 		}
 
 		public function testAddReturns403WhenAclAddDenied(): void

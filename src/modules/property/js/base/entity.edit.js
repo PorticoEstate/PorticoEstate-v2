@@ -1,8 +1,8 @@
-/* global get_files_java_url, get_checklists_url, get_cases_url, get_controls_url, get_cases_for_checklist_url, location_id, item_id */
+/* global get_files_java_url, get_checklists_url, get_cases_url, get_controls_url, get_cases_for_checklist_url, location_id, item_id, multi_upload_url */
 
 this.fileuploader = function ()
 {
-	var sUrl = phpGWLink('index.php', multi_upload_parans);
+	var sUrl = multi_upload_url || phpGWLink('index.php', multi_upload_parans);
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
 		closejs: function ()
@@ -85,22 +85,17 @@ this.refresh_inventory = function (location_id, id)
 	var type = $('#field_type').val() || '';
 	var entityId = $('#field_entity_id').val() || '';
 	var catId = $('#cat_id').val() || '';
-	var requestUrl = '';
 
-	if (type && entityId && catId && id)
+	if (!(type && entityId && catId && id))
 	{
-		requestUrl = '/property/entity/' + encodeURIComponent(type)
-			+ '/' + encodeURIComponent(entityId)
-			+ '/' + encodeURIComponent(catId)
-			+ '/' + encodeURIComponent(id)
-			+ '/inventory';
+		return;
 	}
-	else
-	{
-		// Keep legacy fallback until all contexts provide REST route parameters.
-		var oArgs = {menuaction: 'property.uientity.get_inventory', location_id: location_id, id: id};
-		requestUrl = phpGWLink('index.php', oArgs, true);
-	}
+
+	var requestUrl = '/property/entity/' + encodeURIComponent(type)
+		+ '/' + encodeURIComponent(entityId)
+		+ '/' + encodeURIComponent(catId)
+		+ '/' + encodeURIComponent(id)
+		+ '/inventory';
 
 	var api = oTable3.api();
 	api.ajax.url(requestUrl).load();

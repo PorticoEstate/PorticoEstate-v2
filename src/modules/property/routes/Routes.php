@@ -126,6 +126,7 @@ $app->group('/property/entity', function (RouteCollectorProxy $group) use ($cont
 		$g->post('/{id:[0-9]+}/files',     [$controller, 'getFiles']);
 		$g->post('/{id:[0-9]+}/related',   [$controller, 'getRelated']);
 		$g->post('/{id:[0-9]+}/inventory', [$controller, 'getInventory']);
+		$g->get('/{id:[0-9]+}/multi-upload', [$controller, 'buildMultiUploadFile']);
 
 		// Category-level data queries (id/location_id as query params)
 		$g->get('/items-per-qr',        [$controller, 'getItemsPerQr']);

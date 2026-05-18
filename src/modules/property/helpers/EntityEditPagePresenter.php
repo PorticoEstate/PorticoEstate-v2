@@ -339,6 +339,13 @@ class EntityEditPagePresenter
 				. "_entity_id:'{$context['entity_id']}',"
 				. "_cat_id:'{$context['cat_id']}',"
 				. "_type:'{$context['type']}'}";
+			$payload['multi_upload_url'] = \phpgw::link(
+				'/property/entity/' . rawurlencode((string)$context['type'])
+				. '/' . rawurlencode((string)$context['entity_id'])
+				. '/' . rawurlencode((string)$context['cat_id'])
+				. '/' . rawurlencode((string)$context['id'])
+				. '/multi-upload'
+			);
 		}
 
 		if (!isset($payload['multi_upload_action'])
@@ -455,6 +462,13 @@ class EntityEditPagePresenter
 				. "_entity_id:'{$input['entity_id']}',"
 				. "_cat_id:'{$input['cat_id']}',"
 				. "_type:'{$input['type']}'}",
+			'multi_upload_url' => \phpgw::link(
+				'/property/entity/' . rawurlencode((string)$input['type'])
+				. '/' . rawurlencode((string)$input['entity_id'])
+				. '/' . rawurlencode((string)$input['cat_id'])
+				. '/' . rawurlencode((string)$input['id'])
+				. '/multi-upload'
+			),
 			'multi_upload_action' => \phpgw::link(
 				'/index.php',
 				array(

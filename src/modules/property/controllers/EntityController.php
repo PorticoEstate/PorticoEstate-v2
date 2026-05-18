@@ -1164,6 +1164,46 @@ class EntityController
 	}
 
 	/**
+	 * Render the multi-upload popup shell for an entity item.
+	 */
+	public function buildMultiUploadFile(Request $request, Response $response, array $args): Response
+	{
+		$seed = [
+			'id'        => (int)$args['id'],
+			'_entity_id'=> (int)$args['entity_id'],
+			'_cat_id'   => (int)$args['cat_id'],
+			'_type'     => (string)$args['type'],
+		];
+
+		$backupGet = $_GET;
+		$backupRequest = $_REQUEST;
+
+		try
+		{
+			foreach ($seed as $key => $value)
+			{
+				$_GET[$key] = $value;
+				$_REQUEST[$key] = $value;
+			}
+
+			include_class('property', 'uientity');
+			$ui = new \property_uientity();
+
+			ob_start();
+			$ui->build_multi_upload_file();
+			$html = (string)ob_get_clean();
+		}
+		finally
+		{
+			$_GET = $backupGet;
+			$_REQUEST = $backupRequest;
+		}
+
+		$response->getBody()->write($html ?? '');
+		return $response->withHeader('Content-Type', 'text/html')->withStatus(200);
+	}
+
+	/**
 	 * Return controller cases linked to this entity item.
 	 *
 	 * @OA\Get(

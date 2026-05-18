@@ -62,12 +62,12 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		$type, $entity_id, $role, $accounts;
 
 	var $public_functions = array(
-		'query'						 => true,
+		'query'						 => false,
 		'responsiblility_role_save'	 => true,
 		'get_part_of_town'			 => true,
-		'get_history_data'			 => true,
-		'get_documents'				 => true,
-		'get_accounts'				 => true,
+		'get_history_data'			 => false,
+		'get_documents'				 => false,
+		'get_accounts'				 => false,
 		'download'					 => true,
 		'index'						 => true,
 		'view'						 => true,
@@ -83,13 +83,13 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		'responsiblility_role'		 => true,
 		'get_delivery_address'		 => true,
 		'get_location_exception'	 => true,
-		'get_controls_at_component'	 => true,
-		'get_assigned_history'		 => true,
-		'get_cases'					 => true,
-		'get_checklists'			 => true,
-		'get_cases_for_checklist'	 => true,
+		'get_controls_at_component'	 => false,
+		'get_assigned_history'		 => false,
+		'get_cases'					 => false,
+		'get_checklists'			 => false,
+		'get_cases_for_checklist'	 => false,
 		'get_location_data'			 => true,
-		'edit_field'				 => true,
+		'edit_field'					 => false,
 		'dashboard'					 => true,
 	);
 
@@ -139,6 +139,8 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 
 	/**
 	 * Fetch data from $this->bo based on parametres
+	 *
+	 * @deprecated Use LocationController::index() via /property/location.
 	 * @return array
 	 */
 	public function query()
@@ -521,8 +523,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 	{
 		if (!$this->acl_read)
 		{
-			$this->bocommon->no_access();
-			return;
+			phpgw::no_access();
 		}
 
 		$download_type = Sanitizer::get_var('download_type');
@@ -848,6 +849,12 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		return $combos;
 	}
 
+	/**
+	 * Return selectable account options for responsibility-role UI.
+	 *
+	 * @deprecated Use LocationController::getAccounts() via /property/location/accounts.
+	 * @return array
+	 */
 	public function get_accounts($account_type = '')
 	{
 		if (!$account_type)
@@ -1068,8 +1075,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		Settings::getInstance()->set('flags', $this->flags);
 		if (!$this->acl_read)
 		{
-			$this->bocommon->no_access();
-			return;
+			phpgw::no_access();
 		}
 
 
@@ -1638,8 +1644,7 @@ JS;
 		Settings::getInstance()->set('flags', $this->flags);
 		if (!$this->acl_read)
 		{
-			$this->bocommon->no_access();
-			return;
+			phpgw::no_access();
 		}
 
 		$default_district = (isset($this->userSettings['preferences']['property']['default_district']) ? $this->userSettings['preferences']['property']['default_district'] : '');
@@ -1923,6 +1928,12 @@ JS;
 		self::render_template_xsl('lookup.entity', $data);
 	}
 
+	/**
+	 * Return location history rows.
+	 *
+	 * @deprecated Use LocationController::getHistoryData() via /property/location/history.
+	 * @return array
+	 */
 	public function get_history_data()
 	{
 		$draw			 = Sanitizer::get_var('draw', 'int');
@@ -1943,6 +1954,12 @@ JS;
 		return $this->jquery_results($result_data);
 	}
 
+	/**
+	 * Return location documents as a DataTables payload.
+	 *
+	 * @deprecated Use LocationController::getDocuments() via /property/location/documents.
+	 * @return array
+	 */
 	public function get_documents()
 	{
 		$search			 = Sanitizer::get_var('search');
@@ -2093,16 +2110,14 @@ JS;
 		{
 			if (!$this->acl_read)
 			{
-				$this->bocommon->no_access();
-				return;
+				phpgw::no_access();
 			}
 		}
 		else
 		{
 			if (!$this->acl_add && !$this->acl_edit)
 			{
-				$this->bocommon->no_access();
-				return;
+				phpgw::no_access();
 			}
 		}
 
@@ -3243,8 +3258,7 @@ JS;
 
 		if (!$this->acl_delete)
 		{
-			$this->bocommon->no_access();
-			return;
+			phpgw::no_access();
 		}
 
 		$confirm = Sanitizer::get_var('confirm', 'bool', 'POST');
@@ -3284,6 +3298,13 @@ JS;
 		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('delete' => $data));
 	}
 
+	/**
+	 * Return core location data for a given location code.
+	 *
+	 * This legacy endpoint is still in use by menuaction callers outside the REST flow.
+	 *
+	 * @return array
+	 */
 	function get_location_data()
 	{
 		if (!$this->acl_read)
@@ -3312,8 +3333,7 @@ JS;
 	{
 		if (!$this->acl_read)
 		{
-			$this->bocommon->no_access();
-			return;
+			phpgw::no_access();
 		}
 		$this->edit(array(), $mode = 'view');
 	}
@@ -3330,8 +3350,7 @@ JS;
 
 		if (!$this->acl->check('.admin.location', ACL_EDIT, 'property'))
 		{
-			$this->bocommon->no_access();
-			return;
+			phpgw::no_access();
 		}
 
 		$confirm = Sanitizer::get_var('confirm', 'bool', 'POST');
@@ -3388,8 +3407,7 @@ JS;
 
 		if (!$this->acl->check('.admin.location', ACL_EDIT, 'property'))
 		{
-			$this->bocommon->no_access();
-			return;
+			phpgw::no_access();
 		}
 
 		$confirm = Sanitizer::get_var('confirm', 'bool', 'POST');
@@ -3568,31 +3586,67 @@ JS;
 		);
 	}
 
+	/**
+	 * Return controller controls registered at a given location component.
+	 *
+	 * @deprecated Use LocationController::getControlsAtComponent() via /property/location/component/controls.
+	 * @return mixed
+	 */
 	public function get_controls_at_component($location_id = 0, $id = 0, $skip_json = false)
 	{
 		return $this->controller_helper->get_controls_at_component($location_id, $id, $skip_json);
 	}
 
+	/**
+	 * Return cases related to a location component.
+	 *
+	 * @deprecated Use LocationController::getCases() via /property/location/component/cases.
+	 * @return mixed
+	 */
 	public function get_cases($location_id = 0, $id = 0, $year = 0)
 	{
 		return $this->controller_helper->get_cases($location_id, $id, $year);
 	}
 
+	/**
+	 * Return cases for the selected checklist context.
+	 *
+	 * @deprecated Use LocationController::getCasesForChecklist() via /property/location/component/cases-for-checklist.
+	 * @return mixed
+	 */
 	public function get_cases_for_checklist()
 	{
 		return $this->controller_helper->get_cases_for_checklist();
 	}
 
+	/**
+	 * Return checklists for a location component.
+	 *
+	 * @deprecated Use LocationController::getChecklists() via /property/location/component/checklists.
+	 * @return mixed
+	 */
 	public function get_checklists($location_id = 0, $id = 0, $year = 0)
 	{
 		return $this->controller_helper->get_checklists($location_id, $id, $year);
 	}
 
+	/**
+	 * Return assignment history for a controller series.
+	 *
+	 * @deprecated Use a REST controller endpoint instead of the legacy menuaction entry point.
+	 * @return mixed
+	 */
 	function get_assigned_history()
 	{
 		return $this->controller_helper->get_assigned_history();
 	}
 
+	/**
+	 * Update an inline-editable location field.
+	 *
+	 * @deprecated Use LocationController::editField() via /property/location/edit-field.
+	 * @return string
+	 */
 	public function edit_field()
 	{
 		$type_id	 = Sanitizer::get_var('type_id', 'int', 'GET');

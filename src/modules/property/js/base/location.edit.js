@@ -252,3 +252,337 @@ $(document).ready(function ()
 	});
 
 });
+
+function parseFormKeyTokens(key)
+{
+	var tokens = [];
+	var match;
+	var regex = /([^\[\]]+)/g;
+	while ((match = regex.exec(key)) !== null)
+	{
+		tokens.push(match[1]);
+	}
+	return tokens;
+}
+
+function setNestedValue(target, key, value)
+{
+	var tokens = parseFormKeyTokens(key);
+	var forceArray = /\[\]$/.test(key);
+	if (!tokens.length)
+	{
+		return;
+	}
+
+	var node = target;
+	for (var i = 0; i < tokens.length - 1; i++)
+	{
+		var token = tokens[i];
+		if (!Object.prototype.hasOwnProperty.call(node, token) || typeof node[token] !== 'object' || node[token] === null)
+		{
+			node[token] = {};
+		}
+		node = node[token];
+	}
+
+	var leaf = tokens[tokens.length - 1];
+	if (!Object.prototype.hasOwnProperty.call(node, leaf))
+	{
+		node[leaf] = forceArray ? [value] : value;
+		return;
+	}
+
+	if (Array.isArray(node[leaf]))
+	{
+		node[leaf].push(value);
+		return;
+	}
+
+	node[leaf] = [node[leaf], value];
+}
+
+function formDataToObject(formData)
+{
+	var payload = {};
+	formData.forEach(function (value, key)
+	{
+		setNestedValue(payload, key, value);
+	});
+	return payload;
+}
+
+function buildLocationRestRequest(form)
+{
+	var parsed = parseURL(form.action);
+	var query = parsed.searchObject || {};
+	var clickHistory = query.click_history || '';
+	var queryParts = [];
+
+	var rawLocationId = '';
+	if (typeof location_id !== 'undefined' && location_id !== null)
+	{
+		rawLocationId = String(location_id);
+	}
+
+	var routeLocationId = parseInt(rawLocationId, 10);
+	var isUpdate = !isNaN(routeLocationId) && routeLocationId > 0;
+	var requestUrl = isUpdate
+		? '/property/location/' + encodeURIComponent(routeLocationId)
+		: '/property/location/add';
+
+	if (clickHistory)
+	{
+		queryParts.push('click_history=' + encodeURIComponent(clickHistory));
+	}
+
+	if (queryParts.length)
+	{
+		requestUrl += '?' + queryParts.join('&');
+	}
+
+	return {
+		url: requestUrl,
+		method: isUpdate ? 'PUT' : 'POST'
+	};
+}
+
+function clearLocationFormAlerts(form)
+{
+	var notices = form.querySelectorAll('.rest-submit-alert');
+	for (var i = 0; i < notices.length; i++)
+	{
+		notices[i].remove();
+	}
+}
+
+function renderLocationFormErrorAlert(form, messages)
+{
+	clearLocationFormAlerts(form);
+
+	var alert = document.createElement('div');
+	alert.className = 'rest-submit-alert form-error alert alert-danger';
+
+	var heading = document.createElement('strong');
+	heading.textContent = 'Saving location failed';
+	alert.appendChild(heading);
+
+	var list = document.createElement('ul');
+	for (var i = 0; i < messages.length; i++)
+	{
+		var item = document.createElement('li');
+		item.textContent = messages[i];
+		list.appendChild(item);
+	}
+	alert.appendChild(list);
+
+	form.insertBefore(alert, form.firstChild);
+}
+
+function renderLocationFormSuccessAlert(form, message)
+{
+	clearLocationFormAlerts(form);
+
+	var alert = document.createElement('div');
+	alert.className = 'rest-submit-alert text-center alert alert-success';
+	alert.setAttribute('role', 'alert');
+	alert.appendChild(document.createTextNode(message));
+
+	form.insertBefore(alert, form.firstChild);
+}
+
+function toErrorMessageArray(data)
+{
+	if (!data)
+	{
+		return ['Failed to save location. Please try again.'];
+	}
+
+	if (Array.isArray(data.errors) && data.errors.length)
+	{
+		return data.errors.map(function (entry)
+		{
+			if (typeof entry === 'string')
+			{
+				return entry;
+			}
+			if (entry && typeof entry.msg === 'string')
+			{
+				return entry.msg;
+			}
+			return '';
+		}).filter(function (msg)
+		{
+			return !!msg;
+		});
+	}
+
+	if (typeof data.message === 'string' && data.message)
+	{
+		return [data.message];
+	}
+
+	return ['Failed to save location. Please try again.'];
+}
+
+function buildLocationEditRedirectUrl(locationCode, form)
+{
+	var parsed = parseURL(form.action);
+	var query = parsed.searchObject || {};
+	var typeId = query.type_id || '';
+	var lookupTenant = query.lookup_tenant || '';
+
+	var target = 'index.php?menuaction=property.uilocation.edit&location_code=' + encodeURIComponent(locationCode);
+	if (typeId)
+	{
+		target += '&type_id=' + encodeURIComponent(typeId);
+	}
+	if (lookupTenant)
+	{
+		target += '&lookup_tenant=' + encodeURIComponent(lookupTenant);
+	}
+
+	return target;
+}
+
+$(document).ready(function ()
+{
+	var form = document.getElementById('form');
+	if (!form || !window.fetch)
+	{
+		return;
+	}
+
+	var isSubmitting = false;
+	var clickedSubmitter = null;
+
+	function setSubmitButtonsDisabled(disabled)
+	{
+		var buttons = form.querySelectorAll('input[type="submit"], button[type="submit"]');
+		for (var i = 0; i < buttons.length; i++)
+		{
+			buttons[i].disabled = disabled;
+		}
+	}
+
+	$(form).on('click', 'input[type="submit"], button[type="submit"]', function ()
+	{
+		clickedSubmitter = this;
+	});
+
+	$(form).on('submit', function (e)
+	{
+		if (typeof $.fn.isValid === 'function')
+		{
+			var conf = $.extend({}, form.validationConfig || {}, {
+				modules: (form.validationConfig && form.validationConfig.modules) || 'location, date, security, file',
+				validateOnBlur: false,
+				scrollToTopOnError: true,
+				errorMessagePosition: 'top',
+				validateHiddenInputs: true
+			});
+
+			var valid = $('form').isValid(false, conf);
+			if (!valid)
+			{
+				e.preventDefault();
+				return false;
+			}
+		}
+
+		var submitter = (e.originalEvent && e.originalEvent.submitter)
+			? e.originalEvent.submitter
+			: clickedSubmitter;
+
+		if (!submitter || submitter.name !== 'save')
+		{
+			return true;
+		}
+
+		var restRequest = buildLocationRestRequest(form);
+		if (!restRequest)
+		{
+			return true;
+		}
+
+		if (isSubmitting)
+		{
+			e.preventDefault();
+			return false;
+		}
+
+		e.preventDefault();
+		clearLocationFormAlerts(form);
+		isSubmitting = true;
+		setSubmitButtonsDisabled(true);
+
+		var formData = new FormData(form);
+		if (submitter.name)
+		{
+			formData.set(submitter.name, submitter.value || '1');
+		}
+
+		fetch(restRequest.url, {
+			method: restRequest.method,
+			headers: {'Content-Type': 'application/json'},
+			credentials: 'same-origin',
+			body: JSON.stringify(formDataToObject(formData))
+		})
+			.then(function (response)
+			{
+				return response.json()
+					.catch(function ()
+					{
+						return null;
+					})
+					.then(function (data)
+					{
+						if (!response.ok)
+						{
+							var error = new Error('REST save failed');
+							error.responseData = data;
+							throw error;
+						}
+
+						return data;
+					});
+			})
+			.then(function (data)
+			{
+				if (!data || data.status === 'error')
+				{
+					isSubmitting = false;
+					setSubmitButtonsDisabled(false);
+					renderLocationFormErrorAlert(form, toErrorMessageArray(data));
+					form.scrollIntoView({behavior: 'smooth', block: 'start'});
+					return;
+				}
+
+				var savedLocationCode = data.location_code || (data.receipt && data.receipt.location_code) || '';
+				if (!savedLocationCode)
+				{
+					isSubmitting = false;
+					setSubmitButtonsDisabled(false);
+					renderLocationFormErrorAlert(form, ['Save succeeded, but no location code was returned']);
+					return;
+				}
+
+				renderLocationFormSuccessAlert(form, 'Location saved successfully');
+				form.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+				var redirectUrl = buildLocationEditRedirectUrl(savedLocationCode, form);
+				setTimeout(function ()
+				{
+					window.location.href = redirectUrl;
+				}, 700);
+			})
+			.catch(function (error)
+			{
+				isSubmitting = false;
+				setSubmitButtonsDisabled(false);
+				renderLocationFormErrorAlert(form, toErrorMessageArray(error && error.responseData));
+				form.scrollIntoView({behavior: 'smooth', block: 'start'});
+			});
+
+		return false;
+	});
+});

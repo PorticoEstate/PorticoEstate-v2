@@ -315,6 +315,45 @@ function buildEntityRestRequest(form, submitterName) {
 - Forward `click_history` query parameter for save/create REST calls only.
 - Maintain non-JS fallback for safety.
 
+## Concrete Implementation Checklist (Entity vs Location)
+
+Use this as the execution checklist for closing the parity gap identified in the latest analysis.
+
+### Step 1: Location client REST submit bridge
+
+- [x] Add submit interception in location client JS for the main edit form.
+- [x] Keep non-JS fallback by only intercepting when request-building succeeds.
+- [x] Build REST write target dynamically:
+    - create: `POST /property/location/add`
+    - update: `PUT /property/location/{location_id}`
+- [x] Add click_history forwarding for save submissions.
+- [x] Add in-flight guard (`isSubmitting`) and disable/enable submit buttons.
+- [x] Show inline REST success/error alerts.
+- [x] Preserve legacy redirect semantics by redirecting to legacy edit URL after successful save.
+
+### Step 2: Location REST ACL parity
+
+- [ ] Add explicit ACL checks in `LocationController` write endpoints (`add`, `save`, `delete`).
+- [ ] Ensure ACL scope matches legacy `property_uilocation` behavior.
+- [ ] Add/extend tests for ACL deny paths (403).
+
+### Step 3: Location REST payload contract hardening
+
+- [ ] Add controller-level request normalization/shape checks (location equivalent of entity `normalizedSavePayload`).
+- [ ] Return consistent 400 payloads for malformed request bodies and validation errors.
+- [ ] Document payload schema in OpenAPI annotations.
+
+### Step 4: HTTP semantics parity
+
+- [ ] Return `201 Created` for successful location create.
+- [ ] Keep update as `200 OK` and invalid identifier as `400`.
+
+### Step 5: Test coverage parity
+
+- [ ] Expand `LocationControllerTest` with malformed payload and contract cases.
+- [ ] Add client contract smoke checks for save interception and redirect behavior.
+- [ ] Keep helper regression tests for transport-key stripping and dynamic mapping.
+
 ## Phase F: Decommission Legacy Endpoints
 
 Remove legacy handlers only when all gates pass.

@@ -5,6 +5,7 @@ namespace App\modules\property\controllers;
 use App\Database\Db;
 use App\modules\property\helpers\EntityFormHelper;
 use App\modules\phpgwapi\services\Cache;
+use App\modules\phpgwapi\services\Settings;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -1168,8 +1169,13 @@ class EntityController
 	 */
 	public function buildMultiUploadFile(Request $request, Response $response, array $args): Response
 	{
+		$this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+
 		$seed = [
 			'id'        => (int)$args['id'],
+			'entity_id' => (int)$args['entity_id'],
+			'cat_id'    => (int)$args['cat_id'],
+			'type'      => (string)$args['type'],
 			'_entity_id'=> (int)$args['entity_id'],
 			'_cat_id'   => (int)$args['cat_id'],
 			'_type'     => (string)$args['type'],
@@ -1201,6 +1207,77 @@ class EntityController
 
 		$response->getBody()->write($html ?? '');
 		return $response->withHeader('Content-Type', 'text/html')->withStatus(200);
+	}
+
+	/**
+	 * Handle multi-upload file operations (list/add/delete) for an entity item.
+	 */
+	public function handleMultiUploadFile(Request $request, Response $response, array $args): Response
+	{
+		$bo = $this->assertEntityAcl($request, $args, ACL_EDIT, 'No edit access for this entity category');
+
+		$id = (int)$args['id'];
+		$entityId = (int)$args['entity_id'];
+		$catId = (int)$args['cat_id'];
+		$type = (string)$args['type'];
+
+		\phpgw::import_class('property.multiuploader');
+
+		$values = $bo->read_single([
+			'entity_id' => $entityId,
+			'cat_id' => $catId,
+			'id' => $id,
+		]);
+
+		$loc1 = isset($values['location_data']['loc1']) && $values['location_data']['loc1']
+			? $values['location_data']['loc1']
+			: 'dummy';
+
+		if (($bo->type_app[$bo->type] ?? '') === 'catch')
+		{
+			$loc1 = 'dummy';
+		}
+
+		$baseDir = "{$bo->category_dir}/{$loc1}/{$id}";
+		$serverSettings = Settings::getInstance()->get('server');
+		$scriptUrl = \phpgw::link(
+			'/property/entity/' . rawurlencode($type)
+			. '/' . rawurlencode((string)$entityId)
+			. '/' . rawurlencode((string)$catId)
+			. '/' . rawurlencode((string)$id)
+			. '/multi-upload'
+		);
+
+		$options = [
+			'base_dir' => $baseDir,
+			'upload_dir' => $serverSettings['files_dir'] . '/property/' . $baseDir . '/',
+			'script_url' => html_entity_decode($scriptUrl),
+		];
+
+		$uploadHandler = new \property_multiuploader($options, false);
+
+		switch (strtoupper($request->getMethod()))
+		{
+			case 'OPTIONS':
+			case 'HEAD':
+				$uploadHandler->head();
+				break;
+			case 'GET':
+				$uploadHandler->get();
+				break;
+			case 'PATCH':
+			case 'PUT':
+			case 'POST':
+				$uploadHandler->add_file();
+				break;
+			case 'DELETE':
+				$uploadHandler->delete_file();
+				break;
+			default:
+				return $response->withStatus(405);
+		}
+
+		return $response;
 	}
 
 	/**

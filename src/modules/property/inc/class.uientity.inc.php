@@ -336,14 +336,11 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		$type		 = Sanitizer::get_var('type');
 
 		$multi_upload_action = phpgw::link(
-			'/index.php',
-			array(
-				'menuaction' => 'property.uientity.handle_multi_upload_file',
-				'id'		 => $id,
-				'entity_id'	 => $entity_id,
-				'cat_id'	 => $cat_id,
-				'type'		 => $type
-			)
+			'/property/entity/' . rawurlencode((string)$type)
+			. '/' . rawurlencode((string)$entity_id)
+			. '/' . rawurlencode((string)$cat_id)
+			. '/' . rawurlencode((string)$id)
+			. '/multi-upload'
 		);
 
 		phpgw::import_class('property.multiuploader');

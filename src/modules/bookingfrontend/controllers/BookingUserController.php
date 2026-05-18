@@ -603,6 +603,13 @@ class BookingUserController
 				return ResponseHelper::sendErrorResponse(['error' => 'No SSN found for user'], 400);
 			}
 
+			// Check if user already exists
+			$existingUserId = $bouser->get_user_id($userSsn);
+			if ($existingUserId)
+			{
+				return ResponseHelper::sendErrorResponse(['error' => 'User already exists'], 400);
+			}
+
 			// Get create data from request body
 			$data = json_decode($request->getBody()->getContents(), true);
 			if (json_last_error() !== JSON_ERROR_NONE)
@@ -627,68 +634,39 @@ class BookingUserController
 				return ResponseHelper::sendErrorResponse(['error' => 'Invalid homepage URL format'], 400);
 			}
 
-			// Check if user already exists — if so, update their profile instead of failing
-			$existingUserId = $bouser->get_user_id($userSsn);
-			if ($existingUserId)
+			// Prepare user data for creation (only use known valid columns)
+			$createData = [
+				'customer_ssn' => $userSsn,
+				'name' => $data['name']
+			];
+
+			// Add optional fields only if they have values
+			if (!empty($data['email'])) $createData['email'] = $data['email'];
+			if (!empty($data['phone'])) $createData['phone'] = $data['phone'];
+			if (!empty($data['street'])) $createData['street'] = $data['street'];
+			if (!empty($data['zip_code'])) $createData['zip_code'] = $data['zip_code'];
+			if (!empty($data['city'])) $createData['city'] = $data['city'];
+			if (!empty($data['homepage'])) $createData['homepage'] = $data['homepage'];
+
+			// Create the user directly in the database
+			$placeholders = implode(',', array_fill(0, count($createData), '?'));
+			$columns = implode(',', array_keys($createData));
+
+			$sql = "INSERT INTO bb_user ({$columns}) VALUES ({$placeholders})";
+
+			$stmt = $this->db->prepare($sql);
+			$result = $stmt->execute(array_values($createData));
+
+			if (!$result)
 			{
-				$updateFields = [];
-				$updateValues = [];
-
-				$allowedFields = ['name', 'email', 'phone', 'street', 'zip_code', 'city', 'homepage'];
-				foreach ($allowedFields as $field)
-				{
-					if (isset($data[$field]) && $data[$field] !== '')
-					{
-						$updateFields[] = "{$field} = ?";
-						$updateValues[] = $data[$field];
-					}
-				}
-
-				if (!empty($updateFields))
-				{
-					$updateValues[] = $existingUserId;
-					$sql = "UPDATE bb_user SET " . implode(', ', $updateFields) . " WHERE id = ?";
-					$stmt = $this->db->prepare($sql);
-					$stmt->execute($updateValues);
-				}
-
-				$userId = $existingUserId;
+				return ResponseHelper::sendErrorResponse(['error' => 'Failed to create user'], 500);
 			}
-			else
+
+			$userId = $this->db->lastInsertId();
+
+			if (!$userId)
 			{
-				// Prepare user data for creation (only use known valid columns)
-				$createData = [
-					'customer_ssn' => $userSsn,
-					'name' => $data['name']
-				];
-
-				// Add optional fields only if they have values
-				if (!empty($data['email'])) $createData['email'] = $data['email'];
-				if (!empty($data['phone'])) $createData['phone'] = $data['phone'];
-				if (!empty($data['street'])) $createData['street'] = $data['street'];
-				if (!empty($data['zip_code'])) $createData['zip_code'] = $data['zip_code'];
-				if (!empty($data['city'])) $createData['city'] = $data['city'];
-				if (!empty($data['homepage'])) $createData['homepage'] = $data['homepage'];
-
-				$placeholders = implode(',', array_fill(0, count($createData), '?'));
-				$columns = implode(',', array_keys($createData));
-
-				$sql = "INSERT INTO bb_user ({$columns}) VALUES ({$placeholders})";
-
-				$stmt = $this->db->prepare($sql);
-				$result = $stmt->execute(array_values($createData));
-
-				if (!$result)
-				{
-					return ResponseHelper::sendErrorResponse(['error' => 'Failed to create user'], 500);
-				}
-
-				$userId = $this->db->lastInsertId();
-
-				if (!$userId)
-				{
-					return ResponseHelper::sendErrorResponse(['error' => 'Failed to create user'], 500);
-				}
+				return ResponseHelper::sendErrorResponse(['error' => 'Failed to create user'], 500);
 			}
 
 			// Directly update the session data to include the newly created user

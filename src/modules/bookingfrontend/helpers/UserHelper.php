@@ -966,7 +966,7 @@ class UserHelper
 		$existing_user = $this->get_user_id($ssn);
 		if ($existing_user) {
 			// User exists, update with latest external data if needed
-			$this->update_user_from_external_data($existing_user, $external_data);
+//			$this->update_user_from_external_data($existing_user, $external_data);
 		} else {
 			// First-time user, create new record
 			$this->create_user_from_external_data($external_data);

@@ -66,7 +66,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		'responsiblility_role_save'	 => false,
 		'get_part_of_town'			 => false,
 		'get_history_data'			 => false,
-		'get_documents'				 => false,
 		'get_accounts'				 => false,
 		'download'					 => false,
 		'index'						 => true,
@@ -1899,111 +1898,6 @@ JS;
 		$result_data = array('results' => $values);
 
 		$result_data['total_records']	 = count($values);
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
-	}
-
-	/**
-	 * Return location documents as a DataTables payload.
-	 *
-	 * @deprecated Use LocationController::getDocuments() via /property/location/documents.
-	 * @return array
-	 */
-	public function get_documents()
-	{
-		$search			 = Sanitizer::get_var('search');
-		$order			 = Sanitizer::get_var('order');
-		$draw			 = Sanitizer::get_var('draw', 'int');
-		$columns		 = Sanitizer::get_var('columns');
-		$doc_type		 = Sanitizer::get_var('doc_type', 'int');
-		$location_code	 = Sanitizer::get_var('location_code');
-		$export			 = Sanitizer::get_var('export', 'bool');
-		$values			 = array();
-
-		$params = array(
-			'start'			 => Sanitizer::get_var('start', 'int', 'REQUEST', 0),
-			'results'		 => Sanitizer::get_var('length', 'int', 'REQUEST', 0),
-			'query'			 => $search['value'],
-			'order'			 => $columns[$order[0]['column']]['data'],
-			'sort'			 => $order[0]['dir'],
-			'dir'			 => $order[0]['dir'],
-			'allrows'		 => Sanitizer::get_var('length', 'int') == -1 || $export,
-			'doc_type'		 => $doc_type,
-			'location_code'	 => $location_code
-		);
-
-		$dateformat		 = $this->userSettings['preferences']['common']['dateformat'];
-		$document		 = CreateObject('property.sodocument');
-		$documents		 = $document->read_at_location($params);
-		$total_records	 = $document->total_records;
-		foreach ($documents as $item)
-		{
-			if ($item['link'])
-			{
-				if (!preg_match('/^HTTP/i', $item['link']))
-				{
-					$link = 'file:///' . str_replace(':', '|', $item['link']);
-				}
-
-				$values[]		 = array(
-					'id'			 => $item['id'],
-					'type'			 => 'location',
-					'document_name'	 => "<a href='{$link}'>{$item['title']}</a>",
-					'title'			 => $item['title'],
-					'document_date'	 => $this->phpgwapi_common->show_date($item['document_date'], $dateformat)
-				);
-
-				continue;
-			}
-
-			$document_name	 = '<a href="' . self::link(array(
-				'menuaction' => 'property.uidocument.view_file',
-				'id'		 => $item['id']
-			)) . '" target="_blank">' . $item['document_name'] . '</a>';
-			$values[]		 = array(
-				'id'			 => $item['id'],
-				'type'			 => 'location',
-				'document_name'	 => $document_name,
-				'title'			 => $item['title'],
-				'document_date'	 => $this->phpgwapi_common->show_date($item['document_date'], $dateformat)
-			);
-		}
-		unset($item);
-
-		$location_id				 = $this->locations->get_id('property', '.location.' . count(explode('-', $location_code)));
-		$generic_document			 = CreateObject('property.sogeneric_document');
-		$params['location_id']		 = $location_id;
-		$params['location_item_id']	 = $this->bo->get_item_id($location_code);
-		$params['order']			 = 'name';
-		$params['cat_id']			 = $doc_type;
-		$documents2					 = $generic_document->read($params);
-		$total_records				 += $generic_document->total_records;
-		foreach ($documents2 as $item)
-		{
-			$title = '';
-			if ($item['path'])
-			{
-				$temp	 = (array)json_decode($item['path']);
-				$title	 = implode('<br/>', $temp);
-			}
-
-			$document_name	 = '<a href="' . self::link(array(
-				'menuaction' => 'property.uigeneric_document.view_file',
-				'file_id'	 => $item['id']
-			)) . '" target="_blank">' . $item['name'] . '</a>';
-			$values[]		 = array(
-				'id'			 => $item['id'],
-				'type'			 => 'generic',
-				'document_name'	 => $document_name,
-				'title'			 => $title,
-				'document_date'	 => $item['created']
-			);
-		}
-
-		$result_data = array('results' => $values);
-
-		$result_data['total_records']	 = $total_records;
 		$result_data['draw']			 = $draw;
 
 		return $this->jquery_results($result_data);

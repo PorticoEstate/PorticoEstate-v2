@@ -27,11 +27,11 @@ function populate_location_data(location_code)
 {
 	var res = location_code.split("-");
 	var level = res.length;
-	var oArgs = {menuaction: 'property.uilocation.get_location_data', location_code: location_code};
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var oArgs = {location_code: location_code};
+	var requestUrl = phpGWLink('/property/location/location-data', oArgs, true);
 
 	$.ajax({
-		type: 'POST',
+		type: 'GET',
 		dataType: 'json',
 		url: requestUrl,
 		success: function (data)

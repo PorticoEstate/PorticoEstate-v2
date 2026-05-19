@@ -359,7 +359,7 @@ HTML;
 		 * Get controller cases related to this item and a spesific checklist.
 		 * @return array
 		 */
-		public function get_cases_for_checklist(?int $check_list_id = null)
+		public function get_cases_for_checklist(?int $check_list_id = null, ?bool $return_json = null, ?int $draw = null)
 		{
 			if ($check_list_id === null)
 			{
@@ -457,13 +457,19 @@ HTML;
 				}
 			}
 
-			if (Sanitizer::get_var('phpgw_return_as') == 'json')
+			$should_return_json = $return_json;
+			if ($should_return_json === null)
+			{
+				$should_return_json = (Sanitizer::get_var('phpgw_return_as') == 'json');
+			}
+
+			if ($should_return_json)
 			{
 				$result_data = array
 					(
 					'results'		 => $_cases,
 					'total_records'	 => count($_cases),
-					'draw'			 => Sanitizer::get_var('draw', 'int')
+					'draw'			 => $draw !== null ? (int)$draw : Sanitizer::get_var('draw', 'int')
 				);
 
 				return $this->jquery_results($result_data);
@@ -564,18 +570,20 @@ HTML;
 			return $_check_list;
 		}
 
-		public function add_control()
+		public function add_control($payload = array())
 		{
-			$location_id	 = Sanitizer::get_var('location_id', 'int');
-			$id				 = Sanitizer::get_var('id', 'int');
-			$control_id		 = Sanitizer::get_var('control_id', 'int');
-			$assigned_to	 = Sanitizer::get_var('control_responsible', 'int');
-			$start_date		 = Sanitizer::get_var('control_start_date', 'string');
-			$repeat_type	 = Sanitizer::get_var('repeat_type', 'int');
-			$repeat_interval = Sanitizer::get_var('repeat_interval', 'int');
+			$payload = is_array($payload) ? $payload : array();
+
+			$location_id	 = (int)($payload['location_id'] ?? Sanitizer::get_var('location_id', 'int'));
+			$id				 = (int)($payload['id'] ?? Sanitizer::get_var('id', 'int'));
+			$control_id		 = (int)($payload['control_id'] ?? Sanitizer::get_var('control_id', 'int'));
+			$assigned_to	 = (int)($payload['control_responsible'] ?? Sanitizer::get_var('control_responsible', 'int'));
+			$start_date		 = (string)($payload['control_start_date'] ?? Sanitizer::get_var('control_start_date', 'string'));
+			$repeat_type	 = (int)($payload['repeat_type'] ?? Sanitizer::get_var('repeat_type', 'int'));
+			$repeat_interval = (int)($payload['repeat_interval'] ?? Sanitizer::get_var('repeat_interval', 'int'));
 			$repeat_interval = $repeat_interval ? $repeat_interval : 1;
-			$controle_time	 = Sanitizer::get_var('controle_time', 'float');
-			$service_time	 = Sanitizer::get_var('service_time', 'float');
+			$controle_time	 = (float)($payload['controle_time'] ?? Sanitizer::get_var('controle_time', 'float'));
+			$service_time	 = (float)($payload['service_time'] ?? Sanitizer::get_var('service_time', 'float'));
 
 //			$location_info = $this->locations_obj->get_name($location_id);
 //
@@ -702,9 +710,12 @@ HTML;
 			}
 		}
 
-		function update_control_serie()
+		function update_control_serie($payload = array())
 		{
-			if ($start_date = Sanitizer::get_var('control_start_date', 'string'))
+			$payload = is_array($payload) ? $payload : array();
+			$start_date = $payload['control_start_date'] ?? Sanitizer::get_var('control_start_date', 'string');
+
+			if ($start_date)
 			{
 				phpgw::import_class('phpgwapi.datetime');
 				$start_date = phpgwapi_datetime::date_to_timestamp($start_date);
@@ -713,14 +724,14 @@ HTML;
 			$so_control = CreateObject('controller.socontrol');
 
 			$values	 = array(
-				'ids'				 => Sanitizer::get_var('ids', 'int'),
-				'action'			 => Sanitizer::get_var('action', 'string'),
-				'assigned_to'		 => Sanitizer::get_var('control_responsible', 'int'),
+				'ids'				 => $payload['ids'] ?? Sanitizer::get_var('ids', 'int'),
+				'action'			 => (string)($payload['action'] ?? Sanitizer::get_var('action', 'string')),
+				'assigned_to'		 => (int)($payload['control_responsible'] ?? Sanitizer::get_var('control_responsible', 'int')),
 				'start_date'		 => $start_date,
-				'repeat_type'		 => Sanitizer::get_var('repeat_type', 'int'),
-				'repeat_interval'	 => Sanitizer::get_var('repeat_interval', 'int'),
-				'controle_time'		 => Sanitizer::get_var('controle_time', 'float'),
-				'service_time'		 => Sanitizer::get_var('service_time', 'float')
+				'repeat_type'		 => (int)($payload['repeat_type'] ?? Sanitizer::get_var('repeat_type', 'int')),
+				'repeat_interval'	 => (int)($payload['repeat_interval'] ?? Sanitizer::get_var('repeat_interval', 'int')),
+				'controle_time'		 => (float)($payload['controle_time'] ?? Sanitizer::get_var('controle_time', 'float')),
+				'service_time'		 => (float)($payload['service_time'] ?? Sanitizer::get_var('service_time', 'float'))
 			);
 			$ret	 = $so_control->update_control_serie($values);
 

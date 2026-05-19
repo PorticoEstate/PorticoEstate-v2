@@ -63,7 +63,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 
 	var $public_functions = array(
 		'query'						 => false,
-		'responsiblility_role_save'	 => true,
+		'responsiblility_role_save'	 => false,
 		'get_part_of_town'			 => true,
 		'get_history_data'			 => false,
 		'get_documents'				 => false,
@@ -81,14 +81,14 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		'columns'					 => true,
 		'update_location'			 => true,
 		'responsiblility_role'		 => true,
-		'get_delivery_address'		 => true,
-		'get_location_exception'	 => true,
+		'get_delivery_address'		 => false,
+		'get_location_exception'	 => false,
 		'get_controls_at_component'	 => false,
 		'get_assigned_history'		 => false,
 		'get_cases'					 => false,
 		'get_checklists'			 => false,
 		'get_cases_for_checklist'	 => false,
-		'get_location_data'			 => true,
+		'get_location_data'			 => false,
 		'edit_field'					 => false,
 		'dashboard'					 => true,
 	);

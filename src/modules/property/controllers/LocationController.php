@@ -89,19 +89,6 @@ class LocationController
 		return $this->controllerHelper;
 	}
 
-	private function hydrateRequestGlobals(Request $request, array $extra = array(), bool $json = true): void
-	{
-		$queryParams	 = $request->getQueryParams();
-		$bodyParams		 = $request->getParsedBody();
-		$bodyParams		 = is_array($bodyParams) ? $bodyParams : array();
-		$commonExtra		 = $json ? array('phpgw_return_as' => 'json') : array();
-		$extra			 = array_merge($commonExtra, $extra);
-
-		$_GET = array_merge($_GET, $queryParams, $extra);
-		$_POST = array_merge($_POST, $bodyParams, $extra);
-		$_REQUEST = array_merge($_REQUEST, $queryParams, $bodyParams, $extra);
-	}
-
 	private function jsonResponse(Response $response, mixed $payload, int $statusCode = 200): Response
 	{
 		try
@@ -518,7 +505,6 @@ class LocationController
 
 	public function getControlsAtComponent(Request $request, Response $response): Response
 	{
-		$this->hydrateRequestGlobals($request);
 		$locationId = (int)($request->getQueryParams()['location_id'] ?? 0);
 		$id = (int)($request->getQueryParams()['id'] ?? 0);
 		$skipJson = (bool)($request->getQueryParams()['skip_json'] ?? false);
@@ -527,7 +513,6 @@ class LocationController
 
 	public function getCases(Request $request, Response $response): Response
 	{
-		$this->hydrateRequestGlobals($request);
 		$locationId = (int)($request->getQueryParams()['location_id'] ?? 0);
 		$id = (int)($request->getQueryParams()['id'] ?? 0);
 		$year = (int)($request->getQueryParams()['year'] ?? 0);
@@ -536,7 +521,6 @@ class LocationController
 
 	public function getChecklists(Request $request, Response $response): Response
 	{
-		$this->hydrateRequestGlobals($request);
 		$locationId = (int)($request->getQueryParams()['location_id'] ?? 0);
 		$id = (int)($request->getQueryParams()['id'] ?? 0);
 		$year = (int)($request->getQueryParams()['year'] ?? 0);
@@ -545,8 +529,16 @@ class LocationController
 
 	public function getCasesForChecklist(Request $request, Response $response): Response
 	{
-		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->controllerHelper()->get_cases_for_checklist());
+		$queryParams = $request->getQueryParams();
+		$bodyParams = $request->getParsedBody();
+		$bodyParams = is_array($bodyParams) ? $bodyParams : array();
+		$checkListId = (int)($queryParams['check_list_id'] ?? ($bodyParams['check_list_id'] ?? 0));
+		$draw = (int)($queryParams['draw'] ?? 0);
+
+		return $this->jsonResponse(
+			$response,
+			$this->controllerHelper()->get_cases_for_checklist($checkListId ?: null, true, $draw)
+		);
 	}
 
 	public function editField(Request $request, Response $response): Response
@@ -658,14 +650,22 @@ class LocationController
 
 	public function addControl(Request $request, Response $response): Response
 	{
-		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->controllerHelper()->add_control());
+		$queryParams = $request->getQueryParams();
+		$bodyParams = $request->getParsedBody();
+		$bodyParams = is_array($bodyParams) ? $bodyParams : array();
+		$payload = array_merge($queryParams, $bodyParams);
+
+		return $this->jsonResponse($response, $this->controllerHelper()->add_control($payload));
 	}
 
 	public function updateControlSerie(Request $request, Response $response): Response
 	{
-		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->controllerHelper()->update_control_serie());
+		$queryParams = $request->getQueryParams();
+		$bodyParams = $request->getParsedBody();
+		$bodyParams = is_array($bodyParams) ? $bodyParams : array();
+		$payload = array_merge($queryParams, $bodyParams);
+
+		return $this->jsonResponse($response, $this->controllerHelper()->update_control_serie($payload));
 	}
 
 	public function delete(Request $request, Response $response, array $args): Response

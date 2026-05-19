@@ -3326,12 +3326,6 @@ JS;
 			phpgw::no_access();
 		}
 
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			return $this->query_summary();
-		}
-
-
 		$appname		 = lang('Summary');
 		$function_msg	 = lang('List') . ' ' . lang($this->role);
 

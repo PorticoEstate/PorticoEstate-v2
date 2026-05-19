@@ -67,7 +67,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		'get_part_of_town'			 => false,
 		'get_history_data'			 => false,
 		'get_accounts'				 => false,
-		'download'					 => false,
 		'index'						 => true,
 		'view'						 => true,
 		'edit'						 => true,

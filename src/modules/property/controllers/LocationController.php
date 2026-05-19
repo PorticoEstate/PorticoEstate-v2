@@ -152,12 +152,18 @@ class LocationController
 
 	public function index(Request $request, Response $response): Response
 	{
-		$search = $request->getQueryParams()['search'] ?? array();
-		$order = (array)($request->getQueryParams()['order'] ?? array());
-		$draw = (int)($request->getQueryParams()['draw'] ?? 0) + 1;
-		$columns = (array)($request->getQueryParams()['columns'] ?? array());
-		$lookupTenant = (bool)($request->getQueryParams()['lookup_tenant'] ?? false);
-		$export = !empty($request->getQueryParams()['export']);
+		$queryParams = $request->getQueryParams();
+		$search = $queryParams['search'] ?? array();
+		$order = (array)($queryParams['order'] ?? array());
+		$draw = (int)($queryParams['draw'] ?? 0) + 1;
+		$columns = (array)($queryParams['columns'] ?? array());
+		$lookupTenant = (bool)($queryParams['lookup_tenant'] ?? false);
+		$export = !empty($queryParams['export']);
+		$orderColumnIndex = (int)($order[0]['column'] ?? -1);
+		$orderField = ($orderColumnIndex >= 0 && isset($columns[$orderColumnIndex]['data']))
+			? (string)$columns[$orderColumnIndex]['data']
+			: '';
+		$orderDir = strtolower((string)($order[0]['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
 
 		$columnSearch = array();
 		foreach ($columns as $column)
@@ -169,13 +175,13 @@ class LocationController
 		}
 
 		$params = array(
-			'start' => (int)($request->getQueryParams()['start'] ?? 0),
-			'results' => (int)($request->getQueryParams()['length'] ?? 0),
+			'start' => (int)($queryParams['start'] ?? 0),
+			'results' => (int)($queryParams['length'] ?? 0),
 			'query' => $search['value'] ?? '',
-			'order' => $columns[$order[0]['column']]['data'] ?? '',
-			'sort' => $order[0]['dir'] ?? 'ASC',
-			'dir' => $order[0]['dir'] ?? 'ASC',
-			'allrows' => ((int)($request->getQueryParams()['length'] ?? 0) == -1) || $export,
+			'order' => $orderField,
+			'sort' => $orderDir,
+			'dir' => $orderDir,
+			'allrows' => ((int)($queryParams['length'] ?? 0) == -1) || $export,
 			'lookup_tenant' => $lookupTenant,
 			'dry_run' => false,
 			'column_search' => $columnSearch,
@@ -316,22 +322,28 @@ class LocationController
 
 	public function getDocuments(Request $request, Response $response): Response
 	{
-		$search = $request->getQueryParams()['search'] ?? array();
-		$order = (array)($request->getQueryParams()['order'] ?? array());
-		$draw = (int)($request->getQueryParams()['draw'] ?? 0) +1;
-		$columns = (array)($request->getQueryParams()['columns'] ?? array());
-		$docType = (int)($request->getQueryParams()['doc_type'] ?? 0);
-		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
-		$export = !empty($request->getQueryParams()['export']);
+		$queryParams = $request->getQueryParams();
+		$search = $queryParams['search'] ?? array();
+		$order = (array)($queryParams['order'] ?? array());
+		$draw = (int)($queryParams['draw'] ?? 0) +1;
+		$columns = (array)($queryParams['columns'] ?? array());
+		$docType = (int)($queryParams['doc_type'] ?? 0);
+		$locationCode = (string)($queryParams['location_code'] ?? '');
+		$export = !empty($queryParams['export']);
+		$orderColumnIndex = (int)($order[0]['column'] ?? -1);
+		$orderField = ($orderColumnIndex >= 0 && isset($columns[$orderColumnIndex]['data']))
+			? (string)$columns[$orderColumnIndex]['data']
+			: '';
+		$orderDir = strtolower((string)($order[0]['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
 
 		$params = array(
-			'start' => (int)($request->getQueryParams()['start'] ?? 0),
-			'results' => (int)($request->getQueryParams()['length'] ?? 0),
+			'start' => (int)($queryParams['start'] ?? 0),
+			'results' => (int)($queryParams['length'] ?? 0),
 			'query' => $search['value'] ?? '',
-			'order' => $columns[$order[0]['column']]['data'] ?? '',
-			'sort' => $order[0]['dir'] ?? 'ASC',
-			'dir' => $order[0]['dir'] ?? 'ASC',
-			'allrows' => ((int)($request->getQueryParams()['length'] ?? 0) == -1) || $export,
+			'order' => $orderField,
+			'sort' => $orderDir,
+			'dir' => $orderDir,
+			'allrows' => ((int)($queryParams['length'] ?? 0) == -1) || $export,
 			'doc_type' => $docType,
 			'location_code' => $locationCode,
 		);
@@ -453,22 +465,28 @@ class LocationController
 
 	public function queryRole(Request $request, Response $response): Response
 	{
-		$lookupTenant = (bool)($request->getQueryParams()['lookup_tenant'] ?? false);
-		$userId = (int)($request->getQueryParams()['user_id'] ?? $this->currentAccountId());
-		$roleId = (int)($request->getQueryParams()['role_id'] ?? 0);
-		$search = $request->getQueryParams()['search'] ?? array();
-		$order = (array)($request->getQueryParams()['order'] ?? array());
-		$draw = (int)($request->getQueryParams()['draw'] ?? 0) +1;
-		$columns = (array)($request->getQueryParams()['columns'] ?? array());
+		$queryParams = $request->getQueryParams();
+		$lookupTenant = (bool)($queryParams['lookup_tenant'] ?? false);
+		$userId = (int)($queryParams['user_id'] ?? $this->currentAccountId());
+		$roleId = (int)($queryParams['role_id'] ?? 0);
+		$search = $queryParams['search'] ?? array();
+		$order = (array)($queryParams['order'] ?? array());
+		$draw = (int)($queryParams['draw'] ?? 0) +1;
+		$columns = (array)($queryParams['columns'] ?? array());
+		$orderColumnIndex = (int)($order[0]['column'] ?? -1);
+		$orderField = ($orderColumnIndex >= 0 && isset($columns[$orderColumnIndex]['data']))
+			? (string)$columns[$orderColumnIndex]['data']
+			: '';
+		$orderDir = strtolower((string)($order[0]['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
 
 		$params = array(
-			'start' => (int)($request->getQueryParams()['start'] ?? 0),
-			'results' => (int)($request->getQueryParams()['length'] ?? 0),
+			'start' => (int)($queryParams['start'] ?? 0),
+			'results' => (int)($queryParams['length'] ?? 0),
 			'query' => $search['value'] ?? '',
-			'order' => $columns[$order[0]['column']]['data'] ?? '',
-			'sort' => $order[0]['dir'] ?? 'ASC',
-			'dir' => $order[0]['dir'] ?? 'ASC',
-			'allrows' => ((int)($request->getQueryParams()['length'] ?? 0) == -1),
+			'order' => $orderField,
+			'sort' => $orderDir,
+			'dir' => $orderDir,
+			'allrows' => ((int)($queryParams['length'] ?? 0) == -1),
 			'lookup_tenant' => $lookupTenant,
 			'user_id' => $userId,
 			'role_id' => $roleId,

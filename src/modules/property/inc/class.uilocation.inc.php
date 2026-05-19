@@ -531,65 +531,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 	}
 
 
-	function download()
-	{
-		if (!$this->acl_read)
-		{
-			phpgw::no_access();
-		}
-
-		$download_type = Sanitizer::get_var('download_type');
-
-		switch ($download_type)
-		{
-			case 'summary':
-				$list	 = $this->query_summary();
-				$uicols	 = $this->bo->uicols;
-				break;
-			case 'responsiblility_role':
-				$user_id = Sanitizer::get_var('user_id', 'int');
-				$role_id = Sanitizer::get_var('role_id', 'int');
-				$type_id = Sanitizer::get_var('type_id', 'int', 'GET');
-				$search	 = Sanitizer::get_var('search');
-
-				$list = $this->bo->get_responsible(array(
-					'user_id'	 => $user_id,
-					'role_id'	 => $role_id,
-					'type_id'	 => $type_id,
-					'query'		 => $search['value'],
-					'allrows'	 => true
-				));
-
-				foreach ($list as &$entry)
-				{
-					$entry['role_id'] = $role_id;
-				}
-
-				$uicols = $this->bo->uicols;
-
-				$uicols['name'][]		 = 'role_id';
-				$uicols['descr'][]		 = 'role_id';
-				$uicols['input_type'][]	 = '';
-
-				$uicols['name'][]		 = 'responsible_contact';
-				$uicols['descr'][]		 = lang('responsible');
-				$uicols['input_type'][]	 = '';
-
-				$uicols['name'][]		 = 'contact_id';
-				$uicols['descr'][]		 = 'contact_id';
-				$uicols['input_type'][]	 = '';
-
-
-				break;
-			default:
-				$list	 = $this->query();
-				$uicols	 = $this->bo->uicols;
-				break;
-		}
-
-		$this->bocommon->download($list, $uicols['name'], $uicols['descr'], $uicols['input_type']);
-	}
-
 	function columns()
 	{
 		$this->flags['xslt_app']	 = true;

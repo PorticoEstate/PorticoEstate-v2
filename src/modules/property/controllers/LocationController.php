@@ -28,14 +28,35 @@ class LocationController
 		$this->formHelper = new LocationFormHelper();
 	}
 
-	private function bo()
+	protected function bo()
 	{
 		if ($this->bo === null)
 		{
-			$this->bo = CreateObject('property.bolocation', true);
+			$this->bo = $this->createObject('property.bolocation', true);
 		}
 
 		return $this->bo;
+	}
+
+	protected function createObject(string $name, ...$args)
+	{
+		return CreateObject($name, ...$args);
+	}
+
+	protected function makeLocationsController()
+	{
+		return new \App\modules\phpgwapi\controllers\Locations();
+	}
+
+	protected function makeBoCommon()
+	{
+		return new \App\modules\property\helpers\BoCommon();
+	}
+
+	protected function hasReadAccess(): bool
+	{
+		$bo = $this->bo();
+		return (bool)Acl::getInstance()->check($bo->acl_location, ACL_READ, 'property');
 	}
 
 	private function phpgwapiCommon(): \phpgwapi_common
@@ -344,15 +365,19 @@ class LocationController
 			'location_code' => $locationCode,
 		);
 
-		$dateFormat = $this->dateFormat();
-		$document = CreateObject('property.sodocument');
+		$document = $this->createObject('property.sodocument');
 		$documents = $document->read_at_location($params);
 		$recordsTotal = $document->total_records;
 		$values = array();
+		$dateFormat = null;
 		foreach ($documents as $item)
 		{
 			if ($item['link'])
 			{
+				if ($dateFormat === null)
+				{
+					$dateFormat = $this->dateFormat();
+				}
 				$link = $item['link'];
 				if (!preg_match('/^HTTP/i', $link))
 				{
@@ -366,6 +391,10 @@ class LocationController
 					'document_date' => $this->phpgwapiCommon()->show_date($item['document_date'], $dateFormat)
 				);
 				continue;
+			}
+			if ($dateFormat === null)
+			{
+				$dateFormat = $this->dateFormat();
 			}
 			$documentName = '<a href="' . \phpgw::link('/index.php',array(
 				'menuaction' => 'property.uidocument.view_file',
@@ -381,9 +410,9 @@ class LocationController
 			}
 		unset($item);
 
-		$locations = new \App\modules\phpgwapi\controllers\Locations();
+		$locations = $this->makeLocationsController();
 		$locationId = $locations->get_id('property', '.location.' . count(explode('-', $locationCode)));
-		$genericDocument = CreateObject('property.sogeneric_document');
+		$genericDocument = $this->createObject('property.sogeneric_document');
 		$params['location_id'] = $locationId;
 		$params['location_item_id'] = $this->bo()->get_item_id($locationCode);
 		$params['order'] = 'name';
@@ -746,15 +775,13 @@ class LocationController
 	 * @param Response $response
 	 * @param array $args
 	 */
-	public function download(Request $request, Response $response, array $args): void
+	public function download(Request $request, Response $response, array $args): Response
 	{
 		$bo = $this->bo();
 
-		if (!Acl::getInstance()->check($bo->acl_location, ACL_READ, 'property'))
+		if (!$this->hasReadAccess())
 		{
-			http_response_code(403);
-			echo json_encode(array('message' => 'No read access'));
-			exit;
+			return $this->forbiddenResponse($response, 'No read access for location');
 		}
 
 		$queryParams  = $request->getQueryParams();
@@ -808,13 +835,14 @@ class LocationController
 				break;
 		}
 
-		$bocommon = new \App\modules\property\helpers\BoCommon();
+		$bocommon = $this->makeBoCommon();
 		$bocommon->download(
 			(array)$list,
 			$uicols['name'],
 			$uicols['descr'],
 			$uicols['input_type'] ?? array()
 		);
-		exit;
+
+		return $response;
 	}
 }

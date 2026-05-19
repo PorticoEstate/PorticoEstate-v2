@@ -353,5 +353,448 @@ namespace Tests\Controllers
 			$this->assertSame('error', $decoded['status']);
 			$this->assertSame('No delete access for location', $decoded['message']);
 		}
+
+		public function testQueryRoleAcceptsBodyParamsAndOverridesQueryParams(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+				public array $capturedParams = [];
+
+				public function get_responsible(array $params): array
+				{
+					$this->capturedParams = $params;
+					$this->total_records = 1;
+					return [['id' => 1]];
+				}
+			};
+
+			$controller = new class($this->container, $bo) extends LocationController
+			{
+				private $boStub;
+
+				public function __construct(ContainerInterface $container, $boStub)
+				{
+					parent::__construct($container);
+					$this->boStub = $boStub;
+				}
+
+				protected function bo()
+				{
+					return $this->boStub;
+				}
+
+				protected function currentAccountId(): int
+				{
+					return 55;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn([
+				'user_id' => 10,
+				'role_id' => 2,
+				'start' => 0,
+				'length' => 10,
+				'draw' => 1,
+				'search' => ['value' => 'query-side'],
+				'order' => [['column' => 0, 'dir' => 'asc']],
+				'columns' => [['data' => 'loc1']],
+			]);
+			$this->request->method('getParsedBody')->willReturn([
+				'user_id' => 77,
+				'role_id' => 9,
+				'start' => 5,
+				'length' => -1,
+				'draw' => 3,
+				'search' => ['value' => 'body-side'],
+				'order' => [['column' => 0, 'dir' => 'desc']],
+				'columns' => [['data' => 'loc2']],
+			]);
+
+			$controller->queryRole($this->request, $this->response);
+
+			$this->assertSame(77, $bo->capturedParams['user_id']);
+			$this->assertSame(9, $bo->capturedParams['role_id']);
+			$this->assertSame(5, $bo->capturedParams['start']);
+			$this->assertSame(-1, $bo->capturedParams['results']);
+			$this->assertSame('body-side', $bo->capturedParams['query']);
+			$this->assertSame('loc2', $bo->capturedParams['order']);
+			$this->assertSame('DESC', $bo->capturedParams['sort']);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame(4, $decoded['draw']);
+			$this->assertSame(1, $decoded['recordsTotal']);
+		}
+
+		public function testGetDocumentsAcceptsBodyParamsAndOverridesQueryParams(): void
+		{
+			$sodocument = new class
+			{
+				public int $total_records = 3;
+				public array $capturedParams = [];
+
+				public function read_at_location(array $params): array
+				{
+					$this->capturedParams = $params;
+					return [];
+				}
+			};
+
+			$genericDocument = new class
+			{
+				public int $total_records = 2;
+				public array $capturedParams = [];
+
+				public function read(array $params): array
+				{
+					$this->capturedParams = $params;
+					return [];
+				}
+			};
+
+			$locations = new class
+			{
+				public function get_id(string $app, string $location): int
+				{
+					return 321;
+				}
+			};
+
+			$bo = new class
+			{
+				public function get_item_id(string $locationCode): int
+				{
+					return 789;
+				}
+			};
+
+			$controller = new class($this->container, $bo, $sodocument, $genericDocument, $locations) extends LocationController
+			{
+				private $boStub;
+				private $sodocumentStub;
+				private $genericDocumentStub;
+				private $locationsStub;
+
+				public function __construct(ContainerInterface $container, $boStub, $sodocumentStub, $genericDocumentStub, $locationsStub)
+				{
+					parent::__construct($container);
+					$this->boStub = $boStub;
+					$this->sodocumentStub = $sodocumentStub;
+					$this->genericDocumentStub = $genericDocumentStub;
+					$this->locationsStub = $locationsStub;
+				}
+
+				protected function bo()
+				{
+					return $this->boStub;
+				}
+
+				protected function createObject(string $name, ...$args)
+				{
+					if ($name === 'property.sodocument')
+					{
+						return $this->sodocumentStub;
+					}
+					if ($name === 'property.sogeneric_document')
+					{
+						return $this->genericDocumentStub;
+					}
+
+					return parent::createObject($name, ...$args);
+				}
+
+				protected function makeLocationsController()
+				{
+					return $this->locationsStub;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn([
+				'doc_type' => 1,
+				'location_code' => '10-01',
+				'start' => 0,
+				'length' => 10,
+				'draw' => 1,
+				'search' => ['value' => 'query-side'],
+				'order' => [['column' => 0, 'dir' => 'asc']],
+				'columns' => [['data' => 'name']],
+			]);
+			$this->request->method('getParsedBody')->willReturn([
+				'doc_type' => 9,
+				'location_code' => '20-02',
+				'start' => 4,
+				'length' => -1,
+				'draw' => 5,
+				'export' => true,
+				'search' => ['value' => 'body-side'],
+				'order' => [['column' => 0, 'dir' => 'desc']],
+				'columns' => [['data' => 'title']],
+			]);
+
+			$controller->getDocuments($this->request, $this->response);
+
+			$this->assertSame(9, $sodocument->capturedParams['doc_type']);
+			$this->assertSame('20-02', $sodocument->capturedParams['location_code']);
+			$this->assertSame(4, $sodocument->capturedParams['start']);
+			$this->assertSame(-1, $sodocument->capturedParams['results']);
+			$this->assertSame('body-side', $sodocument->capturedParams['query']);
+			$this->assertSame('title', $sodocument->capturedParams['order']);
+			$this->assertSame('DESC', $sodocument->capturedParams['sort']);
+			$this->assertTrue($sodocument->capturedParams['allrows']);
+
+			$this->assertSame(321, $genericDocument->capturedParams['location_id']);
+			$this->assertSame(789, $genericDocument->capturedParams['location_item_id']);
+			$this->assertSame(9, $genericDocument->capturedParams['cat_id']);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame(6, $decoded['draw']);
+			$this->assertSame(5, $decoded['recordsTotal']);
+		}
+
+		public function testDownloadDefaultUsesReadAndReturnsResponse(): void
+		{
+			$bo = new class
+			{
+				public string $acl_location = '.location.1';
+				public array $uicols = [
+					'name' => ['loc1'],
+					'descr' => ['Loc1'],
+					'input_type' => [''],
+				];
+				public array $capturedReadParams = [];
+
+				public function read(array $params): array
+				{
+					$this->capturedReadParams = $params;
+					return [['loc1' => 'A']];
+				}
+			};
+
+			$boCommon = new class
+			{
+				public array $captured = [];
+
+				public function download($list, $name, $descr, $inputType): void
+				{
+					$this->captured = [$list, $name, $descr, $inputType];
+				}
+			};
+
+			$controller = new class($this->container, $bo, $boCommon) extends LocationController
+			{
+				private $boStub;
+				private $boCommonStub;
+
+				public function __construct(ContainerInterface $container, $boStub, $boCommonStub)
+				{
+					parent::__construct($container);
+					$this->boStub = $boStub;
+					$this->boCommonStub = $boCommonStub;
+				}
+
+				protected function bo()
+				{
+					return $this->boStub;
+				}
+
+				protected function hasReadAccess(): bool
+				{
+					return true;
+				}
+
+				protected function makeBoCommon()
+				{
+					return $this->boCommonStub;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn([]);
+
+			$returned = $controller->download($this->request, $this->response, []);
+
+			$this->assertSame($this->response, $returned);
+			$this->assertSame(['allrows' => true], $bo->capturedReadParams);
+			$this->assertSame([['loc1' => 'A']], $boCommon->captured[0]);
+		}
+
+		public function testDownloadSummaryUsesReadSummary(): void
+		{
+			$bo = new class
+			{
+				public string $acl_location = '.location.1';
+				public array $uicols = [
+					'name' => ['loc1'],
+					'descr' => ['Loc1'],
+					'input_type' => [''],
+				];
+				public bool $summaryCalled = false;
+
+				public function read_summary(): array
+				{
+					$this->summaryCalled = true;
+					return [['loc1' => 'S']];
+				}
+			};
+
+			$boCommon = new class
+			{
+				public array $captured = [];
+
+				public function download($list, $name, $descr, $inputType): void
+				{
+					$this->captured = [$list, $name, $descr, $inputType];
+				}
+			};
+
+			$controller = new class($this->container, $bo, $boCommon) extends LocationController
+			{
+				private $boStub;
+				private $boCommonStub;
+
+				public function __construct(ContainerInterface $container, $boStub, $boCommonStub)
+				{
+					parent::__construct($container);
+					$this->boStub = $boStub;
+					$this->boCommonStub = $boCommonStub;
+				}
+
+				protected function bo()
+				{
+					return $this->boStub;
+				}
+
+				protected function hasReadAccess(): bool
+				{
+					return true;
+				}
+
+				protected function makeBoCommon()
+				{
+					return $this->boCommonStub;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(['download_type' => 'summary']);
+			$controller->download($this->request, $this->response, []);
+
+			$this->assertTrue($bo->summaryCalled);
+			$this->assertSame([['loc1' => 'S']], $boCommon->captured[0]);
+		}
+
+		public function testDownloadResponsibilityRoleUsesGetResponsibleAndAppendsColumns(): void
+		{
+			$bo = new class
+			{
+				public string $acl_location = '.location.1';
+				public array $uicols = [
+					'name' => ['loc1'],
+					'descr' => ['Loc1'],
+					'input_type' => [''],
+				];
+				public array $capturedParams = [];
+
+				public function get_responsible(array $params): array
+				{
+					$this->capturedParams = $params;
+					return [[
+						'loc1' => 'A',
+						'responsible_contact' => 'John',
+						'contact_id' => 88,
+					]];
+				}
+			};
+
+			$boCommon = new class
+			{
+				public array $captured = [];
+
+				public function download($list, $name, $descr, $inputType): void
+				{
+					$this->captured = [$list, $name, $descr, $inputType];
+				}
+			};
+
+			$controller = new class($this->container, $bo, $boCommon) extends LocationController
+			{
+				private $boStub;
+				private $boCommonStub;
+
+				public function __construct(ContainerInterface $container, $boStub, $boCommonStub)
+				{
+					parent::__construct($container);
+					$this->boStub = $boStub;
+					$this->boCommonStub = $boCommonStub;
+				}
+
+				protected function bo()
+				{
+					return $this->boStub;
+				}
+
+				protected function hasReadAccess(): bool
+				{
+					return true;
+				}
+
+				protected function makeBoCommon()
+				{
+					return $this->boCommonStub;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn([
+				'download_type' => 'responsiblility_role',
+				'user_id' => 5,
+				'role_id' => 42,
+				'type_id' => 1,
+				'search' => ['value' => 'abc'],
+			]);
+
+			$controller->download($this->request, $this->response, []);
+
+			$this->assertSame(5, $bo->capturedParams['user_id']);
+			$this->assertSame(42, $bo->capturedParams['role_id']);
+			$this->assertSame('abc', $bo->capturedParams['query']);
+			$this->assertSame(42, $boCommon->captured[0][0]['role_id']);
+			$this->assertContains('role_id', $boCommon->captured[1]);
+			$this->assertContains('responsible_contact', $boCommon->captured[1]);
+			$this->assertContains('contact_id', $boCommon->captured[1]);
+		}
+
+		public function testDownloadReturns403WhenReadAclDenied(): void
+		{
+			$bo = new class
+			{
+				public string $acl_location = '.location.1';
+			};
+
+			$controller = new class($this->container, $bo) extends LocationController
+			{
+				private $boStub;
+
+				public function __construct(ContainerInterface $container, $boStub)
+				{
+					parent::__construct($container);
+					$this->boStub = $boStub;
+				}
+
+				protected function bo()
+				{
+					return $this->boStub;
+				}
+
+				protected function hasReadAccess(): bool
+				{
+					return false;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn([]);
+			$controller->download($this->request, $this->response, []);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('error', $decoded['status']);
+			$this->assertSame('No read access for location', $decoded['message']);
+		}
 	}
 }

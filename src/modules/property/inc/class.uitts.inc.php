@@ -807,8 +807,7 @@ HTML;
 
 		$values_combo_box[1] = $this->bocommon->select_district_list('filter', $this->district_id);
 		array_unshift($values_combo_box[1],  array('id' => '', 'name' => lang('no district')));
-		$link				 = self::link(array(
-			'menuaction'		 => 'property.uilocation.get_part_of_town',
+		$link				 = \phpgw::link('/property/location/part-of-town', array(
 			'district_id'		 => $this->district_id,
 			'part_of_town_id'	 => $this->part_of_town_id,
 			'phpgw_return_as'	 => 'json'

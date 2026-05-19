@@ -449,8 +449,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 					$default_value = array('id' => '', 'name' => lang('no district'));
 					array_unshift($values_combo_box[0], $default_value);
 
-					$link = self::link(array(
-						'menuaction'		 => 'property.uilocation.get_part_of_town',
+					$link = phpgw::link('/property/location/part-of-town', array(
 						'district_id'		 => $this->district_id,
 						'part_of_town_id'	 => $this->part_of_town_id,
 						'phpgw_return_as'	 => 'json'

@@ -64,7 +64,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 	var $public_functions = array(
 		'query'						 => false,
 		'responsiblility_role_save'	 => false,
-		'get_part_of_town'			 => true,
+		'get_part_of_town'			 => false,
 		'get_history_data'			 => false,
 		'get_documents'				 => false,
 		'get_accounts'				 => false,

@@ -140,12 +140,16 @@ class LocationController
 	public function index(Request $request, Response $response): Response
 	{
 		$queryParams = $request->getQueryParams();
-		$search = $queryParams['search'] ?? array();
-		$order = (array)($queryParams['order'] ?? array());
-		$draw = (int)($queryParams['draw'] ?? 0) + 1;
-		$columns = (array)($queryParams['columns'] ?? array());
-		$lookupTenant = (bool)($queryParams['lookup_tenant'] ?? false);
-		$export = !empty($queryParams['export']);
+
+		$search	 = $queryParams['search'] ?? \Sanitizer::get_var('search');
+		$order	 = $queryParams['order'] ?? \Sanitizer::get_var('order');
+		$draw	 = (int)($queryParams['draw'] ?? \Sanitizer::get_var('draw', 'int'));
+		$columns = (array)($queryParams['columns'] ?? \Sanitizer::get_var('columns'));
+		$start = (int)($queryParams['start'] ?? \Sanitizer::get_var('start', 'int', 'REQUEST', 0));
+		$export = !empty($queryParams['export']) || \Sanitizer::get_var('export', 'bool', 'REQUEST', false);
+		$lookupTenant = (bool)($queryParams['lookup_tenant'] ?? \Sanitizer::get_var('lookup_tenant', 'bool', 'REQUEST', false));
+		$allrows = $export || ((int)($queryParams['length'] ?? \Sanitizer::get_var('length', 'int', 'REQUEST', 0)) === -1);
+
 		$orderColumnIndex = (int)($order[0]['column'] ?? -1);
 		$orderField = ($orderColumnIndex >= 0 && isset($columns[$orderColumnIndex]['data']))
 			? (string)$columns[$orderColumnIndex]['data']
@@ -162,13 +166,13 @@ class LocationController
 		}
 
 		$params = array(
-			'start' => (int)($queryParams['start'] ?? 0),
+			'start' => $start,
 			'results' => (int)($queryParams['length'] ?? 0),
 			'query' => $search['value'] ?? '',
 			'order' => $orderField,
 			'sort' => $orderDir,
 			'dir' => $orderDir,
-			'allrows' => ((int)($queryParams['length'] ?? 0) == -1) || $export,
+			'allrows' => $allrows,
 			'lookup_tenant' => $lookupTenant,
 			'dry_run' => false,
 			'column_search' => $columnSearch,
@@ -183,7 +187,7 @@ class LocationController
 		return $this->jsonResponse($response, array(
 			'data' => $values,
 			'recordsTotal' => $this->bo()->total_records,
-			'recordsFiltered' => count($values),
+			'recordsFiltered' => $this->bo()->total_records,
 			'draw' => $draw,
 		));
 	}
@@ -310,27 +314,32 @@ class LocationController
 	public function getDocuments(Request $request, Response $response): Response
 	{
 		$queryParams = $request->getQueryParams();
-		$search = $queryParams['search'] ?? array();
-		$order = (array)($queryParams['order'] ?? array());
-		$draw = (int)($queryParams['draw'] ?? 0) +1;
-		$columns = (array)($queryParams['columns'] ?? array());
-		$docType = (int)($queryParams['doc_type'] ?? 0);
-		$locationCode = (string)($queryParams['location_code'] ?? '');
-		$export = !empty($queryParams['export']);
+		$bodyParams = $request->getParsedBody();
+		$bodyParams = is_array($bodyParams) ? $bodyParams : array();
+		$input = array_merge($queryParams, $bodyParams);
+
+		$search = $input['search'] ?? array();
+		$order = (array)($input['order'] ?? array());
+		$draw = (int)($input['draw'] ?? 0) +1;
+		$columns = (array)($input['columns'] ?? array());
+		$docType = (int)($input['doc_type'] ?? 0);
+		$locationCode = (string)($input['location_code'] ?? '');
+		$export = !empty($input['export']);
 		$orderColumnIndex = (int)($order[0]['column'] ?? -1);
 		$orderField = ($orderColumnIndex >= 0 && isset($columns[$orderColumnIndex]['data']))
 			? (string)$columns[$orderColumnIndex]['data']
 			: '';
 		$orderDir = strtolower((string)($order[0]['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
+		$searchValue = is_array($search) ? ($search['value'] ?? '') : (string)$search;
 
 		$params = array(
-			'start' => (int)($queryParams['start'] ?? 0),
-			'results' => (int)($queryParams['length'] ?? 0),
-			'query' => $search['value'] ?? '',
+			'start' => (int)($input['start'] ?? 0),
+			'results' => (int)($input['length'] ?? 0),
+			'query' => $searchValue,
 			'order' => $orderField,
 			'sort' => $orderDir,
 			'dir' => $orderDir,
-			'allrows' => ((int)($queryParams['length'] ?? 0) == -1) || $export,
+			'allrows' => ((int)($input['length'] ?? 0) == -1) || $export,
 			'doc_type' => $docType,
 			'location_code' => $locationCode,
 		);
@@ -405,7 +414,7 @@ class LocationController
 		return $this->jsonResponse($response, array(
 			'data' => $values,
 			'recordsTotal' => $recordsTotal,
-			'recordsFiltered'=> count($values),
+			'recordsFiltered'=> $recordsTotal,
 			'draw' => $draw,
 		));
 	}
@@ -453,27 +462,32 @@ class LocationController
 	public function queryRole(Request $request, Response $response): Response
 	{
 		$queryParams = $request->getQueryParams();
-		$lookupTenant = (bool)($queryParams['lookup_tenant'] ?? false);
-		$userId = (int)($queryParams['user_id'] ?? $this->currentAccountId());
-		$roleId = (int)($queryParams['role_id'] ?? 0);
-		$search = $queryParams['search'] ?? array();
-		$order = (array)($queryParams['order'] ?? array());
-		$draw = (int)($queryParams['draw'] ?? 0) +1;
-		$columns = (array)($queryParams['columns'] ?? array());
+		$bodyParams = $request->getParsedBody();
+		$bodyParams = is_array($bodyParams) ? $bodyParams : array();
+		$input = array_merge($queryParams, $bodyParams);
+
+		$lookupTenant = (bool)($input['lookup_tenant'] ?? false);
+		$userId = (int)($input['user_id'] ?? $this->currentAccountId());
+		$roleId = (int)($input['role_id'] ?? 0);
+		$search = $input['search'] ?? array();
+		$order = (array)($input['order'] ?? array());
+		$draw = (int)($input['draw'] ?? 0) +1;
+		$columns = (array)($input['columns'] ?? array());
 		$orderColumnIndex = (int)($order[0]['column'] ?? -1);
 		$orderField = ($orderColumnIndex >= 0 && isset($columns[$orderColumnIndex]['data']))
 			? (string)$columns[$orderColumnIndex]['data']
 			: '';
 		$orderDir = strtolower((string)($order[0]['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
+		$searchValue = is_array($search) ? ($search['value'] ?? '') : (string)$search;
 
 		$params = array(
-			'start' => (int)($queryParams['start'] ?? 0),
-			'results' => (int)($queryParams['length'] ?? 0),
-			'query' => $search['value'] ?? '',
+			'start' => (int)($input['start'] ?? 0),
+			'results' => (int)($input['length'] ?? 0),
+			'query' => $searchValue,
 			'order' => $orderField,
 			'sort' => $orderDir,
 			'dir' => $orderDir,
-			'allrows' => ((int)($queryParams['length'] ?? 0) == -1),
+			'allrows' => ((int)($input['length'] ?? 0) == -1),
 			'lookup_tenant' => $lookupTenant,
 			'user_id' => $userId,
 			'role_id' => $roleId,
@@ -483,7 +497,7 @@ class LocationController
 		return $this->jsonResponse($response, array(
 			'data' => $values,
 			'recordsTotal' => $this->bo()->total_records,
-			'recordsFiltered' => count($values),
+			'recordsFiltered' => $this->bo()->total_records,
 			'draw' => $draw,
 		));
 	}

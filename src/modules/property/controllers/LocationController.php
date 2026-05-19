@@ -10,11 +10,9 @@ use App\modules\property\helpers\LocationFormHelper;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\security\Acl;
-use function include_class;
 
 class LocationController
 {
-	private ?\property_uilocation $uiLocation = null;
 	private LocationFormHelper $formHelper;
 	private const ACL_ADD = 'acl_add';
 	private const ACL_EDIT = 'acl_edit';
@@ -26,10 +24,6 @@ class LocationController
 
 	public function __construct(ContainerInterface $container)
 	{
-		if (defined('SRC_ROOT_PATH') && !function_exists('include_class'))
-		{
-			require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
-		}
 		// Initialize form helper for write operations
 		$this->formHelper = new LocationFormHelper();
 	}
@@ -108,17 +102,6 @@ class LocationController
 		$_REQUEST = array_merge($_REQUEST, $queryParams, $bodyParams, $extra);
 	}
 
-	private function ui(): \property_uilocation
-	{
-		if ($this->uiLocation === null)
-		{
-			include_class('property', 'uilocation');
-			$this->uiLocation = CreateObject('property.uilocation');
-		}
-
-		return $this->uiLocation;
-	}
-
 	private function jsonResponse(Response $response, mixed $payload, int $statusCode = 200): Response
 	{
 		try
@@ -169,20 +152,57 @@ class LocationController
 
 	public function index(Request $request, Response $response): Response
 	{
-		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->index());
+		$search = $request->getQueryParams()['search'] ?? array();
+		$order = (array)($request->getQueryParams()['order'] ?? array());
+		$draw = (int)($request->getQueryParams()['draw'] ?? 0) + 1;
+		$columns = (array)($request->getQueryParams()['columns'] ?? array());
+		$lookupTenant = (bool)($request->getQueryParams()['lookup_tenant'] ?? false);
+		$export = !empty($request->getQueryParams()['export']);
+
+		$columnSearch = array();
+		foreach ($columns as $column)
+		{
+			if (!empty($column['search']['value']) && !empty($column['data']))
+			{
+				$columnSearch[$column['data']] = $column['search']['value'];
+			}
+		}
+
+		$params = array(
+			'start' => (int)($request->getQueryParams()['start'] ?? 0),
+			'results' => (int)($request->getQueryParams()['length'] ?? 0),
+			'query' => $search['value'] ?? '',
+			'order' => $columns[$order[0]['column']]['data'] ?? '',
+			'sort' => $order[0]['dir'] ?? 'ASC',
+			'dir' => $order[0]['dir'] ?? 'ASC',
+			'allrows' => ((int)($request->getQueryParams()['length'] ?? 0) == -1) || $export,
+			'lookup_tenant' => $lookupTenant,
+			'dry_run' => false,
+			'column_search' => $columnSearch,
+		);
+
+		$values = $this->bo()->read($params);
+		if ($export)
+		{
+			return $this->jsonResponse($response, $values);
+		}
+
+		return $this->jsonResponse($response, array(
+			'data' => $values,
+			'recordsTotal' => $this->bo()->total_records,
+			'recordsFiltered' => count($values),
+			'draw' => $draw,
+		));
 	}
 
 	public function summary(Request $request, Response $response): Response
 	{
-		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->summary());
+		return $this->querySummary($request, $response);
 	}
 
 	public function responsibilityRole(Request $request, Response $response): Response
 	{
-		$this->hydrateRequestGlobals($request);
-		return $this->jsonResponse($response, $this->ui()->responsiblility_role());
+		return $this->queryRole($request, $response);
 	}
 
 	public function responsibilityRoleSave(Request $request, Response $response): Response
@@ -637,8 +657,20 @@ class LocationController
 			return $this->forbiddenResponse($response, 'No delete access for location');
 		}
 
-		$this->hydrateRequestGlobals($request, array('location_code' => $args['location_code']));
-		return $this->jsonResponse($response, $this->ui()->delete());
+		$locationCode = (string)($args['location_code'] ?? '');
+		if ($locationCode === '')
+		{
+			return $this->jsonResponse($response, array(
+				'status' => 'error',
+				'message' => 'Missing location code',
+			), 400);
+		}
+
+		$this->bo()->delete($locationCode);
+		return $this->jsonResponse($response, array(
+			'status' => 'success',
+			'message' => "location_code {$locationCode} " . lang('has been deleted'),
+		));
 	}
 
 	public function deleteByLocationCode(Request $request, Response $response): Response
@@ -657,8 +689,18 @@ class LocationController
 				$locationCode = (string)($parsedBody['location_code'] ?? '');
 			}
 		}
+		if ($locationCode === '')
+		{
+			return $this->jsonResponse($response, array(
+				'status' => 'error',
+				'message' => 'Missing location code',
+			), 400);
+		}
 
-		$this->hydrateRequestGlobals($request, array('location_code' => $locationCode));
-		return $this->jsonResponse($response, $this->ui()->delete());
+		$this->bo()->delete($locationCode);
+		return $this->jsonResponse($response, array(
+			'status' => 'success',
+			'message' => "location_code {$locationCode} " . lang('has been deleted'),
+		));
 	}
 }

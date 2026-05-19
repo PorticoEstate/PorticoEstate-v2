@@ -107,6 +107,7 @@ $app->group('/property/location', function (RouteCollectorProxy $group) use ($co
 	$group->post('/component/add-control', [$controller, 'addControl']);
 	$group->post('/component/update-control-serie', [$controller, 'updateControlSerie']);
 	$group->post('/edit-field', [$controller, 'editField']);
+	$group->get('/download', [$controller, 'download']);
 	$group->map(['GET', 'POST'], '/delete', [$controller, 'deleteByLocationCode']);
 	$group->delete('/{location_code:[^/]+}', [$controller, 'delete']);
 })

@@ -721,4 +721,86 @@ class LocationController
 			'message' => "location_code {$locationCode} " . lang('has been deleted'),
 		));
 	}
+
+	/**
+	 * Export location data as a spreadsheet download.
+	 *
+	 * Replaces uilocation::download(). Calls BO methods directly (not query())
+	 * so that bocommon->download() receives the expected flat row array.
+	 *
+	 * @param Request $request
+	 * @param Response $response
+	 * @param array $args
+	 */
+	public function download(Request $request, Response $response, array $args): void
+	{
+		$bo = $this->bo();
+
+		if (!Acl::getInstance()->check($bo->acl_location, ACL_READ, 'property'))
+		{
+			http_response_code(403);
+			echo json_encode(array('message' => 'No read access'));
+			exit;
+		}
+
+		$queryParams  = $request->getQueryParams();
+		$downloadType = (string)($queryParams['download_type'] ?? '');
+
+		switch ($downloadType)
+		{
+			case 'summary':
+				$list   = $bo->read_summary();
+				$uicols = $bo->uicols;
+				break;
+
+			case 'responsiblility_role':
+				$userId = isset($queryParams['user_id']) ? (int)$queryParams['user_id'] : null;
+				$roleId = isset($queryParams['role_id']) ? (int)$queryParams['role_id'] : null;
+				$typeId = isset($queryParams['type_id']) ? (int)$queryParams['type_id'] : null;
+				$search = $queryParams['search'] ?? '';
+
+				$list = $bo->get_responsible(array(
+					'user_id'  => $userId,
+					'role_id'  => $roleId,
+					'type_id'  => $typeId,
+					'query'    => is_array($search) ? ($search['value'] ?? '') : $search,
+					'allrows'  => true,
+				));
+
+				foreach ($list as &$entry)
+				{
+					$entry['role_id'] = $roleId;
+				}
+				unset($entry);
+
+				$uicols = $bo->uicols;
+
+				$uicols['name'][]       = 'role_id';
+				$uicols['descr'][]      = 'role_id';
+				$uicols['input_type'][] = '';
+
+				$uicols['name'][]       = 'responsible_contact';
+				$uicols['descr'][]      = lang('responsible');
+				$uicols['input_type'][] = '';
+
+				$uicols['name'][]       = 'contact_id';
+				$uicols['descr'][]      = 'contact_id';
+				$uicols['input_type'][] = '';
+				break;
+
+			default:
+				$list   = $bo->read(array('allrows' => true));
+				$uicols = $bo->uicols;
+				break;
+		}
+
+		$bocommon = new \App\modules\property\helpers\BoCommon();
+		$bocommon->download(
+			(array)$list,
+			$uicols['name'],
+			$uicols['descr'],
+			$uicols['input_type'] ?? array()
+		);
+		exit;
+	}
 }

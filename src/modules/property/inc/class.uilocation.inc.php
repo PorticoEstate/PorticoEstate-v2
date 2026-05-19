@@ -68,7 +68,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		'get_history_data'			 => false,
 		'get_documents'				 => false,
 		'get_accounts'				 => false,
-		'download'					 => true,
+		'download'					 => false,
 		'index'						 => true,
 		'view'						 => true,
 		'edit'						 => true,
@@ -1313,8 +1313,7 @@ JS;
 				)),
 				"column_search"		 => array('onclick' => "init_column_search();"),
 				"columns"		 => array('onclick' => "JqueryPortico.openPopup({menuaction:'property.uilocation.columns', type_id:'{$type_id}',parent:'{$this->location_code}'}, {closeAction:'reload'})"),
-				'download'		 => self::link(array(
-					'menuaction'	 => 'property.uilocation.download',
+				'download'		 => phpgw::link('/property/location/download', array(
 					'type_id'		 => $type_id,
 					'lookup'		 => $lookup,
 					'lookup_tenant'	 => $lookup_tenant,
@@ -1775,14 +1774,13 @@ JS;
 						'entity_id'			 => $this->entity_id
 					)),
 					'ColumnDefs' => $entity_def,
-					'download'	 => array(
-						'menuaction'	 => 'property.uilocation.download',
+					'download'	 => phpgw::link('/property/location/download', array(
 						'type_id'		 => $type_id,
 						'role_id'		 => $role_id,
 						'export'		 => true,
 						'allrows'		 => true,
 						'download_type'	 => 'responsiblility_role'
-					),
+					)),
 					'allrows'	 => true,
 				);
 
@@ -1829,8 +1827,7 @@ JS;
 					'location_code'		 => $this->location_code,
 					'entity_id'			 => $this->entity_id
 				)),
-				'download'		 => self::link(array(
-					'menuaction'	 => 'property.uilocation.download',
+				'download'		 => phpgw::link('/property/location/download', array(
 					'type_id'		 => $type_id,
 					'role_id'		 => $role_id,
 					'export'		 => true,
@@ -3523,8 +3520,7 @@ JS;
 					'district_id'		 => $this->district_id,
 					'part_of_town_id'	 => $this->part_of_town_id
 				)),
-				'download'			 => self::link(array(
-					'menuaction'	 => 'property.uilocation.download',
+				'download'			 => phpgw::link('/property/location/download', array(
 					'summary'		 => true,
 					'export'		 => true,
 					'allrows'		 => true,

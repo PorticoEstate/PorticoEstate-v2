@@ -184,6 +184,30 @@ class LocationController
 		], 403);
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location",
+	 *     summary="List locations with pagination and search",
+	 *     description="Returns paginated list of locations with support for DataTables server-side processing and search/filter",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="search", in="query", required=false, description="Search term", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="order", in="query", required=false, description="Column ordering (JSON)", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="draw", in="query", required=false, description="DataTables draw counter", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="start", in="query", required=false, description="Pagination start", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="length", in="query", required=false, description="Pagination length", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="export", in="query", required=false, description="Export mode", @OA\Schema(type="boolean")),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="List of locations",
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="data", type="array"),
+	 *             @OA\Property(property="recordsTotal", type="integer"),
+	 *             @OA\Property(property="recordsFiltered", type="integer"),
+	 *             @OA\Property(property="draw", type="integer")
+	 *         )
+	 *     )
+	 * )
+	 */
 	public function index(Request $request, Response $response): Response
 	{
 		$queryParams = $request->getQueryParams();
@@ -239,11 +263,33 @@ class LocationController
 		));
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/summary",
+	 *     summary="Get location summary data",
+	 *     description="Delegates to querySummary for summary report generation",
+	 *     tags={"Location"},
+	 *     @OA\Response(response=200, description="Summary data")
+	 * )
+	 */
 	public function summary(Request $request, Response $response): Response
 	{
 		return $this->querySummary($request, $response);
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/responsibility-role",
+	 *     summary="Get responsibility role configuration",
+	 *     description="Returns configuration for responsibility and role assignments with DataTables metadata",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="head", in="query", required=false, description="Get header metadata", @OA\Schema(type="boolean")),
+	 *     @OA\Parameter(name="type_id", in="query", required=false, description="Location type ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="user_id", in="query", required=false, description="User ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="role_id", in="query", required=false, description="Role ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Role responsibility data")
+	 * )
+	 */
 	public function responsibilityRole(Request $request, Response $response): Response
 	{
 		$queryParams = $request->getQueryParams();
@@ -419,6 +465,23 @@ class LocationController
 		return $uicols;
 	}
 
+	/**
+	 * @OA\Post(
+	 *     path="/property/location/responsibility-role/save",
+	 *     summary="Save responsibility role assignments",
+	 *     description="Update responsibility and role assignments for locations",
+	 *     tags={"Location"},
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="assign_orig", type="array"),
+	 *             @OA\Property(property="assignments", type="array")
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=200, description="Save result"),
+	 *     @OA\Response(response=403, description="Forbidden - no edit access")
+	 * )
+	 */
 	public function responsibilityRoleSave(Request $request, Response $response): Response
 	{
 		$queryParams = $request->getQueryParams();
@@ -454,6 +517,22 @@ class LocationController
 		return $this->jsonResponse($response, $result);
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/part-of-town",
+	 *     summary="Get parts of town for district",
+	 *     description="Returns list of parts of town filtered by district ID",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="district_id", in="query", required=false, description="District ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="part_of_town_id", in="query", required=false, description="Part of town ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Parts of town list",
+	 *         @OA\JsonContent(type="array", @OA\Items(type="object",
+	 *             @OA\Property(property="id", type="string"),
+	 *             @OA\Property(property="name", type="string")
+	 *         ))
+	 *     )
+	 * )
+	 */
 	public function getPartOfTown(Request $request, Response $response): Response
 	{
 		$districtId = (int)($request->getQueryParams()['district_id'] ?? 0);
@@ -464,6 +543,18 @@ class LocationController
 		return $this->jsonResponse($response, $values);
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/accounts",
+	 *     summary="Get available accounts",
+	 *     description="Returns list of accounts, optionally filtered by account type",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="account_type", in="query", required=false, description="Account type filter", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="List of accounts",
+	 *         @OA\JsonContent(type="array", @OA\Items(type="object"))
+	 *     )
+	 * )
+	 */
 	public function getAccounts(Request $request, Response $response): Response
 	{
 		$accountType = (string)($request->getQueryParams()['account_type'] ?? '');
@@ -476,6 +567,24 @@ class LocationController
 		return $this->jsonResponse($response, $values);
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/history",
+	 *     summary="Get location change history",
+	 *     description="Returns DataTables-formatted history of changes to a location",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="location_code", in="query", required=false, description="Location code", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="draw", in="query", required=false, description="DataTables draw counter", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="History data",
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="data", type="array"),
+	 *             @OA\Property(property="draw", type="integer"),
+	 *             @OA\Property(property="recordsTotal", type="integer"),
+	 *             @OA\Property(property="recordsFiltered", type="integer")
+	 *         )
+	 *     )
+	 * )
+	 */
 	public function getHistoryData(Request $request, Response $response): Response
 	{
 		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
@@ -495,6 +604,25 @@ class LocationController
 		));
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/documents",
+	 *     summary="Get location documents",
+	 *     description="Returns DataTables-formatted list of documents associated with a location",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="location_code", in="query", required=false, description="Location code", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="doc_type", in="query", required=false, description="Document type ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="draw", in="query", required=false, description="DataTables draw", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Documents list",
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="data", type="array"),
+	 *             @OA\Property(property="recordsTotal", type="integer"),
+	 *             @OA\Property(property="recordsFiltered", type="integer"),
+	 *             @OA\Property(property="draw", type="integer")
+	 *         )
+	 *     )
+	 * )
+	 */
 	public function getDocuments(Request $request, Response $response): Response
 	{
 		$queryParams = $request->getQueryParams();
@@ -611,6 +739,22 @@ class LocationController
 		));
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/location-data",
+	 *     summary="Get complete location data",
+	 *     description="Returns complete location record including part of town information",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="location_code", in="query", required=true, description="Location code", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="Location data",
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="location_code", type="string"),
+	 *             @OA\Property(property="loc1", type="string"),
+	 *             @OA\Property(property="part_of_town_name", type="string")
+	 *         )
+	 *     )
+	 * )
+	 */
 	public function getLocationData(Request $request, Response $response): Response
 	{
 		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
@@ -628,6 +772,20 @@ class LocationController
 		return $this->jsonResponse($response, $values);
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/delivery-address",
+	 *     summary="Get delivery address",
+	 *     description="Returns formatted delivery address for a location",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="loc1", in="query", required=true, description="Location identifier (loc1)", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="Delivery address",
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="delivery_address", type="string")
+	 *         )
+	 *     )
+	 * )
+	 */
 	public function getDeliveryAddress(Request $request, Response $response): Response
 	{
 		$loc1 = (string)($request->getQueryParams()['loc1'] ?? '');
@@ -636,6 +794,20 @@ class LocationController
 		));
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/location-exception",
+	 *     summary="Get location exception data",
+	 *     description="Returns location exception records with formatted text (URLs as links)",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="location_code", in="query", required=true, description="Location code", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="Location exceptions",
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="location_exception", type="array", @OA\Items(type="object"))
+	 *         )
+	 *     )
+	 * )
+	 */
 	public function getLocationException(Request $request, Response $response): Response
 	{
 		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
@@ -651,6 +823,19 @@ class LocationController
 		));
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/responsibility-role/query",
+	 *     summary="Query responsibility roles",
+	 *     description="Fetch detailed responsibility role data with filtering and sorting",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="user_id", in="query", required=false, description="User ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="role_id", in="query", required=false, description="Role ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="type_id", in="query", required=false, description="Location type", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="lookup_tenant", in="query", required=false, description="Lookup tenant", @OA\Schema(type="boolean")),
+	 *     @OA\Response(response=200, description="Query results")
+	 * )
+	 */
 	public function queryRole(Request $request, Response $response): Response
 	{
 		$queryParams = $request->getQueryParams();
@@ -694,6 +879,17 @@ class LocationController
 		));
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/summary/query",
+	 *     summary="Query location summary data",
+	 *     description="Fetch summary report with specified parameters and filtering",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="search", in="query", required=false, description="Search filter", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="export", in="query", required=false, description="Export raw data", @OA\Schema(type="boolean")),
+	 *     @OA\Response(response=200, description="Summary query results")
+	 * )
+	 */
 	public function querySummary(Request $request, Response $response): Response
 	{
 		$values = $this->bo()->read_summary();
@@ -709,6 +905,18 @@ class LocationController
 		));
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/component/controls",
+	 *     summary="Get controls at location component",
+	 *     description="Returns list of controls associated with a location component",
+	 *     tags={"Location\"},
+	 *     @OA\Parameter(name="location_id", in="query", required=true, description="Location ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="query", required=false, description="Component ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="skip_json", in="query", required=false, description="Skip JSON encoding", @OA\Schema(type="boolean")),
+	 *     @OA\Response(response=200, description="Controls list")
+	 * )
+	 */
 	public function getControlsAtComponent(Request $request, Response $response): Response
 	{
 		$locationId = (int)($request->getQueryParams()['location_id'] ?? 0);
@@ -717,6 +925,18 @@ class LocationController
 		return $this->jsonResponse($response, $this->controllerHelper()->get_controls_at_component($locationId, $id, $skipJson));
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/component/cases",
+	 *     summary="Get cases at location component",
+	 *     description="Returns list of cases for a location component",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="location_id", in="query", required=true, description="Location ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="query", required=false, description="Component ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="year", in="query", required=false, description="Filter by year", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Cases list")
+	 * )
+	 */
 	public function getCases(Request $request, Response $response): Response
 	{
 		$locationId = (int)($request->getQueryParams()['location_id'] ?? 0);
@@ -725,6 +945,18 @@ class LocationController
 		return $this->jsonResponse($response, $this->controllerHelper()->get_cases($locationId, $id, $year));
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/component/checklists",
+	 *     summary="Get checklists at location component",
+	 *     description="Returns list of checklists for a location component",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="location_id", in="query", required=true, description="Location ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="query", required=false, description="Component ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="year", in="query", required=false, description="Filter by year", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Checklists list")
+	 * )
+	 */
 	public function getChecklists(Request $request, Response $response): Response
 	{
 		$locationId = (int)($request->getQueryParams()['location_id'] ?? 0);
@@ -733,6 +965,17 @@ class LocationController
 		return $this->jsonResponse($response, $this->controllerHelper()->get_checklists($locationId, $id, $year));
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/component/cases-for-checklist",
+	 *     summary="Get cases for a checklist",
+	 *     description="Returns DataTables-formatted cases for a specific checklist",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="check_list_id", in="query", required=false, description="Checklist ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="draw", in="query", required=false, description="DataTables draw counter", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Cases for checklist")
+	 * )
+	 */
 	public function getCasesForChecklist(Request $request, Response $response): Response
 	{
 		$queryParams = $request->getQueryParams();
@@ -747,6 +990,17 @@ class LocationController
 		);
 	}
 
+	/**
+	 * @OA\Post(
+	 *     path="/property/location/edit-field",
+	 *     summary="Edit a single location field",
+	 *     description="Updates a specific field on a location record via inline editing",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="type_id", in="query", required=false, description="Location type ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="field_name", in="query", required=true, description="Field name to edit", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="OK on success, ERROR on failure")
+	 * )
+	 */
 	public function editField(Request $request, Response $response): Response
 	{
 		$typeId = (int)($request->getQueryParams()['type_id'] ?? 0);
@@ -789,13 +1043,27 @@ class LocationController
 	}
 
 	/**
-	 * Create new location with explicit form helper orchestration
-	 * 
-	 * Hybrid approach: Explicit validation/persistence instead of global state hydration
-	 * Supports: location creation with field validation and clear error handling
-	 * 
-	 * POST /property/location/add
-	 * Body: {loc_code, loc1, loc2, ..., location_type}
+	 * @OA\Post(
+	 *     path="/property/location/add",
+	 *     summary="Create a new location",
+	 *     description="Creates a new location record with provided field values and validation",
+	 *     tags={"Location"},
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="location_code", type="string", example="LOC-00001"),
+	 *             @OA\Property(property="loc1", type="string", example="Building A"),
+	 *             @OA\Property(property="location_type", type="string", example="Office")
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=200, description="Location created",
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="status", type="string"),
+	 *             @OA\Property(property="location_code", type="string")
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=403, description="Forbidden")
+	 * )
 	 */
 	public function add(Request $request, Response $response): Response
 	{
@@ -817,13 +1085,23 @@ class LocationController
 	}
 
 	/**
-	 * Save/update location with explicit form helper orchestration
-	 * 
-	 * Hybrid approach: Explicit validation/persistence instead of global state hydration
-	 * Supports: location updates with field validation, error recovery, and clear responses
-	 * 
-	 * PUT /property/location/:location_code
-	 * Body: {loc_code, loc1, loc2, ..., location_type}
+	 * @OA\Put(
+	 *     path="/property/location/{location_code}",
+	 *     summary="Update an existing location",
+	 *     description="Updates a location record, supporting field changes and renames",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="location_code", in="path", required=true, description="Current location code", @OA\Schema(type="string")),
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="location_code", type="string", example="LOC-67890"),
+	 *             @OA\Property(property="loc1", type="string", example="Building A")
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=200, description="Location updated"),
+	 *     @OA\Response(response=400, description="Invalid location code"),
+	 *     @OA\Response(response=403, description="Forbidden")
+	 * )
 	 */
 	public function save(Request $request, Response $response, array $args): Response
 	{
@@ -860,6 +1138,16 @@ class LocationController
 		return $this->jsonResponse($response, $responseData['payload'], $statusCode);
 	}
 
+	/**
+	 * @OA\Post(
+	 *     path="/property/location/component/add-control",
+	 *     summary="Add a control at a location component",
+	 *     description="Adds a control record to a location component",
+	 *     tags={"Location"},
+	 *     @OA\RequestBody(required=true),
+	 *     @OA\Response(response=200, description="Control added")
+	 * )
+	 */
 	public function addControl(Request $request, Response $response): Response
 	{
 		$queryParams = $request->getQueryParams();
@@ -869,6 +1157,16 @@ class LocationController
 		return $this->jsonResponse($response, $this->controllerHelper()->add_control($payload));
 	}
 
+	/**
+	 * @OA\Post(
+	 *     path="/property/location/component/update-control-serie",
+	 *     summary="Update control series",
+	 *     description="Updates a series of control records",
+	 *     tags={"Location"},
+	 *     @OA\RequestBody(required=true),
+	 *     @OA\Response(response=200, description="Controls updated")
+	 * )
+	 */
 	public function updateControlSerie(Request $request, Response $response): Response
 	{
 		$queryParams = $request->getQueryParams();
@@ -878,6 +1176,23 @@ class LocationController
 		return $this->jsonResponse($response, $this->controllerHelper()->update_control_serie($payload));
 	}
 
+	/**
+	 * @OA\Delete(
+	 *     path="/property/location/{location_code}",
+	 *     summary="Delete a location",
+	 *     description="Deletes a location record by its code",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="location_code", in="path", required=true, description="Location code to delete", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="Location deleted",
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="status", type="string", enum={"success"}),
+	 *             @OA\Property(property="message", type="string")
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=400, description="Missing location code"),
+	 *     @OA\Response(response=403, description="Forbidden - no delete access")
+	 * )
+	 */
 	public function delete(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->hasAcl(self::ACL_DELETE))
@@ -901,6 +1216,24 @@ class LocationController
 		));
 	}
 
+	/**
+	 * @OA\Delete(
+	 *     path="/property/location/delete",
+	 *     summary="Delete a location via query/body parameter",
+	 *     description="Deletes a location record using location_code from query or request body",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="location_code", in="query", required=false, description="Location code to delete", @OA\Schema(type="string")),
+	 *     @OA\RequestBody(required=false),
+	 *     @OA\Response(response=200, description="Location deleted",
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="status", type="string", enum={"success"}),
+	 *             @OA\Property(property="message", type="string")
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=400, description="Missing location code"),
+	 *     @OA\Response(response=403, description="Forbidden - no delete access")
+	 * )
+	 */
 	public function deleteByLocationCode(Request $request, Response $response): Response
 	{
 		if (!$this->hasAcl(self::ACL_DELETE))
@@ -930,14 +1263,20 @@ class LocationController
 	}
 
 	/**
-	 * Export location data as a spreadsheet download.
-	 *
-	 * Replaces uilocation::download(). Calls BO methods directly (not query())
-	 * so that bocommon->download() receives the expected flat row array.
-	 *
-	 * @param Request $request
-	 * @param Response $response
-	 * @param array $args
+	 * @OA\Get(
+	 *     path="/property/location/download",
+	 *     summary="Download location data as spreadsheet",
+	 *     description="Exports location data in spreadsheet format (XLS, CSV, etc.)",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="download_type", in="query", required=false, description="Type of download (default/summary/responsibility_role)", @OA\Schema(type="string", enum={"", "summary", "responsibility_role"})),
+	 *     @OA\Parameter(name="user_id", in="query", required=false, description="User ID (for responsibility_role)", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="role_id", in="query", required=false, description="Role ID (for responsibility_role)", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="type_id", in="query", required=false, description="Location type (for responsibility_role)", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="File download initiated",
+	 *         @OA\MediaType(mediaType="application/vnd.ms-excel")
+	 *     ),
+	 *     @OA\Response(response=403, description="Forbidden - no read access")
+	 * )
 	 */
 	public function download(Request $request, Response $response, array $args): Response
 	{

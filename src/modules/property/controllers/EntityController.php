@@ -1164,7 +1164,17 @@ class EntityController
 	}
 
 	/**
-	 * Render the multi-upload popup shell for an entity item.
+	 * @OA\Get(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}/multi-upload",
+	 *     summary="Build multi-upload interface",
+	 *     description="Renders HTML for the multi-file upload popup interface",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Item ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="HTML form for file upload")
+	 * )
 	 */
 	public function buildMultiUploadFile(Request $request, Response $response, array $args): Response
 	{
@@ -1209,7 +1219,18 @@ class EntityController
 	}
 
 	/**
-	 * Handle multi-upload file operations (list/add/delete) for an entity item.
+	 * @OA\Post(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}/multi-upload",
+	 *     summary="Handle multi-upload file operations",
+	 *     description="Processes file uploads, deletions, and listing for multi-upload interface (GET/POST/PUT/PATCH/DELETE/HEAD/OPTIONS)",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Item ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Upload operation result"),
+	 *     @OA\Response(response=403, description="Forbidden - no edit access")
+	 * )
 	 */
 	public function handleMultiUploadFile(Request $request, Response $response, array $args): Response
 	{
@@ -1309,7 +1330,18 @@ class EntityController
 	}
 
 	/**
-	 * Render legacy add-inventory popup behind a REST route.
+	 * @OA\Get(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory/add",
+	 *     summary="Show add inventory popup",
+	 *     description="Renders the add inventory form popup for an entity item",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Item ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="location_id", in="query", required=true, description="Location ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="HTML form or JSON response")
+	 * )
 	 */
 	public function addInventoryPopup(Request $request, Response $response, array $args): Response
 	{
@@ -1335,7 +1367,19 @@ class EntityController
 	}
 
 	/**
-	 * Render legacy edit-inventory popup behind a REST route.
+	 * @OA\Get(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory/{inventory_id}/edit",
+	 *     summary="Show edit inventory popup",
+	 *     description="Renders the edit inventory form popup for a specific inventory record",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Item ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="inventory_id", in="path", required=true, description="Inventory record ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="location_id", in="query", required=true, description="Location ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="HTML form or JSON response")
+	 * )
 	 */
 	public function editInventoryPopup(Request $request, Response $response, array $args): Response
 	{
@@ -1362,7 +1406,19 @@ class EntityController
 	}
 
 	/**
-	 * Render legacy inventory-calendar popup behind a REST route.
+	 * @OA\Get(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory/{inventory_id}/calendar",
+	 *     summary="Show inventory calendar popup",
+	 *     description="Renders the inventory calendar interface for a specific inventory record",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Item ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="inventory_id", in="path", required=true, description="Inventory record ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="location_id", in="query", required=true, description="Location ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="HTML calendar interface")
+	 * )
 	 */
 	public function inventoryCalendarPopup(Request $request, Response $response, array $args): Response
 	{
@@ -1389,7 +1445,18 @@ class EntityController
 	}
 
 	/**
-	 * Render legacy assigned-history popup behind a REST route.
+	 * @OA\Get(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory/assigned-history",
+	 *     summary="Show assigned history popup",
+	 *     description="Renders the assigned history interface for a control series",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Item ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="serie_id", in="query", required=true, description="Control series ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="HTML history interface")
+	 * )
 	 */
 	public function assignedHistoryPopup(Request $request, Response $response, array $args): Response
 	{
@@ -1531,7 +1598,8 @@ class EntityController
 	 *
 	 * @OA\Get(
 	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/download",
-		$draw       = (int)($params['draw'] ?? 1);
+	 *     summary="Download entity list as spreadsheet",
+	 *     description="Exports the entity list in CSV, Excel, or ODS format",
 	 *     tags={"Entity"},
 	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
 	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),

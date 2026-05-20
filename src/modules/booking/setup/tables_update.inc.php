@@ -8609,4 +8609,25 @@ function booking_upgrade0_2_128($oProc)
 		$currentver = '0.2.129';
 		return $currentver;
 	}
+}
+
+$test[] = '0.2.129';
+function booking_upgrade0_2_129($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	if (!booking_column_exists($oProc, 'bb_hospitality_order', 'billed'))
+	{
+		$oProc->AddColumn(
+			'bb_hospitality_order',
+			'billed',
+			array('type' => 'int', 'precision' => 4, 'nullable' => False, 'default' => 0)
+		);
+	}
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.130';
+		return $currentver;
+	}
 }	

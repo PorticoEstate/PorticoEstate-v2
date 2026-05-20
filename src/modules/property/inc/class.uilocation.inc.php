@@ -76,10 +76,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		'columns'					 => true,
 		'update_location'			 => true,
 		'responsiblility_role'		 => true,
-		'get_controls_at_component'	 => false,
-		'get_cases'					 => false,
-		'get_checklists'			 => false,
-		'get_cases_for_checklist'	 => false,
 		'get_location_data'			 => false,
 		'dashboard'					 => true,
 	);
@@ -2391,7 +2387,7 @@ JS;
 			if ($_enable_controller)
 			{
 				$id			 = (int)$values['id'];
-				$_controls	 = $this->get_controls_at_component($location_id, $id);
+				$_controls	 = $this->controller_helper->get_controls_at_component($location_id, $id, false);
 
 				$controls_def	 = array(
 					array('key' => 'serie_id', 'label' => 'serie', 'sortable' => false, 'resizeable' => true),
@@ -2500,7 +2496,7 @@ JS;
 					)
 				);
 
-				$_checklists		 = $this->get_checklists($location_id, $id, date('Y'));
+				$_checklists		 = $this->controller_helper->get_checklists($location_id, $id, date('Y'));
 				$check_lst_time_span = $this->controller_helper->get_check_lst_time_span();
 
 				$_checklists_def = array(
@@ -2526,7 +2522,7 @@ JS;
 						array('singleSelect' => true)
 					)
 				);
-				$_cases			 = $this->get_cases($location_id, $id, date('Y')); // initial search
+				$_cases			 = $this->controller_helper->get_cases($location_id, $id, date('Y')); // initial search
 
 				$_case_def = array(
 					array('key' => 'url', 'label' => lang('id'), 'sortable' => true, 'resizeable' => true),
@@ -3129,48 +3125,7 @@ JS;
 	}
 
 
-	/**
-	 * Return controller controls registered at a given location component.
-	 *
-	 * @deprecated Use LocationController::getControlsAtComponent() via /property/location/component/controls.
-	 * @return mixed
-	 */
-	public function get_controls_at_component($location_id = 0, $id = 0, $skip_json = false)
-	{
-		return $this->controller_helper->get_controls_at_component($location_id, $id, $skip_json);
-	}
 
-	/**
-	 * Return cases related to a location component.
-	 *
-	 * @deprecated Use LocationController::getCases() via /property/location/component/cases.
-	 * @return mixed
-	 */
-	public function get_cases($location_id = 0, $id = 0, $year = 0)
-	{
-		return $this->controller_helper->get_cases($location_id, $id, $year);
-	}
 
-	/**
-	 * Return cases for the selected checklist context.
-	 *
-	 * @deprecated Use LocationController::getCasesForChecklist() via /property/location/component/cases-for-checklist.
-	 * @return mixed
-	 */
-	public function get_cases_for_checklist()
-	{
-		return $this->controller_helper->get_cases_for_checklist();
-	}
-
-	/**
-	 * Return checklists for a location component.
-	 *
-	 * @deprecated Use LocationController::getChecklists() via /property/location/component/checklists.
-	 * @return mixed
-	 */
-	public function get_checklists($location_id = 0, $id = 0, $year = 0)
-	{
-		return $this->controller_helper->get_checklists($location_id, $id, $year);
-	}
 
 }

@@ -1191,4 +1191,49 @@ JS;
 	{
 		return $this->so->edit_field($data);
 	}
+
+	/**
+	 * Return selectable account options for responsibility-role UI.
+	 *
+	 * @param string $accountType  'accounts', 'groups', or '' for both
+	 * @return array
+	 */
+	public function get_accounts(string $accountType = ''): array
+	{
+		switch ($accountType)
+		{
+			case 'accounts':
+				$_accounts = $this->accounts->get_list('accounts', -1, 'ASC', 'account_lastname', '', -1);
+				break;
+			case 'groups':
+				$_accounts = $this->accounts->get_list('groups', -1, 'ASC', 'account_firstname', '', -1);
+				break;
+			default:
+				$_accounts = array_merge(
+					$this->accounts->get_list('groups', -1, 'ASC', 'account_firstname', '', -1),
+					$this->accounts->get_list('accounts', -1, 'ASC', 'account_lastname', '', -1)
+				);
+				break;
+		}
+
+		$values = array();
+		foreach ($_accounts as $_account)
+		{
+			$values[] = array(
+				'id'   => $_account->id,
+				'name' => $_account->__toString(),
+			);
+		}
+
+		if ($accountType === 'accounts')
+		{
+			array_unshift($values, array(
+				'id'   => (-1 * $this->userSettings['account_id']),
+				'name' => lang('mine roles'),
+			));
+		}
+
+		array_unshift($values, array('id' => '', 'name' => lang('Select')));
+		return $values;
+	}
 }

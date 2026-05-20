@@ -711,38 +711,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		{
 			$account_type = Sanitizer::get_var('account_type');
 		}
-		switch ($account_type)
-		{
-			case 'accounts':
-				$_accounts	 = $this->accounts->get_list('accounts', -1, 'ASC', 'account_lastname', '', -1);
-				break;
-			case 'groups':
-				$_accounts	 = $this->accounts->get_list('groups', -1, 'ASC', 'account_firstname', '', -1);
-				break;
-			default:
-				$_accounts	 = array_merge(
-					$this->accounts->get_list('groups', -1, 'ASC', 'account_firstname', '', -1),
-					$this->accounts->get_list('accounts', -1, 'ASC', 'account_lastname', '', -1)
-				);
-				break;
-		}
-		$values = array();
-		foreach ($_accounts as $_account)
-		{
-			$values[] = array(
-				'id'	 => $_account->id,
-				'name'	 => $_account->__toString(),
-			);
-		}
-		if ($account_type == 'accounts')
-		{
-			array_unshift($values, array(
-				'id'	 => (-1 * $this->userSettings['account_id']),
-				'name'	 => lang('mine roles')
-			));
-		}
-		array_unshift($values, array('id' => '', 'name' => lang('Select')));
-		return $values;
+		return $this->bo->get_accounts((string)$account_type);
 	}
 
 	private function _get_categories_summary()

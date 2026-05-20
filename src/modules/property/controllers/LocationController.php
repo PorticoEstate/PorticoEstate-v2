@@ -445,41 +445,8 @@ class LocationController
 		{
 			$accountType = (string)($request->getParsedBody()['account_type'] ?? '');
 		}
-		$accountsObj = $this->accounts();
 
-		switch ($accountType)
-		{
-			case 'accounts':
-				$accounts = $accountsObj->get_list('accounts', -1, 'ASC', 'account_lastname', '', -1);
-				break;
-			case 'groups':
-				$accounts = $accountsObj->get_list('groups', -1, 'ASC', 'account_firstname', '', -1);
-				break;
-			default:
-				$accounts = array_merge(
-					$accountsObj->get_list('groups', -1, 'ASC', 'account_firstname', '', -1),
-					$accountsObj->get_list('accounts', -1, 'ASC', 'account_lastname', '', -1)
-				);
-				break;
-		}
-
-		$values = array();
-		foreach ($accounts as $account)
-		{
-			$values[] = array(
-				'id' => $account->id,
-				'name' => $account->__toString(),
-			);
-		}
-		if ($accountType === 'accounts')
-		{
-			array_unshift($values, array(
-				'id' => (-1 * $this->currentAccountId()),
-				'name' => lang('mine roles')
-			));
-		}
-		array_unshift($values, array('id' => '', 'name' => lang('Select')));
-
+		$values = $this->bo()->get_accounts($accountType);
 		return $this->jsonResponse($response, $values);
 	}
 

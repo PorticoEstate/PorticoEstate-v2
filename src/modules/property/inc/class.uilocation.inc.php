@@ -76,7 +76,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		'columns'					 => true,
 		'update_location'			 => true,
 		'responsiblility_role'		 => true,
-		'get_location_data'			 => false,
 		'dashboard'					 => true,
 	);
 
@@ -2871,36 +2870,6 @@ JS;
 		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('delete' => $data));
 	}
 
-	/**
-	 * Return core location data for a given location code.
-	 *
-	 * This legacy endpoint is still in use by menuaction callers outside the REST flow.
-	 *
-	 * @return array
-	 */
-	function get_location_data()
-	{
-		if (!$this->acl_read)
-		{
-			phpgw::no_access();
-		}
-		$location_code = Sanitizer::get_var('location_code');
-
-		if ($location_code)
-		{
-			$values			 = $this->bo->read_single($location_code, array('noattrib' => true));
-			$part_of_town_id = $values['part_of_town_id'];
-
-			$part_of_town				 = createObject('property.bogeneric')->read_single(array(
-				'id'			 => $part_of_town_id,
-				'location_info'	 => array('type' => 'part_of_town')
-			));
-			$values['part_of_town_name'] = $part_of_town['name'];
-		}
-
-
-		return $values;
-	}
 
 	function view()
 	{
@@ -3123,9 +3092,4 @@ JS;
 		Settings::getInstance()->set('flags', $flags);
 		self::render_template_xsl('datatable2', $data);
 	}
-
-
-
-
-
 }

@@ -312,8 +312,10 @@ class LocationController
 						. " }";
 					$params['sortable'] = true;
 				}
-				else if (isset($uicols['cols_return_extra'][$k])
-					&& ($uicols['cols_return_extra'][$k] != 'T' || $uicols['cols_return_extra'][$k] != 'CH'))
+				else if (
+					isset($uicols['cols_return_extra'][$k])
+					&& ($uicols['cols_return_extra'][$k] != 'T' || $uicols['cols_return_extra'][$k] != 'CH')
+				)
 				{
 					$params['sortable'] = true;
 				}
@@ -484,7 +486,7 @@ class LocationController
 	public function getHistoryData(Request $request, Response $response): Response
 	{
 		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
-		$draw = (int)($request->getQueryParams()['draw'] ?? 0) +1;
+		$draw = (int)($request->getQueryParams()['draw'] ?? 0) + 1;
 		$values = $this->bo()->get_history($locationCode);
 		$dateFormat = $this->dateFormat();
 		foreach ($values as &$entry)
@@ -509,7 +511,7 @@ class LocationController
 
 		$search = $input['search'] ?? array();
 		$order = (array)($input['order'] ?? array());
-		$draw = (int)($input['draw'] ?? 0) +1;
+		$draw = (int)($input['draw'] ?? 0) + 1;
 		$columns = (array)($input['columns'] ?? array());
 		$docType = (int)($input['doc_type'] ?? 0);
 		$locationCode = (string)($input['location_code'] ?? '');
@@ -564,7 +566,7 @@ class LocationController
 			{
 				$dateFormat = $this->dateFormat();
 			}
-			$documentName = '<a href="' . \phpgw::link('/index.php',array(
+			$documentName = '<a href="' . \phpgw::link('/index.php', array(
 				'menuaction' => 'property.uidocument.view_file',
 				'id' => $item['id']
 			)) . '" target="_blank">' . $item['document_name'] . '</a>';
@@ -575,7 +577,7 @@ class LocationController
 				'title' => $item['title'],
 				'document_date' => $this->phpgwapiCommon()->show_date($item['document_date'], $dateFormat)
 			);
-			}
+		}
 		unset($item);
 
 		$locations = $this->makeLocationsController();
@@ -595,7 +597,7 @@ class LocationController
 				$temp = (array)json_decode($item['path']);
 				$title = implode('<br/>', $temp);
 			}
-			$documentName = '<a href="' . \phpgw::link('/index.php',array(
+			$documentName = '<a href="' . \phpgw::link('/index.php', array(
 				'menuaction' => 'property.uigeneric_document.view_file',
 				'file_id' => $item['id']
 			)) . '" target="_blank">' . $item['name'] . '</a>';
@@ -611,7 +613,7 @@ class LocationController
 		return $this->jsonResponse($response, array(
 			'data' => $values,
 			'recordsTotal' => $recordsTotal,
-			'recordsFiltered'=> $recordsTotal,
+			'recordsFiltered' => $recordsTotal,
 			'draw' => $draw,
 		));
 	}
@@ -668,7 +670,7 @@ class LocationController
 		$roleId = (int)($input['role_id'] ?? 0);
 		$search = $input['search'] ?? array();
 		$order = (array)($input['order'] ?? array());
-		$draw = (int)($input['draw'] ?? 0) +1;
+		$draw = (int)($input['draw'] ?? 0) + 1;
 		$columns = (array)($input['columns'] ?? array());
 		$orderColumnIndex = (int)($order[0]['column'] ?? -1);
 		$orderField = ($orderColumnIndex >= 0 && isset($columns[$orderColumnIndex]['data']))
@@ -710,7 +712,7 @@ class LocationController
 			'data' => $values,
 			'recordsTotal' => count($values),
 			'recordsFiltered' => count($values),
-			'draw' => (int)($request->getQueryParams()['draw'] ?? 0) +1,
+			'draw' => (int)($request->getQueryParams()['draw'] ?? 0) + 1,
 		));
 	}
 
@@ -838,7 +840,8 @@ class LocationController
 		}
 
 		$locationId = (int)($args['location_id'] ?? 0);
-		if ($locationId <= 0) {
+		if ($locationId <= 0)
+		{
 			return $this->jsonResponse($response, [
 				'status' => 'error',
 				'message' => 'Invalid location ID',

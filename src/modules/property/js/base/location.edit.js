@@ -311,12 +311,71 @@ function formDataToObject(formData)
 	return payload;
 }
 
+function getLocationFieldValue(form, selector)
+{
+	var el = form.querySelector(selector);
+	if (!el)
+	{
+		return '';
+	}
+	return (el.value || '').trim();
+}
+
+function buildLocationCodeFromLocationForm(form)
+{
+	var explicitLocationCode = getLocationFieldValue(form, 'input[name="location_code"]');
+	if (explicitLocationCode)
+	{
+		return explicitLocationCode;
+	}
+
+	var locationParts = [];
+	var locationInputs = form.querySelectorAll('input[name]');
+	for (var i = 0; i < locationInputs.length; i++)
+	{
+		var input = locationInputs[i];
+		var name = input.getAttribute('name') || '';
+		var match = name.match(/^loc(\d+)$/);
+		if (!match)
+		{
+			continue;
+		}
+
+		var value = (input.value || '').trim();
+		if (!value)
+		{
+			continue;
+		}
+
+		locationParts.push({
+			level: parseInt(match[1], 10),
+			value: value
+		});
+	}
+
+	if (!locationParts.length)
+	{
+		return '';
+	}
+
+	locationParts.sort(function (a, b)
+	{
+		return a.level - b.level;
+	});
+
+	return locationParts.map(function (part)
+	{
+		return part.value;
+	}).join('-');
+}
+
 function buildLocationRestRequest(form)
 {
 	var parsed = parseURL(form.action);
 	var query = parsed.searchObject || {};
 	var clickHistory = query.click_history || '';
 	var queryParts = [];
+	var locationCode = buildLocationCodeFromLocationForm(form);
 
 	var rawLocationId = '';
 	if (typeof location_id !== 'undefined' && location_id !== null)
@@ -325,9 +384,10 @@ function buildLocationRestRequest(form)
 	}
 
 	var routeLocationId = parseInt(rawLocationId, 10);
-	var isUpdate = !isNaN(routeLocationId) && routeLocationId > 0;
+	var hasExistingLocation = (!isNaN(routeLocationId) && routeLocationId > 0) || !!query.location_code;
+	var isUpdate = hasExistingLocation && !!locationCode;
 	var requestUrl = isUpdate
-		? '/property/location/' + encodeURIComponent(routeLocationId)
+		? '/property/location/' + encodeURIComponent(locationCode)
 		: '/property/location/add';
 
 	if (clickHistory)
@@ -519,6 +579,12 @@ $(document).ready(function ()
 		if (submitter.name)
 		{
 			formData.set(submitter.name, submitter.value || '1');
+		}
+
+		var dynamicLocationCode = buildLocationCodeFromLocationForm(form);
+		if (dynamicLocationCode)
+		{
+			formData.set('location_code', dynamicLocationCode);
 		}
 
 		fetch(restRequest.url, {

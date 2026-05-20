@@ -129,6 +129,32 @@ class LocationController
 		}
 	}
 
+	private function requestBodyAsArray(Request $request): array
+	{
+		$parsedBody = $request->getParsedBody();
+		if (is_array($parsedBody))
+		{
+			return $parsedBody;
+		}
+
+		$rawBody = (string)$request->getBody();
+		if ($rawBody === '')
+		{
+			return array();
+		}
+
+		$contentType = strtolower((string)$request->getHeaderLine('Content-Type'));
+		if (strpos($contentType, 'application/json') !== false)
+		{
+			$json = json_decode($rawBody, true);
+			return is_array($json) ? $json : array();
+		}
+
+		$decoded = array();
+		parse_str($rawBody, $decoded);
+		return is_array($decoded) ? $decoded : array();
+	}
+
 	protected function hasAcl(string $aclProperty): bool
 	{
 		$aclMap = array(
@@ -778,7 +804,7 @@ class LocationController
 			return $this->forbiddenResponse($response, 'No add access for location');
 		}
 
-		$bodyParams = $request->getParsedBody() ?? [];
+		$bodyParams = $this->requestBodyAsArray($request);
 
 		// Map input -> validate -> persist -> build response
 		$state = $this->formHelper->mapInput($bodyParams, null);
@@ -796,7 +822,7 @@ class LocationController
 	 * Hybrid approach: Explicit validation/persistence instead of global state hydration
 	 * Supports: location updates with field validation, error recovery, and clear responses
 	 * 
-	 * PUT /property/location/:location_id
+	 * PUT /property/location/:location_code
 	 * Body: {loc_code, loc1, loc2, ..., location_type}
 	 */
 	public function save(Request $request, Response $response, array $args): Response
@@ -806,20 +832,24 @@ class LocationController
 			return $this->forbiddenResponse($response, 'No edit access for location');
 		}
 
-		$locationId = (int)($args['location_id'] ?? 0);
-		if ($locationId <= 0)
+		$locationCode = (string)($args['location_code'] ?? '');
+		if ($locationCode === '' || !preg_match('/^[A-Za-z0-9_-]+(?:-[A-Za-z0-9_-]+)*$/', $locationCode))
 		{
 			return $this->jsonResponse($response, [
 				'status' => 'error',
-				'message' => 'Invalid location ID',
-				'location_id' => null,
+				'message' => 'Invalid location code',
+				'location_code' => null,
 			], 400);
 		}
 
-		$bodyParams = $request->getParsedBody() ?? [];
+		$bodyParams = $this->requestBodyAsArray($request);
+		if (empty($bodyParams['location_code']))
+		{
+			$bodyParams['location_code'] = $locationCode;
+		}
 
 		// Map input -> validate -> persist -> build response
-		$state = $this->formHelper->mapInput($bodyParams, $locationId);
+		$state = $this->formHelper->mapInput($bodyParams, 1);
 		$state = $this->formHelper->applyLegacyRules($state, [], true);
 		$state = $this->formHelper->validate($state);
 		$state = $this->formHelper->persistSave($state);
@@ -832,8 +862,7 @@ class LocationController
 	public function addControl(Request $request, Response $response): Response
 	{
 		$queryParams = $request->getQueryParams();
-		$bodyParams = $request->getParsedBody();
-		$bodyParams = is_array($bodyParams) ? $bodyParams : array();
+		$bodyParams = $this->requestBodyAsArray($request);
 		$payload = array_merge($queryParams, $bodyParams);
 
 		return $this->jsonResponse($response, $this->controllerHelper()->add_control($payload));
@@ -842,8 +871,7 @@ class LocationController
 	public function updateControlSerie(Request $request, Response $response): Response
 	{
 		$queryParams = $request->getQueryParams();
-		$bodyParams = $request->getParsedBody();
-		$bodyParams = is_array($bodyParams) ? $bodyParams : array();
+		$bodyParams = $this->requestBodyAsArray($request);
 		$payload = array_merge($queryParams, $bodyParams);
 
 		return $this->jsonResponse($response, $this->controllerHelper()->update_control_serie($payload));
@@ -882,11 +910,8 @@ class LocationController
 		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
 		if ($locationCode === '')
 		{
-			$parsedBody = $request->getParsedBody();
-			if (is_array($parsedBody))
-			{
-				$locationCode = (string)($parsedBody['location_code'] ?? '');
-			}
+			$bodyParams = $this->requestBodyAsArray($request);
+			$locationCode = (string)($bodyParams['location_code'] ?? '');
 		}
 		if ($locationCode === '')
 		{

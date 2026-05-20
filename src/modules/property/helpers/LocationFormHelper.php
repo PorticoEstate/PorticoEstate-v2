@@ -48,23 +48,31 @@ class LocationFormHelper
         // Extract and normalize location fields based on DB-configured location settings.
         $fieldsToMap = $this->buildDynamicFieldMap($typeId);
 
-        foreach ($fieldsToMap as $key => $type) {
-            if (isset($requestData[$key])) {
+        foreach ($fieldsToMap as $key => $type)
+        {
+            if (isset($requestData[$key]))
+            {
                 $normalized['values'][$key] = \Sanitizer::sanitize($requestData[$key], $type);
             }
         }
 
-        if ($locationCode !== '') {
+        if ($locationCode !== '')
+        {
             $normalized['values']['location_code'] = $locationCode;
         }
 
         // Load existing location data if editing
-        if (!empty($normalized['is_edit'])) {
-            if ($locationCode === '') {
+        if (!empty($normalized['is_edit']))
+        {
+            if ($locationCode === '')
+            {
                 $normalized['errors']['location_code'] = 'Location code is required for update';
-            } else {
+            }
+            else
+            {
                 $normalized['location_data'] = $this->loadLocationData($locationCode);
-                if (!$normalized['location_data']) {
+                if (!$normalized['location_data'])
+                {
                     $normalized['errors']['location_code'] = 'Location not found';
                 }
             }
@@ -86,28 +94,35 @@ class LocationFormHelper
         $locationCode = $values['location_code'] ?? ($state['location_code'] ?? '');
 
         // Required field validation
-        if ($locationCode === '') {
+        if ($locationCode === '')
+        {
             $errors['location_code'] = 'Location code is required';
         }
 
-        if (!isset($values['loc1']) || trim($values['loc1']) === '') {
+        if (!isset($values['loc1']) || trim($values['loc1']) === '')
+        {
             $errors['loc1'] = 'Location level 1 is required';
         }
 
         // Validate location code format (alphanumeric, underscore, hyphen)
-        if ($locationCode !== '' && !preg_match('/^[A-Za-z0-9_-]+(?:-[A-Za-z0-9_-]+)*$/', $locationCode)) {
+        if ($locationCode !== '' && !preg_match('/^[A-Za-z0-9_-]+(?:-[A-Za-z0-9_-]+)*$/', $locationCode))
+        {
             $errors['location_code'] = 'Location code must contain only alphanumeric characters, underscore, or hyphen';
         }
 
         // Validate numeric fields if provided
-        if (isset($values['street_number']) && trim($values['street_number']) !== '') {
-            if (!is_numeric($values['street_number'])) {
+        if (isset($values['street_number']) && trim($values['street_number']) !== '')
+        {
+            if (!is_numeric($values['street_number']))
+            {
                 $errors['street_number'] = 'Street number must be numeric';
             }
         }
 
-        if (isset($values['zip_code']) && trim($values['zip_code']) !== '') {
-            if (!preg_match('/^[0-9\s\-]+$/', $values['zip_code'])) {
+        if (isset($values['zip_code']) && trim($values['zip_code']) !== '')
+        {
+            if (!preg_match('/^[0-9\s\-]+$/', $values['zip_code']))
+            {
                 $errors['zip_code'] = 'Invalid zip code format';
             }
         }
@@ -125,25 +140,30 @@ class LocationFormHelper
      */
     public function persistSave(array $state): array
     {
-        if (!empty($state['errors'])) {
+        if (!empty($state['errors']))
+        {
             $state['receipt'] = ['status' => 'error', 'message' => 'Validation failed'];
             return $state;
         }
 
-        try {
+        try
+        {
             $values = $state['values'] ?? [];
             $locationCode = (string)($values['location_code'] ?? ($state['location_code'] ?? ''));
             $typeId = (int)($state['type_id'] ?? 0);
 
-            if ($locationCode === '') {
+            if ($locationCode === '')
+            {
                 throw new Exception('Location code is required');
             }
 
-            if ($typeId <= 0) {
+            if ($typeId <= 0)
+            {
                 $typeId = count($this->extractLocationParts($locationCode));
             }
 
-            if ($typeId <= 0) {
+            if ($typeId <= 0)
+            {
                 throw new Exception('Location type is required');
             }
 
@@ -158,7 +178,8 @@ class LocationFormHelper
                 $state['location_parent'] ?? ''
             );
 
-            if (!empty($receipt['error'])) {
+            if (!empty($receipt['error']))
+            {
                 $state['errors']['save'] = $this->flattenReceiptMessages($receipt['error']);
                 $state['receipt'] = [
                     'status' => 'error',
@@ -167,7 +188,9 @@ class LocationFormHelper
                     'location_id' => $state['location_id'] ?: null,
                     'receipt' => $receipt,
                 ];
-            } else {
+            }
+            else
+            {
                 $savedLocationCode = $receipt['location_code'] ?? $locationCode;
                 $state['location_code'] = $savedLocationCode;
                 $state['values']['location_code'] = $savedLocationCode;
@@ -180,7 +203,9 @@ class LocationFormHelper
                     'receipt' => $receipt,
                 ];
             }
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             $state['errors']['save'] = $e->getMessage();
             $state['receipt'] = [
                 'status' => 'error',
@@ -199,7 +224,8 @@ class LocationFormHelper
      */
     private function sanitizeSaveValues(array $values): array
     {
-        if (empty($values['location_code']) && !empty($values['loc_code'])) {
+        if (empty($values['location_code']) && !empty($values['loc_code']))
+        {
             $values['location_code'] = (string) $values['loc_code'];
         }
 
@@ -233,7 +259,8 @@ class LocationFormHelper
         $errors = $state['errors'] ?? [];
         $typeId = (int) ($state['type_id'] ?? 0);
 
-        if ($typeId <= 0) {
+        if ($typeId <= 0)
+        {
             $locationCode = (string) ($state['location_code'] ?? ($values['location_code'] ?? ''));
             $typeId = $locationCode !== '' ? count($this->extractLocationParts($locationCode)) : 0;
         }
@@ -241,58 +268,73 @@ class LocationFormHelper
         $locationCodeParts = [];
         $locationParent = [];
 
-        for ($level = 1; $level <= $typeId; $level++) {
+        for ($level = 1; $level <= $typeId; $level++)
+        {
             $locKey = "loc{$level}";
             $value = isset($values[$locKey]) ? trim((string) $values[$locKey]) : '';
 
-            if ($value === '') {
+            if ($value === '')
+            {
                 $errors[] = lang('Please select a location %1 ID !', $level);
             }
 
             $values[$locKey] = $value;
             $locationCodeParts[] = $value;
-            if ($level < $typeId) {
+            if ($level < $typeId)
+            {
                 $locationParent[] = $value;
             }
         }
 
-        if (empty($values['cat_id'])) {
+        if (empty($values['cat_id']))
+        {
             $errors[] = lang('Please select a category');
         }
 
-        if (is_array($valuesAttribute)) {
-            foreach ($valuesAttribute as $attribute) {
-                if (($attribute['nullable'] ?? null) != 1 && empty($attribute['value'])) {
+        if (is_array($valuesAttribute))
+        {
+            foreach ($valuesAttribute as $attribute)
+            {
+                if (($attribute['nullable'] ?? null) != 1 && empty($attribute['value']))
+                {
                     $errors[] = lang('Please enter value for attribute %1', $attribute['input_text']);
                 }
 
-                if (($attribute['datatype'] ?? null) == 'I' && !empty($attribute['value']) && !is_int((int) ($attribute['value']))) {
+                if (($attribute['datatype'] ?? null) == 'I' && !empty($attribute['value']) && !is_int((int) ($attribute['value'])))
+                {
                     $errors[] = lang('Please enter integer for attribute %1', $attribute['input_text']);
                 }
             }
         }
 
-        if (isset($insertRecord['extra']) && is_array($insertRecord['extra'])) {
-            if (array_search('street_id', $insertRecord['extra'], true) !== false && empty($values['street_id'])) {
+        if (isset($insertRecord['extra']) && is_array($insertRecord['extra']))
+        {
+            if (array_search('street_id', $insertRecord['extra'], true) !== false && empty($values['street_id']))
+            {
                 $errors[] = lang('Please select a street');
             }
-            if (array_search('part_of_town_id', $insertRecord['extra'], true) !== false && empty($values['part_of_town_id'])) {
+            if (array_search('part_of_town_id', $insertRecord['extra'], true) !== false && empty($values['part_of_town_id']))
+            {
                 $errors[] = lang('Please select a part of town');
             }
-            if (array_search('owner_id', $insertRecord['extra'], true) !== false && empty($values['owner_id'])) {
+            if (array_search('owner_id', $insertRecord['extra'], true) !== false && empty($values['owner_id']))
+            {
                 $errors[] = lang('Please select an owner');
             }
         }
 
         $values['location_code'] = implode('-', $locationCodeParts);
 
-        if (!$isEdit && !empty($values['location_code']) && $typeId > 0 && $this->bo()->check_location($values['location_code'], $typeId)) {
+        if (!$isEdit && !empty($values['location_code']) && $typeId > 0 && $this->bo()->check_location($values['location_code'], $typeId))
+        {
             $errors[] = lang('This location is already registered!') . '[ ' . $values['location_code'] . ' ]';
         }
 
-        if ($isEdit) {
+        if ($isEdit)
+        {
             $values['change_type'] = isset($values['change_type']) ? (int) $values['change_type'] : 0;
-            if (empty($values['change_type'])) {
+            if (empty($values['change_type']))
+            {
                 $errors[] = lang('Please select change type');
             }
         }
@@ -317,7 +359,8 @@ class LocationFormHelper
      */
     private function loadLocationData(string $locationCode): ?array
     {
-        if ($locationCode === '') {
+        if ($locationCode === '')
+        {
             return null;
         }
 
@@ -331,8 +374,10 @@ class LocationFormHelper
 
     private function bo(): \property_bolocation
     {
-        if ($this->bo === null) {
-            if (defined('SRC_ROOT_PATH') && !function_exists('include_class')) {
+        if ($this->bo === null)
+        {
+            if (defined('SRC_ROOT_PATH') && !function_exists('include_class'))
+            {
                 require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
             }
 
@@ -344,18 +389,22 @@ class LocationFormHelper
 
     private function resolveLocationCode(array $requestData): string
     {
-        if (!empty($requestData['location_code'])) {
+        if (!empty($requestData['location_code']))
+        {
             return trim((string) $requestData['location_code']);
         }
 
-        if (!empty($requestData['loc_code'])) {
+        if (!empty($requestData['loc_code']))
+        {
             return trim((string) $requestData['loc_code']);
         }
 
         $parts = [];
-        for ($level = 1; $level <= 5; $level++) {
+        for ($level = 1; $level <= 5; $level++)
+        {
             $key = "loc{$level}";
-            if (empty($requestData[$key])) {
+            if (empty($requestData[$key]))
+            {
                 break;
             }
 
@@ -367,26 +416,32 @@ class LocationFormHelper
 
     private function resolveTypeId(array $requestData, array $locationParts): int
     {
-        if (isset($requestData['type_id'])) {
+        if (isset($requestData['type_id']))
+        {
             $typeId = (int) $requestData['type_id'];
-            if ($typeId > 0) {
+            if ($typeId > 0)
+            {
                 return $typeId;
             }
         }
 
-        if (!empty($locationParts)) {
+        if (!empty($locationParts))
+        {
             return count($locationParts);
         }
 
         $maxLevel = 0;
-        for ($level = 1; $level <= 50; $level++) {
+        for ($level = 1; $level <= 50; $level++)
+        {
             $key = "loc{$level}";
-            if (!empty($requestData[$key])) {
+            if (!empty($requestData[$key]))
+            {
                 $maxLevel = $level;
             }
         }
 
-        if ($maxLevel > 0) {
+        if ($maxLevel > 0)
+        {
             return $maxLevel;
         }
 
@@ -404,33 +459,40 @@ class LocationFormHelper
             'loc_date' => 'string',
         ];
 
-        if ($typeId > 0) {
-            for ($level = 1; $level <= $typeId; $level++) {
+        if ($typeId > 0)
+        {
+            for ($level = 1; $level <= $typeId; $level++)
+            {
                 $fields["loc{$level}"] = 'string';
             }
         }
 
-        foreach ($this->getLocationConfig() as $configEntry) {
+        foreach ($this->getLocationConfig() as $configEntry)
+        {
             $column = isset($configEntry['column_name']) ? (string) $configEntry['column_name'] : '';
             $locationType = isset($configEntry['location_type']) ? (int) $configEntry['location_type'] : 0;
             $lookupForm = !empty($configEntry['lookup_form']);
 
-            if ($column === '' || $locationType <= 0 || $locationType > $typeId || !$lookupForm) {
+            if ($column === '' || $locationType <= 0 || $locationType > $typeId || !$lookupForm)
+            {
                 continue;
             }
 
             $fields[$column] = $this->inferSanitizerType($column);
 
-            if ($column === 'street_id') {
-                $fields['street_name'] = 'string';
+            if ($column === 'street_id')
+            {
+   //             $fields['street_name'] = 'string';
                 $fields['street_number'] = 'string';
             }
-
-            if ($column === 'tenant_id') {
+/*
+            if ($column === 'tenant_id')
+            {
                 $fields['first_name'] = 'string';
                 $fields['last_name'] = 'string';
                 $fields['contact_phone'] = 'string';
             }
+*/
         }
 
         return $fields;
@@ -450,7 +512,8 @@ class LocationFormHelper
             'location_type',
         ];
 
-        if (in_array($column, $intColumns, true) || preg_match('/(^|_)id$/', $column)) {
+        if (in_array($column, $intColumns, true) || preg_match('/(^|_)id$/', $column))
+        {
             return 'int';
         }
 
@@ -459,7 +522,8 @@ class LocationFormHelper
 
     private function getLocationConfig(): array
     {
-        if ($this->locationConfig === null) {
+        if ($this->locationConfig === null)
+        {
             $config = $this->bo()->soadmin_location->read_config('');
             $this->locationConfig = is_array($config) ? $config : [];
         }
@@ -469,7 +533,8 @@ class LocationFormHelper
 
     private function getLocationTypes(): array
     {
-        if ($this->locationTypes === null) {
+        if ($this->locationTypes === null)
+        {
             $types = $this->bo()->soadmin_location->select_location_type();
             $this->locationTypes = is_array($types) ? $types : [];
         }
@@ -479,7 +544,8 @@ class LocationFormHelper
 
     private function extractLocationParts(string $locationCode): array
     {
-        if ($locationCode === '') {
+        if ($locationCode === '')
+        {
             return [];
         }
 
@@ -489,8 +555,10 @@ class LocationFormHelper
     private function flattenReceiptMessages(array $errors): string
     {
         $messages = [];
-        foreach ($errors as $error) {
-            if (is_array($error) && !empty($error['msg'])) {
+        foreach ($errors as $error)
+        {
+            if (is_array($error) && !empty($error['msg']))
+            {
                 $messages[] = $error['msg'];
             }
         }
@@ -519,7 +587,8 @@ class LocationFormHelper
         ];
 
         // If there are errors, rehydrate form data for retry
-        if (!empty($state['errors'])) {
+        if (!empty($state['errors']))
+        {
             $response['type'] = 'json';
             $response['payload']['values'] = $state['values'] ?? [];
             $response['payload']['location_data'] = $state['location_data'] ?? null;

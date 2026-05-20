@@ -75,7 +75,7 @@ $app->group('/property/location', function (RouteCollectorProxy $group) use ($co
 
 	// Hybrid approach routes (explicit form helper orchestration)
 	$group->post('/add', [$controller, 'add']);
-	$group->put('/{location_id:[0-9]+}', [$controller, 'save']);
+	$group->put('/{location_code:[^/]+}', [$controller, 'save']);
 
 	// Thin adapter routes (legacy UI delegation)
 	$group->get('', [$controller, 'index']);

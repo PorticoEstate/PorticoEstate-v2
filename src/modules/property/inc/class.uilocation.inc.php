@@ -143,51 +143,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 	 */
 	public function query()
 	{
-		$lookup_tenant = Sanitizer::get_var('lookup_tenant', 'bool');
-
-		$search	 = Sanitizer::get_var('search');
-		$order	 = Sanitizer::get_var('order');
-		$draw	 = Sanitizer::get_var('draw', 'int');
-		$columns = Sanitizer::get_var('columns');
-		$export	 = Sanitizer::get_var('export', 'bool');
-
-		$column_search = array();
-		if ($columns && is_array($columns))
-		{
-			foreach ($columns as $column)
-			{
-				if (!empty($column['search']['value']))
-				{
-					$column_search[$column['data']] = $column['search']['value'];
-				}
-			}
-		}
-
-		$params = array(
-			'start'			 => Sanitizer::get_var('start', 'int', 'REQUEST', 0),
-			'results'		 => Sanitizer::get_var('length', 'int', 'REQUEST', 0),
-			'query'			 => $search['value'],
-			'order'			 => $columns[$order[0]['column']]['data'],
-			'sort'			 => $order[0]['dir'],
-			'dir'			 => $order[0]['dir'],
-			'allrows'		 => Sanitizer::get_var('length', 'int') == -1 || $export,
-			'lookup_tenant'	 => $lookup_tenant,
-			'dry_run'		 => false,
-			'column_search' => $column_search
-		);
-
-		$values = $this->bo->read($params);
-		if ($export)
-		{
-			return $values;
-		}
-
-		$result_data = array('results' => $values);
-
-		$result_data['total_records']	 = $this->bo->total_records;
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
+		return [];
 	}
 
 	/**
@@ -230,28 +186,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		return $this->jquery_results($result_data);
 	}
 
-	/**
-	 * Return summary rows.
-	 *
-	 * @deprecated Use LocationController::querySummary() via /property/location/summary/query.
-	 * @return array
-	 */
-	public function query_summary()
-	{
-		$values = $this->bo->read_summary();
-
-		if (Sanitizer::get_var('export', 'bool'))
-		{
-			return $values;
-		}
-
-		$result_data = array('results' => $values);
-
-		$result_data['total_records']	 = count($values);
-		$result_data['draw']			 = Sanitizer::get_var('draw', 'int');
-
-		return $this->jquery_results($result_data);
-	}
 
 	public function responsiblility_role_save()
 	{

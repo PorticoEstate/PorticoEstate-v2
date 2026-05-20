@@ -63,7 +63,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 
 	var $public_functions = array(
 		'query'						 => false,
-		'get_accounts'				 => false,
 		'index'						 => true,
 		'view'						 => true,
 		'edit'						 => true,
@@ -702,7 +701,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 	/**
 	 * Return selectable account options for responsibility-role UI.
 	 *
-	 * @deprecated Use LocationController::getAccounts() via /property/location/accounts.
 	 * @return array
 	 */
 	public function get_accounts($account_type = '')

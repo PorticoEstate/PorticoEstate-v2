@@ -14,6 +14,7 @@ import { SessionService } from '../session/session.service';
 import { RoomService } from '../session/room.service';
 import { NotificationService } from '../notification/notification.service';
 import { ApplicationService } from '../application/application.service';
+import { DeliveredApplicationService } from '../application/delivered-application.service';
 import { FreeTimeService } from '../freetime/freetime.service';
 import { BookingService } from '../booking/booking.service';
 import { PhpConfigService } from '../../config/php-config.service';
@@ -41,6 +42,7 @@ export class PorticoGateway
     private readonly roomService: RoomService,
     private readonly notificationService: NotificationService,
     private readonly applicationService: ApplicationService,
+    private readonly deliveredApplicationService: DeliveredApplicationService,
     private readonly freeTimeService: FreeTimeService,
     private readonly bookingService: BookingService,
     private readonly configService: PhpConfigService,
@@ -156,6 +158,10 @@ export class PorticoGateway
         return this.handleUpdateUserInfo(client, data);
       case 'get_partial_applications':
         return this.handleGetPartialApplications(client);
+      case 'get_delivered_applications':
+        return this.handleGetDeliveredApplications(client, data);
+      case 'get_application_detail':
+        return this.handleGetApplicationDetail(client, data);
       case 'get_free_time':
         return this.handleGetFreeTime(client, data);
       case 'create_simple_application':
@@ -349,6 +355,144 @@ export class PorticoGateway
       },
       timestamp: new Date().toISOString(),
     });
+  }
+
+  /**
+   * Handle paginated delivered applications request.
+   *
+   * Client sends: { type: 'get_delivered_applications', offset?: number, limit?: number, secret?: string }
+   * Server responds: { type: 'delivered_applications_response', data: { applications, totalCount, offset, limit, hasMore } }
+   *
+   * Access: SSN from session auth, org delegates auto-included, or secret for single-app access.
+   * The client can call repeatedly with increasing offset to paginate.
+   */
+  private async handleGetDeliveredApplications(client: Socket, data: any) {
+    const session = this.sessionService.getSession(client.id);
+
+    if (!session?.sessionId) {
+      client.emit('message', {
+        type: 'delivered_applications_response',
+        data: { error: true, message: 'No session found' },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const ssn = session.userInfo?.ssn;
+    const secret = data?.secret;
+    const offset = Math.max(0, parseInt(data?.offset, 10) || 0);
+    const limit = Math.min(100, Math.max(1, parseInt(data?.limit, 10) || 50));
+
+    if (!ssn && !secret) {
+      client.emit('message', {
+        type: 'delivered_applications_response',
+        data: { error: true, message: 'No SSN in session and no secret provided' },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    try {
+      const page = await this.deliveredApplicationService.getDeliveredApplications({
+        ssn,
+        includeOrganizations: true,
+        secret,
+        offset,
+        limit,
+      });
+
+      client.emit('message', {
+        type: 'delivered_applications_response',
+        data: {
+          error: false,
+          applications: page.applications,
+          totalCount: page.totalCount,
+          offset: page.offset,
+          limit: page.limit,
+          hasMore: page.hasMore,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      this.logger.error(`Error in handleGetDeliveredApplications: ${err.message}`);
+      client.emit('message', {
+        type: 'delivered_applications_response',
+        data: { error: true, message: err.message },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  /**
+   * Handle single application detail request.
+   *
+   * Client sends: { type: 'get_application_detail', id: number, secret?: string }
+   * Server responds: { type: 'application_detail_response', data: { application, error? } }
+   *
+   * Also joins the client to an application-specific room for future live updates.
+   */
+  private async handleGetApplicationDetail(client: Socket, data: any) {
+    const session = this.sessionService.getSession(client.id);
+    const id = parseInt(data?.id, 10);
+
+    if (!id || isNaN(id)) {
+      client.emit('message', {
+        type: 'application_detail_response',
+        data: { error: true, message: 'Invalid application ID' },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const ssn = session?.userInfo?.ssn;
+    const secret = data?.secret;
+
+    if (!ssn && !secret) {
+      client.emit('message', {
+        type: 'application_detail_response',
+        data: { error: true, message: 'No SSN in session and no secret provided' },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    try {
+      const result = await this.deliveredApplicationService.getApplicationById({
+        id,
+        ssn,
+        secret,
+      });
+
+      if (result.error || !result.application) {
+        client.emit('message', {
+          type: 'application_detail_response',
+          data: { error: true, message: result.error || 'Application not found', id },
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      // Join application room for future live updates
+      const appRoomId = this.roomService.entityRoomId('application', id);
+      client.join(appRoomId);
+
+      client.emit('message', {
+        type: 'application_detail_response',
+        data: {
+          error: false,
+          application: result.application,
+          id,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      this.logger.error(`Error in handleGetApplicationDetail: ${err.message}`);
+      client.emit('message', {
+        type: 'application_detail_response',
+        data: { error: true, message: err.message, id },
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 
   /**

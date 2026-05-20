@@ -947,6 +947,56 @@ export function usePartialApplications(): UseQueryResult<{ list: IApplication[],
 	);
 }
 
+const WS_PAGE_SIZE = 50;
+
+/**
+ * Fetch the first page of delivered applications via WebSocket.
+ * Resolves as soon as the first batch arrives so the table can render immediately.
+ * Returns a cleanup function and whether more pages are expected.
+ */
+function fetchFirstPageViaWs(
+	sendMessage: (type: string, message: string, additionalData?: Record<string, any>) => boolean,
+): Promise<{ list: IApplication[]; total_sum: number; totalCount: number; hasMore: boolean; cleanup: () => void }> {
+	const subscriptionManager = SubscriptionManager.getInstance();
+
+	return new Promise((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			cleanup();
+			reject(new Error('WebSocket delivered_applications timeout'));
+		}, 8000);
+
+		const cleanup = subscriptionManager.subscribeToMessageType(
+			'delivered_applications_response',
+			(message) => {
+				if (message.type !== 'delivered_applications_response') return;
+				clearTimeout(timeout);
+
+				if (message.data.error) {
+					cleanup();
+					reject(new Error(message.data.message || 'WebSocket delivered_applications error'));
+					return;
+				}
+
+				const apps = message.data.applications || [];
+				const totalCount = message.data.totalCount || 0;
+				const hasMore = message.data.hasMore || false;
+				const total_sum = apps.reduce((sum: number, app: IApplication) => {
+					const orderSum = app.orders?.reduce((acc: number, order: any) => acc + (Number(order.sum) || 0), 0) || 0;
+					return sum + orderSum;
+				}, 0);
+
+				// Don't cleanup — the caller will reuse the subscription for subsequent pages
+				resolve({ list: apps, total_sum, totalCount, hasMore, cleanup });
+			}
+		);
+
+		sendMessage('get_delivered_applications', 'Requesting delivered applications', {
+			offset: 0,
+			limit: WS_PAGE_SIZE,
+		});
+	});
+}
+
 export function useApplications(
   options?: {
     initialData?: { list: IApplication[], total_sum: number };
@@ -954,26 +1004,143 @@ export function useApplications(
   }
 ): UseQueryResult<{ list: IApplication[], total_sum: number }> {
 	const includeOrganizations = options?.includeOrganizations ?? false;
+	const queryClient = useQueryClient();
+	const { sessionConnected, isReady: wsReady, sendMessage } = useWebSocketContext();
+	const queryKey = ['deliveredApplications', includeOrganizations];
+	// Track background pagination so we don't start multiple
+	const paginating = useRef(false);
 
 	return useQuery(
 		{
-			queryKey: ['deliveredApplications', includeOrganizations],
-			queryFn: () => fetchDeliveredApplications(includeOrganizations), // Fetch function
-			retry: 2, // Number of retry attempts if the query fails
-			refetchOnWindowFocus: false, // Do not refetch on window focus by default,
+			queryKey,
+			queryFn: async () => {
+				const firstPage = await fetchFirstPageViaWs(sendMessage);
+
+				// If there are more pages, fetch them in the background and
+				// progressively update the query cache
+				if (firstPage.hasMore && !paginating.current) {
+					paginating.current = true;
+					const subscriptionManager = SubscriptionManager.getInstance();
+					let currentOffset = firstPage.list.length;
+
+					// Subscribe for subsequent page responses
+					const cleanupSub = subscriptionManager.subscribeToMessageType(
+						'delivered_applications_response',
+						(message) => {
+							if (message.type !== 'delivered_applications_response') return;
+							if (message.data.error) return;
+
+							const newApps = message.data.applications || [];
+							const hasMore = message.data.hasMore || false;
+
+							// Append to existing cache
+							queryClient.setQueryData<{ list: IApplication[]; total_sum: number }>(
+								queryKey,
+								(prev) => {
+									if (!prev) return prev;
+									const existingIds = new Set(prev.list.map(a => a.id));
+									const deduped = newApps.filter((a: IApplication) => !existingIds.has(a.id));
+									const newList = [...prev.list, ...deduped];
+									const newSum = deduped.reduce((sum: number, app: IApplication) => {
+										const orderSum = app.orders?.reduce((acc: number, order: any) => acc + (Number(order.sum) || 0), 0) || 0;
+										return sum + orderSum;
+									}, prev.total_sum);
+									return { list: newList, total_sum: newSum };
+								}
+							);
+
+							if (hasMore) {
+								currentOffset += newApps.length;
+								sendMessage('get_delivered_applications', 'Fetching next page', {
+									offset: currentOffset,
+									limit: WS_PAGE_SIZE,
+								});
+							} else {
+								// All pages received
+								cleanupSub();
+								paginating.current = false;
+							}
+						}
+					);
+
+					// Request second page
+					sendMessage('get_delivered_applications', 'Fetching next page', {
+						offset: currentOffset,
+						limit: WS_PAGE_SIZE,
+					});
+
+					// Clean up first page subscription
+					firstPage.cleanup();
+				} else {
+					firstPage.cleanup();
+				}
+
+				return { list: firstPage.list, total_sum: firstPage.total_sum };
+			},
+			// Only fetch once WS session is ready
+			enabled: wsReady && sessionConnected,
+			retry: 2,
+			refetchOnWindowFocus: false,
 			initialData: options?.initialData,
 		}
 	);
+}
+
+/**
+ * Fetch a single application via WebSocket.
+ * Resolves with the application data or rejects on error/timeout.
+ */
+function fetchApplicationViaWs(
+	sendMessage: (type: string, message: string, additionalData?: Record<string, any>) => boolean,
+	id: number,
+	secret?: string,
+): Promise<IApplication> {
+	const subscriptionManager = SubscriptionManager.getInstance();
+
+	return new Promise((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			cleanup();
+			reject(new Error('WebSocket application_detail timeout'));
+		}, 8000);
+
+		const cleanup = subscriptionManager.subscribeToMessageType(
+			'application_detail_response',
+			(message) => {
+				if (message.type !== 'application_detail_response') return;
+				// Only handle responses for our specific application ID
+				if (message.data.id !== undefined && message.data.id !== id) return;
+
+				clearTimeout(timeout);
+				cleanup();
+
+				if (message.data.error || !message.data.application) {
+					reject(new Error(message.data.message || 'Application not found'));
+					return;
+				}
+
+				resolve(message.data.application);
+			}
+		);
+
+		sendMessage('get_application_detail', 'Requesting application detail', {
+			id,
+			...(secret && { secret }),
+		});
+	});
 }
 
 export function useApplication(
     id: number,
     options?: { initialData?: IApplication; secret?: string }
 ): UseQueryResult<IApplication> {
+	const { sessionConnected, isReady: wsReady, sendMessage } = useWebSocketContext();
+
     return useQuery(
         {
             queryKey: ['application', id, options?.secret],
-            queryFn: () => fetchApplication(id, options?.secret),
+            queryFn: () => fetchApplicationViaWs(sendMessage, id, options?.secret),
+            // Only fetch once WS session is ready
+            enabled: wsReady && sessionConnected,
             retry: 2,
             refetchOnWindowFocus: false,
             initialData: options?.initialData,

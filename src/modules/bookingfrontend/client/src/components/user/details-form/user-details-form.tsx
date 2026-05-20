@@ -1,45 +1,36 @@
+'use client'
 import React, {Fragment, useEffect} from 'react';
 import {useForm, Controller} from 'react-hook-form';
 import {z} from 'zod';
 import {IBookingUser} from "@/service/types/api.types";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {Button, Textfield} from "@digdir/designsystemet-react";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faPen} from "@fortawesome/free-solid-svg-icons";
+import {Button, Heading, Paragraph, Tag, Textfield, Checkbox} from "@digdir/designsystemet-react";
+import {PencilIcon, PersonGroupIcon, PlusIcon} from "@navikt/aksel-icons";
 import styles from "./user-details-form.module.scss";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 
 
 const maskSSN = (ssn: string): string => {
-	if (!ssn) {
-		return '';
-	}
-	// Keep first digits, replace last 5 with asterisks
-	return ssn.slice(0, -5) + '*****';
-}
+    if (!ssn) return '';
+    return ssn.slice(0, -5) + '*****';
+};
 
-
-// Phone number validation
 const validatePhone = (phone: string) => {
     if (!phone) return true;
-
     const generalFormat = /^\+?[- _0-9]+$/;
     if (!generalFormat.test(phone) || phone.length < 8 || phone.length > 20) {
         return false;
     }
-
     const norwegianPattern = /^(0047|\+47|\d{8})/;
     if (norwegianPattern.test(phone)) {
         const trimmedNumber = phone.replace(/^(0047|\+47)/, '');
         return trimmedNumber.length === 8 && (trimmedNumber[0] === '9' || trimmedNumber[0] === '4');
     }
-
     return true;
 };
 
 type EditableBookingUser = Pick<IBookingUser, 'name' | 'ssn' | 'homepage' | 'phone' | 'email' | 'street' | 'zip_code' | 'city'>;
 
-// Form schema matching IBookingUser interface
 const userFormSchema: z.ZodType<EditableBookingUser> = z.object({
     name: z.string().min(1, 'Name is required').nullable(),
     ssn: z.string().nullable(),
@@ -57,7 +48,6 @@ const userFormSchema: z.ZodType<EditableBookingUser> = z.object({
 
 type UserFormData = z.infer<typeof userFormSchema>;
 
-// Reuse the existing interfaces from api.types.ts
 interface FieldConfig {
     label: string;
     key: keyof EditableBookingUser;
@@ -65,8 +55,9 @@ interface FieldConfig {
     placeholder?: string;
     helperText?: string;
     type?: 'text' | 'email' | 'tel' | 'url';
-	masked?: boolean;
+    masked?: boolean;
     readOnly?: boolean;
+    fullWidth?: boolean;
 }
 
 interface FieldCategory {
@@ -85,91 +76,35 @@ const isEmptyValue = (value: unknown): boolean => {
     return false;
 };
 
-// Helper to normalize empty values based on field type
 const normalizeEmptyValue = (key: keyof IBookingUser, value: unknown): string | null => {
-    // Fields that should be null when empty
     const nullableFields = ['homepage', 'phone', 'email', 'street', 'zip_code', 'city'];
-
-    // Fields that should be empty string when empty
     const emptyStringFields = ['name'];
-
     if (isEmptyValue(value)) {
         if (nullableFields.includes(key)) return null;
         if (emptyStringFields.includes(key)) return '';
-        // Default to null for other fields
         return null;
     }
-
-    // Return the original value if not empty
     return value as string;
 };
 
-const fieldCategories: FieldCategory[] = [
-    {
-        title: 'common.personal information',
-        fields: [
-            {
-                label: 'common.name',
-                key: 'name',
-                editable: true,
-                type: 'text'
-            },
-            {
-                label: 'bookingfrontend.ssn',
-                key: 'ssn',
-                editable: false,
-                type: 'text',
-				masked: true
-            },
-            {
-                label: 'common.phone',
-                key: 'phone',
-                editable: true,
-                type: 'tel',
-                placeholder: '+47 XXXXXXXX',
-                helperText: 'common.phone_helper'
-            },
-            {
-                label: 'common.email',
-                key: 'email',
-                editable: true,
-                type: 'email',
-                placeholder: 'email@example.com'
-            },
-            {
-                label: 'common.homepage',
-                key: 'homepage',
-                editable: true,
-                type: 'url',
-                placeholder: 'https://example.com'
-            },
-        ],
-    },
-    {
-        title: 'common.address information',
-        fields: [
-            {
-                label: 'common.street',
-                key: 'street',
-                editable: true,
-                type: 'text'
-            },
-            {
-                label: 'common.zip_code',
-                key: 'zip_code',
-                editable: true,
-                type: 'text',
-                placeholder: '0000'
-            },
-            {
-                label: 'common.city',
-                key: 'city',
-                editable: true,
-                type: 'text'
-            },
-        ],
-    },
+const personalFields: FieldConfig[] = [
+    {label: 'common.name', key: 'name', editable: true, type: 'text'},
+    {label: 'bookingfrontend.ssn', key: 'ssn', editable: false, type: 'text', masked: true, readOnly: true},
+    {label: 'common.phone', key: 'phone', editable: true, type: 'tel', placeholder: '+47 XXXXXXXX', helperText: 'common.phone_helper'},
+    {label: 'common.email', key: 'email', editable: true, type: 'email', placeholder: 'email@example.com'},
+    {label: 'common.homepage', key: 'homepage', editable: true, type: 'url', placeholder: 'https://example.com'},
 ];
+
+const addressFields: FieldConfig[] = [
+    {label: 'common.street', key: 'street', editable: true, type: 'text', fullWidth: true},
+    {label: 'common.zip_code', key: 'zip_code', editable: true, type: 'text', placeholder: '0000'},
+    {label: 'common.city', key: 'city', editable: true, type: 'text'},
+];
+
+function getInitials(name: string | null): string {
+    if (!name) return '?';
+    return name.split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+}
 
 const UserDetailsForm: React.FC<DetailsProps> = ({user, onUpdate}) => {
     const [isEditing, setIsEditing] = React.useState(false);
@@ -181,7 +116,7 @@ const UserDetailsForm: React.FC<DetailsProps> = ({user, onUpdate}) => {
         handleSubmit,
         reset,
         formState: {errors, isDirty},
-        getValues
+        getValues,
     } = useForm<UserFormData>({
         resolver: zodResolver(userFormSchema),
         defaultValues: {
@@ -197,13 +132,10 @@ const UserDetailsForm: React.FC<DetailsProps> = ({user, onUpdate}) => {
     });
 
     useEffect(() => {
-        // Only reset if the user data has actually changed
         if (JSON.stringify(user) !== JSON.stringify(lastResetUser)) {
-
-            // Reset the form with new values
             reset({
                 name: user.name || null,
-				ssn: user.ssn ? maskSSN(user.ssn) : null,
+                ssn: user.ssn ? maskSSN(user.ssn) : null,
                 homepage: user.homepage || null,
                 phone: user.phone || null,
                 email: user.email || null,
@@ -211,68 +143,32 @@ const UserDetailsForm: React.FC<DetailsProps> = ({user, onUpdate}) => {
                 zip_code: user.zip_code || null,
                 city: user.city || null,
             });
-
-            // Update our reference to the last reset user data
             setLastResetUser(user);
         }
     }, [user, reset, lastResetUser, getValues]);
 
-
     const onSubmit = async (formData: UserFormData) => {
         try {
             setIsSubmitting(true);
-
-            const DEBUG = process.env.NODE_ENV === 'development';
-
-            // Create an object with only the changed fields
             const changedFields = Object.entries(formData).reduce<Partial<IBookingUser>>(
                 (acc, [key, newValue]) => {
                     const fieldKey = key as keyof IBookingUser;
                     const originalValue = user[fieldKey];
-
-                    // Normalize both values to handle empty strings consistently
                     const normalizedOriginal = normalizeEmptyValue(fieldKey, originalValue);
                     const normalizedNew = normalizeEmptyValue(fieldKey, newValue);
-
-                    if (DEBUG) {
-                        console.group(`Checking field: ${key}`);
-                        console.log('Original:', originalValue);
-                        console.log('New:', newValue);
-                        console.log('Normalized Original:', normalizedOriginal);
-                        console.log('Normalized New:', normalizedNew);
-                        console.groupEnd();
-                    }
-
-                    const hasChanged = normalizedOriginal !== normalizedNew;
-
-                    if (hasChanged) {
+                    if (normalizedOriginal !== normalizedNew) {
                         // @ts-ignore
                         acc[fieldKey] = normalizedNew;
                     }
-
                     return acc;
                 },
                 {}
             );
 
-            if (DEBUG) {
-                console.group('Update Summary');
-                console.log('Changed Fields:', changedFields);
-                const changes = Object.entries(changedFields).map(([field, value]) => ({
-                    field,
-                    from: user[field as keyof IBookingUser],
-                    to: value
-                }));
-                console.table(changes);
-                console.groupEnd();
-            }
-
             if (Object.keys(changedFields).length > 0) {
                 await onUpdate(changedFields);
-                setIsEditing(false);
-            } else {
-                setIsEditing(false);
             }
+            setIsEditing(false);
         } catch (error) {
             console.error('Failed to update user details:', error);
         } finally {
@@ -296,96 +192,219 @@ const UserDetailsForm: React.FC<DetailsProps> = ({user, onUpdate}) => {
         return formatted;
     };
 
+    const renderViewField = (field: FieldConfig) => (
+        <div key={field.key} className={styles.field}>
+            <span className={styles.fieldLabel}>{t(field.label)}</span>
+            <span className={styles.fieldValue}>
+                {field.masked
+                    ? (user[field.key] ? maskSSN(user[field.key] as string) : '—')
+                    : (user[field.key] || '—')}
+            </span>
+        </div>
+    );
+
+    const renderEditField = (field: FieldConfig) => (
+        <div key={field.key} className={`${styles.editFieldWrapper} ${field.fullWidth ? styles.fullWidth : ''}`}>
+            {field.editable ? (
+                <Controller
+                    name={field.key}
+                    control={control}
+                    render={({field: {onChange, value}}) => (
+                        <>
+                            <Textfield
+                                type={field.type || 'text'}
+                                label={t(field.label)}
+                                value={value || ''}
+                                onChange={(e) => {
+                                    const newValue = field.key === 'phone'
+                                        ? formatPhoneNumber(e.target.value)
+                                        : e.target.value;
+                                    onChange(newValue);
+                                }}
+                                placeholder={field.placeholder}
+                                disabled={field.readOnly || isSubmitting}
+                                error={errors[field.key]?.message}
+                            />
+                            {field.helperText && (
+                                <p>{t(field.helperText)}</p>
+                            )}
+                        </>
+                    )}
+                />
+            ) : (
+                <Textfield
+                    label={t(field.label)}
+                    value={field.masked ? maskSSN(user[field.key] as string || '') : (user[field.key] as string || '')}
+                    readOnly
+                    disabled
+                />
+            )}
+            {field.key === 'ssn' && isEditing && (
+                <p>
+                    {t('bookingfrontend.ssn_from_idporten')}
+                </p>
+            )}
+        </div>
+    );
+
     return (
         <section>
-            <div>
-                <form onSubmit={handleSubmit(onSubmit)}>
-                    {fieldCategories.map((category) => (
-                        <div key={category.title} className={styles.detailCategory}>
-                            <h3>{t(category.title)}</h3>
-                            <div>
-                                {category.fields.map((field) => (
-                                    <div key={field.key}>
-                                        {isEditing && field.editable ? (
-                                            <Controller
-                                                name={field.key}
-                                                control={control}
-                                                render={({field: {onChange, value}}) => (
-                                                    <div className={styles.editFieldWrapper}>
-                                                        <Textfield
-                                                            type={field.type || 'text'}
-                                                            label={t(field.label)}
-                                                            value={value || ''}
-                                                            onChange={(e) => {
-                                                                const newValue = field.key === 'phone'
-                                                                    ? formatPhoneNumber(e.target.value)
-                                                                    : e.target.value;
-                                                                onChange(newValue);
-                                                            }}
-                                                            placeholder={field.placeholder}
-                                                            disabled={field.readOnly || isSubmitting}
-                                                            error={errors[field.key]?.message}
-                                                        />
-                                                        {field.helperText && (
-                                                            <p>
-                                                                {t(field.helperText)}
-                                                            </p>
-                                                        )}
-                                                        {errors[field.key] && (
-                                                            <p>
-                                                                {errors[field.key]?.message}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            />
-                                        ) : !isEditing && (
-                                            <div className={`${styles.viewField} ${isEditing && styles.editing}`}>
-                                                <span>{t(field.label)}</span>
-												{field.masked ? <span>{ user[field.key] ? maskSSN(user[field.key] as string) : '-'}</span> :
-													<span>{user[field.key] || '-'}</span>}
+            {/* Page header */}
+            <div className={styles.pageHeader}>
+                <div>
+                    <Heading level={1} data-size="lg">
+                        {t('bookingfrontend.user_data')}
+                    </Heading>
+                    <p className={styles.subtitle}>
+                        {t('bookingfrontend.user_data_description')}
+                    </p>
+                </div>
+                {!isEditing && (
+                    <Button variant="primary" data-size="sm" onClick={() => setIsEditing(true)}>
+                        <PencilIcon fontSize="1rem"/>
+                        {t('bookingfrontend.edit')}
+                    </Button>
+                )}
+            </div>
 
-											</div>
-										)}
-                                    </div>
-                                ))}
+            {/* Profile card */}
+            <form onSubmit={handleSubmit(onSubmit)}>
+                <div className={styles.card}>
+                    {/* Profile header */}
+                    <div className={styles.profileHeader}>
+                        <div className={styles.left}>
+                            <span className={styles.avatarLg}>{getInitials(user.name)}</span>
+                            <div>
+                                <Heading level={2} data-size="sm" style={{marginBottom: 4}}>
+                                    {user.name || '—'}
+                                </Heading>
+                                <div className={styles.profileMeta}>
+                                    <span>{t('bookingfrontend.logged_in_with_idporten')}</span>
+                                </div>
                             </div>
                         </div>
-                    ))}
-                    <div className={styles.actionRow}>
-                        {/*{isDirty && <span>isDirty</span>}*/}
-                        {/*{isSubmitting && <span>isSubmitting</span>}*/}
-                        {/*{!(!isDirty || isSubmitting) ? <span>Saveable</span> : <span>Not saveable</span>}*/}
-                        {isEditing && (
-                            <Fragment>
-                                <Button
-                                    type="button"
-                                    variant="tertiary"
-                                    onClick={handleCancel}
-                                    disabled={isSubmitting}
-                                >
-                                    {t('common.cancel')}
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={!isDirty || isSubmitting}
-                                >
-                                    {isSubmitting ? t('common.saving') : t('common.save changes')}
-                                </Button>
-                            </Fragment>
-                        )}
-                        {!isEditing && (
-                            <Button
-                                variant="primary"
-                                data-size="sm"
-                                onClick={() => setIsEditing(true)}
-                            >
-                                <FontAwesomeIcon icon={faPen}/>
-                                {t('bookingfrontend.edit')}
-                            </Button>
-                        )}
+                        <Tag data-color="accent" data-size="sm">
+                            {t('bookingfrontend.verified_via_idporten')}
+                        </Tag>
                     </div>
-                </form>
+
+                    {/* Personopplysninger */}
+                    <h3 className={styles.sectionCaption}>
+                        {t('common.personal information')}
+                    </h3>
+                    <div className={styles.dlGrid}>
+                        {isEditing
+                            ? personalFields.map(renderEditField)
+                            : personalFields.map(renderViewField)}
+                    </div>
+
+                    {/* Adresse */}
+                    <h3 className={styles.sectionCaption}>
+                        {t('common.address information')}
+                    </h3>
+                    <div className={styles.dlGrid}>
+                        {isEditing
+                            ? addressFields.map(renderEditField)
+                            : addressFields.map(renderViewField)}
+                    </div>
+
+                    {/* Action row */}
+                    {isEditing && (
+                        <div className={styles.actionRow}>
+                            <Button
+                                type="button"
+                                variant="tertiary"
+                                onClick={handleCancel}
+                                disabled={isSubmitting}
+                            >
+                                {t('common.cancel')}
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={!isDirty || isSubmitting}
+                            >
+                                {isSubmitting
+                                    ? t('common.saving')
+                                    : (t('common.save changes'))}
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            </form>
+
+            {/* Organizations */}
+            {user.delegates && user.delegates.length > 0 && (
+                <>
+                    <div className={styles.sectionHeader}>
+                        <Heading level={2} data-size="sm">
+                            {t('bookingfrontend.organizations_you_represent')}
+                        </Heading>
+                        <Button variant="tertiary" data-size="sm">
+                            <PlusIcon fontSize="1rem"/>
+                            {t('bookingfrontend.add_organization')}
+                        </Button>
+                    </div>
+                    <div className={styles.card} style={{padding: 0}}>
+                        {user.delegates.map((d) => (
+                            <div key={d.org_id} className={styles.orgRow}>
+                                <div className={styles.orgInfo}>
+                                    <span className={styles.orgIcon}>
+                                        <PersonGroupIcon fontSize="1rem"/>
+                                    </span>
+                                    <div style={{minWidth: 0}}>
+                                        <div style={{fontWeight: 500}}>{d.name}</div>
+                                        <div style={{fontSize: 13, color: 'var(--ds-color-neutral-text-subtle)'}}>
+                                            {t('bookingfrontend.organization number')} {d.organization_number}
+                                        </div>
+                                    </div>
+                                </div>
+                                <Tag data-color="neutral" data-size="sm">
+                                    {d.active
+                                        ? t('bookingfrontend.active_delegate')
+                                        : t('bookingfrontend.inactive')}
+                                </Tag>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
+
+            {/* Notifications section — UI-only, not wired to backend yet */}
+            <div className={styles.sectionHeader}>
+                <Heading level={2} data-size="sm">
+                    {t('bookingfrontend.notifications_and_communication')}
+                </Heading>
+            </div>
+            <div className={styles.card}>
+                <div className={styles.toggleRow}>
+                    <div className={styles.toggleLabel}>
+                        <div className={styles.title}>{t('bookingfrontend.email_notifications')}</div>
+                        <div className={styles.helper}>{t('bookingfrontend.email_notifications_description')}</div>
+                    </div>
+                    <div className={styles.toggleControl}>
+                        <Checkbox defaultChecked aria-label={t('bookingfrontend.email_notifications')}/>
+                    </div>
+                </div>
+
+                <div className={styles.toggleRow}>
+                    <div className={styles.toggleLabel}>
+                        <div className={styles.title}>{t('bookingfrontend.sms_notifications')}</div>
+                        <div className={styles.helper}>{t('bookingfrontend.sms_notifications_description')}</div>
+                    </div>
+                    <div className={styles.toggleControl}>
+                        <Checkbox aria-label={t('bookingfrontend.sms_notifications')}/>
+                    </div>
+                </div>
+
+                <div className={styles.toggleRow}>
+                    <div className={styles.toggleLabel}>
+                        <div className={styles.title}>{t('bookingfrontend.newsletter')}</div>
+                        <div className={styles.helper}>{t('bookingfrontend.newsletter_description')}</div>
+                    </div>
+                    <div className={styles.toggleControl}>
+                        <Checkbox defaultChecked aria-label="Nyhetsbrev"/>
+                    </div>
+                </div>
             </div>
         </section>
     );

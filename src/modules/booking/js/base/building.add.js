@@ -28,7 +28,7 @@ function populate_location_data(location_code)
 	var res = location_code.split("-");
 	var level = res.length;
 	var oArgs = {location_code: location_code};
-	var requestUrl = phpGWLink('/property/location/location-data', oArgs, true);
+	var requestUrl = phpGWLink('property/location/location-data', oArgs);
 
 	$.ajax({
 		type: 'GET',

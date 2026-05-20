@@ -386,7 +386,7 @@ window.on_location_updated = function (location_code)
 	location_code = location_code || $("#loc1").val();
 
 	var oArgs = {location_code: location_code};
-	var requestUrl = phpGWLink('/property/location/location-exception', oArgs, true);
+	var requestUrl = phpGWLink('property/location/location-exception', oArgs);
 
 	$.ajax({
 		type: 'POST',

@@ -10,7 +10,7 @@ $(document).ready(function ()
 		}
 
 		var oArgs = {menuaction: 'registration.boreg.get_locations', location_code: $(this).val(), field: 'loc1'};
-		var requestUrl = phpGWLink('/registration/', oArgs, true);
+		var requestUrl = phpGWLink('registration/', oArgs, true);
 
 		var htmlString = "";
 
@@ -49,7 +49,7 @@ $(document).ready(function ()
 		}
 
 		var oArgs = {menuaction: 'registration.boreg.get_locations', location_code: $(this).val(), field: 'loc2'};
-		var requestUrl = phpGWLink('/registration/', oArgs, true);
+		var requestUrl = phpGWLink('registration/', oArgs, true);
 
 		var htmlString = "";
 
@@ -88,7 +88,7 @@ $(document).ready(function ()
 		}
 
 		var oArgs = {menuaction: 'registration.boreg.get_locations', location_code: $(this).val(), field: 'loc3'};
-		var requestUrl = phpGWLink('/registration/', oArgs, true);
+		var requestUrl = phpGWLink('registration/', oArgs, true);
 
 		var htmlString = "";
 
@@ -127,7 +127,7 @@ $(document).ready(function ()
 		}
 
 		var oArgs = {menuaction: 'registration.boreg.get_locations', location_code: $(this).val(), field: 'loc4'};
-		var requestUrl = phpGWLink('/registration/', oArgs, true);
+		var requestUrl = phpGWLink('registration/', oArgs, true);
 
 		var htmlString = "";
 
@@ -166,7 +166,7 @@ $(document).ready(function ()
 		}
 
 		var oArgs = {menuaction: 'registration.boreg.get_locations', location_code: $(this).val(), field: 'loc5'};
-		var requestUrl = phpGWLink('/registration/', oArgs, true);
+		var requestUrl = phpGWLink('registration/', oArgs, true);
 
 		var htmlString = "";
 
@@ -221,7 +221,7 @@ $(document).ready(function ()
 	 return false;
 	 }
 	 var oArgs = {menuaction:'registration.boreg.get_locations', location_code:new_loc_code};
-	 var requestUrl = phpGWLink('/registration/', oArgs, true);
+	 var requestUrl = phpGWLink('registration/', oArgs, true);
 
 	 var htmlString = "";
 

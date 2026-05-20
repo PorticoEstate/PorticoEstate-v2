@@ -101,7 +101,7 @@ this.onActionsClick = function (action)
 		data.repeat_type = $("#repeat_type").val();
 
 		var oArgs = {location_id : location_id, id: item_id };
-		var requestUrl = phpGWLink('/property/location/component/update-control-serie', oArgs, true);
+		var requestUrl = phpGWLink('property/location/component/update-control-serie', oArgs);
 		$.ajax({
 			type: 'POST',
 			dataType: 'json',
@@ -122,7 +122,7 @@ this.onActionsClick = function (action)
 
 
 		var oArgs2 = {location_id : location_id, id: item_id};
-		var requestUrl2 = phpGWLink('/property/location/component/controls', oArgs2, true);
+		var requestUrl2 = phpGWLink('property/location/component/controls', oArgs2);
 		JqueryPortico.updateinlineTableHelper('datatable-container_4', requestUrl2);
 	}
 }
@@ -170,7 +170,7 @@ add_control = function ()
 	oArgs.repeat_interval = $("#repeat_interval").val();
 	oArgs.controle_time = $("#controle_time").val();
 	oArgs.service_time = $("#service_time").val();
-	requestUrl = phpGWLink('/property/location/component/add-control', oArgs, true);
+	requestUrl = phpGWLink('property/location/component/add-control', oArgs);
 //								alert(requestUrl);
 
 	$("#controller_receipt").html("");
@@ -197,7 +197,7 @@ add_control = function ()
 	});
 
 	var oArgs2 = {location_id: location_id, id: item_id};
-	var requestUrl2 = phpGWLink('/property/location/component/controls', oArgs2, true);
+	var requestUrl2 = phpGWLink('property/location/component/controls', oArgs2);
 	JqueryPortico.updateinlineTableHelper('datatable-container_4', requestUrl2);
 };
 
@@ -208,7 +208,7 @@ function updateCaseTable(check_list_id)
 		return;
 	}
 	var oArgs = {check_list_id: check_list_id};
-	var requestUrl = phpGWLink('/property/location/component/cases-for-checklist', oArgs, true);
+	var requestUrl = phpGWLink('property/location/component/cases-for-checklist', oArgs);
 	JqueryPortico.updateinlineTableHelper('datatable-container_6', requestUrl);
 }
 
@@ -219,11 +219,11 @@ $(document).ready(function ()
 	$("#check_lst_time_span").change(function ()
 	{
 		var oArgs = {location_id: location_id, id: item_id, year: $(this).val()};
-		var requestUrl = phpGWLink('/property/location/component/checklists', oArgs, true);
+		var requestUrl = phpGWLink('property/location/component/checklists', oArgs);
 		var _oTable = JqueryPortico.updateinlineTableHelper('datatable-container_5', requestUrl);
 
 		oArgs = {location_id: location_id, id: item_id, year: $(this).val()};
-		requestUrl = phpGWLink('/property/location/component/cases', oArgs, true);
+		requestUrl = phpGWLink('property/location/component/cases', oArgs);
 		JqueryPortico.updateinlineTableHelper('datatable-container_6', requestUrl);
 
 		if (click_action_on_table == false)

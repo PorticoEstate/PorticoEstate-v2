@@ -221,7 +221,7 @@ this.onActionsClick = function (action)
 		data.repeat_type = $("#repeat_type").val();
 
 		var oArgs = {location_id: location_id, id: item_id };
-		var requestUrl = phpGWLink('/property/location/component/update-control-serie', oArgs, true);
+		var requestUrl = phpGWLink('property/location/component/update-control-serie', oArgs);
 		$.ajax({
 			type: 'POST',
 			dataType: 'json',
@@ -288,7 +288,7 @@ add_control = function ()
 	oArgs.repeat_interval = $("#repeat_interval").val();
 	oArgs.controle_time = $("#controle_time").val();
 	oArgs.service_time = $("#service_time").val();
-	var requestUrl = phpGWLink('/property/location/component/add-control', oArgs, true);
+	var requestUrl = phpGWLink('property/location/component/add-control', oArgs);
 //								alert(requestUrl);
 
 	$("#controller_receipt").html("");

@@ -671,7 +671,7 @@ window.on_location_updated = function (location_code)
 	}
 
 	var oArgs = {loc1: location_code};
-	var requestUrl = phpGWLink('/property/location/delivery-address', oArgs, true);
+	var requestUrl = phpGWLink('property/location/delivery-address', oArgs);
 
 	$.ajax({
 		type: 'POST',
@@ -694,7 +694,7 @@ window.get_location_exception = function (location_code)
     $("div[role=alert]").remove();
 
 	var oArgs = {location_code: location_code};
-	var requestUrl = phpGWLink('/property/location/location-exception', oArgs, true);
+	var requestUrl = phpGWLink('property/location/location-exception', oArgs);
 
 	$.ajax({
 		type: 'POST',

@@ -5,6 +5,22 @@ namespace
 	require_once __DIR__ . '/../../vendor/autoload.php';
 	require_once __DIR__ . '/../../src/helpers/Sanitizer.php';
 
+		if (!class_exists('phpgw'))
+		{
+			class phpgw
+			{
+				public static function link(string $url, array $params = array()): string
+				{
+					if (empty($params))
+					{
+						return $url;
+					}
+
+					return $url . '?' . http_build_query($params);
+				}
+			}
+		}
+
 	if (!function_exists('lang'))
 	{
 		function lang(string $text, ...$args): string
@@ -424,6 +440,85 @@ namespace Tests\Controllers
 			$decoded = json_decode($this->responseBody, true);
 			$this->assertSame(4, $decoded['draw']);
 			$this->assertSame(1, $decoded['recordsTotal']);
+		}
+
+		public function testResponsibilityRoleHeadReturnsDynamicTableDefinition(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+				public array $capturedDryRunParams = [];
+				public array $uicols = [
+					'name' => ['loc1'],
+					'descr' => ['Loc1'],
+					'input_type' => [''],
+					'datatype' => ['V'],
+					'formatter' => [''],
+					'cols_return_extra' => [''],
+				];
+
+				public function get_responsible(array $params): array
+				{
+					if (!empty($params['dry_run']))
+					{
+						$this->capturedDryRunParams = $params;
+					}
+
+					return [];
+				}
+			};
+
+			$controller = new class($this->container, $bo) extends LocationController
+			{
+				private $boStub;
+
+				public function __construct(ContainerInterface $container, $boStub)
+				{
+					parent::__construct($container);
+					$this->boStub = $boStub;
+				}
+
+				protected function bo()
+				{
+					return $this->boStub;
+				}
+
+				protected function currentAccountId(): int
+				{
+					return 55;
+				}
+
+				protected function hasAcl(string $aclProperty): bool
+				{
+					return true;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn([
+				'head' => 1,
+				'type_id' => 4,
+				'role_id' => 9,
+				'user_id' => 77,
+				'status' => '',
+				'location_code' => '',
+				'entity_id' => '',
+			]);
+			$this->request->method('getParsedBody')->willReturn([]);
+
+			$controller->responsibilityRole($this->request, $this->response);
+
+			$this->assertSame(77, $bo->capturedDryRunParams['user_id']);
+			$this->assertSame(9, $bo->capturedDryRunParams['role_id']);
+			$this->assertSame(4, $bo->capturedDryRunParams['type_id']);
+			$this->assertTrue($bo->capturedDryRunParams['dry_run']);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertArrayHasKey('datatable_def', $decoded);
+			$this->assertArrayHasKey('datatable_head', $decoded);
+			$this->assertSame('datatable-container', $decoded['datatable_def']['container']);
+			$this->assertTrue($decoded['datatable_def']['allrows']);
+			$this->assertStringContainsString('<thead>', $decoded['datatable_head']);
+			$this->assertNotEmpty($decoded['datatable_def']['ColumnDefs']);
 		}
 
 		public function testGetDocumentsAcceptsBodyParamsAndOverridesQueryParams(): void

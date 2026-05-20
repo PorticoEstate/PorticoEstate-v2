@@ -220,7 +220,175 @@ class LocationController
 
 	public function responsibilityRole(Request $request, Response $response): Response
 	{
+		$queryParams = $request->getQueryParams();
+		$bodyParams = $request->getParsedBody();
+		$bodyParams = is_array($bodyParams) ? $bodyParams : array();
+		$input = array_merge($queryParams, $bodyParams);
+
+		if (!empty($input['head']))
+		{
+			$typeId = (int)($input['type_id'] ?? 1);
+			if (!$typeId)
+			{
+				$typeId = 1;
+			}
+
+			$userId = (int)($input['user_id'] ?? $this->currentAccountId());
+			$roleId = (int)($input['role_id'] ?? 0);
+
+			$this->bo()->get_responsible(array(
+				'user_id' => $userId,
+				'role_id' => $roleId,
+				'type_id' => $typeId,
+				'dry_run' => true,
+			));
+
+			$uicols = $this->getUicolsResponsibilityRole($this->hasAcl(self::ACL_EDIT));
+			$searchLevels = array();
+			for ($i = 1; $i < $typeId; $i++)
+			{
+				$searchLevels[] = "loc{$i}";
+			}
+
+			$entityDef = array();
+			$head = '<thead>';
+			$countUicolsName = count($uicols['name']);
+
+			for ($k = 0; $k < $countUicolsName; $k++)
+			{
+				$params = array(
+					'key' => $uicols['name'][$k],
+					'label' => $uicols['descr'][$k],
+					'sortable' => false,
+					'hidden' => ($uicols['input_type'][$k] == 'hidden') ? true : false,
+				);
+
+				$params['formatter'] = ""
+					. "formatter = function (dummy1, dummy2, oData) {"
+					. "return oData['{$uicols['name'][$k]}'];"
+					. "}";
+
+				if (!empty($uicols['datatype'][$k]) && $uicols['datatype'][$k] === 'link')
+				{
+					$uicols['formatter'][$k] = 'JqueryPortico.formatLinkGeneric';
+				}
+
+				if (!empty($uicols['formatter'][$k]))
+				{
+					$params['formatter'] = "formatter = function (dummy1, dummy2, oData) {"
+						. " try {"
+						. " var ret = {$uicols['formatter'][$k]}('{$uicols['name'][$k]}', oData);"
+						. " }"
+						. " catch(err) {"
+						. " return err.message;"
+						. " }"
+						. " return ret;"
+						. " }";
+				}
+
+				if (in_array($uicols['name'][$k], $searchLevels, true))
+				{
+					$params['formatter'] = "formatter = function (dummy1, dummy2, oData) {"
+						. " try {"
+						. " var ret = JqueryPortico.searchLink('{$uicols['name'][$k]}', oData);"
+						. " }"
+						. " catch(err) {"
+						. " return err.message;"
+						. " }"
+						. " return ret;"
+						. " }";
+				}
+
+				if ($uicols['name'][$k] === 'loc1')
+				{
+					$params['formatter'] = "formatter = function (dummy1, dummy2, oData) {"
+						. " try {"
+						. " var ret = JqueryPortico.searchLink('{$uicols['name'][$k]}', oData);"
+						. " }"
+						. " catch(err) {"
+						. " return err.message;"
+						. " }"
+						. " return ret;"
+						. " }";
+					$params['sortable'] = true;
+				}
+				else if (isset($uicols['cols_return_extra'][$k])
+					&& ($uicols['cols_return_extra'][$k] != 'T' || $uicols['cols_return_extra'][$k] != 'CH'))
+				{
+					$params['sortable'] = true;
+				}
+
+				$entityDef[] = $params;
+
+				if (($uicols['input_type'][$k] ?? '') !== 'hidden')
+				{
+					$head .= '<th>' . $uicols['descr'][$k] . '</th>';
+				}
+			}
+
+			$head .= '</thead>';
+
+			$datatableDef = array(
+				'container' => 'datatable-container',
+				'requestUrl' => \phpgw::link('/property/location/responsibility-role', array(
+					'type_id' => $typeId,
+					'second_display' => 1,
+					'status' => (string)($input['status'] ?? ''),
+					'location_code' => (string)($input['location_code'] ?? ''),
+					'entity_id' => (string)($input['entity_id'] ?? ''),
+				)),
+				'ColumnDefs' => $entityDef,
+				'download' => \phpgw::link('/property/location/download', array(
+					'type_id' => $typeId,
+					'role_id' => $roleId,
+					'export' => true,
+					'allrows' => true,
+					'download_type' => 'responsiblility_role',
+				)),
+				'allrows' => true,
+			);
+
+			return $this->jsonResponse($response, array(
+				'datatable_def' => $datatableDef,
+				'datatable_head' => $head,
+			));
+		}
+
 		return $this->queryRole($request, $response);
+	}
+
+	private function getUicolsResponsibilityRole(bool $aclEdit): array
+	{
+		$uicols = $this->bo()->uicols;
+		$uicols['name'][] = 'responsible_contact';
+		$uicols['descr'][] = lang('responsible');
+		$uicols['sortable'][] = false;
+		$uicols['format'][] = '';
+		$uicols['formatter'][] = '';
+		$uicols['input_type'][] = '';
+
+		$uicols['name'][] = 'responsible_contact_id';
+		$uicols['descr'][] = 'dummy';
+		$uicols['sortable'][] = false;
+		$uicols['format'][] = '';
+		$uicols['formatter'][] = '';
+		$uicols['input_type'][] = 'hidden';
+
+		$uicols['name'][] = 'responsible_item';
+		$uicols['descr'][] = 'dummy';
+		$uicols['sortable'][] = false;
+		$uicols['format'][] = '';
+		$uicols['formatter'][] = '';
+		$uicols['input_type'][] = 'hidden';
+
+		$uicols['name'][] = 'select';
+		$uicols['descr'][] = lang('select');
+		$uicols['sortable'][] = false;
+		$uicols['format'][] = '';
+		$uicols['formatter'][] = $aclEdit ? 'myFormatterCheck' : '';
+		$uicols['input_type'][] = '';
+
+		return $uicols;
 	}
 
 	public function responsibilityRoleSave(Request $request, Response $response): Response

@@ -79,7 +79,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		'update_location'			 => true,
 		'responsiblility_role'		 => true,
 		'get_delivery_address'		 => false,
-		'get_location_exception'	 => false,
 		'get_controls_at_component'	 => false,
 		'get_assigned_history'		 => false,
 		'get_cases'					 => false,
@@ -3183,28 +3182,6 @@ JS;
 		);
 	}
 
-	/**
-	 * Return location exception data for the given location code.
-	 *
-	 * @deprecated Use LocationController::getLocationException() via /property/location/location-exception.
-	 * @return array
-	 */
-	function get_location_exception()
-	{
-		$location_code = Sanitizer::get_var('location_code', 'string');
-
-		$location_exception = $this->bo->get_location_exception($location_code);
-
-		foreach ($location_exception as &$_location_exception)
-		{
-			$_location_exception['category_text'] = preg_replace('!(http|ftp|scp)(s)?:\/\/[a-zA-Z0-9.?%=\-&_/]+!', "<a href=\"\\0\">\\0</a>", $_location_exception['category_text']);
-			$_location_exception['location_descr'] = preg_replace('!(http|ftp|scp)(s)?:\/\/[a-zA-Z0-9.?%=\-&_/]+!', "<a href=\"\\0\">\\0</a>", $_location_exception['location_descr']);
-		}
-
-		return array(
-			'location_exception' => $location_exception
-		);
-	}
 
 	/**
 	 * Return controller controls registered at a given location component.

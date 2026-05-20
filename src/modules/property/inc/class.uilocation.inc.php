@@ -3084,13 +3084,6 @@ JS;
 		$location_code	 = Sanitizer::get_var('location_code', 'string', 'GET');
 		$type_id		 = $this->type_id;
 
-		//cramirez add JsonCod for Delete
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			$this->bo->delete($location_code);
-			return "location_code " . $location_code . " " . lang("has been deleted");
-		}
-
 		$this->flags['menu_selection'] .= "::loc_$type_id";
 		Settings::getInstance()->set('flags', $this->flags);
 

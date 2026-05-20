@@ -1821,6 +1821,7 @@ $phpgw_baseline = array(
 			'modified' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
 			'created_by' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
 			'modified_by' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+			'billed' => array('type' => 'int', 'precision' => '4', 'nullable' => false, 'default' => 0),
 		),
 		'pk' => array('id'),
 		'fk' => array(

@@ -375,6 +375,7 @@ function buildLocationRestRequest(form)
 	var query = parsed.searchObject || {};
 	var clickHistory = query.click_history || '';
 	var queryParts = [];
+	var originalLocationCode = (query.location_code || getLocationFieldValue(form, 'input[name="location_code"]') || '').trim();
 	var locationCode = buildLocationCodeFromLocationForm(form);
 
 	var rawLocationId = '';
@@ -384,10 +385,10 @@ function buildLocationRestRequest(form)
 	}
 
 	var routeLocationId = parseInt(rawLocationId, 10);
-	var hasExistingLocation = (!isNaN(routeLocationId) && routeLocationId > 0) || !!query.location_code;
-	var isUpdate = hasExistingLocation && !!locationCode;
+	var hasExistingLocation = (!isNaN(routeLocationId) && routeLocationId > 0) || !!originalLocationCode;
+	var isUpdate = hasExistingLocation && !!originalLocationCode;
 	var requestUrl = isUpdate
-		? '/property/location/' + encodeURIComponent(locationCode)
+		? '/property/location/' + encodeURIComponent(originalLocationCode)
 		: '/property/location/add';
 
 	if (clickHistory)

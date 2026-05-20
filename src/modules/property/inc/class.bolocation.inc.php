@@ -967,7 +967,7 @@ JS;
 		return $this->custom->get_attribute_groups('property', $location, $attributes);
 	}
 
-	function save($location, $values_attribute, $action = '', $type_id = '', $location_code_parent = '')
+	function save($location, $values_attribute, $action = '', $type_id = '', $location_code_parent = '', $location_code_original = '')
 	{
 		if (is_array($values_attribute))
 		{
@@ -976,13 +976,23 @@ JS;
 
 		if ($action == 'edit')
 		{
-			if ($this->so->check_location($location['location_code'], $type_id))
+			$existingLocationCode = $location_code_original ?: $location_code_parent;
+			if (!$existingLocationCode)
 			{
-				$receipt = $this->so->edit($location, $values_attribute, $type_id);
+				$existingLocationCode = $location['location_code'];
+			}
+
+			if (!$this->so->check_location($existingLocationCode, $type_id))
+			{
+				$receipt['error'][] = array('msg' => lang('This location ID does not exist!'));
+			}
+			else if ($location['location_code'] !== $existingLocationCode && $this->so->check_location($location['location_code'], $type_id))
+			{
+				$receipt['error'][] = array('msg' => lang('This location ID already exists!'));
 			}
 			else
 			{
-				$receipt['error'][] = array('msg' => lang('This location ID does not exist!'));
+				$receipt = $this->so->edit($location, $values_attribute, $type_id, $existingLocationCode);
 			}
 		}
 		else

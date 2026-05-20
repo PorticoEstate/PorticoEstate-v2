@@ -545,7 +545,7 @@ class property_solocation
 				$on = 'ON';
 				for ($i = ($j); $i > 0; $i--)
 				{
-					$joinmethod	 .= " $on (fm_location" . ($j + 1) . ".loc{$i} = fm_location{$j}.loc{$i})";
+					$joinmethod	 .= " {$on} (fm_location" . ($j + 1) . ".loc{$i} = fm_location{$j}.loc{$i})";
 					$on			 = 'AND';
 					if ($i == 1)
 					{
@@ -834,7 +834,7 @@ class property_solocation
 			$this->db->query("SELECT DISTINCT * FROM $attribute_table WHERE (list=1 OR lookup_form=1) AND $attribute_filter $user_column_filter ORDER BY attrib_sort ASC");
 		}
 
-		$i = count($uicols['name']);
+		$i = count((array)$uicols['name']);
 
 		while ($this->db->next_record())
 		{
@@ -1390,7 +1390,7 @@ class property_solocation
 			$on = 'ON';
 			for ($i = ($j); $i > 0; $i--)
 			{
-				$joinmethod	 .= " {$on} (fm_location" . ($j + 1) . ".loc{$i}  = fm_location{$j}.loc{$i})";
+				$joinmethod	 .= " {$on} (fm_location" . ($j + 1) . ".loc{$i} = fm_location{$j}.loc{$i})";
 				$on			 = 'AND';
 				if ($i == 1)
 				{
@@ -1459,6 +1459,7 @@ class property_solocation
 					$cols_return[]			 = 'last_name';
 					$uicols['input_type'][]	 = 'text';
 					$uicols['name'][]		 = 'last_name';
+					$uicols['datatype'][]	 = 'V';
 					$uicols['descr'][]		 = lang('last name');
 					$uicols['statustext'][]	 = lang('last name');
 
@@ -1466,6 +1467,7 @@ class property_solocation
 					$cols_return[]			 = 'first_name';
 					$uicols['input_type'][]	 = 'text';
 					$uicols['name'][]		 = 'first_name';
+					$uicols['datatype'][]	 = 'V';
 					$uicols['descr'][]		 = lang('first name');
 					$uicols['statustext'][]	 = lang('first name');
 
@@ -1473,6 +1475,7 @@ class property_solocation
 					$cols_return[]			 = 'contact_phone';
 					$uicols['input_type'][]	 = 'text';
 					$uicols['name'][]		 = 'contact_phone';
+					$uicols['datatype'][]	 = 'V';
 					$uicols['descr'][]		 = lang('contact phone');
 					$uicols['statustext'][]	 = lang('contact phone');
 				}
@@ -1808,10 +1811,11 @@ class property_solocation
 		return $receipt;
 	}
 
-	function edit($location, $values_attribute = array(), $type_id = '')
+	function edit($location, $values_attribute = array(), $type_id = '', $location_code_parent = '')
 	{
 		$type_id = (int)$type_id;
 		$receipt = array();
+		$old_location_code = $location_code_parent ?: (isset($location['location_code']) ? $location['location_code'] : '');
 
 		if (is_array($location))
 		{
@@ -1847,7 +1851,7 @@ class property_solocation
 
 		$sql = "SELECT * FROM fm_location{$type_id} WHERE location_code = :location_code";
 		$stmt = $this->db->prepare($sql);
-		$stmt->execute(array(':location_code' => $location['location_code']));
+		$stmt->execute(array(':location_code' => $old_location_code));
 		$row = $stmt->fetch(\PDO::FETCH_ASSOC);
 
 		$metadata = $this->db->metadata('fm_location' . $type_id);
@@ -1887,9 +1891,20 @@ class property_solocation
 		$sql = "INSERT INTO fm_location{$type_id}_history ($cols) VALUES ($vals)";
 		$this->db->query($sql, __LINE__, __FILE__);
 
+		if ($old_location_code !== $location['location_code'])
+		{
+			$sql = "UPDATE fm_locations SET location_code = :new_location_code, loc1 = :loc1 WHERE location_code = :old_location_code";
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute(array(
+				':new_location_code' => $location['location_code'],
+				':loc1' => isset($location['loc1']) ? $location['loc1'] : '',
+				':old_location_code' => $old_location_code,
+			));
+		}
+
 		$sql = "UPDATE fm_location{$type_id} SET {$value_set} WHERE location_code = :location_code";
 		$stmt = $this->db->prepare($sql);
-		$stmt->execute(array(':location_code' => $location['location_code']));
+		$stmt->execute(array(':location_code' => $old_location_code));
 
 		$this->update_location_name($location['location_code']);
 
@@ -1954,7 +1969,7 @@ class property_solocation
 			$on = 'ON';
 			for ($i = ($type_id - 1); $i > 0; $i--)
 			{
-				$joinmethod	 .= " $on (fm_location" . ($type_id) . ".loc" . ($i) . ' = ' . $parent_table . ".loc" . ($i) . ")";
+				$joinmethod	 .= " {$on} (fm_location" . ($type_id) . ".loc" . ($i) . ' = ' . $parent_table . ".loc" . ($i) . ")";
 				$on			 = 'AND';
 				if ($i == 1)
 				{
@@ -2599,8 +2614,7 @@ class property_solocation
 			$locationPattern = "{$location_name}%";
 			$sql = "SELECT loc{$level}_name as name, location_code"
 				. " FROM fm_location{$level}"
-				. " WHERE loc{$level}_name {$this->like} :location_pattern"
-				. " OR location_code {$this->like} :location_pattern";
+				. " WHERE loc{$level}_name {$this->like} '%{$query}%' OR location_code {$this->like} '%{$query}%' ";
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute(array(':location_pattern' => $locationPattern));
 			while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))

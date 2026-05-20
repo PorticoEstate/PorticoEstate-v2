@@ -843,6 +843,7 @@ class LocationController
 		}
 
 		$bodyParams = $this->requestBodyAsArray($request);
+		$bodyParams['location_code_original'] = $locationCode;
 		if (empty($bodyParams['location_code']))
 		{
 			$bodyParams['location_code'] = $locationCode;

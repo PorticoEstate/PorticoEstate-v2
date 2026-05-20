@@ -28,6 +28,11 @@ class LocationFormHelper
     public function mapInput(array $requestData, ?int $locationId = null): array
     {
         $locationCode = $this->resolveLocationCode($requestData);
+        $originalLocationCode = isset($requestData['location_code_original']) ? trim((string) $requestData['location_code_original']) : '';
+        if ($originalLocationCode === '')
+        {
+            $originalLocationCode = $locationCode;
+        }
         $locationParts = $this->extractLocationParts($locationCode);
         $typeId = $this->resolveTypeId($requestData, $locationParts);
 
@@ -39,6 +44,7 @@ class LocationFormHelper
             'errors' => [],
             'location_id' => (int) ($locationId ?? 0),
             'location_code' => $locationCode,
+            'location_code_original' => $originalLocationCode,
             'type_id' => $typeId,
             'location_parent' => count($locationParts) > 1 ? array_slice($locationParts, 0, -1) : [],
             'is_edit' => !empty($locationId),
@@ -64,13 +70,13 @@ class LocationFormHelper
         // Load existing location data if editing
         if (!empty($normalized['is_edit']))
         {
-            if ($locationCode === '')
+            if ($originalLocationCode === '')
             {
                 $normalized['errors']['location_code'] = 'Location code is required for update';
             }
             else
             {
-                $normalized['location_data'] = $this->loadLocationData($locationCode);
+                $normalized['location_data'] = $this->loadLocationData($originalLocationCode);
                 if (!$normalized['location_data'])
                 {
                     $normalized['errors']['location_code'] = 'Location not found';
@@ -150,6 +156,7 @@ class LocationFormHelper
         {
             $values = $state['values'] ?? [];
             $locationCode = (string)($values['location_code'] ?? ($state['location_code'] ?? ''));
+            $originalLocationCode = (string)($state['location_code_original'] ?? $locationCode);
             $typeId = (int)($state['type_id'] ?? 0);
 
             if ($locationCode === '')
@@ -175,7 +182,8 @@ class LocationFormHelper
                 $state['values_attribute'] ?? [],
                 $action,
                 $typeId,
-                $state['location_parent'] ?? ''
+                $state['location_parent'] ?? [],
+                $originalLocationCode
             );
 
             if (!empty($receipt['error']))
@@ -185,6 +193,7 @@ class LocationFormHelper
                     'status' => 'error',
                     'message' => 'Failed to save location',
                     'location_code' => $locationCode,
+                    'location_code_original' => $originalLocationCode,
                     'location_id' => $state['location_id'] ?: null,
                     'receipt' => $receipt,
                 ];
@@ -199,6 +208,7 @@ class LocationFormHelper
                     'status' => 'success',
                     'message' => $action === 'edit' ? 'Location updated successfully' : 'Location created successfully',
                     'location_code' => $savedLocationCode,
+                    'location_code_original' => $originalLocationCode,
                     'location_id' => $state['location_id'] ?: null,
                     'receipt' => $receipt,
                 ];
@@ -211,6 +221,7 @@ class LocationFormHelper
                 'status' => 'error',
                 'message' => 'Failed to save location: ' . $e->getMessage(),
                 'location_code' => $state['location_code'] ?? null,
+                'location_code_original' => $state['location_code_original'] ?? null,
                 'location_id' => $state['location_id'] ?? null,
             ];
         }
@@ -218,10 +229,6 @@ class LocationFormHelper
         return $state;
     }
 
-    /**
-     * Remove transport/helper keys before delegating to legacy bo->save(),
-     * because solocation::edit() treats all keys as SQL update columns.
-     */
     private function sanitizeSaveValues(array $values): array
     {
         if (empty($values['location_code']) && !empty($values['loc_code']))
@@ -237,6 +244,7 @@ class LocationFormHelper
             $values['is_edit'],
             $values['location_parent'],
             $values['location_data'],
+            $values['location_code_original'],
             $values['values_attribute'],
             $values['errors']
         );

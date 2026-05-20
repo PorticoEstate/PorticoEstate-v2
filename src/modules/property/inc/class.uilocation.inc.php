@@ -143,7 +143,66 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 	 */
 	public function query()
 	{
-		return [];
+		$lookup_tenant = Sanitizer::get_var('lookup_tenant', 'bool');
+
+		$search	 = Sanitizer::get_var('search');
+		$order	 = Sanitizer::get_var('order');
+		$draw	 = Sanitizer::get_var('draw', 'int');
+		$columns = Sanitizer::get_var('columns');
+		$export	 = Sanitizer::get_var('export', 'bool');
+		$query_value = (is_array($search) && isset($search['value'])) ? $search['value'] : '';
+		$order_column = '';
+		$sort_dir = 'asc';
+
+		$column_search = array();
+		if ($columns && is_array($columns))
+		{
+			foreach ($columns as $column)
+			{
+				if (!empty($column['search']['value']) && isset($column['data']))
+				{
+					$column_search[$column['data']] = $column['search']['value'];
+				}
+			}
+		}
+
+		if (is_array($order) && isset($order[0]) && is_array($order[0]))
+		{
+			if (isset($order[0]['column']) && is_array($columns) && isset($columns[(int) $order[0]['column']]['data']))
+			{
+				$order_column = $columns[(int) $order[0]['column']]['data'];
+			}
+			if (isset($order[0]['dir']) && strtolower((string) $order[0]['dir']) === 'desc')
+			{
+				$sort_dir = 'desc';
+			}
+		}
+
+		$params = array(
+			'start'			 => Sanitizer::get_var('start', 'int', 'REQUEST', 0),
+			'results'		 => Sanitizer::get_var('length', 'int', 'REQUEST', 0),
+			'query'			 => $query_value,
+			'order'			 => $order_column,
+			'sort'			 => $sort_dir,
+			'dir'			 => $sort_dir,
+			'allrows'		 => Sanitizer::get_var('length', 'int') == -1 || $export,
+			'lookup_tenant'	 => $lookup_tenant,
+			'dry_run'		 => false,
+			'column_search' => $column_search
+		);
+
+		$values = $this->bo->read($params);
+		if ($export)
+		{
+			return $values;
+		}
+
+		$result_data = array('results' => $values);
+
+		$result_data['total_records']	 = $this->bo->total_records;
+		$result_data['draw']			 = $draw;
+
+		return $this->jquery_results($result_data);
 	}
 
 	/**

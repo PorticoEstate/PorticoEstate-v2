@@ -63,7 +63,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 
 	var $public_functions = array(
 		'query'						 => false,
-		'responsiblility_role_save'	 => false,
 		'get_part_of_town'			 => false,
 		'get_history_data'			 => false,
 		'get_accounts'				 => false,
@@ -87,7 +86,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		'get_checklists'			 => false,
 		'get_cases_for_checklist'	 => false,
 		'get_location_data'			 => false,
-		'edit_field'					 => false,
 		'dashboard'					 => true,
 	);
 
@@ -205,88 +203,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		return $this->jquery_results($result_data);
 	}
 
-	/**
-	 * Return responsibility-role rows.
-	 *
-	 * @deprecated Use LocationController::queryRole() via /property/location/responsibility-role/query.
-	 * @return array
-	 */
-	public function query_role()
-	{
-		$lookup_tenant	 = Sanitizer::get_var('lookup_tenant', 'bool');
-		$user_id		 = Sanitizer::get_var('user_id', 'int', 'request', $this->account);
-		$role_id		 = Sanitizer::get_var('role_id', 'int');
-
-		$search	 = Sanitizer::get_var('search');
-		$order	 = Sanitizer::get_var('order');
-		$draw	 = Sanitizer::get_var('draw', 'int');
-		$columns = Sanitizer::get_var('columns');
-
-		$params = array(
-			'start'			 => Sanitizer::get_var('start', 'int', 'REQUEST', 0),
-			'results'		 => Sanitizer::get_var('length', 'int', 'REQUEST', 0),
-			'query'			 => $search['value'],
-			'order'			 => $columns[$order[0]['column']]['data'],
-			'sort'			 => $order[0]['dir'],
-			'dir'			 => $order[0]['dir'],
-			'allrows'		 => Sanitizer::get_var('length', 'int') == -1,
-			'lookup_tenant'	 => $lookup_tenant,
-			'user_id'		 => $user_id,
-			'role_id'		 => $role_id
-		);
-
-		$values = $this->bo->get_responsible($params);
-
-		$result_data = array('results' => $values);
-
-		$result_data['total_records']	 = $this->bo->total_records;
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
-	}
-
-
-	public function responsiblility_role_save()
-	{
-		$values		 = Sanitizer::get_var('values');
-		//$values_assign = $_POST['values_assign'];
-		$assign_orig = Sanitizer::get_var('assign_orig');
-		$assign		 = Sanitizer::get_var('assign');
-
-		$role_id = Sanitizer::get_var('role_id', 'int');
-		//$receipt = array();
-		//			$_role = CreateObject('property.sogeneric');
-		//			$_role->get_location_info('responsibility_role','');
-		//$this->save_sessiondata();
-
-		$user_id			 = Sanitizer::get_var('user_id', 'int', 'request', $this->account);
-		$result['message']	 = array();
-
-		if (($assign || $assign_orig) && $this->acl_edit)
-		{
-			//$values_assign = Sanitizer::clean_value(json_decode(stripslashes($values_assign),true)); //json_decode has issues with magic_quotes_gpc
-			$user_id	 = abs($user_id);
-			$account	 = $this->accounts->get($user_id);
-			$contact_id	 = $account->person_id;
-			if (empty($role_id))
-			{
-				$result['error'][] = array('msg' => lang('missing role'));
-			}
-			else
-			{
-				//					$role = $_role->read_single($data=array('id' => $role_id));
-				$values['contact_id']				 = $contact_id;
-				//					$values['responsibility_id']		= $role['responsibility_id'];
-				$values['responsibility_role_id']	 = $role_id;
-				$values['assign']					 = $assign;
-				$values['assign_orig']				 = $assign_orig;
-				$boresponsible						 = CreateObject('property.boresponsible');
-				$result								 = $boresponsible->update_role_assignment($values);
-			}
-		}
-
-		return $result;
-	}
 
 	function save_sessiondata()
 	{
@@ -1597,131 +1513,6 @@ JS;
 		for ($i = 1; $i < $type_id; $i++)
 		{
 			$searc_levels[] = "loc{$i}";
-		}
-
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			if (Sanitizer::get_var('head'))
-			{
-				$this->bo->get_responsible(array(
-					'user_id'	 => $user_id,
-					'role_id'	 => $role_id,
-					'type_id'	 => $type_id,
-					'dry_run'	 => true
-				));
-
-				$uicols = $this->get_uicols_responsiblility_role();
-
-				$entity_def = array();
-
-				$head				 = '<thead>';
-				$count_uicols_name	 = count($uicols['name']);
-				for ($k = 0; $k < $count_uicols_name; $k++)
-				{
-					$params				 = array(
-						'key'		 => $uicols['name'][$k],
-						'label'		 => $uicols['descr'][$k],
-						'sortable'	 => false,
-						'hidden'	 => ($uicols['input_type'][$k] == 'hidden') ? true : false
-					);
-					$params['formatter'] = ""
-						. "formatter = function (dummy1, dummy2, oData) {"
-						. "return oData['{$uicols['name'][$k]}'];"
-						. "}";
-
-					if ($uicols['datatype'][$k] == 'link')
-					{
-						$uicols['formatter'][$k] = 'JqueryPortico.formatLinkGeneric';
-					}
-
-					if (!empty($uicols['formatter'][$k]))
-					{
-						$params['formatter'] = <<<JS
-								formatter = function (dummy1, dummy2, oData) {
-								try {
-									var ret = {$uicols['formatter'][$k]}('{$uicols['name'][$k]}', oData);
-								}
-								catch(err) {
-									return err.message;
-								}
-								return ret;
-							}
-JS;
-					}
-					if (in_array($uicols['name'][$k], $searc_levels))
-					{
-						$params['formatter'] = <<<JS
-								formatter = function (dummy1, dummy2, oData) {
-								try {
-									var ret = JqueryPortico.searchLink('{$uicols['name'][$k]}', oData);
-								}
-								catch(err) {
-									return err.message;
-								}
-								return ret;
-							}
-JS;
-					}
-					if ($uicols['name'][$k] == 'loc1')
-					{
-						$params['formatter'] = <<<JS
-								formatter = function (dummy1, dummy2, oData) {
-								try {
-									var ret = JqueryPortico.searchLink('{$uicols['name'][$k]}', oData);
-								}
-								catch(err) {
-									return err.message;
-								}
-								return ret;
-							}
-JS;
-						$params['sortable']	 = true;
-					}
-					else if (isset($uicols['cols_return_extra'][$k]) && ($uicols['cols_return_extra'][$k] != 'T' || $uicols['cols_return_extra'][$k] != 'CH'))
-					{
-						$params['sortable'] = true;
-					}
-
-					array_push($entity_def, $params);
-
-					if ($uicols['input_type'][$k] != 'hidden')
-					{
-						$head .= '<th>' . $uicols['descr'][$k] . '</th>';
-					}
-				}
-				$head .= '</thead>';
-
-				$datatable_def = array(
-					'container'	 => 'datatable-container',
-					'requestUrl' => phpgw::link('/property/location/responsibility-role', array(
-						'type_id'			 => $type_id,
-						'second_display'	 => 1,
-						'status'			 => $this->status,
-						'location_code'		 => $this->location_code,
-						'entity_id'			 => $this->entity_id
-					)),
-					'ColumnDefs' => $entity_def,
-					'download'	 => phpgw::link('/property/location/download', array(
-						'type_id'		 => $type_id,
-						'role_id'		 => $role_id,
-						'export'		 => true,
-						'allrows'		 => true,
-						'download_type'	 => 'responsiblility_role'
-					)),
-					'allrows'	 => true,
-				);
-
-				$data = array(
-					'datatable_def'	 => $datatable_def,
-					'datatable_head' => $head,
-				);
-
-				return $data;
-			}
-			else
-			{
-				return $this->query_role();
-			}
 		}
 
 		self::add_javascript('property', 'base', 'location.responsiblility_role.js');
@@ -3470,57 +3261,4 @@ JS;
 		return $this->controller_helper->get_assigned_history();
 	}
 
-	/**
-	 * Update an inline-editable location field.
-	 *
-	 * @deprecated Use LocationController::editField() via /property/location/edit-field.
-	 * @return string
-	 */
-	public function edit_field()
-	{
-		$type_id	 = Sanitizer::get_var('type_id', 'int', 'GET');
-		$id			 = Sanitizer::get_var('id', 'int', 'POST');
-
-		$field_name	 = Sanitizer::get_var('field_name', 'string', 'GET');
-
-		if (!$this->acl_edit)
-		{
-			return "ERROR";
-		}
-
-
-		if (!$this->acl_manage && $field_name != 'contact_phone')
-		{
-			return "ERROR";
-		}
-
-		if ($id && $field_name)
-		{
-
-			$data = array(
-				'type_id'	 => $type_id,
-				'id'		 => $id,
-				'field_name' => $field_name,
-				'value'		 => Sanitizer::get_var('value')
-			);
-
-			try
-			{
-				$ret = $this->bo->edit_field($data);
-			}
-			catch (Exception $e)
-			{
-				if ($e)
-				{
-					echo $e->getMessage();
-				}
-			}
-
-			return $ret ? "OK" : "ERROR";
-		}
-		else
-		{
-			return "ERROR";
-		}
-	}
 }

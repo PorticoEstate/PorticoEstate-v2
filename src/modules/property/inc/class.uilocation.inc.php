@@ -63,8 +63,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 
 	var $public_functions = array(
 		'query'						 => false,
-		'get_part_of_town'			 => false,
-		'get_history_data'			 => false,
 		'get_accounts'				 => false,
 		'index'						 => true,
 		'view'						 => true,
@@ -78,9 +76,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		'columns'					 => true,
 		'update_location'			 => true,
 		'responsiblility_role'		 => true,
-		'get_delivery_address'		 => false,
 		'get_controls_at_component'	 => false,
-		'get_assigned_history'		 => false,
 		'get_cases'					 => false,
 		'get_checklists'			 => false,
 		'get_cases_for_checklist'	 => false,
@@ -898,14 +894,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		);
 	}
 
-	function get_part_of_town()
-	{
-		$district_id = Sanitizer::get_var('district_id', 'int');
-		$values		 = $this->bocommon->select_part_of_town('filter', $this->part_of_town_id, $district_id);
-		array_unshift($values, array('id' => '', 'name' => lang('no part of town')));
-
-		return $values;
-	}
 
 	function index()
 	{
@@ -1654,31 +1642,6 @@ JS;
 		self::render_template_xsl('lookup.entity', $data);
 	}
 
-	/**
-	 * Return location history rows.
-	 *
-	 * @deprecated Use LocationController::getHistoryData() via /property/location/history.
-	 * @return array
-	 */
-	public function get_history_data()
-	{
-		$draw			 = Sanitizer::get_var('draw', 'int');
-		$location_code	 = Sanitizer::get_var('location_code');
-
-		$values		 = $this->bo->get_history($location_code);
-		$dateformat	 = $this->userSettings['preferences']['common']['dateformat'];
-		foreach ($values as &$entry)
-		{
-			$entry['entry_date'] = $this->phpgwapi_common->show_date($entry['entry_date'], $dateformat);
-		}
-
-		$result_data = array('results' => $values);
-
-		$result_data['total_records']	 = count($values);
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
-	}
 
 	public function add()
 	{
@@ -3165,23 +3128,6 @@ JS;
 		self::render_template_xsl('datatable2', $data);
 	}
 
-	/**
-	 * Return a delivery address for the given location.
-	 *
-	 * @deprecated Use LocationController::getDeliveryAddress() via /property/location/delivery-address.
-	 * @return array
-	 */
-	function get_delivery_address()
-	{
-		$loc1 = Sanitizer::get_var('loc1');
-
-		$delivery_address = $this->bo->get_delivery_address($loc1);
-
-		return array(
-			'delivery_address' => $delivery_address
-		);
-	}
-
 
 	/**
 	 * Return controller controls registered at a given location component.
@@ -3225,17 +3171,6 @@ JS;
 	public function get_checklists($location_id = 0, $id = 0, $year = 0)
 	{
 		return $this->controller_helper->get_checklists($location_id, $id, $year);
-	}
-
-	/**
-	 * Return assignment history for a controller series.
-	 *
-	 * @deprecated Use a REST controller endpoint instead of the legacy menuaction entry point.
-	 * @return mixed
-	 */
-	function get_assigned_history()
-	{
-		return $this->controller_helper->get_assigned_history();
 	}
 
 }

@@ -317,7 +317,11 @@ class LocationFormHelper
                     $errors[] = lang('Please enter value for attribute %1', $attribute['input_text']);
                 }
 
-                if (($attribute['datatype'] ?? null) == 'I' && !empty($attribute['value']) && !is_int((int) ($attribute['value'])))
+                if (($attribute['datatype'] ?? null) == 'I'
+                    && array_key_exists('value', $attribute)
+                    && $attribute['value'] !== null
+                    && !(is_string($attribute['value']) && trim($attribute['value']) === '')
+                    && !$this->isStrictIntegerValue($attribute['value']))
                 {
                     $errors[] = lang('Please enter integer for attribute %1', $attribute['input_text']);
                 }
@@ -400,6 +404,29 @@ class LocationFormHelper
         ]);
 
         return is_array($result) ? $result : null;
+    }
+
+    /**
+     * Accept only real integers or integer-formatted strings (including "0").
+     * Reject floats, scientific notation and mixed alphanumeric strings.
+     *
+     * @param mixed $value
+     * @return bool
+     */
+    private function isStrictIntegerValue($value): bool
+    {
+        if (is_int($value))
+        {
+            return true;
+        }
+
+        if (is_string($value))
+        {
+            $value = trim($value);
+            return $value !== '' && preg_match('/^-?\d+$/', $value) === 1;
+        }
+
+        return false;
     }
 
     private function bo(): \property_bolocation

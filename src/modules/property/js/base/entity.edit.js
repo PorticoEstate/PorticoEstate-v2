@@ -619,81 +619,113 @@ function logRelationInfoDebug(formData)
 	}
 }
 
-function buildEntityRestRequest(form, submitterName)
+function createEntityNavigationClient(form)
+{
+	return {
+		buildEditUrl: function (type, entityId, catId, id)
+		{
+			return 'index.php?menuaction=property.uientity.edit'
+				+ '&type=' + encodeURIComponent(type)
+				+ '&entity_id=' + encodeURIComponent(entityId)
+				+ '&cat_id=' + encodeURIComponent(catId)
+				+ '&id=' + encodeURIComponent(id);
+		},
+		buildIndexUrl: function (type, entityId, catId)
+		{
+			return 'index.php?menuaction=property.uientity.index'
+				+ '&entity_id=' + encodeURIComponent(entityId)
+				+ '&cat_id=' + encodeURIComponent(catId)
+				+ '&type=' + encodeURIComponent(type);
+		}
+	};
+}
+
+function createEntityApiClient(form)
 {
 	var parsed = parseURL(form.action);
 	var query = parsed.searchObject || {};
-	var type = query.type || '';
-	var entityId = query.entity_id || '';
-	var catId = query.cat_id || '';
-	var isApply = (submitterName === 'values[apply]');
-	var clickHistory = isApply ? '' : (query.click_history || '');
-
-	if (!type || !entityId || !catId)
-	{
-		var pathMatch = parsed.pathname.match(/\/property\/entity\/([^\/]+)\/(\d+)\/(\d+)/);
-		if (pathMatch)
-		{
-			if (!type) { type = decodeURIComponent(pathMatch[1]); }
-			if (!entityId) { entityId = pathMatch[2]; }
-			if (!catId) { catId = pathMatch[3]; }
-		}
-	}
-
-	if (!type) { type = $('#field_type').val() || ''; }
-	if (!catId || catId === '0')
-	{
-		catId = $('#cat_id').val() || '';
-	}
-
-	var rawId = (query.id || item_id || '').toString();
-	var id = parseInt(rawId, 10);
-	var bypass = query.bypass;
-
-	if (!type || !entityId || !catId)
-	{
-		return null;
-	}
-
-	var isCreate = !id;
-	var url = '/property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId;
-	if (isCreate)
-	{
-		url += '/create';
-	}
-	else
-	{
-		url += '/' + id;
-	}
-
-	if (!isApply && !clickHistory && typeof strBaseURL !== 'undefined' && strBaseURL)
-	{
-		var baseQuery = parseURL(strBaseURL).searchObject || {};
-		clickHistory = baseQuery.click_history || '';
-	}
-
-	var queryParts = [];
-	if (typeof bypass !== 'undefined' && bypass !== null && bypass !== '')
-	{
-		queryParts.push('bypass=' + encodeURIComponent(bypass));
-	}
-	if (clickHistory)
-	{
-		queryParts.push('click_history=' + encodeURIComponent(clickHistory));
-	}
-	if (queryParts.length)
-	{
-		url += '?' + queryParts.join('&');
-	}
 
 	return {
-		url: url,
-		method: isCreate ? 'POST' : 'PUT',
-		isCreate: isCreate,
-		type: type,
-		entityId: entityId,
-		catId: catId
+		buildSaveRequest: function (submitterName)
+		{
+			var type = query.type || '';
+			var entityId = query.entity_id || '';
+			var catId = query.cat_id || '';
+			var isApply = (submitterName === 'values[apply]');
+			var clickHistory = isApply ? '' : (query.click_history || '');
+
+			if (!type || !entityId || !catId)
+			{
+				var pathMatch = parsed.pathname.match(/\/property\/entity\/([^\/]+)\/(\d+)\/(\d+)/);
+				if (pathMatch)
+				{
+					if (!type) { type = decodeURIComponent(pathMatch[1]); }
+					if (!entityId) { entityId = pathMatch[2]; }
+					if (!catId) { catId = pathMatch[3]; }
+				}
+			}
+
+			if (!type) { type = $('#field_type').val() || ''; }
+			if (!catId || catId === '0')
+			{
+				catId = $('#cat_id').val() || '';
+			}
+
+			var rawId = (query.id || item_id || '').toString();
+			var id = parseInt(rawId, 10);
+			var bypass = query.bypass;
+
+			if (!type || !entityId || !catId)
+			{
+				return null;
+			}
+
+			var isCreate = !id;
+			var url = '/property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId;
+			if (isCreate)
+			{
+				url += '/create';
+			}
+			else
+			{
+				url += '/' + id;
+			}
+
+			if (!isApply && !clickHistory && typeof strBaseURL !== 'undefined' && strBaseURL)
+			{
+				var baseQuery = parseURL(strBaseURL).searchObject || {};
+				clickHistory = baseQuery.click_history || '';
+			}
+
+			var queryParts = [];
+			if (typeof bypass !== 'undefined' && bypass !== null && bypass !== '')
+			{
+				queryParts.push('bypass=' + encodeURIComponent(bypass));
+			}
+			if (clickHistory)
+			{
+				queryParts.push('click_history=' + encodeURIComponent(clickHistory));
+			}
+			if (queryParts.length)
+			{
+				url += '?' + queryParts.join('&');
+			}
+
+			return {
+				url: url,
+				method: isCreate ? 'POST' : 'PUT',
+				isCreate: isCreate,
+				type: type,
+				entityId: entityId,
+				catId: catId
+			};
+		}
 	};
+}
+
+function buildEntityRestRequest(form, submitterName)
+{
+	return createEntityApiClient(form).buildSaveRequest(submitterName);
 }
 
 function clearFormAlerts(form)
@@ -906,6 +938,7 @@ $(document).ready(function ()
 			return true;
 		}
 
+		var navigationClient = createEntityNavigationClient(form);
 		var restRequest = buildEntityRestRequest(form, submitter ? submitter.name : '');
 		if (!restRequest)
 		{
@@ -989,11 +1022,12 @@ $(document).ready(function ()
 
 				if (restRequest.isCreate && data.id)
 				{
-					var redirectUrl = 'index.php?menuaction=property.uientity.edit'
-						+ '&type=' + encodeURIComponent(restRequest.type)
-						+ '&entity_id=' + encodeURIComponent(restRequest.entityId)
-						+ '&cat_id=' + encodeURIComponent(restRequest.catId)
-						+ '&id=' + encodeURIComponent(data.id);
+					var redirectUrl = navigationClient.buildEditUrl(
+						restRequest.type,
+						restRequest.entityId,
+						restRequest.catId,
+						data.id
+					);
 					setTimeout(function ()
 					{
 						window.location.href = redirectUrl;
@@ -1001,10 +1035,11 @@ $(document).ready(function ()
 				}
 				else if (submitter && submitter.name === 'values[save]')
 				{
-					var indexUrl = 'index.php?menuaction=property.uientity.index'
-						+ '&entity_id=' + encodeURIComponent(restRequest.entityId)
-						+ '&cat_id=' + encodeURIComponent(restRequest.catId)
-						+ '&type=' + encodeURIComponent(restRequest.type);
+					var indexUrl = navigationClient.buildIndexUrl(
+						restRequest.type,
+						restRequest.entityId,
+						restRequest.catId
+					);
 					setTimeout(function ()
 					{
 						window.location.href = indexUrl;

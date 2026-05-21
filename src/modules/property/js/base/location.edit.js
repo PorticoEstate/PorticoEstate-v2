@@ -369,42 +369,78 @@ function buildLocationCodeFromLocationForm(form)
 	}).join('-');
 }
 
-function buildLocationRestRequest(form)
+function createLocationNavigationClient(form)
 {
 	var parsed = parseURL(form.action);
 	var query = parsed.searchObject || {};
-	var clickHistory = query.click_history || '';
-	var queryParts = [];
-	var originalLocationCode = (query.location_code || getLocationFieldValue(form, 'input[name="location_code"]') || '').trim();
-	var locationCode = buildLocationCodeFromLocationForm(form);
-
-	var rawLocationId = '';
-	if (typeof location_id !== 'undefined' && location_id !== null)
-	{
-		rawLocationId = String(location_id);
-	}
-
-	var routeLocationId = parseInt(rawLocationId, 10);
-	var hasExistingLocation = (!isNaN(routeLocationId) && routeLocationId > 0) || !!originalLocationCode;
-	var isUpdate = hasExistingLocation && !!originalLocationCode;
-	var requestUrl = isUpdate
-		? '/property/location/' + encodeURIComponent(originalLocationCode)
-		: '/property/location/add';
-
-	if (clickHistory)
-	{
-		queryParts.push('click_history=' + encodeURIComponent(clickHistory));
-	}
-
-	if (queryParts.length)
-	{
-		requestUrl += '?' + queryParts.join('&');
-	}
 
 	return {
-		url: requestUrl,
-		method: isUpdate ? 'PUT' : 'POST'
+		buildEditUrl: function (locationCode)
+		{
+			var typeId = query.type_id || '';
+			var lookupTenant = query.lookup_tenant || '';
+			var target = 'index.php?menuaction=property.uilocation.edit&location_code=' + encodeURIComponent(locationCode);
+
+			if (typeId)
+			{
+				target += '&type_id=' + encodeURIComponent(typeId);
+			}
+			if (lookupTenant)
+			{
+				target += '&lookup_tenant=' + encodeURIComponent(lookupTenant);
+			}
+
+			return target;
+		}
 	};
+}
+
+function createLocationApiClient(form)
+{
+	var parsed = parseURL(form.action);
+	var query = parsed.searchObject || {};
+
+	return {
+		buildSaveRequest: function ()
+		{
+			var clickHistory = query.click_history || '';
+			var queryParts = [];
+			var originalLocationCode = (query.location_code || getLocationFieldValue(form, 'input[name="location_code"]') || '').trim();
+			var rawLocationId = '';
+
+			if (typeof location_id !== 'undefined' && location_id !== null)
+			{
+				rawLocationId = String(location_id);
+			}
+
+			var routeLocationId = parseInt(rawLocationId, 10);
+			var hasExistingLocation = (!isNaN(routeLocationId) && routeLocationId > 0) || !!originalLocationCode;
+			var isUpdate = hasExistingLocation && !!originalLocationCode;
+			var requestUrl = isUpdate
+				? '/property/location/' + encodeURIComponent(originalLocationCode)
+				: '/property/location/add';
+
+			if (clickHistory)
+			{
+				queryParts.push('click_history=' + encodeURIComponent(clickHistory));
+			}
+
+			if (queryParts.length)
+			{
+				requestUrl += '?' + queryParts.join('&');
+			}
+
+			return {
+				url: requestUrl,
+				method: isUpdate ? 'PUT' : 'POST'
+			};
+		}
+	};
+}
+
+function buildLocationRestRequest(form)
+{
+	return createLocationApiClient(form).buildSaveRequest();
 }
 
 function clearLocationFormAlerts(form)
@@ -487,22 +523,7 @@ function toErrorMessageArray(data)
 
 function buildLocationEditRedirectUrl(locationCode, form)
 {
-	var parsed = parseURL(form.action);
-	var query = parsed.searchObject || {};
-	var typeId = query.type_id || '';
-	var lookupTenant = query.lookup_tenant || '';
-
-	var target = 'index.php?menuaction=property.uilocation.edit&location_code=' + encodeURIComponent(locationCode);
-	if (typeId)
-	{
-		target += '&type_id=' + encodeURIComponent(typeId);
-	}
-	if (lookupTenant)
-	{
-		target += '&lookup_tenant=' + encodeURIComponent(lookupTenant);
-	}
-
-	return target;
+	return createLocationNavigationClient(form).buildEditUrl(locationCode);
 }
 
 $(document).ready(function ()

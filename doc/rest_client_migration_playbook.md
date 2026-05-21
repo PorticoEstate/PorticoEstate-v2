@@ -51,6 +51,35 @@ Do not do a big-bang rewrite.
 - Save/update/delete interactions (`POST/PUT/DELETE` to REST).
 - Legacy internal orchestration in UI classes with shared helper/service code.
 
+## Navigation/API Boundary Policy
+
+Use this policy for all migrated modules to keep legacy navigation while separating client and API concerns.
+
+### Allowed use of menuaction
+
+- Page navigation only: open index/edit/view shells, redirects after save, and popup shell navigation.
+- Preserve existing ACL/session/bootstrap behavior in legacy page rendering.
+
+### Disallowed use of menuaction
+
+- Any data fetch, save, update, delete, file, checklist, or relation operation.
+- Any client-side business flow that depends on menuaction response payloads.
+
+### REST boundary rules
+
+- REST endpoints own all data contracts (JSON/form-data) and mutation side effects.
+- REST endpoints must not call legacy UI render methods or depend on menuaction context.
+- Client code should split URL construction into two concerns: navigation client for menuaction URLs and API client for REST URLs.
+
+### Review gate for boundary compliance
+
+Before merge, verify:
+
+1. All AJAX/fetch/XHR calls use REST endpoints.
+2. menuaction usage is limited to navigation and shell rendering.
+3. No new REST handler calls legacy UI classes for data operations.
+4. Redirect behavior is deterministic and uses navigation URL helpers.
+
 ## Migration Preconditions
 
 Before starting a module migration:

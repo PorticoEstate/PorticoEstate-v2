@@ -133,9 +133,9 @@ namespace Tests\Controllers
 			{
 				public array $capturedMapInputArgs = [];
 
-				public function mapInput(array $requestData, ?int $locationId = null): array
+				public function mapInput(array $requestData, ?bool $isEdit = null): array
 				{
-					$this->capturedMapInputArgs = [$requestData, $locationId];
+					$this->capturedMapInputArgs = [$requestData, $isEdit];
 					return ['values' => ['loc1' => 'A'], 'errors' => [], 'location_id' => 0];
 				}
 
@@ -172,16 +172,16 @@ namespace Tests\Controllers
 			$this->assertSame([['loc1' => 'A'], null], $helper->capturedMapInputArgs);
 		}
 
-		public function testSaveReturns400ForInvalidLocationId(): void
+		public function testSaveReturns400ForInvalidLocationCode(): void
 		{
 			$this->request->method('getParsedBody')->willReturn(['loc1' => 'A']);
 
 			$controller = $this->makeControllerWithHelper(new LocationFormHelper());
-			$controller->save($this->request, $this->response, ['location_id' => '0']);
+			$controller->save($this->request, $this->response, ['location_code' => '']);
 
 			$decoded = json_decode($this->responseBody, true);
 			$this->assertSame('error', $decoded['status']);
-			$this->assertSame('Invalid location ID', $decoded['message']);
+			$this->assertSame('Invalid location code', $decoded['message']);
 		}
 
 		public function testSaveReturns400WhenHelperReportsErrorStatus(): void
@@ -190,9 +190,9 @@ namespace Tests\Controllers
 			{
 				public array $capturedMapInputArgs = [];
 
-				public function mapInput(array $requestData, ?int $locationId = null): array
+				public function mapInput(array $requestData, ?bool $isEdit = null): array
 				{
-					$this->capturedMapInputArgs = [$requestData, $locationId];
+					$this->capturedMapInputArgs = [$requestData, $isEdit];
 					return ['values' => ['loc1' => 'A'], 'errors' => ['x']];
 				}
 
@@ -219,19 +219,23 @@ namespace Tests\Controllers
 			$this->request->method('getParsedBody')->willReturn(['loc1' => 'A']);
 
 			$controller = $this->makeControllerWithHelper($helper);
-			$controller->save($this->request, $this->response, ['location_id' => '9']);
+			$controller->save($this->request, $this->response, ['location_code' => 'A-9']);
 
 			$decoded = json_decode($this->responseBody, true);
 			$this->assertSame('error', $decoded['status']);
 			$this->assertSame('failed', $decoded['message']);
-			$this->assertSame([['loc1' => 'A'], 9], $helper->capturedMapInputArgs);
+			$this->assertSame([[
+				'loc1' => 'A',
+				'location_code_original' => 'A-9',
+				'location_code' => 'A-9',
+			], true], $helper->capturedMapInputArgs);
 		}
 
 		public function testSaveReturns200WhenHelperReportsSuccessStatus(): void
 		{
 			$helper = new class extends LocationFormHelper
 			{
-				public function mapInput(array $requestData, ?int $locationId = null): array
+				public function mapInput(array $requestData, ?bool $isEdit = null): array
 				{
 					return ['values' => ['loc1' => 'A'], 'errors' => []];
 				}
@@ -259,7 +263,7 @@ namespace Tests\Controllers
 			$this->request->method('getParsedBody')->willReturn(['loc1' => 'A']);
 
 			$controller = $this->makeControllerWithHelper($helper);
-			$controller->save($this->request, $this->response, ['location_id' => '10']);
+			$controller->save($this->request, $this->response, ['location_code' => 'A-10']);
 
 			$decoded = json_decode($this->responseBody, true);
 			$this->assertSame('success', $decoded['status']);
@@ -272,13 +276,13 @@ namespace Tests\Controllers
 			{
 				public array $callOrder = [];
 
-				public function mapInput(array $requestData, ?int $locationId = null): array
+				public function mapInput(array $requestData, ?bool $isEdit = null): array
 				{
 					$this->callOrder[] = 'mapInput';
 					return [
 						'values' => ['loc1' => 'A', 'cat_id' => 1],
 						'errors' => [],
-						'location_id' => (int) $locationId,
+						'is_edit' => $isEdit ?? !empty($requestData['location_code_original']),
 						'type_id' => 1,
 						'location_parent' => [],
 					];
@@ -317,7 +321,7 @@ namespace Tests\Controllers
 			$this->request->method('getParsedBody')->willReturn(['loc1' => 'A', 'cat_id' => 1]);
 
 			$controller = $this->makeControllerWithHelper($helper);
-			$controller->save($this->request, $this->response, ['location_id' => '10']);
+			$controller->save($this->request, $this->response, ['location_code' => 'A-10']);
 
 			$decoded = json_decode($this->responseBody, true);
 			$this->assertSame('success', $decoded['status']);
@@ -349,7 +353,7 @@ namespace Tests\Controllers
 			$controller = $this->makeControllerWithAclMap($helper, ['acl_edit' => false]);
 
 			$this->request->method('getParsedBody')->willReturn(['loc1' => 'A']);
-			$controller->save($this->request, $this->response, ['location_id' => '10']);
+			$controller->save($this->request, $this->response, ['location_code' => 'A-10']);
 
 			$decoded = json_decode($this->responseBody, true);
 			$this->assertSame('error', $decoded['status']);

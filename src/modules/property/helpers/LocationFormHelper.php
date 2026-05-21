@@ -22,10 +22,10 @@ class LocationFormHelper
      * Normalize and enrich request state for location save
      * 
      * @param array $requestData Raw request data from controller
-     * @param int|null $locationId Location ID if editing (null for new)
+     * @param bool|null $isEdit Indicates if the operation is an edit (null for new)
      * @return array Normalized state with structure: [values, errors, location_data]
      */
-    public function mapInput(array $requestData, ?int $locationId = null): array
+    public function mapInput(array $requestData, ?bool $isEdit = null): array
     {
         $locationCode = $this->resolveLocationCode($requestData);
         $originalLocationCode = isset($requestData['location_code_original']) ? trim((string) $requestData['location_code_original']) : '';
@@ -42,12 +42,11 @@ class LocationFormHelper
                 ? $requestData['values_attribute']
                 : [],
             'errors' => [],
-            'location_id' => (int) ($locationId ?? 0),
             'location_code' => $locationCode,
             'location_code_original' => $originalLocationCode,
             'type_id' => $typeId,
             'location_parent' => count($locationParts) > 1 ? array_slice($locationParts, 0, -1) : [],
-            'is_edit' => !empty($locationId),
+            'is_edit' => $isEdit ?? !empty($requestData['location_code_original']),
             'location_data' => null,
         ];
 
@@ -304,7 +303,7 @@ class LocationFormHelper
         {
             // get the attribute definitions for the location type to validate against from the database.
             $firstAttribute = current($valuesAttribute);
-            if (empty($firstAttribute['datatype']))
+            if (!empty($valuesAttribute) && is_array($firstAttribute) && empty($firstAttribute['datatype']))
             {
                 $bo = $this->bo();
                 $bo->get_attribute_information($valuesAttribute, $typeId);
@@ -328,7 +327,7 @@ class LocationFormHelper
             }
         }
 
-        foreach ($this->getLocationConfig() as $configEntry)
+        foreach (($typeId > 0 ? $this->getLocationConfig() : []) as $configEntry)
         {
             if($configEntry['location_type'] == $typeId && !empty($configEntry['lookup_form']))
             {
@@ -438,10 +437,15 @@ class LocationFormHelper
                 require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
             }
 
-            $this->bo = \CreateObject('property.bolocation');
+            $this->bo = $this->createObject('property.bolocation');
         }
 
         return $this->bo;
+    }
+
+    protected function createObject(string $name, ...$args)
+    {
+        return CreateObject($name, ...$args);
     }
 
     private function resolveLocationCode(array $requestData): string

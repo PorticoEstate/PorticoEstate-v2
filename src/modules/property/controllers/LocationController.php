@@ -1334,7 +1334,7 @@ class LocationController
 		}
 
 		// Map input -> validate -> persist -> build response
-		$state = $this->formHelper->mapInput($bodyParams, 1);
+		$state = $this->formHelper->mapInput($bodyParams, true);
 		$state = $this->formHelper->applyLegacyRules($state, [], true);
 		$state = $this->formHelper->validate($state);
 		$state = $this->formHelper->persistSave($state);

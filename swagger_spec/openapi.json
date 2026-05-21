@@ -6850,6 +6850,266 @@
                         }
                     }
                 }
+            },
+            "post": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Create a new entity item",
+                "description": "Creates a new entity item with optional EAV attribute values. Accepts JSON or multipart\/form-data (required when uploading a file attachment). Legacy alias \/create is still supported for backward compatibility.",
+                "operationId": "b61d565c242ddd7c9a4f2e17d4db918b",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/EntitySaveRequest"
+                            },
+                            "examples": {
+                                "ticketCreateExample": {
+                                    "summary": "Create with ticket relation context",
+                                    "value": {
+                                        "values": {
+                                            "name": "R\u00f8ykvarsler",
+                                            "descr": "Opprettet fra ticket"
+                                        },
+                                        "values_attribute": {
+                                            "7": {
+                                                "value": "2024-12-31"
+                                            },
+                                            "20": {
+                                                "value": "1"
+                                            },
+                                            "21": {
+                                                "value": [
+                                                    "1",
+                                                    "3"
+                                                ]
+                                            }
+                                        },
+                                        "RelationInfo": {
+                                            "location_code": "5436-01-01-001",
+                                            "p_num": "7",
+                                            "p_entity_id": 1,
+                                            "p_cat_id": 15,
+                                            "tenant_id": 1000,
+                                            "origin": ".ticket",
+                                            "origin_id": 34844
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "multipart\/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "values": {
+                                        "description": "Core field values",
+                                        "type": "object"
+                                    },
+                                    "values_attribute": {
+                                        "description": "EAV attribute values keyed by attribute ID",
+                                        "type": "object"
+                                    },
+                                    "values_checklist_stage": {
+                                        "description": "Checklist stage values",
+                                        "type": "object"
+                                    },
+                                    "RelationInfo": {
+                                        "$ref": "#\/components\/schemas\/RelationInfo"
+                                    },
+                                    "file": {
+                                        "description": "Optional file attachment",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "jasperfile": {
+                                        "description": "Optional Jasper report attachment",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Item created",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/EntityReceipt"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/list": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "List entity items (canonical envelope)",
+                "description": "Returns a canonical JSON envelope for entity item collections without DataTables-specific keys.",
+                "operationId": "cf13b632eb6f32fa29e6bb1108cdfc83",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "description": "Pagination offset",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "description": "Free-text search",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "description": "Status\/category filter",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Column to sort by",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "dir",
+                        "in": "query",
+                        "description": "Sort direction",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "ASC",
+                            "enum": [
+                                "ASC",
+                                "DESC"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "allrows",
+                        "in": "query",
+                        "description": "Return all rows without pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Canonical list of entity items",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/EntityItem"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "start": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}": {
@@ -7073,133 +7333,6 @@
                     },
                     "400": {
                         "description": "Invalid id"
-                    }
-                }
-            }
-        },
-        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/create": {
-            "post": {
-                "tags": [
-                    "Entity"
-                ],
-                "summary": "Create a new entity item",
-                "description": "Creates a new entity item with optional EAV attribute values. Accepts JSON or multipart\/form-data (required when uploading a file attachment).",
-                "operationId": "05b18c8ff312589be372ba882853fb44",
-                "parameters": [
-                    {
-                        "name": "type",
-                        "in": "path",
-                        "description": "Entity type key",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "entity_id",
-                        "in": "path",
-                        "description": "Entity definition ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "cat_id",
-                        "in": "path",
-                        "description": "Category ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application\/json": {
-                            "schema": {
-                                "$ref": "#\/components\/schemas\/EntitySaveRequest"
-                            },
-                            "examples": {
-                                "ticketCreateExample": {
-                                    "summary": "Create with ticket relation context",
-                                    "value": {
-                                        "values": {
-                                            "name": "R\u00f8ykvarsler",
-                                            "descr": "Opprettet fra ticket"
-                                        },
-                                        "values_attribute": {
-                                            "7": {
-                                                "value": "2024-12-31"
-                                            },
-                                            "20": {
-                                                "value": "1"
-                                            },
-                                            "21": {
-                                                "value": [
-                                                    "1",
-                                                    "3"
-                                                ]
-                                            }
-                                        },
-                                        "RelationInfo": {
-                                            "location_code": "5436-01-01-001",
-                                            "p_num": "7",
-                                            "p_entity_id": 1,
-                                            "p_cat_id": 15,
-                                            "tenant_id": 1000,
-                                            "origin": ".ticket",
-                                            "origin_id": 34844
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "multipart\/form-data": {
-                            "schema": {
-                                "properties": {
-                                    "values": {
-                                        "description": "Core field values",
-                                        "type": "object"
-                                    },
-                                    "values_attribute": {
-                                        "description": "EAV attribute values keyed by attribute ID",
-                                        "type": "object"
-                                    },
-                                    "values_checklist_stage": {
-                                        "description": "Checklist stage values",
-                                        "type": "object"
-                                    },
-                                    "RelationInfo": {
-                                        "$ref": "#\/components\/schemas\/RelationInfo"
-                                    },
-                                    "file": {
-                                        "description": "Optional file attachment",
-                                        "type": "string",
-                                        "format": "binary"
-                                    },
-                                    "jasperfile": {
-                                        "description": "Optional Jasper report attachment",
-                                        "type": "string",
-                                        "format": "binary"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Item created",
-                        "content": {
-                            "application\/json": {
-                                "schema": {
-                                    "$ref": "#\/components\/schemas\/EntityReceipt"
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -8222,6 +8355,207 @@
                         }
                     }
                 }
+            },
+            "post": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Create a new location",
+                "description": "Creates a new location record with provided field values and custom attributes. Legacy alias \/property\/location\/add is still supported for backward compatibility.",
+                "operationId": "aadef3c5bbb5e9c38ffc667e0aa23a92",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "location_code": {
+                                        "description": "Unique location code",
+                                        "type": "string",
+                                        "example": "5000-03"
+                                    },
+                                    "loc1": {
+                                        "description": "Level 1 location code",
+                                        "type": "string",
+                                        "example": "5000"
+                                    },
+                                    "loc1_name": {
+                                        "description": "Level 1 location name",
+                                        "type": "string",
+                                        "example": "M\u00d8HLENPRIS III"
+                                    },
+                                    "loc2": {
+                                        "description": "Level 2 location code",
+                                        "type": "string",
+                                        "example": "03"
+                                    },
+                                    "loc2_name": {
+                                        "description": "Level 2 location name",
+                                        "type": "string",
+                                        "example": "Bygg 3"
+                                    },
+                                    "cat_id": {
+                                        "description": "Category\/type ID",
+                                        "type": "string",
+                                        "example": "5"
+                                    },
+                                    "values_attribute": {
+                                        "description": "Custom attributes keyed by attribute ID (integer)",
+                                        "type": "object",
+                                        "additionalProperties": {
+                                            "properties": {
+                                                "value": {
+                                                    "description": "Attribute value",
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Location created successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "enum": [
+                                                "success",
+                                                "error"
+                                            ]
+                                        },
+                                        "message": {
+                                            "description": "Validation messages",
+                                            "type": "array"
+                                        },
+                                        "location_code": {
+                                            "description": "The created location code",
+                                            "type": "string"
+                                        },
+                                        "id": {
+                                            "description": "Internal location ID",
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    },
+                    "403": {
+                        "description": "Forbidden - no add access"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/list": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "List locations (canonical envelope)",
+                "description": "Returns location collection in a canonical JSON envelope without DataTables-specific keys",
+                "operationId": "06875f688977e5b39dd11ce31aefefb8",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search term or object with value key",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "description": "Pagination start",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "length",
+                        "in": "query",
+                        "description": "Pagination length",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "order_by",
+                        "in": "query",
+                        "description": "Order field",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "order_dir",
+                        "in": "query",
+                        "description": "Order direction",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Canonical location list",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "start": {
+                                                    "type": "integer"
+                                                },
+                                                "length": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "\/property\/location\/summary": {
@@ -8473,6 +8807,59 @@
                 }
             }
         },
+        "\/property\/location\/history\/list": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get location change history (canonical envelope)",
+                "description": "Returns location history in canonical JSON envelope without DataTables-specific keys",
+                "operationId": "fec4d22e00f7e172d1a8cf78a3de44c7",
+                "parameters": [
+                    {
+                        "name": "location_code",
+                        "in": "query",
+                        "description": "Location code",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "History list",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "\/property\/location\/documents": {
             "get": {
                 "tags": [
@@ -8528,6 +8915,92 @@
                                         },
                                         "draw": {
                                             "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/location\/documents\/list": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get location documents (canonical envelope)",
+                "description": "Returns location documents in canonical JSON envelope without DataTables-specific keys",
+                "operationId": "64a639167dd1f162f05dc6204ff2f970",
+                "parameters": [
+                    {
+                        "name": "location_code",
+                        "in": "query",
+                        "description": "Location code",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "doc_type",
+                        "in": "query",
+                        "description": "Document type ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "description": "Pagination start",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "length",
+                        "in": "query",
+                        "description": "Pagination length",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Documents list",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "start": {
+                                                    "type": "integer"
+                                                },
+                                                "length": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -8947,110 +9420,6 @@
                 "responses": {
                     "200": {
                         "description": "OK on success, ERROR on failure"
-                    }
-                }
-            }
-        },
-        "\/property\/location\/add": {
-            "post": {
-                "tags": [
-                    "Location"
-                ],
-                "summary": "Create a new location",
-                "description": "Creates a new location record with provided field values and custom attributes",
-                "operationId": "03bde229a78024a170025b8915f14390",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application\/json": {
-                            "schema": {
-                                "properties": {
-                                    "location_code": {
-                                        "description": "Unique location code",
-                                        "type": "string",
-                                        "example": "5000-03"
-                                    },
-                                    "loc1": {
-                                        "description": "Level 1 location code",
-                                        "type": "string",
-                                        "example": "5000"
-                                    },
-                                    "loc1_name": {
-                                        "description": "Level 1 location name",
-                                        "type": "string",
-                                        "example": "M\u00d8HLENPRIS III"
-                                    },
-                                    "loc2": {
-                                        "description": "Level 2 location code",
-                                        "type": "string",
-                                        "example": "03"
-                                    },
-                                    "loc2_name": {
-                                        "description": "Level 2 location name",
-                                        "type": "string",
-                                        "example": "Bygg 3"
-                                    },
-                                    "cat_id": {
-                                        "description": "Category\/type ID",
-                                        "type": "string",
-                                        "example": "5"
-                                    },
-                                    "values_attribute": {
-                                        "description": "Custom attributes keyed by attribute ID (integer)",
-                                        "type": "object",
-                                        "additionalProperties": {
-                                            "properties": {
-                                                "value": {
-                                                    "description": "Attribute value",
-                                                    "type": "string"
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Location created successfully",
-                        "content": {
-                            "application\/json": {
-                                "schema": {
-                                    "properties": {
-                                        "status": {
-                                            "type": "string",
-                                            "enum": [
-                                                "success",
-                                                "error"
-                                            ]
-                                        },
-                                        "message": {
-                                            "description": "Validation messages",
-                                            "type": "array"
-                                        },
-                                        "location_code": {
-                                            "description": "The created location code",
-                                            "type": "string"
-                                        },
-                                        "id": {
-                                            "description": "Internal location ID",
-                                            "type": "integer"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Validation error"
-                    },
-                    "403": {
-                        "description": "Forbidden - no add access"
                     }
                 }
             }

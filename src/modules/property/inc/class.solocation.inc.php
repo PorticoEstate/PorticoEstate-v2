@@ -1734,11 +1734,8 @@ class property_solocation
 			}
 			if (($value !== null && !(is_string($value) && trim($value) === '')) && in_array($input_name, $allowed_cols, true))
 			{
-				if (in_array($input_name, $allowed_cols, true))
-				{
-					$cols[]	 = $input_name;
-					$vals[]	 = $value;
-				}
+				$cols[]	 = $input_name;
+				$vals[]	 = $value;
 			}
 		}
 
@@ -1748,11 +1745,6 @@ class property_solocation
 			{
 				if ((array_key_exists('value', $entry) && $entry['value'] !== null && !(is_string($entry['value']) && trim($entry['value']) === '')) && in_array($entry['name'], $allowed_cols, true))
 				{
-					if ($entry['datatype'] == 'C' || $entry['datatype'] == 'T' || $entry['datatype'] == 'V' || $entry['datatype'] == 'link')
-					{
-						$entry['value'] = $this->db->db_addslashes($entry['value']);
-					}
-
 					$cols[]	 = $entry['name'];
 					$vals[]	 = $entry['value'];
 				}
@@ -1768,14 +1760,21 @@ class property_solocation
 		$vals[]	 = $this->account;
 		$vals[]	 = date($this->db->datetime_format(), time());
 
-		$cols	 = implode(",", $cols);
-		$vals	 = "'" . implode("','", $vals) . "'";
+		$cols_sql = implode(',', $cols);
+		$value_placeholders = array();
+		$insert_params = array();
+		foreach ($vals as $index => $value)
+		{
+			$placeholder = ':v' . $index;
+			$value_placeholders[] = $placeholder;
+			$insert_params[$placeholder] = $value;
+		}
+		$vals_sql = implode(',', $value_placeholders);
 
 		$this->db->transaction_begin();
-		$sql = "INSERT INTO fm_location{$type_id} ($cols) VALUES ($vals)";
-
-		//echo $sql;
-		$this->db->query($sql, __LINE__, __FILE__);
+		$sql = "INSERT INTO fm_location{$type_id} ({$cols_sql}) VALUES ({$vals_sql})";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute($insert_params);
 
 		$sql = "INSERT INTO fm_locations (level, location_code, loc1) VALUES (:level, :location_code, :loc1)";
 		$stmt = $this->db->prepare($sql);

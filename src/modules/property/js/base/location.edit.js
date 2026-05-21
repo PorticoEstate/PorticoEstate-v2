@@ -2,6 +2,44 @@
 var link_history = null;
 var set_history_data = 0;
 
+formatLocationDocumentLink = function (key, oData)
+{
+	var name = (oData && oData[key]) ? String(oData[key]) : '';
+	var url = (oData && oData.document_url) ? String(oData.document_url) : '';
+	var source = (oData && oData.document_source) ? String(oData.document_source) : '';
+	if (!name)
+	{
+		return '';
+	}
+
+	if (!url)
+	{
+		if (source === 'generic' && oData && oData.id)
+		{
+			url = phpGWLink('index.php', {
+				menuaction: 'property.uigeneric_document.view_file',
+				file_id: oData.id
+			});
+		}
+		else if (source === 'location' && oData && oData.id)
+		{
+			url = phpGWLink('index.php', {
+				menuaction: 'property.uidocument.view_file',
+				id: oData.id
+			});
+		}
+	}
+
+	if (!url)
+	{
+		return $('<div/>').text(name).html();
+	}
+
+	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener">'
+		+ $('<div/>').text(name).html()
+		+ '</a>';
+};
+
 $(document).ready(function ()
 {
 	$('#doc_type').change( function()

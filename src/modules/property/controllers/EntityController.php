@@ -1122,13 +1122,14 @@ class EntityController
 	}
 
 	/**
-	 * Return attached files for a given item, with HTML file_link / delete_file cells
-	 * and image enrichment (img_id, img_url) for image/* mime types.
+	 * Return attached files for a given item as pure data fields.
+	 *
+	 * Rendering concerns (anchors, checkboxes) are handled in client formatters.
 	 *
 	 * @OA\Post(
 	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}/files",
 	 *     summary="Get attached files",
-	 *     description="Returns file attachments for the given item as a DataTables-compatible response. Includes HTML link and delete-checkbox cells, plus img_id/img_url for image types.",
+	 *     description="Returns file attachments for the given item as a DataTables-compatible response with pure data fields.",
 	 *     tags={"Entity"},
 	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
 	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
@@ -1156,40 +1157,30 @@ class EntityController
 			'id'        => $id,
 		]);
 
-		$loc1            = $item['location_data']['loc1'] ?? '';
-		$view_file_base  = '/index.php?' . http_build_query([
-			'menuaction' => 'property.uientity.view_file',
-			'loc1'       => $loc1,
-			'id'         => $id,
-			'cat_id'     => $cat_id,
-			'entity_id'  => $entity_id,
-			'type'       => $type,
-		]);
+		$loc1 = (string)($item['location_data']['loc1'] ?? '');
 
 		$img_types = ['image/jpeg', 'image/png', 'image/gif'];
-
-		$lang_view   = lang('click to view file');
-		$lang_delete = lang('Check to delete file');
 
 		$content_files = [];
 		foreach ((array)($item['files'] ?? []) as $_entry)
 		{
-			$file_url = $view_file_base . '&file_id=' . (int)$_entry['file_id'];
+			$fileId = (int)($_entry['file_id'] ?? 0);
 
 			$row = [
-				'file_link'   => "<a href='" . htmlspecialchars($file_url, ENT_QUOTES, 'UTF-8') . "'"
-					. " target='_blank' title='" . htmlspecialchars($lang_view, ENT_QUOTES, 'UTF-8') . "'>"
-					. htmlspecialchars($_entry['name'] ?? '', ENT_QUOTES, 'UTF-8') . '</a>',
-				'delete_file' => "<input type='checkbox' name='values[file_action][]'"
-					. " value='" . (int)$_entry['file_id'] . "'"
-					. " title='" . htmlspecialchars($lang_delete, ENT_QUOTES, 'UTF-8') . "'>",
+				'file_id' => $fileId,
+				'file_name' => (string)($_entry['name'] ?? ''),
+				'file_mime_type' => (string)($_entry['mime_type'] ?? ''),
+				'loc1' => $loc1,
+				'item_id' => $id,
+				'entity_id' => $entity_id,
+				'cat_id' => $cat_id,
+				'type' => $type,
 			];
 
 			if (in_array($_entry['mime_type'] ?? '', $img_types, true))
 			{
-				$row['file_name'] = $_entry['name'] ?? '';
-				$row['img_id']    = (int)$_entry['file_id'];
-				$row['img_url']   = $file_url;
+				$row['img_id']    = $fileId;
+				$row['img_url']   = null;
 			}
 
 			$content_files[] = $row;

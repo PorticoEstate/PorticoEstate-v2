@@ -1860,14 +1860,16 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 				$file_def = array(
 					array(
-						'key'		 => 'file_link',
+						'key'		 => 'file_name',
 						'label'		 => lang('Filename'),
+						'formatter' => 'formatEntityFileLink',
 						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'delete_file',
+						'key'		 => 'file_id',
 						'label'		 => lang('Delete file'),
+						'formatter' => 'formatEntityDeleteFileCheckbox',
 						'sortable'	 => false,
 						'resizeable' => true
 					)

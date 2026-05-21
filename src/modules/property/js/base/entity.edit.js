@@ -42,6 +42,50 @@ function getEntityContext()
 	return {type: type, entityId: entityId, catId: catId};
 }
 
+formatEntityFileLink = function (key, oData)
+{
+	var name = (oData && oData[key]) ? String(oData[key]) : '';
+	var url = '';
+	if (!name)
+	{
+		return '';
+	}
+
+	if (oData && oData.file_id)
+	{
+		url = phpGWLink('index.php', {
+			menuaction: 'property.uientity.view_file',
+			loc1: oData.loc1 || '',
+			id: oData.item_id || '',
+			cat_id: oData.cat_id || '',
+			entity_id: oData.entity_id || '',
+			type: oData.type || '',
+			file_id: oData.file_id
+		});
+	}
+
+	if (!url)
+	{
+		return $('<div/>').text(name).html();
+	}
+
+	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener">'
+		+ $('<div/>').text(name).html()
+		+ '</a>';
+};
+
+formatEntityDeleteFileCheckbox = function (key, oData)
+{
+	var fileId = (oData && oData[key] !== undefined && oData[key] !== null) ? String(oData[key]) : '';
+	if (!fileId)
+	{
+		return '';
+	}
+
+	return "<input type='checkbox' name='values[file_action][]' value='" + $('<div/>').text(fileId).html()
+		+ "' title='" + $('<div/>').text('Check to delete file').html() + "'>";
+};
+
 this.fileuploader = function ()
 {
 	var sUrl = multi_upload_url || phpGWLink('index.php', multi_upload_parans);

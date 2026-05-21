@@ -2059,6 +2059,7 @@ JS;
 					array(
 						'key'		 => 'document_name',
 						'label'		 => lang('name'),
+						'formatter' => 'formatLocationDocumentLink',
 						'sortable'	 => true,
 						'resizeable' => true
 					),

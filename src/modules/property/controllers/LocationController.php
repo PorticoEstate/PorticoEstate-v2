@@ -847,12 +847,18 @@ class LocationController
 		$dateFormat = null;
 		foreach ($documents as $item)
 		{
+			$documentDate = null;
+			if ($dateFormat === null)
+			{
+				$dateFormat = $this->dateFormat();
+			}
+			if (!empty($item['document_date']))
+			{
+				$documentDate = $this->phpgwapiCommon()->show_date($item['document_date'], $dateFormat);
+			}
+
 			if ($item['link'])
 			{
-				if ($dateFormat === null)
-				{
-					$dateFormat = $this->dateFormat();
-				}
 				$link = $item['link'];
 				if (!preg_match('/^HTTP/i', $link))
 				{
@@ -861,26 +867,22 @@ class LocationController
 				$values[] = array(
 					'id' => $item['id'],
 					'type' => 'location',
-					'document_name' => "<a href='{$link}'>{$item['title']}</a>",
+					'document_name' => (string)($item['title'] ?? ''),
+					'document_url' => $link,
+					'document_source' => 'external',
 					'title' => $item['title'],
-					'document_date' => $this->phpgwapiCommon()->show_date($item['document_date'], $dateFormat)
+					'document_date' => $documentDate,
 				);
 				continue;
 			}
-			if ($dateFormat === null)
-			{
-				$dateFormat = $this->dateFormat();
-			}
-			$documentName = '<a href="' . \phpgw::link('/index.php', array(
-				'menuaction' => 'property.uidocument.view_file',
-				'id' => $item['id']
-			)) . '" target="_blank">' . $item['document_name'] . '</a>';
 			$values[] = array(
 				'id' => $item['id'],
 				'type' => 'location',
-				'document_name' => $documentName,
+				'document_name' => (string)($item['document_name'] ?? ''),
+				'document_url' => null,
+				'document_source' => 'location',
 				'title' => $item['title'],
-				'document_date' => $this->phpgwapiCommon()->show_date($item['document_date'], $dateFormat)
+				'document_date' => $documentDate,
 			);
 		}
 		unset($item);
@@ -902,14 +904,12 @@ class LocationController
 				$temp = (array)json_decode($item['path']);
 				$title = implode('<br/>', $temp);
 			}
-			$documentName = '<a href="' . \phpgw::link('/index.php', array(
-				'menuaction' => 'property.uigeneric_document.view_file',
-				'file_id' => $item['id']
-			)) . '" target="_blank">' . $item['name'] . '</a>';
 			$values[] = array(
 				'id' => $item['id'],
 				'type' => 'generic',
-				'document_name' => $documentName,
+				'document_name' => (string)($item['name'] ?? ''),
+				'document_url' => null,
+				'document_source' => 'generic',
 				'title' => $title,
 				'document_date' => $item['created']
 			);

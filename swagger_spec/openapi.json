@@ -8996,7 +8996,7 @@
                                         "example": "5"
                                     },
                                     "values_attribute": {
-                                        "description": "Custom attributes keyed by attribute ID",
+                                        "description": "Custom attributes keyed by attribute ID (integer)",
                                         "type": "object",
                                         "additionalProperties": {
                                             "properties": {

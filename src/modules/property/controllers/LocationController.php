@@ -1057,7 +1057,7 @@ class LocationController
 	 *             @OA\Property(property="loc2", type="string", example="03", description="Level 2 location code"),
 	 *             @OA\Property(property="loc2_name", type="string", example="Bygg 3", description="Level 2 location name"),
 	 *             @OA\Property(property="cat_id", type="string", example="5", description="Category/type ID"),
-	 *             @OA\Property(property="values_attribute", type="object", description="Custom attributes keyed by attribute ID",
+	 *             @OA\Property(property="values_attribute", type="object", description="Custom attributes keyed by attribute ID (integer)",
 	 *                 @OA\AdditionalProperties(type="object",
 	 *                     @OA\Property(property="value", type="string", description="Attribute value")
 	 *                 )

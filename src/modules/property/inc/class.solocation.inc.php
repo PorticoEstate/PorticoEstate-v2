@@ -1816,17 +1816,25 @@ class property_solocation
 		$type_id = (int)$type_id;
 		$receipt = array();
 		$old_location_code = $location_code_parent ?: (isset($location['location_code']) ? $location['location_code'] : '');
+		$value_set = array();
+
+		// Keep write operations constrained to actual table columns.
+		$table_metadata = $this->db->metadata("fm_location{$type_id}");
+		$allowed_cols = array_keys((array)$table_metadata);
 
 		if (is_array($location))
 		{
 			foreach ($location as $input_name => $value)
 			{
-				if ($value !== null && !(is_string($value) && trim($value) === ''))
+				if ($input_name == 'cat_id')
 				{
-					if ($input_name == 'cat_id')
-					{
-						$input_name = 'category';
-					}
+					$input_name = 'category';
+				}
+
+				if ($value !== null
+					&& !(is_string($value) && trim($value) === '')
+					&& in_array($input_name, $allowed_cols, true))
+				{
 					$value_set[$input_name] = $this->db->db_addslashes($value);
 				}
 			}
@@ -1836,6 +1844,14 @@ class property_solocation
 		{
 			foreach ($values_attribute as $entry)
 			{
+				if (!array_key_exists('value', $entry)
+					|| $entry['value'] === null
+					|| (is_string($entry['value']) && trim($entry['value']) === '')
+					|| !in_array($entry['name'], $allowed_cols, true))
+				{
+					continue;
+				}
+
 				if ($entry['datatype'] == 'C' || $entry['datatype'] == 'T' || $entry['datatype'] == 'V' || $entry['datatype'] == 'link')
 				{
 					$entry['value'] = $this->db->db_addslashes($entry['value']);
@@ -1855,15 +1871,15 @@ class property_solocation
 		$row = $stmt->fetch(\PDO::FETCH_ASSOC);
 
 		$metadata = $this->db->metadata('fm_location' . $type_id);
-
-		$i = 0;
-		foreach ($metadata as $key => $val)
+		$metadata_list = array();
+		foreach ((array)$metadata as $key => $val)
 		{
-			$metadata_temp[$i]['name'] = $key;
-			$i++;
+			$metadata_list[] = array('name' => $key);
 		}
-		$metadata = $metadata_temp;
-		unset($metadata_temp);
+		$metadata = $metadata_list;
+
+		$cols = array();
+		$vals = array();
 
 
 		for ($i = 0; $i < count($metadata); $i++)

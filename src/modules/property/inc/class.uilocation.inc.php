@@ -2633,6 +2633,7 @@ JS;
 
 		$appname = lang('location');
 
+		self::add_javascript('property', 'base', 'navigation-api-boundary.js');
 		self::add_javascript('property', 'base', 'location.edit.js');
 
 		/**

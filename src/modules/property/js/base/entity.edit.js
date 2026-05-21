@@ -621,6 +621,13 @@ function logRelationInfoDebug(formData)
 
 function createEntityNavigationClient(form)
 {
+	if (window.PorticoBoundaryClients && typeof window.PorticoBoundaryClients.createEntityClients === 'function')
+	{
+		return window.PorticoBoundaryClients.createEntityClients(form, {
+			parseURL: parseURL
+		}).navigation;
+	}
+
 	return {
 		buildEditUrl: function (type, entityId, catId, id)
 		{
@@ -642,6 +649,13 @@ function createEntityNavigationClient(form)
 
 function createEntityApiClient(form)
 {
+	if (window.PorticoBoundaryClients && typeof window.PorticoBoundaryClients.createEntityClients === 'function')
+	{
+		return window.PorticoBoundaryClients.createEntityClients(form, {
+			parseURL: parseURL
+		}).api;
+	}
+
 	var parsed = parseURL(form.action);
 	var query = parsed.searchObject || {};
 

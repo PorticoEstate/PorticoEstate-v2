@@ -371,6 +371,14 @@ function buildLocationCodeFromLocationForm(form)
 
 function createLocationNavigationClient(form)
 {
+	if (window.PorticoBoundaryClients && typeof window.PorticoBoundaryClients.createLocationClients === 'function')
+	{
+		return window.PorticoBoundaryClients.createLocationClients(form, {
+			parseURL: parseURL,
+			getLocationFieldValue: getLocationFieldValue
+		}).navigation;
+	}
+
 	var parsed = parseURL(form.action);
 	var query = parsed.searchObject || {};
 
@@ -397,6 +405,14 @@ function createLocationNavigationClient(form)
 
 function createLocationApiClient(form)
 {
+	if (window.PorticoBoundaryClients && typeof window.PorticoBoundaryClients.createLocationClients === 'function')
+	{
+		return window.PorticoBoundaryClients.createLocationClients(form, {
+			parseURL: parseURL,
+			getLocationFieldValue: getLocationFieldValue
+		}).api;
+	}
+
 	var parsed = parseURL(form.action);
 	var query = parsed.searchObject || {};
 

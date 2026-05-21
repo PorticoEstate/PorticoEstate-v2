@@ -301,6 +301,14 @@ class LocationFormHelper
 
         if (is_array($valuesAttribute))
         {
+            // get the attribute definitions for the location type to validate against from the database.
+            $firstAttribute = current($valuesAttribute);
+            if (empty($firstAttribute['datatype']))
+            {
+                $bo = $this->bo();
+                $bo->get_attribute_information($valuesAttribute, $typeId);
+            }
+
             foreach ($valuesAttribute as $attribute)
             {
                 if (($attribute['nullable'] ?? null) != 1 && empty($attribute['value']))
@@ -460,11 +468,9 @@ class LocationFormHelper
     {
         $fields = [
             'location_code' => 'string',
-            'loc_code' => 'string',
             'type_id' => 'int',
             'cat_id' => 'int',
             'change_type' => 'int',
-            'loc_date' => 'string',
         ];
 
         if ($typeId > 0)
@@ -472,6 +478,9 @@ class LocationFormHelper
             for ($level = 1; $level <= $typeId; $level++)
             {
                 $fields["loc{$level}"] = 'string';
+                if ($level === $typeId) {
+                    $fields["loc{$level}_name"] = 'string';
+                }
             }
         }
 

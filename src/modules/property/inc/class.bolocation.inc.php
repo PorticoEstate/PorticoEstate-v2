@@ -954,6 +954,31 @@ JS;
 		return $this->so->check_location($location_code, $type_id);
 	}
 
+
+	/**
+	 * Merge full attribute metadata into an array of attribute values.
+	 *
+	 * @param array &$values_attribute Attribute values keyed by attrib_id; merged in place.
+	 * @return void
+	 */
+	function get_attribute_information(array &$values_attribute, int $typeId): void
+	{
+		$location = ".location.{$typeId}";
+		$_attributes = $this->find_attribute($location);
+
+		foreach ($values_attribute as $attrib_id => &$attribute)
+		{
+			foreach ($_attributes as $_key =>  $_attribute)
+			{
+				if ($attrib_id == $_attribute['id'])
+				{
+					$attribute = array_merge($_attribute, $attribute);
+				}
+			}
+		}
+	}
+
+
 	/**
 	 * Arrange attributes within groups
 	 *

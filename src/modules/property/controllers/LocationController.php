@@ -1046,23 +1046,34 @@ class LocationController
 	 * @OA\Post(
 	 *     path="/property/location/add",
 	 *     summary="Create a new location",
-	 *     description="Creates a new location record with provided field values and validation",
+	 *     description="Creates a new location record with provided field values and custom attributes",
 	 *     tags={"Location"},
 	 *     @OA\RequestBody(
 	 *         required=true,
 	 *         @OA\JsonContent(type="object",
-	 *             @OA\Property(property="location_code", type="string", example="LOC-00001"),
-	 *             @OA\Property(property="loc1", type="string", example="Building A"),
-	 *             @OA\Property(property="location_type", type="string", example="Office")
+	 *             @OA\Property(property="location_code", type="string", example="5000-03", description="Unique location code"),
+	 *             @OA\Property(property="loc1", type="string", example="5000", description="Level 1 location code"),
+	 *             @OA\Property(property="loc1_name", type="string", example="MØHLENPRIS III", description="Level 1 location name"),
+	 *             @OA\Property(property="loc2", type="string", example="03", description="Level 2 location code"),
+	 *             @OA\Property(property="loc2_name", type="string", example="Bygg 3", description="Level 2 location name"),
+	 *             @OA\Property(property="cat_id", type="string", example="5", description="Category/type ID"),
+	 *             @OA\Property(property="values_attribute", type="object", description="Custom attributes keyed by attribute ID",
+	 *                 @OA\AdditionalProperties(type="object",
+	 *                     @OA\Property(property="value", type="string", description="Attribute value")
+	 *                 )
+	 *             )
 	 *         )
 	 *     ),
-	 *     @OA\Response(response=200, description="Location created",
+	 *     @OA\Response(response=200, description="Location created successfully",
 	 *         @OA\JsonContent(type="object",
-	 *             @OA\Property(property="status", type="string"),
-	 *             @OA\Property(property="location_code", type="string")
+	 *             @OA\Property(property="status", type="string", enum={"success", "error"}),
+	 *             @OA\Property(property="message", type="array", description="Validation messages"),
+	 *             @OA\Property(property="location_code", type="string", description="The created location code"),
+	 *             @OA\Property(property="id", type="integer", description="Internal location ID")
 	 *         )
 	 *     ),
-	 *     @OA\Response(response=403, description="Forbidden")
+	 *     @OA\Response(response=400, description="Validation error"),
+	 *     @OA\Response(response=403, description="Forbidden - no add access")
 	 * )
 	 */
 	public function add(Request $request, Response $response): Response
@@ -1088,19 +1099,32 @@ class LocationController
 	 * @OA\Put(
 	 *     path="/property/location/{location_code}",
 	 *     summary="Update an existing location",
-	 *     description="Updates a location record, supporting field changes and renames",
+	 *     description="Updates a location record with field changes, custom attribute modifications, and optional rename via location_code_original threading",
 	 *     tags={"Location"},
 	 *     @OA\Parameter(name="location_code", in="path", required=true, description="Current location code", @OA\Schema(type="string")),
 	 *     @OA\RequestBody(
 	 *         required=true,
 	 *         @OA\JsonContent(type="object",
-	 *             @OA\Property(property="location_code", type="string", example="LOC-67890"),
-	 *             @OA\Property(property="loc1", type="string", example="Building A")
+	 *             @OA\Property(property="location_code", type="string", example="5000-04", description="New location code (for rename) or existing code"),
+	 *             @OA\Property(property="loc1", type="string", example="5000", description="Level 1 location code"),
+	 *             @OA\Property(property="loc2", type="string", example="04", description="Level 2 location code"),
+	 *             @OA\Property(property="cat_id", type="string", example="5", description="Category/type ID"),
+	 *             @OA\Property(property="values_attribute", type="object", description="Updated custom attributes keyed by attribute ID",
+	 *                 @OA\AdditionalProperties(type="object",
+	 *                     @OA\Property(property="value", type="string", description="Updated attribute value")
+	 *                 )
+	 *             )
 	 *         )
 	 *     ),
-	 *     @OA\Response(response=200, description="Location updated"),
-	 *     @OA\Response(response=400, description="Invalid location code"),
-	 *     @OA\Response(response=403, description="Forbidden")
+	 *     @OA\Response(response=200, description="Location updated successfully",
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="status", type="string", enum={"success", "error"}),
+	 *             @OA\Property(property="message", type="array", description="Validation messages"),
+	 *             @OA\Property(property="location_code", type="string", description="The location code (new if renamed)")
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=400, description="Invalid location code or validation error"),
+	 *     @OA\Response(response=403, description="Forbidden - no edit access")
 	 * )
 	 */
 	public function save(Request $request, Response $response, array $args): Response

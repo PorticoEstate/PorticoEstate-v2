@@ -8957,7 +8957,7 @@
                     "Location"
                 ],
                 "summary": "Create a new location",
-                "description": "Creates a new location record with provided field values and validation",
+                "description": "Creates a new location record with provided field values and custom attributes",
                 "operationId": "03bde229a78024a170025b8915f14390",
                 "requestBody": {
                     "required": true,
@@ -8966,16 +8966,47 @@
                             "schema": {
                                 "properties": {
                                     "location_code": {
+                                        "description": "Unique location code",
                                         "type": "string",
-                                        "example": "LOC-00001"
+                                        "example": "5000-03"
                                     },
                                     "loc1": {
+                                        "description": "Level 1 location code",
                                         "type": "string",
-                                        "example": "Building A"
+                                        "example": "5000"
                                     },
-                                    "location_type": {
+                                    "loc1_name": {
+                                        "description": "Level 1 location name",
                                         "type": "string",
-                                        "example": "Office"
+                                        "example": "M\u00d8HLENPRIS III"
+                                    },
+                                    "loc2": {
+                                        "description": "Level 2 location code",
+                                        "type": "string",
+                                        "example": "03"
+                                    },
+                                    "loc2_name": {
+                                        "description": "Level 2 location name",
+                                        "type": "string",
+                                        "example": "Bygg 3"
+                                    },
+                                    "cat_id": {
+                                        "description": "Category\/type ID",
+                                        "type": "string",
+                                        "example": "5"
+                                    },
+                                    "values_attribute": {
+                                        "description": "Custom attributes keyed by attribute ID",
+                                        "type": "object",
+                                        "additionalProperties": {
+                                            "properties": {
+                                                "value": {
+                                                    "description": "Attribute value",
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
                                     }
                                 },
                                 "type": "object"
@@ -8985,16 +9016,29 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Location created",
+                        "description": "Location created successfully",
                         "content": {
                             "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "status": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "enum": [
+                                                "success",
+                                                "error"
+                                            ]
+                                        },
+                                        "message": {
+                                            "description": "Validation messages",
+                                            "type": "array"
                                         },
                                         "location_code": {
+                                            "description": "The created location code",
                                             "type": "string"
+                                        },
+                                        "id": {
+                                            "description": "Internal location ID",
+                                            "type": "integer"
                                         }
                                     },
                                     "type": "object"
@@ -9002,8 +9046,11 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "Validation error"
+                    },
                     "403": {
-                        "description": "Forbidden"
+                        "description": "Forbidden - no add access"
                     }
                 }
             }
@@ -9014,7 +9061,7 @@
                     "Location"
                 ],
                 "summary": "Update an existing location",
-                "description": "Updates a location record, supporting field changes and renames",
+                "description": "Updates a location record with field changes, custom attribute modifications, and optional rename via location_code_original threading",
                 "operationId": "b15d5b022a534fed78955d3ccf6e4a8b",
                 "parameters": [
                     {
@@ -9034,12 +9081,37 @@
                             "schema": {
                                 "properties": {
                                     "location_code": {
+                                        "description": "New location code (for rename) or existing code",
                                         "type": "string",
-                                        "example": "LOC-67890"
+                                        "example": "5000-04"
                                     },
                                     "loc1": {
+                                        "description": "Level 1 location code",
                                         "type": "string",
-                                        "example": "Building A"
+                                        "example": "5000"
+                                    },
+                                    "loc2": {
+                                        "description": "Level 2 location code",
+                                        "type": "string",
+                                        "example": "04"
+                                    },
+                                    "cat_id": {
+                                        "description": "Category\/type ID",
+                                        "type": "string",
+                                        "example": "5"
+                                    },
+                                    "values_attribute": {
+                                        "description": "Updated custom attributes keyed by attribute ID",
+                                        "type": "object",
+                                        "additionalProperties": {
+                                            "properties": {
+                                                "value": {
+                                                    "description": "Updated attribute value",
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
                                     }
                                 },
                                 "type": "object"
@@ -9049,13 +9121,37 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Location updated"
+                        "description": "Location updated successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "enum": [
+                                                "success",
+                                                "error"
+                                            ]
+                                        },
+                                        "message": {
+                                            "description": "Validation messages",
+                                            "type": "array"
+                                        },
+                                        "location_code": {
+                                            "description": "The location code (new if renamed)",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "400": {
-                        "description": "Invalid location code"
+                        "description": "Invalid location code or validation error"
                     },
                     "403": {
-                        "description": "Forbidden"
+                        "description": "Forbidden - no edit access"
                     }
                 }
             },

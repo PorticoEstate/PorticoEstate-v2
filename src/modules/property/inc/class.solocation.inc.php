@@ -2611,7 +2611,7 @@ class property_solocation
 		$values			 = array();
 		if ($location_name)
 		{
-			$locationPattern = "%{$location_name}%";
+			$locationPattern = "{$location_name}%";
 			$sql = "SELECT loc{$level}_name as name, location_code"
 				. " FROM fm_location{$level}"
 				. " WHERE loc{$level}_name {$this->like} :location_pattern OR location_code {$this->like} :location_pattern";

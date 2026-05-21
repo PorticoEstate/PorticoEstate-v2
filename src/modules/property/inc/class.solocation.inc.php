@@ -1728,12 +1728,12 @@ class property_solocation
 
 		foreach ($location as $input_name => $value)
 		{
-			if ($value && in_array($input_name, $allowed_cols, true))
+			if ($input_name == 'cat_id')
 			{
-				if ($input_name == 'cat_id')
-				{
-					$input_name = 'category';
-				}
+				$input_name = 'category';
+			}
+			if (($value !== null && !(is_string($value) && trim($value) === '')) && in_array($input_name, $allowed_cols, true))
+			{
 				if (in_array($input_name, $allowed_cols, true))
 				{
 					$cols[]	 = $input_name;
@@ -1746,7 +1746,7 @@ class property_solocation
 		{
 			foreach ($values_attribute as $entry)
 			{
-				if ($entry['value'] && in_array($entry['name'], $allowed_cols, true))
+				if ((array_key_exists('value', $entry) && $entry['value'] !== null && !(is_string($entry['value']) && trim($entry['value']) === '')) && in_array($entry['name'], $allowed_cols, true))
 				{
 					if ($entry['datatype'] == 'C' || $entry['datatype'] == 'T' || $entry['datatype'] == 'V' || $entry['datatype'] == 'link')
 					{
@@ -1821,7 +1821,7 @@ class property_solocation
 		{
 			foreach ($location as $input_name => $value)
 			{
-				if ($value)
+				if ($value !== null && !(is_string($value) && trim($value) === ''))
 				{
 					if ($input_name == 'cat_id')
 					{

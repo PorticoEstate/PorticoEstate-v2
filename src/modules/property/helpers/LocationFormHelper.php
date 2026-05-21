@@ -246,7 +246,8 @@ class LocationFormHelper
             $values['location_data'],
             $values['location_code_original'],
             $values['values_attribute'],
-            $values['errors']
+            $values['errors'],
+            $values['error_id']
         );
 
         return $values;
@@ -311,7 +312,7 @@ class LocationFormHelper
 
             foreach ($valuesAttribute as $attribute)
             {
-                if (($attribute['nullable'] ?? null) != 1 && empty($attribute['value']))
+                if (($attribute['nullable'] ?? null) != 1 && (!array_key_exists('value', $attribute) || $attribute['value'] === null || (is_string($attribute['value']) && trim($attribute['value']) === '')))
                 {
                     $errors[] = lang('Please enter value for attribute %1', $attribute['input_text']);
                 }
@@ -323,6 +324,19 @@ class LocationFormHelper
             }
         }
 
+        foreach ($this->getLocationConfig() as $configEntry)
+        {
+            if($configEntry['location_type'] == $typeId && !empty($configEntry['lookup_form']))
+            {
+                $column = $configEntry['column_name'] ?? '';
+                if ($column && isset($values[$column]) && ($values[$column] === null || (is_string($values[$column]) && trim($values[$column]) === '')))
+                {
+                    $errors[] = lang('Please select a value for %1', $configEntry['column_name']);
+                }
+            }
+        }
+
+/*
         if (isset($insertRecord['extra']) && is_array($insertRecord['extra']))
         {
             if (array_search('street_id', $insertRecord['extra'], true) !== false && empty($values['street_id']))
@@ -338,7 +352,7 @@ class LocationFormHelper
                 $errors[] = lang('Please select an owner');
             }
         }
-
+*/
         $values['location_code'] = implode('-', $locationCodeParts);
 
         if (!$isEdit && !empty($values['location_code']) && $typeId > 0 && $this->bo()->check_location($values['location_code'], $typeId))
@@ -478,7 +492,8 @@ class LocationFormHelper
             for ($level = 1; $level <= $typeId; $level++)
             {
                 $fields["loc{$level}"] = 'string';
-                if ($level === $typeId) {
+                if ($level === $typeId)
+                {
                     $fields["loc{$level}_name"] = 'string';
                 }
             }
@@ -499,10 +514,10 @@ class LocationFormHelper
 
             if ($column === 'street_id')
             {
-   //             $fields['street_name'] = 'string';
+                //             $fields['street_name'] = 'string';
                 $fields['street_number'] = 'string';
             }
-/*
+            /*
             if ($column === 'tenant_id')
             {
                 $fields['first_name'] = 'string';

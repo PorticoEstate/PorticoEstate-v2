@@ -6,6 +6,7 @@ type TranslationFunction = (key: string, options?: any) => string;
 
 export const createBillingFormSchema = (t: TranslationFunction) => z.object({
     customerType: z.enum(['ssn', 'organization_number']),
+    organizationId: z.number().optional(),
     organizationNumber: z.string().optional(),
     organizationName: z.string().optional(),
     contactName: z.string().min(1, t('bookingfrontend.field_wild_required', {field: t('bookingfrontend.contact_name')})),

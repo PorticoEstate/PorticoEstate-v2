@@ -1095,7 +1095,7 @@ JS;
 				)
 			),
 			'datatable'		 => array(
-				'source'		 => phpgw::link('/property/location', array(
+				'source'		 => phpgw::link('/property/location/datatable', array(
 					'type_id'			 => $type_id,
 					'lookup'			 => $lookup,
 					'lookup_tenant'		 => $lookup_tenant,

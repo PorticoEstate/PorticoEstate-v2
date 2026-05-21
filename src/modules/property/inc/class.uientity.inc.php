@@ -1184,7 +1184,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			'datatable'		 => array(
 				'source'		 => '/property/entity/' . urlencode($this->type)
 					. '/' . (int)$this->entity_id
-					. '/' . (int)$this->cat_id,
+					. '/' . (int)$this->cat_id
+					. '/datatable',
 				'district_id'		 => $this->district_id,
 				'p_num'				 => $this->p_num,
 				'download'		 => phpgw::link('/property/entity/' . urlencode($this->type)

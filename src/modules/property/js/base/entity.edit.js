@@ -696,11 +696,7 @@ function createEntityApiClient(form)
 
 			var isCreate = !id;
 			var url = '/property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId;
-			if (isCreate)
-			{
-				url += '/create';
-			}
-			else
+			if (!isCreate)
 			{
 				url += '/' + id;
 			}

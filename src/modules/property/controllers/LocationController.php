@@ -265,6 +265,94 @@ class LocationController
 	}
 
 	/**
+	 * Canonical collection POST endpoint.
+	 *
+	 * DataTables clients can still post collection requests by including DataTables
+	 * keys (draw/order/columns), while create payloads are handled as resource creation.
+	 */
+	public function postCollection(Request $request, Response $response): Response
+	{
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		if ($this->isDataTablesRequest($input))
+		{
+			return $this->index($request, $response);
+		}
+
+		return $this->add($request, $response);
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/list",
+	 *     summary="List locations (canonical envelope)",
+	 *     description="Returns location collection in a canonical JSON envelope without DataTables-specific keys",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="search", in="query", required=false, description="Search term or object with value key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="start", in="query", required=false, description="Pagination start", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="length", in="query", required=false, description="Pagination length", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="order_by", in="query", required=false, description="Order field", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="order_dir", in="query", required=false, description="Order direction", @OA\Schema(type="string", enum={"asc", "desc"})),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Canonical location list",
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="status", type="string", example="success"),
+	 *             @OA\Property(property="data", type="array", @OA\Items(type="object")),
+	 *             @OA\Property(property="meta", type="object",
+	 *                 @OA\Property(property="start", type="integer"),
+	 *                 @OA\Property(property="length", type="integer"),
+	 *                 @OA\Property(property="total", type="integer")
+	 *             )
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function listLocations(Request $request, Response $response): Response
+	{
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$search = $input['search'] ?? '';
+		$searchValue = is_array($search) ? (string)($search['value'] ?? '') : (string)$search;
+		$start = (int)($input['start'] ?? 0);
+		$length = (int)($input['length'] ?? 25);
+		$orderBy = (string)($input['order_by'] ?? '');
+		$orderDir = strtolower((string)($input['order_dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
+		$lookupTenant = (bool)($input['lookup_tenant'] ?? false);
+		$export = !empty($input['export']);
+		$allrows = $export || ($length === -1) || !empty($input['allrows']);
+
+		$params = array(
+			'start' => $start,
+			'results' => $length,
+			'query' => $searchValue,
+			'order' => $orderBy,
+			'sort' => $orderDir,
+			'dir' => $orderDir,
+			'allrows' => $allrows,
+			'lookup_tenant' => $lookupTenant,
+			'dry_run' => false,
+		);
+
+		$values = $this->bo()->read($params);
+
+		return $this->jsonResponse($response, array(
+			'status' => 'success',
+			'data' => $values,
+			'meta' => array(
+				'start' => $start,
+				'length' => $length,
+				'total' => (int)$this->bo()->total_records,
+			),
+		));
+	}
+
+	private function isDataTablesRequest(array $input): bool
+	{
+		return array_key_exists('draw', $input)
+			|| array_key_exists('columns', $input)
+			|| array_key_exists('order', $input);
+	}
+
+	/**
 	 * @OA\Get(
 	 *     path="/property/location/summary",
 	 *     summary="Get location summary data",
@@ -590,6 +678,52 @@ class LocationController
 	{
 		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
 		$draw = (int)($request->getQueryParams()['draw'] ?? 0) + 1;
+		$values = $this->buildHistoryRows($locationCode);
+		return $this->jsonResponse($response, array(
+			'data' => $values,
+			'recordsTotal' => count($values),
+			'recordsFiltered' => count($values),
+			'draw' => $draw,
+		));
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/history/list",
+	 *     summary="Get location change history (canonical envelope)",
+	 *     description="Returns location history in canonical JSON envelope without DataTables-specific keys",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="location_code", in="query", required=false, description="Location code", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="History list",
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="status", type="string", example="success"),
+	 *             @OA\Property(property="data", type="array", @OA\Items(type="object")),
+	 *             @OA\Property(property="meta", type="object",
+	 *                 @OA\Property(property="total", type="integer")
+	 *             )
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function listHistory(Request $request, Response $response): Response
+	{
+		$queryParams = $request->getQueryParams();
+		$bodyParams = $this->requestBodyAsArray($request);
+		$input = array_merge($queryParams, $bodyParams);
+		$locationCode = (string)($input['location_code'] ?? '');
+		$values = $this->buildHistoryRows($locationCode);
+
+		return $this->jsonResponse($response, array(
+			'status' => 'success',
+			'data' => $values,
+			'meta' => array(
+				'total' => count($values),
+			),
+		));
+	}
+
+	private function buildHistoryRows(string $locationCode): array
+	{
 		$values = $this->bo()->get_history($locationCode);
 		$dateFormat = $this->dateFormat();
 		foreach ($values as &$entry)
@@ -597,12 +731,8 @@ class LocationController
 			$entry['entry_date'] = $this->phpgwapiCommon()->show_date($entry['entry_date'], $dateFormat);
 		}
 		unset($entry);
-		return $this->jsonResponse($response, array(
-			'data' => $values,
-			'recordsTotal' => count($values),
-			'recordsFiltered' => count($values),
-			'draw' => $draw,
-		));
+
+		return $values;
 	}
 
 	/**
@@ -630,10 +760,63 @@ class LocationController
 		$bodyParams = $request->getParsedBody();
 		$bodyParams = is_array($bodyParams) ? $bodyParams : array();
 		$input = array_merge($queryParams, $bodyParams);
+		$draw = (int)($input['draw'] ?? 0) + 1;
+		$result = $this->buildDocumentRows($input);
+
+		return $this->jsonResponse($response, array(
+			'data' => $result['rows'],
+			'recordsTotal' => $result['total'],
+			'recordsFiltered' => $result['total'],
+			'draw' => $draw,
+		));
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/property/location/documents/list",
+	 *     summary="Get location documents (canonical envelope)",
+	 *     description="Returns location documents in canonical JSON envelope without DataTables-specific keys",
+	 *     tags={"Location"},
+	 *     @OA\Parameter(name="location_code", in="query", required=false, description="Location code", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="doc_type", in="query", required=false, description="Document type ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="start", in="query", required=false, description="Pagination start", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="length", in="query", required=false, description="Pagination length", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Documents list",
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="status", type="string", example="success"),
+	 *             @OA\Property(property="data", type="array", @OA\Items(type="object")),
+	 *             @OA\Property(property="meta", type="object",
+	 *                 @OA\Property(property="start", type="integer"),
+	 *                 @OA\Property(property="length", type="integer"),
+	 *                 @OA\Property(property="total", type="integer")
+	 *             )
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function listDocuments(Request $request, Response $response): Response
+	{
+		$queryParams = $request->getQueryParams();
+		$bodyParams = $this->requestBodyAsArray($request);
+		$input = array_merge($queryParams, $bodyParams);
+		$result = $this->buildDocumentRows($input);
+
+		return $this->jsonResponse($response, array(
+			'status' => 'success',
+			'data' => $result['rows'],
+			'meta' => array(
+				'start' => (int)($input['start'] ?? 0),
+				'length' => (int)($input['length'] ?? 0),
+				'total' => $result['total'],
+			),
+		));
+	}
+
+	private function buildDocumentRows(array $input): array
+	{
 
 		$search = $input['search'] ?? array();
 		$order = (array)($input['order'] ?? array());
-		$draw = (int)($input['draw'] ?? 0) + 1;
 		$columns = (array)($input['columns'] ?? array());
 		$docType = (int)($input['doc_type'] ?? 0);
 		$locationCode = (string)($input['location_code'] ?? '');
@@ -732,12 +915,10 @@ class LocationController
 			);
 		}
 
-		return $this->jsonResponse($response, array(
-			'data' => $values,
-			'recordsTotal' => $recordsTotal,
-			'recordsFiltered' => $recordsTotal,
-			'draw' => $draw,
-		));
+		return array(
+			'rows' => $values,
+			'total' => (int)$recordsTotal,
+		);
 	}
 
 	/**
@@ -1045,9 +1226,9 @@ class LocationController
 
 	/**
 	 * @OA\Post(
-	 *     path="/property/location/add",
+	 *     path="/property/location",
 	 *     summary="Create a new location",
-	 *     description="Creates a new location record with provided field values and custom attributes",
+	 *     description="Creates a new location record with provided field values and custom attributes. Legacy alias /property/location/add is still supported for backward compatibility.",
 	 *     tags={"Location"},
 	 *     @OA\RequestBody(
 	 *         required=true,

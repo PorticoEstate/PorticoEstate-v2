@@ -242,6 +242,13 @@ class EntityController
 		]);
 	}
 
+	private function isDataTablesRequest(array $input): bool
+	{
+		return array_key_exists('draw', $input)
+			|| array_key_exists('columns', $input)
+			|| array_key_exists('order', $input);
+	}
+
 	/**
 	 * Return a validation error response compatible with legacy receipts.
 	 */
@@ -630,6 +637,80 @@ class EntityController
 	}
 
 	/**
+	 * Canonical collection POST endpoint.
+	 *
+	 * DataTables clients can still post by including draw/order/columns,
+	 * while non-DataTables payloads are treated as create requests.
+	 */
+	public function postCollection(Request $request, Response $response, array $args): Response
+	{
+		$input = array_merge($request->getQueryParams(), $this->requestBodyArray($request));
+		if ($this->isDataTablesRequest($input))
+		{
+			return $this->index($request, $response, $args);
+		}
+
+		return $this->store($request, $response, $args);
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/list",
+	 *     summary="List entity items (canonical envelope)",
+	 *     description="Returns a canonical JSON envelope for entity item collections without DataTables-specific keys.",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="start", in="query", required=false, description="Pagination offset", @OA\Schema(type="integer", default=0)),
+	 *     @OA\Parameter(name="query", in="query", required=false, description="Free-text search", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="filter", in="query", required=false, description="Status/category filter", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="sort", in="query", required=false, description="Column to sort by", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="dir", in="query", required=false, description="Sort direction", @OA\Schema(type="string", enum={"ASC", "DESC"}, default="ASC")),
+	 *     @OA\Parameter(name="allrows", in="query", required=false, description="Return all rows without pagination", @OA\Schema(type="boolean", default=false)),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Canonical list of entity items",
+	 *         @OA\JsonContent(type="object",
+	 *             @OA\Property(property="status", type="string", example="success"),
+	 *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/EntityItem")),
+	 *             @OA\Property(property="meta", type="object",
+	 *                 @OA\Property(property="start", type="integer"),
+	 *                 @OA\Property(property="total", type="integer")
+	 *             )
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function listItems(Request $request, Response $response, array $args): Response
+	{
+		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+		$input = array_merge($request->getQueryParams(), $this->requestBodyArray($request));
+
+		$readParams = [
+			'start'   => isset($input['start']) ? (int)$input['start'] : 0,
+			'query'   => Sanitizer::clean_value($input['query'] ?? '', 'string'),
+			'filter'  => Sanitizer::clean_value($input['filter'] ?? '', 'string'),
+			'order'   => Sanitizer::clean_value($input['sort'] ?? '', 'string'),
+			'sort'    => Sanitizer::clean_value($input['dir'] ?? '', 'string'),
+			'allrows' => isset($input['allrows']) && (string)$input['allrows'] === 'true',
+		];
+
+		$bo->allrows = $readParams['allrows'];
+		$items = $bo->read($readParams);
+		$items = $this->enrichRows((array)$items, $bo);
+
+		return $this->jsonResponse($response, [
+			'status' => 'success',
+			'data' => $items,
+			'meta' => [
+				'start' => $readParams['start'],
+				'total' => (int)$bo->total_records,
+			],
+		]);
+	}
+
+	/**
 	 * @OA\Get(
 	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}",
 	 *     summary="Get a single entity item",
@@ -671,9 +752,9 @@ class EntityController
 
 	/**
 	 * @OA\Post(
-	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/create",
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}",
 	 *     summary="Create a new entity item",
-	 *     description="Creates a new entity item with optional EAV attribute values. Accepts JSON or multipart/form-data (required when uploading a file attachment).",
+	 *     description="Creates a new entity item with optional EAV attribute values. Accepts JSON or multipart/form-data (required when uploading a file attachment). Legacy alias /create is still supported for backward compatibility.",
 	 *     tags={"Entity"},
 	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
 	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),

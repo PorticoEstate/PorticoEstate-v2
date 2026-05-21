@@ -74,12 +74,15 @@ $app->group('/property/location', function (RouteCollectorProxy $group) use ($co
 	$controller = new LocationController($container);
 
 	// Hybrid approach routes (explicit form helper orchestration)
+	$group->post('', [$controller, 'postCollection']);
 	$group->post('/add', [$controller, 'add']);
 	$group->put('/{location_code:[^/]+}', [$controller, 'save']);
+	$group->get('/list', [$controller, 'listLocations']);
+	$group->post('/list', [$controller, 'listLocations']);
+	$group->post('/datatable', [$controller, 'index']);
 
 	// Thin adapter routes (legacy UI delegation)
 	$group->get('', [$controller, 'index']);
-	$group->post('', [$controller, 'index']);
 	$group->get('/summary', [$controller, 'summary']);
 	$group->post('/summary', [$controller, 'summary']);
 	$group->get('/summary/query', [$controller, 'querySummary']);
@@ -93,8 +96,12 @@ $app->group('/property/location', function (RouteCollectorProxy $group) use ($co
 	$group->get('/accounts', [$controller, 'getAccounts']);
 	$group->get('/history', [$controller, 'getHistoryData']);
 	$group->post('/history', [$controller, 'getHistoryData']);
+	$group->get('/history/list', [$controller, 'listHistory']);
+	$group->post('/history/list', [$controller, 'listHistory']);
 	$group->get('/documents', [$controller, 'getDocuments']);
 	$group->post('/documents', [$controller, 'getDocuments']);
+	$group->get('/documents/list', [$controller, 'listDocuments']);
+	$group->post('/documents/list', [$controller, 'listDocuments']);
 	$group->get('/location-data', [$controller, 'getLocationData']);
 	$group->get('/delivery-address', [$controller, 'getDeliveryAddress']);
 	$group->post('/delivery-address', [$controller, 'getDeliveryAddress']);
@@ -124,7 +131,10 @@ $app->group('/property/entity', function (RouteCollectorProxy $group) use ($cont
 	{
 		// Core CRUD
 		$g->get('',                [$controller, 'index']);
-		$g->post('',               [$controller, 'index']); // DataTables server-side POST
+		$g->post('',               [$controller, 'postCollection']);
+		$g->post('/datatable',     [$controller, 'index']); // DataTables server-side POST
+		$g->get('/list',           [$controller, 'listItems']);
+		$g->post('/list',          [$controller, 'listItems']);
 		$g->post('/create',        [$controller, 'store']);
 		$g->get('/download',       [$controller, 'download']);
 		$g->get('/{id:[0-9]+}',    [$controller, 'show']);

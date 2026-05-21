@@ -434,7 +434,7 @@ function createLocationApiClient(form)
 			var isUpdate = hasExistingLocation && !!originalLocationCode;
 			var requestUrl = isUpdate
 				? '/property/location/' + encodeURIComponent(originalLocationCode)
-				: '/property/location/add';
+				: '/property/location';
 
 			if (clickHistory)
 			{

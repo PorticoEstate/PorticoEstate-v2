@@ -42,7 +42,7 @@
 			var isUpdate = hasExistingLocation && !!originalLocationCode;
 			var requestUrl = isUpdate
 				? '/property/location/' + encodeURIComponent(originalLocationCode)
-				: '/property/location/add';
+				: '/property/location';
 
 			if (clickHistory)
 			{
@@ -128,11 +128,7 @@
 
 			var isCreate = !id;
 			var url = '/property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId;
-			if (isCreate)
-			{
-				url += '/create';
-			}
-			else
+			if (!isCreate)
 			{
 				url += '/' + id;
 			}

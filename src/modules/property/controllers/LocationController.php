@@ -217,9 +217,10 @@ class LocationController
 		$draw	 = (int)($queryParams['draw'] ?? \Sanitizer::get_var('draw', 'int'));
 		$columns = (array)($queryParams['columns'] ?? \Sanitizer::get_var('columns'));
 		$start = (int)($queryParams['start'] ?? \Sanitizer::get_var('start', 'int', 'REQUEST', 0));
+		$length = (int)($queryParams['length'] ?? \Sanitizer::get_var('length', 'int', 'REQUEST', 10));
 		$export = !empty($queryParams['export']) || \Sanitizer::get_var('export', 'bool', 'REQUEST', false);
 		$lookupTenant = (bool)($queryParams['lookup_tenant'] ?? \Sanitizer::get_var('lookup_tenant', 'bool', 'REQUEST', false));
-		$allrows = $export || ((int)($queryParams['length'] ?? \Sanitizer::get_var('length', 'int', 'REQUEST', 0)) === -1);
+		$allrows = $export || ($length === -1);
 
 		$orderColumnIndex = (int)($order[0]['column'] ?? -1);
 		$orderField = ($orderColumnIndex >= 0 && isset($columns[$orderColumnIndex]['data']))
@@ -238,7 +239,7 @@ class LocationController
 
 		$params = array(
 			'start' => $start,
-			'results' => (int)($queryParams['length'] ?? 0),
+			'results' => $length,
 			'query' => $search['value'] ?? '',
 			'order' => $orderField,
 			'sort' => $orderDir,

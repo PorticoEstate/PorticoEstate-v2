@@ -1013,9 +1013,14 @@ class EntityControllerTest extends TestCase
 
 		$decoded = json_decode($this->responseBody, true);
 		$this->assertSame('photo.jpg',  $decoded['data'][0]['file_name']);
+		$this->assertSame(1,            $decoded['data'][0]['file_id']);
+		$this->assertSame('image/jpeg', $decoded['data'][0]['file_mime_type']);
 		$this->assertSame(1,            $decoded['data'][0]['img_id']);
-		$this->assertArrayHasKey('file_link', $decoded['data'][0]);
-		$this->assertArrayHasKey('delete_file', $decoded['data'][0]);
+		$this->assertArrayHasKey('loc1', $decoded['data'][0]);
+		$this->assertArrayHasKey('item_id', $decoded['data'][0]);
+		$this->assertArrayHasKey('entity_id', $decoded['data'][0]);
+		$this->assertArrayHasKey('cat_id', $decoded['data'][0]);
+		$this->assertArrayHasKey('type', $decoded['data'][0]);
 		$this->assertSame(1,            $decoded['recordsTotal']);
 		$this->assertSame(1,            $decoded['recordsFiltered']);
 		$this->assertSame(2,            $decoded['draw']);
@@ -1056,6 +1061,9 @@ class EntityControllerTest extends TestCase
 		$decoded = json_decode($this->responseBody, true);
 		$this->assertCount(1, $decoded['data']);
 		$this->assertSame('ItemX', $decoded['data'][0]['name']);
+		$this->assertSame('/index.php', $decoded['data'][0]['related_path']);
+		$this->assertIsArray($decoded['data'][0]['related_params']);
+		$this->assertArrayHasKey('menuaction', $decoded['data'][0]['related_params']);
 		$this->assertSame(2, $decoded['draw']);
 	}
 }

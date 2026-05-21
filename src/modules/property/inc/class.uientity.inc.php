@@ -839,8 +839,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	/**
 	 * Return a DataTables-compatible JSON list of entity records linked to the given item.
 	 *
-	 * Reads interlinks via bo->read_entity_to_link() and returns an array of
-	 * HTML anchor elements as rows.
+	 * Reads interlinks via bo->read_entity_to_link() and returns pure data rows
+	 * with navigation context for client-side URL construction.
 	 *
 	 * @deprecated Use EntityController::getRelated() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/related.
 	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
@@ -864,8 +864,31 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			{
 				foreach ($related_data as $entry)
 				{
+					$link = (string)($entry['entity_link'] ?? '');
+					$path = null;
+					$params = array();
+					if ($link !== '')
+					{
+						$rawPath = parse_url($link, PHP_URL_PATH);
+						if (is_string($rawPath) && $rawPath !== '')
+						{
+							$path = $rawPath;
+						}
+						$rawQuery = parse_url($link, PHP_URL_QUERY);
+						if (is_string($rawQuery) && $rawQuery !== '')
+						{
+							parse_str($rawQuery, $params);
+							if (!is_array($params))
+							{
+								$params = array();
+							}
+						}
+					}
+
 					$values[] = array(
-						'url' => "<a href=\"{$entry['entity_link']}\" > {$entry['name']}</a>",
+						'name' => (string)($entry['name'] ?? ''),
+						'related_path' => $path,
+						'related_params' => $params,
 					);
 				}
 			}
@@ -1283,8 +1306,13 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 			if ($uicols['name'][$k] == 'num')
 			{
-				$params['formatter'] = 'JqueryPortico.formatLink';
+				$params['formatter'] = 'formatEntityNumLink';
 				$params['hidden']	 = false;
+			}
+
+			if ($uicols['name'][$k] == 'picture')
+			{
+				$params['formatter'] = 'formatEntityPicture';
 			}
 
 			$denied = array('merknad');
@@ -1446,6 +1474,60 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				'custom_code'	 => $delete_custom_code
 			);
 		}
+
+		$entityJsType = addslashes((string)$this->type);
+		$entityJsEntityId = (int)$this->entity_id;
+		$entityJsCatId = (int)$this->cat_id;
+		$entityFormatterJs = <<<JS
+formatEntityNumLink = function (key, oData)
+{
+	var text = (oData && oData[key] !== undefined && oData[key] !== null) ? String(oData[key]) : '';
+	if (!text)
+	{
+		return '';
+	}
+	if (!oData || !oData.id)
+	{
+		return $('<div/>').text(text).html();
+	}
+
+	var url = phpGWLink('index.php', {
+		menuaction: 'property.uientity.view',
+		type: '{$entityJsType}',
+		entity_id: {$entityJsEntityId},
+		cat_id: {$entityJsCatId},
+		id: oData.id
+	});
+
+	return '<a href="' + encodeURI(url) + '">' + $('<div/>').text(text).html() + '</a>';
+};
+
+formatEntityPicture = function (key, oData)
+{
+	if (!oData)
+	{
+		return '';
+	}
+
+	var imageUrl = oData.img_url ? String(oData.img_url) : '';
+	if (!imageUrl && oData.directory && oData.file_name)
+	{
+		imageUrl = phpGWLink('index.php', {
+			menuaction: 'property.uigallery.view_file',
+			file: String(oData.directory) + '/' + String(oData.file_name)
+		});
+	}
+
+	if (!imageUrl)
+	{
+		return '';
+	}
+
+	var thumb = oData.thumbnail_flag ? '&' + String(oData.thumbnail_flag) : '';
+	return '<img src="' + encodeURI(imageUrl + thumb) + '" alt="" style="max-height:48px;max-width:64px;" />';
+};
+JS;
+		phpgwapi_js::getInstance()->add_code('', $entityFormatterJs);
 
 		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $appname . ': ' . $function_msg;
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
@@ -1931,7 +2013,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			);
 
 			$related_def = array(
-				array('key' => 'url', 'label' => lang('related'), 'sortable' => false, 'resizeable' => true)
+				array('key' => 'name', 'label' => lang('related'), 'formatter' => 'formatEntityRelatedLink', 'sortable' => false, 'resizeable' => true)
 			);
 
 			$datatable_def[] = array(

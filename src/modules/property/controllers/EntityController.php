@@ -287,6 +287,38 @@ class EntityController
 	}
 
 	/**
+	 * Split a link into path + query params for client-side navigation URL building.
+	 *
+	 * @return array{path: string|null, params: array<string, mixed>}
+	 */
+	private function splitLinkToPathAndParams(string $link): array
+	{
+		if ($link === '')
+		{
+			return ['path' => null, 'params' => []];
+		}
+
+		$rawPath = parse_url($link, PHP_URL_PATH);
+		$path = is_string($rawPath) && $rawPath !== '' ? $rawPath : null;
+		$params = [];
+
+		$rawQuery = parse_url($link, PHP_URL_QUERY);
+		if (is_string($rawQuery) && $rawQuery !== '')
+		{
+			parse_str($rawQuery, $params);
+			if (!is_array($params))
+			{
+				$params = [];
+			}
+		}
+
+		return [
+			'path' => $path,
+			'params' => $params,
+		];
+	}
+
+	/**
 	 * Recursively sanitize scalar payload values while preserving array structure.
 	 */
 	private function sanitizePayloadValue(mixed $value): mixed
@@ -499,16 +531,12 @@ class EntityController
 			$vfs = null;
 		}
 
-		$link_base = [
-			'menuaction' => 'property.uientity.view',
-			'entity_id'  => $bo->entity_id,
-			'cat_id'     => $bo->cat_id,
-			'type'       => $bo->type,
-		];
-
 		foreach ($rows as &$entry)
 		{
 			$loc1 = !empty($entry['loc1']) ? $entry['loc1'] : 'dummy';
+			$entry['entity_type'] = (string)$bo->type;
+			$entry['entity_id'] = (int)$bo->entity_id;
+			$entry['cat_id'] = (int)$bo->cat_id;
 
 			if ($remote_image_in_table)
 			{
@@ -519,6 +547,7 @@ class EntityController
 					. '&' . ($remote_image_config['img_key_remote'] ?? '')
 					. '=' . $entry['img_id'];
 				$entry['thumbnail_flag']  = $remote_image_config['thumbnail_flag'] ?? '';
+				$entry['image_source'] = 'remote';
 			}
 			else
 			{
@@ -533,18 +562,11 @@ class EntityController
 					$entry['file_name']      = $_files[0]['name'];
 					$entry['img_id']         = $_files[0]['file_id'];
 					$entry['directory']      = $_files[0]['directory'];
-					$entry['img_url']        = \phpgw::link('/index.php', [
-						'menuaction' => 'property.uigallery.view_file',
-						'file'       => $entry['directory'] . '/' . $entry['file_name'],
-					]);
+					$entry['img_url']        = null;
 					$entry['thumbnail_flag'] = 'thumb=1';
+					$entry['image_source'] = 'local';
 				}
 			}
-
-			$entry['link'] = \phpgw::link(
-				'/index.php',
-				array_merge($link_base, ['id' => $entry['id']])
-			);
 		}
 		unset($entry);
 
@@ -1073,8 +1095,8 @@ class EntityController
 	 *
 	 * @OA\Post(
 	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}/related",
-	 *     summary="Get related entity links",
-	 *     description="Returns interlinked entity records for the given item. Called via DataTables POST.",
+	 *     summary="Get related entities",
+	 *     description="Returns related entity records for the given item as pure data with navigation context. Called via DataTables POST.",
 	 *     tags={"Entity"},
 	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
 	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
@@ -1105,9 +1127,11 @@ class EntityController
 			{
 				foreach ($related_data as $entry)
 				{
+					$linkParts = $this->splitLinkToPathAndParams((string)($entry['entity_link'] ?? ''));
 					$values[] = [
-						'name'        => $entry['name'] ?? '',
-						'entity_link' => $entry['entity_link'] ?? '',
+						'name' => (string)($entry['name'] ?? ''),
+						'related_path' => $linkParts['path'],
+						'related_params' => $linkParts['params'],
 					];
 				}
 			}

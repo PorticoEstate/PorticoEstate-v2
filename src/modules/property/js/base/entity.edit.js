@@ -86,6 +86,37 @@ formatEntityDeleteFileCheckbox = function (key, oData)
 		+ "' title='" + $('<div/>').text('Check to delete file').html() + "'>";
 };
 
+formatEntityRelatedLink = function (key, oData)
+{
+	var text = (oData && oData[key]) ? String(oData[key]) : '';
+	if (!text)
+	{
+		return '';
+	}
+
+	var path = (oData && oData.related_path) ? String(oData.related_path) : '';
+	var params = (oData && oData.related_params && typeof oData.related_params === 'object')
+		? oData.related_params
+		: null;
+	var url = '';
+
+	if (path && params)
+	{
+		url = phpGWLink(path, params);
+	}
+	else if (path)
+	{
+		url = path;
+	}
+
+	if (!url)
+	{
+		return $('<div/>').text(text).html();
+	}
+
+	return '<a href="' + encodeURI(url) + '">' + $('<div/>').text(text).html() + '</a>';
+};
+
 this.fileuploader = function ()
 {
 	var sUrl = multi_upload_url || phpGWLink('index.php', multi_upload_parans);

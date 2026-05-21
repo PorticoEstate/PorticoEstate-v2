@@ -902,7 +902,7 @@ class LocationController
 			if ($item['path'])
 			{
 				$temp = (array)json_decode($item['path']);
-				$title = implode('<br/>', $temp);
+				$title = implode("\n", $temp);
 			}
 			$values[] = array(
 				'id' => $item['id'],
@@ -980,7 +980,7 @@ class LocationController
 	 * @OA\Get(
 	 *     path="/property/location/location-exception",
 	 *     summary="Get location exception data",
-	 *     description="Returns location exception records with formatted text (URLs as links)",
+	 *     description="Returns location exception records with plain text fields",
 	 *     tags={"Location"},
 	 *     @OA\Parameter(name="location_code", in="query", required=true, description="Location code", @OA\Schema(type="string")),
 	 *     @OA\Response(response=200, description="Location exceptions",
@@ -994,12 +994,6 @@ class LocationController
 	{
 		$locationCode = (string)($request->getQueryParams()['location_code'] ?? '');
 		$locationException = $this->bo()->get_location_exception($locationCode);
-		foreach ($locationException as &$_locationException)
-		{
-			$_locationException['category_text'] = preg_replace('!(http|ftp|scp)(s)?:\/\/[a-zA-Z0-9.?%=\-&_/]+!', "<a href=\"\\0\">\\0</a>", $_locationException['category_text']);
-			$_locationException['location_descr'] = preg_replace('!(http|ftp|scp)(s)?:\/\/[a-zA-Z0-9.?%=\-&_/]+!', "<a href=\"\\0\">\\0</a>", $_locationException['location_descr']);
-		}
-		unset($_locationException);
 		return $this->jsonResponse($response, array(
 			'location_exception' => $locationException
 		));

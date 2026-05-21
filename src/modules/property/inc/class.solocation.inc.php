@@ -2611,10 +2611,10 @@ class property_solocation
 		$values			 = array();
 		if ($location_name)
 		{
-			$locationPattern = "{$location_name}%";
+			$locationPattern = "%{$location_name}%";
 			$sql = "SELECT loc{$level}_name as name, location_code"
 				. " FROM fm_location{$level}"
-				. " WHERE loc{$level}_name {$this->like} '%{$query}%' OR location_code {$this->like} '%{$query}%' ";
+				. " WHERE loc{$level}_name {$this->like} :location_pattern OR location_code {$this->like} :location_pattern";
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute(array(':location_pattern' => $locationPattern));
 			while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))

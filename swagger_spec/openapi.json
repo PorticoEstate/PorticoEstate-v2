@@ -6922,7 +6922,7 @@
                                             "p_entity_id": 1,
                                             "p_cat_id": 15,
                                             "tenant_id": 1000,
-                                            "origin": ".ticket",
+                                            "origin": "property.ticket.category",
                                             "origin_id": 34844
                                         }
                                     }
@@ -7257,7 +7257,7 @@
                                             "p_entity_id": 1,
                                             "p_cat_id": 15,
                                             "tenant_id": 1000,
-                                            "origin": ".ticket",
+                                            "origin": "property.ticket.category",
                                             "origin_id": 34844
                                         }
                                     }
@@ -11415,8 +11415,9 @@
                         "example": 1000
                     },
                     "origin": {
+                        "description": "Origin context. Preferred format is {application}.{module}[.{submodule}] (for example property.ticket.category). Legacy dot-prefixed values (for example .ticket.category) are accepted and normalized with a property application fallback when resolving location.",
                         "type": "string",
-                        "example": ".ticket"
+                        "example": "property.ticket.category"
                     },
                     "origin_id": {
                         "type": "integer",

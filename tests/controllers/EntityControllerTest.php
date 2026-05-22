@@ -60,6 +60,46 @@ namespace
 			{
 				return false;
 			}
+
+			public static function link(string $path, array $params = []): string
+			{
+				if (!$params)
+				{
+					return $path;
+				}
+
+				return $path . '?' . http_build_query($params);
+			}
+		}
+	}
+
+	if (!function_exists('set_test_create_object'))
+	{
+		function set_test_create_object(string $name, object $instance): void
+		{
+			$GLOBALS['__entity_test_create_object_map'][$name] = $instance;
+		}
+	}
+
+	if (!function_exists('reset_test_create_object'))
+	{
+		function reset_test_create_object(): void
+		{
+			$GLOBALS['__entity_test_create_object_map'] = [];
+		}
+	}
+
+	if (!function_exists('CreateObject'))
+	{
+		function CreateObject(string $name, ...$args)
+		{
+			$map = $GLOBALS['__entity_test_create_object_map'] ?? [];
+			if (isset($map[$name]) && is_object($map[$name]))
+			{
+				return $map[$name];
+			}
+
+			throw new \RuntimeException("No test CreateObject mapping for {$name}");
 		}
 	}
 
@@ -85,6 +125,22 @@ namespace
 			abstract public function get_items_per_qr(string $qr_code): array;
 			abstract public function read_entity_to_link(array $params): array;
 			abstract public function get_inventory(array $params): array;
+		}
+	}
+
+	if (!class_exists('phpgwapi_common'))
+	{
+		class phpgwapi_common
+		{
+			public function show_date($value, string $format = 'Y-m-d'): string
+			{
+				if (is_numeric($value))
+				{
+					return date($format, (int)$value);
+				}
+
+				return (string)$value;
+			}
 		}
 	}
 
@@ -132,6 +188,8 @@ class EntityControllerTest extends TestCase
 
 	protected function setUp(): void
 	{
+		reset_test_create_object();
+
 		$this->responseBody = '';
 
 		$stream = $this->createMock(StreamInterface::class);
@@ -1065,6 +1123,135 @@ class EntityControllerTest extends TestCase
 		$this->assertIsArray($decoded['data'][0]['related_params']);
 		$this->assertArrayHasKey('menuaction', $decoded['data'][0]['related_params']);
 		$this->assertSame(2, $decoded['draw']);
+	}
+
+	// ── getTarget() ──────────────────────────────────────────────────────────
+
+	public function testGetTargetReturnsStructuredRowsFromInterlinkAndWorkorders(): void
+	{
+		$bo = $this->createMock(\property_boentity::class);
+		$bo->acl_location = '.entity.5.3';
+
+		$interlink = new class
+		{
+			public function get_relation(string $app, string $aclLocation, int $id, string $mode): array
+			{
+				return [[
+					'descr' => 'ticket',
+					'data' => [[
+						'id' => '55',
+						'link' => '/index.php?menuaction=helpdesk.uiticket.view&id=55',
+						'title' => 'Broken door',
+						'statustext' => 'Open',
+						'account_id' => 0,
+						'entry_date' => 1710000000,
+					]],
+				]];
+			}
+		};
+
+		$soworkorder = new class
+		{
+			public function get_entity_relation(int $entityId, int $catId, int $id): array
+			{
+				return [[
+					'id' => 9,
+					'title' => 'WO title',
+					'statustext' => 'New',
+					'user_id' => 0,
+					'entry_date' => 1710001000,
+				]];
+			}
+		};
+
+		set_test_create_object('property.interlink', $interlink);
+		set_test_create_object('property.soworkorder', $soworkorder);
+
+		$this->request->method('getQueryParams')->willReturn(['draw' => '3']);
+
+		$args = array_merge($this->baseArgs(), ['id' => '1']);
+		$this->makeController($bo)->getTarget($this->request, $this->response, $args);
+
+		$decoded = json_decode($this->responseBody, true);
+		$this->assertSame(3, $decoded['draw']);
+		$this->assertSame(2, $decoded['recordsTotal']);
+		$this->assertCount(2, $decoded['data']);
+
+		$this->assertSame('55', $decoded['data'][0]['target_id']);
+		$this->assertSame('/index.php', $decoded['data'][0]['target_path']);
+		$this->assertSame('ticket', $decoded['data'][0]['type']);
+		$this->assertSame('Broken door', $decoded['data'][0]['title']);
+		$this->assertIsArray($decoded['data'][0]['target_params']);
+		$this->assertArrayHasKey('menuaction', $decoded['data'][0]['target_params']);
+
+		$this->assertSame('9', $decoded['data'][1]['target_id']);
+		$this->assertSame('workorder', $decoded['data'][1]['type']);
+		$this->assertSame('WO title', $decoded['data'][1]['title']);
+	}
+
+	// ── getDocuments() ───────────────────────────────────────────────────────
+
+	public function testGetDocumentsReturnsEntityAndGenericRows(): void
+	{
+		$bo = $this->createMock(\property_boentity::class);
+
+		$sodocument = new class
+		{
+			public int $total_records = 1;
+
+			public function read_at_location(array $params): array
+			{
+				return [[
+					'id' => 7,
+					'document_name' => 'Entity doc',
+					'title' => 'Entity title',
+				]];
+			}
+		};
+
+		$sogenericDocument = new class
+		{
+			public int $total_records = 1;
+
+			public function read(array $params): array
+			{
+				return [[
+					'id' => 8,
+					'name' => 'Generic doc',
+					'title' => 'Generic title',
+				]];
+			}
+		};
+
+		set_test_create_object('property.sodocument', $sodocument);
+		set_test_create_object('property.sogeneric_document', $sogenericDocument);
+
+		$this->request->method('getQueryParams')->willReturn([
+			'draw' => '1',
+			'location_id' => '99',
+			'doc_type' => '2',
+			'start' => '0',
+			'length' => '10',
+		]);
+		$this->request->method('getParsedBody')->willReturn([]);
+
+		$args = array_merge($this->baseArgs(), ['id' => '3']);
+		$this->makeController($bo)->getDocuments($this->request, $this->response, $args);
+
+		$decoded = json_decode($this->responseBody, true);
+		$this->assertSame(2, $decoded['draw']);
+		$this->assertSame(2, $decoded['recordsTotal']);
+		$this->assertCount(2, $decoded['data']);
+
+		$this->assertSame('Entity doc', $decoded['data'][0]['document_name']);
+		$this->assertSame('entity', $decoded['data'][0]['document_source']);
+		$this->assertSame(7, $decoded['data'][0]['document_id']);
+		$this->assertSame('Entity title', $decoded['data'][0]['title']);
+
+		$this->assertSame('Generic doc', $decoded['data'][1]['document_name']);
+		$this->assertSame('generic', $decoded['data'][1]['document_source']);
+		$this->assertSame(8, $decoded['data'][1]['document_id']);
+		$this->assertSame('Generic title', $decoded['data'][1]['title']);
 	}
 }
 

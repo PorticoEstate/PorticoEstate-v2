@@ -4,6 +4,7 @@ namespace App\modules\property\controllers;
 
 use App\Database\Db;
 use App\modules\property\helpers\EntityFormHelper;
+use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Container\ContainerInterface;
@@ -1142,6 +1143,228 @@ class EntityController
 			'recordsTotal'    => count($values),
 			'recordsFiltered' => count($values),
 			'draw'            => $draw,
+		]);
+	}
+
+	/**
+	 * Return target/log rows for a given item as pure data fields.
+	 *
+	 * Rendering concerns (anchors) are handled in client formatters.
+	 *
+	 * @OA\Post(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}/target",
+	 *     summary="Get target/log rows",
+	 *     description="Returns interlink/workorder target rows for the given item as DataTables-compatible pure data.",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Item ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="draw", in="query", required=false, description="DataTables draw counter", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="DataTables response with target rows")
+	 * )
+	 */
+	public function getTarget(Request $request, Response $response, array $args): Response
+	{
+		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+
+		$params = $request->getQueryParams();
+		$id = (int)$args['id'];
+		$draw = (int)($params['draw'] ?? 1);
+		$phpgwapiCommon = new \phpgwapi_common();
+
+		$accounts = null;
+		$dateFormat = 'Y-m-d';
+		try
+		{
+			$userSettings = Settings::getInstance()->get('user') ?? [];
+			$dateFormat = (string)($userSettings['preferences']['common']['dateformat'] ?? 'Y-m-d');
+		}
+		catch (\Throwable $e)
+		{
+			// Keep a deterministic date format when settings bootstrap is unavailable.
+		}
+
+		$interlink = CreateObject('property.interlink');
+		$target = $interlink->get_relation('property', $bo->acl_location, $id, 'target');
+
+		$values = [];
+		if (is_array($target))
+		{
+			foreach ($target as $targetSection)
+			{
+				foreach ((array)($targetSection['data'] ?? []) as $targetEntry)
+				{
+					$linkParts = $this->splitLinkToPathAndParams((string)($targetEntry['link'] ?? ''));
+					$accountId = (int)($targetEntry['account_id'] ?? 0);
+					$userLabel = '';
+					if ($accountId > 0)
+					{
+						if ($accounts === null)
+						{
+							$accounts = new Accounts();
+						}
+						$userLabel = $accounts->get($accountId)->__toString();
+					}
+
+					$values[] = [
+						'target_id' => (string)($targetEntry['id'] ?? ''),
+						'target_path' => $linkParts['path'],
+						'target_params' => $linkParts['params'],
+						'type' => (string)($targetSection['descr'] ?? ''),
+						'title' => (string)($targetEntry['title'] ?? ''),
+						'status' => (string)($targetEntry['statustext'] ?? ''),
+						'user' => $userLabel,
+						'entry_date' => !empty($targetEntry['entry_date'])
+							? $phpgwapiCommon->show_date($targetEntry['entry_date'], $dateFormat)
+							: '',
+					];
+				}
+			}
+		}
+
+		$workorders = CreateObject('property.soworkorder')->get_entity_relation((int)$args['entity_id'], (int)$args['cat_id'], $id);
+		$langWorkorder = lang('workorder');
+		foreach ((array)$workorders as $workorder)
+		{
+			$link = \phpgw::link('/index.php', [
+				'menuaction' => 'property.uiworkorder.view',
+				'id' => $workorder['id'],
+			]);
+			$linkParts = $this->splitLinkToPathAndParams($link);
+			$workorderUserId = (int)($workorder['user_id'] ?? 0);
+			$userLabel = '';
+			if ($workorderUserId > 0)
+			{
+				if ($accounts === null)
+				{
+					$accounts = new Accounts();
+				}
+				$userLabel = $accounts->get($workorderUserId)->__toString();
+			}
+
+			$values[] = [
+				'target_id' => (string)($workorder['id'] ?? ''),
+				'target_path' => $linkParts['path'],
+				'target_params' => $linkParts['params'],
+				'type' => $langWorkorder,
+				'title' => (string)($workorder['title'] ?? ''),
+				'status' => (string)($workorder['statustext'] ?? ''),
+				'user' => $userLabel,
+				'entry_date' => !empty($workorder['entry_date'])
+					? $phpgwapiCommon->show_date($workorder['entry_date'], $dateFormat)
+					: '',
+			];
+		}
+
+		return $this->jsonResponse($response, [
+			'data' => $values,
+			'recordsTotal' => count($values),
+			'recordsFiltered' => count($values),
+			'draw' => $draw,
+		]);
+	}
+
+	/**
+	 * Return document rows for a given item as pure data fields.
+	 *
+	 * Rendering concerns (anchors) are handled in client formatters.
+	 *
+	 * @OA\Post(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}/documents",
+	 *     summary="Get document rows",
+	 *     description="Returns classic and generic document rows for the given item as DataTables-compatible pure data.",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Item ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="doc_type", in="query", required=false, description="Document type filter", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="draw", in="query", required=false, description="DataTables draw counter", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="DataTables response with document rows")
+	 * )
+	 */
+	public function getDocuments(Request $request, Response $response, array $args): Response
+	{
+		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+
+		$queryParams = $request->getQueryParams();
+		$bodyParams = $this->requestBodyArray($request);
+		$input = array_merge($queryParams, $bodyParams);
+
+		$search = $input['search'] ?? [];
+		$order = (array)($input['order'] ?? []);
+		$columns = (array)($input['columns'] ?? []);
+		$draw = (int)($input['draw'] ?? 0) + 1;
+		$docType = (int)($input['doc_type'] ?? 0);
+		$itemId = (int)$args['id'];
+
+		$orderColumnIndex = (int)($order[0]['column'] ?? -1);
+		$orderField = ($orderColumnIndex >= 0 && isset($columns[$orderColumnIndex]['data']))
+			? (string)$columns[$orderColumnIndex]['data']
+			: '';
+		$orderDir = strtolower((string)($order[0]['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
+		$searchValue = is_array($search) ? ($search['value'] ?? '') : (string)$search;
+
+		$params = [
+			'start' => (int)($input['start'] ?? 0),
+			'results' => (int)($input['length'] ?? 0),
+			'query' => $searchValue,
+			'order' => $orderField,
+			'sort' => $orderDir,
+			'dir' => $orderDir,
+			'allrows' => ((int)($input['length'] ?? 0) == -1) || !empty($input['export']),
+			'doc_type' => $docType,
+			'entity_id' => (int)$args['entity_id'],
+			'cat_id' => (int)$args['cat_id'],
+			'p_num' => $itemId,
+			'location_item_id' => $itemId,
+		];
+
+		$document = CreateObject('property.sodocument');
+		$documents = $document->read_at_location($params);
+		$totalRecords = (int)$document->total_records;
+
+		$rows = [];
+		foreach ((array)$documents as $item)
+		{
+			$rows[] = [
+				'document_name' => (string)($item['document_name'] ?? ''),
+				'document_source' => 'entity',
+				'document_id' => (int)($item['id'] ?? 0),
+				'title' => (string)($item['title'] ?? ''),
+			];
+		}
+
+		$genericDocument = CreateObject('property.sogeneric_document');
+		$locationId = (int)($input['location_id'] ?? 0);
+		if ($locationId <= 0)
+		{
+			$locations = new \App\modules\phpgwapi\controllers\Locations();
+			$locationId = (int)$locations->get_id($bo->type_app[$bo->type], ".{$bo->type}.{$bo->entity_id}.{$bo->cat_id}");
+		}
+
+		$params['location_id'] = $locationId;
+		$params['order'] = 'name';
+		$params['cat_id'] = $docType;
+		$documents2 = $genericDocument->read($params);
+		$totalRecords += (int)$genericDocument->total_records;
+
+		foreach ((array)$documents2 as $item)
+		{
+			$rows[] = [
+				'document_name' => (string)($item['name'] ?? ''),
+				'document_source' => 'generic',
+				'document_id' => (int)($item['id'] ?? 0),
+				'title' => (string)($item['title'] ?? ''),
+			];
+		}
+
+		return $this->jsonResponse($response, [
+			'data' => $rows,
+			'recordsTotal' => $totalRecords,
+			'recordsFiltered' => $totalRecords,
+			'draw' => $draw,
 		]);
 	}
 

@@ -119,8 +119,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		'print_pdf'					 => true,
 		'index'						 => true,
 		//'addfiles' => true,
-		'get_documents'				 => true,
-		'get_target'				 => true,
+		'get_documents'				 => false,
+		'get_target'				 => false,
 		'get_related'				 => false,
 		'get_inventory'			 => false,
 		'add_inventory'				 => true,
@@ -1978,7 +1978,7 @@ JS;
 			}
 
 			$target_def = array(
-				array('key' => 'url', 'label' => lang('id'), 'sortable' => false, 'resizeable' => true),
+				array('key' => 'target_id', 'label' => lang('id'), 'formatter' => 'formatEntityTargetLink', 'sortable' => false, 'resizeable' => true),
 				array('key' => 'type', 'label' => lang('type'), 'sortable' => true, 'resizeable' => true),
 				array('key' => 'title', 'label' => lang('title'), 'sortable' => false, 'resizeable' => true),
 				array('key' => 'status', 'label' => lang('status'), 'sortable' => false, 'resizeable' => true),
@@ -1993,18 +1993,10 @@ JS;
 
 			$datatable_def[] = array(
 				'container'	 => 'datatable-container_1',
-				'requestUrl' => json_encode(
-					self::link(
-						array(
-							'menuaction'		 => 'property.uientity.get_target',
-							'entity_id'			 => $this->entity_id,
-							'cat_id'			 => $this->cat_id,
-							'id'				 => $id,
-							'type'				 => $this->type,
-							'phpgw_return_as'	 => 'json'
-						)
-					)
-				),
+				'requestUrl' => json_encode('/property/entity/' . urlencode($this->type)
+					. '/' . (int)$this->entity_id
+					. '/' . (int)$this->cat_id
+					. '/' . (int)$id . '/target'),
 				'ColumnDefs' => $target_def,
 				'config'	 => array(
 					array('disableFilter' => true),
@@ -2622,6 +2614,7 @@ JS;
 				array(
 					'key'        => 'document_name',
 					'label'      => lang('name'),
+					'formatter'  => 'formatEntityDocumentLink',
 					'sortable'   => false,
 					'resizeable' => true
 				),
@@ -2630,14 +2623,10 @@ JS;
 
 			$datatable_def[] = array(
 				'container'  => 'datatable-container_7',
-				'requestUrl' => json_encode(self::link(array(
-					'menuaction'       => 'property.uientity.get_documents',
-					'location_id'      => $location_id,
-					'entity_id'        => $this->entity_id,
-					'cat_id'           => $this->cat_id,
-					'item_id'          => $id,
-					'phpgw_return_as'  => 'json'
-				))),
+				'requestUrl' => json_encode('/property/entity/' . urlencode($this->type)
+					. '/' . (int)$this->entity_id
+					. '/' . (int)$this->cat_id
+					. '/' . (int)$id . '/documents?location_id=' . (int)$location_id),
 				'data'       => "",
 				'tabletools' => ($mode == 'edit') ? $documents_tabletools : array(),
 				'ColumnDefs' => $documents_def,

@@ -117,6 +117,74 @@ formatEntityRelatedLink = function (key, oData)
 	return '<a href="' + encodeURI(url) + '">' + $('<div/>').text(text).html() + '</a>';
 };
 
+formatEntityTargetLink = function (key, oData)
+{
+	var text = (oData && oData[key] !== undefined && oData[key] !== null) ? String(oData[key]) : '';
+	if (!text)
+	{
+		return '';
+	}
+
+	var path = (oData && oData.target_path) ? String(oData.target_path) : '';
+	var params = (oData && oData.target_params && typeof oData.target_params === 'object')
+		? oData.target_params
+		: null;
+	var url = '';
+
+	if (path && params)
+	{
+		url = phpGWLink(path, params);
+	}
+	else if (path)
+	{
+		url = path;
+	}
+
+	if (!url)
+	{
+		return $('<div/>').text(text).html();
+	}
+
+	return '<a href="' + encodeURI(url) + '">' + $('<div/>').text(text).html() + '</a>';
+};
+
+formatEntityDocumentLink = function (key, oData)
+{
+	var name = (oData && oData[key]) ? String(oData[key]) : '';
+	if (!name)
+	{
+		return '';
+	}
+
+	var source = (oData && oData.document_source) ? String(oData.document_source) : '';
+	var documentId = (oData && oData.document_id) ? String(oData.document_id) : '';
+	var url = '';
+
+	if (source === 'generic' && documentId)
+	{
+		url = phpGWLink('index.php', {
+			menuaction: 'property.uigeneric_document.view_file',
+			file_id: documentId
+		});
+	}
+	else if (documentId)
+	{
+		url = phpGWLink('index.php', {
+			menuaction: 'property.uidocument.view_file',
+			id: documentId
+		});
+	}
+
+	if (!url)
+	{
+		return $('<div/>').text(name).html();
+	}
+
+	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener">'
+		+ $('<div/>').text(name).html()
+		+ '</a>';
+};
+
 this.fileuploader = function ()
 {
 	var sUrl = multi_upload_url || phpGWLink('index.php', multi_upload_parans);

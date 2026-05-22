@@ -63,6 +63,11 @@ mkdir -p /var/log/apache2
 touch /var/log/apache2/websocket.log
 (tail -f /var/log/apache2/websocket.log | sed 's/^/WEBSOCKET: /' &)
 
+# Install asyncservices cron job
+echo '*/5 * * * * www-data /usr/local/bin/php -q /var/www/html/src/modules/phpgwapi/cron/asyncservices.php default' > /etc/cron.d/asyncservices
+chmod 0644 /etc/cron.d/asyncservices
+echo "Asyncservices cron job installed in /etc/cron.d/"
+
 # Start all services with Supervisor
 echo "Starting all services with Supervisor..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf

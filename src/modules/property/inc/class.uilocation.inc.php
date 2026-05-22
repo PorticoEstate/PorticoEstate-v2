@@ -68,7 +68,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		'edit'						 => true,
 		'add'						 => true,
 		'save'						 => true,
-		'delete'					 => true,
+		'delete'					 => false,
 		'update_cat'				 => true,
 		'stop'						 => true,
 		'summary'					 => true,

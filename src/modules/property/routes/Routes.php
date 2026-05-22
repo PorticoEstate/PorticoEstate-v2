@@ -13,7 +13,7 @@ use Slim\Routing\RouteCollectorProxy;
 use App\modules\property\models\PropertyGenericRegistry;
 
 /** @var \Slim\App $app */
-/** @var \Psr\Container\ContainerInterface $container */
+/** @var \DI\Container $container */
 
 
 $app->get('/property/inc/soap_client/bra5/soap.php', Bra5Controller::class . ':process');

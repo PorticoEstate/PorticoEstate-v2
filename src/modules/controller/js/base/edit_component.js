@@ -6,14 +6,64 @@ var longitude;
 
 downloadComponents = function (parent_location_id, parent_id, location_id)
 {
-	var oArgs = {
-		menuaction: 'property.uientity.download',
-		parent_location_id: parent_location_id,
-		parent_id: parent_id,
-		location_id: location_id,
-		export: 1
+	var getQueryValue = function (name)
+	{
+		var pairs = (window.location.search || '').replace(/^\?/, '').split('&');
+		for (var i = 0; i < pairs.length; i++)
+		{
+			var pair = pairs[i].split('=');
+			if (decodeURIComponent(pair[0] || '') === name)
+			{
+				return decodeURIComponent((pair[1] || '').replace(/\+/g, ' '));
+			}
+		}
+		return '';
 	};
-	var requestUrl = phpGWLink('index.php', oArgs);
+
+	var type = getQueryValue('type');
+	var entityId = getQueryValue('entity_id');
+	var catId = getQueryValue('cat_id');
+
+	if (!type)
+	{
+		var typeInput = document.getElementById('field_type') || document.getElementById('type');
+		type = typeInput ? (typeInput.value || '') : '';
+	}
+	if (!entityId)
+	{
+		var entityInput = document.getElementById('field_entity_id') || document.getElementById('entity_id');
+		entityId = entityInput ? (entityInput.value || '') : '';
+	}
+	if (!catId)
+	{
+		var catInput = document.getElementById('cat_id');
+		catId = catInput ? (catInput.value || '') : '';
+	}
+
+	var requestUrl;
+	if (type && entityId && catId)
+	{
+		requestUrl = '/property/entity/' + encodeURIComponent(type)
+			+ '/' + encodeURIComponent(entityId)
+			+ '/' + encodeURIComponent(catId)
+			+ '/download'
+			+ '?parent_location_id=' + encodeURIComponent(parent_location_id)
+			+ '&parent_id=' + encodeURIComponent(parent_id)
+			+ '&location_id=' + encodeURIComponent(location_id)
+			+ '&export=1';
+	}
+	else
+	{
+		var oArgs = {
+			menuaction: 'property.uientity.download',
+			parent_location_id: parent_location_id,
+			parent_id: parent_id,
+			location_id: location_id,
+			export: 1
+		};
+		requestUrl = phpGWLink('index.php', oArgs);
+	}
+
 	window.location.href = requestUrl;
 };
 

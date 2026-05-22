@@ -339,20 +339,24 @@ class EntityEditPagePresenter
 				. "_entity_id:'{$context['entity_id']}',"
 				. "_cat_id:'{$context['cat_id']}',"
 				. "_type:'{$context['type']}'}";
+			$payload['multi_upload_url'] = \phpgw::link(
+				'/property/entity/' . rawurlencode((string)$context['type'])
+				. '/' . rawurlencode((string)$context['entity_id'])
+				. '/' . rawurlencode((string)$context['cat_id'])
+				. '/' . rawurlencode((string)$context['id'])
+				. '/multi-upload'
+			);
 		}
 
 		if (!isset($payload['multi_upload_action'])
 			&& isset($context['id'], $context['entity_id'], $context['cat_id'], $context['type']))
 		{
 			$payload['multi_upload_action'] = \phpgw::link(
-				'/index.php',
-				array(
-					'menuaction' => 'property.uientity.handle_multi_upload_file',
-					'id' => $context['id'],
-					'entity_id' => $context['entity_id'],
-					'cat_id' => $context['cat_id'],
-					'type' => $context['type']
-				)
+				'/property/entity/' . rawurlencode((string)$context['type'])
+				. '/' . rawurlencode((string)$context['entity_id'])
+				. '/' . rawurlencode((string)$context['cat_id'])
+				. '/' . rawurlencode((string)$context['id'])
+				. '/multi-upload'
 			);
 		}
 
@@ -455,15 +459,19 @@ class EntityEditPagePresenter
 				. "_entity_id:'{$input['entity_id']}',"
 				. "_cat_id:'{$input['cat_id']}',"
 				. "_type:'{$input['type']}'}",
+			'multi_upload_url' => \phpgw::link(
+				'/property/entity/' . rawurlencode((string)$input['type'])
+				. '/' . rawurlencode((string)$input['entity_id'])
+				. '/' . rawurlencode((string)$input['cat_id'])
+				. '/' . rawurlencode((string)$input['id'])
+				. '/multi-upload'
+			),
 			'multi_upload_action' => \phpgw::link(
-				'/index.php',
-				array(
-					'menuaction' => 'property.uientity.handle_multi_upload_file',
-					'id' => $input['id'],
-					'entity_id' => $input['entity_id'],
-					'cat_id' => $input['cat_id'],
-					'type' => $input['type']
-				)
+				'/property/entity/' . rawurlencode((string)$input['type'])
+				. '/' . rawurlencode((string)$input['entity_id'])
+				. '/' . rawurlencode((string)$input['cat_id'])
+				. '/' . rawurlencode((string)$input['id'])
+				. '/multi-upload'
 			),
 			'value_origin' => $input['values']['origin_data'] ?? '',
 			'value_origin_type' => $input['origin'] ?? '',

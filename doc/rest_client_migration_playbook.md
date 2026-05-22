@@ -13,6 +13,19 @@ Use this playbook when migrating modules such as:
 
 The objective is to keep existing XSL-rendered page shells while progressively moving data exchange and write paths to REST endpoints.
 
+## Generic vs Module-Specific Guidance
+
+This playbook is the generic baseline for all legacy-to-REST client migrations.
+
+- Keep generic rules here: architecture, phase sequence, DB conventions, naming, testing, and rollout gates.
+- Keep module-specific behavior in separate companion documents under `doc/`.
+- Link each module migration to one dedicated companion document and one contract matrix/checklist.
+
+Companion example:
+
+- `doc/location_rest_client_migration.md` (Location-specific migration decisions)
+- `doc/uilocation_phase_a_contract_matrix.md` (Location contract freeze + parity tracking)
+
 ## Core Strategy
 
 Adopt a **Strangler Fig** approach:
@@ -37,6 +50,35 @@ Do not do a big-bang rewrite.
 - Data fetch URLs in client JS (`menuaction` -> REST URL).
 - Save/update/delete interactions (`POST/PUT/DELETE` to REST).
 - Legacy internal orchestration in UI classes with shared helper/service code.
+
+## Navigation/API Boundary Policy
+
+Use this policy for all migrated modules to keep legacy navigation while separating client and API concerns.
+
+### Allowed use of menuaction
+
+- Page navigation only: open index/edit/view shells, redirects after save, and popup shell navigation.
+- Preserve existing ACL/session/bootstrap behavior in legacy page rendering.
+
+### Disallowed use of menuaction
+
+- Any data fetch, save, update, delete, file, checklist, or relation operation.
+- Any client-side business flow that depends on menuaction response payloads.
+
+### REST boundary rules
+
+- REST endpoints own all data contracts (JSON/form-data) and mutation side effects.
+- REST endpoints must not call legacy UI render methods or depend on menuaction context.
+- Client code should split URL construction into two concerns: navigation client for menuaction URLs and API client for REST URLs.
+
+### Review gate for boundary compliance
+
+Before merge, verify:
+
+1. All AJAX/fetch/XHR calls use REST endpoints.
+2. menuaction usage is limited to navigation and shell rendering.
+3. No new REST handler calls legacy UI classes for data operations.
+4. Redirect behavior is deterministic and uses navigation URL helpers.
 
 ## Migration Preconditions
 
@@ -300,7 +342,47 @@ function buildEntityRestRequest(form, submitterName) {
 - Add `isSubmitting` guard and disable submit buttons during in-flight requests.
 - Reset `isSubmitting` (and re-enable buttons) in the error path and in the apply-success path.
 - Forward `click_history` query parameter for save/create REST calls only.
-- Maintain non-JS fallback for safety.
+- Maintain non-JS fallback for safety, unless the module explicitly disables legacy write `menuaction` handlers to enforce a strict navigation/API boundary.
+
+## Concrete Implementation Checklist (Entity vs Location)
+
+Use this as the execution checklist for closing the parity gap identified in the latest analysis.
+
+### Step 1: Location client REST submit bridge
+
+- [x] Add submit interception in location client JS for the main edit form.
+- [x] Enforce strict write boundary by disabling legacy location write `menuaction` handlers (`save`, `delete`) after REST cutover.
+- [x] Build REST write target dynamically:
+    - create (canonical): `POST /property/location`
+    - create (legacy alias): `POST /property/location/add`
+    - update: `PUT /property/location/{location_code}`
+- [x] Add click_history forwarding for save submissions.
+- [x] Add in-flight guard (`isSubmitting`) and disable/enable submit buttons.
+- [x] Show inline REST success/error alerts.
+- [x] Preserve legacy redirect semantics by redirecting to legacy edit URL after successful save.
+
+### Step 2: Location REST ACL parity
+
+- [x] Add explicit ACL checks in `LocationController` write endpoints (`add`, `save`, `delete`).
+- [x] Ensure ACL scope matches legacy `property_uilocation` behavior.
+- [x] Add/extend tests for ACL deny paths (403).
+
+### Step 3: Location REST payload contract hardening
+
+- [ ] Add controller-level request normalization/shape checks (location equivalent of entity `normalizedSavePayload`).
+- [ ] Return consistent 400 payloads for malformed request bodies and validation errors.
+- [ ] Document payload schema in OpenAPI annotations.
+
+### Step 4: HTTP semantics parity
+
+- [ ] Return `201 Created` for successful location create.
+- [ ] Keep update as `200 OK` and invalid identifier as `400`.
+
+### Step 5: Test coverage parity
+
+- [ ] Expand `LocationControllerTest` with malformed payload and contract cases.
+- [ ] Add client contract smoke checks for save interception and redirect behavior.
+- [ ] Keep helper regression tests for transport-key stripping and dynamic mapping.
 
 ## Phase F: Decommission Legacy Endpoints
 
@@ -412,6 +494,34 @@ Use this checklist per module (`uitts`, `uiproject`, `uiworkorder`, `uirequest`)
 - [ ] Manual smoke tests completed
 - [ ] Legacy endpoints marked deprecated
 - [ ] Legacy endpoints removed after usage gate
+
+## Module-Specific Companion Document Template
+
+Create one companion document per module migration.
+
+Recommended file name:
+
+- `doc/{module}_rest_client_migration.md`
+
+Recommended sections:
+
+1. Scope boundaries
+2. Legacy surfaces and contracts to preserve
+3. REST endpoints and route map
+4. Client cutover plan (read first, write second)
+5. ACL parity rules
+6. DB migration notes (prepared statements and paging)
+7. Feature-specific non-generic caveats
+8. Contract freeze matrix link
+9. Go-live and rollback checkpoints
+
+Each companion document should only contain non-generic details that are not broadly reusable.
+
+## Current Module Companions
+
+- `doc/location_rest_client_migration.md`
+- `doc/request_rest_client_migration.md`
+- `doc/uilocation_phase_a_contract_matrix.md`
 
 ## Suggested Rollout Order for Remaining Modules
 

@@ -51,7 +51,12 @@ use function include_class;
  *     @OA\Property(property="p_entity_id", type="integer", example=1),
  *     @OA\Property(property="p_cat_id", type="integer", example=15),
  *     @OA\Property(property="tenant_id", type="integer", example=1000),
- *     @OA\Property(property="origin", type="string", example=".ticket"),
+ *     @OA\Property(
+ *         property="origin",
+ *         type="string",
+ *         description="Origin context. Preferred format is {application}.{module}[.{submodule}] (for example property.ticket.category). Legacy dot-prefixed values (for example .ticket.category) are accepted and normalized with a property application fallback when resolving location.",
+ *         example="property.ticket.category"
+ *     ),
  *     @OA\Property(property="origin_id", type="integer", example=34844)
  * )
  *
@@ -806,7 +811,7 @@ class EntityController
 	 *                         "p_entity_id": 1,
 	 *                         "p_cat_id": 15,
 	 *                         "tenant_id": 1000,
-	 *                         "origin": ".ticket",
+	 *                         "origin": "property.ticket.category",
 	 *                         "origin_id": 34844
 	 *                     }
 	 *                 }
@@ -940,7 +945,7 @@ class EntityController
 	 *                         "p_entity_id": 1,
 	 *                         "p_cat_id": 15,
 	 *                         "tenant_id": 1000,
-	 *                         "origin": ".ticket",
+	 *                         "origin": "property.ticket.category",
 	 *                         "origin_id": 34844
 	 *                     }
 	 *                 }

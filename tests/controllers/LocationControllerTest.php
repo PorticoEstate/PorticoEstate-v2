@@ -374,6 +374,164 @@ namespace Tests\Controllers
 			$this->assertSame('No delete access for location', $decoded['message']);
 		}
 
+		public function testEditFieldReturnsStructuredSuccessPayload(): void
+		{
+			$bo = new class
+			{
+				public string $acl_location = '.location.1';
+				public array $capturedEditFieldPayload = [];
+
+				public function edit_field(array $data): bool
+				{
+					$this->capturedEditFieldPayload = $data;
+					return true;
+				}
+			};
+
+			$controller = new class($this->container, $bo) extends LocationController
+			{
+				private $boStub;
+
+				public function __construct(ContainerInterface $container, $boStub)
+				{
+					parent::__construct($container);
+					$this->boStub = $boStub;
+				}
+
+				protected function bo()
+				{
+					return $this->boStub;
+				}
+
+				protected function hasAcl(string $aclProperty): bool
+				{
+					return true;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn([
+				'type_id' => 5,
+				'field_name' => 'contact_phone',
+			]);
+			$this->request->method('getParsedBody')->willReturn([
+				'id' => 77,
+				'value' => '55512345',
+			]);
+
+			$controller->editField($this->request, $this->response);
+
+			$this->assertSame(5, $bo->capturedEditFieldPayload['type_id']);
+			$this->assertSame(77, $bo->capturedEditFieldPayload['id']);
+			$this->assertSame('contact_phone', $bo->capturedEditFieldPayload['field_name']);
+			$this->assertSame('55512345', $bo->capturedEditFieldPayload['value']);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('success', $decoded['status']);
+			$this->assertSame('Field updated', $decoded['message']);
+			$this->assertSame(77, $decoded['id']);
+			$this->assertSame('contact_phone', $decoded['field_name']);
+		}
+
+		public function testEditFieldReturnsStructuredErrorPayloadWhenEditFails(): void
+		{
+			$bo = new class
+			{
+				public string $acl_location = '.location.1';
+
+				public function edit_field(array $data): bool
+				{
+					return false;
+				}
+			};
+
+			$controller = new class($this->container, $bo) extends LocationController
+			{
+				private $boStub;
+
+				public function __construct(ContainerInterface $container, $boStub)
+				{
+					parent::__construct($container);
+					$this->boStub = $boStub;
+				}
+
+				protected function bo()
+				{
+					return $this->boStub;
+				}
+
+				protected function hasAcl(string $aclProperty): bool
+				{
+					return true;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn([
+				'type_id' => 2,
+				'field_name' => 'contact_phone',
+			]);
+			$this->request->method('getParsedBody')->willReturn([
+				'id' => 99,
+				'value' => 'x',
+			]);
+
+			$controller->editField($this->request, $this->response);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('error', $decoded['status']);
+			$this->assertSame('Failed to update field', $decoded['message']);
+			$this->assertSame(99, $decoded['id']);
+			$this->assertSame('contact_phone', $decoded['field_name']);
+		}
+
+		public function testEditFieldReturnsStructuredErrorWhenAclEditDenied(): void
+		{
+			$bo = new class
+			{
+				public string $acl_location = '.location.1';
+
+				public function edit_field(array $data): bool
+				{
+					return true;
+				}
+			};
+
+			$controller = new class($this->container, $bo) extends LocationController
+			{
+				private $boStub;
+
+				public function __construct(ContainerInterface $container, $boStub)
+				{
+					parent::__construct($container);
+					$this->boStub = $boStub;
+				}
+
+				protected function bo()
+				{
+					return $this->boStub;
+				}
+
+				protected function hasAcl(string $aclProperty): bool
+				{
+					return false;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn([
+				'type_id' => 2,
+				'field_name' => 'contact_phone',
+			]);
+			$this->request->method('getParsedBody')->willReturn([
+				'id' => 100,
+				'value' => 'x',
+			]);
+
+			$controller->editField($this->request, $this->response);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('error', $decoded['status']);
+			$this->assertSame('No edit access for location', $decoded['message']);
+		}
+
 		public function testIndexAcceptsBodyParamsAndOverridesQueryParams(): void
 		{
 			$bo = new class

@@ -1181,24 +1181,32 @@ class LocationController
 	 */
 	public function editField(Request $request, Response $response): Response
 	{
-		$typeId = (int)($request->getQueryParams()['type_id'] ?? 0);
-		$bodyParams = $request->getParsedBody();
-		$bodyParams = is_array($bodyParams) ? $bodyParams : array();
-		$id = (int)($bodyParams['id'] ?? 0);
-		$fieldName = (string)($request->getQueryParams()['field_name'] ?? '');
-		$value = $bodyParams['value'] ?? ($request->getQueryParams()['value'] ?? null);
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$typeId = (int)($input['type_id'] ?? 0);
+		$id = (int)($input['id'] ?? 0);
+		$fieldName = (string)($input['field_name'] ?? '');
+		$value = $input['value'] ?? null;
 
 		if (!$this->hasAcl(self::ACL_EDIT))
 		{
-			return $this->jsonResponse($response, 'ERROR');
+			return $this->jsonResponse($response, array(
+				'status' => 'error',
+				'message' => 'No edit access for location',
+			));
 		}
-		if (!$this->hasManageAcl() && $fieldName !== 'contact_phone')
+		if ($fieldName !== 'contact_phone' && !$this->hasManageAcl())
 		{
-			return $this->jsonResponse($response, 'ERROR');
+			return $this->jsonResponse($response, array(
+				'status' => 'error',
+				'message' => 'No manage access for this field',
+			));
 		}
 		if (!$id || !$fieldName)
 		{
-			return $this->jsonResponse($response, 'ERROR');
+			return $this->jsonResponse($response, array(
+				'status' => 'error',
+				'message' => 'Missing required edit field parameters',
+			));
 		}
 
 		$data = array(
@@ -1217,7 +1225,20 @@ class LocationController
 			$ret = false;
 		}
 
-		return $this->jsonResponse($response, $ret ? 'OK' : 'ERROR');
+		return $this->jsonResponse($response, $ret
+			? array(
+				'status' => 'success',
+				'message' => 'Field updated',
+				'id' => $id,
+				'field_name' => $fieldName,
+			)
+			: array(
+				'status' => 'error',
+				'message' => 'Failed to update field',
+				'id' => $id,
+				'field_name' => $fieldName,
+			)
+		);
 	}
 
 	/**

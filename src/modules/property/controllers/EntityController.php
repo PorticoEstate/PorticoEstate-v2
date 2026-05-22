@@ -1765,14 +1765,13 @@ class EntityController
 
 	/**
 	 * @OA\Get(
-	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory/assigned-history",
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/assigned-history",
 	 *     summary="Show assigned history popup",
 	 *     description="Renders the assigned history interface for a control series",
 	 *     tags={"Entity"},
 	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
 	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
 	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
-	 *     @OA\Parameter(name="id", in="path", required=true, description="Item ID", @OA\Schema(type="integer")),
 	 *     @OA\Parameter(name="serie_id", in="query", required=true, description="Control series ID", @OA\Schema(type="integer")),
 	 *     @OA\Response(response=200, description="HTML history interface")
 	 * )

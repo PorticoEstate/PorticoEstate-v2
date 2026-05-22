@@ -116,18 +116,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		'attrib_help'				 => true,
 		'print_pdf'					 => true,
 		'index'						 => true,
-		'get_inventory'			 => false,
 		'add_inventory'				 => true,
 		'edit_inventory'			 => true,
 		'inventory_calendar'		 => false,
 		'get_controls_at_component'	 => false,
 		'get_assigned_history'		 => true,
 		'get_cases'					 => false,
-		'get_checklists'			 => false,
-		'get_cases_for_checklist'	 => false,
 		'handle_multi_upload_file'	 => true,
 		'build_multi_upload_file'	 => true,
-		'get_items_per_qr'			 => false
 	);
 
 	/**
@@ -1818,7 +1814,7 @@ JS;
 					)
 				);
 
-				$_checklists		 = $this->get_checklists($location_id, $id, date('Y'));
+				$_checklists		 = $this->controller_helper->get_checklists($location_id, $id, date('Y'));
 				$check_lst_time_span = $this->controller_helper->get_check_lst_time_span();
 
 				$_checklists_def = array(
@@ -2963,75 +2959,7 @@ JS;
 		echo $document;
 	}
 
-	/**
-	 * Return a DataTables-compatible JSON list of inventory entries for an entity item.
-	 *
-	 * Reads location_id and id from the request (or resolves location_id from the
-	 * item's location if not provided directly).
-	 *
-	 * @deprecated Use EntityController::getInventory() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory.
-	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
-	 */
-	public function get_inventory(): array
-	{
-		$id		 = Sanitizer::get_var('id', 'int');
-		$draw	 = Sanitizer::get_var('draw', 'int');
-		$allrows = Sanitizer::get_var('length', 'int') == -1;
 
-		if (!$id)
-		{
-			$location_id		 = Sanitizer::get_var('location_id', 'int');
-			$system_location	 = $this->locations->get_name($location_id);
-			$location			 = explode('.', $system_location['location']);
-			$this->bo->type		 = $location[1];
-			$this->bo->entity_id = $location[1];
-			$this->bo->cat_id	 = $location[3];
-		}
-		else
-		{
-			$location_id = $this->locations->get_id($this->type_app[$this->type], ".{$this->type}.{$this->entity_id}.{$this->cat_id}");
-		}
-
-		$values = $this->bo->get_inventory(array('id' => $id, 'location_id' => $location_id));
-
-		foreach ($values as &$value)
-		{
-			$value['edit']		 = '<a href="javascript:showlightbox_edit_inventory(' . $value['location_id'] . ',' . $value['id'] . ',' . $value['inventory_id'] . ')">' . lang('edit') . '</a>';
-			$value['calendar']	 = '<a href="javascript:showlightbox_show_calendar(' . $value['location_id'] . ',' . $value['id'] . ',' . $value['inventory_id'] . ')">' . lang('calendar') . '</a>';
-			$value['inventory']	 = number_format((float)$value['inventory'], 0, ',', ' ');
-			$value['allocated']	 = number_format((float)$value['allocated'], 0, ',', ' ');
-		}
-
-		$start			 = Sanitizer::get_var('start', 'int', 'REQUEST', 0);
-		$total_records	 = count($values);
-
-		$num_rows = Sanitizer::get_var('length', 'int', 'REQUEST', 0);
-
-		if ($allrows)
-		{
-			$out = $values;
-		}
-		else
-		{
-			if ($total_records > $num_rows)
-			{
-				$page		 = (int)ceil(($start / $total_records) * ($total_records / $num_rows));
-				$values_part = array_chunk($values, $num_rows);
-				$out		 = $values_part[$page];
-			}
-			else
-			{
-				$out = $values;
-			}
-		}
-
-		$result_data = array('results' => $out);
-
-		$result_data['total_records']	 = $total_records;
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
-	}
 
 	/**
 	 * Render the inventory edit form for an entity item.
@@ -3324,26 +3252,6 @@ JS;
 
 
 	/**
-	 * Return a paginated ResultSet of entity items matching a QR code value.
-	 *
-	 * Requires ACL_READ. Delegates to bo->get_items_per_qr().
-	 *
-	 * @deprecated Use EntityController::getItemsPerQr() via /property/entity/{type}/{entity_id}/{cat_id}/items-per-qr.
-	 * @return array ResultSet array with 'totalRecords', 'recordsReturned', and 'Result'.
-	 */
-	public function get_items_per_qr(): array
-	{
-		if (!$this->acl_read)
-		{
-			phpgw::no_access();
-		}
-
-		$qr_code	 = Sanitizer::get_var('qr_code', 'string', 'GET');
-
-		return $this->bo->get_items_per_qr($qr_code);
-	}
-
-	/**
 	 * Render the entity summary page.
 	 *
 	 * Displays a summary view with a QR scanner tab. If a location_code is POSTed,
@@ -3532,39 +3440,13 @@ JS;
 		return $this->controller_helper->get_cases($location_id, $id, $year);
 	}
 
-	/**
-	 * Return cases related to a checklist stage from the current request context.
-	 *
-	 * Delegates to controller_helper::get_cases_for_checklist().
-	 *
-	 * @deprecated Use EntityController::getCasesForChecklist() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/cases-for-checklist.
-	 * @return array Cases data for the checklist.
-	 */
-	public function get_cases_for_checklist(): array
-	{
-		return $this->controller_helper->get_cases_for_checklist();
-	}
-
-	/**
-	 * Return checklists associated with a given entity component.
-	 *
-	 * @param int $location_id Location ID of the entity type.
-	 * @param int $id          ID of the entity item.
-	 * @param int $year        Year filter (0 for all years).
-	 * @deprecated Use EntityController::getChecklists() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/checklists.
-	 * @return array Checklists data.
-	 */
-	public function get_checklists($location_id = 0, $id = 0, $year = 0): array
-	{
-		return $this->controller_helper->get_checklists($location_id, $id, $year);
-	}
 
 	/**
 	 * Return the assignment history for a controller series.
 	 *
 	 * Delegates to controller_helper::get_assigned_history().
 	 *
-	 * @deprecated Use EntityController::assignedHistoryPopup() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/assigned-history.
+	 * @deprecated Use EntityController::assignedHistoryPopup() via /property/entity/{type}/{entity_id}/{cat_id}/assigned-history.
 	 * @return void Output is echoed by controller_helper::get_assigned_history().
 	 */
 	function get_assigned_history(): void

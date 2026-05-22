@@ -1088,7 +1088,7 @@ class LocationController
 	 *     path="/property/location/component/controls",
 	 *     summary="Get controls at location component",
 	 *     description="Returns list of controls associated with a location component",
-	 *     tags={"Location\"},
+	 *     tags={"Location"},
 	 *     @OA\Parameter(name="location_id", in="query", required=true, description="Location ID", @OA\Schema(type="integer")),
 	 *     @OA\Parameter(name="id", in="query", required=false, description="Component ID", @OA\Schema(type="integer")),
 	 *     @OA\Parameter(name="skip_json", in="query", required=false, description="Skip JSON encoding", @OA\Schema(type="boolean")),

@@ -9349,7 +9349,7 @@
         "\/property\/location\/component\/controls": {
             "get": {
                 "tags": [
-                    "Location\\"
+                    "Location"
                 ],
                 "summary": "Get controls at location component",
                 "description": "Returns list of controls associated with a location component",
@@ -11543,10 +11543,6 @@
         {
             "name": "Location",
             "description": "Location"
-        },
-        {
-            "name": "Location\\",
-            "description": "Location\\"
         }
     ]
 }

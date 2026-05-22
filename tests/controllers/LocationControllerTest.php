@@ -374,6 +374,119 @@ namespace Tests\Controllers
 			$this->assertSame('No delete access for location', $decoded['message']);
 		}
 
+		public function testIndexAcceptsBodyParamsAndOverridesQueryParams(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+				public array $capturedReadParams = [];
+
+				public function read(array $params): array
+				{
+					$this->capturedReadParams = $params;
+					$this->total_records = 2;
+					return [['loc1' => 'A'], ['loc1' => 'B']];
+				}
+			};
+
+			$controller = new class($this->container, $bo) extends LocationController
+			{
+				private $boStub;
+
+				public function __construct(ContainerInterface $container, $boStub)
+				{
+					parent::__construct($container);
+					$this->boStub = $boStub;
+				}
+
+				protected function bo()
+				{
+					return $this->boStub;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn([
+				'draw' => 1,
+				'start' => 0,
+				'length' => 10,
+				'search' => ['value' => 'query-side'],
+				'order' => [['column' => 0, 'dir' => 'asc']],
+				'columns' => [['data' => 'loc1']],
+			]);
+
+			$this->request->method('getParsedBody')->willReturn([
+				'draw' => 3,
+				'start' => 5,
+				'length' => -1,
+				'lookup_tenant' => 1,
+				'search' => ['value' => 'body-side'],
+				'order' => [['column' => 0, 'dir' => 'desc']],
+				'columns' => [['data' => 'title']],
+			]);
+
+			$controller->index($this->request, $this->response);
+
+			$this->assertSame(5, $bo->capturedReadParams['start']);
+			$this->assertSame(-1, $bo->capturedReadParams['results']);
+			$this->assertSame('body-side', $bo->capturedReadParams['query']);
+			$this->assertSame('title', $bo->capturedReadParams['order']);
+			$this->assertSame('DESC', $bo->capturedReadParams['sort']);
+			$this->assertTrue($bo->capturedReadParams['allrows']);
+			$this->assertTrue($bo->capturedReadParams['lookup_tenant']);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame(3, $decoded['draw']);
+			$this->assertSame(2, $decoded['recordsTotal']);
+			$this->assertCount(2, $decoded['data']);
+		}
+
+		public function testIndexUsesDefaultsWhenQueryAndBodyMissing(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+				public array $capturedReadParams = [];
+
+				public function read(array $params): array
+				{
+					$this->capturedReadParams = $params;
+					return [];
+				}
+			};
+
+			$controller = new class($this->container, $bo) extends LocationController
+			{
+				private $boStub;
+
+				public function __construct(ContainerInterface $container, $boStub)
+				{
+					parent::__construct($container);
+					$this->boStub = $boStub;
+				}
+
+				protected function bo()
+				{
+					return $this->boStub;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn([]);
+			$this->request->method('getParsedBody')->willReturn([]);
+
+			$controller->index($this->request, $this->response);
+
+			$this->assertSame(0, $bo->capturedReadParams['start']);
+			$this->assertSame(10, $bo->capturedReadParams['results']);
+			$this->assertSame('', $bo->capturedReadParams['query']);
+			$this->assertSame('', $bo->capturedReadParams['order']);
+			$this->assertSame('ASC', $bo->capturedReadParams['sort']);
+			$this->assertFalse($bo->capturedReadParams['allrows']);
+			$this->assertFalse($bo->capturedReadParams['lookup_tenant']);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame(0, $decoded['draw']);
+		}
+
 		public function testQueryRoleAcceptsBodyParamsAndOverridesQueryParams(): void
 		{
 			$bo = new class

@@ -210,16 +210,16 @@ class LocationController
 	 */
 	public function index(Request $request, Response $response): Response
 	{
-		$queryParams = $request->getQueryParams();
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
 
-		$search	 = $queryParams['search'] ?? \Sanitizer::get_var('search');
-		$order	 = $queryParams['order'] ?? \Sanitizer::get_var('order');
-		$draw	 = (int)($queryParams['draw'] ?? \Sanitizer::get_var('draw', 'int'));
-		$columns = (array)($queryParams['columns'] ?? \Sanitizer::get_var('columns'));
-		$start = (int)($queryParams['start'] ?? \Sanitizer::get_var('start', 'int', 'REQUEST', 0));
-		$length = (int)($queryParams['length'] ?? \Sanitizer::get_var('length', 'int', 'REQUEST', 10));
-		$export = !empty($queryParams['export']) || \Sanitizer::get_var('export', 'bool', 'REQUEST', false);
-		$lookupTenant = (bool)($queryParams['lookup_tenant'] ?? \Sanitizer::get_var('lookup_tenant', 'bool', 'REQUEST', false));
+		$search = $input['search'] ?? '';
+		$order = is_array($input['order'] ?? null) ? $input['order'] : [];
+		$draw = (int)($input['draw'] ?? 0);
+		$columns = is_array($input['columns'] ?? null) ? $input['columns'] : [];
+		$start = (int)($input['start'] ?? 0);
+		$length = (int)($input['length'] ?? 10);
+		$export = !empty($input['export']);
+		$lookupTenant = !empty($input['lookup_tenant']);
 		$allrows = $export || ($length === -1);
 
 		$orderColumnIndex = (int)($order[0]['column'] ?? -1);
@@ -237,10 +237,12 @@ class LocationController
 			}
 		}
 
+		$searchValue = is_array($search) ? (string)($search['value'] ?? '') : (string)$search;
+
 		$params = array(
 			'start' => $start,
 			'results' => $length,
-			'query' => $search['value'] ?? '',
+			'query' => $searchValue,
 			'order' => $orderField,
 			'sort' => $orderDir,
 			'dir' => $orderDir,

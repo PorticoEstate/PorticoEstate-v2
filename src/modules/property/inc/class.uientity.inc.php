@@ -663,118 +663,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		return [];
 	}
 
-	/**
-	 * Saves an entry to the database for new/edit - redirects to view
-	 *
-	 * @param int  $id  entity id - no id means 'new'
-	 *
-	 * @return void
-	 */
-	/**
-	 * Process the entity add/edit form submission.
-	 *
-	 * Determines add/edit based on presence of 'id'. Reads existing data,
-	 * merges POST values via _populate(), calls bo->save() inside a transaction,
-	 * saves checklist stages, handles file uploads, and redirects or returns JSON.
-	 *
-	 * @return array|void JSON status array if phpgw_return_as=json, otherwise redirects or renders.
-	 */
-	public function save(): mixed
-	{
-		if (!$_POST)
-		{
-			$this->edit();
-			return null;
-		}
 
-		$helper = new EntityFormHelper();
-		$is_json = Sanitizer::get_var('phpgw_return_as') == 'json';
-
-		$id = Sanitizer::get_var('id', 'int');
-
-		if ($id)
-		{
-			$action = 'edit';
-		}
-		else
-		{
-			$action = 'add';
-		}
-
-		/*
-			 * Overrides with incoming data from POST
-			 */
-		if ($id)
-		{
-			$data = $this->bo->read_single(array(
-				'entity_id'	 => $this->entity_id,
-				'cat_id'	 => $this->cat_id,
-				'id'		 => $id
-			));
-		}
-
-		$data		 = $this->_populate($data);
-		$values		 = $data;
-		$attributes	 = $data['attributes'];
-		unset($values['attributes']);
-
-		if ($this->receipt['error'])
-		{
-			$response = $helper->buildSaveResponse($is_json, $this->receipt, $values, 'error');
-			return $this->applySaveResponse($response);
-		}
-		else
-		{
-			try
-			{
-				$persisted = $helper->persistSave(
-					$values,
-					$attributes,
-					$action,
-					(int) $this->entity_id,
-					(int) $this->cat_id,
-					$this->bo
-				);
-
-				$receipt = $persisted['receipt'];
-				$values = $persisted['values'];
-
-				$this->receipt	 = $receipt;
-			}
-			catch (Exception $e)
-			{
-				if ($e)
-				{
-					Db::getInstance()->transaction_abort();
-
-					Cache::message_set($e->getMessage(), 'error');
-					$response = $helper->buildSaveResponse($is_json, $this->receipt, $values, 'error');
-					return $this->applySaveResponse($response);
-				}
-			}
-
-			$errors = (array) ($this->receipt['error'] ?? []);
-			$helper->handleFiles(
-				$values,
-				$this->category_dir,
-				$this->type_app[$this->type],
-				$errors
-			);
-			$this->receipt['error'] = $errors;
-
-			$response = $helper->buildSaveResponse(
-				$is_json,
-				$this->receipt,
-				$values,
-				'success',
-				(int) $id,
-				(int) $this->entity_id,
-				(int) $this->cat_id,
-				$this->type
-			);
-			return $this->applySaveResponse($response);
-		}
-	}
 
 	/**
 	 * Execute the legacy UI side effect selected for a save response.
@@ -1747,16 +1636,6 @@ JS;
 			));
 		}
 
-		$link_data = array(
-			'menuaction'	 => "property.uientity.save",
-			'id'			 => $id,
-			'entity_id'		 => $this->entity_id,
-			'cat_id'		 => $this->cat_id,
-			'type'			 => $this->type,
-			'lean'			 => $_lean,
-			'noframework'	 => isset($this->flags['noframework']) ? $this->flags['noframework'] : false
-		);
-
 		if (isset($values['files']) && is_array($values['files']))
 		{
 			$j = count($values['files']);
@@ -2298,7 +2177,6 @@ JS;
 			'location_data' => $location_data,
 			'lookup_type' => $lookup_type,
 			'mode' => $mode,
-			'link_data' => $link_data,
 			'tabs' => $tabs,
 			'active_tab' => $active_tab,
 			'integration' => $integration,
@@ -2674,7 +2552,6 @@ JS;
 			'location_data' => $input['location_data'] ?? array(),
 			'lookup_type' => $input['lookup_type'] ?? '',
 			'mode' => $input['mode'] ?? 'edit',
-			'link_data' => $input['link_data'] ?? array(),
 			'tabs' => $input['tabs'] ?? array(),
 			'active_tab' => $input['active_tab'] ?? '',
 			'integration' => $input['integration'] ?? array(),

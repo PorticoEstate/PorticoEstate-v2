@@ -591,6 +591,22 @@ $(document).ready(function ()
 	var isSubmitting = false;
 	var clickedSubmitter = null;
 
+	function findSaveSubmitter()
+	{
+		return form.querySelector('input[type="submit"][name="save"], button[type="submit"][name="save"]');
+	}
+
+	function shouldHandleRestSubmit(submitter)
+	{
+		if (submitter && submitter.name === 'save')
+		{
+			return true;
+		}
+
+		// Browser Enter-key submits can omit submitter; default to REST save when save button exists.
+		return !submitter && !!findSaveSubmitter();
+	}
+
 	function setSubmitButtonsDisabled(disabled)
 	{
 		var buttons = form.querySelectorAll('input[type="submit"], button[type="submit"]');
@@ -629,7 +645,7 @@ $(document).ready(function ()
 			? e.originalEvent.submitter
 			: clickedSubmitter;
 
-		if (!submitter || submitter.name !== 'save')
+		if (!shouldHandleRestSubmit(submitter))
 		{
 			return true;
 		}
@@ -652,9 +668,13 @@ $(document).ready(function ()
 		setSubmitButtonsDisabled(true);
 
 		var formData = new FormData(form);
-		if (submitter.name)
+		if (submitter && submitter.name)
 		{
 			formData.set(submitter.name, submitter.value || '1');
+		}
+		else
+		{
+			formData.set('save', '1');
 		}
 
 		var dynamicLocationCode = buildLocationCodeFromLocationForm(form);

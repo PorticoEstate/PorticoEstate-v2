@@ -67,7 +67,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		'view'						 => true,
 		'edit'						 => true,
 		'add'						 => true,
-		'save'						 => true,
+		'save'						 => false,
 		'delete'					 => false,
 		'update_cat'				 => true,
 		'stop'						 => true,
@@ -1703,7 +1703,7 @@ JS;
 		}
 
 		$link_data = array(
-			'menuaction'	 => ($mode == 'view') ? 'property.uilocation.view' : 'property.uilocation.save',
+			'menuaction'	 => ($mode == 'view') ? 'property.uilocation.view' : 'property.uilocation.edit',
 			'location_code'	 => $location_code,
 			'type_id'		 => $type_id,
 			'lookup_tenant'	 => $lookup_tenant

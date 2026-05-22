@@ -342,7 +342,7 @@ function buildEntityRestRequest(form, submitterName) {
 - Add `isSubmitting` guard and disable submit buttons during in-flight requests.
 - Reset `isSubmitting` (and re-enable buttons) in the error path and in the apply-success path.
 - Forward `click_history` query parameter for save/create REST calls only.
-- Maintain non-JS fallback for safety.
+- Maintain non-JS fallback for safety, unless the module explicitly disables legacy write `menuaction` handlers to enforce a strict navigation/API boundary.
 
 ## Concrete Implementation Checklist (Entity vs Location)
 
@@ -351,10 +351,11 @@ Use this as the execution checklist for closing the parity gap identified in the
 ### Step 1: Location client REST submit bridge
 
 - [x] Add submit interception in location client JS for the main edit form.
-- [x] Keep non-JS fallback by only intercepting when request-building succeeds.
+- [x] Enforce strict write boundary by disabling legacy location write `menuaction` handlers (`save`, `delete`) after REST cutover.
 - [x] Build REST write target dynamically:
-    - create: `POST /property/location/add`
-    - update: `PUT /property/location/{location_id}`
+    - create (canonical): `POST /property/location`
+    - create (legacy alias): `POST /property/location/add`
+    - update: `PUT /property/location/{location_code}`
 - [x] Add click_history forwarding for save submissions.
 - [x] Add in-flight guard (`isSubmitting`) and disable/enable submit buttons.
 - [x] Show inline REST success/error alerts.

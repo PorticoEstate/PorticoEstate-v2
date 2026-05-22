@@ -1785,16 +1785,26 @@ class EntityController
 			throw new HttpBadRequestException($request, 'Missing required query parameter: serie_id');
 		}
 
-		$popup = $this->runLegacyEntityPopup('get_assigned_history', [
-			'serie_id' => $serieId,
-		]);
+		$helper = $this->controllerHelper($args);
+		$backupGet = $_GET;
+		$backupRequest = $_REQUEST;
 
-		if (is_array($popup['result']))
+		try
 		{
-			return $this->jsonResponse($response, $popup['result']);
+			$_GET['serie_id'] = $serieId;
+			$_REQUEST['serie_id'] = $serieId;
+
+			ob_start();
+			$helper->get_assigned_history();
+			$html = (string)ob_get_clean();
+		}
+		finally
+		{
+			$_GET = $backupGet;
+			$_REQUEST = $backupRequest;
 		}
 
-		$response->getBody()->write($popup['html']);
+		$response->getBody()->write($html ?? '');
 		return $response->withHeader('Content-Type', 'text/html')->withStatus(200);
 	}
 

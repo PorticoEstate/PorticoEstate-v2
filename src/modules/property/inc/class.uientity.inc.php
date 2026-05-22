@@ -59,8 +59,11 @@ use App\modules\property\helpers\EntityFormHelper;
  * HTML-rendering methods (summary, view, edit, add, columns, download, print_pdf,
  * view_file, handle_multi_upload_file, build_multi_upload_file, index, attrib_history,
  * get_documents, get_target, add_inventory, edit_inventory, inventory_calendar,
- * get_assigned_history) remain accessible via legacy menuaction dispatch until
- * the XSL/React frontend is replaced.
+ * get_assigned_history) may remain as legacy methods during migration.
+ *
+ * Note: menuaction dispatch for get_assigned_history is disabled; use
+ *       EntityController::assignedHistoryPopup() at
+ *       /property/entity/{type}/{entity_id}/{cat_id}/assigned-history.
  *
  * @package property
  */
@@ -119,9 +122,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		'add_inventory'				 => true,
 		'edit_inventory'			 => true,
 		'inventory_calendar'		 => false,
-		'get_controls_at_component'	 => false,
-		'get_assigned_history'		 => true,
-		'get_cases'					 => false,
 		'handle_multi_upload_file'	 => true,
 		'build_multi_upload_file'	 => true,
 	);
@@ -1698,7 +1698,7 @@ JS;
 
 			if ($_enable_controller)
 			{
-				$_controls = $this->get_controls_at_component($location_id, $id);
+				$_controls = $this->controller_helper->get_controls_at_component($location_id, $id);
 
 				$controls_def	 = array(
 					array('key' => 'serie_id', 'label' => 'serie', 'sortable' => false, 'resizeable' => true),
@@ -1840,7 +1840,7 @@ JS;
 						array('singleSelect' => true)
 					)
 				);
-				$_cases			 = $this->get_cases($location_id, $id, date('Y')); // initial search
+				$_cases			 = $this->controller_helper->get_cases($location_id, $id, date('Y')); // initial search
 
 				$_case_def = array(
 					array('key' => 'url', 'label' => lang('id'), 'sortable' => true, 'resizeable' => true),
@@ -3412,47 +3412,6 @@ JS;
 	}
 
 
-	/**
-	 * Return controller controls registered at a given entity component.
-	 *
-	 * @param int  $location_id Location ID of the entity type.
-	 * @param int  $id          ID of the entity item.
-	 * @param bool $skip_json   Whether to skip JSON encoding of the result.
-	 * @deprecated Use EntityController::getControlsAtComponent() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/controls-at-component.
-	 * @return array|string Controller controls data.
-	 */
-	public function get_controls_at_component($location_id = 0, $id = 0, $skip_json = false): array|string
-	{
-		return $this->controller_helper->get_controls_at_component($location_id, $id, $skip_json);
-	}
-
-	/**
-	 * Return cases (deviations) related to a given entity component.
-	 *
-	 * @param int $location_id Location ID of the entity type.
-	 * @param int $id          ID of the entity item.
-	 * @param int $year        Year filter (0 for all years).
-	 * @deprecated Use EntityController::getCases() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/cases.
-	 * @return array Cases data.
-	 */
-	public function get_cases($location_id = 0, $id = 0, $year = 0): array
-	{
-		return $this->controller_helper->get_cases($location_id, $id, $year);
-	}
-
-
-	/**
-	 * Return the assignment history for a controller series.
-	 *
-	 * Delegates to controller_helper::get_assigned_history().
-	 *
-	 * @deprecated Use EntityController::assignedHistoryPopup() via /property/entity/{type}/{entity_id}/{cat_id}/assigned-history.
-	 * @return void Output is echoed by controller_helper::get_assigned_history().
-	 */
-	function get_assigned_history(): void
-	{
-		$this->controller_helper->get_assigned_history();
-	}
 
 	/**
 	 * Return checklist data merged with the list of defined checklists for an entity item.

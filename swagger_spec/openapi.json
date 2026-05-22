@@ -7405,8 +7405,8 @@
                 "tags": [
                     "Entity"
                 ],
-                "summary": "Get related entity links",
-                "description": "Returns interlinked entity records for the given item. Called via DataTables POST.",
+                "summary": "Get related entities",
+                "description": "Returns related entity records for the given item as pure data with navigation context. Called via DataTables POST.",
                 "operationId": "cf55b9378d64e7972819e4c2211593f1",
                 "parameters": [
                     {
@@ -7462,13 +7462,146 @@
                 }
             }
         },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/target": {
+            "post": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get target\/log rows",
+                "description": "Returns interlink\/workorder target rows for the given item as DataTables-compatible pure data.",
+                "operationId": "a9a854fb3a5375d513af80b70ab5da24",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "draw",
+                        "in": "query",
+                        "description": "DataTables draw counter",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DataTables response with target rows"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/documents": {
+            "post": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get document rows",
+                "description": "Returns classic and generic document rows for the given item as DataTables-compatible pure data.",
+                "operationId": "496bf382365d74fd6bc17258d440493e",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "doc_type",
+                        "in": "query",
+                        "description": "Document type filter",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "draw",
+                        "in": "query",
+                        "description": "DataTables draw counter",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DataTables response with document rows"
+                    }
+                }
+            }
+        },
         "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/files": {
             "post": {
                 "tags": [
                     "Entity"
                 ],
                 "summary": "Get attached files",
-                "description": "Returns file attachments for the given item as a DataTables-compatible response. Includes HTML link and delete-checkbox cells, plus img_id\/img_url for image types.",
+                "description": "Returns file attachments for the given item as a DataTables-compatible response with pure data fields.",
                 "operationId": "90d39ea3dd60b4583dcb4db8ca628fa2",
                 "parameters": [
                     {
@@ -7897,14 +8030,14 @@
                 }
             }
         },
-        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/inventory\/assigned-history": {
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/assigned-history": {
             "get": {
                 "tags": [
                     "Entity"
                 ],
                 "summary": "Show assigned history popup",
                 "description": "Renders the assigned history interface for a control series",
-                "operationId": "b5c31eb75244fd83e9a3fd76bf1345d9",
+                "operationId": "51d2706227ed46960fd35bc1fc0d8bc1",
                 "parameters": [
                     {
                         "name": "type",
@@ -7928,15 +8061,6 @@
                         "name": "cat_id",
                         "in": "path",
                         "description": "Category ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Item ID",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -9099,7 +9223,7 @@
                     "Location"
                 ],
                 "summary": "Get location exception data",
-                "description": "Returns location exception records with formatted text (URLs as links)",
+                "description": "Returns location exception records with plain text fields",
                 "operationId": "842b6f11ac6340ba962eb2b0bf2e55d3",
                 "parameters": [
                     {

@@ -108,17 +108,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		'summary'					 => true,
 		'columns'					 => true,
 		'query'						 => false,
-		'download'					 => false,
 		'view'						 => true,
 		'edit'						 => true,
 		'add'						 => true,
-		'delete'					 => true,
 		'view_file'					 => true,
 		'attrib_history'			 => true,
 		'attrib_help'				 => true,
 		'print_pdf'					 => true,
 		'index'						 => true,
-		//'addfiles' => true,
 		'get_documents'				 => false,
 		'get_target'				 => false,
 		'get_related'				 => false,
@@ -2237,80 +2234,7 @@ JS;
 		$t->pfp('out', 'help');
 	}
 
-	/**
-	 * Delete an entity record.
-	 *
-	 * Requires ACL_DELETE. Returns a plain-text confirmation string when
-	 * phpgw_return_as=json, otherwise redirects after deletion.
-	 *
-	 * @return string|void Confirmation string in JSON mode; otherwise redirects.
-	 */
-	function delete(): mixed
-	{
-		$id = Sanitizer::get_var('id', 'int');
 
-		//cramirez add JsonCod for Delete
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			if (!$this->acl_delete)
-			{
-				return json_encode(['error' => lang('no access')]);
-			}
-			$this->bo->delete($id);
-			return "id " . $id . " " . lang("has been deleted");
-		}
-
-
-		if (!$this->acl_delete)
-		{
-			phpgw::redirect_link('/index.php', array(
-				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 8,
-				'acl_location'	 => $this->acl_location
-			));
-		}
-
-
-		$confirm = Sanitizer::get_var('confirm', 'bool', 'POST');
-
-		$link_data = array(
-			'menuaction' => 'property.uientity.index',
-			'entity_id'	 => $this->entity_id,
-			'cat_id'	 => $this->cat_id,
-			'type'		 => $this->type
-		);
-
-		if (Sanitizer::get_var('confirm', 'bool', 'POST'))
-		{
-			$this->bo->delete($id);
-			phpgw::redirect_link('/index.php', $link_data);
-		}
-
-		$data = array(
-			'done_action'			 => phpgw::link('/index.php', $link_data),
-			'delete_action'			 => phpgw::link('/index.php', array(
-				'menuaction' => 'property.uientity.delete',
-				'entity_id'	 => $this->entity_id,
-				'cat_id'	 => $this->cat_id,
-				'id'		 => $id,
-				'type'		 => $this->type
-			)),
-			'lang_confirm_msg'		 => lang('do you really want to delete this entry'),
-			'lang_yes'				 => lang('yes'),
-			'lang_yes_statustext'	 => lang('Delete the entry'),
-			'lang_no_statustext'	 => lang('Back to the list'),
-			'lang_no'				 => lang('no')
-		);
-
-		$appname		 = lang('entity');
-		$function_msg	 = lang('delete entity');
-
-		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $appname . ': ' . $function_msg;
-		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
-
-		self::render_template_xsl('app_delete', $data, '', 'delete');
-		return null;
-	}
 
 	/**
 	 * Render the entity record in read-only view mode.

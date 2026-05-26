@@ -148,9 +148,11 @@
 	 data-lang-in-tax-register="{{ lang('booking.in_tax_register') }}"
 	 data-lang-unit="{{ lang('booking.unit') }}"
 	 data-lang-unit-price="{{ lang('booking.unit_cost') }}"
+	{% if enable_hospitality %}
 	 data-hospitality-orders-url="{{ phpgw_link('/booking/hospitality-orders') }}"
-	 data-hospitality-base-url="{{ phpgw_link('/booking/hospitality') }}"
+	 data-hospitality-base-url="{{ phpgw_link('/booking/hospitality') }}"{% endif %}
 	 data-applications-base-url="{{ phpgw_link('/booking/applications') }}"
+	{% if enable_hospitality %}
 	 data-lang-hospitality-orders="{{ lang('booking.hospitality_orders') }}"
 	 data-lang-hospitality="{{ lang('booking.hospitality') }}"
 	 data-lang-serving-time="{{ lang('booking.serving_time') }}"
@@ -160,7 +162,7 @@
 	 data-lang-select-date="{{ lang('booking.select_date') }}"
 	 data-lang-select-time="{{ lang('booking.select_time') }}"
 	 data-lang-special-requirements="{{ lang('booking.special_requirements') }}"
-	 data-lang-comment="{{ lang('booking.comment') }}"
+	 data-lang-comment="{{ lang('booking.comment') }}"{% endif %}
 	 data-lang-save="{{ lang('common.save') }}"
 	 data-lang-saved="{{ lang('booking.saved') }}"
 >
@@ -197,9 +199,11 @@
 			<button class="app-show__tab" role="tab" aria-selected="false" data-tab="terms">
 				{{ lang('booking.terms and conditions') }}
 			</button>
+			{% if enable_hospitality %}
 			<button class="app-show__tab" role="tab" aria-selected="false" data-tab="hospitality-orders" id="tab-btn-hospitality-orders" hidden>
 				{{ lang('booking.hospitality_orders') }}
 			</button>
+			{% endif %}
 		</div>
 
 		{# Tab: Details #}
@@ -222,17 +226,21 @@
 			<div id="application-terms"></div>
 		</div>
 
+		{% if enable_hospitality %}
 		{# Tab: Hospitality Orders #}
 		<div id="tab-hospitality-orders" class="app-show__tab-content" role="tabpanel" hidden>
 			<div id="application-hospitality-orders"></div>
 		</div>
+		{% endif %}
 	</div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>{{ source('@views/components/search_select/search_select.js') }}</script>
+{% if enable_hospitality %}
 <script>{{ source('@views/components/hospitality_order_list/hospitality_order_list.js') }}</script>
 <script>{{ source('@views/components/hospitality_order_modal/hospitality_order_modal.js') }}</script>
+{% endif %}
 <script>{{ source('@views/application/show/application_show.js') }}</script>
 {% endblock %}

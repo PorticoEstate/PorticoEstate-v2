@@ -50,9 +50,12 @@ class ApplicationViewController
 		}
 
 		try {
+			$bookingConfig = \App\modules\phpgwapi\models\ServerSettings::getInstance(true)->booking_config;
+
 			$componentHtml = $this->twig->render('@views/application/show/application_show.twig', [
 				'layout'         => '@views/_bare.twig',
 				'application_id' => $id,
+				'enable_hospitality' => !empty($bookingConfig->enable_hospitality),
 			]);
 
 			$html = $this->legacyView->render(

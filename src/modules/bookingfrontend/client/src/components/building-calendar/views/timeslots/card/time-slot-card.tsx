@@ -62,6 +62,8 @@ const TimeSlotCard: FC<TimeSlotCardProps> = ({ slot, resourceId, onSelect, isPro
 		slot.overlap_event?.id !== undefined &&
 		partialApplications?.list.some(app => app.id === slot.overlap_event?.id);
 
+
+
 	return (
 		<div className={styles.card}>
 			<div className={`${styles.statusColumn} ${styles[`status-${slot.overlap}`]}`}>

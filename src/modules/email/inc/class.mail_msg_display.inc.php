@@ -16,8 +16,24 @@
 	* Message Processing Functions for MIME and Display
 	*
 	* @package email
-	*/	
-class mail_msg extends mail_msg_wrappers
+	*/
+	// PHP 8.4+ removed constants - define PorticoEstate IMAP compatibility layer
+	defined('PE_IMAP_TYPETEXT') || define('PE_IMAP_TYPETEXT', 0);
+	defined('PE_IMAP_TYPEMULTIPART') || define('PE_IMAP_TYPEMULTIPART', 1);
+	defined('PE_IMAP_TYPEMESSAGE') || define('PE_IMAP_TYPEMESSAGE', 2);
+	defined('PE_IMAP_TYPEAPPLICATION') || define('PE_IMAP_TYPEAPPLICATION', 3);
+	defined('PE_IMAP_TYPEAUDIO') || define('PE_IMAP_TYPEAUDIO', 4);
+	defined('PE_IMAP_TYPEIMAGE') || define('PE_IMAP_TYPEIMAGE', 5);
+	defined('PE_IMAP_TYPEVIDEO') || define('PE_IMAP_TYPEVIDEO', 6);
+	defined('PE_IMAP_TYPEOTHER') || define('PE_IMAP_TYPEOTHER', 7);
+	defined('PE_IMAP_ENC7BIT') || define('PE_IMAP_ENC7BIT', 0);
+	defined('PE_IMAP_ENC8BIT') || define('PE_IMAP_ENC8BIT', 1);
+	defined('PE_IMAP_ENCBINARY') || define('PE_IMAP_ENCBINARY', 2);
+	defined('PE_IMAP_ENCBASE64') || define('PE_IMAP_ENCBASE64', 3);
+	defined('PE_IMAP_ENCQUOTEDPRINTABLE') || define('PE_IMAP_ENCQUOTEDPRINTABLE', 4);
+	defined('PE_IMAP_ENCOTHER') || define('PE_IMAP_ENCOTHER', 5);
+	
+	class mail_msg extends mail_msg_wrappers
 {
 
 	/*!
@@ -1928,16 +1944,16 @@ class mail_msg extends mail_msg_wrappers
 		{
 			switch ((int)$part->type)
 			{
-				case TYPETEXT		: $part_type = 'text'; break;
-				case TYPEMULTIPART	: $part_type = 'multipart'; break;
-				case TYPEMESSAGE		: $part_type = 'message'; break;
-				case TYPEAPPLICATION	: $part_type = 'application'; break;
-				case TYPEAUDIO		: $part_type = 'audio'; break;
-				case TYPEIMAGE		: $part_type = 'image'; break;
-				case TYPEVIDEO		: $part_type = 'video'; break;
+				case PE_IMAP_TYPETEXT		: $part_type = 'text'; break;
+				case PE_IMAP_TYPEMULTIPART	: $part_type = 'multipart'; break;
+				case PE_IMAP_TYPEMESSAGE		: $part_type = 'message'; break;
+				case PE_IMAP_TYPEAPPLICATION	: $part_type = 'application'; break;
+				case PE_IMAP_TYPEAUDIO		: $part_type = 'audio'; break;
+				case PE_IMAP_TYPEIMAGE		: $part_type = 'image'; break;
+				case PE_IMAP_TYPEVIDEO		: $part_type = 'video'; break;
 				//case TYPEMODEL:		$part_type = "model"; break;
 				// TYPEMODEL is not supported as of php v 4
-				case TYPEOTHER		: $part_type = 'other'; break;
+				case PE_IMAP_TYPEOTHER		: $part_type = 'other'; break;
 				default			: $part_type = 'unknown';
 			}
 			$part_nice['type'] = $part_type;
@@ -1957,13 +1973,13 @@ class mail_msg extends mail_msg_wrappers
 		{
 			switch ((int)$part->encoding)
 			{
-				case ENC7BIT		: $part_encoding = '7bit'; break;
-				case ENC8BIT		: $part_encoding = '8bit'; break;
-				case ENCBINARY		: $part_encoding = 'binary';  break;
-				case ENCBASE64		: $part_encoding = 'base64'; break;
-				//case ENCQUOTEDPRINTABLE : $part_encoding = 'quoted-printable'; break;
-				case ENCQUOTEDPRINTABLE 	: $part_encoding = 'qprint'; break;
-				case ENCOTHER		: $part_encoding = 'other';  break;
+				case PE_IMAP_ENC7BIT		: $part_encoding = '7bit'; break;
+				case PE_IMAP_ENC8BIT		: $part_encoding = '8bit'; break;
+				case PE_IMAP_ENCBINARY		: $part_encoding = 'binary';  break;
+				case PE_IMAP_ENCBASE64		: $part_encoding = 'base64'; break;
+				//case PE_IMAP_ENCQUOTEDPRINTABLE : $part_encoding = 'quoted-printable'; break;
+				case PE_IMAP_ENCQUOTEDPRINTABLE 	: $part_encoding = 'qprint'; break;
+				case PE_IMAP_ENCOTHER		: $part_encoding = 'other';  break;
 				case ENCUU		: $part_encoding = 'uu';  break;
 				default			: $part_encoding = 'other';
 			}

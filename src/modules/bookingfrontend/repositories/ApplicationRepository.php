@@ -7,13 +7,15 @@ use App\modules\bookingfrontend\models\User;
 use PDO;
 use App\Database\Db;
 use App\modules\bookingfrontend\models\Application;
-use App\modules\bookingfrontend\models\Document;
+use App\modules\booking\models\Document;
 use App\modules\bookingfrontend\models\Resource;
 use App\modules\bookingfrontend\repositories\ResourceRepository;
 use App\modules\bookingfrontend\models\Order;
 use App\modules\bookingfrontend\models\OrderLine;
 use App\modules\bookingfrontend\models\helper\Date;
-use App\modules\bookingfrontend\services\DocumentService;
+use App\modules\booking\services\DocumentService;
+use App\modules\booking\repositories\DocumentRepository;
+use App\modules\booking\repositories\HospitalityOrderRepository;
 
 class ApplicationRepository
 {
@@ -58,7 +60,7 @@ class ApplicationRepository
             $application->agegroups = $this->fetchAgeGroups($application->id);
             $application->audience = $this->fetchTargetAudience($application->id);
             $application->documents = $this->fetchDocuments($application->id);
-            $applications[] = $application->serialize([]);
+            $applications[] = $application->serialize(['user_ssn' => $this->userHelper->ssn]);
         }
 
         return $applications;
@@ -92,7 +94,7 @@ class ApplicationRepository
             $application->agegroups = $this->fetchAgeGroups($application->id);
             $application->audience = $this->fetchTargetAudience($application->id);
             $application->documents = $this->fetchDocuments($application->id);
-            $applications[] = $application->serialize([]);
+            $applications[] = $application->serialize(['user_ssn' => $this->userHelper->ssn]);
         }
 
         return $applications;
@@ -185,7 +187,7 @@ class ApplicationRepository
             $application->documents = $this->fetchDocuments($application->id);
 
             // Add metadata about application type
-            $serialized = $application->serialize([]);
+            $serialized = $application->serialize(['user_ssn' => $this->userHelper->ssn]);
             $serialized['application_type'] = $result['application_type'];
             $applications[] = $serialized;
         }
@@ -294,6 +296,10 @@ class ApplicationRepository
      */
     private function deleteAssociatedData(int $application_id): void
     {
+        // Delete hospitality orders (lines, changelog, documents, then orders)
+        $hospitalityOrderRepo = new HospitalityOrderRepository();
+        $hospitalityOrderRepo->deleteByApplicationId($application_id);
+
         // First, delete documents (including physical files)
         $this->deleteApplicationDocuments($application_id);
 

@@ -1,0 +1,191 @@
+{% extends '@views/emails/_email_layout.twig' %}
+
+{% block footer %}{% endblock %}
+
+{% block content %}
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="font-family: 'Inter', Arial, Helvetica, sans-serif; color: #2b2b2b; max-width: 600px;">
+
+{# ===== PENDING ===== #}
+{% if status == 'PENDING' %}
+
+<tr>
+<td style="background-color: #F39C12; padding: 16px 24px; border-radius: 6px 6px 0 0;">
+    <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">{{ lang('booking.pending')|default(status_text)|capitalize }}</h2>
+    <p style="margin: 6px 0 0; font-size: 14px; color: #fff8eb;">Din kombinerte søknad i {{ systemname }} om leie/lån av {{ resourcename }}</p>
+</td>
+</tr>
+
+<tr>
+<td style="background-color: #ffffff; padding: 24px; border-left: 1px solid #bcbcbc; border-right: 1px solid #bcbcbc;">
+
+    <p style="margin: 0 0 4px; font-size: 13px; color: #797979;">{{ lang('booking.combined_application')|default('Kombinert søknad') }} &mdash; {{ applications|length }} {{ lang('booking.parts')|default('deler') }}</p>
+
+    {% if organizer %}
+    <table cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 16px;">
+    <tr>
+        <td style="font-size: 13px; color: #797979; padding-right: 12px;">{{ lang('booking.organizer')|default('Arrangør') }}</td>
+        <td style="font-size: 14px; font-weight: 500;">{{ organizer }}</td>
+    </tr>
+    </table>
+    {% endif %}
+
+    {% for app in applications %}
+    {% include '@views/emails/_partials/application_details_bordered.twig' with { app: app } %}
+    {% endfor %}
+
+    {% if comment %}
+    <div style="background-color: #f5f5f5; padding: 12px 16px; margin-bottom: 16px; border-radius: 4px;">
+        <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #4E4E4E;">{{ lang('booking.comment_from_caseofficer')|default('Kommentar fra saksbehandler') }}</p>
+        <p style="margin: 0; font-size: 13px; color: #2b2b2b;">{{ comment }}</p>
+    </div>
+    {% endif %}
+
+    <p style="font-size: 14px; line-height: 1.5; color: #2b2b2b;">{{ mail_pending|safe_html }}</p>
+
+    {% include '@views/emails/_partials/application_link.twig' %}
+
+</td>
+</tr>
+
+{# ===== ACCEPTED / REJECTED ===== #}
+{% elseif status == 'ACCEPTED' or status == 'REJECTED' %}
+
+{# Banner color depends on outcome #}
+{% if has_mixed_results %}
+{% set banner_bg = '#0062BA' %}
+{% set banner_sub = '#d4e8f9' %}
+{% set banner_title = lang('booking.processed')|default('Behandlet') %}
+{% set banner_desc = 'Din kombinerte søknad i ' ~ systemname ~ ' om leie/lån er behandlet' %}
+{% elseif approved_count > 0 %}
+{% set banner_bg = '#118849' %}
+{% set banner_sub = '#ecf6f1' %}
+{% set banner_title = lang('booking.accepted')|default('Godkjent') %}
+{% set banner_desc = 'Din kombinerte søknad i ' ~ systemname ~ ' om leie/lån er ' ~ status_text %}
+{% else %}
+{% set banner_bg = '#dc3545' %}
+{% set banner_sub = '#fdf1f2' %}
+{% set banner_title = lang('booking.rejected')|default('Avslått') %}
+{% set banner_desc = 'Din kombinerte søknad i ' ~ systemname ~ ' om leie/lån er ' ~ status_text %}
+{% endif %}
+
+<tr>
+<td style="background-color: {{ banner_bg }}; padding: 16px 24px; border-radius: 6px 6px 0 0;">
+    <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">{{ banner_title }}</h2>
+    <p style="margin: 6px 0 0; font-size: 14px; color: {{ banner_sub }};">{{ banner_desc }}</p>
+</td>
+</tr>
+
+<tr>
+<td style="background-color: #ffffff; padding: 24px; border-left: 1px solid #bcbcbc; border-right: 1px solid #bcbcbc;">
+
+    {# Summary line #}
+    {% if approved_count > 0 and rejected_count > 0 %}
+    <p style="margin: 0 0 16px; font-size: 13px; color: #4E4E4E;">
+        <span style="display: inline-block; background-color: #118849; color: #fff; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 3px;">{{ approved_count }} {{ lang('booking.approved_lower')|default('godkjent') }}</span>
+        <span style="display: inline-block; background-color: #dc3545; color: #fff; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 3px; margin-left: 4px;">{{ rejected_count }} {{ lang('booking.rejected_lower')|default('avslått') }}</span>
+    </p>
+    {% endif %}
+
+    {% if organizer %}
+    <table cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 16px;">
+    <tr>
+        <td style="font-size: 13px; color: #797979; padding-right: 12px;">{{ lang('booking.organizer')|default('Arrangør') }}</td>
+        <td style="font-size: 14px; font-weight: 500;">{{ organizer }}</td>
+    </tr>
+    </table>
+    {% endif %}
+
+    {# Application cards #}
+    {% for app in applications %}
+    {% include '@views/emails/_partials/accepted_application_details.twig' with { app: app } %}
+    {% endfor %}
+
+    {# Total cost #}
+    {% if total_cost > 0 %}
+    <div style="background-color: #eef4fa; border-left: 3px solid #0062BA; padding: 12px 16px; margin-bottom: 16px; border-radius: 0 4px 4px 0;">
+        <p style="margin: 0; font-size: 14px; font-weight: 600; color: #002c54;">{{ lang('booking.total_cost_all')|default('Totalkostnad for alle bookinger') }}: {{ total_cost|format_nok }}</p>
+    </div>
+    {% endif %}
+
+    {# Additional requirements #}
+    {% if agreement_requirements %}
+    <div style="background-color: #fdf2e0; border-left: 3px solid #F39C12; padding: 12px 16px; margin-bottom: 16px; border-radius: 0 4px 4px 0;">
+        <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #3d2705;">{{ lang('additional requirements') }}</p>
+        <p style="margin: 0; font-size: 13px; color: #3d2705;">{{ agreement_requirements|safe_html }}</p>
+    </div>
+    {% endif %}
+
+    {# Case officer comment #}
+    {% if comment %}
+    <div style="background-color: #f5f5f5; padding: 12px 16px; margin-bottom: 16px; border-radius: 4px;">
+        <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #4E4E4E;">{{ lang('booking.comment_from_caseofficer')|default('Kommentar fra saksbehandler') }}</p>
+        <p style="margin: 0; font-size: 13px; color: #2b2b2b;">{{ comment }}</p>
+    </div>
+    {% endif %}
+
+    {# Footer message #}
+    {% if has_mixed_results %}
+    <p style="font-size: 14px; line-height: 1.5; color: #4E4E4E;">Se detaljer for hver del av søknaden ovenfor.</p>
+    {% elseif approved_count > 0 %}
+    <p style="font-size: 14px; line-height: 1.5; color: #2b2b2b;">{{ mail_accepted|safe_html }}</p>
+    {% else %}
+    <p style="font-size: 14px; line-height: 1.5; color: #2b2b2b;">{{ mail_rejected|safe_html }}</p>
+    {% endif %}
+
+    {# CTA #}
+    <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 20px 0 8px;">
+    <tr>
+    <td style="background-color: #793C8A; border-radius: 4px;">
+        <a href="{{ link }}" style="display: inline-block; padding: 10px 24px; font-size: 14px; font-weight: 600; color: #ffffff; text-decoration: none;">{{ lang('booking.view_application')|default('Se søknad') }} #{{ application_id }}</a>
+    </td>
+    </tr>
+    </table>
+
+    {# E-lock instructions #}
+    {% if e_lock_instructions is defined and e_lock_instructions is not empty %}
+    <div style="background-color: #eef4fa; border: 1px solid #0062BA; padding: 12px 16px; margin-top: 16px; border-radius: 4px;">
+        <p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #002c54;">{{ lang('booking.e_lock_instructions')|default('Instruksjoner for e-lås') }}</p>
+        {% for instruction in e_lock_instructions %}
+        <div style="font-size: 13px; color: #002c54;">{{ instruction|safe_html }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+</td>
+</tr>
+
+{# ===== COMMENT / OTHER ===== #}
+{% else %}
+
+<tr>
+<td style="background-color: #4E4E4E; padding: 16px 24px; border-radius: 6px 6px 0 0;">
+    <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">{{ lang('booking.comment_added')|default('Ny kommentar') }}</h2>
+</td>
+</tr>
+
+<tr>
+<td style="background-color: #ffffff; padding: 24px; border-left: 1px solid #bcbcbc; border-right: 1px solid #bcbcbc;">
+
+    <p style="font-size: 14px; line-height: 1.5; color: #2b2b2b;">{{ comment_added_mail|safe_html }}</p>
+
+    <div style="background-color: #f5f5f5; padding: 12px 16px; margin-bottom: 16px; border-radius: 4px;">
+        <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #4E4E4E;">{{ lang('booking.comment_from_caseofficer')|default('Kommentar fra saksbehandler') }}</p>
+        <p style="margin: 0; font-size: 13px; color: #2b2b2b;">{{ comment }}</p>
+    </div>
+
+    {% include '@views/emails/_partials/application_link.twig' %}
+
+</td>
+</tr>
+
+{% endif %}
+
+{# Footer #}
+<tr>
+<td style="background-color: #f5f5f5; padding: 16px 24px; border-radius: 0 0 6px 6px; border: 1px solid #bcbcbc; border-top: none;">
+    <p style="margin: 0; font-size: 12px; color: #797979; line-height: 1.5;">{{ signature|safe_html }}</p>
+</td>
+</tr>
+
+</table>
+{% endblock %}

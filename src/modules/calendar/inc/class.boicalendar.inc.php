@@ -72,6 +72,10 @@ define('BUSY_TENTATIVESTAT',3);
 define('THISANDPRIOR',0);
 define('THISANDFUTURE',1);
 
+define('ICAL_RELTYPE_PARENT',1);
+define('ICAL_RELTYPE_CHILD',2);
+define('ICAL_RELTYPE_SIBLING',3);
+
 define('START',0);
 define('END',1);
 
@@ -2814,13 +2818,13 @@ class calendar_boicalendar
 			switch($var)
 			{
 				case 'PARENT':
-					return PARENT;
+					return ICAL_RELTYPE_PARENT;
 					break;
 				case 'CHILD':
-					return CHILD;
+					return ICAL_RELTYPE_CHILD;
 					break;
 				case 'SIBLING':
-					return SIBLING;
+					return ICAL_RELTYPE_SIBLING;
 					break;
 			}
 		}
@@ -2828,13 +2832,13 @@ class calendar_boicalendar
 		{
 			switch($var)
 			{
-				case PARENT:
+				case ICAL_RELTYPE_PARENT:
 					return 'PARENT';
 					break;
-				case CHILD:
+				case ICAL_RELTYPE_CHILD:
 					return 'CHILD';
 					break;
-				case SIBLING:
+				case ICAL_RELTYPE_SIBLING:
 					return 'SIBLING';
 					break;
 			}
@@ -3313,7 +3317,7 @@ class calendar_boicalendar
 		}
 		$uploaddir = "{$GLOBALS['phpgw_info']['server']['temp_dir']}/";
 
-		srand((double)microtime()*1000000);
+		srand((float) microtime() * 1000000);
 		$random_number = rand(100000000,999999999);
 		$newfilename = md5($_FILES['uploadedfile']['name'].", ".$uploadedfile_name.", "
 				. time() . getenv("REMOTE_ADDR") . $random_number );

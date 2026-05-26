@@ -92,7 +92,7 @@ setDatePicker_price_item = function ()
 		$("#" + obj.id).datepicker({
 			beforeShow: function (input, inst)
 			{
-				$(this).datepicker("setDate", $.trim(input.value));
+				$(this).datepicker("setDate", (input.value || '').trim());
 				//console.log(inst);
 				//			    inst.dpDiv.css({marginTop: -input.offsetHeight + 'px', marginLeft: input.offsetWidth + 'px'});
 			},
@@ -120,7 +120,7 @@ setDatePicker_price_item = function ()
 		$("#" + obj.id).datepicker({
 			beforeShow: function (input, inst)
 			{
-				$(this).datepicker("setDate", $.trim(input.value));
+				$(this).datepicker("setDate", (input.value || '').trim());
 				//console.log(inst);
 				//		    inst.dpDiv.css({marginTop: -input.offsetHeight + 'px', marginLeft: input.offsetWidth + 'px'});
 			},
@@ -279,7 +279,7 @@ $(document).ready(function ()
 	var previous_composite_query = '';
 	$('#composite_query').on('keyup change', function ()
 	{
-		if ($.trim($(this).val()) != $.trim(previous_composite_query))
+		if (($(this).val() || '').trim() != (previous_composite_query || '').trim())
 		{
 			filterDataComposite('search', {'value': $(this).val()});
 			previous_composite_query = $(this).val();
@@ -311,7 +311,7 @@ $(document).ready(function ()
 	var previous_party_query = '';
 	$('#party_query').on('keyup change', function ()
 	{
-		if ($.trim($(this).val()) != $.trim(previous_party_query))
+		if (($(this).val() || '').trim() != (previous_party_query || '').trim())
 		{
 			filterDataParty('search', {'value': $(this).val()});
 			previous_party_query = $(this).val();
@@ -346,7 +346,7 @@ $(document).ready(function ()
 	var previous_document_query = '';
 	$('#document_query').on('keyup change', function ()
 	{
-		if ($.trim($(this).val()) != $.trim(previous_document_query))
+		if (($(this).val() || '').trim() != (previous_document_query || '').trim())
 		{
 			filterDataDocument('search', {'value': $(this).val()});
 			previous_document_query = $(this).val();
@@ -428,7 +428,7 @@ $(document).ready(function ()
 			alert('no file selected');
 			return false;
 		}
-		if ($.trim($('#document_title').val()) === '')
+		if (($('#document_title').val() || '').trim() === '')
 		{
 			alert('enter document title');
 			return false;
@@ -785,7 +785,7 @@ addNotification = function ()
 	var nTable = 9;
 	var data = {};
 
-	if ($.trim($('#notification_message').val()) == '')
+	if (($('#notification_message').val() || '').trim() == '')
 	{
 		alert('enter a message');
 		return;

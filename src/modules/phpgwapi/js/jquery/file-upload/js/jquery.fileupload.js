@@ -353,13 +353,13 @@
 
     _getFormData: function (options) {
       var formData;
-      if ($.type(options.formData) === 'function') {
+      if (typeof options.formData === 'function') {
         return options.formData(options.form);
       }
-      if ($.isArray(options.formData)) {
+      if (Array.isArray(options.formData)) {
         return options.formData;
       }
-      if ($.type(options.formData) === 'object') {
+      if (typeof options.formData === 'object' && options.formData !== null) {
         formData = [];
         $.each(options.formData, function (name, value) {
           formData.push({ name: name, value: value });
@@ -511,7 +511,7 @@
         // Ignore non-multipart setting if not supported:
         multipart = options.multipart || !$.support.xhrFileUpload,
         paramName =
-          $.type(options.paramName) === 'array'
+          Array.isArray(options.paramName)
             ? options.paramName[0]
             : options.paramName;
       options.headers = $.extend({}, options.headers);
@@ -543,7 +543,7 @@
             $.each(options.files, function (index, file) {
               formData.push({
                 name:
-                  ($.type(options.paramName) === 'array' &&
+                  (Array.isArray(options.paramName) &&
                     options.paramName[index]) ||
                   paramName,
                 value: file
@@ -581,7 +581,7 @@
                   );
                 }
                 formData.append(
-                  ($.type(options.paramName) === 'array' &&
+                  (Array.isArray(options.paramName) &&
                     options.paramName[index]) ||
                     paramName,
                   file,
@@ -647,7 +647,7 @@
         if (!paramName.length) {
           paramName = [fileInput.prop('name') || 'files[]'];
         }
-      } else if (!$.isArray(paramName)) {
+      } else if (!Array.isArray(paramName)) {
         paramName = [paramName];
       }
       return paramName;
@@ -671,7 +671,7 @@
       // The HTTP request method must be "POST" or "PUT":
       options.type = (
         options.type ||
-        ($.type(options.form.prop('method')) === 'string' &&
+        (typeof options.form.prop('method') === 'string' &&
           options.form.prop('method')) ||
         ''
       ).toUpperCase();
@@ -826,7 +826,7 @@
         !(
           this._isXHRUpload(options) &&
           slice &&
-          (ub || ($.type(mcs) === 'function' ? mcs(options) : mcs) < fs)
+          (ub || (typeof mcs === 'function' ? mcs(options) : mcs) < fs)
         ) ||
         options.data
       ) {
@@ -851,7 +851,7 @@
         o.blob = slice.call(
           file,
           ub,
-          ub + ($.type(mcs) === 'function' ? mcs(o) : mcs),
+          ub + (typeof mcs === 'function' ? mcs(o) : mcs),
           file.type
         );
         // Store the current chunk size, as the blob itself
@@ -1482,7 +1482,7 @@
     _isRegExpOption: function (key, value) {
       return (
         key !== 'url' &&
-        $.type(value) === 'string' &&
+        typeof value === 'string' &&
         /^\/.*\/[igm]{0,3}$/.test(value)
       );
     },

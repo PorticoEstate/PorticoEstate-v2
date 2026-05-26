@@ -79,6 +79,11 @@ class LoginHelper
 		{
 			$response->getBody()->write($result['html']);
 		}
+		else
+		{
+			$response = $response->withStatus(401);
+			$response->getBody()->write(lang('Login failed'));
+		}
 		return $response;
 	}
 

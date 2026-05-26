@@ -268,7 +268,7 @@ class property_bofiles
 			$jasper_wrapper	 = CreateObject('phpgwapi.jasper_wrapper');
 			try
 			{
-				$jasper_wrapper->execute('', $output_type, $report_source);
+				$jasper_wrapper->execute($output_type, $report_source, '');
 			}
 			catch (Exception $e)
 			{
@@ -387,7 +387,7 @@ class property_bofiles
 				$jasper_wrapper	 = CreateObject('phpgwapi.jasper_wrapper');
 				try
 				{
-					$jasper_wrapper->execute('', $output_type, $report_source);
+					$jasper_wrapper->execute($output_type, $report_source, '');
 				}
 				catch (Exception $e)
 				{

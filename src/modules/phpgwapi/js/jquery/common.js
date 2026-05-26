@@ -455,9 +455,9 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 				// This replaces the old fnServerParams functionality
 				try
 				{
-					if ($.isNumeric(container.substr(container.length - 1, 1)))
+					if (!isNaN(Number(container.substr(container.length - 1, 1))))
 					{
-						if (!$.isEmptyObject(eval('paramsTable' + container.substr(container.length - 1, 1))))
+						if (Object.keys(eval('paramsTable' + container.substr(container.length - 1, 1))).length !== 0)
 						{
 							$.each(eval('paramsTable' + container.substr(container.length - 1, 1)), function (k, v)
 							{
@@ -659,7 +659,21 @@ JqueryPortico.updateinlineTableHelper = function (oTable, requestUrl)
 	else
 	{
 		var api = _oTable.api();
-		api.ajax.url(requestUrl).load();
+		var settings = api.settings()[0] || {};
+		var draw = (typeof settings.iDraw === 'number') ? settings.iDraw : 1;
+		var requestUrlWithDraw = requestUrl;
+
+		if (requestUrlWithDraw.indexOf('draw=') === -1)
+		{
+			requestUrlWithDraw += (requestUrlWithDraw.indexOf('?') >= 0 ? '&' : '?') + 'draw=' + encodeURIComponent(draw);
+		}
+		else
+		{
+			requestUrlWithDraw = requestUrlWithDraw.replace(/([?&])draw=[^&]*/,
+				'$1draw=' + encodeURIComponent(draw));
+		}
+
+		api.ajax.url(requestUrlWithDraw).load();
 	}
 	return _oTable;
 };

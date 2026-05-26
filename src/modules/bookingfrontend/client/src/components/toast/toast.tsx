@@ -8,8 +8,6 @@ import {Alert, Button, Badge, Heading, Paragraph} from "@digdir/designsystemet-r
 import {SeverityColors} from "@digdir/designsystemet-react/colors";
 import {usePartialApplications} from "@/service/hooks/api-hooks";
 import {ShoppingBasketIcon} from "@navikt/aksel-icons";
-import ShoppingCartPopper from "@/components/layout/header/shopping-cart/shopping-cart-popper";
-import {useIsMobile} from "@/service/hooks/is-mobile";
 import {useShoppingCartDrawer} from "@/components/layout/header/shopping-cart/shopping-cart-drawer-context";
 import {usePathname} from "next/navigation";
 
@@ -19,7 +17,6 @@ const ToastContainer: React.FC = () => {
 	const fabButtonRef = useRef<HTMLButtonElement>(null);
 	const t = useTrans();
 	const pathname = usePathname();
-	const isMobile = useIsMobile();
 	const {setIsOpen: setDrawerOpen, setAnchorRef: setDrawerRef, isOpen: isDrawerOpen} = useShoppingCartDrawer();
 
 	// Register the FAB button ref with the context
@@ -57,13 +54,8 @@ const ToastContainer: React.FC = () => {
 						ref={fabButtonRef}
 						onClick={() => {
 							dismissAllToasts();
-							if (isMobile) {
-								setFabOpen(true);
-							} else {
-								// Use the shared drawer context instead
-								setDrawerRef(fabButtonRef);
-								setDrawerOpen(true);
-							}
+							setDrawerRef(fabButtonRef);
+							setDrawerOpen(true);
 						}}
 					>
 						<ShoppingBasketIcon fontSize="1.25rem"/>
@@ -80,9 +72,6 @@ const ToastContainer: React.FC = () => {
 							count={cartItems?.list.length ?? 0}
 						></Badge>
 					</Button>
-				)}
-				{isMobile && (
-					<ShoppingCartPopper anchor={fabButtonRef.current} open={isFabOpen} setOpen={setFabOpen}/>
 				)}
 			</div>
 		</div>

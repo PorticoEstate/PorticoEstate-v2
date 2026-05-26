@@ -1,0 +1,25 @@
+<p>{{ contact_name }} har søkt {{ systemname }} om leie/lån av {{ resourcename }} på {{ building_name }}</p>
+
+{% if agreement_requirements %}
+{{ lang('additional requirements') }}:<br />{{ agreement_requirements|safe_html }}<br />
+{% endif %}
+
+{% if dates is not empty %}
+<pre>Tidsrom:
+{%- for date in dates %}
+{{ date }}
+{%- endfor %}
+</pre><br/>
+{% endif %}
+
+{% if comment %}
+<p>Kommentar fra saksbehandler:<br />{{ comment }}</p>
+{% endif %}
+
+{% if file_names is not empty %}
+<pre>Søker har kvittert for å ha lest vedlagte dokument(er):
+{%- for name in file_names %}
+{{ name }}
+{%- endfor %}
+</pre>
+{% endif %}

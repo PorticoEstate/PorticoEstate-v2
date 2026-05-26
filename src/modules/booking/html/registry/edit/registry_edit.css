@@ -1,0 +1,76 @@
+.registry-edit {
+	padding: var(--ds-spacing-4, 1rem) 0;
+}
+
+.registry-edit h1 {
+	margin-bottom: var(--ds-spacing-4, 1rem);
+}
+
+.registry-edit .form-group {
+	display: flex;
+	align-items: baseline;
+	gap: var(--ds-spacing-4, 1rem);
+	margin-bottom: var(--ds-spacing-4, 1rem);
+}
+
+.registry-edit .form-group .app-label {
+	flex: 0 0 160px;
+	text-align: right;
+	font-weight: var(--ds-font-weight-medium, 500);
+}
+
+.registry-edit .form-group .app-input,
+.registry-edit .form-group .app-select,
+.registry-edit .form-group textarea {
+	flex: 1;
+	min-width: 0;
+}
+
+.registry-edit .form-group .app-checkbox {
+	flex: none;
+}
+
+.registry-edit .app-input--readonly {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.registry-edit__btn-row {
+	display: flex;
+	gap: var(--ds-spacing-3, 0.75rem);
+	align-items: center;
+	flex-wrap: wrap;
+	margin-top: var(--ds-spacing-6, 1.5rem);
+	padding-top: var(--ds-spacing-4, 1rem);
+	border-top: 1px solid var(--ds-color-border-default, #e0e0e0);
+}
+
+.registry-edit__btn-row .app-button[disabled] {
+	opacity: 0.7;
+	cursor: not-allowed;
+}
+
+.registry-edit .app-alert {
+	margin-bottom: var(--ds-spacing-4, 1rem);
+	transition: opacity 0.3s ease;
+}
+
+.registry-edit .app-alert.is-fading {
+	opacity: 0;
+}
+
+.is-hidden {
+	display: none;
+}
+
+@media (max-width: 640px) {
+	.registry-edit .form-group {
+		flex-direction: column;
+		gap: var(--ds-spacing-1, 0.25rem);
+	}
+
+	.registry-edit .form-group .app-label {
+		flex: none;
+		text-align: left;
+	}
+}

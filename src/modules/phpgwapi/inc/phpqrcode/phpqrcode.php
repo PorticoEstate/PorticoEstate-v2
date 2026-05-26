@@ -951,7 +951,7 @@
     class QRimage {
 
         //----------------------------------------------------------------------
-        public static function png($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color, $fore_color)
+        public static function png($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color = 0xFFFFFF, $fore_color = 0x000000)
         {
             $image = self::image($frame, $pixelPerPoint, $outerFrame, $back_color, $fore_color);
 
@@ -968,7 +968,7 @@
                 }
             }
 
-            ImageDestroy($image);
+            unset($image);
         }
 
         //----------------------------------------------------------------------
@@ -983,7 +983,7 @@
                 ImageJpeg($image, $filename, $q);
             }
 
-            ImageDestroy($image);
+            unset($image);
         }
 
         //----------------------------------------------------------------------
@@ -1024,7 +1024,7 @@
 
             $target_image =ImageCreate($imgW * $pixelPerPoint, $imgH * $pixelPerPoint);
             ImageCopyResized($target_image, $base_image, 0, 0, 0, 0, $imgW * $pixelPerPoint, $imgH * $pixelPerPoint, $imgW, $imgH);
-            ImageDestroy($base_image);
+            unset($base_image);
 
             return $target_image;
         }
@@ -1184,7 +1184,7 @@
         {
             try {
 
-                $bs = new QRbitrtream();
+                $bs = new QRbitstream();
                 
                 $bs->appendNum(4, 0x8);
                 $bs->appendNum(QRspec::lengthIndicator(QR_MODE_KANJI, $version), (int)($this->size / 2));
@@ -1399,7 +1399,7 @@
             $buf = array($size, $index, $parity);
             
             try {
-                $entry = new QRinputItem(QR_MODE_STRUCTURE, 3, buf);
+                $entry = new QRinputItem(QR_MODE_STRUCTURE, 3, $buf);
                 array_unshift($this->items, $entry);
                 return 0;
             } catch (Exception $e) {
@@ -2962,7 +2962,7 @@
         //----------------------------------------------------------------------
         public function getCode()
         {
-            $ret;
+            $ret = '';
 
             if($this->count < $this->dataLength) {
                 $row = $this->count % $this->blocks;
@@ -3076,7 +3076,7 @@
         //----------------------------------------------------------------------
         public function encodeString8bit($string, $version, $level)
         {
-            if(string == NULL) {
+            if($string == NULL) {
                 throw new Exception('empty string!');
                 return NULL;
             }
@@ -3547,7 +3547,7 @@
         }
         
         //----------------------------------------------------------------------
-        public static function svg($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color, $fore_color) 
+        public static function svg($frame, $filename = false, $pixelPerPoint = 4, $outerFrame = 4,$saveandprint=FALSE, $back_color = 0xFFFFFF, $fore_color = 0x000000) 
         {
             $vect = self::vectSVG($frame, $pixelPerPoint, $outerFrame, $back_color, $fore_color);
             

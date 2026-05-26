@@ -16,6 +16,11 @@
 	// Include modern IMAP configuration
 	require_once __DIR__ . '/imap_config.php';
 
+	defined('PE_IMAP_FT_UID') || define('PE_IMAP_FT_UID', 1);
+	defined('PE_IMAP_FT_PREFETCHTEXT') || define('PE_IMAP_FT_PREFETCHTEXT', 16);
+	defined('PE_IMAP_CP_UID') || define('PE_IMAP_CP_UID', 1);
+	defined('PE_IMAP_SE_UID') || define('PE_IMAP_SE_UID', 1);
+	defined('PE_IMAP_ST_UID') || define('PE_IMAP_ST_UID', 1);
 
 	/**
 	* Mail function abstraction for IMAP servers
@@ -66,9 +71,9 @@
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & FT_UID)) )
+			&& (!($flags & PE_IMAP_FT_UID)) )
 			{
-				$flags |= FT_UID;
+				$flags |= PE_IMAP_FT_UID;
 			}
 			return IMAPManager::imap_delete($stream,$msg_num,$flags);
 		}
@@ -89,9 +94,9 @@
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & FT_UID)) )
+			&& (!($flags & PE_IMAP_FT_UID)) )
 			{
-				$flags |= FT_UID;
+				$flags |= PE_IMAP_FT_UID;
 			}
 			return IMAPManager::imap_fetchbody($stream,$msgnr,$partnr,$flags);
 		}
@@ -118,12 +123,12 @@
 
 		function fetch_raw_mail($stream,$msg_num,$flags=0)
 		{
-			$flags |= FT_PREFETCHTEXT;
+			$flags |= PE_IMAP_FT_PREFETCHTEXT;
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & FT_UID)) )
+			&& (!($flags & PE_IMAP_FT_UID)) )
 			{
-				$flags |= FT_UID;
+				$flags |= PE_IMAP_FT_UID;
 			}
 			return IMAPManager::imap_fetchheader($stream,$msg_num,$flags);
 		}
@@ -132,9 +137,9 @@
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & FT_UID)) )
+			&& (!($flags & PE_IMAP_FT_UID)) )
 			{
-				$flags |= FT_UID;
+				$flags |= PE_IMAP_FT_UID;
 			}
 			return IMAPManager::imap_fetchheader($stream,$msg_num,$flags);
 		}
@@ -143,9 +148,9 @@
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & FT_UID)) )
+			&& (!($flags & PE_IMAP_FT_UID)) )
 			{
-				$flags |= FT_UID;
+				$flags |= PE_IMAP_FT_UID;
 			}
 			return IMAPManager::imap_fetchstructure($stream,$msg_num,$flags);
 		}
@@ -154,9 +159,9 @@
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & FT_UID)) )
+			&& (!($flags & PE_IMAP_FT_UID)) )
 			{
-				$flags |= FT_UID;
+				$flags |= PE_IMAP_FT_UID;
 			}
 			return IMAPManager::imap_body($stream,$msg_num,$flags);
 		}
@@ -188,9 +193,9 @@
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & CP_UID)) )
+			&& (!($flags & PE_IMAP_CP_UID)) )
 			{
-				$flags |= CP_UID;
+				$flags |= PE_IMAP_CP_UID;
 			}
 			$mailbox = $this->utf7_encode($mailbox);
 			return IMAPManager::imap_mail_copy($stream,$msg_list,$mailbox,$flags);
@@ -200,9 +205,9 @@
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & CP_UID)) )
+			&& (!($flags & PE_IMAP_CP_UID)) )
 			{
-				$flags |= CP_UID;
+				$flags |= PE_IMAP_CP_UID;
 			}
 			$mailbox = $this->utf7_encode($mailbox, 'mail_move');
 			return IMAPManager::imap_mail_move($stream,$msg_list,$mailbox,$flags);
@@ -247,9 +252,9 @@
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & SE_UID)) )
+			&& (!($flags & PE_IMAP_SE_UID)) )
 			{
-				$flags |= SE_UID;
+				$flags |= PE_IMAP_SE_UID;
 			}
 			return IMAPManager::imap_search($stream,$criteria,$flags);
 		}
@@ -258,9 +263,9 @@
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & SE_UID)) )
+			&& (!($flags & PE_IMAP_SE_UID)) )
 			{
-				$flags |= SE_UID;
+				$flags |= PE_IMAP_SE_UID;
 			}
 			//echo 'class dcom: sort: $this->force_msg_uids= '.serialize($this->force_msg_uids).'; $flags: ['.serialize($flags).']<br />';
 			return IMAPManager::imap_sort($stream,$criteria,$reverse,$flags);
@@ -297,7 +302,7 @@
 			$uids = 0;
 			if($this->force_msg_uids == True)
 			{
-				$uids |= ST_UID;
+				$uids |= PE_IMAP_ST_UID;
 			}
 			return IMAPManager::imap_setflag_full($stream, $msgnum, $flag, $uids);
 		}
@@ -322,9 +327,9 @@
 		{
 			// do we force use of msg UID's 
 			if ( ($this->force_msg_uids == True)
-			&& (!($flags & FT_UID)) )
+			&& (!($flags & PE_IMAP_FT_UID)) )
 			{
-				$flags |= FT_UID;
+				$flags |= PE_IMAP_FT_UID;
 			}
 			$fieldCount = 0;
 			$header = IMAPManager::imap_fetchheader ($stream, $msg_num, $flags);

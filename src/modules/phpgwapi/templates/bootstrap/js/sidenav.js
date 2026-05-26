@@ -239,6 +239,7 @@ $(document).ready(function ()
 			success: function (data)
 			{
 				//		console.log(data);
+				localStorage.removeItem('menu_tree_' + sessionid);
 				location.reload(true);
 			}
 		});

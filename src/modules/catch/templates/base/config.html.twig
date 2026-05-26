@@ -1,0 +1,26 @@
+{# Config template #}
+{% block header %}
+<form method="POST" action="{{ action_url }}">
+<table class="pure-table pure-table-bordered">
+   <tr class="th">
+    <td colspan="2"><font color="{{ th_text }}">&nbsp;<b>{{ title }}</b></font></td>
+   </tr>
+{% endblock %}
+{% block body %}
+
+{% endblock %}
+{% block footer %}
+  <tr class="th">
+    <td colspan="2">
+&nbsp;
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <input type="submit" name="submit" value="{{ lang('submit') }}">
+      <input type="submit" name="cancel" value="{{ lang('cancel') }}">
+    </td>
+  </tr>
+</table>
+</form>
+{% endblock %}

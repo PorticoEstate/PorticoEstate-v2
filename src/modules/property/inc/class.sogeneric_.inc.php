@@ -793,7 +793,7 @@ use App\modules\phpgwapi\controllers\Locations;
 					}
 				}
 
-				$value_set[$field['name']] = $data[$field['name']] ? $this->_db->db_addslashes(html_entity_decode($data[$field['name']])) : '';
+				$value_set[$field['name']] = $this->_db->marshal(html_entity_decode($data[$field['name']]), $field['type']);
 
 				// keep hierarchy in order
 				if (isset($field['role']) && $field['role'] == 'parent')

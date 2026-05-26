@@ -1,4 +1,4 @@
-/* global get_files_java_url, location_id, item_id */
+/* global get_files_java_url, get_checklists_url, get_cases_url, get_controls_url, get_cases_for_checklist_url, location_id, item_id */
 
 this.fileuploader = function ()
 {
@@ -14,13 +14,18 @@ this.fileuploader = function ()
 
 this.refresh_files = function ()
 {
-	var oArgs = get_files_java_url;
-	var strURL = phpGWLink('index.php', oArgs, true);
+	var strURL = get_files_java_url;
 
-	refresh_glider(strURL);
+	try
+	{
+		refresh_glider(strURL);
+	}
+	catch (e)
+	{
 
-	oTable0.api().draw();
-}
+	}
+	JqueryPortico.updateinlineTableHelper(oTable0, strURL);
+};
 
 this.showlightbox_add_inventory = function (location_id, id)
 {
@@ -145,8 +150,7 @@ this.onActionsClick = function (action)
 		});
 
 
-		var oArgs2 = {menuaction: 'property.uientity.get_controls_at_component', location_id : location_id, id: item_id};
-		var requestUrl2 = phpGWLink('index.php', oArgs2, true);
+		var requestUrl2 = get_controls_url + '?location_id=' + encodeURIComponent(location_id) + '&id=' + encodeURIComponent(item_id);
 		JqueryPortico.updateinlineTableHelper('datatable-container_4', requestUrl2);
 	}
 }
@@ -220,8 +224,7 @@ add_control = function ()
 		}
 	});
 
-	var oArgs2 = {menuaction: 'property.uientity.get_controls_at_component', location_id: location_id, id: item_id};
-	var requestUrl2 = phpGWLink('index.php', oArgs2, true);
+	var requestUrl2 = get_controls_url + '?location_id=' + encodeURIComponent(location_id) + '&id=' + encodeURIComponent(item_id);
 	JqueryPortico.updateinlineTableHelper('datatable-container_4', requestUrl2);
 };
 
@@ -251,12 +254,10 @@ $(document).ready(function ()
 	var click_action_on_table = false;
 	$("#check_lst_time_span").change(function ()
 	{
-		var oArgs = {menuaction: 'property.uientity.get_checklists', location_id: location_id, id: item_id, year: $(this).val()};
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = get_checklists_url + '?location_id=' + encodeURIComponent(location_id) + '&id=' + encodeURIComponent(item_id) + '&year=' + encodeURIComponent($(this).val());
 		var _oTable = JqueryPortico.updateinlineTableHelper('datatable-container_5', requestUrl);
 
-		oArgs = {menuaction: 'property.uientity.get_cases', location_id: location_id, id: item_id, year: $(this).val()};
-		requestUrl = phpGWLink('index.php', oArgs, true);
+		requestUrl = get_cases_url + '?location_id=' + encodeURIComponent(location_id) + '&id=' + encodeURIComponent(item_id) + '&year=' + encodeURIComponent($(this).val());
 		JqueryPortico.updateinlineTableHelper('datatable-container_6', requestUrl);
 
 		if (click_action_on_table == false)
@@ -292,8 +293,7 @@ function updateCaseTable(check_list_id)
 	{
 		return;
 	}
-	var oArgs = {menuaction: 'property.uientity.get_cases_for_checklist', check_list_id: check_list_id};
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var requestUrl = get_cases_for_checklist_url + '?check_list_id=' + encodeURIComponent(check_list_id);
 	JqueryPortico.updateinlineTableHelper('datatable-container_6', requestUrl);
 }
 
@@ -306,3 +306,647 @@ function newDocument(oArgs)
 
 	window.open(requestUrl, '_self');
 };
+
+function parseFormKeyTokens(key)
+{
+	var tokens = [];
+	var match;
+	var regex = /([^\[\]]+)/g;
+	while ((match = regex.exec(key)) !== null)
+	{
+		tokens.push(match[1]);
+	}
+	return tokens;
+}
+
+function setNestedValue(target, key, value)
+{
+	var tokens = parseFormKeyTokens(key);
+	var forceArray = /\[\]$/.test(key);
+	if (!tokens.length)
+	{
+		return;
+	}
+
+	var node = target;
+	for (var i = 0; i < tokens.length - 1; i++)
+	{
+		var token = tokens[i];
+		if (!Object.prototype.hasOwnProperty.call(node, token) || typeof node[token] !== 'object' || node[token] === null)
+		{
+			node[token] = {};
+		}
+		node = node[token];
+	}
+
+	var leaf = tokens[tokens.length - 1];
+	if (!Object.prototype.hasOwnProperty.call(node, leaf))
+	{
+		node[leaf] = forceArray ? [value] : value;
+		return;
+	}
+
+	if (Array.isArray(node[leaf]))
+	{
+		node[leaf].push(value);
+		return;
+	}
+
+	node[leaf] = [node[leaf], value];
+}
+
+function formDataToObject(formData)
+{
+	var payload = {};
+	formData.forEach(function (value, key)
+	{
+		setNestedValue(payload, key, value);
+	});
+	return payload;
+}
+
+function getFieldValue(form, selector)
+{
+	var el = form.querySelector(selector);
+	if (!el)
+	{
+		return '';
+	}
+	return (el.value || '').trim();
+}
+
+function buildLocationCodeFromLocationForm(form)
+{
+	var explicitLocationCode = getFieldValue(form, 'input[name="location_code"]');
+	if (explicitLocationCode)
+	{
+		return explicitLocationCode;
+	}
+
+	var locationParts = [];
+	var locationInputs = form.querySelectorAll('input[name]');
+	for (var i = 0; i < locationInputs.length; i++)
+	{
+		var input = locationInputs[i];
+		var name = input.getAttribute('name') || '';
+		var match = name.match(/^loc(\d+)$/);
+		if (!match)
+		{
+			continue;
+		}
+
+		var value = (input.value || '').trim();
+		if (!value)
+		{
+			continue;
+		}
+
+		locationParts.push({
+			level: parseInt(match[1], 10),
+			value: value
+		});
+	}
+
+	if (locationParts.length)
+	{
+		locationParts.sort(function (a, b)
+		{
+			return a.level - b.level;
+		});
+		return locationParts.map(function (part)
+		{
+			return part.value;
+		}).join('-');
+	}
+
+	return '';
+}
+
+function extractPrimaryRelationFromLocationForm(form)
+{
+	var relation = {
+		p_num: '',
+		p_entity_id: '',
+		p_cat_id: ''
+	};
+
+	var relationNumInputs = form.querySelectorAll('input[name^="entity_num_"]');
+	for (var i = 0; i < relationNumInputs.length; i++)
+	{
+		var numInput = relationNumInputs[i];
+		var pNum = (numInput.value || '').trim();
+		if (!pNum)
+		{
+			continue;
+		}
+
+		var suffix = (numInput.name || '').replace('entity_num_', '');
+		relation.p_num = pNum;
+		relation.p_entity_id = getFieldValue(form, 'input[name="entity_id_' + suffix + '"]');
+		relation.p_cat_id = getFieldValue(form, 'input[name="cat_id_' + suffix + '"]');
+		break;
+	}
+
+	return relation;
+}
+
+function buildRelationInfo(form)
+{
+	var relationInfo = {};
+	var locationCode = buildLocationCodeFromLocationForm(form);
+	if (locationCode)
+	{
+		relationInfo.location_code = locationCode;
+	}
+
+	var relation = extractPrimaryRelationFromLocationForm(form);
+	if (relation.p_num)
+	{
+		relationInfo.p_num = relation.p_num;
+	}
+	if (relation.p_entity_id)
+	{
+		relationInfo.p_entity_id = relation.p_entity_id;
+	}
+	if (relation.p_cat_id)
+	{
+		relationInfo.p_cat_id = relation.p_cat_id;
+	}
+
+	var tenantId = getFieldValue(form, 'input[name="tenant_id"]');
+	if (tenantId)
+	{
+		relationInfo.tenant_id = tenantId;
+	}
+
+	var origin = getFieldValue(form, 'input[name="values[origin]"]');
+	if (origin)
+	{
+		relationInfo.origin = origin;
+	}
+
+	var originId = getFieldValue(form, 'input[name="values[origin_id]"]');
+	if (originId)
+	{
+		relationInfo.origin_id = originId;
+	}
+
+	return relationInfo;
+}
+
+function appendRelationInfoToFormData(formData, form)
+{
+	var relationInfo = buildRelationInfo(form);
+	var keys = Object.keys(relationInfo);
+	for (var i = 0; i < keys.length; i++)
+	{
+		var key = keys[i];
+		formData.set('RelationInfo[' + key + ']', relationInfo[key]);
+	}
+}
+
+function logRelationInfoDebug(formData)
+{
+	if (typeof window === 'undefined' || !window.PORTICO_DEBUG_RELATION_INFO)
+	{
+		return;
+	}
+
+	var relationInfo = {};
+	formData.forEach(function (value, key)
+	{
+		var match = key.match(/^RelationInfo\[(.+)\]$/);
+		if (!match)
+		{
+			return;
+		}
+		relationInfo[match[1]] = value;
+	});
+
+	if (window.console && typeof window.console.log === 'function')
+	{
+		window.console.log('RelationInfo payload:', relationInfo);
+	}
+}
+
+function buildEntityRestRequest(form, submitterName)
+{
+	var parsed = parseURL(form.action);
+	var query = parsed.searchObject || {};
+	var type = query.type || '';
+	var entityId = query.entity_id || '';
+	var catId = query.cat_id || '';
+	var isApply = (submitterName === 'values[apply]');
+	var clickHistory = isApply ? '' : (query.click_history || '');
+
+	if (!type || !entityId || !catId)
+	{
+		var pathMatch = parsed.pathname.match(/\/property\/entity\/([^\/]+)\/(\d+)\/(\d+)/);
+		if (pathMatch)
+		{
+			if (!type) { type = decodeURIComponent(pathMatch[1]); }
+			if (!entityId) { entityId = pathMatch[2]; }
+			if (!catId) { catId = pathMatch[3]; }
+		}
+	}
+
+	if (!type) { type = $('#field_type').val() || ''; }
+	if (!catId || catId === '0')
+	{
+		catId = $('#cat_id').val() || '';
+	}
+
+	var rawId = (query.id || item_id || '').toString();
+	var id = parseInt(rawId, 10);
+	var bypass = query.bypass;
+
+	if (!type || !entityId || !catId)
+	{
+		return null;
+	}
+
+	var isCreate = !id;
+	var url = '/property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId;
+	if (isCreate)
+	{
+		url += '/create';
+	}
+	else
+	{
+		url += '/' + id;
+	}
+
+	if (!isApply && !clickHistory && typeof strBaseURL !== 'undefined' && strBaseURL)
+	{
+		var baseQuery = parseURL(strBaseURL).searchObject || {};
+		clickHistory = baseQuery.click_history || '';
+	}
+
+	var queryParts = [];
+	if (typeof bypass !== 'undefined' && bypass !== null && bypass !== '')
+	{
+		queryParts.push('bypass=' + encodeURIComponent(bypass));
+	}
+	if (clickHistory)
+	{
+		queryParts.push('click_history=' + encodeURIComponent(clickHistory));
+	}
+	if (queryParts.length)
+	{
+		url += '?' + queryParts.join('&');
+	}
+
+	return {
+		url: url,
+		method: isCreate ? 'POST' : 'PUT',
+		isCreate: isCreate,
+		type: type,
+		entityId: entityId,
+		catId: catId
+	};
+}
+
+function clearFormAlerts(form)
+{
+	var notices = form.querySelectorAll('.rest-submit-alert');
+	for (var i = 0; i < notices.length; i++)
+	{
+		notices[i].remove();
+	}
+}
+
+function renderFormErrorAlert(form, messages)
+{
+	clearFormAlerts(form);
+
+	var alert = document.createElement('div');
+	alert.className = 'rest-submit-alert form-error alert alert-danger';
+
+	var heading = document.createElement('strong');
+	heading.textContent = 'Innsending av skjemaet feilet!';
+	alert.appendChild(heading);
+
+	var list = document.createElement('ul');
+	for (var i = 0; i < messages.length; i++)
+	{
+		var item = document.createElement('li');
+		item.textContent = messages[i];
+		list.appendChild(item);
+	}
+	alert.appendChild(list);
+
+	form.insertBefore(alert, form.firstChild);
+}
+
+function renderFormSuccessAlert(form, messages)
+{
+	clearFormAlerts(form);
+
+	var alert = document.createElement('div');
+	alert.className = 'rest-submit-alert text-center alert alert-success';
+	alert.setAttribute('role', 'alert');
+
+	var lines = Array.isArray(messages) ? messages : [messages];
+	for (var i = 0; i < lines.length; i++)
+	{
+		if (i > 0)
+		{
+			alert.appendChild(document.createElement('br'));
+		}
+		alert.appendChild(document.createTextNode(lines[i]));
+	}
+
+	form.insertBefore(alert, form.firstChild);
+}
+
+function extractReceiptMessages(entries)
+{
+	if (!Array.isArray(entries))
+	{
+		return [];
+	}
+
+	return entries
+		.map(function (entry)
+		{
+			if (entry && typeof entry.msg === 'string')
+			{
+				return entry.msg;
+			}
+			if (typeof entry === 'string')
+			{
+				return entry;
+			}
+			return '';
+		})
+		.filter(function (message)
+		{
+			return !!message;
+		});
+}
+
+function getErrorMessages(data)
+{
+	var topLevel = extractReceiptMessages(data && data.error);
+	if (topLevel.length)
+	{
+		return topLevel;
+	}
+
+	return extractReceiptMessages(data && data.receipt && data.receipt.error);
+}
+
+function getSuccessMessage(data, isCreate)
+{
+	var topLevel = extractReceiptMessages(data && data.message);
+	if (topLevel.length)
+	{
+		return topLevel;
+	}
+
+	var receipt = extractReceiptMessages(data && data.receipt && data.receipt.message);
+	if (receipt.length)
+	{
+		return receipt;
+	}
+
+	var id = (data && data.id) ? data.id : item_id;
+	if (isCreate)
+	{
+		return ['Post ' + id + ' er opprettet'];
+	}
+
+	return ['Post ' + id + ' er oppdatert'];
+}
+
+function hasSelectedFileUpload(form)
+{
+	var fileInput = form.querySelector('input[type="file"][name="file"]');
+	if (fileInput && fileInput.files && fileInput.files.length > 0)
+	{
+		return true;
+	}
+
+	var jasperInput = form.querySelector('input[type="file"][name="jasperfile"]');
+	if (jasperInput && jasperInput.files && jasperInput.files.length > 0)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+function getMissingReadonlyRequiredMessages(form)
+{
+	var messages = [];
+	var requiredReadonlyInputs = form.querySelectorAll('input[data-validation*="required"].readonly, input[readonly][data-validation*="required"]');
+
+	for (var i = 0; i < requiredReadonlyInputs.length; i++)
+	{
+		var input = requiredReadonlyInputs[i];
+		var value = (input.value || '').trim();
+		if (!value)
+		{
+			messages.push(input.getAttribute('data-validation-error-msg') || 'Fyll ut obligatoriske felter');
+		}
+	}
+
+	return messages;
+}
+
+$(document).ready(function ()
+{
+	var form = document.getElementById('form');
+	if (!form || !window.fetch)
+	{
+		return;
+	}
+
+	var clickedSubmitter = null;
+	var isSubmitting = false;
+
+	function setSubmitButtonsDisabled(disabled)
+	{
+		var buttons = form.querySelectorAll('input[type="submit"], button[type="submit"]');
+		for (var i = 0; i < buttons.length; i++)
+		{
+			buttons[i].disabled = disabled;
+		}
+	}
+
+	$(form).on('click', 'input[type="submit"], button[type="submit"]', function ()
+	{
+		clickedSubmitter = this;
+	});
+
+	$(form).on('submit', function (e)
+	{
+		if (typeof $.fn.isValid === 'function')
+		{
+			var conf = $.extend({}, form.validationConfig || {}, {
+				modules: (form.validationConfig && form.validationConfig.modules) || 'location, date, security, file',
+				validateOnBlur: false,
+				scrollToTopOnError: true,
+				errorMessagePosition: 'top',
+				validateHiddenInputs: true
+			});
+
+			var test = $('form').isValid(false, conf);
+			if (!test)
+			{
+				e.preventDefault();
+				return false;
+			}
+		}
+
+		var missingReadonlyMessages = getMissingReadonlyRequiredMessages(form);
+		if (missingReadonlyMessages.length)
+		{
+			e.preventDefault();
+			renderFormErrorAlert(form, missingReadonlyMessages);
+			form.scrollIntoView({behavior: 'smooth', block: 'start'});
+			return false;
+		}
+
+		var submitter = (e.originalEvent && e.originalEvent.submitter)
+			? e.originalEvent.submitter
+			: clickedSubmitter;
+		if (!submitter || (submitter.name !== 'values[apply]' && submitter.name !== 'values[save]'))
+		{
+			return true;
+		}
+
+		var restRequest = buildEntityRestRequest(form, submitter ? submitter.name : '');
+		if (!restRequest)
+		{
+			return true;
+		}
+
+		if (isSubmitting)
+		{
+			e.preventDefault();
+			return false;
+		}
+
+		e.preventDefault();
+		clearFormAlerts(form);
+		isSubmitting = true;
+		setSubmitButtonsDisabled(true);
+
+		var formData = new FormData(form);
+		if (submitter.name)
+		{
+			formData.set(submitter.name, submitter.value || '1');
+		}
+		appendRelationInfoToFormData(formData, form);
+		logRelationInfoDebug(formData);
+
+		var fetchOptions;
+		if (hasSelectedFileUpload(form))
+		{
+			// Let the browser set Content-Type: multipart/form-data with boundary.
+			// Slim's getParsedBody() + $_FILES will handle it on the server side.
+			fetchOptions = {
+				method: restRequest.method,
+				credentials: 'same-origin',
+				body: formData
+			};
+		}
+		else
+		{
+			fetchOptions = {
+				method: restRequest.method,
+				headers: {'Content-Type': 'application/json'},
+				credentials: 'same-origin',
+				body: JSON.stringify(formDataToObject(formData))
+			};
+		}
+
+		fetch(restRequest.url, fetchOptions)
+			.then(function (response)
+			{
+				return response.json()
+					.catch(function ()
+					{
+						return null;
+					})
+					.then(function (data)
+					{
+						if (!response.ok)
+						{
+							var error = new Error('Failed to save via REST');
+							error.responseData = data;
+							throw error;
+						}
+
+						return data;
+					});
+			})
+			.then(function (data)
+			{
+				var errors = getErrorMessages(data);
+				if (errors.length)
+				{
+					isSubmitting = false;
+					setSubmitButtonsDisabled(false);
+					renderFormErrorAlert(form, errors);
+					form.scrollIntoView({behavior: 'smooth', block: 'start'});
+					return;
+				}
+
+				renderFormSuccessAlert(form, getSuccessMessage(data, restRequest.isCreate));
+				form.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+				if (restRequest.isCreate && data.id)
+				{
+					var redirectUrl = 'index.php?menuaction=property.uientity.edit'
+						+ '&type=' + encodeURIComponent(restRequest.type)
+						+ '&entity_id=' + encodeURIComponent(restRequest.entityId)
+						+ '&cat_id=' + encodeURIComponent(restRequest.catId)
+						+ '&id=' + encodeURIComponent(data.id);
+					setTimeout(function ()
+					{
+						window.location.href = redirectUrl;
+					}, 1200);
+				}
+				else if (submitter && submitter.name === 'values[save]')
+				{
+					var indexUrl = 'index.php?menuaction=property.uientity.index'
+						+ '&entity_id=' + encodeURIComponent(restRequest.entityId)
+						+ '&cat_id=' + encodeURIComponent(restRequest.catId)
+						+ '&type=' + encodeURIComponent(restRequest.type);
+					setTimeout(function ()
+					{
+						window.location.href = indexUrl;
+					}, 1200);
+				}
+				else
+				{
+					isSubmitting = false;
+					setSubmitButtonsDisabled(false);
+					try
+					{
+						refresh_files();
+					}
+					catch (e)
+					{
+						// refresh_files not available on all entity forms
+					}
+				}
+			})
+		.catch(function (error)
+		{
+			isSubmitting = false;
+			setSubmitButtonsDisabled(false);
+			var errors = getErrorMessages(error && error.responseData);
+			if (!errors.length)
+			{
+				errors = ['Feil ved lagring. Vennligst prøv igjen.'];
+			}
+			renderFormErrorAlert(form, errors);
+			form.scrollIntoView({behavior: 'smooth', block: 'start'});
+		});
+
+		return false;
+	});
+});

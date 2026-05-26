@@ -474,6 +474,27 @@
 				</div>
 				<div class="pure-control-group">
 					<label>
+						<xsl:value-of select="php:function('lang', 'cancellation_deadline')"/>
+					</label>
+					<input type="number" min="0" id="cancellation_deadline_value" name="cancellation_deadline_value" value="{resource/cancellation_deadline_value}"/>
+					<select id="cancellation_deadline_unit" name="cancellation_deadline_unit">
+						<xsl:variable name="unit" select="resource/cancellation_deadline_unit"/>
+						<option value="hours">
+							<xsl:if test="$unit = 'hours' or $unit = ''"><xsl:attribute name="selected">selected</xsl:attribute></xsl:if>
+							<xsl:value-of select="php:function('lang', 'hours')"/>
+						</option>
+						<option value="days">
+							<xsl:if test="$unit = 'days'"><xsl:attribute name="selected">selected</xsl:attribute></xsl:if>
+							<xsl:value-of select="php:function('lang', 'days')"/>
+						</option>
+						<option value="weeks">
+							<xsl:if test="$unit = 'weeks'"><xsl:attribute name="selected">selected</xsl:attribute></xsl:if>
+							<xsl:value-of select="php:function('lang', 'weeks')"/>
+						</option>
+					</select>
+				</div>
+				<div class="pure-control-group">
+					<label>
 						<xsl:value-of select="php:function('lang', 'limit number')"/>
 					</label>
 					<input type="number" min="-1" id="booking_limit_number" name="booking_limit_number" value="{resource/booking_limit_number}">

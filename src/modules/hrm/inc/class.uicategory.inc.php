@@ -200,7 +200,7 @@ class hrm_uicategory
 
 			if (!$receipt['error'])
 			{
-				$receipt = $this->bo->save($values, $action, $type, $type_id);
+				$receipt = $this->bo->save($values, $type_id, $action, $type);
 			}
 		}
 

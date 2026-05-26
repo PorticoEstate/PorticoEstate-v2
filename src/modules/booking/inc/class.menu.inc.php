@@ -4,6 +4,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\controllers\Locations;
 use App\modules\phpgwapi\services\Translation;
+use App\modules\booking\viewcontrollers\MenuController;
 
 class booking_menu
 {
@@ -436,6 +437,13 @@ class booking_menu
 							'type' => 'e_lock_system'
 						)),
 					),
+					'resource_activity_entityform' => array(
+						'text' => lang('resource_activity_entityform'),
+						'url' => phpgw::link('/index.php', array(
+							'menuaction' => 'booking.uiresource_activity_entityform.index'
+						)),
+					),
+
 					'office' => array(
 						'text' => lang('office'),
 						'url' => phpgw::link('/index.php', array(
@@ -560,6 +568,6 @@ class booking_menu
 
 		Settings::getInstance()->update('flags', ['currentapp' => $incoming_app]);
 
-		return $menus;
+		return MenuController::applyOverrides($menus);
 	}
 }

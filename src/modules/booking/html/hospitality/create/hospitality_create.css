@@ -1,0 +1,52 @@
+.hospitality-create {
+	max-width: 640px;
+}
+
+.hospitality-create .is-hidden {
+	display: none;
+}
+
+.hospitality-create h2 {
+	margin-bottom: var(--ds-spacing-5, 1.25rem);
+}
+
+.hospitality-create .form-group {
+	display: flex;
+	align-items: baseline;
+	gap: var(--ds-spacing-4, 1rem);
+	margin-bottom: var(--ds-spacing-4, 1rem);
+}
+
+.hospitality-create .form-group .app-label {
+	flex: 0 0 140px;
+	text-align: right;
+	font-weight: var(--ds-font-weight-medium, 500);
+}
+
+.hospitality-create .form-group .ds-input,
+.hospitality-create .form-group .ds-select,
+.hospitality-create .form-group .building-select {
+	flex: 1;
+	min-width: 0;
+}
+
+.hospitality-create__btn-row {
+	display: flex;
+	gap: var(--ds-spacing-3, 0.75rem);
+	align-items: center;
+	margin-top: var(--ds-spacing-6, 1.5rem);
+	padding-top: var(--ds-spacing-4, 1rem);
+	border-top: 1px solid var(--ds-color-border-default, #e0e0e0);
+}
+
+@media (max-width: 640px) {
+	.hospitality-create .form-group {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.hospitality-create .form-group .app-label {
+		flex: none;
+		text-align: left;
+	}
+}

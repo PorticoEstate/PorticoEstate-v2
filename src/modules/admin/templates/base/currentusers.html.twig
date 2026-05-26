@@ -1,0 +1,31 @@
+{# Current users template #}
+
+{% block list %}
+	<table class="pure-table pure-table-bordered">
+		<tr>
+			{{ left_next_matchs|raw }}
+			<td>&nbsp;</td>
+			<td>&nbsp;</td>
+			{{ right_next_matchs|raw }}
+		</tr>
+
+		<tr>
+			<th>{{ sort_loginid|raw }}</th>
+			<th>{{ sort_ip|raw }}</th>
+			<th>{{ sort_login_time|raw }}</th>
+			<th>{{ sort_action|raw }}</th>
+			<th>{{ sort_idle|raw }}</th>
+			<th>{{ lang_kill }}</th>
+		</tr>
+		{% for row in rows %}
+			<tr class="{{ row.tr_class }}">
+				<td>{{ row.lid }}</td>
+				<td>{{ row.ip }}</td>
+				<td>{{ row.logintime }}</td>
+				<td>{{ row.action }}</td>
+				<td>{{ row.idle }}</td>
+				<td>{{ row.kill|raw }}</td>
+			</tr>
+		{% endfor %}
+	</table>
+{% endblock %}

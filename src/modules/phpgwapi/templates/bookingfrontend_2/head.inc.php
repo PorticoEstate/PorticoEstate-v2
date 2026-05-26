@@ -73,7 +73,9 @@ $stylesheets[]	 = "/phpgwapi/templates/bookingfrontend/css/jquery.autocompleter.
 $stylesheets[]	 = "/phpgwapi/templates/bookingfrontend/css/normalize.css";
 $stylesheets[]	 = "/phpgwapi/templates/bookingfrontend/css/rubik-font.css";
 $stylesheets[]	 = "/phpgwapi/js/select2/css/select2.min.css";
-$stylesheets[]	 = "/phpgwapi/js/jquery/css/redmond/jquery-ui.min.css";
+// jQuery UI CSS served from npm via /assets/npm/ route
+$base_url = isset($serverSettings['webserver_url']) ? $serverSettings['webserver_url'] : '';
+$npm_stylesheets[] = $base_url . '/assets/npm/jquery-ui/dist/themes/redmond/jquery-ui.min.css';
 $stylesheets[]	 = "/phpgwapi/js/pecalendar/pecalendar.css";
 
 foreach ($stylesheets as $stylesheet)
@@ -81,6 +83,14 @@ foreach ($stylesheets as $stylesheet)
 	if (file_exists(PHPGW_SERVER_ROOT . $stylesheet))
 	{
 		$template->set_var('stylesheet_uri', $webserver_url . $stylesheet . $cache_refresh_token);
+		$template->parse('stylesheets', 'stylesheet', true);
+	}
+}
+if (!empty($npm_stylesheets))
+{
+	foreach ($npm_stylesheets as $npm_css)
+	{
+		$template->set_var('stylesheet_uri', $npm_css . $cache_refresh_token);
 		$template->parse('stylesheets', 'stylesheet', true);
 	}
 }

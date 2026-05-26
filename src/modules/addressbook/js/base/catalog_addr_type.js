@@ -80,7 +80,7 @@ function addAddrType()
     var nTable = 0;
     var data = {};
 
-    if ($.trim($('#addr_description').val()) == '')
+    if (($('#addr_description').val() || '').trim() == '')
     {
         alert(lang_name);
         return;

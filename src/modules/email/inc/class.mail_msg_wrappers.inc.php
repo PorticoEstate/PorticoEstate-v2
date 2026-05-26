@@ -11,7 +11,9 @@
 	* @internal Based on AngleMail http://www.anglemail.org/
 	*/
 
-	
+	// Guard-defined IMAP compatibility constant (removed in PHP 8.4)
+	defined('PE_IMAP_SA_ALL') || define('PE_IMAP_SA_ALL', 31);
+
 	/**
 	* Wrapper functions to be called as "public" functions
 	*
@@ -1062,7 +1064,7 @@
 			//}
 			// earlier we called $this->ensure_stream_and_folder, so stream *should* exist
 			if (($this->debug_session_caching > 0) || ($this->debug_wrapper_dcom_calls > 0)) { $this->dbug->out('mail_msg(_wrappers): get_folder_status_info: ('.__LINE__.') calling $GLOBALS[phpgw_dcom_'.$fldball['acctnum'].']->dcom->status('.$mailsvr_stream.','.$server_str.$clean_folder_name.',SA_ALL)<br />'); } 
-			$mailbox_status = $GLOBALS['phpgw_dcom_'.$fldball['acctnum']]->dcom->status($mailsvr_stream,$server_str.$clean_folder_name,SA_ALL);
+			$mailbox_status = $GLOBALS['phpgw_dcom_'.$fldball['acctnum']]->dcom->status($mailsvr_stream,$server_str.$clean_folder_name,PE_IMAP_SA_ALL);
 			if (($this->debug_session_caching > 2) || ($this->debug_wrapper_dcom_calls > 2)) { $this->dbug->out('mail_msg(_wrappers): get_folder_status_info: ('.__LINE__.') ->dcom->status returns: $mailbox_status DUMP', $mailbox_status); } 
 			
 			// cache validity data - will be used to cache msg_list_array data, which is good until UID_NEXT changes
@@ -1148,7 +1150,7 @@
 			$server_str = $this->get_arg_value('mailsvr_callstr');
 			$mailsvr_stream = $this->get_arg_value('mailsvr_stream');
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(wrappers): phpgw_status ('.__LINE__.'): calling $GLOBALS[phpgw_dcom_$fake_fldball[acctnum]('.$fake_fldball['acctnum'].')]->dcom->status($mailsvr_stream['.$mailsvr_stream.'],"$server_str"."$feed_folder_long"['.htmlspecialchars("$server_str"."$feed_folder_long").'],SA_ALL)<br />'); } 
-			$retval = $GLOBALS['phpgw_dcom_'.$fake_fldball['acctnum']]->dcom->status($mailsvr_stream,"$server_str"."$feed_folder_long",SA_ALL);
+			$retval = $GLOBALS['phpgw_dcom_'.$fake_fldball['acctnum']]->dcom->status($mailsvr_stream,"$server_str"."$feed_folder_long",PE_IMAP_SA_ALL);
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(wrappers): phpgw_status ('.__LINE__.'): LEAVING, returning $retval ['.serialize($retval).'] <br />'); }
 			return $retval;
 		}

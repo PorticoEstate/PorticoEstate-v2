@@ -12,12 +12,162 @@ use App\modules\phpgwapi\helpers\LoginHelper;
 use App\modules\phpgwapi\helpers\RedirectHelper;
 use Slim\Routing\RouteCollectorProxy;
 
+/** @var \Slim\App $app */
+/** @var \DI\Container $container */
+
 // Handle requests for favicon.ico
 $app->get('/favicon.ico', function (Request $request, Response $response)
 {
 	return $response->withStatus(204);
 });
 
+// Serve Designsystemet CSS bundle
+$app->get('/assets/designsystemet/index.css', function (Request $request, Response $response)
+{
+	$cssPath = dirname(dirname(PHPGW_SERVER_ROOT)) . '/node_modules/@digdir/designsystemet-css/dist/src/index.css';
+	if (!is_readable($cssPath))
+	{
+		return $response->withStatus(404);
+	}
+
+	$response->getBody()->write(file_get_contents($cssPath));
+	return $response
+		->withHeader('Content-Type', 'text/css')
+		->withHeader('Cache-Control', 'public, max-age=3600');
+});
+
+// Serve PorticoEstate design tokens CSS
+$app->get('/assets/design-tokens/{file:.*\\.css}', function (Request $request, Response $response, array $args)
+{
+	$file = $args['file'] ?? '';
+	$filePath = dirname(dirname(PHPGW_SERVER_ROOT)) . '/node_modules/@porticoestate/design-tokens/dist/' . $file;
+	$realPath = realpath($filePath);
+	$distRoot = realpath(dirname(dirname(PHPGW_SERVER_ROOT)) . '/node_modules/@porticoestate/design-tokens/dist');
+
+	if (!$realPath || !$distRoot || !str_starts_with($realPath, $distRoot) || !is_readable($realPath))
+	{
+		return $response->withStatus(404);
+	}
+
+	$response->getBody()->write(file_get_contents($realPath));
+	return $response
+		->withHeader('Content-Type', 'text/css')
+		->withHeader('Cache-Control', 'public, max-age=3600');
+});
+
+// Serve whitelisted node_modules files (JS, CSS, images)
+$app->get('/assets/npm/{path:.*}', function (Request $request, Response $response, array $args)
+{
+	$params = $request->getQueryParams();
+	$nodeModulesDir = dirname(dirname(PHPGW_SERVER_ROOT)) . '/node_modules';
+
+	if (!empty($params['debug']))
+	{
+		$debug = [];
+		$debug['node_modules_path'] = $nodeModulesDir;
+		$debug['node_modules_exists'] = is_dir($nodeModulesDir);
+		$debug['node_modules_readable'] = is_readable($nodeModulesDir);
+
+		if (is_dir($nodeModulesDir))
+		{
+			$items = @scandir($nodeModulesDir);
+			if ($items !== false)
+			{
+				$items = array_filter($items, fn($i) => $i !== '.' && $i !== '..');
+				$debug['node_modules_count'] = count($items);
+				$debug['node_modules_contents'] = array_values($items);
+			}
+			else
+			{
+				$debug['node_modules_contents'] = 'scandir failed';
+			}
+		}
+
+		$debug['node'] = trim(@shell_exec('which node 2>&1') ?: 'not found');
+		$debug['node_version'] = trim(@shell_exec('node --version 2>&1') ?: 'n/a');
+		$debug['npm'] = trim(@shell_exec('which npm 2>&1') ?: 'not found');
+		$debug['npm_version'] = trim(@shell_exec('npm --version 2>&1') ?: 'n/a');
+
+		$path = $args['path'] ?? '';
+		if ($path !== '')
+		{
+			$filePath = $nodeModulesDir . '/' . $path;
+			$debug['requested_path'] = $path;
+			$debug['resolved_file'] = $filePath;
+			$debug['file_exists'] = file_exists($filePath);
+			$debug['file_readable'] = is_readable($filePath);
+			if (!file_exists($filePath))
+			{
+				$parts = explode('/', $path);
+				$packageDir = $nodeModulesDir . '/' . (str_starts_with($path, '@') && count($parts) >= 2 ? $parts[0] . '/' . $parts[1] : $parts[0]);
+				$debug['package_dir'] = $packageDir;
+				$debug['package_exists'] = is_dir($packageDir);
+			}
+		}
+
+		$response->getBody()->write(json_encode($debug, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+		return $response->withHeader('Content-Type', 'application/json');
+	}
+
+	$allowedPrefixes = [
+		'@digdir/designsystemet-web/',
+		'@dnd-kit/',
+		'@floating-ui/',
+		'@preact/',
+		'@u-elements/',
+		'invokers-polyfill/',
+		'jquery/',
+		'jquery-migrate/',
+		'jquery-ui/',
+		'jstree/',
+		'blueimp-file-upload/',
+		'blueimp-tmpl/',
+		'jqtree/',
+		'responsive-tabs/',
+	];
+
+	$path = $args['path'] ?? '';
+	$allowed = false;
+	foreach ($allowedPrefixes as $prefix)
+	{
+		if (str_starts_with($path, $prefix))
+		{
+			$allowed = true;
+			break;
+		}
+	}
+
+	if (!$allowed)
+	{
+		return $response->withStatus(403);
+	}
+
+	$filePath = $nodeModulesDir . '/' . $path;
+	$realPath = realpath($filePath);
+	$nodeModulesRoot = realpath($nodeModulesDir);
+
+	if (!$realPath || !str_starts_with($realPath, $nodeModulesRoot) || !is_readable($realPath))
+	{
+		return $response->withStatus(404);
+	}
+
+	$contentTypes = [
+		'js'  => 'application/javascript',
+		'mjs' => 'application/javascript',
+		'css' => 'text/css',
+		'png' => 'image/png',
+		'gif' => 'image/gif',
+		'svg' => 'image/svg+xml',
+		'map' => 'application/json',
+	];
+	$ext = strtolower(pathinfo($realPath, PATHINFO_EXTENSION));
+	$contentType = $contentTypes[$ext] ?? 'application/octet-stream';
+
+	$response->getBody()->write(file_get_contents($realPath));
+	return $response
+		->withHeader('Content-Type', $contentType)
+		->withHeader('Cache-Control', 'public, max-age=3600');
+});
 $app->get('/', StartPoint::class . ':run')->add(new SessionsMiddleware($app->getContainer()));
 $app->post('/', StartPoint::class . ':run')->add(new SessionsMiddleware($app->getContainer()));
 $app->get('/index.php', StartPoint::class . ':run')->add(new SessionsMiddleware($app->getContainer()));
@@ -77,6 +227,9 @@ $app->group('/api', function (RouteCollectorProxy $group)
 {
 	$group->get('/server-settings', ServerSettingsController::class . ':index');
 });
+
+$app->get('/api/languages', LanguageController::class . ':getLanguages')
+	->add(new SessionsMiddleware($app->getContainer()));
 
 $app->get('/api/set-language/{lng}', LanguageController::class . ':setLanguage')
 	->add(new SessionsMiddleware($app->getContainer()));

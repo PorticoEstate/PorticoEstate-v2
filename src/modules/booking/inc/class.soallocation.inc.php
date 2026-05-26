@@ -125,7 +125,7 @@
 				return; /* Basic validation failed */
 			}
 
-			if (false == (boolean)intval($entity['active']))
+			if (false == (bool)intval($entity['active']))
 			{
 				return; //Don't care about if allocation is within necessary boundaries if dealing with inactivated entity
 			}

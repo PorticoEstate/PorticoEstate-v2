@@ -84,7 +84,7 @@ abstract class phpgwapi_uicommon_jquery
 			self::add_javascript('phpgwapi', $yui, 'common.js');
 		}
 
-		$this->url_prefix = str_replace('_', '.', get_class($this));
+		$this->url_prefix = preg_replace('/_/', '.', get_class($this), 1);
 
 		$this->dateFormat = $this->userSettings['preferences']['common']['dateformat'];
 
@@ -101,7 +101,7 @@ abstract class phpgwapi_uicommon_jquery
 		self::add_javascript('phpgwapi', 'DataTables2', 'datatables.min.js', false, array('combine' => true));
 		self::add_javascript('phpgwapi', 'DataTables2', 'plugins/dataTables.inputPaging.js', false, array('combine' => true));
 		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.min.js', false, array('combine' => true));
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js', false, array('combine' => true));
+		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.min.js', false, array('combine' => true));
 		phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables2/datatables.min.css');
 		phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables2/plugins/dataTables.inputPaging.min.css');
 
@@ -343,7 +343,7 @@ abstract class phpgwapi_uicommon_jquery
 	{
 		if ($end_of_page === "text/javascript")
 		{
-			$bt = debug_backtrace();
+			$bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
 			$log = new Log();
 			$log->error(array(
 				'text'	=> 'js::%1 Called from file: %2 line: %3',
@@ -504,6 +504,26 @@ abstract class phpgwapi_uicommon_jquery
 
 	public static function render_template_xsl($files, $data, $xsl_rootdir = '', $base = 'data')
 	{
+		$template_set = Settings::getInstance()->get('server')['template_set'] ?? '';
+		$template_name = is_array($files) ? reset($files) : $files;
+		if ($template_set === 'digdir' && $template_name)
+		{
+			$twig_name = substr($template_name, -5) === '.twig' ? $template_name : $template_name . '.twig';
+			$twig_search_paths = self::get_tmpl_search_path();
+			if ($xsl_rootdir && !in_array($xsl_rootdir, $twig_search_paths))
+			{
+				$twig_search_paths[] = $xsl_rootdir;
+			}
+			foreach (array_reverse($twig_search_paths) as $path)
+			{
+				$twig_path = $path . '/' . $twig_name;
+				if (file_exists($twig_path))
+				{
+					self::render_template_twig($template_name, $data, $path, $base);
+					return;
+				}
+			}
+		}
 
 		$flags = Settings::getInstance()->get('flags');
 		$flags['xslt_app'] = true;
@@ -552,6 +572,60 @@ abstract class phpgwapi_uicommon_jquery
 		self::add_template_file($files);
 
 		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array($base => $data));
+	}
+
+	public static function render_template_twig($template, $data, $twig_rootdir = '', $base = 'data')
+	{
+		Settings::getInstance()->update('flags', ['xslt_app' => false, 'twig_app' => true]);
+		$phpgwapi_common = new \phpgwapi_common();
+
+		if ($twig_rootdir)
+		{
+			\App\modules\phpgwapi\services\Twig::getInstance()->addPath($twig_rootdir);
+		}
+
+		if (self::$flash_msgs)
+		{
+			$data['msgbox_data'] = $phpgwapi_common->msgbox(self::$flash_msgs);
+		}
+
+		self::reset_flash_msgs();
+
+		self::add_jquery_translation($data);
+		$data['webserver_url'] = Settings::getInstance()->get('server')['webserver_url'] . PHPGW_MODULES_PATH;
+		if (preg_match("/(Trident\/(\d{2,}|7|8|9)(.*)rv:(\d{2,}))|(MSIE\ (\d{2,}|8|9)(.*)Tablet\ PC)|(Trident\/(\d{2,}|7|8|9))/", $_SERVER["HTTP_USER_AGENT"]))
+		{
+			$data['browser_support'] = 'legacy';
+		}
+		else
+		{
+			$data['browser_support'] = 'modern';
+		}
+
+
+		if (\Sanitizer::get_var('phpgw_return_as', 'string', 'GET') == 'json')
+		{
+			$phpgwapi_common->phpgw_exit();
+		}
+
+		$template_name = $template;
+		if (is_array($template_name))
+		{
+			$template_name = reset($template_name);
+		}
+
+		if ($template_name && substr($template_name, -5) !== '.twig')
+		{
+			$template_name .= '.twig';
+		}
+
+		$vars = array_merge($data, array(
+			'phpgw' => array($base => $data),
+			$base => $data
+		));
+
+		$output = \App\modules\phpgwapi\services\Twig::getInstance()->render($template_name, $vars);
+		\App\modules\phpgwapi\services\Twig::getInstance()->setRenderedOutput($output);
 	}
 
 	// Add link key to a result array

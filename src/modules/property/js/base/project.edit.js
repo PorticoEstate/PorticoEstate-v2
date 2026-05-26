@@ -204,7 +204,7 @@ $(document).ready(function ()
 		language: "no",
 		createTag: function (params)
 		{
-			var term = $.trim(params.term);
+			var term = (params.term || '').trim();
 
 			if (term === '')
 			{
@@ -670,8 +670,8 @@ window.on_location_updated = function (location_code)
 		return;
 	}
 
-	var oArgs = {menuaction: 'property.uilocation.get_delivery_address', loc1: location_code};
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var oArgs = {loc1: location_code};
+	var requestUrl = phpGWLink('property/location/delivery-address', oArgs);
 
 	$.ajax({
 		type: 'POST',
@@ -693,8 +693,8 @@ window.get_location_exception = function (location_code)
     //delete div where role=alert, not the $("#message")
     $("div[role=alert]").remove();
 
-	var oArgs = {menuaction: 'property.uilocation.get_location_exception', location_code: location_code};
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var oArgs = {location_code: location_code};
+	var requestUrl = phpGWLink('property/location/location-exception', oArgs);
 
 	$.ajax({
 		type: 'POST',

@@ -4,12 +4,14 @@ import {ChevronLeftIcon, ChevronRightIcon, PlusIcon, TableIcon, CalendarIcon} fr
 import styles from './calendar-inner-header.module.scss';
 import {IBuilding} from "@/service/types/Building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {useToast} from "@/components/toast/toast-context";
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
 import FullCalendar from "@fullcalendar/react";
 import ButtonGroup from "@/components/button-group/button-group";
 import {
 	useCalenderViewMode, useCurrentOrganization,
 	useEnabledResources, useIsOrganization,
+	useResourceHighlight,
 	useResourcesHidden,
 } from "@/components/building-calendar/calendar-context";
 import {DateTime} from "luxon";
@@ -35,6 +37,8 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 	const {view, calendarRef, setView, currentDate, setCurrentDate} = props
 	const {enabledResources} = useEnabledResources();
 	const {resourcesHidden, setResourcesHidden} = useResourcesHidden();
+	const {resourceHighlight, triggerResourceHighlight} = useResourceHighlight();
+	const {addToast} = useToast();
 	const calendarViewMode = useCalenderViewMode();
 	const isMobile = useIsMobile();
 	const isOrg = useIsOrganization();
@@ -108,7 +112,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 		<div className={styles.innerHeader}>
 			<Button data-size={'sm'} icon={true} variant='tertiary'
 					style={{}}
-					className={`${styles.expandCollapseButton} ${resourcesHidden ? styles.closed : styles.open}`}
+					className={`${styles.expandCollapseButton} ${resourcesHidden ? styles.closed : styles.open} ${resourceHighlight ? (resourcesHidden ? styles.glowAll : styles.glowNoBottom) : ''}`}
 					onClick={() => setResourcesHidden(!resourcesHidden)}>
 
 
@@ -119,7 +123,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 					fontSize='2.25rem'/>
 			</Button>
 			<Button variant={'secondary'} data-size={'sm'}
-					className={styles.mobileResourcesButton}
+					className={`${styles.mobileResourcesButton} ${resourceHighlight ? styles.glowAll : ''}`}
 				// className={'captialize'}
 					onClick={() => setResourcesHidden(!resourcesHidden)}>
 					<ResourceIcon fontSize="1.25rem" />{t('booking.select')} {t('bookingfrontend.resources')}
@@ -199,10 +203,22 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 				<Button
 					variant={(partials?.data?.list?.length || 0) === 0 ? 'primary' : 'secondary'}
 					data-color={'accent'}
-					onClick={props.createNew}
+					onClick={() => {
+						if (enabledResources.size === 0) {
+							addToast({
+								type: 'info',
+								text: t('bookingfrontend.select_resource_before_application'),
+								autoHide: true,
+								messageId: 'select_resource_required'
+							});
+							triggerResourceHighlight();
+							return;
+						}
+						props.createNew?.();
+					}}
 					data-size={'sm'}
 					className={styles.orderButton}
-					disabled={!props.building || props.building.deactivate_application || enabledResources.size === 0}
+					disabled={!props.building || props.building.deactivate_application}
 				>
 					{/*<Link href={applicationURL}>*/}
 					{t('bookingfrontend.new application')}

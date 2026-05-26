@@ -2,54 +2,14 @@
 
 namespace App\modules\bookingfrontend\models\helper;
 
-use App\traits\SerializableTrait;
+use App\modules\booking\models\Date as BookingDate;
 
 /**
- * @OA\Schema(
- *     schema="Date",
- *     type="object",
- *     title="Date",
- *     description="Date model for application"
- * )
+ * Backward-compatible alias — canonical model lives in booking module.
+ *
+ * @OA\Schema(schema="Date")
  * @Exclude
  */
-class Date
+class Date extends BookingDate
 {
-    use SerializableTrait;
-
-    /**
-     * @OA\Property(type="string", format="date-time")
-     * @Expose
-     * @Timestamp
-     */
-    public $from_;
-
-    /**
-     * @OA\Property(type="string", format="date-time")
-     * @Expose
-     * @Timestamp
-     */
-    public $to_;
-
-    /**
-     * @OA\Property(type="integer")
-     * @Expose
-     */
-    public $id;
-
-    public function __construct(array $data = [])
-    {
-        if (!empty($data)) {
-            $this->populate($data);
-        }
-    }
-
-    public function populate(array $data)
-    {
-        foreach ($data as $key => $value) {
-            if (property_exists($this, $key)) {
-                $this->$key = $value;
-            }
-        }
-    }
 }

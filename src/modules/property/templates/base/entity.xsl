@@ -116,6 +116,7 @@
 
 	<script type="text/javascript">
 		var lang = <xsl:value-of select="php:function('js_lang', 'Id', 'Name', 'Address', 'Register', 'Location')"/>;
+		var get_items_per_qr_url = '<xsl:value-of select="get_items_per_qr_url"/>';
 	</script>
 
 </xsl:template>
@@ -413,7 +414,11 @@
 	<script type="text/javascript">
 		var location_id = '<xsl:value-of select="value_location_id"/>';
 		var item_id = '<xsl:value-of select="value_id"/>';
-		var get_files_java_url = <xsl:value-of select="get_files_java_url"/>;
+		var get_files_java_url = '<xsl:value-of select="get_files_java_url"/>';
+		var get_checklists_url = '<xsl:value-of select="get_checklists_url"/>';
+		var get_cases_url = '<xsl:value-of select="get_cases_url"/>';
+		var get_controls_url = '<xsl:value-of select="get_controls_url"/>';
+		var get_cases_for_checklist_url = '<xsl:value-of select="get_cases_for_checklist_url"/>';
 		function set_tab(active_tab)
 		{
 		document.form.active_tab.value = active_tab;
@@ -516,7 +521,9 @@
 								<xsl:value-of select="category_name"/>
 							</xsl:when>
 							<xsl:otherwise>
-								<xsl:call-template name="cat_select"/>
+								<xsl:call-template name="cat_select">
+									<xsl:with-param name="id" select="'cat_id'"/>
+								</xsl:call-template>
 							</xsl:otherwise>
 						</xsl:choose>
 					</td>

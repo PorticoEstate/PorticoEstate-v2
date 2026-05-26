@@ -1,0 +1,12 @@
+{% if organization_name %}
+<b>Kommentar fra {{ organization_name }}</b><br />{{ message|safe_html }}<br /><br/>
+{% else %}
+<b>Kommentar fra {{ contact_name }}</b><br />{{ message|safe_html }}<br /><br/>
+{% endif %}
+
+<b>Bygg: </b>{{ building_name }}<br />
+<b>Aktivitet: </b>{{ activity_name }}<br /><br />
+<b>Kontaktperson:</b> {{ contact_name }}<br />
+<b>Epost:</b> {{ contact_email }}<br />
+<b>Telefon:</b> {{ contact_phone }}<br /><br />
+<a href="{{ link }}">Lenke til søknad</a><br /><br />

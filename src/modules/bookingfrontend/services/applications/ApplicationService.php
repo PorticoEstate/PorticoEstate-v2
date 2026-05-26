@@ -4,11 +4,12 @@ namespace App\modules\bookingfrontend\services\applications;
 
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\Application;
-use App\modules\bookingfrontend\models\Document;
+use App\modules\booking\models\Document;
 use App\modules\bookingfrontend\repositories\ApplicationRepository;
 use App\modules\bookingfrontend\repositories\ArticleRepository;
+use App\modules\booking\repositories\HospitalityOrderRepository;
 use App\Database\Db;
-use App\modules\bookingfrontend\services\DocumentService;
+use App\modules\booking\services\DocumentService;
 use App\modules\bookingfrontend\services\EventService;
 use App\modules\booking\services\EmailService;
 use App\modules\bookingfrontend\services\TestEmailService;
@@ -86,7 +87,7 @@ class ApplicationService
     }
 
     /**
-     * Calculate total sum of applications
+     * Calculate total sum of applications (article orders + hospitality orders where included in checkout).
      *
      * @param array $applications Array of applications
      * @return float Total sum
@@ -101,6 +102,14 @@ class ApplicationService
                 $total_sum += $order['sum'];
             }
         }
+
+        // Add hospitality order totals where include_in_checkout_payment is enabled
+        $applicationIds = array_column($applications, 'id');
+        if (!empty($applicationIds)) {
+            $hospitalityOrderRepo = new HospitalityOrderRepository();
+            $total_sum += $hospitalityOrderRepo->getCheckoutTotal($applicationIds);
+        }
+
         return round($total_sum, 2);
     }
 
@@ -1262,339 +1271,9 @@ class ApplicationService
         ];
     }
 
-    /**
-     * Create a simple booking application
-     *
-     * @param int $resourceId Resource ID
-     * @param int $buildingId Building ID
-     * @param string $from Start datetime
-     * @param string $to End datetime
-     * @param string $sessionId Session ID
-     * @return array Application data with ID and status
-     * @throws \Exception If booking fails
-     */
-
-    public function createSimpleBooking(int $resourceId, int $buildingId, string $from, string $to, string $sessionId): array
-    {
-
-        $startedTransaction = false;
-        try
-        {
-            // ATOMIC LOCK ACQUISITION - Use Redis SETNX for true atomicity
-            $lockKey = "booking_lock_{$resourceId}_{$from}_{$to}";
-            $lockTtl = 30; // 30 seconds should be enough for the booking process
-
-            // Try to acquire the atomic lock
-            $lockAcquired = \App\modules\phpgwapi\services\Cache::acquire_atomic_lock('booking', $lockKey, $sessionId, $lockTtl);
-
-            if (!$lockAcquired) {
-                $errorMessage = lang('resource_already_being_booked');
-                \App\modules\phpgwapi\services\Cache::message_set($errorMessage, 'error');
-                throw new \Exception($errorMessage);
-            }
-
-            try {
-                // Start database transaction for atomic booking operation
-                // This ensures that the overlap check and application creation happen atomically
-                if (!$this->db->inTransaction())
-                {
-                    $this->db->beginTransaction();
-                    $startedTransaction = true;
-                }
-
-                // IMPORTANT: All overlap checking must happen WITHIN this transaction
-                // to prevent race conditions between concurrent booking attempts
-
-                // Verify we're in a transaction before using FOR UPDATE
-                if (!$this->db->inTransaction()) {
-                    throw new \Exception("Database transaction required for atomic booking operation");
-                }
-
-                // CRITICAL RACE CONDITION FIX - ATOMIC OVERLAP CHECK WITH ROW LOCKING
-                // Use SELECT FOR UPDATE to lock overlapping rows within the transaction
-                // This ensures that only one transaction can check and create an application at a time
-                // for any given time slot, completely preventing race conditions
-                $overlapCheckSql = "SELECT a.id, a.status, ad.from_, ad.to_
-                FROM bb_application a
-                JOIN bb_application_resource ar ON a.id = ar.application_id
-                JOIN bb_application_date ad ON a.id = ad.application_id
-                WHERE ar.resource_id = :resource_id
-                AND a.status NOT IN ('REJECTED')
-                AND a.active = 1
-                AND ((ad.from_ < :to_date AND ad.to_ > :from_date)
-                    AND NOT (ad.from_ = :to_date OR ad.to_ = :from_date))
-                FOR UPDATE
-                LIMIT 1";
-
-                // Execute the atomic overlap check with row locking
-                // This will block any concurrent transaction trying to book the same slot
-                $stmt = $this->db->prepare($overlapCheckSql);
-                $stmt->execute([
-                    ':resource_id' => $resourceId,
-                    ':from_date' => $from,
-                    ':to_date' => $to
-                ]);
-
-                // Check if any overlapping application was found and locked
-                $overlappingApp = $stmt->fetch(\PDO::FETCH_ASSOC);
-                $hasOverlap = (bool)$overlappingApp;
-
-                // Log the atomic check for debugging
-                if ($hasOverlap) {
-                    error_log("ATOMIC OVERLAP DETECTED: Found conflicting application #{$overlappingApp['id']} (status: {$overlappingApp['status']}) for resource {$resourceId}, time {$from} to {$to}");
-                } else {
-                    error_log("ATOMIC CHECK PASSED: No conflicts for resource {$resourceId}, time {$from} to {$to} - proceeding with booking");
-                }
-
-                // If we found any overlapping applications, set a session message and reject the request
-                if ($hasOverlap) {
-                    $errorMessage = lang('resource_already_booked');
-
-                    // Set message using Cache::message_set() like ApplicationController does
-                    \App\modules\phpgwapi\services\Cache::message_set($errorMessage, 'error');
-
-                    // Enhanced logging with conflicting application details
-                    error_log("ATOMIC BOOKING CONFLICT: Resource {$resourceId}, requested {$from} to {$to}, conflicts with app #{$overlappingApp['id']} ({$overlappingApp['from_']} to {$overlappingApp['to_']})");
-
-                    // Release atomic lock since we're not proceeding with the booking
-                    \App\modules\phpgwapi\services\Cache::release_atomic_lock('booking', $lockKey, $sessionId);
-
-                    // Also clear database blocks since booking failed
-                    try {
-                        $sql = "UPDATE bb_block SET active = 0
-                            WHERE session_id = :session_id
-                            AND resource_id = :resource_id
-                            AND from_ = :from
-                            AND to_ = :to";
-
-                        $clearStmt = $this->db->prepare($sql);
-                        $clearStmt->execute([
-                            ':session_id' => $sessionId,
-                            ':resource_id' => $resourceId,
-                            ':from' => $from,
-                            ':to' => $to
-                        ]);
-
-                        $updatedCount = $clearStmt->rowCount();
-                        error_log("LOCKS AND BLOCKS RELEASED (database conflict): Resource ID {$resourceId}, time {$from} to {$to}, cleared {$updatedCount} blocks");
-                    } catch (\Exception $clearEx) {
-                        // Just log this error but don't interrupt the flow
-                        error_log("ERROR CLEARING BLOCKS: " . $clearEx->getMessage());
-                    }
-
-                    // Throw exception to stop the booking process
-                    throw new \Exception($errorMessage);
-                }
-            } catch (\Exception $e) {
-                // If any exception occurs during the DB check, release atomic lock before re-throwing
-                \App\modules\phpgwapi\services\Cache::release_atomic_lock('booking', $lockKey, $sessionId);
-
-                // Also clear database blocks since booking failed
-                try {
-                    $sql = "UPDATE bb_block SET active = 0
-                        WHERE session_id = :session_id
-                        AND resource_id = :resource_id
-                        AND from_ = :from
-                        AND to_ = :to";
-
-                    $clearStmt = $this->db->prepare($sql);
-                    $clearStmt->execute([
-                        ':session_id' => $sessionId,
-                        ':resource_id' => $resourceId,
-                        ':from' => $from,
-                        ':to' => $to
-                    ]);
-
-                    $updatedCount = $clearStmt->rowCount();
-                    error_log("LOCKS AND BLOCKS RELEASED (early error): Resource ID {$resourceId}, time {$from} to {$to}, cleared {$updatedCount} blocks, error: " . $e->getMessage());
-                } catch (\Exception $clearEx) {
-                    // Just log this error but don't interrupt the flow
-                    error_log("ERROR CLEARING BLOCKS: " . $clearEx->getMessage() . " while handling original error: " . $e->getMessage());
-                }
-
-                throw $e;
-            }
-
-            // Check if resource supports simple booking
-            $resource = $this->getSimpleBookingResource($resourceId);
-            if (!$resource)
-            {
-                throw new \Exception("Resource does not support simple booking");
-            }
-
-            // Check availability using detailed checking with BuildingScheduleService
-            $availability = $this->checkSimpleBookingAvailability($resourceId, $from, $to, $sessionId);
-            if (!$availability['available'])
-            {
-                // Use the detailed information we now have from checkSimpleBookingAvailability
-                $message = $availability['message'] ?? 'Timeslot is not available';
-                $reason = $availability['overlap_reason'] ?? null;
-                $type = $availability['overlap_type'] ?? null;
-
-                if ($reason && $type) {
-                    throw new \Exception("{$message}: {$reason} ({$type})");
-                } else {
-                    throw new \Exception($message);
-                }
-            }
-
-
-            $ssn = $this->userHelper->ssn;
-            // Only check limits if user is authenticated
-            if ($ssn && $resource['booking_limit_number'] > 0 && $resource['booking_limit_number_horizont'] > 0)
-            {
-                $currentBookings = $this->getUserBookingCount($resourceId, $ssn, $resource['booking_limit_number_horizont']);
-
-                if ($currentBookings >= $resource['booking_limit_number'])
-                {
-                    throw new \Exception(
-                        "Quantity limit ({$currentBookings}) exceeded for {$resource['name']}: " .
-                        "maximum {$resource['booking_limit_number']} times within a period of " .
-                        "{$resource['booking_limit_number_horizont']} days"
-                    );
-                }
-            }
-
-
-            // Create block
-            if (!$this->applicationRepository->createBlock($sessionId, $resourceId, $from, $to))
-            {
-                throw new \Exception("Failed to create block for timeslot");
-            }
-
-            // Get building name
-            $sql = "SELECT name FROM bb_building WHERE id = :id";
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':id', $buildingId, \PDO::PARAM_INT);
-            $stmt->execute();
-            $building = $stmt->fetch(\PDO::FETCH_ASSOC);
-
-            if (!$building)
-            {
-                throw new \Exception("Building not found");
-            }
-
-            // Create application data
-            $application = [
-                'status' => 'NEWPARTIAL1',
-                'session_id' => $sessionId,
-                'building_name' => $building['name'],
-                'building_id' => $buildingId,
-                'activity_id' => $resource['activity_id'],
-                'contact_name' => 'dummy',
-                'contact_email' => 'dummy@example.com',
-                'contact_phone' => 'dummy',
-                'responsible_street' => 'dummy',
-                'responsible_zip_code' => '0000',
-                'responsible_city' => 'dummy',
-                'customer_identifier_type' => 'organization_number',
-                'customer_organization_number' => '',
-                'name' => $resource['name'] . ' (simple booking)',
-                'organizer' => 'dummy',
-                'owner_id' => $this->userSettings['account_id'] ?? 0,
-                'active' => 1
-            ];
-
-            // Insert the application
-            $id = $this->savePartialApplication($application);
-
-            // Add the resource to the application
-            $this->applicationRepository->saveApplicationResources($id, [$resourceId]);
-
-            // Add the date to the application
-            $this->applicationRepository->saveApplicationDates($id, [['from_' => $from, 'to_' => $to]]);
-
-            // Auto-generate purchase orders from mandatory resource articles
-            $this->autoAssignMandatoryArticles($id, $resourceId, $from, $to);
-
-            // Update ID string
-            $this->applicationRepository->updateIdString();
-
-            // Only commit if we started the transaction
-            if ($startedTransaction)
-            {
-                $this->db->commit();
-            }
-
-            // Operation successful - release the atomic lock
-            \App\modules\phpgwapi\services\Cache::release_atomic_lock('booking', $lockKey, $sessionId);
-
-            return [
-                'id' => $id,
-                'status' => $application['status']
-            ];
-        } catch (\Exception $e)
-        {
-            // Only rollback if we started the transaction
-            if ($startedTransaction && $this->db->inTransaction())
-            {
-                $this->db->rollBack();
-            }
-
-            // Release atomic lock in error cases
-            \App\modules\phpgwapi\services\Cache::release_atomic_lock('booking', $lockKey, $sessionId);
-
-            // Also clear database blocks since booking failed
-            try {
-                $sql = "UPDATE bb_block SET active = 0
-                    WHERE session_id = :session_id
-                    AND resource_id = :resource_id
-                    AND from_ = :from
-                    AND to_ = :to";
-
-                $clearStmt = $this->db->prepare($sql);
-                $clearStmt->execute([
-                    ':session_id' => $sessionId,
-                    ':resource_id' => $resourceId,
-                    ':from' => $from,
-                    ':to' => $to
-                ]);
-
-                $updatedCount = $clearStmt->rowCount();
-            } catch (\Exception $clearEx) {
-                // Just log this error but don't interrupt the flow
-                error_log("ERROR CLEARING BLOCKS: " . $clearEx->getMessage() . " while handling original error: " . $e->getMessage());
-            }
-
-            throw $e;
-        }
-    }
-
-    /**
-     * Auto-assign mandatory resource articles for a simple booking.
-     * Calculates quantity based on booking duration and article unit.
-     */
-    private function autoAssignMandatoryArticles(int $applicationId, int $resourceId, string $from, string $to): void
-    {
-        $articleRepository = new ArticleRepository();
-        $articles = $articleRepository->getArticlesByResources([$resourceId]);
-
-        $mandatoryArticles = [];
-        foreach ($articles as $article) {
-            if (empty($article['mandatory']) || empty($article['id'])) {
-                continue;
-            }
-
-            $quantity = 1;
-            if ($article['unit'] === 'hour') {
-                $fromTime = new \DateTime($from);
-                $toTime = new \DateTime($to);
-                $diffHours = ($toTime->getTimestamp() - $fromTime->getTimestamp()) / 3600;
-                $quantity = max(1, (int)ceil($diffHours));
-            }
-
-            $mandatoryArticles[] = [
-                'id' => (int)$article['id'],
-                'quantity' => $quantity,
-                'parent_id' => null
-            ];
-        }
-
-        if (!empty($mandatoryArticles)) {
-            $articleRepository->saveArticlesForApplication($applicationId, $mandatoryArticles);
-        }
-    }
-
+    // createSimpleBooking() and autoAssignMandatoryArticles() removed —
+    // all simple bookings now routed through Node FIFO queue via Redis.
+    // See ApplicationController::createSimpleApplication.
     /**
      * Check if a timeslot is available for simple booking
      *

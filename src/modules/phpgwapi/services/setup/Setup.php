@@ -96,28 +96,20 @@
 
 		}
 
-		function lang($key,$m1='',$m2='',$m3='',$m4='',$m5='',$m6='',$m7='',$m8='',$m9='',$m10='')
+		/**
+		 * Translate a phrase using setup-specific translations (flat file based).
+		 *
+		 * Unlike the global lang() function (CommonFunctions.php) which is exposed
+		 * to XSL and Twig templates, this method is only used internally by the
+		 * Setup class during installation/configuration.
+		 *
+		 * @param string $key   Translation key to look up
+		 * @param mixed  ...$args Substitution values for %1, %2, etc. placeholders
+		 * @return string Translated string with substitutions applied
+		 */
+		function lang(string $key, ...$args): string
 		{
-			if(is_array($m1))
-			{
-				$vars = $m1;
-			}
-			else
-			{
-				$vars = array($m1,$m2,$m3,$m4,$m5,$m6,$m7,$m8,$m9,$m10);
-			}
-	
-			// Support DOMNodes from XSL templates
-			foreach($vars as &$var)
-			{
-				if (is_object($var) && $var instanceof \DOMNode)
-				{
-					$var = $var->nodeValue;
-				}
-			}
-	
-	
-			return $this->translation->translate($key, $vars);
+			return $this->translation->translate($key, $args);
 		}
 	
 		/**

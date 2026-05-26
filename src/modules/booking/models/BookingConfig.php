@@ -482,6 +482,13 @@ class BookingConfig
      */
     public $combined_applications_mode;
 
+    /**
+     * @OA\Property(type="boolean")
+	 * @Expose
+	 * @ParseBool
+     */
+    public $enable_hospitality;
+
     public function __construct(?array $data)
     {
         if (is_array($data))

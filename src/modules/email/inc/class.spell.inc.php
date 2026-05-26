@@ -27,6 +27,11 @@
 	* will be put in the spellcheck page form.
 	* @package email
 	*/	
+	
+	// Guard-defined pspell compatibility constants (removed in PHP 8.4)
+	defined('PE_PSPELL_FAST') || define('PE_PSPELL_FAST', 1);
+	defined('PE_PSPELL_RUN_TOGETHER') || define('PE_PSPELL_RUN_TOGETHER', 2);
+	
 	class spell
 	{	
 		var $public_functions = array(
@@ -200,7 +205,7 @@
 				// load the spell service class for php builtin pspell extension
 				$this->spell_svc = CreateObject("email.spell_svc_php");
 				// open connection to dictionary backend 
-				$this->pspell_link = $this->spell_svc->pgw_pspell_new ("$this->user_lang", "", "", "", (PSPELL_FAST|PSPELL_RUN_TOGETHER));
+				$this->pspell_link = $this->spell_svc->pgw_pspell_new ("$this->user_lang", "", "", "", (PE_PSPELL_FAST|PE_PSPELL_RUN_TOGETHER));
 			}
 			else
 			{

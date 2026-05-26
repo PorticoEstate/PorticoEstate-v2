@@ -21,6 +21,10 @@ volumes:
         driver: local
     vendor_data:
         driver: local
+    node_modules_data:
+        driver: local
+    postgres_data:
+        driver: local
 services:
     slim:
         container_name: ${SLIM_HOST:-portico_api}
@@ -44,6 +48,7 @@ services:
         volumes:
             - .:/var/www/html
             - vendor_data:/var/www/html/vendor
+            - node_modules_data:/var/www/html/node_modules
             - ./logs:/var/log/apache2
             - /var/local/:/var/local/
             # developement: store your files in '/var/local/phpgw/<domain>/tmp' and '/var/local/phpgw/<domain>/files'
@@ -110,7 +115,23 @@ services:
         networks:
             - internal
 
+    postgres:
+        image: postgres:15.0
+        profiles: ["db"]
+        container_name: ${POSTGRES_HOST:-portico_postgres}
+        hostname: ${POSTGRES_HOST:-portico_postgres}
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+            PGDATA: /data/postgres
+        volumes:
+            - postgres_data:/data/postgres
+            - ./db_setup:/docker-entrypoint-initdb.d
+        networks:
+            - internal
+
 networks:
     internal:
         name: portico_internal
-        external: true
+#        external: true

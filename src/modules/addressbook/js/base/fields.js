@@ -81,7 +81,7 @@ function addField()
     var nTable = 0;
     var data = {};
 
-    if ($.trim($('#field_name').val()) == '')
+    if (($('#field_name').val() || '').trim() == '')
     {
         alert(lang_field_name);
         return;

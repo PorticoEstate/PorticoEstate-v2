@@ -105,6 +105,8 @@ export interface IWSRoomMessage extends IWebSocketMessageBase {
 export interface IWSSessionUpdateMessage extends IWebSocketMessageBase {
   type: 'update_session';
   sessionId: string;
+  accountId?: number;
+  ssn?: string;
 }
 
 // Interface for session update confirmation message
@@ -147,9 +149,50 @@ export interface IWSPartialApplicationsResponse extends IWebSocketMessageBase {
   data: {
     error: boolean;
     status: string;
-    applications: IApplication[]; // Array of partial applications
+    applications: IApplication[];
     count: number;
     sessionId: string;
+    seq?: number;
+    diff?: {
+      added?: number[];
+      removed?: number[];
+    };
+  };
+}
+
+// Interface for free time response
+export interface IWSFreeTimeResponse extends IWebSocketMessageBase {
+  type: 'free_time_response';
+  data: {
+    error: boolean;
+    message?: string;
+    status?: string;
+    result?: Record<string, any[]>;
+    buildingId?: number;
+    startDate?: string;
+    endDate?: string;
+  };
+}
+
+// Interface for create application response
+export interface IWSCreateApplicationResponse extends IWebSocketMessageBase {
+  type: 'create_application_response';
+  requestId?: string;
+  data: {
+    error: boolean;
+    message?: string;
+    id?: number;
+    status?: string;
+  };
+}
+
+export interface IWSDeleteApplicationResponse extends IWebSocketMessageBase {
+  type: 'delete_application_response';
+  requestId?: string;
+  data: {
+    error: boolean;
+    message?: string;
+    id?: number;
   };
 }
 
@@ -186,6 +229,9 @@ export type WebSocketMessage =
   | IWSSessionIdRequiredMessage
   | IWSConnectionSuccessMessage
   | IWSPartialApplicationsResponse
+  | IWSFreeTimeResponse
+  | IWSCreateApplicationResponse
+  | IWSDeleteApplicationResponse
   | IWSRefreshBookingUserMessage
   | IWSCacheInvalidationMessage;
   // | (IWebSocketMessageBase & { [key: string]: any }); // Catch-all for other message types

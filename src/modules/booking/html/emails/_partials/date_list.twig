@@ -1,0 +1,12 @@
+{# Renders a list of dates in a <pre> block #}
+{# Parameters: label (string), dates (array of formatted strings), style (optional CSS) #}
+{% if dates is not empty %}
+{% if label is defined and label %}
+<p><strong>{{ label }}</strong></p>
+{% endif %}
+<pre{% if style is defined and style %} style="{{ style }}"{% endif %}>
+{%- for date in dates %}
+{{ date }}
+{%- endfor %}
+</pre>
+{% endif %}

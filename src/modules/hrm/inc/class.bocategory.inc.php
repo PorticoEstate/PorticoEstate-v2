@@ -164,7 +164,7 @@ class hrm_bocategory
 		return $category_list;
 	}
 
-	function save($category, $action = '', $type = '', $type_id)
+	function save($category, $type_id, $action = '', $type = '')
 	{
 		if ($action == 'edit')
 		{

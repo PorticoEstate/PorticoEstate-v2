@@ -950,3 +950,19 @@ activity_and_organizer	bookingfrontend	en	Activity and organizer
 title_help_text	bookingfrontend	en	Shown publicly in the calendar and on info screens. Describe what is happening and who is using the room. Avoid sensitive information.
 title_placeholder	bookingfrontend	en	E.g. "Training – IL Brodd" or "Birthday – Kari Hansen"
 vipps_only_for_direct_bookings	bookingfrontend	en	Vipps payment only applies to direct bookings. Applications requiring case processing will be submitted for approval.
+select_resource_before_application	bookingfrontend	en	You must select a resource before creating an application
+hospitality	bookingfrontend	en	Hospitality
+add_hospitality_order	bookingfrontend	en	Add catering order
+select_serving_date	bookingfrontend	en	Select date
+select_serving_time	bookingfrontend	en	Select time
+serving_time	bookingfrontend	en	Serving time
+delivery_location	bookingfrontend	en	Delivery location
+order_cutoff_warning	bookingfrontend	en	Order must be placed at least %1 %2 before serving time
+special_requirements	bookingfrontend	en	Special requirements
+order_total	bookingfrontend	en	Order total
+article	bookingfrontend	en	article
+serving_at	bookingfrontend	en	Serving at
+select_hospitality	bookingfrontend	en	Select hospitality
+cancellation_deadline_info	bookingfrontend	en	Can be cancelled until %1
+cancellation_deadline_passed	bookingfrontend	en	The cancellation deadline has passed
+cancellation_deadline_passed_warning	bookingfrontend	en	The cancellation deadline has passed. If you order you will not be able to cancel.

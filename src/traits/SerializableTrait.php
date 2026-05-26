@@ -10,6 +10,62 @@ trait SerializableTrait
      */
     private static $annotationCache = [];
 
+    /**
+     * Parse @ExposeAcl annotation.
+     *
+     * Syntax: @ExposeAcl(location=".application", permission=4, app="booking")
+     *
+     * When present on a property, the ACL check is evaluated FIRST during serialization:
+     *  - If ACL passes → property is exposed immediately (skips @Expose / when checks)
+     *  - If ACL fails  → falls through to normal @Expose logic
+     *
+     * @return array|null  ['location' => string, 'permission' => int, 'app' => string] or null
+     */
+    private function parseExposeAclAnnotation(\ReflectionProperty $property): ?array
+    {
+        $className = $property->getDeclaringClass()->getName();
+        $propertyName = $property->getName();
+
+        if (!isset(self::$annotationCache[$className]['properties'][$propertyName]['exposeAcl'])) {
+            $docComment = $property->getDocComment();
+
+            if (preg_match('/@ExposeAcl\(([^)]+)\)/', $docComment, $matches)) {
+                $params = [];
+                preg_match_all('/(\w+)\s*=\s*(?:"([^"]+)"|(\d+))/', $matches[1], $paramMatches, PREG_SET_ORDER);
+                foreach ($paramMatches as $m) {
+                    $params[$m[1]] = $m[2] !== '' ? $m[2] : (int) $m[3];
+                }
+
+                if (isset($params['location'], $params['permission'])) {
+                    self::$annotationCache[$className]['properties'][$propertyName]['exposeAcl'] = [
+                        'location'   => $params['location'],
+                        'permission' => (int) $params['permission'],
+                        'app'        => $params['app'] ?? null,
+                    ];
+                } else {
+                    self::$annotationCache[$className]['properties'][$propertyName]['exposeAcl'] = null;
+                }
+            } else {
+                self::$annotationCache[$className]['properties'][$propertyName]['exposeAcl'] = null;
+            }
+        }
+
+        return self::$annotationCache[$className]['properties'][$propertyName]['exposeAcl'];
+    }
+
+    /**
+     * Evaluate an @ExposeAcl annotation against the current user session.
+     */
+    private function checkExposeAcl(array $aclAnnotation): bool
+    {
+        try {
+            $acl = \App\modules\phpgwapi\security\Acl::getInstance();
+            return (bool) $acl->check($aclAnnotation['location'], $aclAnnotation['permission'], $aclAnnotation['app'] ?? '');
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
 
 
     public function serialize(array $context = [], bool $short = false): ?array
@@ -30,6 +86,7 @@ trait SerializableTrait
             $timestampAnnotation = $this->parseTimestampAnnotation($property);
             $parseBoolAnnotation = $this->parseParseBoolAnnotation($property);
             $parseIntAnnotation = $this->parseParseIntAnnotation($property);
+            $exposeAclAnnotation = $this->parseExposeAclAnnotation($property);
 
             if ($excludeAnnotation)
             {
@@ -41,7 +98,10 @@ trait SerializableTrait
                 continue; // Skip non-short properties when short serialization is requested
             }
 
-            if ($exposeAnnotation || $defaultBehavior === 'expose')
+            // @ExposeAcl fast-pass: if present and ACL passes, expose immediately
+            $aclGranted = $exposeAclAnnotation !== null && $this->checkExposeAcl($exposeAclAnnotation);
+
+            if ($aclGranted || $exposeAnnotation || $defaultBehavior === 'expose')
             {
                 $property->setAccessible(true);
                 $value = $property->getValue($this);
@@ -51,7 +111,8 @@ trait SerializableTrait
                     $value = $this->processDefaultValue($defaultAnnotation);
                 }
 
-                if ($this->shouldExposeProperty($exposeAnnotation, $property, $context))
+                // ACL-granted properties bypass shouldExposeProperty entirely
+                if ($aclGranted || $this->shouldExposeProperty($exposeAnnotation, $property, $context))
                 {
                     if (is_string($value))
                     {

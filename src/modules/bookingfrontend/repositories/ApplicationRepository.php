@@ -7,13 +7,15 @@ use App\modules\bookingfrontend\models\User;
 use PDO;
 use App\Database\Db;
 use App\modules\bookingfrontend\models\Application;
-use App\modules\bookingfrontend\models\Document;
+use App\modules\booking\models\Document;
 use App\modules\bookingfrontend\models\Resource;
 use App\modules\bookingfrontend\repositories\ResourceRepository;
 use App\modules\bookingfrontend\models\Order;
 use App\modules\bookingfrontend\models\OrderLine;
 use App\modules\bookingfrontend\models\helper\Date;
-use App\modules\bookingfrontend\services\DocumentService;
+use App\modules\booking\services\DocumentService;
+use App\modules\booking\repositories\DocumentRepository;
+use App\modules\booking\repositories\HospitalityOrderRepository;
 
 class ApplicationRepository
 {
@@ -58,7 +60,7 @@ class ApplicationRepository
             $application->agegroups = $this->fetchAgeGroups($application->id);
             $application->audience = $this->fetchTargetAudience($application->id);
             $application->documents = $this->fetchDocuments($application->id);
-            $applications[] = $application->serialize([]);
+            $applications[] = $application->serialize(['user_ssn' => $this->userHelper->ssn]);
         }
 
         return $applications;
@@ -92,7 +94,7 @@ class ApplicationRepository
             $application->agegroups = $this->fetchAgeGroups($application->id);
             $application->audience = $this->fetchTargetAudience($application->id);
             $application->documents = $this->fetchDocuments($application->id);
-            $applications[] = $application->serialize([]);
+            $applications[] = $application->serialize(['user_ssn' => $this->userHelper->ssn]);
         }
 
         return $applications;
@@ -185,7 +187,7 @@ class ApplicationRepository
             $application->documents = $this->fetchDocuments($application->id);
 
             // Add metadata about application type
-            $serialized = $application->serialize([]);
+            $serialized = $application->serialize(['user_ssn' => $this->userHelper->ssn]);
             $serialized['application_type'] = $result['application_type'];
             $applications[] = $serialized;
         }
@@ -294,6 +296,10 @@ class ApplicationRepository
      */
     private function deleteAssociatedData(int $application_id): void
     {
+        // Delete hospitality orders (lines, changelog, documents, then orders)
+        $hospitalityOrderRepo = new HospitalityOrderRepository();
+        $hospitalityOrderRepo->deleteByApplicationId($application_id);
+
         // First, delete documents (including physical files)
         $this->deleteApplicationDocuments($application_id);
 
@@ -652,6 +658,8 @@ class ApplicationRepository
                 ]);
             }
         }
+
+        $this->syncApplicationFromDate($applicationId);
     }
 
     /**
@@ -701,6 +709,8 @@ class ApplicationRepository
                 ':to_' => $this->formatDateForDatabase($date['to_'])
             ]);
         }
+
+        $this->syncApplicationFromDate($applicationId);
     }
 
     /**
@@ -983,6 +993,18 @@ class ApplicationRepository
     private function generateSecret(int $length = 16): string
     {
         return bin2hex(random_bytes($length));
+    }
+
+    /**
+     * Update bb_application.from_ to the earliest date from bb_application_date
+     */
+    public function syncApplicationFromDate(int $applicationId): void
+    {
+        $sql = "UPDATE bb_application SET from_ = (
+            SELECT MIN(from_) FROM bb_application_date WHERE application_id = :app_id
+        ) WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':app_id' => $applicationId, ':id' => $applicationId]);
     }
 
     /**

@@ -6,8 +6,9 @@ import styles from './checkout.module.scss';
 import ShoppingCartTable from "@/components/layout/header/shopping-cart/shopping-cart-table";
 import { calculateApplicationCost, formatCurrency } from "@/utils/cost-utils";
 import { RecurringInfoUtils, calculateRecurringInstances } from '@/utils/recurring-utils';
-import { useBuildingSeasons } from "@/service/hooks/api-hooks";
+import { useBuildingSeasons, useServerSettings } from "@/service/hooks/api-hooks";
 import BuildingIcon from "@/icons/BuildingIcon";
+import HospitalitySection from "./hospitality/hospitality-section";
 
 interface CartSectionProps {
     applications: IApplication[];
@@ -18,6 +19,8 @@ interface CartSectionProps {
 
 const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication, buildingParentIds, onBuildingParentIdChange}) => {
     const t = useTrans();
+    const {data: serverSettings} = useServerSettings();
+    const enableHospitality = !!serverSettings?.booking_config?.enable_hospitality;
 
     // Fetch seasons for all unique buildings
     const buildingIds = [...new Set(applications.map(item => item.building_id))];
@@ -78,17 +81,29 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
             groupedByBuilding.get(buildingId)!.push(app);
         });
 
+        // Sort applications within each building group by earliest date
+        const getEarliestDate = (app: IApplication) =>
+            app.dates?.length ? Math.min(...app.dates.map(d => new Date(d.from_).getTime())) : 0;
+
+        const buildingGroups = Array.from(groupedByBuilding.entries()).map(([buildingId, apps]) => ({
+            buildingId,
+            buildingName: apps[0].building_name,
+            applications: apps.sort((a, b) => getEarliestDate(a) - getEarliestDate(b))
+        }));
+
+        // Sort building groups by their earliest application date
+        buildingGroups.sort((a, b) => getEarliestDate(a.applications[0]) - getEarliestDate(b.applications[0]));
+
         return {
-            regularApplicationsByBuilding: Array.from(groupedByBuilding.entries()).map(([buildingId, apps]) => ({
-                buildingId,
-                buildingName: apps[0].building_name,
-                applications: apps
-            })),
+            regularApplicationsByBuilding: buildingGroups,
             recurringApplications: recurring
         };
     }, [applications]);
 
     const grandTotal = calculateTotal(applications);
+
+    const sectionCount = regularApplicationsByBuilding.length + (recurringApplications.length > 0 ? 1 : 0);
+    const showSectionTotals = sectionCount > 1;
 
     return (
         <div>
@@ -109,7 +124,13 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                             onParentIdChange={onBuildingParentIdChange ? (parentId) => onBuildingParentIdChange(buildingGroup.buildingId, parentId) : undefined}
                             buildingId={buildingGroup.buildingId}
                         />
-                        {sectionTotal > 0 && (
+                        {enableHospitality && (
+                        <HospitalitySection
+                            applicationIds={buildingGroup.applications.map(a => a.id)}
+                            applications={buildingGroup.applications}
+                        />
+                        )}
+                        {showSectionTotals && sectionTotal > 0 && (
                             <div className={styles.sectionTotal}>
                                 <strong>{t('bookingfrontend.total')}:</strong>
                                 <strong>{formatCurrency(sectionTotal)}</strong>
@@ -135,7 +156,7 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                             selectedParentId={undefined}
                             onParentIdChange={undefined}
                         />
-                        {recurringTotal > 0 && (
+                        {showSectionTotals && recurringTotal > 0 && (
                             <div className={styles.sectionTotal}>
                                 <strong>{t('bookingfrontend.total')}:</strong>
                                 <strong>{formatCurrency(recurringTotal)}</strong>
@@ -146,9 +167,9 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
             })()}
 
             {/* Grand Total */}
-            {grandTotal > 0 && (regularApplicationsByBuilding.length > 0 || recurringApplications.length > 0) && (
+            {grandTotal > 0 && (
                 <div className={styles.grandTotal}>
-                    <strong>{t('bookingfrontend.grand_total')}:</strong>
+                    <strong>{t('bookingfrontend.total')}:</strong>
                     <strong>{formatCurrency(grandTotal)}</strong>
                 </div>
             )}

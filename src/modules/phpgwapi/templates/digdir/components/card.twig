@@ -1,0 +1,32 @@
+{# Card component with Designsystemet support #}
+{% if is_designsystemet %}
+    {# Use Designsystemet web component #}
+    <ds-card
+        {% if id %}id="{{ id }}"{% endif %}
+        {% if class %}class="{{ class }}"{% endif %}
+    >
+        {% if title %}
+            <ds-card-header>{{ title|raw }}</ds-card-header>
+        {% endif %}
+        <ds-card-content>
+            {{ content|raw }}
+        </ds-card-content>
+        {% if footer %}
+            <ds-card-footer>{{ footer|raw }}</ds-card-footer>
+        {% endif %}
+    </ds-card>
+{% else %}
+    {# Fallback to Bootstrap #}
+    <div class="card{% if class %} {{ class }}{% endif %}"
+         {% if id %}id="{{ id }}"{% endif %}>
+        {% if title %}
+            <div class="card-header">{{ title|raw }}</div>
+        {% endif %}
+        <div class="card-body">
+            {{ content|raw }}
+        </div>
+        {% if footer %}
+            <div class="card-footer">{{ footer|raw }}</div>
+        {% endif %}
+    </div>
+{% endif %}

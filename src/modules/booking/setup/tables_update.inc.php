@@ -3,6 +3,59 @@
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Locations;
 
+// Idempotency helpers for migrations from 0.2.118 onwards.
+// They let a migration skip work that has already been applied, so a
+// re-run after a partially-successful upgrade won't fail on "already exists" errors.
+if (!function_exists('booking_column_exists'))
+{
+	function booking_column_exists($oProc, $table, $column)
+	{
+		$table = preg_replace('/[^a-z0-9_]/i', '', $table);
+		$column = preg_replace('/[^a-z0-9_]/i', '', $column);
+		$oProc->m_odb->query("SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = '$table' AND column_name = '$column' LIMIT 1");
+		return (bool)$oProc->m_odb->next_record();
+	}
+}
+if (!function_exists('booking_column_is_nullable'))
+{
+	function booking_column_is_nullable($oProc, $table, $column)
+	{
+		$table = preg_replace('/[^a-z0-9_]/i', '', $table);
+		$column = preg_replace('/[^a-z0-9_]/i', '', $column);
+		$oProc->m_odb->query("SELECT is_nullable FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = '$table' AND column_name = '$column' LIMIT 1");
+		if (!$oProc->m_odb->next_record()) return null;
+		return strtoupper($oProc->m_odb->f('is_nullable')) === 'YES';
+	}
+}
+if (!function_exists('booking_column_data_type'))
+{
+	function booking_column_data_type($oProc, $table, $column)
+	{
+		$table = preg_replace('/[^a-z0-9_]/i', '', $table);
+		$column = preg_replace('/[^a-z0-9_]/i', '', $column);
+		$oProc->m_odb->query("SELECT data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = '$table' AND column_name = '$column' LIMIT 1");
+		if (!$oProc->m_odb->next_record()) return null;
+		return strtolower($oProc->m_odb->f('data_type'));
+	}
+}
+if (!function_exists('booking_table_exists'))
+{
+	function booking_table_exists($oProc, $table)
+	{
+		return (bool)$oProc->m_odb->metadata($table);
+	}
+}
+if (!function_exists('booking_constraint_exists'))
+{
+	function booking_constraint_exists($oProc, $table, $constraint)
+	{
+		$table = preg_replace('/[^a-z0-9_]/i', '', $table);
+		$constraint = preg_replace('/[^a-z0-9_]/i', '', $constraint);
+		$oProc->m_odb->query("SELECT 1 FROM information_schema.table_constraints WHERE table_schema = current_schema() AND table_name = '$table' AND constraint_name = '$constraint' LIMIT 1");
+		return (bool)$oProc->m_odb->next_record();
+	}
+}
+
 # Important!!! Append new upgrade functions to the end of this this
 $test[] = '0.1.41';
 
@@ -7958,7 +8011,7 @@ function booking_upgrade0_2_114($oProc)
 			'uc' => array()
 		)
 	);
- 
+
 	$location_obj = new Locations();
 
 	$custom_config = CreateObject('admin.soconfig', $location_obj->get_id('booking', 'run'));
@@ -8107,7 +8160,10 @@ function booking_upgrade0_2_118($oProc)
 
 	// Fix: bb_application.from_ should be nullable - it gets populated from bb_application_date
 	// and is not available at initial insert time for partial applications
-	$oProc->m_odb->query("ALTER TABLE bb_application ALTER COLUMN from_ DROP NOT NULL");
+	if (!booking_column_is_nullable($oProc, 'bb_application', 'from_'))
+	{
+		$oProc->m_odb->query("ALTER TABLE bb_application ALTER COLUMN from_ DROP NOT NULL");
+	}
 
 	if ($oProc->m_odb->transaction_commit())
 	{
@@ -8124,7 +8180,10 @@ function booking_upgrade0_2_119($oProc)
 	// Fix: parent_mapping_id was added as nullable in upgrade 0.2.78 (AddColumn),
 	// but tables_current.inc.php incorrectly had it as NOT NULL.
 	// Ensure all installs have it as nullable for consistency.
-	$oProc->m_odb->query("ALTER TABLE bb_purchase_order_line ALTER COLUMN parent_mapping_id DROP NOT NULL");
+	if (!booking_column_is_nullable($oProc, 'bb_purchase_order_line', 'parent_mapping_id'))
+	{
+		$oProc->m_odb->query("ALTER TABLE bb_purchase_order_line ALTER COLUMN parent_mapping_id DROP NOT NULL");
+	}
 
 	if ($oProc->m_odb->transaction_commit())
 	{
@@ -8132,3 +8191,443 @@ function booking_upgrade0_2_119($oProc)
 		return $currentver;
 	}
 }
+
+
+$test[] = '0.2.120';
+function booking_upgrade0_2_120($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	if (!booking_table_exists($oProc, 'bb_hospitality'))
+	{
+	$oProc->CreateTable(
+		'bb_hospitality',
+		array(
+			'fd' => array(
+				'id' => array('type' => 'auto', 'nullable' => false),
+				'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'name' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
+				'description' => array('type' => 'text', 'nullable' => true),
+				'active' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 1),
+				'remote_serving_enabled' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 0),
+				'order_by_time_value' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+				'order_by_time_unit' => array('type' => 'varchar', 'precision' => '10', 'nullable' => true),
+				'created' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
+				'modified' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
+				'created_by' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'modified_by' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			),
+			'pk' => array('id'),
+			'fk' => array(
+				'bb_resource' => array('resource_id' => 'id'),
+			),
+			'ix' => array(),
+			'uc' => array()
+		)
+	);
+	}
+
+	if (!booking_table_exists($oProc, 'bb_hospitality_remote_location'))
+	{
+	$oProc->CreateTable(
+		'bb_hospitality_remote_location',
+		array(
+			'fd' => array(
+				'hospitality_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'active' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 1),
+			),
+			'pk' => array('hospitality_id', 'resource_id'),
+			'fk' => array(
+				'bb_hospitality' => array('hospitality_id' => 'id'),
+				'bb_resource' => array('resource_id' => 'id'),
+			),
+			'ix' => array(),
+			'uc' => array()
+		)
+	);
+	}
+
+	if (!booking_table_exists($oProc, 'bb_hospitality_article_group'))
+	{
+	$oProc->CreateTable(
+		'bb_hospitality_article_group',
+		array(
+			'fd' => array(
+				'id' => array('type' => 'auto', 'nullable' => false),
+				'hospitality_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'name' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
+				'sort_order' => array('type' => 'int', 'precision' => '4', 'nullable' => false, 'default' => 0),
+				'active' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 1),
+			),
+			'pk' => array('id'),
+			'fk' => array(
+				'bb_hospitality' => array('hospitality_id' => 'id'),
+			),
+			'ix' => array(),
+			'uc' => array()
+		)
+	);
+	}
+
+	if (!booking_table_exists($oProc, 'bb_hospitality_article'))
+	{
+	$oProc->CreateTable(
+		'bb_hospitality_article',
+		array(
+			'fd' => array(
+				'id' => array('type' => 'auto', 'nullable' => false),
+				'hospitality_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'article_group_id' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+				'article_mapping_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'description' => array('type' => 'text', 'nullable' => true),
+				'sort_order' => array('type' => 'int', 'precision' => '4', 'nullable' => false, 'default' => 0),
+				'active' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 1),
+				'override_price' => array('type' => 'decimal', 'precision' => 10, 'scale' => 2, 'nullable' => true),
+				'override_tax_code' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+			),
+			'pk' => array('id'),
+			'fk' => array(
+				'bb_hospitality' => array('hospitality_id' => 'id'),
+				'bb_hospitality_article_group' => array('article_group_id' => 'id'),
+				'bb_article_mapping' => array('article_mapping_id' => 'id'),
+			),
+			'ix' => array(),
+			'uc' => array(array('hospitality_id', 'article_mapping_id'))
+		)
+	);
+	}
+
+	if (!booking_table_exists($oProc, 'bb_hospitality_order'))
+	{
+	$oProc->CreateTable(
+		'bb_hospitality_order',
+		array(
+			'fd' => array(
+				'id' => array('type' => 'auto', 'nullable' => false),
+				'application_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'hospitality_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'location_resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'status' => array('type' => 'varchar', 'precision' => '20', 'nullable' => false, 'default' => 'pending'),
+				'comment' => array('type' => 'text', 'nullable' => true),
+				'special_requirements' => array('type' => 'text', 'nullable' => true),
+				'created' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
+				'modified' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
+				'created_by' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+				'modified_by' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+			),
+			'pk' => array('id'),
+			'fk' => array(
+				'bb_application' => array('application_id' => 'id'),
+				'bb_hospitality' => array('hospitality_id' => 'id'),
+				'bb_resource' => array('location_resource_id' => 'id'),
+			),
+			'ix' => array(
+				array('application_id'),
+				array('hospitality_id'),
+			),
+			'uc' => array()
+		)
+	);
+	}
+
+	if (!booking_table_exists($oProc, 'bb_hospitality_order_line'))
+	{
+	$oProc->CreateTable(
+		'bb_hospitality_order_line',
+		array(
+			'fd' => array(
+				'id' => array('type' => 'auto', 'nullable' => false),
+				'order_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'hospitality_article_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'quantity' => array('type' => 'decimal', 'precision' => 10, 'scale' => 2, 'nullable' => false, 'default' => '1.0'),
+				'unit_price' => array('type' => 'decimal', 'precision' => 10, 'scale' => 2, 'nullable' => false),
+				'tax_code' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'amount' => array('type' => 'decimal', 'precision' => 10, 'scale' => 2, 'nullable' => false),
+			),
+			'pk' => array('id'),
+			'fk' => array(
+				'bb_hospitality_order' => array('order_id' => 'id'),
+				'bb_hospitality_article' => array('hospitality_article_id' => 'id'),
+			),
+			'ix' => array(
+				array('order_id'),
+			),
+			'uc' => array()
+		)
+	);
+	}
+
+	if (!booking_table_exists($oProc, 'bb_hospitality_order_document'))
+	{
+	$oProc->CreateTable(
+		'bb_hospitality_order_document',
+		array(
+			'fd' => array(
+				'id' => array('type' => 'auto', 'nullable' => false),
+				'name' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
+				'owner_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'category' => array('type' => 'varchar', 'precision' => '150', 'nullable' => false),
+				'description' => array('type' => 'text', 'nullable' => true),
+				'metadata' => array('type' => 'jsonb', 'nullable' => true),
+			),
+			'pk' => array('id'),
+			'fk' => array(
+				'bb_hospitality_order' => array('owner_id' => 'id'),
+			),
+			'ix' => array(),
+			'uc' => array()
+		)
+	);
+	}
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.121';
+		return $currentver;
+	}
+}
+
+$test[] = '0.2.121';
+function booking_upgrade0_2_121($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	if (!booking_column_exists($oProc, 'bb_hospitality', 'allow_on_site_hospitality'))
+	{
+		$oProc->m_odb->query("ALTER TABLE bb_hospitality ADD COLUMN allow_on_site_hospitality SMALLINT DEFAULT 0 NOT NULL");
+	}
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.122';
+		return $currentver;
+	}
+}
+
+$test[] = '0.2.122';
+function booking_upgrade0_2_122($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	$addedNameJson = false;
+	if (!booking_column_exists($oProc, 'bb_service', 'description_json'))
+	{
+		$oProc->m_odb->query("ALTER TABLE bb_service ADD COLUMN description_json JSONB");
+	}
+	if (!booking_column_exists($oProc, 'bb_service', 'name_json'))
+	{
+		$oProc->m_odb->query("ALTER TABLE bb_service ADD COLUMN name_json JSONB");
+		$addedNameJson = true;
+	}
+	// Only backfill on freshly-added column to avoid clobbering later edits
+	if ($addedNameJson)
+	{
+		$oProc->m_odb->query("UPDATE bb_service SET name_json = jsonb_build_object('no', name) WHERE name IS NOT NULL AND name != ''");
+	}
+	if (booking_column_data_type($oProc, 'bb_hospitality_article', 'description') !== 'jsonb')
+	{
+		$oProc->m_odb->query("ALTER TABLE bb_hospitality_article ALTER COLUMN description TYPE JSONB USING CASE WHEN description IS NOT NULL AND description != '' THEN jsonb_build_object('no', description) ELSE NULL END");
+	}
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.123';
+		return $currentver;
+	}
+}
+
+$test[] = '0.2.123';
+function booking_upgrade0_2_123($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	if (!booking_column_exists($oProc, 'bb_hospitality_order', 'serving_time_iso'))
+	{
+		$oProc->m_odb->query("ALTER TABLE bb_hospitality_order ADD COLUMN serving_time_iso TIMESTAMP DEFAULT NULL");
+	}
+	if (!booking_column_exists($oProc, 'bb_hospitality_order_line', 'comment'))
+	{
+		$oProc->m_odb->query("ALTER TABLE bb_hospitality_order_line ADD COLUMN comment TEXT DEFAULT NULL");
+	}
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.124';
+		return $currentver;
+	}
+}
+
+$test[] = '0.2.124';
+function booking_upgrade0_2_124($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$metadata = $oProc->m_odb->metadata('bb_hospitality_order_changelog');
+
+	if (!$metadata)
+	{
+		$oProc->m_odb->query("
+			CREATE TABLE bb_hospitality_order_changelog (
+				id SERIAL PRIMARY KEY,
+				order_id INTEGER NOT NULL REFERENCES bb_hospitality_order(id),
+				case_officer_id INTEGER NULL,
+				booking_user_id INTEGER NULL,
+				changed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+				change_type VARCHAR(50) NOT NULL,
+				old_value JSONB NULL,
+				new_value JSONB NULL,
+				comment TEXT NOT NULL,
+				CONSTRAINT chk_changelog_user CHECK (case_officer_id IS NOT NULL OR booking_user_id IS NOT NULL)
+			)
+		");
+		$oProc->m_odb->query("CREATE INDEX idx_bb_hosp_order_changelog_order_id ON bb_hospitality_order_changelog(order_id)");
+	}
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.125';
+		return $currentver;
+	}
+}
+
+
+$test[] = '0.2.125';
+function booking_upgrade0_2_125($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	if (!booking_column_exists($oProc, 'bb_hospitality', 'include_in_checkout_payment'))
+	{
+		$oProc->m_odb->query("ALTER TABLE bb_hospitality ADD COLUMN include_in_checkout_payment SMALLINT NOT NULL DEFAULT 0");
+	}
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.126';
+		return $currentver;
+	}
+}
+
+/**
+ * Add table bb_resource_activity_entityform
+ * update from 0.2.126 to 0.2.127
+ */
+$test[] = '0.2.126';
+function booking_upgrade0_2_126($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	if (!booking_table_exists($oProc, 'bb_resource_activity_entityform'))
+	{
+	$oProc->CreateTable(
+		'bb_resource_activity_entityform',
+		array(
+			'fd' => array(
+				'id' => array('type' => 'auto', 'nullable' => false),
+				'name' => array('type' => 'varchar', 'precision' => 150, 'nullable' => False),
+				'active' => array('type' => 'int', 'nullable' => true, 'precision' => 2, 'default' => 1),
+				'building_id' => array('type' => 'int', 'precision' => 4, 'nullable' => False),
+				'resources' => array('type' => 'jsonb', 'nullable' => False),
+				'activities' => array('type' => 'jsonb',  'nullable' => True),
+				'location_id' => array('type' => 'int', 'precision' => 4, 'nullable' => False),
+			),
+			'pk' => array('id'),
+			'fk' => array(
+				'phpgw_locations' => array('location_id' => 'location_id'),
+				'bb_building' => array('building_id' => 'id'),
+			),
+			'ix' => array(),
+			'uc' => array()
+		)
+	);
+	}
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.127';
+		return $currentver;
+	}
+}
+
+$test[] = '0.2.127';
+function booking_upgrade0_2_127($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	if (!booking_column_exists($oProc, 'bb_resource_activity_entityform', 'owner_id'))
+	{
+		$oProc->AddColumn('bb_resource_activity_entityform', 'owner_id', array('type' => 'int', 'precision' => 4, 'nullable' => false));
+	}
+	if (!booking_column_exists($oProc, 'bb_resource_activity_entityform', 'modified_on'))
+	{
+		$oProc->AddColumn('bb_resource_activity_entityform', 'modified_on', array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'));
+	}
+	if (!booking_column_exists($oProc, 'bb_resource_activity_entityform', 'modified_by'))
+	{
+		$oProc->AddColumn('bb_resource_activity_entityform', 'modified_by', array('type' => 'int', 'precision' => 4, 'nullable' => false));
+	}
+	if (!booking_constraint_exists($oProc, 'bb_resource_activity_entityform', 'fk_entityform_owner'))
+	{
+		$oProc->m_odb->query("ALTER TABLE bb_resource_activity_entityform ADD CONSTRAINT fk_entityform_owner FOREIGN KEY (owner_id) REFERENCES phpgw_accounts(account_id)");
+	}
+	if (!booking_constraint_exists($oProc, 'bb_resource_activity_entityform', 'fk_entityform_modified_by'))
+	{
+		$oProc->m_odb->query("ALTER TABLE bb_resource_activity_entityform ADD CONSTRAINT fk_entityform_modified_by FOREIGN KEY (modified_by) REFERENCES phpgw_accounts(account_id)");
+	}
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.128';
+		return $currentver;
+	}
+}
+
+/**
+ * Add cancellation deadline fields to bb_resource
+ * update from 0.2.128 to 0.2.129
+ */
+$test[] = '0.2.128';
+function booking_upgrade0_2_128($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	if (!booking_column_exists($oProc, 'bb_resource', 'cancellation_deadline_value'))
+	{
+		$oProc->AddColumn(
+			'bb_resource',
+			'cancellation_deadline_value',
+			array('type' => 'int', 'precision' => 4, 'nullable' => True, 'default' => 0)
+		);
+	}
+	if (!booking_column_exists($oProc, 'bb_resource', 'cancellation_deadline_unit'))
+	{
+		$oProc->AddColumn(
+			'bb_resource',
+			'cancellation_deadline_unit',
+			array('type' => 'varchar', 'precision' => '10', 'nullable' => True, 'default' => 'hours')
+		);
+	}
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.129';
+		return $currentver;
+	}
+}
+
+$test[] = '0.2.129';
+function booking_upgrade0_2_129($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	if (!booking_column_exists($oProc, 'bb_hospitality_order', 'billed'))
+	{
+		$oProc->AddColumn(
+			'bb_hospitality_order',
+			'billed',
+			array('type' => 'int', 'precision' => 4, 'nullable' => False, 'default' => 0)
+		);
+	}
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.130';
+		return $currentver;
+	}
+}	

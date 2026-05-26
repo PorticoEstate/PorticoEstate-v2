@@ -2,9 +2,12 @@
 
 namespace App\modules\bookingfrontend\models;
 
-use App\traits\SerializableTrait;
+use App\modules\booking\models\Application as BookingApplication;
 
 /**
+ * Frontend Application model — extends the booking base with sub-resource
+ * collections that are hydrated in a single fetch for the Next.js client.
+ *
  * @OA\Schema(
  *     schema="Application",
  *     type="object",
@@ -13,95 +16,9 @@ use App\traits\SerializableTrait;
  * )
  * @Exclude
  */
-class Application
+class Application extends BookingApplication
 {
-    use SerializableTrait;
-
-    /**
-     * @OA\Property(type="integer")
-     * @Expose
-     * @Short
-     */
-    public int $id;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     */
-    public string $id_string;
-
-    /**
-     * @OA\Property(type="integer")
-     * @Expose
-     */
-    public int $active;
-
-    /**
-     * @OA\Property(type="integer")
-     * @Expose
-     */
-    public int $display_in_dashboard;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     * @Short
-     */
-    public string $type;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     * @Short
-     */
-    public string $status;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     * @Short
-     */
-    public string $secret;
-
-    /**
-     * @OA\Property(type="string", format="date-time")
-     * @Expose
-     * @Short
-     */
-    public $created;
-
-    /**
-     * @OA\Property(type="string", format="date-time")
-     * @Expose
-     */
-    public $modified;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-	 * @EscapeString(mode="default")
-	 * @Short
-     */
-    public $building_name;
-
-    /**
-     * @OA\Property(type="integer")
-     * @Expose
-     * @Short
-     */
-    public $building_id;
-
-    /**
-     * @OA\Property(type="string", format="date-time")
-     * @Expose
-     */
-    public $frontend_modified;
-
-    /**
-     * @OA\Property(type="integer")
-     * @Expose
-     */
-    public $owner_id;
+    // ── Override: expose case_officer_id without ACL gate for frontend ──
 
     /**
      * @OA\Property(type="integer")
@@ -109,81 +26,7 @@ class Application
      */
     public $case_officer_id;
 
-    /**
-     * @OA\Property(type="integer")
-     * @Expose
-     */
-    public $activity_id;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     */
-    public $customer_identifier_type;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     * @Short
-     */
-    public $customer_ssn;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     * @Short
-     */
-    public $customer_organization_number;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-	 * @EscapeString(mode="default")
-     */
-    public $name;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     */
-    public $organizer;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     */
-    public $homepage;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     */
-    public $description;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     */
-    public $equipment;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     * @Short
-     */
-    public $contact_name;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     */
-    public $contact_email;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     */
-    public $contact_phone;
+    // ── Sub-resource collections (hydrated by bookingfrontend repo) ─────
 
     /**
      * @OA\Property(
@@ -208,7 +51,7 @@ class Application
     /**
      * @OA\Property(type="array", @OA\Items(ref="#/components/schemas/Date"))
      * @Expose
-     * @SerializeAs(type="array", of="App\modules\bookingfrontend\models\helper\Date")
+     * @SerializeAs(type="array", of="App\modules\booking\models\Date")
      * @Short
      */
     public $dates;
@@ -224,14 +67,14 @@ class Application
     /**
      * @OA\Property(type="array", @OA\Items(ref="#/components/schemas/Order"))
      * @Expose
-     * @SerializeAs(type="array", of="App\modules\bookingfrontend\models\Order")
+     * @SerializeAs(type="array", of="App\modules\booking\models\Order")
      */
     public $orders;
 
     /**
      * @OA\Property(type="array", @OA\Items(ref="#/components/schemas/Document"))
      * @Expose
-     * @SerializeAs(type="array", of="App\modules\bookingfrontend\models\Document")
+     * @SerializeAs(type="array", of="App\modules\booking\models\Document")
      */
     public array $documents;
 
@@ -250,79 +93,9 @@ class Application
     public array $articles;
 
     /**
-     * @OA\Property(type="string")
-     * @Expose
-     */
-    public $responsible_street;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     */
-    public $responsible_zip_code;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     */
-    public $responsible_city;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     */
-    public $session_id;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     */
-    public $agreement_requirements;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     */
-    public $external_archive_key;
-
-    /**
-     * @OA\Property(type="string")
-     * @Expose
-     */
-    public $customer_organization_name;
-
-    /**
-     * @OA\Property(type="integer")
-     * @Expose
-     */
-    public $customer_organization_id;
-
-    /**
      * @OA\Property(type="array", @OA\Items(ref="#/components/schemas/ApplicationComment"))
      * @Expose
-     * @SerializeAs(type="array", of="App\modules\bookingfrontend\models\ApplicationComment")
+     * @SerializeAs(type="array", of="App\modules\booking\models\ApplicationComment")
      */
     public array $comments = [];
-
-    /**
-     * @OA\Property(type="object", description="Recurring booking information stored as JSON")
-     * @Expose
-     */
-    public $recurring_info;
-
-    public function __construct(array $data = [])
-    {
-        if (!empty($data)) {
-            $this->populate($data);
-        }
-    }
-
-    public function populate(array $data): void
-    {
-        foreach ($data as $key => $value) {
-            if (property_exists($this, $key)) {
-                $this->$key = $value;
-            }
-        }
-    }
 }

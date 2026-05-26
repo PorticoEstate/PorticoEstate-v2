@@ -2,7 +2,7 @@
 
 namespace App\modules\bookingfrontend\controllers;
 
-use App\modules\bookingfrontend\helpers\ResponseHelper;
+use App\helpers\ResponseHelper;
 use App\modules\bookingfrontend\services\EventService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;

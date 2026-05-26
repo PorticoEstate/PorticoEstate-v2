@@ -10,15 +10,13 @@ import DocumentsSection from "@/components/shared/documents-section/documents-se
 import {fetchTowns} from "@/service/api/api-utils";
 import ShortDectionAccordion from "@/components/building-page/short-description-section";
 
-interface BuildingShowParams {
-    id: string;
-}
 interface BuildingShowProps {
-    params: BuildingShowParams;
-    initialDate?: string; // Add optional initialDate parameter
+    params: { id: string };
+    searchParams?: { initialDate?: string };
 }
 
 const BuildingShow = async (props: BuildingShowProps) => {
+    const initialDate = props.searchParams?.initialDate;
     // Convert the id to a number
     const buildingId = parseInt(props.params.id, 10);
 
@@ -56,7 +54,7 @@ const BuildingShow = async (props: BuildingShowProps) => {
                 <DocumentsSection documents={documents} type="building" />
             </section>
             {/*<hr className={`my-2`}/>*/}
-            <BuildingCalendar building_id={props.params.id} initialDate={props.initialDate}/>
+            <BuildingCalendar building_id={props.params.id} initialDate={initialDate}/>
             <BuildingContact building={building}/>
         </main>
     );

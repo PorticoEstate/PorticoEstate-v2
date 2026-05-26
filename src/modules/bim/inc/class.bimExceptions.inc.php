@@ -45,7 +45,7 @@
 	class ModelDoesNotExistException extends Exception
 	{
 
-		public function __construct($message, Exception $previous = null)
+		public function __construct($message, ?Exception $previous = null)
 		{
         parent::__construct($message, 0, $previous);
     }
@@ -73,7 +73,7 @@
 	class BimDataException extends Exception
 	{
 
-		public function __construct($message, Exception $previous = null)
+		public function __construct($message, ?Exception $previous = null)
 		{
         parent::__construct($message, 0, $previous);
     }
@@ -87,7 +87,7 @@
 	class NoResponseException extends Exception
 	{
 
-		public function __construct($message, Exception $previous = null)
+		public function __construct($message, ?Exception $previous = null)
 		{
         parent::__construct($message, 0, $previous);
     }

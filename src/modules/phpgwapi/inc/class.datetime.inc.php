@@ -681,7 +681,7 @@ class phpgwapi_datetime
 	 */
 	public static function days_between($m1, $d1, $y1, $m2, $d2, $y2)
 	{
-		return (mktime(0, 0, 0, $m2, $d2, $y2, 0) - mktime(13, 0, 0, $m1, $d1, $y1, 0)) / self::SECONDS_IN_DAY;
+		return (mktime(0, 0, 0, $m2, $d2, $y2) - mktime(13, 0, 0, $m1, $d1, $y1)) / self::SECONDS_IN_DAY;
 	}
 
 	/**
@@ -1211,5 +1211,50 @@ class phpgwapi_datetime
 		{
 			return (implode(' ', $dlarr));
 		}
+	}
+
+	/**
+	 * Show current date
+	 *
+	 * @param integer $t Time, defaults to user preferences
+	 * @param string $format Date format, defaults to user preferences
+	 * @return string Formated date
+	 */
+	public static function show_date($t = '', $format = '')
+	{
+		if (!$t || (substr(php_uname(), 0, 7) == "Windows" && intval($t) <= 0))
+		{
+			return ''; // return nothing if not valid input
+		}
+
+		try
+		{
+			$date = new DateTime(date('Y-m-d H:i:s', $t));
+		}
+		catch (Exception $exc)
+		{
+			return 'invalid date';
+		}
+
+		$userSettings = Settings::getInstance()->get('user');
+	
+		$timezone	 = !empty($userSettings['preferences']['common']['timezone']) ? $userSettings['preferences']['common']['timezone'] : 'UTC';
+		$DateTimeZone	 = new DateTimeZone($timezone);
+		$date->setTimezone($DateTimeZone);
+
+		if (!$format)
+		{
+			$format = $userSettings['preferences']['common']['dateformat'] . ' - ';
+			if ($userSettings['preferences']['common']['timeformat'] == '12')
+			{
+				$format .= 'h:i a';
+			}
+			else
+			{
+				$format .= 'H:i';
+			}
+		}
+
+		return $date->format($format);
 	}
 }

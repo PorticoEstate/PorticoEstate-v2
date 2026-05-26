@@ -79,7 +79,7 @@ use App\modules\phpgwapi\services\Settings;
 					),
 				),
 			);
-			$data['datatable']['source'][] = $this->link_to('index', array('phpgw_return_as' => 'json'));
+			$data['datatable']['source'] = $this->link_to('index', array('phpgw_return_as' => 'json'));
 			$data['datatable']['field'][] = array(
 				'key' => 'name', 'label' => lang('Name'), 'formatter' => 'JqueryPortico.formatLink');
 			if (isset($config->config_data['dim_3']))

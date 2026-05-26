@@ -368,7 +368,6 @@
 			{
 				throw new Exception("No connection: {$url}");
 			}
-			curl_close($ch);
 
 			$result = json_decode($result, true);
 
@@ -424,7 +423,7 @@
 			{
 				$msg = "SOAP Fault:\n faultcode: {$fault->faultcode},\n faultstring: {$fault->faultstring}";
 				echo $msg . PHP_EOL;
-				trigger_error(nl2br($msg), E_USER_ERROR);
+				throw new \RuntimeException(nl2br($msg));
 			}
 
 			$searchProp->getGetSearchCriteriaResult()->getSearchCriteriaPropertiesList()->getSearchCriteriaProperties()[0]->setFromValue($bilagsnr)->setToValue($bilagsnr);
@@ -620,7 +619,6 @@ XML;
 
 			$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-			curl_close($ch);
 
 			$result = array();
 			try

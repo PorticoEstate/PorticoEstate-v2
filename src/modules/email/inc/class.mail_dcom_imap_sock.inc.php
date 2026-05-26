@@ -27,6 +27,20 @@
 	* @package email
 	* @ignore
 	*/	
+	defined('PE_IMAP_SA_MESSAGES') || define('PE_IMAP_SA_MESSAGES', 1);
+	defined('PE_IMAP_SA_RECENT') || define('PE_IMAP_SA_RECENT', 2);
+	defined('PE_IMAP_SA_UNSEEN') || define('PE_IMAP_SA_UNSEEN', 4);
+	defined('PE_IMAP_SA_UIDNEXT') || define('PE_IMAP_SA_UIDNEXT', 8);
+	defined('PE_IMAP_SA_UIDVALIDITY') || define('PE_IMAP_SA_UIDVALIDITY', 16);
+	defined('PE_IMAP_SA_ALL') || define('PE_IMAP_SA_ALL', 31);
+	defined('PE_IMAP_SORTDATE') || define('PE_IMAP_SORTDATE', 0);
+	defined('PE_IMAP_SORTARRIVAL') || define('PE_IMAP_SORTARRIVAL', 1);
+	defined('PE_IMAP_SORTFROM') || define('PE_IMAP_SORTFROM', 2);
+	defined('PE_IMAP_SORTSUBJECT') || define('PE_IMAP_SORTSUBJECT', 3);
+	defined('PE_IMAP_SORTTO') || define('PE_IMAP_SORTTO', 4);
+	defined('PE_IMAP_SORTCC') || define('PE_IMAP_SORTCC', 5);
+	defined('PE_IMAP_SORTSIZE') || define('PE_IMAP_SORTSIZE', 6);
+
 	class mail_dcom extends mail_dcom_base
 	{
 
@@ -831,7 +845,7 @@
 		Normally only the line with the actual data would be returned by the server
 		@access public
 		*/
-		function status($stream_notused='', $fq_folder='',$options=SA_ALL)
+		function status($stream_notused='', $fq_folder='',$options=PE_IMAP_SA_ALL)
 		{
 			if ($this->debug_dcom >= 1) { echo 'imap: ENTERING status<br />'; }
 			
@@ -842,11 +856,11 @@
 			// build the query string
 			$query_str = '';
 			$available_options = Array(
-				SA_MESSAGES	=> 'MESSAGES',
-				SA_RECENT	=> 'RECENT',
-				SA_UNSEEN	=> 'UNSEEN',
-				SA_UIDNEXT	=> 'UIDNEXT',
-				SA_UIDVALIDITY	=> 'UIDVALIDITY'
+				PE_IMAP_SA_MESSAGES	=> 'MESSAGES',
+				PE_IMAP_SA_RECENT	=> 'RECENT',
+				PE_IMAP_SA_UNSEEN	=> 'UNSEEN',
+				PE_IMAP_SA_UIDNEXT	=> 'UIDNEXT',
+				PE_IMAP_SA_UIDVALIDITY	=> 'UIDVALIDITY'
 			);
 			//@reset($available_options);
 			//while(list($key,$value) = each($available_options))
@@ -1099,7 +1113,7 @@
 		// options/flags are:
 			//SE_UID	Return UIDs instead of sequence numbers
 			//SE_NOPREFETCH	Don't prefetch searched messages.
-		function sort($stream_notused='',$criteria=SORTARRIVAL,$reverse=False,$options='')
+		function sort($stream_notused='',$criteria=PE_IMAP_SORTARRIVAL,$reverse=False,$options='')
 		{
 			//if ($this->debug_dcom >= 1) { echo 'imap: sort NOT YET IMPLEMENTED imap sockets function<br />'; }
 			//return False;
@@ -1121,7 +1135,7 @@
 				$fq_folder =	 $GLOBALS['phpgw']->msg->get_arg_value('mailsvr_callstr')
 							.$GLOBALS['phpgw']->msg->get_arg_value('folder');
 				if ($this->debug_dcom >= 2) { echo 'imap: sort: NO L1 class var cached num msgs data, calling this->status with $fq_folder ['.htmlspecialchars($fq_folder).']<br />'; }
-				$status_data = $this->status($stream_notused, $fq_folder,SA_ALL);
+				$status_data = $this->status($stream_notused, $fq_folder,PE_IMAP_SA_ALL);
 				$num_msgs = $status_data->messages;
 			}
 			
@@ -1133,30 +1147,30 @@
 			
 			switch($criteria)
 			{
-				case SORTDATE:
+				case PE_IMAP_SORTDATE:
 					$old_list = $this->fetch_header(1,$num_msgs,'Date:');
 					$field_list = $this->convert_date_array($old_list);
 					break;
-				case SORTARRIVAL:
+				case PE_IMAP_SORTARRIVAL:
 					break;
-				case SORTFROM:
+				case PE_IMAP_SORTFROM:
 					$field_list = $this->fetch_header(1,$num_msgs,'From:');
 					break;
-				case SORTSUBJECT:
+				case PE_IMAP_SORTSUBJECT:
 					$field_list = $this->fetch_header(1,$num_msgs,'Subject:');
 					break;
-				case SORTTO:
+				case PE_IMAP_SORTTO:
 					$field_list = $this->fetch_header(1,$num_msgs,'To:');
 					break;
-				case SORTCC:
+				case PE_IMAP_SORTCC:
 					$field_list = $this->fetch_header(1,$num_msgs,'cc:');
 					break;
-				case SORTSIZE:
+				case PE_IMAP_SORTSIZE:
 					$field_list = $this->fetch_field(1,$num_msgs,'RFC822.SIZE');
 					break;
 			}
 			@reset($field_list);
-			if($criteria == SORTSUBJECT)
+			if($criteria == PE_IMAP_SORTSUBJECT)
 			{
 				if(!$reverse)
 				{

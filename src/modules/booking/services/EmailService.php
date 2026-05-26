@@ -5,6 +5,7 @@ namespace App\modules\booking\services;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Send;
 use App\modules\phpgwapi\services\Cache;
+use App\modules\phpgwapi\helpers\EmailTwigHelper;
 use Exception;
 
 /**
@@ -23,6 +24,7 @@ class EmailService
     private $send;
     private $datetimeformat = 'Y-m-d H:i';
     private $userTimezone;
+    private ?EmailTwigHelper $emailTwigHelper = null;
 
     public function __construct()
     {
@@ -38,42 +40,109 @@ class EmailService
     }
 
     /**
+     * Get or create the email Twig helper (lazy initialization)
+     */
+    private function getEmailTwigHelper(): EmailTwigHelper
+    {
+        if ($this->emailTwigHelper === null) {
+            $this->emailTwigHelper = new EmailTwigHelper('booking');
+        }
+        return $this->emailTwigHelper;
+    }
+
+    /**
      * Format a datetime string with proper timezone handling
      *
      * @param string $datetimeString ISO 8601 datetime string (e.g., "2025-11-06T11:00:00+01:00")
      * @param string $format Output format (default: 'Y-m-d H:i')
      * @return string Formatted datetime in user's timezone
      */
-    private function formatDateTime(string $datetimeString, string $format = null): string
+    private function formatDateTime(string $datetimeString, ?string $format = null): string
     {
         if ($format === null) {
             $format = $this->datetimeformat;
         }
 
         try {
-            // Parse the datetime string
-            // If the string has timezone info (e.g., "2025-11-07T11:00:00+01:00"), DateTime respects it
-            // If the string has no timezone info (e.g., "2025-11-07 12:00:00" from database),
-            // we must assume it's already in the user's timezone, not UTC
             if (strpos($datetimeString, 'T') !== false || strpos($datetimeString, '+') !== false || strpos($datetimeString, 'Z') !== false) {
-                // ISO format with timezone - parse as-is
                 $datetime = new \DateTime($datetimeString);
             } else {
-                // Plain datetime from database - assume it's in user's timezone
                 $datetime = new \DateTime($datetimeString, new \DateTimeZone($this->userTimezone));
             }
 
-            // Ensure we're displaying in user's timezone
             $userTz = new \DateTimeZone($this->userTimezone);
             $datetime->setTimezone($userTz);
 
-            // Format and return
             return $datetime->format($format);
         } catch (\Exception $e) {
-            // Fallback to original behavior if parsing fails
             error_log("Failed to parse datetime '{$datetimeString}': " . $e->getMessage());
             return date($format, strtotime($datetimeString));
         }
+    }
+
+    /**
+     * Format application dates into display strings
+     */
+    private function formatDates(array $dates): array
+    {
+        $formatted = [];
+        foreach ($dates as $date) {
+            $from = $this->formatDateTime($date['from_']);
+            $to = $this->formatDateTime($date['to_']);
+            $formatted[] = "\t{$from} - {$to}";
+        }
+        return $formatted;
+    }
+
+    /**
+     * Compute not-approved dates by comparing requested/recurring dates against approved timestamps
+     */
+    private function computeNotApprovedDates(array $application, array $approvedTimestamps): array
+    {
+        $notApprovedDates = [];
+
+        if (!empty($application['recurring_info']) && !empty($application['dates'])) {
+            $recurringData = is_string($application['recurring_info'])
+                ? json_decode($application['recurring_info'], true)
+                : $application['recurring_info'];
+
+            if ($recurringData) {
+                $attemptedDates = $this->generateRecurringDates($application, $recurringData);
+
+                foreach ($attemptedDates as $attemptedDate) {
+                    $isApproved = false;
+                    foreach ($approvedTimestamps as $approved) {
+                        if ($attemptedDate['from'] === $approved['from'] && $attemptedDate['to'] === $approved['to']) {
+                            $isApproved = true;
+                            break;
+                        }
+                    }
+                    if (!$isApproved) {
+                        $notApprovedDates[] = "\t{$attemptedDate['from']} - {$attemptedDate['to']}";
+                    }
+                }
+            }
+        } else {
+            if (!empty($application['dates'])) {
+                foreach ($application['dates'] as $requestedDate) {
+                    $requestedFrom = $this->formatDateTime($requestedDate['from_']);
+                    $requestedTo = $this->formatDateTime($requestedDate['to_']);
+
+                    $isApproved = false;
+                    foreach ($approvedTimestamps as $approved) {
+                        if ($requestedFrom === $approved['from'] && $requestedTo === $approved['to']) {
+                            $isApproved = true;
+                            break;
+                        }
+                    }
+                    if (!$isApproved) {
+                        $notApprovedDates[] = "\t{$requestedFrom} - {$requestedTo}";
+                    }
+                }
+            }
+        }
+
+        return $notApprovedDates;
     }
 
     /**
@@ -238,7 +307,6 @@ class EmailService
     {
         // Skip if SMTP is not configured
         if (!(isset($this->serverSettings['smtp_server']) && $this->serverSettings['smtp_server'])) {
-            // Could log this, but legacy code just returned silently
             return false;
         }
 
@@ -364,9 +432,6 @@ class EmailService
 				: "noreply<noreply@{$this->serverSettings['hostname']}>";
 
 			$subject = "KOPI::" . $config['application_mail_subject'];
-			$external_site_address = !empty($config['external_site_address'])
-				? $config['external_site_address']
-				: $this->serverSettings['webserver_url'];
 
 			// Create backend link
 			$enforce_ssl = $this->serverSettings['enforce_ssl'];
@@ -376,12 +441,15 @@ class EmailService
 
 			$resourcename = $this->getResourceNames($application['resources']);
 
-			$body = "<h1>NB!! KOPI av epost til {$application['contact_email']}</h1>"
-				. "<p>Ny søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . "</p>"
-				. "<p>" . $config['application_mail_created'] . "</p>"
-				. "<p>Forresten...:<br/>"
-				. "<a href=\"{$link_backend}\">Link til søknad i backend</a></p>"
-				. "<p>" . $config['application_mail_signature'] . "</p>";
+			$body = $this->getEmailTwigHelper()->render('@views/emails/case_officer_notification.twig', [
+				'contact_email' => $application['contact_email'],
+				'systemname' => $config['application_mail_systemname'],
+				'resourcename' => $resourcename,
+				'building_name' => $application['building_name'],
+				'mail_created' => $config['application_mail_created'],
+				'link_backend' => $link_backend,
+				'signature' => $config['application_mail_signature'],
+			]);
 
 			$send = CreateObject('phpgwapi.send');
 			$bcc = implode(';', $mail_addresses);
@@ -497,11 +565,31 @@ class EmailService
      */
     protected function getBookingConfig(): ?array
     {
+        // Try legacy CreateObject first (works in legacy context)
+        if (function_exists('CreateObject')) {
+            try {
+                $config = CreateObject('phpgwapi.config', 'booking');
+                $config->read();
+                return $config->config_data ?? null;
+            } catch (\Throwable $e) {
+                // Fall through to direct DB query
+            }
+        }
+
+        // Direct DB fallback for new Slim controller context
         try {
-            $config = CreateObject('phpgwapi.config', 'booking');
-            $config->read();
-            return $config->config_data ?? null;
-        } catch (Exception $e) {
+            $db = \App\Database\Db::getInstance();
+            $stmt = $db->prepare(
+                "SELECT config_name, config_value FROM phpgw_config WHERE config_app = 'booking'"
+            );
+            $stmt->execute();
+            $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            $config = [];
+            foreach ($rows as $r) {
+                $config[$r['config_name']] = $r['config_value'];
+            }
+            return $config ?: null;
+        } catch (\Throwable $e) {
             error_log("Failed to get booking config: " . $e->getMessage());
             return null;
         }
@@ -604,44 +692,34 @@ class EmailService
      */
     protected function buildEmailBodyForGroup(array $applications, array $config, bool $created, string $resourcename, string $link, array $e_lock_instructions): string
     {
+        $twig = $this->getEmailTwigHelper();
         $primaryApplication = reset($applications);
-        $body = '';
+
+        // Common template data
+        $baseData = [
+            'systemname' => $config['application_mail_systemname'],
+            'resourcename' => $resourcename,
+            'link' => $link,
+            'application_id' => $primaryApplication['id'],
+            'organizer' => $primaryApplication['organizer'] ?? '',
+            'comment' => $primaryApplication['comment'] ?? '',
+            'signature' => $config['application_mail_signature'],
+        ];
 
         if ($created) {
-            $body = "<p>" . $config['application_mail_created'] . "</p>";
+            $appDetails = $this->prepareApplicationDetails($applications);
 
-            // Add combined application header
-            $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner:</h3>";
-            if (!empty($primaryApplication['organizer'])) {
-                $body .= "<p><strong>Arrangør:</strong> " . $primaryApplication['organizer'] . "</p>";
-            }
-
-            // Show details for each application separately if they have different resources
-            $body .= $this->buildApplicationDetailsSection($applications);
-
-            $body .= '<p><a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $primaryApplication['id'] . '</a></p>';
+            return $twig->render('@views/emails/application_group_created.twig', array_merge($baseData, [
+                'mail_created' => $config['application_mail_created'],
+                'applications' => $appDetails,
+            ]));
         }
-        elseif ($primaryApplication['status'] == 'PENDING') {
-            $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " er " . lang($primaryApplication['status']) . '</p>';
 
-            // Add combined application details
-            $body .= "<h3>Kombinert søknad - " . count($applications) . " deler:</h3>";
-            if (!empty($primaryApplication['organizer'])) {
-                $body .= "<p><strong>Arrangør:</strong> " . $primaryApplication['organizer'] . "</p>";
-            }
+        // Status-based templates
+        $status = $primaryApplication['status'];
 
-            // Show details for each application separately
-            $body .= $this->buildApplicationDetailsSection($applications);
-
-            if (!empty($primaryApplication['comment'])) {
-                $body .= '<p><strong>Kommentar fra saksbehandler:</strong><br />' . $primaryApplication['comment'] . '</p>';
-            }
-
-            $body .= "<p>" . $config['application_mail_pending'] . "</p>";
-            $body .= '<p><a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $primaryApplication['id'] . '</a></p>';
-        }
-        elseif ($primaryApplication['status'] == 'ACCEPTED' || $primaryApplication['status'] == 'REJECTED') {
-            // Count approved vs rejected applications first to determine if mixed
+        if ($status == 'ACCEPTED' || $status == 'REJECTED' || $status == 'PENDING') {
+            // Count approved vs rejected
             $approvedCount = 0;
             $rejectedCount = 0;
             foreach ($applications as $app) {
@@ -652,78 +730,36 @@ class EmailService
                 }
             }
 
-            // For combined applications with mixed results, use "behandlet" (processed) instead of approved/rejected
             $hasMixedResults = ($approvedCount > 0 && $rejectedCount > 0);
 
-            if ($hasMixedResults) {
-                $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån er behandlet</p>";
+            if ($status == 'PENDING') {
+                $appDetails = $this->prepareApplicationDetails($applications);
             } else {
-                $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån er " . lang($primaryApplication['status']) . '</p>';
+                $appDetails = $this->prepareAcceptedApplicationDetails($applications);
+                $baseData['total_cost'] = $this->calculateTotalCost($applications);
             }
 
-            // Add combined application details with accurate count
-            if ($rejectedCount > 0 && $approvedCount > 0) {
-                // Mixed results
-                $body .= "<h3>Kombinert søknad - " . $approvedCount . " deler godkjent, " . $rejectedCount . " avslått:</h3>";
-            } elseif ($approvedCount > 0) {
-                // All approved
-                $body .= "<h3>Kombinert søknad - " . count($applications) . " deler godkjent:</h3>";
-            } else {
-                // All rejected
-                $body .= "<h3>Kombinert søknad - " . count($applications) . " deler avslått:</h3>";
-            }
-
-            if (!empty($primaryApplication['organizer'])) {
-                $body .= "<p><strong>Arrangør:</strong> " . $primaryApplication['organizer'] . "</p>";
-            }
-
-            // Show detailed breakdown per application with approved times and costs
-            $body .= $this->buildAcceptedApplicationDetailsSection($applications);
-
-            // Calculate and show total cost
-            $totalCost = $this->calculateTotalCost($applications);
-            if ($totalCost > 0) {
-                $body .= "<p><strong>Totalkostnad for alle bookinger: kr " . number_format($totalCost, 2, ",", '.') . "</strong></p>";
-            }
-
-            if (!empty($primaryApplication['agreement_requirements'])) {
-                $lang_additional_requirements = lang('additional requirements');
-                $body .= "{$lang_additional_requirements}:<br />" . $primaryApplication['agreement_requirements'] . "<br />";
-            }
-
-            if (!empty($primaryApplication['comment'])) {
-                $body .= "<p>Kommentar fra saksbehandler:<br />" . $primaryApplication['comment'] . "</p>";
-            }
-
-            // Footer message based on results
-            if ($hasMixedResults) {
-                // Mixed results - use neutral message or omit the standard message
-                $body .= "<p>Se detaljer for hver del av søknaden ovenfor.</p>";
-            } elseif ($approvedCount > 0) {
-                // All approved
-                $body .= "<p>{$config['application_mail_accepted']}</p>";
-            } else {
-                // All rejected
-                $body .= "<p>{$config['application_mail_rejected']}</p>";
-            }
-
-            $body .= "<br /><a href=\"{$link}\">Link til {$config['application_mail_systemname']}: søknad #{$primaryApplication['id']}</a>";
-
-            if (!empty($e_lock_instructions)) {
-                $body .= "\n" . implode("\n", $e_lock_instructions);
-            }
-        }
-        else {
-            // Comment added or other status update
-            $subject = $config['application_comment_mail_subject'];
-            $body = "<p>" . $config['application_comment_added_mail'] . "</p>";
-            $body .= '<p>Kommentar fra saksbehandler:<br />' . $primaryApplication['comment'] . '</p>';
-            $body .= '<p><a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $primaryApplication['id'] . '</a></p>';
+            return $twig->render('@views/emails/application_group_status.twig', array_merge($baseData, [
+                'status' => $status,
+                'status_text' => lang($status),
+                'applications' => $appDetails,
+                'approved_count' => $approvedCount,
+                'rejected_count' => $rejectedCount,
+                'has_mixed_results' => $hasMixedResults,
+                'agreement_requirements' => $primaryApplication['agreement_requirements'] ?? '',
+                'e_lock_instructions' => $e_lock_instructions,
+                'mail_pending' => $config['application_mail_pending'] ?? '',
+                'mail_accepted' => $config['application_mail_accepted'] ?? '',
+                'mail_rejected' => $config['application_mail_rejected'] ?? '',
+                'comment_added_mail' => $config['application_comment_added_mail'] ?? '',
+            ]));
         }
 
-        $body .= "<p>" . $config['application_mail_signature'] . "</p>";
-
-        return $body;
+        // Comment added or other status update
+        return $twig->render('@views/emails/application_group_status.twig', array_merge($baseData, [
+            'status' => 'COMMENT',
+            'comment_added_mail' => $config['application_comment_added_mail'] ?? '',
+        ]));
     }
 
     /**
@@ -731,86 +767,44 @@ class EmailService
      */
     protected function buildEmailBody(array $application, array $config, bool $created, string $resourcename, string $link, array $e_lock_instructions): string
     {
-        $body = '';
+        $twig = $this->getEmailTwigHelper();
+
+        // Common template data
+        $baseData = [
+            'systemname' => $config['application_mail_systemname'],
+            'resourcename' => $resourcename,
+            'building_name' => $application['building_name'],
+            'link' => $link,
+            'application_id' => $application['id'],
+            'application_name' => $application['name'] ?? '',
+            'organizer' => $application['organizer'] ?? '',
+            'comment' => $application['comment'] ?? '',
+            'signature' => $config['application_mail_signature'],
+        ];
 
         if ($created) {
-            $body = "<p>" . $config['application_mail_created'] . "</p>";
+            $dates = !empty($application['dates']) ? $this->formatDates($application['dates']) : [];
 
-            // Add application details
-            $body .= "<h3>Søknadsdetaljer:</h3>";
-            if (!empty($application['name'])) {
-                $body .= "<p><strong>Arrangement:</strong> " . $application['name'] . "</p>";
-            }
-            if (!empty($application['organizer'])) {
-                $body .= "<p><strong>Arrangør:</strong> " . $application['organizer'] . "</p>";
-            }
-            $body .= "<p><strong>Ressurs:</strong> " . $resourcename . "</p>";
-            $body .= "<p><strong>Lokasjon:</strong> " . $application['building_name'] . "</p>";
-
-            // Add requested dates
-            if (!empty($application['dates'])) {
-                $dates = [];
-                foreach ($application['dates'] as $date) {
-                    $from = $this->formatDateTime($date['from_']);
-                    $to = $this->formatDateTime($date['to_']);
-                    $dates[] = "\t{$from} - {$to}";
-                }
-                if (!empty($dates)) {
-                    $body .= "<p><strong>Ønskede tider:</strong></p>";
-                    $body .= "<pre>" . implode("\n", $dates) . "</pre>";
-                }
-            }
-
-            $body .= '<p><a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $application['id'] . '</a></p>';
+            return $twig->render('@views/emails/application_created.twig', array_merge($baseData, [
+                'mail_created' => $config['application_mail_created'],
+                'dates' => $dates,
+            ]));
         }
-        elseif ($application['status'] == 'PENDING') {
-            $body = "<p>Din søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . " er " . lang($application['status']) . '</p>';
 
-            // Add application details
-            $body .= "<h3>Søknadsdetaljer:</h3>";
-            if (!empty($application['name'])) {
-                $body .= "<p><strong>Arrangement:</strong> " . $application['name'] . "</p>";
-            }
-            if (!empty($application['organizer'])) {
-                $body .= "<p><strong>Arrangør:</strong> " . $application['organizer'] . "</p>";
-            }
+        if ($application['status'] == 'PENDING') {
+            $dates = !empty($application['dates']) ? $this->formatDates($application['dates']) : [];
 
-            // Add requested dates
-            if (!empty($application['dates'])) {
-                $dates = [];
-                foreach ($application['dates'] as $date) {
-                    $from = $this->formatDateTime($date['from_']);
-                    $to = $this->formatDateTime($date['to_']);
-                    $dates[] = "\t{$from} - {$to}";
-                }
-                if (!empty($dates)) {
-                    $body .= "<p><strong>Ønskede tider:</strong></p>";
-                    $body .= "<pre>" . implode("\n", $dates) . "</pre>";
-                }
-            }
-
-            if (!empty($application['comment'])) {
-                $body .= '<p><strong>Kommentar fra saksbehandler:</strong><br />' . $application['comment'] . '</p>';
-            }
-
-            $body .= "<p>" . $config['application_mail_pending'] . "</p>";
-            $body .= '<p><a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $application['id'] . '</a></p>';
+            return $twig->render('@views/emails/application_pending.twig', array_merge($baseData, [
+                'status_text' => lang($application['status']),
+                'dates' => $dates,
+                'mail_pending' => $config['application_mail_pending'],
+            ]));
         }
-        elseif ($application['status'] == 'ACCEPTED') {
-            $body = "<p>Din søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . " er " . lang($application['status']) . '</p>';
 
-            // Add application details
-            $body .= "<h3>Søknadsdetaljer:</h3>";
-            if (!empty($application['name'])) {
-                $body .= "<p><strong>Arrangement:</strong> " . $application['name'] . "</p>";
-            }
-            if (!empty($application['organizer'])) {
-                $body .= "<p><strong>Arrangør:</strong> " . $application['organizer'] . "</p>";
-            }
-
+        if ($application['status'] == 'ACCEPTED') {
             // Get associated dates and costs
             $associations = $this->getApplicationAssociations($application['id']);
-            $adates = [];
+            $approvedDates = [];
             $cost = 0;
             $approvedTimestamps = [];
 
@@ -818,11 +812,9 @@ class EmailService
                 if ($assoc['active']) {
                     $from = $this->formatDateTime($assoc['from_']);
                     $to = $this->formatDateTime($assoc['to_']);
-                    $adates[] = "\t{$from} - {$to}";
+                    $approvedDates[] = "\t{$from} - {$to}";
                     $cost += (float)$assoc['cost'];
 
-                    // Store approved datetime strings (normalized to Oslo time) for comparison
-                    // Using formatted strings avoids timezone conversion issues
                     $approvedTimestamps[] = [
                         'from' => $from,
                         'to' => $to
@@ -830,139 +822,33 @@ class EmailService
                 }
             }
 
-            // Calculate rejected/not approved dates for recurring applications
-            $notApprovedDates = [];
+            $notApprovedDates = $this->computeNotApprovedDates($application, $approvedTimestamps);
 
-            // For recurring applications, we need to generate all attempted dates
-            if (!empty($application['recurring_info']) && !empty($application['dates'])) {
-                // Parse recurring info
-                $recurringData = is_string($application['recurring_info'])
-                    ? json_decode($application['recurring_info'], true)
-                    : $application['recurring_info'];
-
-                if ($recurringData) {
-                    // Generate all recurring dates that were attempted
-                    $attemptedDates = $this->generateRecurringDates($application, $recurringData);
-
-                    // Compare attempted dates with approved dates
-                    foreach ($attemptedDates as $attemptedDate) {
-                        // attemptedDate now contains formatted strings directly
-                        $attemptedFrom = $attemptedDate['from'];
-                        $attemptedTo = $attemptedDate['to'];
-
-                        // Check if this attempted time matches any approved time
-                        $isApproved = false;
-                        foreach ($approvedTimestamps as $approved) {
-                            if ($attemptedFrom === $approved['from'] && $attemptedTo === $approved['to']) {
-                                $isApproved = true;
-                                break;
-                            }
-                        }
-
-                        if (!$isApproved) {
-                            $notApprovedDates[] = "\t{$attemptedFrom} - {$attemptedTo}";
-                        }
-                    }
-                }
-            } else {
-                // For non-recurring applications, compare requested dates with approved dates
-                if (!empty($application['dates'])) {
-                    foreach ($application['dates'] as $requestedDate) {
-                        // Format requested dates to Oslo time strings (same format as approved dates)
-                        $requestedFrom = $this->formatDateTime($requestedDate['from_']);
-                        $requestedTo = $this->formatDateTime($requestedDate['to_']);
-
-                        // Check if this requested time matches any approved time
-                        // Compare normalized Oslo time strings directly
-                        $isApproved = false;
-                        foreach ($approvedTimestamps as $approved) {
-                            if ($requestedFrom === $approved['from'] && $requestedTo === $approved['to']) {
-                                $isApproved = true;
-                                break;
-                            }
-                        }
-
-                        // If not approved, add to the not approved list
-                        if (!$isApproved) {
-                            $notApprovedDates[] = "\t{$requestedFrom} - {$requestedTo}";
-                        }
-                    }
-                }
-            }
-
-            // Display not approved times first (if any)
-            if (!empty($notApprovedDates)) {
-                $body .= "<pre style='color: #dc3545;'>Tider du ikke fikk:\n" . implode("\n", $notApprovedDates) . "</pre><br />";
-            }
-
-            // Display approved times
-            if (!empty($adates)) {
-                $body .= "<pre>Godkjent tid:\n" . implode("\n", $adates) . "</pre><br />";
-            }
-
-            if ($cost > 0) {
-                $body .= "<pre>Totalkostnad: kr " . number_format($cost, 2, ",", '.') . "</pre><br />";
-            }
-
-            if (!empty($application['agreement_requirements'])) {
-                $lang_additional_requirements = lang('additional requirements');
-                $body .= "{$lang_additional_requirements}:<br />" . $application['agreement_requirements'] . "<br />";
-            }
-
-            if (!empty($application['comment'])) {
-                $body .= "<p>Kommentar fra saksbehandler:<br />" . $application['comment'] . "</p>";
-            }
-
-            $body .= "<p>{$config['application_mail_accepted']}</p>";
-            $body .= "<br /><a href=\"{$link}\">Link til {$config['application_mail_systemname']}: søknad #{$application['id']}</a>";
-
-            if (!empty($e_lock_instructions)) {
-                $body .= "\n" . implode("\n", $e_lock_instructions);
-            }
-        }
-        elseif ($application['status'] == 'REJECTED') {
-            $body = "<p>Din søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . " er " . lang($application['status']) . '</p>';
-
-            // Add application details
-            $body .= "<h3>Søknadsdetaljer:</h3>";
-            if (!empty($application['name'])) {
-                $body .= "<p><strong>Arrangement:</strong> " . $application['name'] . "</p>";
-            }
-            if (!empty($application['organizer'])) {
-                $body .= "<p><strong>Arrangør:</strong> " . $application['organizer'] . "</p>";
-            }
-
-            // Add requested dates
-            if (!empty($application['dates'])) {
-                $dates = [];
-                foreach ($application['dates'] as $date) {
-                    $from = $this->formatDateTime($date['from_']);
-                    $to = $this->formatDateTime($date['to_']);
-                    $dates[] = "\t{$from} - {$to}";
-                }
-                if (!empty($dates)) {
-                    $body .= "<p><strong>Forespurte tider:</strong></p>";
-                    $body .= "<pre>" . implode("\n", $dates) . "</pre>";
-                }
-            }
-
-            if (!empty($application['comment'])) {
-                $body .= '<p><strong>Kommentar fra saksbehandler:</strong><br />' . $application['comment'] . '</p>';
-            }
-
-            $body .= '<p>' . $config['application_mail_rejected'] . ' <a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $application['id'] . '</a></p>';
-        }
-        else {
-            // Comment added or other status update
-            $subject = $config['application_comment_mail_subject'];
-            $body = "<p>" . $config['application_comment_added_mail'] . "</p>";
-            $body .= '<p>Kommentar fra saksbehandler:<br />' . $application['comment'] . '</p>';
-            $body .= '<p><a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $application['id'] . '</a></p>';
+            return $twig->render('@views/emails/application_accepted.twig', array_merge($baseData, [
+                'status_text' => lang($application['status']),
+                'approved_dates' => $approvedDates,
+                'not_approved_dates' => $notApprovedDates,
+                'cost' => $cost,
+                'agreement_requirements' => $application['agreement_requirements'] ?? '',
+                'mail_accepted' => $config['application_mail_accepted'],
+                'e_lock_instructions' => $e_lock_instructions,
+            ]));
         }
 
-        $body .= "<p>" . $config['application_mail_signature'] . "</p>";
+        if ($application['status'] == 'REJECTED') {
+            $dates = !empty($application['dates']) ? $this->formatDates($application['dates']) : [];
 
-        return $body;
+            return $twig->render('@views/emails/application_rejected.twig', array_merge($baseData, [
+                'status_text' => lang($application['status']),
+                'dates' => $dates,
+                'mail_rejected' => $config['application_mail_rejected'],
+            ]));
+        }
+
+        // Comment added or other status update
+        return $twig->render('@views/emails/application_comment.twig', array_merge($baseData, [
+            'comment_added_mail' => $config['application_comment_added_mail'],
+        ]));
     }
 
     /**
@@ -1023,7 +909,6 @@ class EmailService
             }
 
             $subject_notify = $config['application_mail_subject'] . ": En søknad om leie/lån av " . $resourcename . " på " . $primaryApplication['building_name'] . " er godkjent";
-            $body_notify = "<p>" . $primaryApplication['contact_name'] . " sin søknad om leie/lån av " . $resourcename . " på " . $primaryApplication['building_name'] . "</p>";
 
             // Add approved dates from all applications
             $allAdates = [];
@@ -1038,13 +923,18 @@ class EmailService
                 }
             }
 
-            if (!empty($allAdates)) {
-                $body_notify .= "<pre>Godkjent:\n" . implode("\n", $allAdates) . "</pre>";
-            }
+            $equipment = (!empty($primaryApplication['equipment']) && $primaryApplication['equipment'] != 'dummy')
+                ? $primaryApplication['equipment']
+                : '';
 
-            if (!empty($primaryApplication['equipment']) && $primaryApplication['equipment'] != 'dummy') {
-                $body_notify .= "<p><b>{$config['application_equipment']}:</b><br />" . $primaryApplication['equipment'] . "</p>";
-            }
+            $body_notify = $this->getEmailTwigHelper()->render('@views/emails/building_notification_group.twig', [
+                'contact_name' => $primaryApplication['contact_name'],
+                'resourcename' => $resourcename,
+                'building_name' => $primaryApplication['building_name'],
+                'approved_dates' => $allAdates,
+                'equipment' => $equipment,
+                'equipment_label' => $config['application_equipment'] ?? '',
+            ]);
 
             // Send to each building email
             $buildingemails = array_unique(array_filter([$buildingemail['email1'], $buildingemail['email2'], $buildingemail['email3']]));
@@ -1068,7 +958,6 @@ class EmailService
                             $reply_to
                         );
                     } catch (Exception $e) {
-                        // Log but don't fail the main email
                         error_log("Failed to send building notification to {$email}: " . $e->getMessage());
                     }
                 }
@@ -1092,7 +981,6 @@ class EmailService
             }
 
             $subject_notify = $config['application_mail_subject'] . ": En søknad om leie/lån av " . $resourcename . " på " . $application['building_name'] . " er godkjent";
-            $body_notify = "<p>" . $application['contact_name'] . " sin søknad om leie/lån av " . $resourcename . " på " . $application['building_name'] . "</p>";
 
             // Add approved dates
             $associations = $this->getApplicationAssociations($application['id']);
@@ -1105,13 +993,18 @@ class EmailService
                 }
             }
 
-            if (!empty($adates)) {
-                $body_notify .= "<pre>Godkjent:\n" . implode("\n", $adates) . "</pre>";
-            }
+            $equipment = (!empty($application['equipment']) && $application['equipment'] != 'dummy')
+                ? $application['equipment']
+                : '';
 
-            if (!empty($application['equipment']) && $application['equipment'] != 'dummy') {
-                $body_notify .= "<p><b>{$config['application_equipment']}:</b><br />" . $application['equipment'] . "</p>";
-            }
+            $body_notify = $this->getEmailTwigHelper()->render('@views/emails/building_notification.twig', [
+                'contact_name' => $application['contact_name'],
+                'resourcename' => $resourcename,
+                'building_name' => $application['building_name'],
+                'approved_dates' => $adates,
+                'equipment' => $equipment,
+                'equipment_label' => $config['application_equipment'] ?? '',
+            ]);
 
             // Send to each building email
             $buildingemails = array_unique(array_filter([$buildingemail['email1'], $buildingemail['email2'], $buildingemail['email3']]));
@@ -1135,7 +1028,6 @@ class EmailService
                             $reply_to
                         );
                     } catch (Exception $e) {
-                        // Log but don't fail the main email
                         error_log("Failed to send building notification to {$email}: " . $e->getMessage());
                     }
                 }
@@ -1146,61 +1038,49 @@ class EmailService
     }
 
     /**
-     * Build application details section showing individual applications with their resources and dates
+     * Prepare application details for group email templates (bordered sections)
+     *
+     * @return array Array of application data ready for template rendering
      */
-    private function buildApplicationDetailsSection(array $applications): string
+    private function prepareApplicationDetails(array $applications): array
     {
-        $section = "";
+        $result = [];
 
         foreach ($applications as $application) {
-            $section .= "<div style='border-left: 3px solid #007cba; padding-left: 10px; margin: 10px 0;'>";
+            $appData = [
+                'name' => $application['name'] ?? '',
+                'id' => $application['id'],
+                'building_name' => $application['building_name'] ?? '',
+                'resource_names' => '',
+                'formatted_dates' => [],
+            ];
 
-            // Use the application name (part name) as the header
-            $applicationName = !empty($application['name']) ? $application['name'] : "Søknadsdel";
-            $section .= "<h4>{$applicationName} (ID: {$application['id']}):</h4>";
-
-            // Resource information for this application
             if (!empty($application['resources'])) {
-                $resourceNames = $this->getResourceNames($application['resources']);
-                $section .= "<p><strong>Ressurs:</strong> {$resourceNames}</p>";
+                $appData['resource_names'] = $this->getResourceNames($application['resources']);
             }
 
-            // Building information
-            if (!empty($application['building_name'])) {
-                $section .= "<p><strong>Lokasjon:</strong> {$application['building_name']}</p>";
-            }
-
-            // Dates for this application
             if (!empty($application['dates'])) {
-                $dates = [];
-                foreach ($application['dates'] as $date) {
-                    $from = $this->formatDateTime($date['from_']);
-                    $to = $this->formatDateTime($date['to_']);
-                    $dates[] = "\t{$from} - {$to}";
-                }
-                if (!empty($dates)) {
-                    $section .= "<p><strong>Ønskede tider:</strong></p>";
-                    $section .= "<pre>" . implode("\n", $dates) . "</pre>";
-                }
+                $appData['formatted_dates'] = $this->formatDates($application['dates']);
             }
 
-            $section .= "</div>";
+            $result[] = $appData;
         }
 
-        return $section;
+        return $result;
     }
 
     /**
-     * Build accepted application details section with approved times and costs per application
+     * Prepare accepted application details with approved/rejected dates and costs
+     *
+     * @return array Array of application data ready for template rendering
      */
-    private function buildAcceptedApplicationDetailsSection(array $applications): string
+    private function prepareAcceptedApplicationDetails(array $applications): array
     {
-        $section = "";
+        $result = [];
 
         foreach ($applications as $application) {
-            // First, get associations to check if there are any approved times
             $associations = $this->getApplicationAssociations($application['id']);
-            $adates = [];
+            $approvedDates = [];
             $applicationCost = 0;
             $approvedTimestamps = [];
 
@@ -1210,10 +1090,9 @@ class EmailService
                     $to = $this->formatDateTime($assoc['to_']);
                     $cost = (float)$assoc['cost'];
                     $costText = $cost > 0 ? " (kr " . number_format($cost, 2, ",", '.') . ")" : "";
-                    $adates[] = "\t{$from} - {$to}{$costText}";
+                    $approvedDates[] = "\t{$from} - {$to}{$costText}";
                     $applicationCost += $cost;
 
-                    // Store approved datetime strings for comparison
                     $approvedTimestamps[] = [
                         'from' => $from,
                         'to' => $to
@@ -1221,109 +1100,28 @@ class EmailService
                 }
             }
 
-            // Determine if this application was approved or rejected based on approved times
-            $isApproved = !empty($adates);
+            $isApproved = !empty($approvedDates);
+            $notApprovedDates = $this->computeNotApprovedDates($application, $approvedTimestamps);
 
-            // Use different styling and labels for approved vs rejected applications
-            if ($isApproved) {
-                $section .= "<div style='border-left: 3px solid #28a745; padding-left: 10px; margin: 10px 0;'>";
-                $applicationName = !empty($application['name']) ? $application['name'] : "Søknadsdel";
-                $section .= "<h4>✅ {$applicationName} - Godkjent (ID: {$application['id']}):</h4>";
-            } else {
-                $section .= "<div style='border-left: 3px solid #dc3545; padding-left: 10px; margin: 10px 0;'>";
-                $applicationName = !empty($application['name']) ? $application['name'] : "Søknadsdel";
-                $section .= "<h4>❌ {$applicationName} - Avslått (ID: {$application['id']}):</h4>";
-            }
+            $appData = [
+                'name' => $application['name'] ?? '',
+                'id' => $application['id'],
+                'building_name' => $application['building_name'] ?? '',
+                'resource_names' => '',
+                'is_approved' => $isApproved,
+                'approved_dates' => $approvedDates,
+                'not_approved_dates' => $notApprovedDates,
+                'cost' => $applicationCost,
+            ];
 
-            // Resource information
             if (!empty($application['resources'])) {
-                $resourceNames = $this->getResourceNames($application['resources']);
-                $section .= "<p><strong>Ressurs:</strong> {$resourceNames}</p>";
+                $appData['resource_names'] = $this->getResourceNames($application['resources']);
             }
 
-            // Building information
-            if (!empty($application['building_name'])) {
-                $section .= "<p><strong>Lokasjon:</strong> {$application['building_name']}</p>";
-            }
-
-            // Calculate rejected/not approved dates
-            $notApprovedDates = [];
-
-            // For recurring applications, we need to generate all attempted dates
-            if (!empty($application['recurring_info']) && !empty($application['dates'])) {
-                // Parse recurring info
-                $recurringData = is_string($application['recurring_info'])
-                    ? json_decode($application['recurring_info'], true)
-                    : $application['recurring_info'];
-
-                if ($recurringData) {
-                    // Generate all recurring dates that were attempted
-                    $attemptedDates = $this->generateRecurringDates($application, $recurringData);
-
-                    // Compare attempted dates with approved dates
-                    foreach ($attemptedDates as $attemptedDate) {
-                        // attemptedDate now contains formatted strings directly
-                        $attemptedFrom = $attemptedDate['from'];
-                        $attemptedTo = $attemptedDate['to'];
-
-                        // Check if this attempted time matches any approved time
-                        $isApproved = false;
-                        foreach ($approvedTimestamps as $approved) {
-                            if ($attemptedFrom === $approved['from'] && $attemptedTo === $approved['to']) {
-                                $isApproved = true;
-                                break;
-                            }
-                        }
-
-                        if (!$isApproved) {
-                            $notApprovedDates[] = "\t{$attemptedFrom} - {$attemptedTo}";
-                        }
-                    }
-                }
-            } else {
-                // For non-recurring applications, compare requested dates with approved dates
-                if (!empty($application['dates'])) {
-                    foreach ($application['dates'] as $requestedDate) {
-                        // Format requested dates to Oslo time strings (same format as approved dates)
-                        $requestedFrom = $this->formatDateTime($requestedDate['from_']);
-                        $requestedTo = $this->formatDateTime($requestedDate['to_']);
-
-                        // Check if this requested time matches any approved time
-                        $isApproved = false;
-                        foreach ($approvedTimestamps as $approved) {
-                            if ($requestedFrom === $approved['from'] && $requestedTo === $approved['to']) {
-                                $isApproved = true;
-                                break;
-                            }
-                        }
-
-                        // If not approved, add to the not approved list
-                        if (!$isApproved) {
-                            $notApprovedDates[] = "\t{$requestedFrom} - {$requestedTo}";
-                        }
-                    }
-                }
-            }
-
-            // Display not approved times first (if any)
-            if (!empty($notApprovedDates)) {
-                $section .= "<pre style='color: #dc3545;'><strong>Tider du ikke fikk:</strong>\n" . implode("\n", $notApprovedDates) . "</pre>";
-            }
-
-            // Display approved times
-            if (!empty($adates)) {
-                $section .= "<p><strong>Godkjente tider:</strong></p>";
-                $section .= "<pre>" . implode("\n", $adates) . "</pre>";
-
-                if ($applicationCost > 0) {
-                    $section .= "<p><strong>Kostnad for {$applicationName}: kr " . number_format($applicationCost, 2, ",", '.') . "</strong></p>";
-                }
-            }
-
-            $section .= "</div>";
+            $result[] = $appData;
         }
 
-        return $section;
+        return $result;
     }
 
     /**
@@ -1360,7 +1158,6 @@ class EmailService
         // Get first date from application
         $first_date = $application['dates'][0];
 
-        // Use formatDateTime to parse the date correctly (handles timezone properly)
         $from_str = $first_date['from_'];
         $to_str = $first_date['to_'];
 
@@ -1381,9 +1178,8 @@ class EmailService
 
         if (!empty($recurringData['repeat_until'])) {
             $repeat_until = new \DateTime($recurringData['repeat_until'], new \DateTimeZone($this->userTimezone));
-            $repeat_until->setTime(23, 59, 59); // End of day
+            $repeat_until->setTime(23, 59, 59);
         } else {
-            // Fallback to 3 months from first date
             $repeat_until = clone $from_time;
             $repeat_until->add(new \DateInterval('P3M'));
         }
@@ -1391,18 +1187,16 @@ class EmailService
         // Generate recurring dates by adding intervals (handles DST correctly)
         $current_from = clone $from_time;
         $current_to = clone $to_time;
-        $interval_obj = new \DateInterval('P' . $interval . 'W'); // interval in weeks
+        $interval_obj = new \DateInterval('P' . $interval . 'W');
         $i = 0;
-        $max_iterations = 100; // Safety limit
+        $max_iterations = 100;
 
         while ($current_to <= $repeat_until && $i < $max_iterations) {
-            // Store formatted strings directly for easier comparison
             $dates[] = [
                 'from' => $current_from->format($this->datetimeformat),
                 'to' => $current_to->format($this->datetimeformat)
             ];
 
-            // Add interval for next occurrence
             $current_from->add($interval_obj);
             $current_to->add($interval_obj);
             $i++;

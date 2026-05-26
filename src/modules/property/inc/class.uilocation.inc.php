@@ -62,34 +62,17 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		$type, $entity_id, $role, $accounts;
 
 	var $public_functions = array(
-		'query'						 => true,
-		'responsiblility_role_save'	 => true,
-		'get_part_of_town'			 => true,
-		'get_history_data'			 => true,
-		'get_documents'				 => true,
-		'get_accounts'				 => true,
-		'download'					 => true,
+		'query'						 => false,
 		'index'						 => true,
 		'view'						 => true,
 		'edit'						 => true,
 		'add'						 => true,
-		'save'						 => true,
-		'delete'					 => true,
 		'update_cat'				 => true,
 		'stop'						 => true,
 		'summary'					 => true,
 		'columns'					 => true,
 		'update_location'			 => true,
 		'responsiblility_role'		 => true,
-		'get_delivery_address'		 => true,
-		'get_location_exception'	 => true,
-		'get_controls_at_component'	 => true,
-		'get_assigned_history'		 => true,
-		'get_cases'					 => true,
-		'get_checklists'			 => true,
-		'get_cases_for_checklist'	 => true,
-		'get_location_data'			 => true,
-		'edit_field'				 => true,
 		'dashboard'					 => true,
 	);
 
@@ -139,6 +122,8 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 
 	/**
 	 * Fetch data from $this->bo based on parametres
+	 *
+	 * @deprecated Use LocationController::index() via /property/location.
 	 * @return array
 	 */
 	public function query()
@@ -150,26 +135,41 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		$draw	 = Sanitizer::get_var('draw', 'int');
 		$columns = Sanitizer::get_var('columns');
 		$export	 = Sanitizer::get_var('export', 'bool');
+		$query_value = (is_array($search) && isset($search['value'])) ? $search['value'] : '';
+		$order_column = '';
+		$sort_dir = 'asc';
 
 		$column_search = array();
 		if ($columns && is_array($columns))
 		{
 			foreach ($columns as $column)
 			{
-				if (!empty($column['search']['value']))
+				if (!empty($column['search']['value']) && isset($column['data']))
 				{
 					$column_search[$column['data']] = $column['search']['value'];
 				}
 			}
 		}
 
+		if (is_array($order) && isset($order[0]) && is_array($order[0]))
+		{
+			if (isset($order[0]['column']) && is_array($columns) && isset($columns[(int) $order[0]['column']]['data']))
+			{
+				$order_column = $columns[(int) $order[0]['column']]['data'];
+			}
+			if (isset($order[0]['dir']) && strtolower((string) $order[0]['dir']) === 'desc')
+			{
+				$sort_dir = 'desc';
+			}
+		}
+
 		$params = array(
 			'start'			 => Sanitizer::get_var('start', 'int', 'REQUEST', 0),
 			'results'		 => Sanitizer::get_var('length', 'int', 'REQUEST', 0),
-			'query'			 => $search['value'],
-			'order'			 => $columns[$order[0]['column']]['data'],
-			'sort'			 => $order[0]['dir'],
-			'dir'			 => $order[0]['dir'],
+			'query'			 => $query_value,
+			'order'			 => $order_column,
+			'sort'			 => $sort_dir,
+			'dir'			 => $sort_dir,
 			'allrows'		 => Sanitizer::get_var('length', 'int') == -1 || $export,
 			'lookup_tenant'	 => $lookup_tenant,
 			'dry_run'		 => false,
@@ -190,98 +190,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		return $this->jquery_results($result_data);
 	}
 
-	public function query_role()
-	{
-		$lookup_tenant	 = Sanitizer::get_var('lookup_tenant', 'bool');
-		$user_id		 = Sanitizer::get_var('user_id', 'int', 'request', $this->account);
-		$role_id		 = Sanitizer::get_var('role_id', 'int');
-
-		$search	 = Sanitizer::get_var('search');
-		$order	 = Sanitizer::get_var('order');
-		$draw	 = Sanitizer::get_var('draw', 'int');
-		$columns = Sanitizer::get_var('columns');
-
-		$params = array(
-			'start'			 => Sanitizer::get_var('start', 'int', 'REQUEST', 0),
-			'results'		 => Sanitizer::get_var('length', 'int', 'REQUEST', 0),
-			'query'			 => $search['value'],
-			'order'			 => $columns[$order[0]['column']]['data'],
-			'sort'			 => $order[0]['dir'],
-			'dir'			 => $order[0]['dir'],
-			'allrows'		 => Sanitizer::get_var('length', 'int') == -1,
-			'lookup_tenant'	 => $lookup_tenant,
-			'user_id'		 => $user_id,
-			'role_id'		 => $role_id
-		);
-
-		$values = $this->bo->get_responsible($params);
-
-		$result_data = array('results' => $values);
-
-		$result_data['total_records']	 = $this->bo->total_records;
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
-	}
-
-	public function query_summary()
-	{
-		$values = $this->bo->read_summary();
-
-		if (Sanitizer::get_var('export', 'bool'))
-		{
-			return $values;
-		}
-
-		$result_data = array('results' => $values);
-
-		$result_data['total_records']	 = count($values);
-		$result_data['draw']			 = Sanitizer::get_var('draw', 'int');
-
-		return $this->jquery_results($result_data);
-	}
-
-	public function responsiblility_role_save()
-	{
-		$values		 = Sanitizer::get_var('values');
-		//$values_assign = $_POST['values_assign'];
-		$assign_orig = Sanitizer::get_var('assign_orig');
-		$assign		 = Sanitizer::get_var('assign');
-
-		$role_id = Sanitizer::get_var('role_id', 'int');
-		//$receipt = array();
-		//			$_role = CreateObject('property.sogeneric');
-		//			$_role->get_location_info('responsibility_role','');
-		//$this->save_sessiondata();
-
-		$user_id			 = Sanitizer::get_var('user_id', 'int', 'request', $this->account);
-		$result['message']	 = array();
-
-		if (($assign || $assign_orig) && $this->acl_edit)
-		{
-			//$values_assign = Sanitizer::clean_value(json_decode(stripslashes($values_assign),true)); //json_decode has issues with magic_quotes_gpc
-			$user_id	 = abs($user_id);
-			$account	 = $this->accounts->get($user_id);
-			$contact_id	 = $account->person_id;
-			if (empty($role_id))
-			{
-				$result['error'][] = array('msg' => lang('missing role'));
-			}
-			else
-			{
-				//					$role = $_role->read_single($data=array('id' => $role_id));
-				$values['contact_id']				 = $contact_id;
-				//					$values['responsibility_id']		= $role['responsibility_id'];
-				$values['responsibility_role_id']	 = $role_id;
-				$values['assign']					 = $assign;
-				$values['assign_orig']				 = $assign_orig;
-				$boresponsible						 = CreateObject('property.boresponsible');
-				$result								 = $boresponsible->update_role_assignment($values);
-			}
-		}
-
-		return $result;
-	}
 
 	function save_sessiondata()
 	{
@@ -517,66 +425,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 	}
 
 
-	function download()
-	{
-		if (!$this->acl_read)
-		{
-			$this->bocommon->no_access();
-			return;
-		}
-
-		$download_type = Sanitizer::get_var('download_type');
-
-		switch ($download_type)
-		{
-			case 'summary':
-				$list	 = $this->query_summary();
-				$uicols	 = $this->bo->uicols;
-				break;
-			case 'responsiblility_role':
-				$user_id = Sanitizer::get_var('user_id', 'int');
-				$role_id = Sanitizer::get_var('role_id', 'int');
-				$type_id = Sanitizer::get_var('type_id', 'int', 'GET');
-				$search	 = Sanitizer::get_var('search');
-
-				$list = $this->bo->get_responsible(array(
-					'user_id'	 => $user_id,
-					'role_id'	 => $role_id,
-					'type_id'	 => $type_id,
-					'query'		 => $search['value'],
-					'allrows'	 => true
-				));
-
-				foreach ($list as &$entry)
-				{
-					$entry['role_id'] = $role_id;
-				}
-
-				$uicols = $this->bo->uicols;
-
-				$uicols['name'][]		 = 'role_id';
-				$uicols['descr'][]		 = 'role_id';
-				$uicols['input_type'][]	 = '';
-
-				$uicols['name'][]		 = 'responsible_contact';
-				$uicols['descr'][]		 = lang('responsible');
-				$uicols['input_type'][]	 = '';
-
-				$uicols['name'][]		 = 'contact_id';
-				$uicols['descr'][]		 = 'contact_id';
-				$uicols['input_type'][]	 = '';
-
-
-				break;
-			default:
-				$list	 = $this->query();
-				$uicols	 = $this->bo->uicols;
-				break;
-		}
-
-		$this->bocommon->download($list, $uicols['name'], $uicols['descr'], $uicols['input_type']);
-	}
-
 	function columns()
 	{
 		$this->flags['xslt_app']	 = true;
@@ -630,10 +478,8 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		$values_combo_box	 = array();
 		$combos				 = array();
 
-		$link = self::link(array(
-			'menuaction'		 => 'property.uilocation.get_part_of_town',
-			'type_id'			 => $this->type_id,
-			'phpgw_return_as'	 => 'json'
+		$link = phpgw::link('/property/location/part-of-town', array(
+			'type_id' => $this->type_id
 		));
 
 		$code = '
@@ -716,10 +562,8 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		$values_combo_box	 = array();
 		$combos				 = array();
 
-		$link = self::link(array(
-			'menuaction'		 => 'property.uilocation.get_part_of_town',
-			'type_id'			 => $this->type_id,
-			'phpgw_return_as'	 => 'json'
+		$link = phpgw::link('/property/location/part-of-town', array(
+			'type_id' => $this->type_id
 		));
 
 		$code = '
@@ -810,10 +654,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		 *
 		 *
 		 */
-		$link = self::link(array(
-			'menuaction'		 => 'property.uilocation.get_accounts',
-			'phpgw_return_as'	 => 'json'
-		));
+		$link = phpgw::link('/property/location/accounts');
 
 		$code = '
 				var link = "' . $link . '";
@@ -855,44 +696,18 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		return $combos;
 	}
 
+	/**
+	 * Return selectable account options for responsibility-role UI.
+	 *
+	 * @return array
+	 */
 	public function get_accounts($account_type = '')
 	{
 		if (!$account_type)
 		{
 			$account_type = Sanitizer::get_var('account_type');
 		}
-		switch ($account_type)
-		{
-			case 'accounts':
-				$_accounts	 = $this->accounts->get_list('accounts', -1, 'ASC', 'account_lastname', '', -1);
-				break;
-			case 'groups':
-				$_accounts	 = $this->accounts->get_list('groups', -1, 'ASC', 'account_firstname', '', -1);
-				break;
-			default:
-				$_accounts	 = array_merge(
-					$this->accounts->get_list('groups', -1, 'ASC', 'account_firstname', '', -1),
-					$this->accounts->get_list('accounts', -1, 'ASC', 'account_lastname', '', -1)
-				);
-				break;
-		}
-		$values = array();
-		foreach ($_accounts as $_account)
-		{
-			$values[] = array(
-				'id'	 => $_account->id,
-				'name'	 => $_account->__toString(),
-			);
-		}
-		if ($account_type == 'accounts')
-		{
-			array_unshift($values, array(
-				'id'	 => (-1 * $this->userSettings['account_id']),
-				'name'	 => lang('mine roles')
-			));
-		}
-		array_unshift($values, array('id' => '', 'name' => lang('Select')));
-		return $values;
+		return $this->bo->get_accounts((string)$account_type);
 	}
 
 	private function _get_categories_summary()
@@ -900,10 +715,8 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		$values_combo_box	 = array();
 		$combos				 = array();
 
-		$link = self::link(array(
-			'menuaction'		 => 'property.uilocation.get_part_of_town',
-			'type_id'			 => $this->type_id,
-			'phpgw_return_as'	 => 'json'
+		$link = phpgw::link('/property/location/part-of-town', array(
+			'type_id' => $this->type_id
 		));
 
 		$code = '
@@ -964,25 +777,28 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 	{
 		$change_type		 = Sanitizer::get_var('change_type', 'int', 'POST');
 		$location_code		 = Sanitizer::get_var('location_code');
-		$values_attribute	 = Sanitizer::get_var('values_attribute');
-		$location			 = explode('-', $location_code);
-		$error_id			 = false;
-		$type_id			 = $this->type_id;
 
-		if ($location_code)
+		$helper = new \App\modules\property\helpers\LocationFormHelper();
+		$requestData = (array) $_POST;
+		if (empty($requestData['type_id']) && !empty($this->type_id))
 		{
-			$type_id = count($location);
+			$requestData['type_id'] = (int) $this->type_id;
+		}
+		$input = $helper->mapInput($requestData, $location_code ? 1 : null);
+		$values = $input['values'];
+		$values_attribute = $input['values_attribute'];
+		$type_id = (int) ($input['type_id'] ?? $this->type_id);
+		$errors = array();
+
+		if (!empty($input['errors']) && is_array($input['errors']))
+		{
+			foreach ($input['errors'] as $error)
+			{
+				$errors[] = (string) $error;
+			}
 		}
 
 		$insert_record = Cache::session_get('property', 'insert_record');
-
-		if (isset($insert_record['location']) && is_array($insert_record['location']))
-		{
-			for ($i = 0; $i < count($insert_record['location']); $i++)
-			{
-				$values[$insert_record['location'][$i]] = Sanitizer::get_var($insert_record['location'][$i], 'string', 'POST');
-			}
-		}
 
 		$insert_record_attributes = Cache::session_get('property', 'insert_record_values' . '.location.' . $this->type_id);
 
@@ -1008,89 +824,36 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 			}
 		}
 
-		for ($i = 1; $i < ($type_id + 1); $i++)
+		$values['change_type'] = $change_type;
+		$state = array(
+			'values' => $values,
+			'values_attribute' => $values_attribute,
+			'type_id' => $type_id,
+			'location_code' => $location_code,
+			'errors' => $errors,
+		);
+
+		$state = $helper->applyLegacyRules($state, (array) $insert_record, (bool) $location_code);
+		$values = $state['values'];
+		$values_attribute = $state['values_attribute'];
+		$type_id = (int) ($state['type_id'] ?? $type_id);
+		$location_parent = $state['location_parent'] ?? '';
+
+		$this->receipt['error'] = array();
+		foreach ((array) ($state['errors'] ?? array()) as $error)
 		{
-			if ((!$values["loc{$i}"] && (!isset($location[($i - 1)]) || !$location[($i - 1)])) || !$values["loc{$i}"])
-			{
-				$this->receipt['error'][]	 = array('msg' => lang('Please select a location %1 ID !', $i));
-				$error_id					 = true;
-			}
-
-			$values['location_code'][] = $values["loc{$i}"];
-
-			if ($i < $type_id)
-			{
-				$location_parent[] = $values["loc{$i}"];
-			}
+			$this->receipt['error'][] = array('msg' => (string) $error);
 		}
 
-		if (!$values['cat_id'])
-		{
-			$this->receipt['error'][] = array('msg' => lang('Please select a category'));
-		}
-
-		if (isset($values_attribute) && is_array($values_attribute))
-		{
-			foreach ($values_attribute as $attribute)
-			{
-				if ($attribute['nullable'] != 1 && !$attribute['value'])
-				{
-					$this->receipt['error'][] = array('msg' => lang('Please enter value for attribute %1', $attribute['input_text']));
-				}
-
-				if ($attribute['datatype'] == 'I' && isset($attribute['value']) && $attribute['value'] && !is_int((int)($attribute['value'])))
-				{
-					$this->receipt['error'][] = array('msg' => lang('Please enter integer for attribute %1', $attribute['input_text']));
-				}
-			}
-		}
-
-		if (isset($insert_record['extra']) && array_search('street_id', $insert_record['extra']) && (!isset($values['street_id']) || !$values['street_id']))
-		{
-			$this->receipt['error'][] = array('msg' => lang('Please select a street'));
-		}
-		if (isset($insert_record['extra']) && array_search('part_of_town_id', $insert_record['extra']) && (!isset($values['part_of_town_id']) || !$values['part_of_town_id']))
-		{
-			$this->receipt['error'][] = array('msg' => lang('Please select a part of town'));
-		}
-		if (isset($insert_record['extra']) && array_search('owner_id', $insert_record['extra']) && (!isset($values['owner_id']) || !$values['owner_id']))
-		{
-			$this->receipt['error'][] = array('msg' => lang('Please select an owner'));
-		}
-
-		$values['location_code'] = implode("-", $values['location_code']);
-
-		if ($values['location_code'] && !$location_code)
-		{
-			if ($this->bo->check_location($values['location_code'], $type_id))
-			{
-				$this->receipt['error'][]	 = array('msg' => lang('This location is already registered!') . '[ ' . $values['location_code'] . ' ]');
-				$error_id					 = true;
-			}
-		}
-
-		if ($location_code)
-		{
-			$values['change_type'] = $change_type;
-
-			if (!$values['change_type'])
-			{
-				$this->receipt['error'][] = array('msg' => lang('Please select change type'));
-			}
-		}
-		$values['error_id'] = $error_id;
-
-		return array('values' => $values, 'type_id' => $type_id, 'location_parent' => (isset($location_parent) ? $location_parent : ''));
+		return array(
+			'values' => $values,
+			'values_attribute' => $values_attribute,
+			'type_id' => $type_id,
+			'location_parent' => $location_parent,
+			'errors' => (array) $this->receipt['error'],
+		);
 	}
 
-	function get_part_of_town()
-	{
-		$district_id = Sanitizer::get_var('district_id', 'int');
-		$values		 = $this->bocommon->select_part_of_town('filter', $this->part_of_town_id, $district_id);
-		array_unshift($values, array('id' => '', 'name' => lang('no part of town')));
-
-		return $values;
-	}
 
 	function index()
 	{
@@ -1119,8 +882,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		Settings::getInstance()->set('flags', $this->flags);
 		if (!$this->acl_read)
 		{
-			$this->bocommon->no_access();
-			return;
+			phpgw::no_access();
 		}
 
 
@@ -1130,11 +892,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		{
 			$this->bo->district_id	 = $default_district;
 			$this->district_id		 = $default_district;
-		}
-
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			return $this->query();
 		}
 
 		$location_id	 = $this->locations->get_id('property', $this->acl_location);
@@ -1336,20 +1093,17 @@ JS;
 				)
 			),
 			'datatable'		 => array(
-				'source'		 => self::link(array(
-					'menuaction'		 => 'property.uilocation.index',
+				'source'		 => phpgw::link('/property/location/datatable', array(
 					'type_id'			 => $type_id,
 					'lookup'			 => $lookup,
 					'lookup_tenant'		 => $lookup_tenant,
 					'lookup_name'		 => $lookup_name,
 					'location_code'		 => $this->location_code,
-					'block_query'		 => $block_query,
-					'phpgw_return_as'	 => 'json'
+					'block_query'		 => $block_query
 				)),
 				"column_search"		 => array('onclick' => "init_column_search();"),
 				"columns"		 => array('onclick' => "JqueryPortico.openPopup({menuaction:'property.uilocation.columns', type_id:'{$type_id}',parent:'{$this->location_code}'}, {closeAction:'reload'})"),
-				'download'		 => self::link(array(
-					'menuaction'	 => 'property.uilocation.download',
+				'download'		 => phpgw::link('/property/location/download', array(
 					'type_id'		 => $type_id,
 					'lookup'		 => $lookup,
 					'lookup_tenant'	 => $lookup_tenant,
@@ -1357,10 +1111,8 @@ JS;
 					'allrows'		 => true
 				)),
 				'allrows'		 => true,
-				'editor_action'	 => self::link(array(
-					'menuaction'		 => 'property.uilocation.edit_field',
-					'type_id'			 => $type_id,
-					'phpgw_return_as'	 => 'json'
+				'editor_action'	 => phpgw::link('/property/location/edit-field', array(
+					'type_id' => $type_id
 				)),
 				'field'			 => array()
 			)
@@ -1605,8 +1357,7 @@ JS;
 					'my_name'		 => 'delete',
 					'text'			 => lang('delete'),
 					'confirm_msg'	 => lang('do you really want to delete this entry'),
-					'action'		 => phpgw::link('/index.php', array(
-						'menuaction'	 => 'property.uilocation.delete',
+					'action'		 => phpgw::link('/property/location/delete', array(
 						'lookup_tenant'	 => $lookup_tenant
 					)),
 					'parameters'	 => json_encode($parameters)
@@ -1694,8 +1445,7 @@ JS;
 		Settings::getInstance()->set('flags', $this->flags);
 		if (!$this->acl_read)
 		{
-			$this->bocommon->no_access();
-			return;
+			phpgw::no_access();
 		}
 
 		$default_district = (isset($this->userSettings['preferences']['property']['default_district']) ? $this->userSettings['preferences']['property']['default_district'] : '');
@@ -1710,134 +1460,6 @@ JS;
 		for ($i = 1; $i < $type_id; $i++)
 		{
 			$searc_levels[] = "loc{$i}";
-		}
-
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			if (Sanitizer::get_var('head'))
-			{
-				$this->bo->get_responsible(array(
-					'user_id'	 => $user_id,
-					'role_id'	 => $role_id,
-					'type_id'	 => $type_id,
-					'dry_run'	 => true
-				));
-
-				$uicols = $this->get_uicols_responsiblility_role();
-
-				$entity_def = array();
-
-				$head				 = '<thead>';
-				$count_uicols_name	 = count($uicols['name']);
-				for ($k = 0; $k < $count_uicols_name; $k++)
-				{
-					$params				 = array(
-						'key'		 => $uicols['name'][$k],
-						'label'		 => $uicols['descr'][$k],
-						'sortable'	 => false,
-						'hidden'	 => ($uicols['input_type'][$k] == 'hidden') ? true : false
-					);
-					$params['formatter'] = ""
-						. "formatter = function (dummy1, dummy2, oData) {"
-						. "return oData['{$uicols['name'][$k]}'];"
-						. "}";
-
-					if ($uicols['datatype'][$k] == 'link')
-					{
-						$uicols['formatter'][$k] = 'JqueryPortico.formatLinkGeneric';
-					}
-
-					if (!empty($uicols['formatter'][$k]))
-					{
-						$params['formatter'] = <<<JS
-								formatter = function (dummy1, dummy2, oData) {
-								try {
-									var ret = {$uicols['formatter'][$k]}('{$uicols['name'][$k]}', oData);
-								}
-								catch(err) {
-									return err.message;
-								}
-								return ret;
-							}
-JS;
-					}
-					if (in_array($uicols['name'][$k], $searc_levels))
-					{
-						$params['formatter'] = <<<JS
-								formatter = function (dummy1, dummy2, oData) {
-								try {
-									var ret = JqueryPortico.searchLink('{$uicols['name'][$k]}', oData);
-								}
-								catch(err) {
-									return err.message;
-								}
-								return ret;
-							}
-JS;
-					}
-					if ($uicols['name'][$k] == 'loc1')
-					{
-						$params['formatter'] = <<<JS
-								formatter = function (dummy1, dummy2, oData) {
-								try {
-									var ret = JqueryPortico.searchLink('{$uicols['name'][$k]}', oData);
-								}
-								catch(err) {
-									return err.message;
-								}
-								return ret;
-							}
-JS;
-						$params['sortable']	 = true;
-					}
-					else if (isset($uicols['cols_return_extra'][$k]) && ($uicols['cols_return_extra'][$k] != 'T' || $uicols['cols_return_extra'][$k] != 'CH'))
-					{
-						$params['sortable'] = true;
-					}
-
-					array_push($entity_def, $params);
-
-					if ($uicols['input_type'][$k] != 'hidden')
-					{
-						$head .= '<th>' . $uicols['descr'][$k] . '</th>';
-					}
-				}
-				$head .= '</thead>';
-
-				$datatable_def = array(
-					'container'	 => 'datatable-container',
-					'requestUrl' => self::link(array(
-						'menuaction'		 => 'property.uilocation.responsiblility_role',
-						'type_id'			 => $type_id,
-						'second_display'	 => 1,
-						'status'			 => $this->status,
-						'location_code'		 => $this->location_code,
-						'entity_id'			 => $this->entity_id,
-						'phpgw_return_as'	 => 'json'
-					)),
-					'ColumnDefs' => $entity_def,
-					'download'	 => array(
-						'menuaction'	 => 'property.uilocation.download',
-						'type_id'		 => $type_id,
-						'role_id'		 => $role_id,
-						'export'		 => true,
-						'allrows'		 => true,
-						'download_type'	 => 'responsiblility_role'
-					),
-					'allrows'	 => true,
-				);
-
-				$data = array(
-					'datatable_def'	 => $datatable_def,
-					'datatable_head' => $head,
-				);
-
-				return $data;
-			}
-			else
-			{
-				return $this->query_role();
-			}
 		}
 
 		self::add_javascript('property', 'base', 'location.responsiblility_role.js');
@@ -1863,17 +1485,14 @@ JS;
 				)
 			),
 			'datatable'		 => array(
-				'source'		 => self::link(array(
-					'menuaction'		 => 'property.uilocation.responsiblility_role',
+				'source'		 => phpgw::link('/property/location/responsibility-role', array(
 					'type_id'			 => $type_id,
 					'second_display'	 => 1,
 					'status'			 => $this->status,
 					'location_code'		 => $this->location_code,
-					'entity_id'			 => $this->entity_id,
-					'phpgw_return_as'	 => 'json'
+					'entity_id'			 => $this->entity_id
 				)),
-				'download'		 => self::link(array(
-					'menuaction'	 => 'property.uilocation.download',
+				'download'		 => phpgw::link('/property/location/download', array(
 					'type_id'		 => $type_id,
 					'role_id'		 => $role_id,
 					'export'		 => true,
@@ -1928,14 +1547,12 @@ JS;
 
 		if ($this->acl_edit)
 		{
-			$link = self::link(array(
-				'menuaction'		 => 'property.uilocation.responsiblility_role_save',
+			$link = phpgw::link('/property/location/responsibility-role/save', array(
 				'type_id'			 => $type_id,
 				'second_display'	 => 1,
 				'status'			 => $this->status,
 				'location_code'		 => $this->location_code,
-				'entity_id'			 => $this->entity_id,
-				'phpgw_return_as'	 => 'json'
+				'entity_id'			 => $this->entity_id
 			));
 
 			$code = '
@@ -1985,124 +1602,6 @@ JS;
 		self::render_template_xsl('lookup.entity', $data);
 	}
 
-	public function get_history_data()
-	{
-		$draw			 = Sanitizer::get_var('draw', 'int');
-		$location_code	 = Sanitizer::get_var('location_code');
-
-		$values		 = $this->bo->get_history($location_code);
-		$dateformat	 = $this->userSettings['preferences']['common']['dateformat'];
-		foreach ($values as &$entry)
-		{
-			$entry['entry_date'] = $this->phpgwapi_common->show_date($entry['entry_date'], $dateformat);
-		}
-
-		$result_data = array('results' => $values);
-
-		$result_data['total_records']	 = count($values);
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
-	}
-
-	public function get_documents()
-	{
-		$search			 = Sanitizer::get_var('search');
-		$order			 = Sanitizer::get_var('order');
-		$draw			 = Sanitizer::get_var('draw', 'int');
-		$columns		 = Sanitizer::get_var('columns');
-		$doc_type		 = Sanitizer::get_var('doc_type', 'int');
-		$location_code	 = Sanitizer::get_var('location_code');
-		$export			 = Sanitizer::get_var('export', 'bool');
-		$values			 = array();
-
-		$params = array(
-			'start'			 => Sanitizer::get_var('start', 'int', 'REQUEST', 0),
-			'results'		 => Sanitizer::get_var('length', 'int', 'REQUEST', 0),
-			'query'			 => $search['value'],
-			'order'			 => $columns[$order[0]['column']]['data'],
-			'sort'			 => $order[0]['dir'],
-			'dir'			 => $order[0]['dir'],
-			'allrows'		 => Sanitizer::get_var('length', 'int') == -1 || $export,
-			'doc_type'		 => $doc_type,
-			'location_code'	 => $location_code
-		);
-
-		$dateformat		 = $this->userSettings['preferences']['common']['dateformat'];
-		$document		 = CreateObject('property.sodocument');
-		$documents		 = $document->read_at_location($params);
-		$total_records	 = $document->total_records;
-		foreach ($documents as $item)
-		{
-			if ($item['link'])
-			{
-				if (!preg_match('/^HTTP/i', $item['link']))
-				{
-					$link = 'file:///' . str_replace(':', '|', $item['link']);
-				}
-
-				$values[]		 = array(
-					'id'			 => $item['id'],
-					'type'			 => 'location',
-					'document_name'	 => "<a href='{$link}'>{$item['title']}</a>",
-					'title'			 => $item['title'],
-					'document_date'	 => $this->phpgwapi_common->show_date($item['document_date'], $dateformat)
-				);
-
-				continue;
-			}
-
-			$document_name	 = '<a href="' . self::link(array(
-				'menuaction' => 'property.uidocument.view_file',
-				'id'		 => $item['id']
-			)) . '" target="_blank">' . $item['document_name'] . '</a>';
-			$values[]		 = array(
-				'id'			 => $item['id'],
-				'type'			 => 'location',
-				'document_name'	 => $document_name,
-				'title'			 => $item['title'],
-				'document_date'	 => $this->phpgwapi_common->show_date($item['document_date'], $dateformat)
-			);
-		}
-		unset($item);
-
-		$location_id				 = $this->locations->get_id('property', '.location.' . count(explode('-', $location_code)));
-		$generic_document			 = CreateObject('property.sogeneric_document');
-		$params['location_id']		 = $location_id;
-		$params['location_item_id']	 = $this->bo->get_item_id($location_code);
-		$params['order']			 = 'name';
-		$params['cat_id']			 = $doc_type;
-		$documents2					 = $generic_document->read($params);
-		$total_records				 += $generic_document->total_records;
-		foreach ($documents2 as $item)
-		{
-			$title = '';
-			if ($item['path'])
-			{
-				$temp	 = (array)json_decode($item['path']);
-				$title	 = implode('<br/>', $temp);
-			}
-
-			$document_name	 = '<a href="' . self::link(array(
-				'menuaction' => 'property.uigeneric_document.view_file',
-				'file_id'	 => $item['id']
-			)) . '" target="_blank">' . $item['name'] . '</a>';
-			$values[]		 = array(
-				'id'			 => $item['id'],
-				'type'			 => 'generic',
-				'document_name'	 => $document_name,
-				'title'			 => $title,
-				'document_date'	 => $item['created']
-			);
-		}
-
-		$result_data = array('results' => $values);
-
-		$result_data['total_records']	 = $total_records;
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
-	}
 
 	public function add()
 	{
@@ -2155,16 +1654,14 @@ JS;
 		{
 			if (!$this->acl_read)
 			{
-				$this->bocommon->no_access();
-				return;
+				phpgw::no_access();
 			}
 		}
 		else
 		{
 			if (!$this->acl_add && !$this->acl_edit)
 			{
-				$this->bocommon->no_access();
-				return;
+				phpgw::no_access();
 			}
 		}
 
@@ -2204,7 +1701,7 @@ JS;
 		}
 
 		$link_data = array(
-			'menuaction'	 => ($mode == 'view') ? 'property.uilocation.view' : 'property.uilocation.save',
+			'menuaction'	 => ($mode == 'view') ? 'property.uilocation.view' : 'property.uilocation.edit',
 			'location_code'	 => $location_code,
 			'type_id'		 => $type_id,
 			'lookup_tenant'	 => $lookup_tenant
@@ -2560,6 +2057,7 @@ JS;
 					array(
 						'key'		 => 'document_name',
 						'label'		 => lang('name'),
+						'formatter' => 'formatLocationDocumentLink',
 						'sortable'	 => true,
 						'resizeable' => true
 					),
@@ -2574,10 +2072,8 @@ JS;
 
 				$datatable_def[] = array(
 					'container'	 => 'datatable-container_0',
-					'requestUrl' => json_encode(self::link(array(
-						'menuaction'		 => 'property.uilocation.get_documents',
-						'location_code'		 => $location_code,
-						'phpgw_return_as'	 => 'json'
+					'requestUrl' => json_encode(phpgw::link('/property/location/documents', array(
+						'location_code'		 => $location_code
 					))),
 					'data'		 => "",
 					'tabletools' => ($mode == 'edit') ? $documents_tabletools : array(),
@@ -2669,10 +2165,8 @@ JS;
 					)
 				);
 
-				$link_history = json_encode(self::link(array(
-					'menuaction'		 => 'property.uilocation.get_history_data',
-					'location_code'		 => $location_code,
-					'phpgw_return_as'	 => 'json'
+				$link_history = json_encode(phpgw::link('/property/location/history', array(
+					'location_code'		 => $location_code
 				)));
 			}
 
@@ -2858,7 +2352,7 @@ JS;
 			if ($_enable_controller)
 			{
 				$id			 = (int)$values['id'];
-				$_controls	 = $this->get_controls_at_component($location_id, $id);
+				$_controls	 = $this->controller_helper->get_controls_at_component($location_id, $id, false);
 
 				$controls_def	 = array(
 					array('key' => 'serie_id', 'label' => 'serie', 'sortable' => false, 'resizeable' => true),
@@ -2967,7 +2461,7 @@ JS;
 					)
 				);
 
-				$_checklists		 = $this->get_checklists($location_id, $id, date('Y'));
+				$_checklists		 = $this->controller_helper->get_checklists($location_id, $id, date('Y'));
 				$check_lst_time_span = $this->controller_helper->get_check_lst_time_span();
 
 				$_checklists_def = array(
@@ -2993,7 +2487,7 @@ JS;
 						array('singleSelect' => true)
 					)
 				);
-				$_cases			 = $this->get_cases($location_id, $id, date('Y')); // initial search
+				$_cases			 = $this->controller_helper->get_cases($location_id, $id, date('Y')); // initial search
 
 				$_case_def = array(
 					array('key' => 'url', 'label' => lang('id'), 'sortable' => true, 'resizeable' => true),
@@ -3138,6 +2632,7 @@ JS;
 
 		$appname = lang('location');
 
+		self::add_javascript('property', 'base', 'navigation-api-boundary.js');
 		self::add_javascript('property', 'base', 'location.edit.js');
 
 		/**
@@ -3178,181 +2673,12 @@ JS;
 		return true;
 	}
 
-	public function save()
-	{
-		if (!$_POST)
-		{
-			return $this->edit();
-		}
-
-		$location_code		 = Sanitizer::get_var('location_code');
-		$values_attribute	 = Sanitizer::get_var('values_attribute');
-
-		$result = $this->_populate();
-
-		if ($location_code)
-		{
-			$action = 'edit';
-		}
-
-		$values			 = $result['values'];
-		$location_parent = $result['location_parent'];
-
-		if (!$this->receipt['error'])
-		{
-			try
-			{
-				$receipt = $this->bo->save($values, $values_attribute, $action, $result['type_id'], $location_parent);
-				if (!empty($receipt['location_code']))
-				{
-					$values['saved']		 = true;
-					$values['error_id']		 = false;
-					$values['location_code'] = $receipt['location_code'];
-					$location_code			 = $receipt['location_code'];
-				}
-				else
-				{
-					$values['error_id'] = true;
-				}
-
-				$this->receipt = $receipt;
-			}
-			catch (Exception $e)
-			{
-				if ($e)
-				{
-					Cache::message_set($e->getMessage(), 'error');
-				}
-			}
-			Cache::session_set('property', 'insert_record', '');
-
-			if ($location_code)
-			{
-				self::message_set($this->receipt);
-				self::redirect(array('menuaction' => 'property.uilocation.edit', 'location_code' => $location_code));
-			}
-		}
-		else
-		{
-			if (isset($location_parent) && $location_parent)
-			{
-				$location_code_parent	 = implode('-', $location_parent);
-				if (count(explode('-', $location_code)) > count($location_parent))
-				{
-					$values					 = $this->bo->read_single($location_code);
-				}
-				else
-				{
-					$values					 = $this->bo->read_single($location_code_parent);
-				}
-
-				$values['attributes']	 = $this->bo->find_attribute(".location.{$this->type_id}");
-				$values					 = $this->bo->prepare_attribute($values, ".location.{$this->type_id}");
-			}
-			/* restore date from posting */
-			$insert_record = Cache::session_get('property', 'insert_record');
-
-			if (isset($insert_record['extra']) && is_array($insert_record['extra']))
-			{
-				for ($i = 0; $i < count($insert_record['extra']); $i++)
-				{
-					$values[$insert_record['extra'][$i]] = Sanitizer::get_var($insert_record['extra'][$i], 'string', 'POST');
-				}
-			}
-			$values['error_id'] = $result['values']['error_id'];
-		}
-		$this->edit($values);
-	}
-
-	function delete()
-	{
-
-		$location_code	 = Sanitizer::get_var('location_code', 'string', 'GET');
-		$type_id		 = $this->type_id;
-
-		//cramirez add JsonCod for Delete
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			$this->bo->delete($location_code);
-			return "location_code " . $location_code . " " . lang("has been deleted");
-		}
-
-		$this->flags['menu_selection'] .= "::loc_$type_id";
-		Settings::getInstance()->set('flags', $this->flags);
-
-		if (!$this->acl_delete)
-		{
-			$this->bocommon->no_access();
-			return;
-		}
-
-		$confirm = Sanitizer::get_var('confirm', 'bool', 'POST');
-
-		$link_data = array(
-			'menuaction' => 'property.uilocation.index',
-			'type_id'	 => $type_id
-		);
-
-		if (Sanitizer::get_var('confirm', 'bool', 'GET'))
-		{
-			$this->bo->delete($location_code);
-			phpgw::redirect_link('/index.php', $link_data);
-		}
-
-		phpgwapi_xslttemplates::getInstance()->add_file(array('app_delete'));
-
-		$data = array(
-			'done_action'			 => phpgw::link('/index.php', $link_data),
-			'delete_action'			 => phpgw::link('/index.php', array(
-				'menuaction'	 => 'property.uilocation.delete',
-				'location_code'	 => $location_code,
-				'type_id'		 => $type_id
-			)),
-			'lang_confirm_msg'		 => lang('do you really want to delete this entry'),
-			'lang_yes'				 => lang('yes'),
-			'lang_yes_statustext'	 => lang('Delete the entry'),
-			'lang_no_statustext'	 => lang('Back to the list'),
-			'lang_no'				 => lang('no')
-		);
-
-		$appname		 = lang('location');
-		$function_msg	 = lang('delete location');
-		$flags = Settings::getInstance()->get('flags');
-		$flags['app_header'] = lang('property') . ' - ' . $appname . ': ' . $function_msg;
-		Settings::getInstance()->set('flags', $flags);
-		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('delete' => $data));
-	}
-
-	function get_location_data()
-	{
-		if (!$this->acl_read)
-		{
-			phpgw::no_access();
-		}
-		$location_code = Sanitizer::get_var('location_code');
-
-		if ($location_code)
-		{
-			$values			 = $this->bo->read_single($location_code, array('noattrib' => true));
-			$part_of_town_id = $values['part_of_town_id'];
-
-			$part_of_town				 = createObject('property.bogeneric')->read_single(array(
-				'id'			 => $part_of_town_id,
-				'location_info'	 => array('type' => 'part_of_town')
-			));
-			$values['part_of_town_name'] = $part_of_town['name'];
-		}
-
-
-		return $values;
-	}
 
 	function view()
 	{
 		if (!$this->acl_read)
 		{
-			$this->bocommon->no_access();
-			return;
+			phpgw::no_access();
 		}
 		$this->edit(array(), $mode = 'view');
 	}
@@ -3369,8 +2695,7 @@ JS;
 
 		if (!$this->acl->check('.admin.location', ACL_EDIT, 'property'))
 		{
-			$this->bocommon->no_access();
-			return;
+			phpgw::no_access();
 		}
 
 		$confirm = Sanitizer::get_var('confirm', 'bool', 'POST');
@@ -3427,8 +2752,7 @@ JS;
 
 		if (!$this->acl->check('.admin.location', ACL_EDIT, 'property'))
 		{
-			$this->bocommon->no_access();
-			return;
+			phpgw::no_access();
 		}
 
 		$confirm = Sanitizer::get_var('confirm', 'bool', 'POST');
@@ -3509,12 +2833,6 @@ JS;
 			phpgw::no_access();
 		}
 
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			return $this->query_summary();
-		}
-
-
 		$appname		 = lang('Summary');
 		$function_msg	 = lang('List') . ' ' . lang($this->role);
 
@@ -3526,16 +2844,13 @@ JS;
 				)
 			),
 			'datatable'		 => array(
-				'source'			 => self::link(array(
-					'menuaction'		 => 'property.uilocation.summary',
+				'source'			 => phpgw::link('/property/location/summary', array(
 					'summary'			 => true,
 					'filter'			 => $this->filter,
 					'district_id'		 => $this->district_id,
-					'part_of_town_id'	 => $this->part_of_town_id,
-					'phpgw_return_as'	 => 'json'
+					'part_of_town_id'	 => $this->part_of_town_id
 				)),
-				'download'			 => self::link(array(
-					'menuaction'	 => 'property.uilocation.download',
+				'download'			 => phpgw::link('/property/location/download', array(
 					'summary'		 => true,
 					'export'		 => true,
 					'allrows'		 => true,
@@ -3579,106 +2894,5 @@ JS;
 		$flags['app_header'] = lang('property') . ' - ' . $appname . ': ' . $function_msg;
 		Settings::getInstance()->set('flags', $flags);
 		self::render_template_xsl('datatable2', $data);
-	}
-
-	function get_delivery_address()
-	{
-		$loc1 = Sanitizer::get_var('loc1');
-
-		$delivery_address = $this->bo->get_delivery_address($loc1);
-
-		return array(
-			'delivery_address' => $delivery_address
-		);
-	}
-
-	function get_location_exception()
-	{
-		$location_code = Sanitizer::get_var('location_code', 'string');
-
-		$location_exception = $this->bo->get_location_exception($location_code);
-
-		foreach ($location_exception as &$_location_exception)
-		{
-			$_location_exception['category_text'] = preg_replace('!(http|ftp|scp)(s)?:\/\/[a-zA-Z0-9.?%=\-&_/]+!', "<a href=\"\\0\">\\0</a>", $_location_exception['category_text']);
-			$_location_exception['location_descr'] = preg_replace('!(http|ftp|scp)(s)?:\/\/[a-zA-Z0-9.?%=\-&_/]+!', "<a href=\"\\0\">\\0</a>", $_location_exception['location_descr']);
-		}
-
-		return array(
-			'location_exception' => $location_exception
-		);
-	}
-
-	public function get_controls_at_component($location_id = 0, $id = 0, $skip_json = false)
-	{
-		return $this->controller_helper->get_controls_at_component($location_id, $id, $skip_json);
-	}
-
-	public function get_cases($location_id = 0, $id = 0, $year = 0)
-	{
-		return $this->controller_helper->get_cases($location_id, $id, $year);
-	}
-
-	public function get_cases_for_checklist()
-	{
-		return $this->controller_helper->get_cases_for_checklist();
-	}
-
-	public function get_checklists($location_id = 0, $id = 0, $year = 0)
-	{
-		return $this->controller_helper->get_checklists($location_id, $id, $year);
-	}
-
-	function get_assigned_history()
-	{
-		return $this->controller_helper->get_assigned_history();
-	}
-
-	public function edit_field()
-	{
-		$type_id	 = Sanitizer::get_var('type_id', 'int', 'GET');
-		$id			 = Sanitizer::get_var('id', 'int', 'POST');
-
-		$field_name	 = Sanitizer::get_var('field_name', 'string', 'GET');
-
-		if (!$this->acl_edit)
-		{
-			return "ERROR";
-		}
-
-
-		if (!$this->acl_manage && $field_name != 'contact_phone')
-		{
-			return "ERROR";
-		}
-
-		if ($id && $field_name)
-		{
-
-			$data = array(
-				'type_id'	 => $type_id,
-				'id'		 => $id,
-				'field_name' => $field_name,
-				'value'		 => Sanitizer::get_var('value')
-			);
-
-			try
-			{
-				$ret = $this->bo->edit_field($data);
-			}
-			catch (Exception $e)
-			{
-				if ($e)
-				{
-					echo $e->getMessage();
-				}
-			}
-
-			return $ret ? "OK" : "ERROR";
-		}
-		else
-		{
-			return "ERROR";
-		}
 	}
 }

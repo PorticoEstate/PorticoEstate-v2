@@ -12,6 +12,9 @@ use App\modules\phpgwapi\helpers\LoginHelper;
 use App\modules\phpgwapi\helpers\RedirectHelper;
 use Slim\Routing\RouteCollectorProxy;
 
+/** @var \Slim\App $app */
+/** @var \DI\Container $container */
+
 // Handle requests for favicon.ico
 $app->get('/favicon.ico', function (Request $request, Response $response)
 {

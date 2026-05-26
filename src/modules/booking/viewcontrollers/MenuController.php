@@ -80,12 +80,15 @@ class MenuController
 //			];
 		}
 
-		$appends['navigation'] = [
-			'hospitality' => [
-				'text' => lang('Hospitality'),
-				'url' => \phpgw::link('/booking/view/hospitality'),
-			],
-		];
+		$bookingConfig = \App\modules\phpgwapi\models\ServerSettings::getInstance(true)->booking_config;
+		if (!empty($bookingConfig->enable_hospitality)) {
+			$appends['navigation'] = [
+				'hospitality' => [
+					'text' => lang('Hospitality'),
+					'url' => \phpgw::link('/booking/view/hospitality'),
+				],
+			];
+		}
 
 		return $appends;
 	}

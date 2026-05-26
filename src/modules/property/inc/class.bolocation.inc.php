@@ -919,7 +919,7 @@ JS;
 		return $values;
 	}
 
-	function read_single_old($location_code = '', $extra = '')
+	function read_single_old($location_code = '', $extra = array())
 	{
 		$location_data = $this->so->read_single($location_code);
 
@@ -954,6 +954,31 @@ JS;
 		return $this->so->check_location($location_code, $type_id);
 	}
 
+
+	/**
+	 * Merge full attribute metadata into an array of attribute values.
+	 *
+	 * @param array &$values_attribute Attribute values keyed by attrib_id; merged in place.
+	 * @return void
+	 */
+	function get_attribute_information(array &$values_attribute, int $typeId): void
+	{
+		$location = ".location.{$typeId}";
+		$_attributes = $this->find_attribute($location);
+
+		foreach ($values_attribute as $attrib_id => &$attribute)
+		{
+			foreach ($_attributes as $_key =>  $_attribute)
+			{
+				if ($attrib_id == $_attribute['id'])
+				{
+					$attribute = array_merge($_attribute, $attribute);
+				}
+			}
+		}
+	}
+
+
 	/**
 	 * Arrange attributes within groups
 	 *
@@ -967,7 +992,7 @@ JS;
 		return $this->custom->get_attribute_groups('property', $location, $attributes);
 	}
 
-	function save($location, $values_attribute, $action = '', $type_id = '', $location_code_parent = '')
+	function save($location, $values_attribute, $action = '', $type_id = '', $location_code_parent = '', $location_code_original = '')
 	{
 		if (is_array($values_attribute))
 		{
@@ -976,13 +1001,23 @@ JS;
 
 		if ($action == 'edit')
 		{
-			if ($this->so->check_location($location['location_code'], $type_id))
+			$existingLocationCode = $location_code_original ?: $location_code_parent;
+			if (!$existingLocationCode)
 			{
-				$receipt = $this->so->edit($location, $values_attribute, $type_id);
+				$existingLocationCode = $location['location_code'];
+			}
+
+			if (!$this->so->check_location($existingLocationCode, $type_id))
+			{
+				$receipt['error'][] = array('msg' => lang('This location ID does not exist!'));
+			}
+			else if ($location['location_code'] !== $existingLocationCode && $this->so->check_location($location['location_code'], $type_id))
+			{
+				$receipt['error'][] = array('msg' => lang('This location ID already exists!'));
 			}
 			else
 			{
-				$receipt['error'][] = array('msg' => lang('This location ID does not exist!'));
+				$receipt = $this->so->edit($location, $values_attribute, $type_id, $existingLocationCode);
 			}
 		}
 		else
@@ -1190,5 +1225,50 @@ JS;
 	function edit_field($data)
 	{
 		return $this->so->edit_field($data);
+	}
+
+	/**
+	 * Return selectable account options for responsibility-role UI.
+	 *
+	 * @param string $accountType  'accounts', 'groups', or '' for both
+	 * @return array
+	 */
+	public function get_accounts(string $accountType = ''): array
+	{
+		switch ($accountType)
+		{
+			case 'accounts':
+				$_accounts = $this->accounts->get_list('accounts', -1, 'ASC', 'account_lastname', '', -1);
+				break;
+			case 'groups':
+				$_accounts = $this->accounts->get_list('groups', -1, 'ASC', 'account_firstname', '', -1);
+				break;
+			default:
+				$_accounts = array_merge(
+					$this->accounts->get_list('groups', -1, 'ASC', 'account_firstname', '', -1),
+					$this->accounts->get_list('accounts', -1, 'ASC', 'account_lastname', '', -1)
+				);
+				break;
+		}
+
+		$values = array();
+		foreach ($_accounts as $_account)
+		{
+			$values[] = array(
+				'id'   => $_account->id,
+				'name' => $_account->__toString(),
+			);
+		}
+
+		if ($accountType === 'accounts')
+		{
+			array_unshift($values, array(
+				'id'   => (-1 * $this->userSettings['account_id']),
+				'name' => lang('mine roles'),
+			));
+		}
+
+		array_unshift($values, array('id' => '', 'name' => lang('Select')));
+		return $values;
 	}
 }

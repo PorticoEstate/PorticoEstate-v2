@@ -2777,16 +2777,54 @@ class property_soentity
 
 		if (isset($values['origin_id']) && $values['origin_id'])
 		{
-			$interlink_data = array(
-				'location1_id'		 => $this->locations->get_id('property', $values['origin']),
-				'location1_item_id'	 => $values['origin_id'],
-				'location2_id'		 => $this->locations->get_id($this->type_app[$this->type], ".{$this->type}.{$entity_id}.{$cat_id}"),
-				'location2_item_id'	 => $values['id'],
-				'account_id'		 => $this->account
-			);
+			$origin = (string)($values['origin'] ?? '');
+			$origin = trim($origin);
 
-			$interlink = CreateObject('property.interlink');
-			$interlink->add($interlink_data, $this->db);
+			if ($origin !== '' && $origin[0] === '.')
+			{
+				$origin = 'property' . $origin;
+			}
+
+			$origin_app = 'property';
+			$origin_location = '';
+			if ($origin !== '')
+			{
+				$origin_parts = explode('.', ltrim($origin, '.'), 2);
+				if (!empty($origin_parts[0]))
+				{
+					$origin_app = $origin_parts[0];
+				}
+				if (!empty($origin_parts[1]))
+				{
+					$origin_location = '.' . $origin_parts[1];
+				}
+			}
+
+			$origin_location_id = 0;
+			if ($origin_location)
+			{
+				$origin_location_id = (int)$this->locations->get_id($origin_app, $origin_location);
+				if (!$origin_location_id && $origin_app !== 'property')
+				{
+					$origin_location_id = (int)$this->locations->get_id('property', $origin_location);
+				}
+			}
+
+			$values['origin'] = $origin;
+
+			if ($origin_location_id)
+			{
+				$interlink_data = array(
+					'location1_id'		 => $origin_location_id,
+					'location1_item_id'	 => $values['origin_id'],
+					'location2_id'		 => $this->locations->get_id($this->type_app[$this->type], ".{$this->type}.{$entity_id}.{$cat_id}"),
+					'location2_item_id'	 => $values['id'],
+					'account_id'		 => $this->account
+				);
+
+				$interlink = CreateObject('property.interlink');
+				$interlink->add($interlink_data, $this->db);
+			}
 		}
 
 		if (isset($history_set) and is_array($history_set))

@@ -146,9 +146,8 @@ use App\modules\phpgwapi\services\SchemaProc\SchemaProc;
 			}
 
 			$querymethod = '';
-			if (isset($query))
+			if ($query)
 			{
-				$query	 = $this->db->db_addslashes($query);
 				$query	 = $this->db->db_addslashes($query);
 
 				$querymethod = " WHERE name {$this->like} '%{$query}%' OR column_name {$this->like} '%{$query}%'";

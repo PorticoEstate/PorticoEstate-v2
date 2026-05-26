@@ -771,8 +771,8 @@ window.on_location_updated = function (location_code)
 		return;
 	}
 
-	var oArgs = { menuaction: 'property.uilocation.get_delivery_address', loc1: location_code };
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var oArgs = { loc1: location_code };
+	var requestUrl = phpGWLink('property/location/delivery-address', oArgs);
 
 	$.ajax({
 		type: 'POST',
@@ -793,8 +793,8 @@ window.on_location_updated = function (location_code)
 window.get_location_exception = function (location_code)
 {
 
-	var oArgs = { menuaction: 'property.uilocation.get_location_exception', location_code: location_code };
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var oArgs = { location_code: location_code };
+	var requestUrl = phpGWLink('property/location/location-exception', oArgs);
 
 	$.ajax({
 		type: 'POST',

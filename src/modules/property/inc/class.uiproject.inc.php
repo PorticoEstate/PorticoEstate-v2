@@ -745,14 +745,12 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 				)
 			),
 			'datatable'		 => array(
-				'source'		 => self::link(array(
-					'menuaction'		 => 'property.uiproject.index',
+				'source'		 => phpgw::link('/index.php/property/project/datatable', array(
 					'lookup'			 => $lookup,
 					'from'				 => $from,
 					'make_relation'		 => $make_relation,
 					'relation_id'		 => $relation_id,
-					'relation_type'		 => $relation_type,
-					'phpgw_return_as'	 => 'json'
+					'relation_type'		 => $relation_type
 				)),
 				'download'		 => self::link(array(
 					'menuaction'	 => 'property.uiproject.download',

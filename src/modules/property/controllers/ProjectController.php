@@ -6,6 +6,7 @@ use JsonException;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use App\modules\property\helpers\ProjectFormHelper;
 use App\modules\phpgwapi\security\Acl;
 use Slim\Exception\HttpForbiddenException;
 use Slim\Exception\HttpNotFoundException;
@@ -13,6 +14,7 @@ use Slim\Exception\HttpNotFoundException;
 class ProjectController
 {
 	private $bo = null;
+	private ?ProjectFormHelper $formHelperInstance = null;
 
 	public function __construct(ContainerInterface $container)
 	{
@@ -70,9 +72,34 @@ class ProjectController
 		return is_array($decoded) ? $decoded : array();
 	}
 
-	private function hasReadAccess(): bool
+	protected function hasReadAccess(): bool
 	{
 		return (bool)Acl::getInstance()->check($this->bo()->acl_location, ACL_READ, 'property');
+	}
+
+	protected function hasAddAccess(): bool
+	{
+		return (bool)Acl::getInstance()->check($this->bo()->acl_location, ACL_ADD, 'property');
+	}
+
+	protected function hasEditAccess(): bool
+	{
+		return (bool)Acl::getInstance()->check($this->bo()->acl_location, ACL_EDIT, 'property');
+	}
+
+	protected function hasDeleteAccess(): bool
+	{
+		return (bool)Acl::getInstance()->check($this->bo()->acl_location, ACL_DELETE, 'property');
+	}
+
+	protected function formHelper(): ProjectFormHelper
+	{
+		if ($this->formHelperInstance === null)
+		{
+			$this->formHelperInstance = new ProjectFormHelper();
+		}
+
+		return $this->formHelperInstance;
 	}
 
 	private function currentDraw(array $input): int
@@ -86,6 +113,17 @@ class ProjectController
 		return array_key_exists('draw', $input)
 			|| array_key_exists('columns', $input)
 			|| array_key_exists('order', $input);
+	}
+
+	private function datatableResponse(Response $response, array $input, array $rows, ?int $total = null): Response
+	{
+		$count = $total ?? count($rows);
+		return $this->jsonResponse($response, array(
+			'data' => $rows,
+			'recordsTotal' => $count,
+			'recordsFiltered' => $count,
+			'draw' => $this->currentDraw($input),
+		));
 	}
 
 	private function normalizeSearchValue(mixed $search): string
@@ -158,12 +196,7 @@ class ProjectController
 			return $this->jsonResponse($response, $values);
 		}
 
-		return $this->jsonResponse($response, array(
-			'data' => $values,
-			'recordsTotal' => (int)$this->bo()->total_records,
-			'recordsFiltered' => (int)$this->bo()->total_records,
-			'draw' => $this->currentDraw($input),
-		));
+		return $this->datatableResponse($response, $input, $values, (int)$this->bo()->total_records);
 	}
 
 	/**
@@ -230,6 +263,137 @@ class ProjectController
 		return $this->jsonResponse($response, array(
 			'status' => 'success',
 			'data' => $item,
+		));
+	}
+
+	/**
+	 * Project orders list endpoint (DataTables-compatible).
+	 */
+	public function getOrders(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to project');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$projectId = (int)($args['id'] ?? $input['project_id'] ?? 0);
+		$orderId = (int)($input['order_id'] ?? 0);
+
+		if ($projectId <= 0 && $orderId <= 0)
+		{
+			return $this->datatableResponse($response, $input, array(), 0);
+		}
+
+		$order = is_array($input['order'] ?? null) ? $input['order'] : array();
+		$columns = is_array($input['columns'] ?? null) ? $input['columns'] : array();
+		$orderIndex = (int)($order[0]['column'] ?? -1);
+		$orderField = ($orderIndex >= 0 && isset($columns[$orderIndex]['data']))
+			? (string)$columns[$orderIndex]['data']
+			: (string)($input['order_by'] ?? 'workorder_id');
+		$orderDir = strtolower((string)($order[0]['dir'] ?? $input['order_dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
+
+		$params = array(
+			'order' => $orderField,
+			'sort' => $orderDir,
+			'project_id' => $projectId,
+			'order_id' => $orderId,
+			'year' => isset($input['year']) ? (int)$input['year'] : 0,
+			'start' => isset($input['start']) ? (int)$input['start'] : 0,
+			'results' => isset($input['length']) ? (int)$input['length'] : 0,
+		);
+
+		$rows = $this->bo()->get_orders($params);
+		$total = (int)($this->bo()->so->total_records ?? count($rows));
+
+		return $this->datatableResponse($response, $input, is_array($rows) ? $rows : array(), $total);
+	}
+
+	public function store(Request $request, Response $response): Response
+	{
+		if (!$this->hasAddAccess())
+		{
+			throw new HttpForbiddenException($request, 'No add access to project');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$state = $this->formHelper()->mapInput($input, false, 0);
+		$state = $this->formHelper()->validate($state);
+		$state = $this->formHelper()->persistSave($state, $this->bo());
+
+		if (!empty($state['errors']) || !empty($state['receipt']['error']))
+		{
+			return $this->jsonResponse($response, array(
+				'status' => 'error',
+				'errors' => $state['errors'] ?? array(),
+				'receipt' => $state['receipt'] ?? array(),
+			), 400);
+		}
+
+		return $this->jsonResponse($response, array(
+			'status' => 'success',
+			'data' => array(
+				'id' => (int)($state['id'] ?? 0),
+			),
+			'receipt' => $state['receipt'] ?? array(),
+		), 201);
+	}
+
+	public function update(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasEditAccess())
+		{
+			throw new HttpForbiddenException($request, 'No edit access to project');
+		}
+
+		$id = (int)($args['id'] ?? 0);
+		if ($id <= 0)
+		{
+			throw new HttpNotFoundException($request, 'Project not found');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$state = $this->formHelper()->mapInput($input, true, $id);
+		$state = $this->formHelper()->validate($state);
+		$state = $this->formHelper()->persistSave($state, $this->bo());
+
+		if (!empty($state['errors']) || !empty($state['receipt']['error']))
+		{
+			return $this->jsonResponse($response, array(
+				'status' => 'error',
+				'errors' => $state['errors'] ?? array(),
+				'receipt' => $state['receipt'] ?? array(),
+			), 400);
+		}
+
+		return $this->jsonResponse($response, array(
+			'status' => 'success',
+			'data' => array(
+				'id' => (int)($state['id'] ?? $id),
+			),
+			'receipt' => $state['receipt'] ?? array(),
+		));
+	}
+
+	public function destroy(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasDeleteAccess())
+		{
+			throw new HttpForbiddenException($request, 'No delete access to project');
+		}
+
+		$id = (int)($args['id'] ?? 0);
+		if ($id <= 0)
+		{
+			throw new HttpNotFoundException($request, 'Project not found');
+		}
+
+		$this->bo()->delete($id);
+
+		return $this->jsonResponse($response, array(
+			'status' => 'success',
+			'message' => 'Project deleted',
+			'data' => array('id' => $id),
 		));
 	}
 }

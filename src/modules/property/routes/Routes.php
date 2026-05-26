@@ -176,7 +176,12 @@ $app->group('/property/project', function (RouteCollectorProxy $group) use ($con
 	$group->post('/datatable', [$controller, 'index']);
 	$group->get('/list', [$controller, 'listProjects']);
 	$group->post('/list', [$controller, 'listProjects']);
+	$group->post('/create', [$controller, 'store']);
+	$group->get('/{id:[0-9]+}/orders', [$controller, 'getOrders']);
+	$group->post('/{id:[0-9]+}/orders', [$controller, 'getOrders']);
 	$group->get('/{id:[0-9]+}', [$controller, 'show']);
+	$group->put('/{id:[0-9]+}', [$controller, 'update']);
+	$group->delete('/{id:[0-9]+}', [$controller, 'destroy']);
 })
 ->addMiddleware(new AccessVerifier($container))
 ->addMiddleware(new SessionsMiddleware($container));

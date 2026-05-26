@@ -189,6 +189,51 @@ class ProjectController
 	}
 
 	/**
+	 * Add legacy UI edit links expected by existing DataTables formatters.
+	 */
+	private function withLegacyEditLinks(array $rows): array
+	{
+		foreach ($rows as &$row)
+		{
+			if (!is_array($row))
+			{
+				continue;
+			}
+
+			$id = (int)($row['id'] ?? $row['project_id'] ?? 0);
+			if ($id <= 0)
+			{
+				continue;
+			}
+
+			if (!isset($row['id']))
+			{
+				$row['id'] = $id;
+			}
+
+			$row['link'] = $this->legacyEditLink($id);
+		}
+		unset($row);
+
+		return $rows;
+	}
+
+	private function legacyEditLink(int $id): string
+	{
+		$params = array(
+			'menuaction' => 'property.uiproject.edit',
+			'id' => $id,
+		);
+
+		if (class_exists('phpgw'))
+		{
+			return \phpgw::link('/index.php', $params);
+		}
+
+		return '?' . http_build_query($params);
+	}
+
+	/**
 	 * DataTables-compatible project list endpoint.
 	 */
 	public function index(Request $request, Response $response): Response
@@ -207,6 +252,8 @@ class ProjectController
 			return $this->jsonResponse($response, $values);
 		}
 
+		$values = $this->withLegacyEditLinks(is_array($values) ? $values : array());
+
 		return $this->datatableResponse($response, $input, $values, (int)$this->bo()->total_records);
 	}
 
@@ -223,6 +270,7 @@ class ProjectController
 		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
 		$params = $this->readParams($input);
 		$items = $this->bo()->read($params);
+		$items = $this->withLegacyEditLinks(is_array($items) ? $items : array());
 
 		return $this->jsonResponse($response, array(
 			'status' => 'success',
@@ -407,24 +455,44 @@ class ProjectController
 		}
 
 		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+
 		$id = (int)($args['id'] ?? $input['id'] ?? 0);
 		$locationCode = (string)($input['location_code'] ?? '');
 
-		if ($id <= 0)
+		if ($id < 0)
 		{
 			return $this->datatableResponse($response, $input, array(), 0);
 		}
+		$search = $this->normalizeSearchValue($input['search'] ?? '');
+		$order = is_array($input['order'] ?? null) ? $input['order'] : array();
+		$columns = is_array($input['columns'] ?? null) ? $input['columns'] : array();
+		$orderIndex = (int)($order[0]['column'] ?? -1);
+		$orderField = ($orderIndex >= 0 && isset($columns[$orderIndex]['data']))
+			? (string)$columns[$orderIndex]['data']
+			: (string)($input['order_by'] ?? 'location_code');
+		$orderDir = strtolower((string)($order[0]['dir'] ?? $input['order_dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
 
-		$values = $this->bo()->get_other_projects($id, $locationCode);
-		foreach ($values as &$entry)
+		$params = array(
+			'start' => isset($input['start']) ? (int)$input['start'] : 0,
+			'results' => isset($input['length']) ? (int)$input['length'] : 0,
+			'allrows' => isset($input['length']) && (int)$input['length'] === -1,
+			'query'	 => $search,
+			'orderField' => $orderField,
+			'orderDir'	 => $orderDir,
+
+		);
+		$result = $this->bo()->get_other_projects($id, $locationCode, $params);
+
+		$phpgwapi_common = new \phpgwapi_common();
+		foreach ($result['values'] as &$entry)
 		{
 			$link = \phpgw::link('/index.php', array('menuaction' => 'property.uiproject.view', 'id' => $entry['id']));
 			$entry['url'] = '<a href="' . $link . '">' . $entry['id'] . '</a>';
-			$entry['start_date'] = (new \phpgwapi_common())->show_date($entry['start_date'], 'Y-m-d');
+			$entry['start_date'] = $phpgwapi_common->show_date($entry['start_date'], 'Y-m-d');
 		}
 		unset($entry);
 
-		return $this->datatableResponse($response, $input, is_array($values) ? $values : array(), count($values));
+		return $this->datatableResponse($response, $input, is_array($result['values']) ? $result['values'] : array(), $result['total_records']);
 	}
 
 	/**

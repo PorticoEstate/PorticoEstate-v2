@@ -757,8 +757,8 @@ this.refresh_files = function ()
 
 this.get_other_projects = function (location_code)
 {
-	var oArgs = {menuaction: 'property.uiproject.get_other_projects', location_code: location_code, id: project_id};
-	var strURL = phpGWLink('index.php', oArgs, true);
+	var oArgs = {location_code: location_code, id: project_id};
+	var strURL = phpGWLink('property/project/' + project_id + '/other-projects', oArgs);
 	JqueryPortico.updateinlineTableHelper('datatable-container_7', strURL);
 };
 

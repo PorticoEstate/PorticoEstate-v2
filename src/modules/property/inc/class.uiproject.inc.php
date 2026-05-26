@@ -2382,7 +2382,7 @@ JS;
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_2',
-			'requestUrl' => json_encode(phpgw::link('/index.php/property/project/' . $id . '/vouchers', array(
+			'requestUrl' => json_encode(phpgw::link('/property/project/' . $id . '/vouchers', array(
 				'phpgw_return_as' => 'json'
 			))),
 			'data'		 => json_encode(array()),
@@ -2517,7 +2517,7 @@ JS;
 
 		//---file tagging
 
-		$requestUrl	 = json_encode(phpgw::link('/index.php/property/project/' . $id . '/files/actions', array(
+		$requestUrl	 = json_encode(phpgw::link('/property/project/' . $id . '/files/actions', array(
 			'phpgw_return_as' => 'json'
 		)));
 		$requestUrl = str_replace('&amp;', '&', $requestUrl);
@@ -2647,7 +2647,7 @@ JS;
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_5',
-			'requestUrl' => json_encode(phpgw::link('/index.php/property/project/' . $id . '/files', array(
+			'requestUrl' => json_encode(phpgw::link('/property/project/' . $id . '/files', array(
 				'phpgw_return_as' => 'json'
 			))),
 			'data'		 => json_encode(array()),
@@ -2733,27 +2733,25 @@ JS;
 		);
 
 
-		$other_projects		 = $this->get_other_projects($id, $values['location_data']['location_code']);
+//		$other_projects		 = $this->get_other_projects($id, $values['location_data']['location_code']);
 		$other_projects_def	 = array(
-			array('key' => 'url', 'label' => lang('id'), 'sortable' => true),
+			array('key' => 'url', 'label' => lang('id'), 'sortable' => false),
 			array('key' => 'location_code', 'label' => lang('location'), 'sortable' => true),
-			array('key' => 'name', 'label' => lang('name'), 'sortable' => false),
+			array('key' => 'name', 'label' => lang('name'), 'sortable' => true),
 			array('key' => 'start_date', 'label' => lang('start date'), 'sortable' => true),
-			array('key' => 'coordinator', 'label' => lang('coordinator'), 'sortable' => true),
+			array('key' => 'coordinator', 'label' => lang('coordinator'), 'sortable' => false),
 			array('key' => 'status', 'label' => lang('status'), 'sortable' => true),
 		);
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_7',
-			'requestUrl' => json_encode(phpgw::link('/index.php/property/project/' . $id . '/other-projects', array(
+			'requestUrl' => json_encode(phpgw::link('/property/project/' . $id . '/other-projects', array(
 				'location_code' => $values['location_data']['location_code'],
 				'phpgw_return_as' => 'json'
 			))),
 			'data'		 => json_encode(array()),
 			'ColumnDefs' => $other_projects_def,
 			'config'	 => array(
-				//			array('disableFilter' => true),
-				//			array('disablePagination' => true),
 				array('order' => json_encode(array(array(1, 'desc'), array(3, 'desc'))))
 			)
 		);
@@ -3010,8 +3008,7 @@ JS;
 			'currency'							 => $this->userSettings['preferences']['common']['currency'],
 			'base_java_url'						 => "{menuaction:'property.bocommon.get_vendor_email',phpgw_return_as:'json'}",
 			'location_item_id'					 => $id,
-			'edit_action'						 => phpgw::link('/index.php', array(
-				'menuaction' => 'property.uiproject.edit',
+			'edit_action'						 => phpgw::link('/property/uiproject/edit', array(
 				'id'		 => $id
 			)),
 			'lang_edit_statustext'				 => lang('Edit this entry '),
@@ -3024,7 +3021,7 @@ JS;
 				'file'
 			)),
 			'multiple_uploader'					 => true,
-			'multi_upload_action' => phpgw::link('/index.php/property/project/' . $id . '/multi-upload'),
+			'multi_upload_action' => phpgw::link('/property/project/' . $id . '/multi-upload'),
 			'street_name'						 => $values['location_data']['street_name'],
 			'street_number'						 => $values['location_data']['street_number'],
 			'image_list'						 => $image_list,

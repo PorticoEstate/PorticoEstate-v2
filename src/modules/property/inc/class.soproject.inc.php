@@ -3631,12 +3631,38 @@ class property_soproject
 		}
 	}
 
-	public function get_other_projects($id, $location_code)
+	public function get_other_projects($id, $location_code, $params = array())
 	{
 		if (!$location_code)
 		{
 			return array();
 		}
+
+		$start = isset($params['start']) ? $params['start'] : 0;
+		$results = isset($params['results']) ? $params['results'] : 10;
+		$allrows = isset($params['allrows']) ? $params['allrows'] : false;
+		$query	 = isset($params['query']) ? $params['query'] : '';
+		$orderDir	 = isset($params['orderDir']) ? $params['orderDir'] : 'DESC';
+		$orderField	 = isset($params['orderField']) ? $params['orderField'] : 'location_code';
+
+		$ordermethod = "ORDER BY fm_project.{$orderField} {$orderDir}, start_date DESC";
+
+		switch ($orderField)
+		{
+			case 'name':
+				$ordermethod = "ORDER BY fm_project.name {$orderDir}, start_date DESC";
+				break;
+			case 'start_date':
+				$ordermethod = "ORDER BY fm_project.start_date {$orderDir}";
+				break;
+			case 'id':
+				$ordermethod = "ORDER BY fm_project.id {$orderDir}, start_date DESC";
+				break;
+			case 'status':
+				$ordermethod = "ORDER BY fm_project_status.descr {$orderDir}, start_date DESC";
+				break;
+		}
+
 
 		$id = (int)$id;
 
@@ -3662,6 +3688,12 @@ class property_soproject
 
 		$location_code = $this->db->db_addslashes($location_code);
 
+		$filter_query = '';
+		if ($query)
+		{
+			$query = $this->db->db_addslashes($query);
+			$filter_query = " AND fm_project.name {$this->like} '%{$query}%'";
+		}
 		$values = array();
 
 		$sql = "SELECT DISTINCT fm_project.id, fm_project.location_code,"
@@ -3672,10 +3704,23 @@ class property_soproject
 			. " {$this->join} fm_project_status ON (fm_project.status = fm_project_status.id)"
 			. " {$this->join} fm_workorder ON (fm_workorder.project_id = fm_project.id)"
 			. " WHERE (fm_workorder.location_code {$this->like} '{$location_code}%' {$filter_parent})"
-			. " AND fm_project.id !={$id}"
-			. " ORDER BY fm_project.location_code DESC, start_date DESC";
+			. " AND fm_project.id !={$id} "
+			. " {$filter_query}"
+			. " {$ordermethod}";
 
-		$this->db->query($sql, __LINE__, __FILE__);
+		
+		
+		if ($allrows)
+		{
+			$this->db->query($sql, __LINE__, __FILE__);
+			$total_records = $this->db->num_rows();
+		}
+		else
+		{
+			$this->db->query($sql, __LINE__, __FILE__);
+			$total_records = $this->db->num_rows();
+			$this->db->limit_query($sql, $start, __LINE__, __FILE__, $results);
+		}
 
 		while ($this->db->next_record())
 		{
@@ -3689,6 +3734,10 @@ class property_soproject
 			);
 		}
 
-		return $values;
+		return array(
+			'values'		 => $values,
+			'total_records' => $total_records
+		);
+
 	}
 }

@@ -39,7 +39,7 @@ import {
 	fetchMultiDomains,
 	patchBookingUser
 } from "@/service/api/api-utils";
-import {IApplication, IUpdatePartialApplication, NewPartialApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
+import {IApplication, IUpdatePartialApplication, NewPartialApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse, INotificationUnreadCount} from "@/service/types/api/application.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
 import {IEvent, IFreeTimeSlot, IShortEvent, IAPIEvent, IAPIBooking, IAPIAllocation} from "@/service/pecalendar.types";
@@ -2336,4 +2336,30 @@ export function useApplicationDocuments(
 		retry: 2,
 		refetchOnWindowFocus: false,
 	});
+}
+
+/**
+ * Hook to fetch unread notification count for the current user
+ * @returns Query result with total unread count and per-application breakdown
+ */
+export function useUnreadNotificationCount() {
+	return useQuery({
+		queryKey: ['unreadNotificationCount'],
+		queryFn: async () => {
+			const url = phpGWLink(['bookingfrontend', 'notifications', 'unread-count']);
+			const res = await fetch(url);
+			if (!res.ok) throw new Error('Failed to fetch unread count');
+			return res.json() as Promise<INotificationUnreadCount>;
+		},
+	});
+}
+
+/**
+ * Mark notifications as read for a specific entity
+ * @param entityType The entity type (e.g., 'application')
+ * @param entityId The entity ID
+ */
+export async function markNotificationsAsRead(entityType: string, entityId: number): Promise<void> {
+	const url = phpGWLink(['bookingfrontend', 'notifications', entityType, entityId.toString(), 'mark-read']);
+	await fetch(url, { method: 'PUT' });
 }

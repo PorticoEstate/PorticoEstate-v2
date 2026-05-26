@@ -185,6 +185,11 @@ $app->group('/property/project', function (RouteCollectorProxy $group) use ($con
 	$group->post('/{id:[0-9]+}/orders', [$controller, 'getOrders']);
 	$group->get('/{id:[0-9]+}/vouchers', [$controller, 'getVouchers']);
 	$group->post('/{id:[0-9]+}/vouchers', [$controller, 'getVouchers']);
+	$group->get('/{id:[0-9]+}/other-projects', [$controller, 'getOtherProjects']);
+	$group->post('/{id:[0-9]+}/other-projects', [$controller, 'getOtherProjects']);
+	$group->get('/attachments', [$controller, 'getAttachment']);
+	$group->post('/attachments', [$controller, 'getAttachment']);
+	$group->get('/external-project', [$controller, 'getExternalProject']);
 	$group->get('/{id:[0-9]+}', [$controller, 'show']);
 	$group->put('/{id:[0-9]+}', [$controller, 'update']);
 	$group->delete('/{id:[0-9]+}', [$controller, 'destroy']);

@@ -14,6 +14,7 @@ use Slim\Exception\HttpNotFoundException;
 class ProjectController
 {
 	private $bo = null;
+	private $bocommon = null;
 	private ?ProjectFormHelper $formHelperInstance = null;
 
 	public function __construct(ContainerInterface $container)
@@ -28,6 +29,16 @@ class ProjectController
 		}
 
 		return $this->bo;
+	}
+
+	protected function bocommon()
+	{
+		if ($this->bocommon === null)
+		{
+			$this->bocommon = CreateObject('property.bocommon');
+		}
+
+		return $this->bocommon;
 	}
 
 	private function jsonResponse(Response $response, mixed $payload, int $statusCode = 200): Response
@@ -383,6 +394,102 @@ class ProjectController
 
 		$total = (int)($soinvoice->total_records ?? count($values));
 		return $this->datatableResponse($response, $input, $values, $total);
+	}
+
+	/**
+	 * Project other-projects list endpoint.
+	 */
+	public function getOtherProjects(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to project');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$id = (int)($args['id'] ?? $input['id'] ?? 0);
+		$locationCode = (string)($input['location_code'] ?? '');
+
+		if ($id <= 0)
+		{
+			return $this->datatableResponse($response, $input, array(), 0);
+		}
+
+		$values = $this->bo()->get_other_projects($id, $locationCode);
+		foreach ($values as &$entry)
+		{
+			$link = \phpgw::link('/index.php', array('menuaction' => 'property.uiproject.view', 'id' => $entry['id']));
+			$entry['url'] = '<a href="' . $link . '">' . $entry['id'] . '</a>';
+			$entry['start_date'] = (new \phpgwapi_common())->show_date($entry['start_date'], 'Y-m-d');
+		}
+		unset($entry);
+
+		return $this->datatableResponse($response, $input, is_array($values) ? $values : array(), count($values));
+	}
+
+	/**
+	 * Project attachment list endpoint.
+	 */
+	public function getAttachment(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to project attachments');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$voucherId = (int)($input['voucher_id'] ?? $args['id'] ?? 0);
+		if ($voucherId <= 0)
+		{
+			return $this->datatableResponse($response, $input, array(), 0);
+		}
+
+		$attachmenList = array();
+		$locations = CreateObject('phpgwapi.locations');
+		$invoiceConfig = CreateObject('admin.soconfig', $locations->get_id('property', '.invoice'));
+		$directoryAttachment = rtrim($invoiceConfig->config_data['import']['local_path'], '/') . "/attachment/{$voucherId}/";
+
+		try
+		{
+			$dir = new \DirectoryIterator($directoryAttachment);
+			foreach ($dir as $file)
+			{
+				if ($file->isDot() || !$file->isFile() || !$file->isReadable())
+				{
+					continue;
+				}
+
+				$url = \phpgw::link('/index.php', array(
+					'menuaction' => 'property.uitts.show_attachment',
+					'file_name' => urlencode((string)$file),
+					'key' => $voucherId,
+				));
+
+				$attachmenList[] = array(
+					'voucher_id' => $voucherId,
+					'file_name' => '<a href="' . $url . '" target="_blank">' . (string)$file . '</a>',
+				);
+			}
+		}
+		catch (\Exception $e)
+		{
+		}
+
+		return $this->datatableResponse($response, $input, $attachmenList, count($attachmenList));
+	}
+
+	/**
+	 * Project external project lookup endpoint.
+	 */
+	public function getExternalProject(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to project lookups');
+		}
+
+		$result = $this->bocommon()->get_external_project();
+		return $this->jsonResponse($response, is_array($result) ? $result : array());
 	}
 
 	public function store(Request $request, Response $response): Response

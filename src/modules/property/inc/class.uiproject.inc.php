@@ -2745,8 +2745,11 @@ JS;
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_7',
-			'requestUrl' => "''",
-			'data'		 => json_encode($other_projects),
+			'requestUrl' => json_encode(phpgw::link('/index.php/property/project/' . $id . '/other-projects', array(
+				'location_code' => $values['location_data']['location_code'],
+				'phpgw_return_as' => 'json'
+			))),
+			'data'		 => json_encode(array()),
 			'ColumnDefs' => $other_projects_def,
 			'config'	 => array(
 				//			array('disableFilter' => true),

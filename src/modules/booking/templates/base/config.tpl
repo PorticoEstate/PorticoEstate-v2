@@ -157,4 +157,14 @@
 		</tr>
 	</table>
 </form>
+<script>
+document.querySelector('input[name="submit"]').closest('form').addEventListener('submit', function() {
+	for (var i = localStorage.length - 1; i >= 0; i--) {
+		var key = localStorage.key(i);
+		if (key && key.startsWith('menu_tree_')) {
+			localStorage.removeItem(key);
+		}
+	}
+});
+</script>
 <!-- END footer -->

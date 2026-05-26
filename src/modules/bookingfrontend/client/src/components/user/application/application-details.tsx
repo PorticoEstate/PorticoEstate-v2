@@ -1,6 +1,6 @@
 'use client'
-import React, {FC, useMemo, useEffect, useState} from 'react';
-import {IApplication, IApplicationDate, ApplicationComment as IComment} from "@/service/types/api/application.types";
+import React, {FC, useMemo, useEffect, useState, useRef} from 'react';
+import {IApplication, IApplicationDate, ApplicationComment as IComment, RecurringInfoUtils} from "@/service/types/api/application.types";
 import {
     useApplication,
     useResourceRegulationDocuments,
@@ -9,7 +9,11 @@ import {
     useApplicationComments,
     useAddApplicationComment,
     useUpdateApplicationStatus,
+    useUploadApplicationDocument,
+    useDeleteApplicationDocument,
+    markNotificationsAsRead,
 } from "@/service/hooks/api-hooks";
+import {SubscriptionManager} from "@/service/websocket/subscription-manager";
 import {
     Heading,
     Paragraph,
@@ -20,6 +24,7 @@ import {
     Textarea,
     Details,
     Dialog,
+    Table,
 } from "@digdir/designsystemet-react";
 import Link from "next/link";
 import {DateTime} from "luxon";
@@ -29,6 +34,7 @@ import {getDocumentLink} from "@/service/api/building";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
 import ArticleTable from "@/components/article-table/article-table";
+import {ENABLE_COMBINED_APPLICATIONS} from '@/service/feature-flags';
 import {getStatusColor} from './status-utils';
 import styles from "./application-details.module.scss";
 import {
@@ -41,7 +47,10 @@ import {
     InformationSquareIcon,
     FileIcon,
     PaperplaneIcon,
+    TrashIcon,
+    PlusIcon,
 } from '@navikt/aksel-icons';
+import {useQueryClient} from '@tanstack/react-query';
 import TimeAgo from 'timeago-react';
 import * as timeago from 'timeago.js';
 import nb from 'timeago.js/lib/lang/nb_NO';
@@ -53,6 +62,9 @@ interface ApplicationDetailsProps {
     applicationId: number;
     secret?: string;
 }
+
+const ACCEPTED_FILE_TYPES = '.jpg,.jpeg,.png,.gif,.xls,.xlsx,.doc,.docx,.txt,.pdf,.odt,.ods';
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
 // --- Helpers ---
 
@@ -320,7 +332,18 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
     const {data: audience} = useBuildingAudience(application?.building_id);
     const {data: applicationDocuments} = useApplicationDocuments(props.applicationId);
     const cancelStatus = useUpdateApplicationStatus();
+    const uploadDocumentMutation = useUploadApplicationDocument();
+    const deleteDocumentMutation = useDeleteApplicationDocument();
+    const queryClient = useQueryClient();
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const t = useTrans();
+    const [uploadError, setUploadError] = useState<string | null>(null);
+
+    // TODO: When ENABLE_COMBINED_APPLICATIONS is true and this is a parent application,
+    // fetch child applications via a new API endpoint (e.g., GET /applications/{id}/children)
+    // and merge their dates, resources, orders, and agegroups into the parent display.
+    // For now, combined mode only affects the list page filtering.
+    const isParentApplication = ENABLE_COMBINED_APPLICATIONS && application && (!application.parent_id || application.parent_id === application.id);
 
     useEffect(() => {
         if (application && props.secret) {
@@ -328,10 +351,88 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
         }
     }, [application, props.secret, props.applicationId]);
 
+    // Live comment updates via WebSocket
+    useEffect(() => {
+        if (!application?.id) return;
+
+        const subscriptionManager = SubscriptionManager.getInstance();
+        const cleanup = subscriptionManager.subscribeToEntity(
+            'application',
+            application.id,
+            (event: any) => {
+                if (event.eventType === 'new_comment' && event.data?.comment) {
+                    // Invalidate comments cache to refetch with the new comment
+                    queryClient.invalidateQueries({ queryKey: ['applicationComments', application.id] });
+                    // Also invalidate unread count since we're viewing the page
+                    queryClient.invalidateQueries({ queryKey: ['unreadNotificationCount'] });
+                }
+            }
+        );
+
+        return cleanup;
+    }, [application?.id, queryClient]);
+
+    // Mark notifications as read when viewing the application
+    useEffect(() => {
+        if (!application?.id) return;
+        markNotificationsAsRead('application', application.id).catch(() => {});
+    }, [application?.id]);
+
     // Copy-as-new dialog
     const [showCopyDialog, setShowCopyDialog] = useState(false);
     // Cancel confirmation
     const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        setUploadError(null);
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        const allowedExtensions = ACCEPTED_FILE_TYPES.split(',').map(ext => ext.trim().toLowerCase());
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+            if (!allowedExtensions.includes(ext)) {
+                setUploadError(t('bookingfrontend.invalid_file_type'));
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                return;
+            }
+            if (file.size > MAX_FILE_SIZE) {
+                setUploadError(t('bookingfrontend.file_too_large'));
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                return;
+            }
+        }
+
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append('files[]', files[i]);
+        }
+
+        try {
+            await uploadDocumentMutation.mutateAsync({
+                id: props.applicationId,
+                files: formData,
+            });
+            queryClient.invalidateQueries({queryKey: ['applicationDocuments', props.applicationId]});
+        } catch {
+            setUploadError(t('bookingfrontend.upload_failed'));
+        }
+
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const handleDeleteDocument = async (documentId: number, documentName: string) => {
+        if (!window.confirm(`${t('bookingfrontend.delete_document')}: ${documentName}?`)) return;
+
+        try {
+            await deleteDocumentMutation.mutateAsync(documentId);
+            queryClient.invalidateQueries({queryKey: ['applicationDocuments', props.applicationId]});
+        } catch {
+            console.error('Failed to delete document:', documentId);
+        }
+    };
 
     const createTempEventFromApplication = (): Partial<FCallTempEvent> | undefined => {
         if (!application) return undefined;
@@ -406,6 +507,9 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                         <span>{isOrg ? application.customer_organization_name : t('bookingfrontend.personal')}</span>
                     </div>
                     <Heading level={1} data-size="lg">{application.name}</Heading>
+                    {isParentApplication && (
+                        <Tag data-size="sm" data-color="info">{t('bookingfrontend.combined_application')}</Tag>
+                    )}
                     <div className={styles.metaRow}>
                         <Tag data-color={getStatusColor(application.status)} data-size="md">
                             {t(`bookingfrontend.${application.status.toLowerCase()}`)}
@@ -419,6 +523,9 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                                 ? (t('bookingfrontend.date'))
                                 : (t('bookingfrontend.dates'))}
                         </span>
+                        {RecurringInfoUtils.isRecurring(application) && (
+                            <Tag data-size="sm" data-color="neutral">{t('bookingfrontend.recurring_application')}</Tag>
+                        )}
                     </div>
                 </div>
                 <div className={styles.appActions}>
@@ -525,30 +632,50 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                     </div>
 
                     {/* Om arrangementet */}
-                    {application.description && (
+                    {(application.description || application.equipment || (application.agegroups && application.agegroups.length > 0)) && (
                         <div className={styles.card}>
                             <Heading level={2} data-size="sm">
                                 {t('bookingfrontend.about_the_event')}
                             </Heading>
-                            <Paragraph style={{margin: '12px 0 0', lineHeight: 1.6}}>
-                                {application.description}
-                            </Paragraph>
-                            {application.agegroups && application.agegroups.length > 0 && (
+                            {application.description && (
+                                <Paragraph style={{margin: '12px 0 0', lineHeight: 1.6}}>
+                                    {application.description}
+                                </Paragraph>
+                            )}
+                            {application.equipment && (
                                 <>
                                     <div className={styles.divider} style={{margin: '16px 0'}}/>
-                                    <div className={styles.dlGrid}>
-                                        <Field label={t('bookingfrontend.target_audience')}>
-                                            {application.agegroups.map(g => {
-                                                const total = (g.male || 0) + (g.female || 0);
-                                                return `${g.name} (${total} ${t('bookingfrontend.participants').toLowerCase()})`;
-                                            }).join(', ')}
-                                        </Field>
-                                        <Field label={t('bookingfrontend.participants')}>
-                                            {application.agegroups.reduce((s, g) => s + (g.male || 0) + (g.female || 0), 0)}
-                                        </Field>
-                                    </div>
+                                    <Field label={t('bookingfrontend.equipment')}>{application.equipment}</Field>
                                 </>
                             )}
+                            {application.agegroups && application.agegroups.length > 0 && (() => {
+                                const total = application.agegroups.reduce((s, g) => s + (g.male || 0) + (g.female || 0), 0);
+                                return (
+                                    <>
+                                        <div className={styles.divider} style={{margin: '16px 0'}}/>
+                                        <Table data-size="sm">
+                                            <Table.Head>
+                                                <Table.Row>
+                                                    <Table.HeaderCell>{t('bookingfrontend.age_group')}</Table.HeaderCell>
+                                                    <Table.HeaderCell>{t('bookingfrontend.participants')}</Table.HeaderCell>
+                                                </Table.Row>
+                                            </Table.Head>
+                                            <Table.Body>
+                                                {application.agegroups.map(group => (
+                                                    <Table.Row key={group.id}>
+                                                        <Table.Cell>{group.name}</Table.Cell>
+                                                        <Table.Cell>{(group.male || 0) + (group.female || 0)}</Table.Cell>
+                                                    </Table.Row>
+                                                ))}
+                                                <Table.Row>
+                                                    <Table.Cell><strong>{t('common.total')}</strong></Table.Cell>
+                                                    <Table.Cell><strong>{total}</strong></Table.Cell>
+                                                </Table.Row>
+                                            </Table.Body>
+                                        </Table>
+                                    </>
+                                );
+                            })()}
                         </div>
                     )}
 
@@ -595,29 +722,77 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                             {applicationDocuments && applicationDocuments.length > 0 ? (
                                 <div className={styles.docList}>
                                     {applicationDocuments.map(doc => (
-                                        <a
-                                            key={doc.id}
-                                            href={getDocumentLink(doc, 'application')}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className={styles.docItem}
-                                        >
-                                            <span className={styles.docIcon}>
-                                                <FileIcon fontSize="1rem"/>
-                                            </span>
-                                            <div className={styles.docMeta}>
-                                                <div className={styles.docName}>{doc.name}</div>
-                                            </div>
-                                            <span style={{fontSize: 13, color: 'var(--ds-color-neutral-text-subtle)'}}>
-                                                {t('bookingfrontend.download')}
-                                            </span>
-                                        </a>
+                                        <div key={doc.id} className={styles.docRow}>
+                                            <a
+                                                href={getDocumentLink(doc, 'application')}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={styles.docItem}
+                                            >
+                                                <span className={styles.docIcon}>
+                                                    <FileIcon fontSize="1rem"/>
+                                                </span>
+                                                <div className={styles.docMeta}>
+                                                    <div className={styles.docName}>{doc.name}</div>
+                                                </div>
+                                                <span style={{fontSize: 13, color: 'var(--ds-color-neutral-text-subtle)'}}>
+                                                    {t('bookingfrontend.download')}
+                                                </span>
+                                            </a>
+                                            {!isCancelled && (
+                                                <Button
+                                                    variant="tertiary"
+                                                    data-color="danger"
+                                                    data-size="sm"
+                                                    onClick={() => handleDeleteDocument(doc.id, doc.name)}
+                                                    disabled={deleteDocumentMutation.isPending}
+                                                    aria-label={`${t('bookingfrontend.delete_document')}: ${doc.name}`}
+                                                >
+                                                    {deleteDocumentMutation.isPending ? (
+                                                        <Spinner data-size="xs" aria-hidden="true"/>
+                                                    ) : (
+                                                        <TrashIcon fontSize="1rem"/>
+                                                    )}
+                                                </Button>
+                                            )}
+                                        </div>
                                     ))}
                                 </div>
                             ) : (
                                 <Paragraph data-size="sm" style={{color: 'var(--ds-color-neutral-text-subtle)'}}>
                                     {t('bookingfrontend.no documents available')}
                                 </Paragraph>
+                            )}
+
+                            {!isCancelled && (
+                                <div className={styles.uploadArea}>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept={ACCEPTED_FILE_TYPES}
+                                        onChange={handleFileUpload}
+                                        style={{display: 'none'}}
+                                        multiple
+                                    />
+                                    <Button
+                                        variant="secondary"
+                                        data-size="sm"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={uploadDocumentMutation.isPending}
+                                    >
+                                        {uploadDocumentMutation.isPending ? (
+                                            <Spinner data-size="xs" aria-hidden="true"/>
+                                        ) : (
+                                            <PlusIcon fontSize="1rem"/>
+                                        )}
+                                        {t('bookingfrontend.upload_document')}
+                                    </Button>
+                                    {uploadError && (
+                                        <Paragraph data-size="sm" style={{color: 'var(--ds-color-danger-text-default)', marginTop: 8}}>
+                                            {uploadError}
+                                        </Paragraph>
+                                    )}
+                                </div>
                             )}
                         </Details.Content>
                     </Details>
@@ -673,7 +848,27 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                                     {application.customer_organization_name}
                                 </Field>
                             )}
+                            {application.customer_organization_name && application.customer_organization_number && (
+                                <Field label={t('bookingfrontend.organization_number')}>
+                                    {application.customer_organization_number}
+                                </Field>
+                            )}
                             <Field label={t('bookingfrontend.organizer')}>{application.organizer}</Field>
+                            {application.homepage && (
+                                <Field label={t('bookingfrontend.homepage')}>
+                                    <a href={application.homepage} target="_blank" rel="noopener noreferrer" className={styles.accentLink}>
+                                        {application.homepage}
+                                    </a>
+                                </Field>
+                            )}
+                            {application.responsible_street && (
+                                <Field label={t('bookingfrontend.address')}>
+                                    {application.responsible_street}
+                                    {(application.responsible_zip_code || application.responsible_city) && (
+                                        <>, {application.responsible_zip_code} {application.responsible_city}</>
+                                    )}
+                                </Field>
+                            )}
                             <Field label={t('bookingfrontend.sent')}>
                                 {fmtSqlDate(application.created)}
                             </Field>

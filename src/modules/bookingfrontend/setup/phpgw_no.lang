@@ -1031,3 +1031,15 @@ status_accepted	bookingfrontend	no	Godkjent
 status_rejected	bookingfrontend	no	Avslått
 status_cancelled	bookingfrontend	no	Trukket
 status_draft	bookingfrontend	no	Kladd
+combined_application	bookingfrontend	no	Kombinert søknad
+organization_number	bookingfrontend	no	Organisasjonsnummer
+recurring_application	bookingfrontend	no	Gjentakende
+age_group	bookingfrontend	no	Aldersgruppe
+upload_document	bookingfrontend	no	Last opp dokument
+delete_document	bookingfrontend	no	Slett dokument
+file_too_large	bookingfrontend	no	Filen er for stor (maks 2MB)
+invalid_file_type	bookingfrontend	no	Ugyldig filtype
+upload_failed	bookingfrontend	no	Opplasting feilet
+reply	bookingfrontend	no	Svar
+no documents available	bookingfrontend	no	Ingen dokumenter tilgjengelig
+new_comment_notification	bookingfrontend	no	%1 har skrevet en kommentar

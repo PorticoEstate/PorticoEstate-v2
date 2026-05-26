@@ -1030,3 +1030,15 @@ status_accepted	bookingfrontend	en	Approved
 status_rejected	bookingfrontend	en	Rejected
 status_cancelled	bookingfrontend	en	Withdrawn
 status_draft	bookingfrontend	en	Draft
+combined_application	bookingfrontend	en	Combined application
+organization_number	bookingfrontend	en	Organization number
+recurring_application	bookingfrontend	en	Recurring
+age_group	bookingfrontend	en	Age group
+upload_document	bookingfrontend	en	Upload document
+delete_document	bookingfrontend	en	Delete document
+file_too_large	bookingfrontend	en	File is too large (max 2MB)
+invalid_file_type	bookingfrontend	en	Invalid file type
+upload_failed	bookingfrontend	en	Upload failed
+reply	bookingfrontend	en	Reply
+no documents available	bookingfrontend	en	No documents available
+new_comment_notification	bookingfrontend	en	%1 wrote a comment

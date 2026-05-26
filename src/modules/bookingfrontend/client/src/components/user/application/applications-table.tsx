@@ -19,6 +19,7 @@ import {
 } from '@navikt/aksel-icons';
 import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 import {getStatusColor, FilterKey} from './status-utils';
+import {ENABLE_COMBINED_APPLICATIONS} from '@/service/feature-flags';
 import styles from './applications-table.module.scss';
 
 interface ApplicationsTableProps {
@@ -62,22 +63,28 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 
     const applications = applicationsRaw?.list || [];
 
+    // When combined applications are enabled, hide child applications
+    const visibleApplications = useMemo(() => {
+        if (!ENABLE_COMBINED_APPLICATIONS) return applications;
+        return applications.filter(a => !a.parent_id || a.parent_id === a.id);
+    }, [applications]);
+
     // Compute counts from the full (unfiltered) list
     const counts: FilterCounts = useMemo(() => {
         const c: FilterCounts = {all: 0, new: 0, pending: 0, accepted: 0, rejected: 0, cancelled: 0};
-        c.all = applications.length;
-        applications.forEach(a => {
+        c.all = visibleApplications.length;
+        visibleApplications.forEach(a => {
             const s = a.status.toLowerCase() as keyof FilterCounts;
             if (s in c) c[s]++;
         });
         return c;
-    }, [applications]);
+    }, [visibleApplications]);
 
     // Pre-filter by chip selection (GSTable handles its own search separately)
     const filtered = useMemo(() => {
-        if (currentFilter === 'all') return applications;
-        return applications.filter(a => a.status.toLowerCase() === currentFilter);
-    }, [applications, currentFilter]);
+        if (currentFilter === 'all') return visibleApplications;
+        return visibleApplications.filter(a => a.status.toLowerCase() === currentFilter);
+    }, [visibleApplications, currentFilter]);
 
     // Column definitions for GSTable
     const columns: ColumnDef<IApplication>[] = useMemo(() => [

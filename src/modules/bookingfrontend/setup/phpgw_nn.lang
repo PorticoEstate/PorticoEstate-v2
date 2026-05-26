@@ -966,3 +966,15 @@ select_hospitality	bookingfrontend	nn	Vel servering
 cancellation_deadline_info	bookingfrontend	nn	Kan avbestillast innan %1
 cancellation_deadline_passed	bookingfrontend	nn	Avbestillingsfristen har gått ut
 cancellation_deadline_passed_warning	bookingfrontend	nn	Avbestillingsfristen har gått ut. Viss du bestiller vil du ikkje kunne avbestille.
+combined_application	bookingfrontend	nn	Kombinert søknad
+organization_number	bookingfrontend	nn	Organisasjonsnummer
+recurring_application	bookingfrontend	nn	Gjentakande
+age_group	bookingfrontend	nn	Aldersgruppe
+upload_document	bookingfrontend	nn	Last opp dokument
+delete_document	bookingfrontend	nn	Slett dokument
+file_too_large	bookingfrontend	nn	Fila er for stor (maks 2MB)
+invalid_file_type	bookingfrontend	nn	Ugyldig filtype
+upload_failed	bookingfrontend	nn	Opplasting feila
+reply	bookingfrontend	nn	Svar
+no documents available	bookingfrontend	nn	Ingen dokument tilgjengeleg
+new_comment_notification	bookingfrontend	nn	%1 har skrive ein kommentar

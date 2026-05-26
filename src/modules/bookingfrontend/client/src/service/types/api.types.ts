@@ -192,6 +192,7 @@ export interface IBookingConfig {
     user_can_delete_allocations?: boolean;
     user_can_delete_bookings?: boolean;
     user_can_delete_events?: boolean;
+    enable_hospitality?: boolean;
     voucher_client?: string;
     voucher_responsible?: string;
     voucher_type?: string;

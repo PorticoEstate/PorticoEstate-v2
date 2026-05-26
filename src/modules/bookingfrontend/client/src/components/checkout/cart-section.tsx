@@ -6,7 +6,7 @@ import styles from './checkout.module.scss';
 import ShoppingCartTable from "@/components/layout/header/shopping-cart/shopping-cart-table";
 import { calculateApplicationCost, formatCurrency } from "@/utils/cost-utils";
 import { RecurringInfoUtils, calculateRecurringInstances } from '@/utils/recurring-utils';
-import { useBuildingSeasons } from "@/service/hooks/api-hooks";
+import { useBuildingSeasons, useServerSettings } from "@/service/hooks/api-hooks";
 import BuildingIcon from "@/icons/BuildingIcon";
 import HospitalitySection from "./hospitality/hospitality-section";
 
@@ -19,6 +19,8 @@ interface CartSectionProps {
 
 const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication, buildingParentIds, onBuildingParentIdChange}) => {
     const t = useTrans();
+    const {data: serverSettings} = useServerSettings();
+    const enableHospitality = !!serverSettings?.booking_config?.enable_hospitality;
 
     // Fetch seasons for all unique buildings
     const buildingIds = [...new Set(applications.map(item => item.building_id))];
@@ -122,10 +124,12 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                             onParentIdChange={onBuildingParentIdChange ? (parentId) => onBuildingParentIdChange(buildingGroup.buildingId, parentId) : undefined}
                             buildingId={buildingGroup.buildingId}
                         />
+                        {enableHospitality && (
                         <HospitalitySection
                             applicationIds={buildingGroup.applications.map(a => a.id)}
                             applications={buildingGroup.applications}
                         />
+                        )}
                         {showSectionTotals && sectionTotal > 0 && (
                             <div className={styles.sectionTotal}>
                                 <strong>{t('bookingfrontend.total')}:</strong>

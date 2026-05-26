@@ -309,6 +309,82 @@ class ProjectController
 		return $this->datatableResponse($response, $input, is_array($rows) ? $rows : array(), $total);
 	}
 
+	/**
+	 * Project vouchers list endpoint (DataTables-compatible).
+	 */
+	public function getVouchers(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to project vouchers');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$projectId = (int)($args['id'] ?? $input['project_id'] ?? 0);
+		if ($projectId <= 0)
+		{
+			return $this->datatableResponse($response, $input, array(), 0);
+		}
+
+		$order = is_array($input['order'] ?? null) ? $input['order'] : array();
+		$columns = is_array($input['columns'] ?? null) ? $input['columns'] : array();
+		$orderIndex = (int)($order[0]['column'] ?? -1);
+		$orderField = ($orderIndex >= 0 && isset($columns[$orderIndex]['data']))
+			? (string)$columns[$orderIndex]['data']
+			: (string)($input['order_by'] ?? 'voucher_id');
+		$orderDir = strtolower((string)($order[0]['dir'] ?? $input['order_dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
+
+		$soinvoice = CreateObject('property.soinvoice');
+		$invoices = $soinvoice->read_invoice_sub_sum(array(
+			'project_id' => $projectId,
+			'year' => isset($input['year']) ? (int)$input['year'] : 0,
+			'paid' => 'both',
+			'order' => $orderField,
+			'sort' => $orderDir,
+			'start' => isset($input['start']) ? (int)$input['start'] : 0,
+			'results' => isset($input['length']) ? (int)$input['length'] : 0,
+			'allrows' => isset($input['length']) && (int)$input['length'] === -1,
+		));
+
+		$values = array();
+		$invoiceHandler2 = isset($this->bo()->config['invoicehandler']) && $this->bo()->config['invoicehandler'] == 2;
+		foreach ((array)$invoices as $entry)
+		{
+			$voucherId = $invoiceHandler2
+				? (!empty($entry['transfer_time']) ? -1 * (int)$entry['voucher_id'] : (int)$entry['voucher_id'])
+				: ($entry['external_voucher_id'] ?? null);
+
+			$values[] = array(
+				'voucher_id' => $voucherId,
+				'voucher_out_id' => $entry['voucher_out_id'] ?? null,
+				'workorder_id' => $entry['workorder_id'] ?? null,
+				'status' => $entry['status'] ?? '',
+				'period' => $entry['period'] ?? '',
+				'periodization' => $entry['periodization'] ?? '',
+				'periodization_start' => $entry['periodization_start'] ?? '',
+				'invoice_id' => $entry['invoice_id'] ?? '',
+				'budget_account' => $entry['budget_account'] ?? '',
+				'dima' => $entry['dima'] ?? '',
+				'dimb' => $entry['dimb'] ?? '',
+				'dimd' => $entry['dimd'] ?? '',
+				'type' => $entry['type'] ?? '',
+				'amount_ex_tax' => ((float)($entry['amount'] ?? 0)) * 0.8,
+				'amount_tax' => ((float)($entry['amount'] ?? 0)) * 0.2,
+				'amount' => $entry['amount'] ?? 0,
+				'approved_amount' => $entry['approved_amount'] ?? 0,
+				'vendor' => $entry['vendor'] ?? '',
+				'external_project_id' => $entry['project_id'] ?? null,
+				'currency' => $entry['currency'] ?? '',
+				'budget_responsible' => $entry['budget_responsible'] ?? '',
+				'budsjettsigndato' => !empty($entry['budsjettsigndato']) ? (new \phpgwapi_common())->show_date(strtotime($entry['budsjettsigndato']), $GLOBALS['phpgw_info']['user']['preferences']['common']['dateformat'] ?? 'Y-m-d') : '',
+				'transfer_time' => !empty($entry['transfer_time']) ? (new \phpgwapi_common())->show_date(strtotime($entry['transfer_time']), $GLOBALS['phpgw_info']['user']['preferences']['common']['dateformat'] ?? 'Y-m-d') : '',
+			);
+		}
+
+		$total = (int)($soinvoice->total_records ?? count($values));
+		return $this->datatableResponse($response, $input, $values, $total);
+	}
+
 	public function store(Request $request, Response $response): Response
 	{
 		if (!$this->hasAddAccess())
@@ -395,5 +471,195 @@ class ProjectController
 			'message' => 'Project deleted',
 			'data' => array('id' => $id),
 		));
+	}
+
+	/**
+	 * Project file list endpoint (DataTables-compatible).
+	 */
+	public function getFiles(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to project files');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$id = (int)($args['id'] ?? 0);
+		$filterTags = $input['tags'] ?? null;
+		if (!is_array($filterTags))
+		{
+			$filterTags = $filterTags !== null && $filterTags !== '' ? array($filterTags) : array();
+		}
+
+		if ($id <= 0)
+		{
+			return $this->datatableResponse($response, $input, array(), 0);
+		}
+
+		$linkViewFile = \phpgw::link('/index.php', array(
+			'menuaction' => 'property.uiproject.view_file',
+		));
+
+		$values = $this->bo()->get_files($id);
+		$bofiles = CreateObject('property.bofiles');
+
+		$contentFiles = array();
+		$imgTypes = array('image/jpeg', 'image/png', 'image/gif');
+		$sortArray = array();
+
+		foreach ((array)$values as $_entry)
+		{
+			$tags = array();
+			if (!empty($_entry['tags']))
+			{
+				$decodedTags = json_decode((string)$_entry['tags'], true);
+				if (is_array($decodedTags))
+				{
+					$tags = $decodedTags;
+				}
+			}
+
+			if ($filterTags)
+			{
+				if (!$tags || !array_intersect($tags, $filterTags))
+				{
+					continue;
+				}
+			}
+
+			$sortArray[] = $_entry['name'];
+			$contentFiles[] = array(
+				'file_id' => $_entry['file_id'],
+				'tags' => $tags,
+				'file_name' => '<a href="' . $linkViewFile . '&amp;file_id=' . $_entry['file_id'] . '" target="_blank" title="' . lang('click to view file') . '">' . $_entry['name'] . '</a>',
+				'delete_file' => '<input type="checkbox" name="values[file_action][]" value="' . $_entry['file_id'] . '" title="' . lang('Check to delete file') . '">',
+				'attach_file' => '<input type="checkbox" name="values[file_attach][]" value="' . $_entry['file_id'] . '" title="' . lang('Check to attach file') . '">',
+			);
+
+			$lastIndex = count($contentFiles) - 1;
+			if (in_array($_entry['mime_type'], $imgTypes, true) || $bofiles->is_image("{$bofiles->rootdir}{$_entry['directory']}/{$_entry['name']}"))
+			{
+				$contentFiles[$lastIndex]['file_name'] = $_entry['name'];
+				$contentFiles[$lastIndex]['img_id'] = $_entry['file_id'];
+				$contentFiles[$lastIndex]['img_url'] = \phpgw::link('/index.php', array(
+					'menuaction' => 'property.uiproject.view_image',
+					'img_id' => $_entry['file_id'],
+					'file' => $_entry['directory'] . '/' . $_entry['file_name'],
+				));
+				$contentFiles[$lastIndex]['thumbnail_flag'] = 'thumb=1';
+			}
+		}
+
+		if ($contentFiles)
+		{
+			array_multisort($sortArray, SORT_ASC, $contentFiles);
+		}
+
+		return $this->datatableResponse($response, $input, $contentFiles, count($contentFiles));
+	}
+
+	/**
+	 * Project file metadata/tag/delete actions endpoint.
+	 */
+	public function updateFileData(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasEditAccess())
+		{
+			throw new HttpForbiddenException($request, 'No edit access to project files');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$id = (int)($args['id'] ?? 0);
+		$action = (string)($input['action'] ?? '');
+		$ids = $input['ids'] ?? array();
+		if (!is_array($ids))
+		{
+			$ids = $ids !== '' && $ids !== null ? array((int)$ids) : array();
+		}
+		$tags = $input['tags'] ?? array();
+
+		$bofiles = CreateObject('property.bofiles');
+		if ($action === 'delete_file' && $ids && $id > 0)
+		{
+			$bofiles->delete_file("/project/{$id}/", array('file_action' => $ids));
+		}
+		else if ($action === 'set_tag' && $ids)
+		{
+			$bofiles->set_tags($ids, $tags);
+		}
+		else if ($action === 'remove_tag' && $ids)
+		{
+			$bofiles->remove_tags($ids, $tags);
+		}
+
+		return $this->jsonResponse($response, array(
+			'status' => 'success',
+			'action' => $action,
+			'ids' => $ids,
+		));
+	}
+
+	/**
+	 * Build project multi-upload UI fragment.
+	 */
+	public function buildMultiUploadFile(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasEditAccess())
+		{
+			throw new HttpForbiddenException($request, 'No edit access to project files');
+		}
+
+		\phpgwapi_jquery::init_multi_upload_file();
+		$id = (int)($args['id'] ?? 0);
+
+		$multiUploadAction = \phpgw::link('/index.php/property/project/' . $id . '/multi-upload');
+		$response->getBody()->write(json_encode(array(
+			'multi_upload_action' => $multiUploadAction,
+		), JSON_THROW_ON_ERROR));
+
+		return $response->withHeader('Content-Type', 'application/json');
+	}
+
+	/**
+	 * Handle project multi-upload actions.
+	 */
+	public function handleMultiUploadFile(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasEditAccess())
+		{
+			throw new HttpForbiddenException($request, 'No edit access to project files');
+		}
+
+		$id = (int)($args['id'] ?? 0);
+
+		\phpgw::import_class('property.multiuploader');
+		$options = array();
+		$options['base_dir'] = 'project/' . $id;
+		$options['upload_dir'] = $GLOBALS['phpgw_info']['server']['files_dir'] . '/property/' . $options['base_dir'] . '/';
+		$options['script_url'] = html_entity_decode(\phpgw::link('/index.php/property/project/' . $id . '/multi-upload'));
+		$uploadHandler = new \property_multiuploader($options, false);
+
+		switch ($request->getMethod())
+		{
+			case 'OPTIONS':
+			case 'HEAD':
+				$uploadHandler->head();
+				break;
+			case 'GET':
+				$uploadHandler->get();
+				break;
+			case 'PATCH':
+			case 'PUT':
+			case 'POST':
+				$uploadHandler->add_file();
+				break;
+			case 'DELETE':
+				$uploadHandler->delete_file();
+				break;
+			default:
+				return $this->jsonResponse($response, array('status' => 'error', 'message' => 'Method not allowed'), 405);
+		}
+
+		return $response;
 	}
 }

@@ -745,7 +745,7 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 				)
 			),
 			'datatable'		 => array(
-				'source'		 => phpgw::link('/index.php/property/project/datatable', array(
+				'source'		 => \phpgw::link('/property/project/datatable', array(
 					'lookup'			 => $lookup,
 					'from'				 => $from,
 					'make_relation'		 => $make_relation,
@@ -2382,11 +2382,8 @@ JS;
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_2',
-			'requestUrl' => json_encode(self::link(array(
-				'menuaction'		 => 'property.uiproject.get_vouchers',
-				'project_id'		 => $id,
-				//		'year'				 => $first_year,
-				'phpgw_return_as'	 => 'json'
+			'requestUrl' => json_encode(phpgw::link('/index.php/property/project/' . $id . '/vouchers', array(
+				'phpgw_return_as' => 'json'
 			))),
 			'data'		 => json_encode(array()),
 			'ColumnDefs' => $invoice_def,
@@ -2520,14 +2517,9 @@ JS;
 
 		//---file tagging
 
-		$requestUrl	 = json_encode(self::link(
-			array(
-				'menuaction' => 'property.uiproject.update_file_data',
-				'location_id' => $location_id,
-				'location_item_id' => $id,
-				'phpgw_return_as'	 => 'json'
-			)
-		));
+		$requestUrl	 = json_encode(phpgw::link('/index.php/property/project/' . $id . '/files/actions', array(
+			'phpgw_return_as' => 'json'
+		)));
 		$requestUrl = str_replace('&amp;', '&', $requestUrl);
 
 		$buttons = array(
@@ -2637,8 +2629,7 @@ JS;
 
 				if(action=='delete_file')
 				{
-					var oArgs = {menuaction: 'property.uiproject.get_files', id: {$id}};
-					var strURL = phpGWLink('index.php', oArgs, true);
+					var strURL = phpGWLink('index.php/property/project/{$id}/files', {}, true);
 					refresh_glider(strURL);
 				}
 			},
@@ -2656,10 +2647,8 @@ JS;
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_5',
-			'requestUrl' => json_encode(self::link(array(
-				'menuaction'		 => 'property.uiproject.get_files',
-				'id'				 => $id,
-				'phpgw_return_as'	 => 'json'
+			'requestUrl' => json_encode(phpgw::link('/index.php/property/project/' . $id . '/files', array(
+				'phpgw_return_as' => 'json'
 			))),
 			'data'		 => json_encode(array()),
 			'ColumnDefs' => $files_def,
@@ -3032,7 +3021,7 @@ JS;
 				'file'
 			)),
 			'multiple_uploader'					 => true,
-			'multi_upload_action' => phpgw::link('/index.php', array('menuaction' => 'property.uiproject.handle_multi_upload_file',	'id' => $id)),
+			'multi_upload_action' => phpgw::link('/index.php/property/project/' . $id . '/multi-upload'),
 			'street_name'						 => $values['location_data']['street_name'],
 			'street_number'						 => $values['location_data']['street_number'],
 			'image_list'						 => $image_list,
@@ -3472,7 +3461,7 @@ JS;
 					array(
 						'b_account_id'	 => $b_account_id,
 						'disabled'		 => '',
-						'parent'		 => $project['b_account_id'],
+						'parent'		 => $b_account_id,
 						'type'			 => 'form'
 					)
 				);

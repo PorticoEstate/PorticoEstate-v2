@@ -284,6 +284,27 @@ namespace Tests\Controllers
 			$this->assertSame(321, $decoded['data']['id']);
 		}
 
+		public function testGetFilesWithoutIdReturnsEmptyDataTablesPayload(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new ProjectFormHelper();
+
+			$this->request->method('getQueryParams')->willReturn(array('draw' => 9));
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+			$controller->getFiles($this->request, $this->response, array('id' => 0));
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame(9, $decoded['draw']);
+			$this->assertSame(0, $decoded['recordsTotal']);
+			$this->assertSame(array(), $decoded['data']);
+		}
+
 		public function testDestroyReturnsSuccessPayload(): void
 		{
 			$bo = new class
@@ -309,6 +330,28 @@ namespace Tests\Controllers
 			$this->assertSame('success', $decoded['status']);
 			$this->assertSame(45, $decoded['data']['id']);
 			$this->assertSame(45, $bo->deletedId);
+		}
+
+		public function testGetVouchersWithoutIdReturnsEmptyDataTablesPayload(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+				public array $config = array();
+			};
+
+			$helper = new ProjectFormHelper();
+
+			$this->request->method('getQueryParams')->willReturn(array('draw' => 11));
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+			$controller->getVouchers($this->request, $this->response, array('id' => 0));
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame(11, $decoded['draw']);
+			$this->assertSame(0, $decoded['recordsTotal']);
+			$this->assertSame(array(), $decoded['data']);
 		}
 	}
 }

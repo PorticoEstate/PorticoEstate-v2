@@ -8,6 +8,7 @@ use App\modules\property\controllers\TenantController;
 use App\modules\property\controllers\TicketController;
 use App\modules\property\controllers\LocationController;
 use App\modules\property\controllers\EntityController;
+use App\modules\property\controllers\ProjectController;
 use App\controllers\GenericRegistryController;
 use Slim\Routing\RouteCollectorProxy;
 use App\modules\property\models\PropertyGenericRegistry;
@@ -161,6 +162,21 @@ $app->group('/property/entity', function (RouteCollectorProxy $group) use ($cont
 		$g->get('/cases-for-checklist', [$controller, 'getCasesForChecklist']);
 		$g->get('/assigned-history',    [$controller, 'assignedHistoryPopup']);
 	});
+})
+->addMiddleware(new AccessVerifier($container))
+->addMiddleware(new SessionsMiddleware($container));
+
+
+$app->group('/property/project', function (RouteCollectorProxy $group) use ($container)
+{
+	$controller = new ProjectController($container);
+
+	$group->get('', [$controller, 'index']);
+	$group->post('', [$controller, 'postCollection']);
+	$group->post('/datatable', [$controller, 'index']);
+	$group->get('/list', [$controller, 'listProjects']);
+	$group->post('/list', [$controller, 'listProjects']);
+	$group->get('/{id:[0-9]+}', [$controller, 'show']);
 })
 ->addMiddleware(new AccessVerifier($container))
 ->addMiddleware(new SessionsMiddleware($container));

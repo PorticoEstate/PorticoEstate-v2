@@ -110,6 +110,88 @@ namespace Tests\Controllers
 			};
 		}
 
+		private function makeControllerWithLookupDeps(
+			object $bo,
+			object $bocommon,
+			object $workorderBo,
+			object $notifyService,
+			array $budgetAccount = array(),
+			array $accountGroup = array()
+		): ProjectController
+		{
+			return new class(
+				$this->container,
+				$bo,
+				$bocommon,
+				$workorderBo,
+				$notifyService,
+				$budgetAccount,
+				$accountGroup
+			) extends ProjectController
+			{
+				private object $boStub;
+				private object $bocommonStub;
+				private object $workorderBoStub;
+				private object $notifyServiceStub;
+				private array $budgetAccountStub;
+				private array $accountGroupStub;
+
+				public function __construct(
+					ContainerInterface $container,
+					object $boStub,
+					object $bocommonStub,
+					object $workorderBoStub,
+					object $notifyServiceStub,
+					array $budgetAccountStub,
+					array $accountGroupStub
+				)
+				{
+					parent::__construct($container);
+					$this->boStub = $boStub;
+					$this->bocommonStub = $bocommonStub;
+					$this->workorderBoStub = $workorderBoStub;
+					$this->notifyServiceStub = $notifyServiceStub;
+					$this->budgetAccountStub = $budgetAccountStub;
+					$this->accountGroupStub = $accountGroupStub;
+				}
+
+				protected function bo()
+				{
+					return $this->boStub;
+				}
+
+				protected function bocommon()
+				{
+					return $this->bocommonStub;
+				}
+
+				protected function workorderBo()
+				{
+					return $this->workorderBoStub;
+				}
+
+				protected function notifyService()
+				{
+					return $this->notifyServiceStub;
+				}
+
+				protected function readBudgetAccount(string $bAccountId): array
+				{
+					return $this->budgetAccountStub;
+				}
+
+				protected function readBudgetAccountGroup(int $groupId): array
+				{
+					return $this->accountGroupStub;
+				}
+
+				protected function hasReadAccess(): bool
+				{
+					return true;
+				}
+			};
+		}
+
 		public function testIndexReturnsDataTablesPayload(): void
 		{
 			$bo = new class
@@ -474,6 +556,199 @@ namespace Tests\Controllers
 			$this->assertSame('error', $decoded['status']);
 			$this->assertArrayHasKey('receipt', $decoded);
 			$this->assertArrayHasKey('error', $decoded['receipt']);
+		}
+
+		public function testGetBAccountLookupReturnsLegacyResultShape(): void
+		{
+			$bo = new class
+			{
+			};
+
+			$bocommon = new class
+			{
+				public function getBAccount(string $query, string $role): array
+				{
+					return array('ResultSet' => array('Result' => array(array('id' => '1000', 'name' => '1000 Test'))));
+				}
+			};
+
+			$workorderBo = new class
+			{
+				public object $cats;
+				public function __construct()
+				{
+					$this->cats = new class
+					{
+						public function return_single(int $catId): array { return array(); }
+						public function return_sorted_array(): array { return array(); }
+					};
+				}
+			};
+
+			$notifyService = new class
+			{
+				public function refresh_notify_contact_2(): array
+				{
+					return array();
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array('query' => '1000', 'role' => ''));
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithLookupDeps($bo, $bocommon, $workorderBo, $notifyService);
+			$controller->getBAccountLookup($this->request, $this->response);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('1000', $decoded['ResultSet']['Result'][0]['id']);
+		}
+
+		public function testGetEcodimbLookupReturnsLegacyResultShape(): void
+		{
+			$bo = new class
+			{
+			};
+
+			$bocommon = new class
+			{
+				public function getEcodimb(string $query): array
+				{
+					return array('ResultSet' => array('Result' => array(array('id' => '2000', 'name' => '2000 Dimb'))));
+				}
+			};
+
+			$workorderBo = new class
+			{
+				public object $cats;
+				public function __construct()
+				{
+					$this->cats = new class
+					{
+						public function return_single(int $catId): array { return array(); }
+						public function return_sorted_array(): array { return array(); }
+					};
+				}
+			};
+
+			$notifyService = new class
+			{
+				public function refresh_notify_contact_2(): array
+				{
+					return array();
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array('query' => '2000'));
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithLookupDeps($bo, $bocommon, $workorderBo, $notifyService);
+			$controller->getEcodimbLookup($this->request, $this->response);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('2000', $decoded['ResultSet']['Result'][0]['id']);
+		}
+
+		public function testGetCategoryLookupSetsInactiveWhenCategoryNotAllowed(): void
+		{
+			$bo = new class
+			{
+			};
+
+			$bocommon = new class
+			{
+			};
+
+			$workorderBo = new class
+			{
+				public object $cats;
+				public function __construct()
+				{
+					$this->cats = new class
+					{
+						public function return_single(int $catId): array
+						{
+							return array(array('id' => $catId, 'active' => 1));
+						}
+
+						public function return_sorted_array($a = 0, $b = false, $c = '', $d = '', $e = '', $f = false, $parentCategories = array()): array
+						{
+							return array(array('id' => 999));
+						}
+					};
+				}
+			};
+
+			$notifyService = new class
+			{
+				public function refresh_notify_contact_2(): array
+				{
+					return array();
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array('cat_id' => 10, 'b_account_id' => 'X'));
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithLookupDeps(
+				$bo,
+				$bocommon,
+				$workorderBo,
+				$notifyService,
+				array('category' => 7),
+				array('external_project' => 1, 'project_category' => '1,2,3')
+			);
+
+			$controller->getCategoryLookup($this->request, $this->response);
+			$decoded = json_decode($this->responseBody, true);
+
+			$this->assertSame(0, $decoded['active']);
+			$this->assertSame(1, $decoded['mandatory_external_project']);
+		}
+
+		public function testNotifyContactsReturnsDataTablesEnvelope(): void
+		{
+			$bo = new class
+			{
+			};
+
+			$bocommon = new class
+			{
+			};
+
+			$workorderBo = new class
+			{
+				public object $cats;
+				public function __construct()
+				{
+					$this->cats = new class
+					{
+						public function return_single(int $catId): array { return array(); }
+						public function return_sorted_array(): array { return array(); }
+					};
+				}
+			};
+
+			$notifyService = new class
+			{
+				public function refresh_notify_contact_2(int $locationId, int $projectId, int $contactId, string $type, bool $notify, array $ids): array
+				{
+					return array(
+						array('id' => 1, 'first_name' => 'A'),
+						array('id' => 2, 'first_name' => 'B'),
+					);
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array('location_id' => 77, 'draw' => 4));
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithLookupDeps($bo, $bocommon, $workorderBo, $notifyService);
+			$controller->notifyContacts($this->request, $this->response, array('id' => 55));
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame(4, $decoded['draw']);
+			$this->assertSame(2, $decoded['recordsTotal']);
+			$this->assertCount(2, $decoded['data']);
 		}
 	}
 }

@@ -41,6 +41,40 @@ class ProjectController
 		return $this->bocommon;
 	}
 
+	protected function workorderBo()
+	{
+		return CreateObject('property.boworkorder');
+	}
+
+	protected function readBudgetAccount(string $bAccountId): array
+	{
+		$result = execMethod(
+			'property.bogeneric.read_single',
+			array(
+				'id' => $bAccountId,
+				'location_info' => array(
+					'type' => 'budget_account'
+				)
+			)
+		);
+
+		return is_array($result) ? $result : array();
+	}
+
+	protected function readBudgetAccountGroup(int $groupId): array
+	{
+		$sogeneric = CreateObject('property.sogeneric');
+		$sogeneric->get_location_info('b_account_category', false);
+		$result = $sogeneric->read_single(array('id' => $groupId), array());
+
+		return is_array($result) ? $result : array();
+	}
+
+	protected function notifyService()
+	{
+		return CreateObject('property.notify');
+	}
+
 	private function jsonResponse(Response $response, mixed $payload, int $statusCode = 200): Response
 	{
 		try
@@ -609,28 +643,18 @@ class ProjectController
 		$catId = (int)($input['cat_id'] ?? 0);
 		$bAccountId = isset($input['b_account_id']) ? (string)$input['b_account_id'] : '';
 
-		$boWorkorder = CreateObject('property.boworkorder');
+		$boWorkorder = $this->workorderBo();
 		$categoryRows = $boWorkorder->cats->return_single($catId);
 		$category = isset($categoryRows[0]) && is_array($categoryRows[0]) ? $categoryRows[0] : array();
 
 		if ($bAccountId)
 		{
-			$bAccount = execMethod(
-				'property.bogeneric.read_single',
-				array(
-					'id' => $bAccountId,
-					'location_info' => array(
-						'type' => 'budget_account'
-					)
-				)
-			);
+			$bAccount = $this->readBudgetAccount($bAccountId);
 
 			$bAccountGroup = $bAccount['category'] ?? null;
 			if (!empty($bAccountGroup))
 			{
-				$sogeneric = CreateObject('property.sogeneric');
-				$sogeneric->get_location_info('b_account_category', false);
-				$accountGroupData = $sogeneric->read_single(array('id' => (int)$bAccountGroup), array());
+				$accountGroupData = $this->readBudgetAccountGroup((int)$bAccountGroup);
 
 				$category['mandatory_external_project'] = $accountGroupData['external_project'] ?? null;
 
@@ -682,7 +706,7 @@ class ProjectController
 			$ids = $ids !== '' && $ids !== null ? array((int)$ids) : array();
 		}
 
-		$notifier = CreateObject('property.notify');
+		$notifier = $this->notifyService();
 		$content = $notifier->refresh_notify_contact_2($locationId, $projectId, $contactId, $type, $notify, $ids);
 
 		$totalRecords = count((array)$content);

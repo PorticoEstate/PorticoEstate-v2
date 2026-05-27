@@ -353,5 +353,127 @@ namespace Tests\Controllers
 			$this->assertSame(0, $decoded['recordsTotal']);
 			$this->assertSame(array(), $decoded['data']);
 		}
+
+		public function testUpdateReturnsSuccessPayload(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new class extends ProjectFormHelper
+			{
+				public function mapInput(array $requestData, bool $isEdit = false, int $id = 0): array
+				{
+					return array('values' => array('id' => $id, 'name' => 'Updated'), 'values_attribute' => array(), 'is_edit' => true, 'errors' => array());
+				}
+
+				public function validate(array $state): array
+				{
+					return $state;
+				}
+
+				public function persistSave(array $state, object $bo): array
+				{
+					$state['id'] = 77;
+					$state['receipt'] = array('id' => 77);
+					return $state;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array('name' => 'Updated'));
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+			$controller->update($this->request, $this->response, array('id' => 77));
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('success', $decoded['status']);
+			$this->assertSame(77, $decoded['data']['id']);
+		}
+
+		public function testStoreReturnsErrorPayloadWhenValidationFails(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new class extends ProjectFormHelper
+			{
+				public function mapInput(array $requestData, bool $isEdit = false, int $id = 0): array
+				{
+					return array('values' => array(), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array('Project name is required'));
+				}
+
+				public function validate(array $state): array
+				{
+					return $state;
+				}
+
+				public function persistSave(array $state, object $bo): array
+				{
+					$state['receipt'] = array(
+						'error' => array(
+							array('msg' => 'Project name is required')
+						)
+					);
+					return $state;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+			$controller->store($this->request, $this->response);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('error', $decoded['status']);
+			$this->assertArrayHasKey('receipt', $decoded);
+			$this->assertArrayHasKey('error', $decoded['receipt']);
+		}
+
+		public function testUpdateReturnsErrorPayloadWhenValidationFails(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new class extends ProjectFormHelper
+			{
+				public function mapInput(array $requestData, bool $isEdit = false, int $id = 0): array
+				{
+					return array('values' => array('id' => $id), 'values_attribute' => array(), 'is_edit' => true, 'errors' => array('Status is required'));
+				}
+
+				public function validate(array $state): array
+				{
+					return $state;
+				}
+
+				public function persistSave(array $state, object $bo): array
+				{
+					$state['receipt'] = array(
+						'error' => array(
+							array('msg' => 'Status is required')
+						)
+					);
+					return $state;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+			$controller->update($this->request, $this->response, array('id' => 88));
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('error', $decoded['status']);
+			$this->assertArrayHasKey('receipt', $decoded);
+			$this->assertArrayHasKey('error', $decoded['receipt']);
+		}
 	}
 }

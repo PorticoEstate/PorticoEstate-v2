@@ -13,6 +13,29 @@ class ProjectFormHelper
 			? $requestData['values']
 			: $requestData;
 
+		$legacyContextFields = array(
+			'location_code',
+			'tenant_id',
+			'p_num',
+			'p_entity_id',
+			'p_cat_id',
+			'origin',
+			'origin_id',
+			'descr',
+			'contact_id',
+			'contact',
+			'new_project_id',
+			'copy_project',
+			'bypass',
+		);
+		foreach ($legacyContextFields as $field)
+		{
+			if (array_key_exists($field, $requestData) && !array_key_exists($field, $values))
+			{
+				$values[$field] = $requestData[$field];
+			}
+		}
+
 		$valuesAttribute = isset($requestData['values_attribute']) && is_array($requestData['values_attribute'])
 			? $requestData['values_attribute']
 			: array();

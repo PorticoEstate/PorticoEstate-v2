@@ -505,37 +505,235 @@ function addSubEntry()
 	document.add_sub_entry_form.submit();
 }
 
+function getProjectSaveUrl()
+{
+	var baseUrl = phpGWLink('property/project', {}, true);
+	if (Number(project_id) > 0)
+	{
+		baseUrl = phpGWLink('property/project/' + project_id, {}, true);
+	}
+
+	return baseUrl;
+}
+
+function buildProjectSaveFormData()
+{
+	var form = document.form;
+	var formData = new FormData(form);
+	var submitButton = document.getElementsByName('save')[0];
+	if (submitButton)
+	{
+		formData.set('save', submitButton.value || '1');
+	}
+
+	return formData;
+}
+
+function parseProjectFormKeyTokens(key)
+{
+	var tokens = [];
+	var match;
+	var regex = /([^\[\]]+)/g;
+	while ((match = regex.exec(key)) !== null)
+	{
+		tokens.push(match[1]);
+	}
+	return tokens;
+}
+
+function setProjectNestedValue(target, key, value)
+{
+	var tokens = parseProjectFormKeyTokens(key);
+	var forceArray = /\[\]$/.test(key);
+	if (!tokens.length)
+	{
+		return;
+	}
+
+	var node = target;
+	for (var i = 0; i < tokens.length - 1; i++)
+	{
+		var token = tokens[i];
+		if (!Object.prototype.hasOwnProperty.call(node, token) || typeof node[token] !== 'object' || node[token] === null)
+		{
+			node[token] = {};
+		}
+		node = node[token];
+	}
+
+	var leaf = tokens[tokens.length - 1];
+	if (!Object.prototype.hasOwnProperty.call(node, leaf))
+	{
+		node[leaf] = forceArray ? [value] : value;
+		return;
+	}
+
+	if (Array.isArray(node[leaf]))
+	{
+		node[leaf].push(value);
+		return;
+	}
+
+	node[leaf] = [node[leaf], value];
+}
+
+function formDataToProjectObject(formData)
+{
+	var payload = {};
+	formData.forEach(function (value, key)
+	{
+		setProjectNestedValue(payload, key, value);
+	});
+	return payload;
+}
+
+function buildProjectSavePayload(formData)
+{
+	var payload = formDataToProjectObject(formData);
+	return payload;
+}
+
+function redirectAfterProjectSave(id)
+{
+	if (!id)
+	{
+		return;
+	}
+
+	window.location.href = phpGWLink('index.php', {menuaction: 'property.uiproject.edit', id: id}, true);
+}
+
+var isProjectSubmitting = false;
+
+function setProjectSubmitButtonsDisabled(disabled)
+{
+	var buttons = document.querySelectorAll('input[type="submit"], button[type="submit"]');
+	for (var i = 0; i < buttons.length; i++)
+	{
+		buttons[i].disabled = disabled;
+	}
+}
+
+function extractProjectErrorMessages(responseData)
+{
+	if (!responseData || !responseData.receipt || !Array.isArray(responseData.receipt.error))
+	{
+		return [];
+	}
+
+	return responseData.receipt.error.map(function (entry)
+	{
+		if (entry && typeof entry.msg === 'string')
+		{
+			return entry.msg;
+		}
+		return '';
+	}).filter(function (message)
+	{
+		return !!message;
+	});
+}
+
+function renderProjectSaveError(messages)
+{
+	if (!messages || !messages.length)
+	{
+		messages = ['Feil ved lagring. Vennligst prov igjen.'];
+	}
+
+	var html = '<div class="text-center alert alert-danger" role="alert">';
+	for (var i = 0; i < messages.length; i++)
+	{
+		if (i > 0)
+		{
+			html += '<br/>';
+		}
+		html += $('<div/>').text(messages[i]).html();
+	}
+	html += '</div>';
+
+	if ($('#message').length)
+	{
+		$('#message').html(html);
+		window.scrollTo(0, 0);
+	}
+	else
+	{
+		window.alert(messages[0]);
+	}
+}
+
 function check_and_submit_valid_session()
 {
-	var oArgs = {menuaction: 'property.bocommon.confirm_session'};
-	var strURL = phpGWLink('index.php', oArgs, true);
+	var form = document.form;
+	if (isProjectSubmitting)
+	{
+		return;
+	}
 
-	$.ajax({
-		type: 'POST',
-		dataType: 'json',
-		url: strURL,
-		success: function (data)
+	if (!window.fetch)
+	{
+		document.getElementsByName("save")[0].value = 1;
+		form.submit();
+		return;
+	}
+
+	var formData = buildProjectSaveFormData();
+	var payload = buildProjectSavePayload(formData);
+	var requestUrl = getProjectSaveUrl();
+	var projectId = Number(project_id);
+	var isCreate = !projectId;
+	var requestOptions = {
+		method: isCreate ? 'POST' : 'PUT',
+		credentials: 'same-origin'
+	};
+
+	if (form.querySelector('input[type="file"][name="file"]') || form.querySelector('input[type="file"][name="jasperfile"]'))
+	{
+		requestOptions.body = formData;
+	}
+	else
+	{
+		requestOptions.headers = {'Content-Type': 'application/json'};
+		requestOptions.body = JSON.stringify(payload);
+	}
+
+	isProjectSubmitting = true;
+	setProjectSubmitButtonsDisabled(true);
+
+	fetch(requestUrl, requestOptions)
+		.then(function (response)
 		{
-			if (data != null)
+			return response.json().catch(function ()
 			{
-				if (data['sessionExpired'] == true)
+				return null;
+			}).then(function (data)
+			{
+				if (!response.ok)
 				{
-					window.alert('sessionExpired - please log in');
-					JqueryPortico.lightboxlogin();//defined in common.js
+					var error = new Error('Project save failed');
+					error.responseData = data;
+					throw error;
 				}
-				else
-				{
-					document.getElementsByName("save")[0].value = 1;
-					document.form.submit();
-				}
-			}
-		},
-		failure: function (o)
+
+				return data;
+			});
+		})
+		.then(function (data)
 		{
-			window.alert('failure - try again - once');
-		},
-		timeout: 5000
-	});
+			var id = (data && data.data && data.data.id) ? data.data.id : (data && data.id ? data.id : project_id);
+			if (data && data.receipt && data.receipt.error && data.receipt.error.length)
+			{
+				throw {responseData: data};
+			}
+			redirectAfterProjectSave(id);
+		})
+		.catch(function (error)
+		{
+			isProjectSubmitting = false;
+			setProjectSubmitButtonsDisabled(false);
+			renderProjectSaveError(extractProjectErrorMessages(error && error.responseData));
+		});
 }
 
 this.validate_form = function ()

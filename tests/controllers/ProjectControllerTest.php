@@ -366,6 +366,66 @@ namespace Tests\Controllers
 			$this->assertSame(321, $decoded['data']['id']);
 		}
 
+		public function testStoreNormalizesEntityStylePayloadEnvelopeBeforeMapping(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new class extends ProjectFormHelper
+			{
+				public function mapInput(array $requestData, bool $isEdit = false, int $id = 0): array
+				{
+					if (!isset($requestData['values']) || !is_array($requestData['values']))
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array('Missing values envelope'));
+					}
+
+					if (!array_key_exists('values_attribute', $requestData) || !is_array($requestData['values_attribute']))
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array('Missing values_attribute envelope'));
+					}
+
+					if (!array_key_exists('RelationInfo', $requestData) || !is_array($requestData['RelationInfo']))
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array('Missing RelationInfo envelope'));
+					}
+
+					return array('values' => array('name' => 'New'), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array());
+				}
+
+				public function validate(array $state): array
+				{
+					return $state;
+				}
+
+				public function persistSave(array $state, object $bo): array
+				{
+					$state['id'] = 654;
+					$state['receipt'] = array('id' => 654);
+					return $state;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array(
+				'name' => 'New',
+				'project_type_id' => 1,
+				'coordinator' => 1,
+				'status' => 'open',
+				'origin' => 'property.ticket',
+				'origin_id' => 42,
+			));
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+			$controller->store($this->request, $this->response);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('success', $decoded['status']);
+			$this->assertSame(654, $decoded['data']['id']);
+		}
+
 		public function testGetFilesWithoutIdReturnsEmptyDataTablesPayload(): void
 		{
 			$bo = new class
@@ -472,6 +532,66 @@ namespace Tests\Controllers
 			$decoded = json_decode($this->responseBody, true);
 			$this->assertSame('success', $decoded['status']);
 			$this->assertSame(77, $decoded['data']['id']);
+		}
+
+		public function testUpdateNormalizesEntityStylePayloadEnvelopeBeforeMapping(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new class extends ProjectFormHelper
+			{
+				public function mapInput(array $requestData, bool $isEdit = false, int $id = 0): array
+				{
+					if (!isset($requestData['values']) || !is_array($requestData['values']))
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => true, 'errors' => array('Missing values envelope'));
+					}
+
+					if (!array_key_exists('values_attribute', $requestData) || !is_array($requestData['values_attribute']))
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => true, 'errors' => array('Missing values_attribute envelope'));
+					}
+
+					if (!array_key_exists('RelationInfo', $requestData) || !is_array($requestData['RelationInfo']))
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => true, 'errors' => array('Missing RelationInfo envelope'));
+					}
+
+					return array('values' => array('id' => $id, 'name' => 'Updated'), 'values_attribute' => array(), 'is_edit' => true, 'errors' => array());
+				}
+
+				public function validate(array $state): array
+				{
+					return $state;
+				}
+
+				public function persistSave(array $state, object $bo): array
+				{
+					$state['id'] = 901;
+					$state['receipt'] = array('id' => 901);
+					return $state;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array(
+				'name' => 'Updated',
+				'project_type_id' => 1,
+				'coordinator' => 1,
+				'status' => 'open',
+				'origin' => 'property.ticket',
+				'origin_id' => 99,
+			));
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+			$controller->update($this->request, $this->response, array('id' => 901));
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('success', $decoded['status']);
+			$this->assertSame(901, $decoded['data']['id']);
 		}
 
 		public function testStoreReturnsErrorPayloadWhenValidationFails(): void

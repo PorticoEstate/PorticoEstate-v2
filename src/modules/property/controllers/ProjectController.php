@@ -117,6 +117,42 @@ class ProjectController
 		return is_array($decoded) ? $decoded : array();
 	}
 
+	private function normalizeProjectSavePayload(array $input): array
+	{
+		$values = isset($input['values']) && is_array($input['values'])
+			? $input['values']
+			: $input;
+		$valuesAttribute = isset($input['values_attribute']) && is_array($input['values_attribute'])
+			? $input['values_attribute']
+			: array();
+
+		$relationInfo = isset($input['RelationInfo']) && is_array($input['RelationInfo'])
+			? $input['RelationInfo']
+			: array();
+		$relationFields = array(
+			'location_code',
+			'tenant_id',
+			'p_num',
+			'p_entity_id',
+			'p_cat_id',
+			'origin',
+			'origin_id',
+		);
+		foreach ($relationFields as $field)
+		{
+			if (!array_key_exists($field, $relationInfo) && array_key_exists($field, $values))
+			{
+				$relationInfo[$field] = $values[$field];
+			}
+		}
+
+		return array(
+			'values' => $values,
+			'values_attribute' => $valuesAttribute,
+			'RelationInfo' => $relationInfo,
+		);
+	}
+
 	protected function hasReadAccess(): bool
 	{
 		return (bool)Acl::getInstance()->check($this->bo()->acl_location, ACL_READ, 'property');
@@ -727,6 +763,7 @@ class ProjectController
 		}
 
 		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$input = $this->normalizeProjectSavePayload($input);
 		$state = $this->formHelper()->mapInput($input, false, 0);
 		$state = $this->formHelper()->validate($state);
 		$state = $this->formHelper()->persistSave($state, $this->bo());
@@ -763,6 +800,7 @@ class ProjectController
 		}
 
 		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$input = $this->normalizeProjectSavePayload($input);
 		$state = $this->formHelper()->mapInput($input, true, $id);
 		$state = $this->formHelper()->validate($state);
 		$state = $this->formHelper()->persistSave($state, $this->bo());

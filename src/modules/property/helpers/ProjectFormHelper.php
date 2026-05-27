@@ -13,6 +13,27 @@ class ProjectFormHelper
 			? $requestData['values']
 			: $requestData;
 
+		$relationInfo = isset($requestData['RelationInfo']) && is_array($requestData['RelationInfo'])
+			? $requestData['RelationInfo']
+			: array();
+
+		$relationFields = array(
+			'location_code',
+			'tenant_id',
+			'p_num',
+			'p_entity_id',
+			'p_cat_id',
+			'origin',
+			'origin_id',
+		);
+		foreach ($relationFields as $field)
+		{
+			if (array_key_exists($field, $relationInfo) && !array_key_exists($field, $values))
+			{
+				$values[$field] = $relationInfo[$field];
+			}
+		}
+
 		$legacyContextFields = array(
 			'location_code',
 			'tenant_id',
@@ -48,6 +69,7 @@ class ProjectFormHelper
 		return array(
 			'values' => $values,
 			'values_attribute' => $valuesAttribute,
+			'RelationInfo' => $relationInfo,
 			'is_edit' => $isEdit,
 			'errors' => array(),
 		);
@@ -81,8 +103,65 @@ class ProjectFormHelper
 			$errors[] = 'Status is required';
 		}
 
+
+		$CustomFields = new \App\modules\phpgwapi\services\CustomFields();
+		$_attributes = $CustomFields->find('property', '.project', 0, '', 'ASC', 'attrib_sort', true, true);
+
+		foreach ($_attributes as $attrib_id => &$_attribute)
+		{
+			foreach ($state['values_attribute'] as $_key =>  $attribute)
+			{
+				if ($attrib_id == $_attribute['id'])
+				{
+					$attribute = array_merge($_attribute, $attribute);
+				}
+			}
+		}
+
+
+		foreach ($_attributes as $attribute)
+		{
+			if (($attribute['nullable'] ?? null) != 1 && (!array_key_exists('value', $attribute) || $attribute['value'] === null || (is_string($attribute['value']) && trim($attribute['value']) === '')))
+			{
+				$errors[] = lang('Please enter value for attribute %1', $attribute['input_text']);
+			}
+
+			if (($attribute['datatype'] ?? null) == 'I'
+				&& array_key_exists('value', $attribute)
+				&& $attribute['value'] !== null
+				&& !(is_string($attribute['value']) && trim($attribute['value']) === '')
+				&& !$this->isStrictIntegerValue($attribute['value'])
+			)
+			{
+				$errors[] = lang('Please enter integer for attribute %1', $attribute['input_text']);
+			}
+		}
+
 		$state['errors'] = $errors;
 		return $state;
+	}
+
+	/**
+	 * Accept only real integers or integer-formatted strings (including "0").
+	 * Reject floats, scientific notation and mixed alphanumeric strings.
+	 *
+	 * @param mixed $value
+	 * @return bool
+	 */
+	private function isStrictIntegerValue($value): bool
+	{
+		if (is_int($value))
+		{
+			return true;
+		}
+
+		if (is_string($value))
+		{
+			$value = trim($value);
+			return $value !== '' && preg_match('/^-?\d+$/', $value) === 1;
+		}
+
+		return false;
 	}
 
 	/**

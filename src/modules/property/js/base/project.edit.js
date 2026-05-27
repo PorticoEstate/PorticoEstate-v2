@@ -677,8 +677,51 @@ function formDataToProjectObject(formData)
 
 function buildProjectSavePayload(formData)
 {
-	var payload = formDataToProjectObject(formData);
-	return payload;
+	var rawPayload = formDataToProjectObject(formData);
+	var payloadValues = (rawPayload.values && typeof rawPayload.values === 'object') ? rawPayload.values : {};
+	var payloadAttributes = (rawPayload.values_attribute && typeof rawPayload.values_attribute === 'object')
+		? rawPayload.values_attribute
+		: {};
+	var relationInfo = (rawPayload.RelationInfo && typeof rawPayload.RelationInfo === 'object')
+		? rawPayload.RelationInfo
+		: {};
+	var relationFields = ['location_code', 'tenant_id', 'p_num', 'p_entity_id', 'p_cat_id', 'origin', 'origin_id'];
+	var i;
+
+	// Ensure non-nested inputs (for example "contact") are preserved in values.
+	for (var key in rawPayload)
+	{
+		if (!Object.prototype.hasOwnProperty.call(rawPayload, key))
+		{
+			continue;
+		}
+		if (key === 'values' || key === 'values_attribute' || key === 'RelationInfo')
+		{
+			continue;
+		}
+		if (!Object.prototype.hasOwnProperty.call(payloadValues, key))
+		{
+			payloadValues[key] = rawPayload[key];
+		}
+	}
+
+	// Normalize relation metadata into dedicated RelationInfo contract.
+	for (i = 0; i < relationFields.length; i++)
+	{
+		var relationField = relationFields[i];
+		if (!Object.prototype.hasOwnProperty.call(relationInfo, relationField)
+			&& Object.prototype.hasOwnProperty.call(payloadValues, relationField)
+		)
+		{
+			relationInfo[relationField] = payloadValues[relationField];
+		}
+	}
+
+	return {
+		values: payloadValues,
+		values_attribute: payloadAttributes,
+		RelationInfo: relationInfo
+	};
 }
 
 function redirectAfterProjectSave(id)

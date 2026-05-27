@@ -174,8 +174,63 @@
 		};
 	}
 
+	function createProjectClients(form, deps)
+	{
+		var parsed = deps.parseURL(form.action);
+		var query = parsed.searchObject || {};
+
+		function buildEditUrl(projectId)
+		{
+			return 'index.php?menuaction=property.uiproject.edit&id=' + encodeURIComponent(projectId);
+		}
+
+		function buildSaveRequest(currentProjectId)
+		{
+			var projectId = parseInt(currentProjectId, 10);
+			var basePath = '/property/project';
+			if (!isNaN(projectId) && projectId > 0)
+			{
+				basePath = '/property/project/' + encodeURIComponent(projectId);
+			}
+
+			var clickHistory = query.click_history || '';
+			if (!clickHistory && typeof global.strBaseURL !== 'undefined' && global.strBaseURL)
+			{
+				var baseQuery = deps.parseURL(global.strBaseURL).searchObject || {};
+				clickHistory = baseQuery.click_history || '';
+			}
+
+			var queryParts = [];
+			if (clickHistory)
+			{
+				queryParts.push('click_history=' + encodeURIComponent(clickHistory));
+			}
+
+			var requestUrl = basePath;
+			if (queryParts.length)
+			{
+				requestUrl += '?' + queryParts.join('&');
+			}
+
+			return {
+				url: requestUrl,
+				method: (!isNaN(projectId) && projectId > 0) ? 'PUT' : 'POST'
+			};
+		}
+
+		return {
+			navigation: {
+				buildEditUrl: buildEditUrl
+			},
+			api: {
+				buildSaveRequest: buildSaveRequest
+			}
+		};
+	}
+
 	global.PorticoBoundaryClients = global.PorticoBoundaryClients || {
 		createLocationClients: createLocationClients,
-		createEntityClients: createEntityClients
+		createEntityClients: createEntityClients,
+		createProjectClients: createProjectClients
 	};
 })(window);

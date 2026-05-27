@@ -516,15 +516,92 @@ function addSubEntry()
 	document.add_sub_entry_form.submit();
 }
 
-function getProjectSaveUrl()
+function parseProjectURL(url)
 {
-	var baseUrl = phpGWLink('property/project', {}, true);
-	if (Number(project_id) > 0)
+	var parser = document.createElement('a');
+	var searchObject = {};
+	var queries;
+	var split;
+	var i;
+
+	parser.href = url;
+	queries = parser.search.replace(/^\?/, '').split('&');
+	for (i = 0; i < queries.length; i++)
 	{
-		baseUrl = phpGWLink('property/project/' + project_id, {}, true);
+		if (!queries[i])
+		{
+			continue;
+		}
+		split = queries[i].split('=');
+		searchObject[split[0]] = split[1];
 	}
 
-	return baseUrl;
+	return {
+		protocol: parser.protocol,
+		host: parser.host,
+		hostname: parser.hostname,
+		port: parser.port,
+		pathname: parser.pathname,
+		search: parser.search,
+		searchObject: searchObject,
+		hash: parser.hash
+	};
+}
+
+function createProjectNavigationClient(form)
+{
+	if (window.PorticoBoundaryClients && typeof window.PorticoBoundaryClients.createProjectClients === 'function')
+	{
+		return window.PorticoBoundaryClients.createProjectClients(form, {
+			parseURL: parseProjectURL
+		}).navigation;
+	}
+
+	return {
+		buildEditUrl: function (id)
+		{
+			return 'index.php?menuaction=property.uiproject.edit&id=' + encodeURIComponent(id);
+		}
+	};
+}
+
+function createProjectApiClient(form)
+{
+	if (window.PorticoBoundaryClients && typeof window.PorticoBoundaryClients.createProjectClients === 'function')
+	{
+		return window.PorticoBoundaryClients.createProjectClients(form, {
+			parseURL: parseProjectURL
+		}).api;
+	}
+
+	return {
+		buildSaveRequest: function (currentProjectId)
+		{
+			var parsedProjectId = parseInt(currentProjectId, 10);
+			var requestBase = 'property/project';
+			if (!isNaN(parsedProjectId) && parsedProjectId > 0)
+			{
+				requestBase = 'property/project/' + parsedProjectId;
+			}
+
+			return {
+				url: phpGWLink(requestBase, {}),
+				method: (!isNaN(parsedProjectId) && parsedProjectId > 0) ? 'PUT' : 'POST'
+			};
+		}
+	};
+}
+
+function getProjectSaveUrl()
+{
+	var form = document.form;
+	var request = createProjectApiClient(form).buildSaveRequest(project_id);
+	if (request && request.url)
+	{
+		return request.url;
+	}
+
+	return phpGWLink('property/project', {});
 }
 
 function buildProjectSaveFormData()
@@ -611,7 +688,9 @@ function redirectAfterProjectSave(id)
 		return;
 	}
 
-	window.location.href = phpGWLink('index.php', {menuaction: 'property.uiproject.edit', id: id}, true);
+	var form = document.form;
+	var navigation = createProjectNavigationClient(form);
+	window.location.href = navigation.buildEditUrl(id);
 }
 
 var isProjectSubmitting = false;
@@ -691,11 +770,12 @@ function check_and_submit_valid_session()
 
 	var formData = buildProjectSaveFormData();
 	var payload = buildProjectSavePayload(formData);
-	var requestUrl = getProjectSaveUrl();
+	var saveRequest = createProjectApiClient(form).buildSaveRequest(project_id);
+	var requestUrl = saveRequest && saveRequest.url ? saveRequest.url : getProjectSaveUrl();
 	var projectId = Number(project_id);
 	var isCreate = !projectId;
 	var requestOptions = {
-		method: isCreate ? 'POST' : 'PUT',
+		method: saveRequest && saveRequest.method ? saveRequest.method : (isCreate ? 'POST' : 'PUT'),
 		credentials: 'same-origin'
 	};
 

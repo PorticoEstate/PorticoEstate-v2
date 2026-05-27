@@ -1907,10 +1907,7 @@ JS;
 			}
 		}
 
-		$link_data = array(
-			'menuaction' => 'property.uiproject.save',
-			'id'		 => $id
-		);
+		$project_form_action = '/property/project' . ($id ? '/' . (int)$id : '');
 
 		$link_request_data = array(
 			'menuaction'	 => 'property.uirequest.index',
@@ -2927,7 +2924,7 @@ JS;
 			//					'value_planned_cost'				=> $values['planned_cost'],
 			'location_data'						 => $location_data,
 			'location_type'						 => 'form',
-			'form_action'						 => phpgw::link('/index.php', $link_data),
+			'form_action'						 => $project_form_action,
 			'done_action'						 => phpgw::link('/index.php', array('menuaction' => 'property.uiproject.index')),
 			'lang_year'							 => lang('Year'),
 			'lang_category'						 => lang('category'),
@@ -3069,6 +3066,7 @@ JS;
 		phpgwapi_jquery::load_widget('autocomplete');
 		phpgwapi_jquery::load_widget('file-upload-minimum');
 
+		self::add_javascript('property', 'base', 'navigation-api-boundary.js');
 		self::add_javascript('property', 'base', 'project.edit.js');
 		self::render_template_xsl(array('project', 'datatable_inline', 'multi_upload_file_inline', 'attributes_form'), array(
 			'edit' => $data

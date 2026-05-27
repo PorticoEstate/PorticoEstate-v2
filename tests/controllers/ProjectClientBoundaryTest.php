@@ -46,5 +46,18 @@ namespace Tests\Controllers
 				'Notify table requestUrl should use REST endpoint, not property.notify.update_data menuaction'
 			);
 		}
+
+		public function testUiprojectEditFormSaveActionDoesNotUseLegacySaveMenuaction(): void
+		{
+			$uiProjectPath = __DIR__ . '/../../src/modules/property/inc/class.uiproject.inc.php';
+			$contents = file_get_contents($uiProjectPath);
+
+			$this->assertIsString($contents);
+			$this->assertStringNotContainsString(
+				"'menuaction' => 'property.uiproject.save'",
+				$contents,
+				'Project edit form save action should use REST endpoint, not property.uiproject.save menuaction'
+			);
+		}
 	}
 }

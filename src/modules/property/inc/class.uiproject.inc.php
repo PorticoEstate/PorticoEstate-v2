@@ -2413,11 +2413,8 @@ JS;
 				'location_id'		 => $location_id,
 				'location_item_id'	 => $id,
 				'count'				 => count($datatable_def), //3
-				'requestUrl'		 => json_encode(self::link(array(
-					'menuaction'		 => 'property.notify.update_data',
+				'requestUrl'		 => json_encode(phpgw::link('/property/project/' . $id . '/notify-contacts', array(
 					'location_id'		 => $location_id,
-					'location_item_id'	 => $id,
-					'action'			 => 'refresh_notify_contact',
 					'phpgw_return_as'	 => 'json'
 				))),
 			)
@@ -2425,11 +2422,8 @@ JS;
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_3',
-			'requestUrl' => json_encode(self::link(array(
-				'menuaction'		 => 'property.notify.update_data',
+			'requestUrl' => json_encode(phpgw::link('/property/project/' . $id . '/notify-contacts', array(
 				'location_id'		 => $location_id,
-				'location_item_id'	 => $id,
-				'action'			 => 'refresh_notify_contact',
 				'phpgw_return_as'	 => 'json'
 			))),
 			'ColumnDefs' => $notify_info['column_defs']['values'],

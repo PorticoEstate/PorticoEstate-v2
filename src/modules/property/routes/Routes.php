@@ -197,6 +197,8 @@ $app->group('/property/project', function (RouteCollectorProxy $group) use ($con
 	$group->post('/lookups/b-account', [$controller, 'getBAccountLookup']);
 	$group->get('/lookups/ecodimb', [$controller, 'getEcodimbLookup']);
 	$group->post('/lookups/ecodimb', [$controller, 'getEcodimbLookup']);
+	$group->get('/{id:[0-9]+}/notify-contacts', [$controller, 'notifyContacts']);
+	$group->post('/{id:[0-9]+}/notify-contacts', [$controller, 'notifyContacts']);
 	$group->get('/{id:[0-9]+}', [$controller, 'show']);
 	$group->put('/{id:[0-9]+}', [$controller, 'update']);
 	$group->delete('/{id:[0-9]+}', [$controller, 'destroy']);

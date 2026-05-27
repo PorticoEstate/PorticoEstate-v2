@@ -657,6 +657,44 @@ class ProjectController
 		return $this->jsonResponse($response, $category);
 	}
 
+	/**
+	 * Project notify contacts list/update endpoint.
+	 *
+	 * Preserves legacy notify behavior by delegating to property_notify::refresh_notify_contact_2.
+	 */
+	public function notifyContacts(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No access to project notify contacts');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$projectId = (int)($args['id'] ?? 0);
+		$locationId = (int)($input['location_id'] ?? 0);
+		$contactId = (int)($input['contact_id'] ?? 0);
+		$type = isset($input['type']) ? (string)$input['type'] : '';
+		$notify = !empty($input['notify']);
+		$ids = $input['ids'] ?? array();
+
+		if (!is_array($ids))
+		{
+			$ids = $ids !== '' && $ids !== null ? array((int)$ids) : array();
+		}
+
+		$notifier = CreateObject('property.notify');
+		$content = $notifier->refresh_notify_contact_2($locationId, $projectId, $contactId, $type, $notify, $ids);
+
+		$totalRecords = count((array)$content);
+		return $this->jsonResponse($response, array(
+			'data' => is_array($content) ? $content : array(),
+			'total_records' => $totalRecords,
+			'draw' => (int)($input['draw'] ?? 0),
+			'recordsTotal' => $totalRecords,
+			'recordsFiltered' => $totalRecords,
+		));
+	}
+
 	public function store(Request $request, Response $response): Response
 	{
 		if (!$this->hasAddAccess())

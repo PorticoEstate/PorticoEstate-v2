@@ -452,7 +452,7 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 				$upload_handler->delete_file();
 				break;
 			default:
-				$upload_handler->header('HTTP/1.1 405 Method Not Allowed');
+				header('HTTP/1.1 405 Method Not Allowed');
 		}
 
 		$this->phpgwapi_common->phpgw_exit();
@@ -2739,8 +2739,7 @@ JS;
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_7',
 			'requestUrl' => json_encode(phpgw::link('/property/project/' . $id . '/other-projects', array(
-				'location_code' => $values['location_data']['location_code'],
-				'phpgw_return_as' => 'json'
+				'location_code' => $values['location_data']['location_code']
 			))),
 			'data'		 => json_encode(array()),
 			'ColumnDefs' => $other_projects_def,

@@ -34,6 +34,8 @@ class ProjectFormHelper
 			}
 		}
 
+		$values = $this->applyRelationInfoPayload($values, $relationInfo);
+
 		$legacyContextFields = array(
 			'location_code',
 			'tenant_id',
@@ -73,6 +75,85 @@ class ProjectFormHelper
 			'is_edit' => $isEdit,
 			'errors' => array(),
 		);
+	}
+
+	/**
+	 * Apply RelationInfo-derived location enrichment for project save payloads.
+	 */
+	private function applyRelationInfoPayload(array $values, array $relationInfo): array
+	{
+		$location = array();
+
+		if (isset($values['location']) && is_array($values['location']) && $values['location'])
+		{
+			foreach ($values['location'] as $key => $part)
+			{
+				if ((string)$part === '')
+				{
+					continue;
+				}
+
+				if (is_string($key) && preg_match('/^loc\d+$/', $key))
+				{
+					$location[$key] = $part;
+				}
+				else
+				{
+					$location['loc' . (count($location) + 1)] = $part;
+				}
+			}
+		}
+
+		if (!$location)
+		{
+			for ($i = 1; $i <= 10; $i++)
+			{
+				$field = 'loc' . $i;
+				if (array_key_exists($field, $values) && (string)$values[$field] !== '')
+				{
+					$location[$field] = $values[$field];
+				}
+			}
+		}
+
+		if (!$location)
+		{
+			$locationCode = '';
+			if (isset($values['location_code']))
+			{
+				$locationCode = trim((string)$values['location_code']);
+			}
+			else if (isset($relationInfo['location_code']))
+			{
+				$locationCode = trim((string)$relationInfo['location_code']);
+			}
+
+			if ($locationCode !== '')
+			{
+				$locationParts = array_values(array_filter(explode('-', $locationCode), static function ($part)
+				{
+					return $part !== '';
+				}));
+				if ($locationParts)
+				{
+					foreach ($locationParts as $index => $part)
+					{
+						$location['loc' . ($index + 1)] = $part;
+					}
+				}
+			}
+		}
+
+		if ($location)
+		{
+			$values['location'] = $location;
+			if (!isset($values['location_code']) || $values['location_code'] === '')
+			{
+				$values['location_code'] = implode('-', array_values($location));
+			}
+		}
+
+		return $values;
 	}
 
 	/**

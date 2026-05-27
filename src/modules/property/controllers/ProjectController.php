@@ -146,11 +146,126 @@ class ProjectController
 			}
 		}
 
+		$values = $this->applyRelationInfoPayload($values, $relationInfo);
+
 		return array(
 			'values' => $values,
 			'values_attribute' => $valuesAttribute,
 			'RelationInfo' => $relationInfo,
 		);
+	}
+
+	/**
+	 * Apply RelationInfo-based enrichment for project save payloads.
+	 *
+	 * Ensures legacy BO/SO-compatible location and extra structures.
+	 */
+	private function applyRelationInfoPayload(array $values, array $relationInfo): array
+	{
+		if (!isset($values['extra']) || !is_array($values['extra']))
+		{
+			$values['extra'] = array();
+		}
+
+		$relationFields = array(
+			'location_code',
+			'tenant_id',
+			'p_num',
+			'p_entity_id',
+			'p_cat_id',
+			'origin',
+			'origin_id',
+		);
+
+		foreach ($relationFields as $field)
+		{
+			if (array_key_exists($field, $relationInfo) && !array_key_exists($field, $values))
+			{
+				$values[$field] = $relationInfo[$field];
+			}
+
+			if (array_key_exists($field, $relationInfo) && !array_key_exists($field, $values['extra']))
+			{
+				$values['extra'][$field] = $relationInfo[$field];
+			}
+		}
+
+		if (isset($values['contact_phone']) && $values['contact_phone'] !== '' && !array_key_exists('contact_phone', $values['extra']))
+		{
+			$values['extra']['contact_phone'] = $values['contact_phone'];
+		}
+
+		$location = array();
+
+		if (isset($values['location']) && is_array($values['location']) && $values['location'])
+		{
+			foreach ($values['location'] as $key => $part)
+			{
+				if ((string)$part === '')
+				{
+					continue;
+				}
+
+				if (is_string($key) && preg_match('/^loc\d+$/', $key))
+				{
+					$location[$key] = $part;
+				}
+				else
+				{
+					$location['loc' . (count($location) + 1)] = $part;
+				}
+			}
+		}
+
+		if (!$location)
+		{
+			for ($i = 1; $i <= 10; $i++)
+			{
+				$field = 'loc' . $i;
+				if (array_key_exists($field, $values) && (string)$values[$field] !== '')
+				{
+					$location[$field] = $values[$field];
+				}
+			}
+		}
+
+		if (!$location)
+		{
+			$locationCode = '';
+			if (isset($values['location_code']) && trim((string)$values['location_code']) !== '')
+			{
+				$locationCode = trim((string)$values['location_code']);
+			}
+			else if (isset($relationInfo['location_code']) && trim((string)$relationInfo['location_code']) !== '')
+			{
+				$locationCode = trim((string)$relationInfo['location_code']);
+				$values['location_code'] = $locationCode;
+			}
+
+			if ($locationCode !== '')
+			{
+				$parts = array_values(array_filter(explode('-', $locationCode), static function ($part)
+				{
+					return $part !== '';
+				}));
+
+				foreach ($parts as $index => $part)
+				{
+					$location['loc' . ($index + 1)] = $part;
+				}
+			}
+		}
+
+		if ($location)
+		{
+			$values['location'] = $location;
+			if (!isset($values['location_code']) || trim((string)$values['location_code']) === '')
+			{
+				$values['location_code'] = implode('-', array_values($location));
+			}
+		}
+
+		return $values;
 	}
 
 	protected function hasReadAccess(): bool

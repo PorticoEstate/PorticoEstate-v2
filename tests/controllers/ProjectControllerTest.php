@@ -426,6 +426,134 @@ namespace Tests\Controllers
 			$this->assertSame(654, $decoded['data']['id']);
 		}
 
+		public function testStoreCompilesLocationAndExtraArraysBeforeHelperMapping(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new class extends ProjectFormHelper
+			{
+				public function mapInput(array $requestData, bool $isEdit = false, int $id = 0): array
+				{
+					$values = $requestData['values'] ?? array();
+
+					if (!isset($values['location']) || !is_array($values['location']) || $values['location'] !== array('loc1' => '5804', 'loc2' => '01', 'loc3' => '02'))
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array('Missing or invalid location array'));
+					}
+
+					if (!isset($values['extra']) || !is_array($values['extra']))
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array('Missing extra array'));
+					}
+
+					if (($values['extra']['tenant_id'] ?? null) !== 1000)
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array('Missing tenant_id in extra'));
+					}
+
+					if (($values['extra']['p_entity_id'] ?? null) !== 1 || ($values['extra']['p_cat_id'] ?? null) !== 15 || ($values['extra']['p_num'] ?? null) !== '7')
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array('Missing parent relation in extra'));
+					}
+
+					return array('values' => array('name' => 'New'), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array());
+				}
+
+				public function validate(array $state): array
+				{
+					return $state;
+				}
+
+				public function persistSave(array $state, object $bo): array
+				{
+					$state['id'] = 655;
+					$state['receipt'] = array('id' => 655);
+					return $state;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array(
+				'name' => 'New',
+				'project_type_id' => 1,
+				'coordinator' => 1,
+				'status' => 'open',
+				'RelationInfo' => array(
+					'location_code' => '5804-01-02',
+					'tenant_id' => 1000,
+					'p_num' => '7',
+					'p_entity_id' => 1,
+					'p_cat_id' => 15,
+				),
+			));
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+			$controller->store($this->request, $this->response);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('success', $decoded['status']);
+			$this->assertSame(655, $decoded['data']['id']);
+		}
+
+		public function testStoreCompilesLocationArrayFromTopLevelLocFields(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new class extends ProjectFormHelper
+			{
+				public function mapInput(array $requestData, bool $isEdit = false, int $id = 0): array
+				{
+					$values = $requestData['values'] ?? array();
+					if (($values['location'] ?? array()) !== array('loc1' => '5801', 'loc2' => '99'))
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array('Location not compiled from loc* fields'));
+					}
+
+					if (($values['location_code'] ?? '') !== '5801-99')
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array('location_code not compiled from loc* fields'));
+					}
+
+					return array('values' => array('name' => 'FromLocFields'), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array());
+				}
+
+				public function validate(array $state): array
+				{
+					return $state;
+				}
+
+				public function persistSave(array $state, object $bo): array
+				{
+					$state['id'] = 656;
+					$state['receipt'] = array('id' => 656);
+					return $state;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array(
+				'name' => 'FromLocFields',
+				'project_type_id' => 1,
+				'coordinator' => 1,
+				'status' => 'open',
+				'loc1' => '5801',
+				'loc2' => '99',
+			));
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+			$controller->store($this->request, $this->response);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('success', $decoded['status']);
+			$this->assertSame(656, $decoded['data']['id']);
+		}
+
 		public function testGetFilesWithoutIdReturnsEmptyDataTablesPayload(): void
 		{
 			$bo = new class

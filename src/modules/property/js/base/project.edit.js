@@ -246,12 +246,19 @@ $(document).ready(function ()
 
 	$("#order_time_span").change(function ()
 	{
-		var oArgs1 = {menuaction: 'property.uiproject.get_orders', project_id: project_id, year: $(this).val(), results: -1};
-		var requestUrl1 = phpGWLink('index.php', oArgs1, true);
+		var requestUrl1 = phpGWLink('property/project/' + project_id + '/orders', {
+			project_id: project_id,
+			year: $(this).val(),
+			results: -1,
+			phpgw_return_as: 'json'
+		}, true);
 		JqueryPortico.updateinlineTableHelper(oTable1, requestUrl1);
 
-		var oArgs2 = {menuaction: 'property.uiproject.get_vouchers', project_id: project_id, year: $(this).val()};
-		var requestUrl2 = phpGWLink('index.php', oArgs2, true);
+		var requestUrl2 = phpGWLink('property/project/' + project_id + '/vouchers', {
+			project_id: project_id,
+			year: $(this).val(),
+			phpgw_return_as: 'json'
+		}, true);
 		JqueryPortico.updateinlineTableHelper(oTable2, requestUrl2);
 	});
 
@@ -325,8 +332,10 @@ $(document).ready(function ()
 	$("#datatable-container_2 tbody").on('click', 'tr', function ()
 	{
 		var voucher_id = $('td', this).eq(1).text();
-		var oArgs = {menuaction: 'property.uiproject.get_attachment', voucher_id: voucher_id};
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = phpGWLink('property/project/attachments', {
+			voucher_id: voucher_id,
+			phpgw_return_as: 'json'
+		}, true);
 		JqueryPortico.updateinlineTableHelper('datatable-container_8', requestUrl);
 	});
 
@@ -404,8 +413,9 @@ $(document).ready(function ()
 	strURL = phpGWLink('index.php', oArgs, true);
 	JqueryPortico.autocompleteHelper(strURL, 'b_account_name', 'b_account_id', 'b_account_container', null, null, null, validate_change_budget_account);
 
-	var oArgs = {menuaction: 'property.uiproject.get_external_project'};
-	var strURL = phpGWLink('index.php', oArgs, true);
+	var strURL = phpGWLink('property/project/external-project', {
+		phpgw_return_as: 'json'
+	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'external_project_name', 'external_project_id', 'external_project_container', null, null, null, validate_dim_b);
 	
 	oArgs = {menuaction: 'property.uiproject.get_ecodimb'};
@@ -637,8 +647,10 @@ $(window).on('load', function ()
 	function check_valid_external_project(external_project_id)
 	{
 
-		var oArgs = {menuaction: 'property.uiproject.get_external_project', query: external_project_id};
-		var strURL = phpGWLink('index.php', oArgs, true);
+		var strURL = phpGWLink('property/project/external-project', {
+			query: external_project_id,
+			phpgw_return_as: 'json'
+		}, true);
 		
 
 		$.getJSON(strURL, function (Result)
@@ -747,8 +759,9 @@ this.fileuploader = function ()
 
 this.refresh_files = function ()
 {
-	var oArgs = {menuaction: 'property.uiproject.get_files', id: project_id};
-	var strURL = phpGWLink('index.php', oArgs, true);
+	var strURL = phpGWLink('property/project/' + project_id + '/files', {
+		phpgw_return_as: 'json'
+	}, true);
 
 	refresh_glider(strURL);
 

@@ -2311,8 +2311,7 @@ JS;
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_1',
-			//				'requestUrl' => json_encode(self::link(array('menuaction' => 'property.uiproject.get_orders',
-			//						'project_id' => $id, 'year' => date('Y'), 'phpgw_return_as' => 'json'))),
+			//				'requestUrl' => json_encode(phpgw::link('/property/project/' . $id . '/orders', array('phpgw_return_as' => 'json'))),
 			'requestUrl' => "''",
 			'data'		 => json_encode($_order_data),
 			'ColumnDefs' => $orders_def,
@@ -2772,10 +2771,8 @@ JS;
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_8',
-			//				'requestUrl' => "''",
-			'requestUrl' => json_encode(self::link(array(
-				'menuaction'		 => 'property.uiproject.get_attachment',
-				'phpgw_return_as'	 => 'json'
+			'requestUrl' => json_encode(phpgw::link('/property/project/attachments', array(
+				'phpgw_return_as' => 'json'
 			))),
 			'data'		 => json_encode(array()),
 			'ColumnDefs' => $attachmen_def,

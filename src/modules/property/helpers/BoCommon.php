@@ -92,7 +92,9 @@ class BoCommon
 
 	public function check_perms2($owner_id, $grants, $required)
 	{
-		return $this->checkPerms2($owner_id, $grants, $required, array());
+		$equalto = $this->accounts->membership($owner_id);
+	
+		return $this->checkPerms2($owner_id, $grants, $required, $equalto);
 	}
 
 	public function confirm_session()

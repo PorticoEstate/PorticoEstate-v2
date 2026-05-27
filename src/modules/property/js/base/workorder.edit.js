@@ -847,12 +847,14 @@ this.fileuploader = function ()
 
 this.refresh_files = function ()
 {
-	var oArgs = { menuaction: 'property.uiworkorder.get_files', id: order_id };
-	var strURL = phpGWLink('index.php', oArgs, true);
+	var strURL = phpGWLink('property/workorder/' + order_id + '/files', {
+		phpgw_return_as: 'json'
+	}, true);
 	JqueryPortico.updateinlineTableHelper('datatable-container_1', strURL);
 
-	oArgs = { menuaction: 'property.uiworkorder.get_files_attachments', id: order_id };
-	strURL = phpGWLink('index.php', oArgs, true);
+	strURL = phpGWLink('property/workorder/' + order_id + '/files-attachments', {
+		phpgw_return_as: 'json'
+	}, true);
 	refresh_glider(strURL);
 
 	JqueryPortico.updateinlineTableHelper('datatable-container_8', strURL);

@@ -199,6 +199,21 @@ $app->group('/property/project', function (RouteCollectorProxy $group) use ($con
 ->addMiddleware(new SessionsMiddleware($container));
 
 
+$app->group('/property/workorder', function (RouteCollectorProxy $group) use ($container)
+{
+	$controllerClass = '\\App\\modules\\property\\controllers\\WorkorderController';
+	$controller = new $controllerClass($container);
+
+	$group->get('/{id:[0-9]+}/files', [$controller, 'getFiles']);
+	$group->post('/{id:[0-9]+}/files', [$controller, 'getFiles']);
+	$group->post('/{id:[0-9]+}/files/actions', [$controller, 'updateFileData']);
+	$group->get('/{id:[0-9]+}/files-attachments', [$controller, 'getFilesAttachments']);
+	$group->post('/{id:[0-9]+}/files-attachments', [$controller, 'getFilesAttachments']);
+})
+->addMiddleware(new AccessVerifier($container))
+->addMiddleware(new SessionsMiddleware($container));
+
+
 $app->get('/property[/{params:.*}]', RedirectHelper::class . ':process')
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));

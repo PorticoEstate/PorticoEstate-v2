@@ -560,6 +560,103 @@ class ProjectController
 		return $this->jsonResponse($response, is_array($result) ? $result : array());
 	}
 
+	/**
+	 * Budget account lookup endpoint.
+	 */
+	public function getBAccountLookup(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No access to project budget account lookup');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$query = isset($input['query']) ? (string)$input['query'] : '';
+		$role = isset($input['role']) ? (string)$input['role'] : '';
+
+		$result = $this->bocommon()->getBAccount($query, $role);
+		return $this->jsonResponse($response, is_array($result) ? $result : array());
+	}
+
+	/**
+	 * Ecodimb lookup endpoint.
+	 */
+	public function getEcodimbLookup(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No access to project ecodimb lookup');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$query = isset($input['query']) ? (string)$input['query'] : '';
+
+		$result = $this->bocommon()->getEcodimb($query);
+		return $this->jsonResponse($response, is_array($result) ? $result : array());
+	}
+
+	/**
+	 * Validate if selected project category is valid for a budget account.
+	 */
+	public function getCategoryLookup(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No access to project category lookup');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$catId = (int)($input['cat_id'] ?? 0);
+		$bAccountId = isset($input['b_account_id']) ? (string)$input['b_account_id'] : '';
+
+		$boWorkorder = CreateObject('property.boworkorder');
+		$categoryRows = $boWorkorder->cats->return_single($catId);
+		$category = isset($categoryRows[0]) && is_array($categoryRows[0]) ? $categoryRows[0] : array();
+
+		if ($bAccountId)
+		{
+			$bAccount = execMethod(
+				'property.bogeneric.read_single',
+				array(
+					'id' => $bAccountId,
+					'location_info' => array(
+						'type' => 'budget_account'
+					)
+				)
+			);
+
+			$bAccountGroup = $bAccount['category'] ?? null;
+			if (!empty($bAccountGroup))
+			{
+				$sogeneric = CreateObject('property.sogeneric');
+				$sogeneric->get_location_info('b_account_category', false);
+				$accountGroupData = $sogeneric->read_single(array('id' => (int)$bAccountGroup), array());
+
+				$category['mandatory_external_project'] = $accountGroupData['external_project'] ?? null;
+
+				$parentCategories = array();
+				if (!empty($accountGroupData['project_category']))
+				{
+					$parentCategories = explode(',', trim((string)$accountGroupData['project_category'], ','));
+				}
+
+				$subCategories = $boWorkorder->cats->return_sorted_array(0, false, '', '', '', false, $parentCategories);
+				$catIds = array();
+				foreach ((array)$subCategories as $entry)
+				{
+					$catIds[] = $entry['id'];
+				}
+
+				if (!in_array($catId, $catIds))
+				{
+					$category['active'] = 0;
+				}
+			}
+		}
+
+		return $this->jsonResponse($response, $category);
+	}
+
 	public function store(Request $request, Response $response): Response
 	{
 		if (!$this->hasAddAccess())

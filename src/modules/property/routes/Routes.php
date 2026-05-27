@@ -191,6 +191,12 @@ $app->group('/property/project', function (RouteCollectorProxy $group) use ($con
 	$group->get('/attachments', [$controller, 'getAttachment']);
 	$group->post('/attachments', [$controller, 'getAttachment']);
 	$group->get('/external-project', [$controller, 'getExternalProject']);
+	$group->get('/lookups/category', [$controller, 'getCategoryLookup']);
+	$group->post('/lookups/category', [$controller, 'getCategoryLookup']);
+	$group->get('/lookups/b-account', [$controller, 'getBAccountLookup']);
+	$group->post('/lookups/b-account', [$controller, 'getBAccountLookup']);
+	$group->get('/lookups/ecodimb', [$controller, 'getEcodimbLookup']);
+	$group->post('/lookups/ecodimb', [$controller, 'getEcodimbLookup']);
 	$group->get('/{id:[0-9]+}', [$controller, 'show']);
 	$group->put('/{id:[0-9]+}', [$controller, 'update']);
 	$group->delete('/{id:[0-9]+}', [$controller, 'destroy']);

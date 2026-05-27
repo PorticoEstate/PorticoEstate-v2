@@ -350,8 +350,11 @@ $(document).ready(function ()
 		var b_account_id = $('#b_account_id').val();
 		var external_project_id = $('#external_project_id').val();
 
-		var oArgs = {menuaction: 'property.boworkorder.get_category', cat_id: data.id, b_account_id: b_account_id};
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = phpGWLink('property/project/lookups/category', {
+			cat_id: data.id,
+			b_account_id: b_account_id,
+			phpgw_return_as: 'json'
+		}, true);
 
 		$.ajax({
 			type: 'POST',
@@ -409,8 +412,9 @@ $(document).ready(function ()
 		validate_order_category({id: cat_id});
 	}
 
-	oArgs = {menuaction: 'property.uiworkorder.get_b_account'};
-	strURL = phpGWLink('index.php', oArgs, true);
+	strURL = phpGWLink('property/project/lookups/b-account', {
+		phpgw_return_as: 'json'
+	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'b_account_name', 'b_account_id', 'b_account_container', null, null, null, validate_change_budget_account);
 
 	var strURL = phpGWLink('property/project/external-project', {
@@ -418,12 +422,15 @@ $(document).ready(function ()
 	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'external_project_name', 'external_project_id', 'external_project_container', null, null, null, validate_dim_b);
 	
-	oArgs = {menuaction: 'property.uiproject.get_ecodimb'};
-	strURL = phpGWLink('index.php', oArgs, true);
+	strURL = phpGWLink('property/project/lookups/ecodimb', {
+		phpgw_return_as: 'json'
+	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'ecodimb_name', 'ecodimb', 'ecodimb_container');
 	
-	oArgs = {menuaction: 'property.uiworkorder.get_b_account', role: 'group'};
-	strURL = phpGWLink('index.php', oArgs, true);
+	strURL = phpGWLink('property/project/lookups/b-account', {
+		role: 'group',
+		phpgw_return_as: 'json'
+	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'b_account_group_name', 'b_account_group', 'b_account_group_container');
 		
 	$("#b_account_name").on("autocompleteselect", function (event, ui)
@@ -444,8 +451,10 @@ $(document).ready(function ()
 		{
 			return;
 		}
-		var oArgs = {menuaction: 'property.uiworkorder.get_b_account', query: b_account_id};
-		var strURL = phpGWLink('index.php', oArgs, true);
+		var strURL = phpGWLink('property/project/lookups/b-account', {
+			query: b_account_id,
+			phpgw_return_as: 'json'
+		}, true);
 
 		$.getJSON(strURL, function (Result)
 		{
@@ -477,8 +486,10 @@ $(document).ready(function ()
 				if (ecodimb_id && ecodimb_id !== $('#ecodimb').val())
 				{
 
-					var oArgs = {menuaction: 'property.uiproject.get_ecodimb', query: ecodimb_id};
-					var strURL = phpGWLink('index.php', oArgs, true);
+					var strURL = phpGWLink('property/project/lookups/ecodimb', {
+						query: ecodimb_id,
+						phpgw_return_as: 'json'
+					}, true);
 					$.getJSON(strURL, function (Result)
 					{
 						if (Result.ResultSet.Result.length > 0)

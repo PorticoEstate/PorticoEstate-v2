@@ -386,7 +386,7 @@ abstract class Migration
 			'bool' => 'boolean',
 			'decimal' => 'numeric',
 			'float', 'double' => 'double precision',
-			'timestamp' => 'timestamp without time zone',
+			'datetime', 'timestamp' => 'timestamp without time zone',
 			'timestamptz' => 'timestamp with time zone',
 			'date' => 'date',
 			'time' => 'time without time zone',

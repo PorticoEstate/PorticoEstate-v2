@@ -321,6 +321,7 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 		$make_relation	 = Sanitizer::get_var('make_relation', 'bool');
 		$relation_id	 = Sanitizer::get_var('relation_id', 'int');
 		$relation_type	 = Sanitizer::get_var('relation_type');
+		$update_menuaction = '';
 		if ($make_relation)
 		{
 			$lookup = true;
@@ -1687,6 +1688,7 @@ JS;
 
 		$lang_delete_request_statustext	 = lang('Check to delete this request from this project');
 		$_origin						 = array();
+		$_select = '';
 		if (isset($values['origin_data']) && $values['origin_data'])
 		{
 			foreach ($values['origin_data'] as $__origin)
@@ -1806,6 +1808,7 @@ JS;
 
 		$year	 = date('Y') - 1;
 		$limit	 = $year + 8;
+		$year_list = array();
 
 		while ($year < $limit)
 		{
@@ -2171,6 +2174,11 @@ JS;
 		}
 
 		$total_records = count($list);
+		$myColumnDefs = array();
+		$status_list_new = array();
+		$lang_coordinator = '';
+		$lang_new_coordinator = '';
+		$b_account_data = array();
 
 		switch ($type)
 		{
@@ -2332,6 +2340,7 @@ JS;
 
 		$year	 = date('Y') - 2;
 		$limit	 = $year + 4;
+		$year_list = array();
 
 		while ($year < $limit)
 		{

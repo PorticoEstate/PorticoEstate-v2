@@ -481,6 +481,28 @@ class ProjectController
 		return (string)$search;
 	}
 
+	/**
+	 * Normalize id filter to either positive int, non-empty positive int array, or 0.
+	 */
+	private function normalizeIdFilter(mixed $value): mixed
+	{
+		if (is_array($value))
+		{
+			$ids = array_values(array_unique(array_filter(array_map(static function ($item)
+			{
+				return (int)$item;
+			}, $value), static function ($id)
+			{
+				return $id > 0;
+			})));
+
+			return $ids ?: 0;
+		}
+
+		$id = (int)$value;
+		return $id > 0 ? $id : 0;
+	}
+
 	private function readParams(array $input): array
 	{
 		$order = is_array($input['order'] ?? null) ? $input['order'] : array();
@@ -670,10 +692,15 @@ class ProjectController
 		}
 
 		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
-		$projectId = (int)($args['id'] ?? $input['project_id'] ?? 0);
-		$orderId = (int)($input['order_id'] ?? 0);
+		$rawProjectFilter = $input['project_id'] ?? ($args['id'] ?? 0);
+		$rawOrderFilter = $input['order_id'] ?? 0;
+		$projectId = $this->normalizeIdFilter($rawProjectFilter);
+		$orderId = $this->normalizeIdFilter($rawOrderFilter);
 
-		if ($projectId <= 0 && $orderId <= 0)
+		$hasProjectFilter = is_array($projectId) ? !empty($projectId) : ($projectId > 0);
+		$hasOrderFilter = is_array($orderId) ? !empty($orderId) : ($orderId > 0);
+
+		if (!$hasProjectFilter && !$hasOrderFilter)
 		{
 			return $this->datatableResponse($response, $input, array(), 0);
 		}

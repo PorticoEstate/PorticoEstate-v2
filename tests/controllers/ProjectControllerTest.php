@@ -329,6 +329,52 @@ namespace Tests\Controllers
 			$this->assertCount(2, $decoded['data']);
 		}
 
+		public function testGetOrdersAcceptsArrayProjectAndOrderFilters(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+				public object $so;
+				public array $capturedParams = array();
+
+				public function __construct()
+				{
+					$this->so = new class
+					{
+						public int $total_records = 1;
+					};
+				}
+
+				public function get_orders(array $params): array
+				{
+					$this->capturedParams = $params;
+					return array(
+						array('workorder_id' => 9, 'project_id' => 77),
+					);
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array(
+				'project_id' => array(10, 11),
+				'order_id' => array(5, 6),
+				'draw' => 8,
+				'start' => 0,
+				'length' => 10,
+				'order' => array(array('column' => 0, 'dir' => 'asc')),
+				'columns' => array(array('data' => 'workorder_id')),
+			));
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeController($bo);
+			$controller->getOrders($this->request, $this->response, array('id' => 0));
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame(8, $decoded['draw']);
+			$this->assertSame(array(10, 11), $bo->capturedParams['project_id']);
+			$this->assertSame(array(5, 6), $bo->capturedParams['order_id']);
+			$this->assertCount(1, $decoded['data']);
+		}
+
 		public function testStoreReturnsCreatedPayload(): void
 		{
 			$bo = new class

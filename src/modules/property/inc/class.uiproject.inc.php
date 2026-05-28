@@ -65,29 +65,12 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 		$type_id, $config;
 	var $public_functions = array(
 		'query'							 => false,
-		'download'						 => false,
 		'index'							 => true,
 		'view'							 => true,
 		'edit'							 => true,
 		'add'							 => true,
-		'delete'						 => false,
-		'save'							 => false,
-		'date_search'					 => false,
 		'columns'						 => true,
 		'bulk_update_status'			 => true,
-		'view_file'						 => false,
-		'get_orders'					 => false,
-		'get_vouchers'					 => false,
-		'check_missing_project_budget'	 => false,
-		'get_external_project'			 => false,
-		'get_ecodimb'					 => false,
-		'handle_multi_upload_file'		 => false,
-		'build_multi_upload_file'		 => false,
-		'get_files'						 => false,
-		'update_file_data'				 => false,
-		'view_image'					 => false,
-		'get_other_projects'			 => false,
-		'get_attachment'				 => false
 	);
 
 	function __construct()
@@ -369,10 +352,6 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 			$this->district_id		 = $default_district;
 		}
 
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			return $this->query();
-		}
 		phpgwapi_jquery::load_widget('numberformat');
 
 		$jqcal = CreateObject('phpgwapi.jqcal');
@@ -675,356 +654,18 @@ JS;
 		self::render_template_xsl('datatable2', $data);
 	}
 
+	//deprecated function, but neede for compatibility with parent class
 	public function query()
 	{
-		$search		 = Sanitizer::get_var('search');
-		$order		 = Sanitizer::get_var('order');
-		$draw		 = Sanitizer::get_var('draw', 'int');
-		$columns	 = Sanitizer::get_var('columns');
-		$start_date	 = Sanitizer::get_var('start_date');
-		$end_date	 = Sanitizer::get_var('end_date');
-		$skip_origin = Sanitizer::get_var('skip_origin', 'bool');
-		$export		 = Sanitizer::get_var('export', 'bool');
-
-		if ($start_date && empty($end_date))
-		{
-			$dateformat	 = $this->userSettings['preferences']['common']['dateformat'];
-			$end_date	 = $this->phpgwapi_common->show_date(mktime(0, 0, 0, date("m"), date("d"), date("Y")), $dateformat);
-		}
-
-		$params = array(
-			'start'			 => Sanitizer::get_var('start', 'int', 'REQUEST', 0),
-			'results'		 => Sanitizer::get_var('length', 'int', 'REQUEST', 0),
-			'query'			 => $search['value'],
-			'order'			 => $columns[$order[0]['column']]['data'],
-			'sort'			 => $order[0]['dir'],
-			'allrows'		 => Sanitizer::get_var('length', 'int') == -1 || $export,
-			'start_date'	 => $start_date ? urldecode($start_date) : '',
-			'end_date'		 => $end_date ? urldecode($end_date) : '',
-			'end_date'		 => $end_date,
-			'skip_origin'	 => $skip_origin
-		);
-
-		$values = $this->bo->read($params);
-
-		if ($export)
-		{
-			return $values;
-		}
+		$values = [];
 
 		$result_data					 = array('results' => $values);
-		$result_data['total_records']	 = $this->bo->total_records;
-		$result_data['draw']			 = $draw;
-		$link_data						 = array(
-			'menuaction' => 'property.uiproject.edit'
-		);
-		array_walk($result_data['results'], array($this, '_add_links'), $link_data);
+		$result_data['total_records']	 = 0;
+		$result_data['draw']			 = 1;
 
 		return $this->jquery_results($result_data);
 	}
 
-	/*
-		 * Overrides with incoming data from POST
-		 */
-
-	private function _populate()
-	{
-		$id = (int)Sanitizer::get_var('id', 'int');
-
-		$values					 = Sanitizer::get_var('values');
-		$values_attribute		 = Sanitizer::get_var('values_attribute');
-		//			$values['external_project_id'] = Sanitizer::get_var('external_project_id');
-		//			$values['ecodimb'] = Sanitizer::get_var('ecodimb');
-		$values['contact_id']	 = Sanitizer::get_var('contact', 'int', 'POST');
-
-
-		$insert_record	=	Cache::session_get('property',	'insert_record');
-		$insert_record_entity = (array)Cache::session_get('property',	"insert_record_values{$this->acl_location}");
-
-
-		if (isset($insert_record_entity) && is_array($insert_record_entity))
-		{
-			for ($j = 0; $j < count($insert_record_entity); $j++)
-			{
-				$insert_record['extra'][$insert_record_entity[$j]] = $insert_record_entity[$j];
-			}
-		}
-		$bypass = Sanitizer::get_var('bypass', 'bool');
-
-
-		if ($_POST && !$bypass && isset($insert_record) && is_array($insert_record))
-		{
-			$values = $this->bocommon->collect_locationdata($values, $insert_record);
-		}
-
-		if (!empty($values['b_account_id']))
-		{
-
-			$_b_account					 = execMethod('property.bogeneric.read_single', array(
-				'id'			 => $values['b_account_id'],
-				'location_info'	 => array(
-					'type' => 'budget_account'
-				)
-			));
-			$values['b_account_group']	 = $_b_account['category'];
-
-			if (!empty($_b_account['ecodimb']))
-			if ($bofiles->vfs->file_exists(array(
-				'string'	 => $to_file,
-				'relatives'	 => array(RELATIVE_NONE)
-			)))
-			{
-				$this->receipt['error'][] = array('msg' => lang('This file already exists !'));
-			}
-			else
-			{
-				$bofiles->create_document_dir("project/$id");
-				$bofiles->vfs->override_acl = 1;
-
-				if (!$bofiles->vfs->cp(array(
-					'from'		 => $_FILES['file']['tmp_name'],
-					'to'		 => $to_file,
-					'relatives'	 => array(RELATIVE_NONE | VFS_REAL, RELATIVE_ALL)
-				)))
-				{
-					$this->receipt['error'][] = array('msg' => lang('Failed to upload file !'));
-				}
-				$bofiles->vfs->override_acl = 0;
-			}
-		}
-	}
-
-	public function save()
-	{
-		if (!$_POST)
-		{
-			return $this->edit();
-		}
-
-		$id					 = Sanitizer::get_var('id', 'int');
-		$values_attribute	 = Sanitizer::get_var('values_attribute');
-		$location_id		 = $this->locations->get_id('property', $this->acl_location);
-
-		$values = $this->_populate();
-		if ($id)
-		{
-			$action			 = 'edit';
-			$values['id']	 = $id;
-		}
-
-		if ($values['copy_project'])
-		{
-			$action = 'add';
-		}
-
-		if (!$this->receipt['error'])
-		{
-			try
-			{
-				$receipt		 = $this->bo->save($values, $action, $values_attribute);
-				$values['id']	 = $receipt['id'];
-				$id				 = $receipt['id'];
-				$this->receipt	 = $receipt;
-			}
-			catch (Exception $e)
-			{
-				if ($e)
-				{
-					Cache::message_set($e->getMessage(), 'error');
-				}
-			}
-
-			if (!$this->receipt['error'])
-			{
-				$this->_handle_files($values);
-
-				if (isset($this->serverSettings['smtp_server']) && $this->serverSettings['smtp_server'])
-				{
-					$historylog = CreateObject('property.historylog', 'project');
-
-					$send = CreateObject('phpgwapi.send');
-
-
-					$from_name						 = $this->userSettings['fullname'];
-					$from_email						 = $this->userSettings['preferences']['common']['email'];
-
-					$subject = lang('Approval') . ": " . $id;
-					$message = '<a href ="' . phpgw::link('/index.php', array(
-						'menuaction' => 'property.uiproject.edit',
-						'id'		 => $id
-					), false, true) . '">' . lang('project %1 needs approval', $id) . '</a>';
-
-					$bcc = ''; //$from_email;
-					$cc = ''; //$from_email;
-
-					$action_params = array(
-						'appname'			 => 'property',
-						'location'			 => '.project',
-						'id'				 => $id,
-						'responsible'		 => '',
-						'responsible_type'	 => 'user',
-						'action'			 => 'approval',
-						'remark'			 => '',
-						'deadline'			 => ''
-					);
-
-					/**
-					 * For now - handled by uiworkorder.
-					 * consider remove - beware of the substitute logic...see uiworkorder
-					 */
-					if (isset($values['mail_address']) && is_array($values['mail_address']))
-					{
-						foreach ($values['mail_address'] as $_account_id => $_address)
-						{
-							if (isset($values['approval'][$_account_id]) && $values['approval'][$_account_id])
-							{
-								try
-								{
-									$rcpt = $send->msg('email', $_address, $subject, stripslashes($message), '', $cc, $bcc, $from_email, $from_name, 'html');
-								}
-								catch (Exception $e)
-								{
-									Cache::message_set($e->getMessage(), 'error');
-								}
-
-								$action_params['responsible'] = $_account_id;
-								execMethod('property.sopending_action.set_pending_action', $action_params);
-								if (!$rcpt)
-								{
-									$this->receipt['error'][]	 = array('msg' => "uiproject::edit: sending message to '" . $_address . "', subject='$subject' failed !!!");
-									$this->receipt['error'][]	 = array('msg' => $send->err['desc']);
-									$this->bypass_error			 = true;
-								}
-								else
-								{
-									$historylog->add('AP', $id, lang('%1 is notified', $_address));
-									$this->receipt['message'][] = array('msg' => lang('%1 is notified', $_address));
-								}
-							}
-						}
-					}
-
-					$toarray	 = array();
-					$toarray_sms = array();
-					if (isset($this->receipt['notice_owner']) && is_array($this->receipt['notice_owner']))
-					{
-						if (
-							$this->account != $values['coordinator'] && isset($this->userSettings['preferences']['property']['notify_project_owner']) && $this->userSettings['preferences']['property']['notify_project_owner']
-							//							 && $this->config['mailnotification']
-						)
-						{
-							$prefs_coordinator = $this->bocommon->create_preferences('common', $values['coordinator']);
-							if (isset($prefs_coordinator['email']) && $prefs_coordinator['email'])
-							{
-								$toarray[] = $prefs_coordinator['email'];
-							}
-						}
-					}
-
-					$notify_list = execMethod(
-						'property.notify.read',
-						array(
-							'location_id'		 => $location_id,
-							'location_item_id'	 => $id
-						)
-					);
-
-					$subject = lang('project %1 has been edited', $id);
-
-					if (isset($this->userSettings['apps']['sms']))
-					{
-						$sms_text	 = "{$subject}. \r\n{$this->userSettings['fullname']} \r\n{$this->userSettings['preferences']['common']['email']}";
-						$sms		 = CreateObject('sms.sms');
-
-						foreach ($notify_list as $entry)
-						{
-							if ($entry['is_active'] && $entry['notification_method'] == 'sms' && $entry['sms'])
-							{
-								$sms->websend2pv($this->account, $entry['sms'], $sms_text);
-								$toarray_sms[]				 = "{$entry['first_name']} {$entry['last_name']}({$entry['sms']})";
-								$this->receipt['message'][]	 = array('msg' => lang('%1 is notified', "{$entry['first_name']} {$entry['last_name']}"));
-							}
-						}
-						unset($entry);
-
-						if ($toarray_sms)
-						{
-							$historylog->add('MS', $id, implode(',', $toarray_sms));
-						}
-					}
-
-					reset($notify_list);
-					foreach ($notify_list as $entry)
-					{
-						if ($entry['is_active'] && $entry['notification_method'] == 'email' && $entry['email'])
-						{
-							$toarray[] = "{$entry['first_name']} {$entry['last_name']}<{$entry['email']}>";
-						}
-					}
-					unset($entry);
-
-					if ($toarray)
-					{
-						$to			 = implode(';', $toarray);
-						$from_name	 = $this->userSettings['fullname'];
-						$from_email	 = $this->userSettings['preferences']['common']['email'];
-
-						$body = '<a href ="' . phpgw::link('/index.php', array(
-							'menuaction' => 'property.uiproject.edit',
-							'id'		 => $id
-						), false, true) . '">' . lang('project %1 has been edited', $id) . '</a>' . "\n";
-
-						foreach ($this->receipt['notice_owner'] as $notice)
-						{
-							$body .= $notice . "\n";
-						}
-
-						$body	 .= lang('Altered by') . ': ' . $from_name . "\n";
-						$body	 .= lang('remark') . ': ' . $values['remark'] . "\n";
-
-						$body = nl2br($body);
-
-						try
-						{
-							$returncode = $send->msg('email', $to, $subject, $body, false, false, false, $from_email, $from_name, 'html');
-						}
-						catch (Exception $e)
-						{
-							Cache::message_set($e->getMessage(), 'error');
-						}
-
-						if (!$returncode) // not nice, but better than failing silently
-						{
-							$this->receipt['error'][]	 = array('msg' => "uiproject::edit: sending message to '$to' subject='$subject' failed !!!");
-							$this->receipt['error'][]	 = array('msg' => $send->err['desc']);
-							$this->bypass_error			 = true;
-						}
-						else
-						{
-							$historylog->add('ON', $id, lang('%1 is notified', $to));
-							$this->receipt['message'][] = array('msg' => lang('%1 is notified', $to));
-						}
-					}
-				}
-			}
-		}
-
-		if ($id && !isset($this->receipt['error']))
-		{
-			self::message_set($this->receipt);
-			$active_tab = Sanitizer::get_var('active_tab');
-
-			self::redirect(array(
-				'menuaction' => 'property.uiproject.edit',
-				'id'		 => $id,
-				'active_tab' => $active_tab
-			));
-		}
-
-		$this->edit($values, 'edit');
-
-		return;
-	}
 
 	public function add()
 	{
@@ -1094,9 +735,10 @@ JS;
 			$values['descr']							 = Sanitizer::get_var('descr');
 			$p_entity_id								 = Sanitizer::get_var('p_entity_id', 'int');
 			$p_cat_id									 = Sanitizer::get_var('p_cat_id', 'int');
+			$p_num										 = Sanitizer::get_var('p_num');
 			$values['p'][$p_entity_id]['p_entity_id']	 = $p_entity_id;
 			$values['p'][$p_entity_id]['p_cat_id']		 = $p_cat_id;
-			$values['p'][$p_entity_id]['p_num']			 = Sanitizer::get_var('p_num');
+			$values['p'][$p_entity_id]['p_num']			 = $p_num;
 
 			$origin		 = Sanitizer::get_var('origin');
 			$origin_id	 = Sanitizer::get_var('origin_id', 'int');
@@ -1714,7 +1356,6 @@ JS;
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_1',
-			//				'requestUrl' => json_encode(phpgw::link('/property/project/' . $id . '/orders', array('phpgw_return_as' => 'json'))),
 			'requestUrl' => "''",
 			'data'		 => json_encode($_order_data),
 			'ColumnDefs' => $orders_def,
@@ -1784,9 +1425,7 @@ JS;
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_2',
-			'requestUrl' => json_encode(phpgw::link('/property/project/' . $id . '/vouchers', array(
-				'phpgw_return_as' => 'json'
-			))),
+			'requestUrl' => json_encode(phpgw::link('/property/project/' . $id . '/vouchers', array())),
 			'data'		 => json_encode(array()),
 			'ColumnDefs' => $invoice_def,
 			'tabletools' => array(),
@@ -1817,8 +1456,7 @@ JS;
 				'location_item_id'	 => $id,
 				'count'				 => count($datatable_def), //3
 				'requestUrl'		 => json_encode(phpgw::link('/property/project/' . $id . '/notify-contacts', array(
-					'location_id'		 => $location_id,
-					'phpgw_return_as'	 => 'json'
+					'location_id'		 => $location_id
 				))),
 			)
 		);
@@ -1826,8 +1464,7 @@ JS;
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_3',
 			'requestUrl' => json_encode(phpgw::link('/property/project/' . $id . '/notify-contacts', array(
-				'location_id'		 => $location_id,
-				'phpgw_return_as'	 => 'json'
+				'location_id'		 => $location_id
 			))),
 			'ColumnDefs' => $notify_info['column_defs']['values'],
 			'data'		 => json_encode(array()),
@@ -1909,9 +1546,7 @@ JS;
 
 		//---file tagging
 
-		$requestUrl	 = json_encode(phpgw::link('/property/project/' . $id . '/files/actions', array(
-			'phpgw_return_as' => 'json'
-		)));
+		$requestUrl	 = json_encode(phpgw::link('/property/project/' . $id . '/files/actions', array()));
 		$requestUrl = str_replace('&amp;', '&', $requestUrl);
 
 		$buttons = array(
@@ -2047,9 +1682,7 @@ JS;
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_5',
-			'requestUrl' => json_encode(phpgw::link('/property/project/' . $id . '/files', array(
-				'phpgw_return_as' => 'json'
-			))),
+			'requestUrl' => json_encode(phpgw::link('/property/project/' . $id . '/files', array())),
 			'data'		 => json_encode(array()),
 			'ColumnDefs' => $files_def,
 			'tabletools' => $tabletools,
@@ -2133,7 +1766,6 @@ JS;
 		);
 
 
-//		$other_projects		 = $this->get_other_projects($id, $values['location_data']['location_code']);
 		$other_projects_def	 = array(
 			array('key' => 'url', 'label' => lang('id'), 'sortable' => false),
 			array('key' => 'location_code', 'label' => lang('location'), 'sortable' => true),
@@ -2171,9 +1803,7 @@ JS;
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_8',
-			'requestUrl' => json_encode(phpgw::link('/property/project/attachments', array(
-				'phpgw_return_as' => 'json'
-			))),
+			'requestUrl' => json_encode(phpgw::link('/property/project/attachments', array())),
 			'data'		 => json_encode(array()),
 			'ColumnDefs' => $attachmen_def,
 			'config'	 => array(
@@ -2860,5 +2490,4 @@ JS;
 
 		return phpgwapi_jquery::tabview_generate($tabs, $active_tab);
 	}
-
 }

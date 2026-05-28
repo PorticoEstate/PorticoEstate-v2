@@ -126,9 +126,7 @@ namespace Tests\Controllers
 
 			$this->assertIsString($contents);
 
-			$expectedDisabled = array(
-				"'date_search'\t\t\t\t\t => false",
-				"'delete'\t\t\t\t\t\t => false",
+			$removedLegacyHandlers = array(
 				"'view_file'\t\t\t\t\t\t => false",
 				"'view_image'\t\t\t\t\t => false",
 				"'get_orders'\t\t\t\t\t => false",
@@ -142,9 +140,9 @@ namespace Tests\Controllers
 				"'get_ecodimb'\t\t\t\t\t => false",
 			);
 
-			foreach ($expectedDisabled as $needle)
+			foreach ($removedLegacyHandlers as $needle)
 			{
-				$this->assertStringContainsString($needle, $contents, "Expected disabled public_functions entry missing: {$needle}");
+				$this->assertStringNotContainsString($needle, $contents, "Removed legacy handler still present in uiproject: {$needle}");
 			}
 		}
 	}

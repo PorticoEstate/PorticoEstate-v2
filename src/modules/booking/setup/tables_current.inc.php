@@ -1893,4 +1893,31 @@ $phpgw_baseline = array(
 		'uc' => array()
 	),
 
+	'bb_notification' => array(
+		'fd' => array(
+			'id' => array('type' => 'auto', 'nullable' => false),
+			'source_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
+			'source_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'entity_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
+			'entity_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'recipient_user_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
+			'recipient_identifier' => array('type' => 'varchar', 'precision' => '64', 'nullable' => false),
+			'title' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
+			'message' => array('type' => 'text', 'nullable' => true),
+			'link' => array('type' => 'varchar', 'precision' => '512', 'nullable' => true),
+			'is_read' => array('type' => 'bool', 'nullable' => false, 'default' => 'false'),
+			'read_at' => array('type' => 'timestamp', 'nullable' => true),
+			'data' => array('type' => 'jsonb', 'nullable' => true),
+			'created' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'now()'),
+			'expires_at' => array('type' => 'timestamp', 'nullable' => true),
+		),
+		'pk' => array('id'),
+		'fk' => array(),
+		'ix' => array(
+			array('recipient_user_type', 'recipient_identifier', 'is_read'),
+			array('entity_type', 'entity_id', 'is_read'),
+		),
+		'uc' => array()
+	),
+
 );

@@ -127,6 +127,9 @@ export class ApplicationDto {
   @Expose()
   recurring_info: string | null;
 
+  @Expose()
+  parent_id: number | null;
+
   // --- Relations ---
 
   @Expose()

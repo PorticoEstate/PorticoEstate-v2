@@ -85,7 +85,7 @@ namespace Tests\Controllers
 
 			$this->assertIsString($contents);
 			$this->assertStringContainsString(
-				"phpGWLink('index.php/property/project/' + aData['project_id']",
+				"phpGWLink('property/project/' + aData['project_id']",
 				$contents,
 				'Project index delete action must use REST destroy endpoint'
 			);

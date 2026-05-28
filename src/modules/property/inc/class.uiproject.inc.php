@@ -930,7 +930,7 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 									for ( var n = 0; n < selected.length; ++n )
 									{
 										var aData = selected[n];
-										var requestUrl = phpGWLink('index.php/property/project/' + aData['project_id'], {});
+										var requestUrl = phpGWLink('property/project/' + aData['project_id'], {});
 										execute_ajax(requestUrl, function(result){
 											var message = result && result.message ? result.message : result;
 											document.getElementById('message').innerHTML += '<br/>' + message;
@@ -2610,15 +2610,23 @@ JS;
 			url: {$requestUrl},
 			data:{ids:ids, tags:tags, action:action},
 			success: function(data) {
-				if( data != null)
+				if (data != null && data.message)
 				{
-
+					if (!document.getElementById('message_files_5'))
+					{
+						$('#datatable-container_5').before('<div id="message_files_5" class="message"></div>');
+					}
+					$('#message_files_5').empty();
+					$.each(data.message, function(k, v) {
+						$('#message_files_5').append(v.msg + '<br>');
+					});
+					setTimeout(function() { $('#message_files_5').fadeOut(600, function() { $(this).empty().show(); }); }, 3000);
 				}
 				JqueryPortico.updateinlineTableHelper('datatable-container_5');
 
 				if(action=='delete_file')
 				{
-					var strURL = phpGWLink('index.php/property/project/{$id}/files', {}, true);
+					var strURL = phpGWLink('property/project/{$id}/files', {});
 					refresh_glider(strURL);
 				}
 			},

@@ -1366,9 +1366,12 @@ class ProjectController
 		$tags = $input['tags'] ?? array();
 
 		$bofiles = CreateObject('property.bofiles');
+		$message = array();
 		if ($action === 'delete_file' && $ids && $id > 0)
 		{
 			$bofiles->delete_file("/project/{$id}/", array('file_action' => $ids));
+			$count = count($ids);
+			$message[] = array('msg' => lang('%1 file(s) deleted', $count));
 		}
 		else if ($action === 'set_tag' && $ids)
 		{
@@ -1379,11 +1382,16 @@ class ProjectController
 			$bofiles->remove_tags($ids, $tags);
 		}
 
-		return $this->jsonResponse($response, array(
+		$responseData = array(
 			'status' => 'success',
 			'action' => $action,
 			'ids' => $ids,
-		));
+		);
+		if ($message)
+		{
+			$responseData['message'] = $message;
+		}
+		return $this->jsonResponse($response, $responseData);
 	}
 
 	/**

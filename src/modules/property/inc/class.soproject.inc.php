@@ -35,6 +35,7 @@ use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\controllers\Locations;
+use App\traits\DbRowTrait;
 
 phpgw::import_class('phpgwapi.datetime');
 
@@ -44,6 +45,7 @@ phpgw::import_class('phpgwapi.datetime');
  */
 class property_soproject
 {
+	use DbRowTrait;
 
 	var $total_records	 = 0;
 	private $global_lock	 = false;
@@ -1039,7 +1041,7 @@ class property_soproject
 				':location_id' => (int)$category['location_id']
 			));
 			$row = $stmt->fetch();
-			return $row['maaler_nr'] ?? null;
+			return isset($row['maaler_nr']) ? $this->dbStrip($row['maaler_nr']) : null;
 		}
 		else
 		{
@@ -1047,7 +1049,7 @@ class property_soproject
 			$stmt = $this->db->prepare("SELECT maaler_nr as power_meter FROM {$meter_table} WHERE location_code = :location_code AND category = '1'");
 			$stmt->execute(array(':location_code' => $location_code));
 			$row = $stmt->fetch();
-			return $row['power_meter'] ?? null;
+			return isset($row['power_meter']) ? $this->dbStrip($row['power_meter']) : null;
 		}
 	}
 
@@ -1702,8 +1704,10 @@ class property_soproject
 
 			if ($project['budget_reset_buffer'])
 			{
-				$this->db->query("UPDATE fm_project SET budget = 0 WHERE id = " . (int)$project['id'], __LINE__, __FILE__);
-				$this->db->query("DELETE FROM fm_project_buffer_budget WHERE buffer_project_id = " . (int)$project['id'], __LINE__, __FILE__);
+				$stmt = $this->db->prepare('UPDATE fm_project SET budget = 0 WHERE id = :project_id');
+				$stmt->execute(array(':project_id' => (int)$project['id']));
+				$stmt = $this->db->prepare('DELETE FROM fm_project_buffer_budget WHERE buffer_project_id = :project_id');
+				$stmt->execute(array(':project_id' => (int)$project['id']));
 				$historylog->add('B', $project['id'], 0, $old_budget);
 				$historylog->add('RM', $project['id'], 'reset', false);
 			}
@@ -2365,8 +2369,11 @@ class property_soproject
 		$this->db->query($sql, __LINE__, __FILE__);
 		$this->db->next_record();
 		$sum_budget	 = (int)$this->db->f('sum_budget');
-		$sql		 = "UPDATE fm_project SET budget = {$sum_budget} WHERE id = {$project_id}";
-		$this->db->query($sql, __LINE__, __FILE__);
+		$stmt = $this->db->prepare('UPDATE fm_project SET budget = :sum_budget WHERE id = :project_id');
+		$stmt->execute(array(
+			':sum_budget' => (int)$sum_budget,
+			':project_id' => (int)$project_id
+		));
 		return $sum_budget;
 	}
 
@@ -2720,15 +2727,23 @@ class property_soproject
 		foreach ($active_period as $period)
 		{
 			$when	 = explode('_', $period);
-			$sql	 = "UPDATE fm_project_budget SET active = 1 WHERE project_id = {$project_id} AND year =" . (int)$when[0] . ' AND month = ' . (int)$when[1];
-			$this->db->query($sql, __LINE__, __FILE__);
+			$stmt = $this->db->prepare('UPDATE fm_project_budget SET active = 1 WHERE project_id = :project_id AND year = :year AND month = :month');
+			$stmt->execute(array(
+				':project_id' => (int)$project_id,
+				':year' => (int)$when[0],
+				':month' => (int)$when[1]
+			));
 		}
 
 		foreach ($inactive_period as $period)
 		{
 			$when	 = explode('_', $period);
-			$sql	 = "UPDATE fm_project_budget SET active = 0 WHERE project_id = {$project_id} AND year =" . (int)$when[0] . ' AND month = ' . (int)$when[1];
-			$this->db->query($sql, __LINE__, __FILE__);
+			$stmt = $this->db->prepare('UPDATE fm_project_budget SET active = 0 WHERE project_id = :project_id AND year = :year AND month = :month');
+			$stmt->execute(array(
+				':project_id' => (int)$project_id,
+				':year' => (int)$when[0],
+				':month' => (int)$when[1]
+			));
 		}
 		//_debug_array($close_period);
 		//_debug_array($open_period);die();

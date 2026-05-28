@@ -2482,7 +2482,7 @@ class property_soentity
 			{
 				foreach ($values['attributes'] as &$attr)
 				{
-					$attr['value'] = $this->db->stripslashes($jsondata[$attr['column_name']]);
+					$attr['value'] = $this->dbStrip($jsondata[$attr['column_name']]);
 				}
 			}
 		}
@@ -3279,7 +3279,7 @@ class property_soentity
 
 		$row  = $this->db->resultSet[0] ?? [];
 		//			$helpmsg = str_replace("\n","<br>",stripslashes($row['helpmsg']));
-		$helpmsg = stripslashes($row['helpmsg']);
+		$helpmsg = isset($row['helpmsg']) ? $this->dbStrip($row['helpmsg']) : null;
 		return $helpmsg;
 	}
 

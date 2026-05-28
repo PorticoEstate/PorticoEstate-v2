@@ -1395,7 +1395,11 @@ class property_soproject
 
 		if ($project['extra']['contact_phone'] && $project['extra']['tenant_id'])
 		{
-			$this->db->query("update fm_tenant set contact_phone='" . $project['extra']['contact_phone'] . "' where id='" . $project['extra']['tenant_id'] . "'", __LINE__, __FILE__);
+			$stmt = $this->db->prepare('UPDATE fm_tenant SET contact_phone = :contact_phone WHERE id = :tenant_id');
+			$stmt->execute(array(
+				':contact_phone' => $project['extra']['contact_phone'],
+				':tenant_id' => (int)$project['extra']['tenant_id']
+			));
 		}
 
 		if (isset($project['power_meter']) && $project['power_meter'])
@@ -1406,9 +1410,13 @@ class property_soproject
 		if (!empty($project['branch']) && count($project['branch']) != 0)
 		{
 			//while ($branch = each($project['branch']))
+			$stmt = $this->db->prepare('INSERT INTO fm_projectbranch (project_id, branch_id) VALUES (:project_id, :branch_id)');
 			foreach ($project['branch'] as $key => $value)
 			{
-				$this->db->query("insert into fm_projectbranch (project_id,branch_id) values ({$id},{$value})", __LINE__, __FILE__);
+				$stmt->execute(array(
+					':project_id' => (int)$id,
+					':branch_id' => (int)$value
+				));
 			}
 		}
 
@@ -1844,7 +1852,11 @@ class property_soproject
 
 		if ($project['extra']['contact_phone'] && $project['extra']['tenant_id'])
 		{
-			$this->db->query("UPDATE fm_tenant SET contact_phone='" . $project['extra']['contact_phone'] . "' WHERE id='" . $project['extra']['tenant_id'] . "'", __LINE__, __FILE__);
+			$stmt = $this->db->prepare('UPDATE fm_tenant SET contact_phone = :contact_phone WHERE id = :tenant_id');
+			$stmt->execute(array(
+				':contact_phone' => $project['extra']['contact_phone'],
+				':tenant_id' => (int)$project['extra']['tenant_id']
+			));
 		}
 
 		if (isset($project['power_meter']) && $project['power_meter'])
@@ -1852,14 +1864,19 @@ class property_soproject
 			$this->update_power_meter($project['power_meter'], $project['location_code'], $address);
 		}
 		// -----------------which branch is represented
-		$this->db->query("DELETE FROM fm_projectbranch WHERE project_id={$project['id']}", __LINE__, __FILE__);
+		$stmt = $this->db->prepare('DELETE FROM fm_projectbranch WHERE project_id = :project_id');
+		$stmt->execute(array(':project_id' => (int)$project['id']));
 
 		if (!empty($project['branch']) && count($project['branch']) != 0)
 		{
 			//while ($branch = each($project['branch']))
+			$stmt = $this->db->prepare('INSERT INTO fm_projectbranch (project_id, branch_id) VALUES (:project_id, :branch_id)');
 			foreach ($project['branch'] as $key => $value)
 			{
-				$this->db->query("INSERT INTO fm_projectbranch (project_id,branch_id) VALUES ({$project['id']}, {$value})", __LINE__, __FILE__);
+				$stmt->execute(array(
+					':project_id' => (int)$project['id'],
+					':branch_id' => (int)$value
+				));
 			}
 		}
 
@@ -1875,7 +1892,8 @@ class property_soproject
 		{
 			$close_pending_action	 = false;
 			$close_workorders		 = false;
-			$this->db->query("SELECT * FROM fm_project_status WHERE id = '{$project['status']}'");
+			$stmt = $this->db->prepare('SELECT * FROM fm_project_status WHERE id = :status_id');
+			$stmt->execute(array(':status_id' => $project['status']));
 			$this->db->next_record();
 			if ($this->db->f('closed'))
 			{
@@ -1970,9 +1988,13 @@ class property_soproject
 		if (isset($project['external_project_id']) && $project['external_project_id'])
 		{
 			reset($workorders);
+			$stmt = $this->db->prepare('UPDATE fm_ecobilag SET project_id = :external_project_id WHERE pmwrkord_code = :workorder_id');
 			foreach ($workorders as $workorder_id)
 			{
-				$this->db->query("UPDATE fm_ecobilag SET project_id = '{$project['external_project_id']}' WHERE pmwrkord_code = '{$workorder_id}' ", __LINE__, __FILE__);
+				$stmt->execute(array(
+					':external_project_id' => $project['external_project_id'],
+					':workorder_id' => $workorder_id
+				));
 			}
 		}
 
@@ -2012,9 +2034,10 @@ class property_soproject
 
 	function delete_request_from_project($request, $project_id)
 	{
+		$stmt = $this->db->prepare('UPDATE fm_request SET project_id = NULL WHERE id = :request_id');
 		foreach ($request as $request_id)
 		{
-			$this->db->query("UPDATE fm_request set project_id = NULL where id='{$request_id}'", __LINE__, __FILE__);
+			$stmt->execute(array(':request_id' => (int)$request_id));
 			$this->interlink->delete_at_origin('property', '.project.request', '.project', $request_id, $this->db);
 			$receipt['message'][] = array('msg' => lang('request %1 has been deleted from project %2', $request_id, $project_id));
 		}
@@ -2679,14 +2702,16 @@ class property_soproject
 	function set_status($id, $status_new)
 	{
 		$id			 = (int)$id;
-		$this->db->query("SELECT status FROM fm_project WHERE id = '{$id}'", __LINE__, __FILE__);
+		$stmt = $this->db->prepare('SELECT status FROM fm_project WHERE id = :id');
+		$stmt->execute(array(':id' => $id));
 		$this->db->next_record();
 		$old_status	 = $this->db->f('status');
 
 		if ($old_status != $status_new)
 		{
 			$this->db->transaction_begin();
-			$this->db->query("UPDATE fm_project SET status = '{$status_new}' WHERE id = '{$id}'", __LINE__, __FILE__);
+			$stmt = $this->db->prepare('UPDATE fm_project SET status = :status_new WHERE id = :id');
+			$stmt->execute(array(':status_new' => $status_new, ':id' => $id));
 			$historylog = CreateObject('property.historylog', 'project');
 			$historylog->add('S', $id, $status_new, $old_status);
 			$this->db->transaction_commit();
@@ -2701,7 +2726,8 @@ class property_soproject
 
 		foreach ($request as $request_id)
 		{
-			$this->db->query("SELECT status,category,coordinator FROM fm_request WHERE id='{$request_id}'", __LINE__, __FILE__);
+			$stmt = $this->db->prepare('SELECT status, category, coordinator FROM fm_request WHERE id = :request_id');
+			$stmt->execute(array(':request_id' => (int)$request_id));
 
 			$this->db->next_record();
 
@@ -2724,7 +2750,12 @@ class property_soproject
 				$historylog_r->add('C', $request_id, $coordinator);
 			}
 
-			$this->db->query("UPDATE fm_request SET status='{$status}',coordinator='{$coordinator}' WHERE id='{$request_id}'", __LINE__, __FILE__);
+			$stmt = $this->db->prepare('UPDATE fm_request SET status = :status, coordinator = :coordinator WHERE id = :request_id');
+			$stmt->execute(array(
+				':status' => $status,
+				':coordinator' => (int)$coordinator,
+				':request_id' => (int)$request_id
+			));
 		}
 	}
 
@@ -2756,13 +2787,21 @@ class property_soproject
 
 				$ret = $this->interlink->add($interlink_data);
 
-				$this->db->query("UPDATE fm_request SET project_id='$id' WHERE id='" . $add_request['request_id'][$i] . "'", __LINE__, __FILE__);
+				$stmt = $this->db->prepare('UPDATE fm_request SET project_id = :project_id WHERE id = :request_id');
+				$stmt->execute(array(
+					':project_id' => (int)$id,
+					':request_id' => (int)$add_request['request_id'][$i]
+				));
 
 				$request_project_hookup_status = isset($this->config->config_data['request_project_hookup_status']) && $this->config->config_data['request_project_hookup_status'] ? $this->config->config_data['request_project_hookup_status'] : false;
 
 				if ($request_project_hookup_status)
 				{
-					$this->db->query("UPDATE fm_request SET status='{$request_project_hookup_status}' WHERE id='" . $add_request['request_id'][$i] . "'", __LINE__, __FILE__);
+					$stmt = $this->db->prepare('UPDATE fm_request SET status = :status WHERE id = :request_id');
+					$stmt->execute(array(
+						':status' => $request_project_hookup_status,
+						':request_id' => (int)$add_request['request_id'][$i]
+					));
 				}
 
 				Cache::message_set(lang('request %1 has been added', $add_request['request_id'][$i]), 'message');
@@ -2794,23 +2833,31 @@ class property_soproject
 
 		foreach ($request as $request_id)
 		{
-			$this->db->query("UPDATE fm_request set project_id = NULL where id='{$request_id}'", __LINE__, __FILE__);
+			$stmt = $this->db->prepare('UPDATE fm_request SET project_id = NULL WHERE id = :request_id');
+			$stmt->execute(array(':request_id' => (int)$request_id));
 		}
 
-		$this->db->query("DELETE FROM fm_project WHERE id='{$project_id}'", __LINE__, __FILE__);
-		$this->db->query("DELETE FROM fm_project_history  WHERE  history_record_id='" . $project_id . "'", __LINE__, __FILE__);
-		$this->db->query("DELETE FROM fm_projectbranch  WHERE  project_id='" . $project_id . "'", __LINE__, __FILE__);
+		$stmt = $this->db->prepare('DELETE FROM fm_project WHERE id = :project_id');
+		$stmt->execute(array(':project_id' => (int)$project_id));
+		$stmt = $this->db->prepare('DELETE FROM fm_project_history WHERE history_record_id = :project_id');
+		$stmt->execute(array(':project_id' => (int)$project_id));
+		$stmt = $this->db->prepare('DELETE FROM fm_projectbranch WHERE project_id = :project_id');
+		$stmt->execute(array(':project_id' => (int)$project_id));
 		//			$this->db->query("DELETE FROM fm_origin WHERE destination ='project' AND destination_id ='" . $project_id . "'",__LINE__,__FILE__);
 		$this->interlink->delete_at_origin('property', '.project.request', '.project', $project_id, $this->db);
 		$this->interlink->delete_at_target('property', '.project', $project_id, $this->db);
 
-		$this->db->query("DELETE FROM fm_workorder WHERE project_id='{$project_id}'", __LINE__, __FILE__);
+		$stmt = $this->db->prepare('DELETE FROM fm_workorder WHERE project_id = :project_id');
+		$stmt->execute(array(':project_id' => (int)$project_id));
 
 		for ($i = 0; $i < count($workorder_id); $i++)
 		{
-			$this->db->query("DELETE FROM fm_workorder_budget WHERE order_id='{$workorder_id[$i]}'", __LINE__, __FILE__);
-			$this->db->query("DELETE FROM fm_wo_hours WHERE workorder_id='{$workorder_id[$i]}'", __LINE__, __FILE__);
-			$this->db->query("DELETE FROM fm_workorder_history  WHERE  history_record_id='{$workorder_id[$i]}'", __LINE__, __FILE__);
+			$stmt = $this->db->prepare('DELETE FROM fm_workorder_budget WHERE order_id = :order_id');
+			$stmt->execute(array(':order_id' => (int)$workorder_id[$i]));
+			$stmt = $this->db->prepare('DELETE FROM fm_wo_hours WHERE workorder_id = :order_id');
+			$stmt->execute(array(':order_id' => (int)$workorder_id[$i]));
+			$stmt = $this->db->prepare('DELETE FROM fm_workorder_history WHERE history_record_id = :order_id');
+			$stmt->execute(array(':order_id' => (int)$workorder_id[$i]));
 		}
 
 		$this->db->transaction_commit();
@@ -3162,13 +3209,15 @@ class property_soproject
 				continue;
 			}
 
-			$this->db->query("SELECT status FROM fm_project WHERE id = '{$id}'", __LINE__, __FILE__);
+			$stmt = $this->db->prepare('SELECT status FROM fm_project WHERE id = :id');
+			$stmt->execute(array(':id' => (int)$id));
 			$this->db->next_record();
 			$old_status = $this->db->f('status');
 
 			if ($old_status != $status_new)
 			{
-				$this->db->query("UPDATE fm_project SET status = '{$status_new}' WHERE id = '{$id}'", __LINE__, __FILE__);
+				$stmt = $this->db->prepare('UPDATE fm_project SET status = :status_new WHERE id = :id');
+				$stmt->execute(array(':status_new' => $status_new, ':id' => (int)$id));
 				$historylog->add('S', $id, $status_new, $old_status);
 				$historylog->add('RM', $id, 'Status endret via masseoppdatering');
 			}
@@ -3184,7 +3233,8 @@ class property_soproject
 				'deadline'			 => ''
 			);
 
-			$this->db->query("SELECT * FROM fm_project_status WHERE id = '{$status_new}'");
+			$stmt = $this->db->prepare('SELECT * FROM fm_project_status WHERE id = :status_new');
+			$stmt->execute(array(':status_new' => $status_new));
 			$this->db->next_record();
 			$approved	 = $this->db->f('approved');
 			$closed		 = $this->db->f('closed');
@@ -3286,7 +3336,8 @@ class property_soproject
 				  'deadline'			 => ''
 				  );
 				 */
-			$this->db->query("SELECT * FROM fm_workorder_status WHERE id = '{$status_new}'");
+			$stmt = $this->db->prepare('SELECT * FROM fm_workorder_status WHERE id = :status_new');
+			$stmt->execute(array(':status_new' => $status_new));
 			$this->db->next_record();
 			if ($this->db->f('approved'))
 			{

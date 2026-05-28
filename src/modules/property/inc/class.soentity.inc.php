@@ -127,7 +127,17 @@ class property_soentity
 		$cat_id			 = $location_arr[3];
 		$category = CreateObject('property.soadmin_entity')->read_single_category($entity_id, $cat_id);
 
-		$this->db->query("SELECT column_name FROM phpgw_cust_attribute WHERE location_id = {$location_id} AND column_name = 'geolocation'", __LINE__, __FILE__);
+		$this->db->limit_query_with_params(
+			'SELECT column_name FROM phpgw_cust_attribute WHERE location_id = :location_id AND column_name = :column_name',
+			array(
+				':location_id' => (int)$location_id,
+				':column_name' => 'geolocation'
+			),
+			0,
+			__LINE__,
+			__FILE__,
+			null
+		);
 		if (empty($this->db->resultSet))
 		{
 			//return false;
@@ -157,15 +167,23 @@ class property_soentity
 
 		if ($category['is_eav'])
 		{
-			$sql = "UPDATE fm_bim_item SET json_representation = jsonb_set(json_representation, '{geolocation}', '\"{$lat}, {$lng}\"', true) WHERE location_id = {$location_id} AND id = {$component_id}";
+			$stmt = $this->db->prepare("UPDATE fm_bim_item SET json_representation = jsonb_set(json_representation, '{geolocation}', to_jsonb(:geolocation::text), true) WHERE location_id = :location_id AND id = :component_id");
+			return $stmt->execute(array(
+				':geolocation' => "{$lat}, {$lng}",
+				':location_id' => (int)$location_id,
+				':component_id' => (int)$component_id
+			));
 		}
 		else
 		{
 			$entity_table = "fm_{$type}_{$entity_id}_{$cat_id}";
-			$sql = "UPDATE {$entity_table} SET geolocation = '{$lat}, {$lng}' WHERE location_id = {$location_id} AND id = {$component_id}";
+			$stmt = $this->db->prepare("UPDATE {$entity_table} SET geolocation = :geolocation WHERE location_id = :location_id AND id = :component_id");
+			return $stmt->execute(array(
+				':geolocation' => "{$lat}, {$lng}",
+				':location_id' => (int)$location_id,
+				':component_id' => (int)$component_id
+			));
 		}
-
-		return $this->db->query($sql, __LINE__, __FILE__);
 	}
 
 
@@ -203,7 +221,7 @@ class property_soentity
 		{
 			$status[] = array(
 				'id'	 => $row['id'],
-				'name'	 => stripslashes($row['value'])
+				'name'	 => $this->dbStrip($row['value'])
 			);
 		}
 		return $status;
@@ -520,7 +538,7 @@ class property_soentity
 
 			foreach ($attributes as $attrib_id => $field)
 			{
-				if (!$value = $this->db->stripslashes($jsondata[$field['name']]))
+				if (!$value = $this->dbStrip($jsondata[$field['name']]))
 				{
 					$value = $this->dbStrip($row[$field['name']]);
 				}
@@ -1293,7 +1311,7 @@ class property_soentity
 			foreach ($cols_return as $key => $field)
 			{
 				//		if (!$value = $xml->getElementsByTagName($field)->item(0)->nodeValue)
-				if (!$value = $this->db->stripslashes($jsondata[$field]))
+				if (!$value = $this->dbStrip($jsondata[$field]))
 				{
 					$value = $this->dbStrip($row[$field]);
 				}
@@ -1321,7 +1339,7 @@ class property_soentity
 
 			foreach ($cache_attributes[$location_id] as $key => $attribute)
 			{
-				$description_value = $this->db->stripslashes($jsondata[$attribute['name']]);
+				$description_value = $this->dbStrip($jsondata[$attribute['name']]);
 
 				if (isset($cache_attributes[$location_id][$key]['choice']) && $cache_attributes[$location_id][$key]['choice'])
 				{
@@ -3698,13 +3716,13 @@ class property_soentity
 	{
 		$location_id = (int) $location_id;
 		$item_id = (int) $item_id;
-		$attribute = $this->db->db_addslashes($attribute);
-
-		$value = $this->db->db_addslashes($this->db->stripslashes($value));
-		$sql = "UPDATE fm_bim_item SET json_representation=jsonb_set(json_representation, '{{$attribute}}', '\"{$value}\"', true)"
-			. " WHERE location_id = {$location_id}"
-			. " AND id={$item_id}";
-		$this->db->query($sql, __LINE__, __FILE__);
+		$stmt = $this->db->prepare('UPDATE fm_bim_item SET json_representation = jsonb_set(json_representation, :path::text[], to_jsonb(:value::text), true) WHERE location_id = :location_id AND id = :item_id');
+		$stmt->execute(array(
+			':path' => '{' . $attribute . '}',
+			':value' => $this->dbStrip($value),
+			':location_id' => $location_id,
+			':item_id' => $item_id
+		));
 	}
 
 	/**
@@ -3719,14 +3737,21 @@ class property_soentity
 	{
 		$location_id = (int) $location_id;
 		$item_id = (int) $item_id;
-		$attribute = $this->db->db_addslashes($attribute);
 
-		$sql = "SELECT json_representation->>'{$attribute}' AS value FROM fm_bim_item"
-			. " WHERE location_id = {$location_id}"
-			. " AND id={$item_id}";
-		$this->db->query($sql, __LINE__, __FILE__);
+		$this->db->limit_query_with_params(
+			'SELECT json_representation->>:attribute AS value FROM fm_bim_item WHERE location_id = :location_id AND id = :item_id',
+			array(
+				':attribute' => $attribute,
+				':location_id' => $location_id,
+				':item_id' => $item_id
+			),
+			0,
+			__LINE__,
+			__FILE__,
+			null
+		);
 		$row  = $this->db->resultSet[0] ?? [];
-		return $row['value'];
+		return isset($row['value']) ? $this->dbStrip($row['value']) : null;
 	}
 
 	/**

@@ -1267,5 +1267,34 @@ namespace Tests\Controllers
 			$this->assertSame(2, $decoded['recordsTotal']);
 			$this->assertCount(2, $decoded['data']);
 		}
+
+		public function testBuildMultiUploadFileReturnsRestBasedActionUrl(): void
+		{
+			if (!class_exists('\\phpgwapi_jquery'))
+			{
+				eval('class phpgwapi_jquery { public static function init_multi_upload_file() {} }');
+			}
+			if (!class_exists('\\phpgw'))
+			{
+				eval('class phpgw { public static function link($url, $extravars = array()) { if (is_array($extravars) && !empty($extravars)) { $query = http_build_query($extravars); return $url . (strpos($url, "?") === false ? "?" : "&") . $query; } return $url; } }');
+			}
+
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new ProjectFormHelper();
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+			$controller->buildMultiUploadFile($this->request, $this->response, array('id' => 77));
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertArrayHasKey('multi_upload_action', $decoded);
+			$this->assertStringContainsString('/property/project/77/multi-upload', $decoded['multi_upload_action']);
+			$this->assertStringNotContainsString('menuaction=', $decoded['multi_upload_action']);
+		}
 	}
 }

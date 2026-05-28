@@ -314,11 +314,7 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 
 		if (!$this->acl_read)
 		{
-			phpgw::redirect_link('/index.php', array(
-				'menuaction'	 => 'property.uiproject.stop',
-				'perm'			 => 1,
-				'acl_location'	 => $this->acl_location
-			));
+			phpgw::no_access();
 		}
 
 		$lookup			 = Sanitizer::get_var('lookup', 'bool');
@@ -804,20 +800,11 @@ JS;
 		$record_history = array();
 		if ($this->bypass_error || ((!$this->receipt['error'] || $add_request) && !$bypass) && $id)
 		{
-			$_transfer_new_project = isset($values['new_project_id']) && $values['new_project_id'] ? true : false;
 
 			$values = $this->bo->read_single($id);
 			if (!isset($values['origin']))
 			{
 				$values['origin'] = '';
-			}
-
-			if (!isset($values['workorder_budget']) && $save && !$_transfer_new_project && !$values['project_type_id'] == 3)
-			{
-				phpgw::redirect_link('/index.php', array(
-					'menuaction' => 'property.uiworkorder.edit',
-					'project_id' => $id
-				));
 			}
 
 			if (!$this->bocommon->check_perms2($values['coordinator'], $this->bo->so->grants, ACL_EDIT))

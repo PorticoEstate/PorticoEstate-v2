@@ -8,7 +8,10 @@ return new class extends Migration
 
     public function up(): void
     {
-        if ($this->columnExists('bb_application', 'from_') && !$this->isNullable('bb_application', 'from_')) {
+        $this->assertTableExists('bb_application');
+        $this->assertColumnExists('bb_application', 'from_');
+
+        if (!$this->isNullable('bb_application', 'from_')) {
             $this->sql("ALTER TABLE bb_application ALTER COLUMN from_ DROP NOT NULL");
         }
     }

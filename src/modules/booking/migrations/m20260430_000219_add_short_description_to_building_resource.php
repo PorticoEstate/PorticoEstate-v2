@@ -8,6 +8,9 @@ return new class extends Migration
 
     public function up(): void
     {
+        $this->assertTableExists('bb_building');
+        $this->assertTableExists('bb_resource');
+
         $this->ensureColumn('bb_building', 'short_description', [
             'type' => 'jsonb',
             'nullable' => true,

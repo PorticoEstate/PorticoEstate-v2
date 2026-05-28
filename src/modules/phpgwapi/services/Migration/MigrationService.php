@@ -371,21 +371,29 @@ class MigrationService
 	}
 
 	/**
-	 * Get the "current version" for a migration-based module as applied count.
+	 * Check if a module has unapplied migration files.
 	 */
-	public function getCurrentVersion(string $module): string
+	public function hasPendingMigrations(string $module): bool
 	{
-		$applied = count($this->getAppliedMigrations($module));
-		return (string) $applied;
+		return !empty($this->getPendingMigrations($module));
 	}
 
 	/**
-	 * Get the "target version" for a migration-based module as total migration count.
+	 * Get the last applied migration filename for a module, or '0' if none applied.
+	 */
+	public function getCurrentVersion(string $module): string
+	{
+		$applied = $this->getAppliedMigrations($module);
+		return !empty($applied) ? end($applied) : '0';
+	}
+
+	/**
+	 * Get the last migration filename on disk for a module.
 	 */
 	public function getTargetVersion(string $module): string
 	{
-		$total = count($this->getMigrationFiles($module));
-		return (string) $total;
+		$files = $this->getMigrationFiles($module);
+		return !empty($files) ? basename(end($files)) : '0';
 	}
 
 	/**

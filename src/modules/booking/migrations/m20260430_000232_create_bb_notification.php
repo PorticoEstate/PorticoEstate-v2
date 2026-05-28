@@ -8,6 +8,9 @@ return new class extends Migration
 
 	public function up(): void
 	{
+		// No FK dependencies — bb_notification is a standalone table.
+		// createTable() already skips if the table exists (idempotent).
+
 		$this->createTable('bb_notification', [
 			'fd' => [
 				'id' => ['type' => 'auto', 'nullable' => false],

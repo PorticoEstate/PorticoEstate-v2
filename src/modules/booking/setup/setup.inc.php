@@ -5,6 +5,11 @@ $setup_info['booking']['app_order'] = 9;
 $setup_info['booking']['enable'] = 1;
 $setup_info['booking']['app_group'] = 'office';
 
+// Migration-only mode: all schema changes are handled by migration files.
+// tables_current.inc.php and tables_update.inc.php are frozen and not edited.
+// For new schema changes, only add a migration file + version map entry.
+$setup_info['booking']['migration_only'] = true;
+
 // Last migration guaranteed applied on all production instances (v0.2.105).
 // On legacy→migration transition, everything up to this is seeded without running.
 // Migrations after this are run with idempotent checks (safe for already-applied DBs).

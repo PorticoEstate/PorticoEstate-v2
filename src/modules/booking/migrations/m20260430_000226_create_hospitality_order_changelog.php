@@ -8,6 +8,8 @@ return new class extends Migration
 
 	public function up(): void
 	{
+		$this->assertTableExists('bb_hospitality_order');
+
 		if (!$this->tableExists('bb_hospitality_order_changelog')) {
 			$this->sql("
 				CREATE TABLE bb_hospitality_order_changelog (

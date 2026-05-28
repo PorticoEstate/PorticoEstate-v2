@@ -1,4 +1,13 @@
 <?php
+/**
+ * FROZEN — DO NOT EDIT
+ *
+ * This file is frozen at schema version 0.2.131 (migration m20260430_000232).
+ * All future schema changes MUST be done via migration files in ../migrations/.
+ * This file is retained for historical reference and fresh-install baseline only.
+ *
+ * @see setup.inc.php migration_only flag
+ */
 $phpgw_baseline = array(
 	'bb_activity' => array(
 		'fd' => array(

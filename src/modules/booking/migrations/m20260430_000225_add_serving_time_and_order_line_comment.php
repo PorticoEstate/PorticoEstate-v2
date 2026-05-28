@@ -8,6 +8,9 @@ return new class extends Migration
 
 	public function up(): void
 	{
+		$this->assertTableExists('bb_hospitality_order');
+		$this->assertTableExists('bb_hospitality_order_line');
+
 		$this->ensureColumn('bb_hospitality_order', 'serving_time_iso', [
 			'type' => 'timestamp',
 			'nullable' => true,

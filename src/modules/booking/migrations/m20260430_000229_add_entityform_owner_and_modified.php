@@ -8,6 +8,11 @@ return new class extends Migration
 
 	public function up(): void
 	{
+		// Pre-flight assertions
+		$this->assertTableExists('bb_resource_activity_entityform');
+		$this->assertTableExists('phpgw_accounts');
+		$this->assertColumnExists('phpgw_accounts', 'account_id');
+
 		$this->ensureColumn('bb_resource_activity_entityform', 'owner_id', [
 			'type' => 'int',
 			'precision' => 4,

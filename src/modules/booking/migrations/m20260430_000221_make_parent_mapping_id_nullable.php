@@ -8,6 +8,9 @@ return new class extends Migration
 
     public function up(): void
     {
+        $this->assertTableExists('bb_purchase_order_line');
+        $this->assertColumnExists('bb_purchase_order_line', 'parent_mapping_id');
+
         if ($this->columnExists('bb_purchase_order_line', 'parent_mapping_id') && !$this->isNullable('bb_purchase_order_line', 'parent_mapping_id')) {
             $this->sql("ALTER TABLE bb_purchase_order_line ALTER COLUMN parent_mapping_id DROP NOT NULL");
         }

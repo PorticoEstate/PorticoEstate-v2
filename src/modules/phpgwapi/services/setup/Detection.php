@@ -155,20 +155,27 @@ class Detection
 
 					if ($migrationService->moduleHasMigrations($appname))
 					{
-						$target = $migrationService->getTargetVersion($appname);
-						$current = $migrationService->getCurrentVersion($appname);
+						$applied = $migrationService->getAppliedMigrations($appname);
+						$pending = $migrationService->getPendingMigrations($appname);
+						$appliedCount = count($applied);
+						$pendingCount = count($pending);
 						$legacyVer = $value['currentver'] ?? '';
 
-						$setup_info[$key]['version'] = $target;
-						$setup_info[$key]['currentver'] = $current;
-
-						// For display: show legacy version context when transitioning
-						if ($current === '0' && $legacyVer && $legacyVer !== '0')
+						// Display: "XXX migrations applied" / "XX missing migrations"
+						$currentDisplay = "{$appliedCount} migrations applied";
+						if ($appliedCount === 0 && $legacyVer && $legacyVer !== '0')
 						{
-							$setup_info[$key]['currentver_display'] = "0 (legacy: {$legacyVer})";
+							$currentDisplay .= " (legacy: {$legacyVer})";
 						}
+						$setup_info[$key]['currentver'] = $currentDisplay;
+						$setup_info[$key]['version'] = $pendingCount > 0
+							? "{$pendingCount} missing migrations"
+							: $currentDisplay;
 
-						$value = $setup_info[$key]; // refresh for comparison below
+						// Set status directly — don't rely on version string comparison
+						$setup_info[$key]['status'] = $pendingCount > 0 ? 'U' : 'C';
+						$value = $setup_info[$key];
+						continue;
 					}
 				}
 

@@ -137,6 +137,24 @@ abstract class Migration
 		return null;
 	}
 
+	/**
+	 * Get the column default value as PostgreSQL reports it.
+	 * Returns null if no default is set.
+	 */
+	protected function getColumnDefault(string $table, string $column): ?string
+	{
+		$this->db->query(
+			"SELECT column_default FROM information_schema.columns "
+			. "WHERE table_schema = 'public' AND table_name = '$table' AND column_name = '$column'",
+			__LINE__,
+			__FILE__
+		);
+		if ($this->db->next_record()) {
+			return $this->db->Record['column_default'];
+		}
+		return null;
+	}
+
 	// ------------------------------------------------------------------
 	// Idempotent DDL helpers
 	// ------------------------------------------------------------------
@@ -247,6 +265,105 @@ abstract class Migration
 	}
 
 	// ------------------------------------------------------------------
+	// Assertions — fail the migration if preconditions aren't met
+	// ------------------------------------------------------------------
+
+	/**
+	 * Assert a table exists. Throws if it doesn't.
+	 */
+	protected function assertTableExists(string $table): void
+	{
+		if (!$this->tableExists($table)) {
+			throw new \RuntimeException("Migration precondition failed: table '{$table}' does not exist.");
+		}
+	}
+
+	/**
+	 * Assert a column exists on a table. Throws if it doesn't.
+	 */
+	protected function assertColumnExists(string $table, string $column): void
+	{
+		if (!$this->columnExists($table, $column)) {
+			throw new \RuntimeException("Migration precondition failed: column '{$table}.{$column}' does not exist.");
+		}
+	}
+
+	/**
+	 * Assert a table is empty. Use before destructive schema changes.
+	 * Throws if the table has data.
+	 */
+	protected function assertTableEmpty(string $table): void
+	{
+		$this->db->query("SELECT EXISTS(SELECT 1 FROM {$table}) AS has_rows", __LINE__, __FILE__);
+		$this->db->next_record();
+		if ($this->db->Record['has_rows'] === true || $this->db->Record['has_rows'] === 't') {
+			throw new \RuntimeException("Migration precondition failed: table '{$table}' is not empty.");
+		}
+	}
+
+	/**
+	 * Assert a column has no NULL values. Use before adding NOT NULL constraint.
+	 */
+	protected function assertNoNulls(string $table, string $column): void
+	{
+		$this->db->query(
+			"SELECT EXISTS(SELECT 1 FROM {$table} WHERE {$column} IS NULL) AS has_nulls",
+			__LINE__, __FILE__
+		);
+		$this->db->next_record();
+		if ($this->db->Record['has_nulls'] === true || $this->db->Record['has_nulls'] === 't') {
+			throw new \RuntimeException(
+				"Migration precondition failed: '{$table}.{$column}' contains NULL values. "
+				. "Handle data migration before adding NOT NULL constraint."
+			);
+		}
+	}
+
+	/**
+	 * Assert a column has no values that would violate a type conversion.
+	 * Runs the CAST and checks for failures.
+	 */
+	protected function assertCastable(string $table, string $column, string $targetType): void
+	{
+		try {
+			$this->db->query(
+				"SELECT 1 FROM {$table} WHERE {$column} IS NOT NULL AND {$column}::text != '' LIMIT 1",
+				__LINE__, __FILE__
+			);
+			// Try the actual cast on a sample
+			$this->db->query(
+				"DO $$ BEGIN PERFORM {$column}::{$targetType} FROM {$table} WHERE {$column} IS NOT NULL LIMIT 100; END $$;",
+				__LINE__, __FILE__
+			);
+		} catch (\Exception $e) {
+			throw new \RuntimeException(
+				"Migration precondition failed: '{$table}.{$column}' cannot be cast to {$targetType}. "
+				. "Handle data conversion explicitly. Error: " . $e->getMessage()
+			);
+		}
+	}
+
+	/**
+	 * Get the row count of a table.
+	 */
+	protected function rowCount(string $table): int
+	{
+		$this->db->query("SELECT COUNT(*) AS cnt FROM {$table}", __LINE__, __FILE__);
+		$this->db->next_record();
+		return (int) $this->db->Record['cnt'];
+	}
+
+	/**
+	 * Assert a condition with a custom message. Generic escape hatch.
+	 */
+	protected function assert(bool $condition, string $message): void
+	{
+		if (!$condition) {
+			throw new \RuntimeException("Migration assertion failed: {$message}");
+		}
+	}
+
+	// ------------------------------------------------------------------
 	// Column verification
 	// ------------------------------------------------------------------
 
@@ -280,10 +397,66 @@ abstract class Migration
 	}
 
 	/**
-	 * Verify that an existing column matches the expected definition.
-	 * Logs a warning but does not throw — the column exists, it's just potentially misconfigured.
+	 * Compare an expected default value against PostgreSQL's column_default string.
+	 * PostgreSQL stores defaults with type casts (e.g. '0'::integer, 'hours'::character varying, now()).
+	 */
+	private function defaultsMatch(?string $pgDefault, $expected): bool
+	{
+		// Both null/unset
+		if ($pgDefault === null && $expected === null) {
+			return true;
+		}
+		if ($pgDefault === null || $expected === null) {
+			return false;
+		}
+
+		$expected = (string) $expected;
+
+		// Strip type casts: '0'::integer -> 0, 'hours'::character varying -> hours
+		$normalized = $pgDefault;
+		if (preg_match("/^'(.*)'::[\w\s]+$/", $normalized, $m)) {
+			$normalized = $m[1];
+		}
+		// Unquoted numeric casts: 0::integer -> 0
+		if (preg_match("/^(-?[\d.]+)::[\w\s]+$/", $normalized, $m)) {
+			$normalized = $m[1];
+		}
+
+		// Direct match after normalization
+		if ($normalized === $expected) {
+			return true;
+		}
+
+		// Numeric comparison: '0' == 0, '0.0' == 0
+		if (is_numeric($normalized) && is_numeric($expected)) {
+			return (float) $normalized === (float) $expected;
+		}
+
+		// Timestamp defaults: now(), CURRENT_TIMESTAMP, current_timestamp are equivalent
+		$tsAliases = ['now()', 'current_timestamp', 'current_timestamp()'];
+		if (in_array(strtolower($normalized), $tsAliases) && in_array(strtolower($expected), $tsAliases)) {
+			return true;
+		}
+
+		// Boolean: 'false'::boolean -> false, true::boolean -> true
+		$boolMap = ['true' => true, 'false' => false, '1' => true, '0' => false];
+		if (isset($boolMap[strtolower($normalized)]) && isset($boolMap[strtolower($expected)])) {
+			return $boolMap[strtolower($normalized)] === $boolMap[strtolower($expected)];
+		}
+
+		return false;
+	}
+
+	/**
+	 * Verify that an existing column matches the expected definition and fix drift.
 	 *
-	 * Checks: data type and nullable.
+	 * - Default mismatch: auto-fixed (non-destructive).
+	 * - Nullable mismatch: auto-fixed if safe (dropping NOT NULL is always safe;
+	 *   adding NOT NULL is safe only if no NULLs exist — otherwise throws).
+	 * - Type mismatch: always throws. Type changes can lose data and must be
+	 *   handled with explicit SQL in the migration.
+	 *
+	 * @throws \RuntimeException if the mismatch requires manual data migration.
 	 */
 	protected function verifyColumn(string $table, string $column, array $expectedDef): bool
 	{
@@ -291,9 +464,7 @@ abstract class Migration
 			return false;
 		}
 
-		$issues = [];
-
-		// Check type
+		// Check type — cannot auto-fix, data loss risk
 		if (isset($expectedDef['type'])) {
 			$expectedPgType = $this->mapTypeToPg(
 				$expectedDef['type'],
@@ -302,26 +473,53 @@ abstract class Migration
 			$actualType = $this->getColumnType($table, $column);
 
 			if ($actualType !== null && $actualType !== $expectedPgType) {
-				$issues[] = "type mismatch: expected '{$expectedPgType}', got '{$actualType}'";
+				throw new \RuntimeException(
+					"Migration error: {$table}.{$column} type mismatch — "
+					. "expected '{$expectedPgType}', got '{$actualType}'. "
+					. "Rewrite this migration to handle the type conversion explicitly."
+				);
 			}
 		}
 
-		// Check nullable
+		// Fix nullable
 		if (isset($expectedDef['nullable'])) {
 			$actualNullable = $this->isNullable($table, $column);
 			$expectedNullable = (bool) $expectedDef['nullable'];
 
 			if ($actualNullable !== $expectedNullable) {
-				$expected = $expectedNullable ? 'nullable' : 'not null';
-				$actual = $actualNullable ? 'nullable' : 'not null';
-				$issues[] = "nullable mismatch: expected '{$expected}', got '{$actual}'";
+				if ($expectedNullable) {
+					// Dropping NOT NULL is always safe
+					$this->sql("ALTER TABLE {$table} ALTER COLUMN {$column} DROP NOT NULL");
+				} else {
+					// Adding NOT NULL — fail if there are NULLs, developer must handle data
+					$this->db->query(
+						"SELECT EXISTS(SELECT 1 FROM {$table} WHERE {$column} IS NULL) AS has_nulls",
+						__LINE__, __FILE__
+					);
+					$this->db->next_record();
+					if ($this->db->Record['has_nulls'] === true || $this->db->Record['has_nulls'] === 't') {
+						throw new \RuntimeException(
+							"Migration error: {$table}.{$column} has NULL values but migration expects NOT NULL. "
+							. "Rewrite this migration to handle the data migration before setting NOT NULL."
+						);
+					}
+					$this->sql("ALTER TABLE {$table} ALTER COLUMN {$column} SET NOT NULL");
+				}
 			}
 		}
 
-		if (!empty($issues)) {
-			$msg = "Column {$table}.{$column} verification: " . implode('; ', $issues);
-			trigger_error($msg, E_USER_WARNING);
-			return false;
+		// Fix default
+		if (array_key_exists('default', $expectedDef)) {
+			$actualDefault = $this->getColumnDefault($table, $column);
+			$expectedDefault = $expectedDef['default'];
+
+			if (!$this->defaultsMatch($actualDefault, $expectedDefault)) {
+				if ($expectedDefault === null) {
+					$this->sql("ALTER TABLE {$table} ALTER COLUMN {$column} DROP DEFAULT");
+				} else {
+					$this->sql("ALTER TABLE {$table} ALTER COLUMN {$column} SET DEFAULT " . $this->db->quote($expectedDefault));
+				}
+			}
 		}
 
 		return true;

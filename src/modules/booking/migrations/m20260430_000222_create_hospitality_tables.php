@@ -8,6 +8,11 @@ return new class extends Migration
 
 	public function up(): void
 	{
+		// Assert that FK target tables from earlier migrations exist
+		$this->assertTableExists('bb_resource');
+		$this->assertTableExists('bb_application');
+		$this->assertTableExists('bb_article_mapping');
+
 		$this->createTable('bb_hospitality', [
 			'fd' => [
 				'id' => ['type' => 'auto', 'nullable' => false],

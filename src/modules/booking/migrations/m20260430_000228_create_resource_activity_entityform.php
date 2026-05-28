@@ -8,6 +8,10 @@ return new class extends Migration
 
 	public function up(): void
 	{
+		// Assert FK target tables exist before creating the table
+		$this->assertTableExists('phpgw_locations');
+		$this->assertTableExists('bb_building');
+
 		$this->createTable('bb_resource_activity_entityform', [
 			'fd' => [
 				'id' => ['type' => 'auto', 'nullable' => false],

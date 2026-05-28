@@ -8,6 +8,8 @@ return new class extends Migration
 
 	public function up(): void
 	{
+		$this->assertTableExists('bb_hospitality');
+
 		$this->ensureColumn('bb_hospitality', 'include_in_checkout_payment', [
 			'type' => 'int',
 			'precision' => 2,

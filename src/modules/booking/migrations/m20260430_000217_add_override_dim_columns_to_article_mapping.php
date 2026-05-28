@@ -8,6 +8,9 @@ return new class extends Migration
 
     public function up(): void
     {
+        // The table must exist before we can add columns to it
+        $this->assertTableExists('bb_article_mapping');
+
         for ($i = 0; $i <= 7; $i++) {
             $this->ensureColumn('bb_article_mapping', 'override_dim_' . $i, [
                 'type' => 'varchar',

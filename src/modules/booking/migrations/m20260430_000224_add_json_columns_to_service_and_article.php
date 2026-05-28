@@ -8,6 +8,19 @@ return new class extends Migration
 
 	public function up(): void
 	{
+		// Preconditions
+		$this->assertTableExists('bb_service');
+		$this->assertTableExists('bb_hospitality_article');
+		$this->assertColumnExists('bb_service', 'name');
+
+		// If description is still text, verify existing data can be wrapped in jsonb
+		if ($this->columnExists('bb_hospitality_article', 'description')) {
+			$currentType = $this->getColumnType('bb_hospitality_article', 'description');
+			if ($currentType === 'text') {
+				$this->assertCastable('bb_hospitality_article', 'description', 'jsonb');
+			}
+		}
+
 		$this->ensureColumn('bb_service', 'description_json', [
 			'type' => 'jsonb',
 			'nullable' => true,

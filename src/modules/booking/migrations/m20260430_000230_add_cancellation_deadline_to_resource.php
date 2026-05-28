@@ -8,6 +8,8 @@ return new class extends Migration
 
 	public function up(): void
 	{
+		$this->assertTableExists('bb_resource');
+
 		$this->ensureColumn('bb_resource', 'cancellation_deadline_value', [
 			'type' => 'int',
 			'precision' => 4,

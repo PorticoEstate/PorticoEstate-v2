@@ -15,6 +15,11 @@ return new class extends Migration
             'bb_document_organization',
         ];
 
+        // Verify all document tables exist before attempting schema changes
+        foreach ($tables as $table) {
+            $this->assertTableExists($table);
+        }
+
         foreach ($tables as $table) {
             $this->ensureColumn($table, 'metadata', [
                 'type' => 'jsonb',

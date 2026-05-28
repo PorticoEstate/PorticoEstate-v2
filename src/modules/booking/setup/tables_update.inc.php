@@ -1,4 +1,13 @@
 <?php
+/**
+ * FROZEN — DO NOT EDIT
+ *
+ * This file is frozen at schema version 0.2.131 (migration m20260430_000232).
+ * All future schema changes MUST be done via migration files in ../migrations/.
+ * This file is retained for the legacy→migration transition path (seedUpTo).
+ *
+ * @see setup.inc.php migration_only flag
+ */
 
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Locations;

@@ -967,6 +967,28 @@ namespace Tests\Controllers
 			$controller->store($this->request, $this->response);
 		}
 
+		public function testStoreRejectsInvalidValuesAttributeEnvelopeType(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new ProjectFormHelper();
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array(
+				'values_attribute' => 'not-an-object',
+			));
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+
+			$this->expectException(HttpBadRequestException::class);
+			$this->expectExceptionMessage('Invalid payload: values_attribute must be an object');
+
+			$controller->store($this->request, $this->response);
+		}
+
 		public function testUpdateReturnsErrorPayloadWhenValidationFails(): void
 		{
 			$bo = new class
@@ -1029,6 +1051,28 @@ namespace Tests\Controllers
 			$this->expectExceptionMessage('Invalid payload: RelationInfo must be an object');
 
 			$controller->update($this->request, $this->response, array('id' => 100));
+		}
+
+		public function testUpdateRejectsInvalidValuesAttributeEnvelopeType(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new ProjectFormHelper();
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array(
+				'values_attribute' => 'not-an-object',
+			));
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+
+			$this->expectException(HttpBadRequestException::class);
+			$this->expectExceptionMessage('Invalid payload: values_attribute must be an object');
+
+			$controller->update($this->request, $this->response, array('id' => 101));
 		}
 
 		public function testGetBAccountLookupReturnsLegacyResultShape(): void

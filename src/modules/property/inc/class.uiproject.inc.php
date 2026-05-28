@@ -73,7 +73,7 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 		'edit'							 => true,
 		'add'							 => true,
 		'delete'						 => true,
-		'save'							 => true,
+		'save'							 => false,
 		'date_search'					 => true,
 		'columns'						 => true,
 		'bulk_update_status'			 => true,

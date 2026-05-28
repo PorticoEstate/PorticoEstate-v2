@@ -411,7 +411,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		}
 		unset($_entry);
 
-		$link_view_file			 = phpgw::link('/index.php', array('menuaction' => 'property.uiproject.view_file'));
+		$link_view_file			 = phpgw::link('/property/project/files/view');
 		$boproject		 = CreateObject('property.boproject');
 		$files			 = $boproject->get_files($values['project_id']);
 		$lang_project	 = lang('project');
@@ -3418,7 +3418,7 @@ JS;
 		}
 		unset($_entry);
 
-		$link_view_file			 = phpgw::link('/index.php', array('menuaction' => 'property.uiproject.view_file'));
+		$link_view_file			 = phpgw::link('/property/project/files/view');
 
 		$files			 = $boproject->get_files($project['project_id']);
 		$lang_project	 = lang('project');

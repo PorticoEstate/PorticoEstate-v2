@@ -266,7 +266,7 @@ class WorkorderController
 			$z++;
 		}
 
-		$linkProjectFile = \phpgw::link('/index.php', array('menuaction' => 'property.uiproject.view_file'));
+		$linkProjectFile = \phpgw::link('/property/project/files/view');
 		$boproject = CreateObject('property.boproject');
 		$projectFiles = $boproject->get_files((int)($values['project_id'] ?? 0));
 		$langProject = lang('project');

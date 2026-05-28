@@ -77,19 +77,19 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 		'date_search'					 => true,
 		'columns'						 => true,
 		'bulk_update_status'			 => true,
-		'view_file'						 => true,
+		'view_file'						 => false,
 		'get_orders'					 => false,
-		'get_vouchers'					 => true,
+		'get_vouchers'					 => false,
 		'check_missing_project_budget'	 => true,
 		'get_external_project'			 => true,
 		'get_ecodimb'					 => true,
 		'handle_multi_upload_file'		 => false,
 		'build_multi_upload_file'		 => false,
-		'get_files'						 => true,
-		'update_file_data'				 => true,
+		'get_files'						 => false,
+		'update_file_data'				 => false,
 		'view_image'					 => true,
-		'get_other_projects'			 => true,
-		'get_attachment'				 => true
+		'get_other_projects'			 => false,
+		'get_attachment'				 => false
 	);
 
 	function __construct()
@@ -298,12 +298,7 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 			return;
 		}
 
-		$link_file_data = array(
-			'menuaction' => 'property.uiproject.view_file',
-		);
-
-
-		$link_view_file = phpgw::link('/index.php', $link_file_data);
+		$link_view_file = phpgw::link('/property/project/files/view');
 
 		$values = $this->bo->get_files($id);
 
@@ -433,7 +428,6 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 			'id'		 => $id
 		)));
 		$upload_handler			 = new property_multiuploader($options, false);
-
 		switch ($_SERVER['REQUEST_METHOD'])
 		{
 			case 'OPTIONS':
@@ -2455,11 +2449,7 @@ JS;
 		);
 
 		//--------------files
-		$link_file_data = array(
-			'menuaction' => 'property.uiproject.view_file'
-		);
-
-		$link_view_file = phpgw::link('/index.php', $link_file_data);
+		$link_view_file = phpgw::link('/property/project/files/view');
 
 		$_files = $this->bo->get_files($id);
 

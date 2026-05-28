@@ -1137,6 +1137,27 @@ class ProjectController
 	}
 
 	/**
+	 * Stream project file by file_id.
+	 */
+	public function viewFile(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to project files');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$fileId = (int)($input['file_id'] ?? 0);
+		if ($fileId <= 0)
+		{
+			throw new HttpNotFoundException($request, 'File not found');
+		}
+
+		execMethod('property.bofiles.get_file', $fileId);
+		return $response;
+	}
+
+	/**
 	 * Project file list endpoint (DataTables-compatible).
 	 */
 	public function getFiles(Request $request, Response $response, array $args): Response
@@ -1159,9 +1180,7 @@ class ProjectController
 			return $this->datatableResponse($response, $input, array(), 0);
 		}
 
-		$linkViewFile = \phpgw::link('/index.php', array(
-			'menuaction' => 'property.uiproject.view_file',
-		));
+		$linkViewFile = \phpgw::link('/property/project/files/view');
 
 		$values = $this->bo()->get_files($id);
 		$bofiles = CreateObject('property.bofiles');

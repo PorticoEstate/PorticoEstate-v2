@@ -127,17 +127,11 @@ class property_soentity
 		$cat_id			 = $location_arr[3];
 		$category = CreateObject('property.soadmin_entity')->read_single_category($entity_id, $cat_id);
 
-		$this->db->limit_query_with_params(
-			'SELECT column_name FROM phpgw_cust_attribute WHERE location_id = :location_id AND column_name = :column_name',
-			array(
-				':location_id' => (int)$location_id,
-				':column_name' => 'geolocation'
-			),
-			0,
-			__LINE__,
-			__FILE__,
-			null
-		);
+		$stmt = $this->db->prepare('SELECT column_name FROM phpgw_cust_attribute WHERE location_id = :location_id AND column_name = :column_name');
+		$stmt->execute(array(
+			':location_id' => (int)$location_id,
+			':column_name' => 'geolocation'
+		));
 		if (empty($this->db->resultSet))
 		{
 			//return false;
@@ -3738,18 +3732,12 @@ class property_soentity
 		$location_id = (int) $location_id;
 		$item_id = (int) $item_id;
 
-		$this->db->limit_query_with_params(
-			'SELECT json_representation->>:attribute AS value FROM fm_bim_item WHERE location_id = :location_id AND id = :item_id',
-			array(
-				':attribute' => $attribute,
-				':location_id' => $location_id,
-				':item_id' => $item_id
-			),
-			0,
-			__LINE__,
-			__FILE__,
-			null
-		);
+		$stmt = $this->db->prepare('SELECT json_representation->>:attribute AS value FROM fm_bim_item WHERE location_id = :location_id AND id = :item_id');
+		$stmt->execute(array(
+			':attribute' => $attribute,
+			':location_id' => $location_id,
+			':item_id' => $item_id
+		));
 		$row  = $this->db->resultSet[0] ?? [];
 		return isset($row['value']) ? $this->dbStrip($row['value']) : null;
 	}

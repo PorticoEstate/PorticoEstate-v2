@@ -1158,6 +1158,70 @@ class ProjectController
 	}
 
 	/**
+	 * Stream or thumbnail a project image file.
+	 */
+	public function viewImage(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to project images');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$thumb = !empty($input['thumb']);
+		$imgId = (int)($input['img_id'] ?? 0);
+
+		$bofiles = CreateObject('property.bofiles');
+		$file = '';
+		if ($imgId > 0)
+		{
+			$fileInfo = $bofiles->vfs->get_info($imgId);
+			$file = isset($fileInfo['directory'], $fileInfo['name'])
+				? $fileInfo['directory'] . '/' . $fileInfo['name']
+				: '';
+		}
+		else
+		{
+			$file = urldecode((string)($input['file'] ?? ''));
+		}
+
+		if ($file === '')
+		{
+			throw new HttpNotFoundException($request, 'Image not found');
+		}
+
+		$source = "{$bofiles->rootdir}{$file}";
+		if (preg_match('/\.\./', $source))
+		{
+			throw new HttpForbiddenException($request, 'Invalid image path');
+		}
+
+		$thumbfile = $source . '.thumb';
+		if ($thumb)
+		{
+			if (!is_file($thumbfile) && $bofiles->is_image($source))
+			{
+				$bofiles->resize_image($source, $thumbfile, 100);
+			}
+
+			if (is_file($thumbfile))
+			{
+				readfile($thumbfile);
+				return $response;
+			}
+		}
+
+		if ($imgId > 0)
+		{
+			$bofiles->get_file($imgId);
+			return $response;
+		}
+
+		$bofiles->view_file('', $file);
+		return $response;
+	}
+
+	/**
 	 * Project file list endpoint (DataTables-compatible).
 	 */
 	public function getFiles(Request $request, Response $response, array $args): Response
@@ -1223,8 +1287,7 @@ class ProjectController
 			{
 				$contentFiles[$lastIndex]['file_name'] = $_entry['name'];
 				$contentFiles[$lastIndex]['img_id'] = $_entry['file_id'];
-				$contentFiles[$lastIndex]['img_url'] = \phpgw::link('/index.php', array(
-					'menuaction' => 'property.uiproject.view_image',
+				$contentFiles[$lastIndex]['img_url'] = \phpgw::link('/property/project/files/image', array(
 					'img_id' => $_entry['file_id'],
 					'file' => $_entry['directory'] . '/' . $_entry['file_name'],
 				));

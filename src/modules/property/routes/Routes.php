@@ -178,6 +178,7 @@ $app->group('/property/project', function (RouteCollectorProxy $group) use ($con
 	$group->post('/list', [$controller, 'listProjects']);
 	$group->post('/create', [$controller, 'store']);
 	$group->get('/files/view', [$controller, 'viewFile']);
+	$group->get('/files/image', [$controller, 'viewImage']);
 	$group->post('/{id:[0-9]+}/files', [$controller, 'getFiles']);
 	$group->get('/{id:[0-9]+}/files', [$controller, 'getFiles']);
 	$group->post('/{id:[0-9]+}/files/actions', [$controller, 'updateFileData']);

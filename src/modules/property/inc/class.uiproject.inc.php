@@ -87,7 +87,7 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 		'build_multi_upload_file'		 => false,
 		'get_files'						 => false,
 		'update_file_data'				 => false,
-		'view_image'					 => true,
+		'view_image'					 => false,
 		'get_other_projects'			 => false,
 		'get_attachment'				 => false
 	);
@@ -351,8 +351,7 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 			{
 				$content_files[$z]['file_name']		 = $_entry['name'];
 				$content_files[$z]['img_id']		 = $_entry['file_id'];
-				$content_files[$z]['img_url']		 = self::link(array(
-					'menuaction' => 'property.uiproject.view_image',
+				$content_files[$z]['img_url']		 = phpgw::link('/property/project/files/image', array(
 					'img_id'	 => $_entry['file_id'],
 					'file'		 => $_entry['directory'] . '/' . $_entry['file_name']
 				));

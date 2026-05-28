@@ -78,7 +78,7 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 		'columns'						 => true,
 		'bulk_update_status'			 => true,
 		'view_file'						 => true,
-		'get_orders'					 => true,
+		'get_orders'					 => false,
 		'get_vouchers'					 => true,
 		'check_missing_project_budget'	 => true,
 		'get_external_project'			 => true,

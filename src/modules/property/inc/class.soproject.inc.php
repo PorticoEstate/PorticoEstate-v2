@@ -1010,9 +1010,10 @@ class property_soproject
 
 		if ($project)
 		{
-			$this->db->query("SELECT sum(budget) AS sum_budget FROM fm_project_budget WHERE project_id = $project_id AND active = 1", __LINE__, __FILE__);
-			$this->db->next_record();
-			$project['budget'] = (int)$this->db->f('sum_budget');
+			$stmt = $this->db->prepare('SELECT sum(budget) AS sum_budget FROM fm_project_budget WHERE project_id = :project_id AND active = 1');
+			$stmt->execute(array(':project_id' => (int)$project_id));
+			$row = $stmt->fetch();
+			$project['budget'] = (int)($row['sum_budget'] ?? 0);
 		}
 
 		//_debug_array($project);
@@ -1032,21 +1033,21 @@ class property_soproject
 
 		if ($category['is_eav'])
 		{
-			$sql = "SELECT json_representation->>'maaler_nr' as maaler_nr FROM fm_bim_item"
-				. " WHERE location_code = '{$location_code}'"
-				. " AND location_id = '{$category['location_id']}'"
-				. " AND json_representation->>'category' = '1'";
-
-			$this->db->query($sql, __LINE__, __FILE__);
-			$this->db->next_record();
-			return $this->db->f('maaler_nr');
+			$stmt = $this->db->prepare("SELECT json_representation->>'maaler_nr' as maaler_nr FROM fm_bim_item WHERE location_code = :location_code AND location_id = :location_id AND json_representation->>'category' = '1'");
+			$stmt->execute(array(
+				':location_code' => $location_code,
+				':location_id' => (int)$category['location_id']
+			));
+			$row = $stmt->fetch();
+			return $row['maaler_nr'] ?? null;
 		}
 		else
 		{
 			$meter_table = "fm_entity_{$category['entity_id']}_{$category['id']}";
-			$this->db->query("SELECT maaler_nr as power_meter FROM $meter_table WHERE location_code='$location_code' and category='1'", __LINE__, __FILE__);
-			$this->db->next_record();
-			return $this->db->f('power_meter');
+			$stmt = $this->db->prepare("SELECT maaler_nr as power_meter FROM {$meter_table} WHERE location_code = :location_code AND category = '1'");
+			$stmt->execute(array(':location_code' => $location_code));
+			$row = $stmt->fetch();
+			return $row['power_meter'] ?? null;
 		}
 	}
 
@@ -1246,20 +1247,23 @@ class property_soproject
 	{
 		$name		 = 'project';
 		$now		 = time();
-		$this->db->query("SELECT value, start_date FROM fm_idgenerator WHERE name='{$name}' AND start_date < {$now} ORDER BY start_date DESC");
-		$this->db->next_record();
-		$next_id	 = $this->db->f('value') + 1;
-		$start_date	 = (int)$this->db->f('start_date');
-		$this->db->query("UPDATE fm_idgenerator SET value = $next_id WHERE name = '{$name}' AND start_date = {$start_date}");
+		$stmt = $this->db->prepare('SELECT value, start_date FROM fm_idgenerator WHERE name = :name AND start_date < :now ORDER BY start_date DESC');
+		$stmt->execute(array(':name' => $name, ':now' => $now));
+		$row = $stmt->fetch();
+		$next_id	 = ((int)($row['value'] ?? 0)) + 1;
+		$start_date	 = (int)($row['start_date'] ?? 0);
+		$stmt = $this->db->prepare('UPDATE fm_idgenerator SET value = :next_id WHERE name = :name AND start_date = :start_date');
+		$stmt->execute(array(':next_id' => $next_id, ':name' => $name, ':start_date' => $start_date));
 	}
 
 	function next_project_id()
 	{
 		$name	 = 'project';
 		$now	 = time();
-		$this->db->query("SELECT value FROM fm_idgenerator WHERE name = '{$name}' AND start_date < {$now} ORDER BY start_date DESC");
-		$this->db->next_record();
-		$id		 = $this->db->f('value') + 1;
+		$stmt = $this->db->prepare('SELECT value FROM fm_idgenerator WHERE name = :name AND start_date < :now ORDER BY start_date DESC');
+		$stmt->execute(array(':name' => $name, ':now' => $now));
+		$row = $stmt->fetch();
+		$id		 = ((int)($row['value'] ?? 0)) + 1;
 		return $id;
 	}
 
@@ -1465,37 +1469,40 @@ class property_soproject
 			return;
 		}
 
-		$this->db->query("SELECT id,"
-			. " json_representation->>'maaler_nr' as maaler_nr"
-			. " FROM fm_bim_item"
-			. " WHERE location_id = {$location_id_meter_register}"
-			. " AND location_code='{$location_code}'"
-			. " AND json_representation->>'category' = '1'", __LINE__, __FILE__);
-
-		$this->db->next_record();
-		$id				 = $this->db->f('id');
-		$old_power_meter = $this->db->f('maaler_nr');
+		$stmt = $this->db->prepare("SELECT id, json_representation->>'maaler_nr' as maaler_nr FROM fm_bim_item WHERE location_id = :location_id AND location_code = :location_code AND json_representation->>'category' = '1'");
+		$stmt->execute(array(
+			':location_id' => (int)$location_id_meter_register,
+			':location_code' => $location_code
+		));
+		$row = $stmt->fetch();
+		$id				 = $row['id'] ?? null;
+		$old_power_meter = $row['maaler_nr'] ?? null;
 
 		if ($id)
 		{
-			$address = $this->db->db_addslashes($address);
-			$this->db->query("UPDATE fm_bim_item SET address='$address',"
-				. " json_representation=jsonb_set(json_representation, '{address}', '\"{$address}\"', true),"
-				. " modified_on = " . time() . ","
-				. " modified_by = {$this->account}"
-				. " WHERE location_id = {$location_id_meter_register}"
-				. " AND id = {$id}", __LINE__, __FILE__);
+			$stmt = $this->db->prepare("UPDATE fm_bim_item SET address = :address, json_representation = jsonb_set(json_representation, '{address}', to_jsonb(:address_json::text), true), modified_on = :modified_on, modified_by = :modified_by WHERE location_id = :location_id AND id = :id");
+			$stmt->execute(array(
+				':address' => $address,
+				':address_json' => $address,
+				':modified_on' => time(),
+				':modified_by' => (int)$this->account,
+				':location_id' => (int)$location_id_meter_register,
+				':id' => (int)$id
+			));
 
-			$this->db->query("UPDATE fm_bim_item SET"
-				. " json_representation=jsonb_set(json_representation, '{maaler_nr}', '\"{$power_meter}\"', true)"
-				. " WHERE location_id = {$location_id_meter_register}"
-				. " AND id = {$id}", __LINE__, __FILE__);
+			$stmt = $this->db->prepare("UPDATE fm_bim_item SET json_representation = jsonb_set(json_representation, '{maaler_nr}', to_jsonb(:power_meter::text), true) WHERE location_id = :location_id AND id = :id");
+			$stmt->execute(array(
+				':power_meter' => $power_meter,
+				':location_id' => (int)$location_id_meter_register,
+				':id' => (int)$id
+			));
 
 			if ($old_power_meter != $power_meter)
 			{
-				$this->db->query("SELECT id AS attrib_id FROM phpgw_cust_attribute WHERE location_id = {$location_id_meter_register} AND column_name = 'maaler_nr'", __LINE__, __FILE__);
-				$this->db->next_record();
-				$attrib_id = $this->db->f('attrib_id');
+				$stmt = $this->db->prepare("SELECT id AS attrib_id FROM phpgw_cust_attribute WHERE location_id = :location_id AND column_name = 'maaler_nr'");
+				$stmt->execute(array(':location_id' => (int)$location_id_meter_register));
+				$row = $stmt->fetch();
+				$attrib_id = $row['attrib_id'] ?? null;
 
 				$meter_info		 = $this->locations->get_name($location_id_meter_register);
 				$meter_location	 = str_replace('.', '_', ltrim($meter_info['location'], '.'));
@@ -1528,10 +1535,12 @@ class property_soproject
 			$id = $soentity->_save_eav($data, $location_id_meter_register);
 
 			$num = sprintf("%04s", $id);
-			$this->db->query("UPDATE fm_bim_item SET"
-				. " json_representation=jsonb_set(json_representation, '{num}', '\"{$num}\"', true)"
-				. " WHERE location_id = {$location_id_meter_register}"
-				. " AND id='{$id}'", __LINE__, __FILE__);
+			$stmt = $this->db->prepare("UPDATE fm_bim_item SET json_representation = jsonb_set(json_representation, '{num}', to_jsonb(:num::text), true) WHERE location_id = :location_id AND id = :id");
+			$stmt->execute(array(
+				':num' => $num,
+				':location_id' => (int)$location_id_meter_register,
+				':id' => (int)$id
+			));
 		}
 
 		return $id;
@@ -1635,7 +1644,8 @@ class property_soproject
 		$old_budget		 = (int)$this->db->f('budget');
 		$old_reserve	 = (int)$this->db->f('reserve');
 
-		$this->db->query("UPDATE fm_project SET $value_set WHERE id= {$project['id']}", __LINE__, __FILE__);
+		$stmt = $this->db->prepare("UPDATE fm_project SET $value_set WHERE id = :project_id");
+		$stmt->execute(array(':project_id' => (int)$project['id']));
 
 		$_closed_period	 = array(
 			'closed_b_period'		 => isset($project['closed_b_period']) && $project['closed_b_period'] ? $project['closed_b_period'] : array(),
@@ -1682,7 +1692,11 @@ class property_soproject
 
 			if ($old_budget != $new_budget)
 			{
-				$this->db->query("UPDATE fm_project SET budget = {$new_budget} WHERE id = " . (int)$project['id'], __LINE__, __FILE__);
+				$stmt = $this->db->prepare('UPDATE fm_project SET budget = :new_budget WHERE id = :project_id');
+				$stmt->execute(array(
+					':new_budget' => (int)$new_budget,
+					':project_id' => (int)$project['id']
+				));
 				$historylog->add('B', $project['id'], $project['budget'], $old_budget);
 			}
 
@@ -1710,7 +1724,11 @@ class property_soproject
 				$this->db->query("SELECT sum(amount_in) AS amount_in, sum(amount_out) AS amount_out FROM fm_project_buffer_budget WHERE buffer_project_id = " . (int)$project['transfer_target'], __LINE__, __FILE__);
 				$this->db->next_record();
 				$new_budget = (int)$this->db->f('amount_in') - (int)$this->db->f('amount_out');
-				$this->db->query("UPDATE fm_project SET budget = {$new_budget} WHERE id = " . (int)$project['transfer_target'], __LINE__, __FILE__);
+				$stmt = $this->db->prepare('UPDATE fm_project SET budget = :new_budget WHERE id = :project_id');
+				$stmt->execute(array(
+					':new_budget' => (int)$new_budget,
+					':project_id' => (int)$project['transfer_target']
+				));
 
 				if (isset($project['transfer_remark']) && $project['transfer_remark'])
 				{
@@ -1730,7 +1748,11 @@ class property_soproject
 
 			if ($old_budget != $new_budget)
 			{
-				$this->db->query("UPDATE fm_project SET budget = {$new_budget} WHERE id = " . (int)$project['id'], __LINE__, __FILE__);
+				$stmt = $this->db->prepare('UPDATE fm_project SET budget = :new_budget WHERE id = :project_id');
+				$stmt->execute(array(
+					':new_budget' => (int)$new_budget,
+					':project_id' => (int)$project['id']
+				));
 				$historylog->add('B', $project['id'], $new_budget, $old_budget);
 			}
 
@@ -1834,11 +1856,24 @@ class property_soproject
 					$historylog->add('B', $new_project_id, $new_budget_new_project, $old_budget_new_project);
 				}
 
-				$this->db->query("UPDATE fm_workorder SET project_id = {$new_project_id}, ecodimb = {$ecodimb_new_project} WHERE project_id = {$project['id']}", __LINE__, __FILE__);
-				$this->db->query("UPDATE fm_project SET reserve = 0 WHERE reserve IS NULL AND id = {$new_project_id}", __LINE__, __FILE__);
-				$this->db->query("UPDATE fm_project SET budget = {$new_budget_new_project}, reserve = reserve + {$reserve_old_project} WHERE id = {$new_project_id}", __LINE__, __FILE__);
-				$this->db->query("UPDATE fm_project SET budget = 0, reserve = 0 WHERE id =  " . (int)$project['id'], __LINE__, __FILE__);
-				$this->db->query("DELETE FROM fm_project_budget WHERE project_id =  " . (int)$project['id'], __LINE__, __FILE__);
+				$stmt = $this->db->prepare('UPDATE fm_workorder SET project_id = :new_project_id, ecodimb = :ecodimb_new_project WHERE project_id = :old_project_id');
+				$stmt->execute(array(
+					':new_project_id' => (int)$new_project_id,
+					':ecodimb_new_project' => (int)$ecodimb_new_project,
+					':old_project_id' => (int)$project['id']
+				));
+				$stmt = $this->db->prepare('UPDATE fm_project SET reserve = 0 WHERE reserve IS NULL AND id = :new_project_id');
+				$stmt->execute(array(':new_project_id' => (int)$new_project_id));
+				$stmt = $this->db->prepare('UPDATE fm_project SET budget = :new_budget, reserve = reserve + :reserve_old_project WHERE id = :new_project_id');
+				$stmt->execute(array(
+					':new_budget' => (int)$new_budget_new_project,
+					':reserve_old_project' => (int)$reserve_old_project,
+					':new_project_id' => (int)$new_project_id
+				));
+				$stmt = $this->db->prepare('UPDATE fm_project SET budget = 0, reserve = 0 WHERE id = :old_project_id');
+				$stmt->execute(array(':old_project_id' => (int)$project['id']));
+				$stmt = $this->db->prepare('DELETE FROM fm_project_budget WHERE project_id = :old_project_id');
+				$stmt->execute(array(':old_project_id' => (int)$project['id']));
 				$historylog->add('RM', (int)$project['id'], "Budsjett og alle bestillinger er overført fra prosjekt {$project['id']} til prosjekt {$new_project_id}");
 				$historylog->add('RM', $new_project_id, "Budsjett og alle bestillinger er overført fra prosjekt {$project['id']} til prosjekt {$new_project_id}");
 
@@ -1894,13 +1929,13 @@ class property_soproject
 			$close_workorders		 = false;
 			$stmt = $this->db->prepare('SELECT * FROM fm_project_status WHERE id = :status_id');
 			$stmt->execute(array(':status_id' => $project['status']));
-			$this->db->next_record();
-			if ($this->db->f('closed'))
+			$row = $stmt->fetch();
+			if (!empty($row['closed']))
 			{
 				$close_workorders = true;
 			}
 
-			if ($this->db->f('approved'))
+			if (!empty($row['approved']))
 			{
 				$close_pending_action = true;
 
@@ -2704,8 +2739,8 @@ class property_soproject
 		$id			 = (int)$id;
 		$stmt = $this->db->prepare('SELECT status FROM fm_project WHERE id = :id');
 		$stmt->execute(array(':id' => $id));
-		$this->db->next_record();
-		$old_status	 = $this->db->f('status');
+		$row = $stmt->fetch();
+		$old_status	 = $row['status'] ?? null;
 
 		if ($old_status != $status_new)
 		{
@@ -2728,12 +2763,11 @@ class property_soproject
 		{
 			$stmt = $this->db->prepare('SELECT status, category, coordinator FROM fm_request WHERE id = :request_id');
 			$stmt->execute(array(':request_id' => (int)$request_id));
+			$row = $stmt->fetch();
 
-			$this->db->next_record();
-
-			$old_status		 = $this->db->f('status');
-			$old_category	 = (int)$this->db->f('category');
-			$old_coordinator = (int)$this->db->f('coordinator');
+			$old_status		 = $row['status'] ?? null;
+			$old_category	 = (int)($row['category'] ?? 0);
+			$old_coordinator = (int)($row['coordinator'] ?? 0);
 
 			if ($old_status != $status)
 			{
@@ -2873,17 +2907,19 @@ class property_soproject
 		$id					 = (int)$id;
 		$year				 = (int)$year;
 		$latest_year		 = (int)$budget['latest_year'];
-		$this->db->query("SELECT periodization_id, project_type_id FROM fm_project WHERE id = {$id}", __LINE__, __FILE__);
-		$this->db->next_record();
-		$periodization_id	 = $this->db->f('periodization_id');
-		$project_type_id	 = $this->db->f('project_type_id');
+		$stmt = $this->db->prepare('SELECT periodization_id, project_type_id FROM fm_project WHERE id = :id');
+		$stmt->execute(array(':id' => $id));
+		$row = $stmt->fetch();
+		$periodization_id	 = $row['periodization_id'] ?? null;
+		$project_type_id	 = $row['project_type_id'] ?? null;
 
 		if ($project_type_id == 2) // investment
 		{
 			// total budget
-			$this->db->query("SELECT sum(budget) as budget FROM fm_project_budget WHERE project_id = {$id} AND year = {$latest_year} AND active = 1", __LINE__, __FILE__);
-			$this->db->next_record();
-			$last_budget = $this->db->f('budget');
+			$stmt = $this->db->prepare('SELECT sum(budget) as budget FROM fm_project_budget WHERE project_id = :id AND year = :latest_year AND active = 1');
+			$stmt->execute(array(':id' => $id, ':latest_year' => $latest_year));
+			$row = $stmt->fetch();
+			$last_budget = $row['budget'] ?? 0;
 
 			if (!abs($last_budget) > 0)
 			{
@@ -2943,7 +2979,8 @@ class property_soproject
 		{
 			//		if($budget['budget_amount'])
 			{
-				$this->db->query("UPDATE fm_project_budget SET active = 0 WHERE project_id = {$id}", __LINE__, __FILE__); // previous
+				$stmt = $this->db->prepare('UPDATE fm_project_budget SET active = 0 WHERE project_id = :project_id'); // previous
+				$stmt->execute(array(':project_id' => (int)$id));
 				$this->update_budget($id, $year, $periodization_id, (int)$budget['budget_amount'], true, 'update', true);
 
 				$historylog->add('B', $id, (int)$budget['budget_amount']);
@@ -3211,8 +3248,8 @@ class property_soproject
 
 			$stmt = $this->db->prepare('SELECT status FROM fm_project WHERE id = :id');
 			$stmt->execute(array(':id' => (int)$id));
-			$this->db->next_record();
-			$old_status = $this->db->f('status');
+			$row = $stmt->fetch();
+			$old_status = $row['status'] ?? null;
 
 			if ($old_status != $status_new)
 			{
@@ -3235,9 +3272,9 @@ class property_soproject
 
 			$stmt = $this->db->prepare('SELECT * FROM fm_project_status WHERE id = :status_new');
 			$stmt->execute(array(':status_new' => $status_new));
-			$this->db->next_record();
-			$approved	 = $this->db->f('approved');
-			$closed		 = $this->db->f('closed');
+			$row = $stmt->fetch();
+			$approved	 = $row['approved'] ?? null;
+			$closed		 = $row['closed'] ?? null;
 
 			if ($approved || $closed)
 			{
@@ -3304,7 +3341,8 @@ class property_soproject
 			if ($old_status != $status_new)
 			{
 				Cache::system_clear('property', "budget_order_{$id}");
-				$this->db->query("UPDATE fm_workorder SET status = '{$status_new}' WHERE id = '{$id}'", __LINE__, __FILE__);
+				$stmt = $this->db->prepare('UPDATE fm_workorder SET status = :status_new WHERE id = :id');
+				$stmt->execute(array(':status_new' => $status_new, ':id' => (int)$id));
 				$historylog->add('S', $id, $status_new, $old_status);
 				$historylog->add('RM', $id, 'Status endret via masseoppdatering eller prosjekt');
 			}
@@ -3338,12 +3376,12 @@ class property_soproject
 				 */
 			$stmt = $this->db->prepare('SELECT * FROM fm_workorder_status WHERE id = :status_new');
 			$stmt->execute(array(':status_new' => $status_new));
-			$this->db->next_record();
-			if ($this->db->f('approved'))
+			$row = $stmt->fetch();
+			if (!empty($row['approved']))
 			{
 				execMethod('property.sopending_action.close_pending_action', $action_params_approved);
 			}
-			if ($this->db->f('in_progress'))
+			if (!empty($row['in_progress']))
 			{
 				//					execMethod('property.sopending_action.close_pending_action', $action_params_progress);
 			}
@@ -3578,7 +3616,8 @@ class property_soproject
 
 		if ($update)
 		{
-			$this->db->query("UPDATE fm_project_budget SET active = 0 WHERE project_id = {$project_id} AND year != {$current_year}", __LINE__, __FILE__);
+			$stmt = $this->db->prepare('UPDATE fm_project_budget SET active = 0 WHERE project_id = :project_id AND year != :current_year');
+			$stmt->execute(array(':project_id' => (int)$project_id, ':current_year' => (int)$current_year));
 
 			$this->db->query("SELECT id, periodization_id FROM fm_project WHERE id = {$project_id}", __LINE__, __FILE__);
 			if ($this->db->next_record())

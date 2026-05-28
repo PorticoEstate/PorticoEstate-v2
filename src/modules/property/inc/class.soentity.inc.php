@@ -1164,7 +1164,8 @@ class property_soentity
 
 			if ($sqlParams)
 			{
-				$this->db->limit_query_with_params($sql2, $sqlParams, 0, __LINE__, __FILE__, null);
+				$stmt = $this->db->prepare($sql2);
+				$stmt->execute($sqlParams);
 			}
 			else
 			{
@@ -1255,7 +1256,8 @@ class property_soentity
 		{
 			if ($sqlParams)
 			{
-				$this->db->limit_query_with_params($sql_pre_run . $ordermethod, $sqlParams, 0, __LINE__, __FILE__, null);
+				$stmt = $this->db->prepare($sql_pre_run . $ordermethod);
+				$stmt->execute($sqlParams);
 			}
 			else
 			{
@@ -2214,7 +2216,8 @@ class property_soentity
 
 			if ($sqlParams)
 			{
-				$this->db->limit_query_with_params($sql2, $sqlParams, 0, __LINE__, __FILE__, null);
+				$stmt = $this->db->prepare($sql2);
+				$stmt->execute($sqlParams);
 			}
 			else
 			{
@@ -2254,7 +2257,8 @@ class property_soentity
 		{
 			if ($sqlParams)
 			{
-				$this->db->limit_query_with_params($sql . $ordermethod, $sqlParams, 0, __LINE__, __FILE__, null);
+				$stmt = $this->db->prepare($sql . $ordermethod);
+				$stmt->execute($sqlParams);
 			}
 			else
 			{
@@ -2377,7 +2381,8 @@ class property_soentity
 			$params[':id'] = $id;
 		}
 
-		$this->db->limit_query_with_params("SELECT * FROM {$table} {$filtermethod}", $params, 0, __LINE__, __FILE__, null);
+		$stmt = $this->db->prepare("SELECT * FROM {$table} {$filtermethod}");
+		$stmt->execute($params);
 
 		if (!empty($this->db->resultSet) && ($row = $this->db->resultSet[0]))
 		{
@@ -2451,7 +2456,8 @@ class property_soentity
 			$params[':location_id'] = $location_id;
 		}
 
-		$this->db->limit_query_with_params($sql, $params, 0, __LINE__, __FILE__, null);
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute($params);
 
 		if (!empty($this->db->resultSet) && ($row = $this->db->resultSet[0]))
 		{
@@ -2875,7 +2881,8 @@ class property_soentity
 	{
 		$location_id = (int)$location_id;
 
-		$this->db->query("SELECT id as type FROM fm_bim_type WHERE location_id = {$location_id}", __LINE__, __FILE__);
+		$stmt = $this->db->prepare('SELECT id as type FROM fm_bim_type WHERE location_id = :location_id');
+		$stmt->execute(array(':location_id' => $location_id));
 		$row  = $this->db->resultSet[0] ?? [];
 		$type	 = $row['type'];
 		$id		 = $this->db->next_id('fm_bim_item', array('type' => $type));
@@ -2935,13 +2942,15 @@ class property_soentity
 		$location_id = (int)$location_id;
 		$id			 = (int)$id;
 
-		$this->db->query("SELECT id as type FROM fm_bim_type WHERE location_id = {$location_id}", __LINE__, __FILE__);
+		$stmt = $this->db->prepare('SELECT id as type FROM fm_bim_type WHERE location_id = :location_id');
+		$stmt->execute(array(':location_id' => $location_id));
 		$row  = $this->db->resultSet[0] ?? [];
 		$type = (int)$row['type'];
 
 		$location_name = str_replace('.', '_', $location_name);
 
-		$this->db->query("SELECT json_representation FROM fm_bim_item WHERE fm_bim_item.id = {$id} AND location_id = $location_id", __LINE__, __FILE__);
+		$stmt = $this->db->prepare('SELECT json_representation FROM fm_bim_item WHERE fm_bim_item.id = :id AND location_id = :location_id');
+		$stmt->execute(array(':id' => $id, ':location_id' => $location_id));
 		$row  = $this->db->resultSet[0] ?? [];
 		$jsondata = json_decode($row['json_representation'], true);
 
@@ -2964,7 +2973,11 @@ class property_soentity
 		);
 
 		$value_set = $this->db->validate_update($value_set);
-		return $this->db->query("UPDATE fm_bim_item SET $value_set WHERE id = $id AND type = {$type}", __LINE__, __FILE__);
+		$stmt = $this->db->prepare("UPDATE fm_bim_item SET $value_set WHERE id = :id AND type = :type");
+		return $stmt->execute(array(
+			':id' => (int)$id,
+			':type' => (int)$type
+		));
 	}
 
 	/**
@@ -3168,7 +3181,8 @@ class property_soentity
 			$value_set['modified_on']	 = time();
 
 			$value_set = $this->db->validate_update($value_set);
-			$this->db->query("UPDATE $table set $value_set WHERE id=" . $values['id'], __LINE__, __FILE__);
+			$stmt = $this->db->prepare("UPDATE {$table} SET $value_set WHERE id = :id");
+			$stmt->execute(array(':id' => (int)$values['id']));
 		}
 
 		if (isset($history_set) && is_array($history_set))
@@ -3215,23 +3229,29 @@ class property_soentity
 
 		$this->db->transaction_begin();
 
-		$this->db->query("DELETE FROM fm_bim_item_checklist_data WHERE type_location_id ={$location_id} AND item_id = {$id}", __LINE__, __FILE__);
+		$stmt = $this->db->prepare('DELETE FROM fm_bim_item_checklist_data WHERE type_location_id = :location_id AND item_id = :id');
+		$stmt->execute(array(':location_id' => (int)$location_id, ':id' => $id));
 
 		if ($category['is_eav'])
 		{
-			$this->db->query("SELECT id as type FROM fm_bim_type WHERE location_id = {$location_id}", __LINE__, __FILE__);
+			$stmt = $this->db->prepare('SELECT id as type FROM fm_bim_type WHERE location_id = :location_id');
+			$stmt->execute(array(':location_id' => (int)$location_id));
 			$row  = $this->db->resultSet[0] ?? [];
 			$type = (int)$row['type'];
-			$this->db->query("DELETE FROM fm_bim_item WHERE id = $id AND type = {$type}", __LINE__, __FILE__);
+			$stmt = $this->db->prepare('DELETE FROM fm_bim_item WHERE id = :id AND type = :type');
+			$stmt->execute(array(':id' => $id, ':type' => $type));
 		}
 		else
 		{
 			$table = "fm_{$this->type}_{$entity_id}_{$cat_id}";
-			$this->db->query("DELETE FROM $table WHERE id = $id", __LINE__, __FILE__);
+			$stmt = $this->db->prepare("DELETE FROM {$table} WHERE id = :id");
+			$stmt->execute(array(':id' => $id));
 		}
 
-		$this->db->query("DELETE FROM phpgw_interlink WHERE location1_id ={$location_id} AND location1_item_id = {$id}", __LINE__, __FILE__);
-		$this->db->query("DELETE FROM phpgw_interlink WHERE location2_id ={$location_id} AND location2_item_id = {$id}", __LINE__, __FILE__);
+		$stmt = $this->db->prepare('DELETE FROM phpgw_interlink WHERE location1_id = :location_id AND location1_item_id = :id');
+		$stmt->execute(array(':location_id' => (int)$location_id, ':id' => $id));
+		$stmt = $this->db->prepare('DELETE FROM phpgw_interlink WHERE location2_id = :location_id AND location2_item_id = :id');
+		$stmt->execute(array(':location_id' => (int)$location_id, ':id' => $id));
 
 		$this->db->transaction_commit();
 	}
@@ -3615,7 +3635,8 @@ class property_soentity
 		);
 
 		$value_set = $this->db->validate_update($value_set);
-		$this->db->query("UPDATE {$table} SET $value_set WHERE id = {$inventory_id}", __LINE__, __FILE__);
+		$stmt = $this->db->prepare("UPDATE {$table} SET $value_set WHERE id = :inventory_id");
+		$stmt->execute(array(':inventory_id' => (int)$inventory_id));
 
 		if (!(int)$values['inventory'])
 		{
@@ -3839,7 +3860,8 @@ class property_soentity
 				'json_representation' => json_encode($jsondata)
 			);
 			$value_set = $this->db->validate_update($value_set);
-			$this->db->query("UPDATE fm_bim_item_checklist_data set $value_set WHERE id = {$id}", __LINE__, __FILE__);
+			$stmt = $this->db->prepare("UPDATE fm_bim_item_checklist_data SET $value_set WHERE id = :id");
+			$stmt->execute(array(':id' => (int)$id));
 		}
 		else
 		{

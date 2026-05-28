@@ -1907,7 +1907,7 @@ JS;
 			}
 		}
 
-		$project_form_action = '/property/project' . ($id ? '/' . (int)$id : '');
+		$project_form_action = phpgw::link('/property/project' . ($id ? '/' . (int)$id : ''));
 
 		$link_request_data = array(
 			'menuaction'	 => 'property.uirequest.index',

@@ -533,7 +533,14 @@ function parseProjectURL(url)
 			continue;
 		}
 		split = queries[i].split('=');
-		searchObject[split[0]] = split[1];
+		var queryKey = split[0] ? decodeURIComponent(split[0]) : '';
+		if (!queryKey)
+		{
+			continue;
+		}
+
+		var queryValue = split.length > 1 ? split.slice(1).join('=') : '';
+		searchObject[queryKey] = decodeURIComponent((queryValue || '').replace(/\+/g, ' '));
 	}
 
 	return {

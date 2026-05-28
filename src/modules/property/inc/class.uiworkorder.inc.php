@@ -2891,9 +2891,8 @@ JS;
 			'container'	 => 'datatable-container_6',
 			//				'requestUrl' => "''",
 			//				'data'		 => json_encode($attachmen_list),
-			'requestUrl' => json_encode(self::link(array(
-				'menuaction'		 => 'property.uiproject.get_attachment',
-				'phpgw_return_as'	 => 'json'
+			'requestUrl' => json_encode(phpgw::link('/property/project/attachments', array(
+				'phpgw_return_as' => 'json'
 			))),
 			'data'		 => json_encode(array()),
 

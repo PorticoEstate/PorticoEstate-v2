@@ -293,8 +293,7 @@ $(document).ready(function ()
 	$("#datatable-container_2 tbody").on('click', 'tr', function ()
 	{
 		var voucher_id = $('td', this).eq(0).text();
-		var oArgs = { menuaction: 'property.uiproject.get_attachment', voucher_id: voucher_id };
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = phpGWLink('property/project/attachments', { voucher_id: voucher_id }, true);
 		JqueryPortico.updateinlineTableHelper('datatable-container_6', requestUrl);
 	});
 

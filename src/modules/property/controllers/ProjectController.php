@@ -1222,6 +1222,22 @@ class ProjectController
 	}
 
 	/**
+	 * Download report of missing project budgets.
+	 */
+	public function checkMissingProjectBudget(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to project reports');
+		}
+
+		$values = $this->bo()->get_missing_project_budget();
+		$this->bocommon()->download($values, array('project_id', 'year'), array(lang('project_id'), lang('year')));
+
+		return $response;
+	}
+
+	/**
 	 * Project file list endpoint (DataTables-compatible).
 	 */
 	public function getFiles(Request $request, Response $response, array $args): Response

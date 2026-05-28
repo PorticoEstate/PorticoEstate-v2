@@ -193,6 +193,7 @@ $app->group('/property/project', function (RouteCollectorProxy $group) use ($con
 	$group->get('/attachments', [$controller, 'getAttachment']);
 	$group->post('/attachments', [$controller, 'getAttachment']);
 	$group->get('/external-project', [$controller, 'getExternalProject']);
+	$group->get('/reports/missing-project-budget', [$controller, 'checkMissingProjectBudget']);
 	$group->get('/lookups/category', [$controller, 'getCategoryLookup']);
 	$group->post('/lookups/category', [$controller, 'getCategoryLookup']);
 	$group->get('/lookups/b-account', [$controller, 'getBAccountLookup']);

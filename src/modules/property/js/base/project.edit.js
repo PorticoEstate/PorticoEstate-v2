@@ -560,7 +560,23 @@ function createProjectNavigationClient(form)
 	return {
 		buildEditUrl: function (id)
 		{
-			return 'index.php?menuaction=property.uiproject.edit&id=' + encodeURIComponent(id);
+			var parsed = parseProjectURL(form.action);
+			var query = parsed.searchObject || {};
+			var clickHistory = query.click_history || '';
+
+			if (!clickHistory && typeof window.strBaseURL !== 'undefined' && window.strBaseURL)
+			{
+				var baseQuery = parseProjectURL(window.strBaseURL).searchObject || {};
+				clickHistory = baseQuery.click_history || '';
+			}
+
+			var url = 'index.php?menuaction=property.uiproject.edit&id=' + encodeURIComponent(id);
+			if (clickHistory)
+			{
+				url += '&click_history=' + encodeURIComponent(clickHistory);
+			}
+
+			return url;
 		}
 	};
 }

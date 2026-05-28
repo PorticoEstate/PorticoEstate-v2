@@ -164,6 +164,11 @@ class ProjectFormHelper
 		$values = $state['values'] ?? array();
 		$errors = $state['errors'] ?? array();
 
+		if ($this->isRepost())
+		{
+			$errors[] = lang('Hmm... looks like a repost!');
+		}
+
 		if (empty($values['name']))
 		{
 			$errors[] = 'Project name is required';
@@ -220,6 +225,16 @@ class ProjectFormHelper
 
 		$state['errors'] = $errors;
 		return $state;
+	}
+
+	protected function isRepost(): bool
+	{
+		if (!class_exists('phpgw') || !method_exists('phpgw', 'is_repost'))
+		{
+			return false;
+		}
+
+		return (bool) \phpgw::is_repost();
 	}
 
 	/**

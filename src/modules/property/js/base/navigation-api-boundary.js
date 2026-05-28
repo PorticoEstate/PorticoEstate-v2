@@ -181,7 +181,20 @@
 
 		function buildEditUrl(projectId)
 		{
-			return 'index.php?menuaction=property.uiproject.edit&id=' + encodeURIComponent(projectId);
+			var clickHistory = query.click_history || '';
+			if (!clickHistory && typeof global.strBaseURL !== 'undefined' && global.strBaseURL)
+			{
+				var baseQuery = deps.parseURL(global.strBaseURL).searchObject || {};
+				clickHistory = baseQuery.click_history || '';
+			}
+
+			var url = 'index.php?menuaction=property.uiproject.edit&id=' + encodeURIComponent(projectId);
+			if (clickHistory)
+			{
+				url += '&click_history=' + encodeURIComponent(clickHistory);
+			}
+
+			return url;
 		}
 
 		function buildSaveRequest(currentProjectId)

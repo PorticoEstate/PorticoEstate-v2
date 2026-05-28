@@ -723,6 +723,7 @@ JS;
 		$bolocation = CreateObject('property.bolocation');
 
 		// origin
+		$auto_create = false;
 
 		if (!$id && $bypass)
 		{
@@ -1931,8 +1932,6 @@ JS;
 			'value_sum'							 => isset($values['sum']) ? $values['sum'] : '',
 			'value_reserve_remainder'			 => isset($reserve_remainder) ? $reserve_remainder : '',
 			'value_reserve_remainder_percent'	 => isset($remainder_percent) ? $remainder_percent : '',
-			//					'lang_planned_cost'					=> lang('planned cost'),
-			//					'value_planned_cost'				=> $values['planned_cost'],
 			'location_data'						 => $location_data,
 			'location_type'						 => 'form',
 			'form_action'						 => $project_form_action,

@@ -66,8 +66,8 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 		$acl_delete, $acl_manage, $status_id, $wo_hour_cat_id, $user_id, $filter_year, $decimal_separator,
 		$type_id, $config;
 	var $public_functions = array(
-		'query'							 => true,
-		'download'						 => true,
+		'query'							 => false,
+		'download'						 => false,
 		'index'							 => true,
 		'view'							 => true,
 		'edit'							 => true,
@@ -745,8 +745,7 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 					'relation_id'		 => $relation_id,
 					'relation_type'		 => $relation_type
 				)),
-				'download'		 => self::link(array(
-					'menuaction'	 => 'property.uiproject.download',
+				'download'		 => phpgw::link('/property/project/reports/download', array(
 					'export'		 => true,
 					'skip_origin'	 => true,
 					'allrows'		 => true

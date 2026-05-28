@@ -1238,6 +1238,31 @@ class ProjectController
 	}
 
 	/**
+	 * Download project list report.
+	 */
+	public function downloadProjects(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to project reports');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$params = $this->readParams($input);
+		$values = $this->bo()->read($params);
+		$uicols = $this->bo()->uicols;
+
+		$this->bocommon()->download(
+			$values,
+			$uicols['name'] ?? array(),
+			$uicols['descr'] ?? array(),
+			$uicols['input_type'] ?? array()
+		);
+
+		return $response;
+	}
+
+	/**
 	 * Project file list endpoint (DataTables-compatible).
 	 */
 	public function getFiles(Request $request, Response $response, array $args): Response

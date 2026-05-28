@@ -60,6 +60,24 @@ namespace Tests\Controllers
 			);
 		}
 
+		public function testUiprojectIndexDownloadUsesRestReportEndpoint(): void
+		{
+			$uiProjectPath = __DIR__ . '/../../src/modules/property/inc/class.uiproject.inc.php';
+			$contents = file_get_contents($uiProjectPath);
+
+			$this->assertIsString($contents);
+			$this->assertStringContainsString(
+				"'/property/project/reports/download'",
+				$contents,
+				'Project index download action must use REST report endpoint'
+			);
+			$this->assertStringNotContainsString(
+				"'menuaction'\t => 'property.uiproject.download'",
+				$contents,
+				'Project index download must not use legacy uiproject.download menuaction'
+			);
+		}
+
 		public function testWorkorderAddInvoiceUsesProjectRestExternalProjectLookup(): void
 		{
 			$workorderAddInvoicePath = __DIR__ . '/../../src/modules/property/js/base/workorder.add_invoice.js';

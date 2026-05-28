@@ -554,6 +554,122 @@ namespace Tests\Controllers
 			$this->assertSame(656, $decoded['data']['id']);
 		}
 
+		public function testStoreMapsLegacyTopLevelContactAndParentRelationFields(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new class extends ProjectFormHelper
+			{
+				public function mapInput(array $requestData, bool $isEdit = false, int $id = 0): array
+				{
+					$values = $requestData['values'] ?? array();
+
+					if (($values['contact_id'] ?? 0) !== 345)
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array('contact_id not mapped from contact'));
+					}
+
+					if (!isset($values['p'][2]) || !is_array($values['p'][2]))
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array('Missing p relation array'));
+					}
+
+					if (($values['p'][2]['p_entity_id'] ?? 0) !== 2 || ($values['p'][2]['p_cat_id'] ?? 0) !== 8 || ($values['p'][2]['p_num'] ?? '') !== '42')
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array('Invalid p relation data'));
+					}
+
+					return array('values' => array('name' => 'LegacyShape'), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array());
+				}
+
+				public function validate(array $state): array
+				{
+					return $state;
+				}
+
+				public function persistSave(array $state, object $bo): array
+				{
+					$state['id'] = 657;
+					$state['receipt'] = array('id' => 657);
+					return $state;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array(
+				'name' => 'LegacyShape',
+				'project_type_id' => 1,
+				'coordinator' => 1,
+				'status' => 'open',
+				'contact' => 345,
+				'p_entity_id' => 2,
+				'p_cat_id' => 8,
+				'p_num' => '42',
+			));
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+			$controller->store($this->request, $this->response);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('success', $decoded['status']);
+			$this->assertSame(657, $decoded['data']['id']);
+		}
+
+		public function testStoreDerivesRelationInfoFromIndexedEntityLookupFields(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new class extends ProjectFormHelper
+			{
+				public function mapInput(array $requestData, bool $isEdit = false, int $id = 0): array
+				{
+					$relationInfo = $requestData['RelationInfo'] ?? array();
+					if (($relationInfo['p_entity_id'] ?? 0) !== 1 || ($relationInfo['p_cat_id'] ?? 0) !== 11 || ($relationInfo['p_num'] ?? '') !== '2024')
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array('RelationInfo parent relation not derived from entity_id_<x>/cat_id_<x>/entity_num_<x>'));
+					}
+
+					return array('values' => array('name' => 'LookupDerived'), 'values_attribute' => array(), 'is_edit' => false, 'errors' => array());
+				}
+
+				public function validate(array $state): array
+				{
+					return $state;
+				}
+
+				public function persistSave(array $state, object $bo): array
+				{
+					$state['id'] = 658;
+					$state['receipt'] = array('id' => 658);
+					return $state;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array(
+				'name' => 'LookupDerived',
+				'project_type_id' => 1,
+				'coordinator' => 1,
+				'status' => 'open',
+				'entity_id_1' => 1,
+				'cat_id_1' => 11,
+				'entity_num_1' => '2024',
+			));
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+			$controller->store($this->request, $this->response);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('success', $decoded['status']);
+			$this->assertSame(658, $decoded['data']['id']);
+		}
+
 		public function testGetFilesWithoutIdReturnsEmptyDataTablesPayload(): void
 		{
 			$bo = new class
@@ -720,6 +836,70 @@ namespace Tests\Controllers
 			$decoded = json_decode($this->responseBody, true);
 			$this->assertSame('success', $decoded['status']);
 			$this->assertSame(901, $decoded['data']['id']);
+		}
+
+		public function testUpdateMapsLegacyTopLevelContactAndParentRelationFields(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new class extends ProjectFormHelper
+			{
+				public function mapInput(array $requestData, bool $isEdit = false, int $id = 0): array
+				{
+					$values = $requestData['values'] ?? array();
+
+					if (($values['contact_id'] ?? 0) !== 456)
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => true, 'errors' => array('contact_id not mapped from contact'));
+					}
+
+					if (!isset($values['p'][3]) || !is_array($values['p'][3]))
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => true, 'errors' => array('Missing p relation array'));
+					}
+
+					if (($values['p'][3]['p_entity_id'] ?? 0) !== 3 || ($values['p'][3]['p_cat_id'] ?? 0) !== 9 || ($values['p'][3]['p_num'] ?? '') !== '77')
+					{
+						return array('values' => array(), 'values_attribute' => array(), 'is_edit' => true, 'errors' => array('Invalid p relation data'));
+					}
+
+					return array('values' => array('id' => $id, 'name' => 'LegacyUpdateShape'), 'values_attribute' => array(), 'is_edit' => true, 'errors' => array());
+				}
+
+				public function validate(array $state): array
+				{
+					return $state;
+				}
+
+				public function persistSave(array $state, object $bo): array
+				{
+					$state['id'] = 902;
+					$state['receipt'] = array('id' => 902);
+					return $state;
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array(
+				'name' => 'LegacyUpdateShape',
+				'project_type_id' => 1,
+				'coordinator' => 1,
+				'status' => 'open',
+				'contact' => 456,
+				'p_entity_id' => 3,
+				'p_cat_id' => 9,
+				'p_num' => '77',
+			));
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+			$controller->update($this->request, $this->response, array('id' => 902));
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('success', $decoded['status']);
+			$this->assertSame(902, $decoded['data']['id']);
 		}
 
 		public function testStoreReturnsErrorPayloadWhenValidationFails(): void

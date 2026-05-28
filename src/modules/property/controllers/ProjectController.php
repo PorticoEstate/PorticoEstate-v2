@@ -126,9 +126,45 @@ class ProjectController
 			? $input['values_attribute']
 			: array();
 
+		// Mirror legacy uiproject::_populate() collection from top-level POST fields.
+		$legacyValueFields = array(
+			'descr',
+			'new_project_id',
+			'copy_project',
+			'bypass',
+			'contact',
+			'contact_id',
+			'remark',
+			'mail_address',
+			'approval',
+		);
+		foreach ($legacyValueFields as $field)
+		{
+			if (array_key_exists($field, $input) && !array_key_exists($field, $values))
+			{
+				$values[$field] = $input[$field];
+			}
+		}
+
+		// Legacy save sets contact_id from the top-level 'contact' field.
+		if (array_key_exists('contact', $input))
+		{
+			$values['contact_id'] = (int)$input['contact'];
+		}
+
 		$relationInfo = isset($input['RelationInfo']) && is_array($input['RelationInfo'])
 			? $input['RelationInfo']
 			: array();
+
+		$derivedParentRelation = $this->extractParentRelationFromEntityLookupFields($input, $values);
+		foreach ($derivedParentRelation as $field => $value)
+		{
+			if (!array_key_exists($field, $relationInfo) || $relationInfo[$field] === '' || $relationInfo[$field] === null)
+			{
+				$relationInfo[$field] = $value;
+			}
+		}
+
 		$relationFields = array(
 			'location_code',
 			'tenant_id',
@@ -156,6 +192,65 @@ class ProjectController
 	}
 
 	/**
+	 * Derive parent relation fields from legacy lookup keys like entity_id_1/cat_id_1/entity_num_1.
+	 *
+	 * @return array{p_entity_id?: int, p_cat_id?: int, p_num?: string}
+	 */
+	private function extractParentRelationFromEntityLookupFields(array $input, array $values): array
+	{
+		$sources = array($values, $input);
+		$matches = array();
+
+		foreach ($sources as $source)
+		{
+			foreach ($source as $key => $value)
+			{
+				if (!is_string($key))
+				{
+					continue;
+				}
+
+				if (!preg_match('/^(entity_id|cat_id|entity_num)_(\d+)$/', $key, $match))
+				{
+					continue;
+				}
+
+				$prefix = $match[1];
+				$suffix = (int)$match[2];
+				if (!isset($matches[$suffix]))
+				{
+					$matches[$suffix] = array();
+				}
+				$matches[$suffix][$prefix] = $value;
+			}
+		}
+
+		if (!$matches)
+		{
+			return array();
+		}
+
+		ksort($matches);
+		foreach ($matches as $entry)
+		{
+			$entityId = isset($entry['entity_id']) ? (int)$entry['entity_id'] : 0;
+			$catId = isset($entry['cat_id']) ? (int)$entry['cat_id'] : 0;
+			$pNum = isset($entry['entity_num']) ? trim((string)$entry['entity_num']) : '';
+
+			if ($entityId > 0 && $catId > 0 && $pNum !== '')
+			{
+				return array(
+					'p_entity_id' => $entityId,
+					'p_cat_id' => $catId,
+					'p_num' => $pNum,
+				);
+			}
+		}
+
+		return array();
+	}
+
+	/**
 	 * Apply RelationInfo-based enrichment for project save payloads.
 	 *
 	 * Ensures legacy BO/SO-compatible location and extra structures.
@@ -177,6 +272,14 @@ class ProjectController
 			'origin_id',
 		);
 
+		$extraRelationFields = array(
+			'location_code',
+			'tenant_id',
+			'p_num',
+			'p_entity_id',
+			'p_cat_id',
+		);
+
 		foreach ($relationFields as $field)
 		{
 			if (array_key_exists($field, $relationInfo) && !array_key_exists($field, $values))
@@ -184,21 +287,45 @@ class ProjectController
 				$values[$field] = $relationInfo[$field];
 			}
 
-			if (array_key_exists($field, $relationInfo) && !array_key_exists($field, $values['extra']))
+			if (in_array($field, $extraRelationFields, true) && array_key_exists($field, $relationInfo) && !array_key_exists($field, $values['extra']))
 			{
 				$values['extra'][$field] = $relationInfo[$field];
 			}
 		}
+
+		// Keep origin metadata in RelationInfo/values, never in legacy extra payload.
+		unset($values['extra']['origin'], $values['extra']['origin_id']);
 
 		if (isset($values['contact_phone']) && $values['contact_phone'] !== '' && !array_key_exists('contact_phone', $values['extra']))
 		{
 			$values['extra']['contact_phone'] = $values['contact_phone'];
 		}
 
-		$location = array();
+		// Legacy bypass/origin flows populate values['p'][p_entity_id][...].
+		$pEntityId = isset($values['p_entity_id']) ? (int)$values['p_entity_id'] : 0;
+		$pCatId = isset($values['p_cat_id']) ? (int)$values['p_cat_id'] : 0;
+		$pNum = isset($values['p_num']) ? (string)$values['p_num'] : '';
+		if ($pEntityId > 0 && $pCatId > 0 && $pNum !== '')
+		{
+			if (!isset($values['p']) || !is_array($values['p']))
+			{
+				$values['p'] = array();
+			}
 
+			if (!isset($values['p'][$pEntityId]) || !is_array($values['p'][$pEntityId]))
+			{
+				$values['p'][$pEntityId] = array();
+			}
+
+			$values['p'][$pEntityId]['p_entity_id'] = $pEntityId;
+			$values['p'][$pEntityId]['p_cat_id'] = $pCatId;
+			$values['p'][$pEntityId]['p_num'] = $pNum;
+		}
+
+		$location = array();
 		if (isset($values['location']) && is_array($values['location']) && $values['location'])
 		{
+			$i=0;
 			foreach ($values['location'] as $key => $part)
 			{
 				if ((string)$part === '')
@@ -214,6 +341,12 @@ class ProjectController
 				{
 					$location['loc' . (count($location) + 1)] = $part;
 				}
+				$i++;
+			}
+			$locationNameKey = 'loc' . $i . '_name';
+			if (!empty($body[$locationNameKey]))
+			{
+				$values['location_name'] = \Sanitizer::clean_value((string)$body[$locationNameKey], 'string');
 			}
 		}
 

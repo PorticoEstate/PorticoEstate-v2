@@ -6,6 +6,7 @@ use JsonException;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use App\modules\phpgwapi\services\Settings;
 use App\modules\property\helpers\ProjectFormHelper;
 use App\modules\phpgwapi\security\Acl;
 use Slim\Exception\HttpBadRequestException;
@@ -1417,11 +1418,12 @@ class ProjectController
 		}
 
 		$id = (int)($args['id'] ?? 0);
+		$serverSettings = Settings::getInstance()->get('server');
 
 		\phpgw::import_class('property.multiuploader');
 		$options = array();
-		$options['base_dir'] = 'project/' . $id;
-		$options['upload_dir'] = $GLOBALS['phpgw_info']['server']['files_dir'] . '/property/' . $options['base_dir'] . '/';
+		$options['base_dir']	 = 'project/' . $id;
+		$options['upload_dir']	 = $serverSettings['files_dir'] . '/property/' . $options['base_dir'] . '/';
 		$options['script_url'] = html_entity_decode(\phpgw::link('/index.php/property/project/' . $id . '/multi-upload'));
 		$uploadHandler = new \property_multiuploader($options, false);
 

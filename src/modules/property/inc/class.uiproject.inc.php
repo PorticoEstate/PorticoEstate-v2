@@ -72,9 +72,9 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 		'view'							 => true,
 		'edit'							 => true,
 		'add'							 => true,
-		'delete'						 => true,
+		'delete'						 => false,
 		'save'							 => false,
-		'date_search'					 => true,
+		'date_search'					 => false,
 		'columns'						 => true,
 		'bulk_update_status'			 => true,
 		'view_file'						 => false,
@@ -923,10 +923,21 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 					'my_name'		 => 'delete',
 					'text'			 => lang('delete'),
 					'confirm_msg'	 => lang('do you really want to delete this entry'),
-					'action'		 => phpgw::link('/index.php', array(
-						'menuaction' => 'property.uiproject.delete'
-					)),
-					'parameters'	 => json_encode($parameters2)
+					'type'			 => 'custom',
+					'custom_code'	 => "
+									var api = oTable.api();
+									var selected = api.rows( { selected: true } ).data();
+									for ( var n = 0; n < selected.length; ++n )
+									{
+										var aData = selected[n];
+										var requestUrl = phpGWLink('index.php/property/project/' + aData['project_id'], {});
+										execute_ajax(requestUrl, function(result){
+											var message = result && result.message ? result.message : result;
+											document.getElementById('message').innerHTML += '<br/>' + message;
+											api.draw('page');
+										}, {}, 'DELETE', 'json');
+									}
+								"
 				);
 			}
 		}

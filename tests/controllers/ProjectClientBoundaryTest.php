@@ -78,6 +78,29 @@ namespace Tests\Controllers
 			);
 		}
 
+		public function testUiprojectIndexDeleteUsesRestDestroyEndpoint(): void
+		{
+			$uiProjectPath = __DIR__ . '/../../src/modules/property/inc/class.uiproject.inc.php';
+			$contents = file_get_contents($uiProjectPath);
+
+			$this->assertIsString($contents);
+			$this->assertStringContainsString(
+				"phpGWLink('index.php/property/project/' + aData['project_id']",
+				$contents,
+				'Project index delete action must use REST destroy endpoint'
+			);
+			$this->assertStringContainsString(
+				"'DELETE', 'json'",
+				$contents,
+				'Project index delete action must issue REST DELETE request'
+			);
+			$this->assertStringNotContainsString(
+				"'menuaction' => 'property.uiproject.delete'",
+				$contents,
+				'Project index delete must not use legacy uiproject.delete menuaction'
+			);
+		}
+
 		public function testWorkorderAddInvoiceUsesProjectRestExternalProjectLookup(): void
 		{
 			$workorderAddInvoicePath = __DIR__ . '/../../src/modules/property/js/base/workorder.add_invoice.js';
@@ -104,6 +127,8 @@ namespace Tests\Controllers
 			$this->assertIsString($contents);
 
 			$expectedDisabled = array(
+				"'date_search'\t\t\t\t\t => false",
+				"'delete'\t\t\t\t\t\t => false",
 				"'view_file'\t\t\t\t\t\t => false",
 				"'view_image'\t\t\t\t\t => false",
 				"'get_orders'\t\t\t\t\t => false",

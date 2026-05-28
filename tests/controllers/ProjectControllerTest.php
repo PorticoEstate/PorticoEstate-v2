@@ -12,6 +12,7 @@ namespace Tests\Controllers
 	use Psr\Http\Message\ResponseInterface;
 	use Psr\Http\Message\ServerRequestInterface;
 	use Psr\Http\Message\StreamInterface;
+		use Slim\Exception\HttpBadRequestException;
 
 	class ProjectControllerTest extends TestCase
 	{
@@ -944,6 +945,28 @@ namespace Tests\Controllers
 			$this->assertArrayHasKey('error', $decoded['receipt']);
 		}
 
+		public function testStoreRejectsInvalidValuesEnvelopeType(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new ProjectFormHelper();
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array(
+				'values' => 'not-an-object',
+			));
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+
+			$this->expectException(HttpBadRequestException::class);
+			$this->expectExceptionMessage('Invalid payload: values must be an object');
+
+			$controller->store($this->request, $this->response);
+		}
+
 		public function testUpdateReturnsErrorPayloadWhenValidationFails(): void
 		{
 			$bo = new class
@@ -984,6 +1007,28 @@ namespace Tests\Controllers
 			$this->assertSame('error', $decoded['status']);
 			$this->assertArrayHasKey('receipt', $decoded);
 			$this->assertArrayHasKey('error', $decoded['receipt']);
+		}
+
+		public function testUpdateRejectsInvalidRelationInfoEnvelopeType(): void
+		{
+			$bo = new class
+			{
+				public int $total_records = 0;
+			};
+
+			$helper = new ProjectFormHelper();
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array(
+				'RelationInfo' => 'not-an-object',
+			));
+
+			$controller = $this->makeControllerWithHelper($bo, $helper);
+
+			$this->expectException(HttpBadRequestException::class);
+			$this->expectExceptionMessage('Invalid payload: RelationInfo must be an object');
+
+			$controller->update($this->request, $this->response, array('id' => 100));
 		}
 
 		public function testGetBAccountLookupReturnsLegacyResultShape(): void

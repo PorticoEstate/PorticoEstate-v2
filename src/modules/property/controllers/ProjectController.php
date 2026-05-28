@@ -8,6 +8,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\modules\property\helpers\ProjectFormHelper;
 use App\modules\phpgwapi\security\Acl;
+use Slim\Exception\HttpBadRequestException;
 use Slim\Exception\HttpForbiddenException;
 use Slim\Exception\HttpNotFoundException;
 
@@ -117,8 +118,23 @@ class ProjectController
 		return is_array($decoded) ? $decoded : array();
 	}
 
-	private function normalizeProjectSavePayload(array $input): array
+	private function normalizeProjectSavePayload(Request $request, array $input): array
 	{
+		if (array_key_exists('values', $input) && !is_array($input['values']))
+		{
+			throw new HttpBadRequestException($request, 'Invalid payload: values must be an object');
+		}
+
+		if (array_key_exists('values_attribute', $input) && !is_array($input['values_attribute']))
+		{
+			throw new HttpBadRequestException($request, 'Invalid payload: values_attribute must be an object');
+		}
+
+		if (array_key_exists('RelationInfo', $input) && !is_array($input['RelationInfo']))
+		{
+			throw new HttpBadRequestException($request, 'Invalid payload: RelationInfo must be an object');
+		}
+
 		$values = isset($input['values']) && is_array($input['values'])
 			? $input['values']
 			: $input;
@@ -182,7 +198,7 @@ class ProjectController
 			}
 		}
 
-		$values = $this->applyRelationInfoPayload($values, $relationInfo);
+		$values = $this->applyRelationInfoPayload($values, $relationInfo, $input);
 
 		return array(
 			'values' => $values,
@@ -255,7 +271,7 @@ class ProjectController
 	 *
 	 * Ensures legacy BO/SO-compatible location and extra structures.
 	 */
-	private function applyRelationInfoPayload(array $values, array $relationInfo): array
+	private function applyRelationInfoPayload(array $values, array $relationInfo, array $input): array
 	{
 		if (!isset($values['extra']) || !is_array($values['extra']))
 		{
@@ -323,9 +339,9 @@ class ProjectController
 		}
 
 		$location = array();
+		$locationSegmentCount = 0;
 		if (isset($values['location']) && is_array($values['location']) && $values['location'])
 		{
-			$i=0;
 			foreach ($values['location'] as $key => $part)
 			{
 				if ((string)$part === '')
@@ -341,12 +357,12 @@ class ProjectController
 				{
 					$location['loc' . (count($location) + 1)] = $part;
 				}
-				$i++;
+				$locationSegmentCount++;
 			}
-			$locationNameKey = 'loc' . $i . '_name';
-			if (!empty($body[$locationNameKey]))
+			$locationNameKey = 'loc' . $locationSegmentCount . '_name';
+			if ($locationSegmentCount > 0 && !empty($input[$locationNameKey]))
 			{
-				$values['location_name'] = \Sanitizer::clean_value((string)$body[$locationNameKey], 'string');
+				$values['location_name'] = \Sanitizer::clean_value((string)$input[$locationNameKey], 'string');
 			}
 		}
 
@@ -1011,7 +1027,7 @@ class ProjectController
 		}
 
 		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
-		$input = $this->normalizeProjectSavePayload($input);
+		$input = $this->normalizeProjectSavePayload($request, $input);
 		$state = $this->formHelper()->mapInput($input, false, 0);
 		$state = $this->formHelper()->validate($state);
 		$state = $this->formHelper()->persistSave($state, $this->bo());
@@ -1048,7 +1064,7 @@ class ProjectController
 		}
 
 		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
-		$input = $this->normalizeProjectSavePayload($input);
+		$input = $this->normalizeProjectSavePayload($request, $input);
 		$state = $this->formHelper()->mapInput($input, true, $id);
 		$state = $this->formHelper()->validate($state);
 		$state = $this->formHelper()->persistSave($state, $this->bo());

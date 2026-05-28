@@ -379,21 +379,21 @@ class MigrationService
 	}
 
 	/**
-	 * Get the last applied migration filename for a module, or '0' if none applied.
+	 * Get the stored version for a migration-based module (applied count).
+	 * Only used for phpgw_applications storage, not for upgrade decisions.
 	 */
 	public function getCurrentVersion(string $module): string
 	{
-		$applied = $this->getAppliedMigrations($module);
-		return !empty($applied) ? end($applied) : '0';
+		return (string) count($this->getAppliedMigrations($module));
 	}
 
 	/**
-	 * Get the last migration filename on disk for a module.
+	 * Get the target version for a migration-based module (total file count).
+	 * Only used for phpgw_applications storage, not for upgrade decisions.
 	 */
 	public function getTargetVersion(string $module): string
 	{
-		$files = $this->getMigrationFiles($module);
-		return !empty($files) ? basename(end($files)) : '0';
+		return (string) count($this->getMigrationFiles($module));
 	}
 
 	/**

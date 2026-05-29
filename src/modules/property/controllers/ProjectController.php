@@ -15,8 +15,8 @@ use Slim\Exception\HttpNotFoundException;
 
 class ProjectController
 {
-	private $bo = null;
-	private $bocommon = null;
+	private ?object $bo = null;
+	private ?object$bocommon = null;
 	private ?ProjectFormHelper $formHelperInstance = null;
 
 	public function __construct(ContainerInterface $container)

@@ -127,8 +127,12 @@ class property_soentity
 		$cat_id			 = $location_arr[3];
 		$category = CreateObject('property.soadmin_entity')->read_single_category($entity_id, $cat_id);
 
-		$this->db->query("SELECT column_name FROM phpgw_cust_attribute WHERE location_id = {$location_id} AND column_name = 'geolocation'", __LINE__, __FILE__);
-		if (!$this->db->next_record())
+		$stmt = $this->db->prepare('SELECT column_name FROM phpgw_cust_attribute WHERE location_id = :location_id AND column_name = :column_name');
+		$stmt->execute(array(
+			':location_id' => (int)$location_id,
+			':column_name' => 'geolocation'
+		));
+		if (!$stmt->fetch())
 		{
 			//return false;
 			$boadmin_entity = CreateObject('property.boadmin_entity');
@@ -157,15 +161,19 @@ class property_soentity
 
 		if ($category['is_eav'])
 		{
-			$sql = "UPDATE fm_bim_item SET json_representation = jsonb_set(json_representation, '{geolocation}', '\"{$lat}, {$lng}\"', true) WHERE location_id = {$location_id} AND id = {$component_id}";
+			$stmt = $this->db->prepare("UPDATE fm_bim_item SET json_representation = jsonb_set(json_representation, '{geolocation}', to_jsonb(:geolocation::text), true) WHERE location_id = :location_id AND id = :component_id");
 		}
 		else
 		{
 			$entity_table = "fm_{$type}_{$entity_id}_{$cat_id}";
-			$sql = "UPDATE {$entity_table} SET geolocation = '{$lat}, {$lng}' WHERE location_id = {$location_id} AND id = {$component_id}";
+			$stmt = $this->db->prepare("UPDATE {$entity_table} SET geolocation = :geolocation WHERE location_id = :location_id AND id = :component_id");
 		}
 
-		return $this->db->query($sql, __LINE__, __FILE__);
+		return $stmt->execute(array(
+			':geolocation' => "{$lat}, {$lng}",
+			':location_id' => (int)$location_id,
+			':component_id' => (int)$component_id
+		));
 	}
 
 
@@ -183,16 +191,17 @@ class property_soentity
 			. " phpgw_cust_attribute.location_id= phpgw_cust_choice.location_id AND"
 			. " phpgw_cust_attribute.id= phpgw_cust_choice.attrib_id"
 			. " WHERE phpgw_cust_attribute.column_name='status'"
-			. " AND phpgw_cust_choice.location_id={$location_id} ORDER BY phpgw_cust_choice.id";
+			. " AND phpgw_cust_choice.location_id = :location_id ORDER BY phpgw_cust_choice.id";
 
-		$this->db->query($sql, __LINE__, __FILE__);
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':location_id' => (int)$location_id));
 
 		$status = array();
-		while ($this->db->next_record())
+		foreach ($stmt->fetchAll() as $row)
 		{
 			$status[] = array(
-				'id'	 => $this->db->f('id'),
-				'name'	 => stripslashes($this->db->f('value'))
+				'id'	 => $row['id'],
+				'name'	 => $this->dbStrip($row['value'])
 			);
 		}
 		return $status;
@@ -288,7 +297,7 @@ class property_soentity
 			{
 				foreach ($grants['accounts'] as $user => $right)
 				{
-					$public_user_list[] = $user;
+					$public_user_list[] = (int)$user;
 				}
 				unset($user);
 
@@ -303,7 +312,7 @@ class property_soentity
 			{
 				foreach ($grants['groups'] as $user => $_right)
 				{
-					$public_group_list[] = $user;
+					$public_group_list[] = (int)$user;
 				}
 				unset($user);
 				reset($public_group_list);
@@ -381,18 +390,22 @@ class property_soentity
 		$attributes		 = array();
 		foreach ($conditions as $condition)
 		{
-			$this->db->query("SELECT * FROM phpgw_cust_attribute WHERE location_id = {$location_id} AND id= " . (int)$condition['attribute_id']);
-			$this->db->next_record();
-			$attribute_name = $this->db->f('column_name');
+			$stmt = $this->db->prepare('SELECT * FROM phpgw_cust_attribute WHERE location_id = :location_id AND id = :attribute_id');
+			$stmt->execute(array(
+				':location_id' => (int)$location_id,
+				':attribute_id' => (int)$condition['attribute_id']
+			));
+			$row = $stmt->fetch();
+			$attribute_name = $row['column_name'];
 
 			$attributes[$condition['attibute_id']]['name']						 = $attribute_name;
-			$attributes[$condition['attibute_id']]['datatype']					 = $this->db->f('datatype');
-			$attributes[$condition['attibute_id']]['get_list_function']			 = $this->db->f('get_list_function', true);
-			$attributes[$condition['attibute_id']]['get_list_function_input']	 = $this->db->f('get_list_function_input') ? unserialize($this->db->f('get_list_function_input', true)) : '';
-			$attributes[$condition['attibute_id']]['get_single_function']		 = $this->db->f('get_single_function', true);
-			$attributes[$condition['attibute_id']]['get_single_function_input']	 = $this->db->f('get_single_function_input') ? unserialize($this->db->f('get_single_function_input', true)) : '';
+			$attributes[$condition['attibute_id']]['datatype']					 = $row['datatype'];
+			$attributes[$condition['attibute_id']]['get_list_function']			 = $this->dbStrip($row['get_list_function']);
+			$attributes[$condition['attibute_id']]['get_list_function_input']	 = $row['get_list_function_input'] ? unserialize($this->dbStrip($row['get_list_function_input'])) : '';
+			$attributes[$condition['attibute_id']]['get_single_function']		 = $this->dbStrip($row['get_single_function']);
+			$attributes[$condition['attibute_id']]['get_single_function_input']	 = $row['get_single_function_input'] ? unserialize($this->dbStrip($row['get_single_function_input'])) : '';
 
-			switch ($this->db->f('datatype'))
+			switch ($row['datatype'])
 			{
 				case 'I':
 					switch ($condition['operator'])
@@ -2283,37 +2296,42 @@ class property_soentity
 		$num	 = isset($data['num']) && $data['num'] ? $data['num'] : '';
 		$table	 = "fm_{$this->type}_{$entity_id}_{$cat_id}";
 
+		$params = array();
 		if ($num)
 		{
-			$filtermethod = "WHERE num = '{$num}'";
+			$filtermethod = 'WHERE num = :num';
+			$params[':num'] = $num;
 		}
 		else
 		{
-			$filtermethod = "WHERE id = {$id}";
+			$filtermethod = 'WHERE id = :id';
+			$params[':id'] = (int)$id;
 		}
 
-		$this->db->query("SELECT * FROM {$table} {$filtermethod}");
+		$stmt = $this->db->prepare("SELECT * FROM {$table} {$filtermethod}");
+		$stmt->execute($params);
+		$row = $stmt->fetch();
 
-		if ($this->db->next_record())
+		if ($row)
 		{
 			$values['id']			 = $id;
-			$values['num']			 = $this->db->f('num');
-			$values['p_num']		 = $this->db->f('p_num');
-			$values['p_entity_id']	 = $this->db->f('p_entity_id');
-			$values['p_cat_id']		 = $this->db->f('p_cat_id');
-			$values['location_code'] = $this->db->f('location_code');
-			$values['tenant_id']	 = $this->db->f('tenant_id');
-			$values['contact_phone'] = $this->db->f('contact_phone');
-			$values['status']		 = $this->db->f('status');
-			$values['user_id']		 = $this->db->f('user_id');
-			$values['entry_date']	 = $this->db->f('entry_date');
-			$values['org_unit_id']	 = $this->db->f('org_unit_id');
+			$values['num']			 = $row['num'];
+			$values['p_num']		 = $row['p_num'];
+			$values['p_entity_id']	 = $row['p_entity_id'];
+			$values['p_cat_id']		 = $row['p_cat_id'];
+			$values['location_code'] = $row['location_code'];
+			$values['tenant_id']	 = $row['tenant_id'];
+			$values['contact_phone'] = $row['contact_phone'];
+			$values['status']		 = $row['status'];
+			$values['user_id']		 = $row['user_id'];
+			$values['entry_date']	 = $row['entry_date'];
+			$values['org_unit_id']	 = $row['org_unit_id'];
 
 			if (isset($values['attributes']) && is_array($values['attributes']))
 			{
 				foreach ($values['attributes'] as &$attr)
 				{
-					$attr['value'] = $this->db->f($attr['column_name'], true);
+					$attr['value'] = $this->dbStrip($row[$attr['column_name']]);
 				}
 			}
 		}
@@ -2339,10 +2357,13 @@ class property_soentity
 		}
 
 		$sql = '';
+		$params = array();
 
 		if (isset($data['guid']) && $data['guid'])
 		{
-			$sql = "SELECT * FROM fm_bim_item WHERE guid = '{$data['guid']}'";
+			$sql = 'SELECT * FROM fm_bim_item WHERE guid = :guid';
+			$params[':guid'] = $data['guid'];
+			$id = 0;
 		}
 		else if (isset($data['location_id']) && $data['location_id'])
 		{
@@ -2358,34 +2379,39 @@ class property_soentity
 		if (!$sql)
 		{
 			//				$sql = "SELECT fm_bim_item.* FROM fm_bim_item {$this->join} fm_bim_type ON fm_bim_type.id = fm_bim_item.type WHERE fm_bim_item.id = {$id} AND location_id = $location_id";
-			$sql = "SELECT * FROM fm_bim_item WHERE fm_bim_item.id = {$id} AND location_id = $location_id";
+			$sql = 'SELECT * FROM fm_bim_item WHERE fm_bim_item.id = :id AND location_id = :location_id';
+			$params[':id'] = (int)$id;
+			$params[':location_id'] = (int)$location_id;
 		}
 
-		$this->db->query($sql, __LINE__, __FILE__);
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute($params);
+		$row = $stmt->fetch();
 
-		if ($this->db->next_record())
+		if ($row)
 		{
-			$values['id']				 = $id;
-			$values['num']				 = $id;
-			$values['p_id']				 = $this->db->f('p_id');
-			$values['p_location_id']	 = $this->db->f('p_location_id');
-			$values['location_code']	 = $this->db->f('location_code');
-			$values['user_id']			 = $this->db->f('user_id');
-			$values['entry_date']		 = $this->db->f('entry_date');
-			$values['org_unit_id']		 = $this->db->f('org_unit_id');
-			$values['entity_group_id']	 = $this->db->f('entity_group_id');
+			$resolvedId = $id ?: (int)$row['id'];
+			$values['id']				 = $resolvedId;
+			$values['num']				 = $resolvedId;
+			$values['p_id']				 = $row['p_id'];
+			$values['p_location_id']	 = $row['p_location_id'];
+			$values['location_code']	 = $row['location_code'];
+			$values['user_id']			 = $row['user_id'];
+			$values['entry_date']		 = $row['entry_date'];
+			$values['org_unit_id']		 = $row['org_unit_id'];
+			$values['entity_group_id']	 = $row['entity_group_id'];
 
 			//				$xmldata = $this->db->f('xml_representation', true);
 			//				$xml = new DOMDocument('1.0', 'utf-8');
 			//				$xml->loadXML($xmldata);
 
-			$jsondata = json_decode($this->db->f('json_representation'), true);
+			$jsondata = json_decode($row['json_representation'], true);
 
 			if (isset($values['attributes']) && is_array($values['attributes']))
 			{
 				foreach ($values['attributes'] as &$attr)
 				{
-					$attr['value'] = $this->db->stripslashes($jsondata[$attr['column_name']]);
+					$attr['value'] = $this->dbStrip($jsondata[$attr['column_name']]);
 				}
 			}
 		}
@@ -2492,11 +2518,11 @@ class property_soentity
 	function check_entity($entity_id, $cat_id, $num): ?bool
 	{
 		$table = "fm_{$this->type}_{$entity_id}_{$cat_id}";
-		$this->db->query("SELECT count(*) as cnt FROM $table where num='$num'");
+		$stmt = $this->db->prepare("SELECT count(*) as cnt FROM $table WHERE num = :num");
+		$stmt->execute(array(':num' => $num));
+		$row = $stmt->fetch();
 
-		$this->db->next_record();
-
-		if ($this->db->f('cnt'))
+		if (!empty($row['cnt']))
 		{
 			return true;
 		}
@@ -2512,9 +2538,10 @@ class property_soentity
 	function generate_id($data): int
 	{
 		$table	 = "fm_{$this->type}_{$data['entity_id']}_{$data['cat_id']}";
-		$this->db->query("select max(id) as id from $table");
-		$this->db->next_record();
-		$id		 = (int) $this->db->f('id') + 1;
+		$stmt = $this->db->prepare("SELECT max(id) as id FROM $table");
+		$stmt->execute();
+		$row = $stmt->fetch();
+		$id		 = (int)($row['id'] ?? 0) + 1;
 
 		return $id;
 	}
@@ -2531,9 +2558,13 @@ class property_soentity
 	 */
 	function generate_num($entity_id, $cat_id, $id): string
 	{
-		$this->db->query("select prefix from fm_{$this->type}_category WHERE entity_id=$entity_id AND id=$cat_id ");
-		$this->db->next_record();
-		$prefix = $this->db->f('prefix');
+		$stmt = $this->db->prepare("SELECT prefix FROM fm_{$this->type}_category WHERE entity_id = :entity_id AND id = :cat_id");
+		$stmt->execute(array(
+			':entity_id' => (int)$entity_id,
+			':cat_id' => (int)$cat_id
+		));
+		$row = $stmt->fetch();
+		$prefix = isset($row['prefix']) ? $this->dbStrip($row['prefix']) : '';
 
 		if (strlen($id) == 4)
 			$return	 = $id;
@@ -2784,9 +2815,10 @@ class property_soentity
 	{
 		$location_id = (int)$location_id;
 
-		$this->db->query("SELECT id as type FROM fm_bim_type WHERE location_id = {$location_id}", __LINE__, __FILE__);
-		$this->db->next_record();
-		$type	 = $this->db->f('type');
+		$stmt = $this->db->prepare('SELECT id as type FROM fm_bim_type WHERE location_id = :location_id');
+		$stmt->execute(array(':location_id' => (int)$location_id));
+		$row = $stmt->fetch();
+		$type	 = $row['type'];
 		$id		 = $this->db->next_id('fm_bim_item', array('type' => $type));
 
 		if (function_exists('com_create_guid') === true)
@@ -2820,8 +2852,22 @@ class property_soentity
 			'user_id'				 => $this->account
 		);
 
-		$this->db->query("INSERT INTO fm_bim_item (" . implode(',', array_keys($values_insert)) . ') VALUES ('
-			. $this->db->validate_insert(array_values($values_insert)) . ')', __LINE__, __FILE__);
+		$stmt = $this->db->prepare('INSERT INTO fm_bim_item (id, location_id, type, guid, json_representation, model, p_location_id, p_id, location_code, loc1, address, entry_date, user_id) VALUES (:id, :location_id, :type, :guid, :json_representation, :model, :p_location_id, :p_id, :location_code, :loc1, :address, :entry_date, :user_id)');
+		$stmt->execute(array(
+			':id' => $values_insert['id'],
+			':location_id' => $values_insert['location_id'],
+			':type' => $values_insert['type'],
+			':guid' => $values_insert['guid'],
+			':json_representation' => $values_insert['json_representation'],
+			':model' => $values_insert['model'],
+			':p_location_id' => $values_insert['p_location_id'],
+			':p_id' => $values_insert['p_id'],
+			':location_code' => $values_insert['location_code'],
+			':loc1' => $values_insert['loc1'],
+			':address' => $values_insert['address'],
+			':entry_date' => $values_insert['entry_date'],
+			':user_id' => $values_insert['user_id']
+		));
 
 		return $id;
 	}
@@ -2844,15 +2890,20 @@ class property_soentity
 		$location_id = (int)$location_id;
 		$id			 = (int)$id;
 
-		$this->db->query("SELECT id as type FROM fm_bim_type WHERE location_id = {$location_id}", __LINE__, __FILE__);
-		$this->db->next_record();
-		$type = (int)$this->db->f('type');
+		$stmt = $this->db->prepare('SELECT id as type FROM fm_bim_type WHERE location_id = :location_id');
+		$stmt->execute(array(':location_id' => (int)$location_id));
+		$row = $stmt->fetch();
+		$type = (int)$row['type'];
 
 		$location_name = str_replace('.', '_', $location_name);
 
-		$this->db->query("SELECT json_representation FROM fm_bim_item WHERE fm_bim_item.id = {$id} AND location_id = $location_id", __LINE__, __FILE__);
-		$this->db->next_record();
-		$jsondata = json_decode($this->db->f('json_representation'), true);
+		$stmt = $this->db->prepare('SELECT json_representation FROM fm_bim_item WHERE fm_bim_item.id = :id AND location_id = :location_id');
+		$stmt->execute(array(
+			':id' => (int)$id,
+			':location_id' => (int)$location_id
+		));
+		$row = $stmt->fetch();
+		$jsondata = json_decode($row['json_representation'], true);
 
 		foreach ($data as $key => $value)
 		{
@@ -2873,7 +2924,11 @@ class property_soentity
 		);
 
 		$value_set = $this->db->validate_update($value_set);
-		return $this->db->query("UPDATE fm_bim_item SET $value_set WHERE id = $id AND type = {$type}", __LINE__, __FILE__);
+		$stmt = $this->db->prepare("UPDATE fm_bim_item SET $value_set WHERE id = :id AND type = :type");
+		return $stmt->execute(array(
+			':id' => (int)$id,
+			':type' => (int)$type
+		));
 	}
 
 	/**
@@ -2996,23 +3051,25 @@ class property_soentity
 				{
 					if (!$category['is_eav'])
 					{
-						$this->db->query("SELECT {$entry['name']} FROM {$table} WHERE id = '{$values['id']}'", __LINE__, __FILE__);
-						$this->db->next_record();
-						$old_value = $this->db->f($entry['name'], true);
+						$stmt = $this->db->prepare("SELECT {$entry['name']} FROM {$table} WHERE id = :id");
+						$stmt->execute(array(':id' => (int)$values['id']));
+						$row = $stmt->fetch();
+						$old_value = $row ? $this->dbStrip($row[$entry['name']]) : null;
 					}
 					else
 					{
-						$sql = "SELECT * FROM fm_bim_item WHERE fm_bim_item.id = {$values['id']} AND location_id = $location_id";
-
-						$this->db->query($sql, __LINE__, __FILE__);
-
-						$this->db->next_record();
+						$stmt = $this->db->prepare('SELECT * FROM fm_bim_item WHERE fm_bim_item.id = :id AND location_id = :location_id');
+						$stmt->execute(array(
+							':id' => (int)$values['id'],
+							':location_id' => (int)$location_id
+						));
+						$row = $stmt->fetch();
 						//							$xmldata = $this->db->f('xml_representation');
 						//							$xml = new DOMDocument('1.0', 'utf-8');
 						//							$xml->loadXML($xmldata);
 						//							$old_value = $xml->getElementsByTagName($entry['name'])->item(0)->nodeValue;
-						$jsondata	 = json_decode($this->db->f('json_representation'), true);
-						$old_value	 = $this->db->stripslashes($jsondata[$entry['name']]);
+						$jsondata	 = json_decode($row['json_representation'] ?? '{}', true);
+						$old_value	 = isset($jsondata[$entry['name']]) ? $this->dbStrip($jsondata[$entry['name']]) : null;
 					}
 
 					if ($entry['datatype'] == 'D')
@@ -3077,7 +3134,8 @@ class property_soentity
 			$value_set['modified_on']	 = time();
 
 			$value_set = $this->db->validate_update($value_set);
-			$this->db->query("UPDATE $table set $value_set WHERE id=" . $values['id'], __LINE__, __FILE__);
+			$stmt = $this->db->prepare("UPDATE $table SET $value_set WHERE id = :id");
+			$stmt->execute(array(':id' => (int)$values['id']));
 		}
 
 		if (isset($history_set) && is_array($history_set))
@@ -3124,23 +3182,29 @@ class property_soentity
 
 		$this->db->transaction_begin();
 
-		$this->db->query("DELETE FROM fm_bim_item_checklist_data WHERE type_location_id ={$location_id} AND item_id = {$id}", __LINE__, __FILE__);
+		$stmt = $this->db->prepare('DELETE FROM fm_bim_item_checklist_data WHERE type_location_id = :location_id AND item_id = :id');
+		$stmt->execute(array(':location_id' => (int)$location_id, ':id' => (int)$id));
 
 		if ($category['is_eav'])
 		{
-			$this->db->query("SELECT id as type FROM fm_bim_type WHERE location_id = {$location_id}", __LINE__, __FILE__);
-			$this->db->next_record();
-			$type = (int)$this->db->f('type');
-			$this->db->query("DELETE FROM fm_bim_item WHERE id = $id AND type = {$type}", __LINE__, __FILE__);
+			$stmt = $this->db->prepare('SELECT id as type FROM fm_bim_type WHERE location_id = :location_id');
+			$stmt->execute(array(':location_id' => (int)$location_id));
+			$row = $stmt->fetch();
+			$type = (int)$row['type'];
+			$stmt = $this->db->prepare('DELETE FROM fm_bim_item WHERE id = :id AND type = :type');
+			$stmt->execute(array(':id' => (int)$id, ':type' => (int)$type));
 		}
 		else
 		{
 			$table = "fm_{$this->type}_{$entity_id}_{$cat_id}";
-			$this->db->query("DELETE FROM $table WHERE id = $id", __LINE__, __FILE__);
+			$stmt = $this->db->prepare("DELETE FROM $table WHERE id = :id");
+			$stmt->execute(array(':id' => (int)$id));
 		}
 
-		$this->db->query("DELETE FROM phpgw_interlink WHERE location1_id ={$location_id} AND location1_item_id = {$id}", __LINE__, __FILE__);
-		$this->db->query("DELETE FROM phpgw_interlink WHERE location2_id ={$location_id} AND location2_item_id = {$id}", __LINE__, __FILE__);
+		$stmt = $this->db->prepare('DELETE FROM phpgw_interlink WHERE location1_id = :location_id AND location1_item_id = :id');
+		$stmt->execute(array(':location_id' => (int)$location_id, ':id' => (int)$id));
+		$stmt = $this->db->prepare('DELETE FROM phpgw_interlink WHERE location2_id = :location_id AND location2_item_id = :id');
+		$stmt->execute(array(':location_id' => (int)$location_id, ':id' => (int)$id));
 
 		$this->db->transaction_commit();
 	}
@@ -3164,11 +3228,13 @@ class property_soentity
 
 		$location_id = $this->locations->get_id($this->type_app[$this->type], ".{$this->type}.{$entity_id}.{$cat_id}");
 
-		$this->db->query("SELECT helpmsg FROM fphpgw_cust_attribute WHERE location_id = {$location_id} AND id =" . (int)$attrib_id);
-
-		$this->db->next_record();
-		//			$helpmsg = str_replace("\n","<br>",stripslashes($this->db->f('helpmsg')));
-		$helpmsg = stripslashes($this->db->f('helpmsg'));
+		$stmt = $this->db->prepare('SELECT helpmsg FROM fphpgw_cust_attribute WHERE location_id = :location_id AND id = :attrib_id');
+		$stmt->execute(array(
+			':location_id' => (int)$location_id,
+			':attrib_id' => (int)$attrib_id
+		));
+		$row = $stmt->fetch();
+		$helpmsg = $row ? $this->dbStrip($row['helpmsg']) : null;
 		return $helpmsg;
 	}
 
@@ -3491,8 +3557,22 @@ class property_soentity
 			'remark'		 => $this->db->db_addslashes($values['remark'])
 		);
 
-		return $this->db->query("INSERT INTO {$table} (" . implode(',', array_keys($value_set)) . ') VALUES ('
-			. $this->db->validate_insert(array_values($value_set)) . ')', __LINE__, __FILE__);
+		$stmt = $this->db->prepare("INSERT INTO {$table} (location_id, item_id, p_location_id, p_id, unit_id, inventory, write_off, bookable, active_from, active_to, created_on, created_by, remark) VALUES (:location_id, :item_id, :p_location_id, :p_id, :unit_id, :inventory, :write_off, :bookable, :active_from, :active_to, :created_on, :created_by, :remark)");
+		return $stmt->execute(array(
+			':location_id' => $value_set['location_id'],
+			':item_id' => $value_set['item_id'],
+			':p_location_id' => $value_set['p_location_id'],
+			':p_id' => $value_set['p_id'],
+			':unit_id' => $value_set['unit_id'],
+			':inventory' => $value_set['inventory'],
+			':write_off' => $value_set['write_off'],
+			':bookable' => $value_set['bookable'],
+			':active_from' => $value_set['active_from'],
+			':active_to' => $value_set['active_to'],
+			':created_on' => $value_set['created_on'],
+			':created_by' => $value_set['created_by'],
+			':remark' => $value_set['remark']
+		));
 	}
 
 	/**
@@ -3524,24 +3604,24 @@ class property_soentity
 		);
 
 		$value_set = $this->db->validate_update($value_set);
-		$this->db->query("UPDATE {$table} SET $value_set WHERE id = {$inventory_id}", __LINE__, __FILE__);
+		$stmt = $this->db->prepare("UPDATE {$table} SET $value_set WHERE id = :inventory_id");
+		$stmt->execute(array(':inventory_id' => (int)$inventory_id));
 
 		if (!(int)$values['inventory'])
 		{
 			return $this->db->transaction_commit();
 		}
 
-		$sql = "SELECT * FROM fm_bim_item_inventory WHERE id = {$inventory_id}";
-
-		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
+		$stmt = $this->db->prepare('SELECT * FROM fm_bim_item_inventory WHERE id = :inventory_id');
+		$stmt->execute(array(':inventory_id' => (int)$inventory_id));
+		$row = $stmt->fetch();
 
 		$value_set = array(
-			'location_id'	 => $this->db->f('location_id'),
-			'item_id'		 => $this->db->f('item_id'),
-			'p_location_id'	 => $this->db->f('p_location_id'),
-			'p_id'			 => $this->db->f('p_id'),
-			'unit_id'		 => $this->db->f('unit_id'),
+			'location_id'	 => $row['location_id'],
+			'item_id'		 => $row['item_id'],
+			'p_location_id'	 => $row['p_location_id'],
+			'p_id'			 => $row['p_id'],
+			'unit_id'		 => $row['unit_id'],
 			'inventory'		 => (int)$values['inventory'],
 			'write_off'		 => (int)$values['write_off'],
 			'bookable'		 => (int)$values['bookable'],
@@ -3552,8 +3632,22 @@ class property_soentity
 			'remark'		 => $this->db->db_addslashes($values['remark'])
 		);
 
-		$this->db->query("INSERT INTO {$table} (" . implode(',', array_keys($value_set)) . ') VALUES ('
-			. $this->db->validate_insert(array_values($value_set)) . ')', __LINE__, __FILE__);
+		$stmt = $this->db->prepare("INSERT INTO {$table} (location_id, item_id, p_location_id, p_id, unit_id, inventory, write_off, bookable, active_from, active_to, created_on, created_by, remark) VALUES (:location_id, :item_id, :p_location_id, :p_id, :unit_id, :inventory, :write_off, :bookable, :active_from, :active_to, :created_on, :created_by, :remark)");
+		$stmt->execute(array(
+			':location_id' => $value_set['location_id'],
+			':item_id' => $value_set['item_id'],
+			':p_location_id' => $value_set['p_location_id'],
+			':p_id' => $value_set['p_id'],
+			':unit_id' => $value_set['unit_id'],
+			':inventory' => $value_set['inventory'],
+			':write_off' => $value_set['write_off'],
+			':bookable' => $value_set['bookable'],
+			':active_from' => $value_set['active_from'],
+			':active_to' => $value_set['active_to'],
+			':created_on' => $value_set['created_on'],
+			':created_by' => $value_set['created_by'],
+			':remark' => $value_set['remark']
+		));
 
 		return $this->db->transaction_commit();
 	}
@@ -3594,12 +3688,13 @@ class property_soentity
 	 */
 	function get_location_code($location_id, $item_id): ?string
 	{
-		$sql = 'SELECT location_code from fm_bim_item WHERE location_id = ' . (int)$location_id;
-		$sql .= ' AND id = ' . (int)$item_id;
-
-		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
-		$location_code = $this->db->f('location_code');
+		$stmt = $this->db->prepare('SELECT location_code FROM fm_bim_item WHERE location_id = :location_id AND id = :item_id');
+		$stmt->execute(array(
+			':location_id' => (int)$location_id,
+			':item_id' => (int)$item_id
+		));
+		$row = $stmt->fetch();
+		$location_code = $row ? $this->dbStrip($row['location_code']) : null;
 		return $location_code;
 	}
 
@@ -3619,13 +3714,13 @@ class property_soentity
 	{
 		$location_id = (int) $location_id;
 		$item_id = (int) $item_id;
-		$attribute = $this->db->db_addslashes($attribute);
-
-		$value = $this->db->db_addslashes($this->db->stripslashes($value));
-		$sql = "UPDATE fm_bim_item SET json_representation=jsonb_set(json_representation, '{{$attribute}}', '\"{$value}\"', true)"
-			. " WHERE location_id = {$location_id}"
-			. " AND id={$item_id}";
-		$this->db->query($sql, __LINE__, __FILE__);
+		$stmt = $this->db->prepare('UPDATE fm_bim_item SET json_representation = jsonb_set(json_representation, :path::text[], to_jsonb(:value::text), true) WHERE location_id = :location_id AND id = :item_id');
+		$stmt->execute(array(
+			':path' => '{' . $attribute . '}',
+			':value' => $value,
+			':location_id' => $location_id,
+			':item_id' => $item_id
+		));
 	}
 
 	/**
@@ -3640,14 +3735,14 @@ class property_soentity
 	{
 		$location_id = (int) $location_id;
 		$item_id = (int) $item_id;
-		$attribute = $this->db->db_addslashes($attribute);
-
-		$sql = "SELECT json_representation->>'{$attribute}' AS value FROM fm_bim_item"
-			. " WHERE location_id = {$location_id}"
-			. " AND id={$item_id}";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
-		return $this->db->f('value');
+		$stmt = $this->db->prepare('SELECT json_representation->>:attribute AS value FROM fm_bim_item WHERE location_id = :location_id AND id = :item_id');
+		$stmt->execute(array(
+			':attribute' => $attribute,
+			':location_id' => $location_id,
+			':item_id' => $item_id
+		));
+		$row = $stmt->fetch();
+		return $row ? $this->dbStrip($row['value']) : null;
 	}
 
 	/**
@@ -3659,15 +3754,13 @@ class property_soentity
 	 */
 	function get_QR_attributes(): array
 	{
-		$sql = "SELECT DISTINCT location_id, column_name FROM phpgw_cust_attribute WHERE datatype = 'QR_code'";
-
 		$values = array();
-
-		$this->db->query($sql, __LINE__, __FILE__);
-		while ($this->db->next_record())
+		$stmt = $this->db->prepare("SELECT DISTINCT location_id, column_name FROM phpgw_cust_attribute WHERE datatype = :datatype");
+		$stmt->execute(array(':datatype' => 'QR_code'));
+		foreach ($stmt->fetchAll() as $row)
 		{
-			$column_name =  $this->db->f('column_name');
-			$location_id =  $this->db->f('location_id');
+			$column_name =  $this->dbStrip($row['column_name']);
+			$location_id =  $row['location_id'];
 			$values[$column_name][] = $location_id;
 		}
 
@@ -3728,16 +3821,20 @@ class property_soentity
 		$type_location_id = $checklist['type_location_id'];
 
 		//check if checklist is already saved
-		$sql = "SELECT id, json_representation FROM fm_bim_item_checklist_data"
-			. " WHERE item_id = {$item_id} AND stage_id = {$stage_id} AND type_location_id = {$type_location_id}";
-		$this->db->query($sql, __LINE__, __FILE__);
+		$stmt = $this->db->prepare('SELECT id, json_representation FROM fm_bim_item_checklist_data WHERE item_id = :item_id AND stage_id = :stage_id AND type_location_id = :type_location_id');
+		$stmt->execute(array(
+			':item_id' => (int)$item_id,
+			':stage_id' => (int)$stage_id,
+			':type_location_id' => (int)$type_location_id
+		));
+		$row = $stmt->fetch();
 
-		if ($this->db->next_record())
+		if ($row)
 		{
 			//update
-			$id = (int)$this->db->f('id');
+			$id = (int)$row['id'];
 
-			$jsondata = json_decode($this->db->f('json_representation'), true);
+			$jsondata = json_decode($row['json_representation'], true);
 
 			foreach ($values_attribute as $entry)
 			{
@@ -3747,7 +3844,8 @@ class property_soentity
 				'json_representation' => json_encode($jsondata)
 			);
 			$value_set = $this->db->validate_update($value_set);
-			$this->db->query("UPDATE fm_bim_item_checklist_data set $value_set WHERE id = {$id}", __LINE__, __FILE__);
+			$stmt = $this->db->prepare("UPDATE fm_bim_item_checklist_data SET $value_set WHERE id = :id");
+			$stmt->execute(array(':id' => (int)$id));
 		}
 		else
 		{
@@ -3767,9 +3865,15 @@ class property_soentity
 				'created_by' => $this->account,
 				'json_representation' => json_encode($jsondata)
 			);
-
-			$this->db->query("INSERT INTO fm_bim_item_checklist_data (" . implode(',', array_keys($value_set)) . ') VALUES ('
-				. $this->db->validate_insert(array_values($value_set)) . ')', __LINE__, __FILE__);
+			$stmt = $this->db->prepare('INSERT INTO fm_bim_item_checklist_data (item_id, stage_id, type_location_id, created_on, created_by, json_representation) VALUES (:item_id, :stage_id, :type_location_id, :created_on, :created_by, :json_representation)');
+			$stmt->execute(array(
+				':item_id' => $value_set['item_id'],
+				':stage_id' => $value_set['stage_id'],
+				':type_location_id' => $value_set['type_location_id'],
+				':created_on' => $value_set['created_on'],
+				':created_by' => $value_set['created_by'],
+				':json_representation' => $value_set['json_representation']
+			));
 		}
 	}
 
@@ -3786,11 +3890,12 @@ class property_soentity
 		$item_id = (int) $item_id;
 		$sql = "SELECT DISTINCT stage_id, json_representation FROM fm_bim_item_checklist_data"
 			. " WHERE item_id = {$item_id} AND type_location_id = {$type_location_id}";
-		$this->db->query($sql, __LINE__, __FILE__);
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute();
 		$values = array();
-		while ($this->db->next_record())
+		foreach ($stmt->fetchAll() as $row)
 		{
-			$values[$this->db->f('stage_id')] = (array)json_decode($this->db->f('json_representation'), true);
+			$values[$row['stage_id']] = (array)json_decode($row['json_representation'], true);
 		}
 		return $values;
 	}

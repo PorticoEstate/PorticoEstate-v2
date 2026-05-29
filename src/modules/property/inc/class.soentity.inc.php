@@ -1166,12 +1166,13 @@ class property_soentity
 			{
 				$stmt = $this->db->prepare($sql2);
 				$stmt->execute($sqlParams);
+				$row = $stmt->fetch() ?: array();
 			}
 			else
 			{
 				$this->db->query($sql2, __LINE__, __FILE__);
+				$row  = $this->db->resultSet[0] ?? [];
 			}
-			$row  = $this->db->resultSet[0] ?? [];
 			unset($sql2);
 			unset($sql_cnt);
 
@@ -1246,10 +1247,12 @@ class property_soentity
 			if ($sqlParams)
 			{
 				$this->db->limit_query_with_params($sql_pre_run . $ordermethod, $sqlParams, $start, __LINE__, __FILE__, $results);
+				$rows = $this->db->resultSet;
 			}
 			else
 			{
 				$this->db->limit_query($sql_pre_run . $ordermethod, $start, __LINE__, __FILE__, $results);
+				$rows = $this->db->resultSet;
 			}
 		}
 		else
@@ -1258,16 +1261,18 @@ class property_soentity
 			{
 				$stmt = $this->db->prepare($sql_pre_run . $ordermethod);
 				$stmt->execute($sqlParams);
+				$rows = $stmt->fetchAll();
 			}
 			else
 			{
 				$this->db->query($sql_pre_run . $ordermethod, __LINE__, __FILE__);
+				$rows = $this->db->resultSet;
 			}
 		}
 
 		$ids	 = array();
 		$types	 = array();
-		foreach ($this->db->resultSet as $row)
+		foreach ($rows as $row)
 		{
 			$ids[]	 = (int)$row['id'];
 			$types[] = (int)$row['type'];
@@ -2218,12 +2223,13 @@ class property_soentity
 			{
 				$stmt = $this->db->prepare($sql2);
 				$stmt->execute($sqlParams);
+				$row = $stmt->fetch() ?: array();
 			}
 			else
 			{
 				$this->db->query($sql2, __LINE__, __FILE__);
+				$row  = $this->db->resultSet[0] ?? [];
 			}
-			$row  = $this->db->resultSet[0] ?? [];
 			unset($sql2);
 			unset($sql_cnt);
 
@@ -2247,10 +2253,12 @@ class property_soentity
 			if ($sqlParams)
 			{
 				$this->db->limit_query_with_params($sql . $ordermethod, $sqlParams, $start, __LINE__, __FILE__, $results);
+				$rows = $this->db->resultSet;
 			}
 			else
 			{
 				$this->db->limit_query($sql . $ordermethod, $start, __LINE__, __FILE__, $results);
+				$rows = $this->db->resultSet;
 			}
 		}
 		else
@@ -2259,10 +2267,12 @@ class property_soentity
 			{
 				$stmt = $this->db->prepare($sql . $ordermethod);
 				$stmt->execute($sqlParams);
+				$rows = $stmt->fetchAll();
 			}
 			else
 			{
 				$this->db->query($sql . $ordermethod, __LINE__, __FILE__);
+				$rows = $this->db->resultSet;
 			}
 		}
 
@@ -2272,7 +2282,7 @@ class property_soentity
 		//			$cols_return = $this->cols_return;
 
 		$dataset = array();
-		foreach ($this->db->resultSet as $row)
+		foreach ($rows as $row)
 		{
 			foreach ($cols_return as $key => $field)
 			{
@@ -2383,8 +2393,9 @@ class property_soentity
 
 		$stmt = $this->db->prepare("SELECT * FROM {$table} {$filtermethod}");
 		$stmt->execute($params);
+		$row = $stmt->fetch();
 
-		if (!empty($this->db->resultSet) && ($row = $this->db->resultSet[0]))
+		if ($row)
 		{
 			$values['id']			 = $id;
 			$values['num']			 = $row['num'];
@@ -2458,8 +2469,9 @@ class property_soentity
 
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute($params);
+		$row = $stmt->fetch();
 
-		if (!empty($this->db->resultSet) && ($row = $this->db->resultSet[0]))
+		if ($row)
 		{
 			$resolvedId = $id ?: (int)$row['id'];
 			$values['id']				 = $resolvedId;
@@ -2887,7 +2899,7 @@ class property_soentity
 
 		$stmt = $this->db->prepare('SELECT id as type FROM fm_bim_type WHERE location_id = :location_id');
 		$stmt->execute(array(':location_id' => $location_id));
-		$row  = $this->db->resultSet[0] ?? [];
+		$row  = $stmt->fetch() ?: array();
 		$type	 = $row['type'];
 		$id		 = $this->db->next_id('fm_bim_item', array('type' => $type));
 
@@ -2948,14 +2960,14 @@ class property_soentity
 
 		$stmt = $this->db->prepare('SELECT id as type FROM fm_bim_type WHERE location_id = :location_id');
 		$stmt->execute(array(':location_id' => $location_id));
-		$row  = $this->db->resultSet[0] ?? [];
+		$row  = $stmt->fetch() ?: array();
 		$type = (int)$row['type'];
 
 		$location_name = str_replace('.', '_', $location_name);
 
 		$stmt = $this->db->prepare('SELECT json_representation FROM fm_bim_item WHERE fm_bim_item.id = :id AND location_id = :location_id');
 		$stmt->execute(array(':id' => $id, ':location_id' => $location_id));
-		$row  = $this->db->resultSet[0] ?? [];
+		$row  = $stmt->fetch() ?: array();
 		$jsondata = json_decode($row['json_representation'], true);
 
 		foreach ($data as $key => $value)
@@ -3242,7 +3254,7 @@ class property_soentity
 		{
 			$stmt = $this->db->prepare('SELECT id as type FROM fm_bim_type WHERE location_id = :location_id');
 			$stmt->execute(array(':location_id' => (int)$location_id));
-			$row  = $this->db->resultSet[0] ?? [];
+			$row  = $stmt->fetch() ?: array();
 			$type = (int)$row['type'];
 			$stmt = $this->db->prepare('DELETE FROM fm_bim_item WHERE id = :id AND type = :type');
 			$stmt->execute(array(':id' => $id, ':type' => $type));
@@ -3335,10 +3347,13 @@ class property_soentity
 			}
 
 
-			$sql = "SELECT DISTINCT location_id FROM fm_bim_item WHERE p_location_id = {$p_location_id} AND p_id = '{$p_id}'";
-			$this->db->query($sql, __LINE__, __FILE__);
+			$stmt = $this->db->prepare('SELECT DISTINCT location_id FROM fm_bim_item WHERE p_location_id = :p_location_id AND p_id = :p_id');
+			$stmt->execute(array(
+				':p_location_id' => (int)$p_location_id,
+				':p_id' => $p_id
+			));
 			$location_ids = array();
-			foreach ($this->db->resultSet as $row)
+			foreach ($stmt->fetchAll() as $row)
 			{
 				$location_ids[] = (int)$row['location_id'];
 			}
@@ -3357,9 +3372,13 @@ class property_soentity
 						continue;
 					}
 
-					$sql = "SELECT count(*) as hits FROM fm_bim_item WHERE location_id = {$entry['location_id']} AND p_location_id = {$p_location_id} AND p_id = '{$p_id}'";
-					$this->db2->query($sql, __LINE__, __FILE__);
-					$row2 = $this->db2->resultSet[0] ?? [];
+					$stmt = $this->db2->prepare('SELECT count(*) as hits FROM fm_bim_item WHERE location_id = :location_id AND p_location_id = :p_location_id AND p_id = :p_id');
+					$stmt->execute(array(
+						':location_id' => (int)$entry['location_id'],
+						':p_location_id' => (int)$p_location_id,
+						':p_id' => $p_id
+					));
+					$row2 = $stmt->fetch() ?: array();
 					if ($row2['hits'])
 					{
 						$entity['related'][] = array(
@@ -3385,9 +3404,13 @@ class property_soentity
 				}
 				else
 				{
-					$sql = "SELECT count(*) as hits FROM fm_{$type}_{$entry['entity_id']}_{$entry['cat_id']} WHERE p_entity_id = {$entity_id} AND p_cat_id = {$cat_id} AND p_num = '{$p_id}'";
-					$this->db->query($sql, __LINE__, __FILE__);
-					$row  = $this->db->resultSet[0] ?? [];
+					$stmt = $this->db->prepare("SELECT count(*) as hits FROM fm_{$type}_{$entry['entity_id']}_{$entry['cat_id']} WHERE p_entity_id = :entity_id AND p_cat_id = :cat_id AND p_num = :p_id");
+					$stmt->execute(array(
+						':entity_id' => (int)$entity_id,
+						':cat_id' => (int)$cat_id,
+						':p_id' => $p_id
+					));
+					$row  = $stmt->fetch() ?: array();
 					if ($row['hits'])
 					{
 						$entity['related'][] = array(
@@ -3411,9 +3434,13 @@ class property_soentity
 			}
 		}
 
-		$sql = "SELECT DISTINCT id, subject FROM fm_tts_tickets WHERE p_entity_id = {$entity_id} AND p_cat_id = {$cat_id} AND p_num = '{$p_id}'";
-		$this->db->query($sql, __LINE__, __FILE__);
-		foreach ($this->db->resultSet as $row)
+		$stmt = $this->db->prepare('SELECT DISTINCT id, subject FROM fm_tts_tickets WHERE p_entity_id = :entity_id AND p_cat_id = :cat_id AND p_num = :p_id');
+		$stmt->execute(array(
+			':entity_id' => (int)$entity_id,
+			':cat_id' => (int)$cat_id,
+			':p_id' => $p_id
+		));
+		foreach ($stmt->fetchAll() as $row)
 		{
 			$subject				 = $this->dbStrip($row['subject']);
 			$entity['related'][] = array(
@@ -3428,9 +3455,13 @@ class property_soentity
 			);
 		}
 
-		$sql = "SELECT DISTINCT id, title AS subject FROM fm_request WHERE p_entity_id = {$entity_id} AND p_cat_id = {$cat_id} AND p_num = '{$p_id}'";
-		$this->db->query($sql, __LINE__, __FILE__);
-		foreach ($this->db->resultSet as $row)
+		$stmt = $this->db->prepare('SELECT DISTINCT id, title AS subject FROM fm_request WHERE p_entity_id = :entity_id AND p_cat_id = :cat_id AND p_num = :p_id');
+		$stmt->execute(array(
+			':entity_id' => (int)$entity_id,
+			':cat_id' => (int)$cat_id,
+			':p_id' => $p_id
+		));
+		foreach ($stmt->fetchAll() as $row)
 		{
 			$subject				 = $this->dbStrip($row['subject']);
 			$entity['related'][] = array(
@@ -3447,9 +3478,13 @@ class property_soentity
 			);
 		}
 
-		$sql = "SELECT DISTINCT id, name AS subject  FROM fm_project WHERE p_entity_id = {$entity_id} AND p_cat_id = {$cat_id} AND p_num = '{$p_id}'";
-		$this->db->query($sql, __LINE__, __FILE__);
-		foreach ($this->db->resultSet as $row)
+		$stmt = $this->db->prepare('SELECT DISTINCT id, name AS subject FROM fm_project WHERE p_entity_id = :entity_id AND p_cat_id = :cat_id AND p_num = :p_id');
+		$stmt->execute(array(
+			':entity_id' => (int)$entity_id,
+			':cat_id' => (int)$cat_id,
+			':p_id' => $p_id
+		));
+		foreach ($stmt->fetchAll() as $row)
 		{
 			$subject				 = $this->dbStrip($row['subject']);
 			$entity['related'][] = array(
@@ -3464,9 +3499,13 @@ class property_soentity
 			);
 		}
 
-		$sql = "SELECT DISTINCT fm_s_agreement.id, fm_s_agreement.name AS subject FROM fm_s_agreement {$this->join} fm_s_agreement_detail ON fm_s_agreement.id = fm_s_agreement_detail.agreement_id WHERE p_entity_id = {$entity_id} AND p_cat_id = {$cat_id} AND p_num = '{$p_id}'";
-		$this->db->query($sql, __LINE__, __FILE__);
-		foreach ($this->db->resultSet as $row)
+		$stmt = $this->db->prepare("SELECT DISTINCT fm_s_agreement.id, fm_s_agreement.name AS subject FROM fm_s_agreement {$this->join} fm_s_agreement_detail ON fm_s_agreement.id = fm_s_agreement_detail.agreement_id WHERE p_entity_id = :entity_id AND p_cat_id = :cat_id AND p_num = :p_id");
+		$stmt->execute(array(
+			':entity_id' => (int)$entity_id,
+			':cat_id' => (int)$cat_id,
+			':p_id' => $p_id
+		));
+		foreach ($stmt->fetchAll() as $row)
 		{
 			$subject				 = $this->dbStrip($row['subject']);
 			$entity['related'][] = array(
@@ -3537,7 +3576,6 @@ class property_soentity
 				'bookable'		 => $row['bookable'],
 				'active_from'	 => $row['active_from'],
 				'active_to'		 => $row['active_to'],
-				'bookable'		 => $row['bookable'],
 			);
 		}
 
@@ -3765,7 +3803,7 @@ class property_soentity
 			':location_id' => $location_id,
 			':item_id' => $item_id
 		));
-		$row  = $this->db->resultSet[0] ?? [];
+		$row  = $stmt->fetch() ?: array();
 		return isset($row['value']) ? $this->dbStrip($row['value']) : null;
 	}
 
@@ -3847,11 +3885,15 @@ class property_soentity
 		$type_location_id = $checklist['type_location_id'];
 
 		//check if checklist is already saved
-		$sql = "SELECT id, json_representation FROM fm_bim_item_checklist_data"
-			. " WHERE item_id = {$item_id} AND stage_id = {$stage_id} AND type_location_id = {$type_location_id}";
-		$this->db->query($sql, __LINE__, __FILE__);
+		$stmt = $this->db->prepare('SELECT id, json_representation FROM fm_bim_item_checklist_data WHERE item_id = :item_id AND stage_id = :stage_id AND type_location_id = :type_location_id');
+		$stmt->execute(array(
+			':item_id' => (int)$item_id,
+			':stage_id' => (int)$stage_id,
+			':type_location_id' => (int)$type_location_id
+		));
+		$row = $stmt->fetch();
 
-		if (!empty($this->db->resultSet) && ($row = $this->db->resultSet[0]))
+		if ($row)
 		{
 			//update
 			$id = (int)$row['id'];
@@ -3904,11 +3946,13 @@ class property_soentity
 	{
 		$type_location_id = (int) $type_location_id;
 		$item_id = (int) $item_id;
-		$sql = "SELECT DISTINCT stage_id, json_representation FROM fm_bim_item_checklist_data"
-			. " WHERE item_id = {$item_id} AND type_location_id = {$type_location_id}";
-		$this->db->query($sql, __LINE__, __FILE__);
+		$stmt = $this->db->prepare('SELECT DISTINCT stage_id, json_representation FROM fm_bim_item_checklist_data WHERE item_id = :item_id AND type_location_id = :type_location_id');
+		$stmt->execute(array(
+			':item_id' => $item_id,
+			':type_location_id' => $type_location_id
+		));
 		$values = array();
-		foreach ($this->db->resultSet as $row)
+		foreach ($stmt->fetchAll() as $row)
 		{
 			$values[$row['stage_id']] = (array)json_decode($row['json_representation'], true);
 		}

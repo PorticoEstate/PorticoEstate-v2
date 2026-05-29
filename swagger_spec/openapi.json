@@ -9849,6 +9849,630 @@
                     }
                 }
             }
+        },
+        "\/property\/project": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List projects",
+                "description": "DataTables-compatible project list endpoint.",
+                "operationId": "80b70a8865736382b5b9a56f4441db3b",
+                "parameters": [
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "length",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 25
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Project DataTables payload"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Post collection (DataTables\/list dispatch)",
+                "description": "Canonical collection POST endpoint.",
+                "operationId": "a01724fef94bf71508a1bc05c4e273be",
+                "responses": {
+                    "200": {
+                        "description": "Collection response"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/list": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List projects (canonical envelope)",
+                "description": "Canonical list endpoint with envelope payload.",
+                "operationId": "af22bed14a561158b1836d9d936166ab",
+                "responses": {
+                    "200": {
+                        "description": "Project list",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/ProjectItem"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Get project",
+                "description": "Project detail endpoint.",
+                "operationId": "b93c1659de5ecf8f6137ef6ef639bdd6",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Project",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ProjectItem"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Update project",
+                "operationId": "ef675946416776c74d325fea31b0db2e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/ProjectSavePayload"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ProjectReceipt"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Delete project",
+                "operationId": "93880be4377a661dde43cfa6ba72aa5d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/orders": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List project orders",
+                "description": "Project orders list endpoint (DataTables-compatible).",
+                "operationId": "bf04e443f94064c224d195840b26b4b3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/vouchers": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List project vouchers",
+                "description": "Project vouchers list endpoint (DataTables-compatible).",
+                "operationId": "6a750613c3d1eecf21551eb34a0e71bc",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Voucher rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/other-projects": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List related projects",
+                "description": "Project other-projects list endpoint.",
+                "operationId": "f6a3246130e985843be36dc31c93f31b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Related project rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/attachments": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List project voucher attachments",
+                "description": "Project attachment list endpoint.",
+                "operationId": "72e5e8757ed16d55ac10fbbcd67a6c01",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Attachment rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/lookups\/external-project": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "External project lookup",
+                "description": "Project external project lookup endpoint.",
+                "operationId": "6c8ddcda2875f80c574575da6cfa7cc5",
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/lookups\/b-account": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Budget account lookup",
+                "description": "Budget account lookup endpoint.",
+                "operationId": "3e9e67617b8be037f8b8ab92cde98cd3",
+                "parameters": [
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/lookups\/ecodimb": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Ecodimb lookup",
+                "description": "Ecodimb lookup endpoint.",
+                "operationId": "c4f60da24a1fd5e9aeb223de4c8c41f9",
+                "parameters": [
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/lookups\/category": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Category lookup and validation",
+                "description": "Validate if selected project category is valid for a budget account.",
+                "operationId": "bcb266272808ad513cb8db14a80ec725",
+                "parameters": [
+                    {
+                        "name": "cat_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "b_account_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Category payload"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/notify-contacts": {
+            "post": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List or update project notify contacts",
+                "description": "Project notify contacts list\/update endpoint.\n\nPreserves legacy notify behavior by delegating to property_notify::refresh_notify_contact_2.",
+                "operationId": "ccec2a95144c2606f558518594f4632e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Notify contact rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/create": {
+            "post": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Create project",
+                "operationId": "5ba22396f030db8a5dd3882f22462d7a",
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/ProjectSavePayload"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ProjectReceipt"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/files\/view": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "View\/download project file",
+                "description": "Stream project file by file_id.",
+                "operationId": "30263a4713469eea08c2de163bbe813b",
+                "parameters": [
+                    {
+                        "name": "file_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File stream"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/files\/image": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "View project image or thumbnail",
+                "description": "Stream or thumbnail a project image file.",
+                "operationId": "aff6250f61320969877d2f7aa3fb9aae",
+                "parameters": [
+                    {
+                        "name": "img_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "thumb",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Image stream"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/reports\/missing-budget": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Download missing budget report",
+                "description": "Download report of missing project budgets.",
+                "operationId": "67af95f5ac4f516862b7a17e1f9a4f79",
+                "responses": {
+                    "200": {
+                        "description": "Report download"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/reports\/download": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Download project list report",
+                "description": "Download project list report.",
+                "operationId": "32205e4270c9da52dedfc371503e1556",
+                "responses": {
+                    "200": {
+                        "description": "Report download"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/files": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List project files",
+                "description": "Project file list endpoint (DataTables-compatible).",
+                "operationId": "8045099eec1a15f21492f97c92301e2e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/files\/actions": {
+            "post": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Update project file metadata",
+                "description": "Project file metadata\/tag\/delete actions endpoint.",
+                "operationId": "3b0c4c40c33749043e734db9009b08ed",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Action result"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/multi-upload\/build": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Build project multi-upload payload",
+                "description": "Build project multi-upload UI fragment.",
+                "operationId": "a6c85ad0aec474c65941ced5a190b375",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upload metadata"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/multi-upload": {
+            "post": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Handle project multi-upload",
+                "description": "Handle project multi-upload actions.",
+                "operationId": "ec2e9657a3bb1db9436c09c760c4af0b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upload handler response"
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -11445,6 +12069,148 @@
                     }
                 },
                 "type": "object"
+            },
+            "ProjectItem": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "project_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "location_code": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "ProjectReceipt": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "message": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "error": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "ProjectRelationInfo": {
+                "description": "Optional relation metadata used by legacy save flow",
+                "properties": {
+                    "location_code": {
+                        "type": "string"
+                    },
+                    "tenant_id": {
+                        "type": "string"
+                    },
+                    "p_num": {
+                        "type": "string"
+                    },
+                    "p_entity_id": {
+                        "type": "integer"
+                    },
+                    "p_cat_id": {
+                        "type": "integer"
+                    },
+                    "origin": {
+                        "type": "string"
+                    },
+                    "origin_id": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "ProjectValues": {
+                "description": "Project core fields. Additional legacy keys may be accepted.",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "descr": {
+                        "type": "string"
+                    },
+                    "cat_id": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "location_code": {
+                        "type": "string"
+                    },
+                    "contact_id": {
+                        "type": "integer"
+                    },
+                    "contact": {
+                        "description": "Legacy alias mapped to contact_id",
+                        "type": "integer"
+                    },
+                    "remark": {
+                        "type": "string"
+                    },
+                    "mail_address": {
+                        "type": "string"
+                    },
+                    "approval": {
+                        "type": "string"
+                    },
+                    "copy_project": {
+                        "type": "integer"
+                    },
+                    "extra": {
+                        "type": "object"
+                    },
+                    "location": {
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "ProjectSavePayload": {
+                "description": "Payload accepted by both create and update endpoints",
+                "properties": {
+                    "values": {
+                        "$ref": "#\/components\/schemas\/ProjectValues"
+                    },
+                    "values_attribute": {
+                        "type": "object",
+                        "additionalProperties": true
+                    },
+                    "RelationInfo": {
+                        "$ref": "#\/components\/schemas\/ProjectRelationInfo"
+                    },
+                    "name": {
+                        "description": "Top-level legacy field accepted when values is omitted",
+                        "type": "string"
+                    },
+                    "descr": {
+                        "type": "string"
+                    },
+                    "contact": {
+                        "type": "integer"
+                    },
+                    "location_code": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
             }
         },
         "securitySchemes": {
@@ -11511,6 +12277,10 @@
         {
             "name": "Entity",
             "description": "REST API for EAV-based entity item records"
+        },
+        {
+            "name": "Project",
+            "description": "REST API for project resources"
         },
         {
             "name": "Relationships",

@@ -9,10 +9,80 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\property\helpers\ProjectFormHelper;
 use App\modules\phpgwapi\security\Acl;
+use OpenApi\Annotations as OA;
 use Slim\Exception\HttpBadRequestException;
 use Slim\Exception\HttpForbiddenException;
 use Slim\Exception\HttpNotFoundException;
 
+/**
+ * @OA\Tag(
+ *     name="Project",
+ *     description="REST API for project resources"
+ * )
+ *
+ * @OA\Schema(
+ *     schema="ProjectItem",
+ *     type="object",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="project_id", type="integer"),
+ *     @OA\Property(property="name", type="string"),
+ *     @OA\Property(property="status", type="string"),
+ *     @OA\Property(property="location_code", type="string")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="ProjectReceipt",
+ *     type="object",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="message", type="array", @OA\Items(type="object")),
+ *     @OA\Property(property="error", type="array", @OA\Items(type="object"))
+ * )
+ *
+ * @OA\Schema(
+ *     schema="ProjectRelationInfo",
+ *     type="object",
+ *     description="Optional relation metadata used by legacy save flow",
+ *     @OA\Property(property="location_code", type="string"),
+ *     @OA\Property(property="tenant_id", type="string"),
+ *     @OA\Property(property="p_num", type="string"),
+ *     @OA\Property(property="p_entity_id", type="integer"),
+ *     @OA\Property(property="p_cat_id", type="integer"),
+ *     @OA\Property(property="origin", type="string"),
+ *     @OA\Property(property="origin_id", type="integer")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="ProjectValues",
+ *     type="object",
+ *     description="Project core fields. Additional legacy keys may be accepted.",
+ *     @OA\Property(property="name", type="string"),
+ *     @OA\Property(property="descr", type="string"),
+ *     @OA\Property(property="cat_id", type="integer"),
+ *     @OA\Property(property="status", type="string"),
+ *     @OA\Property(property="location_code", type="string"),
+ *     @OA\Property(property="contact_id", type="integer"),
+ *     @OA\Property(property="contact", type="integer", description="Legacy alias mapped to contact_id"),
+ *     @OA\Property(property="remark", type="string"),
+ *     @OA\Property(property="mail_address", type="string"),
+ *     @OA\Property(property="approval", type="string"),
+ *     @OA\Property(property="copy_project", type="integer"),
+ *     @OA\Property(property="extra", type="object"),
+ *     @OA\Property(property="location", type="object")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="ProjectSavePayload",
+ *     type="object",
+ *     description="Payload accepted by both create and update endpoints",
+ *     @OA\Property(property="values", ref="#/components/schemas/ProjectValues"),
+ *     @OA\Property(property="values_attribute", type="object", additionalProperties=true),
+ *     @OA\Property(property="RelationInfo", ref="#/components/schemas/ProjectRelationInfo"),
+ *     @OA\Property(property="name", type="string", description="Top-level legacy field accepted when values is omitted"),
+ *     @OA\Property(property="descr", type="string"),
+ *     @OA\Property(property="contact", type="integer"),
+ *     @OA\Property(property="location_code", type="string")
+ * )
+ */
 class ProjectController
 {
 	private ?object $bo = null;
@@ -592,6 +662,16 @@ class ProjectController
 
 	/**
 	 * DataTables-compatible project list endpoint.
+	 *
+	 * @OA\Get(
+	 *     path="/property/project",
+	 *     summary="List projects",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="start", in="query", @OA\Schema(type="integer", default=0)),
+	 *     @OA\Parameter(name="length", in="query", @OA\Schema(type="integer", default=25)),
+	 *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="Project DataTables payload")
+	 * )
 	 */
 	public function index(Request $request, Response $response): Response
 	{
@@ -616,6 +696,21 @@ class ProjectController
 
 	/**
 	 * Canonical list endpoint with envelope payload.
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/list",
+	 *     summary="List projects (canonical envelope)",
+	 *     tags={"Project"},
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Project list",
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             @OA\Property(property="status", type="string"),
+	 *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/ProjectItem"))
+	 *         )
+	 *     )
+	 * )
 	 */
 	public function listProjects(Request $request, Response $response): Response
 	{
@@ -642,6 +737,13 @@ class ProjectController
 
 	/**
 	 * Canonical collection POST endpoint.
+	 *
+	 * @OA\Post(
+	 *     path="/property/project",
+	 *     summary="Post collection (DataTables/list dispatch)",
+	 *     tags={"Project"},
+	 *     @OA\Response(response=200, description="Collection response")
+	 * )
 	 */
 	public function postCollection(Request $request, Response $response): Response
 	{
@@ -656,6 +758,15 @@ class ProjectController
 
 	/**
 	 * Project detail endpoint.
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/{id}",
+	 *     summary="Get project",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Project", @OA\JsonContent(ref="#/components/schemas/ProjectItem")),
+	 *     @OA\Response(response=404, description="Not found")
+	 * )
 	 */
 	public function show(Request $request, Response $response, array $args): Response
 	{
@@ -684,6 +795,14 @@ class ProjectController
 
 	/**
 	 * Project orders list endpoint (DataTables-compatible).
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/{id}/orders",
+	 *     summary="List project orders",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Order rows")
+	 * )
 	 */
 	public function getOrders(Request $request, Response $response, array $args): Response
 	{
@@ -732,6 +851,14 @@ class ProjectController
 
 	/**
 	 * Project vouchers list endpoint (DataTables-compatible).
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/{id}/vouchers",
+	 *     summary="List project vouchers",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Voucher rows")
+	 * )
 	 */
 	public function getVouchers(Request $request, Response $response, array $args): Response
 	{
@@ -808,6 +935,14 @@ class ProjectController
 
 	/**
 	 * Project other-projects list endpoint.
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/{id}/other-projects",
+	 *     summary="List related projects",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Related project rows")
+	 * )
 	 */
 	public function getOtherProjects(Request $request, Response $response, array $args): Response
 	{
@@ -859,6 +994,14 @@ class ProjectController
 
 	/**
 	 * Project attachment list endpoint.
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/{id}/attachments",
+	 *     summary="List project voucher attachments",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Attachment rows")
+	 * )
 	 */
 	public function getAttachment(Request $request, Response $response, array $args): Response
 	{
@@ -910,6 +1053,13 @@ class ProjectController
 
 	/**
 	 * Project external project lookup endpoint.
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/lookups/external-project",
+	 *     summary="External project lookup",
+	 *     tags={"Project"},
+	 *     @OA\Response(response=200, description="Lookup rows")
+	 * )
 	 */
 	public function getExternalProject(Request $request, Response $response): Response
 	{
@@ -924,6 +1074,14 @@ class ProjectController
 
 	/**
 	 * Budget account lookup endpoint.
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/lookups/b-account",
+	 *     summary="Budget account lookup",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="query", in="query", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="Lookup rows")
+	 * )
 	 */
 	public function getBAccountLookup(Request $request, Response $response): Response
 	{
@@ -942,6 +1100,14 @@ class ProjectController
 
 	/**
 	 * Ecodimb lookup endpoint.
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/lookups/ecodimb",
+	 *     summary="Ecodimb lookup",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="query", in="query", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="Lookup rows")
+	 * )
 	 */
 	public function getEcodimbLookup(Request $request, Response $response): Response
 	{
@@ -959,6 +1125,15 @@ class ProjectController
 
 	/**
 	 * Validate if selected project category is valid for a budget account.
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/lookups/category",
+	 *     summary="Category lookup and validation",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="cat_id", in="query", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="b_account_id", in="query", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="Category payload")
+	 * )
 	 */
 	public function getCategoryLookup(Request $request, Response $response): Response
 	{
@@ -1013,6 +1188,14 @@ class ProjectController
 	 * Project notify contacts list/update endpoint.
 	 *
 	 * Preserves legacy notify behavior by delegating to property_notify::refresh_notify_contact_2.
+	 *
+	 * @OA\Post(
+	 *     path="/property/project/{id}/notify-contacts",
+	 *     summary="List or update project notify contacts",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Notify contact rows")
+	 * )
 	 */
 	public function notifyContacts(Request $request, Response $response, array $args): Response
 	{
@@ -1047,6 +1230,19 @@ class ProjectController
 		));
 	}
 
+	/**
+	 * @OA\Post(
+	 *     path="/property/project/create",
+	 *     summary="Create project",
+	 *     tags={"Project"},
+	 *     @OA\RequestBody(
+	 *         required=false,
+	 *         @OA\JsonContent(ref="#/components/schemas/ProjectSavePayload")
+	 *     ),
+	 *     @OA\Response(response=201, description="Created", @OA\JsonContent(ref="#/components/schemas/ProjectReceipt")),
+	 *     @OA\Response(response=400, description="Validation error")
+	 * )
+	 */
 	public function store(Request $request, Response $response): Response
 	{
 		if (!$this->hasAddAccess())
@@ -1078,6 +1274,20 @@ class ProjectController
 		), 201);
 	}
 
+	/**
+	 * @OA\Put(
+	 *     path="/property/project/{id}",
+	 *     summary="Update project",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\RequestBody(
+	 *         required=false,
+	 *         @OA\JsonContent(ref="#/components/schemas/ProjectSavePayload")
+	 *     ),
+	 *     @OA\Response(response=200, description="Updated", @OA\JsonContent(ref="#/components/schemas/ProjectReceipt")),
+	 *     @OA\Response(response=400, description="Validation error")
+	 * )
+	 */
 	public function update(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->hasEditAccess())
@@ -1115,6 +1325,15 @@ class ProjectController
 		));
 	}
 
+	/**
+	 * @OA\Delete(
+	 *     path="/property/project/{id}",
+	 *     summary="Delete project",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Deleted")
+	 * )
+	 */
 	public function destroy(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->hasDeleteAccess())
@@ -1139,6 +1358,14 @@ class ProjectController
 
 	/**
 	 * Stream project file by file_id.
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/files/view",
+	 *     summary="View/download project file",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="file_id", in="query", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="File stream")
+	 * )
 	 */
 	public function viewFile(Request $request, Response $response): Response
 	{
@@ -1160,6 +1387,15 @@ class ProjectController
 
 	/**
 	 * Stream or thumbnail a project image file.
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/files/image",
+	 *     summary="View project image or thumbnail",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="img_id", in="query", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="thumb", in="query", @OA\Schema(type="boolean")),
+	 *     @OA\Response(response=200, description="Image stream")
+	 * )
 	 */
 	public function viewImage(Request $request, Response $response): Response
 	{
@@ -1224,6 +1460,13 @@ class ProjectController
 
 	/**
 	 * Download report of missing project budgets.
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/reports/missing-budget",
+	 *     summary="Download missing budget report",
+	 *     tags={"Project"},
+	 *     @OA\Response(response=200, description="Report download")
+	 * )
 	 */
 	public function checkMissingProjectBudget(Request $request, Response $response): Response
 	{
@@ -1240,6 +1483,13 @@ class ProjectController
 
 	/**
 	 * Download project list report.
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/reports/download",
+	 *     summary="Download project list report",
+	 *     tags={"Project"},
+	 *     @OA\Response(response=200, description="Report download")
+	 * )
 	 */
 	public function downloadProjects(Request $request, Response $response): Response
 	{
@@ -1265,6 +1515,14 @@ class ProjectController
 
 	/**
 	 * Project file list endpoint (DataTables-compatible).
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/{id}/files",
+	 *     summary="List project files",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="File rows")
+	 * )
 	 */
 	public function getFiles(Request $request, Response $response, array $args): Response
 	{
@@ -1347,6 +1605,14 @@ class ProjectController
 
 	/**
 	 * Project file metadata/tag/delete actions endpoint.
+	 *
+	 * @OA\Post(
+	 *     path="/property/project/{id}/files/actions",
+	 *     summary="Update project file metadata",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Action result")
+	 * )
 	 */
 	public function updateFileData(Request $request, Response $response, array $args): Response
 	{
@@ -1396,6 +1662,14 @@ class ProjectController
 
 	/**
 	 * Build project multi-upload UI fragment.
+	 *
+	 * @OA\Get(
+	 *     path="/property/project/{id}/multi-upload/build",
+	 *     summary="Build project multi-upload payload",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Upload metadata")
+	 * )
 	 */
 	public function buildMultiUploadFile(Request $request, Response $response, array $args): Response
 	{
@@ -1417,6 +1691,14 @@ class ProjectController
 
 	/**
 	 * Handle project multi-upload actions.
+	 *
+	 * @OA\Post(
+	 *     path="/property/project/{id}/multi-upload",
+	 *     summary="Handle project multi-upload",
+	 *     tags={"Project"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Upload handler response")
+	 * )
 	 */
 	public function handleMultiUploadFile(Request $request, Response $response, array $args): Response
 	{

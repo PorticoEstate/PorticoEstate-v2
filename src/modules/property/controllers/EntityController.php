@@ -1435,7 +1435,11 @@ class EntityController
 			if (in_array($_entry['mime_type'] ?? '', $img_types, true))
 			{
 				$row['img_id']    = $fileId;
-				$row['img_url']   = null;
+				$row['img_url'] = \phpgw::link('/property/project/files/image', array(
+					'img_id' => $fileId,
+					'file' => $_entry['directory'] . '/' . $_entry['file_name'],
+				));
+
 			}
 
 			$content_files[] = $row;

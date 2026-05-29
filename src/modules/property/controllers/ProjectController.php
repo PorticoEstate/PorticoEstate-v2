@@ -7,6 +7,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\modules\phpgwapi\services\Settings;
+use App\modules\property\helpers\BoCommon;
 use App\modules\property\helpers\ProjectFormHelper;
 use App\modules\phpgwapi\security\Acl;
 use OpenApi\Annotations as OA;
@@ -365,6 +366,7 @@ class ProjectController
 			'p_num',
 			'p_entity_id',
 			'p_cat_id',
+			'contact_phone',
 		);
 
 		foreach ($relationFields as $field)
@@ -484,6 +486,8 @@ class ProjectController
 				$values['location_code'] = implode('-', array_values($location));
 			}
 		}
+
+		$values = BoCommon::mergeAdditionalInfoFromPayload($values, $input);
 
 		return $values;
 	}

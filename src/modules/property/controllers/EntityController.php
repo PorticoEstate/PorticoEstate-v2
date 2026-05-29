@@ -3,6 +3,7 @@
 namespace App\modules\property\controllers;
 
 use App\Database\Db;
+use App\modules\property\helpers\BoCommon;
 use App\modules\property\helpers\EntityFormHelper;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\services\Cache;
@@ -489,6 +490,8 @@ class EntityController
 		{
 			$values['origin_id'] = (int)$relationInfo['origin_id'];
 		}
+
+		$values = BoCommon::mergeAdditionalInfoFromPayload($values, $body);
 
 		return $values;
 	}

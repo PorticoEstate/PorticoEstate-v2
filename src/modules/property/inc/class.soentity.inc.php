@@ -132,7 +132,8 @@ class property_soentity
 			':location_id' => (int)$location_id,
 			':column_name' => 'geolocation'
 		));
-		if (empty($this->db->resultSet))
+		$existingGeolocation = $stmt->fetch();
+		if (!$existingGeolocation)
 		{
 			//return false;
 			$boadmin_entity = CreateObject('property.boadmin_entity');
@@ -200,18 +201,16 @@ class property_soentity
 		}
 
 		$location_id = $this->locations->get_id($this->type_app[$this->type], ".{$this->type}.{$entity_id}.{$cat_id}");
-
-		$sql = "SELECT phpgw_cust_choice.id, phpgw_cust_choice.value FROM phpgw_cust_attribute"
+		$stmt = $this->db->prepare("SELECT phpgw_cust_choice.id, phpgw_cust_choice.value FROM phpgw_cust_attribute"
 			. " $this->join phpgw_cust_choice ON"
 			. " phpgw_cust_attribute.location_id= phpgw_cust_choice.location_id AND"
 			. " phpgw_cust_attribute.id= phpgw_cust_choice.attrib_id"
 			. " WHERE phpgw_cust_attribute.column_name='status'"
-			. " AND phpgw_cust_choice.location_id={$location_id} ORDER BY phpgw_cust_choice.id";
-
-		$this->db->query($sql, __LINE__, __FILE__);
+			. " AND phpgw_cust_choice.location_id = :location_id ORDER BY phpgw_cust_choice.id");
+		$stmt->execute(array(':location_id' => (int)$location_id));
 
 		$status = array();
-		foreach ($this->db->resultSet as $row)
+		foreach ($stmt->fetchAll() as $row)
 		{
 			$status[] = array(
 				'id'	 => $row['id'],
@@ -292,6 +291,7 @@ class property_soentity
 
 		$where			 = 'WHERE';
 		$filtermethod	 = '';
+		$sqlParams	 = array();
 
 		$_config = CreateObject('phpgwapi.config', $this->type_app[$this->type]);
 		$_config->read();
@@ -311,7 +311,7 @@ class property_soentity
 			{
 				foreach ($grants['accounts'] as $user => $right)
 				{
-					$public_user_list[] = $user;
+					$public_user_list[] = (int)$user;
 				}
 				unset($user);
 
@@ -326,7 +326,7 @@ class property_soentity
 			{
 				foreach ($grants['groups'] as $user => $_right)
 				{
-					$public_group_list[] = $user;
+					$public_group_list[] = (int)$user;
 				}
 				unset($user);
 				reset($public_group_list);
@@ -341,7 +341,8 @@ class property_soentity
 		}
 		else
 		{
-			$filtermethod	 = " $where $entity_table.user_id=$filter ";
+			$filtermethod	 = " $where $entity_table.user_id = :filter_user_id ";
+			$sqlParams[':filter_user_id'] = (int)$filter;
 			$where			 = 'AND';
 		}
 		$values	 = array();
@@ -351,8 +352,10 @@ class property_soentity
 			. " {$this->join} phpgw_group_map ON phpgw_accounts.account_id = phpgw_group_map.account_id"
 			. " {$filtermethod}";
 
-		$this->db->query($sql, __LINE__, __FILE__);
-		foreach ($this->db->resultSet as $row)
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute($sqlParams);
+		$rows = $stmt->fetchAll();
+		foreach ($rows as $row)
 		{
 
 			$values[] = array(
@@ -404,8 +407,12 @@ class property_soentity
 		$attributes		 = array();
 		foreach ($conditions as $condition)
 		{
-			$this->db->query("SELECT * FROM phpgw_cust_attribute WHERE location_id = {$location_id} AND id= " . (int)$condition['attribute_id']);
-			$row  = $this->db->resultSet[0] ?? [];
+			$stmt = $this->db->prepare('SELECT * FROM phpgw_cust_attribute WHERE location_id = :location_id AND id = :attribute_id');
+			$stmt->execute(array(
+				':location_id' => (int)$location_id,
+				':attribute_id' => (int)$condition['attribute_id']
+			));
+			$row  = $stmt->fetch() ?: [];
 			$attribute_name = $row['column_name'];
 
 			$attributes[$condition['attibute_id']]['name']						 = $attribute_name;
@@ -504,8 +511,9 @@ class property_soentity
 
 		$sql_cnt = "SELECT count(id) as cnt FROM fm_bim_item WHERE location_id = {$location_id} $querymethod";
 
-		$this->db->query($sql_cnt, __LINE__, __FILE__);
-		$row  = $this->db->resultSet[0] ?? [];
+		$stmt = $this->db->prepare($sql_cnt);
+		$stmt->execute();
+		$row  = $stmt->fetch() ?: [];
 		unset($sql_cnt);
 
 		$this->total_records = $row['cnt'];
@@ -514,16 +522,19 @@ class property_soentity
 		if (!$allrows)
 		{
 			$this->db->limit_query($sql . $ordermethod, $start, __LINE__, __FILE__, $results);
+			$rows = $this->db->resultSet;
 		}
 		else
 		{
-			$this->db->query($sql . $ordermethod, __LINE__, __FILE__);
+			$stmt = $this->db->prepare($sql . $ordermethod);
+			$stmt->execute();
+			$rows = $stmt->fetchAll();
 		}
 
 		$items	 = array();
 		$dataset = array();
 		$j		 = 0;
-		foreach ($this->db->resultSet as $row)
+		foreach ($rows as $row)
 		{
 			$jsondata = json_decode($row['json_representation'], true);
 
@@ -854,8 +865,10 @@ class property_soentity
 		$_joinmethod_datatype		 = array();
 		$_joinmethod_datatype_custom = array();
 		$custom_attribs				 = array();
-		$this->db->query("SELECT * FROM $attribute_table WHERE $attribute_filter AND search='1'");
-		foreach ($this->db->resultSet as $row)
+		$stmt = $this->db->prepare("SELECT * FROM $attribute_table WHERE $attribute_filter AND search='1'");
+		$stmt->execute();
+		$rows = $stmt->fetchAll();
+		foreach ($rows as $row)
 		{
 			$custom_attribs[$row['column_name']] = array(
 				'id'			 => $row['id'],
@@ -904,9 +917,11 @@ class property_soentity
 				}
 				//_debug_array($__querymethod);
 
-				$this->db->query("SELECT * FROM $attribute_table WHERE $attribute_filter AND search='1'");
+				$stmt = $this->db->prepare("SELECT * FROM $attribute_table WHERE $attribute_filter AND search='1'");
+				$stmt->execute();
+				$rows = $stmt->fetchAll();
 
-				foreach ($this->db->resultSet as $row)
+				foreach ($rows as $row)
 				{
 					$_column_name = $row['column_name'];
 					switch ($row['datatype'])
@@ -1170,8 +1185,9 @@ class property_soentity
 			}
 			else
 			{
-				$this->db->query($sql2, __LINE__, __FILE__);
-				$row  = $this->db->resultSet[0] ?? [];
+				$stmt = $this->db->prepare($sql2);
+				$stmt->execute();
+				$row  = $stmt->fetch() ?: [];
 			}
 			unset($sql2);
 			unset($sql_cnt);
@@ -1265,8 +1281,9 @@ class property_soentity
 			}
 			else
 			{
-				$this->db->query($sql_pre_run . $ordermethod, __LINE__, __FILE__);
-				$rows = $this->db->resultSet;
+				$stmt = $this->db->prepare($sql_pre_run . $ordermethod);
+				$stmt->execute();
+				$rows = $stmt->fetchAll();
 			}
 		}
 
@@ -1293,7 +1310,8 @@ class property_soentity
 		}
 		$sql	 = str_replace($acl_group_join, '', $sql);
 		$sql_arr = explode('WHERE', $sql);
-		$this->db->query("{$sql_arr[0]} WHERE fm_bim_item.id IN (" . implode(', ', $ids) . ") AND fm_bim_item.type IN ({$types[0]}) {$group_method} " . $ordermethod, __LINE__, __FILE__);
+		$stmt = $this->db->prepare("{$sql_arr[0]} WHERE fm_bim_item.id IN (" . implode(', ', $ids) . ") AND fm_bim_item.type IN ({$types[0]}) {$group_method} " . $ordermethod);
+		$stmt->execute();
 
 		$j = 0;
 
@@ -1302,7 +1320,8 @@ class property_soentity
 		//			$cols_return = $this->cols_return;
 		$dataset	 = array();
 		//_debug_array($uicols);
-		foreach ($this->db->resultSet as $row)
+		$rows = $stmt->fetchAll();
+		foreach ($rows as $row)
 		{
 			//				$xmldata = $row['xml_representation'];
 			//				$xml = new DOMDocument('1.0', 'utf-8');
@@ -1680,10 +1699,12 @@ class property_soentity
 				$user_column_filter = " OR ({$attribute_filter} AND id IN (" . implode(',', $_user_columns) . '))';
 			}
 
-			$this->db->query("SELECT * FROM {$attribute_table} WHERE list=1 AND {$attribute_filter} {$user_column_filter} ORDER BY group_id, attrib_sort ASC");
+			$stmt = $this->db->prepare("SELECT * FROM {$attribute_table} WHERE list=1 AND {$attribute_filter} {$user_column_filter} ORDER BY group_id, attrib_sort ASC");
+			$stmt->execute();
 
 			$i = count($uicols['name']);
-			foreach ($this->db->resultSet as $row)
+			$rows = $stmt->fetchAll();
+			foreach ($rows as $row)
 			{
 				$uicols['input_type'][]					 = 'text';
 				$uicols['name'][]						 = $row['column_name'];
@@ -1754,11 +1775,12 @@ class property_soentity
 		$exclude_locations	 = isset($data['exclude_locations']) && $data['exclude_locations'] && is_array($data['exclude_locations']) ? $data['exclude_locations'] : array(
 			0
 		);
+		$exclude_locations = array_map('intval', $exclude_locations);
 		$exclude_filter		 = implode(', ', $exclude_locations);
 		$location_filter	 = array();
-		$sql				 = "SELECT DISTINCT location_id FROM fm_entity_category WHERE entity_group_id = {$entity_group_id} AND location_id NOT IN ({$exclude_filter})";
-		$this->db->query($sql);
-		foreach ($this->db->resultSet as $row)
+		$stmt = $this->db->prepare("SELECT DISTINCT location_id FROM fm_entity_category WHERE entity_group_id = :entity_group_id AND location_id NOT IN ({$exclude_filter})");
+		$stmt->execute(array(':entity_group_id' => (int)$entity_group_id));
+		foreach ($stmt->fetchAll() as $row)
 		{
 			$location_filter[] = $row['location_id'];
 		}
@@ -2091,9 +2113,11 @@ class property_soentity
 				}
 				//_debug_array($__querymethod);
 
-				$this->db->query("SELECT * FROM $attribute_table WHERE $attribute_filter AND search='1'");
+				$stmt = $this->db->prepare("SELECT * FROM $attribute_table WHERE $attribute_filter AND search='1'");
+				$stmt->execute();
+				$rows = $stmt->fetchAll();
 
-				foreach ($this->db->resultSet as $row)
+				foreach ($rows as $row)
 				{
 					switch ($row['datatype'])
 					{
@@ -2227,8 +2251,9 @@ class property_soentity
 			}
 			else
 			{
-				$this->db->query($sql2, __LINE__, __FILE__);
-				$row  = $this->db->resultSet[0] ?? [];
+				$stmt = $this->db->prepare($sql2);
+				$stmt->execute();
+				$row  = $stmt->fetch() ?: [];
 			}
 			unset($sql2);
 			unset($sql_cnt);
@@ -2271,8 +2296,9 @@ class property_soentity
 			}
 			else
 			{
-				$this->db->query($sql . $ordermethod, __LINE__, __FILE__);
-				$rows = $this->db->resultSet;
+				$stmt = $this->db->prepare($sql . $ordermethod);
+				$stmt->execute();
+				$rows = $stmt->fetchAll();
 			}
 		}
 
@@ -2621,8 +2647,9 @@ class property_soentity
 	function generate_id($data): int
 	{
 		$table	 = "fm_{$this->type}_{$data['entity_id']}_{$data['cat_id']}";
-		$this->db->query("select max(id) as id from $table");
-		$row  = $this->db->resultSet[0] ?? [];
+		$stmt = $this->db->prepare("select max(id) as id from $table");
+		$stmt->execute();
+		$row  = $stmt->fetch() ?: [];
 		$id		 = (int) $row['id'] + 1;
 
 		return $id;
@@ -3293,9 +3320,12 @@ class property_soentity
 
 		$location_id = $this->locations->get_id($this->type_app[$this->type], ".{$this->type}.{$entity_id}.{$cat_id}");
 
-		$this->db->query("SELECT helpmsg FROM fphpgw_cust_attribute WHERE location_id = {$location_id} AND id =" . (int)$attrib_id);
-
-		$row  = $this->db->resultSet[0] ?? [];
+		$stmt = $this->db->prepare('SELECT helpmsg FROM fphpgw_cust_attribute WHERE location_id = :location_id AND id = :attrib_id');
+		$stmt->execute(array(
+			':location_id' => (int)$location_id,
+			':attrib_id' => (int)$attrib_id
+		));
+		$row  = $stmt->fetch() ?: array();
 		//			$helpmsg = str_replace("\n","<br>",stripslashes($row['helpmsg']));
 		$helpmsg = isset($row['helpmsg']) ? $this->dbStrip($row['helpmsg']) : null;
 		return $helpmsg;
@@ -3330,11 +3360,11 @@ class property_soentity
 				continue;
 			}
 
-			$sql = "SELECT * FROM fm_{$type}_category";
-			$this->db->query($sql, __LINE__, __FILE__);
+			$stmt = $this->db->prepare("SELECT * FROM fm_{$type}_category");
+			$stmt->execute();
 
 			$category = array();
-			foreach ($this->db->resultSet as $row)
+			foreach ($stmt->fetchAll() as $row)
 			{
 				$category[] = array(
 					'location_id' => (int)$row['location_id'],
@@ -3541,13 +3571,17 @@ class property_soentity
 
 		$filtermethod = '';
 
+		$params = array();
 		if ($inventory_id)
 		{
-			$filtermethod = "WHERE fm_bim_item_inventory.id = {$inventory_id}";
+			$filtermethod = 'WHERE fm_bim_item_inventory.id = :inventory_id';
+			$params[':inventory_id'] = (int)$inventory_id;
 		}
 		else
 		{
-			$filtermethod = "WHERE location_id = {$location_id} AND fm_bim_item_inventory.item_id = {$id} AND expired_on IS NULL";
+			$filtermethod = 'WHERE location_id = :location_id AND fm_bim_item_inventory.item_id = :item_id AND expired_on IS NULL';
+			$params[':location_id'] = (int)$location_id;
+			$params[':item_id'] = (int)$id;
 		}
 
 		if (!$filtermethod)
@@ -3560,9 +3594,10 @@ class property_soentity
 			. " {$filtermethod}"
 			. " ORDER BY p_location_id, p_id";
 
-		$this->db->query($sql, __LINE__, __FILE__);
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute($params);
 		$inventory = array();
-		foreach ($this->db->resultSet as $row)
+		foreach ($stmt->fetchAll() as $row)
 		{
 			$inventory[] = array(
 				'inventory_id'	 => $row['id'],
@@ -3587,16 +3622,16 @@ class property_soentity
 
 			foreach ($inventory as &$entry)
 			{
-				$sql = "SELECT SUM(item_inventory_amount) AS allocated"
-					. " FROM lg_calendar"
-					. " WHERE location_id = {$location_id}"
-					. " AND lg_calendar.item_id = {$id}"
-					. " AND item_inventory_id = {$entry['inventory_id']}"
-					. " AND lg_calendar.end_date >= {$start_date} AND lg_calendar.start_date <= {$end_date}";
+				$stmt = $this->db->prepare('SELECT SUM(item_inventory_amount) AS allocated FROM lg_calendar WHERE location_id = :location_id AND lg_calendar.item_id = :item_id AND item_inventory_id = :inventory_id AND lg_calendar.end_date >= :start_date AND lg_calendar.start_date <= :end_date');
+				$stmt->execute(array(
+					':location_id' => (int)$location_id,
+					':item_id' => (int)$id,
+					':inventory_id' => (int)$entry['inventory_id'],
+					':start_date' => (int)$start_date,
+					':end_date' => (int)$end_date
+				));
 
-				$this->db->query($sql, __LINE__, __FILE__);
-
-				$row  = $this->db->resultSet[0] ?? [];
+				$row  = $stmt->fetch() ?: array();
 				$entry['allocated'] = (int)$row['allocated'];
 			}
 		}
@@ -3750,11 +3785,12 @@ class property_soentity
 	 */
 	function get_location_code($location_id, $item_id): ?string
 	{
-		$sql = 'SELECT location_code from fm_bim_item WHERE location_id = ' . (int)$location_id;
-		$sql .= ' AND id = ' . (int)$item_id;
-
-		$this->db->query($sql, __LINE__, __FILE__);
-		$row  = $this->db->resultSet[0] ?? [];
+		$stmt = $this->db->prepare('SELECT location_code FROM fm_bim_item WHERE location_id = :location_id AND id = :item_id');
+		$stmt->execute(array(
+			':location_id' => (int)$location_id,
+			':item_id' => (int)$item_id
+		));
+		$row  = $stmt->fetch() ?: array();
 		$location_code = $row['location_code'];
 		return $location_code;
 	}
@@ -3816,12 +3852,10 @@ class property_soentity
 	 */
 	function get_QR_attributes(): array
 	{
-		$sql = "SELECT DISTINCT location_id, column_name FROM phpgw_cust_attribute WHERE datatype = 'QR_code'";
-
 		$values = array();
-
-		$this->db->query($sql, __LINE__, __FILE__);
-		foreach ($this->db->resultSet as $row)
+		$stmt = $this->db->prepare("SELECT DISTINCT location_id, column_name FROM phpgw_cust_attribute WHERE datatype = :datatype");
+		$stmt->execute(array(':datatype' => 'QR_code'));
+		foreach ($stmt->fetchAll() as $row)
 		{
 			$column_name =  $row['column_name'];
 			$location_id =  $row['location_id'];
@@ -3840,14 +3874,16 @@ class property_soentity
 	 */
 	function get_items_per_qr($location_ids, $attrib_filter): array
 	{
+		$location_ids = array_map('intval', $location_ids);
 		$filtermethod	 = 'location_id IN(' . implode(',', $location_ids) . ')';
 		$filtermethod	 .= ' AND (' . implode(' OR ', $attrib_filter) . ')';
 
 		$sql	 = "SELECT DISTINCT id, location_id, location_code, address FROM fm_bim_item WHERE {$filtermethod}";
 		$values	 = array();
 
-		$this->db->query($sql, __LINE__, __FILE__);
-		foreach ($this->db->resultSet as $row)
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute();
+		foreach ($stmt->fetchAll() as $row)
 		{
 			$values[] = array(
 				'id'			 => $row['id'],

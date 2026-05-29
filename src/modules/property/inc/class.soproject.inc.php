@@ -59,6 +59,11 @@ class property_soproject
 	 */
 	private static $instance = null;
 
+	/**
+	 * Initialize database handles, helpers, ACL context and configuration for project storage.
+	 *
+	 * @return void
+	 */
 	function __construct()
 	{
 		$this->userSettings = Settings::getInstance()->get('user');
@@ -84,7 +89,9 @@ class property_soproject
 	}
 
 	/**
-	 * Gets the instance via lazy initialization (created on first usage)
+	 * Get singleton instance via lazy initialization.
+	 *
+	 * @return property_soproject
 	 */
 	public static function getInstance(): property_soproject
 	{
@@ -96,6 +103,11 @@ class property_soproject
 	}
 
 
+	/**
+	 * Fetch available project status options.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
 	function select_status_list()
 	{
 		$this->db->query("SELECT id, descr FROM fm_project_status ORDER BY id ");
@@ -110,6 +122,11 @@ class property_soproject
 		return $status;
 	}
 
+	/**
+	 * Fetch available project branch options.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
 	function select_branch_list()
 	{
 		$this->db->query("SELECT id, descr FROM fm_branch ORDER BY id ");
@@ -125,6 +142,11 @@ class property_soproject
 		return $branch;
 	}
 
+	/**
+	 * Fetch available key location options.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
 	function select_key_location_list()
 	{
 		$this->db->query("SELECT id, descr FROM fm_key_loc ORDER BY descr ");
@@ -139,6 +161,12 @@ class property_soproject
 		return $location;
 	}
 
+	/**
+	 * Read a filtered and paginated list of projects.
+	 *
+	 * @param array<string, mixed> $data List filters, sorting, and paging options.
+	 * @return array<int, array<string, mixed>>
+	 */
 	function read($data)
 	{
 		$start			 = isset($data['start']) && $data['start'] ? $data['start'] : 0;
@@ -932,6 +960,11 @@ class property_soproject
 		return array();
 	}
 
+	/**
+	 * Resolve the configured meter register location id.
+	 *
+	 * @return int|string|null
+	 */
 	function get_meter_register()
 	{
 		$config_data	 = CreateObject('phpgwapi.config', 'property')->read();
@@ -945,6 +978,13 @@ class property_soproject
 		return $location_id_meter_register = $this->locations->get_id('property', $meter_register_location);
 	}
 
+	/**
+	 * Read one project with status metadata and optional custom attributes.
+	 *
+	 * @param int|string $project_id Project id.
+	 * @param array<string, mixed> $values Optional preloaded values including attributes.
+	 * @return array<string, mixed>
+	 */
 	function read_single($project_id, $values = array())
 	{
 		$project_id	 = (int)$project_id;
@@ -1022,6 +1062,12 @@ class property_soproject
 		return $project;
 	}
 
+	/**
+	 * Read power meter value for a location code from configured meter register entity.
+	 *
+	 * @param string $location_code Location code.
+	 * @return string|false|null
+	 */
 	function get_power_meter($location_code = '')
 	{
 		if (!$location_id_meter_register = $this->get_meter_register())
@@ -1053,6 +1099,12 @@ class property_soproject
 		}
 	}
 
+	/**
+	 * Read workorder budget and cost data linked to one or more projects.
+	 *
+	 * @param array<string, mixed> $data Filters and paging options.
+	 * @return array<int, array<string, mixed>>
+	 */
 	function project_workorder_data($data = array())
 	{
 		$start		 = isset($data['start']) && $data['start'] ? $data['start'] : 0;
@@ -1234,6 +1286,12 @@ class property_soproject
 		return $values;
 	}
 
+	/**
+	 * Get branch relations for a project.
+	 *
+	 * @param int|string $project_id Project id.
+	 * @return array<int, array<string, mixed>>
+	 */
 	function branch_p_list($project_id = '')
 	{
 		$selected = array();
@@ -1245,6 +1303,11 @@ class property_soproject
 		return $selected;
 	}
 
+	/**
+	 * Increment the project id generator sequence.
+	 *
+	 * @return void
+	 */
 	function increment_project_id()
 	{
 		$name		 = 'project';
@@ -1258,6 +1321,11 @@ class property_soproject
 		$stmt->execute(array(':next_id' => $next_id, ':name' => $name, ':start_date' => $start_date));
 	}
 
+	/**
+	 * Get next project id from id generator without persisting the increment.
+	 *
+	 * @return int
+	 */
 	function next_project_id()
 	{
 		$name	 = 'project';
@@ -1269,6 +1337,13 @@ class property_soproject
 		return $id;
 	}
 
+	/**
+	 * Create a project and related metadata such as branches and linked requests.
+	 *
+	 * @param array<string, mixed> $project Project payload.
+	 * @param array<int, array<string, mixed>> $values_attribute Custom attribute values.
+	 * @return array<string, mixed> Receipt with id, messages and/or errors.
+	 */
 	function add($project, $values_attribute = array())
 	{
 		$receipt	 = array();
@@ -1464,6 +1539,14 @@ class property_soproject
 		return $receipt;
 	}
 
+	/**
+	 * Update or create a related meter-register entity and set power meter value.
+	 *
+	 * @param string $power_meter Meter number.
+	 * @param string $location_code Location code.
+	 * @param string $address Address text.
+	 * @return int|string|null
+	 */
 	function update_power_meter($power_meter, $location_code, $address)
 	{
 		if (!$location_id_meter_register = $this->get_meter_register())
@@ -1548,6 +1631,13 @@ class property_soproject
 		return $id;
 	}
 
+	/**
+	 * Update an existing project, including budget logic, relations and history.
+	 *
+	 * @param array<string, mixed> $project Project payload.
+	 * @param array<int, array<string, mixed>> $values_attribute Custom attribute values.
+	 * @return array<string, mixed> Receipt with id and messages.
+	 */
 	function edit($project, $values_attribute = array())
 	{
 		$historylog	 = CreateObject('property.historylog', 'project');
@@ -2086,6 +2176,13 @@ class property_soproject
 		return $receipt;
 	}
 
+	/**
+	 * Remove linked requests from a project.
+	 *
+	 * @param array<int, int|string> $request Request ids.
+	 * @param int|string $project_id Project id.
+	 * @return array<string, mixed>
+	 */
 	function delete_request_from_project($request, $project_id)
 	{
 		$stmt = $this->db->prepare('UPDATE fm_request SET project_id = NULL WHERE id = :request_id');
@@ -2098,6 +2195,12 @@ class property_soproject
 		return $receipt ?? array();
 	}
 
+	/**
+	 * Get buffer budget rows for a project.
+	 *
+	 * @param int|string $project_id Project id.
+	 * @return array<int, array<string, mixed>>
+	 */
 	public function get_buffer_budget($project_id)
 	{
 		$project_id = (int)$project_id;
@@ -2122,6 +2225,17 @@ class property_soproject
 		return $values;
 	}
 
+	/**
+	 * Add buffer movements and optionally transfer budget between projects.
+	 *
+	 * @param int|string $project_id Buffer project id.
+	 * @param int|string $year Budget year.
+	 * @param int|float|string $amount Transfer amount.
+	 * @param int|string|null $from_project Source project id.
+	 * @param int|string|null $to_project Target project id.
+	 * @param string|null $transfer_remark Optional transfer remark.
+	 * @return void
+	 */
 	private function _update_buffer_budget($project_id, $year, $amount, $from_project, $to_project, $transfer_remark)
 	{
 		$year	 = (int)$year;
@@ -2232,6 +2346,18 @@ class property_soproject
 		}
 	}
 
+	/**
+	 * Update project budget for one year, with optional periodization and transfer mode.
+	 *
+	 * @param int|string $project_id Project id.
+	 * @param int|string $year Budget year.
+	 * @param int|string $periodization_id Periodization id.
+	 * @param int|float|string $budget Budget amount.
+	 * @param bool $budget_periodization_all Include closed/past periods when true.
+	 * @param string $action One of update|add|subtract.
+	 * @param int|bool $activate Activation flag for created budget rows.
+	 * @return int
+	 */
 	function update_budget($project_id, $year, $periodization_id, $budget, $budget_periodization_all = false, $action = 'update', $activate = 0)
 	{
 		$project_id	 = (int)$project_id;
@@ -2397,6 +2523,17 @@ class property_soproject
 		return $sum_budget;
 	}
 
+	/**
+	 * Upsert one project budget row for a specific period.
+	 *
+	 * @param int|string $project_id Project id.
+	 * @param int|string $year Budget year.
+	 * @param int|string $month Budget month (0-12).
+	 * @param int|float|string $budget Budget amount.
+	 * @param string $action One of update|add|subtract.
+	 * @param int|bool $active Active flag for inserted rows.
+	 * @return void
+	 */
 	private function _update_budget($project_id, $year, $month, $budget, $action = 'update', $active = 0)
 	{
 		$month		 = (int)$month;
@@ -2449,6 +2586,12 @@ class property_soproject
 		}
 	}
 
+	/**
+	 * Build aggregated budget, obligation, order and deviation data by period.
+	 *
+	 * @param int|string $project_id Project id.
+	 * @return array<int, array<string, mixed>>
+	 */
 	function get_budget($project_id)
 	{
 		$project_id		 = (int)$project_id;
@@ -2669,6 +2812,13 @@ class property_soproject
 		return $values;
 	}
 
+	/**
+	 * Delete selected periods from project budget.
+	 *
+	 * @param int|string $project_id Project id.
+	 * @param array<int, string> $data Period keys on format YYYY_MM.
+	 * @return void
+	 */
 	function delete_period_from_budget($project_id, $data)
 	{
 		$project_id = (int)$project_id;
@@ -2680,6 +2830,13 @@ class property_soproject
 		}
 	}
 
+	/**
+	 * Mark selected budget periods as closed/open.
+	 *
+	 * @param int|string $project_id Project id.
+	 * @param array<string, array<int, string>> $data Closed period payload.
+	 * @return void
+	 */
 	function close_period_from_budget($project_id, $data)
 	{
 		$project_id				 = (int)$project_id;
@@ -2722,6 +2879,13 @@ class property_soproject
 		//_debug_array($open_period);die();
 	}
 
+	/**
+	 * Activate and deactivate selected budget periods.
+	 *
+	 * @param int|string $project_id Project id.
+	 * @param array<string, array<int, string>> $data Active period payload.
+	 * @return void
+	 */
 	function activate_period_from_budget($project_id, $data)
 	{
 		$project_id		 = (int)$project_id;
@@ -2769,6 +2933,13 @@ class property_soproject
 		//_debug_array($open_period);die();
 	}
 
+	/**
+	 * Update project status and write history when status changes.
+	 *
+	 * @param int|string $id Project id.
+	 * @param int|string $status_new New status id.
+	 * @return void
+	 */
 	function set_status($id, $status_new)
 	{
 		$id			 = (int)$id;
@@ -2788,6 +2959,15 @@ class property_soproject
 		}
 	}
 
+	/**
+	 * Propagate project status/category/coordinator to linked requests.
+	 *
+	 * @param int|string $project_id Project id.
+	 * @param int|string $status Request status id.
+	 * @param int $category Request category id.
+	 * @param int $coordinator Request coordinator account id.
+	 * @return void
+	 */
 	function update_request_status($project_id = '', $status = '', $category = 0, $coordinator = 0)
 	{
 		$historylog_r = CreateObject('property.historylog', 'request');
@@ -2828,6 +3008,12 @@ class property_soproject
 		}
 	}
 
+	/**
+	 * Check whether a request is already linked to a project.
+	 *
+	 * @param int|string $request_id Request id.
+	 * @return mixed
+	 */
 	function check_request($request_id)
 	{
 		$target = $this->interlink->get_specific_relation('property', '.project.request', '.project', $request_id, 'target');
@@ -2837,6 +3023,13 @@ class property_soproject
 		}
 	}
 
+	/**
+	 * Attach one or more requests to a project.
+	 *
+	 * @param array<string, mixed> $add_request Request payload containing request_id list.
+	 * @param int|string $id Project id.
+	 * @return bool
+	 */
 	function add_request($add_request, $id)
 	{
 		$ret = false;
@@ -2886,6 +3079,12 @@ class property_soproject
 		return $ret;
 	}
 
+	/**
+	 * Delete a project and related records inside one transaction.
+	 *
+	 * @param int|string $project_id Project id.
+	 * @return void
+	 */
 	function delete($project_id)
 	{
 		$request = $this->interlink->get_specific_relation('property', '.project.request', '.project', $project_id);
@@ -2932,6 +3131,14 @@ class property_soproject
 		$this->db->transaction_commit();
 	}
 
+	/**
+	 * Transfer and rebaseline budget between years for bulk update routines.
+	 *
+	 * @param int|string $id Project id.
+	 * @param array<string, mixed> $budget Budget metadata and amount values.
+	 * @param int|string $year Target year.
+	 * @return void
+	 */
 	private function transfer_budget($id, $budget, $year)
 	{
 
@@ -3026,6 +3233,26 @@ class property_soproject
 		$this->db->transaction_commit();
 	}
 
+	/**
+	 * Bulk update project/workorder status and related fields with optional budget transfer.
+	 *
+	 * @param string $start_date From date.
+	 * @param string $end_date To date.
+	 * @param mixed $status_filter Current status filter.
+	 * @param mixed $status_new New status.
+	 * @param bool $execute Apply updates when true.
+	 * @param string $type One of project|workorder.
+	 * @param mixed $coordinator Current coordinator filter.
+	 * @param int|string $new_coordinator New coordinator id.
+	 * @param array<int, int|string> $ids Target ids.
+	 * @param bool $paid Include paid filter.
+	 * @param bool $closed_orders Include closed orders.
+	 * @param int|string $ecodimb Ecodimb filter.
+	 * @param int|string $transfer_budget_year Transfer budget target year.
+	 * @param array<string, mixed> $new_budget Budget payload used during transfer.
+	 * @param int|string $b_account_id Budget account filter.
+	 * @return array<int, array<string, mixed>>
+	 */
 	public function bulk_update_status($start_date, $end_date, $status_filter, $status_new, $execute, $type, $coordinator, $new_coordinator, $ids, $paid = false, $closed_orders = false, $ecodimb = 0, $transfer_budget_year = 0, $new_budget = array(), $b_account_id = 0)
 	{
 		if ($transfer_budget_year && $execute && $new_budget)
@@ -3271,6 +3498,14 @@ class property_soproject
 		return $values;
 	}
 
+	/**
+	 * Apply bulk status update for projects and close related pending actions.
+	 *
+	 * @param bool $execute Apply updates when true.
+	 * @param mixed $status_new New status value.
+	 * @param array<int, int|string> $ids Project ids.
+	 * @return void
+	 */
 	protected function _update_status_project($execute, $status_new, $ids)
 	{
 		if (!$execute || !$status_new)
@@ -3343,6 +3578,14 @@ class property_soproject
 		$this->db->transaction_commit();
 	}
 
+	/**
+	 * Apply bulk status update for workorders and close related pending actions.
+	 *
+	 * @param bool $execute Apply updates when true.
+	 * @param mixed $status_new New status value.
+	 * @param array<int, int|string> $ids Workorder ids.
+	 * @return void
+	 */
 	protected function _update_status_workorder($execute, $status_new, $ids)
 	{
 		if (!$execute || !$status_new)
@@ -3441,6 +3684,11 @@ class property_soproject
 		}
 	}
 
+	/**
+	 * Get coordinators that are currently in use on projects.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
 	public function get_user_list()
 	{
 		$values	 = array();
@@ -3471,6 +3719,11 @@ class property_soproject
 		return $values;
 	}
 
+	/**
+	 * Get periodization templates that have outline rows.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
 	public function get_periodizations_with_outline()
 	{
 		$values	 = array();
@@ -3492,6 +3745,11 @@ class property_soproject
 		return $values;
 	}
 
+	/**
+	 * Build selectable year list for project filters.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
 	public function get_filter_year_list()
 	{
 		$sql = 'SELECT min(start_date) AS start_date FROM fm_project WHERE start_date <> 0';
@@ -3519,6 +3777,12 @@ class property_soproject
 		return $year_list;
 	}
 
+	/**
+	 * Get list of years spanned by workorders linked to a project.
+	 *
+	 * @param int|string $id Project id.
+	 * @return array<int, array<string, mixed>>
+	 */
 	public function get_order_time_span($id)
 	{
 		if (!$id)
@@ -3567,6 +3831,11 @@ class property_soproject
 		return $year_list;
 	}
 
+	/**
+	 * Detect and backfill missing project budget years derived from order budgets.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
 	public function get_missing_project_budget()
 	{
 		$values = array();
@@ -3598,10 +3867,12 @@ class property_soproject
 	}
 
 	/**
-	 * Add budget to project if missing.
-	 * @param integer $project_id
-	 * @param integer $year
-	 * @param boolean $force
+	 * Ensure project budget exists and is aligned with workorder budgets for a given year.
+	 *
+	 * @param int|string $project_id Project id.
+	 * @param int|string $year Year.
+	 * @param bool $force Force update regardless of configuration.
+	 * @return bool|null
 	 */
 	public function check_and_update_project_budget($project_id, $year, $force = false)
 	{
@@ -3678,8 +3949,10 @@ class property_soproject
 	}
 
 	/**
-	 * Add budget to project if missing.
-	 * @param integer $project_id
+	 * Ensure project budgets exist for all years referenced by project workorders.
+	 *
+	 * @param int|string $project_id Project id.
+	 * @return void
 	 */
 	protected function _update_project_budget($project_id)
 	{
@@ -3705,6 +3978,12 @@ class property_soproject
 		}
 	}
 
+	/**
+	 * Approve pending approval actions for all workorders in a project.
+	 *
+	 * @param int|string $project_id Project id.
+	 * @return void
+	 */
 	private function approve_related_workorders($project_id)
 	{
 		$project_id	 = (int)$project_id;
@@ -3771,6 +4050,14 @@ class property_soproject
 		}
 	}
 
+	/**
+	 * Find other projects connected to the same location tree through workorders.
+	 *
+	 * @param int|string $id Current project id to exclude.
+	 * @param string $location_code Base location code.
+	 * @param array<string, mixed> $params Search, sorting and paging options.
+	 * @return array<string, mixed>
+	 */
 	public function get_other_projects($id, $location_code, $params = array())
 	{
 		if (!$location_code)

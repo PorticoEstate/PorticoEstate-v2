@@ -255,6 +255,7 @@ class property_soentity
 		$category = $admin_entity->read_single_category($entity_id, $cat_id);
 
 		$entity_table = "fm_{$this->type}_{$entity_id}_{$cat_id}";
+		$ordermethod = " order by $entity_table.id DESC";
 
 
 		if ($order)
@@ -511,6 +512,7 @@ class property_soentity
 		}
 
 		$items	 = array();
+		$dataset = array();
 		$j		 = 0;
 		while ($this->db->next_record())
 		{
@@ -1824,6 +1826,7 @@ class property_soentity
 		{
 			return [];
 		}
+		$ordermethod = " order by $entity_table.id DESC";
 
 		$acl	 = Acl::getInstance();
 		$acl->set_account_id($this->account);

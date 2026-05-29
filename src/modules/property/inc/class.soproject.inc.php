@@ -1348,6 +1348,8 @@ class property_soproject
 	{
 		$receipt	 = array();
 		$historylog	 = CreateObject('property.historylog', 'project');
+		$cols		 = array();
+		$vals		 = array();
 
 		if (is_array($project['location']))
 		{

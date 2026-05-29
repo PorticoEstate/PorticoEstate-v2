@@ -2589,9 +2589,9 @@ class property_soentity
 	function check_entity($entity_id, $cat_id, $num): ?bool
 	{
 		$table = "fm_{$this->type}_{$entity_id}_{$cat_id}";
-		$this->db->query("SELECT count(*) as cnt FROM $table where num='$num'");
-
-		$row  = $this->db->resultSet[0] ?? [];
+		$stmt = $this->db->prepare("SELECT count(*) as cnt FROM {$table} WHERE num = :num");
+		$stmt->execute(array(':num' => $num));
+		$row  = $stmt->fetch();
 
 		if ($row['cnt'])
 		{
@@ -2628,9 +2628,13 @@ class property_soentity
 	 */
 	function generate_num($entity_id, $cat_id, $id): string
 	{
-		$this->db->query("select prefix from fm_{$this->type}_category WHERE entity_id=$entity_id AND id=$cat_id ");
-		$row  = $this->db->resultSet[0] ?? [];
-		$prefix = $row['prefix'];
+		$stmt = $this->db->prepare("SELECT prefix FROM fm_{$this->type}_category WHERE entity_id = :entity_id AND id = :cat_id");
+		$stmt->execute(array(
+			':entity_id' => (int)$entity_id,
+			':cat_id' => (int)$cat_id
+		));
+		$row  = $stmt->fetch();
+		$prefix = isset($row['prefix']) ? $this->dbStrip($row['prefix']) : '';
 
 		if (strlen($id) == 4)
 			$return	 = $id;
@@ -3100,23 +3104,25 @@ class property_soentity
 				{
 					if (!$category['is_eav'])
 					{
-						$this->db->query("SELECT {$entry['name']} FROM {$table} WHERE id = '{$values['id']}'", __LINE__, __FILE__);
-						$row  = $this->db->resultSet[0] ?? [];
-						$old_value = $this->dbStrip($row[$entry['name']]);
+						$stmt = $this->db->prepare("SELECT {$entry['name']} FROM {$table} WHERE id = :id");
+						$stmt->execute(array(':id' => (int)$values['id']));
+						$row  = $stmt->fetch();
+						$old_value = isset($row[$entry['name']]) ? $this->dbStrip($row[$entry['name']]) : null;
 					}
 					else
 					{
-						$sql = "SELECT * FROM fm_bim_item WHERE fm_bim_item.id = {$values['id']} AND location_id = $location_id";
-
-						$this->db->query($sql, __LINE__, __FILE__);
-
-						$row  = $this->db->resultSet[0] ?? [];
+						$stmt = $this->db->prepare('SELECT * FROM fm_bim_item WHERE fm_bim_item.id = :id AND location_id = :location_id');
+						$stmt->execute(array(
+							':id' => (int)$values['id'],
+							':location_id' => (int)$location_id
+						));
+						$row  = $stmt->fetch();
 						//							$xmldata = $row['xml_representation'];
 						//							$xml = new DOMDocument('1.0', 'utf-8');
 						//							$xml->loadXML($xmldata);
 						//							$old_value = $xml->getElementsByTagName($entry['name'])->item(0)->nodeValue;
-						$jsondata	 = json_decode($row['json_representation'], true);
-						$old_value	 = $this->dbStrip($jsondata[$entry['name']]);
+						$jsondata	 = json_decode($row['json_representation'] ?? '{}', true);
+						$old_value	 = isset($jsondata[$entry['name']]) ? $this->dbStrip($jsondata[$entry['name']]) : null;
 					}
 
 					if ($entry['datatype'] == 'D')
@@ -3644,9 +3650,9 @@ class property_soentity
 		}
 
 		$sql = "SELECT * FROM fm_bim_item_inventory WHERE id = {$inventory_id}";
-
-		$this->db->query($sql, __LINE__, __FILE__);
-		$row  = $this->db->resultSet[0] ?? [];
+		$stmt = $this->db->prepare('SELECT * FROM fm_bim_item_inventory WHERE id = :inventory_id');
+		$stmt->execute(array(':inventory_id' => (int)$inventory_id));
+		$row  = $stmt->fetch();
 
 		$value_set = array(
 			'location_id'	 => $row['location_id'],

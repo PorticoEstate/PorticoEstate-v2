@@ -1638,13 +1638,14 @@ class property_soproject
 
 		$this->db->transaction_begin();
 
-		$this->db->query("SELECT status,category,coordinator,budget,reserve FROM fm_project WHERE id = {$project['id']}", __LINE__, __FILE__);
-		$this->db->next_record();
-		$old_status		 = $this->db->f('status');
-		$old_category	 = (int)$this->db->f('category');
-		$old_coordinator = (int)$this->db->f('coordinator');
-		$old_budget		 = (int)$this->db->f('budget');
-		$old_reserve	 = (int)$this->db->f('reserve');
+		$stmt = $this->db->prepare('SELECT status, category, coordinator, budget, reserve FROM fm_project WHERE id = :project_id');
+		$stmt->execute(array(':project_id' => (int)$project['id']));
+		$row = $stmt->fetch();
+		$old_status		 = $row['status'] ?? null;
+		$old_category	 = (int)($row['category'] ?? 0);
+		$old_coordinator = (int)($row['coordinator'] ?? 0);
+		$old_budget		 = (int)($row['budget'] ?? 0);
+		$old_reserve	 = (int)($row['reserve'] ?? 0);
 
 		$stmt = $this->db->prepare("UPDATE fm_project SET $value_set WHERE id = :project_id");
 		$stmt->execute(array(':project_id' => (int)$project['id']));
@@ -1688,9 +1689,10 @@ class property_soproject
 				}
 			}
 
-			$this->db->query("SELECT sum(amount_in) AS amount_in, sum(amount_out) AS amount_out FROM fm_project_buffer_budget WHERE buffer_project_id = " . (int)$project['id'], __LINE__, __FILE__);
-			$this->db->next_record();
-			$new_budget = (int)$this->db->f('amount_in') - (int)$this->db->f('amount_out');
+			$stmt = $this->db->prepare('SELECT sum(amount_in) AS amount_in, sum(amount_out) AS amount_out FROM fm_project_buffer_budget WHERE buffer_project_id = :project_id');
+			$stmt->execute(array(':project_id' => (int)$project['id']));
+			$row = $stmt->fetch();
+			$new_budget = (int)($row['amount_in'] ?? 0) - (int)($row['amount_out'] ?? 0);
 
 			if ($old_budget != $new_budget)
 			{
@@ -1716,18 +1718,20 @@ class property_soproject
 		{
 			if (isset($project['transfer_amount']) && $project['transfer_amount'] && isset($project['transfer_target']) && $project['transfer_target'])
 			{
-				$this->db->query("SELECT project_type_id FROM fm_project WHERE id = " . (int)$project['transfer_target'], __LINE__, __FILE__);
-				$this->db->next_record();
-				if ($this->db->f('project_type_id') != 3)
+				$stmt = $this->db->prepare('SELECT project_type_id FROM fm_project WHERE id = :project_id');
+				$stmt->execute(array(':project_id' => (int)$project['transfer_target']));
+				$row = $stmt->fetch();
+				if ((int)($row['project_type_id'] ?? 0) != 3)
 				{
 					throw new Exception('property_soproject::edit() - target project is not a buffer-project');
 				}
 
 				$this->_update_buffer_budget($project['transfer_target'], date('Y'), $project['transfer_amount'], $project['id'], null, $project['transfer_remark']);
 
-				$this->db->query("SELECT sum(amount_in) AS amount_in, sum(amount_out) AS amount_out FROM fm_project_buffer_budget WHERE buffer_project_id = " . (int)$project['transfer_target'], __LINE__, __FILE__);
-				$this->db->next_record();
-				$new_budget = (int)$this->db->f('amount_in') - (int)$this->db->f('amount_out');
+				$stmt = $this->db->prepare('SELECT sum(amount_in) AS amount_in, sum(amount_out) AS amount_out FROM fm_project_buffer_budget WHERE buffer_project_id = :project_id');
+				$stmt->execute(array(':project_id' => (int)$project['transfer_target']));
+				$row = $stmt->fetch();
+				$new_budget = (int)($row['amount_in'] ?? 0) - (int)($row['amount_out'] ?? 0);
 				$stmt = $this->db->prepare('UPDATE fm_project SET budget = :new_budget WHERE id = :project_id');
 				$stmt->execute(array(
 					':new_budget' => (int)$new_budget,
@@ -1746,9 +1750,10 @@ class property_soproject
 				$this->update_budget($project['id'], $project['budget_year'], $project['budget_periodization'], (int)$project['budget'], $project['budget_periodization_all'], 'update', $project['budget_periodization_activate']);
 			}
 
-			$this->db->query("SELECT sum(budget) AS sum_budget FROM fm_project_budget WHERE active = 1 AND project_id = " . (int)$project['id'], __LINE__, __FILE__);
-			$this->db->next_record();
-			$new_budget = (int)$this->db->f('sum_budget');
+			$stmt = $this->db->prepare('SELECT sum(budget) AS sum_budget FROM fm_project_budget WHERE active = 1 AND project_id = :project_id');
+			$stmt->execute(array(':project_id' => (int)$project['id']));
+			$row = $stmt->fetch();
+			$new_budget = (int)($row['sum_budget'] ?? 0);
 
 			if ($old_budget != $new_budget)
 			{
@@ -1783,38 +1788,47 @@ class property_soproject
 					$historylog_workorder->add('NP', $workorder_id, $new_project_id, $project['id']);
 				}
 
-				$sql					 = "SELECT sum(budget) AS sum_budget FROM fm_project_budget WHERE project_id = {$new_project_id}";
-				$this->db->query($sql, __LINE__, __FILE__);
-				$this->db->next_record();
-				$old_budget_new_project	 = (int)$this->db->f('sum_budget');
+				$stmt = $this->db->prepare('SELECT sum(budget) AS sum_budget FROM fm_project_budget WHERE project_id = :project_id');
+				$stmt->execute(array(':project_id' => (int)$new_project_id));
+				$row = $stmt->fetch();
+				$old_budget_new_project	 = (int)($row['sum_budget'] ?? 0);
 
-				$sql = "SELECT * FROM fm_project_budget WHERE project_id = " . (int)$project['id'];
-				$this->db->query($sql, __LINE__, __FILE__);
+				$stmt = $this->db->prepare('SELECT * FROM fm_project_budget WHERE project_id = :project_id');
+				$stmt->execute(array(':project_id' => (int)$project['id']));
 
 				$budget = array();
-				while ($this->db->next_record())
+				foreach ($stmt->fetchAll() as $_budget_row)
 				{
 					$budget[] = array(
 						'project_id'	 => (int)$project['id'],
-						'year'			 => $this->db->f('year'),
-						'month'			 => $this->db->f('month'),
-						'budget'		 => (int)$this->db->f('budget'),
-						'user_id'		 => $this->db->f('user_id'),
-						'entry_date'	 => $this->db->f('entry_date'),
-						'modified_date'	 => $this->db->f('modified_date'),
-						'closed'		 => $this->db->f('closed'),
-						'active'		 => $this->db->f('active')
+						'year'			 => $_budget_row['year'],
+						'month'			 => $_budget_row['month'],
+						'budget'		 => (int)$_budget_row['budget'],
+						'user_id'		 => $_budget_row['user_id'],
+						'entry_date'	 => $_budget_row['entry_date'],
+						'modified_date'	 => $_budget_row['modified_date'],
+						'closed'		 => $_budget_row['closed'],
+						'active'		 => $_budget_row['active']
 					);
 				}
 
 				foreach ($budget as $entry)
 				{
-					$sql = "SELECT * FROM fm_project_budget WHERE project_id = {$new_project_id} AND year = {$entry['year']} AND month = {$entry['month']}";
-					$this->db->query($sql, __LINE__, __FILE__);
-					if ($this->db->next_record())
+					$stmt = $this->db->prepare('SELECT * FROM fm_project_budget WHERE project_id = :project_id AND year = :year AND month = :month');
+					$stmt->execute(array(
+						':project_id' => (int)$new_project_id,
+						':year' => (int)$entry['year'],
+						':month' => (int)$entry['month']
+					));
+					if ($stmt->fetch())
 					{
-						$sql = "UPDATE fm_project_budget SET budget = budget + {$entry['budget']} WHERE project_id = {$new_project_id} AND year = {$entry['year']} AND month = {$entry['month']}";
-						$this->db->query($sql, __LINE__, __FILE__);
+						$stmt = $this->db->prepare('UPDATE fm_project_budget SET budget = budget + :budget WHERE project_id = :project_id AND year = :year AND month = :month');
+						$stmt->execute(array(
+							':budget' => (int)$entry['budget'],
+							':project_id' => (int)$new_project_id,
+							':year' => (int)$entry['year'],
+							':month' => (int)$entry['month']
+						));
 					}
 					else
 					{
@@ -1840,20 +1854,20 @@ class property_soproject
 					$historylog->add('B', $project['id'], 0, $old_budget);
 				}
 
-				$sql					 = "SELECT sum(budget) AS sum_budget FROM fm_project_budget WHERE active = 1 AND project_id = {$new_project_id}";
-				$this->db->query($sql, __LINE__, __FILE__);
-				$this->db->next_record();
-				$new_budget_new_project	 = (int)$this->db->f('sum_budget');
+				$stmt = $this->db->prepare('SELECT sum(budget) AS sum_budget FROM fm_project_budget WHERE active = 1 AND project_id = :project_id');
+				$stmt->execute(array(':project_id' => (int)$new_project_id));
+				$row = $stmt->fetch();
+				$new_budget_new_project	 = (int)($row['sum_budget'] ?? 0);
 
-				$sql				 = "SELECT ecodimb FROM fm_project WHERE id = {$new_project_id}";
-				$this->db->query($sql, __LINE__, __FILE__);
-				$this->db->next_record();
-				$ecodimb_new_project = (int)$this->db->f('ecodimb');
+				$stmt = $this->db->prepare('SELECT ecodimb FROM fm_project WHERE id = :project_id');
+				$stmt->execute(array(':project_id' => (int)$new_project_id));
+				$row = $stmt->fetch();
+				$ecodimb_new_project = (int)($row['ecodimb'] ?? 0);
 
-				$sql				 = "SELECT reserve FROM fm_project WHERE id = " . (int)$project['id'];
-				$this->db->query($sql, __LINE__, __FILE__);
-				$this->db->next_record();
-				$reserve_old_project = (int)$this->db->f('reserve');
+				$stmt = $this->db->prepare('SELECT reserve FROM fm_project WHERE id = :project_id');
+				$stmt->execute(array(':project_id' => (int)$project['id']));
+				$row = $stmt->fetch();
+				$reserve_old_project = (int)($row['reserve'] ?? 0);
 
 				if ($new_budget_new_project != $old_budget_new_project)
 				{
@@ -1947,9 +1961,10 @@ class property_soproject
 				$users_for_substitute	 = $sosubstitute->get_users_for_substitute($this->account);
 				$take_responsibility_for = array($this->account);
 
-				$this->db->query("SELECT sum(budget) AS sum_budget FROM fm_project_budget WHERE project_id = " . (int)$project['id'], __LINE__, __FILE__);
-				$this->db->next_record();
-				$total_budget = (int)$this->db->f('sum_budget');
+				$stmt = $this->db->prepare('SELECT sum(budget) AS sum_budget FROM fm_project_budget WHERE project_id = :project_id');
+				$stmt->execute(array(':project_id' => (int)$project['id']));
+				$row = $stmt->fetch();
+				$total_budget = (int)($row['sum_budget'] ?? 0);
 
 				$limit = (int)$total_budget + (int)$project['reserve'];
 				$action_params = array(
@@ -3610,13 +3625,16 @@ class property_soproject
 		{
 			return false;
 		}
-		$this->db->query("SELECT sum(budget) AS budget FROM fm_workorder_budget WHERE year = {$year} AND order_id IN (" . implode(',', $ids) . ')', __LINE__, __FILE__);
-		$this->db->next_record();
-		$workorder_budget = $this->db->f('budget');
+		$sql = 'SELECT sum(budget) AS budget FROM fm_workorder_budget WHERE year = :year AND order_id IN (' . implode(',', $ids) . ')';
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array(':year' => (int)$year));
+		$row = $stmt->fetch();
+		$workorder_budget = $row['budget'] ?? 0;
 
-		$this->db->query("SELECT sum(budget) AS budget FROM fm_project_budget WHERE project_id = {$project_id} AND year = {$year}", __LINE__, __FILE__);
-		$this->db->next_record();
-		$project_budget = $this->db->f('budget');
+		$stmt = $this->db->prepare('SELECT sum(budget) AS budget FROM fm_project_budget WHERE project_id = :project_id AND year = :year');
+		$stmt->execute(array(':project_id' => (int)$project_id, ':year' => (int)$year));
+		$row = $stmt->fetch();
+		$project_budget = $row['budget'] ?? 0;
 
 		$update = false;
 
@@ -3634,10 +3652,12 @@ class property_soproject
 			$stmt = $this->db->prepare('UPDATE fm_project_budget SET active = 0 WHERE project_id = :project_id AND year != :current_year');
 			$stmt->execute(array(':project_id' => (int)$project_id, ':current_year' => (int)$current_year));
 
-			$this->db->query("SELECT id, periodization_id FROM fm_project WHERE id = {$project_id}", __LINE__, __FILE__);
-			if ($this->db->next_record())
+			$stmt = $this->db->prepare('SELECT id, periodization_id FROM fm_project WHERE id = :project_id');
+			$stmt->execute(array(':project_id' => (int)$project_id));
+			$row = $stmt->fetch();
+			if ($row)
 			{
-				$periodization_id = (int)$this->db->f('periodization_id');
+				$periodization_id = (int)($row['periodization_id'] ?? 0);
 
 				$this->update_budget($project_id, $year, $periodization_id, (int)$workorder_budget, true, 'update', $activate);
 			}

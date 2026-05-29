@@ -3116,7 +3116,7 @@ class property_soentity
 						//							$xml->loadXML($xmldata);
 						//							$old_value = $xml->getElementsByTagName($entry['name'])->item(0)->nodeValue;
 						$jsondata	 = json_decode($row['json_representation'], true);
-						$old_value	 = $this->db->stripslashes($jsondata[$entry['name']]);
+						$old_value	 = $this->dbStrip($jsondata[$entry['name']]);
 					}
 
 					if ($entry['datatype'] == 'D')

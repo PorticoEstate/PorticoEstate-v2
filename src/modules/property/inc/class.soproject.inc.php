@@ -108,7 +108,7 @@ class property_soproject
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	function select_status_list()
+	function select_status_list(): array
 	{
 		$this->db->query("SELECT id, descr FROM fm_project_status ORDER BY id ");
 		$status = array();
@@ -127,7 +127,7 @@ class property_soproject
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	function select_branch_list()
+	function select_branch_list(): array
 	{
 		$this->db->query("SELECT id, descr FROM fm_branch ORDER BY id ");
 
@@ -147,7 +147,7 @@ class property_soproject
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	function select_key_location_list()
+	function select_key_location_list(): array
 	{
 		$this->db->query("SELECT id, descr FROM fm_key_loc ORDER BY descr ");
 		$location = array();
@@ -167,7 +167,7 @@ class property_soproject
 	 * @param array<string, mixed> $data List filters, sorting, and paging options.
 	 * @return array<int, array<string, mixed>>
 	 */
-	function read($data)
+	function read($data): array
 	{
 		$start			 = isset($data['start']) && $data['start'] ? $data['start'] : 0;
 		$filter			 = $data['filter'] ? (int)$data['filter'] : 0;
@@ -965,7 +965,7 @@ class property_soproject
 	 *
 	 * @return int|string|null
 	 */
-	function get_meter_register()
+	function get_meter_register(): mixed
 	{
 		$config_data	 = CreateObject('phpgwapi.config', 'property')->read();
 		$meter_register	 = !empty($config_data['meter_register']) ? $config_data['meter_register'] : '';
@@ -985,7 +985,7 @@ class property_soproject
 	 * @param array<string, mixed> $values Optional preloaded values including attributes.
 	 * @return array<string, mixed>
 	 */
-	function read_single($project_id, $values = array())
+	function read_single($project_id, $values = array()): array
 	{
 		$project_id	 = (int)$project_id;
 		$project	 = array();
@@ -1068,7 +1068,7 @@ class property_soproject
 	 * @param string $location_code Location code.
 	 * @return string|false|null
 	 */
-	function get_power_meter($location_code = '')
+	function get_power_meter($location_code = ''): string|false|null
 	{
 		if (!$location_id_meter_register = $this->get_meter_register())
 		{
@@ -1105,7 +1105,7 @@ class property_soproject
 	 * @param array<string, mixed> $data Filters and paging options.
 	 * @return array<int, array<string, mixed>>
 	 */
-	function project_workorder_data($data = array())
+	function project_workorder_data($data = array()): array
 	{
 		$start		 = isset($data['start']) && $data['start'] ? $data['start'] : 0;
 		$project_ids = !empty($data['project_id']) && is_array($data['project_id']) ? implode(',', array_map('intval', $data['project_id'])) : (int)$data['project_id'];
@@ -1292,7 +1292,7 @@ class property_soproject
 	 * @param int|string $project_id Project id.
 	 * @return array<int, array<string, mixed>>
 	 */
-	function branch_p_list($project_id = '')
+	function branch_p_list($project_id = ''): array
 	{
 		$selected = array();
 		$this->db->query("SELECT branch_id from fm_projectbranch WHERE project_id=" . (int)$project_id, __LINE__, __FILE__);
@@ -1308,7 +1308,7 @@ class property_soproject
 	 *
 	 * @return void
 	 */
-	function increment_project_id()
+	function increment_project_id(): void
 	{
 		$name		 = 'project';
 		$now		 = time();
@@ -1326,7 +1326,7 @@ class property_soproject
 	 *
 	 * @return int
 	 */
-	function next_project_id()
+	function next_project_id(): int
 	{
 		$name	 = 'project';
 		$now	 = time();
@@ -1344,7 +1344,7 @@ class property_soproject
 	 * @param array<int, array<string, mixed>> $values_attribute Custom attribute values.
 	 * @return array<string, mixed> Receipt with id, messages and/or errors.
 	 */
-	function add($project, $values_attribute = array())
+	function add($project, $values_attribute = array()): array
 	{
 		$receipt	 = array();
 		$historylog	 = CreateObject('property.historylog', 'project');
@@ -1547,11 +1547,11 @@ class property_soproject
 	 * @param string $address Address text.
 	 * @return int|string|null
 	 */
-	function update_power_meter($power_meter, $location_code, $address)
+	function update_power_meter($power_meter, $location_code, $address): int|string|null
 	{
 		if (!$location_id_meter_register = $this->get_meter_register())
 		{
-			return;
+			return null;
 		}
 
 		$stmt = $this->db->prepare("SELECT id, json_representation->>'maaler_nr' as maaler_nr FROM fm_bim_item WHERE location_id = :location_id AND location_code = :location_code AND json_representation->>'category' = '1'");
@@ -1638,7 +1638,7 @@ class property_soproject
 	 * @param array<int, array<string, mixed>> $values_attribute Custom attribute values.
 	 * @return array<string, mixed> Receipt with id and messages.
 	 */
-	function edit($project, $values_attribute = array())
+	function edit($project, $values_attribute = array()): array
 	{
 		$historylog	 = CreateObject('property.historylog', 'project');
 		$receipt	 = array();
@@ -2183,7 +2183,7 @@ class property_soproject
 	 * @param int|string $project_id Project id.
 	 * @return array<string, mixed>
 	 */
-	function delete_request_from_project($request, $project_id)
+	function delete_request_from_project($request, $project_id): array
 	{
 		$stmt = $this->db->prepare('UPDATE fm_request SET project_id = NULL WHERE id = :request_id');
 		foreach ($request as $request_id)
@@ -2201,7 +2201,7 @@ class property_soproject
 	 * @param int|string $project_id Project id.
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function get_buffer_budget($project_id)
+	public function get_buffer_budget($project_id): array
 	{
 		$project_id = (int)$project_id;
 		$sql	 = "SELECT * FROM fm_project_buffer_budget WHERE buffer_project_id = {$project_id}";
@@ -2236,7 +2236,7 @@ class property_soproject
 	 * @param string|null $transfer_remark Optional transfer remark.
 	 * @return void
 	 */
-	private function _update_buffer_budget($project_id, $year, $amount, $from_project, $to_project, $transfer_remark)
+	private function _update_buffer_budget($project_id, $year, $amount, $from_project, $to_project, $transfer_remark): void
 	{
 		$year	 = (int)$year;
 		$amount	 = (int)$amount;
@@ -2358,7 +2358,7 @@ class property_soproject
 	 * @param int|bool $activate Activation flag for created budget rows.
 	 * @return int
 	 */
-	function update_budget($project_id, $year, $periodization_id, $budget, $budget_periodization_all = false, $action = 'update', $activate = 0)
+	function update_budget($project_id, $year, $periodization_id, $budget, $budget_periodization_all = false, $action = 'update', $activate = 0): int|float
 	{
 		$project_id	 = (int)$project_id;
 		$year		 = $year ? (int)$year : date('Y');
@@ -2534,7 +2534,7 @@ class property_soproject
 	 * @param int|bool $active Active flag for inserted rows.
 	 * @return void
 	 */
-	private function _update_budget($project_id, $year, $month, $budget, $action = 'update', $active = 0)
+	private function _update_budget($project_id, $year, $month, $budget, $action = 'update', $active = 0): void
 	{
 		$month		 = (int)$month;
 		$budget		 = (int)$budget;
@@ -2592,7 +2592,7 @@ class property_soproject
 	 * @param int|string $project_id Project id.
 	 * @return array<int, array<string, mixed>>
 	 */
-	function get_budget($project_id)
+	function get_budget($project_id): array
 	{
 		$project_id		 = (int)$project_id;
 		$closed_period	 = array();
@@ -2819,7 +2819,7 @@ class property_soproject
 	 * @param array<int, string> $data Period keys on format YYYY_MM.
 	 * @return void
 	 */
-	function delete_period_from_budget($project_id, $data)
+	function delete_period_from_budget($project_id, $data): void
 	{
 		$project_id = (int)$project_id;
 		foreach ($data as $entry)
@@ -2837,7 +2837,7 @@ class property_soproject
 	 * @param array<string, array<int, string>> $data Closed period payload.
 	 * @return void
 	 */
-	function close_period_from_budget($project_id, $data)
+	function close_period_from_budget($project_id, $data): void
 	{
 		$project_id				 = (int)$project_id;
 		$closed_orig_b_period	 = isset($data['closed_orig_b_period']) && $data['closed_orig_b_period'] ? $data['closed_orig_b_period'] : array();
@@ -2886,7 +2886,7 @@ class property_soproject
 	 * @param array<string, array<int, string>> $data Active period payload.
 	 * @return void
 	 */
-	function activate_period_from_budget($project_id, $data)
+	function activate_period_from_budget($project_id, $data): void
 	{
 		$project_id		 = (int)$project_id;
 		$close_period	 = array();
@@ -2940,7 +2940,7 @@ class property_soproject
 	 * @param int|string $status_new New status id.
 	 * @return void
 	 */
-	function set_status($id, $status_new)
+	function set_status($id, $status_new): void
 	{
 		$id			 = (int)$id;
 		$stmt = $this->db->prepare('SELECT status FROM fm_project WHERE id = :id');
@@ -2968,7 +2968,7 @@ class property_soproject
 	 * @param int $coordinator Request coordinator account id.
 	 * @return void
 	 */
-	function update_request_status($project_id = '', $status = '', $category = 0, $coordinator = 0)
+	function update_request_status($project_id = '', $status = '', $category = 0, $coordinator = 0): void
 	{
 		$historylog_r = CreateObject('property.historylog', 'request');
 
@@ -3014,13 +3014,15 @@ class property_soproject
 	 * @param int|string $request_id Request id.
 	 * @return mixed
 	 */
-	function check_request($request_id)
+	function check_request($request_id): int|string|null
 	{
 		$target = $this->interlink->get_specific_relation('property', '.project.request', '.project', $request_id, 'target');
 		if ($target)
 		{
 			return $target[0];
 		}
+
+		return null;
 	}
 
 	/**
@@ -3030,7 +3032,7 @@ class property_soproject
 	 * @param int|string $id Project id.
 	 * @return bool
 	 */
-	function add_request($add_request, $id)
+	function add_request($add_request, $id): bool
 	{
 		$ret = false;
 		for ($i = 0; $i < count($add_request['request_id']); $i++)
@@ -3085,16 +3087,17 @@ class property_soproject
 	 * @param int|string $project_id Project id.
 	 * @return void
 	 */
-	function delete($project_id)
+	function delete($project_id): void
 	{
 		$request = $this->interlink->get_specific_relation('property', '.project.request', '.project', $project_id);
 
 		$sql = "SELECT id as workorder_id FROM fm_workorder WHERE project_id='$project_id'";
 		$this->db->query($sql, __LINE__, __FILE__);
 
+		$workorder_ids = array();
 		while ($this->db->next_record())
 		{
-			$workorder_id[] = $this->db->f('workorder_id');
+			$workorder_ids[] = $this->db->f('workorder_id');
 		}
 
 		$this->db->transaction_begin();
@@ -3118,14 +3121,14 @@ class property_soproject
 		$stmt = $this->db->prepare('DELETE FROM fm_workorder WHERE project_id = :project_id');
 		$stmt->execute(array(':project_id' => (int)$project_id));
 
-		for ($i = 0; $i < count($workorder_id); $i++)
+		foreach ($workorder_ids as $workorder_id)
 		{
 			$stmt = $this->db->prepare('DELETE FROM fm_workorder_budget WHERE order_id = :order_id');
-			$stmt->execute(array(':order_id' => (int)$workorder_id[$i]));
+			$stmt->execute(array(':order_id' => (int)$workorder_id));
 			$stmt = $this->db->prepare('DELETE FROM fm_wo_hours WHERE workorder_id = :order_id');
-			$stmt->execute(array(':order_id' => (int)$workorder_id[$i]));
+			$stmt->execute(array(':order_id' => (int)$workorder_id));
 			$stmt = $this->db->prepare('DELETE FROM fm_workorder_history WHERE history_record_id = :order_id');
-			$stmt->execute(array(':order_id' => (int)$workorder_id[$i]));
+			$stmt->execute(array(':order_id' => (int)$workorder_id));
 		}
 
 		$this->db->transaction_commit();
@@ -3139,7 +3142,7 @@ class property_soproject
 	 * @param int|string $year Target year.
 	 * @return void
 	 */
-	private function transfer_budget($id, $budget, $year)
+	private function transfer_budget($id, $budget, $year): void
 	{
 
 		$historylog = &$this->historylog;
@@ -3253,7 +3256,7 @@ class property_soproject
 	 * @param int|string $b_account_id Budget account filter.
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function bulk_update_status($start_date, $end_date, $status_filter, $status_new, $execute, $type, $coordinator, $new_coordinator, $ids, $paid = false, $closed_orders = false, $ecodimb = 0, $transfer_budget_year = 0, $new_budget = array(), $b_account_id = 0)
+	public function bulk_update_status($start_date, $end_date, $status_filter, $status_new, $execute, $type, $coordinator, $new_coordinator, $ids, $paid = false, $closed_orders = false, $ecodimb = 0, $transfer_budget_year = 0, $new_budget = array(), $b_account_id = 0): array
 	{
 		if ($transfer_budget_year && $execute && $new_budget)
 		{
@@ -3506,7 +3509,7 @@ class property_soproject
 	 * @param array<int, int|string> $ids Project ids.
 	 * @return void
 	 */
-	protected function _update_status_project($execute, $status_new, $ids)
+	protected function _update_status_project($execute, $status_new, $ids): void
 	{
 		if (!$execute || !$status_new)
 		{
@@ -3586,7 +3589,7 @@ class property_soproject
 	 * @param array<int, int|string> $ids Workorder ids.
 	 * @return void
 	 */
-	protected function _update_status_workorder($execute, $status_new, $ids)
+	protected function _update_status_workorder($execute, $status_new, $ids): void
 	{
 		if (!$execute || !$status_new)
 		{
@@ -3689,7 +3692,7 @@ class property_soproject
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function get_user_list()
+	public function get_user_list(): array
 	{
 		$values	 = array();
 		$users	 = $this->account_obj->get_list('accounts', $start	 = -1, $sort	 = 'ASC', $order	 = 'account_lastname', $query = '', $offset	 = -1);
@@ -3724,7 +3727,7 @@ class property_soproject
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function get_periodizations_with_outline()
+	public function get_periodizations_with_outline(): array
 	{
 		$values	 = array();
 		$sql	 = 'SELECT DISTINCT fm_eco_periodization.id, fm_eco_periodization.descr FROM fm_eco_periodization'
@@ -3750,7 +3753,7 @@ class property_soproject
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function get_filter_year_list()
+	public function get_filter_year_list(): array
 	{
 		$sql = 'SELECT min(start_date) AS start_date FROM fm_project WHERE start_date <> 0';
 		$this->db->query($sql, __LINE__, __FILE__);
@@ -3783,7 +3786,7 @@ class property_soproject
 	 * @param int|string $id Project id.
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function get_order_time_span($id)
+	public function get_order_time_span($id): array
 	{
 		if (!$id)
 		{
@@ -3836,7 +3839,7 @@ class property_soproject
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function get_missing_project_budget()
+	public function get_missing_project_budget(): array
 	{
 		$values = array();
 
@@ -3874,13 +3877,13 @@ class property_soproject
 	 * @param bool $force Force update regardless of configuration.
 	 * @return bool|null
 	 */
-	public function check_and_update_project_budget($project_id, $year, $force = false)
+	public function check_and_update_project_budget($project_id, $year, $force = false): bool|null
 	{
 		$update_project_budget_from_order = isset($this->config->config_data['update_project_budget_from_order']) && $this->config->config_data['update_project_budget_from_order'] ? $this->config->config_data['update_project_budget_from_order'] : false;
 
 		if (!$force && !$update_project_budget_from_order)
 		{
-			return;
+			return null;
 		}
 
 		$project_id		 = (int)$project_id;
@@ -3944,8 +3947,13 @@ class property_soproject
 				$periodization_id = (int)($row['periodization_id'] ?? 0);
 
 				$this->update_budget($project_id, $year, $periodization_id, (int)$workorder_budget, true, 'update', $activate);
+				return true;
 			}
+
+			return false;
 		}
+
+		return false;
 	}
 
 	/**
@@ -3954,7 +3962,7 @@ class property_soproject
 	 * @param int|string $project_id Project id.
 	 * @return void
 	 */
-	protected function _update_project_budget($project_id)
+	protected function _update_project_budget($project_id): void
 	{
 		$years	 = array();
 		$ids	 = array();
@@ -3984,7 +3992,7 @@ class property_soproject
 	 * @param int|string $project_id Project id.
 	 * @return void
 	 */
-	private function approve_related_workorders($project_id)
+	private function approve_related_workorders($project_id): void
 	{
 		$project_id	 = (int)$project_id;
 		$ids		 = array();
@@ -4058,7 +4066,7 @@ class property_soproject
 	 * @param array<string, mixed> $params Search, sorting and paging options.
 	 * @return array<string, mixed>
 	 */
-	public function get_other_projects($id, $location_code, $params = array())
+	public function get_other_projects($id, $location_code, $params = array()): array
 	{
 		if (!$location_code)
 		{

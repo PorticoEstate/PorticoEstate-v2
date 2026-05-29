@@ -580,7 +580,7 @@ HTML;
 			case 'DELETE':
 				if ($this->simple)
 				{
-					$upload_handler->header('HTTP/1.1 405 Method Not Allowed');
+					header('HTTP/1.1 405 Method Not Allowed');
 				}
 				else
 				{
@@ -588,7 +588,7 @@ HTML;
 				}
 				break;
 			default:
-				$upload_handler->header('HTTP/1.1 405 Method Not Allowed');
+				header('HTTP/1.1 405 Method Not Allowed');
 		}
 
 		$this->phpgwapi_common->phpgw_exit();

@@ -2095,11 +2095,12 @@ class property_soproject
 			$this->interlink->delete_at_origin('property', '.project.request', '.project', $request_id, $this->db);
 			$receipt['message'][] = array('msg' => lang('request %1 has been deleted from project %2', $request_id, $project_id));
 		}
-		return $receipt;
+		return $receipt ?? array();
 	}
 
 	public function get_buffer_budget($project_id)
 	{
+		$project_id = (int)$project_id;
 		$sql	 = "SELECT * FROM fm_project_buffer_budget WHERE buffer_project_id = {$project_id}";
 		$this->db->query($sql, __LINE__, __FILE__);
 		$values	 = array();
@@ -3484,7 +3485,7 @@ class property_soproject
 
 			$values[] = array(
 				'id'	 => $id,
-				'name'	 => $id . ' - ' . $this->db->f('descr'),
+				'name'	 => $id . ' - ' . $this->db->f('descr', true),
 			);
 		}
 
@@ -3847,8 +3848,8 @@ class property_soproject
 			. " {$filter_query}"
 			. " {$ordermethod}";
 
-		
-		
+
+
 		if ($allrows)
 		{
 			$this->db->query($sql, __LINE__, __FILE__);
@@ -3877,6 +3878,5 @@ class property_soproject
 			'values'		 => $values,
 			'total_records' => $total_records
 		);
-
 	}
 }

@@ -2175,9 +2175,10 @@ class property_soproject
 		 * In case the transfer is betwee two buffer-projects
 		 */
 		$check_for_buffer_target = $from_project + $to_project; //only one of them has value...
-		$this->db->query("SELECT project_type_id FROM fm_project WHERE id = {$check_for_buffer_target}", __LINE__, __FILE__);
-		$this->db->next_record();
-		$project_type_id		 = $this->db->f('project_type_id');
+		$stmt = $this->db->prepare('SELECT project_type_id FROM fm_project WHERE id = :project_id');
+		$stmt->execute(array(':project_id' => (int)$check_for_buffer_target));
+		$row = $stmt->fetch();
+		$project_type_id		 = (int)($row['project_type_id'] ?? 0);
 		if ($project_type_id == 3) //buffer
 		{
 			$value_set = array(
@@ -2206,9 +2207,10 @@ class property_soproject
 		 * */
 		if ($amount_out)
 		{
-			$this->db->query("SELECT periodization_id FROM fm_project WHERE id = {$to_project}", __LINE__, __FILE__);
-			$this->db->next_record();
-			$periodization_id = $this->db->f('periodization_id');
+			$stmt = $this->db->prepare('SELECT periodization_id FROM fm_project WHERE id = :project_id');
+			$stmt->execute(array(':project_id' => (int)$to_project));
+			$row = $stmt->fetch();
+			$periodization_id = $row['periodization_id'] ?? 0;
 			$this->update_budget($to_project, $year, $periodization_id, $amount_out, false, 'add');
 		}
 
@@ -2217,9 +2219,10 @@ class property_soproject
 		 * */
 		if ($amount_in && $from_project)
 		{
-			$this->db->query("SELECT periodization_id FROM fm_project WHERE id = {$from_project}", __LINE__, __FILE__);
-			$this->db->next_record();
-			$periodization_id	 = $this->db->f('periodization_id');
+			$stmt = $this->db->prepare('SELECT periodization_id FROM fm_project WHERE id = :project_id');
+			$stmt->execute(array(':project_id' => (int)$from_project));
+			$row = $stmt->fetch();
+			$periodization_id	 = $row['periodization_id'] ?? 0;
 			$transferred		 = $this->update_budget($from_project, $year, $periodization_id, $amount_in, false, 'subtract');
 			if (!$transferred == $amount_in)
 			{
@@ -2315,19 +2318,20 @@ class property_soproject
 
 		if ($periodization_id)
 		{
-			$this->db->query("SELECT month, value,dividend,divisor FROM fm_eco_periodization_outline WHERE periodization_id = {$periodization_id} ORDER BY month ASC", __LINE__, __FILE__);
-			while ($this->db->next_record())
+			$stmt = $this->db->prepare('SELECT month, value, dividend, divisor FROM fm_eco_periodization_outline WHERE periodization_id = :periodization_id ORDER BY month ASC');
+			$stmt->execute(array(':periodization_id' => (int)$periodization_id));
+			foreach ($stmt->fetchAll() as $outline_row)
 			{
-				$month = (int)$this->db->f('month');
+				$month = (int)$outline_row['month'];
 				if ($month < date('n') && $year == date('Y'))
 				{
 					$skip_period[] = $month;
 				}
 				$periodization_outline[] = array(
 					'month'		 => $month,
-					'value'		 => $this->db->f('value'),
-					'dividend'	 => $this->db->f('dividend'),
-					'divisor'	 => $this->db->f('divisor')
+					'value'		 => $outline_row['value'],
+					'dividend'	 => $outline_row['dividend'],
+					'divisor'	 => $outline_row['divisor']
 				);
 			}
 		}
@@ -3078,14 +3082,22 @@ class property_soproject
 		if ((int)$new_coordinator && $ids)
 		{
 			$new_coordinator = (int)$new_coordinator;
-			switch ($type)
+			$ids = array_map('intval', $ids);
+			$ids = array_filter($ids);
+			if ($ids)
 			{
-				case 'project':
-					$this->db->query("UPDATE fm_{$type} SET coordinator = {$new_coordinator} WHERE id IN (" . implode(',', $ids) . ")", __LINE__, __FILE__);
-					break;
-				case 'workorder':
-					$this->db->query("UPDATE fm_{$type} SET user_id = {$new_coordinator} WHERE id IN (" . implode(',', $ids) . ")", __LINE__, __FILE__);
-					break;
+				$idList = implode(',', $ids);
+				switch ($type)
+				{
+					case 'project':
+						$stmt = $this->db->prepare("UPDATE fm_project SET coordinator = :new_coordinator WHERE id IN ({$idList})");
+						$stmt->execute(array(':new_coordinator' => $new_coordinator));
+						break;
+					case 'workorder':
+						$stmt = $this->db->prepare("UPDATE fm_workorder SET user_id = :new_coordinator WHERE id IN ({$idList})");
+						$stmt->execute(array(':new_coordinator' => $new_coordinator));
+						break;
+				}
 			}
 		}
 
@@ -3672,10 +3684,11 @@ class property_soproject
 	{
 		$years	 = array();
 		$ids	 = array();
-		$this->db->query("SELECT id FROM fm_workorder WHERE project_id = {$project_id}", __LINE__, __FILE__);
-		while ($this->db->next_record())
+		$stmt = $this->db->prepare('SELECT id FROM fm_workorder WHERE project_id = :project_id');
+		$stmt->execute(array(':project_id' => (int)$project_id));
+		foreach ($stmt->fetchAll() as $row)
 		{
-			$ids[] = $this->db->f('id');
+			$ids[] = $row['id'];
 		}
 		if ($ids)
 		{
@@ -3695,10 +3708,11 @@ class property_soproject
 	{
 		$project_id	 = (int)$project_id;
 		$ids		 = array();
-		$this->db->query("SELECT id FROM fm_workorder WHERE project_id = {$project_id}", __LINE__, __FILE__);
-		while ($this->db->next_record())
+		$stmt = $this->db->prepare('SELECT id FROM fm_workorder WHERE project_id = :project_id');
+		$stmt->execute(array(':project_id' => (int)$project_id));
+		foreach ($stmt->fetchAll() as $row)
 		{
-			$ids[] = $this->db->f('id');
+			$ids[] = $row['id'];
 		}
 
 		$historylog				 = CreateObject('property.historylog', 'workorder');

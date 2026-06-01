@@ -138,6 +138,10 @@ class EntityController
 		)
 		{
 			$aclCheckLocation = ".{$bo->type}.{$bo->entity_id}";
+			if($bo->cat_id > 0)
+			{
+				$aclCheckLocation .= ".{$bo->cat_id}";
+			}
 		}
 
 		$app = $bo->type_app[$bo->type] ?? 'property';

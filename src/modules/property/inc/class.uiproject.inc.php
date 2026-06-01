@@ -1515,7 +1515,8 @@ JS;
 				'key'	=> 'file_name',
 				'label'	=> lang('Filename'),
 				'sortable'	 => false,
-				'resizeable' => true
+				'resizeable' => true,
+				'formatter' => 'project_file_link'
 			),
 			array(
 				'key' => 'picture',
@@ -1757,7 +1758,7 @@ JS;
 
 
 		$other_projects_def	 = array(
-			array('key' => 'url', 'label' => lang('id'), 'sortable' => false),
+			array('key' => 'url', 'label' => lang('id'), 'sortable' => false, 'formatter' => 'project_link'),
 			array('key' => 'location_code', 'label' => lang('location'), 'sortable' => true),
 			array('key' => 'name', 'label' => lang('name'), 'sortable' => true),
 			array('key' => 'start_date', 'label' => lang('start date'), 'sortable' => true),
@@ -1788,6 +1789,7 @@ JS;
 				'label'		 => lang('attachments'),
 				'hidden'	 => false,
 				'sortable'	 => true,
+				'formatter' => 'project_attachment_link'
 			)
 		);
 

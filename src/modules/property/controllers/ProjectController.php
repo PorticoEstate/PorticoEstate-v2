@@ -620,51 +620,6 @@ class ProjectController
 	}
 
 	/**
-	 * Add legacy UI edit links expected by existing DataTables formatters.
-	 */
-	private function withLegacyEditLinks(array $rows): array
-	{
-		foreach ($rows as &$row)
-		{
-			if (!is_array($row))
-			{
-				continue;
-			}
-
-			$id = (int)($row['id'] ?? $row['project_id'] ?? 0);
-			if ($id <= 0)
-			{
-				continue;
-			}
-
-			if (!isset($row['id']))
-			{
-				$row['id'] = $id;
-			}
-
-			$row['link'] = $this->legacyEditLink($id);
-		}
-		unset($row);
-
-		return $rows;
-	}
-
-	private function legacyEditLink(int $id): string
-	{
-		$params = array(
-			'menuaction' => 'property.uiproject.edit',
-			'id' => $id,
-		);
-
-		if (class_exists('phpgw'))
-		{
-			return \phpgw::link('/index.php', $params);
-		}
-
-		return '?' . http_build_query($params);
-	}
-
-	/**
 	 * DataTables-compatible project list endpoint.
 	 *
 	 * @OA\Get(
@@ -693,7 +648,7 @@ class ProjectController
 			return $this->jsonResponse($response, $values);
 		}
 
-		$values = $this->withLegacyEditLinks(is_array($values) ? $values : array());
+		$values = is_array($values) ? $values : array();
 
 		return $this->datatableResponse($response, $input, $values, (int)$this->bo()->total_records);
 	}
@@ -726,7 +681,7 @@ class ProjectController
 		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
 		$params = $this->readParams($input);
 		$items = $this->bo()->read($params);
-		$items = $this->withLegacyEditLinks(is_array($items) ? $items : array());
+		$items = is_array($items) ? $items : array();
 
 		return $this->jsonResponse($response, array(
 			'status' => 'success',
@@ -987,8 +942,7 @@ class ProjectController
 		$phpgwapi_common = new \phpgwapi_common();
 		foreach ($result['values'] as &$entry)
 		{
-			$link = \phpgw::link('/index.php', array('menuaction' => 'property.uiproject.view', 'id' => $entry['id']));
-			$entry['url'] = '<a href="' . $link . '">' . $entry['id'] . '</a>';
+			$entry['url'] = (int)($entry['id'] ?? 0);
 			$entry['start_date'] = $phpgwapi_common->show_date($entry['start_date'], 'Y-m-d');
 		}
 		unset($entry);
@@ -1036,15 +990,9 @@ class ProjectController
 					continue;
 				}
 
-				$url = \phpgw::link('/index.php', array(
-					'menuaction' => 'property.uitts.show_attachment',
-					'file_name' => urlencode((string)$file),
-					'key' => $voucherId,
-				));
-
 				$attachmenList[] = array(
 					'voucher_id' => $voucherId,
-					'file_name' => '<a href="' . $url . '" target="_blank">' . (string)$file . '</a>',
+					'file_name' => (string)$file,
 				);
 			}
 		}
@@ -1548,8 +1496,6 @@ class ProjectController
 			return $this->datatableResponse($response, $input, array(), 0);
 		}
 
-		$linkViewFile = \phpgw::link('/property/project/files/view');
-
 		$values = $this->bo()->get_files($id);
 		$bofiles = CreateObject('property.bofiles');
 
@@ -1581,9 +1527,7 @@ class ProjectController
 			$contentFiles[] = array(
 				'file_id' => $_entry['file_id'],
 				'tags' => $tags,
-				'file_name' => '<a href="' . $linkViewFile . '&amp;file_id=' . $_entry['file_id'] . '" target="_blank" title="' . lang('click to view file') . '">' . $_entry['name'] . '</a>',
-				'delete_file' => '<input type="checkbox" name="values[file_action][]" value="' . $_entry['file_id'] . '" title="' . lang('Check to delete file') . '">',
-				'attach_file' => '<input type="checkbox" name="values[file_attach][]" value="' . $_entry['file_id'] . '" title="' . lang('Check to attach file') . '">',
+				'file_name' => $_entry['name'],
 			);
 
 			$lastIndex = count($contentFiles) - 1;

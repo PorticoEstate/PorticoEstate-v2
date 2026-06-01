@@ -70,6 +70,11 @@ JqueryPortico.formatProject = function (key, oData)
 {
 	var name = oData[key];
 	var link = oData['link'];
+
+	if (!link)
+	{
+		link = phpGWLink('index.php', {menuaction: 'property.uiproject.edit'});
+	}
 	return '<a href="' + link + '&id=' + name + '">' + name + '</a>';
 }
 

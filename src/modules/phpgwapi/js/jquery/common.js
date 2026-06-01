@@ -68,14 +68,21 @@ JqueryPortico.formatLinkTicket = function (key, oData)
 
 JqueryPortico.formatProject = function (key, oData)
 {
-	var name = oData[key];
-	var link = oData['link'];
+	var rawValue = oData[key];
+	var projectId = parseInt(rawValue, 10);
 
-	if (!link)
+	if (!projectId && oData && oData.project_id)
 	{
-		link = phpGWLink('index.php', {menuaction: 'property.uiproject.edit'});
+		projectId = parseInt(oData.project_id, 10);
 	}
-	return '<a href="' + link + '&id=' + name + '">' + name + '</a>';
+
+	if (!projectId)
+	{
+		return $('<div/>').text(rawValue || '').html();
+	}
+
+	var strURL = phpGWLink('index.php', {menuaction: 'property.uiproject.edit', id: projectId});
+	return '<a href="' + strURL + '">' + projectId + '</a>';
 }
 
 JqueryPortico.formatLinkGallery = function (key, oData)

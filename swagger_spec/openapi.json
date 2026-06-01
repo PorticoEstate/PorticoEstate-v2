@@ -7112,6 +7112,80 @@
                 }
             }
         },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/schema": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get entity attribute schema",
+                "description": "Returns attribute metadata\/schema for the selected entity category.",
+                "operationId": "e2121db1bfab29d00dd6dfdb06e9404e",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Entity schema envelope",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "schema": {
+                                            "properties": {
+                                                "attributes": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "groups": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}": {
             "get": {
                 "tags": [
@@ -7653,6 +7727,86 @@
                 "responses": {
                     "200": {
                         "description": "DataTables response with file rows"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/files\/image": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "View entity image or thumbnail",
+                "description": "Streams an attached image file or thumbnail for the selected entity item.",
+                "operationId": "729fbdecc221f37e59f9a02c0e11f75a",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "img_id",
+                        "in": "query",
+                        "description": "VFS file ID for the image",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "thumb",
+                        "in": "query",
+                        "description": "Return or generate a thumbnail",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "file",
+                        "in": "query",
+                        "description": "Relative file path when img_id is not provided",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Image stream or thumbnail"
                     }
                 }
             }

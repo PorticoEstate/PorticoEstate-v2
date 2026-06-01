@@ -72,13 +72,14 @@ class BoCommon
 		return $this->checkPerms($rights, $required);
 	}
 
-	public function checkPerms2($owner_id, $grants, $required, $equalto = array())
+	public function checkPerms2($owner_id, $grants, $required)
 	{
 		if (isset($grants['accounts'][$owner_id]) && ($grants['accounts'][$owner_id] & $required))
 		{
 			return true;
 		}
 
+		$equalto = $this->accounts->membership($owner_id);
 		foreach ($grants['groups'] as $group => $_right)
 		{
 			if (isset($equalto[$group]) && ($_right & $required))
@@ -92,9 +93,8 @@ class BoCommon
 
 	public function check_perms2($owner_id, $grants, $required)
 	{
-		$equalto = $this->accounts->membership($owner_id);
 	
-		return $this->checkPerms2($owner_id, $grants, $required, $equalto);
+		return $this->checkPerms2($owner_id, $grants, $required);
 	}
 
 	public function confirm_session()

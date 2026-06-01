@@ -138,6 +138,7 @@ $app->group('/property/entity', function (RouteCollectorProxy $group) use ($cont
 		$g->post('/list',          [$controller, 'listItems']);
 		$g->post('/create',        [$controller, 'store']);
 		$g->get('/download',       [$controller, 'download']);
+		$g->get('/schema',         [$controller, 'schema']);
 		$g->get('/{id:[0-9]+}',    [$controller, 'show']);
 		$g->put('/{id:[0-9]+}',    [$controller, 'update']);
 		$g->delete('/{id:[0-9]+}', [$controller, 'destroy']);

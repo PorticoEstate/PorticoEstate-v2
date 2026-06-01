@@ -171,6 +171,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 
 	// Notification endpoints
 	$group->group('/notifications', function (RouteCollectorProxy $group) {
+		$group->get('', NotificationController::class . ':getNotifications');
 		$group->get('/unread-count', NotificationController::class . ':getUnreadCount');
 		$group->put('/{entity_type}/{entity_id}/mark-read', NotificationController::class . ':markAsRead');
 	});

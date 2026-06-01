@@ -168,6 +168,8 @@ export class PorticoGateway
         return this.handleCreateSimpleApplication(client, data);
       case 'delete_partial_application':
         return this.handleDeletePartialApplication(client, data);
+      case 'add_application_comment':
+        return this.handleAddApplicationComment(client, data);
       case 'ping':
         return; // No-op: Socket.IO handles heartbeat natively
       default:
@@ -285,6 +287,15 @@ export class PorticoGateway
         accountId ? Number(accountId) : undefined,
         ssn ? String(ssn) : undefined,
       );
+
+      // Join identity-scoped rooms so notifications addressed by SSN/account
+      // reach this user on every tab/page, not just the current entity room.
+      if (ssn) {
+        client.join(this.roomService.userRoomId('bb_user', String(ssn)));
+      }
+      if (accountId) {
+        client.join(this.roomService.userRoomId('phpgw_accounts', String(accountId)));
+      }
     }
 
     if (result.success && result.roomJoined && result.roomId) {
@@ -490,6 +501,128 @@ export class PorticoGateway
       client.emit('message', {
         type: 'application_detail_response',
         data: { error: true, message: err.message, id },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  /**
+   * Handle a new application comment posted by a frontend user.
+   *
+   * Client sends: { type: 'add_application_comment', applicationId: number, comment: string, secret?: string, requestId?: string }
+   * Server responds to sender: { type: 'add_comment_response', data: { error, comment?, message? }, requestId?, timestamp }
+   * Server broadcasts to room application:{id}: { type: 'entity_event', entityType: 'application', entityId, eventType: 'new_comment', data: { comment, notification_id? }, timestamp }
+   *
+   * Writes the comment directly to the DB and broadcasts to the application room
+   * (admin + other frontend subscribers) without a Redis round-trip.
+   */
+  private async handleAddApplicationComment(client: Socket, data: any) {
+    const { requestId } = data;
+    const applicationId = parseInt(data?.applicationId, 10);
+    const commentText = typeof data?.comment === 'string' ? data.comment.trim() : '';
+
+    if (!applicationId || isNaN(applicationId)) {
+      client.emit('message', {
+        type: 'add_comment_response',
+        data: { error: true, message: 'Invalid application ID' },
+        ...(requestId && { requestId }),
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    if (!commentText) {
+      client.emit('message', {
+        type: 'add_comment_response',
+        data: { error: true, message: 'Comment text is required' },
+        ...(requestId && { requestId }),
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const session = this.sessionService.getSession(client.id);
+    const ssn = session?.userInfo?.ssn;
+    const secret = data?.secret;
+
+    if (!ssn && !secret) {
+      client.emit('message', {
+        type: 'add_comment_response',
+        data: { error: true, message: 'No SSN in session and no secret provided' },
+        ...(requestId && { requestId }),
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    try {
+      const result = await this.deliveredApplicationService.addComment({
+        applicationId,
+        ssn,
+        secret,
+        commentText,
+      });
+
+      if ('error' in result) {
+        client.emit('message', {
+          type: 'add_comment_response',
+          data: { error: true, message: result.error },
+          ...(requestId && { requestId }),
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      const { comment, notificationId, notification } = result;
+
+      // Respond to the sender
+      client.emit('message', {
+        type: 'add_comment_response',
+        data: { error: false, comment },
+        ...(requestId && { requestId }),
+        timestamp: new Date().toISOString(),
+      });
+
+      // Broadcast to the application room (all subscribers incl. admin) — live thread update
+      const roomId = this.roomService.entityRoomId('application', applicationId);
+      this.server.to(roomId).emit('message', {
+        type: 'entity_event',
+        entityType: 'application',
+        entityId: applicationId,
+        eventType: 'new_comment',
+        data: { comment, notification_id: notificationId },
+        timestamp: new Date().toISOString(),
+      });
+
+      // Notify the recipient's identity room — updates their bell anywhere in the app
+      if (notification) {
+        const userRoom = this.roomService.userRoomId(
+          notification.recipientUserType,
+          notification.recipientIdentifier,
+        );
+        this.server.to(userRoom).emit('message', {
+          type: 'notification_event',
+          eventType: 'new',
+          notification: {
+            id: notification.id,
+            entity_type: notification.entity_type,
+            entity_id: notification.entity_id,
+            title: notification.title,
+            message: notification.message,
+            link: notification.link,
+            is_read: false,
+            data: notification.data,
+            created: new Date().toISOString(),
+          },
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (err: any) {
+      this.logger.error(`Error in handleAddApplicationComment: ${err.message}`);
+      client.emit('message', {
+        type: 'add_comment_response',
+        data: { error: true, message: err.message },
+        ...(requestId && { requestId }),
         timestamp: new Date().toISOString(),
       });
     }

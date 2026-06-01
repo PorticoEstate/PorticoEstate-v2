@@ -1042,3 +1042,10 @@ upload_failed	bookingfrontend	en	Upload failed
 reply	bookingfrontend	en	Reply
 no documents available	bookingfrontend	en	No documents available
 new_comment_notification	bookingfrontend	en	%1 wrote a comment
+notifications_title	bookingfrontend	en	Notifications
+no_notifications	bookingfrontend	en	No notifications
+mark_all_read	bookingfrontend	en	Mark all as read
+see_all_notifications	bookingfrontend	en	See all notifications
+unread	bookingfrontend	en	Unread
+load_more	bookingfrontend	en	Load more
+no_unread_notifications	bookingfrontend	en	No unread notifications

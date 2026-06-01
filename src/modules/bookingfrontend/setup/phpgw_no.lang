@@ -1043,3 +1043,10 @@ upload_failed	bookingfrontend	no	Opplasting feilet
 reply	bookingfrontend	no	Svar
 no documents available	bookingfrontend	no	Ingen dokumenter tilgjengelig
 new_comment_notification	bookingfrontend	no	%1 har skrevet en kommentar
+notifications_title	bookingfrontend	no	Varsler
+no_notifications	bookingfrontend	no	Ingen varsler
+mark_all_read	bookingfrontend	no	Marker alle som lest
+see_all_notifications	bookingfrontend	no	Se alle varsler
+unread	bookingfrontend	no	Uleste
+load_more	bookingfrontend	no	Last inn flere
+no_unread_notifications	bookingfrontend	no	Ingen uleste varsler

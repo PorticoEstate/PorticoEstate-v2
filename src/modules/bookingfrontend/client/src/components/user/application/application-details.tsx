@@ -7,7 +7,7 @@ import {
     useBuildingAudience,
     useApplicationDocuments,
     useApplicationComments,
-    useAddApplicationComment,
+    useAddApplicationCommentWs,
     useUpdateApplicationStatus,
     useUploadApplicationDocument,
     useDeleteApplicationDocument,
@@ -204,7 +204,7 @@ const CommentsSection: FC<{
     t: (k: string) => string;
 }> = ({applicationId, secret, isCancelled, t}) => {
     const {data: commentsData, isLoading} = useApplicationComments(applicationId, "comment,ownership,status", secret);
-    const addComment = useAddApplicationComment();
+    const addComment = useAddApplicationCommentWs();
     const [replyDraft, setReplyDraft] = useState('');
     const {i18n} = useClientTranslation();
 
@@ -214,7 +214,7 @@ const CommentsSection: FC<{
         try {
             await addComment.mutateAsync({
                 applicationId,
-                commentData: {comment: replyDraft.trim(), type: 'comment'},
+                comment: replyDraft.trim(),
                 secret,
             });
             setReplyDraft('');

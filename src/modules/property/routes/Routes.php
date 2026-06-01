@@ -144,6 +144,7 @@ $app->group('/property/entity', function (RouteCollectorProxy $group) use ($cont
 
 		// Item sub-resources (id in path)
 		$g->post('/{id:[0-9]+}/files',     [$controller, 'getFiles']);
+		$g->get('/{id:[0-9]+}/files/image',      [$controller, 'viewImage']);
 		$g->post('/{id:[0-9]+}/related',   [$controller, 'getRelated']);
 		$g->post('/{id:[0-9]+}/target',    [$controller, 'getTarget']);
 		$g->post('/{id:[0-9]+}/documents', [$controller, 'getDocuments']);

@@ -1431,13 +1431,11 @@ class EntityController
 				'cat_id' => $cat_id,
 				'type' => $type,
 			];
-
 			if (in_array($_entry['mime_type'] ?? '', $img_types, true))
 			{
 				$row['img_id']    = $fileId;
-				$row['img_url'] = \phpgw::link('/property/project/files/image', array(
+				$row['img_url'] = \phpgw::link("/property/entity/{$type}/{$entity_id}/{$cat_id}/{$id}/files/image", array(
 					'img_id' => $fileId,
-					'file' => $_entry['directory'] . '/' . $_entry['file_name'],
 				));
 
 			}
@@ -1451,6 +1449,78 @@ class EntityController
 			'recordsFiltered' => count($content_files),
 			'draw'            => $draw,
 		]);
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/files/image",
+	 *     summary="View entity image or thumbnail",
+	 *     description="Streams an attached image file or thumbnail for the selected entity item.",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="img_id", in="query", required=false, description="VFS file ID for the image", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="thumb", in="query", required=false, description="Return or generate a thumbnail", @OA\Schema(type="boolean")),
+	 *     @OA\Parameter(name="file", in="query", required=false, description="Relative file path when img_id is not provided", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="Image stream or thumbnail")
+	 * )
+	 */
+	public function viewImage(Request $request, Response $response, array $args): Response
+	{
+		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+
+		$queryParams = $request->getQueryParams();
+		$imgId = (int)($queryParams['img_id'] ?? 0);
+		$thumb = !empty($queryParams['thumb']);
+		$bofiles = CreateObject('property.bofiles');
+		$file = '';
+		if ($imgId > 0)
+		{
+			$fileInfo = $bofiles->vfs->get_info($imgId);
+			$file = isset($fileInfo['directory'], $fileInfo['name'])
+				? $fileInfo['directory'] . '/' . $fileInfo['name']
+				: '';
+		}
+		else
+		{
+			$file = urldecode((string)($input['file'] ?? ''));
+		}
+
+		if ($file === '')
+		{
+			throw new HttpNotFoundException($request, 'Image not found');
+		}
+
+		$source = "{$bofiles->rootdir}{$file}";
+		if (preg_match('/\.\./', $source))
+		{
+			throw new HttpForbiddenException($request, 'Invalid image path');
+		}
+
+		$thumbfile = $source . '.thumb';
+		if ($thumb)
+		{
+			if (!is_file($thumbfile) && $bofiles->is_image($source))
+			{
+				$bofiles->resize_image($source, $thumbfile, 100);
+			}
+
+			if (is_file($thumbfile))
+			{
+				readfile($thumbfile);
+				return $response;
+			}
+		}
+
+		if ($imgId > 0)
+		{
+			$bofiles->get_file($imgId);
+			return $response;
+		}
+
+		$bofiles->view_file('', $file);
+		return $response;
 	}
 
 	/**

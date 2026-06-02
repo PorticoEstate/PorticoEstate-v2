@@ -23,7 +23,7 @@ import {EventImpl} from "@fullcalendar/core/internal";
 import {IUpdatePartialApplication} from "@/service/types/api/application.types";
 import {FCallEventConverter} from "@/components/building-calendar/util/event-converter";
 import {useIsMobile} from "@/service/hooks/is-mobile";
-import {useBookingUser, usePartialApplications, useUpdatePartialApplication} from "@/service/hooks/api-hooks";
+import {useBookingUser, usePartialApplications, useServerSettings, useUpdatePartialApplication} from "@/service/hooks/api-hooks";
 import {
 	useCurrentBuilding,
 	useEnabledResources,
@@ -36,11 +36,6 @@ import {Season} from "@/service/types/Building";
 import {useBuilding, useBuildingResources} from "@/service/api/building";
 import { useToast } from "@/components/toast/toast-context";
 import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
-
-// When true, buildings that have NO seasons defined at all are treated as fully
-// closed (nothing bookable). When false, such buildings stay fully open.
-// Toggle this constant to switch the behaviour.
-const CLOSE_WHEN_NO_SEASONS = true as const;
 
 interface FullCalendarViewProps {
 	calendarRef: React.MutableRefObject<FullCalendar | null>,
@@ -86,6 +81,9 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	const {data: user} = useBookingUser();
 	const { addToast } = useToast();
 	const isOrg = useIsOrganization();
+	const {data: serverSettings} = useServerSettings();
+	// Admin-configurable: buildings without any seasons are fully closed by default
+	const closeWhenNoSeasons = serverSettings?.bookingfrontend_config?.close_calendar_without_season ?? true;
 
 	useEffect(() => {
 		if (calendarRef.current) {
@@ -136,8 +134,8 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	// enabled resources). Used to close times that no season covers. When the
 	// building has no seasons at all, every date is considered closed.
 	const isDateCoveredBySeason = useCallback((date: DateTime): boolean => {
-		// No seasons defined at all: closed or open depending on the constant
-		if (!seasons || seasons.length === 0) return !CLOSE_WHEN_NO_SEASONS;
+		// No seasons defined at all: closed or open depending on admin config
+		if (!seasons || seasons.length === 0) return !closeWhenNoSeasons;
 
 		return seasons.some(season => {
 			if (!season.active) return false;
@@ -153,7 +151,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 			return date >= seasonStart.startOf('day') && date <= seasonEnd.endOf('day') && hasMatchingResources;
 		});
-	}, [seasons, enabledResources]);
+	}, [seasons, enabledResources, closeWhenNoSeasons]);
 
 	// Memoize the results to prevent FullCalendar from receiving new object references on every render
 	const businessHours = useMemo(() => generateBusinessHours(), [generateBusinessHours]);

@@ -191,6 +191,15 @@
 			<td>{lang_highlighted_buildings}:<br/><small>{lang_comma_separated_building_ids}</small></td>
 			<td><input name="newsettings[highlighted_buildings]" value="{value_highlighted_buildings}" class="pure-u-1"/></td>
 		</tr>
+		<tr>
+			<td>{lang_close_calendar_without_season}:<br/><small>{lang_close_calendar_without_season_note}</small></td>
+			<td>
+				<select name="newsettings[close_calendar_without_season]" class="pure-u-1">
+					<option value="1"{selected_close_calendar_without_season_1}>{lang_Yes}</option>
+					<option value="0"{selected_close_calendar_without_season_0}>{lang_No}</option>
+				</select>
+			</td>
+		</tr>
 
 		<!-- END body -->
 		<!-- BEGIN footer -->

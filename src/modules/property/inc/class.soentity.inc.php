@@ -2699,6 +2699,16 @@ class property_soentity
 			$p_location_id	 = $this->locations->get_id($this->type_app[$this->type], ".{$this->type}.{$values_insert['p_entity_id']}.{$values_insert['p_cat_id']}");
 		}
 
+		$location_id	 = $this->locations->get_id($this->type_app[$this->type], ".{$this->type}.{$entity_id}.{$cat_id}");
+
+		if ($location_id)
+		{
+			$config_entity = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
+			if(isset($config_entity['owner']['user_id']))
+			{
+				$values_insert['user_id'] = $config_entity['owner']['user_id'];
+			}
+		}
 
 		if ($category['is_eav'])
 		{
@@ -2708,7 +2718,6 @@ class property_soentity
 				$values_insert['p_location_id']	 = $p_location_id;
 			}
 
-			$location_id	 = $this->locations->get_id($this->type_app[$this->type], ".{$this->type}.{$entity_id}.{$cat_id}");
 			$values['id']	 = $this->_save_eav($values_insert, $location_id);
 		}
 		else
@@ -2719,7 +2728,7 @@ class property_soentity
 			$values_insert['id']		 = $values['id'];
 			$values_insert['num']		 = $num;
 			$values_insert['entry_date'] = time();
-			$values_insert['user_id']	 = $this->account;
+			$values_insert['user_id']	 = isset($values_insert['user_id']) && $values_insert['user_id'] ? $values_insert['user_id'] : $this->account;
 
 			if (isset($values_insert['p_num']) && $values_insert['p_num'])
 			{
@@ -2846,13 +2855,13 @@ class property_soentity
 			'guid'					 => $guid,
 			'json_representation'	 => json_encode($json_data),
 			'model'					 => 0,
-			'p_location_id'			 => isset($data['p_location_id']) && $data['p_location_id'] ? $data['p_location_id'] : '',
-			'p_id'					 => isset($data['p_id']) && $data['p_id'] ? $data['p_id'] : '',
+			'p_location_id'			 => isset($data['p_location_id']) && $data['p_location_id'] !== '' ? (int)$data['p_location_id'] : null,
+			'p_id'					 => isset($data['p_id']) && $data['p_id'] !== '' ? $data['p_id'] : null,
 			'location_code'			 => $data['location_code'],
 			'loc1'					 => $data['loc1'],
 			'address'				 => $data['address'],
 			'entry_date'			 => time(),
-			'user_id'				 => $this->account
+			'user_id'				 => isset($data['user_id']) && $data['user_id'] !== '' ? (int)$data['user_id'] : (int)$this->account
 		);
 
 		$stmt = $this->db->prepare('INSERT INTO fm_bim_item (id, location_id, type, guid, json_representation, model, p_location_id, p_id, location_code, loc1, address, entry_date, user_id) VALUES (:id, :location_id, :type, :guid, :json_representation, :model, :p_location_id, :p_id, :location_code, :loc1, :address, :entry_date, :user_id)');
@@ -2915,8 +2924,8 @@ class property_soentity
 
 		$value_set = array(
 			'json_representation'	 => json_encode($jsondata),
-			'p_location_id'			 => isset($data['p_location_id']) && $data['p_location_id'] ? $data['p_location_id'] : '',
-			'p_id'					 => isset($data['p_id']) && $data['p_id'] ? $data['p_id'] : '',
+			'p_location_id'			 => isset($data['p_location_id']) && $data['p_location_id'] !== '' ? (int)$data['p_location_id'] : null,
+			'p_id'					 => isset($data['p_id']) && $data['p_id'] !== '' ? $data['p_id'] : null,
 			'location_code'			 => $data['location_code'],
 			'loc1'					 => $data['loc1'],
 			'address'				 => $data['address'],

@@ -200,11 +200,10 @@
 		function buildSaveRequest(currentProjectId)
 		{
 			var projectId = parseInt(currentProjectId, 10);
-			var basePath = '/property/project';
-			if (!isNaN(projectId) && projectId > 0)
-			{
-				basePath = '/property/project/' + encodeURIComponent(projectId);
-			}
+			var isUpdate = !isNaN(projectId) && projectId > 0;
+			var basePath = isUpdate
+				? '/property/project/' + encodeURIComponent(projectId)
+				: '/property/project/create';
 
 			var clickHistory = query.click_history || '';
 			if (!clickHistory && typeof global.strBaseURL !== 'undefined' && global.strBaseURL)
@@ -227,7 +226,7 @@
 
 			return {
 				url: requestUrl,
-				method: (!isNaN(projectId) && projectId > 0) ? 'PUT' : 'POST'
+				method: isUpdate ? 'PUT' : 'POST'
 			};
 		}
 

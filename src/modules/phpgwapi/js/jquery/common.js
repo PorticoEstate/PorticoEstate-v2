@@ -484,14 +484,15 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 				}
 
 				// Keep only the relevant column for ordering if needed
-				if (typeof (d.order) != 'undefined')
+				if (Array.isArray(d.order) && d.order.length > 0 && d.order[0] && typeof (d.order[0].column) != 'undefined')
 				{
 					var column = d.order[0].column;
-					var dir = d.order[0].dir;
-					var column_to_keep = d.columns[column];
-					delete d.columns;
-					d.columns = {};
-					d.columns[column] = column_to_keep;
+					if (d.columns && typeof (d.columns[column]) != 'undefined')
+					{
+						var column_to_keep = d.columns[column];
+						d.columns = {};
+						d.columns[column] = column_to_keep;
+					}
 				}
 
 				return d;

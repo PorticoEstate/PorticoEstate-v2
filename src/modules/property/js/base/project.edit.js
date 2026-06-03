@@ -644,15 +644,17 @@ function createProjectApiClient(form)
 		buildSaveRequest: function (currentProjectId)
 		{
 			var parsedProjectId = parseInt(currentProjectId, 10);
-			var requestBase = 'property/project';
+			var requestBase = 'property/project/create';
+			var requestMethod = 'POST';
 			if (!isNaN(parsedProjectId) && parsedProjectId > 0)
 			{
 				requestBase = 'property/project/' + parsedProjectId;
+				requestMethod = 'PUT';
 			}
 
 			return {
 				url: phpGWLink(requestBase, {}),
-				method: (!isNaN(parsedProjectId) && parsedProjectId > 0) ? 'PUT' : 'POST'
+				method: requestMethod
 			};
 		}
 	};
@@ -667,7 +669,33 @@ function getProjectSaveUrl()
 		return request.url;
 	}
 
-	return phpGWLink('property/project', {});
+	return phpGWLink('property/project/create', {});
+}
+
+function normalizeProjectSaveRequest(saveRequest, currentProjectId)
+{
+	var parsedProjectId = parseInt(currentProjectId, 10);
+	var isCreate = isNaN(parsedProjectId) || parsedProjectId <= 0;
+	var method = (saveRequest && saveRequest.method) ? String(saveRequest.method).toUpperCase() : (isCreate ? 'POST' : 'PUT');
+	var url = (saveRequest && saveRequest.url) ? saveRequest.url : getProjectSaveUrl();
+
+	if (isCreate)
+	{
+		if (url && url.indexOf('/property/project/create') === -1 && url.indexOf('/property/project') !== -1)
+		{
+			url = url.replace('/property/project', '/property/project/create');
+		}
+
+		if (!url || url.indexOf('/property/project/create') === -1)
+		{
+			url = phpGWLink('property/project/create', {});
+		}
+	}
+
+	return {
+		url: url,
+		method: method
+	};
 }
 
 function buildProjectSaveFormData()
@@ -879,12 +907,13 @@ function check_and_submit_valid_session()
 
 	var formData = buildProjectSaveFormData();
 	var payload = buildProjectSavePayload(formData);
-	var saveRequest = createProjectApiClient(form).buildSaveRequest(project_id);
-	var requestUrl = saveRequest && saveRequest.url ? saveRequest.url : getProjectSaveUrl();
+	var saveRequestRaw = createProjectApiClient(form).buildSaveRequest(project_id);
+	var saveRequest = normalizeProjectSaveRequest(saveRequestRaw, project_id);
+	var requestUrl = saveRequest.url;
 	var projectId = Number(project_id);
 	var isCreate = !projectId;
 	var requestOptions = {
-		method: saveRequest && saveRequest.method ? saveRequest.method : (isCreate ? 'POST' : 'PUT'),
+		method: saveRequest.method ? saveRequest.method : (isCreate ? 'POST' : 'PUT'),
 		credentials: 'same-origin'
 	};
 

@@ -189,7 +189,7 @@ export class FreeTimeService {
 
       // simple_booking_start_date handling
       if (resource.simple_booking_start_date) {
-        const sbsd = new Date(resource.simple_booking_start_date * 1000);
+        const sbsd = osloFromResourceTimestamp(resource.simple_booking_start_date);
         if (sbsd > now) {
           resource.skip_timeslot = true;
         }
@@ -222,7 +222,7 @@ export class FreeTimeService {
 
       // simple_booking_end_date
       if (resource.simple_booking_end_date) {
-        const sbed = new Date(resource.simple_booking_end_date * 1000);
+        const sbed = osloFromResourceTimestamp(resource.simple_booking_end_date);
         if (sbed < to) to = new Date(sbed);
         to.setHours(23, 59, 59, 0);
       }
@@ -946,6 +946,29 @@ export class FreeTimeService {
 
 function toOsloDate(dateStr: string): Date {
   return new Date(dateStr + 'T00:00:00');
+}
+
+/**
+ * Interpret a stored bb_resource timestamp (simple_booking_start_date /
+ * simple_booking_end_date) as a venue-local wall-clock time.
+ *
+ * These columns were written by the legacy admin via mktime() while PHP's default
+ * timezone was UTC, so the intended wall-clock (e.g. 09:00 Oslo) is persisted as that
+ * same wall-clock at UTC (09:00Z). Reading the raw instant in Oslo would shift it by
+ * the offset (09:00 -> 11:00), opening the resource 1-2h late. We therefore reinterpret
+ * the instant's UTC components as Oslo local time, mirroring the PHP FreeTimeService.
+ */
+function osloFromResourceTimestamp(ts: number): Date {
+  const raw = new Date(ts * 1000);
+  return new Date(
+    raw.getUTCFullYear(),
+    raw.getUTCMonth(),
+    raw.getUTCDate(),
+    raw.getUTCHours(),
+    raw.getUTCMinutes(),
+    0,
+    0,
+  );
 }
 
 function osloNow(): Date {

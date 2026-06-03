@@ -2169,10 +2169,13 @@ JS;
 
 			$entry['obligation'] = $_obligation;
 
-			$entry['link'] = phpgw::link('/index.php', array(
-				'menuaction' => "property.ui{$type}.edit",
-				'id'		 => $entry['id']
-			));
+			if ($type !== 'project')
+			{
+				$entry['link'] = phpgw::link('/index.php', array(
+					'menuaction' => "property.ui{$type}.edit",
+					'id'		 => $entry['id']
+				));
+			}
 		}
 
 		$total_records = count($list);
@@ -2188,7 +2191,7 @@ JS;
 				$lang_coordinator		 = lang('coordinator');
 				$lang_new_coordinator	 = lang('new coordinator');
 				$myColumnDefs			 = array(
-					array('key' => 'id', 'label' => lang('id'), 'sortable' => true, 'formatter' => 'JqueryPortico.formatLink'),
+					array('key' => 'id', 'label' => lang('id'), 'sortable' => true, 'formatter' => 'JqueryPortico.formatProject'),
 					array('key' => 'coordinator_name', 'label' => lang('coordinator'), 'sortable' => false),
 					array('key' => 'start_date', 'label' => lang('date'), 'sortable' => false),
 					array('key' => 'title', 'label' => lang('title'), 'sortable' => true),

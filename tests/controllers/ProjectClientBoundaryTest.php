@@ -34,6 +34,29 @@ namespace Tests\Controllers
 			}
 		}
 
+		public function testProjectCopyUsesCreateEndpointAndPostMethod(): void
+		{
+			$projectEditPath = __DIR__ . '/../../src/modules/property/js/base/project.edit.js';
+			$contents = file_get_contents($projectEditPath);
+
+			$this->assertIsString($contents);
+			$this->assertStringContainsString(
+				"function isProjectCopyRequested(form)",
+				$contents,
+				'Project edit client should detect when copy_project is checked'
+			);
+			$this->assertStringContainsString(
+				"method = 'POST';",
+				$contents,
+				'Project copy should force POST semantics to create a new project'
+			);
+			$this->assertStringContainsString(
+				"url = phpGWLink('property/project/create', {});",
+				$contents,
+				'Project copy should force the create endpoint instead of updating the source project'
+			);
+		}
+
 		public function testUiprojectNotifyTableDoesNotUseNotifyUpdateDataMenuaction(): void
 		{
 			$uiProjectPath = __DIR__ . '/../../src/modules/property/inc/class.uiproject.inc.php';

@@ -672,18 +672,26 @@ function getProjectSaveUrl()
 	return phpGWLink('property/project/create', {});
 }
 
-function normalizeProjectSaveRequest(saveRequest, currentProjectId)
+function isProjectCopyRequested(form)
+{
+	var copyProjectField = form ? form.querySelector('input[name="values[copy_project]"]') : null;
+	return !!(copyProjectField && copyProjectField.checked);
+}
+
+function normalizeProjectSaveRequest(saveRequest, currentProjectId, forceCreate)
 {
 	var parsedProjectId = parseInt(currentProjectId, 10);
-	var isCreate = isNaN(parsedProjectId) || parsedProjectId <= 0;
+	var isCreate = !!forceCreate || isNaN(parsedProjectId) || parsedProjectId <= 0;
 	var method = (saveRequest && saveRequest.method) ? String(saveRequest.method).toUpperCase() : (isCreate ? 'POST' : 'PUT');
 	var url = (saveRequest && saveRequest.url) ? saveRequest.url : getProjectSaveUrl();
 
 	if (isCreate)
 	{
-		if (url && url.indexOf('/property/project/create') === -1 && url.indexOf('/property/project') !== -1)
+		method = 'POST';
+
+		if (url && url.indexOf('/property/project/create') === -1)
 		{
-			url = url.replace('/property/project', '/property/project/create');
+			url = phpGWLink('property/project/create', {});
 		}
 
 		if (!url || url.indexOf('/property/project/create') === -1)
@@ -907,11 +915,12 @@ function check_and_submit_valid_session()
 
 	var formData = buildProjectSaveFormData();
 	var payload = buildProjectSavePayload(formData);
+	var copyProjectRequested = isProjectCopyRequested(form);
 	var saveRequestRaw = createProjectApiClient(form).buildSaveRequest(project_id);
-	var saveRequest = normalizeProjectSaveRequest(saveRequestRaw, project_id);
+	var saveRequest = normalizeProjectSaveRequest(saveRequestRaw, project_id, copyProjectRequested);
 	var requestUrl = saveRequest.url;
 	var projectId = Number(project_id);
-	var isCreate = !projectId;
+	var isCreate = copyProjectRequested || !projectId;
 	var requestOptions = {
 		method: saveRequest.method ? saveRequest.method : (isCreate ? 'POST' : 'PUT'),
 		credentials: 'same-origin'

@@ -8,6 +8,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\modules\phpgwapi\security\Acl;
+use Slim\Exception\HttpBadRequestException;
 use Slim\Exception\HttpForbiddenException;
 
 class WorkorderController
@@ -72,7 +73,12 @@ class WorkorderController
 		if (strpos($contentType, 'application/json') !== false)
 		{
 			$json = json_decode($rawBody, true);
-			return is_array($json) ? $json : array();
+			if (!is_array($json))
+			{
+				throw new HttpBadRequestException($request, 'Invalid JSON request body');
+			}
+
+			return $json;
 		}
 
 		$decoded = array();

@@ -182,7 +182,12 @@ class ProjectController
 		if (strpos($contentType, 'application/json') !== false)
 		{
 			$json = json_decode($rawBody, true);
-			return is_array($json) ? $json : array();
+			if (!is_array($json))
+			{
+				throw new HttpBadRequestException($request, 'Invalid JSON request body');
+			}
+
+			return $json;
 		}
 
 		$decoded = array();

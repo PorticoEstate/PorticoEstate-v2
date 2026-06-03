@@ -301,7 +301,7 @@ class EntityController
 	/**
 	 * Return request body as array, with JSON fallback when parsed body is empty.
 	 */
-	private function requestBodyArray(Request $request): array
+	private function requestBodyAsArray(Request $request): array
 	{
 		$parsed = $request->getParsedBody();
 		if (is_array($parsed))
@@ -312,16 +312,29 @@ class EntityController
 		$rawBody = (string)$request->getBody();
 		if ($rawBody === '')
 		{
-			return [];
+			return array();
 		}
 
-		$decoded = json_decode($rawBody, true);
-		if (!is_array($decoded))
+		$contentType = strtolower((string)$request->getHeaderLine('Content-Type'));
+		if (strpos($contentType, 'application/json') !== false)
 		{
-			throw new HttpBadRequestException($request, 'Invalid JSON request body');
+			$decoded = json_decode($rawBody, true);
+			if (!is_array($decoded))
+			{
+				throw new HttpBadRequestException($request, 'Invalid JSON request body');
+			}
+
+			return $decoded;
 		}
 
-		return $decoded;
+		$decoded = array();
+		parse_str($rawBody, $decoded);
+		return is_array($decoded) ? $decoded : array();
+	}
+
+	private function requestBodyArray(Request $request): array
+	{
+		return $this->requestBodyAsArray($request);
 	}
 
 	/**
@@ -391,7 +404,7 @@ class EntityController
 	 */
 	private function normalizedSavePayload(Request $request): array
 	{
-		$body = $this->requestBodyArray($request);
+		$body = $this->requestBodyAsArray($request);
 
 		if (isset($body['values']) && !is_array($body['values']))
 		{
@@ -430,7 +443,7 @@ class EntityController
 	 */
 	private function applyRelationInfoPayload(array $values, \property_boentity $bo, Request $request): array
 	{
-		$body = $this->requestBodyArray($request);
+		$body = $this->requestBodyAsArray($request);
 
 		$relationInfo = [];
 		if (isset($body['RelationInfo']) && is_array($body['RelationInfo']))
@@ -639,7 +652,7 @@ class EntityController
 	{
 		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
 
-		$body = $this->requestBodyArray($request);
+		$body = $this->requestBodyAsArray($request);
 
 		// DataTables server-side POST protocol
 		if (isset($body['draw']))
@@ -706,7 +719,7 @@ class EntityController
 	 */
 	public function postCollection(Request $request, Response $response, array $args): Response
 	{
-		$input = array_merge($request->getQueryParams(), $this->requestBodyArray($request));
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
 		if ($this->isDataTablesRequest($input))
 		{
 			return $this->index($request, $response, $args);
@@ -747,7 +760,7 @@ class EntityController
 	public function listItems(Request $request, Response $response, array $args): Response
 	{
 		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
-		$input = array_merge($request->getQueryParams(), $this->requestBodyArray($request));
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
 
 		$readParams = [
 			'start'   => isset($input['start']) ? (int)$input['start'] : 0,
@@ -1377,7 +1390,7 @@ class EntityController
 		$this->assertEntityGrants($request, $args, ACL_READ, 'No read access for this entity item');
 
 		$queryParams = $request->getQueryParams();
-		$bodyParams = $this->requestBodyArray($request);
+		$bodyParams = $this->requestBodyAsArray($request);
 		$input = array_merge($queryParams, $bodyParams);
 
 		$search = $input['search'] ?? [];

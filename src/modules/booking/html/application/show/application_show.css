@@ -334,6 +334,32 @@
 	color: var(--ds-color-neutral-text-subtle, #68707c);
 }
 
+/* Split button (primary action + dropdown caret) */
+.app-show__split {
+	display: inline-flex;
+}
+
+.app-show__split > .ds-button:first-child {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+.app-show__split-toggle {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	padding-inline: var(--ds-size-2);
+	min-width: 0;
+}
+
+.app-show__split-toggle svg {
+	width: 1rem;
+	height: 1rem;
+}
+
+.app-show__split-menu {
+	min-width: 12rem;
+}
+
 /* Designsystemet dialog */
 .app-show__dialog-footer {
 	display: flex;

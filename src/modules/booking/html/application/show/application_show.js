@@ -777,54 +777,60 @@
 					: rawAgegroups || [];
 				dateParamsMap[d.id] = buildDateParams(app, d, flatAgegroups, data.audience || {});
 
-				// Action dropdown
-				var selectHtml = '<select class="ds-input app-show__date-select" data-size="sm" data-date-id="' + d.id + '"';
-				if (!isCO || hasAssoc) selectHtml += ' disabled';
-				selectHtml += '>';
+				// Action: split button — primary "Lag arrangement" + caret dropdown for the rest
+				var actionHtml;
 				if (hasAssoc) {
-					selectHtml += '<option>' + lang('dateCreated') + '</option>';
+					actionHtml = '<span class="ds-tag" data-color="neutral">' + lang('dateCreated') + '</span>';
+				} else if (!isCO) {
+					actionHtml = '<div class="app-show__split">' +
+						'<button type="button" class="ds-button" data-variant="primary" data-color="accent" data-size="sm" disabled>' + esc(lang('createEvent')) + '</button>' +
+						'<button type="button" class="ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" disabled aria-label="' + esc(lang('dateActions')) + '">' + ICONS.chevron + '</button>' +
+						'</div>';
 				} else {
-					selectHtml += '<option>' + lang('dateActions') + '</option>';
-					selectHtml += '<option>' + lang('createAllocation') + '</option>';
-					selectHtml += '<option>' + lang('createBooking') + '</option>';
-					selectHtml += '<option>' + lang('createEvent') + '</option>';
+					var menuId = 'datemenu-' + d.id;
+					actionHtml = '<div class="app-show__split">' +
+						'<button type="button" class="ds-button" data-variant="primary" data-color="accent" data-size="sm" data-create="event" data-date-id="' + d.id + '">' + esc(lang('createEvent')) + '</button>' +
+						'<button type="button" class="ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '" aria-label="' + esc(lang('dateActions')) + '">' + ICONS.chevron + '</button>' +
+						'<div class="ds-dropdown app-show__menu app-show__split-menu" popover id="' + menuId + '"><ul>' +
+						'<li><button type="button" class="ds-dropdown__item" data-create="allocation" data-date-id="' + d.id + '"><span>' + esc(lang('createAllocation')) + '</span></button></li>' +
+						'<li><button type="button" class="ds-dropdown__item" data-create="booking" data-date-id="' + d.id + '"><span>' + esc(lang('createBooking')) + '</span></button></li>' +
+						'</ul></div></div>';
 				}
-				selectHtml += '</select>';
 
 				datesHtml += '<tr>';
 				if (isCombined) datesHtml += '<td>#' + esc(d.application_id) + '</td>';
-				datesHtml += '<td>' + fmtDate(d.from_) + '</td><td>' + fmtDate(d.to_) + '</td><td>' + esc(d.resource_names) + '</td><td>' + collisionTag + scheduleIcon + '</td><td>' + selectHtml + '</td></tr>';
+				datesHtml += '<td>' + fmtDate(d.from_) + '</td><td>' + fmtDate(d.to_) + '</td><td>' + esc(d.resource_names) + '</td><td>' + collisionTag + scheduleIcon + '</td><td>' + actionHtml + '</td></tr>';
 			});
 			datesHtml += '</tbody></table>';
 			html += section(lang('dates'), datesHtml, { icon: ICONS.calendar });
 		}
 
-		// Delegated event: date action dropdown
-		root.addEventListener('change', function (e) {
-			var sel = e.target.closest('.app-show__date-select');
-			if (!sel) return;
-			var idx = sel.selectedIndex;
-			if (idx === 0) return;
+		// Delegated event: date action split button (primary + dropdown items)
+		root.addEventListener('click', function (e) {
+			var btn = e.target.closest('[data-create]');
+			if (!btn || btn.disabled) return;
 
-			var dateId = sel.dataset.dateId;
-			var params = dateParamsMap[dateId];
+			var params = dateParamsMap[btn.dataset.dateId];
 			if (!params) return;
 
 			var urls = {
-				1: '/?menuaction=booking.uiallocation.add',
-				2: '/?menuaction=booking.uibooking.add',
-				3: '/?menuaction=booking.uievent.add'
+				allocation: '/?menuaction=booking.uiallocation.add',
+				booking: '/?menuaction=booking.uibooking.add',
+				event: '/?menuaction=booking.uievent.add'
 			};
-			var url = urls[idx];
+			var url = urls[btn.dataset.create];
 			if (!url) return;
 
-			sel.disabled = true;
+			// Disable the whole split group while submitting
+			var group = btn.closest('.app-show__split');
+			var groupBtns = group ? group.querySelectorAll('button') : [btn];
+			groupBtns.forEach(function (b) { b.disabled = true; });
+
 			postJsonToLegacy(url, params).then(function (result) {
 				// Redirect to the edit page for the newly created entity
 				window.location.href = result.edit_url;
 			}).catch(function (err) {
-				sel.disabled = false;
-				sel.selectedIndex = 0;
+				groupBtns.forEach(function (b) { b.disabled = false; });
 				var msg = lang('error');
 				if (err.errors) {
 					var errMsgs = Object.values(err.errors).filter(Boolean);

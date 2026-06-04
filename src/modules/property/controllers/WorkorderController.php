@@ -14,6 +14,7 @@ use Slim\Exception\HttpForbiddenException;
 class WorkorderController
 {
 	private $bo = null;
+	private $bocommon = null;
 
 	public function __construct(ContainerInterface $container)
 	{
@@ -27,6 +28,16 @@ class WorkorderController
 		}
 
 		return $this->bo;
+	}
+
+	protected function bocommon()
+	{
+		if ($this->bocommon === null)
+		{
+			$this->bocommon = CreateObject('property.bocommon');
+		}
+
+		return $this->bocommon;
 	}
 
 	protected function hasReadAccess(): bool
@@ -95,6 +106,124 @@ class WorkorderController
 			'recordsFiltered' => $count,
 			'draw' => (int)($input['draw'] ?? 0),
 		));
+	}
+
+	private function getVendorContractOptions(int $vendorId, int $selected = 0): array
+	{
+		$contractList = $this->bocommon()->get_vendor_contract($vendorId, $selected);
+		$config = CreateObject('phpgwapi.config', 'property')->read();
+
+		if ($contractList || !empty($config['alternative_to_contract_1']))
+		{
+			$contractList[] = array(
+				'id' => -1,
+				'name' => !empty($config['alternative_to_contract_1']) ? $config['alternative_to_contract_1'] : lang('outside contract')
+			);
+
+			if (!empty($config['alternative_to_contract_2']))
+			{
+				$contractList[] = array('id' => -2, 'name' => $config['alternative_to_contract_2']);
+			}
+			if (!empty($config['alternative_to_contract_3']))
+			{
+				$contractList[] = array('id' => -3, 'name' => $config['alternative_to_contract_3']);
+			}
+			if (!empty($config['alternative_to_contract_4']))
+			{
+				$contractList[] = array('id' => -4, 'name' => $config['alternative_to_contract_4']);
+			}
+		}
+
+		if ($selected)
+		{
+			foreach ($contractList as &$contract)
+			{
+				$contract['selected'] = $selected == $contract['id'] ? 1 : 0;
+			}
+			unset($contract);
+		}
+
+		return is_array($contractList) ? $contractList : array();
+	}
+
+	public function getVendorContract(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to vendor contracts');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$vendorId = (int)($input['vendor_id'] ?? 0);
+		$selected = (int)($input['selected'] ?? 0);
+		return $this->jsonResponse($response, $this->getVendorContractOptions($vendorId, $selected));
+	}
+
+	public function getEcoService(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to eco service lookup');
+		}
+
+		return $this->jsonResponse($response, (array)$this->bocommon()->get_eco_service());
+	}
+
+	public function getUnspscCode(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to UNSPSC lookup');
+		}
+
+		return $this->jsonResponse($response, (array)$this->bocommon()->get_unspsc_code());
+	}
+
+	public function getEcodimb(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to ecodimb lookup');
+		}
+
+		return $this->jsonResponse($response, (array)$this->bocommon()->get_ecodimb());
+	}
+
+	public function getBAccount(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to budget account lookup');
+		}
+
+		return $this->jsonResponse($response, (array)$this->bocommon()->get_b_account());
+	}
+
+	public function receiveOrder(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasEditAccess())
+		{
+			throw new HttpForbiddenException($request, 'No edit access to receive workorder');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$id = (int)($args['id'] ?? $input['id'] ?? 0);
+		$receivedAmount = (float)($input['received_amount'] ?? 0);
+		return $this->jsonResponse($response, $this->bo()->receive_order($id, $receivedAmount));
+	}
+
+	public function getOtherOrders(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to other workorders');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$vendorId = (int)($input['vendor_id'] ?? 0);
+		$locationCode = (string)($input['location_code'] ?? '');
+		$rows = (array)$this->bo()->get_other_orders($vendorId, $locationCode);
+		return $this->datatableResponse($response, $input, $rows);
 	}
 
 	public function getFiles(Request $request, Response $response, array $args): Response

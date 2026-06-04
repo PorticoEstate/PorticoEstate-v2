@@ -28,8 +28,7 @@ this.fetch_vendor_contract = function ()
 
 	if ($("#vendor_id").val() != vendor_id)
 	{
-		var oArgs = {menuaction: 'property.uiworkorder.get_vendor_contract', vendor_id: $("#vendor_id").val()};
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = phpGWLink('property/workorder/lookups/vendor-contract', {vendor_id: $("#vendor_id").val()}, true);
 		var htmlString = "";
 
 		$.ajax({
@@ -157,4 +156,3 @@ JqueryPortico.autocompleteHelper(strURL, 'external_project_name', 'external_proj
 var oArgs = {menuaction: 'property.uitts.get_unspsc_code'};
 var strURL = phpGWLink('index.php', oArgs, true);
 JqueryPortico.autocompleteHelper(strURL, 'unspsc_code_name', 'unspsc_code', 'unspsc_code_container');
-

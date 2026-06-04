@@ -31,10 +31,16 @@ return new class extends Migration
 		$this->addIndex('bb_allocation', 'idx_bb_allocation_active_from_to', ['active', 'from_', 'to_']);
 		$this->addIndex('bb_allocation', 'idx_bb_allocation_completed_to', ['completed', 'to_']);
 
-		// bb_event: anti-join from bb_application (LEFT JOIN ... WHERE id IS NULL).
-		$this->addIndex('bb_event', 'idx_bb_event_application_id', 'application_id');
-
 		// bb_event_comment: per-event comment fetch ordered by time (high call count).
 		$this->addIndex('bb_event_comment', 'idx_bb_event_comment_event_id_time', ['event_id', 'time']);
+
+		// Partial (application_id, from_) indexes for reservation tables.
+		// Restricted to rows with a non-null application link — most rows have
+		// none, so the index stays small while covering application_id joins/
+		// anti-joins and from_ ordering/ranges. On bb_event this also supersedes
+		// a standalone application_id index (leading column covers that lookup).
+		$this->addIndex('bb_booking', 'idx_booking_appid_from_partial', ['application_id', 'from_'], false, 'application_id IS NOT NULL');
+		$this->addIndex('bb_allocation', 'idx_allocation_appid_from_partial', ['application_id', 'from_'], false, 'application_id IS NOT NULL');
+		$this->addIndex('bb_event', 'idx_event_appid_from_partial', ['application_id', 'from_'], false, 'application_id IS NOT NULL');
 	}
 };

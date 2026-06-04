@@ -264,8 +264,9 @@ abstract class Migration
 	 * @param string|string[] $columns Column or list of columns to index.
 	 * @param bool            $unique  Whether to create a UNIQUE index.
 	 * @param string|null     $where   Optional predicate for a partial index (without the WHERE keyword).
+	 * @param string|string[] $include Optional non-key columns for a covering index (INCLUDE clause).
 	 */
-	protected function addIndex(string $table, string $name, $columns, bool $unique = false, ?string $where = null): void
+	protected function addIndex(string $table, string $name, $columns, bool $unique = false, ?string $where = null, $include = null): void
 	{
 		if ($this->indexExists($table, $name)) {
 			return;
@@ -274,6 +275,9 @@ abstract class Migration
 		$cols = implode(', ', (array) $columns);
 		$type = $unique ? 'UNIQUE INDEX' : 'INDEX';
 		$sql = "CREATE {$type} {$name} ON {$table} ({$cols})";
+		if (!empty($include)) {
+			$sql .= " INCLUDE (" . implode(', ', (array) $include) . ")";
+		}
 		if ($where !== null) {
 			$sql .= " WHERE {$where}";
 		}

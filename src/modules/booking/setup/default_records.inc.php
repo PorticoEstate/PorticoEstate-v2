@@ -32,9 +32,9 @@ switch ($serverSettings['db_type'])
 		$db->query(
 			"CREATE VIEW bb_application_association AS " .
 				"SELECT 'booking' AS type, application_id, id, from_, to_, cost, active FROM bb_booking WHERE application_id IS NOT NULL " .
-				"UNION " .
+				"UNION ALL " .
 				"SELECT 'allocation' AS type, application_id, id, from_, to_, cost, active FROM bb_allocation  WHERE application_id IS NOT NULL " .
-				"UNION " .
+				"UNION ALL " .
 				"SELECT 'event' AS type, application_id, id, from_, to_, cost, active FROM bb_event  WHERE application_id IS NOT NULL"
 		);
 		break;
@@ -888,7 +888,7 @@ $db->query(
 		   FROM bb_resource
 		   JOIN bb_building_resource ON bb_building_resource.resource_id = bb_resource.id
 		   JOIN bb_building ON bb_building_resource.building_id = bb_building.id
-		UNION
+		UNION ALL
 		 SELECT bb_service.id,
 			bb_service.name,
 			bb_service.description,

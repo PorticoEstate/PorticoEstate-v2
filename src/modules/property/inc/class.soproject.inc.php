@@ -1503,13 +1503,13 @@ class property_soproject
 			}
 		}
 
-		if (isset($project['RelationInfo']['origin']))
+		if (isset($project['origin']))
 		{
-			if ($project['RelationInfo']['origin_id'])
+			if ($project['origin_id'])
 			{
 				$interlink_data = array(
-					'location1_id'		 => $this->locations->get_id('property', $project['RelationInfo']['origin']),
-					'location1_item_id'	 => $project['RelationInfo']['origin_id'],
+					'location1_id'		 => $this->locations->get_id('property', $project['origin']),
+					'location1_item_id'	 => $project['origin_id'],
 					'location2_id'		 => $this->locations->get_id('property', '.project'),
 					'location2_item_id'	 => $id,
 					'account_id'		 => $this->account

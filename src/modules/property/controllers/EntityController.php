@@ -332,11 +332,6 @@ class EntityController
 		return is_array($decoded) ? $decoded : array();
 	}
 
-	private function requestBodyArray(Request $request): array
-	{
-		return $this->requestBodyAsArray($request);
-	}
-
 	/**
 	 * Split a link into path + query params for client-side navigation URL building.
 	 *
@@ -402,9 +397,9 @@ class EntityController
 	 *
 	 * @return array{values: array, values_attribute: array, values_checklist_stage: mixed}
 	 */
-	private function normalizedSavePayload(Request $request): array
+	private function normalizedSavePayload(Request $request, array $input): array
 	{
-		$body = $this->requestBodyAsArray($request);
+		$body = $input;
 
 		if (isset($body['values']) && !is_array($body['values']))
 		{
@@ -441,9 +436,9 @@ class EntityController
 	 *
 	 * This replaces the legacy collect_locationdata() bridge for REST saves.
 	 */
-	private function applyRelationInfoPayload(array $values, \property_boentity $bo, Request $request): array
+	private function applyRelationInfoPayload(array $values, \property_boentity $bo, array $input): array
 	{
-		$body = $this->requestBodyAsArray($request);
+		$body = $input;
 
 		$relationInfo = [];
 		if (isset($body['RelationInfo']) && is_array($body['RelationInfo']))
@@ -933,12 +928,13 @@ class EntityController
 		$bo = $this->assertEntityAcl($request, $args, ACL_ADD, 'No add access for this entity category');
 		$helper = $this->formHelper();
 		$soadminEntity = $this->soadminEntity();
+		$input = $this->requestBodyAsArray($request);
 
-		$payload = $this->normalizedSavePayload($request);
+		$payload = $this->normalizedSavePayload($request, $input);
 		$values = $payload['values'];
 		$values_attribute = $payload['values_attribute'];
 		$valuesChecklistStage = $payload['values_checklist_stage'];
-		$values = $this->applyRelationInfoPayload($values, $bo, $request);
+		$values = $this->applyRelationInfoPayload($values, $bo, $input);
 
 		$validation = $helper->validate(
 			$values,
@@ -1056,6 +1052,7 @@ class EntityController
 		$bo = $this->assertEntityAcl($request, $args, ACL_EDIT, 'No edit access for this entity category');
 		$helper = $this->formHelper();
 		$soadminEntity = $this->soadminEntity();
+		$input = $this->requestBodyAsArray($request);
 
 		$id = (int)$args['id'];
 		if ($id <= 0)
@@ -1065,11 +1062,11 @@ class EntityController
 
 		$this->assertEntityGrants($request, $args, ACL_EDIT, 'No access to this entity item');
 
-		$payload = $this->normalizedSavePayload($request);
+		$payload = $this->normalizedSavePayload($request, $input);
 		$values = $payload['values'];
 		$values_attribute = $payload['values_attribute'];
 		$valuesChecklistStage = $payload['values_checklist_stage'];
-		$values = $this->applyRelationInfoPayload($values, $bo, $request);
+		$values = $this->applyRelationInfoPayload($values, $bo, $input);
 		$values['id'] = $id;
 
 		$validation = $helper->validate(

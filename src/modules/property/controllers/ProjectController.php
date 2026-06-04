@@ -492,6 +492,16 @@ class ProjectController
 			}
 		}
 
+		if (!empty($relationInfo['origin']))
+		{
+			$values['origin'] = \Sanitizer::clean_value((string)$relationInfo['origin'], 'string');
+		}
+
+		if (!empty($relationInfo['origin_id']))
+		{
+			$values['origin_id'] = (int)$relationInfo['origin_id'];
+		}
+
 		$values = BoCommon::mergeAdditionalInfoFromPayload($values, $input);
 
 		return $values;

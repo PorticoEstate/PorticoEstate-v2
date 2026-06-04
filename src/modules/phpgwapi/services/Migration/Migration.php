@@ -257,6 +257,38 @@ abstract class Migration
 	}
 
 	/**
+	 * Create an index if it does not already exist.
+	 *
+	 * @param string          $table   Table to index.
+	 * @param string          $name    Index name (must be unique within the schema).
+	 * @param string|string[] $columns Column or list of columns to index.
+	 * @param bool            $unique  Whether to create a UNIQUE index.
+	 */
+	protected function addIndex(string $table, string $name, $columns, bool $unique = false): void
+	{
+		if ($this->indexExists($table, $name)) {
+			return;
+		}
+
+		$cols = implode(', ', (array) $columns);
+		$type = $unique ? 'UNIQUE INDEX' : 'INDEX';
+		$this->sql("CREATE {$type} {$name} ON {$table} ({$cols})");
+	}
+
+	/**
+	 * Drop an index if it exists.
+	 *
+	 * The table name is only used for the existence check; PostgreSQL drops
+	 * indexes by name alone.
+	 */
+	protected function dropIndex(string $table, string $name): void
+	{
+		if ($this->indexExists($table, $name)) {
+			$this->sql("DROP INDEX {$name}");
+		}
+	}
+
+	/**
 	 * Run raw SQL. No idempotency check — caller is responsible.
 	 */
 	protected function sql(string $query): void

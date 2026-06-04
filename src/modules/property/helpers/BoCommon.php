@@ -2932,6 +2932,11 @@ class BoCommon
 
 	public function getVendorContract($vendor_id = 0, $selected = '')
 	{
+		if (!$vendor_id)
+		{
+			$vendor_id = \Sanitizer::get_var('vendor_id', 'int');
+		}
+
 		$contract_list = createObject('property.soagreement')->get_vendor_contract($vendor_id, $selected);
 		if ($selected)
 		{

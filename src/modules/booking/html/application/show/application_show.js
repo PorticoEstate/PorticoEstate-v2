@@ -41,6 +41,42 @@
 		});
 	}
 
+	// Shared inline SVG icon set (Designsystemet-style line icons).
+	var ICONS = {
+		chevron: '<svg class="app-show__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
+		reply: '<svg class="app-show__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 17 4 12l5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>',
+		send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 9.5 21 3m0 0-6.5 18-4-8-8-4L21 3Z"/></svg>',
+		message: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-9 8.3 9.6 9.6 0 0 1-3.5-.7L3 21l1.9-4.5A8.38 8.38 0 0 1 12 3a8.5 8.5 0 0 1 9 8.5Z"/></svg>',
+		note: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/><path d="M9 13h6M9 17h4"/></svg>',
+		userCheck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m16 11 2 2 4-4"/></svg>',
+		eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
+		checkCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.8 10A9.5 9.5 0 1 1 14 3.5"/><path d="m9 11 3 3 9-9"/></svg>',
+		xCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="m15 9-6 6M9 9l6 6"/></svg>',
+		swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
+		pdf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M19 9v9a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7Z"/><path d="M9 17v-4h1.5a1.5 1.5 0 0 1 0 3H9"/></svg>',
+		edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+		back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>',
+		contact: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2.2"/><path d="M5.5 16a3.5 3.5 0 0 1 7 0M15 9h4M15 13h4"/></svg>',
+		building: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21h16M6 21V5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v16M15 9h3a1 1 0 0 1 1 1v11"/><path d="M9 8h2M9 12h2"/></svg>',
+		invoice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h9l4 4v14a1 1 0 0 1-1.4.9L15 20l-2.5 1.6L10 20l-2.5 1.6L5 20l-1.6.9A1 1 0 0 1 2 20V4"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>',
+		text: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
+		target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg>',
+		people: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11"/></svg>',
+		cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/><path d="M2 3h2.2l2.3 12.4a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.78L21 7H6"/></svg>',
+		calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+		repeat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
+		doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/></svg>',
+		link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>'
+	};
+
+	// Designsystemet Spinner (SVG markup; sized via data-size).
+	function spinner(size) {
+		return '<svg class="ds-spinner" data-size="' + (size || 'md') + '" viewBox="0 0 50 50" role="img" aria-label="' + esc(lang('loading')) + '">' +
+			'<circle class="ds-spinner__background" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>' +
+			'<circle class="ds-spinner__circle" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>' +
+			'</svg>';
+	}
+
 	function statusTag(status) {
 		var colorMap = {
 			'new': 'info', 'pending': 'warning',
@@ -50,35 +86,43 @@
 		return '<span class="ds-tag" data-color="' + color + '">' + esc(status) + '</span>';
 	}
 
+	// A titled card. opts.icon = ICONS key/svg, opts.aside = right-aligned header html.
 	function section(title, bodyHtml, opts) {
 		opts = opts || {};
 		if (opts.hideEmpty && !bodyHtml) return '';
-		return '<div class="app-show__section">' +
-			'<div class="app-show__section-header"><h3>' + esc(title) + '</h3></div>' +
-			'<div class="app-show__section-body">' + (bodyHtml || '<p class="app-show__empty">&mdash;</p>') + '</div>' +
-			'</div>';
+		var iconHtml = opts.icon ? '<span class="app-show__card-icon">' + opts.icon + '</span>' : '';
+		var aside = opts.aside ? '<span class="app-show__card-aside">' + opts.aside + '</span>' : '';
+		return '<section class="ds-card app-show__card">' +
+			'<div class="app-show__card-head">' +
+			'<div class="app-show__card-title">' + iconHtml + '<h2 class="ds-heading" data-size="xs">' + esc(title) + '</h2></div>' +
+			aside +
+			'</div>' +
+			(bodyHtml || '<p class="app-show__empty">&mdash;</p>') +
+			'</section>';
+	}
+
+	// Wrap label/value items (from field()) in a definition grid.
+	function defGrid(itemsHtml, cols) {
+		if (!itemsHtml) return '';
+		return '<dl class="app-show__def' + (cols === 3 ? ' app-show__def--3' : '') + '">' + itemsHtml + '</dl>';
 	}
 
 	function field(label, value) {
 		if (value == null || value === '') return '';
-		return '<div class="app-show__field">' +
-			'<span class="app-show__label">' + esc(label) + '</span>' +
-			'<span class="app-show__value">' + esc(value) + '</span>' +
-			'</div>';
+		return '<div><dt>' + esc(label) + '</dt><dd>' + esc(value) + '</dd></div>';
 	}
 
-	function fieldHtml(label, valueHtml) {
+	function fieldHtml(label, valueHtml, wide) {
 		if (!valueHtml) return '';
-		return '<div class="app-show__field">' +
-			'<span class="app-show__label">' + esc(label) + '</span>' +
-			'<span class="app-show__value">' + valueHtml + '</span>' +
-			'</div>';
+		return '<div' + (wide ? ' class="app-show__def-wide"' : '') + '><dt>' + esc(label) + '</dt><dd>' + valueHtml + '</dd></div>';
 	}
 
 	function showToast(message, type) {
 		var toast = document.createElement('div');
-		toast.className = 'app-alert app-alert-' + (type || 'success') + ' app-show__toast';
-		toast.textContent = message;
+		toast.className = 'ds-alert app-show__toast';
+		toast.setAttribute('data-color', type || 'success');
+		toast.setAttribute('role', 'status');
+		toast.innerHTML = '<p class="ds-paragraph">' + esc(message) + '</p>';
 		document.body.appendChild(toast);
 		setTimeout(function () { toast.remove(); }, 3000);
 	}
@@ -268,160 +312,153 @@
 		var isCO = tb.case_officer_is_current_user;
 		var hasCO = tb.has_case_officer;
 
+		var icons = ICONS;
+
 		function menuItem(label, opts) {
 			opts = opts || {};
 			var disabled = opts.disabled;
-			var cls = 'app-dropdown__item';
-			if (disabled) cls += ' app-show__toolbar-disabled';
-			var attrs = disabled ? ' aria-disabled="true" tabindex="-1"' : '';
+			var attrs = ' class="ds-dropdown__item"';
+			if (opts.color) attrs += ' data-color="' + esc(opts.color) + '"';
+			if (disabled) attrs += ' aria-disabled="true" tabindex="-1"';
+			if (opts.title) attrs += ' title="' + esc(opts.title) + '"';
 			if (opts.action) attrs += ' data-action="' + esc(opts.action) + '"';
+			var inner = (opts.icon || '') + '<span>' + esc(label) +
+				(opts.desc ? '<span class="ds-dropdown__item-desc">' + esc(opts.desc) + '</span>' : '') +
+				'</span>';
 			if (opts.href && !disabled) {
-				return '<a class="' + cls + '" href="' + esc(opts.href) + '"' + attrs + '>' + esc(label) + '</a>';
+				return '<li><a' + attrs + ' href="' + esc(opts.href) + '">' + inner + '</a></li>';
 			}
-			return '<button type="button" class="' + cls + '"' + attrs + '>' + esc(label) + '</button>';
+			return '<li><button type="button"' + attrs + '>' + inner + '</button></li>';
 		}
 
-		function dropdownGroup(triggerCls, triggerIcon, items) {
-			items = items.filter(function (item) { return !!item; });
-			var id = 'dd-' + Math.random().toString(36).substr(2, 6);
-			var html = '<div class="app-dropdown">';
-			html += '<button type="button" class="app-button ' + triggerCls + ' app-button-circle app-show__toolbar-trigger" aria-haspopup="true" aria-expanded="false" data-dropdown-id="' + id + '">';
-			html += triggerIcon;
-			html += '</button>';
-			html += '<ul class="app-dropdown__menu" id="' + id + '">';
-			items.forEach(function (item) {
-				if (item === 'divider') {
-					html += '<li class="app-dropdown__divider"></li>';
-				} else {
-					html += '<li>' + item + '</li>';
-				}
+		// Build a Designsystemet Dropdown (native Popover API).
+		// triggerAttrs is the ds-button attribute string (variant/color);
+		// groups is an array of { heading?, items: [<li>…] } separated by rules.
+		function dropdown(id, triggerAttrs, triggerHtml, groups) {
+			var html = '<button type="button" class="ds-button app-show__menu-trigger" ' + triggerAttrs + ' popovertarget="' + id + '">' + triggerHtml + '</button>';
+			html += '<div class="ds-dropdown app-show__menu" popover id="' + id + '">';
+			groups.forEach(function (g, i) {
+				if (i > 0) html += '<hr class="app-show__menu-sep">';
+				if (g.heading) html += '<h3>' + esc(g.heading) + '</h3>';
+				html += '<ul>' + g.items.filter(Boolean).join('') + '</ul>';
 			});
-			html += '</ul></div>';
+			html += '</div>';
 			return html;
 		}
 
-		var replyIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17l-5-5 5-5"/><path d="M4 12h11a4 4 0 010 8h-1"/></svg>';
-		var forwardIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>';
-		var actionsIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
-
 		var html = '<div class="app-show__toolbar">';
-		html += '<div class="app-show__toolbar-group">';
 
-		// Dropdown 1: Reply (green)
-		var replyItems = [];
-		replyItems.push(menuItem(lang('sendReplyToApplicant'), { disabled: !isCO, action: 'comment-modal' }));
-		replyItems.push(menuItem(lang('sendMessageToCaseOfficer'), {
-			disabled: !tb.messenger_enabled || isCO || !hasCO,
-			action: 'messenger-modal'
-		}));
-		replyItems.push(menuItem(lang('createInternalNote'), { disabled: !isCO, action: 'internal-note-modal' }));
-		html += dropdownGroup('app-button-success', replyIcon, replyItems);
+		// ── Reply / messages dropdown (secondary) ──
+		var svarItems = [
+			menuItem(lang('sendReplyToApplicant'), { disabled: !isCO, action: 'comment-modal', icon: icons.send }),
+			menuItem(lang('sendMessageToCaseOfficer'), {
+				disabled: !tb.messenger_enabled || isCO || !hasCO,
+				action: 'messenger-modal', icon: icons.message
+			}),
+			menuItem(lang('createInternalNote'), { disabled: !isCO, action: 'internal-note-modal', icon: icons.note })
+		];
+		html += dropdown('menu-svar', 'data-variant="secondary" data-color="neutral"',
+			icons.reply + esc(lang('reply')) + icons.chevron,
+			[{ items: svarItems }]);
 
-		// Dropdown 2: Forward (warning/orange)
-		var forwardItems = [];
-		forwardItems.push(menuItem(lang('changeCaseOfficer'), { action: 'change-user-modal' }));
-		html += dropdownGroup('app-button-warning', forwardIcon, forwardItems);
-
-		// Dropdown 3: Actions (primary/blue)
-		var actionItems = [];
-
+		// ── Actions dropdown (primary) ──
+		var caseGroup = [];
 		if (isCO) {
-			actionItems.push(menuItem(lang('unassignMe'), { action: 'unassign' }));
+			caseGroup.push(menuItem(lang('unassignMe'), { action: 'unassign', icon: icons.userCheck }));
 			var dashLabel = tb.display_in_dashboard === 1
 				? lang('hideFromDashboard')
 				: lang('displayInDashboard');
-			actionItems.push(menuItem(dashLabel, { action: 'toggle-dashboard' }));
+			caseGroup.push(menuItem(dashLabel, { action: 'toggle-dashboard', icon: icons.eye }));
 		} else {
 			var assignLabel = hasCO ? lang('reAssignToMe') : lang('assignToMe');
-			actionItems.push(menuItem(assignLabel, { action: 'assign' }));
+			caseGroup.push(menuItem(assignLabel, { action: 'assign', icon: icons.userCheck }));
 		}
+		caseGroup.push(menuItem(lang('changeCaseOfficer'), { action: 'change-user-modal', icon: icons.swap }));
 
-		actionItems.push('divider');
-
-		if (tb.show_reject) {
-			actionItems.push(menuItem(lang('rejectApplication'), {
-				disabled: !isCO, action: 'reject-modal'
-			}));
-		}
-
+		var decisionGroup = [];
 		if (tb.show_accept) {
 			if (tb.num_associations === 0) {
-				actionItems.push(menuItem(lang('acceptRequiresAssociations'), { disabled: true }));
+				decisionGroup.push(menuItem(lang('acceptRequiresAssociations'), { disabled: true, color: 'success', icon: icons.checkCircle }));
 			} else {
-				actionItems.push(menuItem(lang('acceptApplication'), {
-					disabled: !isCO, action: 'accept-modal'
+				decisionGroup.push(menuItem(lang('acceptApplication'), {
+					disabled: !isCO, color: 'success', action: 'accept-modal', icon: icons.checkCircle,
+					title: !isCO ? lang('notCaseOfficerWarning') : ''
 				}));
 			}
 		}
+		if (tb.show_reject) {
+			decisionGroup.push(menuItem(lang('rejectApplication'), {
+				disabled: !isCO, color: 'danger', action: 'reject-modal', icon: icons.xCircle,
+				title: !isCO ? lang('notCaseOfficerWarning') : ''
+			}));
+		}
 
-		actionItems.push('divider');
-
+		var docGroup = [];
 		if (tb.external_archive && !tb.external_archive_key) {
-			actionItems.push(menuItem(lang('pdfExportToArchive'), { disabled: !isCO, action: 'export-pdf' }));
-			actionItems.push(menuItem(lang('preview'), { disabled: !isCO, action: 'export-pdf-preview' }));
+			docGroup.push(menuItem(lang('pdfExportToArchive'), { disabled: !isCO, action: 'export-pdf', icon: icons.pdf }));
+			docGroup.push(menuItem(lang('preview'), { disabled: !isCO, action: 'export-pdf-preview', icon: icons.eye }));
 		}
-
-		actionItems.push(menuItem(lang('edit'), { disabled: !isCO, href: tb.edit_url }));
-
+		docGroup.push(menuItem(lang('edit'), { disabled: !isCO, href: tb.edit_url, icon: icons.edit }));
 		if (tb.show_edit_selection) {
-			actionItems.push(menuItem(lang('editInvoicing'), { disabled: !isCO, href: tb.edit_invoicing_url }));
+			docGroup.push(menuItem(lang('editInvoicing'), { disabled: !isCO, href: tb.edit_invoicing_url, icon: icons.edit }));
 		}
 
-		actionItems.push(menuItem(lang('backToDashboard'), { href: tb.dashboard_url }));
-		actionItems.push(menuItem(lang('backToOverview'), { href: tb.applications_url }));
-		html += dropdownGroup('app-button-primary', actionsIcon, actionItems);
+		var navGroup = [
+			menuItem(lang('backToDashboard'), { href: tb.dashboard_url, icon: icons.back }),
+			menuItem(lang('backToOverview'), { href: tb.applications_url, icon: icons.back })
+		];
 
-		html += '</div></div>';
+		var groups = [{ items: caseGroup }];
+		if (decisionGroup.length) groups.push({ items: decisionGroup });
+		groups.push({ items: docGroup });
+		groups.push({ items: navGroup });
+
+		html += dropdown('menu-handlinger', 'data-variant="primary" data-color="accent"',
+			esc(lang('actions')) + icons.chevron, groups);
+
+		html += '</div>';
 
 		renderToolbar._toolbarHtml = html;
 
 		var warningHtml = '';
 		if (!isCO) {
-			var warningIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> ';
-			if (!hasCO) {
-				warningHtml += '<div class="app-show__case-officer-warning" role="alert">';
-				warningHtml += warningIcon;
-				warningHtml += lang('noCaseOfficerWarning');
-				warningHtml += '</div>';
-			} else {
-				warningHtml += '<div class="app-show__case-officer-warning" role="alert">';
-				warningHtml += warningIcon;
-				warningHtml += lang('differentCaseOfficerWarning');
-				warningHtml += '</div>';
-			}
+			var warnText = !hasCO ? lang('noCaseOfficerWarning') : lang('differentCaseOfficerWarning');
+			warningHtml = '<div class="ds-alert app-show__alert" data-color="warning" role="alert">' +
+				'<p class="ds-paragraph">' + esc(warnText) + '</p></div>';
 		}
 		document.getElementById('application-toolbar').innerHTML = warningHtml;
 
-		// Dropdown toggle
+		// Close the dropdown once an enabled item is activated.
 		root.addEventListener('click', function (e) {
-			var trigger = e.target.closest('.app-show__toolbar-trigger');
-			if (trigger) {
-				e.stopPropagation();
-				var dd = trigger.closest('.app-dropdown');
-				var wasOpen = dd.classList.contains('show');
-				root.querySelectorAll('.app-dropdown.show').forEach(function (d) {
-					d.classList.remove('show');
-					d.querySelector('.app-show__toolbar-trigger').setAttribute('aria-expanded', 'false');
-				});
-				if (!wasOpen) {
-					dd.classList.add('show');
-					trigger.setAttribute('aria-expanded', 'true');
-				}
-				return;
-			}
-			root.querySelectorAll('.app-dropdown.show').forEach(function (d) {
-				d.classList.remove('show');
-				d.querySelector('.app-show__toolbar-trigger').setAttribute('aria-expanded', 'false');
-			});
+			var item = e.target.closest('.ds-dropdown__item');
+			if (!item || item.getAttribute('aria-disabled') === 'true') return;
+			var pop = item.closest('.ds-dropdown');
+			if (pop && pop.matches(':popover-open')) pop.hidePopover();
 		});
 
-		document.addEventListener('keydown', function (e) {
-			if (e.key === 'Escape') {
-				root.querySelectorAll('.app-dropdown.show').forEach(function (d) {
-					d.classList.remove('show');
-					d.querySelector('.app-show__toolbar-trigger').setAttribute('aria-expanded', 'false');
-				});
+		// Anchor each popover under its trigger (anchorless popover fallback).
+		function placePopover(pop) {
+			var trigger = document.querySelector('[popovertarget="' + pop.id + '"]');
+			if (!trigger) return;
+			var t = trigger.getBoundingClientRect();
+			var p = pop.getBoundingClientRect();
+			var gap = 6;
+			var left = Math.max(8, Math.min(t.right - p.width, window.innerWidth - p.width - 8));
+			var top = t.bottom + gap;
+			if (top + p.height > window.innerHeight - 8) top = Math.max(8, t.top - p.height - gap);
+			pop.style.position = 'fixed';
+			pop.style.margin = '0';
+			pop.style.left = left + 'px';
+			pop.style.top = top + 'px';
+		}
+		document.addEventListener('toggle', function (e) {
+			var pop = e.target;
+			if (e.newState === 'open' && pop.classList && pop.classList.contains('app-show__menu')) {
+				placePopover(pop);
 			}
+		}, true);
+		window.addEventListener('resize', function () {
+			root.querySelectorAll('.app-show__menu:popover-open').forEach(placePopover);
 		});
 
 		// Action handling
@@ -482,44 +519,42 @@
 			: lang('application') + ' #' + esc(app.id);
 		var html = '<div class="app-show__title-row">' +
 			'<div class="app-show__title-left">' +
-			'<h1 class="app-show__title">' + titleText + '</h1>' +
+			'<h1 class="ds-heading app-show__title" data-size="lg">' + titleText + '</h1>' +
 			statusTag(app.status) +
 			'</div>' +
 			toolbarHtml +
 			'</div>';
 
-		html += '<div class="app-show__meta">';
-		html += '<span class="app-show__meta-item">' + lang('building') + ': ' + esc(app.building_name);
+		// Key facts as a definition grid inside a card.
+		var buildingVal = esc(app.building_name);
 		if (app.building_id) {
-			html += ' <a href="javascript:void(0)" class="app-show__schedule-link" data-building-schedule="' + esc(app.building_id) + '" title="' + lang('schedule') + '">' +
-				'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
-				'</a>';
+			buildingVal += ' <a href="javascript:void(0)" class="app-show__schedule-link" data-building-schedule="' + esc(app.building_id) + '" title="' + lang('schedule') + '" aria-label="' + lang('schedule') + '">' + ICONS.calendar + '</a>';
 		}
-		html += '</span>';
-		html += '<span class="app-show__meta-item">' + lang('created') + ': ' + fmtDate(app.created) + '</span>';
+		var meta = '<dl><dt>' + lang('building') + '</dt><dd>' + buildingVal + '</dd></dl>';
+		meta += '<dl><dt>' + lang('created') + '</dt><dd>' + fmtDate(app.created) + '</dd></dl>';
 		if (app.modified) {
-			html += '<span class="app-show__meta-item">' + lang('modified') + ': ' + fmtDate(app.modified) + '</span>';
+			meta += '<dl><dt>' + lang('modified') + '</dt><dd>' + fmtDate(app.modified) + '</dd></dl>';
 		}
-		html += '<span class="app-show__meta-item">' + lang('caseOfficer') + ': ';
+		var officerVal;
 		if (app.case_officer_name) {
-			html += esc(app.case_officer_name);
+			officerVal = esc(app.case_officer_name);
 			if (app.case_officer_is_current_user) {
-				html += ' <span class="ds-tag" data-color="success">&#10003;</span>';
+				officerVal += ' <span class="ds-tag" data-color="success" data-size="sm">&#10003;</span>';
 			}
 		} else {
-			html += '<em>' + lang('notAssigned') + '</em>';
+			officerVal = '<em>' + lang('notAssigned') + '</em>';
 		}
-		html += '</span>';
+		meta += '<dl><dt>' + lang('caseOfficer') + '</dt><dd>' + officerVal + '</dd></dl>';
 		if (app.related_application_count > 1) {
-			html += '<span class="app-show__meta-item">' + lang('relatedApps') + ': ' + app.related_application_count + '</span>';
+			meta += '<dl><dt>' + lang('relatedApps') + '</dt><dd>' + app.related_application_count + '</dd></dl>';
 		}
 		if (app.num_associations > 0) {
-			html += '<span class="app-show__meta-item">' + lang('associations') + ': ' + app.num_associations + '</span>';
+			meta += '<dl><dt>' + lang('associations') + '</dt><dd>' + app.num_associations + '</dd></dl>';
 		}
 		if (app.toolbar && app.toolbar.external_archive_key) {
-			html += '<span class="app-show__meta-item">' + lang('archiveKey') + ': ' + esc(app.toolbar.external_archive_key) + '</span>';
+			meta += '<dl><dt>' + lang('archiveKey') + '</dt><dd>' + esc(app.toolbar.external_archive_key) + '</dd></dl>';
 		}
-		html += '</div>';
+		html += '<section class="ds-card app-show__meta">' + meta + '</section>';
 
 		document.getElementById('application-header').innerHTML = html;
 	}
@@ -539,7 +574,7 @@
 			var relHtml = '<div class="app-show__card-grid">';
 			related.forEach(function (rel) {
 				var isCurrent = rel.id === app.id;
-				relHtml += '<div class="app-show__app-card' + (isCurrent ? ' app-show__app-card--current' : '') + '">';
+				relHtml += '<div class="ds-card app-show__app-card' + (isCurrent ? ' app-show__app-card--current' : '') + '">';
 				relHtml += '<div class="app-show__app-card-header">';
 				relHtml += '<span>' + lang('application') + ' #' + rel.id + '</span>';
 				relHtml += ' ' + statusTag(rel.status);
@@ -579,7 +614,7 @@
 		contactHtml += field(lang('contactName'), app.contact_name);
 		contactHtml += field(lang('contactEmail'), app.contact_email);
 		contactHtml += field(lang('contactPhone'), app.contact_phone);
-		html += section(lang('contact'), contactHtml);
+		html += section(lang('contact'), defGrid(contactHtml, 3), { icon: ICONS.contact });
 
 		// Organization
 		if (app.organization) {
@@ -590,10 +625,10 @@
 				orgHtml += field(lang('inTaxRegister'),
 					(app.organization.in_tax_register === 1 || app.organization.in_tax_register === '1') ? lang('yes') : lang('no'));
 			}
-			html += section(lang('organization'), orgHtml);
+			html += section(lang('organization'), defGrid(orgHtml, 3), { icon: ICONS.building });
 		} else if (app.customer_identifier_type === 'ssn' && app.customer_ssn) {
 			var ssnHtml = field(lang('ssn'), app.customer_ssn.substring(0, 6) + '*****');
-			html += section(lang('invoice'), ssnHtml);
+			html += section(lang('invoice'), defGrid(ssnHtml, 3), { icon: ICONS.invoice });
 		}
 
 		// Invoice / Address
@@ -605,7 +640,7 @@
 		invoiceHtml += field(lang('zip'), app.responsible_zip_code);
 		invoiceHtml += field(lang('city'), app.responsible_city);
 		if (invoiceHtml) {
-			html += section(lang('invoice'), invoiceHtml);
+			html += section(lang('invoice'), defGrid(invoiceHtml, 3), { icon: ICONS.invoice });
 		}
 
 		// Event details, audience, agegroups (hidden for simple bookings)
@@ -613,13 +648,13 @@
 			var eventHtml = '';
 			eventHtml += field(lang('activity'), app.activity_name);
 			eventHtml += field(lang('eventName'), app.name);
-			eventHtml += fieldHtml(lang('description'), app.description ? escNl(app.description) : '');
-			eventHtml += fieldHtml(lang('equipment'), app.equipment ? escNl(app.equipment) : '');
 			eventHtml += field(lang('organizer'), app.organizer);
 			if (app.homepage) {
 				eventHtml += fieldHtml(lang('homepage'), '<a href="' + esc(app.homepage) + '" target="_blank">' + esc(app.homepage) + '</a>');
 			}
-			html += section(lang('description'), eventHtml);
+			eventHtml += fieldHtml(lang('description'), app.description ? escNl(app.description) : '', true);
+			eventHtml += fieldHtml(lang('equipment'), app.equipment ? escNl(app.equipment) : '', true);
+			html += section(lang('description'), defGrid(eventHtml, 2), { icon: ICONS.text });
 
 			var audienceData = data.audience || {};
 			var selected = audienceData.selected || [];
@@ -631,22 +666,25 @@
 				});
 				if (audienceNames.length > 0) {
 					html += section(lang('targetAudience'),
-						'<p>' + audienceNames.map(esc).join(', ') + '</p>');
+						'<div class="app-show__tags-row">' + audienceNames.map(function (n) {
+							return '<span class="ds-tag">' + esc(n) + '</span>';
+						}).join('') + '</div>',
+						{ icon: ICONS.target });
 				}
 			}
 
 			var rawAgegroups = data.agegroups || [];
 
 			function renderAgTable(groups) {
-				var tbl = '<table class="ds-table" data-border>' +
-					'<thead><tr><th>' + lang('name') + '</th><th>' + lang('male') + '</th><th>' + lang('female') + '</th></tr></thead><tbody>';
+				var tbl = '<table class="ds-table" data-size="sm" data-zebra>' +
+					'<thead><tr><th>' + lang('name') + '</th><th class="app-show__num">' + lang('male') + '</th><th class="app-show__num">' + lang('female') + '</th></tr></thead><tbody>';
 				var hasData = false;
 				(groups || []).forEach(function (ag) {
 					var m = parseInt(ag.male || 0);
 					var f = parseInt(ag.female || 0);
 					if (m > 0 || f > 0) {
 						hasData = true;
-						tbl += '<tr><td>' + esc(ag.name) + '</td><td>' + m + '</td><td>' + f + '</td></tr>';
+						tbl += '<tr><td>' + esc(ag.name) + '</td><td class="app-show__num">' + m + '</td><td class="app-show__num">' + f + '</td></tr>';
 					}
 				});
 				tbl += '</tbody></table>';
@@ -657,7 +695,7 @@
 				// Combined application — per-app or single depending on all_same
 				if (rawAgegroups.all_same) {
 					var agContent = renderAgTable((rawAgegroups.per_app[0] || {}).agegroups || []);
-					if (agContent) html += section(lang('participants'), agContent);
+					if (agContent) html += section(lang('participants'), agContent, { icon: ICONS.people });
 				} else {
 					var agContent = '';
 					(rawAgegroups.per_app || []).forEach(function (entry) {
@@ -678,12 +716,12 @@
 							agContent += '<h4>' + heading + '</h4>' + tbl;
 						}
 					});
-					if (agContent) html += section(lang('participants'), agContent);
+					if (agContent) html += section(lang('participants'), agContent, { icon: ICONS.people });
 				}
 			} else if (rawAgegroups.length > 0) {
 				// Single application — flat array
 				var agContent = renderAgTable(rawAgegroups);
-				if (agContent) html += section(lang('participants'), agContent);
+				if (agContent) html += section(lang('participants'), agContent, { icon: ICONS.people });
 			}
 		}
 
@@ -711,7 +749,7 @@
 		var dateParamsMap = {};
 
 		if (dates.length > 0 && !isRecurring) {
-			var datesHtml = '<table class="ds-table" data-border id="dates-table"><thead><tr>';
+			var datesHtml = '<table class="ds-table" data-size="sm" data-zebra id="dates-table"><thead><tr>';
 			if (isCombined) datesHtml += '<th>' + lang('application') + '</th>';
 			datesHtml += '<th>' + lang('from') + '</th><th>' + lang('to') + '</th><th>' + lang('resources') + '</th><th>' + lang('status') + '</th><th>' + lang('handling') + '</th></tr></thead><tbody>';
 			dates.forEach(function (d) {
@@ -740,7 +778,7 @@
 				dateParamsMap[d.id] = buildDateParams(app, d, flatAgegroups, data.audience || {});
 
 				// Action dropdown
-				var selectHtml = '<select class="app-show__date-select" data-date-id="' + d.id + '"';
+				var selectHtml = '<select class="ds-input app-show__date-select" data-size="sm" data-date-id="' + d.id + '"';
 				if (!isCO || hasAssoc) selectHtml += ' disabled';
 				selectHtml += '>';
 				if (hasAssoc) {
@@ -758,7 +796,7 @@
 				datesHtml += '<td>' + fmtDate(d.from_) + '</td><td>' + fmtDate(d.to_) + '</td><td>' + esc(d.resource_names) + '</td><td>' + collisionTag + scheduleIcon + '</td><td>' + selectHtml + '</td></tr>';
 			});
 			datesHtml += '</tbody></table>';
-			html += section(lang('dates'), datesHtml);
+			html += section(lang('dates'), datesHtml, { icon: ICONS.calendar });
 		}
 
 		// Delegated event: date action dropdown
@@ -835,7 +873,7 @@
 		// Documents
 		var docs = data.documents || [];
 		if (docs.length > 0) {
-			var docsHtml = '<table class="ds-table" data-border>' +
+			var docsHtml = '<table class="ds-table" data-size="sm" data-zebra>' +
 				'<thead><tr><th>' + lang('name') + '</th><th>' + lang('category') + '</th></tr></thead><tbody>';
 			docs.forEach(function (doc) {
 				var nameCell = doc.download_url
@@ -844,7 +882,7 @@
 				docsHtml += '<tr><td>' + nameCell + '</td><td>' + esc(doc.category) + '</td></tr>';
 			});
 			docsHtml += '</tbody></table>';
-			html += section(lang('documents'), docsHtml);
+			html += section(lang('documents'), docsHtml, { icon: ICONS.doc });
 		}
 
 		// Orders (only when articles config is enabled)
@@ -884,30 +922,30 @@
 				if (isCombined) {
 					ordersHtml += '<p>' + orders.length + ' ' + lang('orders') + '</p>';
 				}
-				ordersHtml += '<table class="ds-table" data-border>' +
-					'<thead><tr><th>' + lang('article') + '</th><th>' + lang('unit') + '</th><th>' + lang('unitPrice') + '</th><th>' + lang('tax') + '</th><th>' + lang('quantity') + '</th><th>' + lang('sum') + '</th></tr></thead><tbody>';
+				ordersHtml += '<table class="ds-table" data-size="sm" data-zebra>' +
+					'<thead><tr><th>' + lang('article') + '</th><th>' + lang('unit') + '</th><th class="app-show__num">' + lang('unitPrice') + '</th><th class="app-show__num">' + lang('tax') + '</th><th class="app-show__num">' + lang('quantity') + '</th><th class="app-show__num">' + lang('sum') + '</th></tr></thead><tbody>';
 				articleKeys.forEach(function (key) {
 					var a = articleMap[key];
-					ordersHtml += '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.unit) + '</td><td>' + a.unit_price.toFixed(2) + '</td><td>' + a.tax_per_unit.toFixed(2) + '</td><td>' + a.quantity + '</td><td>' + a.total.toFixed(2) + '</td></tr>';
+					ordersHtml += '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.unit) + '</td><td class="app-show__num">' + a.unit_price.toFixed(2) + '</td><td class="app-show__num">' + a.tax_per_unit.toFixed(2) + '</td><td class="app-show__num">' + a.quantity + '</td><td class="app-show__num">' + a.total.toFixed(2) + '</td></tr>';
 				});
 				ordersHtml += '</tbody>' +
-					'<tfoot><tr><td colspan="5">' + lang('sum') + ':</td><td>' + grandTotal.toFixed(2) + '</td></tr></tfoot>' +
+					'<tfoot><tr><td colspan="5">' + lang('sum') + ':</td><td class="app-show__num">' + grandTotal.toFixed(2) + '</td></tr></tfoot>' +
 					'</table>';
-				html += section(lang('orders'), ordersHtml);
+				html += section(lang('orders'), ordersHtml, { icon: ICONS.cart });
 			}
 		}
 
 		// Associations
 		var associations = data.associations || [];
 		if (associations.length > 0) {
-			var assocHtml = '<table class="ds-table" data-border>' +
-				'<thead><tr><th>ID</th><th>' + lang('type') + '</th><th>' + lang('from') + '</th><th>' + lang('to') + '</th><th>' + lang('cost') + '</th><th>' + lang('active') + '</th>';
+			var assocHtml = '<table class="ds-table" data-size="sm" data-zebra>' +
+				'<thead><tr><th>ID</th><th>' + lang('type') + '</th><th>' + lang('from') + '</th><th>' + lang('to') + '</th><th class="app-show__num">' + lang('cost') + '</th><th>' + lang('active') + '</th>';
 			if (isCO) assocHtml += '<th></th>';
 			assocHtml += '</tr></thead><tbody>';
 			associations.forEach(function (a) {
 				var activeLabel = (a.active === 1 || a.active === '1') ? lang('yes') : lang('no');
 				var costVal = (a.cost != null && a.cost !== '' && Number(a.cost) !== 0) ? Number(a.cost).toFixed(2) : '—';
-				assocHtml += '<tr><td>' + esc(a.id) + '</td><td>' + esc(a.type) + '</td><td>' + fmtDate(a.from_) + '</td><td>' + fmtDate(a.to_) + '</td><td>' + costVal + '</td><td>' + activeLabel + '</td>';
+				assocHtml += '<tr><td>' + esc(a.id) + '</td><td>' + esc(a.type) + '</td><td>' + fmtDate(a.from_) + '</td><td>' + fmtDate(a.to_) + '</td><td class="app-show__num">' + costVal + '</td><td>' + activeLabel + '</td>';
 				if (isCO) {
 					if (a.active === 1 || a.active === '1') {
 						assocHtml += '<td><button type="button" class="ds-button app-show__assoc-delete" data-variant="primary" data-color="danger" data-size="sm" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' + lang('delete') + '</button></td>';
@@ -918,17 +956,16 @@
 				assocHtml += '</tr>';
 			});
 			assocHtml += '</tbody></table>';
-			html += section(lang('associations'), assocHtml);
+			html += section(lang('associations'), assocHtml, { icon: ICONS.link });
 		}
 
 		// Recurring info — async loaded section
 		if (app.recurring_data) {
 			html += '<div id="recurring-section">' +
-				'<div class="app-show__section">' +
-				'<div class="app-show__section-header"><h3>' + esc(lang('recurring')) + '</h3></div>' +
-				'<div class="app-show__section-body">' +
-				'<div class="app-show__loading-inline"><div class="app-show__spinner"></div></div>' +
-				'</div></div></div>';
+				section(lang('recurring'),
+					'<div class="app-show__loading-inline">' + spinner('sm') + '</div>',
+					{ icon: ICONS.repeat }) +
+				'</div>';
 		}
 
 		document.getElementById('application-details').innerHTML = html;
@@ -948,18 +985,19 @@
 
 		// System-wide terms text (plain text from config textarea, must be escaped)
 		if (app.application_terms) {
-			html += '<div class="app-show__section"><div class="app-show__section-body">' + esc(app.application_terms) + '</div></div>';
+			html += '<section class="ds-card app-show__card">' + esc(app.application_terms) + '</section>';
 		}
 
 		// Regulation documents (building + resource docs)
 		var regDocs = app.regulation_documents || [];
 		if (regDocs.length > 0) {
-			var docsHtml = '<ul class="app-show__doc-list">';
+			var docsHtml = '<table class="ds-table" data-size="sm" data-zebra>' +
+				'<thead><tr><th>' + lang('name') + '</th></tr></thead><tbody>';
 			regDocs.forEach(function (doc) {
-				docsHtml += '<li><a href="' + esc(doc.download_url) + '">' + esc(doc.display_name) + '</a></li>';
+				docsHtml += '<tr><td><a href="' + esc(doc.download_url) + '">' + esc(doc.display_name) + '</a></td></tr>';
 			});
-			docsHtml += '</ul>';
-			html += section(lang('document'), docsHtml);
+			docsHtml += '</tbody></table>';
+			html += section(lang('document'), docsHtml, { icon: ICONS.doc });
 		}
 
 		// Footer text
@@ -971,9 +1009,7 @@
 		// This field is admin-authored rich text (via rich_text_editor), rendered
 		// with |raw in legacy Twig and disable-output-escaping in legacy XSL.
 		if (app.agreement_requirements) {
-			html += '<div class="app-show__section">' +
-				'<div class="app-show__section-header"><h3>' + lang('additionalRequirements') + '</h3></div>' +
-				'<div class="app-show__section-body">' + app.agreement_requirements + '</div></div>';
+			html += section(lang('additionalRequirements'), app.agreement_requirements, { icon: ICONS.doc });
 		}
 
 		if (!html) {
@@ -1041,10 +1077,9 @@
 		}).catch(function (err) {
 			var el = document.getElementById('recurring-section');
 			if (el) {
-				el.innerHTML = '<div class="app-show__section">' +
-					'<div class="app-show__section-header"><h3>' + esc(lang('recurring')) + '</h3></div>' +
-					'<div class="app-show__section-body"><p class="app-show__empty">' +
-					lang('error') + ': ' + esc(err.message) + '</p></div></div>';
+				el.innerHTML = section(lang('recurring'),
+					'<p class="app-show__empty">' + lang('error') + ': ' + esc(err.message) + '</p>',
+					{ icon: ICONS.repeat });
 			}
 		});
 	}
@@ -1061,19 +1096,18 @@
 
 		// Season info alert
 		if (season) {
-			html += '<div class="app-show__recurring-season-alert">' +
-				'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg> ' +
-				'<span>' + esc(lang('season')) + ': <strong>' + esc(season.name) + '</strong> (' +
-				esc(season.from_) + ' — ' + esc(season.to_) + ')</span>' +
+			html += '<div class="ds-alert app-show__alert" data-color="info">' +
+				'<p class="ds-paragraph">' + esc(lang('season')) + ': <strong>' + esc(season.name) + '</strong> (' +
+				esc(season.from_) + ' — ' + esc(season.to_) + ')</p>' +
 				'</div>';
 		}
 
 		// Recurring badges
 		html += '<div class="app-show__recurring-badges">';
-		html += '<span class="ds-tag" data-color="neutral">' +
+		html += '<span class="ds-tag" data-color="accent">' +
 			esc(lang('interval')) + ': ' + esc(preview.interval_weeks) + ' ' + esc(lang('weeks')) + '</span>';
 		if (items.length > 0) {
-			html += '<span class="ds-tag" data-color="neutral">' +
+			html += '<span class="ds-tag" data-color="accent">' +
 				esc(items[0].day_name) + '</span>';
 		}
 		html += '<span class="ds-tag" data-color="neutral">' +
@@ -1086,43 +1120,40 @@
 			html += '<span class="ds-tag" data-color="danger">' +
 				esc(counts.conflict) + ' ' + esc(lang('collision')) + '</span>';
 		}
-		html += '</div>';
 
-		// Create button
-		html += '<div class="app-show__recurring-actions">';
+		// Create button — sits on the same row as the tags, pushed to the right
 		if (counts.creatable > 0 && isCO) {
 			var btnLabel = counts.conflict > 0
 				? lang('createNonConflictingAllocations')
 				: lang('createAllAllocations');
-			html += '<button class="ds-button" data-variant="secondary" type="button" data-color="neutral" id="recurring-create-btn">' +
-				esc(btnLabel) + ' <span class="app-show__badge">' + esc(counts.creatable) + '</span></button>';
+			html += '<button class="ds-button app-show__recurring-create" data-variant="secondary" type="button" data-color="neutral" data-size="sm" id="recurring-create-btn">' +
+				esc(btnLabel) + ' <span class="ds-badge" data-color="neutral" data-count="' + esc(counts.creatable) + '"></span></button>';
 		} else if (counts.creatable === 0 && counts.existing > 0) {
-			html += '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" disabled>' +
+			html += '<button type="button" class="ds-button app-show__recurring-create" data-variant="secondary" data-color="neutral" data-size="sm" disabled>' +
 				esc(lang('allAllocationsCreated')) + '</button>';
 		} else if (!isCO && counts.creatable > 0) {
-			html += '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" disabled title="' + esc(lang('notCaseOfficerWarning')) + '">' +
-				esc(lang('createAllAllocations')) + ' <span class="app-show__badge">' + esc(counts.creatable) + '</span></button>';
+			html += '<button type="button" class="ds-button app-show__recurring-create" data-variant="secondary" data-color="neutral" data-size="sm" disabled title="' + esc(lang('notCaseOfficerWarning')) + '">' +
+				esc(lang('createAllAllocations')) + ' <span class="ds-badge" data-color="neutral" data-count="' + esc(counts.creatable) + '"></span></button>';
 		}
+		html += '</div>';
+
 		// Show summary from the last create action (persists across re-renders)
 		html += '<div id="recurring-summary">';
 		if (lastResult) {
-			html += '<div class="app-show__recurring-summary">';
 			if (lastResult.created && lastResult.created.length > 0) {
-				html += '<div class="app-show__recurring-summary--success">' +
-					esc(lastResult.created.length) + ' ' + esc(lang('successfullyCreated')) + '</div>';
+				html += '<div class="ds-alert app-show__alert" data-color="success"><p class="ds-paragraph">' +
+					esc(lastResult.created.length) + ' ' + esc(lang('successfullyCreated')) + '</p></div>';
 			}
 			if (lastResult.failed && lastResult.failed.length > 0) {
-				html += '<div class="app-show__recurring-summary--warning">' +
-					esc(lastResult.failed.length) + ' ' + esc(lang('collision')) + '</div>';
+				html += '<div class="ds-alert app-show__alert" data-color="danger"><p class="ds-paragraph">' +
+					esc(lastResult.failed.length) + ' ' + esc(lang('collision')) + '</p></div>';
 			}
-			html += '</div>';
 		}
-		html += '</div>';
 		html += '</div>';
 
 		// Preview table
 		if (items.length > 0) {
-			html += '<table class="ds-table" data-border id="recurring-table">' +
+			html += '<table class="ds-table" data-size="sm" data-zebra id="recurring-table">' +
 				'<thead><tr>' +
 				'<th>' + esc(lang('dates')) + '</th>' +
 				'<th>' + lang('from') + ' - ' + lang('to') + '</th>' +
@@ -1170,9 +1201,7 @@
 			html += '</tbody></table>';
 		}
 
-		el.innerHTML = '<div class="app-show__section">' +
-			'<div class="app-show__section-header"><h3>' + esc(lang('recurring')) + '</h3></div>' +
-			'<div class="app-show__section-body">' + html + '</div></div>';
+		el.innerHTML = section(lang('recurring'), html, { icon: ICONS.repeat });
 
 		// Create button handler
 		var createBtn = document.getElementById('recurring-create-btn');
@@ -1238,7 +1267,7 @@
 			});
 			var url = hospOrdersUrl + '?' + queryParts.join('&');
 
-			container.innerHTML = '<div class="app-show__loading-inline"><div class="app-show__spinner"></div></div>';
+			container.innerHTML = '<div class="app-show__loading-inline">' + spinner('sm') + '</div>';
 
 			fetchJson(url).then(function (orders) {
 				var html = '';
@@ -1301,7 +1330,7 @@
 				// We need to pass data again — simplest: just reload
 				var container = document.getElementById('application-hospitality-orders');
 				if (container) {
-					container.innerHTML = '<div class="app-show__loading-inline"><div class="app-show__spinner"></div></div>';
+					container.innerHTML = '<div class="app-show__loading-inline">' + spinner('sm') + '</div>';
 				}
 				var hospOrdersUrl = root.dataset.hospitalityOrdersUrl.split('?')[0];
 				var related = _hospOrdersHospitalities; // reuse cached
@@ -1336,57 +1365,45 @@
 		var existing = document.getElementById(id);
 		if (existing) existing.remove();
 
-		var modal = document.createElement('div');
-		modal.id = id;
-		modal.className = 'app-modal';
-		modal.innerHTML =
-			'<div class="app-modal-dialog app-modal-dialog-centered">' +
-			'<div class="app-modal-content">' +
-			'<div class="app-modal-header">' +
-			'<h3 style="margin:0">' + esc(title) + '</h3>' +
-			'<button type="button" class="app-btn-close" data-modal-close>&times;</button>' +
-			'</div>' +
-			'<div class="app-modal-body">' + bodyHtml + '</div>' +
-			'<div class="app-modal-footer">' + footerHtml + '</div>' +
-			'</div></div>';
+		var dlg = document.createElement('dialog');
+		dlg.id = id;
+		dlg.className = 'ds-dialog app-show__dialog';
+		dlg.innerHTML =
+			'<button type="button" class="app-show__dialog-close" data-command="close" data-modal-close aria-label="' + esc(lang('cancel')) + '"></button>' +
+			'<div class="ds-dialog__block"><h2 class="ds-heading" data-size="sm">' + esc(title) + '</h2></div>' +
+			'<div class="ds-dialog__block">' + bodyHtml + '</div>' +
+			'<div class="ds-dialog__block app-show__dialog-footer">' + footerHtml + '</div>';
 
-		document.body.appendChild(modal);
+		document.body.appendChild(dlg);
 
-		// Show
-		requestAnimationFrame(function () {
-			modal.classList.add('show');
+		// Close handlers: backdrop click + any [data-modal-close]; remove on close.
+		dlg.addEventListener('click', function (e) {
+			if (e.target === dlg || e.target.closest('[data-modal-close]')) closeModal(id);
 		});
+		dlg.addEventListener('close', function () { dlg.remove(); });
 
-		// Close handlers
-		modal.addEventListener('click', function (e) {
-			if (e.target === modal || e.target.closest('[data-modal-close]')) {
-				closeModal(id);
-			}
-		});
-		modal.addEventListener('keydown', function (e) {
-			if (e.key === 'Escape') closeModal(id);
-		});
+		if (typeof dlg.showModal === 'function') dlg.showModal();
 
 		// Focus first input
-		var firstInput = modal.querySelector('textarea, select, input');
+		var firstInput = dlg.querySelector('textarea, select, input');
 		if (firstInput) setTimeout(function () { firstInput.focus(); }, 50);
 
-		return modal;
+		return dlg;
 	}
 
 	function closeModal(id) {
-		var modal = document.getElementById(id);
-		if (modal) {
-			modal.classList.remove('show');
-			setTimeout(function () { modal.remove(); }, 200);
-		}
+		var dlg = document.getElementById(id);
+		if (!dlg) return;
+		if (dlg.open) dlg.close(); // 'close' listener removes it
+		else dlg.remove();
 	}
 
 	// ── Comment modal (reply to applicant) ─────────────────────────────
 
 	function showCommentModal() {
-		var body = '<label class="app-show__modal-label" for="modal-comment-text">' + esc(lang('writeReplyToApplicant')) + '</label>' +
-			'<textarea id="modal-comment-text" class="app-show__modal-textarea" rows="5"></textarea>';
+		var body = '<div class="ds-field" data-size="sm">' +
+			'<label class="ds-label" for="modal-comment-text">' + esc(lang('writeReplyToApplicant')) + '</label>' +
+			'<textarea id="modal-comment-text" class="ds-input" rows="5"></textarea></div>';
 		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
 			'<button type="button" class="ds-button" data-variant="primary" data-color="success" id="modal-comment-submit">' + esc(lang('send')) + '</button>';
 
@@ -1414,8 +1431,9 @@
 	// ── Internal note modal ────────────────────────────────────────────
 
 	function showInternalNoteModal() {
-		var body = '<label class="app-show__modal-label" for="modal-note-text">' + esc(lang('noteContent')) + '</label>' +
-			'<textarea id="modal-note-text" class="app-show__modal-textarea" rows="5"></textarea>';
+		var body = '<div class="ds-field" data-size="sm">' +
+			'<label class="ds-label" for="modal-note-text">' + esc(lang('noteContent')) + '</label>' +
+			'<textarea id="modal-note-text" class="ds-input" rows="5"></textarea></div>';
 		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
 			'<button type="button" class="ds-button" data-variant="primary" data-color="success" id="modal-note-submit">' + esc(lang('send')) + '</button>';
 
@@ -1443,9 +1461,11 @@
 	// ── Accept modal ───────────────────────────────────────────────────
 
 	function showAcceptModal() {
-		var body = '<label class="app-show__modal-label" for="modal-accept-text">' + esc(lang('acceptanceMessage')) + '</label>' +
-			'<textarea id="modal-accept-text" class="app-show__modal-textarea" rows="4" placeholder="' + esc(lang('optional')) + '"></textarea>' +
-			'<label class="app-show__modal-checkbox"><input type="checkbox" id="modal-accept-email" checked> ' + esc(lang('sendEmailToApplicant')) + '</label>';
+		var body = '<div class="ds-field" data-size="sm">' +
+			'<label class="ds-label" for="modal-accept-text">' + esc(lang('acceptanceMessage')) + '</label>' +
+			'<textarea id="modal-accept-text" class="ds-input" rows="4" placeholder="' + esc(lang('optional')) + '"></textarea></div>' +
+			'<div class="ds-field" data-size="sm"><input type="checkbox" class="ds-input" id="modal-accept-email" checked>' +
+			'<label class="ds-label" for="modal-accept-email">' + esc(lang('sendEmailToApplicant')) + '</label></div>';
 		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
 			'<button type="button" class="ds-button" data-variant="primary" data-color="success" id="modal-accept-submit">' + esc(lang('approve')) + '</button>';
 
@@ -1474,9 +1494,11 @@
 	// ── Reject modal ───────────────────────────────────────────────────
 
 	function showRejectModal() {
-		var body = '<label class="app-show__modal-label" for="modal-reject-text">' + esc(lang('rejectionReason')) + ' *</label>' +
-			'<textarea id="modal-reject-text" class="app-show__modal-textarea" rows="4" required></textarea>' +
-			'<label class="app-show__modal-checkbox"><input type="checkbox" id="modal-reject-email" checked> ' + esc(lang('sendEmailToApplicant')) + '</label>';
+		var body = '<div class="ds-field" data-size="sm">' +
+			'<label class="ds-label" for="modal-reject-text">' + esc(lang('rejectionReason')) + ' *</label>' +
+			'<textarea id="modal-reject-text" class="ds-input" rows="4" required></textarea></div>' +
+			'<div class="ds-field" data-size="sm"><input type="checkbox" class="ds-input" id="modal-reject-email" checked>' +
+			'<label class="ds-label" for="modal-reject-email">' + esc(lang('sendEmailToApplicant')) + '</label></div>';
 		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
 			'<button type="button" class="ds-button" data-variant="primary" data-color="danger" id="modal-reject-submit">' + esc(lang('rejectBtn')) + '</button>';
 
@@ -1509,10 +1531,12 @@
 	// ── Messenger modal ───────────────────────────────────────────────
 
 	function showMessengerModal() {
-		var body = '<label class="app-show__modal-label" for="modal-messenger-subject">' + esc(lang('subject')) + '</label>' +
-			'<input type="text" id="modal-messenger-subject" class="app-show__modal-input">' +
-			'<label class="app-show__modal-label" for="modal-messenger-content">' + esc(lang('message')) + '</label>' +
-			'<textarea id="modal-messenger-content" class="app-show__modal-textarea" rows="5"></textarea>';
+		var body = '<div class="ds-field" data-size="sm">' +
+			'<label class="ds-label" for="modal-messenger-subject">' + esc(lang('subject')) + '</label>' +
+			'<input type="text" id="modal-messenger-subject" class="ds-input"></div>' +
+			'<div class="ds-field" data-size="sm">' +
+			'<label class="ds-label" for="modal-messenger-content">' + esc(lang('message')) + '</label>' +
+			'<textarea id="modal-messenger-content" class="ds-input" rows="5"></textarea></div>';
 		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
 			'<button type="button" class="ds-button" data-variant="primary" data-color="success" id="modal-messenger-submit">' + esc(lang('send')) + '</button>';
 
@@ -1543,9 +1567,10 @@
 	// ── Change case officer modal ──────────────────────────────────────
 
 	function showChangeUserModal() {
-		var body = '<p>' + esc(lang('selectCaseOfficer')) + '</p>' +
-			'<select id="modal-user-select" class="app-show__modal-select">' +
-			'<option value="">' + esc(lang('loading')) + '...</option></select>';
+		var body = '<div class="ds-field" data-size="sm">' +
+			'<label class="ds-label" for="modal-user-select">' + esc(lang('selectCaseOfficer')) + '</label>' +
+			'<select id="modal-user-select" class="ds-input">' +
+			'<option value="">' + esc(lang('loading')) + '...</option></select></div>';
 		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
 			'<button type="button" class="ds-button" data-variant="primary" data-color="accent" id="modal-user-submit" disabled>' + esc(lang('send')) + '</button>';
 

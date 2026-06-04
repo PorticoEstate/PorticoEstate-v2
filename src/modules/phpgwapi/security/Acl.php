@@ -1391,13 +1391,17 @@ class Acl
 		return $apps;
 	}
 	/**
-	 * Get a list of users that have grants rights to their records at a location within an app
+	 * Get granted rights for the current account as a flat account-id map.
+	 *
+	 * This returns the legacy structure used by older callers:
+	 * account_id => bitmask of rights.
+	 * Group and user grants are merged into that single list.
 	 *
 	 * @param string $app      Application name
-	 *				if emptry string, value of $this->server_flags['currentapp'] is used
+	 *				If empty, value of $this->server_flags['currentapp'] is used.
 	 * @param string $location location within application
 	 *
-	 * @return array Array with account ids and corresponding rights
+	 * @return array<int,int> Map of account id to granted rights bitmask
 	 */
 	public function get_grants($app = '', $location = '')
 	{
@@ -1432,13 +1436,17 @@ class Acl
 		return $grant_rights;
 	}
 	/**
-	 * Get a list of users that have grants rights to their records at a location within an app
+	 * Get granted rights for the current account split into accounts and groups.
+	 *
+	 * This is the newer structured variant of get_grants(). It returns two
+	 * separate maps so callers can distinguish direct account grants from group
+	 * grants before applying their own logic.
 	 *
 	 * @param string $app      Application name
-	 *				if emptry string, value of $this->server_flags['currentapp'] is used
+	 *				If empty, value of $this->server_flags['currentapp'] is used.
 	 * @param string $location location within application
 	 *
-	 * @return array Array with account ids and corresponding rights
+	 * @return array{accounts: array<int,int>, groups: array<int,int>} Structured granted rights map
 	 */
 	public function get_grants2($app = '', $location = '')
 	{

@@ -57,7 +57,7 @@ class LocationFormHelper
         {
             if (isset($requestData[$key]))
             {
-                $normalized['values'][$key] = \Sanitizer::sanitize($requestData[$key], $type);
+                $normalized['values'][$key] = \Sanitizer::clean_value($requestData[$key], $type);
             }
         }
 

@@ -26,6 +26,16 @@ Companion example:
 - `doc/location_rest_client_migration.md` (Location-specific migration decisions)
 - `doc/uilocation_phase_a_contract_matrix.md` (Location contract freeze + parity tracking)
 
+## Module Note: Project (uiproject)
+
+The Project module now treats multi-upload as a REST-owned surface.
+
+- Client popup/upload target: `/property/project/{id}/multi-upload`
+- REST handlers: `ProjectController::buildMultiUploadFile()` and `ProjectController::handleMultiUploadFile()`
+- Legacy UI menuaction dispatch for multi-upload (`uiproject.build_multi_upload_file` / `uiproject.handle_multi_upload_file`) is disabled in `public_functions` as part of boundary hardening.
+
+This preserves `menuaction` for shell/navigation while keeping upload data/mutation traffic in REST.
+
 ## Core Strategy
 
 Adopt a **Strangler Fig** approach:

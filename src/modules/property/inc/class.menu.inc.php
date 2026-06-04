@@ -236,7 +236,7 @@
 					'check_missing_project_budget'	 => array
 						(
 						'text'	 => lang('check missing project budget'),
-						'url'	 => phpgw::link('/index.php', array('menuaction' => 'property.uiproject.check_missing_project_budget'))
+						'url'	 => phpgw::link('/property/project/reports/missing-project-budget')
 					)
 				);
 

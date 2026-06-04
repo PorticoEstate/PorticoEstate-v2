@@ -30,6 +30,7 @@ $scanSources = [
 	SRC_ROOT_PATH . '/modules/booking/controllers/EventController.php',
 	SRC_ROOT_PATH . '/modules/property/controllers/EntityController.php',
 	SRC_ROOT_PATH . '/modules/property/controllers/LocationController.php',
+	SRC_ROOT_PATH . '/modules/property/controllers/ProjectController.php',
 ];
 
 $exclude = [

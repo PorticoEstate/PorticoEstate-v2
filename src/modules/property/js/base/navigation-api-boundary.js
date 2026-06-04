@@ -174,8 +174,75 @@
 		};
 	}
 
+	function createProjectClients(form, deps)
+	{
+		var parsed = deps.parseURL(form.action);
+		var query = parsed.searchObject || {};
+
+		function buildEditUrl(projectId)
+		{
+			var clickHistory = query.click_history || '';
+			if (!clickHistory && typeof global.strBaseURL !== 'undefined' && global.strBaseURL)
+			{
+				var baseQuery = deps.parseURL(global.strBaseURL).searchObject || {};
+				clickHistory = baseQuery.click_history || '';
+			}
+
+			var url = 'index.php?menuaction=property.uiproject.edit&id=' + encodeURIComponent(projectId);
+			if (clickHistory)
+			{
+				url += '&click_history=' + encodeURIComponent(clickHistory);
+			}
+
+			return url;
+		}
+
+		function buildSaveRequest(currentProjectId)
+		{
+			var projectId = parseInt(currentProjectId, 10);
+			var isUpdate = !isNaN(projectId) && projectId > 0;
+			var basePath = isUpdate
+				? '/property/project/' + encodeURIComponent(projectId)
+				: '/property/project/create';
+
+			var clickHistory = query.click_history || '';
+			if (!clickHistory && typeof global.strBaseURL !== 'undefined' && global.strBaseURL)
+			{
+				var baseQuery = deps.parseURL(global.strBaseURL).searchObject || {};
+				clickHistory = baseQuery.click_history || '';
+			}
+
+			var queryParts = [];
+			if (clickHistory)
+			{
+				queryParts.push('click_history=' + encodeURIComponent(clickHistory));
+			}
+
+			var requestUrl = basePath;
+			if (queryParts.length)
+			{
+				requestUrl += '?' + queryParts.join('&');
+			}
+
+			return {
+				url: requestUrl,
+				method: isUpdate ? 'PUT' : 'POST'
+			};
+		}
+
+		return {
+			navigation: {
+				buildEditUrl: buildEditUrl
+			},
+			api: {
+				buildSaveRequest: buildSaveRequest
+			}
+		};
+	}
+
 	global.PorticoBoundaryClients = global.PorticoBoundaryClients || {
 		createLocationClients: createLocationClients,
-		createEntityClients: createEntityClients
+		createEntityClients: createEntityClients,
+		createProjectClients: createProjectClients
 	};
 })(window);

@@ -39,6 +39,7 @@ use App\modules\phpgwapi\services\Translation;
 	 */
 	class phpgwapi_menu
 	{
+		private const MENU_CACHE_TTL = 300; // 5 minutes
 
 		var $public_functions = array
 			(
@@ -57,6 +58,42 @@ use App\modules\phpgwapi\services\Translation;
 
 			$account_id = $userSettings['account_id'];
 			Cache::user_clear('phpgwapi', 'menu', $account_id);
+		}
+
+		/**
+		 * Clear all menu caches for the current user.
+		 * Call after config changes that affect menu structure.
+		 */
+		public static function clearAllMenuCaches(): void
+		{
+			$userSettings = Settings::getInstance()->get('user');
+			$accountId = $userSettings['account_id'] ?? 0;
+			if ($accountId) {
+				Cache::user_clear('phpgwapi', 'menu', $accountId);
+			}
+
+			// Clear session-level render_navbar caches for all app/template combos
+			$apps = array_keys($userSettings['apps'] ?? []);
+			$templateSets = ['digdir', 'bootstrap', 'portico'];
+			foreach ($apps as $app) {
+				foreach ($templateSets as $tpl) {
+					Cache::session_clear('phpgwapi', "menu_{$app}_{$tpl}");
+				}
+			}
+		}
+
+		private static function session_cache_get(string $module, string $id)
+		{
+			$entry = Cache::session_get($module, $id);
+			if (!is_array($entry) || !isset($entry['_ts']) || (time() - $entry['_ts']) > self::MENU_CACHE_TTL) {
+				return null;
+			}
+			return $entry['data'];
+		}
+
+		private static function session_cache_set(string $module, string $id, $data): void
+		{
+			Cache::session_set($module, $id, ['_ts' => time(), 'data' => $data]);
 		}
 
 		/**
@@ -407,7 +444,8 @@ HTML;
 			$serverSettings = Settings::getInstance()->get('server');
 			$templateSet = $serverSettings['template_set'] ?? 'digdir';
 			$local_menu_cache_key = "menu_{$app}_{$templateSet}";
-			if($disable_menu_cache || !$menu = Cache::session_get($local_menu_cache_key, $flags['menu_selection']))
+			$menu_selection_key = isset($flags['menu_selection']) && $flags['menu_selection'] ? $flags['menu_selection'] : 'menu_missing_selection';
+			if($disable_menu_cache || !$menu = self::session_cache_get($local_menu_cache_key, $menu_selection_key))
 			{
 				$menu_gross = execMethod("{$app}.menu.get_menu", 'horisontal');
 				$selection = explode('::', $flags['menu_selection']);
@@ -415,7 +453,7 @@ HTML;
 				$menu = self::_get_sub_menu($menu_gross['navigation'], $selection, $level);
 				if(!$disable_menu_cache)
 				{
-					Cache::session_set($local_menu_cache_key, isset($flags['menu_selection']) && $flags['menu_selection'] ? $flags['menu_selection'] : 'menu_missing_selection', $menu);
+					self::session_cache_set($local_menu_cache_key, $menu_selection_key, $menu);
 				}
 				unset($menu_gross);
 			}
@@ -523,12 +561,12 @@ HTML;
 			$serverSettings = Settings::getInstance()->get('server');
 			$templateSet = $serverSettings['template_set'] ?? 'digdir';
 			$menu_cache_key = "menu_{$app}_{$templateSet}";
-			if($disable_menu_cache || !$menu_gross = Cache::session_get('phpgwapi', $menu_cache_key))
+			if($disable_menu_cache || !$menu_gross = self::session_cache_get('phpgwapi', $menu_cache_key))
 			{
 				$menu_gross = execMethod("{$app}.menu.get_menu");
 				if(!$disable_menu_cache)
 				{
-					Cache::session_set('phpgwapi', $menu_cache_key, $menu_gross);
+					self::session_cache_set('phpgwapi', $menu_cache_key, $menu_gross);
 				}
 			}
 

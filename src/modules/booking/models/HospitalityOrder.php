@@ -74,18 +74,21 @@ class HospitalityOrder
     /**
      * When the order should be fulfilled/served (UTC ISO-8601 string)
      * @OA\Property(type="string", nullable=true, example="2026-03-04T18:30:00.000Z")
+     * @Timestamp(format="c", sourceTimezone="UTC")
      * @Expose
      */
     public $serving_time_iso;
 
     /**
      * @OA\Property(type="string", format="date-time")
+     * @Timestamp(format="c", sourceTimezone="UTC")
      * @Expose
      */
     public $created;
 
     /**
      * @OA\Property(type="string", format="date-time")
+     * @Timestamp(format="c", sourceTimezone="UTC")
      * @Expose
      */
     public $modified;

@@ -2055,11 +2055,7 @@ HTML;
 			$content_files[$z]['select_file']	 = "<input type='checkbox' {$_checked} name='values[file_action][workorder][]' value='{$files[$z]['file_id']}' title='{$lang_select_file}'>";
 		}
 
-		$project_link_file_data	 = array(
-			'menuaction' => 'property.uiproject.view_file',
-			'id'		 => $project['project_id']
-		);
-		$link_view_file			 = phpgw::link('/index.php', $project_link_file_data);
+		$link_view_file			 = phpgw::link('/property/project/files/view');
 
 
 		$files = $this->boproject->get_files($project['project_id']);

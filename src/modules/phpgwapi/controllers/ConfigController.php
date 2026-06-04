@@ -96,6 +96,9 @@ class ConfigController
             $config->config_data = $existing;
             $config->save_repository();
 
+            // Bust menu caches so config-driven menu changes take effect immediately
+            \phpgwapi_menu::clearAllMenuCaches();
+
             $response->getBody()->write(json_encode($existing));
             return $response->withHeader('Content-Type', 'application/json');
         } catch (Exception $e) {
@@ -105,4 +108,5 @@ class ConfigController
             );
         }
     }
+
 }

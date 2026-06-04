@@ -8,6 +8,7 @@ use App\modules\property\controllers\TenantController;
 use App\modules\property\controllers\TicketController;
 use App\modules\property\controllers\LocationController;
 use App\modules\property\controllers\EntityController;
+use App\modules\property\controllers\ProjectController;
 use App\controllers\GenericRegistryController;
 use Slim\Routing\RouteCollectorProxy;
 use App\modules\property\models\PropertyGenericRegistry;
@@ -137,12 +138,14 @@ $app->group('/property/entity', function (RouteCollectorProxy $group) use ($cont
 		$g->post('/list',          [$controller, 'listItems']);
 		$g->post('/create',        [$controller, 'store']);
 		$g->get('/download',       [$controller, 'download']);
+		$g->get('/schema',         [$controller, 'schema']);
 		$g->get('/{id:[0-9]+}',    [$controller, 'show']);
 		$g->put('/{id:[0-9]+}',    [$controller, 'update']);
 		$g->delete('/{id:[0-9]+}', [$controller, 'destroy']);
 
 		// Item sub-resources (id in path)
 		$g->post('/{id:[0-9]+}/files',     [$controller, 'getFiles']);
+		$g->get('/{id:[0-9]+}/files/image',      [$controller, 'viewImage']);
 		$g->post('/{id:[0-9]+}/related',   [$controller, 'getRelated']);
 		$g->post('/{id:[0-9]+}/target',    [$controller, 'getTarget']);
 		$g->post('/{id:[0-9]+}/documents', [$controller, 'getDocuments']);
@@ -161,6 +164,65 @@ $app->group('/property/entity', function (RouteCollectorProxy $group) use ($cont
 		$g->get('/cases-for-checklist', [$controller, 'getCasesForChecklist']);
 		$g->get('/assigned-history',    [$controller, 'assignedHistoryPopup']);
 	});
+})
+->addMiddleware(new AccessVerifier($container))
+->addMiddleware(new SessionsMiddleware($container));
+
+
+$app->group('/property/project', function (RouteCollectorProxy $group) use ($container)
+{
+	$controller = new ProjectController($container);
+
+	$group->get('', [$controller, 'index']);
+	$group->post('', [$controller, 'postCollection']);
+	$group->post('/datatable', [$controller, 'index']);
+	$group->get('/list', [$controller, 'listProjects']);
+	$group->post('/list', [$controller, 'listProjects']);
+	$group->post('/create', [$controller, 'store']);
+	$group->get('/files/view', [$controller, 'viewFile']);
+	$group->get('/files/image', [$controller, 'viewImage']);
+	$group->post('/{id:[0-9]+}/files', [$controller, 'getFiles']);
+	$group->get('/{id:[0-9]+}/files', [$controller, 'getFiles']);
+	$group->post('/{id:[0-9]+}/files/actions', [$controller, 'updateFileData']);
+	$group->get('/{id:[0-9]+}/multi-upload', [$controller, 'buildMultiUploadFile']);
+	$group->map(['POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'], '/{id:[0-9]+}/multi-upload', [$controller, 'handleMultiUploadFile']);
+	$group->get('/{id:[0-9]+}/orders', [$controller, 'getOrders']);
+	$group->post('/{id:[0-9]+}/orders', [$controller, 'getOrders']);
+	$group->get('/{id:[0-9]+}/vouchers', [$controller, 'getVouchers']);
+	$group->post('/{id:[0-9]+}/vouchers', [$controller, 'getVouchers']);
+	$group->get('/{id:[0-9]+}/other-projects', [$controller, 'getOtherProjects']);
+	$group->post('/{id:[0-9]+}/other-projects', [$controller, 'getOtherProjects']);
+	$group->get('/attachments', [$controller, 'getAttachment']);
+	$group->post('/attachments', [$controller, 'getAttachment']);
+	$group->get('/external-project', [$controller, 'getExternalProject']);
+	$group->get('/reports/download', [$controller, 'downloadProjects']);
+	$group->get('/reports/missing-project-budget', [$controller, 'checkMissingProjectBudget']);
+	$group->get('/lookups/category', [$controller, 'getCategoryLookup']);
+	$group->post('/lookups/category', [$controller, 'getCategoryLookup']);
+	$group->get('/lookups/b-account', [$controller, 'getBAccountLookup']);
+	$group->post('/lookups/b-account', [$controller, 'getBAccountLookup']);
+	$group->get('/lookups/ecodimb', [$controller, 'getEcodimbLookup']);
+	$group->post('/lookups/ecodimb', [$controller, 'getEcodimbLookup']);
+	$group->get('/{id:[0-9]+}/notify-contacts', [$controller, 'notifyContacts']);
+	$group->post('/{id:[0-9]+}/notify-contacts', [$controller, 'notifyContacts']);
+	$group->get('/{id:[0-9]+}', [$controller, 'show']);
+	$group->put('/{id:[0-9]+}', [$controller, 'update']);
+	$group->delete('/{id:[0-9]+}', [$controller, 'destroy']);
+})
+->addMiddleware(new AccessVerifier($container))
+->addMiddleware(new SessionsMiddleware($container));
+
+
+$app->group('/property/workorder', function (RouteCollectorProxy $group) use ($container)
+{
+	$controllerClass = '\\App\\modules\\property\\controllers\\WorkorderController';
+	$controller = new $controllerClass($container);
+
+	$group->get('/{id:[0-9]+}/files', [$controller, 'getFiles']);
+	$group->post('/{id:[0-9]+}/files', [$controller, 'getFiles']);
+	$group->post('/{id:[0-9]+}/files/actions', [$controller, 'updateFileData']);
+	$group->get('/{id:[0-9]+}/files-attachments', [$controller, 'getFilesAttachments']);
+	$group->post('/{id:[0-9]+}/files-attachments', [$controller, 'getFilesAttachments']);
 })
 ->addMiddleware(new AccessVerifier($container))
 ->addMiddleware(new SessionsMiddleware($container));

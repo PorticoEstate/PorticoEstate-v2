@@ -1590,7 +1590,7 @@ class booking_socompleted_reservation_export extends booking_socommon
 	 *
 	 * @return String Fields in csv format
 	 */
-	function format_to_csv_line(&$fields, $conf = array())
+	function format_to_csv_line($fields, $conf = array())
 	{
 		$conf = array_merge(array('sep' => ',', 'quote' => '"', 'crlf' => "\n"), $conf);
 
@@ -2542,7 +2542,8 @@ class booking_socompleted_reservation_export extends booking_socommon
 				$header['line_no'] = '0000'; //Nothing here according to example file but spec. says so
 				//Topptekst til faktura, knyttet mot fagavdeling
 				$header['long_info1'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $account_codes['invoice_instruction']), 0, 120), 120, ' ');
-				$header['long_info2'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $additional_invoice_information), 0, 120), 120, ' ');
+				$sanitized_additional_invoice_information = str_replace(array("\r", "\n", "\t"), ' ', $additional_invoice_information);
+				$header['long_info2'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $sanitized_additional_invoice_information), 0, 120), 120, ' ');
 				//Ordrenr. UNIKT, løpenr. genereres i booking ut fra gitt serie, eks. 38000000
 				$header['order_id'] = str_pad($order_id, 9, 0, STR_PAD_LEFT);
 				$stored_header['order_id'] = str_pad($order_id, 9, 0, STR_PAD_LEFT);
@@ -3360,7 +3361,8 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 			$header['line_no'] = '0000';
 			//Topptekst til faktura, knyttet mot fagavdeling
 			$header['long_info1'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $account_codes['invoice_instruction']), 0, 120), 120, ' ');
-			$header['long_info2'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $additional_invoice_information), 0, 120), 120, ' ');
+			$sanitized_additional_invoice_information = str_replace(array("\r", "\n", "\t"), ' ', $additional_invoice_information);
+			$header['long_info2'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $sanitized_additional_invoice_information), 0, 120), 120, ' ');
 			//Ordrenr. UNIKT, løpenr. genereres i booking ut fra gitt serie, eks. 38000000
 			$header['order_id'] = str_pad($order_id, 15, 0, STR_PAD_LEFT);
 			$stored_header['order_id'] = str_pad($order_id, 15, 0, STR_PAD_LEFT);

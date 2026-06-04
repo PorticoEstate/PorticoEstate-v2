@@ -335,7 +335,7 @@ class ApplicationService
             $baseUpdateData['customer_identifier_type'] = $data['customerType'];
             $baseUpdateData['customer_organization_number'] = $data['customerType'] === 'organization_number' ? $data['organizationNumber'] : null;
             $baseUpdateData['customer_organization_name'] = $data['customerType'] === 'organization_number' ? $data['organizationName'] : null;
-            $baseUpdateData['customer_ssn'] = $data['customerType'] === 'ssn' ? $this->userHelper->ssn : null;
+            $baseUpdateData['customer_ssn'] = $this->userHelper->ssn;
 
             // Handle organization ID
             if ($data['customerType'] === 'organization_number') {

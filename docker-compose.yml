@@ -43,6 +43,7 @@ services:
         environment:
             <<: *common-variables
             docker: "true"
+            ENABLE_ASYNC_CRON: "1"
         ports:
             - "8088:80"
         volumes:

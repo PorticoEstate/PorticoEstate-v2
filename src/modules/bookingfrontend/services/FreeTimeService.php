@@ -915,6 +915,18 @@ class FreeTimeService
 
 				$checkDate = clone $endTime;
 
+				// Guard against zero-/negative-length slots: a resource whose booking
+				// time config resolves to endTime <= startTime (e.g. all-zero
+				// booking_time_default_start/end with booking_time_minutes = 0) can never
+				// produce a bookable slot and leaves $checkDate unadvanced, which would
+				// otherwise spin this loop until PHP's max_execution_time fatal. Skip it.
+				if ($endTime <= $startTime) {
+					if ($this->debug) {
+						$this->tick("zero_length_slot_skip resource_{$resource['id']}: {$startTime->format('Y-m-d H:i')} -> {$endTime->format('Y-m-d H:i')}");
+					}
+					break;
+				}
+
 				// Season validation
 				$withinSeason = false;
 				foreach ($activeSeasons as $seasonId) {

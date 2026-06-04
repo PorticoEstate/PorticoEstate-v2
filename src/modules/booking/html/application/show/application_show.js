@@ -563,9 +563,9 @@
 				var editUrl = '/?menuaction=booking.uiapplication.edit&id=' + rel.id + '&selected_app_id=' + rel.id + '&hide_invoicing=1';
 				relHtml += '<div class="app-show__app-card-actions">';
 				if (isCO) {
-					relHtml += '<a class="app-button app-button-sm" href="' + esc(editUrl) + '">' + lang('edit') + '</a>';
+					relHtml += '<a class="ds-button" data-variant="secondary" data-color="neutral" data-size="sm" href="' + esc(editUrl) + '">' + lang('edit') + '</a>';
 				} else {
-					relHtml += '<span class="app-button app-button-sm app-show__toolbar-disabled" aria-disabled="true">' + lang('edit') + '</span>';
+					relHtml += '<span class="ds-button app-show__toolbar-disabled" data-variant="secondary" data-color="neutral" data-size="sm" aria-disabled="true">' + lang('edit') + '</span>';
 				}
 				relHtml += '</div>';
 				relHtml += '</div>';
@@ -910,7 +910,7 @@
 				assocHtml += '<tr><td>' + esc(a.id) + '</td><td>' + esc(a.type) + '</td><td>' + fmtDate(a.from_) + '</td><td>' + fmtDate(a.to_) + '</td><td>' + costVal + '</td><td>' + activeLabel + '</td>';
 				if (isCO) {
 					if (a.active === 1 || a.active === '1') {
-						assocHtml += '<td><button type="button" class="app-button app-button-sm app-button-danger app-show__assoc-delete" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' + lang('delete') + '</button></td>';
+						assocHtml += '<td><button type="button" class="ds-button app-show__assoc-delete" data-variant="primary" data-color="danger" data-size="sm" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' + lang('delete') + '</button></td>';
 					} else {
 						assocHtml += '<td></td>';
 					}
@@ -1094,13 +1094,13 @@
 			var btnLabel = counts.conflict > 0
 				? lang('createNonConflictingAllocations')
 				: lang('createAllAllocations');
-			html += '<button type="button" class="app-button app-button-success" id="recurring-create-btn">' +
+			html += '<button class="ds-button" data-variant="secondary" type="button" data-color="neutral" id="recurring-create-btn">' +
 				esc(btnLabel) + ' <span class="app-show__badge">' + esc(counts.creatable) + '</span></button>';
 		} else if (counts.creatable === 0 && counts.existing > 0) {
-			html += '<button type="button" class="app-button" disabled>' +
+			html += '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" disabled>' +
 				esc(lang('allAllocationsCreated')) + '</button>';
 		} else if (!isCO && counts.creatable > 0) {
-			html += '<button type="button" class="app-button" disabled title="' + esc(lang('notCaseOfficerWarning')) + '">' +
+			html += '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" disabled title="' + esc(lang('notCaseOfficerWarning')) + '">' +
 				esc(lang('createAllAllocations')) + ' <span class="app-show__badge">' + esc(counts.creatable) + '</span></button>';
 		}
 		// Show summary from the last create action (persists across re-renders)
@@ -1157,9 +1157,9 @@
 
 				// Action column
 				if (item.exists) {
-					html += '<td><a class="app-button app-button-sm" href="/?menuaction=booking.uiallocation.edit&id=' + esc(item.allocation_id) + '">' + esc(lang('show')) + '</a></td>';
+					html += '<td><a class="ds-button" data-variant="secondary" data-color="neutral" data-size="sm" href="/?menuaction=booking.uiallocation.edit&id=' + esc(item.allocation_id) + '">' + esc(lang('show')) + '</a></td>';
 				} else if (item.has_conflict) {
-					html += '<td><a class="app-button app-button-sm" href="' + esc(item.schedule_link) + '" target="_blank">' + esc(lang('schedule')) + '</a></td>';
+					html += '<td><a class="ds-button" data-variant="secondary" data-color="neutral" data-size="sm" href="' + esc(item.schedule_link) + '" target="_blank">' + esc(lang('schedule')) + '</a></td>';
 				} else {
 					html += '<td>&mdash;</td>';
 				}
@@ -1245,7 +1245,7 @@
 
 				// Create order button
 				html += '<div class="hosp-show__tab-actions" style="margin-bottom:0.75rem">' +
-					'<button type="button" class="app-button app-button-sm" data-action="create-hospitality-order">' +
+					'<button type="button" class="ds-button" data-variant="primary" data-color="accent" data-size="sm" data-action="create-hospitality-order">' +
 					esc(lang('createOrder')) + '</button></div>';
 
 				html += '<div id="application-hospitality-orders-list"></div>';
@@ -1312,7 +1312,7 @@
 				fetchJson(hospOrdersUrl + '?' + queryParts.join('&')).then(function (orders) {
 					if (container) {
 						var html = '<div class="hosp-show__tab-actions" style="margin-bottom:0.75rem">' +
-							'<button type="button" class="app-button app-button-sm" data-action="create-hospitality-order">' +
+							'<button type="button" class="ds-button" data-variant="primary" data-color="accent" data-size="sm" data-action="create-hospitality-order">' +
 							esc(lang('createOrder')) + '</button></div>' +
 							'<div id="application-hospitality-orders-list"></div>';
 						container.innerHTML = html;
@@ -1387,8 +1387,8 @@
 	function showCommentModal() {
 		var body = '<label class="app-show__modal-label" for="modal-comment-text">' + esc(lang('writeReplyToApplicant')) + '</label>' +
 			'<textarea id="modal-comment-text" class="app-show__modal-textarea" rows="5"></textarea>';
-		var footer = '<button type="button" class="app-button" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="app-button app-button-success" id="modal-comment-submit">' + esc(lang('send')) + '</button>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="ds-button" data-variant="primary" data-color="success" id="modal-comment-submit">' + esc(lang('send')) + '</button>';
 
 		showModal('comment-dialog', lang('sendReplyToApplicant'), body, footer);
 
@@ -1416,8 +1416,8 @@
 	function showInternalNoteModal() {
 		var body = '<label class="app-show__modal-label" for="modal-note-text">' + esc(lang('noteContent')) + '</label>' +
 			'<textarea id="modal-note-text" class="app-show__modal-textarea" rows="5"></textarea>';
-		var footer = '<button type="button" class="app-button" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="app-button app-button-success" id="modal-note-submit">' + esc(lang('send')) + '</button>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="ds-button" data-variant="primary" data-color="success" id="modal-note-submit">' + esc(lang('send')) + '</button>';
 
 		showModal('note-dialog', lang('createInternalNote'), body, footer);
 
@@ -1446,8 +1446,8 @@
 		var body = '<label class="app-show__modal-label" for="modal-accept-text">' + esc(lang('acceptanceMessage')) + '</label>' +
 			'<textarea id="modal-accept-text" class="app-show__modal-textarea" rows="4" placeholder="' + esc(lang('optional')) + '"></textarea>' +
 			'<label class="app-show__modal-checkbox"><input type="checkbox" id="modal-accept-email" checked> ' + esc(lang('sendEmailToApplicant')) + '</label>';
-		var footer = '<button type="button" class="app-button" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="app-button app-button-success" id="modal-accept-submit">' + esc(lang('approve')) + '</button>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="ds-button" data-variant="primary" data-color="success" id="modal-accept-submit">' + esc(lang('approve')) + '</button>';
 
 		showModal('accept-dialog', lang('acceptApplication'), body, footer);
 
@@ -1477,8 +1477,8 @@
 		var body = '<label class="app-show__modal-label" for="modal-reject-text">' + esc(lang('rejectionReason')) + ' *</label>' +
 			'<textarea id="modal-reject-text" class="app-show__modal-textarea" rows="4" required></textarea>' +
 			'<label class="app-show__modal-checkbox"><input type="checkbox" id="modal-reject-email" checked> ' + esc(lang('sendEmailToApplicant')) + '</label>';
-		var footer = '<button type="button" class="app-button" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="app-button app-button-danger" id="modal-reject-submit">' + esc(lang('rejectBtn')) + '</button>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="ds-button" data-variant="primary" data-color="danger" id="modal-reject-submit">' + esc(lang('rejectBtn')) + '</button>';
 
 		showModal('reject-dialog', lang('rejectApplication'), body, footer);
 
@@ -1513,8 +1513,8 @@
 			'<input type="text" id="modal-messenger-subject" class="app-show__modal-input">' +
 			'<label class="app-show__modal-label" for="modal-messenger-content">' + esc(lang('message')) + '</label>' +
 			'<textarea id="modal-messenger-content" class="app-show__modal-textarea" rows="5"></textarea>';
-		var footer = '<button type="button" class="app-button" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="app-button app-button-success" id="modal-messenger-submit">' + esc(lang('send')) + '</button>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="ds-button" data-variant="primary" data-color="success" id="modal-messenger-submit">' + esc(lang('send')) + '</button>';
 
 		showModal('messenger-dialog', lang('sendMessageToCaseOfficer'), body, footer);
 
@@ -1546,8 +1546,8 @@
 		var body = '<p>' + esc(lang('selectCaseOfficer')) + '</p>' +
 			'<select id="modal-user-select" class="app-show__modal-select">' +
 			'<option value="">' + esc(lang('loading')) + '...</option></select>';
-		var footer = '<button type="button" class="app-button" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="app-button app-button-primary" id="modal-user-submit" disabled>' + esc(lang('send')) + '</button>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="ds-button" data-variant="primary" data-color="accent" id="modal-user-submit" disabled>' + esc(lang('send')) + '</button>';
 
 		showModal('user-dialog', lang('changeCaseOfficer'), body, footer);
 

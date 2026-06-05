@@ -89,6 +89,7 @@ namespace Tests\Controllers
 			$this->assertStringContainsString("phpgw::link('/property/workorder/create'", $contents);
 			$this->assertStringContainsString('phpgw::link(\'/property/workorder/\' . (int)$id', $contents);
 			$this->assertStringNotContainsString('workorder_rest_save_form_action', $contents);
+			$this->assertStringNotContainsString("'property.uiworkorder.save'", $contents);
 		}
 	}
 }

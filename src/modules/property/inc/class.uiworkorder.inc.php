@@ -2335,11 +2335,6 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		$sum_estimated_cost		 = number_format((float)$sum_estimated_cost, 2, $this->decimal_separator, '.');
 		$values['calculation']	 = number_format((float)$values['calculation'], 2, $this->decimal_separator, '.');
 
-		$link_data = array(
-			'menuaction' => 'property.uiworkorder.save',
-			'id'		 => $id
-		);
-
 		$form_action = $mode == 'edit'
 			? ($id
 				? phpgw::link('/property/workorder/' . (int)$id, array())

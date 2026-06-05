@@ -83,19 +83,19 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		'add_invoice'				 => true,
 		'recalculate'				 => true,
 		'save'						 => true,
-		'get_vendor_contract'		 => true,
-		'get_eco_service'			 => true,
-		'get_ecodimb'				 => true,
-		'get_b_account'				 => true,
-		'get_unspsc_code'			 => true,
-		'receive_order'				 => true,
+		'get_vendor_contract'		 => false,
+		'get_eco_service'			 => false,
+		'get_ecodimb'			 => false,
+		'get_b_account'			 => false,
+		'get_unspsc_code'		 => false,
+		'receive_order'			 => false,
 		'handle_multi_upload_file'	 => true,
 		'build_multi_upload_file'	 => true,
-		'get_files'					 => true,
-		'get_files_attachments'		 => true,
+		'get_files'					 => false,
+		'get_files_attachments'		 => false,
 		'view_image'				 => true,
-		'get_other_orders'			 => true,
-		'update_file_data'			 => true
+		'get_other_orders'			 => false,
+		'update_file_data'			 => false
 	);
 
 	function __construct()

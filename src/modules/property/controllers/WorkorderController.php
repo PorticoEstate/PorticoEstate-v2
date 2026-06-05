@@ -3,6 +3,7 @@
 namespace App\modules\property\controllers;
 
 use App\Database\Db;
+use App\modules\property\helpers\WorkorderFormHelper;
 use JsonException;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -15,6 +16,7 @@ class WorkorderController
 {
 	private $bo = null;
 	private $bocommon = null;
+	private ?WorkorderFormHelper $formHelper = null;
 
 	public function __construct(ContainerInterface $container)
 	{
@@ -48,6 +50,21 @@ class WorkorderController
 	protected function hasEditAccess(): bool
 	{
 		return (bool)Acl::getInstance()->check('.project', ACL_EDIT, 'property');
+	}
+
+	protected function hasAddAccess(): bool
+	{
+		return (bool)Acl::getInstance()->check('.project', ACL_ADD, 'property');
+	}
+
+	private function formHelper(): WorkorderFormHelper
+	{
+		if ($this->formHelper === null)
+		{
+			$this->formHelper = new WorkorderFormHelper();
+		}
+
+		return $this->formHelper;
 	}
 
 	private function jsonResponse(Response $response, mixed $payload, int $statusCode = 200): Response
@@ -108,59 +125,15 @@ class WorkorderController
 		));
 	}
 
-	private function executeLegacySave(Request $request, array $input, int $id = 0): array
-	{
-		$originalPost = $_POST ?? array();
-		$originalRequest = $_REQUEST ?? array();
-
-		try
-		{
-			$_POST = is_array($input) ? $input : array();
-			$_REQUEST = array_merge($originalRequest, $_POST);
-
-			if ($id > 0)
-			{
-				$_POST['id'] = $id;
-				$_REQUEST['id'] = $id;
-			}
-
-			$_POST['phpgw_return_as'] = 'json';
-			$_REQUEST['phpgw_return_as'] = 'json';
-
-			$ui = CreateObject('property.uiworkorder');
-			$result = $ui->save();
-
-			if (!is_array($result))
-			{
-				throw new HttpBadRequestException($request, 'Invalid response from legacy workorder save');
-			}
-
-			$receipt = isset($result['receipt']) && is_array($result['receipt']) ? $result['receipt'] : array();
-			$errorList = isset($receipt['error']) && is_array($receipt['error']) ? $receipt['error'] : array();
-			$resolvedId = (int)($receipt['id'] ?? $_POST['id'] ?? $id);
-
-			return array(
-				'status' => empty($errorList) ? 'success' : 'error',
-				'data' => array('id' => $resolvedId),
-				'receipt' => $receipt,
-			);
-		}
-		finally
-		{
-			$_POST = $originalPost;
-			$_REQUEST = $originalRequest;
-		}
-	}
-
 	public function store(Request $request, Response $response): Response
 	{
-		if (!$this->hasEditAccess())
+		if (!$this->hasAddAccess())
 		{
 			throw new HttpForbiddenException($request, 'No add access to workorder');
 		}
 
 		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
-		$result = $this->executeLegacySave($request, $input, 0);
+		$result = $this->formHelper()->persistSave($request, $input, 0);
 		$statusCode = ($result['status'] === 'success') ? 201 : 400;
 
 		return $this->jsonResponse($response, $result, $statusCode);
@@ -180,7 +153,7 @@ class WorkorderController
 		}
 
 		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
-		$result = $this->executeLegacySave($request, $input, $id);
+		$result = $this->formHelper()->persistSave($request, $input, $id);
 		$statusCode = ($result['status'] === 'success') ? 200 : 400;
 
 		return $this->jsonResponse($response, $result, $statusCode);

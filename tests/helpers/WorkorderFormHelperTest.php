@@ -350,5 +350,59 @@ namespace Tests\Helpers
 			$this->assertContains('you are not approved for this dimb: 777', $result['errors']);
 			$this->assertContains('you do not have permission to approve this order', $result['errors']);
 		}
+
+		public function testPersistSaveAppendsMessagesToSuccessfulReceipt(): void
+		{
+			$helper = new WorkorderFormHelper();
+			$bo = new class
+			{
+				public function save(array $values, string $action, array $valuesAttribute): array
+				{
+					return array(
+						'id' => 501,
+						'message' => array(array('msg' => 'existing receipt message')),
+					);
+				}
+			};
+
+			$state = array(
+				'values' => array('title' => 'WO', 'id' => 0),
+				'values_attribute' => array(),
+				'is_edit' => false,
+				'errors' => array(),
+				'messages' => array('Ansvar er overstyrt av binding til art: 333 -> 444'),
+			);
+
+			$result = $helper->persistSave($state, $bo);
+			$this->assertSame(501, $result['id']);
+			$this->assertCount(2, $result['receipt']['message']);
+			$this->assertSame('existing receipt message', $result['receipt']['message'][0]['msg']);
+			$this->assertSame('Ansvar er overstyrt av binding til art: 333 -> 444', $result['receipt']['message'][1]['msg']);
+		}
+
+		public function testPersistSaveIncludesMessagesInErrorReceipt(): void
+		{
+			$helper = new WorkorderFormHelper();
+			$bo = new class
+			{
+				public function save(array $values, string $action, array $valuesAttribute): array
+				{
+					return array('id' => 999);
+				}
+			};
+
+			$state = array(
+				'values' => array('title' => 'WO'),
+				'values_attribute' => array(),
+				'is_edit' => false,
+				'errors' => array('Please select a valid dimb!'),
+				'messages' => array('Ansvar er overstyrt av binding til art: 333 -> 444'),
+			);
+
+			$result = $helper->persistSave($state, $bo);
+			$this->assertSame('error', $result['receipt']['status']);
+			$this->assertSame('Please select a valid dimb!', $result['receipt']['error'][0]['msg']);
+			$this->assertSame('Ansvar er overstyrt av binding til art: 333 -> 444', $result['receipt']['message'][0]['msg']);
+		}
 	}
 }

@@ -278,11 +278,17 @@ class WorkorderFormHelper
 
 	public function persistSave(array $state, object $bo): array
 	{
+		$messages = array_values(array_filter((array)($state['messages'] ?? array()), static function ($msg)
+		{
+			return is_string($msg) && $msg !== '';
+		}));
+
 		if (!empty($state['errors']))
 		{
 			$state['receipt'] = array(
 				'status' => 'error',
 				'error' => array_map(static fn(string $msg) => array('msg' => $msg), $state['errors']),
+				'message' => array_map(static fn(string $msg) => array('msg' => $msg), $messages),
 			);
 			return $state;
 		}
@@ -291,6 +297,19 @@ class WorkorderFormHelper
 		$receipt = $bo->save($state['values'], $action, $state['values_attribute']);
 
 		$state['receipt'] = is_array($receipt) ? $receipt : array();
+		if (!isset($state['receipt']['message']) || !is_array($state['receipt']['message']))
+		{
+			$state['receipt']['message'] = array();
+		}
+
+		if ($messages)
+		{
+			$state['receipt']['message'] = array_merge(
+				$state['receipt']['message'],
+				array_map(static fn(string $msg) => array('msg' => $msg), $messages)
+			);
+		}
+
 		$state['id'] = (int)($state['receipt']['id'] ?? $state['values']['id'] ?? 0);
 		return $state;
 	}

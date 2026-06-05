@@ -3,6 +3,7 @@
 namespace App\modules\bookingfrontend\services\applications;
 
 use App\Database\Db;
+use App\modules\booking\services\NotificationService;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\interfaces\CommentsServiceInterface;
 use App\modules\bookingfrontend\models\ApplicationComment;
@@ -118,6 +119,13 @@ class ApplicationCommentsService implements CommentsServiceInterface
             $this->sendAdminNotification($applicationId, $comment);
 
             $this->db->commit();
+
+            // Create in-app notification for the case officer (non-fatal)
+            try {
+                $this->notifyCaseOfficer($applicationId, (int) $commentId, $author, $comment);
+            } catch (Exception $e) {
+                error_log("Failed to create case officer notification for application {$applicationId}: " . $e->getMessage());
+            }
 
             // Convert to ApplicationComment model and return serialized
             $comment = new ApplicationComment($createdComment);
@@ -269,6 +277,37 @@ class ApplicationCommentsService implements CommentsServiceInterface
         }
 
         return $stats;
+    }
+
+    /**
+     * Create an in-app notification for the case officer when a frontend user posts a comment.
+     *
+     * @param int    $applicationId Application ID
+     * @param int    $commentId     Created comment ID
+     * @param string $authorName    Comment author name
+     * @param string $commentText   Comment text
+     */
+    private function notifyCaseOfficer(int $applicationId, int $commentId, string $authorName, string $commentText): void
+    {
+        $sql = "SELECT case_officer_id FROM bb_application WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$applicationId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $caseOfficerId = (int) ($row['case_officer_id'] ?? 0);
+        if ($caseOfficerId === 0) {
+            return;
+        }
+
+        $notificationService = new NotificationService();
+        $notificationService->createCommentNotification(
+            $applicationId,
+            $commentId,
+            $authorName,
+            $commentText,
+            'phpgw_accounts',
+            strval($caseOfficerId)
+        );
     }
 
 }

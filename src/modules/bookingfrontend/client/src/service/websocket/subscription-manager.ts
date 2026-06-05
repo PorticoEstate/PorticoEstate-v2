@@ -39,6 +39,8 @@ const SILENT_SOCKET_TYPES: Record<WebSocketMessage['type'], boolean> = {
 	'connection_success': true,
 	session_update_confirmation: true,
 	partial_applications_response: false,
+	delivered_applications_response: false,
+	application_detail_response: false,
 	free_time_response: false,
 	create_application_response: false,
 	delete_application_response: false,

@@ -1,18 +1,12 @@
 import React from 'react';
-import { fetchDeliveredApplications } from "@/service/api/api-utils";
 import ApplicationsTable from '@/components/user/application/applications-table';
-import PageHeader from '@/components/page-header/page-header';
-import { getTranslation } from "@/app/i18n";
 
-export default async function ApplicationsPage() {
-  const { t } = await getTranslation();
-
-  // Fetch delivered applications on the server using the enhanced function with cookie authentication
-  const applications = await fetchDeliveredApplications(true);
-
+export default function ApplicationsPage() {
+  // Data is fetched client-side via useApplications hook to avoid blocking page render.
+  // The server-side prefetch was removed because the query is slow (~3500 DB queries for 500+ apps).
   return (
     <main>
-      <ApplicationsTable initialApplications={applications} />
+      <ApplicationsTable />
     </main>
   );
 }

@@ -602,6 +602,11 @@
 				}
 			}
 
+			// Default precision for int types when not specified
+			if ($iPrecision === 0 && in_array($sType, ['int', 'auto'])) {
+				$iPrecision = 4;
+			}
+
 			// Translate the type for the DBMS
 			$sBufNullable = '';
 			$sBufDefault = '';

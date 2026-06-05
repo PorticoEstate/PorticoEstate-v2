@@ -967,3 +967,5 @@ select_hospitality	bookingfrontend	no	Velg servering
 cancellation_deadline_info	bookingfrontend	no	Kan avbestilles innen %1
 cancellation_deadline_passed	bookingfrontend	no	Avbestillingsfristen har utløpt
 cancellation_deadline_passed_warning	bookingfrontend	no	Avbestillingsfristen har utløpt. Hvis du bestiller vil du ikke kunne avbestille.
+close_calendar_without_season	bookingfrontend	no	Steng kalender når bygg mangler sesong
+close_calendar_without_season_note	bookingfrontend	no	Når aktiv vises bygg uten definert sesong som stengt

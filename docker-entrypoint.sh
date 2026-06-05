@@ -85,9 +85,6 @@ else
     fi
 fi
 
-# Install asyncservices cron job
-/bin/sh -c "echo '*/5 * * * * /usr/local/bin/php -q /var/www/html/src/modules/phpgwapi/cron/asyncservices.php default' | sudo -u www-data crontab - "
-
 set -e
 
 # Create log directory for Supervisor
@@ -110,6 +107,12 @@ a2enmod proxy proxy_http proxy_wstunnel rewrite
 mkdir -p /var/log/apache2
 touch /var/log/apache2/websocket.log
 (tail -f /var/log/apache2/websocket.log | sed 's/^/WEBSOCKET: /' &)
+
+# Install asyncservices cron job (only on selected services via env flag)
+if [ "${ENABLE_ASYNC_CRON}" = "1" ]; then
+    echo "*/5 * * * * /usr/local/bin/php -q /var/www/html/src/modules/phpgwapi/cron/asyncservices.php default" | sudo -u www-data crontab -
+    log "Asyncservices cron job installed for www-data"
+fi
 
 # Start all services with Supervisor
 log "Starting all services with Supervisor..."

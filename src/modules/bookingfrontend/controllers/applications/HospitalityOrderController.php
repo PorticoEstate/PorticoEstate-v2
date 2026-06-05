@@ -160,7 +160,12 @@ class HospitalityOrderController
 
 			$orders = $this->orderRepo->getOrdersWithLinesByApplication($applicationId);
 
-			return ResponseHelper::sendJSONResponse($orders, 200, $response);
+			$serialized = array_map(
+				fn($order) => (new HospitalityOrder($order))->serialize(),
+				$orders
+			);
+
+			return ResponseHelper::sendJSONResponse($serialized, 200, $response);
 		} catch (Exception $e) {
 			error_log("Error in getOrders: " . $e->getMessage());
 			return ResponseHelper::sendErrorResponse(['error' => 'Failed to retrieve orders'], 500, $response);
@@ -298,7 +303,7 @@ class HospitalityOrderController
 
 			$order = $this->orderRepo->getOrderWithLines($orderId);
 
-			return ResponseHelper::sendJSONResponse($order, 201, $response);
+			return ResponseHelper::sendJSONResponse((new HospitalityOrder($order))->serialize(), 201, $response);
 		} catch (Exception $e) {
 			error_log("Error in createOrder: " . $e->getMessage());
 			return ResponseHelper::sendErrorResponse(['error' => 'Failed to create order'], 500, $response);
@@ -434,7 +439,7 @@ class HospitalityOrderController
 
 			$updatedOrder = $this->orderRepo->getOrderWithLines($orderId);
 
-			return ResponseHelper::sendJSONResponse($updatedOrder, 200, $response);
+			return ResponseHelper::sendJSONResponse((new HospitalityOrder($updatedOrder))->serialize(), 200, $response);
 		} catch (Exception $e) {
 			error_log("Error in updateOrder: " . $e->getMessage());
 			return ResponseHelper::sendErrorResponse(['error' => 'Failed to update order'], 500, $response);

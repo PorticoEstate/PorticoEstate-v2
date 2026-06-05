@@ -88,6 +88,13 @@ class BookingfrontendConfig
      */
     public $highlighted_buildings = [];
 
+    /**
+     * @OA\Property(type="boolean")
+	 * @Expose
+	 * @ParseBool
+     */
+    public $close_calendar_without_season = true;
+
     public function __construct(?array $data)
     {
         if (is_array($data))

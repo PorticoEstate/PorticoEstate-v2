@@ -376,7 +376,8 @@ class WorkorderController
 				{
 					foreach ($decodedTags as $tag)
 					{
-						$tags[] = Db::getInstance()->stripslashes((string)$tag);
+						$tagValue = (string)$tag;
+						$tags[] = Db::getInstance()->stripslashes($tagValue);
 					}
 				}
 			}

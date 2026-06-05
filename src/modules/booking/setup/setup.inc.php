@@ -135,5 +135,6 @@ $setup_info['booking']['hooks'] = [
 	'after_navbar'	=> 'booking.hook_helper.after_navbar',
 	'resource_add' => 'booking.hook_helper.resource_add',
 	'home' => 'booking.hook_helper.home',
-	'config'
+	'config',
+	'config_validate'
 ];

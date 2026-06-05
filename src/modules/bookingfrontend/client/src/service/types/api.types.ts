@@ -104,6 +104,7 @@ export interface IBookingfrontendConfig {
 	url_uustatus?: string;
 	url_system_feedback?: string;
 	highlighted_buildings: number[]; // Up to 6 highlighted buildings, could be none
+	close_calendar_without_season?: boolean; // When true, buildings with no seasons are fully closed. Defaults to true.
 }
 
 

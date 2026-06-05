@@ -270,6 +270,16 @@ class EntityControllerTest extends TestCase
 				return $this->boStub;
 			}
 
+			protected function assertEntityGrants(
+				ServerRequestInterface $request,
+				array $args,
+				int $aclType,
+				string $message
+			): void {
+				// Keep controller unit tests focused on endpoint behavior and payload shaping.
+				// Grant-path behavior is covered separately in integration-style tests.
+			}
+
 			protected function formHelper(): EntityFormHelper
 			{
 				if ($this->helperStub)

@@ -1042,3 +1042,5 @@ upload_failed	bookingfrontend	en	Upload failed
 reply	bookingfrontend	en	Reply
 no documents available	bookingfrontend	en	No documents available
 new_comment_notification	bookingfrontend	en	%1 wrote a comment
+close_calendar_without_season	bookingfrontend	en	Close calendar when building has no season
+close_calendar_without_season_note	bookingfrontend	en	When enabled, buildings without a defined season are shown as closed

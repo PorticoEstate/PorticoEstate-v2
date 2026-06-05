@@ -168,13 +168,16 @@
 >
 	{# Loading state — replaced by JS once data arrives #}
 	<div id="application-loading" class="app-show__loading">
-		<div class="app-show__spinner"></div>
+		<svg class="ds-spinner" data-size="md" viewBox="0 0 50 50" role="img" aria-label="{{ lang('common.loading') }}">
+			<circle class="ds-spinner__background" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+			<circle class="ds-spinner__circle" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+		</svg>
 		<p>{{ lang('common.loading') }}...</p>
 	</div>
 
 	{# Error state — shown by JS on fetch failure #}
-	<div id="application-error" class="app-show__error" hidden>
-		<p id="application-error-message"></p>
+	<div id="application-error" class="ds-alert app-show__alert" data-color="danger" role="alert" hidden>
+		<p class="ds-paragraph" id="application-error-message"></p>
 	</div>
 
 	{# Content — populated by JS #}
@@ -185,7 +188,8 @@
 		{# Header #}
 		<div id="application-header" class="app-show__header"></div>
 
-		{# Tab navigation #}
+		{# Tabs (Designsystemet) #}
+		<div class="ds-tabs app-show__tabs-wrap">
 		<div class="app-show__tabs" role="tablist">
 			<button class="app-show__tab app-show__tab--active" role="tab" aria-selected="true" data-tab="details">
 				{{ lang('booking.details') }}
@@ -232,6 +236,7 @@
 			<div id="application-hospitality-orders"></div>
 		</div>
 		{% endif %}
+		</div>{# /ds-tabs #}
 	</div>
 </div>
 {% endblock %}

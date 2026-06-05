@@ -462,6 +462,7 @@ class property_solocation
 
 		$cols_return = array();
 		$uicols = array();
+		$cols = '';
 		if (!$sql)
 		{
 			$location_types = $this->soadmin_location->select_location_type();
@@ -1976,6 +1977,8 @@ class property_solocation
 		for ($type_id = $m; $type_id > 1; $type_id--)
 		{
 			$parent_table = 'fm_location' . ($type_id - 1);
+			$outdated = array();
+			$update = array();
 
 			$joinmethod .= " $this->join $parent_table";
 
@@ -2032,8 +2035,8 @@ class property_solocation
 
 			unset($outdated);
 			unset($update);
-			unset($joinmethod);
-			unset($paranthesis);
+			$joinmethod = '';
+			$paranthesis = '';
 		}
 
 		$this->db->transaction_commit();
@@ -2217,8 +2220,13 @@ class property_solocation
 		));
 	}
 
-	function read_summary($data = '')
+	function read_summary($data = array())
 	{
+		$filter			 = 0;
+		$type_id		 = 0;
+		$district_id	 = 0;
+		$part_of_town_id = 0;
+		$dry_run		 = false;
 		if (is_array($data))
 		{
 			$filter			 = isset($data['filter']) && $data['filter'] ? (int)$data['filter'] : 0;

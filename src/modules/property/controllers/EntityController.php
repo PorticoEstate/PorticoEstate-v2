@@ -3,6 +3,7 @@
 namespace App\modules\property\controllers;
 
 use App\Database\Db;
+use App\modules\property\helpers\BoCommon;
 use App\modules\property\helpers\EntityFormHelper;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\services\Cache;
@@ -137,6 +138,10 @@ class EntityController
 		)
 		{
 			$aclCheckLocation = ".{$bo->type}.{$bo->entity_id}";
+			if ($bo->cat_id > 0)
+			{
+				$aclCheckLocation .= ".{$bo->cat_id}";
+			}
 		}
 
 		$app = $bo->type_app[$bo->type] ?? 'property';
@@ -185,6 +190,33 @@ class EntityController
 		}
 
 		return $bo;
+	}
+
+	protected function assertEntityGrants(Request $request, array $args, int $aclType, string $message): void
+	{
+		$bo = $this->bo($args);
+		$item = $bo->so->read_single([
+			'entity_id' => (int)$args['entity_id'],
+			'cat_id' => (int)$args['cat_id'],
+			'id' => (int)$args['id']
+		]);
+
+		if (empty($item))
+		{
+			throw new HttpNotFoundException($request, 'Entity item not found');
+		}
+
+		$item_owner = $item['user_id'] ?? null;
+		$acl = \App\modules\phpgwapi\security\Acl::getInstance();
+		$context = $this->resolveAclContext($args);
+		$grants = $acl->get_grants2($context['app'], $context['acl_check_location']);
+
+		$BoCommon = new BoCommon();
+
+		if (!$BoCommon->checkPerms2($item_owner, $grants, $aclType))
+		{
+			throw new HttpForbiddenException($request, $message);
+		}
 	}
 
 	/**
@@ -269,7 +301,7 @@ class EntityController
 	/**
 	 * Return request body as array, with JSON fallback when parsed body is empty.
 	 */
-	private function requestBodyArray(Request $request): array
+	private function requestBodyAsArray(Request $request): array
 	{
 		$parsed = $request->getParsedBody();
 		if (is_array($parsed))
@@ -280,16 +312,24 @@ class EntityController
 		$rawBody = (string)$request->getBody();
 		if ($rawBody === '')
 		{
-			return [];
+			return array();
 		}
 
-		$decoded = json_decode($rawBody, true);
-		if (!is_array($decoded))
+		$contentType = strtolower((string)$request->getHeaderLine('Content-Type'));
+		if (strpos($contentType, 'application/json') !== false)
 		{
-			throw new HttpBadRequestException($request, 'Invalid JSON request body');
+			$decoded = json_decode($rawBody, true);
+			if (!is_array($decoded))
+			{
+				throw new HttpBadRequestException($request, 'Invalid JSON request body');
+			}
+
+			return $decoded;
 		}
 
-		return $decoded;
+		$decoded = array();
+		parse_str($rawBody, $decoded);
+		return is_array($decoded) ? $decoded : array();
 	}
 
 	/**
@@ -357,9 +397,9 @@ class EntityController
 	 *
 	 * @return array{values: array, values_attribute: array, values_checklist_stage: mixed}
 	 */
-	private function normalizedSavePayload(Request $request): array
+	private function normalizedSavePayload(Request $request, array $input): array
 	{
-		$body = $this->requestBodyArray($request);
+		$body = $input;
 
 		if (isset($body['values']) && !is_array($body['values']))
 		{
@@ -396,9 +436,9 @@ class EntityController
 	 *
 	 * This replaces the legacy collect_locationdata() bridge for REST saves.
 	 */
-	private function applyRelationInfoPayload(array $values, \property_boentity $bo, Request $request): array
+	private function applyRelationInfoPayload(array $values, \property_boentity $bo, array $input): array
 	{
-		$body = $this->requestBodyArray($request);
+		$body = $input;
 
 		$relationInfo = [];
 		if (isset($body['RelationInfo']) && is_array($body['RelationInfo']))
@@ -489,6 +529,8 @@ class EntityController
 		{
 			$values['origin_id'] = (int)$relationInfo['origin_id'];
 		}
+
+		$values = BoCommon::mergeAdditionalInfoFromPayload($values, $body);
 
 		return $values;
 	}
@@ -605,7 +647,7 @@ class EntityController
 	{
 		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
 
-		$body = $this->requestBodyArray($request);
+		$body = $this->requestBodyAsArray($request);
 
 		// DataTables server-side POST protocol
 		if (isset($body['draw']))
@@ -672,7 +714,7 @@ class EntityController
 	 */
 	public function postCollection(Request $request, Response $response, array $args): Response
 	{
-		$input = array_merge($request->getQueryParams(), $this->requestBodyArray($request));
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
 		if ($this->isDataTablesRequest($input))
 		{
 			return $this->index($request, $response, $args);
@@ -713,7 +755,7 @@ class EntityController
 	public function listItems(Request $request, Response $response, array $args): Response
 	{
 		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
-		$input = array_merge($request->getQueryParams(), $this->requestBodyArray($request));
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
 
 		$readParams = [
 			'start'   => isset($input['start']) ? (int)$input['start'] : 0,
@@ -734,6 +776,47 @@ class EntityController
 			'meta' => [
 				'start' => $readParams['start'],
 				'total' => (int)$bo->total_records,
+			],
+		]);
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/schema",
+	 *     summary="Get entity attribute schema",
+	 *     description="Returns attribute metadata/schema for the selected entity category.",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Entity schema envelope",
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             @OA\Property(property="status", type="string", example="success"),
+	 *             @OA\Property(property="schema", type="object",
+	 *                 @OA\Property(property="attributes", type="array", @OA\Items(type="object")),
+	 *                 @OA\Property(property="groups", type="array", @OA\Items(type="object"))
+	 *             )
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function schema(Request $request, Response $response, array $args): Response
+	{
+		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+
+		$context = $this->resolveAclContext($args);
+
+		$CustomFields = new \App\modules\phpgwapi\services\CustomFields();
+		$groups = $CustomFields->find_group($context['app'], $context['acl_check_location'], 0, '', 'ASC', 'group_sort', true);
+		$attributes = $CustomFields->find($context['app'], $context['acl_check_location'], 0, '', 'ASC', 'attrib_sort', true, true);
+		return $this->jsonResponse($response, [
+			'status' => 'success',
+			'schema' => [
+				'groups' => $groups,
+				'attributes' => $attributes,
 			],
 		]);
 	}
@@ -773,6 +856,9 @@ class EntityController
 		{
 			throw new HttpNotFoundException($request, 'Entity item not found');
 		}
+
+		$this->assertEntityGrants($request, $args, ACL_READ, 'No read access for this entity item');
+
 
 		$response->getBody()->write(json_encode($item, JSON_THROW_ON_ERROR));
 		return $response->withHeader('Content-Type', 'application/json');
@@ -842,12 +928,13 @@ class EntityController
 		$bo = $this->assertEntityAcl($request, $args, ACL_ADD, 'No add access for this entity category');
 		$helper = $this->formHelper();
 		$soadminEntity = $this->soadminEntity();
+		$input = $this->requestBodyAsArray($request);
 
-		$payload = $this->normalizedSavePayload($request);
+		$payload = $this->normalizedSavePayload($request, $input);
 		$values = $payload['values'];
 		$values_attribute = $payload['values_attribute'];
 		$valuesChecklistStage = $payload['values_checklist_stage'];
-		$values = $this->applyRelationInfoPayload($values, $bo, $request);
+		$values = $this->applyRelationInfoPayload($values, $bo, $input);
 
 		$validation = $helper->validate(
 			$values,
@@ -965,6 +1052,7 @@ class EntityController
 		$bo = $this->assertEntityAcl($request, $args, ACL_EDIT, 'No edit access for this entity category');
 		$helper = $this->formHelper();
 		$soadminEntity = $this->soadminEntity();
+		$input = $this->requestBodyAsArray($request);
 
 		$id = (int)$args['id'];
 		if ($id <= 0)
@@ -972,11 +1060,13 @@ class EntityController
 			throw new HttpBadRequestException($request, 'Invalid id');
 		}
 
-		$payload = $this->normalizedSavePayload($request);
+		$this->assertEntityGrants($request, $args, ACL_EDIT, 'No access to this entity item');
+
+		$payload = $this->normalizedSavePayload($request, $input);
 		$values = $payload['values'];
 		$values_attribute = $payload['values_attribute'];
 		$valuesChecklistStage = $payload['values_checklist_stage'];
-		$values = $this->applyRelationInfoPayload($values, $bo, $request);
+		$values = $this->applyRelationInfoPayload($values, $bo, $input);
 		$values['id'] = $id;
 
 		$validation = $helper->validate(
@@ -1065,6 +1155,8 @@ class EntityController
 			throw new HttpBadRequestException($request, 'Invalid id');
 		}
 
+		$this->assertEntityGrants($request, $args, ACL_DELETE, 'No delete access for this entity item');
+
 		$bo->delete($id);
 
 		return $response->withStatus(204);
@@ -1115,7 +1207,7 @@ class EntityController
 	public function getRelated(Request $request, Response $response, array $args): Response
 	{
 		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
-
+		$this->assertEntityGrants($request, $args, ACL_READ, 'No read access for this entity item');
 		$params  = $request->getQueryParams();
 		$id      = (int)$args['id'];
 		$draw    = (int)($params['draw'] ?? 1);
@@ -1172,7 +1264,7 @@ class EntityController
 	public function getTarget(Request $request, Response $response, array $args): Response
 	{
 		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
-
+		$this->assertEntityGrants($request, $args, ACL_READ, 'No read access for this entity item');
 		$params = $request->getQueryParams();
 		$id = (int)$args['id'];
 		$draw = (int)($params['draw'] ?? 1);
@@ -1292,9 +1384,10 @@ class EntityController
 	public function getDocuments(Request $request, Response $response, array $args): Response
 	{
 		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+		$this->assertEntityGrants($request, $args, ACL_READ, 'No read access for this entity item');
 
 		$queryParams = $request->getQueryParams();
-		$bodyParams = $this->requestBodyArray($request);
+		$bodyParams = $this->requestBodyAsArray($request);
 		$input = array_merge($queryParams, $bodyParams);
 
 		$search = $input['search'] ?? [];
@@ -1394,6 +1487,7 @@ class EntityController
 	public function getFiles(Request $request, Response $response, array $args): Response
 	{
 		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+		$this->assertEntityGrants($request, $args, ACL_READ, 'No read access for this entity item');
 
 		$params     = $request->getQueryParams();
 		$id         = (int)$args['id'];
@@ -1428,11 +1522,12 @@ class EntityController
 				'cat_id' => $cat_id,
 				'type' => $type,
 			];
-
 			if (in_array($_entry['mime_type'] ?? '', $img_types, true))
 			{
 				$row['img_id']    = $fileId;
-				$row['img_url']   = null;
+				$row['img_url'] = \phpgw::link("/property/entity/{$type}/{$entity_id}/{$cat_id}/{$id}/files/image", array(
+					'img_id' => $fileId,
+				));
 			}
 
 			$content_files[] = $row;
@@ -1444,6 +1539,80 @@ class EntityController
 			'recordsFiltered' => count($content_files),
 			'draw'            => $draw,
 		]);
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/property/entity/{type}/{entity_id}/{cat_id}/{id}/files/image",
+	 *     summary="View entity image or thumbnail",
+	 *     description="Streams an attached image file or thumbnail for the selected entity item.",
+	 *     tags={"Entity"},
+	 *     @OA\Parameter(name="type", in="path", required=true, description="Entity type key", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="entity_id", in="path", required=true, description="Entity definition ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="cat_id", in="path", required=true, description="Category ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Item ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="img_id", in="query", required=false, description="VFS file ID for the image", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="thumb", in="query", required=false, description="Return or generate a thumbnail", @OA\Schema(type="boolean")),
+	 *     @OA\Parameter(name="file", in="query", required=false, description="Relative file path when img_id is not provided", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="Image stream or thumbnail")
+	 * )
+	 */
+	public function viewImage(Request $request, Response $response, array $args): Response
+	{
+		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+		$this->assertEntityGrants($request, $args, ACL_READ, 'No read access for this entity item');
+
+		$queryParams = $request->getQueryParams();
+		$imgId = (int)($queryParams['img_id'] ?? 0);
+		$thumb = !empty($queryParams['thumb']);
+		$bofiles = CreateObject('property.bofiles');
+		$file = '';
+		if ($imgId > 0)
+		{
+			$fileInfo = $bofiles->vfs->get_info($imgId);
+			$file = isset($fileInfo['directory'], $fileInfo['name'])
+				? $fileInfo['directory'] . '/' . $fileInfo['name']
+				: '';
+		}
+		else
+		{
+			$file = urldecode((string)($input['file'] ?? ''));
+		}
+
+		if ($file === '')
+		{
+			throw new HttpNotFoundException($request, 'Image not found');
+		}
+
+		$source = "{$bofiles->rootdir}{$file}";
+		if (preg_match('/\.\./', $source))
+		{
+			throw new HttpForbiddenException($request, 'Invalid image path');
+		}
+
+		$thumbfile = $source . '.thumb';
+		if ($thumb)
+		{
+			if (!is_file($thumbfile) && $bofiles->is_image($source))
+			{
+				$bofiles->resize_image($source, $thumbfile, 100);
+			}
+
+			if (is_file($thumbfile))
+			{
+				readfile($thumbfile);
+				return $response;
+			}
+		}
+
+		if ($imgId > 0)
+		{
+			$bofiles->get_file($imgId);
+			return $response;
+		}
+
+		$bofiles->view_file('', $file);
+		return $response;
 	}
 
 	/**
@@ -1465,6 +1634,7 @@ class EntityController
 	public function getInventory(Request $request, Response $response, array $args): Response
 	{
 		$bo = $this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
+		$this->assertEntityGrants($request, $args, ACL_READ, 'No read access for this entity item');
 
 		$params      = $request->getQueryParams();
 		$id          = (int)$args['id'];
@@ -1509,7 +1679,7 @@ class EntityController
 			'entity_id' => (int)$args['entity_id'],
 			'cat_id'    => (int)$args['cat_id'],
 			'type'      => (string)$args['type'],
-			'_entity_id'=> (int)$args['entity_id'],
+			'_entity_id' => (int)$args['entity_id'],
 			'_cat_id'   => (int)$args['cat_id'],
 			'_type'     => (string)$args['type'],
 		];
@@ -1559,6 +1729,7 @@ class EntityController
 	public function handleMultiUploadFile(Request $request, Response $response, array $args): Response
 	{
 		$bo = $this->assertEntityAcl($request, $args, ACL_EDIT, 'No edit access for this entity category');
+		$this->assertEntityGrants($request, $args, ACL_EDIT, 'No edit access for this entity item');
 
 		$id = (int)$args['id'];
 		$entityId = (int)$args['entity_id'];
@@ -1586,10 +1757,10 @@ class EntityController
 		$serverSettings = Settings::getInstance()->get('server');
 		$scriptUrl = \phpgw::link(
 			'/property/entity/' . rawurlencode($type)
-			. '/' . rawurlencode((string)$entityId)
-			. '/' . rawurlencode((string)$catId)
-			. '/' . rawurlencode((string)$id)
-			. '/multi-upload'
+				. '/' . rawurlencode((string)$entityId)
+				. '/' . rawurlencode((string)$catId)
+				. '/' . rawurlencode((string)$id)
+				. '/multi-upload'
 		);
 
 		$options = [

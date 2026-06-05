@@ -580,7 +580,7 @@ HTML;
 			case 'DELETE':
 				if ($this->simple)
 				{
-					$upload_handler->header('HTTP/1.1 405 Method Not Allowed');
+					header('HTTP/1.1 405 Method Not Allowed');
 				}
 				else
 				{
@@ -588,7 +588,7 @@ HTML;
 				}
 				break;
 			default:
-				$upload_handler->header('HTTP/1.1 405 Method Not Allowed');
+				header('HTTP/1.1 405 Method Not Allowed');
 		}
 
 		$this->phpgwapi_common->phpgw_exit();
@@ -3688,8 +3688,7 @@ JS;
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_10',
-			'requestUrl' => json_encode(self::link(array(
-				'menuaction' => 'property.uiproject.get_orders',
+			'requestUrl' => json_encode(phpgw::link('/property/project/0/orders', array(
 				'project_id' => $project_ids,
 				'order_id' => $order_ids,
 				'phpgw_return_as' => 'json'

@@ -978,3 +978,5 @@ upload_failed	bookingfrontend	nn	Opplasting feila
 reply	bookingfrontend	nn	Svar
 no documents available	bookingfrontend	nn	Ingen dokument tilgjengeleg
 new_comment_notification	bookingfrontend	nn	%1 har skrive ein kommentar
+close_calendar_without_season	bookingfrontend	nn	Steng kalender når bygg manglar sesong
+close_calendar_without_season_note	bookingfrontend	nn	Når aktiv blir bygg utan definert sesong vist som stengde

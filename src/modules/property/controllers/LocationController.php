@@ -10,6 +10,7 @@ use App\modules\property\helpers\LocationFormHelper;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\security\Acl;
+use Slim\Exception\HttpBadRequestException;
 
 class LocationController
 {
@@ -147,7 +148,12 @@ class LocationController
 		if (strpos($contentType, 'application/json') !== false)
 		{
 			$json = json_decode($rawBody, true);
-			return is_array($json) ? $json : array();
+			if (!is_array($json))
+			{
+				throw new HttpBadRequestException($request, 'Invalid JSON request body');
+			}
+
+			return $json;
 		}
 
 		$decoded = array();

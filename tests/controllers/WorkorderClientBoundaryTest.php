@@ -80,5 +80,15 @@ namespace Tests\Controllers
 			$this->assertStringContainsString('$group->post(\'/create\', [$controller, \'store\']);', $contents);
 			$this->assertStringContainsString('$group->post(\'/{id:[0-9]+}\', [$controller, \'update\']);', $contents);
 		}
+
+		public function testWorkorderShellSupportsFeatureFlaggedRestFormAction(): void
+		{
+			$uiPath = __DIR__ . '/../../src/modules/property/inc/class.uiworkorder.inc.php';
+			$contents = (string)file_get_contents($uiPath);
+
+			$this->assertStringContainsString('workorder_rest_save_form_action', $contents);
+			$this->assertStringContainsString("phpgw::link('/property/workorder/create'", $contents);
+			$this->assertStringContainsString('phpgw::link(\'/property/workorder/\' . (int)$id', $contents);
+		}
 	}
 }

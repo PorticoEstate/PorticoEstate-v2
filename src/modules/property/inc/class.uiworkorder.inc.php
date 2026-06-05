@@ -2342,6 +2342,15 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 			'id'		 => $id
 		);
 
+		$use_rest_save_form_action = !empty($config->config_data['workorder_rest_save_form_action']);
+		$form_action = phpgw::link('/index.php', $link_data);
+		if ($mode == 'edit' && $use_rest_save_form_action)
+		{
+			$form_action = $id
+				? phpgw::link('/property/workorder/' . (int)$id, array())
+				: phpgw::link('/property/workorder/create', array());
+		}
+
 		$workorder_status = (isset($this->userSettings['preferences']['property']['workorder_status']) ? $this->userSettings['preferences']['property']['workorder_status'] : '');
 		if (!$values['status'])
 		{
@@ -3584,7 +3593,7 @@ JS;
 			'vendor_data'							 => $vendor_data,
 			'location_data'							 => $location_data,
 			'location_template_type'				 => $location_template_type,
-			'form_action'							 => $mode == 'edit' ? phpgw::link('/index.php', $link_data) : phpgw::link('/home/'), //avoid accidents
+			'form_action'							 => $mode == 'edit' ? $form_action : phpgw::link('/home/'), //avoid accidents
 			'done_action'							 => phpgw::link('/index.php', array(
 				'menuaction' => 'property.uiworkorder.index'
 			)),

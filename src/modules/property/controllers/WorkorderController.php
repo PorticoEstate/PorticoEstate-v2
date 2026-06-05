@@ -57,7 +57,7 @@ class WorkorderController
 		return (bool)Acl::getInstance()->check('.project', ACL_ADD, 'property');
 	}
 
-	private function formHelper(): WorkorderFormHelper
+	protected function formHelper(): WorkorderFormHelper
 	{
 		if ($this->formHelper === null)
 		{
@@ -114,6 +114,21 @@ class WorkorderController
 		return is_array($decoded) ? $decoded : array();
 	}
 
+	private function normalizeWorkorderSavePayload(Request $request, array $input): array
+	{
+		if (array_key_exists('values', $input) && !is_array($input['values']))
+		{
+			throw new HttpBadRequestException($request, 'Invalid payload: values must be an object');
+		}
+
+		if (array_key_exists('values_attribute', $input) && !is_array($input['values_attribute']))
+		{
+			throw new HttpBadRequestException($request, 'Invalid payload: values_attribute must be an object');
+		}
+
+		return $input;
+	}
+
 	private function datatableResponse(Response $response, array $input, array $rows, ?int $total = null): Response
 	{
 		$count = $total ?? count($rows);
@@ -133,10 +148,26 @@ class WorkorderController
 		}
 
 		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
-		$result = $this->formHelper()->persistSave($request, $input, 0);
-		$statusCode = ($result['status'] === 'success') ? 201 : 400;
+		$input = $this->normalizeWorkorderSavePayload($request, $input);
+		$state = $this->formHelper()->mapInput($input, false, 0);
+		$state = $this->formHelper()->validate($state);
+		$state = $this->formHelper()->persistSave($state, $this->bo());
 
-		return $this->jsonResponse($response, $result, $statusCode);
+		if (!empty($state['errors']) || !empty($state['receipt']['error']))
+		{
+			return $this->jsonResponse($response, array(
+				'status' => 'error',
+				'errors' => $state['errors'] ?? array(),
+				'data' => array('id' => (int)($state['id'] ?? 0)),
+				'receipt' => $state['receipt'] ?? array(),
+			), 400);
+		}
+
+		return $this->jsonResponse($response, array(
+			'status' => 'success',
+			'data' => array('id' => (int)($state['id'] ?? 0)),
+			'receipt' => $state['receipt'] ?? array(),
+		), 201);
 	}
 
 	public function update(Request $request, Response $response, array $args): Response
@@ -153,10 +184,26 @@ class WorkorderController
 		}
 
 		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
-		$result = $this->formHelper()->persistSave($request, $input, $id);
-		$statusCode = ($result['status'] === 'success') ? 200 : 400;
+		$input = $this->normalizeWorkorderSavePayload($request, $input);
+		$state = $this->formHelper()->mapInput($input, true, $id);
+		$state = $this->formHelper()->validate($state);
+		$state = $this->formHelper()->persistSave($state, $this->bo());
 
-		return $this->jsonResponse($response, $result, $statusCode);
+		if (!empty($state['errors']) || !empty($state['receipt']['error']))
+		{
+			return $this->jsonResponse($response, array(
+				'status' => 'error',
+				'errors' => $state['errors'] ?? array(),
+				'data' => array('id' => (int)($state['id'] ?? $id)),
+				'receipt' => $state['receipt'] ?? array(),
+			), 400);
+		}
+
+		return $this->jsonResponse($response, array(
+			'status' => 'success',
+			'data' => array('id' => (int)($state['id'] ?? $id)),
+			'receipt' => $state['receipt'] ?? array(),
+		));
 	}
 
 	private function getVendorContractOptions(int $vendorId, int $selected = 0): array

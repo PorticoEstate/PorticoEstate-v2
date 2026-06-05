@@ -54,5 +54,27 @@ namespace Tests\Controllers
 			$this->assertIsString($contents);
 			$this->assertStringContainsString("menuaction: 'property.uiworkorder.edit'", $contents);
 		}
+
+		public function testWorkorderEditUsesRestSaveEndpoints(): void
+		{
+			$editPath = __DIR__ . '/../../src/modules/property/js/base/workorder.edit.js';
+			$contents = (string)file_get_contents($editPath);
+
+			$this->assertStringContainsString("function createWorkorderApiClient(form)", $contents);
+			$this->assertStringContainsString("phpGWLink('property/workorder/create', {})", $contents);
+			$this->assertStringContainsString("phpGWLink('property/workorder/' + parsedOrderId, {})", $contents);
+			$this->assertStringContainsString("submit_workorder_via_api('save')", $contents);
+			$this->assertStringContainsString("submit_workorder_via_api('send')", $contents);
+			$this->assertStringContainsString("submit_workorder_via_api('calculate')", $contents);
+		}
+
+		public function testWorkorderRoutesExposeRestSaveEndpoints(): void
+		{
+			$routesPath = __DIR__ . '/../../src/modules/property/routes/Routes.php';
+			$contents = (string)file_get_contents($routesPath);
+
+			$this->assertStringContainsString('$group->post(\'/create\', [$controller, \'store\']);', $contents);
+			$this->assertStringContainsString('$group->post(\'/{id:[0-9]+}\', [$controller, \'update\']);', $contents);
+		}
 	}
 }

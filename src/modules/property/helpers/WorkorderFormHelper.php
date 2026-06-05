@@ -2,58 +2,193 @@
 
 namespace App\modules\property\helpers;
 
-use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Exception\HttpBadRequestException;
-
 class WorkorderFormHelper
 {
 	/**
-	 * Transitional save bridge used during Workorder API cutover.
-	 *
-	 * This keeps legacy save behavior intact while moving request handling to
-	 * REST endpoints and JS API clients.
+	 * Normalize incoming workorder payload.
 	 */
-	public function persistSave(Request $request, array $input, int $id = 0): array
+	public function mapInput(array $requestData, bool $isEdit = false, int $id = 0): array
 	{
-		$originalPost = $_POST ?? array();
-		$originalRequest = $_REQUEST ?? array();
+		$values = isset($requestData['values']) && is_array($requestData['values'])
+			? $requestData['values']
+			: $requestData;
 
-		try
+		$legacyContextFields = array(
+			'project_id',
+			'origin',
+			'origin_id',
+			'location_code',
+			'tenant_id',
+			'p_num',
+			'p_entity_id',
+			'p_cat_id',
+			'vendor_id',
+			'vendor_name',
+			'event_id',
+			'send_workorder',
+			'calculate_workorder',
+			'copy_workorder',
+		);
+
+		foreach ($legacyContextFields as $field)
 		{
-			$_POST = is_array($input) ? $input : array();
-			$_REQUEST = array_merge($originalRequest, $_POST);
-
-			if ($id > 0)
+			if (array_key_exists($field, $requestData) && !array_key_exists($field, $values))
 			{
-				$_POST['id'] = $id;
-				$_REQUEST['id'] = $id;
+				$values[$field] = $requestData[$field];
 			}
+		}
 
-			$_POST['phpgw_return_as'] = 'json';
-			$_REQUEST['phpgw_return_as'] = 'json';
+		if (array_key_exists('vendor_id', $values))
+		{
+			$values['vendor_id'] = (int)$values['vendor_id'];
+		}
 
-			$ui = CreateObject('property.uiworkorder');
-			$result = $ui->save();
+		if (array_key_exists('event_id', $values))
+		{
+			$values['event_id'] = (int)$values['event_id'];
+		}
 
-			if (!is_array($result))
+		if (!$isEdit)
+		{
+			$pEntityId = (int)($values['p_entity_id'] ?? 0);
+			$pCatId = (int)($values['p_cat_id'] ?? 0);
+			$pNum = isset($values['p_num']) ? (string)$values['p_num'] : '';
+
+			if ($pEntityId > 0 && $pCatId > 0)
 			{
-				throw new HttpBadRequestException($request, 'Invalid response from legacy workorder save');
+				if (!isset($values['p']) || !is_array($values['p']))
+				{
+					$values['p'] = array();
+				}
+
+				if (!isset($values['p'][$pEntityId]) || !is_array($values['p'][$pEntityId]))
+				{
+					$values['p'][$pEntityId] = array();
+				}
+
+				$values['p'][$pEntityId]['p_entity_id'] = $pEntityId;
+				$values['p'][$pEntityId]['p_cat_id'] = $pCatId;
+				$values['p'][$pEntityId]['p_num'] = $pNum;
 			}
+		}
 
-			$receipt = isset($result['receipt']) && is_array($result['receipt']) ? $result['receipt'] : array();
-			$errorList = isset($receipt['error']) && is_array($receipt['error']) ? $receipt['error'] : array();
-			$resolvedId = (int)($receipt['id'] ?? $_POST['id'] ?? $id);
+		$valuesAttribute = isset($requestData['values_attribute']) && is_array($requestData['values_attribute'])
+			? $requestData['values_attribute']
+			: array();
 
-			return array(
-				'status' => empty($errorList) ? 'success' : 'error',
-				'data' => array('id' => $resolvedId),
-				'receipt' => $receipt,
+		if ($isEdit && $id > 0)
+		{
+			$values['id'] = $id;
+		}
+
+		return array(
+			'values' => $values,
+			'values_attribute' => $valuesAttribute,
+			'is_edit' => $isEdit,
+			'errors' => array(),
+		);
+	}
+
+	public function validate(array $state): array
+	{
+		$values = $state['values'] ?? array();
+		$errors = $state['errors'] ?? array();
+
+		if ($this->isRepost())
+		{
+			$errors[] = lang('Hmm... looks like a repost!');
+		}
+
+		if (empty($values['title']))
+		{
+			$errors[] = lang('Please enter a workorder title !');
+		}
+
+		if (empty($values['project_id']))
+		{
+			$errors[] = lang('Please select a valid project !');
+		}
+
+		if (empty($values['status']))
+		{
+			$errors[] = lang('Please select a status !');
+		}
+
+		if (empty($values['b_account_id']))
+		{
+			$errors[] = lang('Please select a budget account !');
+		}
+
+		$config = CreateObject('phpgwapi.config', 'property');
+		$config->read();
+		if (isset($config->config_data['workorder_require_vendor'])
+			&& (int)$config->config_data['workorder_require_vendor'] === 1
+			&& empty($values['vendor_id']))
+		{
+			$errors[] = lang('no vendor');
+		}
+
+		if (isset($values['budget']) && $values['budget'] !== '' && !$this->isIntegerValue($values['budget']))
+		{
+			$errors[] = lang('budget') . ': ' . lang('Please enter an integer !');
+		}
+
+		if (isset($values['addition_rs']) && $values['addition_rs'] !== '' && !$this->isIntegerValue($values['addition_rs']))
+		{
+			$errors[] = lang('Rig addition') . ': ' . lang('Please enter an integer !');
+		}
+
+		if (isset($values['addition_percentage']) && $values['addition_percentage'] !== '' && !$this->isIntegerValue($values['addition_percentage']))
+		{
+			$errors[] = lang('Percentage addition') . ': ' . lang('Please enter an integer !');
+		}
+
+		$state['errors'] = $errors;
+		return $state;
+	}
+
+	public function persistSave(array $state, object $bo): array
+	{
+		if (!empty($state['errors']))
+		{
+			$state['receipt'] = array(
+				'status' => 'error',
+				'error' => array_map(static fn(string $msg) => array('msg' => $msg), $state['errors']),
 			);
+			return $state;
 		}
-		finally
+
+		$action = !empty($state['is_edit']) ? 'edit' : '';
+		$receipt = $bo->save($state['values'], $action, $state['values_attribute']);
+
+		$state['receipt'] = is_array($receipt) ? $receipt : array();
+		$state['id'] = (int)($state['receipt']['id'] ?? $state['values']['id'] ?? 0);
+		return $state;
+	}
+
+	protected function isRepost(): bool
+	{
+		if (!class_exists('phpgw') || !method_exists('phpgw', 'is_repost'))
 		{
-			$_POST = $originalPost;
-			$_REQUEST = $originalRequest;
+			return false;
 		}
+
+		return (bool) \phpgw::is_repost();
+	}
+
+	private function isIntegerValue($value): bool
+	{
+		if (is_int($value))
+		{
+			return true;
+		}
+
+		if (is_string($value))
+		{
+			$value = trim($value);
+			return $value !== '' && preg_match('/^-?\d+$/', $value) === 1;
+		}
+
+		return false;
 	}
 }

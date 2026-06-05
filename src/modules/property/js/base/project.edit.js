@@ -460,7 +460,7 @@ $(document).ready(function ()
 	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'b_account_name', 'b_account_id', 'b_account_container', null, null, null, validate_change_budget_account);
 
-	var strURL = phpGWLink('property/project/external-project', {
+	var strURL = phpGWLink('property/project/lookups/external-project', {
 		phpgw_return_as: 'json'
 	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'external_project_name', 'external_project_id', 'external_project_container', null, null, null, validate_dim_b);
@@ -1083,7 +1083,7 @@ $(window).on('load', function ()
 	function check_valid_external_project(external_project_id)
 	{
 
-		var strURL = phpGWLink('property/project/external-project', {
+		var strURL = phpGWLink('property/project/lookups/external-project', {
 			query: external_project_id,
 			phpgw_return_as: 'json'
 		}, true);

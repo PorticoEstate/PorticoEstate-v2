@@ -93,7 +93,7 @@ JqueryPortico.autocompleteHelper(strURL, 'b_account_name', 'b_account_id', 'b_ac
 var strURL = phpGWLink('property/workorder/lookups/unspsc-code', {}, true);
 JqueryPortico.autocompleteHelper(strURL, 'unspsc_code_name', 'unspsc_code', 'unspsc_code_container');
 
-var strURL = phpGWLink('property/project/external-project', {});
+var strURL = phpGWLink('property/project/lookups/external-project', {});
 JqueryPortico.autocompleteHelper(strURL, 'external_project_name', 'external_project_id', 'external_project_container');
 
 

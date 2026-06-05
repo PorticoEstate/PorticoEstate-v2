@@ -93,10 +93,32 @@ class WorkorderFormHelper
 	{
 		$values = $state['values'] ?? array();
 		$errors = $state['errors'] ?? array();
+		$messages = $state['messages'] ?? array();
+
+		$configData = $this->getConfigData();
+		$projectId = (int)($values['project_id'] ?? 0);
+		$project = $projectId > 0 ? $this->readProjectMini($projectId) : array();
+		$projectEcodimb = (string)($project['ecodimb'] ?? '');
 
 		if ($this->isRepost())
 		{
 			$errors[] = lang('Hmm... looks like a repost!');
+		}
+
+		if (!empty($values['new_project_id']))
+		{
+			$newProjectId = (int)$values['new_project_id'];
+			if ($newProjectId > 0)
+			{
+				if ($projectId > 0 && $newProjectId === $projectId)
+				{
+					unset($values['new_project_id']);
+				}
+				else if (!$this->readProjectMini($newProjectId))
+				{
+					$errors[] = lang('the project %1 does not exist', (string)$values['new_project_id']);
+				}
+			}
 		}
 
 		if (empty($values['title']))
@@ -118,19 +140,76 @@ class WorkorderFormHelper
 		{
 			$errors[] = lang('Please select a budget account !');
 		}
+		else
+		{
+			$bAccountId = (int)$values['b_account_id'];
+			$bAccount = $this->readGeneric('budget_account', $bAccountId);
 
-		$config = CreateObject('phpgwapi.config', 'property');
-		$config->read();
-		if (isset($config->config_data['workorder_require_vendor'])
-			&& (int)$config->config_data['workorder_require_vendor'] === 1
+			if (!empty($bAccount['ecodimb']))
+			{
+				$boundEcodimb = (string)$bAccount['ecodimb'];
+				$currentEcodimb = (string)($values['ecodimb'] ?? '');
+				if ($currentEcodimb !== '' && $currentEcodimb !== $boundEcodimb)
+				{
+					$messages[] = "Ansvar er overstyrt av binding til art: {$currentEcodimb} -> {$boundEcodimb}";
+				}
+
+				$values['ecodimb'] = $boundEcodimb;
+			}
+
+			if (empty($bAccount) || empty($bAccount['active']))
+			{
+				$values['b_account_id'] = '';
+				$values['b_account_name'] = '';
+				$errors[] = lang('Please select a valid budget account !');
+			}
+		}
+
+		if (isset($configData['workorder_require_vendor'])
+			&& (int)$configData['workorder_require_vendor'] === 1
 			&& empty($values['vendor_id']))
 		{
 			$errors[] = lang('no vendor');
 		}
 
+		if (empty($values['ecodimb']))
+		{
+			$values['ecodimb'] = $projectEcodimb;
+		}
+
+		if (empty($values['ecodimb']))
+		{
+			$errors[] = lang('Please select dimb!');
+		}
+		else
+		{
+			$ecodimb = (string)$values['ecodimb'];
+			$ecodimbData = $this->readGeneric('dimb', (int)$ecodimb);
+			if (empty($ecodimbData) || empty($ecodimbData['active']))
+			{
+				$values['ecodimb'] = '';
+				$values['ecodimb_name'] = '';
+				$errors[] = lang('Please select a valid dimb!');
+			}
+		}
+
 		if (isset($values['budget']) && $values['budget'] !== '' && !$this->isIntegerValue($values['budget']))
 		{
 			$errors[] = lang('budget') . ': ' . lang('Please enter an integer !');
+		}
+
+		if (empty($state['is_edit'])
+			&& empty($values['contract_sum'])
+			&& empty($values['budget']))
+		{
+			$errors[] = lang('please enter either a budget or contrakt sum');
+		}
+
+		$contractSum = (int)($values['contract_sum'] ?? 0);
+		$budget = (int)($values['budget'] ?? 0);
+		if ($contractSum !== 0 && $budget !== 0 && abs($contractSum) > abs($budget))
+		{
+			$values['budget'] = (string)$values['contract_sum'];
 		}
 
 		if (isset($values['addition_rs']) && $values['addition_rs'] !== '' && !$this->isIntegerValue($values['addition_rs']))
@@ -143,7 +222,57 @@ class WorkorderFormHelper
 			$errors[] = lang('Percentage addition') . ': ' . lang('Please enter an integer !');
 		}
 
+		if (!empty($values['cat_id']))
+		{
+			$category = $this->readCategory((int)$values['cat_id']);
+			if ($category !== null && empty($category['active']))
+			{
+				$errors[] = lang('invalid category');
+			}
+		}
+
+		if (!empty($values['approval'])
+			&& !empty($configData['workorder_approval'])
+			&& !empty($configData['workorder_approval_status']))
+		{
+			$values['status'] = $configData['workorder_approval_status'];
+		}
+
+		if (($configData['invoice_acl'] ?? '') === 'dimb'
+			&& !empty($values['do_approve'])
+			&& !$this->hasManageAccess())
+		{
+			$currentAccount = $this->getCurrentAccountId();
+			$approvalEcodimb = $projectEcodimb ?: (string)($values['ecodimb'] ?? '');
+
+			foreach ((array)$values['do_approve'] as $accountId => $dummy)
+			{
+				if ((int)$accountId !== $currentAccount)
+				{
+					continue;
+				}
+
+				$approveRole = $this->checkInvoiceRole($approvalEcodimb);
+				$isJanitor = !empty($approveRole['is_janitor']);
+				$isSupervisor = !empty($approveRole['is_supervisor']);
+				$isBudgetResponsible = !empty($approveRole['is_budget_responsible']);
+
+				if (!$isJanitor && !$isSupervisor && !$isBudgetResponsible)
+				{
+					$errors[] = lang('you are not approved for this dimb: %1', $approvalEcodimb);
+				}
+
+				if (!$isSupervisor && !$isBudgetResponsible)
+				{
+					$errors[] = lang('you do not have permission to approve this order');
+					$values['approved'] = false;
+				}
+			}
+		}
+
+		$state['values'] = $values;
 		$state['errors'] = $errors;
+		$state['messages'] = $messages;
 		return $state;
 	}
 
@@ -174,6 +303,88 @@ class WorkorderFormHelper
 		}
 
 		return (bool) \phpgw::is_repost();
+	}
+
+	protected function getConfigData(): array
+	{
+		$config = CreateObject('phpgwapi.config', 'property');
+		$config->read();
+		return is_array($config->config_data ?? null) ? $config->config_data : array();
+	}
+
+	protected function readProjectMini(int $projectId): array
+	{
+		if ($projectId <= 0)
+		{
+			return array();
+		}
+
+		$boproject = CreateObject('property.boproject');
+		$project = $boproject->read_single_mini($projectId);
+		return is_array($project) ? $project : array();
+	}
+
+	protected function readGeneric(string $type, int $id): array
+	{
+		if ($id <= 0)
+		{
+			return array();
+		}
+
+		$result = execMethod('property.bogeneric.read_single', array(
+			'id' => $id,
+			'location_info' => array('type' => $type),
+		));
+
+		return is_array($result) ? $result : array();
+	}
+
+	protected function readCategory(int $catId): ?array
+	{
+		if ($catId <= 0)
+		{
+			return null;
+		}
+
+		$boworkorder = CreateObject('property.boworkorder');
+		$categoryRows = $boworkorder->cats->return_single($catId);
+		if (!is_array($categoryRows) || !isset($categoryRows[0]) || !is_array($categoryRows[0]))
+		{
+			return null;
+		}
+
+		return $categoryRows[0];
+	}
+
+	protected function hasManageAccess(): bool
+	{
+		if (!class_exists('App\\modules\\phpgwapi\\security\\Acl'))
+		{
+			return false;
+		}
+
+		return (bool) \App\modules\phpgwapi\security\Acl::getInstance()->check('.project', 16, 'property');
+	}
+
+	protected function getCurrentAccountId(): int
+	{
+		if (!empty($GLOBALS['phpgw_info']['user']['account_id']))
+		{
+			return (int)$GLOBALS['phpgw_info']['user']['account_id'];
+		}
+
+		return 0;
+	}
+
+	protected function checkInvoiceRole(string $ecodimb): array
+	{
+		if ($ecodimb === '')
+		{
+			return array();
+		}
+
+		$result = execMethod('property.boinvoice.check_role', $ecodimb);
+		return is_array($result) ? $result : array();
 	}
 
 	private function isIntegerValue($value): bool

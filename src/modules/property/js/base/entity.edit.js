@@ -774,18 +774,22 @@ function createEntityNavigationClient(form)
 	return {
 		buildEditUrl: function (type, entityId, catId, id)
 		{
-			return 'index.php?menuaction=property.uientity.edit'
-				+ '&type=' + encodeURIComponent(type)
-				+ '&entity_id=' + encodeURIComponent(entityId)
-				+ '&cat_id=' + encodeURIComponent(catId)
-				+ '&id=' + encodeURIComponent(id);
+			return phpGWLink('index.php', {
+				menuaction: 'property.uientity.edit',
+				type: type,
+				entity_id: entityId,
+				cat_id: catId,
+				id: id
+			});
 		},
 		buildIndexUrl: function (type, entityId, catId)
 		{
-			return 'index.php?menuaction=property.uientity.index'
-				+ '&entity_id=' + encodeURIComponent(entityId)
-				+ '&cat_id=' + encodeURIComponent(catId)
-				+ '&type=' + encodeURIComponent(type);
+			return phpGWLink('index.php', {
+				menuaction: 'property.uientity.index',
+				entity_id: entityId,
+				cat_id: catId,
+				type: type
+			});
 		}
 	};
 }

@@ -28,8 +28,7 @@ this.fetch_vendor_contract = function ()
 
 	if ($("#vendor_id").val() != vendor_id)
 	{
-		var oArgs = {menuaction: 'property.uiworkorder.get_vendor_contract', vendor_id: $("#vendor_id").val()};
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = phpGWLink('property/workorder/lookups/vendor-contract', {vendor_id: $("#vendor_id").val()}, true);
 		var htmlString = "";
 
 		$.ajax({
@@ -187,8 +186,7 @@ $(document).ready(function ()
 
 this.get_other_orders = function (location_code, vendor_id)
 {
-	var oArgs = {menuaction:'property.uiworkorder.get_other_orders',location_code:location_code,vendor_id:vendor_id};
-	var strURL = phpGWLink('index.php', oArgs, true);
+	var strURL = phpGWLink('property/workorder/lookups/other-orders', {location_code:location_code,vendor_id:vendor_id}, true);
 	JqueryPortico.updateinlineTableHelper('datatable-container_2', strURL);
 };
 
@@ -198,4 +196,3 @@ this.get_other_deviations = function (location_code, vendor_id)
 	var strURL = phpGWLink('index.php', oArgs, true);
 	JqueryPortico.updateinlineTableHelper('datatable-container_3', strURL);
 };
-

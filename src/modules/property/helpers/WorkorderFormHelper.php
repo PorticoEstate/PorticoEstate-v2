@@ -13,6 +13,25 @@ class WorkorderFormHelper
 			? $requestData['values']
 			: $requestData;
 
+		$relationFields = array(
+			'location_code',
+			'tenant_id',
+			'p_num',
+			'p_entity_id',
+			'p_cat_id',
+			'origin',
+			'origin_id',
+		);
+		foreach ($relationFields as $field)
+		{
+			if (array_key_exists($field, $requestData) && !array_key_exists($field, $values))
+			{
+				$values[$field] = $requestData[$field];
+			}
+		}
+
+		$values = $this->normalizeLocationFields($values);
+
 		$legacyContextFields = array(
 			'project_id',
 			'origin',
@@ -172,7 +191,9 @@ class WorkorderFormHelper
 			$errors[] = lang('no vendor');
 		}
 
-		if (empty($values['ecodimb']))
+		$ecodimbWasEmptyBeforeFallback = empty($values['ecodimb']);
+
+		if ($ecodimbWasEmptyBeforeFallback)
 		{
 			$values['ecodimb'] = $projectEcodimb;
 		}
@@ -181,7 +202,7 @@ class WorkorderFormHelper
 		{
 			$errors[] = lang('Please select dimb!');
 		}
-		else
+		else if ($ecodimbWasEmptyBeforeFallback)
 		{
 			$ecodimb = (string)$values['ecodimb'];
 			$ecodimbData = $this->readGeneric('dimb', (int)$ecodimb);
@@ -217,7 +238,9 @@ class WorkorderFormHelper
 			$errors[] = lang('Rig addition') . ': ' . lang('Please enter an integer !');
 		}
 
-		if (isset($values['addition_percentage']) && $values['addition_percentage'] !== '' && !$this->isIntegerValue($values['addition_percentage']))
+		if (isset($values['addition_percentage'])
+			&& $values['addition_percentage']
+			&& !$this->isUnsignedIntegerValue($values['addition_percentage']))
 		{
 			$errors[] = lang('Percentage addition') . ': ' . lang('Please enter an integer !');
 		}
@@ -406,6 +429,70 @@ class WorkorderFormHelper
 		return is_array($result) ? $result : array();
 	}
 
+	private function normalizeLocationFields(array $values): array
+	{
+		$location = array();
+
+		if (isset($values['location']) && is_array($values['location']) && $values['location'])
+		{
+			foreach ($values['location'] as $key => $part)
+			{
+				if ((string)$part === '')
+				{
+					continue;
+				}
+
+				if (is_string($key) && preg_match('/^loc\d+$/', $key))
+				{
+					$location[$key] = $part;
+				}
+				else
+				{
+					$location['loc' . (count($location) + 1)] = $part;
+				}
+			}
+		}
+
+		if (!$location)
+		{
+			for ($i = 1; $i <= 10; $i++)
+			{
+				$field = 'loc' . $i;
+				if (array_key_exists($field, $values) && (string)$values[$field] !== '')
+				{
+					$location[$field] = $values[$field];
+				}
+			}
+		}
+
+		if (!$location && isset($values['location_code']))
+		{
+			$locationCode = trim((string)$values['location_code']);
+			if ($locationCode !== '')
+			{
+				$locationParts = array_values(array_filter(explode('-', $locationCode), static function ($part)
+				{
+					return $part !== '';
+				}));
+				foreach ($locationParts as $index => $part)
+				{
+					$location['loc' . ($index + 1)] = $part;
+				}
+			}
+		}
+
+		if ($location)
+		{
+			$values['location'] = $location;
+			if (!isset($values['location_code']) || $values['location_code'] === '')
+			{
+				$values['location_code'] = implode('-', array_values($location));
+			}
+		}
+
+		return $values;
+	}
+
 	private function isIntegerValue($value): bool
 	{
 		if (is_int($value))
@@ -417,6 +504,22 @@ class WorkorderFormHelper
 		{
 			$value = trim($value);
 			return $value !== '' && preg_match('/^-?\d+$/', $value) === 1;
+		}
+
+		return false;
+	}
+
+	private function isUnsignedIntegerValue($value): bool
+	{
+		if (is_int($value))
+		{
+			return $value >= 0;
+		}
+
+		if (is_string($value))
+		{
+			$value = trim($value);
+			return $value !== '' && ctype_digit($value);
 		}
 
 		return false;

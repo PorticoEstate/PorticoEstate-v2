@@ -109,6 +109,37 @@ namespace Tests\Helpers
 			};
 		}
 
+		public function testMapInputBuildsLocationFromLocationCodeInValues(): void
+		{
+			$helper = $this->makeHelper();
+
+			$result = $helper->mapInput(array(
+				'values' => array(
+					'title' => 'WO',
+					'location_code' => '5804-01-02',
+				),
+			));
+
+			$this->assertSame(array('loc1' => '5804', 'loc2' => '01', 'loc3' => '02'), $result['values']['location']);
+			$this->assertSame('5804-01-02', $result['values']['location_code']);
+		}
+
+		public function testMapInputBuildsLocationFromFlatLocFields(): void
+		{
+			$helper = $this->makeHelper();
+
+			$result = $helper->mapInput(array(
+				'values' => array(
+					'title' => 'WO',
+					'loc1' => '5804',
+					'loc2' => '01',
+				),
+			));
+
+			$this->assertSame(array('loc1' => '5804', 'loc2' => '01'), $result['values']['location']);
+			$this->assertSame('5804-01', $result['values']['location_code']);
+		}
+
 		public function testValidateUnsetsNewProjectWhenEqualProject(): void
 		{
 			$helper = $this->makeHelper();
@@ -349,6 +380,89 @@ namespace Tests\Helpers
 			$this->assertFalse($result['values']['approved']);
 			$this->assertContains('you are not approved for this dimb: 777', $result['errors']);
 			$this->assertContains('you do not have permission to approve this order', $result['errors']);
+		}
+
+		public function testValidateRejectsNegativeAdditionPercentage(): void
+		{
+			$helper = $this->makeHelper(
+				array(),
+				array(),
+				array(
+					'budget_account' => array(8 => array('active' => 1)),
+				),
+				array(),
+				array(),
+				false,
+				0
+			);
+
+			$state = array(
+				'is_edit' => true,
+				'values' => array(
+					'title' => 'WO',
+					'project_id' => 20,
+					'status' => 'open',
+					'b_account_id' => 8,
+					'ecodimb' => 123,
+					'addition_percentage' => '-1',
+				),
+			);
+
+			$result = $helper->validate($state);
+			$this->assertContains('Percentage addition: Please enter an integer !', $result['errors']);
+		}
+
+		public function testValidateDoesNotCheckActiveDimbWhenProvidedDirectly(): void
+		{
+			$helper = $this->makeHelper(
+				array(),
+				array(20 => array('ecodimb' => '777')),
+				array(
+					'budget_account' => array(8 => array('active' => 1)),
+					'dimb' => array(555 => array('active' => 0)),
+				)
+			);
+
+			$state = array(
+				'is_edit' => true,
+				'values' => array(
+					'title' => 'WO',
+					'project_id' => 20,
+					'status' => 'open',
+					'b_account_id' => 8,
+					'ecodimb' => 555,
+				),
+			);
+
+			$result = $helper->validate($state);
+			$this->assertNotContains('Please select a valid dimb!', $result['errors']);
+		}
+
+		public function testValidateChecksActiveDimbOnlyOnFallbackPath(): void
+		{
+			$helper = $this->makeHelper(
+				array(),
+				array(20 => array('ecodimb' => '777')),
+				array(
+					'budget_account' => array(8 => array('active' => 1)),
+					'dimb' => array(777 => array('active' => 0)),
+				)
+			);
+
+			$state = array(
+				'is_edit' => true,
+				'values' => array(
+					'title' => 'WO',
+					'project_id' => 20,
+					'status' => 'open',
+					'b_account_id' => 8,
+					'ecodimb' => '',
+				),
+			);
+
+			$result = $helper->validate($state);
+			$this->assertContains('Please select a valid dimb!', $result['errors']);
+			$this->assertSame('', $result['values']['ecodimb']);
 		}
 
 		public function testPersistSaveAppendsMessagesToSuccessfulReceipt(): void

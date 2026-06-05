@@ -108,6 +108,84 @@ class WorkorderController
 		));
 	}
 
+	private function executeLegacySave(Request $request, array $input, int $id = 0): array
+	{
+		$originalPost = $_POST ?? array();
+		$originalRequest = $_REQUEST ?? array();
+
+		try
+		{
+			$_POST = is_array($input) ? $input : array();
+			$_REQUEST = array_merge($originalRequest, $_POST);
+
+			if ($id > 0)
+			{
+				$_POST['id'] = $id;
+				$_REQUEST['id'] = $id;
+			}
+
+			$_POST['phpgw_return_as'] = 'json';
+			$_REQUEST['phpgw_return_as'] = 'json';
+
+			$ui = CreateObject('property.uiworkorder');
+			$result = $ui->save();
+
+			if (!is_array($result))
+			{
+				throw new HttpBadRequestException($request, 'Invalid response from legacy workorder save');
+			}
+
+			$receipt = isset($result['receipt']) && is_array($result['receipt']) ? $result['receipt'] : array();
+			$errorList = isset($receipt['error']) && is_array($receipt['error']) ? $receipt['error'] : array();
+			$resolvedId = (int)($receipt['id'] ?? $_POST['id'] ?? $id);
+
+			return array(
+				'status' => empty($errorList) ? 'success' : 'error',
+				'data' => array('id' => $resolvedId),
+				'receipt' => $receipt,
+			);
+		}
+		finally
+		{
+			$_POST = $originalPost;
+			$_REQUEST = $originalRequest;
+		}
+	}
+
+	public function store(Request $request, Response $response): Response
+	{
+		if (!$this->hasEditAccess())
+		{
+			throw new HttpForbiddenException($request, 'No add access to workorder');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$result = $this->executeLegacySave($request, $input, 0);
+		$statusCode = ($result['status'] === 'success') ? 201 : 400;
+
+		return $this->jsonResponse($response, $result, $statusCode);
+	}
+
+	public function update(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasEditAccess())
+		{
+			throw new HttpForbiddenException($request, 'No edit access to workorder');
+		}
+
+		$id = (int)($args['id'] ?? 0);
+		if ($id <= 0)
+		{
+			throw new HttpBadRequestException($request, 'Invalid workorder id');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$result = $this->executeLegacySave($request, $input, $id);
+		$statusCode = ($result['status'] === 'success') ? 200 : 400;
+
+		return $this->jsonResponse($response, $result, $statusCode);
+	}
+
 	private function getVendorContractOptions(int $vendorId, int $selected = 0): array
 	{
 		$contractList = $this->bocommon()->get_vendor_contract($vendorId, $selected);

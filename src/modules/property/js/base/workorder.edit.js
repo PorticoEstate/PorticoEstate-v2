@@ -176,9 +176,8 @@ function createWorkorderApiClient(form)
 function submit_workorder_via_api(actionType)
 {
 	var form = document.form;
-	if (!form || !window.fetch)
+	if (!form)
 	{
-		form.submit();
 		return;
 	}
 
@@ -188,6 +187,12 @@ function submit_workorder_via_api(actionType)
 	var formData = new FormData(form);
 	formData.set('phpgw_return_as', 'json');
 	formData.set('save', '1');
+
+	if (!window.fetch)
+	{
+		submit_workorder_via_api_xhr(saveRequest, formData, action);
+		return;
+	}
 
 	fetch(saveRequest.url, {
 		method: saveRequest.method,
@@ -212,50 +217,98 @@ function submit_workorder_via_api(actionType)
 		})
 		.then(function (data)
 		{
-			var hasErrors = !!(data && data.receipt && data.receipt.error && data.receipt.error.length);
-			if (hasErrors)
-			{
-				var firstError = data.receipt.error[0];
-				window.alert(firstError && firstError.msg ? firstError.msg : 'Could not save workorder');
-				return;
-			}
-
-			var id = (data && data.data && data.data.id) ? data.data.id : order_id;
-
-			if (action === 'send')
-			{
-				window.location.href = phpGWLink('index.php', {
-					menuaction: 'property.uiwo_hour.view',
-					workorder_id: id,
-					from: 'index'
-				});
-				return;
-			}
-
-			if (action === 'calculate')
-			{
-				window.location.href = phpGWLink('index.php', {
-					menuaction: 'property.uiwo_hour.index',
-					workorder_id: id
-				});
-				return;
-			}
-
-			window.location.href = phpGWLink('index.php', {
-				menuaction: 'property.uiworkorder.edit',
-				id: id,
-				active_tab: $('#active_tab').val()
-			});
+			handle_workorder_save_success(data, action);
 		})
 		.catch(function (error)
 		{
-			var message = 'Could not save workorder';
-			if (error && error.responseData && error.responseData.receipt && error.responseData.receipt.error && error.responseData.receipt.error.length)
-			{
-				message = error.responseData.receipt.error[0].msg || message;
-			}
-			window.alert(message);
+			handle_workorder_save_error(error && error.responseData ? error.responseData : null);
 		});
+}
+
+function submit_workorder_via_api_xhr(saveRequest, formData, action)
+{
+	var xhr = new XMLHttpRequest();
+	xhr.open(saveRequest.method, saveRequest.url, true);
+	xhr.withCredentials = true;
+
+	xhr.onreadystatechange = function ()
+	{
+		if (xhr.readyState !== 4)
+		{
+			return;
+		}
+
+		var data = null;
+		if (xhr.responseText)
+		{
+			try
+			{
+				data = JSON.parse(xhr.responseText);
+			}
+			catch (e)
+			{
+				data = null;
+			}
+		}
+
+		if (xhr.status >= 200 && xhr.status < 300)
+		{
+			handle_workorder_save_success(data, action);
+			return;
+		}
+
+		handle_workorder_save_error(data);
+	};
+
+	xhr.send(formData);
+}
+
+function handle_workorder_save_success(data, action)
+{
+	var hasErrors = !!(data && data.receipt && data.receipt.error && data.receipt.error.length);
+	if (hasErrors)
+	{
+		var firstError = data.receipt.error[0];
+		window.alert(firstError && firstError.msg ? firstError.msg : 'Could not save workorder');
+		return;
+	}
+
+	var id = (data && data.data && data.data.id) ? data.data.id : order_id;
+
+	if (action === 'send')
+	{
+		window.location.href = phpGWLink('index.php', {
+			menuaction: 'property.uiwo_hour.view',
+			workorder_id: id,
+			from: 'index'
+		});
+		return;
+	}
+
+	if (action === 'calculate')
+	{
+		window.location.href = phpGWLink('index.php', {
+			menuaction: 'property.uiwo_hour.index',
+			workorder_id: id
+		});
+		return;
+	}
+
+	window.location.href = phpGWLink('index.php', {
+		menuaction: 'property.uiworkorder.edit',
+		id: id,
+		active_tab: $('#active_tab').val()
+	});
+}
+
+function handle_workorder_save_error(responseData)
+{
+	var message = 'Could not save workorder';
+	if (responseData && responseData.receipt && responseData.receipt.error && responseData.receipt.error.length)
+	{
+		message = responseData.receipt.error[0].msg || message;
+	}
+	window.alert(message);
 }
 
 this.validate_form = function ()

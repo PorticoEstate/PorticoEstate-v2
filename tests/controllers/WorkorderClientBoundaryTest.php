@@ -66,6 +66,10 @@ namespace Tests\Controllers
 			$this->assertStringContainsString("submit_workorder_via_api('save')", $contents);
 			$this->assertStringContainsString("submit_workorder_via_api('send')", $contents);
 			$this->assertStringContainsString("submit_workorder_via_api('calculate')", $contents);
+			$this->assertStringContainsString("function submit_workorder_via_api_xhr", $contents);
+			$this->assertStringContainsString("new XMLHttpRequest()", $contents);
+			$this->assertStringNotContainsString("if (!form || !window.fetch)", $contents);
+			$this->assertStringNotContainsString("if (!form || !window.fetch)\n\t{\n\t\tform.submit();", $contents);
 		}
 
 		public function testWorkorderRoutesExposeRestSaveEndpoints(): void

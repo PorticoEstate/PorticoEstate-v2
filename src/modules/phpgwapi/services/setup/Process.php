@@ -1036,7 +1036,11 @@ class Process
 			}
 		}
 
-		// Note: migrations are handled by the Applications controller directly
+		// Run new-style migrations for any migration-based modules. Migration
+		// modules skip the legacy upgrade above (status set to 'U'); this applies
+		// their pending migrations so the auto-upgrade cron (property
+		// update_phpgw) covers them too, not just the setup controller.
+		$this->runMigrationsForApps($setup_info, $DEBUG);
 
 		/* Done, return current status */
 		return ($setup_info);

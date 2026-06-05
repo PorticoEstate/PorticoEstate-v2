@@ -570,6 +570,19 @@ class booking_soapplication extends booking_socommon
 			$sql		 = "DELETE FROM $table_name WHERE application_id=" . (int)$id;
 			$this->db->query($sql, __LINE__, __FILE__);
 		}
+
+		/**
+		 * Remove hospitality orders and their child rows. These FKs are not
+		 * ON DELETE CASCADE, so without this the bb_application delete fails
+		 * for any application that has hospitality orders (e.g. abandoned
+		 * NEWPARTIAL1 applications cleaned up by booking.soblock::delete_expired).
+		 */
+		$order_subquery = "SELECT id FROM bb_hospitality_order WHERE application_id=" . (int)$id;
+		$this->db->query("DELETE FROM bb_hospitality_order_line WHERE order_id IN ($order_subquery)", __LINE__, __FILE__);
+		$this->db->query("DELETE FROM bb_hospitality_order_changelog WHERE order_id IN ($order_subquery)", __LINE__, __FILE__);
+		$this->db->query("DELETE FROM bb_hospitality_order_document WHERE owner_id IN ($order_subquery)", __LINE__, __FILE__);
+		$this->db->query("DELETE FROM bb_hospitality_order WHERE application_id=" . (int)$id, __LINE__, __FILE__);
+
 		$table_name	 = $this->table_name;
 		$sql		 = "DELETE FROM $table_name WHERE id=" . (int)$id;
 		$this->db->query($sql, __LINE__, __FILE__);

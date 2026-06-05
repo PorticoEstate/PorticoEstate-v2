@@ -9,6 +9,7 @@ use App\modules\property\controllers\TicketController;
 use App\modules\property\controllers\LocationController;
 use App\modules\property\controllers\EntityController;
 use App\modules\property\controllers\ProjectController;
+use App\modules\property\controllers\WorkorderController;
 use App\controllers\GenericRegistryController;
 use Slim\Routing\RouteCollectorProxy;
 use App\modules\property\models\PropertyGenericRegistry;
@@ -215,9 +216,21 @@ $app->group('/property/project', function (RouteCollectorProxy $group) use ($con
 
 $app->group('/property/workorder', function (RouteCollectorProxy $group) use ($container)
 {
-	$controllerClass = '\\App\\modules\\property\\controllers\\WorkorderController';
-	$controller = new $controllerClass($container);
+	$controller = new WorkorderController($container);
 
+	$group->get('/lookups/vendor-contract', [$controller, 'getVendorContract']);
+	$group->post('/lookups/vendor-contract', [$controller, 'getVendorContract']);
+	$group->get('/lookups/eco-service', [$controller, 'getEcoService']);
+	$group->post('/lookups/eco-service', [$controller, 'getEcoService']);
+	$group->get('/lookups/ecodimb', [$controller, 'getEcodimb']);
+	$group->post('/lookups/ecodimb', [$controller, 'getEcodimb']);
+	$group->get('/lookups/b-account', [$controller, 'getBAccount']);
+	$group->post('/lookups/b-account', [$controller, 'getBAccount']);
+	$group->get('/lookups/unspsc-code', [$controller, 'getUnspscCode']);
+	$group->post('/lookups/unspsc-code', [$controller, 'getUnspscCode']);
+	$group->get('/lookups/other-orders', [$controller, 'getOtherOrders']);
+	$group->post('/lookups/other-orders', [$controller, 'getOtherOrders']);
+	$group->post('/{id:[0-9]+}/receive-order', [$controller, 'receiveOrder']);
 	$group->get('/{id:[0-9]+}/files', [$controller, 'getFiles']);
 	$group->post('/{id:[0-9]+}/files', [$controller, 'getFiles']);
 	$group->post('/{id:[0-9]+}/files/actions', [$controller, 'updateFileData']);

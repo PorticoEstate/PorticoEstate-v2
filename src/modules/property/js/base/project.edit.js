@@ -1,12 +1,14 @@
 var project_id;
-var sUrl_workorder = phpGWLink('index.php', {'menuaction': 'property.uiworkorder.edit'});
-var sUrl_invoice = phpGWLink('index.php', {'menuaction': 'property.uiinvoice.index'});
 var external_project_budget_account_category = null;
 
 
 formatLink = function (key, oData)
 {
-	return "<a href=" + sUrl_workorder + "&id=" + oData[key] + ">" + oData[key] + "</a>";
+	var url = phpGWLink('index.php', {
+		menuaction: 'property.uiworkorder.edit',
+		id: oData[key]
+	});
+	return "<a href=" + url + ">" + oData[key] + "</a>";
 };
 
 formatLink_voucher = function (key, oData)
@@ -23,18 +25,27 @@ formatLink_voucher = function (key, oData)
 
 	if (oData[key] > 0)
 	{
-		return "<a href=" + sUrl_invoice + "&query=" + oData[key] + "&voucher_id=" + oData[key] + "&user_lid=all>" + voucher_id + "</a>";
+		var url = phpGWLink('index.php', {
+			menuaction: 'property.uiinvoice.index',
+			query: oData[key],
+			voucher_id: oData[key],
+			user_lid: 'all'
+		});
+		return "<a href=" + url + ">" + voucher_id + "</a>";
 	}
 	else
 	{
-		//oData[key] = -1 * oData[key];
-		return "<a href=" + sUrl_invoice + "&voucher_id=" + Math.abs(oData[key]) + "&user_lid=all&paid=true>" + voucher_id + "</a>";
+		var paidUrl = phpGWLink('index.php', {
+			menuaction: 'property.uiinvoice.index',
+			voucher_id: Math.abs(oData[key]),
+			user_lid: 'all',
+			paid: true
+		});
+		return "<a href=" + paidUrl + ">" + voucher_id + "</a>";
 	}
 };
 
 //var oArgs_invoicehandler_2 = {menuaction:'property.uiinvoice2.index'};
-var sUrl_invoicehandler_2 = phpGWLink('index.php', {menuaction: 'property.uiinvoice2.index'});
-
 formatLink_invoicehandler_2 = function (key, oData)
 {
 	var voucher_out_id = oData['voucher_out_id'];
@@ -49,23 +60,29 @@ formatLink_invoicehandler_2 = function (key, oData)
 
 	if (oData[key] > 0)
 	{
-		return "<a href=" + sUrl_invoicehandler_2 + "&voucher_id=" + oData[key] + ">" + voucher_id + "</a>";
+		var url = phpGWLink('index.php', {
+			menuaction: 'property.uiinvoice2.index',
+			voucher_id: oData[key]
+		});
+		return "<a href=" + url + ">" + voucher_id + "</a>";
 	}
 	else
 	{
-		//oData[key] = -1 * oData[key];
-		return "<a href=" + sUrl_invoice + "&voucher_id=" + Math.abs(oData[key]) + "&user_lid=all&paid=true>" + voucher_id + "</a>";
+		var paidUrl = phpGWLink('index.php', {
+			menuaction: 'property.uiinvoice.index',
+			voucher_id: Math.abs(oData[key]),
+			user_lid: 'all',
+			paid: true
+		});
+		return "<a href=" + paidUrl + ">" + voucher_id + "</a>";
 	}
 };
-
-//var oArgs_project = {menuaction:'property.uiproject.edit'};
-var sUrl_project = phpGWLink('index.php', {menuaction: 'property.uiproject.edit'});
 
 var project_link = function (key, oData)
 {
 	if (oData[key] > 0)
 	{
-		return "<a href=" + sUrl_project + "&id=" + oData[key] + ">" + oData[key] + "</a>";
+		return "<a href=" + buildProjectEditUrl(oData[key]) + ">" + oData[key] + "</a>";
 	}
 };
 
@@ -596,6 +613,26 @@ function parseProjectURL(url)
 		searchObject: searchObject,
 		hash: parser.hash
 	};
+}
+
+function getProjectNavigationContext()
+{
+	var form = document.getElementById('form');
+	if (form && form.action)
+	{
+		return form;
+	}
+
+	return {
+		action: (typeof window.strBaseURL !== 'undefined' && window.strBaseURL)
+			? window.strBaseURL
+			: window.location.href
+	};
+}
+
+function buildProjectEditUrl(projectId)
+{
+	return createProjectNavigationClient(getProjectNavigationContext()).buildEditUrl(projectId);
 }
 
 function createProjectNavigationClient(form)

@@ -197,8 +197,6 @@ $app->group('/property/project', function (RouteCollectorProxy $group) use ($con
 	$group->post('/attachments', [$controller, 'getAttachment']);
 	$group->get('/lookups/external-project', [$controller, 'getExternalProject']);
 	$group->post('/lookups/external-project', [$controller, 'getExternalProject']);
-	// Backward-compatible alias while callers migrate to the canonical lookup path.
-	$group->get('/external-project', [$controller, 'getExternalProject']);
 	$group->get('/reports/download', [$controller, 'downloadProjects']);
 	$group->get('/reports/missing-project-budget', [$controller, 'checkMissingProjectBudget']);
 	$group->get('/lookups/category', [$controller, 'getCategoryLookup']);

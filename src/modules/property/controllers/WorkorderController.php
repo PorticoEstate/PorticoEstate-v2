@@ -126,6 +126,11 @@ class WorkorderController
 			throw new HttpBadRequestException($request, 'Invalid payload: values_attribute must be an object');
 		}
 
+		if (array_key_exists('RelationInfo', $input) && !is_array($input['RelationInfo']))
+		{
+			throw new HttpBadRequestException($request, 'Invalid payload: RelationInfo must be an object');
+		}
+
 		return $input;
 	}
 

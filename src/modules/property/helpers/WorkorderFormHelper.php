@@ -13,6 +13,10 @@ class WorkorderFormHelper
 			? $requestData['values']
 			: $requestData;
 
+		$relationInfo = isset($requestData['RelationInfo']) && is_array($requestData['RelationInfo'])
+			? $requestData['RelationInfo']
+			: array();
+
 		$relationFields = array(
 			'location_code',
 			'tenant_id',
@@ -24,6 +28,11 @@ class WorkorderFormHelper
 		);
 		foreach ($relationFields as $field)
 		{
+			if (array_key_exists($field, $relationInfo) && !array_key_exists($field, $values))
+			{
+				$values[$field] = $relationInfo[$field];
+			}
+
 			if (array_key_exists($field, $requestData) && !array_key_exists($field, $values))
 			{
 				$values[$field] = $requestData[$field];
@@ -31,6 +40,30 @@ class WorkorderFormHelper
 		}
 
 		$values = $this->normalizeLocationFields($values);
+
+		if (!isset($values['extra']) || !is_array($values['extra']))
+		{
+			$values['extra'] = array();
+		}
+
+		$extraRelationFields = array(
+			'location_code',
+			'tenant_id',
+			'p_num',
+			'p_entity_id',
+			'p_cat_id',
+			'contact_phone',
+		);
+		foreach ($extraRelationFields as $field)
+		{
+			if (array_key_exists($field, $values) && !array_key_exists($field, $values['extra']))
+			{
+				$values['extra'][$field] = $values[$field];
+			}
+		}
+
+		// Keep origin metadata in top-level values/relation context, never in legacy extra payload.
+		unset($values['extra']['origin'], $values['extra']['origin_id']);
 
 		$legacyContextFields = array(
 			'project_id',
@@ -56,6 +89,8 @@ class WorkorderFormHelper
 				$values[$field] = $requestData[$field];
 			}
 		}
+
+		$values = $this->mergeAdditionalInfoFromPayload($values, $requestData);
 
 		if (array_key_exists('vendor_id', $values))
 		{
@@ -491,6 +526,11 @@ class WorkorderFormHelper
 		}
 
 		return $values;
+	}
+
+	protected function mergeAdditionalInfoFromPayload(array $values, array $requestData): array
+	{
+		return BoCommon::mergeAdditionalInfoFromPayload($values, $requestData);
 	}
 
 	private function isIntegerValue($value): bool

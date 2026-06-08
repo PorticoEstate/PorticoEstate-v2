@@ -140,6 +140,77 @@ namespace Tests\Helpers
 			$this->assertSame('5804-01', $result['values']['location_code']);
 		}
 
+		public function testMapInputPromotesRelationInfoFieldsIntoValues(): void
+		{
+			$helper = $this->makeHelper();
+
+			$result = $helper->mapInput(array(
+				'values' => array(
+					'title' => 'WO',
+				),
+				'RelationInfo' => array(
+					'location_code' => '5804-77-09',
+					'tenant_id' => '312',
+					'p_entity_id' => 3,
+					'p_cat_id' => 4,
+					'p_num' => '55',
+					'origin' => 'property.ticket',
+					'origin_id' => 99,
+				),
+			));
+
+			$this->assertSame('5804-77-09', $result['values']['location_code']);
+			$this->assertSame(array('loc1' => '5804', 'loc2' => '77', 'loc3' => '09'), $result['values']['location']);
+			$this->assertSame('312', $result['values']['tenant_id']);
+			$this->assertSame(3, $result['values']['p_entity_id']);
+			$this->assertSame(4, $result['values']['p_cat_id']);
+			$this->assertSame('55', $result['values']['p_num']);
+			$this->assertSame('property.ticket', $result['values']['origin']);
+			$this->assertSame(99, $result['values']['origin_id']);
+			$this->assertSame('5804-77-09', $result['values']['extra']['location_code']);
+			$this->assertSame('312', $result['values']['extra']['tenant_id']);
+			$this->assertSame(3, $result['values']['extra']['p_entity_id']);
+			$this->assertSame(4, $result['values']['extra']['p_cat_id']);
+			$this->assertSame('55', $result['values']['extra']['p_num']);
+			$this->assertArrayNotHasKey('origin', $result['values']['extra']);
+			$this->assertArrayNotHasKey('origin_id', $result['values']['extra']);
+		}
+
+		public function testMapInputCopiesContactPhoneIntoExtra(): void
+		{
+			$helper = $this->makeHelper();
+
+			$result = $helper->mapInput(array(
+				'values' => array(
+					'title' => 'WO',
+					'contact_phone' => '55512345',
+				),
+			));
+
+			$this->assertSame('55512345', $result['values']['extra']['contact_phone']);
+		}
+
+		public function testMapInputMergesAdditionalInfoFromPayload(): void
+		{
+			$helper = new class extends WorkorderFormHelper
+			{
+				protected function mergeAdditionalInfoFromPayload(array $values, array $requestData): array
+				{
+					$values['additional_info']['Room'] = $requestData['room_name'] ?? '';
+					return $values;
+				}
+			};
+
+			$result = $helper->mapInput(array(
+				'values' => array(
+					'title' => 'WO',
+				),
+				'room_name' => 'A-201',
+			));
+
+			$this->assertSame('A-201', $result['values']['additional_info']['Room']);
+		}
+
 		public function testValidateUnsetsNewProjectWhenEqualProject(): void
 		{
 			$helper = $this->makeHelper();

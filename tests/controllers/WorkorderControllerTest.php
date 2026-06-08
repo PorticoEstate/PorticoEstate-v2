@@ -125,6 +125,25 @@ namespace Tests\Controllers
 			$controller->store($this->request, $this->response);
 		}
 
+		public function testStoreRejectsInvalidRelationInfoPayloadType(): void
+		{
+			$bo = new class
+			{
+			};
+			$helper = $this->createMock(WorkorderFormHelper::class);
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array(
+				'values' => array('title' => 'WO'),
+				'RelationInfo' => 'invalid',
+			));
+
+			$controller = $this->makeController($bo, $helper);
+
+			$this->expectException(HttpBadRequestException::class);
+			$controller->store($this->request, $this->response);
+		}
+
 		public function testUpdateReturnsErrorEnvelopeWhenValidationFails(): void
 		{
 			$bo = new class

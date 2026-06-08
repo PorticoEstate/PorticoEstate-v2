@@ -721,8 +721,10 @@ $(document).ready(function ()
 
 		var b_account_id = $('#b_account_id').val();
 
-		var oArgs = { menuaction: 'property.boworkorder.get_category', cat_id: data.id, b_account_id: b_account_id };
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = phpGWLink('property/workorder/lookups/category', {
+			cat_id: data.id,
+			b_account_id: b_account_id
+		}, true);
 
 		$.ajax({
 			type: 'POST',

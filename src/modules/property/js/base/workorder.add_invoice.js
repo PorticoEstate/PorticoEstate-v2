@@ -123,8 +123,7 @@ $(document).ready(function ()
 
 	$("#global_category_id").change(function ()
 	{
-		var oArgs = {menuaction: 'property.boworkorder.get_category', cat_id: $(this).val()};
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = phpGWLink('property/workorder/lookups/category', {cat_id: $(this).val()}, true);
 
 		var htmlString = "";
 

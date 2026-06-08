@@ -229,6 +229,8 @@ $app->group('/property/workorder', function (RouteCollectorProxy $group) use ($c
 	$group->post('/lookups/ecodimb', [$controller, 'getEcodimb']);
 	$group->get('/lookups/b-account', [$controller, 'getBAccount']);
 	$group->post('/lookups/b-account', [$controller, 'getBAccount']);
+	$group->get('/lookups/category', [$controller, 'getCategory']);
+	$group->post('/lookups/category', [$controller, 'getCategory']);
 	$group->get('/lookups/unspsc-code', [$controller, 'getUnspscCode']);
 	$group->post('/lookups/unspsc-code', [$controller, 'getUnspscCode']);
 	$group->get('/lookups/other-orders', [$controller, 'getOtherOrders']);

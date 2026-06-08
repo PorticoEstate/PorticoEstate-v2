@@ -302,6 +302,87 @@ class WorkorderController
 		return $this->jsonResponse($response, (array)$this->bocommon()->get_b_account());
 	}
 
+	private function getCategoryLookupResult(int $catId, string $bAccountId = ''): array
+	{
+		if ($catId <= 0)
+		{
+			return array();
+		}
+
+		$categoryRows = $this->bo()->cats->return_single($catId);
+		$category = (is_array($categoryRows) && isset($categoryRows[0]) && is_array($categoryRows[0]))
+			? $categoryRows[0]
+			: array();
+
+		if (!$category || $bAccountId === '')
+		{
+			return $category;
+		}
+
+		$bAccount = execMethod(
+			'property.bogeneric.read_single',
+			array(
+				'id' => $bAccountId,
+				'location_info' => array('type' => 'budget_account')
+			)
+		);
+
+		$accountGroupId = is_array($bAccount) ? (string)($bAccount['category'] ?? '') : '';
+		if ($accountGroupId === '')
+		{
+			return $category;
+		}
+
+		$sogeneric = CreateObject('property.sogeneric');
+		$sogeneric->get_location_info('b_account_category', false);
+		$accountGroupData = $sogeneric->read_single(array('id' => (int)$accountGroupId), array());
+
+		if (is_array($accountGroupData) && isset($accountGroupData['external_project']))
+		{
+			$category['mandatory_external_project'] = $accountGroupData['external_project'];
+		}
+
+		$parentCategories = array();
+		if (is_array($accountGroupData) && !empty($accountGroupData['project_category']))
+		{
+			$parentCategories = explode(',', trim((string)$accountGroupData['project_category'], ','));
+		}
+
+		if ($parentCategories)
+		{
+			$subCategories = $this->bo()->cats->return_sorted_array(0, false, '', '', '', false, $parentCategories);
+			$allowedCatIds = array();
+			foreach ((array)$subCategories as $entry)
+			{
+				if (is_array($entry) && isset($entry['id']))
+				{
+					$allowedCatIds[] = (int)$entry['id'];
+				}
+			}
+
+			if (!in_array($catId, $allowedCatIds, true))
+			{
+				$category['active'] = 0;
+			}
+		}
+
+		return $category;
+	}
+
+	public function getCategory(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to workorder category lookup');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$catId = (int)($input['cat_id'] ?? 0);
+		$bAccountId = (string)($input['b_account_id'] ?? '');
+
+		return $this->jsonResponse($response, $this->getCategoryLookupResult($catId, $bAccountId));
+	}
+
 	public function receiveOrder(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->hasEditAccess())

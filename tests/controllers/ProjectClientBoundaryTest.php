@@ -131,7 +131,7 @@ namespace Tests\Controllers
 
 			$this->assertIsString($contents);
 			$this->assertStringContainsString(
-				"phpGWLink('property/project/external-project'",
+				"phpGWLink('property/project/lookups/external-project'",
 				$contents,
 				'Workorder add invoice must use project REST external-project lookup endpoint'
 			);

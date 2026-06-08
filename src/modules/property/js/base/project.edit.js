@@ -801,6 +801,113 @@ function formDataToProjectObject(formData)
 	return payload;
 }
 
+function deriveProjectLocationCode(payloadValues, rawPayload)
+{
+	var explicitLocationCode = '';
+
+	if (payloadValues && typeof payloadValues.location_code === 'string' && payloadValues.location_code.trim() !== '')
+	{
+		explicitLocationCode = payloadValues.location_code.trim();
+	}
+	else if (rawPayload && typeof rawPayload.location_code === 'string' && rawPayload.location_code.trim() !== '')
+	{
+		explicitLocationCode = rawPayload.location_code.trim();
+	}
+
+	if (explicitLocationCode)
+	{
+		return explicitLocationCode;
+	}
+
+	var partsByLevel = {};
+
+	var locationNode = payloadValues && payloadValues.location && typeof payloadValues.location === 'object'
+		? payloadValues.location
+		: null;
+	if (locationNode)
+	{
+		for (var key in locationNode)
+		{
+			if (!Object.prototype.hasOwnProperty.call(locationNode, key))
+			{
+				continue;
+			}
+
+			var match = key.match(/^loc(\d+)$/);
+			if (!match)
+			{
+				continue;
+			}
+
+			var value = String(locationNode[key] || '').trim();
+			if (!value)
+			{
+				continue;
+			}
+
+			var level = parseInt(match[1], 10);
+			if (Number.isFinite(level) && level > 0 && !Object.prototype.hasOwnProperty.call(partsByLevel, level))
+			{
+				partsByLevel[level] = value;
+			}
+		}
+	}
+
+	var nodesToScan = [payloadValues || {}, rawPayload || {}];
+	for (var n = 0; n < nodesToScan.length; n++)
+	{
+		var node = nodesToScan[n];
+		for (var nodeKey in node)
+		{
+			if (!Object.prototype.hasOwnProperty.call(node, nodeKey))
+			{
+				continue;
+			}
+
+			var nodeMatch = nodeKey.match(/^loc(\d+)$/);
+			if (!nodeMatch)
+			{
+				continue;
+			}
+
+			var nodeValue = String(node[nodeKey] || '').trim();
+			if (!nodeValue)
+			{
+				continue;
+			}
+
+			var nodeLevel = parseInt(nodeMatch[1], 10);
+			if (Number.isFinite(nodeLevel) && nodeLevel > 0 && !Object.prototype.hasOwnProperty.call(partsByLevel, nodeLevel))
+			{
+				partsByLevel[nodeLevel] = nodeValue;
+			}
+		}
+	}
+
+	var levels = Object.keys(partsByLevel).map(function (level)
+	{
+		return parseInt(level, 10);
+	}).filter(function (level)
+	{
+		return Number.isFinite(level) && level > 0;
+	}).sort(function (a, b)
+	{
+		return a - b;
+	});
+
+	if (!levels.length)
+	{
+		return '';
+	}
+
+	var locationParts = levels.map(function (level)
+	{
+		return partsByLevel[level];
+	});
+
+	return locationParts.join('-');
+}
+
 function buildProjectSavePayload(formData)
 {
 	var rawPayload = formDataToProjectObject(formData);
@@ -828,6 +935,15 @@ function buildProjectSavePayload(formData)
 		if (!Object.prototype.hasOwnProperty.call(payloadValues, key))
 		{
 			payloadValues[key] = rawPayload[key];
+		}
+	}
+
+	if (!Object.prototype.hasOwnProperty.call(payloadValues, 'location_code') || !String(payloadValues.location_code || '').trim())
+	{
+		var derivedLocationCode = deriveProjectLocationCode(payloadValues, rawPayload);
+		if (derivedLocationCode)
+		{
+			payloadValues.location_code = derivedLocationCode;
 		}
 	}
 

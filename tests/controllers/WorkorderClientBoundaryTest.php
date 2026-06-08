@@ -66,6 +66,11 @@ namespace Tests\Controllers
 			$this->assertStringContainsString("submit_workorder_via_api('save')", $contents);
 			$this->assertStringContainsString("submit_workorder_via_api('send')", $contents);
 			$this->assertStringContainsString("submit_workorder_via_api('calculate')", $contents);
+			$this->assertStringContainsString('function enrichWorkorderRelationInfo(formData)', $contents);
+			$this->assertStringContainsString("formData.set('RelationInfo[location_code]', locationCode);", $contents);
+			$this->assertStringContainsString("var relationFields = ['tenant_id', 'p_num', 'p_entity_id', 'p_cat_id', 'origin', 'origin_id'];", $contents);
+			$this->assertStringContainsString("'RelationInfo[' + field + ']';", $contents);
+			$this->assertStringContainsString('enrichWorkorderRelationInfo(formData);', $contents);
 			$this->assertStringContainsString("function submit_workorder_via_api_xhr", $contents);
 			$this->assertStringContainsString("new XMLHttpRequest()", $contents);
 			$this->assertStringNotContainsString("if (!form || !window.fetch)", $contents);

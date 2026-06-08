@@ -173,6 +173,116 @@ function createWorkorderApiClient(form)
 	};
 }
 
+function getFirstWorkorderFormDataValue(formData, keys)
+{
+	for (var i = 0; i < keys.length; i++)
+	{
+		var value = formData.get(keys[i]);
+		if (value !== null && String(value) !== '')
+		{
+			return String(value);
+		}
+	}
+
+	return '';
+}
+
+function deriveWorkorderLocationCode(formData)
+{
+	var partsByLevel = {};
+
+	formData.forEach(function (rawValue, key)
+	{
+		var value = (rawValue === null || rawValue === undefined) ? '' : String(rawValue).trim();
+		if (!value)
+		{
+			return;
+		}
+
+		var match = key.match(/^values\[location\]\[loc(\d+)\]$/)
+			|| key.match(/^location\[loc(\d+)\]$/)
+			|| key.match(/^values\[loc(\d+)\]$/)
+			|| key.match(/^loc(\d+)$/);
+
+		if (!match)
+		{
+			return;
+		}
+
+		var level = parseInt(match[1], 10);
+		if (!Number.isFinite(level) || level <= 0)
+		{
+			return;
+		}
+
+		if (!Object.prototype.hasOwnProperty.call(partsByLevel, level))
+		{
+			partsByLevel[level] = value;
+		}
+	});
+
+	var levels = Object.keys(partsByLevel).map(function (level)
+	{
+		return parseInt(level, 10);
+	}).filter(function (level)
+	{
+		return Number.isFinite(level) && level > 0;
+	}).sort(function (a, b)
+	{
+		return a - b;
+	});
+
+	if (!levels.length)
+	{
+		return '';
+	}
+
+	var locationParts = [];
+	for (var i = 0; i < levels.length; i++)
+	{
+		locationParts.push(partsByLevel[levels[i]]);
+	}
+
+	return locationParts.join('-');
+}
+
+function enrichWorkorderRelationInfo(formData)
+{
+	var locationCode = getFirstWorkorderFormDataValue(formData, [
+		'RelationInfo[location_code]',
+		'values[location_code]',
+		'location_code'
+	]);
+
+	if (locationCode === '')
+	{
+		locationCode = deriveWorkorderLocationCode(formData);
+	}
+
+	if (locationCode !== '')
+	{
+		formData.set('RelationInfo[location_code]', locationCode);
+	}
+
+	var relationFields = ['tenant_id', 'p_num', 'p_entity_id', 'p_cat_id', 'origin', 'origin_id'];
+
+	for (var i = 0; i < relationFields.length; i++)
+	{
+		var field = relationFields[i];
+		var relationKey = 'RelationInfo[' + field + ']';
+		var value = getFirstWorkorderFormDataValue(formData, [
+			relationKey,
+			'values[' + field + ']',
+			field
+		]);
+
+		if (value !== '')
+		{
+			formData.set(relationKey, value);
+		}
+	}
+}
+
 function submit_workorder_via_api(actionType)
 {
 	var form = document.form;
@@ -187,6 +297,7 @@ function submit_workorder_via_api(actionType)
 	var formData = new FormData(form);
 	formData.set('phpgw_return_as', 'json');
 	formData.set('save', '1');
+	enrichWorkorderRelationInfo(formData);
 
 	if (!window.fetch)
 	{

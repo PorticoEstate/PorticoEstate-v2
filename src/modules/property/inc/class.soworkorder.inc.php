@@ -1290,8 +1290,7 @@ class property_soworkorder
 		$workorder['title']			 = $this->db->db_addslashes($workorder['title']);
 		$workorder['billable_hours'] = (float)str_replace(',', '.', $workorder['billable_hours']);
 
-		$cols	 = array();
-		$vals	 = array();
+		$value_set= array();
 
 		if (isset($workorder['extra']) && is_array($workorder['extra']))
 		{
@@ -1299,8 +1298,7 @@ class property_soworkorder
 			{
 				if ($value)
 				{
-					$cols[]	 = $input_name;
-					$vals[]	 = $value;
+					$value_set[$input_name] = $value;
 				}
 			}
 			unset($value);
@@ -1308,8 +1306,8 @@ class property_soworkorder
 
 		if ($workorder['location_code'])
 		{
-			$cols[]	 = 'location_code';
-			$vals[]	 = $workorder['location_code'];
+
+			$value_set['location_code'] = $workorder['location_code'];
 
 			$_address = array();
 			if ($workorder['street_name'])
@@ -1335,19 +1333,7 @@ class property_soworkorder
 			}
 			$address	 = $this->db->db_addslashes(implode(" ", $_address));
 
-			$cols[]	 = 'address';
-			$vals[]	 = $address;
-		}
-
-		if ($cols)
-		{
-			$cols	 = "," . implode(",", $cols);
-			$vals	 = ",'" . implode("','", $vals) . "'";
-		}
-		else
-		{
-			$cols	 = '';
-			$vals	 = '';
+			$value_set['address'] = $address;
 		}
 
 		$this->db->transaction_begin();
@@ -1375,55 +1361,50 @@ class property_soworkorder
 			$combined_cost = (int)$workorder['budget'];
 		}
 
-		$values = array(
-			$id,
-			$workorder['workorder_num'],
-			$workorder['project_id'],
-			$workorder['title'],
-			'public',
-			time(),
-			$workorder['start_date'],
-			$workorder['end_date'],
-			$workorder['tender_deadline'],
-			$workorder['tender_received'],
-			$workorder['inspection_on_completion'],
-			$workorder['status'],
-			$workorder['descr'],
-			(int)$workorder['budget'],
-			$combined_cost,
-			$this->db->db_addslashes($workorder['b_account_id']),
-			$workorder['addition_rs'],
-			$workorder['addition_percentage'],
-			$workorder['key_deliver'],
-			$workorder['key_fetch'],
-			$workorder['vendor_id'],
-			$workorder['charge_tenant'],
-			$workorder['user_id'] ? $workorder['user_id'] : $this->account,
-			$workorder['ecodimb'],
-			$workorder['cat_id'],
-			$workorder['billable_hours'],
-			$workorder['contract_sum'],
-			$workorder['approved'],
-			$workorder['continuous'],
-			$workorder['fictive_periodization'],
-			$workorder['contract_id'],
-			$workorder['tax_code'],
-			$workorder['unspsc_code'],
-			$workorder['service_id'],
-			$workorder['building_part'],
-			$workorder['order_dim1'],
-			isset($workorder['vendor_email']) && is_array($workorder['vendor_email']) ? implode(',', $workorder['vendor_email']) : '',
-			$workorder['delivery_address']
-		);
+		$value_set['id'] = $id;
+		$value_set['num'] = $workorder['workorder_num'];
+		$value_set['project_id'] = $workorder['project_id'];
+		$value_set['title'] = $workorder['title'];
+		$value_set['access'] = 'public';
+		$value_set['entry_date'] = time();
+		$value_set['start_date'] = $workorder['start_date'];
+		$value_set['end_date'] = $workorder['end_date'];
+		$value_set['tender_deadline'] = $workorder['tender_deadline'];
+		$value_set['tender_received'] = $workorder['tender_received'];
+		$value_set['inspection_on_completion'] = $workorder['inspection_on_completion'];
+		$value_set['status'] = $workorder['status'];
+		$value_set['descr'] = $workorder['descr'];
+		$value_set['budget'] = (int)$workorder['budget'];
+		$value_set['combined_cost'] = $combined_cost;
+		$value_set['account_id'] = $this->db->db_addslashes($workorder['b_account_id']);
+		$value_set['rig_addition'] = $workorder['addition_rs'];
+		$value_set['addition'] = $workorder['addition_percentage'];
+		$value_set['key_deliver'] = $workorder['key_deliver'];
+		$value_set['key_fetch'] = $workorder['key_fetch'];
+		$value_set['vendor_id'] = $workorder['vendor_id'];
+		$value_set['charge_tenant'] = $workorder['charge_tenant'];
+		$value_set['user_id'] = $workorder['user_id'] ? $workorder['user_id'] : $this->account;
+		$value_set['ecodimb'] = $workorder['ecodimb'];
+		$value_set['category'] = $workorder['cat_id'];
+		$value_set['billable_hours'] = $workorder['billable_hours'];
+		$value_set['contract_sum'] = $workorder['contract_sum'];
+		$value_set['approved'] = $workorder['approved'];
+		$value_set['continuous'] = $workorder['continuous'];
+		$value_set['fictive_periodization'] = $workorder['fictive_periodization'];
+		$value_set['contract_id'] = $workorder['contract_id'];
+		$value_set['tax_code'] = $workorder['tax_code'];
+		$value_set['unspsc_code'] = $workorder['unspsc_code'];
+		$value_set['service_id'] = $workorder['service_id'];
+		$value_set['building_part'] = $workorder['building_part'];
+		$value_set['order_dim1'] = $workorder['order_dim1'];
+		$value_set['mail_recipients'] = isset($workorder['vendor_email']) && is_array($workorder['vendor_email']) ? implode(',', $workorder['vendor_email']) : '';
+		$value_set['delivery_address'] = $workorder['delivery_address'];
 
-		$values = $this->db->validate_insert($values);
+		$cols = implode(',', array_keys($value_set));
+		$values = $this->db->validate_insert(array_values($value_set));
 
-		$this->db->query("INSERT INTO fm_workorder (id,num,project_id,title,access,entry_date,start_date,end_date,tender_deadline,"
-			. "tender_received,inspection_on_completion,status,"
-			. "descr,budget,combined_cost,account_id,rig_addition,addition,key_deliver,key_fetch,vendor_id,charge_tenant,"
-			. "user_id,ecodimb,category,billable_hours,contract_sum,approved,continuous,fictive_periodization,"
-			. "contract_id, tax_code, unspsc_code, service_id,building_part, order_dim1, mail_recipients, delivery_address $cols) "
-			. "VALUES ( {$values} {$vals})", __LINE__, __FILE__);
+		$this->db->query("INSERT INTO fm_workorder ({$cols}) VALUES ({$values})", __LINE__, __FILE__);
+
 
 		$secret = (new \phpgwapi_common())->randomstring();
 		$this->db->query("INSERT INTO fm_orders (id,type, secret) VALUES ({$id},'workorder', '{$secret}')");

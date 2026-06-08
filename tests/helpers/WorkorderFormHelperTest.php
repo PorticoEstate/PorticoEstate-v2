@@ -167,7 +167,7 @@ namespace Tests\Helpers
 			$this->assertSame('55', $result['values']['p_num']);
 			$this->assertSame('property.ticket', $result['values']['origin']);
 			$this->assertSame(99, $result['values']['origin_id']);
-			$this->assertSame('5804-77-09', $result['values']['extra']['location_code']);
+			$this->assertArrayNotHasKey('location_code', $result['values']['extra']);
 			$this->assertSame('312', $result['values']['extra']['tenant_id']);
 			$this->assertSame(3, $result['values']['extra']['p_entity_id']);
 			$this->assertSame(4, $result['values']['extra']['p_cat_id']);
@@ -188,6 +188,25 @@ namespace Tests\Helpers
 			));
 
 			$this->assertSame('55512345', $result['values']['extra']['contact_phone']);
+		}
+
+		public function testMapInputPromotesStreetAndLocationNameFromTopLevelPayload(): void
+		{
+			$helper = $this->makeHelper();
+
+			$result = $helper->mapInput(array(
+				'values' => array(
+					'title' => 'WO',
+					'location_code' => '5804-01-01',
+				),
+				'street_name' => 'Main Street',
+				'street_number' => '12B',
+				'location_name' => 'Building A',
+			));
+
+			$this->assertSame('Main Street', $result['values']['street_name']);
+			$this->assertSame('12B', $result['values']['street_number']);
+			$this->assertSame('Building A', $result['values']['location_name']);
 		}
 
 		public function testMapInputMergesAdditionalInfoFromPayload(): void

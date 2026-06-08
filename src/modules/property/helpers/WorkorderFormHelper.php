@@ -47,7 +47,6 @@ class WorkorderFormHelper
 		}
 
 		$extraRelationFields = array(
-			'location_code',
 			'tenant_id',
 			'p_num',
 			'p_entity_id',
@@ -70,6 +69,9 @@ class WorkorderFormHelper
 			'origin',
 			'origin_id',
 			'location_code',
+			'location_name',
+			'street_name',
+			'street_number',
 			'tenant_id',
 			'p_num',
 			'p_entity_id',

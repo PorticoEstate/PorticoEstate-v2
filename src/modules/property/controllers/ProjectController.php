@@ -366,7 +366,6 @@ class ProjectController
 		);
 
 		$extraRelationFields = array(
-			'location_code',
 			'tenant_id',
 			'p_num',
 			'p_entity_id',

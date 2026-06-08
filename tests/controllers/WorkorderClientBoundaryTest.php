@@ -48,6 +48,8 @@ namespace Tests\Controllers
 			$this->assertStringNotContainsString("menuaction: 'property.boworkorder.get_category'", $addInvoice);
 			$this->assertStringNotContainsString("menuaction: 'property.uiworkorder.get_vendor_contract'", $addDeviation);
 			$this->assertStringNotContainsString("menuaction:'property.uiworkorder.get_other_orders'", $addDeviation);
+			$this->assertStringNotContainsString("property.uitts.", $addDeviation);
+			$this->assertStringNotContainsString("menuaction: 'property.boworkorder.get_category'", $addDeviation);
 			$this->assertStringNotContainsString("menuaction: 'property.uiworkorder.get_vendor_contract'", $orderTemplate);
 			$this->assertStringNotContainsString("menuaction: 'property.boworkorder.get_category'", $orderTemplate);
 		}

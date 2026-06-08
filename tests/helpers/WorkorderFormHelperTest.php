@@ -230,6 +230,20 @@ namespace Tests\Helpers
 			$this->assertSame('A-201', $result['values']['additional_info']['Room']);
 		}
 
+		public function testMapInputPromotesCopyWorkorderFromFromTopLevelPayload(): void
+		{
+			$helper = $this->makeHelper();
+
+			$result = $helper->mapInput(array(
+				'values' => array(
+					'title' => 'WO',
+				),
+				'copy_workorder_from' => '77',
+			));
+
+			$this->assertSame('77', (string)$result['values']['copy_workorder_from']);
+		}
+
 		public function testValidateUnsetsNewProjectWhenEqualProject(): void
 		{
 			$helper = $this->makeHelper();
@@ -526,6 +540,61 @@ namespace Tests\Helpers
 
 			$result = $helper->validate($state);
 			$this->assertNotContains('Please select a valid dimb!', $result['errors']);
+		}
+
+		public function testValidateCopyWorkorderInheritsBudgetFromSourceId(): void
+		{
+			$helper = new class extends WorkorderFormHelper
+			{
+				protected function getConfigData(): array
+				{
+					return array();
+				}
+
+				protected function readProjectMini(int $projectId): array
+				{
+					return array('ecodimb' => '123');
+				}
+
+				protected function readGeneric(string $type, int $id): array
+				{
+					if ($type === 'budget_account')
+					{
+						return array('active' => 1);
+					}
+
+					if ($type === 'dimb')
+					{
+						return array('active' => 1);
+					}
+
+					return array();
+				}
+
+				protected function readWorkorderSingle(int $workorderId): array
+				{
+					return array('budget' => 3500);
+				}
+			};
+
+			$state = array(
+				'is_edit' => false,
+				'values' => array(
+					'title' => 'WO',
+					'project_id' => 20,
+					'status' => 'open',
+					'b_account_id' => 8,
+					'ecodimb' => 123,
+					'copy_workorder' => 1,
+					'copy_workorder_from' => 77,
+					'budget' => '',
+					'contract_sum' => '',
+				),
+			);
+
+			$result = $helper->validate($state);
+			$this->assertSame('3500', $result['values']['budget']);
+			$this->assertNotContains('please enter either a budget or contrakt sum', $result['errors']);
 		}
 
 		public function testValidateChecksActiveDimbOnlyOnFallbackPath(): void

@@ -77,6 +77,33 @@ namespace Tests\Controllers
 			$this->assertStringNotContainsString("if (!form || !window.fetch)\n\t{\n\t\tform.submit();", $contents);
 		}
 
+		public function testWorkorderCopyUsesCreateEndpointAndPostMethod(): void
+		{
+			$editPath = __DIR__ . '/../../src/modules/property/js/base/workorder.edit.js';
+			$contents = (string)file_get_contents($editPath);
+
+			$this->assertStringContainsString(
+				"function isWorkorderCopyRequested(form)",
+				$contents,
+				'Workorder edit client should detect when copy_workorder is checked'
+			);
+			$this->assertStringContainsString(
+				"method = 'POST';",
+				$contents,
+				'Workorder copy should force POST semantics to create a new workorder'
+			);
+			$this->assertStringContainsString(
+				"url = phpGWLink('property/workorder/create', {});",
+				$contents,
+				'Workorder copy should force the create endpoint instead of updating the source workorder'
+			);
+			$this->assertStringContainsString(
+				"formData.set('copy_workorder_from', String(order_id));",
+				$contents,
+				'Workorder copy should include the source workorder id for create-path budget fallback'
+			);
+		}
+
 		public function testWorkorderRoutesExposeRestSaveEndpoints(): void
 		{
 			$routesPath = __DIR__ . '/../../src/modules/property/routes/Routes.php';

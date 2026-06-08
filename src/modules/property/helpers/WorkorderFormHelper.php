@@ -82,6 +82,7 @@ class WorkorderFormHelper
 			'send_workorder',
 			'calculate_workorder',
 			'copy_workorder',
+			'copy_workorder_from',
 		);
 
 		foreach ($legacyContextFields as $field)
@@ -152,6 +153,18 @@ class WorkorderFormHelper
 		$messages = $state['messages'] ?? array();
 
 		$configData = $this->getConfigData();
+
+		if (empty($state['is_edit']) && !empty($values['copy_workorder']))
+		{
+			$copyFromId = (int)($values['copy_workorder_from'] ?? 0);
+			if ($copyFromId > 0)
+			{
+				$sourceWorkorder = $this->readWorkorderSingle($copyFromId);
+				$sourceBudget = (int)($sourceWorkorder['budget'] ?? 0);
+				$values['budget'] = (string)($sourceBudget !== 0 ? $sourceBudget : 1);
+			}
+		}
+
 		$projectId = (int)($values['project_id'] ?? 0);
 		$project = $projectId > 0 ? $this->readProjectMini($projectId) : array();
 		$projectEcodimb = (string)($project['ecodimb'] ?? '');
@@ -401,6 +414,18 @@ class WorkorderFormHelper
 		$boproject = CreateObject('property.boproject');
 		$project = $boproject->read_single_mini($projectId);
 		return is_array($project) ? $project : array();
+	}
+
+	protected function readWorkorderSingle(int $workorderId): array
+	{
+		if ($workorderId <= 0)
+		{
+			return array();
+		}
+
+		$boworkorder = CreateObject('property.boworkorder');
+		$workorder = $boworkorder->read_single($workorderId);
+		return is_array($workorder) ? $workorder : array();
 	}
 
 	protected function readGeneric(string $type, int $id): array

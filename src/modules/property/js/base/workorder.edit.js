@@ -173,6 +173,35 @@ function createWorkorderApiClient(form)
 	};
 }
 
+function isWorkorderCopyRequested(form)
+{
+	var copyWorkorderField = form ? form.querySelector('input[name="values[copy_workorder]"]') : null;
+	return !!(copyWorkorderField && copyWorkorderField.checked);
+}
+
+function normalizeWorkorderSaveRequest(saveRequest, currentOrderId, forceCreate)
+{
+	var parsedOrderId = parseInt(currentOrderId, 10);
+	var isCreate = !!forceCreate || isNaN(parsedOrderId) || parsedOrderId <= 0;
+	var method = (saveRequest && saveRequest.method) ? String(saveRequest.method).toUpperCase() : 'POST';
+	var url = (saveRequest && saveRequest.url) ? saveRequest.url : phpGWLink('property/workorder/create', {});
+
+	if (isCreate)
+	{
+		method = 'POST';
+
+		if (!url || url.indexOf('/property/workorder/create') === -1)
+		{
+			url = phpGWLink('property/workorder/create', {});
+		}
+	}
+
+	return {
+		url: url,
+		method: method
+	};
+}
+
 function getFirstWorkorderFormDataValue(formData, keys)
 {
 	for (var i = 0; i < keys.length; i++)
@@ -293,10 +322,16 @@ function submit_workorder_via_api(actionType)
 
 	var action = actionType || 'save';
 
-	var saveRequest = createWorkorderApiClient(form).buildSaveRequest(order_id);
+	var copyWorkorderRequested = isWorkorderCopyRequested(form);
+	var saveRequestRaw = createWorkorderApiClient(form).buildSaveRequest(order_id);
+	var saveRequest = normalizeWorkorderSaveRequest(saveRequestRaw, order_id, copyWorkorderRequested);
 	var formData = new FormData(form);
 	formData.set('phpgw_return_as', 'json');
 	formData.set('save', '1');
+	if (copyWorkorderRequested && Number(order_id) > 0)
+	{
+		formData.set('copy_workorder_from', String(order_id));
+	}
 	enrichWorkorderRelationInfo(formData);
 
 	if (!window.fetch)

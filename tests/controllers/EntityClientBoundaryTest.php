@@ -32,6 +32,28 @@ namespace Tests\Controllers
 			$this->assertStringContainsString("menuaction: 'property.uientity.index'", $contents);
 		}
 
+		public function testEntityInventoryPopupLinksUseRestRoutes(): void
+		{
+			$path = __DIR__ . '/../../src/modules/property/js/base/entity.edit.js';
+			$contents = (string)file_get_contents($path);
+
+			$this->assertStringContainsString("+ '/inventory/add?location_id=' + encodeURIComponent(location_id);", $contents);
+			$this->assertStringContainsString("+ '/inventory/' + encodeURIComponent(inventory_id)", $contents);
+			$this->assertStringContainsString("+ '/edit?location_id=' + encodeURIComponent(location_id);", $contents);
+			$this->assertStringContainsString("+ '/inventory/' + encodeURIComponent(inventory_id)", $contents);
+			$this->assertStringContainsString("+ '/calendar?location_id=' + encodeURIComponent(location_id);", $contents);
+		}
+
+		public function testEntitySummaryUsesServerProvidedRestItemsPerQrEndpoint(): void
+		{
+			$path = __DIR__ . '/../../src/modules/property/js/base/entity.summary.js';
+			$contents = (string)file_get_contents($path);
+
+			$this->assertStringContainsString('/* global get_items_per_qr_url */', $contents);
+			$this->assertStringContainsString("var qr_code_infoURL = get_items_per_qr_url + '?qr_code=' + encodeURIComponent(qr_code);", $contents);
+			$this->assertStringNotContainsString("menuaction: 'property.uientity.get_items_per_qr'", $contents);
+		}
+
 		public function testEntityRoutesExposeRestSaveEndpoints(): void
 		{
 			$routesPath = __DIR__ . '/../../src/modules/property/routes/Routes.php';

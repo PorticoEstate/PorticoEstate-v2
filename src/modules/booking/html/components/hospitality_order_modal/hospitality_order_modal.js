@@ -144,12 +144,18 @@ var HospitalityOrderModal = (function () {
 			return d.toLocaleDateString('nb-NO', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
 		}
 
-		function fmtNaiveIso(d) {
+		function fmtLocalIso(d) {
+			var pad = function (n) { return String(n).padStart(2, '0'); };
+			// Offset in minutes east of UTC (getTimezoneOffset is minutes behind UTC)
+			var offMin = -d.getTimezoneOffset();
+			var sign = offMin >= 0 ? '+' : '-';
+			var absOff = Math.abs(offMin);
 			return d.getFullYear() + '-' +
-				String(d.getMonth() + 1).padStart(2, '0') + '-' +
-				String(d.getDate()).padStart(2, '0') + 'T' +
-				String(d.getHours()).padStart(2, '0') + ':' +
-				String(d.getMinutes()).padStart(2, '0') + ':00';
+				pad(d.getMonth() + 1) + '-' +
+				pad(d.getDate()) + 'T' +
+				pad(d.getHours()) + ':' +
+				pad(d.getMinutes()) + ':00' +
+				sign + pad(Math.floor(absOff / 60)) + ':' + pad(absOff % 60);
 		}
 
 		function populateTimeSlots(dateIdx) {
@@ -161,7 +167,7 @@ var HospitalityOrderModal = (function () {
 			var slots = generate15MinIntervals(range.from_, range.to_);
 			slots.forEach(function (slot) {
 				var opt = document.createElement('option');
-				opt.value = fmtNaiveIso(slot);
+				opt.value = fmtLocalIso(slot);
 				opt.textContent = fmtTime(slot);
 				timeSelect.appendChild(opt);
 			});

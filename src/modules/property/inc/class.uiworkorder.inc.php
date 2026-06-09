@@ -70,7 +70,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 	var $jqcal;
 	var $public_functions = array(
 		'columns'					 => true,
-		'query'						 => true,
+		'query'					 => false,
 		'download'					 => true,
 		'index'						 => true,
 		'view'						 => true,
@@ -466,10 +466,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		$options = array();
 		$options['base_dir']	 = 'workorder/' . $id;
 		$options['upload_dir']	 = $this->serverSettings['files_dir'] . '/property/' . $options['base_dir'] . '/';
-		$options['script_url']	 = html_entity_decode(self::link(array(
-			'menuaction' => 'property.uiworkorder.handle_multi_upload_file',
-			'id'		 => $id
-		)));
+		$options['script_url']	 = phpgw::link('/property/workorder/' . (int)$id . '/multi-upload');
 		$upload_handler			 = new property_multiuploader($options, false);
 
 		switch ($_SERVER['REQUEST_METHOD'])

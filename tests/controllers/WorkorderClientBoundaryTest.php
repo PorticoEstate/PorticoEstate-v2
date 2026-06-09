@@ -43,6 +43,11 @@ namespace Tests\Controllers
 			$this->assertStringContainsString("phpGWLink('property/workorder/lookups/other-orders'", $addDeviation);
 			$this->assertStringContainsString("phpGWLink('property/workorder/lookups/vendor-contract'", $orderTemplate);
 			$this->assertStringContainsString("phpGWLink('property/workorder/lookups/category'", $orderTemplate);
+			$this->assertStringContainsString("phpGWLink('property/workorder/lookups/eco-service'", $orderTemplate);
+			$this->assertStringContainsString("phpGWLink('property/workorder/lookups/ecodimb'", $orderTemplate);
+			$this->assertStringContainsString("phpGWLink('property/workorder/lookups/b-account'", $orderTemplate);
+			$this->assertStringContainsString("phpGWLink('property/project/lookups/external-project'", $orderTemplate);
+			$this->assertStringContainsString("phpGWLink('property/workorder/lookups/unspsc-code'", $orderTemplate);
 
 			$this->assertStringNotContainsString("menuaction: 'property.uiworkorder.get_vendor_contract'", $addInvoice);
 			$this->assertStringNotContainsString("menuaction: 'property.boworkorder.get_category'", $addInvoice);
@@ -52,6 +57,7 @@ namespace Tests\Controllers
 			$this->assertStringNotContainsString("menuaction: 'property.boworkorder.get_category'", $addDeviation);
 			$this->assertStringNotContainsString("menuaction: 'property.uiworkorder.get_vendor_contract'", $orderTemplate);
 			$this->assertStringNotContainsString("menuaction: 'property.boworkorder.get_category'", $orderTemplate);
+			$this->assertStringNotContainsString("property.uitts.", $orderTemplate);
 		}
 
 		public function testWorkorderNavigationStillUsesLegacyMenuaction(): void

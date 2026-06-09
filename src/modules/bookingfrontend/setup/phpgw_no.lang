@@ -967,6 +967,8 @@ select_hospitality	bookingfrontend	no	Velg servering
 cancellation_deadline_info	bookingfrontend	no	Kan avbestilles innen %1
 cancellation_deadline_passed	bookingfrontend	no	Avbestillingsfristen har utløpt
 cancellation_deadline_passed_warning	bookingfrontend	no	Avbestillingsfristen har utløpt. Hvis du bestiller vil du ikke kunne avbestille.
+close_calendar_without_season	bookingfrontend	no	Steng kalender når bygg mangler sesong
+close_calendar_without_season_note	bookingfrontend	no	Når aktiv vises bygg uten definert sesong som stengt
 user_data	bookingfrontend	no	Brukerdata
 user_data_description	bookingfrontend	no	Slik viser AktivKommune deg som søker. Endringer i navn og personnummer hentes fra ID-porten.
 applications_description	bookingfrontend	no	Alle søknader om leie du har sendt inn — som privatperson eller på vegne av en organisasjon.

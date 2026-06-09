@@ -438,6 +438,14 @@ namespace Tests\Controllers
 				{
 					return array(
 						array(
+							'file_id' => 8,
+							'name' => 'sample.pdf',
+							'file_name' => 'sample.pdf',
+							'directory' => '/workorder/77',
+							'mime_type' => 'application/pdf',
+							'tags' => '',
+						),
+						array(
 							'file_id' => 9,
 							'name' => 'sample.png',
 							'file_name' => 'sample.png',
@@ -457,9 +465,11 @@ namespace Tests\Controllers
 			$controller->getFiles($this->request, $this->response, array('id' => 77));
 
 			$payload = json_decode($this->responseBody, true);
-			$this->assertCount(1, $payload['data']);
-			$this->assertStringContainsString('/property/workorder/77/files/image', $payload['data'][0]['img_url']);
-			$this->assertStringNotContainsString('menuaction=property.uiworkorder.view_image', $payload['data'][0]['img_url']);
+			$this->assertCount(2, $payload['data']);
+			$this->assertStringContainsString('/property/workorder/files/view', $payload['data'][0]['file_name']);
+			$this->assertStringNotContainsString('menuaction=property.uiworkorder.view_file', $payload['data'][0]['file_name']);
+			$this->assertStringContainsString('/property/workorder/77/files/image', $payload['data'][1]['img_url']);
+			$this->assertStringNotContainsString('menuaction=property.uiworkorder.view_image', $payload['data'][1]['img_url']);
 		}
 
 		public function testUpdateFileDataReturnsSuccessEnvelopeForNoopAction(): void

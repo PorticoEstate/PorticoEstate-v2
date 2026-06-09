@@ -459,9 +459,7 @@ class WorkorderController
 
 		$viewImageUrl = '/property/workorder/' . $id . '/files/image';
 
-		$linkViewFile = \phpgw::link('/index.php', array(
-			'menuaction' => 'property.uiworkorder.view_file',
-		));
+		$linkViewFile = \phpgw::link('/property/workorder/files/view');
 
 		$values = $this->bo()->get_files($id);
 		$contentFiles = array();
@@ -643,7 +641,7 @@ class WorkorderController
 		$imgTypes = array('image/jpeg', 'image/png', 'image/gif');
 		$sortArray = array();
 
-		$linkWorkorderFile = \phpgw::link('/index.php', array('menuaction' => 'property.uiworkorder.view_file'));
+		$linkWorkorderFile = \phpgw::link('/property/workorder/files/view');
 		$langViewFile = lang('click to view file');
 		$langSelectFile = lang('Check to attach file');
 		$langWorkorder = lang('workorder');
@@ -705,6 +703,24 @@ class WorkorderController
 		}
 
 		return $this->datatableResponse($response, $input, $contentAttachments, count($contentAttachments));
+	}
+
+	public function viewFile(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to workorder files');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$fileId = (int)($input['file_id'] ?? 0);
+		if ($fileId <= 0)
+		{
+			throw new HttpNotFoundException($request, 'File not found');
+		}
+
+		execMethod('property.bofiles.get_file', $fileId);
+		return $response;
 	}
 
 	public function viewImage(Request $request, Response $response, array $args): Response

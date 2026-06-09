@@ -127,6 +127,7 @@ namespace Tests\Controllers
 			$this->assertStringContainsString('$group->post(\'/{id:[0-9]+}\', [$controller, \'update\']);', $contents);
 			$this->assertStringContainsString('$group->get(\'/lookups/category\', [$controller, \'getCategory\']);', $contents);
 			$this->assertStringContainsString('$group->post(\'/lookups/category\', [$controller, \'getCategory\']);', $contents);
+			$this->assertStringContainsString('$group->get(\'/files/view\', [$controller, \'viewFile\']);', $contents);
 			$this->assertStringContainsString('$group->get(\'/{id:[0-9]+}/files/image\', [$controller, \'viewImage\']);', $contents);
 			$this->assertStringContainsString('$group->get(\'/{id:[0-9]+}/multi-upload\', [$controller, \'buildMultiUploadFile\']);', $contents);
 			$this->assertStringContainsString('$group->map([\'POST\', \'PUT\', \'PATCH\', \'DELETE\', \'HEAD\', \'OPTIONS\'], \'/{id:[0-9]+}/multi-upload\', [$controller, \'handleMultiUploadFile\']);', $contents);

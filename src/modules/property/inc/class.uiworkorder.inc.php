@@ -91,7 +91,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		'build_multi_upload_file'	 => false,
 		'get_files'					 => false,
 		'get_files_attachments'		 => false,
-		'view_image'				 => true,
+		'view_image'				 => false,
 		'get_other_orders'			 => false,
 		'update_file_data'			 => false
 	);

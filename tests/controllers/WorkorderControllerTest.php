@@ -421,6 +421,47 @@ namespace Tests\Controllers
 			$this->assertSame(array(), $payload['data']);
 		}
 
+		public function testGetFilesUsesRestImageEndpointForImageRows(): void
+		{
+			if (!class_exists('\\phpgw'))
+			{
+				eval('class phpgw { public static function link($url, $extravars = array()) { if (is_array($extravars) && !empty($extravars)) { $query = http_build_query($extravars); return $url . (strpos($url, "?") === false ? "?" : "&") . $query; } return $url; } }');
+			}
+			if (!function_exists('lang'))
+			{
+				eval('function lang($text) { return $text; }');
+			}
+
+			$bo = new class
+			{
+				public function get_files(int $id): array
+				{
+					return array(
+						array(
+							'file_id' => 9,
+							'name' => 'sample.png',
+							'file_name' => 'sample.png',
+							'directory' => '/workorder/77',
+							'mime_type' => 'image/png',
+							'tags' => '',
+						)
+					);
+				}
+			};
+			$helper = $this->createMock(WorkorderFormHelper::class);
+
+			$this->request->method('getQueryParams')->willReturn(array('draw' => 2));
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithDeps($bo, $helper);
+			$controller->getFiles($this->request, $this->response, array('id' => 77));
+
+			$payload = json_decode($this->responseBody, true);
+			$this->assertCount(1, $payload['data']);
+			$this->assertStringContainsString('/property/workorder/77/files/image', $payload['data'][0]['img_url']);
+			$this->assertStringNotContainsString('menuaction=property.uiworkorder.view_image', $payload['data'][0]['img_url']);
+		}
+
 		public function testUpdateFileDataReturnsSuccessEnvelopeForNoopAction(): void
 		{
 			if (!function_exists('CreateObject'))

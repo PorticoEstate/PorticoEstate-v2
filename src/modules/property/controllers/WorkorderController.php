@@ -12,6 +12,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use App\modules\phpgwapi\security\Acl;
 use Slim\Exception\HttpBadRequestException;
 use Slim\Exception\HttpForbiddenException;
+use Slim\Exception\HttpNotFoundException;
 
 class WorkorderController
 {
@@ -456,6 +457,8 @@ class WorkorderController
 			return $this->datatableResponse($response, $input, array(), 0);
 		}
 
+		$viewImageUrl = '/property/workorder/' . $id . '/files/image';
+
 		$linkViewFile = \phpgw::link('/index.php', array(
 			'menuaction' => 'property.uiworkorder.view_file',
 		));
@@ -507,8 +510,7 @@ class WorkorderController
 			{
 				$contentFiles[$lastIndex]['file_name'] = $_entry['name'];
 				$contentFiles[$lastIndex]['img_id'] = $_entry['file_id'];
-				$contentFiles[$lastIndex]['img_url'] = \phpgw::link('/index.php', array(
-					'menuaction' => 'property.uiworkorder.view_image',
+				$contentFiles[$lastIndex]['img_url'] = \phpgw::link($viewImageUrl, array(
 					'img_id' => $_entry['file_id'],
 					'file' => $_entry['directory'] . '/' . $_entry['file_name']
 				));
@@ -633,6 +635,8 @@ class WorkorderController
 			return $this->datatableResponse($response, $input, array(), 0);
 		}
 
+		$viewImageUrl = '/property/workorder/' . $id . '/files/image';
+
 		$values = $this->bo()->read_single($id);
 		$fileAttachments = isset($values['file_attachments']) && is_array($values['file_attachments']) ? $values['file_attachments'] : array();
 		$contentAttachments = array();
@@ -661,8 +665,7 @@ class WorkorderController
 			{
 				$contentAttachments[$z]['file_name'] = $_entry['name'];
 				$contentAttachments[$z]['img_id'] = $_entry['file_id'];
-				$contentAttachments[$z]['img_url'] = \phpgw::link('/index.php', array(
-					'menuaction' => 'property.uiworkorder.view_image',
+				$contentAttachments[$z]['img_url'] = \phpgw::link($viewImageUrl, array(
 					'img_id' => $_entry['file_id']
 				));
 			}
@@ -689,8 +692,7 @@ class WorkorderController
 			{
 				$contentAttachments[$z]['file_name'] = $_entry['name'];
 				$contentAttachments[$z]['img_id'] = $_entry['file_id'];
-				$contentAttachments[$z]['img_url'] = \phpgw::link('/index.php', array(
-					'menuaction' => 'property.uiworkorder.view_image',
+				$contentAttachments[$z]['img_url'] = \phpgw::link($viewImageUrl, array(
 					'img_id' => $_entry['file_id']
 				));
 			}
@@ -703,5 +705,66 @@ class WorkorderController
 		}
 
 		return $this->datatableResponse($response, $input, $contentAttachments, count($contentAttachments));
+	}
+
+	public function viewImage(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to workorder images');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$thumb = !empty($input['thumb']);
+		$imgId = (int)($input['img_id'] ?? 0);
+
+		$bofiles = CreateObject('property.bofiles');
+		$file = '';
+		if ($imgId > 0)
+		{
+			$fileInfo = $bofiles->vfs->get_info($imgId);
+			$file = isset($fileInfo['directory'], $fileInfo['name'])
+				? $fileInfo['directory'] . '/' . $fileInfo['name']
+				: '';
+		}
+		else
+		{
+			$file = urldecode((string)($input['file'] ?? ''));
+		}
+
+		if ($file === '')
+		{
+			throw new HttpNotFoundException($request, 'Image not found');
+		}
+
+		$source = "{$bofiles->rootdir}{$file}";
+		if (preg_match('/\.\./', $source))
+		{
+			throw new HttpForbiddenException($request, 'Invalid image path');
+		}
+
+		$thumbfile = $source . '.thumb';
+		if ($thumb)
+		{
+			if (!is_file($thumbfile) && $bofiles->is_image($source))
+			{
+				$bofiles->resize_image($source, $thumbfile, 100);
+			}
+
+			if (is_file($thumbfile))
+			{
+				readfile($thumbfile);
+				return $response;
+			}
+		}
+
+		if ($imgId > 0)
+		{
+			$bofiles->get_file($imgId);
+			return $response;
+		}
+
+		$bofiles->view_file('', $file);
+		return $response;
 	}
 }

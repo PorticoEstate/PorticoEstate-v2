@@ -238,6 +238,7 @@ $app->group('/property/workorder', function (RouteCollectorProxy $group) use ($c
 	$group->post('/{id:[0-9]+}/receive-order', [$controller, 'receiveOrder']);
 	$group->get('/{id:[0-9]+}/files', [$controller, 'getFiles']);
 	$group->post('/{id:[0-9]+}/files', [$controller, 'getFiles']);
+	$group->get('/{id:[0-9]+}/files/image', [$controller, 'viewImage']);
 	$group->post('/{id:[0-9]+}/files/actions', [$controller, 'updateFileData']);
 	$group->get('/{id:[0-9]+}/multi-upload', [$controller, 'buildMultiUploadFile']);
 	$group->map(['POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'], '/{id:[0-9]+}/multi-upload', [$controller, 'handleMultiUploadFile']);

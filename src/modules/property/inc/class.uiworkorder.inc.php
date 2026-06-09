@@ -750,16 +750,8 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 	{
 		if (!$this->acl_read)
 		{
-			phpgw::redirect_link('/index.php', array(
-				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1,
-				'acl_location'	 => $this->acl_location
-			));
-		}
-
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			return $this->query();
+			phpgw::no_access();
+			 return;
 		}
 
 		$lookup			 = Sanitizer::get_var('lookup', 'bool');
@@ -830,21 +822,19 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 				)
 			),
 			'datatable'		 => array(
-				'source'		 => self::link(array(
-					'menuaction'		 => 'property.uiworkorder.index',
-					'lookup'			 => $lookup,
-					'make_relation'		 => $make_relation,
-					'relation_id'		 => $relation_id,
-					'relation_type'		 => $relation_type,
-					'district_id'		 => $this->district_id,
-					'start_date'		 => $start_date,
-					'end_date'			 => $end_date,
-					'b_group'			 => $this->b_group,
-					'b_account'			 => $this->b_account,
-					'paid'				 => $this->paid,
-					'obligation'		 => $this->obligation,
-					'ecodimb'			 => $this->ecodimb,
-					'phpgw_return_as'	 => 'json'
+				'source'		 => phpgw::link('/property/workorder', array(
+					'lookup'		 => $lookup,
+					'make_relation'	 => $make_relation,
+					'relation_id'	 => $relation_id,
+					'relation_type'	 => $relation_type,
+					'district_id'	 => $this->district_id,
+					'start_date'	 => $start_date,
+					'end_date'		 => $end_date,
+					'b_group'		 => $this->b_group,
+					'b_account'		 => $this->b_account,
+					'paid'			 => $this->paid,
+					'obligation'	 => $this->obligation,
+					'ecodimb'		 => $this->ecodimb,
 				)),
 				'download'		 => self::link(array(
 					'menuaction' => 'property.uiworkorder.download',

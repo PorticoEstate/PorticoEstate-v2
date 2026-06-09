@@ -219,6 +219,8 @@ $app->group('/property/workorder', function (RouteCollectorProxy $group) use ($c
 {
 	$controller = new WorkorderController($container);
 
+	$group->get('', [$controller, 'index']);
+	$group->post('', [$controller, 'index']);
 	$group->get('/lookups/vendor-contract', [$controller, 'getVendorContract']);
 	$group->post('/lookups/vendor-contract', [$controller, 'getVendorContract']);
 	$group->post('/create', [$controller, 'store']);

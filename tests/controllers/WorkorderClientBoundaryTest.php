@@ -126,6 +126,8 @@ namespace Tests\Controllers
 			$this->assertStringContainsString('$group->post(\'/create\', [$controller, \'store\']);', $contents);
 			$this->assertStringContainsString('$group->post(\'/{id:[0-9]+}\', [$controller, \'update\']);', $contents);
 			$this->assertStringContainsString('$group->delete(\'/{id:[0-9]+}\', [$controller, \'destroy\']);', $contents);
+			$this->assertStringContainsString('$group->get(\'\', [$controller, \'index\']);', $contents);
+			$this->assertStringContainsString('$group->post(\'\', [$controller, \'index\']);', $contents);
 			$this->assertStringContainsString('$group->get(\'/lookups/category\', [$controller, \'getCategory\']);', $contents);
 			$this->assertStringContainsString('$group->post(\'/lookups/category\', [$controller, \'getCategory\']);', $contents);
 			$this->assertStringContainsString('$group->get(\'/files/view\', [$controller, \'viewFile\']);', $contents);
@@ -140,6 +142,7 @@ namespace Tests\Controllers
 			$contents = (string)file_get_contents($uiPath);
 
 			$this->assertStringContainsString("phpgw::link('/property/workorder/create'", $contents);
+			$this->assertStringContainsString("'source'\t\t => phpgw::link('/property/workorder'", $contents);
 			$this->assertStringContainsString('phpgw::link(\'/property/workorder/\' . (int)$id', $contents);
 			$this->assertStringContainsString('phpgw::link(\'/property/workorder/\' . (int)$id . \'/multi-upload\')', $contents);
 			$this->assertStringContainsString("'query'\t\t\t\t\t => false", $contents);
@@ -151,6 +154,7 @@ namespace Tests\Controllers
 			$this->assertStringNotContainsString("'property.uiworkorder.delete'", $contents);
 			$this->assertStringNotContainsString("'property.uiworkorder.query'", $contents);
 			$this->assertStringNotContainsString("'property.uiworkorder.handle_multi_upload_file'", $contents);
+			$this->assertStringNotContainsString("'menuaction'\t\t\t => 'property.uiworkorder.index'", $contents);
 		}
 	}
 }

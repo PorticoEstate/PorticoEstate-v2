@@ -152,6 +152,51 @@ class WorkorderController
 		));
 	}
 
+	public function index(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to workorders');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+
+		$searchValue = '';
+		if (isset($input['search']) && is_array($input['search']))
+		{
+			$searchValue = (string)($input['search']['value'] ?? '');
+		}
+
+		$orderColumn = '';
+		$orderDir = '';
+		if (isset($input['order'][0]) && is_array($input['order'][0]) && isset($input['columns']) && is_array($input['columns']))
+		{
+			$columnIndex = (int)($input['order'][0]['column'] ?? 0);
+			if (isset($input['columns'][$columnIndex]) && is_array($input['columns'][$columnIndex]))
+			{
+				$orderColumn = (string)($input['columns'][$columnIndex]['data'] ?? '');
+			}
+			$orderDir = (string)($input['order'][0]['dir'] ?? '');
+		}
+
+		$length = (int)($input['length'] ?? 0);
+		$params = array(
+			'start' => (int)($input['start'] ?? 0),
+			'results' => $length,
+			'query' => $searchValue,
+			'order' => $orderColumn,
+			'sort' => $orderDir,
+			'allrows' => $length === -1 || !empty($input['export']),
+			'start_date' => !empty($input['start_date']) ? urldecode((string)$input['start_date']) : '',
+			'end_date' => !empty($input['end_date']) ? urldecode((string)$input['end_date']) : '',
+		);
+
+		$rows = $this->bo()->read($params);
+		$total = isset($this->bo()->total_records) ? (int)$this->bo()->total_records : count($rows);
+
+		return $this->datatableResponse($response, $input, is_array($rows) ? $rows : array(), $total);
+	}
+
 	public function store(Request $request, Response $response): Response
 	{
 		if (!$this->hasAddAccess())

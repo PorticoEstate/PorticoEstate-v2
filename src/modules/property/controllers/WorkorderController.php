@@ -408,6 +408,31 @@ class WorkorderController
 		$vendorId = (int)($input['vendor_id'] ?? 0);
 		$locationCode = (string)($input['location_code'] ?? '');
 		$rows = (array)$this->bo()->get_other_orders($vendorId, $locationCode);
+
+		foreach ($rows as &$row)
+		{
+			if (!is_array($row))
+			{
+				continue;
+			}
+
+			$orderId = (int)($row['id'] ?? $row['workorder_id'] ?? 0);
+			if ($orderId <= 0)
+			{
+				continue;
+			}
+
+			$link = \phpgw::link('/index.php', array(
+				'menuaction' => 'property.uiworkorder.view',
+				'id' => $orderId
+			));
+
+			$row['id'] = $orderId;
+			$row['url'] = "<a href='{$link}'>{$orderId}</a>";
+			$row['select'] = "<input type='radio' name='order_id' value='{$orderId}' class='mychecks'/>";
+		}
+		unset($row);
+
 		return $this->datatableResponse($response, $input, $rows);
 	}
 

@@ -374,6 +374,9 @@ namespace Tests\Controllers
 			$this->assertSame(9, $payload['draw']);
 			$this->assertSame(2, $payload['recordsTotal']);
 			$this->assertCount(2, $payload['data']);
+			$this->assertSame(1, $payload['data'][0]['id']);
+			$this->assertStringContainsString("menuaction=property.uiworkorder.view", $payload['data'][0]['url']);
+			$this->assertStringContainsString("value='1'", $payload['data'][0]['select']);
 		}
 
 		public function testReceiveOrderDelegatesToBo(): void

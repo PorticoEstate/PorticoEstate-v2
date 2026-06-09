@@ -27,6 +27,7 @@ $setup_info['phpgwapi']['tables'] = array(
 	'phpgw_account_delegates',
 	'phpgw_acl',
 	'phpgw_applications',
+	'phpgw_migrations',
 	'phpgw_app_sessions',
 	'phpgw_async',
 	'phpgw_cache_user',

@@ -969,3 +969,81 @@ cancellation_deadline_passed	bookingfrontend	no	Avbestillingsfristen har utløpt
 cancellation_deadline_passed_warning	bookingfrontend	no	Avbestillingsfristen har utløpt. Hvis du bestiller vil du ikke kunne avbestille.
 close_calendar_without_season	bookingfrontend	no	Steng kalender når bygg mangler sesong
 close_calendar_without_season_note	bookingfrontend	no	Når aktiv vises bygg uten definert sesong som stengt
+user_data	bookingfrontend	no	Brukerdata
+user_data_description	bookingfrontend	no	Slik viser AktivKommune deg som søker. Endringer i navn og personnummer hentes fra ID-porten.
+applications_description	bookingfrontend	no	Alle søknader om leie du har sendt inn — som privatperson eller på vegne av en organisasjon.
+waiting_for_response	bookingfrontend	no	Venter på svar
+finished	bookingfrontend	no	Avsluttet
+search_applications_placeholder	bookingfrontend	no	Søk i tittel lokale eller organisasjon
+refresh	bookingfrontend	no	Oppdater
+no_applications_match	bookingfrontend	no	Ingen søknader matchet søket.
+first_date	bookingfrontend	no	Første dato
+sent	bookingfrontend	no	Sendt
+back_to_applications	bookingfrontend	no	Tilbake til søknader
+case_history	bookingfrontend	no	Saksgang
+updated	bookingfrontend	no	Oppdatert
+times_and_venue	bookingfrontend	no	Tider og lokale
+requested_times	bookingfrontend	no	Forespurte tidsrom
+about_the_event	bookingfrontend	no	Om arrangementet
+communication_with_case_officer	bookingfrontend	no	Kommunikasjon med saksbehandler
+send_message	bookingfrontend	no	Send melding
+reply_to_case_officer	bookingfrontend	no	Svar saksbehandleren
+reply_placeholder	bookingfrontend	no	Skriv et svar … (synlig for deg og saksbehandler)
+email_notification_on_reply	bookingfrontend	no	Du vil få e-postvarsel når saksbehandler svarer.
+quick_facts	bookingfrontend	no	Hurtigfakta
+contact_person	bookingfrontend	no	Kontaktperson
+responsible_applicant	bookingfrontend	no	Ansvarlig søker
+tips_while_waiting	bookingfrontend	no	Tips mens du venter
+processing_time_info	bookingfrontend	no	Saksbehandlingstid er normalt 5-10 virkedager. Du kan svare i kommentartråden hvis du har spørsmål eller vil endre noe.
+withdraw_application	bookingfrontend	no	Trekk søknad
+confirm_cancel_title	bookingfrontend	no	Trekk søknad
+confirm_cancel_description	bookingfrontend	no	Er du sikker på at du vil trekke denne søknaden? Handlingen kan ikke angres.
+application_pending_title	bookingfrontend	no	Søknaden er til behandling
+application_pending_description	bookingfrontend	no	Saksbehandler vil ta stilling til søknaden din. Du kan følge med i kommentartråden under.
+application_accepted_title	bookingfrontend	no	Søknaden er godkjent
+application_accepted_description	bookingfrontend	no	Du har nå reservert tidene som er listet under.
+application_rejected_title	bookingfrontend	no	Søknaden ble dessverre avslått
+application_rejected_description	bookingfrontend	no	Du kan lese begrunnelsen i kommentartråden under eller kopiere søknaden som utgangspunkt for en ny.
+on_behalf_of_organization	bookingfrontend	no	På vegne av organisasjon
+invoice_after_event	bookingfrontend	no	Faktura sendes etter at arrangementet er gjennomført.
+price_confirmed_on_approval	bookingfrontend	no	Endelig pris bekreftes når søknaden er godkjent.
+date	bookingfrontend	no	dato
+num_dates	bookingfrontend	no	datoer
+messages	bookingfrontend	no	meldinger
+active_delegate	bookingfrontend	no	Aktivt delegat
+organizations_you_represent	bookingfrontend	no	Organisasjoner du representerer
+notifications_and_communication	bookingfrontend	no	Varsler og kommunikasjon
+email_notifications	bookingfrontend	no	E-postvarsler
+email_notifications_description	bookingfrontend	no	Få e-post når status på søknadene dine endres eller saksbehandler kommenterer.
+sms_notifications	bookingfrontend	no	SMS-varsler
+sms_notifications_description	bookingfrontend	no	Få SMS dagen før en booking eller hvis en søknad nærmer seg svarfrist.
+newsletter	bookingfrontend	no	Nyhetsbrev
+newsletter_description	bookingfrontend	no	Tips om ledige lokaler sesongåpning og nye fasiliteter.
+logged_in_with_idporten	bookingfrontend	no	Innlogget med ID-porten
+verified_via_idporten	bookingfrontend	no	Verifisert via ID-porten
+ssn_from_idporten	bookingfrontend	no	Personnummer hentes fra ID-porten og kan ikke endres her.
+all	bookingfrontend	no	Alle
+place	bookingfrontend	no	Sted
+time_slots	bookingfrontend	no	tidsrom
+download	bookingfrontend	no	Last ned
+open_document	bookingfrontend	no	Åpne
+status_new	bookingfrontend	no	Innsendt
+status_pending	bookingfrontend	no	Til behandling
+status_accepted	bookingfrontend	no	Godkjent
+status_rejected	bookingfrontend	no	Avslått
+status_cancelled	bookingfrontend	no	Trukket
+status_draft	bookingfrontend	no	Kladd
+combined_application	bookingfrontend	no	Kombinert søknad
+organization_number	bookingfrontend	no	Organisasjonsnummer
+recurring_application	bookingfrontend	no	Gjentakende
+age_group	bookingfrontend	no	Aldersgruppe
+upload_document	bookingfrontend	no	Last opp dokument
+delete_document	bookingfrontend	no	Slett dokument
+file_too_large	bookingfrontend	no	Filen er for stor (maks 2MB)
+invalid_file_type	bookingfrontend	no	Ugyldig filtype
+upload_failed	bookingfrontend	no	Opplasting feilet
+reply	bookingfrontend	no	Svar
+no documents available	bookingfrontend	no	Ingen dokumenter tilgjengelig
+new_comment_notification	bookingfrontend	no	%1 har skrevet en kommentar
+close_calendar_without_season	bookingfrontend	no	Steng kalender når bygg mangler sesong
+close_calendar_without_season_note	bookingfrontend	no	Når aktiv vises bygg uten definert sesong som stengt

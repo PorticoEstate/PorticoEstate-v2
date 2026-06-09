@@ -78,7 +78,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		'edit'						 => true,
 		'save'						 => false,
 		'delete'					 => true,
-		'view_file'					 => true,
+		'view_file'					 => false,
 		'add_invoice'				 => true,
 		'recalculate'				 => true,
 		'get_vendor_contract'		 => false,
@@ -238,11 +238,12 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		}
 
 		$link_file_data = array(
-			'menuaction' => 'property.uiworkorder.view_file',
+			'file_id' => 0,
 		);
 
 
-		$link_view_file = phpgw::link('/index.php', $link_file_data);
+		$link_view_file = phpgw::link('/property/workorder/files/view');
+		$view_image_url = phpgw::link('/property/workorder/' . (int)$id . '/files/image');
 
 		$values = $this->bo->get_files($id);
 
@@ -294,8 +295,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 			{
 				$content_files[$z]['file_name']		 = $_entry['name'];
 				$content_files[$z]['img_id']		 = $_entry['file_id'];
-				$content_files[$z]['img_url']		 = self::link(array(
-					'menuaction' => 'property.uiworkorder.view_image',
+				$content_files[$z]['img_url']		 = phpgw::link($view_image_url, array(
 					'img_id'	 => $_entry['file_id'],
 					'file'		 => $_entry['directory'] . '/' . $_entry['file_name']
 				));
@@ -374,7 +374,8 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		$file_attachments	 = isset($values['file_attachments']) && is_array($values['file_attachments']) ? $values['file_attachments'] : array();
 
 		$content_attachments = array();
-		$link_view_file = phpgw::link('/index.php', array('menuaction' => 'property.uiworkorder.view_file'));
+		$link_view_file = phpgw::link('/property/workorder/files/view');
+		$view_image_url = phpgw::link('/property/workorder/' . (int)$id . '/files/image');
 		$lang_view_file		 = lang('click to view file');
 		$lang_select_file	 = lang('Check to attach file');
 		$lang_workorder		 = lang('workorder');
@@ -400,8 +401,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 			{
 				$content_attachments[$z]['file_name']		 = $_entry['name'];
 				$content_attachments[$z]['img_id']		 = $_entry['file_id'];
-				$content_attachments[$z]['img_url']		 = self::link(array(
-					'menuaction' => 'property.uiworkorder.view_image',
+				$content_attachments[$z]['img_url']		 = phpgw::link($view_image_url, array(
 					'img_id'	 => $_entry['file_id']
 				));
 			}
@@ -433,8 +433,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 			{
 				$content_attachments[$z]['file_name']		 = $_entry['name'];
 				$content_attachments[$z]['img_id']		 = $_entry['file_id'];
-				$content_attachments[$z]['img_url']		 = self::link(array(
-					'menuaction' => 'property.uiworkorder.view_image',
+				$content_attachments[$z]['img_url']		 = phpgw::link($view_image_url, array(
 					'img_id'	 => $_entry['file_id']
 				));
 			}
@@ -3369,7 +3368,8 @@ JS;
 		$image_list		 = array();
 
 		$content_attachments = array();
-		$link_view_file		 = phpgw::link('/index.php', array('menuaction' => 'property.uiworkorder.view_file'));
+		$link_view_file		 = phpgw::link('/property/workorder/files/view');
+		$view_image_url		 = phpgw::link('/property/workorder/' . (int)$id . '/files/image');
 		$lang_view_file		 = lang('click to view file');
 		$lang_select_file	 = lang('Check to attach file');
 		$lang_workorder		 = lang('workorder');
@@ -3398,8 +3398,7 @@ JS;
 				$sort_array2[] = $_entry['name'];
 				$content_attachments[$z]['file_name']	 = $_entry['name'];
 				$content_attachments[$z]['img_id']		 = $_entry['file_id'];
-				$content_attachments[$z]['img_url']		 = self::link(array(
-					'menuaction' => 'property.uiworkorder.view_image',
+				$content_attachments[$z]['img_url']		 = phpgw::link($view_image_url, array(
 					'img_id'	 => $_entry['file_id'],
 					'file'		 => $_entry['directory'] . '/' . $_entry['file_name']
 				));
@@ -3439,8 +3438,7 @@ JS;
 				$sort_array2[] = $_entry['name'];
 				$content_attachments[$z]['file_name']	 = $_entry['name'];
 				$content_attachments[$z]['img_id']		 = $_entry['file_id'];
-				$content_attachments[$z]['img_url']		 = self::link(array(
-					'menuaction' => 'property.uiworkorder.view_image',
+				$content_attachments[$z]['img_url']		 = phpgw::link($view_image_url, array(
 					'img_id'	 => $_entry['file_id'],
 					'file'		 => $_entry['directory'] . '/' . $_entry['file_name']
 				));
@@ -3648,7 +3646,7 @@ JS;
 			'lang_ask_approval'						 => lang('Ask for approval'),
 			'lang_ask_approval_statustext'			 => lang('Check this to send a mail to your supervisor for approval'),
 			'currency'								 => $this->userSettings['preferences']['common']['currency'],
-			'link_view_file'						 => phpgw::link('/index.php', $link_file_data),
+			'link_view_file'						 => phpgw::link('/property/workorder/files/view'),
 			'link_to_files'							 => (isset($config->config_data['files_url']) ? $config->config_data['files_url'] : ''),
 			'files'									 => isset($values['files']) ? $values['files'] : '',
 			'lang_files'							 => lang('files'),

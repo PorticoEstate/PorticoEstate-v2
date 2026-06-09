@@ -223,6 +223,7 @@ $app->group('/property/workorder', function (RouteCollectorProxy $group) use ($c
 	$group->post('/lookups/vendor-contract', [$controller, 'getVendorContract']);
 	$group->post('/create', [$controller, 'store']);
 	$group->post('/{id:[0-9]+}', [$controller, 'update']);
+	$group->delete('/{id:[0-9]+}', [$controller, 'destroy']);
 	$group->get('/lookups/eco-service', [$controller, 'getEcoService']);
 	$group->post('/lookups/eco-service', [$controller, 'getEcoService']);
 	$group->get('/lookups/ecodimb', [$controller, 'getEcodimb']);

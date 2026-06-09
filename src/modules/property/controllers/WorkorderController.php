@@ -59,6 +59,11 @@ class WorkorderController
 		return (bool)Acl::getInstance()->check('.project', ACL_ADD, 'property');
 	}
 
+	protected function hasDeleteAccess(): bool
+	{
+		return (bool)Acl::getInstance()->check('.project', ACL_DELETE, 'property');
+	}
+
 	protected function formHelper(): WorkorderFormHelper
 	{
 		if ($this->formHelper === null)
@@ -210,6 +215,28 @@ class WorkorderController
 			'status' => 'success',
 			'data' => array('id' => (int)($state['id'] ?? $id)),
 			'receipt' => $state['receipt'] ?? array(),
+		));
+	}
+
+	public function destroy(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasDeleteAccess())
+		{
+			throw new HttpForbiddenException($request, 'No delete access to workorder');
+		}
+
+		$id = (int)($args['id'] ?? 0);
+		if ($id <= 0)
+		{
+			throw new HttpNotFoundException($request, 'Workorder not found');
+		}
+
+		$this->bo()->delete($id);
+
+		return $this->jsonResponse($response, array(
+			'status' => 'success',
+			'message' => 'Workorder deleted',
+			'data' => array('id' => $id),
 		));
 	}
 

@@ -84,14 +84,15 @@ namespace Tests\Controllers
 			?object $bocommon = null,
 			bool $readAccess = true,
 			bool $addAccess = true,
-			bool $editAccess = true
+			bool $editAccess = true,
+			bool $deleteAccess = true
 		): WorkorderController
 		{
 			$bocommonStub = $bocommon ?? new class
 			{
 			};
 
-			return new class($this->container, $bo, $helper, $bocommonStub, $readAccess, $addAccess, $editAccess) extends WorkorderController
+			return new class($this->container, $bo, $helper, $bocommonStub, $readAccess, $addAccess, $editAccess, $deleteAccess) extends WorkorderController
 			{
 				private object $boStub;
 				private WorkorderFormHelper $helperStub;
@@ -99,6 +100,7 @@ namespace Tests\Controllers
 				private bool $readAccess;
 				private bool $addAccess;
 				private bool $editAccess;
+				private bool $deleteAccess;
 
 				public function __construct(
 					ContainerInterface $container,
@@ -107,7 +109,8 @@ namespace Tests\Controllers
 					object $bocommonStub,
 					bool $readAccess,
 					bool $addAccess,
-					bool $editAccess
+					bool $editAccess,
+					bool $deleteAccess
 				)
 				{
 					parent::__construct($container);
@@ -117,6 +120,7 @@ namespace Tests\Controllers
 					$this->readAccess = $readAccess;
 					$this->addAccess = $addAccess;
 					$this->editAccess = $editAccess;
+					$this->deleteAccess = $deleteAccess;
 				}
 
 				protected function bo()
@@ -142,6 +146,11 @@ namespace Tests\Controllers
 				protected function hasEditAccess(): bool
 				{
 					return $this->editAccess;
+				}
+
+				protected function hasDeleteAccess(): bool
+				{
+					return $this->deleteAccess;
 				}
 
 				protected function formHelper(): WorkorderFormHelper
@@ -400,6 +409,47 @@ namespace Tests\Controllers
 			$this->assertSame('ok', $payload['status']);
 			$this->assertSame(77, $payload['id']);
 			$this->assertSame(345.5, $payload['received_amount']);
+		}
+
+		public function testDestroyReturnsSuccessPayload(): void
+		{
+			$bo = new class
+			{
+				public int $deletedId = 0;
+
+				public function delete(int $id): void
+				{
+					$this->deletedId = $id;
+				}
+			};
+			$helper = $this->createMock(WorkorderFormHelper::class);
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithDeps($bo, $helper);
+			$controller->destroy($this->request, $this->response, array('id' => 45));
+
+			$payload = json_decode($this->responseBody, true);
+			$this->assertSame('success', $payload['status']);
+			$this->assertSame(45, $payload['data']['id']);
+			$this->assertSame(45, $bo->deletedId);
+		}
+
+		public function testDestroyRejectsWhenDeleteAccessMissing(): void
+		{
+			$bo = new class
+			{
+			};
+			$helper = $this->createMock(WorkorderFormHelper::class);
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithDeps($bo, $helper, null, true, true, true, false);
+
+			$this->expectException(HttpForbiddenException::class);
+			$controller->destroy($this->request, $this->response, array('id' => 45));
 		}
 
 		public function testGetFilesReturnsEmptyDatatableForMissingId(): void

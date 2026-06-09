@@ -125,6 +125,7 @@ namespace Tests\Controllers
 
 			$this->assertStringContainsString('$group->post(\'/create\', [$controller, \'store\']);', $contents);
 			$this->assertStringContainsString('$group->post(\'/{id:[0-9]+}\', [$controller, \'update\']);', $contents);
+			$this->assertStringContainsString('$group->delete(\'/{id:[0-9]+}\', [$controller, \'destroy\']);', $contents);
 			$this->assertStringContainsString('$group->get(\'/lookups/category\', [$controller, \'getCategory\']);', $contents);
 			$this->assertStringContainsString('$group->post(\'/lookups/category\', [$controller, \'getCategory\']);', $contents);
 			$this->assertStringContainsString('$group->get(\'/files/view\', [$controller, \'viewFile\']);', $contents);

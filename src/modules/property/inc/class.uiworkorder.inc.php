@@ -77,7 +77,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		'add'						 => true,
 		'edit'						 => true,
 		'save'						 => false,
-		'delete'					 => true,
+		'delete'				 => false,
 		'view_file'					 => false,
 		'add_invoice'				 => true,
 		'recalculate'				 => true,
@@ -1026,10 +1026,21 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 					'my_name'		 => 'delete',
 					'text'			 => lang('delete'),
 					'confirm_msg'	 => lang('do you really want to delete this entry'),
-					'action'		 => phpgw::link('/index.php', array(
-						'menuaction' => 'property.uiworkorder.delete'
-					)),
-					'parameters'	 => json_encode($parameters)
+					'type'			 => 'custom',
+					'custom_code'	 => "
+									var api = oTable.api();
+									var selected = api.rows( { selected: true } ).data();
+									for ( var n = 0; n < selected.length; ++n )
+									{
+										var aData = selected[n];
+										var requestUrl = phpGWLink('property/workorder/' + aData['workorder_id'], {});
+										execute_ajax(requestUrl, function(result){
+											var message = result && result.message ? result.message : result;
+											document.getElementById('message').innerHTML += '<br/>' + message;
+											api.draw('page');
+										}, {}, 'DELETE', 'json');
+									}
+								"
 				);
 			}
 			unset($parameters);
@@ -3787,7 +3798,6 @@ JS;
 			));
 		}
 		//$id = Sanitizer::get_var('id', 'int');
-		$confirm = Sanitizer::get_var('confirm', 'bool', 'POST');
 
 		$link_data = array(
 			'menuaction' => 'property.uiworkorder.index'
@@ -3805,10 +3815,7 @@ JS;
 
 		$data = array(
 			'done_action'			 => phpgw::link('/index.php', $link_data),
-			'delete_action'			 => phpgw::link('/index.php', array(
-				'menuaction' => 'property.uiworkorder.delete',
-				'id'		 => $id
-			)),
+			'delete_action'			 => phpgw::link('/index.php', $link_data),
 			'lang_confirm_msg'		 => lang('do you really want to delete this entry'),
 			'lang_yes'				 => lang('yes'),
 			'lang_yes_statustext'	 => lang('Delete the entry'),

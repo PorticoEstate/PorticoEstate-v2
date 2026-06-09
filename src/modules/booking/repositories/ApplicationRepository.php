@@ -578,7 +578,7 @@ class ApplicationRepository
 		$stmt->execute([':status' => $status, ':id' => $applicationId]);
 	}
 
-	public function addComment(int $applicationId, string $author, string $comment, string $type = 'comment'): void
+	public function addComment(int $applicationId, string $author, string $comment, string $type = 'comment'): int
 	{
 		$stmt = $this->db->prepare(
 			"INSERT INTO bb_application_comment (application_id, time, author, comment, type)
@@ -590,6 +590,8 @@ class ApplicationRepository
 			':comment' => $comment,
 			':type'    => $type,
 		]);
+
+		return (int) $this->db->lastInsertId();
 	}
 
 	// ── Internal notes (write) ──────────────────────────────────────────

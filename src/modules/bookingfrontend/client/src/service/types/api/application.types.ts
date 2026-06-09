@@ -47,6 +47,7 @@ export interface IApplication {
     articles?: ArticleOrder[];
     application_type?: 'personal' | 'organization';
     recurring_info?: string | null; // JSON string of RecurringInfo
+    parent_id?: number | null; // Links child applications to parent when combined_applications_mode is enabled
 }
 
 // Interface for the parsed recurring_info JSON
@@ -182,4 +183,9 @@ export interface UpdateStatusResponse {
     comments: ApplicationComment[]; // Status change comment(s) created
     status: string; // The new status
     message: string; // "Application status updated successfully"
+}
+
+export interface INotificationUnreadCount {
+    total_unread: number;
+    applications: Array<{ application_id: number; unread_count: number }>;
 }

@@ -61,7 +61,12 @@ export const SocketIOProvider: React.FC<SocketIOProviderProps> = ({
     switch (data.type) {
       case 'connection_success':
         wsLog(`Connected to session room ${data.roomId}`);
-        setSessionConnected(true);
+        break;
+
+      case 'session_update_confirmation':
+        if (data.success) {
+          setSessionConnected(true);
+        }
         break;
 
       case 'notification':

@@ -184,10 +184,28 @@ class ApplicationService
 		}
 
 		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';
-		$this->repo->addComment($appId, $authorName, $comment, 'comment');
+		$commentId = $this->repo->addComment($appId, $authorName, $comment, 'comment');
 
 		// Send email notification (non-fatal on failure)
 		$this->sendNotificationSafe($appId);
+
+		// Create in-app notification for the applicant (non-fatal)
+		try {
+			$customerSsn = $row['customer_ssn'] ?? '';
+			if (!empty($customerSsn)) {
+				$notificationService = new NotificationService();
+				$notificationService->createCommentNotification(
+					$appId,
+					$commentId,
+					$authorName,
+					$comment,
+					'bb_user',
+					$customerSsn
+				);
+			}
+		} catch (\Throwable $e) {
+			error_log("Failed to create applicant notification for application {$appId}: " . $e->getMessage());
+		}
 	}
 
 	// ── Add internal note ──────────────────────────────────────────────

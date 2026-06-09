@@ -13,6 +13,7 @@ namespace Tests\Controllers
 	use Psr\Http\Message\ServerRequestInterface;
 	use Psr\Http\Message\StreamInterface;
 	use Slim\Exception\HttpBadRequestException;
+	use Slim\Exception\HttpForbiddenException;
 
 	class WorkorderControllerTest extends TestCase
 	{
@@ -68,6 +69,79 @@ namespace Tests\Controllers
 				protected function hasEditAccess(): bool
 				{
 					return true;
+				}
+
+				protected function formHelper(): WorkorderFormHelper
+				{
+					return $this->helperStub;
+				}
+			};
+		}
+
+		private function makeControllerWithDeps(
+			object $bo,
+			WorkorderFormHelper $helper,
+			?object $bocommon = null,
+			bool $readAccess = true,
+			bool $addAccess = true,
+			bool $editAccess = true
+		): WorkorderController
+		{
+			$bocommonStub = $bocommon ?? new class
+			{
+			};
+
+			return new class($this->container, $bo, $helper, $bocommonStub, $readAccess, $addAccess, $editAccess) extends WorkorderController
+			{
+				private object $boStub;
+				private WorkorderFormHelper $helperStub;
+				private object $bocommonStub;
+				private bool $readAccess;
+				private bool $addAccess;
+				private bool $editAccess;
+
+				public function __construct(
+					ContainerInterface $container,
+					object $boStub,
+					WorkorderFormHelper $helperStub,
+					object $bocommonStub,
+					bool $readAccess,
+					bool $addAccess,
+					bool $editAccess
+				)
+				{
+					parent::__construct($container);
+					$this->boStub = $boStub;
+					$this->helperStub = $helperStub;
+					$this->bocommonStub = $bocommonStub;
+					$this->readAccess = $readAccess;
+					$this->addAccess = $addAccess;
+					$this->editAccess = $editAccess;
+				}
+
+				protected function bo()
+				{
+					return $this->boStub;
+				}
+
+				protected function bocommon()
+				{
+					return $this->bocommonStub;
+				}
+
+				protected function hasReadAccess(): bool
+				{
+					return $this->readAccess;
+				}
+
+				protected function hasAddAccess(): bool
+				{
+					return $this->addAccess;
+				}
+
+				protected function hasEditAccess(): bool
+				{
+					return $this->editAccess;
 				}
 
 				protected function formHelper(): WorkorderFormHelper
@@ -205,6 +279,186 @@ namespace Tests\Controllers
 			$this->assertArrayHasKey('multi_upload_action', $decoded);
 			$this->assertStringContainsString('/property/workorder/88/multi-upload', $decoded['multi_upload_action']);
 			$this->assertStringNotContainsString('menuaction=', $decoded['multi_upload_action']);
+		}
+
+		public function testStoreRejectsWhenAddAccessMissing(): void
+		{
+			$bo = new class
+			{
+			};
+			$helper = $this->createMock(WorkorderFormHelper::class);
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array('values' => array('title' => 'WO')));
+
+			$controller = $this->makeControllerWithDeps($bo, $helper, null, true, false, true);
+
+			$this->expectException(HttpForbiddenException::class);
+			$controller->store($this->request, $this->response);
+		}
+
+		public function testUpdateRejectsWhenEditAccessMissing(): void
+		{
+			$bo = new class
+			{
+			};
+			$helper = $this->createMock(WorkorderFormHelper::class);
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array('values' => array('title' => 'WO')));
+
+			$controller = $this->makeControllerWithDeps($bo, $helper, null, true, true, false);
+
+			$this->expectException(HttpForbiddenException::class);
+			$controller->update($this->request, $this->response, array('id' => 77));
+		}
+
+		public function testUpdateRejectsInvalidId(): void
+		{
+			$bo = new class
+			{
+			};
+			$helper = $this->createMock(WorkorderFormHelper::class);
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array('values' => array('title' => 'WO')));
+
+			$controller = $this->makeControllerWithDeps($bo, $helper);
+
+			$this->expectException(HttpBadRequestException::class);
+			$controller->update($this->request, $this->response, array('id' => 0));
+		}
+
+		public function testGetCategoryReturnsEmptyPayloadForMissingCategoryId(): void
+		{
+			$bo = new class
+			{
+			};
+			$helper = $this->createMock(WorkorderFormHelper::class);
+
+			$this->request->method('getQueryParams')->willReturn(array('cat_id' => 0));
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithDeps($bo, $helper);
+			$controller->getCategory($this->request, $this->response);
+
+			$payload = json_decode($this->responseBody, true);
+			$this->assertSame(array(), $payload);
+		}
+
+		public function testGetOtherOrdersReturnsDataTableEnvelope(): void
+		{
+			$bo = new class
+			{
+				public function get_other_orders(int $vendorId, string $locationCode): array
+				{
+					return array(
+						array('workorder_id' => 1, 'vendor_id' => $vendorId, 'location_code' => $locationCode),
+						array('workorder_id' => 2, 'vendor_id' => $vendorId, 'location_code' => $locationCode),
+					);
+				}
+			};
+			$helper = $this->createMock(WorkorderFormHelper::class);
+
+			$this->request->method('getQueryParams')->willReturn(array(
+				'vendor_id' => 55,
+				'location_code' => '123-45',
+				'draw' => 9,
+			));
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithDeps($bo, $helper);
+			$controller->getOtherOrders($this->request, $this->response);
+
+			$payload = json_decode($this->responseBody, true);
+			$this->assertSame(9, $payload['draw']);
+			$this->assertSame(2, $payload['recordsTotal']);
+			$this->assertCount(2, $payload['data']);
+		}
+
+		public function testReceiveOrderDelegatesToBo(): void
+		{
+			$bo = new class
+			{
+				public function receive_order(int $id, float $receivedAmount): array
+				{
+					return array('status' => 'ok', 'id' => $id, 'received_amount' => $receivedAmount);
+				}
+			};
+			$helper = $this->createMock(WorkorderFormHelper::class);
+
+			$this->request->method('getQueryParams')->willReturn(array('received_amount' => 345.5));
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithDeps($bo, $helper);
+			$controller->receiveOrder($this->request, $this->response, array('id' => 77));
+
+			$payload = json_decode($this->responseBody, true);
+			$this->assertSame('ok', $payload['status']);
+			$this->assertSame(77, $payload['id']);
+			$this->assertSame(345.5, $payload['received_amount']);
+		}
+
+		public function testGetFilesReturnsEmptyDatatableForMissingId(): void
+		{
+			$bo = new class
+			{
+			};
+			$helper = $this->createMock(WorkorderFormHelper::class);
+
+			$this->request->method('getQueryParams')->willReturn(array('draw' => 3));
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithDeps($bo, $helper);
+			$controller->getFiles($this->request, $this->response, array('id' => 0));
+
+			$payload = json_decode($this->responseBody, true);
+			$this->assertSame(3, $payload['draw']);
+			$this->assertSame(0, $payload['recordsTotal']);
+			$this->assertSame(array(), $payload['data']);
+		}
+
+		public function testUpdateFileDataReturnsSuccessEnvelopeForNoopAction(): void
+		{
+			if (!function_exists('CreateObject'))
+			{
+				eval('function CreateObject($name) { return new class { public function delete_file($path, $opts) {} public function set_tags($ids, $tags) {} public function remove_tags($ids, $tags) {} }; }');
+			}
+
+			$bo = new class
+			{
+			};
+			$helper = $this->createMock(WorkorderFormHelper::class);
+
+			$this->request->method('getQueryParams')->willReturn(array(
+				'action' => 'noop',
+				'ids' => array(10, 20),
+			));
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithDeps($bo, $helper);
+			$controller->updateFileData($this->request, $this->response, array('id' => 77));
+
+			$payload = json_decode($this->responseBody, true);
+			$this->assertSame('success', $payload['status']);
+			$this->assertSame('noop', $payload['action']);
+			$this->assertSame(array(10, 20), $payload['ids']);
+		}
+
+		public function testGetVendorContractRejectsWhenReadAccessMissing(): void
+		{
+			$bo = new class
+			{
+			};
+			$helper = $this->createMock(WorkorderFormHelper::class);
+
+			$this->request->method('getQueryParams')->willReturn(array('vendor_id' => 1));
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithDeps($bo, $helper, null, false, true, true);
+
+			$this->expectException(HttpForbiddenException::class);
+			$controller->getVendorContract($this->request, $this->response);
 		}
 	}
 }

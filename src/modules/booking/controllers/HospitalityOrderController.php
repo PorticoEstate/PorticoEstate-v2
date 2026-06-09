@@ -72,10 +72,17 @@ class HospitalityOrderController
 	}
 
 	/**
-	 * Validate that serving_time_iso (UTC ISO-8601) falls within one of the
-	 * application's date ranges. The date ranges in bb_application_date are
-	 * stored as naive server-local timestamps, so we convert the UTC ISO
-	 * string to server-local before comparing.
+	 * Application/booking data is stored as naive Europe/Oslo wall-clock
+	 * timestamps and serialized back with the Oslo offset. We use this as the
+	 * canonical local timezone for parsing and validating serving times.
+	 */
+	private const LOCAL_TIMEZONE = 'Europe/Oslo';
+
+	/**
+	 * Validate that serving_time_iso (an offset-aware ISO-8601) falls within one
+	 * of the application's date ranges. The date ranges in bb_application_date
+	 * are stored as naive Europe/Oslo timestamps, so we convert the serving time
+	 * to Oslo wall-clock before comparing.
 	 *
 	 * Returns null on success, or an error string on failure.
 	 */
@@ -91,9 +98,9 @@ class HospitalityOrderController
 			return null; // No date constraints
 		}
 
-		// Convert UTC ISO to server-local timestamp for comparison with naive DB columns
+		// Convert to Oslo wall-clock for comparison with the naive Oslo DB columns
 		$dt = new \DateTime($servingTimeIso);
-		$dt->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+		$dt->setTimezone(new \DateTimeZone(self::LOCAL_TIMEZONE));
 		$localTimestamp = $dt->format('Y-m-d H:i:s');
 
 		$stmt = $db->prepare(
@@ -112,6 +119,18 @@ class HospitalityOrderController
 		}
 
 		return 'serving_time_iso must be within one of the application date ranges';
+	}
+
+	/**
+	 * Convert an incoming offset-aware serving_time ISO-8601 string to a naive
+	 * UTC timestamp for storage. The serving_time_iso column holds UTC; the
+	 * model serializes it back to local time via @Timestamp(sourceTimezone="UTC").
+	 */
+	private function servingTimeToStorage(string $servingTimeIso): string
+	{
+		$dt = new \DateTime($servingTimeIso);
+		$dt->setTimezone(new \DateTimeZone('UTC'));
+		return $dt->format('Y-m-d H:i:s');
 	}
 
 	/**
@@ -215,6 +234,7 @@ class HospitalityOrderController
 				if ($err !== null) {
 					return $this->jsonError($response, $err);
 				}
+				$body['serving_time_iso'] = $this->servingTimeToStorage($body['serving_time_iso']);
 			}
 
 			$body['created_by'] = (int)$this->userSettings['account_id'];
@@ -307,6 +327,7 @@ class HospitalityOrderController
 				if ($err !== null) {
 					return $this->jsonError($response, $err);
 				}
+				$body['serving_time_iso'] = $this->servingTimeToStorage($body['serving_time_iso']);
 			}
 
 			// Diff changed fields for changelog

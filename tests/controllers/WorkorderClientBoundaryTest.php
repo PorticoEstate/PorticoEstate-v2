@@ -128,6 +128,7 @@ namespace Tests\Controllers
 			$this->assertStringContainsString('$group->delete(\'/{id:[0-9]+}\', [$controller, \'destroy\']);', $contents);
 			$this->assertStringContainsString('$group->get(\'\', [$controller, \'index\']);', $contents);
 			$this->assertStringContainsString('$group->post(\'\', [$controller, \'index\']);', $contents);
+			$this->assertStringContainsString('$group->get(\'/reports/download\', [$controller, \'download\']);', $contents);
 			$this->assertStringContainsString('$group->get(\'/lookups/category\', [$controller, \'getCategory\']);', $contents);
 			$this->assertStringContainsString('$group->post(\'/lookups/category\', [$controller, \'getCategory\']);', $contents);
 			$this->assertStringContainsString('$group->get(\'/files/view\', [$controller, \'viewFile\']);', $contents);
@@ -143,9 +144,11 @@ namespace Tests\Controllers
 
 			$this->assertStringContainsString("phpgw::link('/property/workorder/create'", $contents);
 			$this->assertStringContainsString("'source'\t\t => phpgw::link('/property/workorder'", $contents);
+			$this->assertStringContainsString("'download'\t\t => phpgw::link('/property/workorder/reports/download'", $contents);
 			$this->assertStringContainsString('phpgw::link(\'/property/workorder/\' . (int)$id', $contents);
 			$this->assertStringContainsString('phpgw::link(\'/property/workorder/\' . (int)$id . \'/multi-upload\')', $contents);
 			$this->assertStringContainsString("'query'\t\t\t\t\t => false", $contents);
+			$this->assertStringContainsString("'download'\t\t\t\t => false", $contents);
 			$this->assertStringContainsString("\$options['script_url']\t = phpgw::link('/property/workorder/' . (int)\$id . '/multi-upload');", $contents);
 			$this->assertStringContainsString("phpGWLink('property/workorder/' + aData['workorder_id'], {})", $contents);
 			$this->assertStringContainsString("execute_ajax(requestUrl, function(result)", $contents);
@@ -153,6 +156,7 @@ namespace Tests\Controllers
 			$this->assertStringNotContainsString("'property.uiworkorder.save'", $contents);
 			$this->assertStringNotContainsString("'property.uiworkorder.delete'", $contents);
 			$this->assertStringNotContainsString("'property.uiworkorder.query'", $contents);
+			$this->assertStringNotContainsString("'property.uiworkorder.download'", $contents);
 			$this->assertStringNotContainsString("'property.uiworkorder.handle_multi_upload_file'", $contents);
 			$this->assertStringNotContainsString("'menuaction'\t\t\t => 'property.uiworkorder.index'", $contents);
 		}

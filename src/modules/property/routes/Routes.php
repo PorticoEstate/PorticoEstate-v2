@@ -238,6 +238,7 @@ $app->group('/property/workorder', function (RouteCollectorProxy $group) use ($c
 	$group->post('/lookups/unspsc-code', [$controller, 'getUnspscCode']);
 	$group->get('/lookups/other-orders', [$controller, 'getOtherOrders']);
 	$group->post('/lookups/other-orders', [$controller, 'getOtherOrders']);
+	$group->get('/reports/download', [$controller, 'download']);
 	$group->post('/{id:[0-9]+}/receive-order', [$controller, 'receiveOrder']);
 	$group->get('/{id:[0-9]+}/files', [$controller, 'getFiles']);
 	$group->post('/{id:[0-9]+}/files', [$controller, 'getFiles']);

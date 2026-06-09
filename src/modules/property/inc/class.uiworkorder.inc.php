@@ -71,7 +71,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 	var $public_functions = array(
 		'columns'					 => true,
 		'query'					 => false,
-		'download'					 => true,
+		'download'				 => false,
 		'index'						 => true,
 		'view'						 => true,
 		'add'						 => true,
@@ -836,8 +836,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 					'obligation'	 => $this->obligation,
 					'ecodimb'		 => $this->ecodimb,
 				)),
-				'download'		 => self::link(array(
-					'menuaction' => 'property.uiworkorder.download',
+				'download'		 => phpgw::link('/property/workorder/reports/download', array(
 					'start_date' => $start_date,
 					'end_date'	 => $end_date,
 					'b_group'	 => $this->b_group,

@@ -152,15 +152,8 @@ class WorkorderController
 		));
 	}
 
-	public function index(Request $request, Response $response): Response
+	private function listReadParams(array $input): array
 	{
-		if (!$this->hasReadAccess())
-		{
-			throw new HttpForbiddenException($request, 'No read access to workorders');
-		}
-
-		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
-
 		$searchValue = '';
 		if (isset($input['search']) && is_array($input['search']))
 		{
@@ -180,7 +173,8 @@ class WorkorderController
 		}
 
 		$length = (int)($input['length'] ?? 0);
-		$params = array(
+
+		return array(
 			'start' => (int)($input['start'] ?? 0),
 			'results' => $length,
 			'query' => $searchValue,
@@ -190,11 +184,44 @@ class WorkorderController
 			'start_date' => !empty($input['start_date']) ? urldecode((string)$input['start_date']) : '',
 			'end_date' => !empty($input['end_date']) ? urldecode((string)$input['end_date']) : '',
 		);
+	}
+
+	public function index(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to workorders');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$params = $this->listReadParams($input);
 
 		$rows = $this->bo()->read($params);
 		$total = isset($this->bo()->total_records) ? (int)$this->bo()->total_records : count($rows);
 
 		return $this->datatableResponse($response, $input, is_array($rows) ? $rows : array(), $total);
+	}
+
+	public function download(Request $request, Response $response): Response
+	{
+		if (!$this->hasReadAccess())
+		{
+			throw new HttpForbiddenException($request, 'No read access to workorder reports');
+		}
+
+		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
+		$params = $this->listReadParams($input);
+		$values = $this->bo()->read($params);
+		$uicols = $this->bo()->uicols;
+
+		$this->bocommon()->download(
+			is_array($values) ? $values : array(),
+			$uicols['name'] ?? array(),
+			$uicols['descr'] ?? array(),
+			$uicols['input_type'] ?? array()
+		);
+
+		return $response;
 	}
 
 	public function store(Request $request, Response $response): Response

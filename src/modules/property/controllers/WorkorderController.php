@@ -4,6 +4,7 @@ namespace App\modules\property\controllers;
 
 use App\Database\Db;
 use App\modules\property\helpers\WorkorderFormHelper;
+use App\modules\phpgwapi\services\Settings;
 use JsonException;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -534,6 +535,63 @@ class WorkorderController
 			'action' => $action,
 			'ids' => $ids,
 		));
+	}
+
+	public function buildMultiUploadFile(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasEditAccess())
+		{
+			throw new HttpForbiddenException($request, 'No edit access to workorder files');
+		}
+
+		\phpgwapi_jquery::init_multi_upload_file();
+		$id = (int)($args['id'] ?? 0);
+
+		$multiUploadAction = \phpgw::link('/property/workorder/' . $id . '/multi-upload');
+		return $this->jsonResponse($response, array(
+			'multi_upload_action' => $multiUploadAction,
+		));
+	}
+
+	public function handleMultiUploadFile(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasEditAccess())
+		{
+			throw new HttpForbiddenException($request, 'No edit access to workorder files');
+		}
+
+		$id = (int)($args['id'] ?? 0);
+		$serverSettings = Settings::getInstance()->get('server');
+
+		\phpgw::import_class('property.multiuploader');
+		$options = array();
+		$options['base_dir'] = 'workorder/' . $id;
+		$options['upload_dir'] = $serverSettings['files_dir'] . '/property/' . $options['base_dir'] . '/';
+		$options['script_url'] = html_entity_decode(\phpgw::link('/property/workorder/' . $id . '/multi-upload'));
+		$uploadHandler = new \property_multiuploader($options, false);
+
+		switch (strtoupper($request->getMethod()))
+		{
+			case 'OPTIONS':
+			case 'HEAD':
+				$uploadHandler->head();
+				break;
+			case 'GET':
+				$uploadHandler->get();
+				break;
+			case 'PATCH':
+			case 'PUT':
+			case 'POST':
+				$uploadHandler->add_file();
+				break;
+			case 'DELETE':
+				$uploadHandler->delete_file();
+				break;
+			default:
+				return $this->jsonResponse($response, array('status' => 'error', 'message' => 'Method not allowed'), 405);
+		}
+
+		return $response;
 	}
 
 	public function getFilesAttachments(Request $request, Response $response, array $args): Response

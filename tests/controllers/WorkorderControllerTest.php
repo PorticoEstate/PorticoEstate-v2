@@ -178,5 +178,33 @@ namespace Tests\Controllers
 			$this->assertSame(77, $payload['data']['id']);
 			$this->assertNotEmpty($payload['receipt']['error']);
 		}
+
+		public function testBuildMultiUploadFileReturnsRestBasedActionUrl(): void
+		{
+			if (!class_exists('\\phpgwapi_jquery'))
+			{
+				eval('class phpgwapi_jquery { public static function init_multi_upload_file() {} }');
+			}
+			if (!class_exists('\\phpgw'))
+			{
+				eval('class phpgw { public static function link($url, $extravars = array()) { if (is_array($extravars) && !empty($extravars)) { $query = http_build_query($extravars); return $url . (strpos($url, "?") === false ? "?" : "&") . $query; } return $url; } }');
+			}
+
+			$bo = new class
+			{
+			};
+			$helper = $this->createMock(WorkorderFormHelper::class);
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeController($bo, $helper);
+			$controller->buildMultiUploadFile($this->request, $this->response, array('id' => 88));
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertArrayHasKey('multi_upload_action', $decoded);
+			$this->assertStringContainsString('/property/workorder/88/multi-upload', $decoded['multi_upload_action']);
+			$this->assertStringNotContainsString('menuaction=', $decoded['multi_upload_action']);
+		}
 	}
 }

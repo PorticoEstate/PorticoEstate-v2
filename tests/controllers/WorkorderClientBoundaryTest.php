@@ -121,6 +121,8 @@ namespace Tests\Controllers
 			$this->assertStringContainsString('$group->post(\'/{id:[0-9]+}\', [$controller, \'update\']);', $contents);
 			$this->assertStringContainsString('$group->get(\'/lookups/category\', [$controller, \'getCategory\']);', $contents);
 			$this->assertStringContainsString('$group->post(\'/lookups/category\', [$controller, \'getCategory\']);', $contents);
+			$this->assertStringContainsString('$group->get(\'/{id:[0-9]+}/multi-upload\', [$controller, \'buildMultiUploadFile\']);', $contents);
+			$this->assertStringContainsString('$group->map([\'POST\', \'PUT\', \'PATCH\', \'DELETE\', \'HEAD\', \'OPTIONS\'], \'/{id:[0-9]+}/multi-upload\', [$controller, \'handleMultiUploadFile\']);', $contents);
 		}
 
 		public function testWorkorderShellUsesRestFormActionUnconditionally(): void
@@ -130,6 +132,7 @@ namespace Tests\Controllers
 
 			$this->assertStringContainsString("phpgw::link('/property/workorder/create'", $contents);
 			$this->assertStringContainsString('phpgw::link(\'/property/workorder/\' . (int)$id', $contents);
+			$this->assertStringContainsString('phpgw::link(\'/property/workorder/\' . (int)$id . \'/multi-upload\')', $contents);
 			$this->assertStringNotContainsString('workorder_rest_save_form_action', $contents);
 			$this->assertStringNotContainsString("'property.uiworkorder.save'", $contents);
 		}

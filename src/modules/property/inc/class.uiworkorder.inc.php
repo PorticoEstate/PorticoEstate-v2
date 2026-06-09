@@ -506,10 +506,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		$this->flags['nofooter']		 = true;
 		Settings::getInstance()->update('flags', ['noframework' => true, 'nofooter' => true]);
 
-		$multi_upload_action = phpgw::link('/index.php', array(
-			'menuaction' => 'property.uiworkorder.handle_multi_upload_file',
-			'id'		 => $id
-		));
+		$multi_upload_action = phpgw::link('/property/workorder/' . (int)$id . '/multi-upload');
 
 		$data = array(
 			'multi_upload_action' => $multi_upload_action
@@ -3695,7 +3692,7 @@ JS;
 			'value_order_received_amount'			 => (int)$values['order_received_amount'],
 			'value_delivery_address'				 => $delivery_address,
 			'multiple_uploader'						 => true,
-			'multi_upload_action' => phpgw::link('/index.php', array('menuaction' => 'property.uiworkorder.handle_multi_upload_file', 'id' => $id)),
+			'multi_upload_action' => phpgw::link('/property/workorder/' . (int)$id . '/multi-upload'),
 			'image_list'							 => $image_list,
 			'tag_list'							 => array('options' => $bofiles->get_all_tags())
 		);

@@ -366,7 +366,6 @@ class ProjectController
 		);
 
 		$extraRelationFields = array(
-			'location_code',
 			'tenant_id',
 			'p_num',
 			'p_entity_id',
@@ -644,7 +643,7 @@ class ProjectController
 	 *     @OA\Parameter(name="start", in="query", @OA\Schema(type="integer", default=0)),
 	 *     @OA\Parameter(name="length", in="query", @OA\Schema(type="integer", default=25)),
 	 *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
-	 *     @OA\Response(response=200, description="Project DataTables payload")
+	 *     @OA\Response(response=200, description="Project DataTables payload", @OA\JsonContent(ref="#/components/schemas/DataTablesEnvelope"))
 	 * )
 	 */
 	public function index(Request $request, Response $response): Response
@@ -775,7 +774,7 @@ class ProjectController
 	 *     summary="List project orders",
 	 *     tags={"Project"},
 	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-	 *     @OA\Response(response=200, description="Order rows")
+	 *     @OA\Response(response=200, description="Order rows", @OA\JsonContent(ref="#/components/schemas/DataTablesEnvelope"))
 	 * )
 	 */
 	public function getOrders(Request $request, Response $response, array $args): Response
@@ -831,7 +830,7 @@ class ProjectController
 	 *     summary="List project vouchers",
 	 *     tags={"Project"},
 	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-	 *     @OA\Response(response=200, description="Voucher rows")
+	 *     @OA\Response(response=200, description="Voucher rows", @OA\JsonContent(ref="#/components/schemas/DataTablesEnvelope"))
 	 * )
 	 */
 	public function getVouchers(Request $request, Response $response, array $args): Response
@@ -870,6 +869,9 @@ class ProjectController
 
 		$values = array();
 		$invoiceHandler2 = isset($this->bo()->config['invoicehandler']) && $this->bo()->config['invoicehandler'] == 2;
+		$user = Settings::getInstance()->get('user');
+		$user = is_array($user) ? $user : array();
+		$dateFormat = $user['preferences']['common']['dateformat'] ?? 'Y-m-d';
 		foreach ((array)$invoices as $entry)
 		{
 			$voucherId = $invoiceHandler2
@@ -898,8 +900,8 @@ class ProjectController
 				'external_project_id' => $entry['project_id'] ?? null,
 				'currency' => $entry['currency'] ?? '',
 				'budget_responsible' => $entry['budget_responsible'] ?? '',
-				'budsjettsigndato' => !empty($entry['budsjettsigndato']) ? (new \phpgwapi_common())->show_date(strtotime($entry['budsjettsigndato']), $GLOBALS['phpgw_info']['user']['preferences']['common']['dateformat'] ?? 'Y-m-d') : '',
-				'transfer_time' => !empty($entry['transfer_time']) ? (new \phpgwapi_common())->show_date(strtotime($entry['transfer_time']), $GLOBALS['phpgw_info']['user']['preferences']['common']['dateformat'] ?? 'Y-m-d') : '',
+				'budsjettsigndato' => !empty($entry['budsjettsigndato']) ? (new \phpgwapi_common())->show_date(strtotime($entry['budsjettsigndato']), $dateFormat) : '',
+				'transfer_time' => !empty($entry['transfer_time']) ? (new \phpgwapi_common())->show_date(strtotime($entry['transfer_time']), $dateFormat) : '',
 			);
 		}
 
@@ -915,7 +917,7 @@ class ProjectController
 	 *     summary="List related projects",
 	 *     tags={"Project"},
 	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-	 *     @OA\Response(response=200, description="Related project rows")
+	 *     @OA\Response(response=200, description="Related project rows", @OA\JsonContent(ref="#/components/schemas/DataTablesEnvelope"))
 	 * )
 	 */
 	public function getOtherProjects(Request $request, Response $response, array $args): Response
@@ -973,7 +975,7 @@ class ProjectController
 	 *     summary="List project voucher attachments",
 	 *     tags={"Project"},
 	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-	 *     @OA\Response(response=200, description="Attachment rows")
+	 *     @OA\Response(response=200, description="Attachment rows", @OA\JsonContent(ref="#/components/schemas/DataTablesEnvelope"))
 	 * )
 	 */
 	public function getAttachment(Request $request, Response $response, array $args): Response
@@ -1488,7 +1490,7 @@ class ProjectController
 	 *     summary="List project files",
 	 *     tags={"Project"},
 	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-	 *     @OA\Response(response=200, description="File rows")
+	 *     @OA\Response(response=200, description="File rows", @OA\JsonContent(ref="#/components/schemas/DataTablesEnvelope"))
 	 * )
 	 */
 	public function getFiles(Request $request, Response $response, array $args): Response

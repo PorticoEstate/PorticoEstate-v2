@@ -1970,8 +1970,7 @@ HTML;
 		//		$msgbox_data = $this->bocommon->msgbox_data($receipt);
 
 		$link_file_data = array(
-			'menuaction' => 'property.uiworkorder.view_file',
-			'id'		 => $workorder_id
+			'file_id' => 0
 		);
 
 		//---datatable settings---------------------------------------------------
@@ -2033,7 +2032,7 @@ HTML;
 		);
 
 		$content_files	 = array();
-		$link_view_file	 = phpgw::link('/index.php', $link_file_data);
+		$link_view_file	 = phpgw::link('/property/workorder/files/view');
 
 		$files				 = $workorder['files'] ? $workorder['files'] : array();
 		$lang_view_file		 = lang('click to view file');
@@ -2129,7 +2128,7 @@ HTML;
 			'no_email'							 => $no_email,
 			'table_send'						 => $table_send,
 			'table_done'						 => $table_done,
-			'link_view_file'					 => phpgw::link('/index.php', $link_file_data),
+			'link_view_file'					 => phpgw::link('/property/workorder/files/view'),
 			'files'								 => $content_files,
 			'lang_files'						 => lang('files'),
 			'lang_filename'						 => lang('Filename'),

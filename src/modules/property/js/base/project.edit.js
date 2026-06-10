@@ -1,12 +1,14 @@
 var project_id;
-var sUrl_workorder = phpGWLink('index.php', {'menuaction': 'property.uiworkorder.edit'});
-var sUrl_invoice = phpGWLink('index.php', {'menuaction': 'property.uiinvoice.index'});
 var external_project_budget_account_category = null;
 
 
 formatLink = function (key, oData)
 {
-	return "<a href=" + sUrl_workorder + "&id=" + oData[key] + ">" + oData[key] + "</a>";
+	var url = phpGWLink('index.php', {
+		menuaction: 'property.uiworkorder.edit',
+		id: oData[key]
+	});
+	return "<a href=" + url + ">" + oData[key] + "</a>";
 };
 
 formatLink_voucher = function (key, oData)
@@ -23,18 +25,27 @@ formatLink_voucher = function (key, oData)
 
 	if (oData[key] > 0)
 	{
-		return "<a href=" + sUrl_invoice + "&query=" + oData[key] + "&voucher_id=" + oData[key] + "&user_lid=all>" + voucher_id + "</a>";
+		var url = phpGWLink('index.php', {
+			menuaction: 'property.uiinvoice.index',
+			query: oData[key],
+			voucher_id: oData[key],
+			user_lid: 'all'
+		});
+		return "<a href=" + url + ">" + voucher_id + "</a>";
 	}
 	else
 	{
-		//oData[key] = -1 * oData[key];
-		return "<a href=" + sUrl_invoice + "&voucher_id=" + Math.abs(oData[key]) + "&user_lid=all&paid=true>" + voucher_id + "</a>";
+		var paidUrl = phpGWLink('index.php', {
+			menuaction: 'property.uiinvoice.index',
+			voucher_id: Math.abs(oData[key]),
+			user_lid: 'all',
+			paid: true
+		});
+		return "<a href=" + paidUrl + ">" + voucher_id + "</a>";
 	}
 };
 
 //var oArgs_invoicehandler_2 = {menuaction:'property.uiinvoice2.index'};
-var sUrl_invoicehandler_2 = phpGWLink('index.php', {menuaction: 'property.uiinvoice2.index'});
-
 formatLink_invoicehandler_2 = function (key, oData)
 {
 	var voucher_out_id = oData['voucher_out_id'];
@@ -49,24 +60,73 @@ formatLink_invoicehandler_2 = function (key, oData)
 
 	if (oData[key] > 0)
 	{
-		return "<a href=" + sUrl_invoicehandler_2 + "&voucher_id=" + oData[key] + ">" + voucher_id + "</a>";
+		var url = phpGWLink('index.php', {
+			menuaction: 'property.uiinvoice2.index',
+			voucher_id: oData[key]
+		});
+		return "<a href=" + url + ">" + voucher_id + "</a>";
 	}
 	else
 	{
-		//oData[key] = -1 * oData[key];
-		return "<a href=" + sUrl_invoice + "&voucher_id=" + Math.abs(oData[key]) + "&user_lid=all&paid=true>" + voucher_id + "</a>";
+		var paidUrl = phpGWLink('index.php', {
+			menuaction: 'property.uiinvoice.index',
+			voucher_id: Math.abs(oData[key]),
+			user_lid: 'all',
+			paid: true
+		});
+		return "<a href=" + paidUrl + ">" + voucher_id + "</a>";
 	}
 };
-
-//var oArgs_project = {menuaction:'property.uiproject.edit'};
-var sUrl_project = phpGWLink('index.php', {menuaction: 'property.uiproject.edit'});
 
 var project_link = function (key, oData)
 {
 	if (oData[key] > 0)
 	{
-		return "<a href=" + sUrl_project + "&id=" + oData[key] + ">" + oData[key] + "</a>";
+		return "<a href=" + buildProjectEditUrl(oData[key]) + ">" + oData[key] + "</a>";
 	}
+};
+
+var project_file_link = function (key, oData)
+{
+	var fileName = (oData && oData[key]) ? String(oData[key]) : '';
+	var fileId = (oData && oData.file_id) ? String(oData.file_id) : '';
+
+	if (!fileName)
+	{
+		return '';
+	}
+
+	if (!fileId)
+	{
+		return $('<div/>').text(fileName).html();
+	}
+
+	var url = phpGWLink('property/project/files/view', {file_id: fileId});
+	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener" title="' + $('<div/>').text(lang['click to view file'] || 'click to view file').html() + '">' + $('<div/>').text(fileName).html() + '</a>';
+};
+
+var project_attachment_link = function (key, oData)
+{
+	var fileName = (oData && oData[key]) ? String(oData[key]) : '';
+	var voucherId = (oData && oData.voucher_id) ? String(oData.voucher_id) : '';
+
+	if (!fileName)
+	{
+		return '';
+	}
+
+	if (!voucherId)
+	{
+		return $('<div/>').text(fileName).html();
+	}
+
+	var url = phpGWLink('index.php', {
+		menuaction: 'property.uitts.show_attachment',
+		file_name: fileName,
+		key: voucherId
+	});
+
+	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener">' + $('<div/>').text(fileName).html() + '</a>';
 };
 
 var project_file_link = function (key, oData)
@@ -460,7 +520,7 @@ $(document).ready(function ()
 	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'b_account_name', 'b_account_id', 'b_account_container', null, null, null, validate_change_budget_account);
 
-	var strURL = phpGWLink('property/project/external-project', {
+	var strURL = phpGWLink('property/project/lookups/external-project', {
 		phpgw_return_as: 'json'
 	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'external_project_name', 'external_project_id', 'external_project_container', null, null, null, validate_dim_b);
@@ -598,6 +658,26 @@ function parseProjectURL(url)
 	};
 }
 
+function getProjectNavigationContext()
+{
+	var form = document.getElementById('form');
+	if (form && form.action)
+	{
+		return form;
+	}
+
+	return {
+		action: (typeof window.strBaseURL !== 'undefined' && window.strBaseURL)
+			? window.strBaseURL
+			: window.location.href
+	};
+}
+
+function buildProjectEditUrl(projectId)
+{
+	return createProjectNavigationClient(getProjectNavigationContext()).buildEditUrl(projectId);
+}
+
 function createProjectNavigationClient(form)
 {
 	if (window.PorticoBoundaryClients && typeof window.PorticoBoundaryClients.createProjectClients === 'function')
@@ -610,23 +690,10 @@ function createProjectNavigationClient(form)
 	return {
 		buildEditUrl: function (id)
 		{
-			var parsed = parseProjectURL(form.action);
-			var query = parsed.searchObject || {};
-			var clickHistory = query.click_history || '';
-
-			if (!clickHistory && typeof window.strBaseURL !== 'undefined' && window.strBaseURL)
-			{
-				var baseQuery = parseProjectURL(window.strBaseURL).searchObject || {};
-				clickHistory = baseQuery.click_history || '';
-			}
-
-			var url = 'index.php?menuaction=property.uiproject.edit&id=' + encodeURIComponent(id);
-			if (clickHistory)
-			{
-				url += '&click_history=' + encodeURIComponent(clickHistory);
-			}
-
-			return url;
+			return phpGWLink('index.php', {
+				menuaction: 'property.uiproject.edit',
+				id: id
+			});
 		}
 	};
 }
@@ -777,6 +844,113 @@ function formDataToProjectObject(formData)
 	return payload;
 }
 
+function deriveProjectLocationCode(payloadValues, rawPayload)
+{
+	var explicitLocationCode = '';
+
+	if (payloadValues && typeof payloadValues.location_code === 'string' && payloadValues.location_code.trim() !== '')
+	{
+		explicitLocationCode = payloadValues.location_code.trim();
+	}
+	else if (rawPayload && typeof rawPayload.location_code === 'string' && rawPayload.location_code.trim() !== '')
+	{
+		explicitLocationCode = rawPayload.location_code.trim();
+	}
+
+	if (explicitLocationCode)
+	{
+		return explicitLocationCode;
+	}
+
+	var partsByLevel = {};
+
+	var locationNode = payloadValues && payloadValues.location && typeof payloadValues.location === 'object'
+		? payloadValues.location
+		: null;
+	if (locationNode)
+	{
+		for (var key in locationNode)
+		{
+			if (!Object.prototype.hasOwnProperty.call(locationNode, key))
+			{
+				continue;
+			}
+
+			var match = key.match(/^loc(\d+)$/);
+			if (!match)
+			{
+				continue;
+			}
+
+			var value = String(locationNode[key] || '').trim();
+			if (!value)
+			{
+				continue;
+			}
+
+			var level = parseInt(match[1], 10);
+			if (Number.isFinite(level) && level > 0 && !Object.prototype.hasOwnProperty.call(partsByLevel, level))
+			{
+				partsByLevel[level] = value;
+			}
+		}
+	}
+
+	var nodesToScan = [payloadValues || {}, rawPayload || {}];
+	for (var n = 0; n < nodesToScan.length; n++)
+	{
+		var node = nodesToScan[n];
+		for (var nodeKey in node)
+		{
+			if (!Object.prototype.hasOwnProperty.call(node, nodeKey))
+			{
+				continue;
+			}
+
+			var nodeMatch = nodeKey.match(/^loc(\d+)$/);
+			if (!nodeMatch)
+			{
+				continue;
+			}
+
+			var nodeValue = String(node[nodeKey] || '').trim();
+			if (!nodeValue)
+			{
+				continue;
+			}
+
+			var nodeLevel = parseInt(nodeMatch[1], 10);
+			if (Number.isFinite(nodeLevel) && nodeLevel > 0 && !Object.prototype.hasOwnProperty.call(partsByLevel, nodeLevel))
+			{
+				partsByLevel[nodeLevel] = nodeValue;
+			}
+		}
+	}
+
+	var levels = Object.keys(partsByLevel).map(function (level)
+	{
+		return parseInt(level, 10);
+	}).filter(function (level)
+	{
+		return Number.isFinite(level) && level > 0;
+	}).sort(function (a, b)
+	{
+		return a - b;
+	});
+
+	if (!levels.length)
+	{
+		return '';
+	}
+
+	var locationParts = levels.map(function (level)
+	{
+		return partsByLevel[level];
+	});
+
+	return locationParts.join('-');
+}
+
 function buildProjectSavePayload(formData)
 {
 	var rawPayload = formDataToProjectObject(formData);
@@ -804,6 +978,15 @@ function buildProjectSavePayload(formData)
 		if (!Object.prototype.hasOwnProperty.call(payloadValues, key))
 		{
 			payloadValues[key] = rawPayload[key];
+		}
+	}
+
+	if (!Object.prototype.hasOwnProperty.call(payloadValues, 'location_code') || !String(payloadValues.location_code || '').trim())
+	{
+		var derivedLocationCode = deriveProjectLocationCode(payloadValues, rawPayload);
+		if (derivedLocationCode)
+		{
+			payloadValues.location_code = derivedLocationCode;
 		}
 	}
 
@@ -1083,7 +1266,7 @@ $(window).on('load', function ()
 	function check_valid_external_project(external_project_id)
 	{
 
-		var strURL = phpGWLink('property/project/external-project', {
+		var strURL = phpGWLink('property/project/lookups/external-project', {
 			query: external_project_id,
 			phpgw_return_as: 'json'
 		}, true);

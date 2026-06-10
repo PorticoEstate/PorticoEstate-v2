@@ -873,71 +873,12 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		$location_template_type = $location_context['location_template_type'];
 		$_location_data = $location_context['_location_data'];
 
-		$vendor_data = $this->bocommon->initiate_ui_vendorlookup(array(
-			'vendor_id'		 => $values['vendor_id'],
-			'vendor_name'	 => $values['vendor_name'],
-			'type'			 => $mode,
-			'required'		 => isset($config->config_data['workorder_require_vendor']) && $config->config_data['workorder_require_vendor'] == 1
-		));
-
-
-		$b_group_data = $this->bocommon->initiate_ui_budget_account_lookup(array(
-			'b_account_id'	 => $project['b_account_group'],
-			'role'			 => 'group',
-			'type'			 => $mode
-		));
-
-		$b_account_data = $this->bocommon->initiate_ui_budget_account_lookup(array(
-			'b_account_id'	 => $values['b_account_id'] ? $values['b_account_id'] : $project['b_account_id'],
-			//				'b_account_name' => $values['b_account_name'],
-			'disabled'		 => '',
-			'parent'		 => $project['b_account_group'],
-			'type'			 => $mode,
-			'required'		 => true
-		));
-
-		$b_account_list_favorite = ExecMethod('property.sob_account_user.get_favorite', $this->account);
-
-		if ($b_account_list_favorite)
-		{
-			$b_account_list = $b_account_list_favorite;
-		}
-		else
-		{
-			$b_account_list = execMethod('property.bogeneric.get_list', array(
-				'type'		 => 'budget_account',
-				'selected'	 => $values['b_account_id'] ? $values['b_account_id'] : $project['b_account_id'],
-				'add_empty'	 => true,
-				'filter'	 => array('active' => 1)
-			));
-		}
-
-		$_b_account_found = false;
-		foreach ($b_account_list as &$entry)
-		{
-			$entry['name'] = "{$entry['id']} {$entry['name']}";
-			if (!empty($b_account_data['value_b_account_id']) && $b_account_data['value_b_account_id'] == $entry['id'])
-			{
-				$_b_account_found = true;
-			}
-		}
-		if (!empty($b_account_data['value_b_account_id']) && !$_b_account_found)
-		{
-			array_unshift($b_account_list, array(
-				'id'	 => $b_account_data['value_b_account_id'],
-				'name'	 => "{$b_account_data['value_b_account_id']} {$b_account_data['value_b_account_name']}"
-			));
-		}
-
-		unset($entry);
-
-		$ecodimb_data = $this->bocommon->initiate_ecodimb_lookup(
-			array(
-				'ecodimb'		 => $values['ecodimb'] ? $values['ecodimb'] : $project['ecodimb'],
-				'ecodimb_descr'	 => $values['ecodimb_descr'],
-				'disabled'		 => $project['ecodimb'] || $mode == 'view'
-			)
-		);
+		$vendor_budget_context = $this->_initialize_vendor_budget_context($values, $project, $mode, $config);
+		$vendor_data = $vendor_budget_context['vendor_data'];
+		$b_group_data = $vendor_budget_context['b_group_data'];
+		$b_account_data = $vendor_budget_context['b_account_data'];
+		$b_account_list = $vendor_budget_context['b_account_list'];
+		$ecodimb_data = $vendor_budget_context['ecodimb_data'];
 
 		$event_criteria	 = array(
 			'location'	 => $this->acl_location,
@@ -2435,6 +2376,82 @@ JS;
 			'location_data' => $location_data,
 			'location_template_type' => $location_template_type,
 			'_location_data' => $_location_data
+		);
+	}
+
+	private function _initialize_vendor_budget_context(array $values, array $project, $mode, $config)
+	{
+		$vendor_data = $this->bocommon->initiate_ui_vendorlookup(array(
+			'vendor_id'		 => $values['vendor_id'],
+			'vendor_name'	 => $values['vendor_name'],
+			'type'			 => $mode,
+			'required'		 => isset($config->config_data['workorder_require_vendor']) && $config->config_data['workorder_require_vendor'] == 1
+		));
+
+		$b_group_data = $this->bocommon->initiate_ui_budget_account_lookup(array(
+			'b_account_id'	 => $project['b_account_group'],
+			'role'			 => 'group',
+			'type'			 => $mode
+		));
+
+		$b_account_data = $this->bocommon->initiate_ui_budget_account_lookup(array(
+			'b_account_id'	 => $values['b_account_id'] ? $values['b_account_id'] : $project['b_account_id'],
+			//				'b_account_name' => $values['b_account_name'],
+			'disabled'		 => '',
+			'parent'		 => $project['b_account_group'],
+			'type'			 => $mode,
+			'required'		 => true
+		));
+
+		$b_account_list_favorite = ExecMethod('property.sob_account_user.get_favorite', $this->account);
+
+		if ($b_account_list_favorite)
+		{
+			$b_account_list = $b_account_list_favorite;
+		}
+		else
+		{
+			$b_account_list = execMethod('property.bogeneric.get_list', array(
+				'type'		 => 'budget_account',
+				'selected'	 => $values['b_account_id'] ? $values['b_account_id'] : $project['b_account_id'],
+				'add_empty'	 => true,
+				'filter'	 => array('active' => 1)
+			));
+		}
+
+		$_b_account_found = false;
+		foreach ($b_account_list as &$entry)
+		{
+			$entry['name'] = "{$entry['id']} {$entry['name']}";
+			if (!empty($b_account_data['value_b_account_id']) && $b_account_data['value_b_account_id'] == $entry['id'])
+			{
+				$_b_account_found = true;
+			}
+		}
+		if (!empty($b_account_data['value_b_account_id']) && !$_b_account_found)
+		{
+			array_unshift($b_account_list, array(
+				'id'	 => $b_account_data['value_b_account_id'],
+				'name'	 => "{$b_account_data['value_b_account_id']} {$b_account_data['value_b_account_name']}"
+			));
+		}
+
+		unset($entry);
+
+		$ecodimb_data = $this->bocommon->initiate_ecodimb_lookup(
+			array(
+				'ecodimb'		 => $values['ecodimb'] ? $values['ecodimb'] : $project['ecodimb'],
+				'ecodimb_descr'	 => $values['ecodimb_descr'],
+				'disabled'		 => $project['ecodimb'] || $mode == 'view'
+			)
+		);
+
+		return array(
+			'vendor_data' => $vendor_data,
+			'b_group_data' => $b_group_data,
+			'b_account_data' => $b_account_data,
+			'b_account_list' => $b_account_list,
+			'ecodimb_data' => $ecodimb_data
 		);
 	}
 

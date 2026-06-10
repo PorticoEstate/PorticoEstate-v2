@@ -52,8 +52,9 @@ class NotificationService
             ],
         ]);
 
-        // Publish real-time event via Redis/WebSocket
+        // Publish real-time events via Redis/WebSocket
         try {
+            // 1. Live thread update for anyone viewing the application
             WebSocketHelper::sendEntityEvent('application', $applicationId, 'new_comment', [
                 'comment' => [
                     'id'      => $commentId,
@@ -63,6 +64,27 @@ class NotificationService
                     'type'    => 'comment',
                 ],
                 'notification_id' => $notificationId,
+            ]);
+
+            // 2. Bell update for the recipient on every tab/page (identity room)
+            WebSocketHelper::sendToUserRoom($recipientUserType, $recipientIdentifier, [
+                'type'      => 'notification_event',
+                'eventType' => 'new',
+                'notification' => [
+                    'id'          => $notificationId,
+                    'entity_type' => 'application',
+                    'entity_id'   => $applicationId,
+                    'title'       => 'new_comment_notification',
+                    'message'     => mb_substr($commentText, 0, 200),
+                    'link'        => '/user/applications/' . $applicationId,
+                    'is_read'     => false,
+                    'data'        => [
+                        'title_is_key' => true,
+                        'title_params' => ['1' => $authorName],
+                    ],
+                    'created'     => date('c'),
+                ],
+                'timestamp' => date('c'),
             ]);
         } catch (\Throwable $e) {
             error_log("Failed to send WebSocket event for comment notification: " . $e->getMessage());

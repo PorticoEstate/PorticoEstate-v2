@@ -185,7 +185,4 @@ export interface UpdateStatusResponse {
     message: string; // "Application status updated successfully"
 }
 
-export interface INotificationUnreadCount {
-    total_unread: number;
-    applications: Array<{ application_id: number; unread_count: number }>;
-}
+// Notification types live in @/service/types/api/notification.types

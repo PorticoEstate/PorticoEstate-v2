@@ -95,6 +95,70 @@ class NotificationRepository
     }
 
     /**
+     * Get all notifications for a recipient, newest first, with paging.
+     *
+     * @param string $userType   Recipient user type
+     * @param string $identifier Recipient identifier
+     * @param int    $limit      Max rows to return
+     * @param int    $offset     Rows to skip
+     * @param bool   $onlyUnread When true, only unread notifications are returned
+     * @return array
+     */
+    public function getAllByRecipient(
+        string $userType,
+        string $identifier,
+        int $limit = 50,
+        int $offset = 0,
+        bool $onlyUnread = false
+    ): array {
+        $sql = "SELECT * FROM bb_notification
+                WHERE recipient_user_type = :user_type
+                  AND recipient_identifier = :identifier";
+
+        if ($onlyUnread) {
+            $sql .= " AND is_read = false";
+        }
+
+        $sql .= " ORDER BY created DESC
+                  LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':user_type', $userType, PDO::PARAM_STR);
+        $stmt->bindValue(':identifier', $identifier, PDO::PARAM_STR);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Count all notifications for a recipient (for pagination totals).
+     *
+     * @param string $userType   Recipient user type
+     * @param string $identifier Recipient identifier
+     * @param bool   $onlyUnread When true, only counts unread
+     * @return int
+     */
+    public function countAllByRecipient(string $userType, string $identifier, bool $onlyUnread = false): int
+    {
+        $sql = "SELECT COUNT(*) FROM bb_notification
+                WHERE recipient_user_type = :user_type
+                  AND recipient_identifier = :identifier";
+        if ($onlyUnread) {
+            $sql .= " AND is_read = false";
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':user_type'  => $userType,
+            ':identifier' => $identifier,
+        ]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
      * Get unread notification counts grouped by entity_type + entity_id.
      *
      * @param string $userType   Recipient user type

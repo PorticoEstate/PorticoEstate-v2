@@ -85,8 +85,12 @@ class ApplicationCommentsService implements CommentsServiceInterface
      */
     public function addComment(int $applicationId, string $comment, string $type = 'comment', ?string $author = null): array
     {
+        // Only manage the transaction if no outer transaction is active (e.g. from addStatusChangeComment)
+        $ownTransaction = !$this->db->inTransaction();
         try {
-            $this->db->beginTransaction();
+            if ($ownTransaction) {
+                $this->db->beginTransaction();
+            }
 			$userModel = new User($this->userHelper);
 
             // Use provided author or get current user name
@@ -118,7 +122,9 @@ class ApplicationCommentsService implements CommentsServiceInterface
             // Send admin notification
             $this->sendAdminNotification($applicationId, $comment);
 
-            $this->db->commit();
+            if ($ownTransaction) {
+                $this->db->commit();
+            }
 
             // Create in-app notification for the case officer (non-fatal)
             try {
@@ -132,7 +138,9 @@ class ApplicationCommentsService implements CommentsServiceInterface
             return $comment->toArray();
 
         } catch (Exception $e) {
-            $this->db->rollBack();
+            if ($ownTransaction && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             throw $e;
         }
     }
@@ -173,7 +181,9 @@ class ApplicationCommentsService implements CommentsServiceInterface
             return $createdComments;
 
         } catch (Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             throw $e;
         }
     }

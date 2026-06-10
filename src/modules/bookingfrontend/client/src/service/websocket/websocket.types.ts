@@ -90,6 +90,13 @@ export interface IWSEntityEventMessage extends IWebSocketMessageBase {
   data?: any;
 }
 
+// Interface for a notification event pushed to a user's identity room
+export interface IWSNotificationEventMessage extends IWebSocketMessageBase {
+  type: 'notification_event';
+  eventType: 'new' | string;
+  notification?: any;
+}
+
 // Interface for room message
 export interface IWSRoomMessage extends IWebSocketMessageBase {
   type: 'room_message';
@@ -248,6 +255,7 @@ export type WebSocketMessage =
   | IWSEntityUnsubscribeMessage
   | IWSSubscriptionConfirmMessage
   | IWSEntityEventMessage
+  | IWSNotificationEventMessage
   | IWSRoomMessage
   | IWSSessionUpdateMessage
   | IWSSessionUpdateConfirmMessage

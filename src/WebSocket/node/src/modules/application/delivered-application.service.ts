@@ -212,6 +212,143 @@ export class DeliveredApplicationService {
   }
 
   /**
+   * Add a comment to an application from a frontend user.
+   *
+   * Loads + access-checks the application via getApplicationById (secret/SSN/org delegate),
+   * resolves the author display name, inserts the comment, and creates an in-app
+   * notification for the case officer (mirrors PHP ApplicationCommentsService::addComment
+   * + NotificationService::createCommentNotification).
+   *
+   * @returns The created comment plus notification id, or { error } on failure.
+   */
+  async addComment(opts: {
+    applicationId: number;
+    ssn?: string;
+    secret?: string;
+    commentText: string;
+  }): Promise<
+    | {
+        comment: { id: number; author: string; comment: string; time: string; type: string };
+        notificationId: number | null;
+        notification: {
+          id: number;
+          recipientUserType: string;
+          recipientIdentifier: string;
+          entity_type: string;
+          entity_id: number;
+          title: string;
+          message: string;
+          link: string;
+          data: { title_is_key: boolean; title_params: Record<string, string> };
+        } | null;
+      }
+    | { error: string }
+  > {
+    if (!this.db.isConnected()) {
+      return { error: 'Database not connected' };
+    }
+
+    const { applicationId, ssn, secret, commentText } = opts;
+
+    // a. Load + access-check the application (also verifies secret/SSN/org access)
+    const { application, error } = await this.getApplicationById({ id: applicationId, ssn, secret });
+    if (error || !application) {
+      return { error: error || 'Application not found' };
+    }
+
+    try {
+      // b. Resolve author display name: bb_user.name by SSN, fall back to contact_name, else 'Bruker'
+      let authorName = '';
+      if (ssn) {
+        const { rows: userRows } = await this.db.query(
+          `SELECT name FROM bb_user WHERE customer_ssn = $1`,
+          [ssn],
+        );
+        authorName = (userRows[0]?.name || '').trim();
+      }
+      if (!authorName) {
+        authorName = (application.contact_name || '').trim() || 'Bruker';
+      }
+
+      // c. Insert the comment
+      const { rows: insertRows } = await this.db.query(
+        `INSERT INTO bb_application_comment (application_id, time, author, comment, type)
+         VALUES ($1, NOW(), $2, $3, 'comment')
+         RETURNING id, time`,
+        [applicationId, authorName, commentText],
+      );
+      const commentId: number = parseInt(insertRows[0].id, 10);
+      const rawTime = insertRows[0].time;
+      const timeIso = rawTime instanceof Date ? rawTime.toISOString() : new Date(rawTime).toISOString();
+
+      // d. Create a notification for the case officer if one is assigned
+      let notificationId: number | null = null;
+      let notification: {
+        id: number;
+        recipientUserType: string;
+        recipientIdentifier: string;
+        entity_type: string;
+        entity_id: number;
+        title: string;
+        message: string;
+        link: string;
+        data: { title_is_key: boolean; title_params: Record<string, string> };
+      } | null = null;
+      const caseOfficerId = application.case_officer_id ? parseInt(String(application.case_officer_id), 10) : 0;
+      if (caseOfficerId) {
+        const messagePreview = commentText.substring(0, 200);
+        const link = `/user/applications/${applicationId}`;
+        const dataObj = { title_is_key: true, title_params: { '1': authorName } };
+        const dataJson = JSON.stringify(dataObj);
+
+        const { rows: notifRows } = await this.db.query(
+          `INSERT INTO bb_notification
+             (source_type, source_id, entity_type, entity_id,
+              recipient_user_type, recipient_identifier,
+              title, message, link, is_read, data, created)
+           VALUES
+             ('application_comment', $1, 'application', $2,
+              'phpgw_accounts', $3::text,
+              'new_comment_notification', $4, $5, false, $6::jsonb, NOW())
+           RETURNING id`,
+          [commentId, applicationId, caseOfficerId, messagePreview, link, dataJson],
+        );
+        notificationId = notifRows[0]?.id != null ? parseInt(notifRows[0].id, 10) : null;
+
+        if (notificationId !== null) {
+          notification = {
+            id: notificationId,
+            recipientUserType: 'phpgw_accounts',
+            recipientIdentifier: String(caseOfficerId),
+            entity_type: 'application',
+            entity_id: applicationId,
+            title: 'new_comment_notification',
+            message: messagePreview,
+            link,
+            data: dataObj,
+          };
+        }
+      }
+
+      // e. Return the created comment
+      return {
+        comment: {
+          id: commentId,
+          author: authorName,
+          comment: commentText,
+          time: timeIso,
+          type: 'comment',
+        },
+        notificationId,
+        notification,
+      };
+    } catch (err: any) {
+      this.logger.error(`Error adding comment to application ${applicationId}: ${err.message}`);
+      return { error: err.message };
+    }
+  }
+
+  /**
    * Check if access is allowed for an application.
    * Mirrors PHP: ApplicationHelper::canViewApplication
    */

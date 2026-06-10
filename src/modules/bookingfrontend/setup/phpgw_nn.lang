@@ -966,8 +966,6 @@ select_hospitality	bookingfrontend	nn	Vel servering
 cancellation_deadline_info	bookingfrontend	nn	Kan avbestillast innan %1
 cancellation_deadline_passed	bookingfrontend	nn	Avbestillingsfristen har gått ut
 cancellation_deadline_passed_warning	bookingfrontend	nn	Avbestillingsfristen har gått ut. Viss du bestiller vil du ikkje kunne avbestille.
-close_calendar_without_season	bookingfrontend	nn	Steng kalender når bygg manglar sesong
-close_calendar_without_season_note	bookingfrontend	nn	Når aktiv blir bygg utan definert sesong vist som stengde
 combined_application	bookingfrontend	nn	Kombinert søknad
 organization_number	bookingfrontend	nn	Organisasjonsnummer
 recurring_application	bookingfrontend	nn	Gjentakande
@@ -982,3 +980,11 @@ no documents available	bookingfrontend	nn	Ingen dokument tilgjengeleg
 new_comment_notification	bookingfrontend	nn	%1 har skrive ein kommentar
 close_calendar_without_season	bookingfrontend	nn	Steng kalender når bygg manglar sesong
 close_calendar_without_season_note	bookingfrontend	nn	Når aktiv blir bygg utan definert sesong vist som stengde
+notifications_title	bookingfrontend	nn	Varsel
+no_notifications	bookingfrontend	nn	Ingen varsel
+mark_all_read	bookingfrontend	nn	Marker alle som lese
+see_all_notifications	bookingfrontend	nn	Sjå alle varsel
+all	bookingfrontend	nn	Alle
+unread	bookingfrontend	nn	Ulesne
+load_more	bookingfrontend	nn	Last inn fleire
+no_unread_notifications	bookingfrontend	nn	Ingen ulesne varsel

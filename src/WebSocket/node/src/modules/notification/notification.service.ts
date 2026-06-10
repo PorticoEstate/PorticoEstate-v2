@@ -105,6 +105,19 @@ export class NotificationService implements OnModuleInit {
         return;
       }
 
+      // User-identity-targeted (reaches all the user's tabs/sessions)
+      if (data.target === 'user' && data.userType && data.identifier) {
+        const roomId = this.roomService.userRoomId(
+          data.userType,
+          data.identifier,
+        );
+        this.server.to(roomId).emit('message', data);
+        this.logger.debug(
+          `User notification -> ${data.userType}:${data.identifier}`,
+        );
+        return;
+      }
+
       // General broadcast
       data.source = 'redis';
       data.received_at = new Date().toISOString();

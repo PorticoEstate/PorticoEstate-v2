@@ -868,82 +868,10 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 			$this->cat_id = $values['cat_id'];
 		}
 
-		if (isset($config->config_data['location_at_workorder']) && $config->config_data['location_at_workorder'])
-		{
-			$admin_location	 = &$bolocation->soadmin_location;
-			$location_types	 = $admin_location->select_location_type();
-			$max_level		 = count($location_types);
-
-			$location_level			 = isset($project['location_data']['location_code']) && $project['inherit_location'] ? count(explode('-', $project['location_data']['location_code'])) : 0;
-			$location_template_type	 = 'form';
-			$_location_data			 = array();
-
-			if (!$values['location_data'] && ($values['location_code'] || $values['location']))
-			{
-				$location_code			 = isset($values['location_code']) && $values['location_code'] ? $values['location_code'] : implode("-", $values['location']);
-				$values['extra']['view'] = true;
-				$values['location_data'] = $bolocation->read_single($location_code, $values['extra']);
-			}
-
-			if ($values['location_data'])
-			{
-				$_location_data = $values['location_data'];
-			}
-			else if (isset($values['location']) && is_array($values['location']))
-			{
-				$location_code			 = implode("-", $values['location']);
-				$values['extra']['view'] = true;
-				$_location_data			 = $bolocation->read_single($location_code, $values['extra']);
-			}
-			else
-			{
-				if (isset($project['location_data']) && $project['location_data'] && $project['inherit_location'])
-				{
-					$_location_data = $project['location_data'];
-				}
-			}
-
-			if ($mode == 'view')
-			{
-				$location_template_type = 'view';
-			}
-
-			$location_data = $bolocation->initiate_ui_location(array(
-				'values'			 => $_location_data,
-				'type_id'			 => $mode == 'edit' ? $max_level : count(explode('-', $_location_data['location_code'])),
-				'no_link'			 => false, // disable lookup links for location type less than type_id
-				'tenant'			 => true,
-				'block_parent'		 => $location_level,
-				'lookup_type'		 => $location_template_type,
-				'lookup_entity'		 => $this->bocommon->get_lookup_entity('project'),
-				'entity_data'		 => (isset($values['p']) ? $values['p'] : ''),
-				'filter_location'	 => $project['inherit_location'] ? $project['location_data']['location_code'] : false,
-				'required_level'	 => 1
-			));
-		}
-		else
-		{
-			$location_template_type	 = 'view';
-			$_location_data			 = !empty($project['location_data']) ? $project['location_data'] : '';
-			$location_data			 = $bolocation->initiate_ui_location(array(
-				'values'		 => $_location_data,
-				'type_id'		 => (isset($project['location_data']['location_code']) ? count(explode('-', $project['location_data']['location_code'])) : ''),
-				'no_link'		 => false, // disable lookup links for location type less than type_id
-				'tenant'		 => (isset($project['location_data']['tenant_id']) ? $project['location_data']['tenant_id'] : ''),
-				'lookup_type'	 => 'view'
-			));
-		}
-
-		if (!empty($project['contact_phone']) || !empty($values['contact_phone']))
-		{
-			for ($i = 0; $i < count($location_data['location']); $i++)
-			{
-				if ($location_data['location'][$i]['input_name'] == 'contact_phone')
-				{
-					$location_data['location'][$i]['value'] = $values['contact_phone'] ? $values['contact_phone'] : $project['contact_phone'];
-				}
-			}
-		}
+		$location_context = $this->_initialize_location_context($values, $project, $mode, $bolocation, $config);
+		$location_data = $location_context['location_data'];
+		$location_template_type = $location_context['location_template_type'];
+		$_location_data = $location_context['_location_data'];
 
 		$vendor_data = $this->bocommon->initiate_ui_vendorlookup(array(
 			'vendor_id'		 => $values['vendor_id'],
@@ -2421,6 +2349,92 @@ JS;
 					'disablePagination' => true
 				)
 			)
+		);
+	}
+
+	private function _initialize_location_context(array &$values, array $project, $mode, $bolocation, $config)
+	{
+		if (isset($config->config_data['location_at_workorder']) && $config->config_data['location_at_workorder'])
+		{
+			$admin_location	 = &$bolocation->soadmin_location;
+			$location_types	 = $admin_location->select_location_type();
+			$max_level		 = count($location_types);
+
+			$location_level			 = isset($project['location_data']['location_code']) && $project['inherit_location'] ? count(explode('-', $project['location_data']['location_code'])) : 0;
+			$location_template_type	 = 'form';
+			$_location_data			 = array();
+
+			if (!$values['location_data'] && ($values['location_code'] || $values['location']))
+			{
+				$location_code			 = isset($values['location_code']) && $values['location_code'] ? $values['location_code'] : implode("-", $values['location']);
+				$values['extra']['view'] = true;
+				$values['location_data'] = $bolocation->read_single($location_code, $values['extra']);
+			}
+
+			if ($values['location_data'])
+			{
+				$_location_data = $values['location_data'];
+			}
+			else if (isset($values['location']) && is_array($values['location']))
+			{
+				$location_code			 = implode("-", $values['location']);
+				$values['extra']['view'] = true;
+				$_location_data			 = $bolocation->read_single($location_code, $values['extra']);
+			}
+			else
+			{
+				if (isset($project['location_data']) && $project['location_data'] && $project['inherit_location'])
+				{
+					$_location_data = $project['location_data'];
+				}
+			}
+
+			if ($mode == 'view')
+			{
+				$location_template_type = 'view';
+			}
+
+			$location_data = $bolocation->initiate_ui_location(array(
+				'values'			 => $_location_data,
+				'type_id'			 => $mode == 'edit' ? $max_level : count(explode('-', $_location_data['location_code'])),
+				'no_link'			 => false, // disable lookup links for location type less than type_id
+				'tenant'			 => true,
+				'block_parent'		 => $location_level,
+				'lookup_type'		 => $location_template_type,
+				'lookup_entity'		 => $this->bocommon->get_lookup_entity('project'),
+				'entity_data'		 => (isset($values['p']) ? $values['p'] : ''),
+				'filter_location'	 => $project['inherit_location'] ? $project['location_data']['location_code'] : false,
+				'required_level'	 => 1
+			));
+		}
+		else
+		{
+			$location_template_type	 = 'view';
+			$_location_data			 = !empty($project['location_data']) ? $project['location_data'] : '';
+			$location_data			 = $bolocation->initiate_ui_location(array(
+				'values'		 => $_location_data,
+				'type_id'		 => (isset($project['location_data']['location_code']) ? count(explode('-', $project['location_data']['location_code'])) : ''),
+				'no_link'		 => false, // disable lookup links for location type less than type_id
+				'tenant'		 => (isset($project['location_data']['tenant_id']) ? $project['location_data']['tenant_id'] : ''),
+				'lookup_type'	 => 'view'
+			));
+		}
+
+		if (!empty($project['contact_phone']) || !empty($values['contact_phone']))
+		{
+			for ($i = 0; $i < count($location_data['location']); $i++)
+			{
+				if ($location_data['location'][$i]['input_name'] == 'contact_phone')
+				{
+					$location_data['location'][$i]['value'] = $values['contact_phone'] ? $values['contact_phone'] : $project['contact_phone'];
+				}
+			}
+		}
+
+		return array(
+			'location_data' => $location_data,
+			'location_template_type' => $location_template_type,
+			'_location_data' => $_location_data
 		);
 	}
 

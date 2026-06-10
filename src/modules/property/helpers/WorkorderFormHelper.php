@@ -2,6 +2,8 @@
 
 namespace App\modules\property\helpers;
 
+use App\modules\phpgwapi\services\Settings;
+
 class WorkorderFormHelper
 {
 	/**
@@ -385,10 +387,11 @@ class WorkorderFormHelper
 
 		$state['id'] = (int)($state['receipt']['id'] ?? $state['values']['id'] ?? 0);
 		$state = $this->applyApprovalWorkflow($state, $bo);
+		$state = $this->applyNotifyWorkflow($state);
 		return $state;
 	}
 
-	private function applyApprovalWorkflow(array $state, object $bo): array
+	protected function applyApprovalWorkflow(array $state, object $bo): array
 	{
 		$id = (int)($state['id'] ?? 0);
 		$values = is_array($state['values'] ?? null) ? $state['values'] : array();
@@ -411,9 +414,11 @@ class WorkorderFormHelper
 		$boCommon = CreateObject('property.bocommon');
 		$accountsObj = new \App\modules\phpgwapi\controllers\Accounts\Accounts();
 
-		$currentUser = is_array($GLOBALS['phpgw_info']['user'] ?? null) ? $GLOBALS['phpgw_info']['user'] : array();
+		$currentUser = Settings::getInstance()->get('user');
+		$currentUser = is_array($currentUser) ? $currentUser : array();
 		$currentPrefs = is_array($currentUser['preferences']['common'] ?? null) ? $currentUser['preferences']['common'] : array();
-		$serverSettings = is_array($GLOBALS['phpgw_info']['server'] ?? null) ? $GLOBALS['phpgw_info']['server'] : array();
+		$serverSettings = Settings::getInstance()->get('server');
+		$serverSettings = is_array($serverSettings) ? $serverSettings : array();
 
 		$coordinatorName = (string)($currentUser['fullname'] ?? '');
 		$coordinatorEmail = (string)($currentPrefs['email'] ?? '');
@@ -688,6 +693,157 @@ class WorkorderFormHelper
 		return $state;
 	}
 
+	protected function applyNotifyWorkflow(array $state): array
+	{
+		$id = (int)($state['id'] ?? 0);
+		$values = is_array($state['values'] ?? null) ? $state['values'] : array();
+		if ($id <= 0 || empty($values))
+		{
+			return $state;
+		}
+
+		$currentUser = Settings::getInstance()->get('user');
+		$currentUser = is_array($currentUser) ? $currentUser : array();
+		$currentCommonPrefs = is_array($currentUser['preferences']['common'] ?? null) ? $currentUser['preferences']['common'] : array();
+		$configData = $this->getConfigData();
+
+		$accountId = (int)($currentUser['account_id'] ?? 0);
+		$historylog = CreateObject('property.historylog', 'workorder');
+		$boCommon = CreateObject('property.bocommon');
+
+		$toArray = array();
+		$toArraySms = array();
+		$receiptNoticeOwner = (array)($state['receipt']['notice_owner'] ?? array());
+
+		if (!empty($state['receipt']['notice_owner']) && is_array($state['receipt']['notice_owner']))
+		{
+			$project = !empty($values['project_id'])
+				? CreateObject('property.boproject')->read_single_mini((int)$values['project_id'])
+				: array();
+
+			$projectCoordinator = (int)($project['coordinator'] ?? 0);
+			if ($accountId !== $projectCoordinator
+				&& !empty($configData['notify_project_owner'])
+				&& !empty($configData['mailnotification']))
+			{
+				$prefsCoordinator = $boCommon->create_preferences('common', $projectCoordinator);
+				if (!empty($prefsCoordinator['email']))
+				{
+					$toArray[] = (string)$prefsCoordinator['email'];
+				}
+			}
+
+			$orderUserId = (int)($values['user_id'] ?? 0);
+			if ($accountId !== $orderUserId && $orderUserId > 0)
+			{
+				$prefsUser = $boCommon->create_preferences('common', $orderUserId);
+				if (!empty($prefsUser['email']))
+				{
+					$toArray[] = (string)$prefsUser['email'];
+				}
+			}
+		}
+
+		$locationId = 0;
+		if (!empty($GLOBALS['phpgw']->locations) && method_exists($GLOBALS['phpgw']->locations, 'get_id'))
+		{
+			$locationId = (int)$GLOBALS['phpgw']->locations->get_id('property', '.project.workorder');
+		}
+		else
+		{
+			$locations = CreateObject('phpgwapi.locations');
+			if ($locations && method_exists($locations, 'get_id'))
+			{
+				$locationId = (int)$locations->get_id('property', '.project.workorder');
+			}
+		}
+
+		$notifyList = execMethod('property.notify.read', array(
+			'location_id' => $locationId,
+			'location_item_id' => $id,
+		));
+		$notifyList = is_array($notifyList) ? $notifyList : array();
+
+		$subject = lang('workorder %1 has been edited', $id);
+		if (!empty($currentUser['apps']['sms']))
+		{
+			$smsText = "{$subject}. \r\n" . (string)($currentUser['fullname'] ?? '') . " \r\n" . (string)($currentCommonPrefs['email'] ?? '');
+			$sms = CreateObject('sms.sms');
+
+			foreach ($notifyList as $entry)
+			{
+				if (!empty($entry['is_active'])
+					&& ($entry['notification_method'] ?? '') === 'sms'
+					&& !empty($entry['sms']))
+				{
+					$sms->websend2pv($accountId, $entry['sms'], $smsText);
+					$toArraySms[] = "{$entry['first_name']} {$entry['last_name']}({$entry['sms']})";
+					$this->appendReceiptMessage($state, lang('%1 is notified', "{$entry['first_name']} {$entry['last_name']}"));
+				}
+			}
+
+			if ($toArraySms)
+			{
+				$historylog->add('MS', $id, implode(',', $toArraySms));
+			}
+		}
+
+		foreach ($notifyList as $entry)
+		{
+			if (!empty($entry['is_active'])
+				&& ($entry['notification_method'] ?? '') === 'email'
+				&& !empty($entry['email']))
+			{
+				$toArray[] = "{$entry['first_name']} {$entry['last_name']}<{$entry['email']}>";
+			}
+		}
+
+		if (!$toArray)
+		{
+			return $state;
+		}
+
+		$to = implode(';', $toArray);
+		$fromName = (string)($currentUser['fullname'] ?? '');
+		$fromEmail = (string)($currentCommonPrefs['email'] ?? '');
+
+		$body = '<a href ="' . \phpgw::link('/index.php', array(
+			'menuaction' => 'property.uiworkorder.edit',
+			'id' => $id,
+		), false, true) . '">' . lang('workorder %1 has been edited', $id) . '</a>' . "\n";
+
+		foreach ($receiptNoticeOwner as $notice)
+		{
+			$body .= $notice . "\n";
+		}
+
+		$body .= lang('Altered by') . ': ' . $fromName . "\n";
+		if (empty($values['remark']))
+		{
+			$body .= lang('remark') . ': ' . (string)($values['remark'] ?? '') . "\n";
+		}
+
+		$body = nl2br($body);
+		$send = CreateObject('phpgwapi.send');
+
+		try
+		{
+			$send->msg('email', $to, $subject, $body, false, false, false, $fromEmail, $fromName, 'html');
+			$historylog->add('ON', $id, lang('%1 is notified', $to));
+			$this->appendReceiptMessage($state, lang('%1 is notified', $to));
+		}
+		catch (\Exception $e)
+		{
+			$this->appendReceiptError($state, "uiworkorder::edit: sending message to '{$to}' subject='{$subject}' failed !!!");
+			if (isset($send->err['desc']))
+			{
+				$this->appendReceiptError($state, (string)$send->err['desc']);
+			}
+		}
+
+		return $state;
+	}
+
 	private function resolveNotificationEmail(int $accountId, $boCommon, $accountsObj, array $serverSettings): string
 	{
 		if ($accountId <= 0)
@@ -843,9 +999,10 @@ class WorkorderFormHelper
 
 	protected function getCurrentAccountId(): int
 	{
-		if (!empty($GLOBALS['phpgw_info']['user']['account_id']))
+		$user = Settings::getInstance()->get('user');
+		if (!empty($user['account_id']))
 		{
-			return (int)$GLOBALS['phpgw_info']['user']['account_id'];
+			return (int)$user['account_id'];
 		}
 
 		return 0;

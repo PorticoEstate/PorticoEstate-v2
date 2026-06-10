@@ -869,6 +869,9 @@ class ProjectController
 
 		$values = array();
 		$invoiceHandler2 = isset($this->bo()->config['invoicehandler']) && $this->bo()->config['invoicehandler'] == 2;
+		$user = Settings::getInstance()->get('user');
+		$user = is_array($user) ? $user : array();
+		$dateFormat = $user['preferences']['common']['dateformat'] ?? 'Y-m-d';
 		foreach ((array)$invoices as $entry)
 		{
 			$voucherId = $invoiceHandler2
@@ -897,8 +900,8 @@ class ProjectController
 				'external_project_id' => $entry['project_id'] ?? null,
 				'currency' => $entry['currency'] ?? '',
 				'budget_responsible' => $entry['budget_responsible'] ?? '',
-				'budsjettsigndato' => !empty($entry['budsjettsigndato']) ? (new \phpgwapi_common())->show_date(strtotime($entry['budsjettsigndato']), $GLOBALS['phpgw_info']['user']['preferences']['common']['dateformat'] ?? 'Y-m-d') : '',
-				'transfer_time' => !empty($entry['transfer_time']) ? (new \phpgwapi_common())->show_date(strtotime($entry['transfer_time']), $GLOBALS['phpgw_info']['user']['preferences']['common']['dateformat'] ?? 'Y-m-d') : '',
+				'budsjettsigndato' => !empty($entry['budsjettsigndato']) ? (new \phpgwapi_common())->show_date(strtotime($entry['budsjettsigndato']), $dateFormat) : '',
+				'transfer_time' => !empty($entry['transfer_time']) ? (new \phpgwapi_common())->show_date(strtotime($entry['transfer_time']), $dateFormat) : '',
 			);
 		}
 

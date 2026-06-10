@@ -626,7 +626,18 @@ namespace Tests\Helpers
 
 		public function testPersistSaveAppendsMessagesToSuccessfulReceipt(): void
 		{
-			$helper = new WorkorderFormHelper();
+			$helper = new class extends WorkorderFormHelper
+			{
+				protected function applyApprovalWorkflow(array $state, object $bo): array
+				{
+					return $state;
+				}
+
+				protected function applyNotifyWorkflow(array $state): array
+				{
+					return $state;
+				}
+			};
 			$bo = new class
 			{
 				public function save(array $values, string $action, array $valuesAttribute): array
@@ -655,7 +666,18 @@ namespace Tests\Helpers
 
 		public function testPersistSaveIncludesMessagesInErrorReceipt(): void
 		{
-			$helper = new WorkorderFormHelper();
+			$helper = new class extends WorkorderFormHelper
+			{
+				protected function applyApprovalWorkflow(array $state, object $bo): array
+				{
+					return $state;
+				}
+
+				protected function applyNotifyWorkflow(array $state): array
+				{
+					return $state;
+				}
+			};
 			$bo = new class
 			{
 				public function save(array $values, string $action, array $valuesAttribute): array

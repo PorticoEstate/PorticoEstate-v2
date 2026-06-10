@@ -10787,13 +10787,13 @@
             }
         },
         "\/property\/workorder\/{id}": {
-            "post": {
+            "put": {
                 "tags": [
                     "Workorder"
                 ],
                 "summary": "Update workorder",
                 "description": "Update workorder.",
-                "operationId": "acc650455dcec69f0f9ef418cee9e25b",
+                "operationId": "02ba35cd0b78cbf264d012b8ccfbca0c",
                 "parameters": [
                     {
                         "name": "id",

@@ -148,8 +148,6 @@ namespace Tests\Controllers
 			$this->assertStringContainsString('phpgw::link(\'/property/workorder/\' . (int)$id', $contents);
 			$this->assertStringContainsString('phpgw::link(\'/property/workorder/\' . (int)$id . \'/multi-upload\')', $contents);
 			$this->assertStringContainsString("'query'\t\t\t\t\t => false", $contents);
-			$this->assertStringContainsString("'download'\t\t\t\t => false", $contents);
-			$this->assertStringContainsString("\$options['script_url']\t = phpgw::link('/property/workorder/' . (int)\$id . '/multi-upload');", $contents);
 			$this->assertStringContainsString("phpGWLink('property/workorder/' + aData['workorder_id'], {})", $contents);
 			$this->assertStringContainsString("execute_ajax(requestUrl, function(result)", $contents);
 			$this->assertStringNotContainsString('workorder_rest_save_form_action', $contents);

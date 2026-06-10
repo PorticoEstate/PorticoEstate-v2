@@ -384,7 +384,378 @@ class WorkorderFormHelper
 		}
 
 		$state['id'] = (int)($state['receipt']['id'] ?? $state['values']['id'] ?? 0);
+		$state = $this->applyApprovalWorkflow($state, $bo);
 		return $state;
+	}
+
+	private function applyApprovalWorkflow(array $state, object $bo): array
+	{
+		$id = (int)($state['id'] ?? 0);
+		$values = is_array($state['values'] ?? null) ? $state['values'] : array();
+		if ($id <= 0 || empty($values))
+		{
+			return $state;
+		}
+
+		$configData = $this->getConfigData();
+		$workorderStatus = execMethod('property.bogeneric.read_single', array(
+			'id' => $values['status'] ?? null,
+			'location_info' => array('type' => 'workorder_status')
+		));
+		$workorderStatus = is_array($workorderStatus) ? $workorderStatus : array();
+
+		$send = CreateObject('phpgwapi.send');
+		$sosubstitute = CreateObject('property.sosubstitute');
+		$historylog = CreateObject('property.historylog', 'workorder');
+		$pendingAction = CreateObject('property.sopending_action');
+		$boCommon = CreateObject('property.bocommon');
+		$accountsObj = new \App\modules\phpgwapi\controllers\Accounts\Accounts();
+
+		$currentUser = is_array($GLOBALS['phpgw_info']['user'] ?? null) ? $GLOBALS['phpgw_info']['user'] : array();
+		$currentPrefs = is_array($currentUser['preferences']['common'] ?? null) ? $currentUser['preferences']['common'] : array();
+		$serverSettings = is_array($GLOBALS['phpgw_info']['server'] ?? null) ? $GLOBALS['phpgw_info']['server'] : array();
+
+		$coordinatorName = (string)($currentUser['fullname'] ?? '');
+		$coordinatorEmail = (string)($currentPrefs['email'] ?? '');
+
+		$budgetAmount = (int)$bo->get_budget_amount($id);
+
+		if (empty($workorderStatus['closed'])
+			&& !empty($values['approval'])
+			&& !empty($configData['workorder_approval']))
+		{
+			if (empty($serverSettings['smtp_server']))
+			{
+				$this->appendReceiptError($state, lang('SMTP server is not set! (admin section)'));
+			}
+
+			$approvalLevel = !empty($configData['approval_level']) ? (string)$configData['approval_level'] : 'order';
+
+			switch ($approvalLevel)
+			{
+				case 'project':
+					$projectId = (int)($values['project_id'] ?? 0);
+					if ($projectId > 0)
+					{
+						$subject = lang('Approval') . ": {$projectId}";
+						$message = '<a href ="' . \phpgw::link('/index.php', array(
+							'menuaction' => 'property.uiproject.edit',
+							'id' => $projectId
+						), false, true) . '">' . lang('project %1 needs approval', $projectId) . '</a>';
+
+						$budgetAmount = (int)$bo->get_accumulated_budget_amount($projectId);
+
+						foreach ((array)$values['approval'] as $accountId => $dummy)
+						{
+							$accountId = (int)$accountId;
+							if ($accountId <= 0)
+							{
+								continue;
+							}
+
+							$actionParamsApproved = array(
+								'appname' => 'property',
+								'location' => '.project',
+								'id' => $projectId,
+								'responsible' => $accountId,
+								'responsible_type' => 'user',
+								'action' => 'approval',
+								'remark' => '',
+								'deadline' => '',
+								'closed' => true,
+								'data' => array('limit' => $budgetAmount)
+							);
+
+							$approvals = $pendingAction->get_pending_action($actionParamsApproved);
+							$approvals = is_array($approvals) ? $approvals : array();
+							$approved = false;
+
+							if (!empty($approvals[0]['action_performed']))
+							{
+								if (isset($approvals[0]['data']['limit']) && (int)$approvals[0]['data']['limit'] >= $budgetAmount)
+								{
+									$approved = true;
+								}
+								else if (empty($approvals[0]['data']['limit']))
+								{
+									$approved = true;
+								}
+							}
+
+							if (!$approved)
+							{
+								$substitute = $sosubstitute->get_substitute($accountId);
+								$notifyOnRequest = array($accountId);
+								if ($substitute)
+								{
+									$notifyOnRequest[] = (int)$substitute;
+								}
+
+								$pendingAction->set_pending_action($actionParamsApproved);
+
+								if (!empty($configData['project_approval_status']))
+								{
+									createObject('property.soproject')->set_status($projectId, $configData['project_approval_status']);
+								}
+
+								$toArray = array();
+								foreach ($notifyOnRequest as $notifyAccountId)
+								{
+									$toArray[] = $this->resolveNotificationEmail((int)$notifyAccountId, $boCommon, $accountsObj, $serverSettings);
+								}
+
+								try
+								{
+									CreateObject('property.historylog', 'project')->add('AP', $projectId, $this->accountName($accountsObj, $accountId) . "::{$budgetAmount}");
+									$to = implode(';', array_filter($toArray));
+									if ($to)
+									{
+										$rcpt = $send->msg('email', $to, $subject, stripslashes($message), '', '', '', $coordinatorEmail, $coordinatorName, 'html');
+										if ($rcpt)
+										{
+											$this->appendReceiptMessage($state, lang('%1 is notified', $to));
+										}
+									}
+								}
+								catch (\Exception $exc)
+								{
+									$this->appendReceiptError($state, $exc->getMessage());
+								}
+
+								$orderApprovalParams = array(
+									'appname' => 'property',
+									'location' => '.project.workorder',
+									'id' => $id,
+									'responsible' => $accountId,
+									'responsible_type' => 'user',
+									'action' => 'approval',
+									'remark' => '',
+									'deadline' => ''
+								);
+
+								if (!execMethod('property.sopending_action.get_pending_action', $orderApprovalParams))
+								{
+									execMethod('property.sopending_action.set_pending_action', $orderApprovalParams);
+								}
+							}
+							else
+							{
+								$orderApprovalParams = array(
+									'appname' => 'property',
+									'location' => '.project.workorder',
+									'id' => $id,
+									'responsible' => $accountId,
+									'responsible_type' => 'user',
+									'action' => 'approval',
+									'remark' => '',
+									'deadline' => ''
+								);
+
+								if (!execMethod('property.sopending_action.get_pending_action', $orderApprovalParams))
+								{
+									execMethod('property.sopending_action.set_pending_action', $orderApprovalParams);
+								}
+								execMethod('property.sopending_action.close_pending_action', $orderApprovalParams);
+
+								$langImplicitly = lang('implicitly from project');
+								$historylog->add('OA', $id, $this->accountName($accountsObj, $accountId) . ", {$langImplicitly}::{$budgetAmount}");
+							}
+						}
+					}
+					break;
+
+				default:
+					$subject = lang('Approval') . ": {$id}";
+					$message = '<a href ="' . \phpgw::link('/index.php', array(
+						'menuaction' => 'property.uiworkorder.edit',
+						'id' => $id
+					), false, true) . '">' . lang('Workorder %1 needs approval', $id) . '</a>';
+
+					$orderIds = array($id);
+					$actionParams = array(
+						'appname' => 'property',
+						'location' => '.project.workorder',
+						'id' => $id,
+						'responsible' => '',
+						'responsible_type' => 'user',
+						'action' => 'approval',
+						'remark' => '',
+						'deadline' => ''
+					);
+
+					foreach ((array)$values['approval'] as $accountId => $dummy)
+					{
+						$accountId = (int)$accountId;
+						if ($accountId <= 0)
+						{
+							continue;
+						}
+
+						$substitute = $sosubstitute->get_substitute($accountId);
+						$notifyOnRequest = array($accountId);
+						if ($substitute)
+						{
+							$notifyOnRequest[] = (int)$substitute;
+						}
+
+						$toArray = array();
+						foreach ($notifyOnRequest as $notifyAccountId)
+						{
+							$toArray[] = $this->resolveNotificationEmail((int)$notifyAccountId, $boCommon, $accountsObj, $serverSettings);
+						}
+
+						$to = implode(';', array_filter($toArray));
+
+						foreach ($orderIds as $orderId)
+						{
+							$actionParams['responsible'] = $accountId;
+							$actionParams['id'] = $orderId;
+
+							try
+							{
+								$historylog->add('AP', $id, $this->accountName($accountsObj, $accountId) . "::{$budgetAmount}");
+								execMethod('property.sopending_action.set_pending_action', $actionParams);
+								if ($to)
+								{
+									$rcpt = $send->msg('email', $to, $subject, stripslashes($message), '', '', '', $coordinatorEmail, $coordinatorName, 'html');
+									if ($rcpt)
+									{
+										$this->appendReceiptMessage($state, lang('%1 is notified', $to));
+									}
+								}
+							}
+							catch (\Exception $exc)
+							{
+								$this->appendReceiptError($state, $exc->getMessage());
+							}
+						}
+					}
+					break;
+			}
+		}
+
+		if (!empty($values['do_approve']) && is_array($values['do_approve']))
+		{
+			$actionParams = array(
+				'appname' => 'property',
+				'location' => '.project.workorder',
+				'id' => $id,
+				'responsible' => '',
+				'responsible_type' => 'user',
+				'action' => 'approval',
+				'remark' => '',
+				'deadline' => ''
+			);
+
+			foreach ((array)$values['do_approve'] as $accountId => $dummy)
+			{
+				$accountId = (int)$accountId;
+				if ($accountId <= 0)
+				{
+					continue;
+				}
+
+				$usersForSubstitute = $sosubstitute->get_users_for_substitute($accountId);
+				$usersForSubstitute = is_array($usersForSubstitute) ? $usersForSubstitute : array();
+
+				$approvals = execMethod('property.sopending_action.get_pending_action', $actionParams);
+				$approvals = is_array($approvals) ? $approvals : array();
+
+				$takeResponsibilityFor = array($accountId);
+				foreach ($approvals as $approval)
+				{
+					if (!empty($approval['responsible']) && in_array($approval['responsible'], $usersForSubstitute))
+					{
+						$takeResponsibilityFor[] = (int)$approval['responsible'];
+					}
+				}
+
+				foreach ($takeResponsibilityFor as $responsibleAccountId)
+				{
+					$actionParams['responsible'] = (int)$responsibleAccountId;
+					if (!execMethod('property.sopending_action.get_pending_action', $actionParams))
+					{
+						execMethod('property.sopending_action.set_pending_action', $actionParams);
+					}
+					execMethod('property.sopending_action.close_pending_action', $actionParams);
+					$historylog->add('OA', $id, $this->accountName($accountsObj, (int)$responsibleAccountId) . "::{$budgetAmount}");
+				}
+
+				unset($actionParams['responsible']);
+			}
+		}
+
+		return $state;
+	}
+
+	private function resolveNotificationEmail(int $accountId, $boCommon, $accountsObj, array $serverSettings): string
+	{
+		if ($accountId <= 0)
+		{
+			return '';
+		}
+
+		$prefs = $boCommon->create_preferences('common', $accountId);
+		if (!empty($prefs['email']))
+		{
+			return (string)$prefs['email'];
+		}
+
+		$emailDomain = !empty($serverSettings['email_domain']) ? (string)$serverSettings['email_domain'] : 'bergen.kommune.no';
+		$lid = (string)$accountsObj->id2lid($accountId);
+		if ($lid === '')
+		{
+			return '';
+		}
+
+		return "{$lid}@{$emailDomain}";
+	}
+
+	private function accountName($accountsObj, int $accountId): string
+	{
+		try
+		{
+			$account = $accountsObj->get($accountId);
+			if ($account)
+			{
+				return (string)$account;
+			}
+		}
+		catch (\Throwable $e)
+		{
+		}
+
+		return (string)$accountId;
+	}
+
+	private function appendReceiptMessage(array &$state, string $msg): void
+	{
+		if (!isset($state['receipt']) || !is_array($state['receipt']))
+		{
+			$state['receipt'] = array();
+		}
+
+		if (!isset($state['receipt']['message']) || !is_array($state['receipt']['message']))
+		{
+			$state['receipt']['message'] = array();
+		}
+
+		$state['receipt']['message'][] = array('msg' => $msg);
+	}
+
+	private function appendReceiptError(array &$state, string $msg): void
+	{
+		if (!isset($state['receipt']) || !is_array($state['receipt']))
+		{
+			$state['receipt'] = array();
+		}
+
+		if (!isset($state['receipt']['error']) || !is_array($state['receipt']['error']))
+		{
+			$state['receipt']['error'] = array();
+		}
+
+		$state['receipt']['error'][] = array('msg' => $msg);
 	}
 
 	protected function isRepost(): bool

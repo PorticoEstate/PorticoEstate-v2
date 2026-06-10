@@ -76,7 +76,6 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		'view'						 => true,
 		'add'						 => true,
 		'edit'						 => true,
-		'save'						 => false,
 		'delete'				 => false,
 		'view_file'					 => false,
 		'add_invoice'				 => true,
@@ -87,13 +86,6 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		'get_b_account'			 => false,
 		'get_unspsc_code'		 => false,
 		'receive_order'			 => false,
-		'handle_multi_upload_file'	 => false,
-		'build_multi_upload_file'	 => false,
-		'get_files'					 => false,
-		'get_files_attachments'		 => false,
-		'view_image'				 => false,
-		'get_other_orders'			 => false,
-		'update_file_data'			 => false
 	);
 
 	function __construct()
@@ -163,193 +155,6 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 			));
 		}
 		ExecMethod('property.bofiles.get_file', Sanitizer::get_var('file_id', 'int'));
-	}
-
-	function view_image()
-	{
-		$this->flags['noheader']	 = true;
-		$this->flags['nofooter']	 = true;
-		$this->flags['xslt_app']	 = false;
-		Settings::getInstance()->update('flags', ['noheader' => true, 'nofooter' => true, 'xslt_app' => false]);
-
-
-		if (!$this->acl_read)
-		{
-			$this->phpgwapi_common->phpgw_exit();
-		}
-
-		$thumb	 = Sanitizer::get_var('thumb', 'bool');
-		$img_id	 = Sanitizer::get_var('img_id', 'int');
-
-		$bofiles = CreateObject('property.bofiles');
-
-		if ($img_id)
-		{
-			$file_info	 = $bofiles->vfs->get_info($img_id);
-			$file		 = "{$file_info['directory']}/{$file_info['name']}";
-		}
-		else
-		{
-			$file = urldecode(Sanitizer::get_var('file'));
-		}
-
-		$source		 = "{$bofiles->rootdir}{$file}";
-		$thumbfile	 = "$source.thumb";
-
-		// prevent path traversal
-		if (preg_match('/\.\./', $source))
-		{
-			return false;
-		}
-
-		$re_create = false;
-		if ($bofiles->is_image($source) && $thumb && $re_create)
-		{
-			$bofiles->resize_image($source, $thumbfile, $thumb_size = 100);
-			readfile($thumbfile);
-		}
-		else if ($thumb && is_file($thumbfile))
-		{
-			readfile($thumbfile);
-		}
-		else if ($bofiles->is_image($source) && $thumb)
-		{
-			$bofiles->resize_image($source, $thumbfile, $thumb_size = 100);
-			readfile($thumbfile);
-		}
-		else if ($img_id)
-		{
-			$bofiles->get_file($img_id);
-		}
-		else
-		{
-			$bofiles->view_file('', $file);
-		}
-	}
-
-	function get_files()
-	{
-		$id = Sanitizer::get_var('id', 'int');
-		$filter_tags = Sanitizer::get_var('tags');
-
-		if (!$this->acl_read)
-		{
-			return;
-		}
-
-		$link_file_data = array(
-			'file_id' => 0,
-		);
-
-
-		$link_view_file = phpgw::link('/property/workorder/files/view');
-		$view_image_url = phpgw::link('/property/workorder/' . (int)$id . '/files/image');
-
-		$values = $this->bo->get_files($id);
-
-		$content_files	 = array();
-		$img_types		 = array(
-			'image/jpeg',
-			'image/png',
-			'image/gif'
-		);
-
-		$sort_array = array();
-		$z = 0;
-		foreach ($values as $_entry)
-		{
-			if ($filter_tags && !$_entry['tags'])
-			{
-				continue;
-			}
-			else if ($filter_tags && $_entry['tags'])
-			{
-				$filter_check = json_decode($_entry['tags'], true);
-
-				if (!array_intersect($filter_check, $filter_tags))
-				{
-					continue;
-				}
-			}
-
-			$tags = array();
-			if ($_entry['tags'])
-			{
-				$tags = json_decode($_entry['tags'], true);
-				foreach ($tags as &$tag)
-				{
-					$tag = Db::getInstance()->stripslashes($tag);
-				}
-				unset($tag);
-			}
-
-			$sort_array[] = $_entry['name'];
-			$content_files[] = array(
-				'file_id'		 => $_entry['file_id'],
-				'tags'			 => $tags,
-				'file_name'		 => '<a href="' . $link_view_file . '&amp;file_id=' . $_entry['file_id'] . '" target="_blank" title="' . lang('click to view file') . '">' . $_entry['name'] . '</a>',
-				//					'delete_file'	 => '<input type="checkbox" name="values[file_action][]" value="' . $_entry['file_id'] . '" title="' . lang('Check to delete file') . '">',
-				'attach_file'	 => '<input type="checkbox" name="values[file_attach][]" value="' . $_entry['file_id'] . '" title="' . lang('Check to attach file') . '">'
-			);
-			if (in_array($_entry['mime_type'], $img_types))
-			{
-				$content_files[$z]['file_name']		 = $_entry['name'];
-				$content_files[$z]['img_id']		 = $_entry['file_id'];
-				$content_files[$z]['img_url']		 = phpgw::link($view_image_url, array(
-					'img_id'	 => $_entry['file_id'],
-					'file'		 => $_entry['directory'] . '/' . $_entry['file_name']
-				));
-				$content_files[$z]['thumbnail_flag'] = 'thumb=1';
-			}
-			$z++;
-		}
-
-		array_multisort($sort_array, SORT_ASC, $content_files);
-
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-
-			$total_records = count($content_files);
-
-			return array(
-				'data'				 => $content_files,
-				'draw'				 => Sanitizer::get_var('draw', 'int'),
-				'recordsTotal'		 => $total_records,
-				'recordsFiltered'	 => $total_records
-			);
-		}
-		return $content_files;
-	}
-
-	public function update_file_data()
-	{
-		if (!$this->acl_edit)
-		{
-			phpgw::no_access();
-		}
-
-		$location_id = Sanitizer::get_var('location_id', 'int');
-		$location_item_id = Sanitizer::get_var('location_item_id', 'int');
-		$ids = Sanitizer::get_var('ids', 'int');
-		$action = Sanitizer::get_var('action', 'string');
-		$tags = Sanitizer::get_var('tags', 'string');
-
-		$bofiles = CreateObject('property.bofiles');
-
-		if ($action == 'delete_file' && $ids && $location_item_id)
-		{
-			$bofiles->delete_file("/workorder/{$location_item_id}/", array('file_action' => $ids));
-		}
-		else if ($action == 'set_tag' && $ids)
-		{
-			$bofiles->set_tags($ids, $tags);
-		}
-		else if ($action == 'remove_tag' && $ids)
-		{
-			$bofiles->remove_tags($ids, $tags);
-		}
-
-		return $action;
 	}
 
 
@@ -457,60 +262,6 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		return $content_attachments;
 	}
 
-	public function handle_multi_upload_file()
-	{
-		$id = Sanitizer::get_var('id', 'int', 'GET');
-
-		phpgw::import_class('property.multiuploader');
-
-		$options = array();
-		$options['base_dir']	 = 'workorder/' . $id;
-		$options['upload_dir']	 = $this->serverSettings['files_dir'] . '/property/' . $options['base_dir'] . '/';
-		$options['script_url']	 = phpgw::link('/property/workorder/' . (int)$id . '/multi-upload');
-		$upload_handler			 = new property_multiuploader($options, false);
-
-		switch ($_SERVER['REQUEST_METHOD'])
-		{
-			case 'OPTIONS':
-			case 'HEAD':
-				$upload_handler->head();
-				break;
-			case 'GET':
-				$upload_handler->get();
-				break;
-			case 'PATCH':
-			case 'PUT':
-			case 'POST':
-				$upload_handler->add_file();
-				break;
-			case 'DELETE':
-				$upload_handler->delete_file();
-				break;
-			default:
-				$upload_handler->header('HTTP/1.1 405 Method Not Allowed');
-		}
-
-		$this->phpgwapi_common->phpgw_exit();
-	}
-
-	public function build_multi_upload_file()
-	{
-		phpgwapi_jquery::init_multi_upload_file();
-		$id = Sanitizer::get_var('id', 'int');
-
-		$this->flags['noframework']	 = true;
-		$this->flags['nofooter']		 = true;
-		Settings::getInstance()->update('flags', ['noframework' => true, 'nofooter' => true]);
-
-		$multi_upload_action = phpgw::link('/property/workorder/' . (int)$id . '/multi-upload');
-
-		$data = array(
-			'multi_upload_action' => $multi_upload_action
-		);
-
-		phpgwapi_xslttemplates::getInstance()->add_file(array('files', 'multi_upload_file'));
-		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('multi_upload' => $data));
-	}
 
 	function columns()
 	{
@@ -4378,49 +4129,6 @@ JS;
 		return $this->bo->receive_order($id, $received_amount);
 	}
 
-	function get_other_orders($vendor_id = 0, $location_code = '')
-	{
-		if (!$this->acl_read)
-		{
-			return array();
-		}
-
-		if (!$vendor_id)
-		{
-			$vendor_id = Sanitizer::get_var('vendor_id', 'int');
-		}
-
-		if (!$location_code)
-		{
-			$location_code = Sanitizer::get_var('location_code', 'string');
-		}
-
-		$values = $this->bo->get_other_orders($vendor_id, $location_code);
-
-		$dateformat = $this->userSettings['preferences']['common']['dateformat'];
-		foreach ($values as &$entry)
-		{
-			$link				 = self::link(array('menuaction' => 'property.uiworkorder.view', 'id' => $entry['id']));
-			$entry['url']		 = "<a href='{$link}'>{$entry['id']}</a>";
-			$entry['start_date'] = $this->phpgwapi_common->show_date($entry['start_date'], $dateformat);
-			$entry['select']	 = "<input type='radio' name='order_id' value='{$entry['id']}' class='mychecks'/>";
-		}
-
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-
-			$total_records = count($values);
-
-			return array(
-				'data'				 => $values,
-				'draw'				 => Sanitizer::get_var('draw', 'int'),
-				'recordsTotal'		 => $total_records,
-				'recordsFiltered'	 => $total_records
-			);
-		}
-
-		return $values;
-	}
 	private function _get_eco_service_name($id)
 	{
 		return $this->bocommon->get_eco_service_name($id);

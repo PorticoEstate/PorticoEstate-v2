@@ -8,9 +8,28 @@ use App\Database\Db;
 
 class SwaggerController
 {
+  private const PROPERTY_SUBMODULES = ['entity', 'location', 'project', 'workorder'];
+
   private function getSpecFilePath(): string
   {
     return __DIR__ . '/../../../../swagger_spec/openapi.json';
+  }
+
+  private function getModulePathPrefixes(string $module): array
+  {
+    if (in_array($module, self::PROPERTY_SUBMODULES, true))
+    {
+      return ['/property/' . $module];
+    }
+
+    $prefixes = ['/' . $module];
+
+    if (in_array($module, ['property', 'booking', 'rental', 'admin'], true))
+    {
+      $prefixes[] = '/{module}/registry';
+    }
+
+    return $prefixes;
   }
 
   private function loadSpecData(): array
@@ -152,13 +171,23 @@ HTML;
       return $this->jsonResponse($response, ['error' => $exception->getMessage()], 404);
     }
 
-    $pathPrefix = '/property/' . $module;
+    $pathPrefixes = $this->getModulePathPrefixes($module);
     $filteredPaths = [];
     $tagNames = [];
 
     foreach (($spec['paths'] ?? []) as $path => $operations)
     {
-      if (strpos((string) $path, $pathPrefix) !== 0)
+      $matchesModule = false;
+      foreach ($pathPrefixes as $pathPrefix)
+      {
+        if (strpos((string) $path, $pathPrefix) === 0)
+        {
+          $matchesModule = true;
+          break;
+        }
+      }
+
+      if (!$matchesModule)
       {
         continue;
       }

@@ -10627,6 +10627,685 @@
                     }
                 }
             }
+        },
+        "\/property\/workorder": {
+            "get": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "List workorders",
+                "description": "Workorder DataTables-compatible list endpoint.",
+                "operationId": "96bb4c442be7e75e15c5c025e0087744",
+                "parameters": [
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "length",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 25
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Workorder DataTables payload"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "List workorders (POST variant)",
+                "operationId": "7b928f333b592131fdded642c88cc7a2",
+                "responses": {
+                    "200": {
+                        "description": "Workorder DataTables payload"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/reports\/download": {
+            "get": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Download workorder list report",
+                "description": "Download workorder list report.",
+                "operationId": "b21da78fdb906c0076651ea3854af31a",
+                "responses": {
+                    "200": {
+                        "description": "Report download"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/create": {
+            "post": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Create workorder",
+                "description": "Create workorder.",
+                "operationId": "49830f28ba85bf98ecf992fd43f3d3ba",
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/WorkorderSavePayload"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/WorkorderReceipt"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/{id}": {
+            "post": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Update workorder",
+                "description": "Update workorder.",
+                "operationId": "acc650455dcec69f0f9ef418cee9e25b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/WorkorderSavePayload"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/WorkorderReceipt"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Delete workorder",
+                "description": "Delete workorder.",
+                "operationId": "40aa20d26d4fd0abbd695e00387a3022",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/lookups\/vendor-contract": {
+            "get": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Vendor contract lookup",
+                "description": "Vendor contract lookup.",
+                "operationId": "f558b76ac42a33084d1120ec07cc90cc",
+                "parameters": [
+                    {
+                        "name": "vendor_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "selected",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Vendor contract lookup (POST variant)",
+                "operationId": "fd4c2df3f6ab6a97cd734b771f150f0f",
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/lookups\/eco-service": {
+            "get": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Eco service lookup",
+                "description": "Eco service lookup.",
+                "operationId": "9c7500070624a41ef8f0df8ab2e38762",
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Eco service lookup (POST variant)",
+                "operationId": "20eb479d69c3df17225861286d26553e",
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/lookups\/unspsc-code": {
+            "get": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "UNSPSC lookup",
+                "description": "UNSPSC lookup.",
+                "operationId": "54298cfd6aabe613bc2cbdc0f5c3cc8a",
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "UNSPSC lookup (POST variant)",
+                "operationId": "e5dd00123a037ba2487de94d77831c88",
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/lookups\/ecodimb": {
+            "get": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Ecodimb lookup",
+                "description": "Ecodimb lookup.",
+                "operationId": "7822b41ef8b2bb5aa80949a747158466",
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Ecodimb lookup (POST variant)",
+                "operationId": "2cf68220dffde1bdc05ef3d20755bf26",
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/lookups\/b-account": {
+            "get": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Budget account lookup",
+                "description": "Budget account lookup.",
+                "operationId": "af26a35152df80a3989622cf0424137d",
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Budget account lookup (POST variant)",
+                "operationId": "be0d5208a8508fd0a0557cb7397bcd3c",
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/lookups\/category": {
+            "get": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Category lookup and validation",
+                "description": "Category lookup and validation.",
+                "operationId": "e7121f8b5d1ab30287e323d25fa4163f",
+                "parameters": [
+                    {
+                        "name": "cat_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "b_account_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Category payload"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Category lookup and validation (POST variant)",
+                "operationId": "b33cf5fa142a311fc1bd0d9c8dffa8ef",
+                "responses": {
+                    "200": {
+                        "description": "Category payload"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/{id}\/receive-order": {
+            "post": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Register received amount for workorder",
+                "description": "Receive order amount.",
+                "operationId": "03ba5ddf90e2a778bf45478a78f683ec",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "received_amount": {
+                                        "type": "number",
+                                        "format": "float"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Receive order result"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/lookups\/other-orders": {
+            "get": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "List other orders",
+                "description": "Other orders lookup\/list.",
+                "operationId": "b21cf02071ffd4ec0c16396d512a30b7",
+                "parameters": [
+                    {
+                        "name": "vendor_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "location_code",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order rows"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "List other orders (POST variant)",
+                "operationId": "c3a7ec58a51519e8f30ad42f1b380a12",
+                "responses": {
+                    "200": {
+                        "description": "Order rows"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/{id}\/files": {
+            "get": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "List workorder files",
+                "description": "Workorder file list endpoint.",
+                "operationId": "91342515054a0a1969ba2aaca89ad4cb",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File rows"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "List workorder files (POST variant)",
+                "operationId": "02c2854b8681f59b6c11dc3e49962ad8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File rows"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/{id}\/files\/actions": {
+            "post": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Update workorder file metadata",
+                "description": "Update workorder file metadata\/tags.",
+                "operationId": "f864c2235e454e0d7e797837dc2248d5",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Action result"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/{id}\/multi-upload": {
+            "get": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Build workorder multi-upload payload",
+                "description": "Build workorder multi-upload payload.",
+                "operationId": "35856e601336905cebaea49a951bb7da",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upload metadata"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "Handle workorder multi-upload (POST\/PUT\/PATCH\/DELETE\/HEAD\/OPTIONS)",
+                "description": "Handle workorder multi-upload file operations.",
+                "operationId": "9da97a4cc050e09771d90b387dae2c5c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upload handler response"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/{id}\/files-attachments": {
+            "get": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "List workorder and project file attachments",
+                "description": "Workorder file attachments endpoint.",
+                "operationId": "7fd05af2544d94342241587145430332",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Attachment rows"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "List workorder and project file attachments (POST variant)",
+                "operationId": "45a66d7d741e167098870aa79c751cdf",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Attachment rows"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/files\/view": {
+            "get": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "View\/download workorder file",
+                "description": "Stream workorder file by file_id.",
+                "operationId": "ce63b588d3e1da5ae4971fe5c887aed3",
+                "parameters": [
+                    {
+                        "name": "file_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File stream"
+                    }
+                }
+            }
+        },
+        "\/property\/workorder\/{id}\/files\/image": {
+            "get": {
+                "tags": [
+                    "Workorder"
+                ],
+                "summary": "View workorder image or thumbnail",
+                "description": "Stream workorder image or thumbnail.",
+                "operationId": "1139930b7114eabd5a21633b5b24456d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "img_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "thumb",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Image stream"
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -11202,6 +11881,9 @@
                         "items": {
                             "type": "integer"
                         }
+                    },
+                    "close_calendar_without_season": {
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -12365,6 +13047,63 @@
                     }
                 },
                 "type": "object"
+            },
+            "WorkorderItem": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "workorder_id": {
+                        "type": "integer"
+                    },
+                    "project_id": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "WorkorderReceipt": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "message": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "error": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "WorkorderSavePayload": {
+                "properties": {
+                    "values": {
+                        "type": "object",
+                        "additionalProperties": true
+                    },
+                    "values_attribute": {
+                        "type": "object",
+                        "additionalProperties": true
+                    },
+                    "RelationInfo": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object"
             }
         },
         "securitySchemes": {
@@ -12435,6 +13174,10 @@
         {
             "name": "Project",
             "description": "REST API for project resources"
+        },
+        {
+            "name": "Workorder",
+            "description": "REST API for workorder resources"
         },
         {
             "name": "Relationships",

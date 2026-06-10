@@ -6,6 +6,7 @@ use App\Database\Db;
 use App\modules\property\helpers\WorkorderFormHelper;
 use App\modules\phpgwapi\services\Settings;
 use JsonException;
+use OpenApi\Annotations as OA;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -14,6 +15,53 @@ use Slim\Exception\HttpBadRequestException;
 use Slim\Exception\HttpForbiddenException;
 use Slim\Exception\HttpNotFoundException;
 
+/**
+ * @OA\Tag(
+ *     name="Workorder",
+ *     description="REST API for workorder resources"
+ * )
+ *
+ * @OA\Schema(
+ *     schema="WorkorderItem",
+ *     type="object",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="workorder_id", type="integer"),
+ *     @OA\Property(property="project_id", type="integer"),
+ *     @OA\Property(property="title", type="string"),
+ *     @OA\Property(property="status", type="string")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="WorkorderReceipt",
+ *     type="object",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="message", type="array", @OA\Items(type="object")),
+ *     @OA\Property(property="error", type="array", @OA\Items(type="object"))
+ * )
+ *
+ * @OA\Schema(
+ *     schema="WorkorderSavePayload",
+ *     type="object",
+ *     @OA\Property(property="values", type="object", additionalProperties=true),
+ *     @OA\Property(property="values_attribute", type="object", additionalProperties=true),
+ *     @OA\Property(property="RelationInfo", type="object", additionalProperties=true)
+ * )
+ *
+ * @OA\Schema(
+ *     schema="DataTablesEnvelope",
+ *     type="object",
+ *     description="Generic DataTables response envelope",
+ *     required={"data", "recordsTotal", "recordsFiltered", "draw"},
+ *     @OA\Property(
+ *         property="data",
+ *         type="array",
+ *         @OA\Items(type="object", additionalProperties=true)
+ *     ),
+ *     @OA\Property(property="recordsTotal", type="integer", minimum=0),
+ *     @OA\Property(property="recordsFiltered", type="integer", minimum=0),
+ *     @OA\Property(property="draw", type="integer", minimum=0)
+ * )
+ */
 class WorkorderController
 {
 	private $bo = null;
@@ -186,6 +234,26 @@ class WorkorderController
 		);
 	}
 
+	/**
+	 * Workorder DataTables-compatible list endpoint.
+	 *
+	 * @OA\Get(
+	 *     path="/property/workorder",
+	 *     summary="List workorders",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="start", in="query", @OA\Schema(type="integer", default=0)),
+	 *     @OA\Parameter(name="length", in="query", @OA\Schema(type="integer", default=25)),
+	 *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="Workorder DataTables payload", @OA\JsonContent(ref="#/components/schemas/DataTablesEnvelope"))
+	 * )
+	 *
+	 * @OA\Post(
+	 *     path="/property/workorder",
+	 *     summary="List workorders (POST variant)",
+	 *     tags={"Workorder"},
+	 *     @OA\Response(response=200, description="Workorder DataTables payload", @OA\JsonContent(ref="#/components/schemas/DataTablesEnvelope"))
+	 * )
+	 */
 	public function index(Request $request, Response $response): Response
 	{
 		if (!$this->hasReadAccess())
@@ -202,6 +270,16 @@ class WorkorderController
 		return $this->datatableResponse($response, $input, is_array($rows) ? $rows : array(), $total);
 	}
 
+	/**
+	 * Download workorder list report.
+	 *
+	 * @OA\Get(
+	 *     path="/property/workorder/reports/download",
+	 *     summary="Download workorder list report",
+	 *     tags={"Workorder"},
+	 *     @OA\Response(response=200, description="Report download")
+	 * )
+	 */
 	public function download(Request $request, Response $response): Response
 	{
 		if (!$this->hasReadAccess())
@@ -224,6 +302,21 @@ class WorkorderController
 		return $response;
 	}
 
+	/**
+	 * Create workorder.
+	 *
+	 * @OA\Post(
+	 *     path="/property/workorder/create",
+	 *     summary="Create workorder",
+	 *     tags={"Workorder"},
+	 *     @OA\RequestBody(
+	 *         required=false,
+	 *         @OA\JsonContent(ref="#/components/schemas/WorkorderSavePayload")
+	 *     ),
+	 *     @OA\Response(response=201, description="Created", @OA\JsonContent(ref="#/components/schemas/WorkorderReceipt")),
+	 *     @OA\Response(response=400, description="Validation error")
+	 * )
+	 */
 	public function store(Request $request, Response $response): Response
 	{
 		if (!$this->hasAddAccess())
@@ -254,6 +347,22 @@ class WorkorderController
 		), 201);
 	}
 
+	/**
+	 * Update workorder.
+	 *
+	 * @OA\Post(
+	 *     path="/property/workorder/{id}",
+	 *     summary="Update workorder",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\RequestBody(
+	 *         required=false,
+	 *         @OA\JsonContent(ref="#/components/schemas/WorkorderSavePayload")
+	 *     ),
+	 *     @OA\Response(response=200, description="Updated", @OA\JsonContent(ref="#/components/schemas/WorkorderReceipt")),
+	 *     @OA\Response(response=400, description="Validation error")
+	 * )
+	 */
 	public function update(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->hasEditAccess())
@@ -290,6 +399,17 @@ class WorkorderController
 		));
 	}
 
+	/**
+	 * Delete workorder.
+	 *
+	 * @OA\Delete(
+	 *     path="/property/workorder/{id}",
+	 *     summary="Delete workorder",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Deleted")
+	 * )
+	 */
 	public function destroy(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->hasDeleteAccess())
@@ -350,6 +470,25 @@ class WorkorderController
 		return is_array($contractList) ? $contractList : array();
 	}
 
+	/**
+	 * Vendor contract lookup.
+	 *
+	 * @OA\Get(
+	 *     path="/property/workorder/lookups/vendor-contract",
+	 *     summary="Vendor contract lookup",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="vendor_id", in="query", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="selected", in="query", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Lookup rows")
+	 * )
+	 *
+	 * @OA\Post(
+	 *     path="/property/workorder/lookups/vendor-contract",
+	 *     summary="Vendor contract lookup (POST variant)",
+	 *     tags={"Workorder"},
+	 *     @OA\Response(response=200, description="Lookup rows")
+	 * )
+	 */
 	public function getVendorContract(Request $request, Response $response): Response
 	{
 		if (!$this->hasReadAccess())
@@ -363,6 +502,23 @@ class WorkorderController
 		return $this->jsonResponse($response, $this->getVendorContractOptions($vendorId, $selected));
 	}
 
+	/**
+	 * Eco service lookup.
+	 *
+	 * @OA\Get(
+	 *     path="/property/workorder/lookups/eco-service",
+	 *     summary="Eco service lookup",
+	 *     tags={"Workorder"},
+	 *     @OA\Response(response=200, description="Lookup rows")
+	 * )
+	 *
+	 * @OA\Post(
+	 *     path="/property/workorder/lookups/eco-service",
+	 *     summary="Eco service lookup (POST variant)",
+	 *     tags={"Workorder"},
+	 *     @OA\Response(response=200, description="Lookup rows")
+	 * )
+	 */
 	public function getEcoService(Request $request, Response $response): Response
 	{
 		if (!$this->hasReadAccess())
@@ -373,6 +529,23 @@ class WorkorderController
 		return $this->jsonResponse($response, (array)$this->bocommon()->get_eco_service());
 	}
 
+	/**
+	 * UNSPSC lookup.
+	 *
+	 * @OA\Get(
+	 *     path="/property/workorder/lookups/unspsc-code",
+	 *     summary="UNSPSC lookup",
+	 *     tags={"Workorder"},
+	 *     @OA\Response(response=200, description="Lookup rows")
+	 * )
+	 *
+	 * @OA\Post(
+	 *     path="/property/workorder/lookups/unspsc-code",
+	 *     summary="UNSPSC lookup (POST variant)",
+	 *     tags={"Workorder"},
+	 *     @OA\Response(response=200, description="Lookup rows")
+	 * )
+	 */
 	public function getUnspscCode(Request $request, Response $response): Response
 	{
 		if (!$this->hasReadAccess())
@@ -383,6 +556,23 @@ class WorkorderController
 		return $this->jsonResponse($response, (array)$this->bocommon()->get_unspsc_code());
 	}
 
+	/**
+	 * Ecodimb lookup.
+	 *
+	 * @OA\Get(
+	 *     path="/property/workorder/lookups/ecodimb",
+	 *     summary="Ecodimb lookup",
+	 *     tags={"Workorder"},
+	 *     @OA\Response(response=200, description="Lookup rows")
+	 * )
+	 *
+	 * @OA\Post(
+	 *     path="/property/workorder/lookups/ecodimb",
+	 *     summary="Ecodimb lookup (POST variant)",
+	 *     tags={"Workorder"},
+	 *     @OA\Response(response=200, description="Lookup rows")
+	 * )
+	 */
 	public function getEcodimb(Request $request, Response $response): Response
 	{
 		if (!$this->hasReadAccess())
@@ -393,6 +583,23 @@ class WorkorderController
 		return $this->jsonResponse($response, (array)$this->bocommon()->get_ecodimb());
 	}
 
+	/**
+	 * Budget account lookup.
+	 *
+	 * @OA\Get(
+	 *     path="/property/workorder/lookups/b-account",
+	 *     summary="Budget account lookup",
+	 *     tags={"Workorder"},
+	 *     @OA\Response(response=200, description="Lookup rows")
+	 * )
+	 *
+	 * @OA\Post(
+	 *     path="/property/workorder/lookups/b-account",
+	 *     summary="Budget account lookup (POST variant)",
+	 *     tags={"Workorder"},
+	 *     @OA\Response(response=200, description="Lookup rows")
+	 * )
+	 */
 	public function getBAccount(Request $request, Response $response): Response
 	{
 		if (!$this->hasReadAccess())
@@ -470,6 +677,25 @@ class WorkorderController
 		return $category;
 	}
 
+	/**
+	 * Category lookup and validation.
+	 *
+	 * @OA\Get(
+	 *     path="/property/workorder/lookups/category",
+	 *     summary="Category lookup and validation",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="cat_id", in="query", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="b_account_id", in="query", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="Category payload")
+	 * )
+	 *
+	 * @OA\Post(
+	 *     path="/property/workorder/lookups/category",
+	 *     summary="Category lookup and validation (POST variant)",
+	 *     tags={"Workorder"},
+	 *     @OA\Response(response=200, description="Category payload")
+	 * )
+	 */
 	public function getCategory(Request $request, Response $response): Response
 	{
 		if (!$this->hasReadAccess())
@@ -484,6 +710,24 @@ class WorkorderController
 		return $this->jsonResponse($response, $this->getCategoryLookupResult($catId, $bAccountId));
 	}
 
+	/**
+	 * Receive order amount.
+	 *
+	 * @OA\Post(
+	 *     path="/property/workorder/{id}/receive-order",
+	 *     summary="Register received amount for workorder",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\RequestBody(
+	 *         required=false,
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             @OA\Property(property="received_amount", type="number", format="float")
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=200, description="Receive order result")
+	 * )
+	 */
 	public function receiveOrder(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->hasEditAccess())
@@ -497,6 +741,25 @@ class WorkorderController
 		return $this->jsonResponse($response, $this->bo()->receive_order($id, $receivedAmount));
 	}
 
+	/**
+	 * Other orders lookup/list.
+	 *
+	 * @OA\Get(
+	 *     path="/property/workorder/lookups/other-orders",
+	 *     summary="List other orders",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="vendor_id", in="query", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="location_code", in="query", @OA\Schema(type="string")),
+	 *     @OA\Response(response=200, description="Order rows", @OA\JsonContent(ref="#/components/schemas/DataTablesEnvelope"))
+	 * )
+	 *
+	 * @OA\Post(
+	 *     path="/property/workorder/lookups/other-orders",
+	 *     summary="List other orders (POST variant)",
+	 *     tags={"Workorder"},
+	 *     @OA\Response(response=200, description="Order rows", @OA\JsonContent(ref="#/components/schemas/DataTablesEnvelope"))
+	 * )
+	 */
 	public function getOtherOrders(Request $request, Response $response): Response
 	{
 		if (!$this->hasReadAccess())
@@ -536,6 +799,25 @@ class WorkorderController
 		return $this->datatableResponse($response, $input, $rows);
 	}
 
+	/**
+	 * Workorder file list endpoint.
+	 *
+	 * @OA\Get(
+	 *     path="/property/workorder/{id}/files",
+	 *     summary="List workorder files",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="File rows", @OA\JsonContent(ref="#/components/schemas/DataTablesEnvelope"))
+	 * )
+	 *
+	 * @OA\Post(
+	 *     path="/property/workorder/{id}/files",
+	 *     summary="List workorder files (POST variant)",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="File rows", @OA\JsonContent(ref="#/components/schemas/DataTablesEnvelope"))
+	 * )
+	 */
 	public function getFiles(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->hasReadAccess())
@@ -623,6 +905,17 @@ class WorkorderController
 		return $this->datatableResponse($response, $input, $contentFiles, count($contentFiles));
 	}
 
+	/**
+	 * Update workorder file metadata/tags.
+	 *
+	 * @OA\Post(
+	 *     path="/property/workorder/{id}/files/actions",
+	 *     summary="Update workorder file metadata",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Action result")
+	 * )
+	 */
 	public function updateFileData(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->hasEditAccess())
@@ -661,6 +954,17 @@ class WorkorderController
 		));
 	}
 
+	/**
+	 * Build workorder multi-upload payload.
+	 *
+	 * @OA\Get(
+	 *     path="/property/workorder/{id}/multi-upload",
+	 *     summary="Build workorder multi-upload payload",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Upload metadata")
+	 * )
+	 */
 	public function buildMultiUploadFile(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->hasEditAccess())
@@ -677,6 +981,17 @@ class WorkorderController
 		));
 	}
 
+	/**
+	 * Handle workorder multi-upload file operations.
+	 *
+	 * @OA\Post(
+	 *     path="/property/workorder/{id}/multi-upload",
+	 *     summary="Handle workorder multi-upload (POST/PUT/PATCH/DELETE/HEAD/OPTIONS)",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Upload handler response")
+	 * )
+	 */
 	public function handleMultiUploadFile(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->hasEditAccess())
@@ -718,6 +1033,25 @@ class WorkorderController
 		return $response;
 	}
 
+	/**
+	 * Workorder file attachments endpoint.
+	 *
+	 * @OA\Get(
+	 *     path="/property/workorder/{id}/files-attachments",
+	 *     summary="List workorder and project file attachments",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Attachment rows", @OA\JsonContent(ref="#/components/schemas/DataTablesEnvelope"))
+	 * )
+	 *
+	 * @OA\Post(
+	 *     path="/property/workorder/{id}/files-attachments",
+	 *     summary="List workorder and project file attachments (POST variant)",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Attachment rows", @OA\JsonContent(ref="#/components/schemas/DataTablesEnvelope"))
+	 * )
+	 */
 	public function getFilesAttachments(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->hasReadAccess())
@@ -804,6 +1138,17 @@ class WorkorderController
 		return $this->datatableResponse($response, $input, $contentAttachments, count($contentAttachments));
 	}
 
+	/**
+	 * Stream workorder file by file_id.
+	 *
+	 * @OA\Get(
+	 *     path="/property/workorder/files/view",
+	 *     summary="View/download workorder file",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="file_id", in="query", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="File stream")
+	 * )
+	 */
 	public function viewFile(Request $request, Response $response): Response
 	{
 		if (!$this->hasReadAccess())
@@ -822,6 +1167,19 @@ class WorkorderController
 		return $response;
 	}
 
+	/**
+	 * Stream workorder image or thumbnail.
+	 *
+	 * @OA\Get(
+	 *     path="/property/workorder/{id}/files/image",
+	 *     summary="View workorder image or thumbnail",
+	 *     tags={"Workorder"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="img_id", in="query", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="thumb", in="query", @OA\Schema(type="boolean")),
+	 *     @OA\Response(response=200, description="Image stream")
+	 * )
+	 */
 	public function viewImage(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->hasReadAccess())

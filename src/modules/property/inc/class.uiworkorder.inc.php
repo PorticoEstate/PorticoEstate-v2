@@ -1459,19 +1459,6 @@ JS;
 			{
 				$_disable_link	 = true;
 				$voucher_id		 = $entry['external_voucher_id'];
-
-				//					if ($entry['voucher_id'] > 0)
-				//					{
-				//						$link_data_invoice1['voucher_id'] = $entry['voucher_id'];
-				//						$link_data_invoice1['query'] = $entry['voucher_id'];
-				//						$url = phpgw::link('/index.php', $link_data_invoice1);
-				//					}
-				//					else
-				//					{
-				//						$link_data_invoice1['voucher_id'] = abs($entry['voucher_id']);
-				//						$link_data_invoice1['paid'] = 'true';
-				//						$url = phpgw::link('/index.php', $link_data_invoice1);
-				//					}
 			}
 
 			$link_voucher_id = "<a href='" . $url . "'>" . $voucher_out_id . "</a>";
@@ -1508,47 +1495,6 @@ JS;
 			$approved_amount += $entry['approved_amount'];
 		}
 		unset($entry);
-
-		if ($invoices)
-		{
-			$invoice_config = CreateObject('admin.soconfig', $this->locations->get_id('property', '.invoice'));
-		}
-
-		//			$attachmen_list = array();
-		//			foreach ($invoices as $entry)
-		//			{
-		//				$directory_attachment = rtrim($invoice_config->config_data['import']['local_path'], '/') . '/attachment/' . $entry['external_voucher_id'];
-		//				try
-		//				{
-		//					$dir = new DirectoryIterator("$directory_attachment/");
-		//					if (is_object($dir))
-		//					{
-		//						foreach ($dir as $file)
-		//						{
-		//							if ($file->isDot() || !$file->isFile() || !$file->isReadable())
-		//							{
-		//								continue;
-		//							}
-		//
-		//							$url = self::link(array(
-		//									'menuaction' => 'property.uitts.show_attachment',
-		//									'file_name'	 => urlencode((string)$file),
-		//									'key'		 => $entry['external_voucher_id']
-		//							));
-		//
-		//							$attachmen_list[] = array(
-		//								'voucher_id' => $entry['external_voucher_id'],
-		//								'file_name'	 => "<a href='{$url}' target='_blank'>" . (string)$file . "</a>"
-		//							);
-		//						}
-		//					}
-		//				}
-		//				catch (Exception $e)
-		//				{
-		//
-		//				}
-		//			}
-		//			unset($entry);
 
 		$attachmen_def = array(
 			array(
@@ -1985,31 +1931,7 @@ JS;
 			}
 		}
 
-
-		//---
-		//
-		//			$_b_account			 = execMethod('property.bogeneric.read_single', array(
-		//					'id'		 =>  $values['b_account_id'] ? $values['b_account_id'] : $project['b_account_id'],
-		//					'location_info'	 => array(
-		//						'type' => 'budget_account')));
-		//			$_b_account_group	 = $_b_account['category'];
-		//
-		//			$parent_categories = array();
-		//
-		//			if (!empty($_b_account_group))
-		//			{
-		//				$sogeneric	 = CreateObject('property.sogeneric');
-		//				$sogeneric->get_location_info('b_account_category', false);
-		//				$account_group_data = $sogeneric->read_single(array('id' => (int)$_b_account_group), array());
-		//
-		//				if (isset($account_group_data['project_category']) && $account_group_data['project_category'])
-		//				{
-		//					$parent_categories = explode(',',trim($account_group_data['project_category'],','));
-		//				}
-		//			}
-		//----
-
-		$_cat_sub	 = $this->cats->return_sorted_array(0, false, '', '', '', false, $parent_categories);
+		$_cat_sub	 = $this->cats->return_sorted_array(0, false);
 
 		$selected_cat		 = $values['cat_id'] ? $values['cat_id'] : $project['cat_id'];
 		$validatet_category	 = '';
@@ -2880,9 +2802,6 @@ JS;
 			),
 			'type_list'					 => array(
 				'options' => $boinvoice->get_type_list(isset($values['typeid']) ? $values['typeid'] : '')
-			),
-			'tax_code_list'				 => array(
-				'options' => $boinvoice->tax_code_list(isset($values['tax_code']) ? $values['tax_code'] : '')
 			),
 			'janitor_list'				 => array(
 				'options_lid' => $this->bocommon->get_user_list_right(32, isset($values['janitor']) && $values['janitor'] ? $values['janitor'] : $account_lid, '.invoice')

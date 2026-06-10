@@ -8,6 +8,34 @@ use App\Database\Db;
 
 class SwaggerController
 {
+  private function getSpecFilePath(): string
+  {
+    return __DIR__ . '/../../../../swagger_spec/openapi.json';
+  }
+
+  private function loadSpecData(): array
+  {
+    $specFile = $this->getSpecFilePath();
+    if (!file_exists($specFile))
+    {
+      throw new \RuntimeException('Specification not found');
+    }
+
+    $spec = json_decode((string) file_get_contents($specFile), true);
+    if (!is_array($spec))
+    {
+      throw new \RuntimeException('Specification is invalid JSON');
+    }
+
+    return $spec;
+  }
+
+  private function jsonResponse(Response $response, array $payload, int $status = 200): Response
+  {
+    $response->getBody()->write(json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+    return $response->withStatus($status)->withHeader('Content-Type', 'application/json');
+  }
+
   /**
    * Show the Swagger UI interface
    */
@@ -64,13 +92,13 @@ class SwaggerController
             dom_id: '#swagger-ui',
             deepLinking: true,
             presets: [
-              SwaggerUIBundle.presets.apis,
-              SwaggerUIStandalonePreset
+			  SwaggerUIBundle.presets.apis,
+			  SwaggerUIStandalonePreset
             ],
             plugins: [
               SwaggerUIBundle.plugins.DownloadUrl
             ],
-            layout: "StandaloneLayout"
+			layout: "StandaloneLayout"
           });
         })
         .catch(error => {
@@ -94,17 +122,78 @@ HTML;
    */
   public function getSpec(Request $request, Response $response): Response
   {
-    // Path to your OpenAPI specification
-    $specFile = __DIR__ . '/../../../../swagger_spec/openapi.json';
+  try
+  {
+    return $this->jsonResponse($response, $this->loadSpecData());
+  }
+  catch (\RuntimeException $exception)
+  {
+    return $this->jsonResponse($response, ['error' => $exception->getMessage()], 404);
+  }
+  }
 
-    if (!file_exists($specFile))
+  /**
+   * Serve a module-filtered OpenAPI specification.
+   */
+  public function getModuleSpec(Request $request, Response $response, array $args): Response
+  {
+    $module = strtolower((string) ($args['module'] ?? ''));
+    if ($module === '')
     {
-      $response->getBody()->write(json_encode(['error' => 'Specification not found']));
-      return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+      return $this->jsonResponse($response, ['error' => 'Module is required'], 400);
     }
 
-    $spec = file_get_contents($specFile);
-    $response->getBody()->write($spec);
-    return $response->withHeader('Content-Type', 'application/json');
+    try
+    {
+      $spec = $this->loadSpecData();
+    }
+    catch (\RuntimeException $exception)
+    {
+      return $this->jsonResponse($response, ['error' => $exception->getMessage()], 404);
+    }
+
+    $pathPrefix = '/property/' . $module;
+    $filteredPaths = [];
+    $tagNames = [];
+
+    foreach (($spec['paths'] ?? []) as $path => $operations)
+    {
+      if (strpos((string) $path, $pathPrefix) !== 0)
+      {
+        continue;
+      }
+
+      $filteredPaths[$path] = $operations;
+      foreach ($operations as $operation)
+      {
+        if (!is_array($operation) || empty($operation['tags']) || !is_array($operation['tags']))
+        {
+          continue;
+        }
+
+        foreach ($operation['tags'] as $tag)
+        {
+          $tagNames[(string) $tag] = true;
+        }
+      }
+    }
+
+    if (!$filteredPaths)
+    {
+      return $this->jsonResponse($response, ['error' => "No Swagger definition found for module '{$module}'"], 404);
+    }
+
+    $spec['paths'] = $filteredPaths;
+    if (!empty($spec['tags']) && is_array($spec['tags']))
+    {
+      $spec['tags'] = array_values(array_filter($spec['tags'], static function ($tag) use ($tagNames)
+      {
+        return is_array($tag)
+          && isset($tag['name'])
+          && isset($tagNames[(string) $tag['name']]);
+      }));
+    }
+
+    return $this->jsonResponse($response, $spec);
   }
 }

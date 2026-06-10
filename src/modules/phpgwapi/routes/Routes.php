@@ -274,6 +274,26 @@ $app->get('/swagger/spec', function ($request, $response) use ($container)
 	return $swaggerController->getSpec($request, $response);
 });
 
+$app->get('/swagger/{module}', function ($request, $response, $args) use ($container)
+{
+	$sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
+	if (!$sessions->verify())
+	{
+		$response->getBody()->write(json_encode(['error' => 'Authentication required']));
+		return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
+	}
+
+	$userInfo = $sessions->get_user();
+	if (empty($userInfo['apps']['admin']['enabled']))
+	{
+		$response->getBody()->write(json_encode(['error' => 'Admin privileges required']));
+		return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
+	}
+
+	$swaggerController = new \App\modules\phpgwapi\controllers\SwaggerController();
+	return $swaggerController->getModuleSpec($request, $response, $args);
+});
+
 $app->get('/api/tables', function ($request, $response) use ($container)
 {
     // Same authentication checks

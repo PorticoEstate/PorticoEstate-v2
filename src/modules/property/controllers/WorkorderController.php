@@ -350,7 +350,7 @@ class WorkorderController
 	/**
 	 * Update workorder.
 	 *
-	 * @OA\Post(
+	 * @OA\Put(
 	 *     path="/property/workorder/{id}",
 	 *     summary="Update workorder",
 	 *     tags={"Workorder"},

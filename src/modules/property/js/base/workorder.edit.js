@@ -161,7 +161,7 @@ function createWorkorderApiClient(form)
 			{
 				return {
 					url: phpGWLink('property/workorder/' + parsedOrderId, {}),
-					method: 'POST'
+					method: 'PUT'
 				};
 			}
 

@@ -77,6 +77,7 @@ namespace Tests\Controllers
 			$this->assertStringContainsString("function createWorkorderApiClient(form)", $contents);
 			$this->assertStringContainsString("phpGWLink('property/workorder/create', {})", $contents);
 			$this->assertStringContainsString("phpGWLink('property/workorder/' + parsedOrderId, {})", $contents);
+			$this->assertStringContainsString("method: 'PUT'", $contents);
 			$this->assertStringContainsString("submit_workorder_via_api('save')", $contents);
 			$this->assertStringContainsString("submit_workorder_via_api('send')", $contents);
 			$this->assertStringContainsString("submit_workorder_via_api('calculate')", $contents);
@@ -124,7 +125,8 @@ namespace Tests\Controllers
 			$contents = (string)file_get_contents($routesPath);
 
 			$this->assertStringContainsString('$group->post(\'/create\', [$controller, \'store\']);', $contents);
-			$this->assertStringContainsString('$group->post(\'/{id:[0-9]+}\', [$controller, \'update\']);', $contents);
+			$this->assertStringContainsString('$group->put(\'/{id:[0-9]+}\', [$controller, \'update\']);', $contents);
+			$this->assertStringNotContainsString('$group->post(\'/{id:[0-9]+}\', [$controller, \'update\']);', $contents);
 			$this->assertStringContainsString('$group->delete(\'/{id:[0-9]+}\', [$controller, \'destroy\']);', $contents);
 			$this->assertStringContainsString('$group->get(\'\', [$controller, \'index\']);', $contents);
 			$this->assertStringContainsString('$group->post(\'\', [$controller, \'index\']);', $contents);

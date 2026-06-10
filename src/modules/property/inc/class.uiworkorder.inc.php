@@ -767,66 +767,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		$origin		 = Sanitizer::get_var('origin');
 		$origin_id	 = Sanitizer::get_var('origin_id', 'int');
 
-		if ($origin == '.ticket' && $origin_id && !$values['descr'])
-		{
-			$boticket		 = CreateObject('property.botts');
-			$ticket			 = $boticket->read_single($origin_id);
-			$values['descr'] = strip_tags($ticket['details']);
-			$values['title'] = $ticket['subject'] ? $ticket['subject'] : $ticket['category_name'];
-			$ticket_notes	 = $boticket->read_additional_notes($origin_id);
-			$i				 = count($ticket_notes) - 1;
-			if (isset($ticket_notes[$i]['value_note']) && $ticket_notes[$i]['value_note'])
-			{
-				$values['descr'] .= ": " . $ticket_notes[$i]['value_note'];
-			}
-
-			$values['location_data'] = $ticket['location_data'];
-		}
-		else if ($origin && preg_match("/(^.entity.|^.catch.)/i", $origin) && $origin_id)
-		{
-			$_origin				 = explode('.', $origin);
-			$_boentity				 = CreateObject('property.boentity', false, $_origin[1], $_origin[2], $_origin[3]);
-			$_entity				 = $_boentity->read_single(array(
-				'entity_id'	 => $_origin[2],
-				'cat_id'	 => $_origin[3],
-				'id'		 => $origin_id,
-				'view'		 => true
-			));
-			$values['location_data'] = $_entity['location_data'];
-			unset($_origin);
-			unset($_boentity);
-			unset($_entity);
-		}
-		else if ($origin == '.project.request' && $origin_id)
-		{
-			$_borequest				 = CreateObject('property.borequest', false);
-			$_request				 = $_borequest->read_single($origin_id, array(), true);
-			$values['descr']		 = $_request['descr'];
-			$values['title']		 = $_request['title'];
-			$values['location_data'] = $_request['location_data'];
-			unset($_origin);
-			unset($_borequest);
-			unset($_request);
-		}
-
-		if (isset($values['origin']) && $values['origin'])
-		{
-			$origin		 = $values['origin'];
-			$origin_id	 = $values['origin_id'];
-		}
-
-		$interlink = &$this->bo->interlink;
-		if (isset($origin) && $origin)
-		{
-			$values['origin_data'][0]['location']	 = $origin;
-			$values['origin_data'][0]['descr']		 = $interlink->get_location_name($origin);
-			$values['origin_data'][0]['data'][]		 = array(
-				'id'	 => $origin_id,
-				'link'	 => $interlink->get_relation_link(array(
-					'location' => $origin
-				), $origin_id),
-			);
-		}
+		$this->_resolve_origin_details($values, $origin, $origin_id);
 
 		if ($project_id && !isset($values['project_id']))
 		{
@@ -899,61 +840,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 
 			if ($project['key_fetch'] && !$values['key_fetch'])
 			{
-				$values['key_fetch'] = $project['key_fetch'];
-			}
-
-			if ($project['key_deliver'] && !$values['key_deliver'])
-			{
-				$values['key_deliver'] = $project['key_deliver'];
-			}
-
-			if ($project['start_date'] && !$values['start_date'])
-			{
-				$_start_date = max(time(), phpgwapi_datetime::date_to_timestamp($project['start_date']));
-				$values['start_date'] = $this->phpgwapi_common->show_date($_start_date, $this->userSettings['preferences']['common']['dateformat']);
-				if ($project['project_type_id'] == 1) //operation
-				{
-					phpgw::import_class('phpgwapi.datetime');
-					if ($project['end_date'] && phpgwapi_datetime::date_to_timestamp($project['end_date']) < time())
-					{
-						$values['start_date'] = $project['end_date'];
-					}
-				}
-			}
-
-			$last_day_of_year = mktime(13, 0, 0, 12, 31, date("Y"));
-
-
-			if ($project['end_date'] && !$values['end_date'])
-			{
-				if ($project['project_type_id'] == 1 && isset($config->config_data['delay_operation_workorder_end_date']) && $config->config_data['delay_operation_workorder_end_date'] == 1) //operation
-				{
-					$values['end_date'] = $this->phpgwapi_common->show_date($last_day_of_year, $this->userSettings['preferences']['common']['dateformat']);
-				}
-				else
-				{
-					$values['end_date'] = $project['end_date'];
-				}
-			}
-			else if (!$project['end_date'] && !$values['end_date'])
-			{
-				if ($project['project_type_id'] == 1 && isset($config->config_data['delay_operation_workorder_end_date']) && $config->config_data['delay_operation_workorder_end_date'] == 1) //operation
-				{
-					$values['end_date'] = $this->phpgwapi_common->show_date($last_day_of_year, $this->userSettings['preferences']['common']['dateformat']);
-				}
-				else
-				{
-					$values['end_date'] = $this->phpgwapi_common->show_date(time(), $this->userSettings['preferences']['common']['dateformat']);
-				}
-			}
-
-			if ($project['name'] && !isset($values['title']))
-			{
-				$values['title'] = $project['name'];
-			}
-			if ($project['descr'] && !isset($values['descr']))
-			{
-				$values['descr'] = $project['descr'];
+				$this->_apply_project_defaults_to_values($values, $project, $config);
 			}
 		}
 
@@ -2353,6 +2240,131 @@ JS;
 		$this->jqcal->add_listener('values_tender_deadline');
 		$this->jqcal->add_listener('values_tender_received');
 		$this->jqcal->add_listener('values_inspection_on_completion');
+	}
+
+	private function _resolve_origin_details(array &$values, &$origin, &$origin_id)
+	{
+		if ($origin == '.ticket' && $origin_id && !$values['descr'])
+		{
+			$boticket		 = CreateObject('property.botts');
+			$ticket			 = $boticket->read_single($origin_id);
+			$values['descr'] = strip_tags($ticket['details']);
+			$values['title'] = $ticket['subject'] ? $ticket['subject'] : $ticket['category_name'];
+			$ticket_notes	 = $boticket->read_additional_notes($origin_id);
+			$i				 = count($ticket_notes) - 1;
+			if (isset($ticket_notes[$i]['value_note']) && $ticket_notes[$i]['value_note'])
+			{
+				$values['descr'] .= ": " . $ticket_notes[$i]['value_note'];
+			}
+
+			$values['location_data'] = $ticket['location_data'];
+		}
+		else if ($origin && preg_match("/(^.entity.|^.catch.)/i", $origin) && $origin_id)
+		{
+			$_origin				 = explode('.', $origin);
+			$_boentity				 = CreateObject('property.boentity', false, $_origin[1], $_origin[2], $_origin[3]);
+			$_entity				 = $_boentity->read_single(array(
+				'entity_id'	 => $_origin[2],
+				'cat_id'	 => $_origin[3],
+				'id'		 => $origin_id,
+				'view'		 => true
+			));
+			$values['location_data'] = $_entity['location_data'];
+			unset($_origin);
+			unset($_boentity);
+			unset($_entity);
+		}
+		else if ($origin == '.project.request' && $origin_id)
+		{
+			$_borequest				 = CreateObject('property.borequest', false);
+			$_request				 = $_borequest->read_single($origin_id, array(), true);
+			$values['descr']		 = $_request['descr'];
+			$values['title']		 = $_request['title'];
+			$values['location_data'] = $_request['location_data'];
+			unset($_origin);
+			unset($_borequest);
+			unset($_request);
+		}
+
+		if (isset($values['origin']) && $values['origin'])
+		{
+			$origin		 = $values['origin'];
+			$origin_id	 = $values['origin_id'];
+		}
+
+		$interlink = &$this->bo->interlink;
+		if (isset($origin) && $origin)
+		{
+			$values['origin_data'][0]['location']	 = $origin;
+			$values['origin_data'][0]['descr']		 = $interlink->get_location_name($origin);
+			$values['origin_data'][0]['data'][]		 = array(
+				'id'	 => $origin_id,
+				'link'	 => $interlink->get_relation_link(array(
+					'location' => $origin
+				), $origin_id),
+			);
+		}
+	}
+
+	private function _apply_project_defaults_to_values(array &$values, array $project, $config)
+	{
+		if ($project['key_fetch'] && !$values['key_fetch'])
+		{
+			$values['key_fetch'] = $project['key_fetch'];
+		}
+
+		if ($project['key_deliver'] && !$values['key_deliver'])
+		{
+			$values['key_deliver'] = $project['key_deliver'];
+		}
+
+		if ($project['start_date'] && !$values['start_date'])
+		{
+			$_start_date = max(time(), phpgwapi_datetime::date_to_timestamp($project['start_date']));
+			$values['start_date'] = $this->phpgwapi_common->show_date($_start_date, $this->userSettings['preferences']['common']['dateformat']);
+			if ($project['project_type_id'] == 1) //operation
+			{
+				phpgw::import_class('phpgwapi.datetime');
+				if ($project['end_date'] && phpgwapi_datetime::date_to_timestamp($project['end_date']) < time())
+				{
+					$values['start_date'] = $project['end_date'];
+				}
+			}
+		}
+
+		$last_day_of_year = mktime(13, 0, 0, 12, 31, date("Y"));
+
+		if ($project['end_date'] && !$values['end_date'])
+		{
+			if ($project['project_type_id'] == 1 && isset($config->config_data['delay_operation_workorder_end_date']) && $config->config_data['delay_operation_workorder_end_date'] == 1) //operation
+			{
+				$values['end_date'] = $this->phpgwapi_common->show_date($last_day_of_year, $this->userSettings['preferences']['common']['dateformat']);
+			}
+			else
+			{
+				$values['end_date'] = $project['end_date'];
+			}
+		}
+		else if (!$project['end_date'] && !$values['end_date'])
+		{
+			if ($project['project_type_id'] == 1 && isset($config->config_data['delay_operation_workorder_end_date']) && $config->config_data['delay_operation_workorder_end_date'] == 1) //operation
+			{
+				$values['end_date'] = $this->phpgwapi_common->show_date($last_day_of_year, $this->userSettings['preferences']['common']['dateformat']);
+			}
+			else
+			{
+				$values['end_date'] = $this->phpgwapi_common->show_date(time(), $this->userSettings['preferences']['common']['dateformat']);
+			}
+		}
+
+		if ($project['name'] && !isset($values['title']))
+		{
+			$values['title'] = $project['name'];
+		}
+		if ($project['descr'] && !isset($values['descr']))
+		{
+			$values['descr'] = $project['descr'];
+		}
 	}
 
 	private function _append_history_datatable(array &$datatable_def, array $record_history)

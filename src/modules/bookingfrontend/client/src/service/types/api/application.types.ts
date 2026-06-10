@@ -47,6 +47,7 @@ export interface IApplication {
     articles?: ArticleOrder[];
     application_type?: 'personal' | 'organization';
     recurring_info?: string | null; // JSON string of RecurringInfo
+    parent_id?: number | null; // Links child applications to parent when combined_applications_mode is enabled
 }
 
 // Interface for the parsed recurring_info JSON
@@ -183,3 +184,5 @@ export interface UpdateStatusResponse {
     status: string; // The new status
     message: string; // "Application status updated successfully"
 }
+
+// Notification types live in @/service/types/api/notification.types

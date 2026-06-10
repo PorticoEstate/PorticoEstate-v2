@@ -14,6 +14,7 @@ import { SessionService } from '../session/session.service';
 import { RoomService } from '../session/room.service';
 import { NotificationService } from '../notification/notification.service';
 import { ApplicationService } from '../application/application.service';
+import { DeliveredApplicationService } from '../application/delivered-application.service';
 import { FreeTimeService } from '../freetime/freetime.service';
 import { BookingService } from '../booking/booking.service';
 import { PhpConfigService } from '../../config/php-config.service';
@@ -41,6 +42,7 @@ export class PorticoGateway
     private readonly roomService: RoomService,
     private readonly notificationService: NotificationService,
     private readonly applicationService: ApplicationService,
+    private readonly deliveredApplicationService: DeliveredApplicationService,
     private readonly freeTimeService: FreeTimeService,
     private readonly bookingService: BookingService,
     private readonly configService: PhpConfigService,
@@ -156,12 +158,18 @@ export class PorticoGateway
         return this.handleUpdateUserInfo(client, data);
       case 'get_partial_applications':
         return this.handleGetPartialApplications(client);
+      case 'get_delivered_applications':
+        return this.handleGetDeliveredApplications(client, data);
+      case 'get_application_detail':
+        return this.handleGetApplicationDetail(client, data);
       case 'get_free_time':
         return this.handleGetFreeTime(client, data);
       case 'create_simple_application':
         return this.handleCreateSimpleApplication(client, data);
       case 'delete_partial_application':
         return this.handleDeletePartialApplication(client, data);
+      case 'add_application_comment':
+        return this.handleAddApplicationComment(client, data);
       case 'ping':
         return; // No-op: Socket.IO handles heartbeat natively
       default:
@@ -279,6 +287,15 @@ export class PorticoGateway
         accountId ? Number(accountId) : undefined,
         ssn ? String(ssn) : undefined,
       );
+
+      // Join identity-scoped rooms so notifications addressed by SSN/account
+      // reach this user on every tab/page, not just the current entity room.
+      if (ssn) {
+        client.join(this.roomService.userRoomId('bb_user', String(ssn)));
+      }
+      if (accountId) {
+        client.join(this.roomService.userRoomId('phpgw_accounts', String(accountId)));
+      }
     }
 
     if (result.success && result.roomJoined && result.roomId) {
@@ -349,6 +366,266 @@ export class PorticoGateway
       },
       timestamp: new Date().toISOString(),
     });
+  }
+
+  /**
+   * Handle paginated delivered applications request.
+   *
+   * Client sends: { type: 'get_delivered_applications', offset?: number, limit?: number, secret?: string }
+   * Server responds: { type: 'delivered_applications_response', data: { applications, totalCount, offset, limit, hasMore } }
+   *
+   * Access: SSN from session auth, org delegates auto-included, or secret for single-app access.
+   * The client can call repeatedly with increasing offset to paginate.
+   */
+  private async handleGetDeliveredApplications(client: Socket, data: any) {
+    const session = this.sessionService.getSession(client.id);
+
+    if (!session?.sessionId) {
+      client.emit('message', {
+        type: 'delivered_applications_response',
+        data: { error: true, message: 'No session found' },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const ssn = session.userInfo?.ssn;
+    const secret = data?.secret;
+    const offset = Math.max(0, parseInt(data?.offset, 10) || 0);
+    const limit = Math.min(100, Math.max(1, parseInt(data?.limit, 10) || 50));
+
+    if (!ssn && !secret) {
+      client.emit('message', {
+        type: 'delivered_applications_response',
+        data: { error: true, message: 'No SSN in session and no secret provided' },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    try {
+      const page = await this.deliveredApplicationService.getDeliveredApplications({
+        ssn,
+        includeOrganizations: true,
+        secret,
+        offset,
+        limit,
+      });
+
+      client.emit('message', {
+        type: 'delivered_applications_response',
+        data: {
+          error: false,
+          applications: page.applications,
+          totalCount: page.totalCount,
+          offset: page.offset,
+          limit: page.limit,
+          hasMore: page.hasMore,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      this.logger.error(`Error in handleGetDeliveredApplications: ${err.message}`);
+      client.emit('message', {
+        type: 'delivered_applications_response',
+        data: { error: true, message: err.message },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  /**
+   * Handle single application detail request.
+   *
+   * Client sends: { type: 'get_application_detail', id: number, secret?: string }
+   * Server responds: { type: 'application_detail_response', data: { application, error? } }
+   *
+   * Also joins the client to an application-specific room for future live updates.
+   */
+  private async handleGetApplicationDetail(client: Socket, data: any) {
+    const session = this.sessionService.getSession(client.id);
+    const id = parseInt(data?.id, 10);
+
+    if (!id || isNaN(id)) {
+      client.emit('message', {
+        type: 'application_detail_response',
+        data: { error: true, message: 'Invalid application ID' },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const ssn = session?.userInfo?.ssn;
+    const secret = data?.secret;
+
+    if (!ssn && !secret) {
+      client.emit('message', {
+        type: 'application_detail_response',
+        data: { error: true, message: 'No SSN in session and no secret provided' },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    try {
+      const result = await this.deliveredApplicationService.getApplicationById({
+        id,
+        ssn,
+        secret,
+      });
+
+      if (result.error || !result.application) {
+        client.emit('message', {
+          type: 'application_detail_response',
+          data: { error: true, message: result.error || 'Application not found', id },
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      // Join application room for future live updates
+      const appRoomId = this.roomService.entityRoomId('application', id);
+      client.join(appRoomId);
+
+      client.emit('message', {
+        type: 'application_detail_response',
+        data: {
+          error: false,
+          application: result.application,
+          id,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      this.logger.error(`Error in handleGetApplicationDetail: ${err.message}`);
+      client.emit('message', {
+        type: 'application_detail_response',
+        data: { error: true, message: err.message, id },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  /**
+   * Handle a new application comment posted by a frontend user.
+   *
+   * Client sends: { type: 'add_application_comment', applicationId: number, comment: string, secret?: string, requestId?: string }
+   * Server responds to sender: { type: 'add_comment_response', data: { error, comment?, message? }, requestId?, timestamp }
+   * Server broadcasts to room application:{id}: { type: 'entity_event', entityType: 'application', entityId, eventType: 'new_comment', data: { comment, notification_id? }, timestamp }
+   *
+   * Writes the comment directly to the DB and broadcasts to the application room
+   * (admin + other frontend subscribers) without a Redis round-trip.
+   */
+  private async handleAddApplicationComment(client: Socket, data: any) {
+    const { requestId } = data;
+    const applicationId = parseInt(data?.applicationId, 10);
+    const commentText = typeof data?.comment === 'string' ? data.comment.trim() : '';
+
+    if (!applicationId || isNaN(applicationId)) {
+      client.emit('message', {
+        type: 'add_comment_response',
+        data: { error: true, message: 'Invalid application ID' },
+        ...(requestId && { requestId }),
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    if (!commentText) {
+      client.emit('message', {
+        type: 'add_comment_response',
+        data: { error: true, message: 'Comment text is required' },
+        ...(requestId && { requestId }),
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const session = this.sessionService.getSession(client.id);
+    const ssn = session?.userInfo?.ssn;
+    const secret = data?.secret;
+
+    if (!ssn && !secret) {
+      client.emit('message', {
+        type: 'add_comment_response',
+        data: { error: true, message: 'No SSN in session and no secret provided' },
+        ...(requestId && { requestId }),
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    try {
+      const result = await this.deliveredApplicationService.addComment({
+        applicationId,
+        ssn,
+        secret,
+        commentText,
+      });
+
+      if ('error' in result) {
+        client.emit('message', {
+          type: 'add_comment_response',
+          data: { error: true, message: result.error },
+          ...(requestId && { requestId }),
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      const { comment, notificationId, notification } = result;
+
+      // Respond to the sender
+      client.emit('message', {
+        type: 'add_comment_response',
+        data: { error: false, comment },
+        ...(requestId && { requestId }),
+        timestamp: new Date().toISOString(),
+      });
+
+      // Broadcast to the application room (all subscribers incl. admin) — live thread update
+      const roomId = this.roomService.entityRoomId('application', applicationId);
+      this.server.to(roomId).emit('message', {
+        type: 'entity_event',
+        entityType: 'application',
+        entityId: applicationId,
+        eventType: 'new_comment',
+        data: { comment, notification_id: notificationId },
+        timestamp: new Date().toISOString(),
+      });
+
+      // Notify the recipient's identity room — updates their bell anywhere in the app
+      if (notification) {
+        const userRoom = this.roomService.userRoomId(
+          notification.recipientUserType,
+          notification.recipientIdentifier,
+        );
+        this.server.to(userRoom).emit('message', {
+          type: 'notification_event',
+          eventType: 'new',
+          notification: {
+            id: notification.id,
+            entity_type: notification.entity_type,
+            entity_id: notification.entity_id,
+            title: notification.title,
+            message: notification.message,
+            link: notification.link,
+            is_read: false,
+            data: notification.data,
+            created: new Date().toISOString(),
+          },
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (err: any) {
+      this.logger.error(`Error in handleAddApplicationComment: ${err.message}`);
+      client.emit('message', {
+        type: 'add_comment_response',
+        data: { error: true, message: err.message },
+        ...(requestId && { requestId }),
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 
   /**

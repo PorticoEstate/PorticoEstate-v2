@@ -335,6 +335,8 @@ class ApplicationService
             $baseUpdateData['customer_identifier_type'] = $data['customerType'];
             $baseUpdateData['customer_organization_number'] = $data['customerType'] === 'organization_number' ? $data['organizationNumber'] : null;
             $baseUpdateData['customer_organization_name'] = $data['customerType'] === 'organization_number' ? $data['organizationName'] : null;
+            // Always store the applicant's own SSN, even for organization applications,
+            // so we keep a reference to who created/owns the application.
             $baseUpdateData['customer_ssn'] = $this->userHelper->ssn;
 
             // Handle organization ID

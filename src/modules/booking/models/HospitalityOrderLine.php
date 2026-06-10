@@ -73,6 +73,7 @@ class HospitalityOrderLine
     /**
      * @OA\Property(type="string")
      * @Expose
+     * @EscapeString(mode="default")
      */
     public $article_name;
 

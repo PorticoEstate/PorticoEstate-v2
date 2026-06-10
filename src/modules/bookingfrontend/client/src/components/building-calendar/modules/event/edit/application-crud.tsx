@@ -219,6 +219,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const updateMutation = useUpdatePartialApplication();
 	const uploadDocumentMutation = useUploadApplicationDocument();
 	const deleteDocumentMutation = useDeleteApplicationDocument();
+	const isSubmitProcessing = createMutation.isPending || updateMutation.isPending || uploadDocumentMutation.isPending;
 	const participantsSectionRef = useRef<HTMLDivElement>(null);
 	const dateSectionRef = useRef<HTMLDivElement>(null);
 	const {data: serverSettings} = useServerSettings();
@@ -1233,7 +1234,8 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 						<Button
 							variant="primary"
 							type={existingApplication && !isDirty && hasExternalChanges ? "button" : "submit"}
-							disabled={!(isDirty || !existingApplication || hasExternalChanges)}
+							loading={isSubmitProcessing}
+							disabled={isSubmitProcessing || !(isDirty || !existingApplication || hasExternalChanges)}
 							onClick={existingApplication && !isDirty && hasExternalChanges ? props.onClose : undefined}
 						>
 							{existingApplication && !isDirty && hasExternalChanges ? t('common.save') : t('common.save')}

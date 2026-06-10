@@ -10039,7 +10039,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Project DataTables payload"
+                        "description": "Project DataTables payload",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/DataTablesEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -10209,7 +10216,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Order rows"
+                        "description": "Order rows",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/DataTablesEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -10234,7 +10248,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Voucher rows"
+                        "description": "Voucher rows",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/DataTablesEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -10259,7 +10280,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Related project rows"
+                        "description": "Related project rows",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/DataTablesEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -10284,7 +10312,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Attachment rows"
+                        "description": "Attachment rows",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/DataTablesEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -10548,7 +10583,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "File rows"
+                        "description": "File rows",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/DataTablesEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -10663,7 +10705,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Workorder DataTables payload"
+                        "description": "Workorder DataTables payload",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/DataTablesEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -10675,7 +10724,14 @@
                 "operationId": "7b928f333b592131fdded642c88cc7a2",
                 "responses": {
                     "200": {
-                        "description": "Workorder DataTables payload"
+                        "description": "Workorder DataTables payload",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/DataTablesEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -11059,7 +11115,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Order rows"
+                        "description": "Order rows",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/DataTablesEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -11071,7 +11134,14 @@
                 "operationId": "c3a7ec58a51519e8f30ad42f1b380a12",
                 "responses": {
                     "200": {
-                        "description": "Order rows"
+                        "description": "Order rows",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/DataTablesEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -11096,7 +11166,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "File rows"
+                        "description": "File rows",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/DataTablesEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -11118,7 +11195,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "File rows"
+                        "description": "File rows",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/DataTablesEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -11216,7 +11300,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Attachment rows"
+                        "description": "Attachment rows",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/DataTablesEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -11238,7 +11329,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Attachment rows"
+                        "description": "Attachment rows",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/DataTablesEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -13101,6 +13199,37 @@
                     "RelationInfo": {
                         "type": "object",
                         "additionalProperties": true
+                    }
+                },
+                "type": "object"
+            },
+            "DataTablesEnvelope": {
+                "description": "Generic DataTables response envelope",
+                "required": [
+                    "data",
+                    "recordsTotal",
+                    "recordsFiltered",
+                    "draw"
+                ],
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "recordsTotal": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "recordsFiltered": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "draw": {
+                        "type": "integer",
+                        "minimum": 0
                     }
                 },
                 "type": "object"

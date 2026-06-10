@@ -44,6 +44,7 @@ interface BillingFormProps {
 type OrganizationOption = {
 	value: string;
 	label: string;
+	orgId?: number;
 };
 
 const BillingForm: FC<BillingFormProps> = ({
@@ -272,6 +273,7 @@ const BillingForm: FC<BillingFormProps> = ({
 		// If switching to private (ssn)
 		if (customerType === 'ssn') {
 			// Reset org-related fields
+			setValue('organizationId', undefined);
 			setValue('organizationNumber', '');
 			setValue('organizationName', '');
 			// Reset address fields to user's default values
@@ -445,12 +447,15 @@ const BillingForm: FC<BillingFormProps> = ({
 										cacheOptions
 											defaultOptions={myOrganizations?.map(org => ({
 												value: org.organization_number,
-												label: `${org.organization_number} [${org.name}]`
+												label: `${org.organization_number} [${org.name}]`,
+												orgId: org.id
 											}))}
 											loadOptions={loadOptions}
 											onChange={(newValue) => {
-												const value = (newValue as OrganizationOption)?.value || '';
+												const selected = newValue as OrganizationOption | null;
+												const value = selected?.value || '';
 												field.onChange(value);
+												setValue('organizationId', selected?.orgId);
 												void handleOrgChange(value);
 												// Clear created org when user selects a different option
 												if (createdOrg && value !== createdOrg.value) {
@@ -462,7 +467,8 @@ const BillingForm: FC<BillingFormProps> = ({
 													? createdOrg
 													: myOrganizations?.map(org => ({
 														value: org.organization_number,
-														label: `${org.organization_number} [${org.name}]`
+														label: `${org.organization_number} [${org.name}]`,
+														orgId: org.id
 													})).find(option => option.value === field.value)
 											}
 											isClearable

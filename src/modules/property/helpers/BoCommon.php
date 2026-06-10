@@ -72,13 +72,14 @@ class BoCommon
 		return $this->checkPerms($rights, $required);
 	}
 
-	public function checkPerms2($owner_id, $grants, $required, $equalto = array())
+	public function checkPerms2($owner_id, $grants, $required)
 	{
 		if (isset($grants['accounts'][$owner_id]) && ($grants['accounts'][$owner_id] & $required))
 		{
 			return true;
 		}
 
+		$equalto = $this->accounts->membership($owner_id);
 		foreach ($grants['groups'] as $group => $_right)
 		{
 			if (isset($equalto[$group]) && ($_right & $required))
@@ -92,7 +93,8 @@ class BoCommon
 
 	public function check_perms2($owner_id, $grants, $required)
 	{
-		return $this->checkPerms2($owner_id, $grants, $required, array());
+	
+		return $this->checkPerms2($owner_id, $grants, $required);
 	}
 
 	public function confirm_session()
@@ -2547,6 +2549,149 @@ class BoCommon
 		return $values;
 	}
 
+	/**
+	 * Resolve location type level from location array or location_code.
+	 */
+	public static function resolveLocationTypeIdFromValues(array $values): int
+	{
+		if (!empty($values['location']) && is_array($values['location']))
+		{
+			$count = 0;
+			foreach ($values['location'] as $key => $part)
+			{
+				if (is_string($key) && preg_match('/^loc\d+$/', $key) && (string)$part !== '')
+				{
+					$count++;
+				}
+			}
+
+			if ($count > 0)
+			{
+				return $count;
+			}
+		}
+
+		$locationCode = trim((string)($values['location_code'] ?? ''));
+		if ($locationCode !== '')
+		{
+			$parts = array_values(array_filter(explode('-', $locationCode), static function ($part)
+			{
+				return $part !== '';
+			}));
+
+			if ($parts)
+			{
+				return count($parts);
+			}
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Build map of payload field => label used for additional_info.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function buildAdditionalInfoFieldMap(int $typeId): array
+	{
+		if ($typeId <= 0)
+		{
+			return array();
+		}
+
+		try
+		{
+			$boLocation = \CreateObject('property.bolocation');
+			$attributes = $boLocation->find_attribute(".location.{$typeId}");
+		}
+		catch (\Throwable $e)
+		{
+			return array();
+		}
+
+		$map = array();
+		foreach ((array)$attributes as $attribute)
+		{
+			$lookupForm = !empty($attribute['lookup_form']);
+			$columnName = isset($attribute['column_name']) ? (string)$attribute['column_name'] : '';
+			$inputText = isset($attribute['input_text']) ? (string)$attribute['input_text'] : '';
+
+			if (!$lookupForm || $columnName === '' || $inputText === '')
+			{
+				continue;
+			}
+
+			$map[$columnName] = $inputText;
+		}
+
+		return $map;
+	}
+
+	/**
+	 * Collect additional_info from payload using location custom-field definitions.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function collectAdditionalInfoFromPayload(array $values, array $input): array
+	{
+		$typeId = self::resolveLocationTypeIdFromValues($values);
+		$fieldMap = self::buildAdditionalInfoFieldMap($typeId);
+		if (!$fieldMap)
+		{
+			return array();
+		}
+
+		$collected = array();
+		foreach ($fieldMap as $inputName => $inputText)
+		{
+			$rawValue = $values[$inputName] ?? $input[$inputName] ?? null;
+
+			if (is_array($rawValue) || $rawValue === null)
+			{
+				continue;
+			}
+
+			$value = trim((string)$rawValue);
+			if ($value === '')
+			{
+				continue;
+			}
+
+			$label = \Sanitizer::clean_value((string)$inputText, 'string');
+			$collected[$label] = \Sanitizer::clean_value($value, 'string');
+		}
+
+		return $collected;
+	}
+
+	/**
+	 * Merge payload-derived additional_info into values.
+	 */
+	public static function mergeAdditionalInfoFromPayload(array $values, array $input): array
+	{
+		$additionalInfo = self::collectAdditionalInfoFromPayload($values, $input);
+		if (!$additionalInfo)
+		{
+			return $values;
+		}
+
+		if (!isset($values['additional_info']) || !is_array($values['additional_info']))
+		{
+			$values['additional_info'] = array();
+		}
+
+		foreach ($additionalInfo as $key => $value)
+		{
+			if (!array_key_exists($key, $values['additional_info']) || $values['additional_info'][$key] === '')
+			{
+				$values['additional_info'][$key] = $value;
+			}
+		}
+
+		return $values;
+	}
+
 	public function getMenu($app = 'property')
 	{
 		$this->flags['nonavbar'] = false;
@@ -2787,6 +2932,11 @@ class BoCommon
 
 	public function getVendorContract($vendor_id = 0, $selected = '')
 	{
+		if (!$vendor_id)
+		{
+			$vendor_id = \Sanitizer::get_var('vendor_id', 'int');
+		}
+
 		$contract_list = createObject('property.soagreement')->get_vendor_contract($vendor_id, $selected);
 		if ($selected)
 		{

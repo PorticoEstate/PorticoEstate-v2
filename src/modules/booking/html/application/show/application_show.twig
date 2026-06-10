@@ -148,9 +148,11 @@
 	 data-lang-in-tax-register="{{ lang('booking.in_tax_register') }}"
 	 data-lang-unit="{{ lang('booking.unit') }}"
 	 data-lang-unit-price="{{ lang('booking.unit_cost') }}"
+	{% if enable_hospitality %}
 	 data-hospitality-orders-url="{{ phpgw_link('/booking/hospitality-orders') }}"
-	 data-hospitality-base-url="{{ phpgw_link('/booking/hospitality') }}"
+	 data-hospitality-base-url="{{ phpgw_link('/booking/hospitality') }}"{% endif %}
 	 data-applications-base-url="{{ phpgw_link('/booking/applications') }}"
+	{% if enable_hospitality %}
 	 data-lang-hospitality-orders="{{ lang('booking.hospitality_orders') }}"
 	 data-lang-hospitality="{{ lang('booking.hospitality') }}"
 	 data-lang-serving-time="{{ lang('booking.serving_time') }}"
@@ -160,19 +162,22 @@
 	 data-lang-select-date="{{ lang('booking.select_date') }}"
 	 data-lang-select-time="{{ lang('booking.select_time') }}"
 	 data-lang-special-requirements="{{ lang('booking.special_requirements') }}"
-	 data-lang-comment="{{ lang('booking.comment') }}"
+	 data-lang-comment="{{ lang('booking.comment') }}"{% endif %}
 	 data-lang-save="{{ lang('common.save') }}"
 	 data-lang-saved="{{ lang('booking.saved') }}"
 >
 	{# Loading state — replaced by JS once data arrives #}
 	<div id="application-loading" class="app-show__loading">
-		<div class="app-show__spinner"></div>
+		<svg class="ds-spinner" data-size="md" viewBox="0 0 50 50" role="img" aria-label="{{ lang('common.loading') }}">
+			<circle class="ds-spinner__background" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+			<circle class="ds-spinner__circle" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+		</svg>
 		<p>{{ lang('common.loading') }}...</p>
 	</div>
 
 	{# Error state — shown by JS on fetch failure #}
-	<div id="application-error" class="app-show__error" hidden>
-		<p id="application-error-message"></p>
+	<div id="application-error" class="ds-alert app-show__alert" data-color="danger" role="alert" hidden>
+		<p class="ds-paragraph" id="application-error-message"></p>
 	</div>
 
 	{# Content — populated by JS #}
@@ -183,7 +188,8 @@
 		{# Header #}
 		<div id="application-header" class="app-show__header"></div>
 
-		{# Tab navigation #}
+		{# Tabs (Designsystemet) #}
+		<div class="ds-tabs app-show__tabs-wrap">
 		<div class="app-show__tabs" role="tablist">
 			<button class="app-show__tab app-show__tab--active" role="tab" aria-selected="true" data-tab="details">
 				{{ lang('booking.details') }}
@@ -197,9 +203,11 @@
 			<button class="app-show__tab" role="tab" aria-selected="false" data-tab="terms">
 				{{ lang('booking.terms and conditions') }}
 			</button>
+			{% if enable_hospitality %}
 			<button class="app-show__tab" role="tab" aria-selected="false" data-tab="hospitality-orders" id="tab-btn-hospitality-orders" hidden>
 				{{ lang('booking.hospitality_orders') }}
 			</button>
+			{% endif %}
 		</div>
 
 		{# Tab: Details #}
@@ -222,17 +230,22 @@
 			<div id="application-terms"></div>
 		</div>
 
+		{% if enable_hospitality %}
 		{# Tab: Hospitality Orders #}
 		<div id="tab-hospitality-orders" class="app-show__tab-content" role="tabpanel" hidden>
 			<div id="application-hospitality-orders"></div>
 		</div>
+		{% endif %}
+		</div>{# /ds-tabs #}
 	</div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>{{ source('@views/components/search_select/search_select.js') }}</script>
+{% if enable_hospitality %}
 <script>{{ source('@views/components/hospitality_order_list/hospitality_order_list.js') }}</script>
 <script>{{ source('@views/components/hospitality_order_modal/hospitality_order_modal.js') }}</script>
+{% endif %}
 <script>{{ source('@views/application/show/application_show.js') }}</script>
 {% endblock %}

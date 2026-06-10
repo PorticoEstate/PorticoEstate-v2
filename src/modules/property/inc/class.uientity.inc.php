@@ -59,8 +59,11 @@ use App\modules\property\helpers\EntityFormHelper;
  * HTML-rendering methods (summary, view, edit, add, columns, download, print_pdf,
  * view_file, handle_multi_upload_file, build_multi_upload_file, index, attrib_history,
  * get_documents, get_target, add_inventory, edit_inventory, inventory_calendar,
- * get_assigned_history) remain accessible via legacy menuaction dispatch until
- * the XSL/React frontend is replaced.
+ * get_assigned_history) may remain as legacy methods during migration.
+ *
+ * Note: menuaction dispatch for get_assigned_history is disabled; use
+ *       EntityController::assignedHistoryPopup() at
+ *       /property/entity/{type}/{entity_id}/{cat_id}/assigned-history.
  *
  * @package property
  */
@@ -107,33 +110,20 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	var $public_functions	 = array(
 		'summary'					 => true,
 		'columns'					 => true,
-		'query'						 => true,
-		'download'					 => false,
+		'query'						 => false,
 		'view'						 => true,
 		'edit'						 => true,
 		'add'						 => true,
-		'delete'					 => true,
 		'view_file'					 => true,
 		'attrib_history'			 => true,
 		'attrib_help'				 => true,
 		'print_pdf'					 => true,
 		'index'						 => true,
-		//'addfiles' => true,
-		'get_documents'				 => true,
-		'get_target'				 => true,
-		'get_related'				 => true,
-		'get_inventory'				 => true,
 		'add_inventory'				 => true,
 		'edit_inventory'			 => true,
-		'inventory_calendar'		 => true,
-		'get_controls_at_component'	 => true,
-		'get_assigned_history'		 => true,
-		'get_cases'					 => true,
-		'get_checklists'			 => true,
-		'get_cases_for_checklist'	 => true,
+		'inventory_calendar'		 => false,
 		'handle_multi_upload_file'	 => true,
 		'build_multi_upload_file'	 => true,
-		'get_items_per_qr'			 => true
 	);
 
 	/**
@@ -326,6 +316,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * Reads id, entity_id, cat_id, and type from GET. Stores uploaded files
 	 * in the entity category VFS directory and returns a JSON status response.
 	 *
+	 * @deprecated Use EntityController::handleMultiUploadFile() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/multi-upload.
 	 * @return void Output is written directly.
 	 */
 	public function handle_multi_upload_file(): void
@@ -336,14 +327,11 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		$type		 = Sanitizer::get_var('type');
 
 		$multi_upload_action = phpgw::link(
-			'/index.php',
-			array(
-				'menuaction' => 'property.uientity.handle_multi_upload_file',
-				'id'		 => $id,
-				'entity_id'	 => $entity_id,
-				'cat_id'	 => $cat_id,
-				'type'		 => $type
-			)
+			'/property/entity/' . rawurlencode((string)$type)
+			. '/' . rawurlencode((string)$entity_id)
+			. '/' . rawurlencode((string)$cat_id)
+			. '/' . rawurlencode((string)$id)
+			. '/multi-upload'
 		);
 
 		phpgw::import_class('property.multiuploader');
@@ -393,6 +381,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	/**
 	 * Render the multi-file upload widget for an entity item (noframework popup).
 	 *
+	 * @deprecated Use EntityController::buildMultiUploadFile() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/multi-upload.
 	 * @return void Output is rendered directly via XSL template.
 	 */
 	public function build_multi_upload_file(): void
@@ -450,8 +439,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 					$default_value = array('id' => '', 'name' => lang('no district'));
 					array_unshift($values_combo_box[0], $default_value);
 
-					$link = self::link(array(
-						'menuaction'		 => 'property.uilocation.get_part_of_town',
+					$link = phpgw::link('/property/location/part-of-town', array(
 						'district_id'		 => $this->district_id,
 						'part_of_town_id'	 => $this->part_of_town_id,
 						'phpgw_return_as'	 => 'json'
@@ -571,83 +559,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		return $combos;
 	}
 
-	/**
-	 * Return a DataTables-compatible JSON list of documents linked to an entity item.
-	 *
-	 * Queries both sodocument (classic document store) and sogeneric_document,
-	 * combining the results into a single paginated response.
-	 *
-	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
-	 */
-	public function get_documents(): array
-	{
-		$search		 = Sanitizer::get_var('search');
-		$order		 = Sanitizer::get_var('order');
-		$draw		 = Sanitizer::get_var('draw', 'int');
-		$columns	 = Sanitizer::get_var('columns');
-		$doc_type	 = Sanitizer::get_var('doc_type', 'int');
-		$entity_id	 = Sanitizer::get_var('entity_id', 'int');
-		$cat_id		 = Sanitizer::get_var('cat_id', 'int');
-		$item_id	 = Sanitizer::get_var('item_id');
-		$location_id = Sanitizer::get_var('location_id', 'int');
-		$export		 = Sanitizer::get_var('export', 'bool');
-		$values		 = array();
 
-		$params = array(
-			'start'				 => Sanitizer::get_var('start', 'int', 'REQUEST', 0),
-			'results'			 => Sanitizer::get_var('length', 'int', 'REQUEST', 0),
-			'query'				 => $search['value'],
-			'order'				 => $columns[$order[0]['column']]['data'],
-			'sort'				 => $order[0]['dir'],
-			'dir'				 => $order[0]['dir'],
-			'allrows'			 => Sanitizer::get_var('length', 'int') == -1 || $export,
-			'doc_type'			 => $doc_type,
-			'entity_id'			 => $entity_id,
-			'cat_id'				 => $cat_id,
-			'p_num'				 => $item_id,
-			'location_item_id'	 => $item_id,
-		);
-
-		$document			 = CreateObject('property.sodocument');
-		$documents			 = $document->read_at_location($params);
-		$total_records		 = $document->total_records;
-
-		foreach ($documents as $item)
-		{
-			$document_name	 = '<a href="' . self::link(array(
-				'menuaction' => 'property.uidocument.view_file',
-				'id'		 => $item['id']
-			)) . '" target="_blank">' . $item['document_name'] . '</a>';
-			$values[]		 = array('document_name' => $document_name, 'title' => $item['title']);
-		}
-
-		//$location_id = $this->locations->get_id('property', '.location.' . count(explode('-', $location_code)));
-		$generic_document = CreateObject('property.sogeneric_document');
-		if (empty($location_id))
-		{
-			$location_id = $this->locations->get_id($this->type_app[$this->type], ".{$this->type}.{$this->entity_id}.{$this->cat_id}");
-		}
-		$params['location_id']	 = $location_id;
-		$params['order']		 = 'name';
-		$params['cat_id']		 = $doc_type;
-		$documents2				 = $generic_document->read($params);
-		$total_records			 += $generic_document->total_records;
-		foreach ($documents2 as $item)
-		{
-			$document_name	 = '<a href="' . self::link(array(
-				'menuaction' => 'property.uigeneric_document.view_file',
-				'file_id'	 => $item['id']
-			)) . '" target="_blank">' . $item['name'] . '</a>';
-			$values[]		 = array('document_name' => $document_name, 'title' => $item['title']);
-		}
-
-		$result_data = array('results' => $values);
-
-		$result_data['total_records']	 = $total_records;
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
-	}
 
 	/**
 	 * Return a DataTables-compatible JSON list of entity records for the current list view.
@@ -657,6 +569,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 	 * 
 	 * NOTE: This method is now handled by the EntityController
 	 *
+	 * @deprecated Use EntityController::index() via /property/entity/{type}/{entity_id}/{cat_id}.
 	 * @return array|void DataTables result array, or void when outputting directly.
 	 */
 	public function query(): array
@@ -664,118 +577,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		return [];
 	}
 
-	/**
-	 * Saves an entry to the database for new/edit - redirects to view
-	 *
-	 * @param int  $id  entity id - no id means 'new'
-	 *
-	 * @return void
-	 */
-	/**
-	 * Process the entity add/edit form submission.
-	 *
-	 * Determines add/edit based on presence of 'id'. Reads existing data,
-	 * merges POST values via _populate(), calls bo->save() inside a transaction,
-	 * saves checklist stages, handles file uploads, and redirects or returns JSON.
-	 *
-	 * @return array|void JSON status array if phpgw_return_as=json, otherwise redirects or renders.
-	 */
-	public function save(): mixed
-	{
-		if (!$_POST)
-		{
-			$this->edit();
-			return null;
-		}
 
-		$helper = new EntityFormHelper();
-		$is_json = Sanitizer::get_var('phpgw_return_as') == 'json';
-
-		$id = Sanitizer::get_var('id', 'int');
-
-		if ($id)
-		{
-			$action = 'edit';
-		}
-		else
-		{
-			$action = 'add';
-		}
-
-		/*
-			 * Overrides with incoming data from POST
-			 */
-		if ($id)
-		{
-			$data = $this->bo->read_single(array(
-				'entity_id'	 => $this->entity_id,
-				'cat_id'	 => $this->cat_id,
-				'id'		 => $id
-			));
-		}
-
-		$data		 = $this->_populate($data);
-		$values		 = $data;
-		$attributes	 = $data['attributes'];
-		unset($values['attributes']);
-
-		if ($this->receipt['error'])
-		{
-			$response = $helper->buildSaveResponse($is_json, $this->receipt, $values, 'error');
-			return $this->applySaveResponse($response);
-		}
-		else
-		{
-			try
-			{
-				$persisted = $helper->persistSave(
-					$values,
-					$attributes,
-					$action,
-					(int) $this->entity_id,
-					(int) $this->cat_id,
-					$this->bo
-				);
-
-				$receipt = $persisted['receipt'];
-				$values = $persisted['values'];
-
-				$this->receipt	 = $receipt;
-			}
-			catch (Exception $e)
-			{
-				if ($e)
-				{
-					Db::getInstance()->transaction_abort();
-
-					Cache::message_set($e->getMessage(), 'error');
-					$response = $helper->buildSaveResponse($is_json, $this->receipt, $values, 'error');
-					return $this->applySaveResponse($response);
-				}
-			}
-
-			$errors = (array) ($this->receipt['error'] ?? []);
-			$helper->handleFiles(
-				$values,
-				$this->category_dir,
-				$this->type_app[$this->type],
-				$errors
-			);
-			$this->receipt['error'] = $errors;
-
-			$response = $helper->buildSaveResponse(
-				$is_json,
-				$this->receipt,
-				$values,
-				'success',
-				(int) $id,
-				(int) $this->entity_id,
-				(int) $this->cat_id,
-				$this->type
-			);
-			return $this->applySaveResponse($response);
-		}
-	}
 
 	/**
 	 * Execute the legacy UI side effect selected for a save response.
@@ -836,160 +638,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		$this->bo->save_sessiondata($data);
 	}
 
-
-	/**
-	 * Return a DataTables-compatible JSON list of entity records linked to the given item.
-	 *
-	 * Reads interlinks via bo->read_entity_to_link() and returns an array of
-	 * HTML anchor elements as rows.
-	 *
-	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
-	 */
-	function get_related(): array
-	{
-		$id		 = Sanitizer::get_var('id', 'REQUEST', 'int');
-		$draw	 = Sanitizer::get_var('draw', 'int');
-		$allrows = Sanitizer::get_var('length', 'int') == -1;
-
-		$related = $this->bo->read_entity_to_link(array(
-			'entity_id'	 => $this->entity_id,
-			'cat_id'	 => $this->cat_id,
-			'id'		 => $id
-		));
-
-		$values = array();
-		if (isset($related['related']))
-		{
-			foreach ($related as $related_key => $related_data)
-			{
-				foreach ($related_data as $entry)
-				{
-					$values[] = array(
-						'url' => "<a href=\"{$entry['entity_link']}\" > {$entry['name']}</a>",
-					);
-				}
-			}
-		}
-
-		$start			 = Sanitizer::get_var('startIndex', 'REQUEST', 'int', 0);
-		$total_records	 = count($values);
-
-		$num_rows = Sanitizer::get_var('length', 'int', 'REQUEST', 0);
-
-		if ($allrows)
-		{
-			$out = $values;
-		}
-		else
-		{
-			if ($total_records > $num_rows)
-			{
-				$page		 = (int)ceil(($start / $total_records) * ($total_records / $num_rows));
-				$values_part = array_chunk($values, $num_rows);
-				$out		 = $values_part[$page];
-			}
-			else
-			{
-				$out = $values;
-			}
-		}
-
-		$result_data = array('results' => $out);
-
-		$result_data['total_records']	 = $total_records;
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
-	}
-
-	/**
-	 * Return a DataTables-compatible JSON list of interlink targets and related workorders.
-	 *
-	 * Combines results from the interlink module and soworkorder::get_entity_relation().
-	 *
-	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
-	 */
-	function get_target(): array
-	{
-		$id		 = Sanitizer::get_var('id', 'int');
-		$draw	 = Sanitizer::get_var('draw', 'int');
-		$allrows = Sanitizer::get_var('length', 'int') == -1;
-
-		$interlink	 = CreateObject('property.interlink');
-		$target		 = $interlink->get_relation('property', $this->acl_location, $id, 'target');
-
-		$values = array();
-		if ($target)
-		{
-			foreach ($target as $_target_section)
-			{
-				foreach ($_target_section['data'] as $_target_entry)
-				{
-					$values[] = array(
-						'url'		 => "<a href=\"{$_target_entry['link']}\" > {$_target_entry['id']}</a>",
-						'type'		 => $_target_section['descr'],
-						'title'		 => $_target_entry['title'],
-						'status'	 => $_target_entry['statustext'],
-						'user'		 => $this->accounts_obj->get($_target_entry['account_id'])->__toString(),
-						'entry_date' => $this->phpgwapi_common->show_date($_target_entry['entry_date'], $this->userSettings['preferences']['common']['dateformat']),
-					);
-				}
-			}
-		}
-
-		$workorders		 = CreateObject('property.soworkorder')->get_entity_relation($this->entity_id, $this->cat_id, $id);
-		$lang_workorder	 = lang('workorder');
-
-		foreach ($workorders as $workorder)
-		{
-			$_link		 = phpgw::link(
-				'/index.php',
-				array(
-					'menuaction' => "property.uiworkorder.view",
-					'id'		 => $workorder['id']
-				)
-			);
-			$values[]	 = array(
-				'url'		 => "<a href=\"{$_link}\" > {$workorder['id']}</a>",
-				'type'		 => $lang_workorder,
-				'title'		 => $workorder['title'],
-				'status'	 => $workorder['statustext'],
-				'user'		 => $this->accounts_obj->get($workorder['user_id'])->__toString(),
-				'entry_date' => $this->phpgwapi_common->show_date($workorder['entry_date'], $this->userSettings['preferences']['common']['dateformat']),
-			);
-		}
-
-
-		$start			 = Sanitizer::get_var('start', 'int', 'REQUEST', 0);
-		$total_records	 = count($values);
-
-		$num_rows = Sanitizer::get_var('length', 'int', 'REQUEST', 0);
-
-		if ($allrows)
-		{
-			$out = $values;
-		}
-		else
-		{
-			if ($total_records > $num_rows)
-			{
-				$page		 = (int)ceil(($start / $total_records) * ($total_records / $num_rows));
-				$values_part = array_chunk($values, $num_rows);
-				$out		 = $values_part[$page];
-			}
-			else
-			{
-				$out = $values;
-			}
-		}
-
-		$result_data = array('results' => $out);
-
-		$result_data['total_records']	 = $total_records;
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
-	}
 
 	/**
 	 * Render the column visibility configuration page.
@@ -1184,7 +832,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			'datatable'		 => array(
 				'source'		 => '/property/entity/' . urlencode($this->type)
 					. '/' . (int)$this->entity_id
-					. '/' . (int)$this->cat_id,
+					. '/' . (int)$this->cat_id
+					. '/datatable',
 				'district_id'		 => $this->district_id,
 				'p_num'				 => $this->p_num,
 				'download'		 => phpgw::link('/property/entity/' . urlencode($this->type)
@@ -1282,8 +931,13 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 			if ($uicols['name'][$k] == 'num')
 			{
-				$params['formatter'] = 'JqueryPortico.formatLink';
+				$params['formatter'] = 'formatEntityNumLink';
 				$params['hidden']	 = false;
+			}
+
+			if ($uicols['name'][$k] == 'picture')
+			{
+				$params['formatter'] = 'formatEntityPicture';
 			}
 
 			$denied = array('merknad');
@@ -1445,6 +1099,60 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				'custom_code'	 => $delete_custom_code
 			);
 		}
+
+		$entityJsType = addslashes((string)$this->type);
+		$entityJsEntityId = (int)$this->entity_id;
+		$entityJsCatId = (int)$this->cat_id;
+		$entityFormatterJs = <<<JS
+formatEntityNumLink = function (key, oData)
+{
+	var text = (oData && oData[key] !== undefined && oData[key] !== null) ? String(oData[key]) : '';
+	if (!text)
+	{
+		return '';
+	}
+	if (!oData || !oData.id)
+	{
+		return $('<div/>').text(text).html();
+	}
+
+	var url = phpGWLink('index.php', {
+		menuaction: 'property.uientity.view',
+		type: '{$entityJsType}',
+		entity_id: {$entityJsEntityId},
+		cat_id: {$entityJsCatId},
+		id: oData.id
+	});
+
+	return '<a href="' + encodeURI(url) + '">' + $('<div/>').text(text).html() + '</a>';
+};
+
+formatEntityPicture = function (key, oData)
+{
+	if (!oData)
+	{
+		return '';
+	}
+
+	var imageUrl = oData.img_url ? String(oData.img_url) : '';
+	if (!imageUrl && oData.directory && oData.file_name)
+	{
+		imageUrl = phpGWLink('index.php', {
+			menuaction: 'property.uigallery.view_file',
+			file: String(oData.directory) + '/' + String(oData.file_name)
+		});
+	}
+
+	if (!imageUrl)
+	{
+		return '';
+	}
+
+	var thumb = oData.thumbnail_flag ? '&' + String(oData.thumbnail_flag) : '';
+	return '<img src="' + encodeURI(imageUrl + thumb) + '" alt="" style="max-height:48px;max-width:64px;" />';
+};
+JS;
+		phpgwapi_js::getInstance()->add_code('', $entityFormatterJs);
 
 		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $appname . ': ' . $function_msg;
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
@@ -1664,16 +1372,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			));
 		}
 
-		$link_data = array(
-			'menuaction'	 => "property.uientity.save",
-			'id'			 => $id,
-			'entity_id'		 => $this->entity_id,
-			'cat_id'		 => $this->cat_id,
-			'type'			 => $this->type,
-			'lean'			 => $_lean,
-			'noframework'	 => isset($this->flags['noframework']) ? $this->flags['noframework'] : false
-		);
-
 		if (isset($values['files']) && is_array($values['files']))
 		{
 			$j = count($values['files']);
@@ -1859,14 +1557,16 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 				$file_def = array(
 					array(
-						'key'		 => 'file_link',
+						'key'		 => 'file_name',
 						'label'		 => lang('Filename'),
+						'formatter' => 'formatEntityFileLink',
 						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'delete_file',
+						'key'		 => 'file_id',
 						'label'		 => lang('Delete file'),
+						'formatter' => 'formatEntityDeleteFileCheckbox',
 						'sortable'	 => false,
 						'resizeable' => true
 					)
@@ -1893,7 +1593,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			}
 
 			$target_def = array(
-				array('key' => 'url', 'label' => lang('id'), 'sortable' => false, 'resizeable' => true),
+				array('key' => 'target_id', 'label' => lang('id'), 'formatter' => 'formatEntityTargetLink', 'sortable' => false, 'resizeable' => true),
 				array('key' => 'type', 'label' => lang('type'), 'sortable' => true, 'resizeable' => true),
 				array('key' => 'title', 'label' => lang('title'), 'sortable' => false, 'resizeable' => true),
 				array('key' => 'status', 'label' => lang('status'), 'sortable' => false, 'resizeable' => true),
@@ -1908,18 +1608,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 			$datatable_def[] = array(
 				'container'	 => 'datatable-container_1',
-				'requestUrl' => json_encode(
-					self::link(
-						array(
-							'menuaction'		 => 'property.uientity.get_target',
-							'entity_id'			 => $this->entity_id,
-							'cat_id'			 => $this->cat_id,
-							'id'				 => $id,
-							'type'				 => $this->type,
-							'phpgw_return_as'	 => 'json'
-						)
-					)
-				),
+				'requestUrl' => json_encode('/property/entity/' . urlencode($this->type)
+					. '/' . (int)$this->entity_id
+					. '/' . (int)$this->cat_id
+					. '/' . (int)$id . '/target'),
 				'ColumnDefs' => $target_def,
 				'config'	 => array(
 					array('disableFilter' => true),
@@ -1928,7 +1620,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			);
 
 			$related_def = array(
-				array('key' => 'url', 'label' => lang('related'), 'sortable' => false, 'resizeable' => true)
+				array('key' => 'name', 'label' => lang('related'), 'formatter' => 'formatEntityRelatedLink', 'sortable' => false, 'resizeable' => true)
 			);
 
 			$datatable_def[] = array(
@@ -2006,7 +1698,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 			if ($_enable_controller)
 			{
-				$_controls = $this->get_controls_at_component($location_id, $id);
+				$_controls = $this->controller_helper->get_controls_at_component($location_id, $id);
 
 				$controls_def	 = array(
 					array('key' => 'serie_id', 'label' => 'serie', 'sortable' => false, 'resizeable' => true),
@@ -2122,7 +1814,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 					)
 				);
 
-				$_checklists		 = $this->get_checklists($location_id, $id, date('Y'));
+				$_checklists		 = $this->controller_helper->get_checklists($location_id, $id, date('Y'));
 				$check_lst_time_span = $this->controller_helper->get_check_lst_time_span();
 
 				$_checklists_def = array(
@@ -2148,7 +1840,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 						array('singleSelect' => true)
 					)
 				);
-				$_cases			 = $this->get_cases($location_id, $id, date('Y')); // initial search
+				$_cases			 = $this->controller_helper->get_cases($location_id, $id, date('Y')); // initial search
 
 				$_case_def = array(
 					array('key' => 'url', 'label' => lang('id'), 'sortable' => true, 'resizeable' => true),
@@ -2221,7 +1913,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			'location_data' => $location_data,
 			'lookup_type' => $lookup_type,
 			'mode' => $mode,
-			'link_data' => $link_data,
 			'tabs' => $tabs,
 			'active_tab' => $active_tab,
 			'integration' => $integration,
@@ -2282,80 +1973,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		$t->pfp('out', 'help');
 	}
 
-	/**
-	 * Delete an entity record.
-	 *
-	 * Requires ACL_DELETE. Returns a plain-text confirmation string when
-	 * phpgw_return_as=json, otherwise redirects after deletion.
-	 *
-	 * @return string|void Confirmation string in JSON mode; otherwise redirects.
-	 */
-	function delete(): mixed
-	{
-		$id = Sanitizer::get_var('id', 'int');
 
-		//cramirez add JsonCod for Delete
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			if (!$this->acl_delete)
-			{
-				return json_encode(['error' => lang('no access')]);
-			}
-			$this->bo->delete($id);
-			return "id " . $id . " " . lang("has been deleted");
-		}
-
-
-		if (!$this->acl_delete)
-		{
-			phpgw::redirect_link('/index.php', array(
-				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 8,
-				'acl_location'	 => $this->acl_location
-			));
-		}
-
-
-		$confirm = Sanitizer::get_var('confirm', 'bool', 'POST');
-
-		$link_data = array(
-			'menuaction' => 'property.uientity.index',
-			'entity_id'	 => $this->entity_id,
-			'cat_id'	 => $this->cat_id,
-			'type'		 => $this->type
-		);
-
-		if (Sanitizer::get_var('confirm', 'bool', 'POST'))
-		{
-			$this->bo->delete($id);
-			phpgw::redirect_link('/index.php', $link_data);
-		}
-
-		$data = array(
-			'done_action'			 => phpgw::link('/index.php', $link_data),
-			'delete_action'			 => phpgw::link('/index.php', array(
-				'menuaction' => 'property.uientity.delete',
-				'entity_id'	 => $this->entity_id,
-				'cat_id'	 => $this->cat_id,
-				'id'		 => $id,
-				'type'		 => $this->type
-			)),
-			'lang_confirm_msg'		 => lang('do you really want to delete this entry'),
-			'lang_yes'				 => lang('yes'),
-			'lang_yes_statustext'	 => lang('Delete the entry'),
-			'lang_no_statustext'	 => lang('Back to the list'),
-			'lang_no'				 => lang('no')
-		);
-
-		$appname		 = lang('entity');
-		$function_msg	 = lang('delete entity');
-
-		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $appname . ': ' . $function_msg;
-		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
-
-		self::render_template_xsl('app_delete', $data, '', 'delete');
-		return null;
-	}
 
 	/**
 	 * Render the entity record in read-only view mode.
@@ -2537,6 +2155,7 @@ JS;
 				array(
 					'key'        => 'document_name',
 					'label'      => lang('name'),
+					'formatter'  => 'formatEntityDocumentLink',
 					'sortable'   => false,
 					'resizeable' => true
 				),
@@ -2545,14 +2164,10 @@ JS;
 
 			$datatable_def[] = array(
 				'container'  => 'datatable-container_7',
-				'requestUrl' => json_encode(self::link(array(
-					'menuaction'       => 'property.uientity.get_documents',
-					'location_id'      => $location_id,
-					'entity_id'        => $this->entity_id,
-					'cat_id'           => $this->cat_id,
-					'item_id'          => $id,
-					'phpgw_return_as'  => 'json'
-				))),
+				'requestUrl' => json_encode('/property/entity/' . urlencode($this->type)
+					. '/' . (int)$this->entity_id
+					. '/' . (int)$this->cat_id
+					. '/' . (int)$id . '/documents?location_id=' . (int)$location_id),
 				'data'       => "",
 				'tabletools' => ($mode == 'edit') ? $documents_tabletools : array(),
 				'ColumnDefs' => $documents_def,
@@ -2600,7 +2215,6 @@ JS;
 			'location_data' => $input['location_data'] ?? array(),
 			'lookup_type' => $input['lookup_type'] ?? '',
 			'mode' => $input['mode'] ?? 'edit',
-			'link_data' => $input['link_data'] ?? array(),
 			'tabs' => $input['tabs'] ?? array(),
 			'active_tab' => $input['active_tab'] ?? '',
 			'integration' => $input['integration'] ?? array(),
@@ -2779,6 +2393,7 @@ JS;
 		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $appname . ': ' . $function_msg;
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
 
+		self::add_javascript('property', 'base', 'navigation-api-boundary.js');
 		self::add_javascript('property', 'base', 'entity.edit.js');
 		phpgwapi_jquery::load_widget('glider');
 
@@ -3344,74 +2959,7 @@ JS;
 		echo $document;
 	}
 
-	/**
-	 * Return a DataTables-compatible JSON list of inventory entries for an entity item.
-	 *
-	 * Reads location_id and id from the request (or resolves location_id from the
-	 * item's location if not provided directly).
-	 *
-	 * @return array DataTables result array with 'results', 'total_records', and 'draw'.
-	 */
-	public function get_inventory(): array
-	{
-		$id		 = Sanitizer::get_var('id', 'int');
-		$draw	 = Sanitizer::get_var('draw', 'int');
-		$allrows = Sanitizer::get_var('length', 'int') == -1;
 
-		if (!$id)
-		{
-			$location_id		 = Sanitizer::get_var('location_id', 'int');
-			$system_location	 = $this->locations->get_name($location_id);
-			$location			 = explode('.', $system_location['location']);
-			$this->bo->type		 = $location[1];
-			$this->bo->entity_id = $location[1];
-			$this->bo->cat_id	 = $location[3];
-		}
-		else
-		{
-			$location_id = $this->locations->get_id($this->type_app[$this->type], ".{$this->type}.{$this->entity_id}.{$this->cat_id}");
-		}
-
-		$values = $this->bo->get_inventory(array('id' => $id, 'location_id' => $location_id));
-
-		foreach ($values as &$value)
-		{
-			$value['edit']		 = '<a href="javascript:showlightbox_edit_inventory(' . $value['location_id'] . ',' . $value['id'] . ',' . $value['inventory_id'] . ')">' . lang('edit') . '</a>';
-			$value['calendar']	 = '<a href="javascript:showlightbox_show_calendar(' . $value['location_id'] . ',' . $value['id'] . ',' . $value['inventory_id'] . ')">' . lang('calendar') . '</a>';
-			$value['inventory']	 = number_format((float)$value['inventory'], 0, ',', ' ');
-			$value['allocated']	 = number_format((float)$value['allocated'], 0, ',', ' ');
-		}
-
-		$start			 = Sanitizer::get_var('start', 'int', 'REQUEST', 0);
-		$total_records	 = count($values);
-
-		$num_rows = Sanitizer::get_var('length', 'int', 'REQUEST', 0);
-
-		if ($allrows)
-		{
-			$out = $values;
-		}
-		else
-		{
-			if ($total_records > $num_rows)
-			{
-				$page		 = (int)ceil(($start / $total_records) * ($total_records / $num_rows));
-				$values_part = array_chunk($values, $num_rows);
-				$out		 = $values_part[$page];
-			}
-			else
-			{
-				$out = $values;
-			}
-		}
-
-		$result_data = array('results' => $out);
-
-		$result_data['total_records']	 = $total_records;
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
-	}
 
 	/**
 	 * Render the inventory edit form for an entity item.
@@ -3419,6 +2967,7 @@ JS;
 	 * Requires ACL_ADD on the inventory location. If phpgw_return_as=json and
 	 * 'save' is posted, calls bo->edit_inventory() and returns a JSON status response.
 	 *
+	 * @deprecated Use EntityController::editInventoryPopup() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory/{inventory_id}/edit.
 	 * @return array|void JSON status array in JSON mode, otherwise renders XSL template.
 	 */
 	public function edit_inventory(): mixed
@@ -3563,6 +3112,7 @@ JS;
 	 * Requires ACL_ADD on the inventory location. On form submit, calls
 	 * bo->add_inventory() after collecting and validating location and unit data.
 	 *
+	 * @deprecated Use EntityController::addInventoryPopup() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory/add.
 	 * @return void Output is rendered via XSL template.
 	 */
 	public function add_inventory(): void
@@ -3680,6 +3230,7 @@ JS;
 	 *
 	 * Requires ACL_ADD. Currently outputs a placeholder message and exits.
 	 *
+	 * @deprecated Use EntityController::inventoryCalendarPopup() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/inventory/{inventory_id}/calendar.
 	 * @return void Output is written directly.
 	 */
 	public function inventory_calendar(): void
@@ -3699,25 +3250,6 @@ JS;
 		}
 	}
 
-
-	/**
-	 * Return a paginated ResultSet of entity items matching a QR code value.
-	 *
-	 * Requires ACL_READ. Delegates to bo->get_items_per_qr().
-	 *
-	 * @return array ResultSet array with 'totalRecords', 'recordsReturned', and 'Result'.
-	 */
-	public function get_items_per_qr(): array
-	{
-		if (!$this->acl_read)
-		{
-			phpgw::no_access();
-		}
-
-		$qr_code	 = Sanitizer::get_var('qr_code', 'string', 'GET');
-
-		return $this->bo->get_items_per_qr($qr_code);
-	}
 
 	/**
 	 * Render the entity summary page.
@@ -3880,68 +3412,6 @@ JS;
 	}
 
 
-	/**
-	 * Return controller controls registered at a given entity component.
-	 *
-	 * @param int  $location_id Location ID of the entity type.
-	 * @param int  $id          ID of the entity item.
-	 * @param bool $skip_json   Whether to skip JSON encoding of the result.
-	 * @return array|string Controller controls data.
-	 */
-	public function get_controls_at_component($location_id = 0, $id = 0, $skip_json = false): array|string
-	{
-		return $this->controller_helper->get_controls_at_component($location_id, $id, $skip_json);
-	}
-
-	/**
-	 * Return cases (deviations) related to a given entity component.
-	 *
-	 * @param int $location_id Location ID of the entity type.
-	 * @param int $id          ID of the entity item.
-	 * @param int $year        Year filter (0 for all years).
-	 * @return array Cases data.
-	 */
-	public function get_cases($location_id = 0, $id = 0, $year = 0): array
-	{
-		return $this->controller_helper->get_cases($location_id, $id, $year);
-	}
-
-	/**
-	 * Return cases related to a checklist stage from the current request context.
-	 *
-	 * Delegates to controller_helper::get_cases_for_checklist().
-	 *
-	 * @return array Cases data for the checklist.
-	 */
-	public function get_cases_for_checklist(): array
-	{
-		return $this->controller_helper->get_cases_for_checklist();
-	}
-
-	/**
-	 * Return checklists associated with a given entity component.
-	 *
-	 * @param int $location_id Location ID of the entity type.
-	 * @param int $id          ID of the entity item.
-	 * @param int $year        Year filter (0 for all years).
-	 * @return array Checklists data.
-	 */
-	public function get_checklists($location_id = 0, $id = 0, $year = 0): array
-	{
-		return $this->controller_helper->get_checklists($location_id, $id, $year);
-	}
-
-	/**
-	 * Return the assignment history for a controller series.
-	 *
-	 * Delegates to controller_helper::get_assigned_history().
-	 *
-	 * @return void Output is echoed by controller_helper::get_assigned_history().
-	 */
-	function get_assigned_history(): void
-	{
-		$this->controller_helper->get_assigned_history();
-	}
 
 	/**
 	 * Return checklist data merged with the list of defined checklists for an entity item.

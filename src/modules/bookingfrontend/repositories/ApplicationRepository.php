@@ -663,6 +663,8 @@ class ApplicationRepository
                 ]);
             }
         }
+
+        $this->syncApplicationFromDate($applicationId);
     }
 
     /**
@@ -712,6 +714,8 @@ class ApplicationRepository
                 ':to_' => $this->formatDateForDatabase($date['to_'])
             ]);
         }
+
+        $this->syncApplicationFromDate($applicationId);
     }
 
     /**
@@ -994,6 +998,18 @@ class ApplicationRepository
     private function generateSecret(int $length = 16): string
     {
         return bin2hex(random_bytes($length));
+    }
+
+    /**
+     * Update bb_application.from_ to the earliest date from bb_application_date
+     */
+    public function syncApplicationFromDate(int $applicationId): void
+    {
+        $sql = "UPDATE bb_application SET from_ = (
+            SELECT MIN(from_) FROM bb_application_date WHERE application_id = :app_id
+        ) WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':app_id' => $applicationId, ':id' => $applicationId]);
     }
 
     /**

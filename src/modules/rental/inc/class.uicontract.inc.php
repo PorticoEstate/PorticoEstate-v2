@@ -187,8 +187,7 @@ class rental_uicontract extends rental_uicommon
 		$values_combo_box[1] = $bocommon->select_district_list('filter', $this->district_id);
 
 		/*
-  			$link				 = self::link(array(
-					'menuaction'		 => 'property.uilocation.get_part_of_town',
+			$link				 = phpgw::link('/property/location/part-of-town', array(
 					'district_id'		 => $this->district_id,
 					'part_of_town_id'	 => $this->part_of_town_id,
 					'phpgw_return_as'	 => 'json'

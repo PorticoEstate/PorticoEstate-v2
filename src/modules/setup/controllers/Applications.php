@@ -102,7 +102,7 @@ class Applications
 
 	/**
 	 * Parse dependencies
-	 * 
+	 *
 	 * @param array $depends
 	 * @param boolean $main Return a string when true otherwise an array
 	 * @return string|array Dependency string or array
@@ -191,7 +191,7 @@ class Applications
 		if (\Sanitizer::get_var('submit', 'string', 'POST'))
 		{
 			$header .= $this->html->get_header($this->setup->lang('Application Management'), False, 'config', $this->db->get_domain() . '(' . $db_config['db_type'] . ')');
-			
+
 			// Use renderBlock for the header part
 			$headerVars = [
 				'description' => $this->setup->lang('App install/remove/upgrade') . ':'
@@ -261,6 +261,7 @@ class Applications
 					$header .=  '<h3>' . $this->setup->lang('Processing: %1', $this->setup->lang($appname)) . "</h3>\n<ul>";
 					$terror = array($setup_info[$appname]);
 
+					$migrationService = $migrationService ?? new \App\modules\phpgwapi\services\Migration\MigrationService();
 					if (
 						isset($setup_info[$appname]['tables'])
 						&& is_array($setup_info[$appname]['tables'])
@@ -269,8 +270,12 @@ class Applications
 						$terror = $this->process->current($terror, $DEBUG);
 						$header .=  "<li>{$setup_info[$appname]['name']} "
 							. $this->setup->lang('tables installed, unless there are errors printed above') . ".</h3>\n";
-						$terror = $this->process->default_records($terror, $DEBUG);
-						$header .=  '<li>' . $this->setup->lang('%1 default values processed', $this->setup->lang($appname)) . ".</li>\n";
+						// Skip legacy default_records for migration-based modules
+						if (!$migrationService->moduleHasMigrations($appname))
+						{
+							$terror = $this->process->default_records($terror, $DEBUG);
+							$header .=  '<li>' . $this->setup->lang('%1 default values processed', $this->setup->lang($appname)) . ".</li>\n";
+						}
 					}
 					else
 					{
@@ -283,9 +288,12 @@ class Applications
 							$this->setup->register_app($appname);
 							$header .=  '<li>' . $this->setup->lang('%1 registered', $this->setup->lang($appname)) . ".</li>\n";
 
-							// Default values have to be processed - even for apps without tables - after register for locations::add to work
-							$terror = $this->process->default_records($terror, $DEBUG);
-							$header .=  '<li>' . $this->setup->lang('%1 default values processed', $this->setup->lang($appname)) . ".</li>\n";
+							// Default values - skip for migration-based modules
+							if (!$migrationService->moduleHasMigrations($appname))
+							{
+								$terror = $this->process->default_records($terror, $DEBUG);
+								$header .=  '<li>' . $this->setup->lang('%1 default values processed', $this->setup->lang($appname)) . ".</li>\n";
+							}
 						}
 						if (
 							isset($setup_info[$appname]['hooks'])
@@ -307,6 +315,57 @@ class Applications
 					$this->process->add_credential($appname);
 				}
 				$this->process->oProc->m_odb->transaction_commit();
+
+				// Run migrations AFTER the setup transaction commits
+				foreach ($install as $appname => $key)
+				{
+					if ($migrationService->moduleHasMigrations($appname))
+					{
+						$applied = $migrationService->getAppliedMigrations($appname);
+						$legacyVersion = $setup_info[$appname]['currentver'] ?? null;
+						$isLegacyTransition = $this->setup->app_registered($appname)
+							&& empty($applied)
+							&& $legacyVersion
+							&& str_contains($legacyVersion, '.');
+
+						if ($isLegacyTransition)
+						{
+							$cutoff = null;
+							if ($legacyVersion) {
+								$cutoff = $migrationService->findMigrationForLegacyVersion($appname, $legacyVersion);
+							}
+							if (!$cutoff && isset($setup_info[$appname]['migration_legacy_cutoff'])) {
+								$cutoff = $setup_info[$appname]['migration_legacy_cutoff'];
+							}
+							if ($cutoff) {
+								$migrationService->seedUpTo($appname, $cutoff);
+							}
+						}
+
+						$results = $migrationService->runPending($appname);
+						$failed = false;
+						foreach ($results as $result) {
+							if ($result['status'] === 'failed') {
+								$failed = true;
+								$header .= '<li><b>Migration failed:</b> ' . $result['name'] . ' &mdash; ' . htmlspecialchars($result['error'] ?? 'unknown') . "</li>\n";
+								break;
+							}
+						}
+
+						if (!$failed) {
+							$setup_info[$appname]['currentver'] = $migrationService->getTargetVersion($appname);
+							$setup_info[$appname]['version'] = $setup_info[$appname]['currentver'];
+							Settings::getInstance()->update('setup_info', [$appname => $setup_info[$appname]]);
+							if ($this->setup->app_registered($appname)) {
+								$this->setup->update_app($appname);
+								$this->setup->update_hooks($appname);
+							} else {
+								$this->setup->register_app($appname);
+								$this->setup->register_hooks($appname);
+							}
+						}
+					}
+				}
 			}
 
 			// Process upgrades
@@ -318,14 +377,65 @@ class Applications
 					$terror = array();
 					$terror[] = $setup_info[$appname];
 
-					$this->process->upgrade($terror, $DEBUG);
-					if (isset($setup_info[$appname]['tables']))
+					$migrationService = $migrationService ?? new \App\modules\phpgwapi\services\Migration\MigrationService();
+
+					if ($migrationService->moduleHasMigrations($appname))
 					{
-						$header .=  '<li>' . $this->setup->lang('%1 tables upgraded', $this->setup->lang($appname)) . ".</li>";
+						// Migration-based upgrade
+						$applied = $migrationService->getAppliedMigrations($appname);
+						$legacyVersion = $setup_info[$appname]['currentver'] ?? null;
+						$isLegacyTransition = $this->setup->app_registered($appname)
+							&& empty($applied)
+							&& $legacyVersion
+							&& str_contains($legacyVersion, '.');
+
+						if ($isLegacyTransition)
+						{
+							$cutoff = null;
+							if ($legacyVersion) {
+								$cutoff = $migrationService->findMigrationForLegacyVersion($appname, $legacyVersion);
+							}
+							if (!$cutoff && isset($setup_info[$appname]['migration_legacy_cutoff'])) {
+								$cutoff = $setup_info[$appname]['migration_legacy_cutoff'];
+							}
+							if ($cutoff) {
+								$migrationService->seedUpTo($appname, $cutoff);
+							}
+						}
+
+						$results = $migrationService->runPending($appname);
+						$failed = false;
+						foreach ($results as $result) {
+							if ($result['status'] === 'failed') {
+								$failed = true;
+								$header .= '<li><b>Migration failed:</b> ' . $result['name'] . ' &mdash; ' . htmlspecialchars($result['error'] ?? 'unknown') . "</li>\n";
+								break;
+							}
+						}
+
+						if (!$failed) {
+							$setup_info[$appname]['currentver'] = $migrationService->getTargetVersion($appname);
+							$setup_info[$appname]['version'] = $setup_info[$appname]['currentver'];
+							Settings::getInstance()->update('setup_info', [$appname => $setup_info[$appname]]);
+							if ($this->setup->app_registered($appname)) {
+								$this->setup->update_app($appname);
+								$this->setup->update_hooks($appname);
+							}
+							$header .= '<li>' . $this->setup->lang('%1 tables upgraded', $this->setup->lang($appname)) . ".</li>";
+						}
 					}
 					else
 					{
-						$header .=  '<li>' . $this->setup->lang('%1 upgraded', $this->setup->lang($appname)) . ".</li>";
+						// Legacy upgrade path
+						$this->process->upgrade($terror, $DEBUG);
+						if (isset($setup_info[$appname]['tables']))
+						{
+							$header .=  '<li>' . $this->setup->lang('%1 tables upgraded', $this->setup->lang($appname)) . ".</li>";
+						}
+						else
+						{
+							$header .=  '<li>' . $this->setup->lang('%1 upgraded', $this->setup->lang($appname)) . ".</li>";
+						}
 					}
 
 					$header .=  "<li>To upgrade languages - run <b>'Manage Languages'</b> from setup</li>\n</ul>\n";
@@ -333,7 +443,7 @@ class Applications
 			}
 
 			$header .=  "<h3><a href=\"applications?debug={$DEBUG}\">" . $this->setup->lang('Done') . "</h3>\n";
-			
+
 			// Render the footer using Twig
 			$footer = $this->twig->renderBlock('applications.html.twig', 'footer', ['footer_text' => '']);
 
@@ -346,13 +456,13 @@ class Applications
 
 		$detail = \Sanitizer::get_var('detail', 'string', 'GET');
 		$resolve = \Sanitizer::get_var('resolve', 'string', 'GET');
-		
+
 		// Handle application detail view
 		if ($detail)
 		{
 			ksort($setup_info[$detail]);
 			$name = $this->setup->lang($setup_info[$detail]['name']);
-			
+
 			// Use renderBlock for the header part with detail-specific description
 			$headerVars = [
 				'description' => "<h2>{$name}</h2>\n<ul>\n"
@@ -452,7 +562,7 @@ class Applications
 				];
 				$details .= $this->twig->renderBlock('applications.html.twig', 'detail', $detailVars);
 			}
-			
+
 			// Render the footer with "Go back" link
 			$footerVars = [
 				'footer_text' => "</ul>\n<a href=\"applications?debug={$DEBUG}\">" . $this->setup->lang('Go back') . '</a>'
@@ -466,7 +576,7 @@ class Applications
 		{
 			$version  = \Sanitizer::get_var('version', 'string', 'GET');
 			$notables = \Sanitizer::get_var('notables', 'string', 'GET');
-			
+
 			// Use renderBlock for the header part with resolve-specific description
 			$headerVars = [
 				'description' => $this->setup->lang('Problem resolution') . ':'
@@ -552,7 +662,7 @@ class Applications
 			}
 
 			$header .=  '<br /><a href="applications?debug=' . $DEBUG . '">' . $this->setup->lang('Go back') . '</a>';
-			
+
 			// Render the footer
 			$footer = $this->twig->renderBlock('applications.html.twig', 'footer', []);
 
@@ -577,27 +687,27 @@ class Applications
 				'details' => $this->setup->lang('register_globals_' . $_GET['globals'])
 			];
 			$detail .= $this->twig->renderBlock('applications.html.twig', 'detail', $detailVars2);
-			
+
 			$footer = $this->twig->renderBlock('applications.html.twig', 'footer', []);
-			
+
 			return $header . $detail . $footer;
 		}
 		else
 		{
 			// Main application list view
-			
+
 			// Use renderBlock for the header part
 			$headerVars = [
 				'description' => $this->setup->lang('Select the desired action(s) from the available choices')
 			];
 			$header .= $this->twig->renderBlock('applications.html.twig', 'header', $headerVars);
-			
+
 			// Use renderBlock for the app_header part
 			$header .= $this->twig->renderBlock('applications.html.twig', 'app_header', $templateVars);
-			
+
 			$apps = '';
 			$i = 0;
-			
+
 			// Generate the app rows
 			foreach ($setup_info as $key => $value)
 			{
@@ -606,7 +716,7 @@ class Applications
 					++$i;
 					$row = $i % 2 ? 'off' : 'on';
 					$value['title'] = !isset($value['title']) || !strlen($value['title']) ? str_replace('*', '', $this->setup->lang($value['name'])) : $value['title'];
-					
+
 					// Prepare app row data for Twig template
 					$appVars = [
 						'bg_class' => "row_{$row}",
@@ -628,7 +738,7 @@ class Applications
 							$appVars['row_remove'] = "row_remove_{$row}";
 							$appVars['remove'] = '<input type="checkbox" name="remove[' . $value['name'] . ']" />';
 							$appVars['upgrade'] = '&nbsp;';
-							
+
 							if (!$this->detection->check_app_tables($value['name']))
 							{
 								// App installed and enabled, but some tables are missing
@@ -643,7 +753,7 @@ class Applications
 								$appVars['instimg'] = 'stock_yes.png';
 								$appVars['instalt'] = $this->setup->lang('%1 status - %2', $value['title'], $this->setup->lang('Completed'));
 								$appVars['install'] = '&nbsp;';
-								
+
 								if ($value['enabled'])
 								{
 									$appVars['resolution'] = '';
@@ -668,12 +778,12 @@ class Applications
 						case 'U':
 							$appVars['instimg'] = 'package-generic.png';
 							$appVars['instalt'] = $this->setup->lang('Not Completed');
-							
+
 							if (!isset($value['currentver']) || !$value['currentver'])
 							{
 								$appVars['bg_class'] = "row_install_{$row}";
 								$appVars['appinfo'] = "[{$value['status']}] " . $this->setup->lang('Please install');
-								
+
 								if (isset($value['tables']) && is_array($value['tables']) && $value['tables'] && $this->detection->check_app_tables($value['name'], True))
 								{
 									// Some tables missing
@@ -746,13 +856,13 @@ class Applications
 							$appVars['appinfo'] = '';
 							break;
 					}
-					
+
 					// Render the app row with Twig
 					$apps .= $this->twig->renderBlock('applications.html.twig', 'apps', $appVars);
 				}
 			}
 		}
-		
+
 		// Render the footer parts
 		$app_footer = $this->twig->renderBlock('applications.html.twig', 'app_footer', $templateVars);
 		$footer = $this->twig->renderBlock('applications.html.twig', 'footer', []);

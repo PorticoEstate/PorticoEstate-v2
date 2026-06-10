@@ -966,7 +966,7 @@ class UserHelper
 		$existing_user = $this->get_user_id($ssn);
 		if ($existing_user) {
 			// User exists, update with latest external data if needed
-			$this->update_user_from_external_data($existing_user, $external_data);
+//			$this->update_user_from_external_data($existing_user, $external_data);
 		} else {
 			// First-time user, create new record
 			$this->create_user_from_external_data($external_data);
@@ -1045,10 +1045,10 @@ class UserHelper
 
 		// Fields that can be updated from external data
 		$updatable_fields = [
-			'name' => $external_data['name'] ?? null,
-			'street' => $external_data['street'] ?? null,
-			'zip_code' => $external_data['zip_code'] ?? null,
-			'city' => $external_data['city'] ?? null
+			'name' => ($name = trim((string)($external_data['name'] ?? ''))) !== '' ? $name : null,//can possibly contain spaces, so we trim and check if it's not empty after trimming
+			'street' => ($street = trim((string)($external_data['street'] ?? ''))) !== '' ? $street : null,
+			'zip_code' => ($zip_code = trim((string)($external_data['zip_code'] ?? ''))) !== '' ? $zip_code : null,
+			'city' => ($city = trim((string)($external_data['city'] ?? ''))) !== '' ? $city : null
 		];
 
 		foreach ($updatable_fields as $field => $value) {

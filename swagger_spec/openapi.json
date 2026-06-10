@@ -6850,6 +6850,340 @@
                         }
                     }
                 }
+            },
+            "post": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Create a new entity item",
+                "description": "Creates a new entity item with optional EAV attribute values. Accepts JSON or multipart\/form-data (required when uploading a file attachment). Legacy alias \/create is still supported for backward compatibility.",
+                "operationId": "b61d565c242ddd7c9a4f2e17d4db918b",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/EntitySaveRequest"
+                            },
+                            "examples": {
+                                "ticketCreateExample": {
+                                    "summary": "Create with ticket relation context",
+                                    "value": {
+                                        "values": {
+                                            "name": "R\u00f8ykvarsler",
+                                            "descr": "Opprettet fra ticket"
+                                        },
+                                        "values_attribute": {
+                                            "7": {
+                                                "value": "2024-12-31"
+                                            },
+                                            "20": {
+                                                "value": "1"
+                                            },
+                                            "21": {
+                                                "value": [
+                                                    "1",
+                                                    "3"
+                                                ]
+                                            }
+                                        },
+                                        "RelationInfo": {
+                                            "location_code": "5436-01-01-001",
+                                            "p_num": "7",
+                                            "p_entity_id": 1,
+                                            "p_cat_id": 15,
+                                            "tenant_id": 1000,
+                                            "origin": "property.ticket.category",
+                                            "origin_id": 34844
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "multipart\/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "values": {
+                                        "description": "Core field values",
+                                        "type": "object"
+                                    },
+                                    "values_attribute": {
+                                        "description": "EAV attribute values keyed by attribute ID",
+                                        "type": "object"
+                                    },
+                                    "values_checklist_stage": {
+                                        "description": "Checklist stage values",
+                                        "type": "object"
+                                    },
+                                    "RelationInfo": {
+                                        "$ref": "#\/components\/schemas\/RelationInfo"
+                                    },
+                                    "file": {
+                                        "description": "Optional file attachment",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "jasperfile": {
+                                        "description": "Optional Jasper report attachment",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Item created",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/EntityReceipt"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/list": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "List entity items (canonical envelope)",
+                "description": "Returns a canonical JSON envelope for entity item collections without DataTables-specific keys.",
+                "operationId": "cf13b632eb6f32fa29e6bb1108cdfc83",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "description": "Pagination offset",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "description": "Free-text search",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "description": "Status\/category filter",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Column to sort by",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "dir",
+                        "in": "query",
+                        "description": "Sort direction",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "ASC",
+                            "enum": [
+                                "ASC",
+                                "DESC"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "allrows",
+                        "in": "query",
+                        "description": "Return all rows without pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Canonical list of entity items",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/EntityItem"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "start": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/schema": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get entity attribute schema",
+                "description": "Returns attribute metadata\/schema for the selected entity category.",
+                "operationId": "e2121db1bfab29d00dd6dfdb06e9404e",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Entity schema envelope",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "schema": {
+                                            "properties": {
+                                                "attributes": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "groups": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}": {
@@ -6997,7 +7331,7 @@
                                             "p_entity_id": 1,
                                             "p_cat_id": 15,
                                             "tenant_id": 1000,
-                                            "origin": ".ticket",
+                                            "origin": "property.ticket.category",
                                             "origin_id": 34844
                                         }
                                     }
@@ -7077,133 +7411,6 @@
                 }
             }
         },
-        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/create": {
-            "post": {
-                "tags": [
-                    "Entity"
-                ],
-                "summary": "Create a new entity item",
-                "description": "Creates a new entity item with optional EAV attribute values. Accepts JSON or multipart\/form-data (required when uploading a file attachment).",
-                "operationId": "05b18c8ff312589be372ba882853fb44",
-                "parameters": [
-                    {
-                        "name": "type",
-                        "in": "path",
-                        "description": "Entity type key",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "entity_id",
-                        "in": "path",
-                        "description": "Entity definition ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "cat_id",
-                        "in": "path",
-                        "description": "Category ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application\/json": {
-                            "schema": {
-                                "$ref": "#\/components\/schemas\/EntitySaveRequest"
-                            },
-                            "examples": {
-                                "ticketCreateExample": {
-                                    "summary": "Create with ticket relation context",
-                                    "value": {
-                                        "values": {
-                                            "name": "R\u00f8ykvarsler",
-                                            "descr": "Opprettet fra ticket"
-                                        },
-                                        "values_attribute": {
-                                            "7": {
-                                                "value": "2024-12-31"
-                                            },
-                                            "20": {
-                                                "value": "1"
-                                            },
-                                            "21": {
-                                                "value": [
-                                                    "1",
-                                                    "3"
-                                                ]
-                                            }
-                                        },
-                                        "RelationInfo": {
-                                            "location_code": "5436-01-01-001",
-                                            "p_num": "7",
-                                            "p_entity_id": 1,
-                                            "p_cat_id": 15,
-                                            "tenant_id": 1000,
-                                            "origin": ".ticket",
-                                            "origin_id": 34844
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "multipart\/form-data": {
-                            "schema": {
-                                "properties": {
-                                    "values": {
-                                        "description": "Core field values",
-                                        "type": "object"
-                                    },
-                                    "values_attribute": {
-                                        "description": "EAV attribute values keyed by attribute ID",
-                                        "type": "object"
-                                    },
-                                    "values_checklist_stage": {
-                                        "description": "Checklist stage values",
-                                        "type": "object"
-                                    },
-                                    "RelationInfo": {
-                                        "$ref": "#\/components\/schemas\/RelationInfo"
-                                    },
-                                    "file": {
-                                        "description": "Optional file attachment",
-                                        "type": "string",
-                                        "format": "binary"
-                                    },
-                                    "jasperfile": {
-                                        "description": "Optional Jasper report attachment",
-                                        "type": "string",
-                                        "format": "binary"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Item created",
-                        "content": {
-                            "application\/json": {
-                                "schema": {
-                                    "$ref": "#\/components\/schemas\/EntityReceipt"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/items-per-qr": {
             "get": {
                 "tags": [
@@ -7272,8 +7479,8 @@
                 "tags": [
                     "Entity"
                 ],
-                "summary": "Get related entity links",
-                "description": "Returns interlinked entity records for the given item. Called via DataTables POST.",
+                "summary": "Get related entities",
+                "description": "Returns related entity records for the given item as pure data with navigation context. Called via DataTables POST.",
                 "operationId": "cf55b9378d64e7972819e4c2211593f1",
                 "parameters": [
                     {
@@ -7329,13 +7536,146 @@
                 }
             }
         },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/target": {
+            "post": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get target\/log rows",
+                "description": "Returns interlink\/workorder target rows for the given item as DataTables-compatible pure data.",
+                "operationId": "a9a854fb3a5375d513af80b70ab5da24",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "draw",
+                        "in": "query",
+                        "description": "DataTables draw counter",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DataTables response with target rows"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/documents": {
+            "post": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Get document rows",
+                "description": "Returns classic and generic document rows for the given item as DataTables-compatible pure data.",
+                "operationId": "496bf382365d74fd6bc17258d440493e",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "doc_type",
+                        "in": "query",
+                        "description": "Document type filter",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "draw",
+                        "in": "query",
+                        "description": "DataTables draw counter",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DataTables response with document rows"
+                    }
+                }
+            }
+        },
         "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/files": {
             "post": {
                 "tags": [
                     "Entity"
                 ],
                 "summary": "Get attached files",
-                "description": "Returns file attachments for the given item as a DataTables-compatible response. Includes HTML link and delete-checkbox cells, plus img_id\/img_url for image types.",
+                "description": "Returns file attachments for the given item as a DataTables-compatible response with pure data fields.",
                 "operationId": "90d39ea3dd60b4583dcb4db8ca628fa2",
                 "parameters": [
                     {
@@ -7387,6 +7727,86 @@
                 "responses": {
                     "200": {
                         "description": "DataTables response with file rows"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/files\/image": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "View entity image or thumbnail",
+                "description": "Streams an attached image file or thumbnail for the selected entity item.",
+                "operationId": "729fbdecc221f37e59f9a02c0e11f75a",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "img_id",
+                        "in": "query",
+                        "description": "VFS file ID for the image",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "thumb",
+                        "in": "query",
+                        "description": "Return or generate a thumbnail",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "file",
+                        "in": "query",
+                        "description": "Relative file path when img_id is not provided",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Image stream or thumbnail"
                     }
                 }
             }
@@ -7449,6 +7869,370 @@
                 "responses": {
                     "200": {
                         "description": "DataTables response with inventory rows"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/multi-upload": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Build multi-upload interface",
+                "description": "Renders HTML for the multi-file upload popup interface",
+                "operationId": "0b5e2a5188f0c9fb293e9a2e6a2ee9b3",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "HTML form for file upload"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Handle multi-upload file operations",
+                "description": "Processes file uploads, deletions, and listing for multi-upload interface (GET\/POST\/PUT\/PATCH\/DELETE\/HEAD\/OPTIONS)",
+                "operationId": "a802481d0e74cf39c6e4210120e9ca1f",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upload operation result"
+                    },
+                    "403": {
+                        "description": "Forbidden - no edit access"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/inventory\/add": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Show add inventory popup",
+                "description": "Renders the add inventory form popup for an entity item",
+                "operationId": "d0caaddf78bea003589c6e5d22f0c360",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "location_id",
+                        "in": "query",
+                        "description": "Location ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "HTML form or JSON response"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/inventory\/{inventory_id}\/edit": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Show edit inventory popup",
+                "description": "Renders the edit inventory form popup for a specific inventory record",
+                "operationId": "d47ed7665c7585188a2fae762d19824a",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "inventory_id",
+                        "in": "path",
+                        "description": "Inventory record ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "location_id",
+                        "in": "query",
+                        "description": "Location ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "HTML form or JSON response"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/{id}\/inventory\/{inventory_id}\/calendar": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Show inventory calendar popup",
+                "description": "Renders the inventory calendar interface for a specific inventory record",
+                "operationId": "c73c95de53b4957767aaca6da6c0d33a",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "inventory_id",
+                        "in": "path",
+                        "description": "Inventory record ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "location_id",
+                        "in": "query",
+                        "description": "Location ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "HTML calendar interface"
+                    }
+                }
+            }
+        },
+        "\/property\/entity\/{type}\/{entity_id}\/{cat_id}\/assigned-history": {
+            "get": {
+                "tags": [
+                    "Entity"
+                ],
+                "summary": "Show assigned history popup",
+                "description": "Renders the assigned history interface for a control series",
+                "operationId": "51d2706227ed46960fd35bc1fc0d8bc1",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "Entity type key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "path",
+                        "description": "Entity definition ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "serie_id",
+                        "in": "query",
+                        "description": "Control series ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "HTML history interface"
                     }
                 }
             }
@@ -7715,8 +8499,8 @@
                 "tags": [
                     "Entity"
                 ],
-                "summary": "Download entity list",
-                "description": "Streams the full entity list as CSV, Excel, or ODS depending on user preference.",
+                "summary": "Download entity list as spreadsheet",
+                "description": "Exports the entity list in CSV, Excel, or ODS format",
                 "operationId": "cf33f970d4d54d02c409d9363c7a6dba",
                 "parameters": [
                     {
@@ -7755,6 +8539,2091 @@
                             "application\/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [],
                             "application\/vnd.oasis.opendocument.spreadsheet": []
                         }
+                    }
+                }
+            }
+        },
+        "\/property\/location": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "List locations with pagination and search",
+                "description": "Returns paginated list of locations with support for DataTables server-side processing and search\/filter",
+                "operationId": "9537e3ecb48c36106cc3fd479e3e504b",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search term",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "order",
+                        "in": "query",
+                        "description": "Column ordering (JSON)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "draw",
+                        "in": "query",
+                        "description": "DataTables draw counter",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "description": "Pagination start",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "length",
+                        "in": "query",
+                        "description": "Pagination length",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "export",
+                        "in": "query",
+                        "description": "Export mode",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of locations",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array"
+                                        },
+                                        "recordsTotal": {
+                                            "type": "integer"
+                                        },
+                                        "recordsFiltered": {
+                                            "type": "integer"
+                                        },
+                                        "draw": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Create a new location",
+                "description": "Creates a new location record with provided field values and custom attributes. Legacy alias \/property\/location\/add is still supported for backward compatibility.",
+                "operationId": "aadef3c5bbb5e9c38ffc667e0aa23a92",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "location_code": {
+                                        "description": "Unique location code",
+                                        "type": "string",
+                                        "example": "5000-03"
+                                    },
+                                    "loc1": {
+                                        "description": "Level 1 location code",
+                                        "type": "string",
+                                        "example": "5000"
+                                    },
+                                    "loc1_name": {
+                                        "description": "Level 1 location name",
+                                        "type": "string",
+                                        "example": "M\u00d8HLENPRIS III"
+                                    },
+                                    "loc2": {
+                                        "description": "Level 2 location code",
+                                        "type": "string",
+                                        "example": "03"
+                                    },
+                                    "loc2_name": {
+                                        "description": "Level 2 location name",
+                                        "type": "string",
+                                        "example": "Bygg 3"
+                                    },
+                                    "cat_id": {
+                                        "description": "Category\/type ID",
+                                        "type": "string",
+                                        "example": "5"
+                                    },
+                                    "values_attribute": {
+                                        "description": "Custom attributes keyed by attribute ID (integer)",
+                                        "type": "object",
+                                        "additionalProperties": {
+                                            "properties": {
+                                                "value": {
+                                                    "description": "Attribute value",
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Location created successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "enum": [
+                                                "success",
+                                                "error"
+                                            ]
+                                        },
+                                        "message": {
+                                            "description": "Validation messages",
+                                            "type": "array"
+                                        },
+                                        "location_code": {
+                                            "description": "The created location code",
+                                            "type": "string"
+                                        },
+                                        "id": {
+                                            "description": "Internal location ID",
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    },
+                    "403": {
+                        "description": "Forbidden - no add access"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/list": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "List locations (canonical envelope)",
+                "description": "Returns location collection in a canonical JSON envelope without DataTables-specific keys",
+                "operationId": "06875f688977e5b39dd11ce31aefefb8",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search term or object with value key",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "description": "Pagination start",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "length",
+                        "in": "query",
+                        "description": "Pagination length",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "order_by",
+                        "in": "query",
+                        "description": "Order field",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "order_dir",
+                        "in": "query",
+                        "description": "Order direction",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Canonical location list",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "start": {
+                                                    "type": "integer"
+                                                },
+                                                "length": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/location\/summary": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get location summary data",
+                "description": "Delegates to querySummary for summary report generation",
+                "operationId": "cc82c9d531c514d849815d5ba5890b0b",
+                "responses": {
+                    "200": {
+                        "description": "Summary data"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/responsibility-role": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get responsibility role configuration",
+                "description": "Returns configuration for responsibility and role assignments with DataTables metadata",
+                "operationId": "a7689a585c150b8830fbb87a084fde44",
+                "parameters": [
+                    {
+                        "name": "head",
+                        "in": "query",
+                        "description": "Get header metadata",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "type_id",
+                        "in": "query",
+                        "description": "Location type ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "description": "User ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "role_id",
+                        "in": "query",
+                        "description": "Role ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role responsibility data"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/responsibility-role\/save": {
+            "post": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Save responsibility role assignments",
+                "description": "Update responsibility and role assignments for locations",
+                "operationId": "d1eca63eb83d8ca83cf6aaabdc0c34bd",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "assign_orig": {
+                                        "type": "array"
+                                    },
+                                    "assignments": {
+                                        "type": "array"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Save result"
+                    },
+                    "403": {
+                        "description": "Forbidden - no edit access"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/part-of-town": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get parts of town for district",
+                "description": "Returns list of parts of town filtered by district ID",
+                "operationId": "b17428b9dbe8c6a57144580b94b5339f",
+                "parameters": [
+                    {
+                        "name": "district_id",
+                        "in": "query",
+                        "description": "District ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "part_of_town_id",
+                        "in": "query",
+                        "description": "Part of town ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Parts of town list",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/location\/accounts": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get available accounts",
+                "description": "Returns list of accounts, optionally filtered by account type",
+                "operationId": "9afa68773abee88b7025cebe2c7d6557",
+                "parameters": [
+                    {
+                        "name": "account_type",
+                        "in": "query",
+                        "description": "Account type filter",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of accounts",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/location\/history": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get location change history",
+                "description": "Returns DataTables-formatted history of changes to a location",
+                "operationId": "b373f805a185011a46862145171c0439",
+                "parameters": [
+                    {
+                        "name": "location_code",
+                        "in": "query",
+                        "description": "Location code",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "draw",
+                        "in": "query",
+                        "description": "DataTables draw counter",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "History data",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array"
+                                        },
+                                        "draw": {
+                                            "type": "integer"
+                                        },
+                                        "recordsTotal": {
+                                            "type": "integer"
+                                        },
+                                        "recordsFiltered": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/location\/history\/list": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get location change history (canonical envelope)",
+                "description": "Returns location history in canonical JSON envelope without DataTables-specific keys",
+                "operationId": "fec4d22e00f7e172d1a8cf78a3de44c7",
+                "parameters": [
+                    {
+                        "name": "location_code",
+                        "in": "query",
+                        "description": "Location code",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "History list",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/location\/documents": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get location documents",
+                "description": "Returns DataTables-formatted list of documents associated with a location",
+                "operationId": "a5d90da2e5c80679970381b21c0cab97",
+                "parameters": [
+                    {
+                        "name": "location_code",
+                        "in": "query",
+                        "description": "Location code",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "doc_type",
+                        "in": "query",
+                        "description": "Document type ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "draw",
+                        "in": "query",
+                        "description": "DataTables draw",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Documents list",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array"
+                                        },
+                                        "recordsTotal": {
+                                            "type": "integer"
+                                        },
+                                        "recordsFiltered": {
+                                            "type": "integer"
+                                        },
+                                        "draw": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/location\/documents\/list": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get location documents (canonical envelope)",
+                "description": "Returns location documents in canonical JSON envelope without DataTables-specific keys",
+                "operationId": "64a639167dd1f162f05dc6204ff2f970",
+                "parameters": [
+                    {
+                        "name": "location_code",
+                        "in": "query",
+                        "description": "Location code",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "doc_type",
+                        "in": "query",
+                        "description": "Document type ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "description": "Pagination start",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "length",
+                        "in": "query",
+                        "description": "Pagination length",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Documents list",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "start": {
+                                                    "type": "integer"
+                                                },
+                                                "length": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/location\/location-data": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get complete location data",
+                "description": "Returns complete location record including part of town information",
+                "operationId": "f45bffb36d28326e651c804cd4f85ad2",
+                "parameters": [
+                    {
+                        "name": "location_code",
+                        "in": "query",
+                        "description": "Location code",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Location data",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "location_code": {
+                                            "type": "string"
+                                        },
+                                        "loc1": {
+                                            "type": "string"
+                                        },
+                                        "part_of_town_name": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/location\/delivery-address": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get delivery address",
+                "description": "Returns formatted delivery address for a location",
+                "operationId": "d80ad9848d8a158f523cb0aae49cb046",
+                "parameters": [
+                    {
+                        "name": "loc1",
+                        "in": "query",
+                        "description": "Location identifier (loc1)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Delivery address",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "delivery_address": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/location\/location-exception": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get location exception data",
+                "description": "Returns location exception records with plain text fields",
+                "operationId": "842b6f11ac6340ba962eb2b0bf2e55d3",
+                "parameters": [
+                    {
+                        "name": "location_code",
+                        "in": "query",
+                        "description": "Location code",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Location exceptions",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "location_exception": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/location\/responsibility-role\/query": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Query responsibility roles",
+                "description": "Fetch detailed responsibility role data with filtering and sorting",
+                "operationId": "405949067a9ec6638f80d1979198b86d",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "description": "User ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "role_id",
+                        "in": "query",
+                        "description": "Role ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "type_id",
+                        "in": "query",
+                        "description": "Location type",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "lookup_tenant",
+                        "in": "query",
+                        "description": "Lookup tenant",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Query results"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/summary\/query": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Query location summary data",
+                "description": "Fetch summary report with specified parameters and filtering",
+                "operationId": "5270d134a2466cdede997bcec3c96587",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search filter",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "export",
+                        "in": "query",
+                        "description": "Export raw data",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Summary query results"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/component\/controls": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get controls at location component",
+                "description": "Returns list of controls associated with a location component",
+                "operationId": "441f7981289dbfa2cdb949586f0d2995",
+                "parameters": [
+                    {
+                        "name": "location_id",
+                        "in": "query",
+                        "description": "Location ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Component ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "skip_json",
+                        "in": "query",
+                        "description": "Skip JSON encoding",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Controls list"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/component\/cases": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get cases at location component",
+                "description": "Returns list of cases for a location component",
+                "operationId": "207d7b24a2dfe1dfcf4f9ad20340542a",
+                "parameters": [
+                    {
+                        "name": "location_id",
+                        "in": "query",
+                        "description": "Location ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Component ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "description": "Filter by year",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cases list"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/component\/checklists": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get checklists at location component",
+                "description": "Returns list of checklists for a location component",
+                "operationId": "9552a0e04b8d0e50a5e49647087a914b",
+                "parameters": [
+                    {
+                        "name": "location_id",
+                        "in": "query",
+                        "description": "Location ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Component ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "description": "Filter by year",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Checklists list"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/component\/cases-for-checklist": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Get cases for a checklist",
+                "description": "Returns DataTables-formatted cases for a specific checklist",
+                "operationId": "ddc300cc89dc1350b0ca25f6c433e444",
+                "parameters": [
+                    {
+                        "name": "check_list_id",
+                        "in": "query",
+                        "description": "Checklist ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "draw",
+                        "in": "query",
+                        "description": "DataTables draw counter",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cases for checklist"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/edit-field": {
+            "post": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Edit a single location field",
+                "description": "Updates a specific field on a location record via inline editing",
+                "operationId": "a9fb10fe067d757151682f9aa2742123",
+                "parameters": [
+                    {
+                        "name": "type_id",
+                        "in": "query",
+                        "description": "Location type ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "field_name",
+                        "in": "query",
+                        "description": "Field name to edit",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK on success, ERROR on failure"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/{location_code}": {
+            "put": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Update an existing location",
+                "description": "Updates a location record with field changes, custom attribute modifications, and optional rename via location_code_original threading",
+                "operationId": "b15d5b022a534fed78955d3ccf6e4a8b",
+                "parameters": [
+                    {
+                        "name": "location_code",
+                        "in": "path",
+                        "description": "Current location code",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "location_code": {
+                                        "description": "New location code (for rename) or existing code",
+                                        "type": "string",
+                                        "example": "5000-04"
+                                    },
+                                    "loc1": {
+                                        "description": "Level 1 location code",
+                                        "type": "string",
+                                        "example": "5000"
+                                    },
+                                    "loc2": {
+                                        "description": "Level 2 location code",
+                                        "type": "string",
+                                        "example": "04"
+                                    },
+                                    "cat_id": {
+                                        "description": "Category\/type ID",
+                                        "type": "string",
+                                        "example": "5"
+                                    },
+                                    "values_attribute": {
+                                        "description": "Updated custom attributes keyed by attribute ID",
+                                        "type": "object",
+                                        "additionalProperties": {
+                                            "properties": {
+                                                "value": {
+                                                    "description": "Updated attribute value",
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Location updated successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "enum": [
+                                                "success",
+                                                "error"
+                                            ]
+                                        },
+                                        "message": {
+                                            "description": "Validation messages",
+                                            "type": "array"
+                                        },
+                                        "location_code": {
+                                            "description": "The location code (new if renamed)",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid location code or validation error"
+                    },
+                    "403": {
+                        "description": "Forbidden - no edit access"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Delete a location",
+                "description": "Deletes a location record by its code",
+                "operationId": "52206489588d3f1d7ac933d009254f62",
+                "parameters": [
+                    {
+                        "name": "location_code",
+                        "in": "path",
+                        "description": "Location code to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Location deleted",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "enum": [
+                                                "success"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing location code"
+                    },
+                    "403": {
+                        "description": "Forbidden - no delete access"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/component\/add-control": {
+            "post": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Add a control at a location component",
+                "description": "Adds a control record to a location component",
+                "operationId": "bf5d0441878ac3fbfb9d89aefecfd4fd",
+                "requestBody": {
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Control added"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/component\/update-control-serie": {
+            "post": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Update control series",
+                "description": "Updates a series of control records",
+                "operationId": "fb9d79e61b2dccecce2b7c055d620a2d",
+                "requestBody": {
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Controls updated"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/delete": {
+            "delete": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Delete a location via query\/body parameter",
+                "description": "Deletes a location record using location_code from query or request body",
+                "operationId": "8a5c192364086945d132b41fc1f8b5d7",
+                "parameters": [
+                    {
+                        "name": "location_code",
+                        "in": "query",
+                        "description": "Location code to delete",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false
+                },
+                "responses": {
+                    "200": {
+                        "description": "Location deleted",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "enum": [
+                                                "success"
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing location code"
+                    },
+                    "403": {
+                        "description": "Forbidden - no delete access"
+                    }
+                }
+            }
+        },
+        "\/property\/location\/download": {
+            "get": {
+                "tags": [
+                    "Location"
+                ],
+                "summary": "Download location data as spreadsheet",
+                "description": "Exports location data in spreadsheet format (XLS, CSV, etc.)",
+                "operationId": "36680ab6ba9cd23597685b712b0cc348",
+                "parameters": [
+                    {
+                        "name": "download_type",
+                        "in": "query",
+                        "description": "Type of download (default\/summary\/responsibility_role)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "",
+                                "summary",
+                                "responsibility_role"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "description": "User ID (for responsibility_role)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "role_id",
+                        "in": "query",
+                        "description": "Role ID (for responsibility_role)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "type_id",
+                        "in": "query",
+                        "description": "Location type (for responsibility_role)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File download initiated",
+                        "content": {
+                            "application\/vnd.ms-excel": []
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - no read access"
+                    }
+                }
+            }
+        },
+        "\/property\/project": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List projects",
+                "description": "DataTables-compatible project list endpoint.",
+                "operationId": "80b70a8865736382b5b9a56f4441db3b",
+                "parameters": [
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "length",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 25
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Project DataTables payload"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Post collection (DataTables\/list dispatch)",
+                "description": "Canonical collection POST endpoint.",
+                "operationId": "a01724fef94bf71508a1bc05c4e273be",
+                "responses": {
+                    "200": {
+                        "description": "Collection response"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/list": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List projects (canonical envelope)",
+                "description": "Canonical list endpoint with envelope payload.",
+                "operationId": "af22bed14a561158b1836d9d936166ab",
+                "responses": {
+                    "200": {
+                        "description": "Project list",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/ProjectItem"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Get project",
+                "description": "Project detail endpoint.",
+                "operationId": "b93c1659de5ecf8f6137ef6ef639bdd6",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Project",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ProjectItem"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Update project",
+                "operationId": "ef675946416776c74d325fea31b0db2e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/ProjectSavePayload"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ProjectReceipt"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Delete project",
+                "operationId": "93880be4377a661dde43cfa6ba72aa5d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/orders": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List project orders",
+                "description": "Project orders list endpoint (DataTables-compatible).",
+                "operationId": "bf04e443f94064c224d195840b26b4b3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/vouchers": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List project vouchers",
+                "description": "Project vouchers list endpoint (DataTables-compatible).",
+                "operationId": "6a750613c3d1eecf21551eb34a0e71bc",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Voucher rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/other-projects": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List related projects",
+                "description": "Project other-projects list endpoint.",
+                "operationId": "f6a3246130e985843be36dc31c93f31b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Related project rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/attachments": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List project voucher attachments",
+                "description": "Project attachment list endpoint.",
+                "operationId": "72e5e8757ed16d55ac10fbbcd67a6c01",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Attachment rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/lookups\/external-project": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "External project lookup",
+                "description": "Project external project lookup endpoint.",
+                "operationId": "6c8ddcda2875f80c574575da6cfa7cc5",
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/lookups\/b-account": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Budget account lookup",
+                "description": "Budget account lookup endpoint.",
+                "operationId": "3e9e67617b8be037f8b8ab92cde98cd3",
+                "parameters": [
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/lookups\/ecodimb": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Ecodimb lookup",
+                "description": "Ecodimb lookup endpoint.",
+                "operationId": "c4f60da24a1fd5e9aeb223de4c8c41f9",
+                "parameters": [
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lookup rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/lookups\/category": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Category lookup and validation",
+                "description": "Validate if selected project category is valid for a budget account.",
+                "operationId": "bcb266272808ad513cb8db14a80ec725",
+                "parameters": [
+                    {
+                        "name": "cat_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "b_account_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Category payload"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/notify-contacts": {
+            "post": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List or update project notify contacts",
+                "description": "Project notify contacts list\/update endpoint.\n\nPreserves legacy notify behavior by delegating to property_notify::refresh_notify_contact_2.",
+                "operationId": "ccec2a95144c2606f558518594f4632e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Notify contact rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/create": {
+            "post": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Create project",
+                "operationId": "5ba22396f030db8a5dd3882f22462d7a",
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/ProjectSavePayload"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ProjectReceipt"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/files\/view": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "View\/download project file",
+                "description": "Stream project file by file_id.",
+                "operationId": "30263a4713469eea08c2de163bbe813b",
+                "parameters": [
+                    {
+                        "name": "file_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File stream"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/files\/image": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "View project image or thumbnail",
+                "description": "Stream or thumbnail a project image file.",
+                "operationId": "aff6250f61320969877d2f7aa3fb9aae",
+                "parameters": [
+                    {
+                        "name": "img_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "thumb",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Image stream"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/reports\/missing-budget": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Download missing budget report",
+                "description": "Download report of missing project budgets.",
+                "operationId": "67af95f5ac4f516862b7a17e1f9a4f79",
+                "responses": {
+                    "200": {
+                        "description": "Report download"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/reports\/download": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Download project list report",
+                "description": "Download project list report.",
+                "operationId": "32205e4270c9da52dedfc371503e1556",
+                "responses": {
+                    "200": {
+                        "description": "Report download"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/files": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "List project files",
+                "description": "Project file list endpoint (DataTables-compatible).",
+                "operationId": "8045099eec1a15f21492f97c92301e2e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File rows"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/files\/actions": {
+            "post": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Update project file metadata",
+                "description": "Project file metadata\/tag\/delete actions endpoint.",
+                "operationId": "3b0c4c40c33749043e734db9009b08ed",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Action result"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/multi-upload\/build": {
+            "get": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Build project multi-upload payload",
+                "description": "Build project multi-upload UI fragment.",
+                "operationId": "a6c85ad0aec474c65941ced5a190b375",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upload metadata"
+                    }
+                }
+            }
+        },
+        "\/property\/project\/{id}\/multi-upload": {
+            "post": {
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Handle project multi-upload",
+                "description": "Handle project multi-upload actions.",
+                "operationId": "ec2e9657a3bb1db9436c09c760c4af0b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upload handler response"
                     }
                 }
             }
@@ -9324,8 +12193,9 @@
                         "example": 1000
                     },
                     "origin": {
+                        "description": "Origin context. Preferred format is {application}.{module}[.{submodule}] (for example property.ticket.category). Legacy dot-prefixed values (for example .ticket.category) are accepted and normalized with a property application fallback when resolving location.",
                         "type": "string",
-                        "example": ".ticket"
+                        "example": "property.ticket.category"
                     },
                     "origin_id": {
                         "type": "integer",
@@ -9350,6 +12220,148 @@
                     },
                     "RelationInfo": {
                         "$ref": "#\/components\/schemas\/RelationInfo"
+                    }
+                },
+                "type": "object"
+            },
+            "ProjectItem": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "project_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "location_code": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "ProjectReceipt": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "message": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "error": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "ProjectRelationInfo": {
+                "description": "Optional relation metadata used by legacy save flow",
+                "properties": {
+                    "location_code": {
+                        "type": "string"
+                    },
+                    "tenant_id": {
+                        "type": "string"
+                    },
+                    "p_num": {
+                        "type": "string"
+                    },
+                    "p_entity_id": {
+                        "type": "integer"
+                    },
+                    "p_cat_id": {
+                        "type": "integer"
+                    },
+                    "origin": {
+                        "type": "string"
+                    },
+                    "origin_id": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "ProjectValues": {
+                "description": "Project core fields. Additional legacy keys may be accepted.",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "descr": {
+                        "type": "string"
+                    },
+                    "cat_id": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "location_code": {
+                        "type": "string"
+                    },
+                    "contact_id": {
+                        "type": "integer"
+                    },
+                    "contact": {
+                        "description": "Legacy alias mapped to contact_id",
+                        "type": "integer"
+                    },
+                    "remark": {
+                        "type": "string"
+                    },
+                    "mail_address": {
+                        "type": "string"
+                    },
+                    "approval": {
+                        "type": "string"
+                    },
+                    "copy_project": {
+                        "type": "integer"
+                    },
+                    "extra": {
+                        "type": "object"
+                    },
+                    "location": {
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "ProjectSavePayload": {
+                "description": "Payload accepted by both create and update endpoints",
+                "properties": {
+                    "values": {
+                        "$ref": "#\/components\/schemas\/ProjectValues"
+                    },
+                    "values_attribute": {
+                        "type": "object",
+                        "additionalProperties": true
+                    },
+                    "RelationInfo": {
+                        "$ref": "#\/components\/schemas\/ProjectRelationInfo"
+                    },
+                    "name": {
+                        "description": "Top-level legacy field accepted when values is omitted",
+                        "type": "string"
+                    },
+                    "descr": {
+                        "type": "string"
+                    },
+                    "contact": {
+                        "type": "integer"
+                    },
+                    "location_code": {
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -9421,6 +12433,10 @@
             "description": "REST API for EAV-based entity item records"
         },
         {
+            "name": "Project",
+            "description": "REST API for project resources"
+        },
+        {
             "name": "Relationships",
             "description": "Relationships"
         },
@@ -9447,6 +12463,10 @@
         {
             "name": "API",
             "description": "API"
+        },
+        {
+            "name": "Location",
+            "description": "Location"
         }
     ]
 }

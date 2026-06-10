@@ -724,6 +724,13 @@ HTML;
 			$serverSettings['template_set'] = 'base';
 		}
 
+		// Fallback to bootstrap if the selected template doesn't exist
+		$coreTplDir = PHPGW_SERVER_ROOT . "/phpgwapi/templates/{$serverSettings['template_set']}";
+		if (!is_dir($coreTplDir) && $serverSettings['template_set'] !== 'base')
+		{
+			$serverSettings['template_set'] = 'bootstrap';
+		}
+
 		Settings::getInstance()->set('server', $serverSettings);
 
 		$tpldir         = PHPGW_SERVER_ROOT . "/{$appname}/templates/{$serverSettings['template_set']}";

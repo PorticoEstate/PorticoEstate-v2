@@ -132,6 +132,15 @@
 				</select>
 			</td>
 		</tr>
+		<tr >
+			<td>{lang_enable_hospitality}:</td>
+			<td>
+				<select name="newsettings[enable_hospitality]" class="pure-u-1">
+					<option value="">{lang_No}</option>
+					<option value="True"{selected_enable_hospitality_True}>{lang_Yes}</option>
+				</select>
+			</td>
+		</tr>
 
 		<!-- END body -->
 		<!-- BEGIN footer -->
@@ -148,4 +157,14 @@
 		</tr>
 	</table>
 </form>
+<script>
+document.querySelector('input[name="submit"]').closest('form').addEventListener('submit', function() {
+	for (var i = localStorage.length - 1; i >= 0; i--) {
+		var key = localStorage.key(i);
+		if (key && key.startsWith('menu_tree_')) {
+			localStorage.removeItem(key);
+		}
+	}
+});
+</script>
 <!-- END footer -->

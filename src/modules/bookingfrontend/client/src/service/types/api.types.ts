@@ -104,6 +104,7 @@ export interface IBookingfrontendConfig {
 	url_uustatus?: string;
 	url_system_feedback?: string;
 	highlighted_buildings: number[]; // Up to 6 highlighted buildings, could be none
+	close_calendar_without_season?: boolean; // When true, buildings with no seasons are fully closed. Defaults to true.
 }
 
 
@@ -192,6 +193,7 @@ export interface IBookingConfig {
     user_can_delete_allocations?: boolean;
     user_can_delete_bookings?: boolean;
     user_can_delete_events?: boolean;
+    enable_hospitality?: boolean;
     voucher_client?: string;
     voucher_responsible?: string;
     voucher_type?: string;

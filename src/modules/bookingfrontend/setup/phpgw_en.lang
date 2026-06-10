@@ -1049,3 +1049,5 @@ see_all_notifications	bookingfrontend	en	See all notifications
 unread	bookingfrontend	en	Unread
 load_more	bookingfrontend	en	Load more
 no_unread_notifications	bookingfrontend	en	No unread notifications
+close_calendar_without_season	bookingfrontend	en	Close calendar when building has no season
+close_calendar_without_season_note	bookingfrontend	en	When enabled, buildings without a defined season are shown as closed

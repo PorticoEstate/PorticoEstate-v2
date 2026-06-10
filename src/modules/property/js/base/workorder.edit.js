@@ -293,8 +293,7 @@ $(document).ready(function ()
 	$("#datatable-container_2 tbody").on('click', 'tr', function ()
 	{
 		var voucher_id = $('td', this).eq(0).text();
-		var oArgs = { menuaction: 'property.uiproject.get_attachment', voucher_id: voucher_id };
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = phpGWLink('property/project/attachments', { voucher_id: voucher_id }, true);
 		JqueryPortico.updateinlineTableHelper('datatable-container_6', requestUrl);
 	});
 
@@ -771,8 +770,8 @@ window.on_location_updated = function (location_code)
 		return;
 	}
 
-	var oArgs = { menuaction: 'property.uilocation.get_delivery_address', loc1: location_code };
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var oArgs = { loc1: location_code };
+	var requestUrl = phpGWLink('property/location/delivery-address', oArgs);
 
 	$.ajax({
 		type: 'POST',
@@ -793,8 +792,8 @@ window.on_location_updated = function (location_code)
 window.get_location_exception = function (location_code)
 {
 
-	var oArgs = { menuaction: 'property.uilocation.get_location_exception', location_code: location_code };
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var oArgs = { location_code: location_code };
+	var requestUrl = phpGWLink('property/location/location-exception', oArgs);
 
 	$.ajax({
 		type: 'POST',
@@ -847,12 +846,14 @@ this.fileuploader = function ()
 
 this.refresh_files = function ()
 {
-	var oArgs = { menuaction: 'property.uiworkorder.get_files', id: order_id };
-	var strURL = phpGWLink('index.php', oArgs, true);
+	var strURL = phpGWLink('property/workorder/' + order_id + '/files', {
+		phpgw_return_as: 'json'
+	}, true);
 	JqueryPortico.updateinlineTableHelper('datatable-container_1', strURL);
 
-	oArgs = { menuaction: 'property.uiworkorder.get_files_attachments', id: order_id };
-	strURL = phpGWLink('index.php', oArgs, true);
+	strURL = phpGWLink('property/workorder/' + order_id + '/files-attachments', {
+		phpgw_return_as: 'json'
+	}, true);
 	refresh_glider(strURL);
 
 	JqueryPortico.updateinlineTableHelper('datatable-container_8', strURL);

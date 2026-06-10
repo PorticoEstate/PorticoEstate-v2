@@ -23,7 +23,7 @@ import {EventImpl} from "@fullcalendar/core/internal";
 import {IUpdatePartialApplication} from "@/service/types/api/application.types";
 import {FCallEventConverter} from "@/components/building-calendar/util/event-converter";
 import {useIsMobile} from "@/service/hooks/is-mobile";
-import {useBookingUser, usePartialApplications, useUpdatePartialApplication} from "@/service/hooks/api-hooks";
+import {useBookingUser, usePartialApplications, useServerSettings, useUpdatePartialApplication} from "@/service/hooks/api-hooks";
 import {
 	useCurrentBuilding,
 	useEnabledResources,
@@ -81,6 +81,9 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	const {data: user} = useBookingUser();
 	const { addToast } = useToast();
 	const isOrg = useIsOrganization();
+	const {data: serverSettings} = useServerSettings();
+	// Admin-configurable: buildings without any seasons are fully closed by default
+	const closeWhenNoSeasons = serverSettings?.bookingfrontend_config?.close_calendar_without_season ?? true;
 
 	useEffect(() => {
 		if (calendarRef.current) {
@@ -126,6 +129,29 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			endTime: boundary.to_
 		}));
 	}, [props.seasons, viewStart, viewEnd, enabledResources]);
+
+	// Determine whether a given date falls within any active season (matching the
+	// enabled resources). Used to close times that no season covers. When the
+	// building has no seasons at all, every date is considered closed.
+	const isDateCoveredBySeason = useCallback((date: DateTime): boolean => {
+		// No seasons defined at all: closed or open depending on admin config
+		if (!seasons || seasons.length === 0) return !closeWhenNoSeasons;
+
+		return seasons.some(season => {
+			if (!season.active) return false;
+			const seasonStart = DateTime.fromISO(season.from_);
+			const seasonEnd = DateTime.fromISO(season.to_);
+
+			// When no resources are enabled, consider all seasons
+			const hasMatchingResources = enabledResources.size === 0
+				? true
+				: season.resources.some(seasonResource =>
+					enabledResources.has(seasonResource.id.toString())
+				);
+
+			return date >= seasonStart.startOf('day') && date <= seasonEnd.endOf('day') && hasMatchingResources;
+		});
+	}, [seasons, enabledResources, closeWhenNoSeasons]);
 
 	// Memoize the results to prevent FullCalendar from receiving new object references on every render
 	const businessHours = useMemo(() => generateBusinessHours(), [generateBusinessHours]);
@@ -246,6 +272,25 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 					source: 'past'
 				}
 			});
+		}
+
+		// Mark every date not covered by an active season as fully closed.
+		// This runs regardless of season transitions so single-season buildings
+		// (and buildings with no seasons) also close uncovered dates.
+		for (let date = startDate; date < endDate; date = date.plus({days: 1})) {
+			if (!isDateCoveredBySeason(date)) {
+				backgroundEvents.push({
+					start: date.startOf('day').toJSDate(),
+					end: date.plus({days: 1}).startOf('day').toJSDate(),
+					display: 'background',
+					classNames: styles.closedHours,
+					extendedProps: {
+						closed: true,
+						type: 'background',
+						source: 'noSeason'
+					}
+				});
+			}
 		}
 
 		// Check if we have season transitions during the view period
@@ -392,7 +437,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		}
 
 		return backgroundEvents;
-	}, [currentDate, seasons, viewStart, viewEnd, enabledResources]);
+	}, [currentDate, seasons, viewStart, viewEnd, enabledResources, isDateCoveredBySeason]);
 
 
 	useEffect(() => {
@@ -568,6 +613,28 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			return false;
 		}
 
+		// Block selections on any day not covered by an active season (closed by default)
+		let hasUncoveredDay = false;
+		for (let date = selectStart.startOf('day'); date <= selectEnd.startOf('day'); date = date.plus({days: 1})) {
+			if (!isDateCoveredBySeason(date)) {
+				hasUncoveredDay = true;
+				break;
+			}
+		}
+
+		if (hasUncoveredDay) {
+			// Only show toast for actual user selection attempts
+			if (span.end && span.start) {
+				addToast({
+					type: 'info',
+					text: t('bookingfrontend.booking_unavailable'),
+					autoHide: true,
+					messageId: 'no_season_closed'
+				});
+			}
+			return false;
+		}
+
 		// Check if selection is within business hours for each specific day
 		// Only do this validation if we have seasons and this is a final selection (not just validation calls)
 		if (props.seasons && span.start && span.end && span.allDay === false) {
@@ -720,7 +787,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		}
 
 		return hasNoOverlap;
-	}, [enabledResources, events, resources, addToast, t, buildingId]);
+	}, [enabledResources, events, resources, addToast, t, buildingId, seasons, isDateCoveredBySeason]);
 
 	const handleEventResize = useCallback((resizeInfo: EventResizeDoneArg | EventDropArg) => {
 		const newEnd = resizeInfo.event.end;

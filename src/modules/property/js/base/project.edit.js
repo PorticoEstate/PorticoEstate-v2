@@ -69,6 +69,49 @@ var project_link = function (key, oData)
 	}
 };
 
+var project_file_link = function (key, oData)
+{
+	var fileName = (oData && oData[key]) ? String(oData[key]) : '';
+	var fileId = (oData && oData.file_id) ? String(oData.file_id) : '';
+
+	if (!fileName)
+	{
+		return '';
+	}
+
+	if (!fileId)
+	{
+		return $('<div/>').text(fileName).html();
+	}
+
+	var url = phpGWLink('property/project/files/view', {file_id: fileId});
+	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener" title="' + $('<div/>').text(lang['click to view file'] || 'click to view file').html() + '">' + $('<div/>').text(fileName).html() + '</a>';
+};
+
+var project_attachment_link = function (key, oData)
+{
+	var fileName = (oData && oData[key]) ? String(oData[key]) : '';
+	var voucherId = (oData && oData.voucher_id) ? String(oData.voucher_id) : '';
+
+	if (!fileName)
+	{
+		return '';
+	}
+
+	if (!voucherId)
+	{
+		return $('<div/>').text(fileName).html();
+	}
+
+	var url = phpGWLink('index.php', {
+		menuaction: 'property.uitts.show_attachment',
+		file_name: fileName,
+		key: voucherId
+	});
+
+	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener">' + $('<div/>').text(fileName).html() + '</a>';
+};
+
 //this.local_DrawCallback_1 = function (container)
 //{
 //	var api = $("#" + container).dataTable().api();
@@ -246,12 +289,19 @@ $(document).ready(function ()
 
 	$("#order_time_span").change(function ()
 	{
-		var oArgs1 = {menuaction: 'property.uiproject.get_orders', project_id: project_id, year: $(this).val(), results: -1};
-		var requestUrl1 = phpGWLink('index.php', oArgs1, true);
+		var requestUrl1 = phpGWLink('property/project/' + project_id + '/orders', {
+			project_id: project_id,
+			year: $(this).val(),
+			results: -1,
+			phpgw_return_as: 'json'
+		}, true);
 		JqueryPortico.updateinlineTableHelper(oTable1, requestUrl1);
 
-		var oArgs2 = {menuaction: 'property.uiproject.get_vouchers', project_id: project_id, year: $(this).val()};
-		var requestUrl2 = phpGWLink('index.php', oArgs2, true);
+		var requestUrl2 = phpGWLink('property/project/' + project_id + '/vouchers', {
+			project_id: project_id,
+			year: $(this).val(),
+			phpgw_return_as: 'json'
+		}, true);
 		JqueryPortico.updateinlineTableHelper(oTable2, requestUrl2);
 	});
 
@@ -325,8 +375,10 @@ $(document).ready(function ()
 	$("#datatable-container_2 tbody").on('click', 'tr', function ()
 	{
 		var voucher_id = $('td', this).eq(1).text();
-		var oArgs = {menuaction: 'property.uiproject.get_attachment', voucher_id: voucher_id};
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = phpGWLink('property/project/attachments', {
+			voucher_id: voucher_id,
+			phpgw_return_as: 'json'
+		}, true);
 		JqueryPortico.updateinlineTableHelper('datatable-container_8', requestUrl);
 	});
 
@@ -341,8 +393,11 @@ $(document).ready(function ()
 		var b_account_id = $('#b_account_id').val();
 		var external_project_id = $('#external_project_id').val();
 
-		var oArgs = {menuaction: 'property.boworkorder.get_category', cat_id: data.id, b_account_id: b_account_id};
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = phpGWLink('property/project/lookups/category', {
+			cat_id: data.id,
+			b_account_id: b_account_id,
+			phpgw_return_as: 'json'
+		}, true);
 
 		$.ajax({
 			type: 'POST',
@@ -400,20 +455,25 @@ $(document).ready(function ()
 		validate_order_category({id: cat_id});
 	}
 
-	oArgs = {menuaction: 'property.uiworkorder.get_b_account'};
-	strURL = phpGWLink('index.php', oArgs, true);
+	strURL = phpGWLink('property/project/lookups/b-account', {
+		phpgw_return_as: 'json'
+	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'b_account_name', 'b_account_id', 'b_account_container', null, null, null, validate_change_budget_account);
 
-	var oArgs = {menuaction: 'property.uiproject.get_external_project'};
-	var strURL = phpGWLink('index.php', oArgs, true);
+	var strURL = phpGWLink('property/project/external-project', {
+		phpgw_return_as: 'json'
+	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'external_project_name', 'external_project_id', 'external_project_container', null, null, null, validate_dim_b);
 	
-	oArgs = {menuaction: 'property.uiproject.get_ecodimb'};
-	strURL = phpGWLink('index.php', oArgs, true);
+	strURL = phpGWLink('property/project/lookups/ecodimb', {
+		phpgw_return_as: 'json'
+	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'ecodimb_name', 'ecodimb', 'ecodimb_container');
 	
-	oArgs = {menuaction: 'property.uiworkorder.get_b_account', role: 'group'};
-	strURL = phpGWLink('index.php', oArgs, true);
+	strURL = phpGWLink('property/project/lookups/b-account', {
+		role: 'group',
+		phpgw_return_as: 'json'
+	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'b_account_group_name', 'b_account_group', 'b_account_group_container');
 		
 	$("#b_account_name").on("autocompleteselect", function (event, ui)
@@ -434,8 +494,10 @@ $(document).ready(function ()
 		{
 			return;
 		}
-		var oArgs = {menuaction: 'property.uiworkorder.get_b_account', query: b_account_id};
-		var strURL = phpGWLink('index.php', oArgs, true);
+		var strURL = phpGWLink('property/project/lookups/b-account', {
+			query: b_account_id,
+			phpgw_return_as: 'json'
+		}, true);
 
 		$.getJSON(strURL, function (Result)
 		{
@@ -467,8 +529,10 @@ $(document).ready(function ()
 				if (ecodimb_id && ecodimb_id !== $('#ecodimb').val())
 				{
 
-					var oArgs = {menuaction: 'property.uiproject.get_ecodimb', query: ecodimb_id};
-					var strURL = phpGWLink('index.php', oArgs, true);
+					var strURL = phpGWLink('property/project/lookups/ecodimb', {
+						query: ecodimb_id,
+						phpgw_return_as: 'json'
+					}, true);
 					$.getJSON(strURL, function (Result)
 					{
 						if (Result.ResultSet.Result.length > 0)
@@ -495,37 +559,419 @@ function addSubEntry()
 	document.add_sub_entry_form.submit();
 }
 
+function parseProjectURL(url)
+{
+	var parser = document.createElement('a');
+	var searchObject = {};
+	var queries;
+	var split;
+	var i;
+
+	parser.href = url;
+	queries = parser.search.replace(/^\?/, '').split('&');
+	for (i = 0; i < queries.length; i++)
+	{
+		if (!queries[i])
+		{
+			continue;
+		}
+		split = queries[i].split('=');
+		var queryKey = split[0] ? decodeURIComponent(split[0]) : '';
+		if (!queryKey)
+		{
+			continue;
+		}
+
+		var queryValue = split.length > 1 ? split.slice(1).join('=') : '';
+		searchObject[queryKey] = decodeURIComponent((queryValue || '').replace(/\+/g, ' '));
+	}
+
+	return {
+		protocol: parser.protocol,
+		host: parser.host,
+		hostname: parser.hostname,
+		port: parser.port,
+		pathname: parser.pathname,
+		search: parser.search,
+		searchObject: searchObject,
+		hash: parser.hash
+	};
+}
+
+function createProjectNavigationClient(form)
+{
+	if (window.PorticoBoundaryClients && typeof window.PorticoBoundaryClients.createProjectClients === 'function')
+	{
+		return window.PorticoBoundaryClients.createProjectClients(form, {
+			parseURL: parseProjectURL
+		}).navigation;
+	}
+
+	return {
+		buildEditUrl: function (id)
+		{
+			var parsed = parseProjectURL(form.action);
+			var query = parsed.searchObject || {};
+			var clickHistory = query.click_history || '';
+
+			if (!clickHistory && typeof window.strBaseURL !== 'undefined' && window.strBaseURL)
+			{
+				var baseQuery = parseProjectURL(window.strBaseURL).searchObject || {};
+				clickHistory = baseQuery.click_history || '';
+			}
+
+			var url = 'index.php?menuaction=property.uiproject.edit&id=' + encodeURIComponent(id);
+			if (clickHistory)
+			{
+				url += '&click_history=' + encodeURIComponent(clickHistory);
+			}
+
+			return url;
+		}
+	};
+}
+
+function createProjectApiClient(form)
+{
+	if (window.PorticoBoundaryClients && typeof window.PorticoBoundaryClients.createProjectClients === 'function')
+	{
+		return window.PorticoBoundaryClients.createProjectClients(form, {
+			parseURL: parseProjectURL
+		}).api;
+	}
+
+	return {
+		buildSaveRequest: function (currentProjectId)
+		{
+			var parsedProjectId = parseInt(currentProjectId, 10);
+			var requestBase = 'property/project/create';
+			var requestMethod = 'POST';
+			if (!isNaN(parsedProjectId) && parsedProjectId > 0)
+			{
+				requestBase = 'property/project/' + parsedProjectId;
+				requestMethod = 'PUT';
+			}
+
+			return {
+				url: phpGWLink(requestBase, {}),
+				method: requestMethod
+			};
+		}
+	};
+}
+
+function getProjectSaveUrl()
+{
+	var form = document.form;
+	var request = createProjectApiClient(form).buildSaveRequest(project_id);
+	if (request && request.url)
+	{
+		return request.url;
+	}
+
+	return phpGWLink('property/project/create', {});
+}
+
+function isProjectCopyRequested(form)
+{
+	var copyProjectField = form ? form.querySelector('input[name="values[copy_project]"]') : null;
+	return !!(copyProjectField && copyProjectField.checked);
+}
+
+function normalizeProjectSaveRequest(saveRequest, currentProjectId, forceCreate)
+{
+	var parsedProjectId = parseInt(currentProjectId, 10);
+	var isCreate = !!forceCreate || isNaN(parsedProjectId) || parsedProjectId <= 0;
+	var method = (saveRequest && saveRequest.method) ? String(saveRequest.method).toUpperCase() : (isCreate ? 'POST' : 'PUT');
+	var url = (saveRequest && saveRequest.url) ? saveRequest.url : getProjectSaveUrl();
+
+	if (isCreate)
+	{
+		method = 'POST';
+
+		if (url && url.indexOf('/property/project/create') === -1)
+		{
+			url = phpGWLink('property/project/create', {});
+		}
+
+		if (!url || url.indexOf('/property/project/create') === -1)
+		{
+			url = phpGWLink('property/project/create', {});
+		}
+	}
+
+	return {
+		url: url,
+		method: method
+	};
+}
+
+function buildProjectSaveFormData()
+{
+	var form = document.form;
+	var formData = new FormData(form);
+	var submitButton = document.getElementsByName('save')[0];
+	if (submitButton)
+	{
+		formData.set('save', submitButton.value || '1');
+	}
+
+	return formData;
+}
+
+function parseProjectFormKeyTokens(key)
+{
+	var tokens = [];
+	var match;
+	var regex = /([^\[\]]+)/g;
+	while ((match = regex.exec(key)) !== null)
+	{
+		tokens.push(match[1]);
+	}
+	return tokens;
+}
+
+function setProjectNestedValue(target, key, value)
+{
+	var tokens = parseProjectFormKeyTokens(key);
+	var forceArray = /\[\]$/.test(key);
+	if (!tokens.length)
+	{
+		return;
+	}
+
+	var node = target;
+	for (var i = 0; i < tokens.length - 1; i++)
+	{
+		var token = tokens[i];
+		if (!Object.prototype.hasOwnProperty.call(node, token) || typeof node[token] !== 'object' || node[token] === null)
+		{
+			node[token] = {};
+		}
+		node = node[token];
+	}
+
+	var leaf = tokens[tokens.length - 1];
+	if (!Object.prototype.hasOwnProperty.call(node, leaf))
+	{
+		node[leaf] = forceArray ? [value] : value;
+		return;
+	}
+
+	if (Array.isArray(node[leaf]))
+	{
+		node[leaf].push(value);
+		return;
+	}
+
+	node[leaf] = [node[leaf], value];
+}
+
+function formDataToProjectObject(formData)
+{
+	var payload = {};
+	formData.forEach(function (value, key)
+	{
+		setProjectNestedValue(payload, key, value);
+	});
+	return payload;
+}
+
+function buildProjectSavePayload(formData)
+{
+	var rawPayload = formDataToProjectObject(formData);
+	var payloadValues = (rawPayload.values && typeof rawPayload.values === 'object') ? rawPayload.values : {};
+	var payloadAttributes = (rawPayload.values_attribute && typeof rawPayload.values_attribute === 'object')
+		? rawPayload.values_attribute
+		: {};
+	var relationInfo = (rawPayload.RelationInfo && typeof rawPayload.RelationInfo === 'object')
+		? rawPayload.RelationInfo
+		: {};
+	var relationFields = ['location_code', 'tenant_id', 'p_num', 'p_entity_id', 'p_cat_id', 'origin', 'origin_id'];
+	var i;
+
+	// Ensure non-nested inputs (for example "contact") are preserved in values.
+	for (var key in rawPayload)
+	{
+		if (!Object.prototype.hasOwnProperty.call(rawPayload, key))
+		{
+			continue;
+		}
+		if (key === 'values' || key === 'values_attribute' || key === 'RelationInfo')
+		{
+			continue;
+		}
+		if (!Object.prototype.hasOwnProperty.call(payloadValues, key))
+		{
+			payloadValues[key] = rawPayload[key];
+		}
+	}
+
+	// Normalize relation metadata into dedicated RelationInfo contract.
+	for (i = 0; i < relationFields.length; i++)
+	{
+		var relationField = relationFields[i];
+		if (!Object.prototype.hasOwnProperty.call(relationInfo, relationField)
+			&& Object.prototype.hasOwnProperty.call(payloadValues, relationField)
+		)
+		{
+			relationInfo[relationField] = payloadValues[relationField];
+		}
+	}
+
+	return {
+		values: payloadValues,
+		values_attribute: payloadAttributes,
+		RelationInfo: relationInfo
+	};
+}
+
+function redirectAfterProjectSave(id)
+{
+	if (!id)
+	{
+		return;
+	}
+
+	var form = document.form;
+	var navigation = createProjectNavigationClient(form);
+	window.location.href = navigation.buildEditUrl(id);
+}
+
+var isProjectSubmitting = false;
+
+function setProjectSubmitButtonsDisabled(disabled)
+{
+	var buttons = document.querySelectorAll('input[type="submit"], button[type="submit"]');
+	for (var i = 0; i < buttons.length; i++)
+	{
+		buttons[i].disabled = disabled;
+	}
+}
+
+function extractProjectErrorMessages(responseData)
+{
+	if (!responseData || !responseData.receipt || !Array.isArray(responseData.receipt.error))
+	{
+		return [];
+	}
+
+	return responseData.receipt.error.map(function (entry)
+	{
+		if (entry && typeof entry.msg === 'string')
+		{
+			return entry.msg;
+		}
+		return '';
+	}).filter(function (message)
+	{
+		return !!message;
+	});
+}
+
+function renderProjectSaveError(messages)
+{
+	if (!messages || !messages.length)
+	{
+		messages = ['Feil ved lagring. Vennligst prov igjen.'];
+	}
+
+	var html = '<div class="text-center alert alert-danger" role="alert">';
+	for (var i = 0; i < messages.length; i++)
+	{
+		if (i > 0)
+		{
+			html += '<br/>';
+		}
+		html += $('<div/>').text(messages[i]).html();
+	}
+	html += '</div>';
+
+	if ($('#message').length)
+	{
+		$('#message').html(html);
+		window.scrollTo(0, 0);
+	}
+	else
+	{
+		window.alert(messages[0]);
+	}
+}
+
 function check_and_submit_valid_session()
 {
-	var oArgs = {menuaction: 'property.bocommon.confirm_session'};
-	var strURL = phpGWLink('index.php', oArgs, true);
+	var form = document.form;
+	if (isProjectSubmitting)
+	{
+		return;
+	}
 
-	$.ajax({
-		type: 'POST',
-		dataType: 'json',
-		url: strURL,
-		success: function (data)
+	if (!window.fetch)
+	{
+		document.getElementsByName("save")[0].value = 1;
+		form.submit();
+		return;
+	}
+
+	var formData = buildProjectSaveFormData();
+	var payload = buildProjectSavePayload(formData);
+	var copyProjectRequested = isProjectCopyRequested(form);
+	var saveRequestRaw = createProjectApiClient(form).buildSaveRequest(project_id);
+	var saveRequest = normalizeProjectSaveRequest(saveRequestRaw, project_id, copyProjectRequested);
+	var requestUrl = saveRequest.url;
+	var projectId = Number(project_id);
+	var isCreate = copyProjectRequested || !projectId;
+	var requestOptions = {
+		method: saveRequest.method ? saveRequest.method : (isCreate ? 'POST' : 'PUT'),
+		credentials: 'same-origin'
+	};
+
+	if (form.querySelector('input[type="file"][name="file"]') || form.querySelector('input[type="file"][name="jasperfile"]'))
+	{
+		requestOptions.body = formData;
+	}
+	else
+	{
+		requestOptions.headers = {'Content-Type': 'application/json'};
+		requestOptions.body = JSON.stringify(payload);
+	}
+
+	isProjectSubmitting = true;
+	setProjectSubmitButtonsDisabled(true);
+
+	fetch(requestUrl, requestOptions)
+		.then(function (response)
 		{
-			if (data != null)
+			return response.json().catch(function ()
 			{
-				if (data['sessionExpired'] == true)
+				return null;
+			}).then(function (data)
+			{
+				if (!response.ok)
 				{
-					window.alert('sessionExpired - please log in');
-					JqueryPortico.lightboxlogin();//defined in common.js
+					var error = new Error('Project save failed');
+					error.responseData = data;
+					throw error;
 				}
-				else
-				{
-					document.getElementsByName("save")[0].value = 1;
-					document.form.submit();
-				}
-			}
-		},
-		failure: function (o)
+
+				return data;
+			});
+		})
+		.then(function (data)
 		{
-			window.alert('failure - try again - once');
-		},
-		timeout: 5000
-	});
+			var id = (data && data.data && data.data.id) ? data.data.id : (data && data.id ? data.id : project_id);
+			if (data && data.receipt && data.receipt.error && data.receipt.error.length)
+			{
+				throw {responseData: data};
+			}
+			redirectAfterProjectSave(id);
+		})
+		.catch(function (error)
+		{
+			isProjectSubmitting = false;
+			setProjectSubmitButtonsDisabled(false);
+			renderProjectSaveError(extractProjectErrorMessages(error && error.responseData));
+		});
 }
 
 this.validate_form = function ()
@@ -637,8 +1083,10 @@ $(window).on('load', function ()
 	function check_valid_external_project(external_project_id)
 	{
 
-		var oArgs = {menuaction: 'property.uiproject.get_external_project', query: external_project_id};
-		var strURL = phpGWLink('index.php', oArgs, true);
+		var strURL = phpGWLink('property/project/external-project', {
+			query: external_project_id,
+			phpgw_return_as: 'json'
+		}, true);
 		
 
 		$.getJSON(strURL, function (Result)
@@ -670,8 +1118,8 @@ window.on_location_updated = function (location_code)
 		return;
 	}
 
-	var oArgs = {menuaction: 'property.uilocation.get_delivery_address', loc1: location_code};
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var oArgs = {loc1: location_code};
+	var requestUrl = phpGWLink('property/location/delivery-address', oArgs);
 
 	$.ajax({
 		type: 'POST',
@@ -693,8 +1141,8 @@ window.get_location_exception = function (location_code)
     //delete div where role=alert, not the $("#message")
     $("div[role=alert]").remove();
 
-	var oArgs = {menuaction: 'property.uilocation.get_location_exception', location_code: location_code};
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var oArgs = {location_code: location_code};
+	var requestUrl = phpGWLink('property/location/location-exception', oArgs);
 
 	$.ajax({
 		type: 'POST',
@@ -734,7 +1182,7 @@ window.get_location_exception = function (location_code)
 
 this.fileuploader = function ()
 {
-	var sUrl = phpGWLink('index.php', multi_upload_parans);
+	var sUrl = phpGWLink('property/project/' + encodeURIComponent(project_id) + '/multi-upload', {});
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
 		closejs: function ()
@@ -747,8 +1195,9 @@ this.fileuploader = function ()
 
 this.refresh_files = function ()
 {
-	var oArgs = {menuaction: 'property.uiproject.get_files', id: project_id};
-	var strURL = phpGWLink('index.php', oArgs, true);
+	var strURL = phpGWLink('property/project/' + project_id + '/files', {
+		phpgw_return_as: 'json'
+	}, true);
 
 	refresh_glider(strURL);
 
@@ -757,8 +1206,8 @@ this.refresh_files = function ()
 
 this.get_other_projects = function (location_code)
 {
-	var oArgs = {menuaction: 'property.uiproject.get_other_projects', location_code: location_code, id: project_id};
-	var strURL = phpGWLink('index.php', oArgs, true);
+	var oArgs = {location_code: location_code, id: project_id};
+	var strURL = phpGWLink('property/project/' + project_id + '/other-projects', oArgs);
 	JqueryPortico.updateinlineTableHelper('datatable-container_7', strURL);
 };
 

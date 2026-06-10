@@ -60,6 +60,46 @@ namespace
 			{
 				return false;
 			}
+
+			public static function link(string $path, array $params = []): string
+			{
+				if (!$params)
+				{
+					return $path;
+				}
+
+				return $path . '?' . http_build_query($params);
+			}
+		}
+	}
+
+	if (!function_exists('set_test_create_object'))
+	{
+		function set_test_create_object(string $name, object $instance): void
+		{
+			$GLOBALS['__entity_test_create_object_map'][$name] = $instance;
+		}
+	}
+
+	if (!function_exists('reset_test_create_object'))
+	{
+		function reset_test_create_object(): void
+		{
+			$GLOBALS['__entity_test_create_object_map'] = [];
+		}
+	}
+
+	if (!function_exists('CreateObject'))
+	{
+		function CreateObject(string $name, ...$args)
+		{
+			$map = $GLOBALS['__entity_test_create_object_map'] ?? [];
+			if (isset($map[$name]) && is_object($map[$name]))
+			{
+				return $map[$name];
+			}
+
+			throw new \RuntimeException("No test CreateObject mapping for {$name}");
 		}
 	}
 
@@ -85,6 +125,22 @@ namespace
 			abstract public function get_items_per_qr(string $qr_code): array;
 			abstract public function read_entity_to_link(array $params): array;
 			abstract public function get_inventory(array $params): array;
+		}
+	}
+
+	if (!class_exists('phpgwapi_common'))
+	{
+		class phpgwapi_common
+		{
+			public function show_date($value, string $format = 'Y-m-d'): string
+			{
+				if (is_numeric($value))
+				{
+					return date($format, (int)$value);
+				}
+
+				return (string)$value;
+			}
 		}
 	}
 
@@ -132,6 +188,8 @@ class EntityControllerTest extends TestCase
 
 	protected function setUp(): void
 	{
+		reset_test_create_object();
+
 		$this->responseBody = '';
 
 		$stream = $this->createMock(StreamInterface::class);
@@ -210,6 +268,16 @@ class EntityControllerTest extends TestCase
 				string $message
 			): \property_boentity {
 				return $this->boStub;
+			}
+
+			protected function assertEntityGrants(
+				ServerRequestInterface $request,
+				array $args,
+				int $aclType,
+				string $message
+			): void {
+				// Keep controller unit tests focused on endpoint behavior and payload shaping.
+				// Grant-path behavior is covered separately in integration-style tests.
 			}
 
 			protected function formHelper(): EntityFormHelper
@@ -421,7 +489,7 @@ class EntityControllerTest extends TestCase
 		$bo->expects($this->once())
 			->method('save')
 			->with(
-				['title' => 'New'],
+				['title' => 'New', 'extra' => []],
 				['1' => 'val'],
 				'add',
 				5,   // entity_id
@@ -460,9 +528,9 @@ class EntityControllerTest extends TestCase
 
 		$helper->expects($this->once())
 			->method('validate')
-			->with(['title' => 'New'], ['1' => 'val'], 3, 5, $this->isType('object'), $bo)
+			->with(['title' => 'New', 'extra' => []], ['1' => 'val'], 3, 5, $this->isType('object'), $bo)
 			->willReturn([
-				'values' => ['title' => 'New'],
+				'values' => ['title' => 'New', 'extra' => []],
 				'values_attribute' => ['1' => 'val'],
 				'errors' => [],
 			]);
@@ -470,7 +538,7 @@ class EntityControllerTest extends TestCase
 		$helper->expects($this->once())
 			->method('persistSave')
 			->with(
-				['title' => 'New'],
+				['title' => 'New', 'extra' => []],
 				['1' => 'val'],
 				'add',
 				5,
@@ -513,6 +581,7 @@ class EntityControllerTest extends TestCase
 			->willReturn([
 				'values' => [
 					'title' => 'New',
+					'extra' => [],
 					'file_action' => [123],
 				],
 				'values_attribute' => [],
@@ -550,68 +619,49 @@ class EntityControllerTest extends TestCase
 		$this->assertSame('Failed to upload file !', $decoded['error'][0]['msg']);
 	}
 
-	public function testBuildLegacyCollectLocationPostPrefersTopLevelRequestBodyFields(): void
+	public function testApplyRelationInfoPayloadPrefersTopLevelRequestBodyFields(): void
 	{
 		$bo = $this->createMock(\property_boentity::class);
 		$controller = $this->makeController($bo);
 
 		$values = [
-			'location' => ['loc1' => 'fallback-100', 'loc2' => 'fallback-200'],
 			'extra' => [
-				'p_entity_id' => 'fallback-5',
-				'p_cat_id' => 'fallback-3',
-			],
-			'additional_info' => [
-				'Building' => 'fallback-A',
+				'tenant_id' => 'fallback-tenant',
 			],
 			'street_name' => 'Fallback St',
 			'street_number' => '99',
 			'location_name' => 'Parent Name',
-			'p' => [
-				5 => ['p_cat_name' => 'Fallback category'],
-			],
 		];
 
 		$body = [
-			'loc1' => '100',
-			'loc2' => '200',
-			'loc1_name' => 'Object name',
+			'RelationInfo' => [
+				'location_code' => '100-200',
+				'tenant_id' => '77',
+				'origin' => '.ticket',
+				'origin_id' => 34844,
+			],
 			'loc2_name' => 'Building name',
-			'p_entity_id' => '5',
-			'p_cat_id' => '3',
-			'building_input' => 'A',
 			'street_name' => 'Main St',
 			'street_number' => '10',
-			'entity_cat_name_5' => 'Child category',
 		];
 
-		$insertRecord = [
-			'location' => ['loc1', 'loc2'],
-			'extra' => [
-				'p_entity_id' => 'p_entity_id',
-				'p_cat_id' => 'p_cat_id',
-			],
-			'additional_info' => [
-				['input_name' => 'building_input', 'input_text' => 'Building'],
-			],
-		];
-
-		$method = new \ReflectionMethod(EntityController::class, 'buildLegacyCollectLocationPost');
+		$method = new \ReflectionMethod(EntityController::class, 'applyRelationInfoPayload');
 		$method->setAccessible(true);
 
-		/** @var array<string, mixed> $post */
-		$post = $method->invoke($controller, $values, $insertRecord, $body);
+		$this->request->method('getParsedBody')->willReturn($body);
 
-		$this->assertSame('100', $post['loc1']);
-		$this->assertSame('200', $post['loc2']);
-		$this->assertSame('Object name', $post['loc1_name']);
-		$this->assertSame('Building name', $post['loc2_name']);
-		$this->assertSame('5', $post['p_entity_id']);
-		$this->assertSame('3', $post['p_cat_id']);
-		$this->assertSame('A', $post['building_input']);
+		/** @var array<string, mixed> $post */
+		$post = $method->invoke($controller, $values, $bo, $this->request);
+
+		$this->assertSame('100-200', $post['location_code']);
+		$this->assertSame('100', $post['location']['loc1']);
+		$this->assertSame('200', $post['location']['loc2']);
+		$this->assertSame('Building name', $post['location_name']);
 		$this->assertSame('Main St', $post['street_name']);
 		$this->assertSame('10', $post['street_number']);
-		$this->assertSame('Child category', $post['entity_cat_name_5']);
+		$this->assertSame('77', $post['extra']['tenant_id']);
+		$this->assertSame('.ticket', $post['origin']);
+		$this->assertSame(34844, $post['origin_id']);
 	}
 
 	public function testStoreReturns400WhenValidationFails(): void
@@ -742,9 +792,9 @@ class EntityControllerTest extends TestCase
 
 		$helper->expects($this->once())
 			->method('validate')
-			->with(['title' => 'Updated', 'id' => 7], ['1' => 'val'], 3, 5, $this->isType('object'), $bo)
+			->with(['title' => 'Updated', 'id' => 7, 'extra' => []], ['1' => 'val'], 3, 5, $this->isType('object'), $bo)
 			->willReturn([
-				'values' => ['title' => 'Updated', 'id' => 7],
+				'values' => ['title' => 'Updated', 'id' => 7, 'extra' => []],
 				'values_attribute' => ['1' => 'val'],
 				'errors' => [],
 			]);
@@ -752,7 +802,7 @@ class EntityControllerTest extends TestCase
 		$helper->expects($this->once())
 			->method('persistSave')
 			->with(
-				['title' => 'Updated', 'id' => 7],
+				['title' => 'Updated', 'id' => 7, 'extra' => []],
 				['1' => 'val'],
 				'edit',
 				5,
@@ -855,7 +905,7 @@ class EntityControllerTest extends TestCase
 		$helper->expects($this->once())
 			->method('validate')
 			->willReturn([
-				'values' => ['title' => 'Updated', 'id' => 7],
+				'values' => ['title' => 'Updated', 'id' => 7, 'extra' => []],
 				'values_attribute' => [],
 				'errors' => [
 					['msg' => 'Please enter value for attribute Test'],
@@ -1031,12 +1081,31 @@ class EntityControllerTest extends TestCase
 
 		$decoded = json_decode($this->responseBody, true);
 		$this->assertSame('photo.jpg',  $decoded['data'][0]['file_name']);
+		$this->assertSame(1,            $decoded['data'][0]['file_id']);
+		$this->assertSame('image/jpeg', $decoded['data'][0]['file_mime_type']);
 		$this->assertSame(1,            $decoded['data'][0]['img_id']);
-		$this->assertArrayHasKey('file_link', $decoded['data'][0]);
-		$this->assertArrayHasKey('delete_file', $decoded['data'][0]);
+		$this->assertArrayHasKey('loc1', $decoded['data'][0]);
+		$this->assertArrayHasKey('item_id', $decoded['data'][0]);
+		$this->assertArrayHasKey('entity_id', $decoded['data'][0]);
+		$this->assertArrayHasKey('cat_id', $decoded['data'][0]);
+		$this->assertArrayHasKey('type', $decoded['data'][0]);
 		$this->assertSame(1,            $decoded['recordsTotal']);
 		$this->assertSame(1,            $decoded['recordsFiltered']);
-		$this->assertSame(1,            $decoded['draw']);
+		$this->assertSame(2,            $decoded['draw']);
+	}
+
+	public function testGetFilesDefaultsDrawToOneWhenMissing(): void
+	{
+		$bo = $this->createMock(\property_boentity::class);
+		$bo->method('read_single')->willReturn(['id' => 3, 'files' => [], 'location_data' => []]);
+
+		$this->request->method('getQueryParams')->willReturn([]);
+
+		$args = array_merge($this->baseArgs(), ['id' => '3']);
+		$this->makeController($bo)->getFiles($this->request, $this->response, $args);
+
+		$decoded = json_decode($this->responseBody, true);
+		$this->assertSame(1, $decoded['draw']);
 	}
 
 	// ── getRelated() ─────────────────────────────────────────────────────────
@@ -1060,7 +1129,139 @@ class EntityControllerTest extends TestCase
 		$decoded = json_decode($this->responseBody, true);
 		$this->assertCount(1, $decoded['data']);
 		$this->assertSame('ItemX', $decoded['data'][0]['name']);
+		$this->assertSame('/index.php', $decoded['data'][0]['related_path']);
+		$this->assertIsArray($decoded['data'][0]['related_params']);
+		$this->assertArrayHasKey('menuaction', $decoded['data'][0]['related_params']);
 		$this->assertSame(2, $decoded['draw']);
+	}
+
+	// ── getTarget() ──────────────────────────────────────────────────────────
+
+	public function testGetTargetReturnsStructuredRowsFromInterlinkAndWorkorders(): void
+	{
+		$bo = $this->createMock(\property_boentity::class);
+		$bo->acl_location = '.entity.5.3';
+
+		$interlink = new class
+		{
+			public function get_relation(string $app, string $aclLocation, int $id, string $mode): array
+			{
+				return [[
+					'descr' => 'ticket',
+					'data' => [[
+						'id' => '55',
+						'link' => '/index.php?menuaction=helpdesk.uiticket.view&id=55',
+						'title' => 'Broken door',
+						'statustext' => 'Open',
+						'account_id' => 0,
+						'entry_date' => 1710000000,
+					]],
+				]];
+			}
+		};
+
+		$soworkorder = new class
+		{
+			public function get_entity_relation(int $entityId, int $catId, int $id): array
+			{
+				return [[
+					'id' => 9,
+					'title' => 'WO title',
+					'statustext' => 'New',
+					'user_id' => 0,
+					'entry_date' => 1710001000,
+				]];
+			}
+		};
+
+		set_test_create_object('property.interlink', $interlink);
+		set_test_create_object('property.soworkorder', $soworkorder);
+
+		$this->request->method('getQueryParams')->willReturn(['draw' => '3']);
+
+		$args = array_merge($this->baseArgs(), ['id' => '1']);
+		$this->makeController($bo)->getTarget($this->request, $this->response, $args);
+
+		$decoded = json_decode($this->responseBody, true);
+		$this->assertSame(3, $decoded['draw']);
+		$this->assertSame(2, $decoded['recordsTotal']);
+		$this->assertCount(2, $decoded['data']);
+
+		$this->assertSame('55', $decoded['data'][0]['target_id']);
+		$this->assertSame('/index.php', $decoded['data'][0]['target_path']);
+		$this->assertSame('ticket', $decoded['data'][0]['type']);
+		$this->assertSame('Broken door', $decoded['data'][0]['title']);
+		$this->assertIsArray($decoded['data'][0]['target_params']);
+		$this->assertArrayHasKey('menuaction', $decoded['data'][0]['target_params']);
+
+		$this->assertSame('9', $decoded['data'][1]['target_id']);
+		$this->assertSame('workorder', $decoded['data'][1]['type']);
+		$this->assertSame('WO title', $decoded['data'][1]['title']);
+	}
+
+	// ── getDocuments() ───────────────────────────────────────────────────────
+
+	public function testGetDocumentsReturnsEntityAndGenericRows(): void
+	{
+		$bo = $this->createMock(\property_boentity::class);
+
+		$sodocument = new class
+		{
+			public int $total_records = 1;
+
+			public function read_at_location(array $params): array
+			{
+				return [[
+					'id' => 7,
+					'document_name' => 'Entity doc',
+					'title' => 'Entity title',
+				]];
+			}
+		};
+
+		$sogenericDocument = new class
+		{
+			public int $total_records = 1;
+
+			public function read(array $params): array
+			{
+				return [[
+					'id' => 8,
+					'name' => 'Generic doc',
+					'title' => 'Generic title',
+				]];
+			}
+		};
+
+		set_test_create_object('property.sodocument', $sodocument);
+		set_test_create_object('property.sogeneric_document', $sogenericDocument);
+
+		$this->request->method('getQueryParams')->willReturn([
+			'draw' => '1',
+			'location_id' => '99',
+			'doc_type' => '2',
+			'start' => '0',
+			'length' => '10',
+		]);
+		$this->request->method('getParsedBody')->willReturn([]);
+
+		$args = array_merge($this->baseArgs(), ['id' => '3']);
+		$this->makeController($bo)->getDocuments($this->request, $this->response, $args);
+
+		$decoded = json_decode($this->responseBody, true);
+		$this->assertSame(2, $decoded['draw']);
+		$this->assertSame(2, $decoded['recordsTotal']);
+		$this->assertCount(2, $decoded['data']);
+
+		$this->assertSame('Entity doc', $decoded['data'][0]['document_name']);
+		$this->assertSame('entity', $decoded['data'][0]['document_source']);
+		$this->assertSame(7, $decoded['data'][0]['document_id']);
+		$this->assertSame('Entity title', $decoded['data'][0]['title']);
+
+		$this->assertSame('Generic doc', $decoded['data'][1]['document_name']);
+		$this->assertSame('generic', $decoded['data'][1]['document_source']);
+		$this->assertSame(8, $decoded['data'][1]['document_id']);
+		$this->assertSame('Generic title', $decoded['data'][1]['title']);
 	}
 }
 

@@ -1,8 +1,193 @@
-/* global get_files_java_url, get_checklists_url, get_cases_url, get_controls_url, get_cases_for_checklist_url, location_id, item_id */
+/* global get_files_java_url, get_checklists_url, get_cases_url, get_controls_url, get_cases_for_checklist_url, location_id, item_id, multi_upload_url */
+
+/**
+ * Read the current entity's type / entity_id / cat_id from the page.
+ *
+ * Sources tried in order:
+ *   1. Hidden inputs #field_type and #field_entity_id (always present in entity.xsl).
+ *   2. #cat_id select element (present when the category list has more than one entry).
+ *   3. The form's REST-style action attribute: /property/entity/{type}/{entity_id}/{cat_id}...
+ *
+ * @returns {{type: string, entityId: string, catId: string}}
+ */
+function getEntityContext()
+{
+	var type = ($('#field_type').val() || '').toString();
+	var entityId = ($('#field_entity_id').val() || '').toString();
+	var catId = ($('#cat_id').val() || '').toString();
+
+	if (!catId || catId === '0')
+	{
+		var formAction = ($('#form').attr('action') || '').toString();
+		var pathMatch = formAction.match(/\/property\/entity\/([^/]+)\/(\d+)\/(\d+)/);
+		if (pathMatch)
+		{
+			if (!type)     { type     = decodeURIComponent(pathMatch[1]); }
+			if (!entityId) { entityId = pathMatch[2]; }
+			catId = pathMatch[3];
+		}
+		else
+		{
+			var qIndex = formAction.indexOf('?');
+			if (qIndex !== -1)
+			{
+				var params = new URLSearchParams(formAction.substring(qIndex + 1));
+				if (!type)     { type     = params.get('type')      || ''; }
+				if (!entityId) { entityId = params.get('entity_id') || ''; }
+				catId = params.get('cat_id') || '';
+			}
+		}
+	}
+
+	return {type: type, entityId: entityId, catId: catId};
+}
+
+formatEntityFileLink = function (key, oData)
+{
+	var name = (oData && oData[key]) ? String(oData[key]) : '';
+	var url = '';
+	if (!name)
+	{
+		return '';
+	}
+
+	if (oData && oData.file_id)
+	{
+		url = phpGWLink('index.php', {
+			menuaction: 'property.uientity.view_file',
+			loc1: oData.loc1 || '',
+			id: oData.item_id || '',
+			cat_id: oData.cat_id || '',
+			entity_id: oData.entity_id || '',
+			type: oData.type || '',
+			file_id: oData.file_id
+		});
+	}
+
+	if (!url)
+	{
+		return $('<div/>').text(name).html();
+	}
+
+	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener">'
+		+ $('<div/>').text(name).html()
+		+ '</a>';
+};
+
+formatEntityDeleteFileCheckbox = function (key, oData)
+{
+	var fileId = (oData && oData[key] !== undefined && oData[key] !== null) ? String(oData[key]) : '';
+	if (!fileId)
+	{
+		return '';
+	}
+
+	return "<input type='checkbox' name='values[file_action][]' value='" + $('<div/>').text(fileId).html()
+		+ "' title='" + $('<div/>').text('Check to delete file').html() + "'>";
+};
+
+formatEntityRelatedLink = function (key, oData)
+{
+	var text = (oData && oData[key]) ? String(oData[key]) : '';
+	if (!text)
+	{
+		return '';
+	}
+
+	var path = (oData && oData.related_path) ? String(oData.related_path) : '';
+	var params = (oData && oData.related_params && typeof oData.related_params === 'object')
+		? oData.related_params
+		: null;
+	var url = '';
+
+	if (path && params)
+	{
+		url = phpGWLink(path, params);
+	}
+	else if (path)
+	{
+		url = path;
+	}
+
+	if (!url)
+	{
+		return $('<div/>').text(text).html();
+	}
+
+	return '<a href="' + encodeURI(url) + '">' + $('<div/>').text(text).html() + '</a>';
+};
+
+formatEntityTargetLink = function (key, oData)
+{
+	var text = (oData && oData[key] !== undefined && oData[key] !== null) ? String(oData[key]) : '';
+	if (!text)
+	{
+		return '';
+	}
+
+	var path = (oData && oData.target_path) ? String(oData.target_path) : '';
+	var params = (oData && oData.target_params && typeof oData.target_params === 'object')
+		? oData.target_params
+		: null;
+	var url = '';
+
+	if (path && params)
+	{
+		url = phpGWLink(path, params);
+	}
+	else if (path)
+	{
+		url = path;
+	}
+
+	if (!url)
+	{
+		return $('<div/>').text(text).html();
+	}
+
+	return '<a href="' + encodeURI(url) + '">' + $('<div/>').text(text).html() + '</a>';
+};
+
+formatEntityDocumentLink = function (key, oData)
+{
+	var name = (oData && oData[key]) ? String(oData[key]) : '';
+	if (!name)
+	{
+		return '';
+	}
+
+	var source = (oData && oData.document_source) ? String(oData.document_source) : '';
+	var documentId = (oData && oData.document_id) ? String(oData.document_id) : '';
+	var url = '';
+
+	if (source === 'generic' && documentId)
+	{
+		url = phpGWLink('index.php', {
+			menuaction: 'property.uigeneric_document.view_file',
+			file_id: documentId
+		});
+	}
+	else if (documentId)
+	{
+		url = phpGWLink('index.php', {
+			menuaction: 'property.uidocument.view_file',
+			id: documentId
+		});
+	}
+
+	if (!url)
+	{
+		return $('<div/>').text(name).html();
+	}
+
+	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener">'
+		+ $('<div/>').text(name).html()
+		+ '</a>';
+};
 
 this.fileuploader = function ()
 {
-	var sUrl = phpGWLink('index.php', multi_upload_parans);
+	var sUrl = multi_upload_url || phpGWLink('index.php', multi_upload_parans);
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
 		closejs: function ()
@@ -29,8 +214,17 @@ this.refresh_files = function ()
 
 this.showlightbox_add_inventory = function (location_id, id)
 {
-	var oArgs = {menuaction: 'property.uientity.add_inventory', location_id: location_id, id: id};
-	var sUrl = phpGWLink('index.php', oArgs);
+	var ctx = getEntityContext();
+	if (!ctx.type || !ctx.entityId || !ctx.catId || !id)
+	{
+		return;
+	}
+
+	var sUrl = '/property/entity/' + encodeURIComponent(ctx.type)
+		+ '/' + encodeURIComponent(ctx.entityId)
+		+ '/' + encodeURIComponent(ctx.catId)
+		+ '/' + encodeURIComponent(id)
+		+ '/inventory/add?location_id=' + encodeURIComponent(location_id);
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
@@ -43,8 +237,18 @@ this.showlightbox_add_inventory = function (location_id, id)
 
 this.showlightbox_edit_inventory = function (location_id, id, inventory_id)
 {
-	var oArgs = {menuaction: 'property.uientity.edit_inventory', location_id: location_id, id: id, inventory_id: inventory_id};
-	var sUrl = phpGWLink('index.php', oArgs);
+	var ctx = getEntityContext();
+	if (!ctx.type || !ctx.entityId || !ctx.catId || !id || !inventory_id)
+	{
+		return;
+	}
+
+	var sUrl = '/property/entity/' + encodeURIComponent(ctx.type)
+		+ '/' + encodeURIComponent(ctx.entityId)
+		+ '/' + encodeURIComponent(ctx.catId)
+		+ '/' + encodeURIComponent(id)
+		+ '/inventory/' + encodeURIComponent(inventory_id)
+		+ '/edit?location_id=' + encodeURIComponent(location_id);
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
@@ -57,8 +261,18 @@ this.showlightbox_edit_inventory = function (location_id, id, inventory_id)
 
 this.showlightbox_show_calendar = function (location_id, id, inventory_id)
 {
-	var oArgs = {menuaction: 'property.uientity.inventory_calendar', location_id: location_id, id: id, inventory_id: inventory_id};
-	var sUrl = phpGWLink('index.php', oArgs);
+	var ctx = getEntityContext();
+	if (!ctx.type || !ctx.entityId || !ctx.catId || !id || !inventory_id)
+	{
+		return;
+	}
+
+	var sUrl = '/property/entity/' + encodeURIComponent(ctx.type)
+		+ '/' + encodeURIComponent(ctx.entityId)
+		+ '/' + encodeURIComponent(ctx.catId)
+		+ '/' + encodeURIComponent(id)
+		+ '/inventory/' + encodeURIComponent(inventory_id)
+		+ '/calendar?location_id=' + encodeURIComponent(location_id);
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
@@ -71,8 +285,16 @@ this.showlightbox_show_calendar = function (location_id, id, inventory_id)
 
 this.showlightbox_assigned_history = function (serie_id)
 {
-	var oArgs = {menuaction: 'property.uientity.get_assigned_history', serie_id: serie_id};
-	var sUrl = phpGWLink('index.php', oArgs);
+	var ctx = getEntityContext();
+	if (!ctx.type || !ctx.entityId || !ctx.catId || !serie_id)
+	{
+		return;
+	}
+
+	var sUrl = '/property/entity/' + encodeURIComponent(ctx.type)
+		+ '/' + encodeURIComponent(ctx.entityId)
+		+ '/' + encodeURIComponent(ctx.catId)
+		+ '/assigned-history?serie_id=' + encodeURIComponent(serie_id);
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
@@ -82,8 +304,20 @@ this.showlightbox_assigned_history = function (serie_id)
 
 this.refresh_inventory = function (location_id, id)
 {
-	var oArgs = {menuaction: 'property.uientity.get_inventory', location_id: location_id, id: id};
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var type = $('#field_type').val() || '';
+	var entityId = $('#field_entity_id').val() || '';
+	var catId = $('#cat_id').val() || '';
+
+	if (!(type && entityId && catId && id))
+	{
+		return;
+	}
+
+	var requestUrl = '/property/entity/' + encodeURIComponent(type)
+		+ '/' + encodeURIComponent(entityId)
+		+ '/' + encodeURIComponent(catId)
+		+ '/' + encodeURIComponent(id)
+		+ '/inventory';
 
 	var api = oTable3.api();
 	api.ajax.url(requestUrl).load();
@@ -129,8 +363,8 @@ this.onActionsClick = function (action)
 		data.control_start_date = $("#control_start_date").val();
 		data.repeat_type = $("#repeat_type").val();
 
-		var oArgs = {menuaction: 'property.controller_helper.update_control_serie', location_id : location_id, id: item_id };
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var oArgs = {location_id: location_id, id: item_id };
+		var requestUrl = phpGWLink('property/location/component/update-control-serie', oArgs);
 		$.ajax({
 			type: 'POST',
 			dataType: 'json',
@@ -184,7 +418,6 @@ function parseURL(url)
 add_control = function ()
 {
 	oArgs = {location_id:location_id, id: item_id};
-	oArgs.menuaction = 'property.controller_helper.add_control';
 	oArgs.control_id = $("#control_id").val();
 	oArgs.control_responsible = $("#control_responsible").val();
 	oArgs.control_start_date = $("#control_start_date").val();
@@ -198,7 +431,7 @@ add_control = function ()
 	oArgs.repeat_interval = $("#repeat_interval").val();
 	oArgs.controle_time = $("#controle_time").val();
 	oArgs.service_time = $("#service_time").val();
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var requestUrl = phpGWLink('property/location/component/add-control', oArgs);
 //								alert(requestUrl);
 
 	$("#controller_receipt").html("");
@@ -529,81 +762,123 @@ function logRelationInfoDebug(formData)
 	}
 }
 
-function buildEntityRestRequest(form, submitterName)
+function createEntityNavigationClient(form)
 {
-	var parsed = parseURL(form.action);
-	var query = parsed.searchObject || {};
-	var type = query.type || '';
-	var entityId = query.entity_id || '';
-	var catId = query.cat_id || '';
-	var isApply = (submitterName === 'values[apply]');
-	var clickHistory = isApply ? '' : (query.click_history || '');
-
-	if (!type || !entityId || !catId)
+	if (window.PorticoBoundaryClients && typeof window.PorticoBoundaryClients.createEntityClients === 'function')
 	{
-		var pathMatch = parsed.pathname.match(/\/property\/entity\/([^\/]+)\/(\d+)\/(\d+)/);
-		if (pathMatch)
-		{
-			if (!type) { type = decodeURIComponent(pathMatch[1]); }
-			if (!entityId) { entityId = pathMatch[2]; }
-			if (!catId) { catId = pathMatch[3]; }
-		}
-	}
-
-	if (!type) { type = $('#field_type').val() || ''; }
-	if (!catId || catId === '0')
-	{
-		catId = $('#cat_id').val() || '';
-	}
-
-	var rawId = (query.id || item_id || '').toString();
-	var id = parseInt(rawId, 10);
-	var bypass = query.bypass;
-
-	if (!type || !entityId || !catId)
-	{
-		return null;
-	}
-
-	var isCreate = !id;
-	var url = '/property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId;
-	if (isCreate)
-	{
-		url += '/create';
-	}
-	else
-	{
-		url += '/' + id;
-	}
-
-	if (!isApply && !clickHistory && typeof strBaseURL !== 'undefined' && strBaseURL)
-	{
-		var baseQuery = parseURL(strBaseURL).searchObject || {};
-		clickHistory = baseQuery.click_history || '';
-	}
-
-	var queryParts = [];
-	if (typeof bypass !== 'undefined' && bypass !== null && bypass !== '')
-	{
-		queryParts.push('bypass=' + encodeURIComponent(bypass));
-	}
-	if (clickHistory)
-	{
-		queryParts.push('click_history=' + encodeURIComponent(clickHistory));
-	}
-	if (queryParts.length)
-	{
-		url += '?' + queryParts.join('&');
+		return window.PorticoBoundaryClients.createEntityClients(form, {
+			parseURL: parseURL
+		}).navigation;
 	}
 
 	return {
-		url: url,
-		method: isCreate ? 'POST' : 'PUT',
-		isCreate: isCreate,
-		type: type,
-		entityId: entityId,
-		catId: catId
+		buildEditUrl: function (type, entityId, catId, id)
+		{
+			return 'index.php?menuaction=property.uientity.edit'
+				+ '&type=' + encodeURIComponent(type)
+				+ '&entity_id=' + encodeURIComponent(entityId)
+				+ '&cat_id=' + encodeURIComponent(catId)
+				+ '&id=' + encodeURIComponent(id);
+		},
+		buildIndexUrl: function (type, entityId, catId)
+		{
+			return 'index.php?menuaction=property.uientity.index'
+				+ '&entity_id=' + encodeURIComponent(entityId)
+				+ '&cat_id=' + encodeURIComponent(catId)
+				+ '&type=' + encodeURIComponent(type);
+		}
 	};
+}
+
+function createEntityApiClient(form)
+{
+	if (window.PorticoBoundaryClients && typeof window.PorticoBoundaryClients.createEntityClients === 'function')
+	{
+		return window.PorticoBoundaryClients.createEntityClients(form, {
+			parseURL: parseURL
+		}).api;
+	}
+
+	var parsed = parseURL(form.action);
+	var query = parsed.searchObject || {};
+
+	return {
+		buildSaveRequest: function (submitterName)
+		{
+			var type = query.type || '';
+			var entityId = query.entity_id || '';
+			var catId = query.cat_id || '';
+			var isApply = (submitterName === 'values[apply]');
+			var clickHistory = isApply ? '' : (query.click_history || '');
+
+			if (!type || !entityId || !catId)
+			{
+				var pathMatch = parsed.pathname.match(/\/property\/entity\/([^\/]+)\/(\d+)\/(\d+)/);
+				if (pathMatch)
+				{
+					if (!type) { type = decodeURIComponent(pathMatch[1]); }
+					if (!entityId) { entityId = pathMatch[2]; }
+					if (!catId) { catId = pathMatch[3]; }
+				}
+			}
+
+			if (!type) { type = $('#field_type').val() || ''; }
+			if (!catId || catId === '0')
+			{
+				catId = $('#cat_id').val() || '';
+			}
+
+			var rawId = (query.id || item_id || '').toString();
+			var id = parseInt(rawId, 10);
+			var bypass = query.bypass;
+
+			if (!type || !entityId || !catId)
+			{
+				return null;
+			}
+
+			var isCreate = !id;
+			var url = '/property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId;
+			if (!isCreate)
+			{
+				url += '/' + id;
+			}
+
+			if (!isApply && !clickHistory && typeof strBaseURL !== 'undefined' && strBaseURL)
+			{
+				var baseQuery = parseURL(strBaseURL).searchObject || {};
+				clickHistory = baseQuery.click_history || '';
+			}
+
+			var queryParts = [];
+			if (typeof bypass !== 'undefined' && bypass !== null && bypass !== '')
+			{
+				queryParts.push('bypass=' + encodeURIComponent(bypass));
+			}
+			if (clickHistory)
+			{
+				queryParts.push('click_history=' + encodeURIComponent(clickHistory));
+			}
+			if (queryParts.length)
+			{
+				url += '?' + queryParts.join('&');
+			}
+
+			return {
+				url: url,
+				method: isCreate ? 'POST' : 'PUT',
+				isCreate: isCreate,
+				type: type,
+				entityId: entityId,
+				catId: catId
+			};
+		}
+	};
+}
+
+function buildEntityRestRequest(form, submitterName)
+{
+	return createEntityApiClient(form).buildSaveRequest(submitterName);
 }
 
 function clearFormAlerts(form)
@@ -816,6 +1091,7 @@ $(document).ready(function ()
 			return true;
 		}
 
+		var navigationClient = createEntityNavigationClient(form);
 		var restRequest = buildEntityRestRequest(form, submitter ? submitter.name : '');
 		if (!restRequest)
 		{
@@ -899,11 +1175,12 @@ $(document).ready(function ()
 
 				if (restRequest.isCreate && data.id)
 				{
-					var redirectUrl = 'index.php?menuaction=property.uientity.edit'
-						+ '&type=' + encodeURIComponent(restRequest.type)
-						+ '&entity_id=' + encodeURIComponent(restRequest.entityId)
-						+ '&cat_id=' + encodeURIComponent(restRequest.catId)
-						+ '&id=' + encodeURIComponent(data.id);
+					var redirectUrl = navigationClient.buildEditUrl(
+						restRequest.type,
+						restRequest.entityId,
+						restRequest.catId,
+						data.id
+					);
 					setTimeout(function ()
 					{
 						window.location.href = redirectUrl;
@@ -911,10 +1188,11 @@ $(document).ready(function ()
 				}
 				else if (submitter && submitter.name === 'values[save]')
 				{
-					var indexUrl = 'index.php?menuaction=property.uientity.index'
-						+ '&entity_id=' + encodeURIComponent(restRequest.entityId)
-						+ '&cat_id=' + encodeURIComponent(restRequest.catId)
-						+ '&type=' + encodeURIComponent(restRequest.type);
+					var indexUrl = navigationClient.buildIndexUrl(
+						restRequest.type,
+						restRequest.entityId,
+						restRequest.catId
+					);
 					setTimeout(function ()
 					{
 						window.location.href = indexUrl;

@@ -760,6 +760,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		$boproject	 = CreateObject('property.boproject');
 		$bolocation	 = CreateObject('property.bolocation');
 		$config		 = CreateObject('phpgwapi.config', 'property');
+		$datatable_def = array();
 		$location_id = $this->locations->get_id('property', $this->acl_location);
 		$config->read();
 		$project_id	 = Sanitizer::get_var('project_id', 'int');
@@ -1145,95 +1146,10 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		$sum_estimated_cost		 = number_format((float)$sum_estimated_cost, 2, $this->decimal_separator, '.');
 		$values['calculation']	 = number_format((float)$values['calculation'], 2, $this->decimal_separator, '.');
 
-		$form_action = $mode == 'edit'
-			? ($id
-				? phpgw::link('/property/workorder/' . (int)$id, array())
-				: phpgw::link('/property/workorder/create', array()))
-			: phpgw::link('/home/');
-
-		$workorder_status = (isset($this->userSettings['preferences']['property']['workorder_status']) ? $this->userSettings['preferences']['property']['workorder_status'] : '');
-		if (!$values['status'])
-		{
-			$values['status'] = $workorder_status;
-		}
-
-		$this->jqcal->add_listener(
-			'values_start_date',
-			'date',
-			'',
-			array(
-				'min_date' => date('F j, Y, g:i a', phpgwapi_datetime::date_to_timestamp($project['start_date'])),
-				//			'max_date' => date('F j, Y, g:i a', phpgwapi_datetime::date_to_timestamp($project['end_date'])),
-			)
-		);
-
-		$this->jqcal->add_listener(
-			'values_end_date',
-			'date',
-			'',
-			array(
-				'min_date' => date("F j, Y, g:i a", phpgwapi_datetime::date_to_timestamp($project['start_date'])),
-				//			'max_date' => date("F j, Y, g:i a", phpgwapi_datetime::date_to_timestamp($project['end_date'])),
-			)
-		);
-
-		$this->jqcal->add_listener('values_tender_deadline');
-		$this->jqcal->add_listener('values_tender_received');
-		$this->jqcal->add_listener('values_inspection_on_completion');
-
-		$history_def = array(
-			array(
-				'key'		 => 'number',
-				'label'		 => '#',
-				'sortable'	 => true,
-				'resizeable' => true
-			),
-			array(
-				'key'		 => 'value_date',
-				'label'		 => lang('Date'),
-				'sortable'	 => false,
-				'resizeable' => true
-			),
-			array(
-				'key'		 => 'value_user',
-				'label'		 => lang('User'),
-				'sortable'	 => false,
-				'resizeable' => true
-			),
-			array(
-				'key'		 => 'value_action',
-				'label'		 => lang('Action'),
-				'sortable'	 => true,
-				'resizeable' => true
-			),
-			array(
-				'key'		 => 'value_old_value',
-				'label'		 => lang('old value'),
-				'sortable'	 => false,
-				'resizeable' => true
-			),
-			array(
-				'key'		 => 'value_new_value',
-				'label'		 => lang('New Value'),
-				'sortable'	 => false,
-				'resizeable' => true
-			)
-		);
-
-		$datatable_def[] = array(
-			'container'	 => 'datatable-container_0',
-			'requestUrl' => "''",
-			'data'		 => json_encode($record_history),
-			'ColumnDefs' => $history_def,
-			'config'	 => array(
-				array(
-					'disableFilter' => true
-				),
-				array(
-					'disablePagination' => true
-				)
-			)
-		);
+		$form_action = $this->_resolve_workorder_form_action($mode, $id);
+		$this->_apply_default_workorder_status($values);
+		$this->_add_workorder_date_listeners($project);
+		$this->_append_history_datatable($datatable_def, $record_history);
 
 		$files_def = array(
 			array(
@@ -2389,6 +2305,111 @@ JS;
 		), array(
 			'edit' => $data
 		));
+	}
+
+	private function _resolve_workorder_form_action($mode, $id)
+	{
+		return $mode == 'edit'
+			? ($id
+				? phpgw::link('/property/workorder/' . (int)$id, array())
+				: phpgw::link('/property/workorder/create', array()))
+			: phpgw::link('/home/');
+	}
+
+	private function _apply_default_workorder_status(array &$values)
+	{
+		$workorder_status = isset($this->userSettings['preferences']['property']['workorder_status'])
+			? $this->userSettings['preferences']['property']['workorder_status']
+			: '';
+
+		if (!$values['status'])
+		{
+			$values['status'] = $workorder_status;
+		}
+	}
+
+	private function _add_workorder_date_listeners(array $project)
+	{
+		$this->jqcal->add_listener(
+			'values_start_date',
+			'date',
+			'',
+			array(
+				'min_date' => date('F j, Y, g:i a', phpgwapi_datetime::date_to_timestamp($project['start_date'])),
+				//			'max_date' => date('F j, Y, g:i a', phpgwapi_datetime::date_to_timestamp($project['end_date'])),
+			)
+		);
+
+		$this->jqcal->add_listener(
+			'values_end_date',
+			'date',
+			'',
+			array(
+				'min_date' => date("F j, Y, g:i a", phpgwapi_datetime::date_to_timestamp($project['start_date'])),
+				//			'max_date' => date("F j, Y, g:i a", phpgwapi_datetime::date_to_timestamp($project['end_date'])),
+			)
+		);
+
+		$this->jqcal->add_listener('values_tender_deadline');
+		$this->jqcal->add_listener('values_tender_received');
+		$this->jqcal->add_listener('values_inspection_on_completion');
+	}
+
+	private function _append_history_datatable(array &$datatable_def, array $record_history)
+	{
+		$history_def = array(
+			array(
+				'key'		 => 'number',
+				'label'		 => '#',
+				'sortable'	 => true,
+				'resizeable' => true
+			),
+			array(
+				'key'		 => 'value_date',
+				'label'		 => lang('Date'),
+				'sortable'	 => false,
+				'resizeable' => true
+			),
+			array(
+				'key'		 => 'value_user',
+				'label'		 => lang('User'),
+				'sortable'	 => false,
+				'resizeable' => true
+			),
+			array(
+				'key'		 => 'value_action',
+				'label'		 => lang('Action'),
+				'sortable'	 => true,
+				'resizeable' => true
+			),
+			array(
+				'key'		 => 'value_old_value',
+				'label'		 => lang('old value'),
+				'sortable'	 => false,
+				'resizeable' => true
+			),
+			array(
+				'key'		 => 'value_new_value',
+				'label'		 => lang('New Value'),
+				'sortable'	 => false,
+				'resizeable' => true
+			)
+		);
+
+		$datatable_def[] = array(
+			'container'	 => 'datatable-container_0',
+			'requestUrl' => "''",
+			'data'		 => json_encode($record_history),
+			'ColumnDefs' => $history_def,
+			'config'	 => array(
+				array(
+					'disableFilter' => true
+				),
+				array(
+					'disablePagination' => true
+				)
+			)
+		);
 	}
 
 	function add()

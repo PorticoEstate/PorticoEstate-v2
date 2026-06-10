@@ -71,21 +71,13 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 	var $public_functions = array(
 		'columns'					 => true,
 		'query'					 => false,
-		'download'				 => false,
 		'index'						 => true,
 		'view'						 => true,
 		'add'						 => true,
 		'edit'						 => true,
-		'delete'				 => false,
-		'view_file'					 => false,
 		'add_invoice'				 => true,
 		'recalculate'				 => true,
 		'get_vendor_contract'		 => false,
-		'get_eco_service'			 => false,
-		'get_ecodimb'			 => false,
-		'get_b_account'			 => false,
-		'get_unspsc_code'		 => false,
-		'receive_order'			 => false,
 	);
 
 	function __construct()
@@ -129,137 +121,6 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		$this->decimal_separator = ',';
 		$this->jqcal = createObject('phpgwapi.jqcal');
 		$this->accounts_obj = new Accounts();
-	}
-
-	function download()
-	{
-		if (!$this->acl_read)
-		{
-			phpgw::no_access();
-			return;
-		}
-
-		$values	 = $this->query();
-		$uicols	 = $this->bo->uicols;
-		$this->bocommon->download($values, $uicols['name'], $uicols['descr'], $uicols['input_type']);
-	}
-
-	function view_file()
-	{
-		if (!$this->acl_read)
-		{
-			phpgw::redirect_link('/index.php', array(
-				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1,
-				'acl_location'	 => $this->acl_location
-			));
-		}
-		ExecMethod('property.bofiles.get_file', Sanitizer::get_var('file_id', 'int'));
-	}
-
-
-	function get_files_attachments()
-	{
-		$id = Sanitizer::get_var('id', 'int');
-
-		if (!$this->acl_read)
-		{
-			return;
-		}
-
-		$z = 0;
-		$img_types		 = array(
-			'image/jpeg',
-			'image/png',
-			'image/gif'
-		);
-
-		$values = $this->bo->read_single($id);
-
-		$file_attachments	 = isset($values['file_attachments']) && is_array($values['file_attachments']) ? $values['file_attachments'] : array();
-
-		$content_attachments = array();
-		$link_view_file = phpgw::link('/property/workorder/files/view');
-		$view_image_url = phpgw::link('/property/workorder/' . (int)$id . '/files/image');
-		$lang_view_file		 = lang('click to view file');
-		$lang_select_file	 = lang('Check to attach file');
-		$lang_workorder		 = lang('workorder');
-
-		$sort_array = array();
-
-		foreach ($values['files'] as $_entry)
-		{
-			$_checked = '';
-			if (in_array($_entry['file_id'], $file_attachments))
-			{
-				$_checked = 'checked="checked"';
-			}
-			$sort_array[] = $_entry['name'];
-
-			$content_attachments[] = array(
-				'source'		 => $lang_workorder,
-				'file_id'		 => $_entry['file_id'],
-				'file_name'		 => "<a href='{$link_view_file}&amp;file_id={$_entry['file_id']}' target='_blank' title='{$lang_view_file}'>{$_entry['name']}</a>",
-				'attach_file'	 => "<input type='checkbox' $_checked  name='values[file_attach][]' value='{$_entry['file_id']}' title='{$lang_select_file}'>"
-			);
-			if (in_array($_entry['mime_type'], $img_types))
-			{
-				$content_attachments[$z]['file_name']		 = $_entry['name'];
-				$content_attachments[$z]['img_id']		 = $_entry['file_id'];
-				$content_attachments[$z]['img_url']		 = phpgw::link($view_image_url, array(
-					'img_id'	 => $_entry['file_id']
-				));
-			}
-			$z++;
-		}
-		unset($_entry);
-
-		$link_view_file			 = phpgw::link('/property/project/files/view');
-		$boproject		 = CreateObject('property.boproject');
-		$files			 = $boproject->get_files($values['project_id']);
-		$lang_project	 = lang('project');
-
-		foreach ($files as $_entry)
-		{
-			$_checked = '';
-			if (in_array($_entry['file_id'], $file_attachments))
-			{
-				$_checked = 'checked="checked"';
-			}
-			$sort_array[] = $_entry['name'];
-
-			$content_attachments[] = array(
-				'source'		 => $lang_project,
-				'file_name'		 => "<a href='{$link_view_file}&amp;file_id={$_entry['file_id']}' target='_blank' title='{$lang_view_file}'>{$_entry['name']}</a>",
-				'attach_file'	 => "<input type='checkbox' $_checked  name='values[file_attach][]' value='{$_entry['file_id']}' title='{$lang_select_file}'>"
-			);
-
-			if (in_array($_entry['mime_type'], $img_types))
-			{
-				$content_attachments[$z]['file_name']		 = $_entry['name'];
-				$content_attachments[$z]['img_id']		 = $_entry['file_id'];
-				$content_attachments[$z]['img_url']		 = phpgw::link($view_image_url, array(
-					'img_id'	 => $_entry['file_id']
-				));
-			}
-			$z++;
-		}
-
-		array_multisort($sort_array, SORT_ASC, $content_attachments);
-
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-
-			$total_records = count($content_attachments);
-
-			return array(
-				'data'				 => $content_attachments,
-				'draw'				 => Sanitizer::get_var('draw', 'int'),
-				'recordsTotal'		 => $total_records,
-				'recordsFiltered'	 => $total_records
-			);
-		}
-		return $content_attachments;
 	}
 
 
@@ -457,44 +318,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 
 	public function query()
 	{
-		$start_date	 = $this->start_date;
-		$end_date	 = $this->end_date;
-
-		if ($start_date && empty($end_date))
-		{
-			$dateformat	 = $this->userSettings['preferences']['common']['dateformat'];
-			$end_date	 = $this->phpgwapi_common->show_date(mktime(0, 0, 0, date("m"), date("d"), date("Y")), $dateformat);
-		}
-
-		$search	 = Sanitizer::get_var('search');
-		$order	 = Sanitizer::get_var('order');
-		$draw	 = Sanitizer::get_var('draw', 'int');
-		$columns = Sanitizer::get_var('columns');
-		$export	 = Sanitizer::get_var('export', 'bool');
-
-		$params = array(
-			'start'		 => Sanitizer::get_var('start', 'int', 'REQUEST', 0),
-			'results'	 => Sanitizer::get_var('length', 'int', 'REQUEST', 0),
-			'query'		 => $search['value'],
-			'order'		 => $columns[$order[0]['column']]['data'],
-			'sort'		 => $order[0]['dir'],
-			'allrows'	 => Sanitizer::get_var('length', 'int') == -1 || $export,
-			'start_date'	 => $start_date ? urldecode($start_date) : '',
-			'end_date'		 => $end_date ? urldecode($end_date) : '',
-		);
-
-		$values = $this->bo->read($params);
-		if ($export)
-		{
-			return $values;
-		}
-		$result_data					 = array(
-			'results' => $values
-		);
-		$result_data['total_records']	 = $this->bo->total_records;
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
+		return [];
 	}
 
 	function index()
@@ -3516,59 +3340,7 @@ JS;
 		));
 	}
 
-	function delete()
-	{
-		$id = Sanitizer::get_var('id');
 
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			$this->bo->delete($id);
-			return "id " . $id . " " . lang("has been deleted");
-		}
-
-		if (!$this->acl_delete)
-		{
-			phpgw::redirect_link('/index.php', array(
-				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 8,
-				'acl_location'	 => $this->acl_location
-			));
-		}
-		//$id = Sanitizer::get_var('id', 'int');
-
-		$link_data = array(
-			'menuaction' => 'property.uiworkorder.index'
-		);
-
-		if (Sanitizer::get_var('confirm', 'bool', 'POST'))
-		{
-			$this->bo->delete($id);
-			phpgw::redirect_link('/index.php', $link_data);
-		}
-
-		phpgwapi_xslttemplates::getInstance()->add_file(array(
-			'app_delete'
-		));
-
-		$data = array(
-			'done_action'			 => phpgw::link('/index.php', $link_data),
-			'delete_action'			 => phpgw::link('/index.php', $link_data),
-			'lang_confirm_msg'		 => lang('do you really want to delete this entry'),
-			'lang_yes'				 => lang('yes'),
-			'lang_yes_statustext'	 => lang('Delete the entry'),
-			'lang_no_statustext'	 => lang('Back to the list'),
-			'lang_no'				 => lang('no')
-		);
-
-		$appname		 = lang('workorder');
-		$function_msg	 = lang('delete workorder');
-
-		$this->flags['app_header'] = lang('property') . ' - ' . $appname . ': ' . $function_msg;
-		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
-		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array(
-			'delete' => $data
-		));
-	}
 
 	function view()
 	{
@@ -4073,61 +3845,7 @@ JS;
 		return $contract_list;
 	}
 
-	/**
-	 * Gets vendor canidated to be used as vendor - called as ajax from edit form
-	 *
-	 * @param string  $query
-	 *
-	 * @return array
-	 */
-	public function get_eco_service()
-	{
-		if (!$this->acl_read)
-		{
-			return;
-		}
-		return $this->bocommon->get_eco_service();
-	}
 
-	public function get_unspsc_code()
-	{
-		if (!$this->acl_read)
-		{
-			return;
-		}
-		return $this->bocommon->get_unspsc_code();
-	}
-
-	public function get_ecodimb()
-	{
-		if (!$this->acl_read)
-		{
-			return;
-		}
-
-		return $this->bocommon->get_ecodimb();
-	}
-
-	public function get_b_account()
-	{
-		if (!$this->acl_read)
-		{
-			return;
-		}
-		return $this->bocommon->get_b_account();
-	}
-
-	public function receive_order()
-	{
-		if (!$this->acl_edit)
-		{
-			return;
-		}
-
-		$id				 = Sanitizer::get_var('id', 'int');
-		$received_amount = Sanitizer::get_var('received_amount', 'float');
-		return $this->bo->receive_order($id, $received_amount);
-	}
 
 	private function _get_eco_service_name($id)
 	{

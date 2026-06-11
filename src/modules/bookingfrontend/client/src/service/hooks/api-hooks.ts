@@ -2453,7 +2453,7 @@ export function useNotifications(
  * `notification_event` to the user's identity room whenever a notification is
  * created, so we invalidate the count (and any open list) on that channel.
  */
-export function useUnreadNotificationCount(): UseQueryResult<IUnreadCountResponse> {
+export function useUnreadNotificationCount(enabled: boolean = true): UseQueryResult<IUnreadCountResponse> {
 	const queryClient = useQueryClient();
 
 	useMessageTypeSubscription('notification_event', () => {
@@ -2462,6 +2462,7 @@ export function useUnreadNotificationCount(): UseQueryResult<IUnreadCountRespons
 	});
 
 	return useQuery<IUnreadCountResponse>({
+		enabled,
 		queryKey: ['unreadNotificationCount'],
 		queryFn: async () => {
 			const url = phpGWLink(['bookingfrontend', 'notifications', 'unread-count']);

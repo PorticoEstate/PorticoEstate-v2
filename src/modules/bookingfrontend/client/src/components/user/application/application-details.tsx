@@ -39,7 +39,6 @@ import {getStatusColor} from './status-utils';
 import styles from "./application-details.module.scss";
 import {
     ArrowLeftIcon,
-    PencilIcon,
     FilesIcon,
     XMarkOctagonIcon,
     CalendarIcon,
@@ -530,21 +529,15 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                 </div>
                 <div className={styles.appActions}>
                     {isPending && (
-                        <>
-                            <Button variant="secondary" data-size="sm">
-                                <PencilIcon fontSize="0.9rem"/>
-                                {t('bookingfrontend.edit')}
-                            </Button>
-                            <Button
-                                data-color="danger"
-                                variant="secondary"
-                                data-size="sm"
-                                onClick={() => setConfirmCancelOpen(true)}
-                            >
-                                <XMarkOctagonIcon fontSize="0.9rem"/>
-                                {t('bookingfrontend.withdraw_application')}
-                            </Button>
-                        </>
+                        <Button
+                            data-color="danger"
+                            variant="secondary"
+                            data-size="sm"
+                            onClick={() => setConfirmCancelOpen(true)}
+                        >
+                            <XMarkOctagonIcon fontSize="0.9rem"/>
+                            {t('bookingfrontend.withdraw_application')}
+                        </Button>
                     )}
                     {(isAccepted || isRejected || isCancelled) && (
                         <Button variant="secondary" data-size="sm" onClick={() => setShowCopyDialog(true)}>

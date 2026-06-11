@@ -6,6 +6,7 @@ import Link from "next/link";
 import {useQueryClient} from "@tanstack/react-query";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {
+	useBookingUser,
 	useNotifications,
 	useUnreadNotificationCount,
 	markNotificationsAsRead,
@@ -32,8 +33,11 @@ const NotificationBell: FC<NotificationBellProps> = () => {
 	const [hasOpened, setHasOpened] = useState(false);
 	const wrapRef = useRef<HTMLDivElement>(null);
 
-	const {data: unreadData} = useUnreadNotificationCount();
-	const {data: listData, isLoading} = useNotifications({limit: 10, enabled: hasOpened});
+	const {data: bookingUser} = useBookingUser();
+	const isLoggedIn = !!bookingUser?.is_logged_in;
+
+	const {data: unreadData} = useUnreadNotificationCount(isLoggedIn);
+	const {data: listData, isLoading} = useNotifications({limit: 10, enabled: isLoggedIn && hasOpened});
 
 	const totalUnread = unreadData?.total_unread ?? 0;
 	const hasUnread = totalUnread > 0;
@@ -99,6 +103,9 @@ const NotificationBell: FC<NotificationBellProps> = () => {
 	};
 
 	const badgeLabel = totalUnread > 9 ? '9+' : String(totalUnread);
+
+	// Notifications are personal — hide the bell entirely for anonymous users.
+	if (!isLoggedIn) return null;
 
 	return (
 		<div className={styles.bellWrap} ref={wrapRef}>

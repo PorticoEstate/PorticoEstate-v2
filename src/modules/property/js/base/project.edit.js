@@ -1052,33 +1052,50 @@ function extractProjectErrorMessages(responseData)
 	});
 }
 
-function renderProjectSaveError(messages)
+function clearProjectFormAlerts()
 {
-	if (!messages || !messages.length)
+	var notices = document.querySelectorAll('.project-submit-alert');
+	for (var i = 0; i < notices.length; i++)
 	{
-		messages = ['Feil ved lagring. Vennligst prov igjen.'];
+		notices[i].remove();
+	}
+}
+
+function renderProjectFormAlert(messages, type)
+{
+	var form = document.getElementById('form');
+	if (!form)
+	{
+		window.alert(messages[0] || '');
+		return;
 	}
 
-	var html = '<div class="text-center alert alert-danger" role="alert">';
+	clearProjectFormAlerts();
+
+	var alert = document.createElement('div');
+	alert.className = 'project-submit-alert text-center alert alert-' + type;
+	alert.setAttribute('role', 'alert');
+
 	for (var i = 0; i < messages.length; i++)
 	{
 		if (i > 0)
 		{
-			html += '<br/>';
+			alert.appendChild(document.createElement('br'));
 		}
-		html += $('<div/>').text(messages[i]).html();
+		alert.appendChild(document.createTextNode(messages[i]));
 	}
-	html += '</div>';
 
-	if ($('#message').length)
+	form.insertBefore(alert, form.firstChild);
+	form.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+function renderProjectSaveError(messages)
+{
+	if (!messages || !messages.length)
 	{
-		$('#message').html(html);
-		window.scrollTo(0, 0);
+		messages = ['Feil ved lagring. Vennligst prøv igjen.'];
 	}
-	else
-	{
-		window.alert(messages[0]);
-	}
+	renderProjectFormAlert(messages, 'danger');
 }
 
 function check_and_submit_valid_session()
@@ -1147,7 +1164,12 @@ function check_and_submit_valid_session()
 			{
 				throw {responseData: data};
 			}
-			redirectAfterProjectSave(id);
+			var successMsg = isCreate ? 'Prosjektet er opprettet' : 'Prosjektet er lagret';
+			renderProjectFormAlert([successMsg], 'success');
+			setTimeout(function ()
+			{
+				redirectAfterProjectSave(id);
+			}, 1200);
 		})
 		.catch(function (error)
 		{

@@ -409,13 +409,53 @@ function submit_workorder_via_api_xhr(saveRequest, formData, action)
 	xhr.send(formData);
 }
 
+function clearWorkorderFormAlerts()
+{
+	var notices = document.querySelectorAll('.workorder-submit-alert');
+	for (var i = 0; i < notices.length; i++)
+	{
+		notices[i].remove();
+	}
+}
+
+function renderWorkorderFormAlert(messages, type)
+{
+	var form = document.form;
+	if (!form)
+	{
+		window.alert(messages[0] || '');
+		return;
+	}
+
+	clearWorkorderFormAlerts();
+
+	var alert = document.createElement('div');
+	alert.className = 'workorder-submit-alert text-center alert alert-' + type;
+	alert.setAttribute('role', 'alert');
+
+	for (var i = 0; i < messages.length; i++)
+	{
+		if (i > 0)
+		{
+			alert.appendChild(document.createElement('br'));
+		}
+		alert.appendChild(document.createTextNode(messages[i]));
+	}
+
+	form.insertBefore(alert, form.firstChild);
+	form.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
 function handle_workorder_save_success(data, action)
 {
 	var hasErrors = !!(data && data.receipt && data.receipt.error && data.receipt.error.length);
 	if (hasErrors)
 	{
-		var firstError = data.receipt.error[0];
-		window.alert(firstError && firstError.msg ? firstError.msg : 'Could not save workorder');
+		var errorMessages = data.receipt.error.map(function (entry)
+		{
+			return (entry && entry.msg) ? entry.msg : 'Could not save workorder';
+		});
+		renderWorkorderFormAlert(errorMessages, 'danger');
 		return;
 	}
 
@@ -440,21 +480,33 @@ function handle_workorder_save_success(data, action)
 		return;
 	}
 
-	window.location.href = phpGWLink('index.php', {
-		menuaction: 'property.uiworkorder.edit',
-		id: id,
-		active_tab: $('#active_tab').val()
-	});
+	var successMsg = order_id ? 'Arbeidsordren er lagret' : 'Arbeidsordren er opprettet';
+	renderWorkorderFormAlert([successMsg], 'success');
+	setTimeout(function ()
+	{
+		window.location.href = phpGWLink('index.php', {
+			menuaction: 'property.uiworkorder.edit',
+			id: id,
+			active_tab: $('#active_tab').val()
+		});
+	}, 1200);
 }
 
 function handle_workorder_save_error(responseData)
 {
-	var message = 'Could not save workorder';
+	var messages = [];
 	if (responseData && responseData.receipt && responseData.receipt.error && responseData.receipt.error.length)
 	{
-		message = responseData.receipt.error[0].msg || message;
+		messages = responseData.receipt.error.map(function (entry)
+		{
+			return (entry && entry.msg) ? entry.msg : '';
+		}).filter(function (m) { return !!m; });
 	}
-	window.alert(message);
+	if (!messages.length)
+	{
+		messages = ['Feil ved lagring. Vennligst prøv igjen.'];
+	}
+	renderWorkorderFormAlert(messages, 'danger');
 }
 
 this.validate_form = function ()

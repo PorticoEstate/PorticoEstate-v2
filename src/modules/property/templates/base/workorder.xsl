@@ -129,7 +129,7 @@
 								<xsl:choose>
 									<xsl:when test="mode='edit' and lean = 0">
 										<td>
-											<input type="button" class="pure-button pure-button-primary" id="save_button" name="save" value="{$lang_save}" onClick="submit_workorder();">
+											<input type="button" class="pure-button pure-button-primary" id="save_button" name="save" value="{$lang_save}" onClick="this.disabled=true; submit_workorder();">
 												<xsl:attribute name="title">
 														<xsl:value-of select="php:function('lang', 'Save the workorder')"/>
 												</xsl:attribute>
@@ -1330,7 +1330,7 @@
 			<xsl:choose>
 				<xsl:when test="mode='edit'">
 					<input type="hidden" name="values[save]" value="1"/>
-					<input type="button" class="pure-button pure-button-primary" id="save_button_bottom" name="save" value="{$lang_save}" onClick="submit_workorder();">
+					<input type="button" class="pure-button pure-button-primary" id="save_button_bottom" name="save" value="{$lang_save}" onClick="this.disabled=true; submit_workorder();">
 						<xsl:attribute name="title">
 							<xsl:value-of select="php:function('lang', 'Save the workorder')"/>
 						</xsl:attribute>

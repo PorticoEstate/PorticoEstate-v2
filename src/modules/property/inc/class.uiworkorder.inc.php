@@ -326,7 +326,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		if (!$this->acl_read)
 		{
 			phpgw::no_access();
-			 return;
+			return;
 		}
 
 		$lookup			 = Sanitizer::get_var('lookup', 'bool');
@@ -703,7 +703,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		}
 	}
 
-	
+
 	function edit($values = array(), $mode = 'edit')
 	{
 
@@ -838,10 +838,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 				}
 			}
 
-			if ($project['key_fetch'] && !$values['key_fetch'])
-			{
-				$this->_apply_project_defaults_to_values($values, $project, $config);
-			}
+			$this->_apply_project_defaults_to_values($values, $project, $config);
 		}
 
 

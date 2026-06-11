@@ -1674,42 +1674,17 @@ class EntityController
 	{
 		$this->assertEntityAcl($request, $args, ACL_READ, 'No read access for this entity category');
 
-		$seed = [
-			'id'        => (int)$args['id'],
-			'entity_id' => (int)$args['entity_id'],
-			'cat_id'    => (int)$args['cat_id'],
-			'type'      => (string)$args['type'],
-			'_entity_id' => (int)$args['entity_id'],
-			'_cat_id'   => (int)$args['cat_id'],
-			'_type'     => (string)$args['type'],
-		];
+		\phpgwapi_jquery::init_multi_upload_file();
+		$id = (int)($args['id'] ?? 0);
 
-		$backupGet = $_GET;
-		$backupRequest = $_REQUEST;
-
-		try
-		{
-			foreach ($seed as $key => $value)
-			{
-				$_GET[$key] = $value;
-				$_REQUEST[$key] = $value;
-			}
-
-			include_class('property', 'uientity');
-			$ui = new \property_uientity();
-
-			ob_start();
-			$ui->build_multi_upload_file();
-			$html = (string)ob_get_clean();
-		}
-		finally
-		{
-			$_GET = $backupGet;
-			$_REQUEST = $backupRequest;
-		}
-
-		$response->getBody()->write($html ?? '');
-		return $response->withHeader('Content-Type', 'text/html')->withStatus(200);
+		$multiUploadAction = \phpgw::link('/property/entity/' . rawurlencode((string)$args['type'])
+			. '/' . rawurlencode((string)$args['entity_id'])
+			. '/' . rawurlencode((string)$args['cat_id'])
+			. '/' . rawurlencode((string)$id)
+			. '/multi-upload');
+		return $this->jsonResponse($response, array(
+			'multi_upload_action' => $multiUploadAction,
+		));
 	}
 
 	/**

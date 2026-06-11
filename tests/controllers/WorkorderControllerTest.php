@@ -262,6 +262,96 @@ namespace Tests\Controllers
 			$this->assertNotEmpty($payload['receipt']['error']);
 		}
 
+		public function testUpdateParsesMultipartFormDataPayloadOnPutRequests(): void
+		{
+			$bo = new class
+			{
+			};
+
+			$helper = $this->createMock(WorkorderFormHelper::class);
+			$helper->expects($this->once())
+				->method('mapInput')
+				->with(
+					$this->callback(function (array $input): bool
+					{
+						$vendorEmails = $input['values']['vendor_email'] ?? array();
+						if (!is_array($vendorEmails))
+						{
+							return false;
+						}
+
+						return ($input['values']['title'] ?? null) === 'Socket issue'
+							&& ($input['values']['project_id'] ?? null) === '215051'
+							&& ($input['RelationInfo']['location_code'] ?? null) === '5087-18-01-166'
+							&& !empty($vendorEmails)
+							&& $vendorEmails[0] === 'ebf@covei.no';
+					}),
+					true,
+					77
+				)
+				->willReturn(array(
+					'values' => array('id' => 77),
+					'values_attribute' => array(),
+					'is_edit' => true,
+					'errors' => array(),
+				));
+
+			$helper->expects($this->once())
+				->method('validate')
+				->willReturn(array(
+					'values' => array('id' => 77),
+					'values_attribute' => array(),
+					'is_edit' => true,
+					'errors' => array(),
+				));
+
+			$helper->expects($this->once())
+				->method('persistSave')
+				->willReturn(array(
+					'id' => 77,
+					'errors' => array(),
+					'receipt' => array('error' => array()),
+				));
+
+			$boundary = '----geckoformboundary123';
+			$rawBody =
+				"--{$boundary}\r\n" .
+				"Content-Disposition: form-data; name=\"values[title]\"\r\n\r\n" .
+				"Socket issue\r\n" .
+				"--{$boundary}\r\n" .
+				"Content-Disposition: form-data; name=\"values[project_id]\"\r\n\r\n" .
+				"215051\r\n" .
+				"--{$boundary}\r\n" .
+				"Content-Disposition: form-data; name=\"values[vendor_email][]\"\r\n\r\n" .
+				"ebf@covei.no\r\n" .
+				"--{$boundary}\r\n" .
+				"Content-Disposition: form-data; name=\"values[vendor_email][]\"\r\n\r\n" .
+				"\r\n" .
+				"--{$boundary}\r\n" .
+				"Content-Disposition: form-data; name=\"RelationInfo[location_code]\"\r\n\r\n" .
+				"5087-18-01-166\r\n" .
+				"--{$boundary}\r\n" .
+				"Content-Disposition: form-data; name=\"files[]\"; filename=\"\"\r\n" .
+				"Content-Type: application/octet-stream\r\n\r\n" .
+				"\r\n" .
+				"--{$boundary}--\r\n";
+
+			$bodyStream = $this->createMock(StreamInterface::class);
+			$bodyStream->method('__toString')->willReturn($rawBody);
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(null);
+			$this->request->method('getBody')->willReturn($bodyStream);
+			$this->request->method('getHeaderLine')->willReturn('multipart/form-data; boundary=' . $boundary);
+
+			$controller = $this->makeController($bo, $helper);
+			$controller->update($this->request, $this->response, array('id' => 77));
+
+			$payload = json_decode($this->responseBody, true);
+			$this->assertSame('success', $payload['status']);
+			$this->assertSame(77, $payload['data']['id']);
+		}
+
 		public function testBuildMultiUploadFileReturnsRestBasedActionUrl(): void
 		{
 			if (!class_exists('\\phpgwapi_jquery'))

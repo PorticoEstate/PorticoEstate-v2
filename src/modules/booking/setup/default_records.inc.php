@@ -37,13 +37,29 @@ switch ($serverSettings['db_type'])
 				"UNION ALL " .
 				"SELECT 'event' AS type, application_id, id, from_, to_, cost, active FROM bb_event  WHERE application_id IS NOT NULL"
 		);
+
+		$db->query("CREATE INDEX IF NOT EXISTS idx_booking_appid_from_partial ON bb_booking (application_id, from_) WHERE application_id IS NOT NULL", __LINE__, __FILE__);
+		$db->query("CREATE INDEX IF NOT EXISTS idx_allocation_appid_from_partial ON bb_allocation (application_id, from_) WHERE application_id IS NOT NULL", __LINE__, __FILE__);
+		$db->query("CREATE INDEX IF NOT EXISTS idx_event_appid_from_partial ON bb_event (application_id, from_) WHERE application_id IS NOT NULL", __LINE__, __FILE__);
+		$db->query("CREATE INDEX IF NOT EXISTS idx_bb_event_application_id_only ON bb_event (application_id)", __LINE__, __FILE__);
+		$db->query("CREATE INDEX IF NOT EXISTS idx_bb_application_session_status ON bb_application (session_id, status)", __LINE__, __FILE__);
+		$db->query("CREATE INDEX IF NOT EXISTS idx_ar_application_id ON bb_application_resource (application_id)", __LINE__, __FILE__);
+		$db->query("CREATE INDEX IF NOT EXISTS idx_br_resource_id ON bb_building_resource (resource_id)", __LINE__, __FILE__);
+		$db->query("CREATE INDEX IF NOT EXISTS idx_permission_object_type_id_subject ON bb_permission (object_type, object_id, subject_id)", __LINE__, __FILE__);
+		$db->query("CREATE INDEX IF NOT EXISTS idx_bb_application_case_officer ON bb_application (case_officer_id)", __LINE__, __FILE__);
+		$db->query("CREATE INDEX IF NOT EXISTS idx_bb_application_status_id_desc ON bb_application (status, id DESC)", __LINE__, __FILE__);
+		$db->query("CREATE INDEX IF NOT EXISTS idx_ad_app_from_to ON bb_application_date (application_id, from_, to_)", __LINE__, __FILE__);
+		$db->query("CREATE INDEX IF NOT EXISTS idx_ar_resource_allocation ON bb_allocation_resource (resource_id, allocation_id)", __LINE__, __FILE__);
+		$db->query("CREATE INDEX IF NOT EXISTS idx_bb_allocation_active_from_to ON bb_allocation (active, from_, to_, id)", __LINE__, __FILE__);
+		$db->query("CREATE INDEX IF NOT EXISTS idx_bb_season_active_status ON bb_season (active, status, id)", __LINE__, __FILE__);
+
 		break;
 	default:
 		//do nothing for now
 }
 
 // Insert start values for billing sequential numbers
-$oProc->query("INSERT INTO bb_billing_sequential_number_generator ( name, value ) VALUES ( 'internal', 1 ), ( 'external', 1 )");
+$db->query("INSERT INTO bb_billing_sequential_number_generator ( name, value ) VALUES ( 'internal', 1 ), ( 'external', 1 )");
 
 $location_obj->add('.admin', 'Admin section', 'booking');
 $location_obj->add('.office', 'office', 'booking');
@@ -913,3 +929,6 @@ HTML;
 $db->query("INSERT INTO bb_e_lock_system (id, name, sms_alert) VALUES(1, 'STANLEY', 1)");
 $db->query("INSERT INTO bb_e_lock_system (id, name, sms_alert) VALUES(2, 'ARX', 1)");
 $db->query("INSERT INTO bb_e_lock_system (id, name, instruction) VALUES(3, 'SALTO', '{$text}')");
+
+
+//indexes

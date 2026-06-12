@@ -9,6 +9,7 @@ import { RecurringInfoUtils, calculateRecurringInstances } from '@/utils/recurri
 import { useBuildingSeasons, useServerSettings } from "@/service/hooks/api-hooks";
 import BuildingIcon from "@/icons/BuildingIcon";
 import HospitalitySection from "./hospitality/hospitality-section";
+import ArticlesSection from "./articles/articles-section";
 
 interface CartSectionProps {
     applications: IApplication[];
@@ -124,6 +125,7 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                             onParentIdChange={onBuildingParentIdChange ? (parentId) => onBuildingParentIdChange(buildingGroup.buildingId, parentId) : undefined}
                             buildingId={buildingGroup.buildingId}
                         />
+                        <ArticlesSection applications={buildingGroup.applications}/>
                         {enableHospitality && (
                         <HospitalitySection
                             applicationIds={buildingGroup.applications.map(a => a.id)}
@@ -156,6 +158,7 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                             selectedParentId={undefined}
                             onParentIdChange={undefined}
                         />
+                        <ArticlesSection applications={recurringApplications}/>
                         {showSectionTotals && recurringTotal > 0 && (
                             <div className={styles.sectionTotal}>
                                 <strong>{t('bookingfrontend.total')}:</strong>

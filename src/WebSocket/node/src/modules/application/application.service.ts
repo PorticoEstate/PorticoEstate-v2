@@ -150,7 +150,7 @@ export class ApplicationService {
    */
   private async fetchOrders(applicationId: number): Promise<any[]> {
     const { rows } = await this.db.query(
-      `SELECT po.*, pol.*, am.unit,
+      `SELECT po.*, pol.*, am.unit, am.article_cat_id,
               CASE WHEN r.name IS NULL THEN s.name ELSE r.name END AS name
        FROM bb_purchase_order po
        JOIN bb_purchase_order_line pol ON po.id = pol.order_id

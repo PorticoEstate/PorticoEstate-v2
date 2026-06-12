@@ -428,6 +428,14 @@
 		}
 		document.getElementById('application-toolbar').innerHTML = warningHtml;
 
+		// Wire up the dropdown/action listeners exactly once. renderToolbar may be
+		// called again to refresh the toolbar (e.g. after recurring allocations are
+		// created); these handlers are delegated on root/document so they keep working
+		// against the re-rendered markup without being re-attached (which would make
+		// each action fire multiple times).
+		if (renderToolbar._wired) return;
+		renderToolbar._wired = true;
+
 		// Close the dropdown once an enabled item is activated.
 		root.addEventListener('click', function (e) {
 			var item = e.target.closest('.ds-dropdown__item');
@@ -1217,8 +1225,23 @@
 				createBtn.textContent = lang('creatingAllocations') + '...';
 
 				postJson(apiUrl + '/create-recurring-allocations').then(function (result) {
-					// Refresh the section, passing result so the summary persists
-					loadRecurringPreview(app, data, result);
+					// The accept ("Godta søknaden") gating is derived from the
+					// association count captured server-side at page load. Re-fetch the
+					// application so the toolbar reflects the allocations just created —
+					// otherwise the button stays disabled until a manual reload.
+					return fetchJson(apiUrl).then(function (freshApp) {
+						if (freshApp && freshApp.toolbar) {
+							app.toolbar = freshApp.toolbar;
+							app.num_associations = freshApp.num_associations;
+							renderToolbar(app);
+							renderHeader(app);
+						}
+					}).catch(function () {
+						// Non-fatal: leave the toolbar as-is if the refresh fails.
+					}).then(function () {
+						// Refresh the section, passing result so the summary persists
+						loadRecurringPreview(app, data, result);
+					});
 				}).catch(function (err) {
 					createBtn.disabled = false;
 					createBtn.textContent = lang('createAllAllocations');

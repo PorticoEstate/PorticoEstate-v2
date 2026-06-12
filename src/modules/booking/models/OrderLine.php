@@ -42,6 +42,13 @@ class OrderLine
     public $article_mapping_id;
 
     /**
+     * Article category: 1 = resource (rental), 2 = service (add-on article)
+     * @OA\Property(type="integer")
+     * @Expose
+     */
+    public $article_cat_id;
+
+    /**
      * @OA\Property(type="number", format="float")
      * @Expose
      */

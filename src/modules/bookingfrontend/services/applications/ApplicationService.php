@@ -644,12 +644,34 @@ class ApplicationService
             $skippedApplications = [];
             $collisionDebugInfo = []; // Debug information for collisions
 
+            // A combined cart that mixes direct-booking and case-managed resources must
+            // NOT auto-confirm the direct part: the whole building group is left to the
+            // case officer so status/calendar stay consistent and the applicant is not
+            // partially committed (see issue #1132). Flag each building group that
+            // contains a case-managed resource (a non-recurring application with a
+            // resource that is not directly bookable right now).
+            $buildingHasCaseManaged = [];
+            foreach ($updatedApplications as $app)
+            {
+                if (!empty($app['recurring_info'])) {
+                    continue; // recurring applications are always reviewed individually
+                }
+                if ($this->applicationHasCaseManagedResource($app)) {
+                    $buildingHasCaseManaged[$app['building_id']] = true;
+                }
+            }
+
             foreach ($updatedApplications as $application)
             {
                 // First check if eligible for direct booking without checking collisions
                 $isEligibleForDirectBooking = $this->isEligibleForDirectBooking($application);
 
-                if ($isEligibleForDirectBooking)
+                // Hold the direct part for case handling when its building group also
+                // contains a case-managed resource (mixed cart) — don't auto-accept it.
+                $heldForMixedGroup = empty($application['recurring_info'])
+                    && !empty($buildingHasCaseManaged[$application['building_id']]);
+
+                if ($isEligibleForDirectBooking && !$heldForMixedGroup)
                 {
                     // Check for collisions separately with detailed debug info
                     $hasCollision = false;
@@ -865,6 +887,30 @@ class ApplicationService
         }
 
         return true; // Eligible for direct booking
+    }
+
+    /**
+     * Whether an application contains at least one case-managed resource — i.e. a
+     * resource that is not directly bookable right now (no direct_booking set, or its
+     * direct_booking activation timestamp is in the future). Mirrors the per-resource
+     * direct-booking test in isEligibleForDirectBooking(), but ignores booking-limit
+     * reasons so only the resource type drives the "mixed cart" decision.
+     */
+    private function applicationHasCaseManagedResource(array $application): bool
+    {
+        $sql = "SELECT 1
+            FROM bb_resource r
+            JOIN bb_application_resource ar ON r.id = ar.resource_id
+            WHERE ar.application_id = :application_id
+              AND (r.direct_booking IS NULL OR r.direct_booking = 0 OR r.direct_booking > :now)
+            LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':application_id', $application['id'], PDO::PARAM_INT);
+        $stmt->bindValue(':now', time(), PDO::PARAM_INT);
+        $stmt->execute();
+
+        return (bool) $stmt->fetchColumn();
     }
 
     /**

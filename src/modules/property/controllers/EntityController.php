@@ -1324,11 +1324,6 @@ class EntityController
 		$langWorkorder = lang('workorder');
 		foreach ((array)$workorders as $workorder)
 		{
-			$link = \phpgw::link('/index.php', [
-				'menuaction' => 'property.uiworkorder.view',
-				'id' => $workorder['id'],
-			]);
-			$linkParts = $this->splitLinkToPathAndParams($link);
 			$workorderUserId = (int)($workorder['user_id'] ?? 0);
 			$userLabel = '';
 			if ($workorderUserId > 0)
@@ -1342,8 +1337,11 @@ class EntityController
 
 			$values[] = [
 				'target_id' => (string)($workorder['id'] ?? ''),
-				'target_path' => $linkParts['path'],
-				'target_params' => $linkParts['params'],
+				'target_path' => '/index.php',
+				'target_params' => [
+					'menuaction' => 'property.uiworkorder.view',
+					'id' => $workorder['id'],
+				],
 				'type' => $langWorkorder,
 				'title' => (string)($workorder['title'] ?? ''),
 				'status' => (string)($workorder['statustext'] ?? ''),

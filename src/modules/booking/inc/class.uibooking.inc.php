@@ -646,6 +646,7 @@ class booking_uibooking extends booking_uicommon
 								$allocation['active'] = '1';
 								$allocation['completed'] = '0';
 								$receipt = $this->allocation_bo->add($allocation);
+								$this->allocation_bo->so->update_id_string($receipt['id']);
 								$booking['allocation_id'] = $receipt['id'];
 								if ($application_id != '0')
 								{
@@ -654,7 +655,6 @@ class booking_uibooking extends booking_uicommon
 								$booking['secret'] = $this->generate_secret();
 								$receipt = $this->bo->add($booking);
 								$booking['allocation_id'] = '';
-								$this->allocation_bo->so->update_id_string();
 							}
 							else
 							{

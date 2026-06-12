@@ -855,14 +855,15 @@ class WorkorderController
 				continue;
 			}
 
-			$link = \phpgw::link('/index.php', array(
-				'menuaction' => 'property.uiworkorder.view',
-				'id' => $orderId
-			));
-
 			$row['id'] = $orderId;
-			$row['url'] = "<a href='{$link}'>{$orderId}</a>";
-			$row['select'] = "<input type='radio' name='order_id' value='{$orderId}' class='mychecks'/>";
+			$row['url'] = (string)$orderId;
+			$row['select'] = (string)$orderId;
+			$row['view_path'] = '/index.php';
+			$row['view_params'] = array(
+				'menuaction' => 'property.uiworkorder.view',
+				'id' => $orderId,
+			);
+			$row['select_value'] = $orderId;
 		}
 		unset($row);
 

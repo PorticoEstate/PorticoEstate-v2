@@ -2525,6 +2525,19 @@ JS;
 		$repeat_types[]	 = array('id' => 2, 'name' => lang('month'));
 		$repeat_types[]	 = array('id' => 3, 'name' => lang('year'));
 
+		$rest_action_params = array(
+			'type_id' => $type_id,
+			'lookup_tenant' => $lookup_tenant,
+		);
+		$click_history = Sanitizer::get_var('click_history', 'string', 'REQUEST');
+		if ($click_history)
+		{
+			$rest_action_params['click_history'] = $click_history;
+		}
+		$rest_form_action = $location_code
+			? phpgw::link('/property/location/' . urlencode($location_code), $rest_action_params)
+			: phpgw::link('/property/location', $rest_action_params);
+
 		$data = array(
 			'datatable_def'					 => $datatable_def,
 			'repeat_types'					 => array('options' => $repeat_types),
@@ -2584,7 +2597,7 @@ JS;
 			'size_first_name'				 => (isset($values['first_name']) ? strlen($values['first_name']) : ''),
 			'lookup_type'					 => $lookup_type,
 			'location_data'					 => $location_data,
-			'form_action'					 => phpgw::link('/index.php', $link_data),
+			'form_action'					 => $rest_form_action,
 			'done_action'					 => phpgw::link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.index',
 				'type_id'		 => $type_id,

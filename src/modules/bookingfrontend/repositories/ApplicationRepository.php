@@ -886,7 +886,7 @@ class ApplicationRepository
      */
     public function fetchOrders(int $application_id): array
     {
-        $sql = "SELECT po.*, pol.*, am.unit,
+        $sql = "SELECT po.*, pol.*, am.unit, am.article_cat_id,
                 CASE WHEN r.name IS NULL THEN s.name ELSE r.name END AS name
                 FROM bb_purchase_order po
                 JOIN bb_purchase_order_line pol ON po.id = pol.order_id

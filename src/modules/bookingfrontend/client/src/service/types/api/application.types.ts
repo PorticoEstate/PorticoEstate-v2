@@ -96,6 +96,8 @@ export interface IOrderLine {
     status: number;
     parent_mapping_id: number;
     article_mapping_id: number;
+    /** Article category: 1 = resource (rental), 2 = service (add-on article) */
+    article_cat_id: number;
     quantity: number;
     unit_price: number;
     overridden_unit_price: number;

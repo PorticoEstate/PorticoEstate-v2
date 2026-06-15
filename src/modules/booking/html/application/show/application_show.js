@@ -175,11 +175,15 @@
 	}
 
 	function buildDateParams(app, date, agegroups, audience) {
+		// In a combined cart each date belongs to its own sub-application. Link the
+		// created event/allocation/booking to THAT sub-application, not the app whose
+		// page we happen to be viewing — otherwise associations are attributed to the
+		// wrong application and the per-sub-app accept/reject logic breaks.
 		var params = {
 			from_: date.from_ || '',
 			to_: date.to_ || '',
 			cost: '0',
-			application_id: app.id,
+			application_id: date.application_id || app.id,
 			reminder: '0'
 		};
 
@@ -193,6 +197,10 @@
 		copyFields.forEach(function (f) {
 			params[f] = app[f] != null ? String(app[f]) : '';
 		});
+		// Prefer the date's own sub-application name when present (combined carts).
+		if (date.application_name) {
+			params.name = String(date.application_name);
+		}
 
 		var male = {}, female = {};
 		(agegroups || []).forEach(function (ag) {
@@ -802,6 +810,8 @@
 						'<div class="ds-dropdown app-show__menu app-show__split-menu" popover id="' + menuId + '"><ul>' +
 						'<li><button type="button" class="ds-dropdown__item" data-create="allocation" data-date-id="' + d.id + '"><span>' + esc(lang('createAllocation')) + '</span></button></li>' +
 						'<li><button type="button" class="ds-dropdown__item" data-create="booking" data-date-id="' + d.id + '"><span>' + esc(lang('createBooking')) + '</span></button></li>' +
+						// Reject only this sub-application (combined carts) — siblings stay open.
+						(isCombined ? '<li><button type="button" class="ds-dropdown__item" data-color="danger" data-reject-app="' + esc(d.application_id) + '"><span>' + esc(lang('rejectApplication')) + '</span></button></li>' : '') +
 						'</ul></div></div>';
 				}
 
@@ -846,6 +856,15 @@
 				}
 				alert(msg);
 			});
+		});
+
+		// Delegated event: per-date "Avslå" — reject only this sub-application.
+		root.addEventListener('click', function (e) {
+			var btn = e.target.closest('[data-reject-app]');
+			if (!btn) return;
+			var pop = btn.closest('.ds-dropdown');
+			if (pop && pop.matches(':popover-open')) pop.hidePopover();
+			showRejectModal({ appId: parseInt(btn.dataset.rejectApp, 10), single: true });
 		});
 
 		// Delegated event: schedule link popup
@@ -1522,7 +1541,19 @@
 
 	// ── Reject modal ───────────────────────────────────────────────────
 
-	function showRejectModal() {
+	// opts.appId + opts.single → reject only that sub-application (no cascade to the
+	// combined-cart siblings). No opts → reject this application and its whole group.
+	function showRejectModal(opts) {
+		opts = opts || {};
+		var single = !!opts.single;
+		var targetId = opts.appId || null;
+		var rejectUrl = targetId
+			? apiUrl.replace(/\/\d+$/, '/' + targetId) + '/reject'
+			: apiUrl + '/reject';
+		var title = single && targetId
+			? lang('rejectApplication') + ' #' + targetId
+			: lang('rejectApplication');
+
 		var body = '<div class="ds-field" data-size="sm">' +
 			'<label class="ds-label" for="modal-reject-text">' + esc(lang('rejectionReason')) + ' *</label>' +
 			'<textarea id="modal-reject-text" class="ds-input" rows="4" required></textarea></div>' +
@@ -1531,7 +1562,7 @@
 		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
 			'<button type="button" class="ds-button" data-variant="primary" data-color="danger" id="modal-reject-submit">' + esc(lang('rejectBtn')) + '</button>';
 
-		showModal('reject-dialog', lang('rejectApplication'), body, footer);
+		showModal('reject-dialog', title, body, footer);
 
 		document.getElementById('modal-reject-submit').addEventListener('click', function () {
 			var text = document.getElementById('modal-reject-text').value.trim();
@@ -1545,7 +1576,7 @@
 
 			var sendEmail = document.getElementById('modal-reject-email').checked;
 
-			postJsonBody(apiUrl + '/reject', { reason: text, send_email: sendEmail }).then(function () {
+			postJsonBody(rejectUrl, { reason: text, send_email: sendEmail, single: single }).then(function () {
 				closeModal('reject-dialog');
 				showToast(lang('applicationRejected'));
 				setTimeout(function () { window.location.reload(); }, 800);

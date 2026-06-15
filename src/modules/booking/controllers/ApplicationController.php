@@ -150,6 +150,12 @@ class ApplicationController
 			$result['recurring_data'] = $recurringData;
 			$result['season_info'] = $seasonInfo;
 
+			// building_name on the row is HTML-entity-encoded (sometimes doubly);
+			// the model only decodes once, so take the fully-decoded value from the repo.
+			if (!empty($row['building_id'])) {
+				$result['building_name'] = $this->repo->fetchBuildingName((int) $row['building_id']);
+			}
+
 			// System-wide terms config
 			$bookingConfig = $this->repo->fetchBookingConfig();
 			$result['application_terms'] = $bookingConfig['application_terms'] ?? '';
@@ -951,9 +957,11 @@ class ApplicationController
 			return ResponseHelper::sendErrorResponse(['error' => 'Rejection reason is required'], 400);
 		}
 		$sendEmail = !isset($body['send_email']) || $body['send_email'] === true;
+		// `single` rejects only this application (no cascade to combined-cart siblings).
+		$cascade = empty($body['single']);
 
 		try {
-			$this->service->rejectApplication($id, $this->currentAccountId, $reason, $sendEmail);
+			$this->service->rejectApplication($id, $this->currentAccountId, $reason, $sendEmail, $cascade);
 			return ResponseHelper::sendJSONResponse(['status' => 'ok'], 200, $response);
 		} catch (RuntimeException $e) {
 			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], $this->httpCode($e));

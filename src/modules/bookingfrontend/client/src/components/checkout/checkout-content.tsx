@@ -434,6 +434,7 @@ const CheckoutContent: FC = () => {
                 onVippsPayment={shouldShowExternalPaymentOptions ? handleVippsPayment : undefined}
                 paymentEligibility={paymentEligibility}
                 vippsLoading={vippsPaymentMutation.isPending}
+                submitting={checkoutMutation.isPending}
                 documentsValidated={!regulationDocuments?.length || areAllDocumentsChecked}
                 documentsSectionRef={documentsSectionRef}
                 showDocumentsSection={true}

@@ -38,6 +38,7 @@ interface BillingFormProps {
 	areAllDocumentsChecked?: boolean;
 	showDocumentsError?: boolean;
 	vippsLoading?: boolean;
+	submitting?: boolean;
 	applications?: IApplication[];
 }
 
@@ -63,6 +64,7 @@ const BillingForm: FC<BillingFormProps> = ({
 											   areAllDocumentsChecked = true,
 											   showDocumentsError = false,
 											   vippsLoading = false,
+											   submitting = false,
 											   applications = []
 										   }) => {
 	const t = useTrans();
@@ -720,7 +722,8 @@ const BillingForm: FC<BillingFormProps> = ({
 								{/* Invoice Payment Button */}
 								<Button
 									type="submit"
-									disabled={vippsLoading}
+									loading={submitting}
+									disabled={vippsLoading || submitting}
 									className={styles.invoiceButton}
 								>
 									{t('bookingfrontend.pay_later_with_invoice')}
@@ -738,6 +741,8 @@ const BillingForm: FC<BillingFormProps> = ({
 						<Button
 							variant="primary"
 							type="submit"
+							loading={submitting}
+							disabled={submitting}
 						>
 							{t('bookingfrontend.submit_application')}
 						</Button>

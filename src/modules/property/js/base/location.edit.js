@@ -396,7 +396,21 @@ function createLocationApiClient(form)
 		{
 			var clickHistory = query.click_history || '';
 			var queryParts = [];
-			var originalLocationCode = (query.location_code || getLocationFieldValue(form, 'input[name="location_code"]') || '').trim();
+			var originalLocationCode = (
+				query.location_code
+				|| getLocationFieldValue(form, 'input[name="location_code"]')
+				|| getLocationFieldValue(form, 'input[name="values[location_code]"]')
+				|| ''
+			).trim();
+
+			if (!originalLocationCode)
+			{
+				var pathMatch = parsed.pathname ? parsed.pathname.match(/\/property\/location\/([^\/?#]+)/) : null;
+				if (pathMatch && pathMatch[1])
+				{
+					originalLocationCode = decodeURIComponent(pathMatch[1]);
+				}
+			}
 			var rawLocationId = '';
 
 			if (typeof location_id !== 'undefined' && location_id !== null)

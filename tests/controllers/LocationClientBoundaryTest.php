@@ -15,6 +15,8 @@ namespace Tests\Controllers
 
 			$this->assertStringContainsString('function createLocationApiClient(form)', $contents);
 			$this->assertStringContainsString("requestUrl = isUpdate", $contents);
+			$this->assertStringContainsString("parsed.pathname.match(/\\/property\\/location\\/([^\\/?#]+)/)", $contents);
+			$this->assertStringContainsString("decodeURIComponent(pathMatch[1])", $contents);
 			$this->assertStringContainsString("? '/property/location/' + encodeURIComponent(originalLocationCode)", $contents);
 			$this->assertStringContainsString(": '/property/location';", $contents);
 			$this->assertStringContainsString("method: isUpdate ? 'PUT' : 'POST'", $contents);

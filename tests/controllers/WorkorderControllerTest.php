@@ -610,8 +610,12 @@ namespace Tests\Controllers
 
 			$payload = json_decode($this->responseBody, true);
 			$this->assertCount(2, $payload['data']);
-			$this->assertStringContainsString('/property/workorder/files/view', $payload['data'][0]['file_name']);
-			$this->assertStringNotContainsString('menuaction=property.uiworkorder.view_file', $payload['data'][0]['file_name']);
+			$this->assertSame('sample.pdf', $payload['data'][0]['file_name']);
+			$this->assertSame('/property/workorder/files/view', $payload['data'][0]['file_view_path']);
+			$this->assertSame(8, $payload['data'][0]['file_view_params']['file_id']);
+			$this->assertSame('8', $payload['data'][0]['attach_file']);
+			$this->assertSame(8, $payload['data'][0]['attach_file_value']);
+			$this->assertFalse($payload['data'][0]['attach_file_checked']);
 			$this->assertStringContainsString('/property/workorder/77/files/image', $payload['data'][1]['img_url']);
 			$this->assertStringNotContainsString('menuaction=property.uiworkorder.view_image', $payload['data'][1]['img_url']);
 		}

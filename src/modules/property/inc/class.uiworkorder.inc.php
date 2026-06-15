@@ -909,7 +909,8 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 				'key'		 => 'file_name',
 				'label'		 => lang('Filename'),
 				'sortable'	 => false,
-				'resizeable' => true
+				'resizeable' => true,
+				'formatter'	 => 'formatWorkorderFileLink'
 			),
 			array(
 				'key'		 => 'picture',
@@ -1750,7 +1751,8 @@ JS;
 				'key'		 => 'file_name',
 				'label'		 => lang('Filename'),
 				'sortable'	 => false,
-				'resizeable' => true
+				'resizeable' => true,
+				'formatter'	 => 'formatWorkorderFileLink'
 			),
 			array(
 				'key'		 => 'picture',
@@ -1764,7 +1766,7 @@ JS;
 				'label'		 => lang('attach file'),
 				'sortable'	 => false,
 				'resizeable' => true,
-				'formatter'	 => 'JqueryPortico.FormatterCenter'
+				'formatter'	 => 'formatWorkorderAttachFile'
 			)
 		);
 		$file_attachments	 = isset($values['file_attachments']) && is_array($values['file_attachments']) ? $values['file_attachments'] : array();

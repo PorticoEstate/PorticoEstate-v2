@@ -910,8 +910,8 @@ class WorkorderController
 		}
 
 		$viewImageUrl = '/property/workorder/' . $id . '/files/image';
-
-		$linkViewFile = \phpgw::link('/property/workorder/files/view');
+		$fileViewPath = '/property/workorder/files/view';
+		$attachFileTitle = lang('Check to attach file');
 
 		$values = $this->bo()->get_files($id);
 		$contentFiles = array();
@@ -951,8 +951,16 @@ class WorkorderController
 			$contentFiles[] = array(
 				'file_id' => $_entry['file_id'],
 				'tags' => $tags,
-				'file_name' => '<a href="' . $linkViewFile . '&amp;file_id=' . $_entry['file_id'] . '" target="_blank" title="' . lang('click to view file') . '">' . $_entry['name'] . '</a>',
-				'attach_file' => '<input type="checkbox" name="values[file_attach][]" value="' . $_entry['file_id'] . '" title="' . lang('Check to attach file') . '">'
+				'file_name' => (string)$_entry['name'],
+				'file_view_path' => $fileViewPath,
+				'file_view_params' => array(
+					'file_id' => (int)$_entry['file_id'],
+				),
+				'attach_file' => (string)$_entry['file_id'],
+				'attach_file_value' => (int)$_entry['file_id'],
+				'attach_file_checked' => false,
+				'attach_file_name' => 'values[file_attach][]',
+				'attach_file_title' => $attachFileTitle,
 			);
 
 			$lastIndex = count($contentFiles) - 1;
@@ -1145,8 +1153,8 @@ class WorkorderController
 		$imgTypes = array('image/jpeg', 'image/png', 'image/gif');
 		$sortArray = array();
 
-		$linkWorkorderFile = \phpgw::link('/property/workorder/files/view');
-		$langViewFile = lang('click to view file');
+		$workorderFileViewPath = '/property/workorder/files/view';
+		$projectFileViewPath = '/property/project/files/view';
 		$langSelectFile = lang('Check to attach file');
 		$langWorkorder = lang('workorder');
 
@@ -1159,8 +1167,16 @@ class WorkorderController
 			$contentAttachments[] = array(
 				'source' => $langWorkorder,
 				'file_id' => $_entry['file_id'],
-				'file_name' => "<a href='{$linkWorkorderFile}&amp;file_id={$_entry['file_id']}' target='_blank' title='{$langViewFile}'>{$_entry['name']}</a>",
-				'attach_file' => "<input type='checkbox' {$checked} name='values[file_attach][]' value='{$_entry['file_id']}' title='{$langSelectFile}'>"
+				'file_name' => (string)$_entry['name'],
+				'file_view_path' => $workorderFileViewPath,
+				'file_view_params' => array(
+					'file_id' => (int)$_entry['file_id'],
+				),
+				'attach_file' => (string)$_entry['file_id'],
+				'attach_file_value' => (int)$_entry['file_id'],
+				'attach_file_checked' => ($checked !== ''),
+				'attach_file_name' => 'values[file_attach][]',
+				'attach_file_title' => $langSelectFile,
 			);
 
 			if (in_array($_entry['mime_type'], $imgTypes, true))
@@ -1174,7 +1190,6 @@ class WorkorderController
 			$z++;
 		}
 
-		$linkProjectFile = \phpgw::link('/property/project/files/view');
 		$boproject = CreateObject('property.boproject');
 		$projectFiles = $boproject->get_files((int)($values['project_id'] ?? 0));
 		$langProject = lang('project');
@@ -1186,8 +1201,16 @@ class WorkorderController
 			$contentAttachments[] = array(
 				'source' => $langProject,
 				'file_id' => $_entry['file_id'],
-				'file_name' => "<a href='{$linkProjectFile}&amp;file_id={$_entry['file_id']}' target='_blank' title='{$langViewFile}'>{$_entry['name']}</a>",
-				'attach_file' => "<input type='checkbox' {$checked} name='values[file_attach][]' value='{$_entry['file_id']}' title='{$langSelectFile}'>"
+				'file_name' => (string)$_entry['name'],
+				'file_view_path' => $projectFileViewPath,
+				'file_view_params' => array(
+					'file_id' => (int)$_entry['file_id'],
+				),
+				'attach_file' => (string)$_entry['file_id'],
+				'attach_file_value' => (int)$_entry['file_id'],
+				'attach_file_checked' => ($checked !== ''),
+				'attach_file_name' => 'values[file_attach][]',
+				'attach_file_title' => $langSelectFile,
 			);
 
 			if (in_array($_entry['mime_type'], $imgTypes, true))

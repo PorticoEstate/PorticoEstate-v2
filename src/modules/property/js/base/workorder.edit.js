@@ -7,6 +7,93 @@ var accumulated_budget_amount;
 var vendor_id;
 var project_ecodimb;
 
+formatWorkorderDataCell = function (mode, key, oData)
+{
+	var rawValue = (oData && oData[key] !== undefined && oData[key] !== null) ? String(oData[key]) : '';
+
+	if (mode === 'link' && rawValue && rawValue.indexOf('<a') !== -1)
+	{
+		return rawValue;
+	}
+
+	if (mode === 'checkbox' && rawValue && rawValue.indexOf('<input') !== -1)
+	{
+		return rawValue;
+	}
+
+	if (mode === 'link')
+	{
+		if (!rawValue)
+		{
+			return '';
+		}
+
+		if (oData && oData.img_id !== undefined && oData.img_id !== null)
+		{
+			return $('<div/>').text(rawValue).html();
+		}
+
+		var path = (oData && oData.file_view_path) ? String(oData.file_view_path) : '';
+		var params = (oData && oData.file_view_params && typeof oData.file_view_params === 'object')
+			? oData.file_view_params
+			: null;
+		var url = '';
+
+		if (path && params)
+		{
+			url = phpGWLink(path, params);
+		}
+		else if (path)
+		{
+			url = path;
+		}
+
+		if (!url)
+		{
+			return $('<div/>').text(rawValue).html();
+		}
+
+		return '<a href="' + encodeURI(url) + '" target="_blank" title="' + $('<div/>').text('click to view file').html() + '">' + $('<div/>').text(rawValue).html() + '</a>';
+	}
+
+	if (mode === 'checkbox')
+	{
+		var value = (oData && oData.attach_file_value !== undefined && oData.attach_file_value !== null)
+			? String(oData.attach_file_value)
+			: rawValue;
+		if (!value && oData && oData.file_id !== undefined && oData.file_id !== null)
+		{
+			value = String(oData.file_id);
+		}
+
+		if (!value)
+		{
+			return '';
+		}
+
+		var checked = !!(oData && (oData.attach_file_checked === true || oData.attach_file_checked === 1 || oData.attach_file_checked === '1' || oData.attach_file_checked === 'true'));
+		var inputName = (oData && oData.attach_file_name) ? String(oData.attach_file_name) : 'values[file_attach][]';
+		var title = (oData && oData.attach_file_title) ? String(oData.attach_file_title) : 'Check to attach file';
+
+		return "<input type='checkbox' " + (checked ? "checked='checked' " : '')
+			+ "name='" + $('<div/>').text(inputName).html() + "' "
+			+ "value='" + $('<div/>').text(value).html() + "' "
+			+ "title='" + $('<div/>').text(title).html() + "'>";
+	}
+
+	return rawValue;
+};
+
+formatWorkorderFileLink = function (key, oData)
+{
+	return formatWorkorderDataCell('link', key, oData);
+};
+
+formatWorkorderAttachFile = function (key, oData)
+{
+	return formatWorkorderDataCell('checkbox', key, oData);
+};
+
 function calculate_order()
 {
 	if (!validate_form())

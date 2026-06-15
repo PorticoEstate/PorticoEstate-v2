@@ -34,6 +34,7 @@
 	 * @package property
 	 */
 	require_once PHPGW_SERVER_ROOT . "/phpgwapi/js/jquery/file-upload/server/php/UploadHandler.php";
+	require_once PHPGW_SERVER_ROOT . "/phpgwapi/inc/class.datetime.inc.php";
 
 	class property_multiuploader extends UploadHandler
 	{
@@ -350,7 +351,7 @@
 			if ($file->name == 'image.jpg') //Apple fuck up
 			{
 				// add timestamp
-				$file->name =	date('Y-m-d_H-i-s', phpgwapi_datetime::user_localtime()) . ".jpg";
+				$file->name =	date('Y-m-d_H-i-s', \phpgwapi_datetime::user_localtime()) . ".jpg";
 			}
 
 			$to_file = "{$this->bofiles->fakebase}/{$save_path}/{$file->name}";

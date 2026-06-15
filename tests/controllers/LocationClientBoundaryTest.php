@@ -50,6 +50,7 @@ namespace Tests\Controllers
 			$uiPath = __DIR__ . '/../../src/modules/property/inc/class.uilocation.inc.php';
 			$contents = (string)file_get_contents($uiPath);
 
+			$this->assertStringContainsString("rest-client-utils.js", $contents);
 			$this->assertStringContainsString("\$rest_form_action = \$location_code", $contents);
 			$this->assertStringContainsString("phpgw::link('/property/location/' . urlencode(\$location_code), \$rest_action_params)", $contents);
 			$this->assertStringContainsString("phpgw::link('/property/location', \$rest_action_params)", $contents);

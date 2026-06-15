@@ -76,6 +76,7 @@ namespace Tests\Controllers
 			$contents = file_get_contents($uiProjectPath);
 
 			$this->assertIsString($contents);
+			$this->assertStringContainsString('rest-client-utils.js', $contents);
 			$this->assertStringNotContainsString(
 				"'menuaction' => 'property.uiproject.save'",
 				$contents,

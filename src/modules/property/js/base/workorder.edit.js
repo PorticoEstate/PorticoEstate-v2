@@ -498,39 +498,20 @@ function submit_workorder_via_api_xhr(saveRequest, formData, action)
 
 function clearWorkorderFormAlerts()
 {
-	var notices = document.querySelectorAll('.workorder-submit-alert');
-	for (var i = 0; i < notices.length; i++)
-	{
-		notices[i].remove();
-	}
+	PorticoClientUtils.clearFormAlerts(document.form, '.workorder-submit-alert');
 }
 
 function renderWorkorderFormAlert(messages, type)
 {
-	var form = document.form;
-	if (!form)
+	PorticoClientUtils.renderFormAlert(document.form, messages, {
+		selector: '.workorder-submit-alert',
+		className: 'workorder-submit-alert text-center alert alert-' + type,
+		role: 'alert'
+	});
+	if (document.form)
 	{
-		window.alert(messages[0] || '');
-		return;
+		document.form.scrollIntoView({behavior: 'smooth', block: 'start'});
 	}
-
-	clearWorkorderFormAlerts();
-
-	var alert = document.createElement('div');
-	alert.className = 'workorder-submit-alert text-center alert alert-' + type;
-	alert.setAttribute('role', 'alert');
-
-	for (var i = 0; i < messages.length; i++)
-	{
-		if (i > 0)
-		{
-			alert.appendChild(document.createElement('br'));
-		}
-		alert.appendChild(document.createTextNode(messages[i]));
-	}
-
-	form.insertBefore(alert, form.firstChild);
-	form.scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 
 function handle_workorder_save_success(data, action)

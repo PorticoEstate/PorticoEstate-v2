@@ -391,28 +391,7 @@ this.onActionsClick = function (action)
 
 function parseURL(url)
 {
-	var parser = document.createElement('a'),
-		searchObject = {},
-		queries, split, i;
-	// Let the browser do the work
-	parser.href = url;
-	// Convert query string to object
-	queries = parser.search.replace(/^\?/, '').split('&');
-	for (i = 0; i < queries.length; i++)
-	{
-		split = queries[i].split('=');
-		searchObject[split[0]] = split[1];
-	}
-	return {
-		protocol: parser.protocol,
-		host: parser.host,
-		hostname: parser.hostname,
-		port: parser.port,
-		pathname: parser.pathname,
-		search: parser.search,
-		searchObject: searchObject,
-		hash: parser.hash
-	};
+	return PorticoClientUtils.parseURL(url);
 }
 
 add_control = function ()
@@ -542,60 +521,17 @@ function newDocument(oArgs)
 
 function parseFormKeyTokens(key)
 {
-	var tokens = [];
-	var match;
-	var regex = /([^\[\]]+)/g;
-	while ((match = regex.exec(key)) !== null)
-	{
-		tokens.push(match[1]);
-	}
-	return tokens;
+	return PorticoClientUtils.parseFormKeyTokens(key);
 }
 
 function setNestedValue(target, key, value)
 {
-	var tokens = parseFormKeyTokens(key);
-	var forceArray = /\[\]$/.test(key);
-	if (!tokens.length)
-	{
-		return;
-	}
-
-	var node = target;
-	for (var i = 0; i < tokens.length - 1; i++)
-	{
-		var token = tokens[i];
-		if (!Object.prototype.hasOwnProperty.call(node, token) || typeof node[token] !== 'object' || node[token] === null)
-		{
-			node[token] = {};
-		}
-		node = node[token];
-	}
-
-	var leaf = tokens[tokens.length - 1];
-	if (!Object.prototype.hasOwnProperty.call(node, leaf))
-	{
-		node[leaf] = forceArray ? [value] : value;
-		return;
-	}
-
-	if (Array.isArray(node[leaf]))
-	{
-		node[leaf].push(value);
-		return;
-	}
-
-	node[leaf] = [node[leaf], value];
+	PorticoClientUtils.setNestedValue(target, key, value);
 }
 
 function formDataToObject(formData)
 {
-	var payload = {};
-	formData.forEach(function (value, key)
-	{
-		setNestedValue(payload, key, value);
-	});
-	return payload;
+	return PorticoClientUtils.formDataToObject(formData);
 }
 
 function getFieldValue(form, selector)
@@ -887,55 +823,27 @@ function buildEntityRestRequest(form, submitterName)
 
 function clearFormAlerts(form)
 {
-	var notices = form.querySelectorAll('.rest-submit-alert');
-	for (var i = 0; i < notices.length; i++)
-	{
-		notices[i].remove();
-	}
+	PorticoClientUtils.clearFormAlerts(form, '.rest-submit-alert');
 }
 
 function renderFormErrorAlert(form, messages)
 {
-	clearFormAlerts(form);
-
-	var alert = document.createElement('div');
-	alert.className = 'rest-submit-alert form-error alert alert-danger';
-
-	var heading = document.createElement('strong');
-	heading.textContent = 'Innsending av skjemaet feilet!';
-	alert.appendChild(heading);
-
-	var list = document.createElement('ul');
-	for (var i = 0; i < messages.length; i++)
-	{
-		var item = document.createElement('li');
-		item.textContent = messages[i];
-		list.appendChild(item);
-	}
-	alert.appendChild(list);
-
-	form.insertBefore(alert, form.firstChild);
+	PorticoClientUtils.renderFormAlert(form, messages, {
+		selector: '.rest-submit-alert',
+		className: 'rest-submit-alert form-error alert alert-danger',
+		headingText: 'Innsending av skjemaet feilet!',
+		headingTag: 'strong',
+		useList: true
+	});
 }
 
 function renderFormSuccessAlert(form, messages)
 {
-	clearFormAlerts(form);
-
-	var alert = document.createElement('div');
-	alert.className = 'rest-submit-alert text-center alert alert-success';
-	alert.setAttribute('role', 'alert');
-
-	var lines = Array.isArray(messages) ? messages : [messages];
-	for (var i = 0; i < lines.length; i++)
-	{
-		if (i > 0)
-		{
-			alert.appendChild(document.createElement('br'));
-		}
-		alert.appendChild(document.createTextNode(lines[i]));
-	}
-
-	form.insertBefore(alert, form.firstChild);
+	PorticoClientUtils.renderFormAlert(form, messages, {
+		selector: '.rest-submit-alert',
+		className: 'rest-submit-alert text-center alert alert-success',
+		role: 'alert'
+	});
 }
 
 function extractReceiptMessages(entries)

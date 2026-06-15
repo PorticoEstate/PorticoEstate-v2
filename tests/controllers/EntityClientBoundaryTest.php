@@ -68,6 +68,7 @@ namespace Tests\Controllers
 			$uiPath = __DIR__ . '/../../src/modules/property/inc/class.uientity.inc.php';
 			$contents = (string)file_get_contents($uiPath);
 
+			$this->assertStringContainsString("rest-client-utils.js", $contents);
 			$this->assertStringContainsString("'form_action' => '/property/entity/' . urlencode(\$this->type)", $contents);
 			$this->assertStringNotContainsString("'menuaction' => 'property.uientity.save'", $contents);
 		}

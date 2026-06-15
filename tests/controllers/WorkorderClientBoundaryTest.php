@@ -99,6 +99,7 @@ namespace Tests\Controllers
 			$uiPath = __DIR__ . '/../../src/modules/property/inc/class.uiworkorder.inc.php';
 			$contents = (string)file_get_contents($uiPath);
 
+			$this->assertStringContainsString("rest-client-utils.js", $contents);
 			$this->assertStringContainsString("formatWorkorderFileLink", $contents);
 			$this->assertStringContainsString("formatWorkorderAttachFile", $contents);
 		}

@@ -2054,6 +2054,7 @@ JS;
 		phpgwapi_jquery::load_widget('autocomplete');
 		phpgwapi_jquery::load_widget('file-upload-minimum');
 
+		self::add_javascript('property', 'base', 'rest-client-utils.js');
 		self::add_javascript('property', 'base', 'navigation-api-boundary.js');
 		self::add_javascript('property', 'base', 'project.edit.js');
 		self::render_template_xsl(array('project', 'datatable_inline', 'multi_upload_file_inline', 'attributes_form'), array(

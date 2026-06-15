@@ -621,41 +621,7 @@ function addSubEntry()
 
 function parseProjectURL(url)
 {
-	var parser = document.createElement('a');
-	var searchObject = {};
-	var queries;
-	var split;
-	var i;
-
-	parser.href = url;
-	queries = parser.search.replace(/^\?/, '').split('&');
-	for (i = 0; i < queries.length; i++)
-	{
-		if (!queries[i])
-		{
-			continue;
-		}
-		split = queries[i].split('=');
-		var queryKey = split[0] ? decodeURIComponent(split[0]) : '';
-		if (!queryKey)
-		{
-			continue;
-		}
-
-		var queryValue = split.length > 1 ? split.slice(1).join('=') : '';
-		searchObject[queryKey] = decodeURIComponent((queryValue || '').replace(/\+/g, ' '));
-	}
-
-	return {
-		protocol: parser.protocol,
-		host: parser.host,
-		hostname: parser.hostname,
-		port: parser.port,
-		pathname: parser.pathname,
-		search: parser.search,
-		searchObject: searchObject,
-		hash: parser.hash
-	};
+	return PorticoClientUtils.parseURL(url);
 }
 
 function getProjectNavigationContext()
@@ -1054,53 +1020,27 @@ function extractProjectErrorMessages(responseData)
 
 function clearProjectFormAlerts()
 {
-	var notices = document.querySelectorAll('.project-submit-alert');
-	for (var i = 0; i < notices.length; i++)
-	{
-		notices[i].remove();
-	}
+	PorticoClientUtils.clearFormAlerts(document.getElementById('form'), '.project-submit-alert');
 }
 
 function renderProjectFormAlert(messages, type)
 {
 	var form = document.getElementById('form');
-	if (!form)
-	{
-		window.alert(messages[0] || '');
-		return;
-	}
-
-	clearProjectFormAlerts();
-
-	var alert = document.createElement('div');
-	alert.className = 'project-submit-alert text-center alert alert-' + type;
-	alert.setAttribute('role', 'alert');
-
-	for (var i = 0; i < messages.length; i++)
-	{
-		if (i > 0)
-		{
-			alert.appendChild(document.createElement('br'));
-		}
-		alert.appendChild(document.createTextNode(messages[i]));
-	}
-
-	form.insertBefore(alert, form.firstChild);
-	form.scrollIntoView({behavior: 'smooth', block: 'start'});
-}
-
-function renderProjectSaveError(messages)
-{
-	if (!messages || !messages.length)
-	{
-		messages = ['Feil ved lagring. Vennligst prøv igjen.'];
-	}
-	renderProjectFormAlert(messages, 'danger');
+	PorticoClientUtils.renderFormAlert(form, messages, {
+		selector: '.project-submit-alert',
+		className: 'project-submit-alert text-center alert alert-' + type,
+		role: 'alert'
+	});
 }
 
 function check_and_submit_valid_session()
 {
 	var form = document.form;
+	if (!form)
+	{
+		return;
+	}
+
 	if (isProjectSubmitting)
 	{
 		return;

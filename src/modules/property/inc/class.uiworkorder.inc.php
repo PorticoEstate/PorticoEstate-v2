@@ -2051,6 +2051,7 @@ JS;
 		phpgwapi_jquery::load_widget('numberformat');
 		phpgwapi_jquery::load_widget('file-upload-minimum');
 
+		self::add_javascript('property', 'base', 'rest-client-utils.js');
 		self::add_javascript('property', 'base', 'workorder.edit.js');
 
 		self::render_template_xsl(array(

@@ -90,6 +90,13 @@ export interface IWSEntityEventMessage extends IWebSocketMessageBase {
   data?: any;
 }
 
+// Interface for a notification event pushed to a user's identity room
+export interface IWSNotificationEventMessage extends IWebSocketMessageBase {
+  type: 'notification_event';
+  eventType: 'new' | string;
+  notification?: any;
+}
+
 // Interface for room message
 export interface IWSRoomMessage extends IWebSocketMessageBase {
   type: 'room_message';
@@ -160,6 +167,31 @@ export interface IWSPartialApplicationsResponse extends IWebSocketMessageBase {
   };
 }
 
+// Interface for delivered applications response (paginated)
+export interface IWSDeliveredApplicationsResponse extends IWebSocketMessageBase {
+  type: 'delivered_applications_response';
+  data: {
+    error: boolean;
+    message?: string;
+    applications?: IApplication[];
+    totalCount?: number;
+    offset?: number;
+    limit?: number;
+    hasMore?: boolean;
+  };
+}
+
+// Interface for single application detail response
+export interface IWSApplicationDetailResponse extends IWebSocketMessageBase {
+  type: 'application_detail_response';
+  data: {
+    error: boolean;
+    message?: string;
+    application?: IApplication;
+    id?: number;
+  };
+}
+
 // Interface for free time response
 export interface IWSFreeTimeResponse extends IWebSocketMessageBase {
   type: 'free_time_response';
@@ -223,12 +255,15 @@ export type WebSocketMessage =
   | IWSEntityUnsubscribeMessage
   | IWSSubscriptionConfirmMessage
   | IWSEntityEventMessage
+  | IWSNotificationEventMessage
   | IWSRoomMessage
   | IWSSessionUpdateMessage
   | IWSSessionUpdateConfirmMessage
   | IWSSessionIdRequiredMessage
   | IWSConnectionSuccessMessage
   | IWSPartialApplicationsResponse
+  | IWSDeliveredApplicationsResponse
+  | IWSApplicationDetailResponse
   | IWSFreeTimeResponse
   | IWSCreateApplicationResponse
   | IWSDeleteApplicationResponse

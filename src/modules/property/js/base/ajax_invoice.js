@@ -90,7 +90,7 @@ $(document).ready(function ()
 		$("#email_link").html('');
 
 
-		var oArgs = {menuaction: 'property.uiinvoice2.get_first_line'};
+		var oArgs = {menuaction: 'property.uiinvoice2.get_first_line', voucher_id: voucher_id};
 		var requestUrl = phpGWLink('index.php', oArgs, true);
 
 		var line_id = 0;
@@ -98,7 +98,7 @@ $(document).ready(function ()
 		$.ajax({
 			type: 'POST',
 			dataType: 'json',
-			url: requestUrl + "&voucher_id=" + voucher_id,
+			url: requestUrl,
 			success: function (data)
 			{
 				if (data !== null)

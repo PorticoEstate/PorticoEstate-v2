@@ -966,5 +966,88 @@ select_hospitality	bookingfrontend	en	Select hospitality
 cancellation_deadline_info	bookingfrontend	en	Can be cancelled until %1
 cancellation_deadline_passed	bookingfrontend	en	The cancellation deadline has passed
 cancellation_deadline_passed_warning	bookingfrontend	en	The cancellation deadline has passed. If you order you will not be able to cancel.
+user_data	bookingfrontend	en	User data
+user_data_description	bookingfrontend	en	This is how AktivKommune shows you as an applicant. Changes to name and social security number come from ID-porten.
+applications_description	bookingfrontend	en	All rental applications you have submitted — as a private person or on behalf of an organization.
+waiting_for_response	bookingfrontend	en	Awaiting response
+finished	bookingfrontend	en	Finished
+search_applications_placeholder	bookingfrontend	en	Search in title venue or organization
+refresh	bookingfrontend	en	Refresh
+no_applications_match	bookingfrontend	en	No applications matched the search.
+first_date	bookingfrontend	en	First date
+sent	bookingfrontend	en	Sent
+back_to_applications	bookingfrontend	en	Back to applications
+case_history	bookingfrontend	en	Case history
+updated	bookingfrontend	en	Updated
+times_and_venue	bookingfrontend	en	Times and venue
+requested_times	bookingfrontend	en	Requested time slots
+about_the_event	bookingfrontend	en	About the event
+communication_with_case_officer	bookingfrontend	en	Communication with case officer
+send_message	bookingfrontend	en	Send message
+reply_to_case_officer	bookingfrontend	en	Reply to case officer
+reply_placeholder	bookingfrontend	en	Write a reply … (visible to you and case officer)
+email_notification_on_reply	bookingfrontend	en	You will receive an email notification when the case officer replies.
+quick_facts	bookingfrontend	en	Quick facts
+contact_person	bookingfrontend	en	Contact person
+responsible_applicant	bookingfrontend	en	Responsible applicant
+tips_while_waiting	bookingfrontend	en	Tips while you wait
+processing_time_info	bookingfrontend	en	Processing time is normally 5-10 business days. You can reply in the comment thread if you have questions or want to change something.
+withdraw_application	bookingfrontend	en	Withdraw application
+confirm_cancel_title	bookingfrontend	en	Withdraw application
+confirm_cancel_description	bookingfrontend	en	Are you sure you want to withdraw this application? This action cannot be undone.
+application_pending_title	bookingfrontend	en	Application is being processed
+application_pending_description	bookingfrontend	en	The case officer will review your application. You can follow along in the comment thread below.
+application_accepted_title	bookingfrontend	en	Application approved
+application_accepted_description	bookingfrontend	en	You have now reserved the times listed below.
+application_rejected_title	bookingfrontend	en	Application was unfortunately rejected
+application_rejected_description	bookingfrontend	en	You can read the reasoning in the comment thread below or copy the application as a starting point for a new one.
+on_behalf_of_organization	bookingfrontend	en	On behalf of organization
+invoice_after_event	bookingfrontend	en	Invoice will be sent after the event is completed.
+price_confirmed_on_approval	bookingfrontend	en	Final price is confirmed when the application is approved.
+date	bookingfrontend	en	date
+num_dates	bookingfrontend	en	dates
+messages	bookingfrontend	en	messages
+active_delegate	bookingfrontend	en	Active delegate
+organizations_you_represent	bookingfrontend	en	Organizations you represent
+notifications_and_communication	bookingfrontend	en	Notifications and communication
+email_notifications	bookingfrontend	en	Email notifications
+email_notifications_description	bookingfrontend	en	Get email when the status of your applications changes or the case officer comments.
+sms_notifications	bookingfrontend	en	SMS notifications
+sms_notifications_description	bookingfrontend	en	Get SMS the day before a booking or if an application is approaching its response deadline.
+newsletter	bookingfrontend	en	Newsletter
+newsletter_description	bookingfrontend	en	Tips about available venues season openings and new facilities.
+logged_in_with_idporten	bookingfrontend	en	Logged in with ID-porten
+verified_via_idporten	bookingfrontend	en	Verified via ID-porten
+ssn_from_idporten	bookingfrontend	en	Social security number is retrieved from ID-porten and cannot be changed here.
+all	bookingfrontend	en	All
+place	bookingfrontend	en	Place
+time_slots	bookingfrontend	en	time slots
+download	bookingfrontend	en	Download
+open_document	bookingfrontend	en	Open
+status_new	bookingfrontend	en	Submitted
+status_pending	bookingfrontend	en	Pending
+status_accepted	bookingfrontend	en	Approved
+status_rejected	bookingfrontend	en	Rejected
+status_cancelled	bookingfrontend	en	Withdrawn
+status_draft	bookingfrontend	en	Draft
+combined_application	bookingfrontend	en	Combined application
+organization_number	bookingfrontend	en	Organization number
+recurring_application	bookingfrontend	en	Recurring
+age_group	bookingfrontend	en	Age group
+upload_document	bookingfrontend	en	Upload document
+delete_document	bookingfrontend	en	Delete document
+file_too_large	bookingfrontend	en	File is too large (max 2MB)
+invalid_file_type	bookingfrontend	en	Invalid file type
+upload_failed	bookingfrontend	en	Upload failed
+reply	bookingfrontend	en	Reply
+no documents available	bookingfrontend	en	No documents available
+new_comment_notification	bookingfrontend	en	%1 wrote a comment
+notifications_title	bookingfrontend	en	Notifications
+no_notifications	bookingfrontend	en	No notifications
+mark_all_read	bookingfrontend	en	Mark all as read
+see_all_notifications	bookingfrontend	en	See all notifications
+unread	bookingfrontend	en	Unread
+load_more	bookingfrontend	en	Load more
+no_unread_notifications	bookingfrontend	en	No unread notifications
 close_calendar_without_season	bookingfrontend	en	Close calendar when building has no season
 close_calendar_without_season_note	bookingfrontend	en	When enabled, buildings without a defined season are shown as closed

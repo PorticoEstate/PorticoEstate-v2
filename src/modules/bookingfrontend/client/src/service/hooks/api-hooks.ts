@@ -39,7 +39,8 @@ import {
 	fetchMultiDomains,
 	patchBookingUser
 } from "@/service/api/api-utils";
-import {IApplication, IUpdatePartialApplication, NewPartialApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
+import {IApplication, IUpdatePartialApplication, NewPartialApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse, ApplicationComment} from "@/service/types/api/application.types";
+import {INotification, INotificationListResponse, IUnreadCountResponse, IMarkReadResponse} from "@/service/types/api/notification.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
 import {IEvent, IFreeTimeSlot, IShortEvent, IAPIEvent, IAPIBooking, IAPIAllocation} from "@/service/pecalendar.types";
@@ -947,6 +948,56 @@ export function usePartialApplications(): UseQueryResult<{ list: IApplication[],
 	);
 }
 
+const WS_PAGE_SIZE = 50;
+
+/**
+ * Fetch the first page of delivered applications via WebSocket.
+ * Resolves as soon as the first batch arrives so the table can render immediately.
+ * Returns a cleanup function and whether more pages are expected.
+ */
+function fetchFirstPageViaWs(
+	sendMessage: (type: string, message: string, additionalData?: Record<string, any>) => boolean,
+): Promise<{ list: IApplication[]; total_sum: number; totalCount: number; hasMore: boolean; cleanup: () => void }> {
+	const subscriptionManager = SubscriptionManager.getInstance();
+
+	return new Promise((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			cleanup();
+			reject(new Error('WebSocket delivered_applications timeout'));
+		}, 8000);
+
+		const cleanup = subscriptionManager.subscribeToMessageType(
+			'delivered_applications_response',
+			(message) => {
+				if (message.type !== 'delivered_applications_response') return;
+				clearTimeout(timeout);
+
+				if (message.data.error) {
+					cleanup();
+					reject(new Error(message.data.message || 'WebSocket delivered_applications error'));
+					return;
+				}
+
+				const apps = message.data.applications || [];
+				const totalCount = message.data.totalCount || 0;
+				const hasMore = message.data.hasMore || false;
+				const total_sum = apps.reduce((sum: number, app: IApplication) => {
+					const orderSum = app.orders?.reduce((acc: number, order: any) => acc + (Number(order.sum) || 0), 0) || 0;
+					return sum + orderSum;
+				}, 0);
+
+				// Don't cleanup — the caller will reuse the subscription for subsequent pages
+				resolve({ list: apps, total_sum, totalCount, hasMore, cleanup });
+			}
+		);
+
+		sendMessage('get_delivered_applications', 'Requesting delivered applications', {
+			offset: 0,
+			limit: WS_PAGE_SIZE,
+		});
+	});
+}
+
 export function useApplications(
   options?: {
     initialData?: { list: IApplication[], total_sum: number };
@@ -954,31 +1005,218 @@ export function useApplications(
   }
 ): UseQueryResult<{ list: IApplication[], total_sum: number }> {
 	const includeOrganizations = options?.includeOrganizations ?? false;
+	const queryClient = useQueryClient();
+	const { sessionConnected, isReady: wsReady, sendMessage } = useWebSocketContext();
+	const queryKey = ['deliveredApplications', includeOrganizations];
+	// Track background pagination so we don't start multiple
+	const paginating = useRef(false);
 
 	return useQuery(
 		{
-			queryKey: ['deliveredApplications', includeOrganizations],
-			queryFn: () => fetchDeliveredApplications(includeOrganizations), // Fetch function
-			retry: 2, // Number of retry attempts if the query fails
-			refetchOnWindowFocus: false, // Do not refetch on window focus by default,
+			queryKey,
+			queryFn: async () => {
+				const firstPage = await fetchFirstPageViaWs(sendMessage);
+
+				// If there are more pages, fetch them in the background and
+				// progressively update the query cache
+				if (firstPage.hasMore && !paginating.current) {
+					paginating.current = true;
+					const subscriptionManager = SubscriptionManager.getInstance();
+					let currentOffset = firstPage.list.length;
+
+					// Subscribe for subsequent page responses
+					const cleanupSub = subscriptionManager.subscribeToMessageType(
+						'delivered_applications_response',
+						(message) => {
+							if (message.type !== 'delivered_applications_response') return;
+							if (message.data.error) return;
+
+							const newApps = message.data.applications || [];
+							const hasMore = message.data.hasMore || false;
+
+							// Append to existing cache
+							queryClient.setQueryData<{ list: IApplication[]; total_sum: number }>(
+								queryKey,
+								(prev) => {
+									if (!prev) return prev;
+									const existingIds = new Set(prev.list.map(a => a.id));
+									const deduped = newApps.filter((a: IApplication) => !existingIds.has(a.id));
+									const newList = [...prev.list, ...deduped];
+									const newSum = deduped.reduce((sum: number, app: IApplication) => {
+										const orderSum = app.orders?.reduce((acc: number, order: any) => acc + (Number(order.sum) || 0), 0) || 0;
+										return sum + orderSum;
+									}, prev.total_sum);
+									return { list: newList, total_sum: newSum };
+								}
+							);
+
+							if (hasMore) {
+								currentOffset += newApps.length;
+								sendMessage('get_delivered_applications', 'Fetching next page', {
+									offset: currentOffset,
+									limit: WS_PAGE_SIZE,
+								});
+							} else {
+								// All pages received
+								cleanupSub();
+								paginating.current = false;
+							}
+						}
+					);
+
+					// Request second page
+					sendMessage('get_delivered_applications', 'Fetching next page', {
+						offset: currentOffset,
+						limit: WS_PAGE_SIZE,
+					});
+
+					// Clean up first page subscription
+					firstPage.cleanup();
+				} else {
+					firstPage.cleanup();
+				}
+
+				return { list: firstPage.list, total_sum: firstPage.total_sum };
+			},
+			// Only fetch once WS session is ready
+			enabled: wsReady && sessionConnected,
+			retry: 2,
+			refetchOnWindowFocus: false,
 			initialData: options?.initialData,
 		}
 	);
+}
+
+/**
+ * Fetch a single application via WebSocket.
+ * Resolves with the application data or rejects on error/timeout.
+ */
+function fetchApplicationViaWs(
+	sendMessage: (type: string, message: string, additionalData?: Record<string, any>) => boolean,
+	id: number,
+	secret?: string,
+): Promise<IApplication> {
+	const subscriptionManager = SubscriptionManager.getInstance();
+
+	return new Promise((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			cleanup();
+			reject(new Error('WebSocket application_detail timeout'));
+		}, 8000);
+
+		const cleanup = subscriptionManager.subscribeToMessageType(
+			'application_detail_response',
+			(message) => {
+				if (message.type !== 'application_detail_response') return;
+				// Only handle responses for our specific application ID
+				if (message.data.id !== undefined && message.data.id !== id) return;
+
+				clearTimeout(timeout);
+				cleanup();
+
+				if (message.data.error || !message.data.application) {
+					reject(new Error(message.data.message || 'Application not found'));
+					return;
+				}
+
+				resolve(message.data.application);
+			}
+		);
+
+		sendMessage('get_application_detail', 'Requesting application detail', {
+			id,
+			...(secret && { secret }),
+		});
+	});
 }
 
 export function useApplication(
     id: number,
     options?: { initialData?: IApplication; secret?: string }
 ): UseQueryResult<IApplication> {
+	const { sessionConnected, isReady: wsReady, sendMessage } = useWebSocketContext();
+
     return useQuery(
         {
             queryKey: ['application', id, options?.secret],
-            queryFn: () => fetchApplication(id, options?.secret),
+            queryFn: () => fetchApplicationViaWs(sendMessage, id, options?.secret),
+            // Only fetch once WS session is ready
+            enabled: wsReady && sessionConnected,
             retry: 2,
             refetchOnWindowFocus: false,
             initialData: options?.initialData,
         }
     );
+}
+
+/**
+ * Add an application comment via WebSocket.
+ * Resolves with the created comment, rejects on error/timeout.
+ * The server also broadcasts a `new_comment` entity_event to the application
+ * room, which the detail page subscription uses to refetch the thread.
+ */
+function addApplicationCommentViaWs(
+    sendMessage: (type: string, message: string, additionalData?: Record<string, any>) => boolean,
+    applicationId: number,
+    comment: string,
+    secret?: string,
+): Promise<ApplicationComment> {
+    const subscriptionManager = SubscriptionManager.getInstance();
+    const requestId = `comment_${applicationId}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+    return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            cleanup();
+            reject(new Error('WebSocket add_comment timeout'));
+        }, 8000);
+
+        const cleanup = subscriptionManager.subscribeToMessageType(
+            'add_comment_response',
+            (message: any) => {
+                if (message.type !== 'add_comment_response') return;
+                if (message.requestId !== requestId) return;
+
+                clearTimeout(timeout);
+                cleanup();
+
+                if (message.data?.error || !message.data?.comment) {
+                    reject(new Error(message.data?.message || 'Failed to add comment'));
+                    return;
+                }
+                resolve(message.data.comment);
+            }
+        );
+
+        const sent = sendMessage('add_application_comment', 'Adding application comment', {
+            applicationId,
+            comment,
+            ...(secret && { secret }),
+            requestId,
+        });
+
+        if (!sent) {
+            clearTimeout(timeout);
+            cleanup();
+            reject(new Error('WebSocket not connected'));
+        }
+    });
+}
+
+/**
+ * Hook to add an application comment over WebSocket.
+ * Mirrors the shape of useAddApplicationComment so it is a drop-in replacement.
+ */
+export function useAddApplicationCommentWs() {
+    const { sendMessage } = useWebSocketContext();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ applicationId, comment, secret }: { applicationId: number; comment: string; secret?: string }) =>
+            addApplicationCommentViaWs(sendMessage, applicationId, comment, secret),
+        onSuccess: (_data, vars) => {
+            queryClient.invalidateQueries({ queryKey: ['applicationComments', vars.applicationId] });
+        },
+    });
 }
 
 /**
@@ -2169,4 +2407,110 @@ export function useApplicationDocuments(
 		retry: 2,
 		refetchOnWindowFocus: false,
 	});
+}
+
+interface UseNotificationsParams {
+	unread?: boolean;
+	limit?: number;
+	offset?: number;
+	/** Gate the request — e.g. only fetch the list once the dropdown is opened. */
+	enabled?: boolean;
+}
+
+/**
+ * Fetch a page of notifications, newest first.
+ */
+export function useNotifications(
+	params: UseNotificationsParams = {}
+): UseQueryResult<INotificationListResponse> {
+	const {unread, limit = 10, offset = 0, enabled = true} = params;
+
+	return useQuery<INotificationListResponse>({
+		enabled,
+		queryKey: ['notifications', {unread: unread ?? null, limit, offset}],
+		queryFn: async () => {
+			const args: Record<string, string | number> = {limit, offset};
+			if (unread !== undefined) {
+				args.unread = unread ? 1 : 0;
+			}
+			const url = phpGWLink(['bookingfrontend', 'notifications'], args);
+
+			const response = await fetch(url, {credentials: 'include'});
+			if (!response.ok) {
+				throw new Error('Failed to fetch notifications');
+			}
+			return response.json();
+		},
+		retry: 2,
+		refetchOnWindowFocus: true,
+	});
+}
+
+/**
+ * Unread notification count + per-application breakdown.
+ *
+ * No polling: the count is kept fresh by WebSocket pushes. The WS server emits a
+ * `notification_event` to the user's identity room whenever a notification is
+ * created, so we invalidate the count (and any open list) on that channel.
+ */
+export function useUnreadNotificationCount(enabled: boolean = true): UseQueryResult<IUnreadCountResponse> {
+	const queryClient = useQueryClient();
+
+	useMessageTypeSubscription('notification_event', () => {
+		queryClient.invalidateQueries({queryKey: ['unreadNotificationCount']});
+		queryClient.invalidateQueries({queryKey: ['notifications']});
+	});
+
+	return useQuery<IUnreadCountResponse>({
+		enabled,
+		queryKey: ['unreadNotificationCount'],
+		queryFn: async () => {
+			const url = phpGWLink(['bookingfrontend', 'notifications', 'unread-count']);
+			const response = await fetch(url, {credentials: 'include'});
+			if (!response.ok) {
+				throw new Error('Failed to fetch unread notification count');
+			}
+			return response.json();
+		},
+		retry: 2,
+		refetchOnWindowFocus: true,
+	});
+}
+
+/**
+ * Mark every notification for a given entity as read.
+ * Plain helper (not a hook) so it can be called from event handlers; the caller
+ * is responsible for invalidating ['unreadNotificationCount'] and ['notifications'].
+ */
+export async function markNotificationsAsRead(
+	entityType: string,
+	entityId: number,
+): Promise<IMarkReadResponse> {
+	const url = phpGWLink(['bookingfrontend', 'notifications', entityType, entityId, 'mark-read']);
+	const response = await fetch(url, {
+		method: 'PUT',
+		credentials: 'include',
+	});
+	if (!response.ok) {
+		throw new Error('Failed to mark notifications as read');
+	}
+	return response.json();
+}
+
+/**
+ * Mark several entities as read in one go (used by "Marker alle som lest").
+ * De-duplicates by entity so we issue one PUT per (entity_type, entity_id).
+ */
+export async function markNotificationGroupsAsRead(
+	notifications: Pick<INotification, 'entity_type' | 'entity_id'>[],
+): Promise<void> {
+	const seen = new Set<string>();
+	const tasks: Promise<IMarkReadResponse>[] = [];
+	for (const n of notifications) {
+		const key = `${n.entity_type}:${n.entity_id}`;
+		if (seen.has(key)) continue;
+		seen.add(key);
+		tasks.push(markNotificationsAsRead(n.entity_type, n.entity_id));
+	}
+	await Promise.all(tasks);
 }

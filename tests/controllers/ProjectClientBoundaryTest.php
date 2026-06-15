@@ -76,6 +76,7 @@ namespace Tests\Controllers
 			$contents = file_get_contents($uiProjectPath);
 
 			$this->assertIsString($contents);
+			$this->assertStringContainsString('rest-client-utils.js', $contents);
 			$this->assertStringNotContainsString(
 				"'menuaction' => 'property.uiproject.save'",
 				$contents,
@@ -131,7 +132,7 @@ namespace Tests\Controllers
 
 			$this->assertIsString($contents);
 			$this->assertStringContainsString(
-				"phpGWLink('property/project/external-project'",
+				"phpGWLink('property/project/lookups/external-project'",
 				$contents,
 				'Workorder add invoice must use project REST external-project lookup endpoint'
 			);

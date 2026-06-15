@@ -38,6 +38,24 @@ class WebSocketHelper
     }
     
     /**
+     * Send a notification to a user's identity room (all their tabs/sessions).
+     *
+     * @param string       $userType   e.g. 'bb_user' or 'phpgw_accounts'
+     * @param string       $identifier SSN (bb_user) or account id (phpgw_accounts)
+     * @param array|string $data       Notification data
+     * @return bool Success status
+     */
+    public static function sendToUserRoom(string $userType, string $identifier, $data): bool
+    {
+        $redisData = is_array($data) ? $data : json_decode($data, true);
+        $redisData['target'] = 'user';
+        $redisData['userType'] = $userType;
+        $redisData['identifier'] = $identifier;
+
+        return self::sendNotification($redisData);
+    }
+
+    /**
      * Send an entity event notification to all clients subscribed to an entity
      *
      * @param string $entityType Type of entity (resource, building, application, etc.)

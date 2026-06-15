@@ -109,10 +109,14 @@ class ApplicationRepository
      */
     public function getApplicationsBySsnAndOrganizations(string $ssn, bool $includeOrganizations = false): array
     {
-        // Base query for personal applications
+        // Base query for personal applications.
+        // Exclude organization applications: even though they now also store the
+        // applicant's customer_ssn, they must only surface via the organization
+        // branches below (tagged 'organization'), otherwise they would appear twice.
         $sql = "SELECT *, 'personal' as application_type FROM bb_application
             WHERE customer_ssn = :ssn
-            AND status != 'NEWPARTIAL1'";
+            AND status != 'NEWPARTIAL1'
+            AND (customer_identifier_type IS NULL OR customer_identifier_type != 'organization_number')";
 
         $params = [':ssn' => $ssn];
 
@@ -158,12 +162,13 @@ class ApplicationRepository
                     }
                     $orgNumbersStr = implode(',', $orgNumberPlaceholders);
 
+                    // No customer_ssn guard here: org applications created by this
+                    // user now carry their own customer_ssn, and the personal branch
+                    // above already excludes organization applications, so there is
+                    // no overlap to dedupe against.
                     $sql .= " UNION SELECT *, 'organization' as application_type FROM bb_application
                         WHERE customer_organization_number IN ({$orgNumbersStr})
-                        AND status != 'NEWPARTIAL1'
-                        AND (customer_ssn IS NULL OR customer_ssn != :ssn2)";
-
-                    $params[':ssn2'] = $ssn; // Avoid duplicates
+                        AND status != 'NEWPARTIAL1'";
                 }
             }
         }
@@ -881,7 +886,7 @@ class ApplicationRepository
      */
     public function fetchOrders(int $application_id): array
     {
-        $sql = "SELECT po.*, pol.*, am.unit,
+        $sql = "SELECT po.*, pol.*, am.unit, am.article_cat_id,
                 CASE WHEN r.name IS NULL THEN s.name ELSE r.name END AS name
                 FROM bb_purchase_order po
                 JOIN bb_purchase_order_line pol ON po.id = pol.order_id

@@ -38,7 +38,17 @@ phpgw::import_class('phpgwapi.uicommon_jquery');
 phpgw::import_class('phpgwapi.jquery');
 
 /**
- * Description
+ * Legacy UI shell for Project pages.
+ *
+ * Project data and mutation flows are progressively being served by
+ * {@see \App\modules\property\controllers\ProjectController} via
+ * `/property/project/*` routes, while legacy menuaction handlers remain in
+ * place for page navigation and HTML/XSL rendering.
+ *
+ * The remaining public menuaction entries in this class are intentionally
+ * shell-oriented. `query` is already disabled because collection data is now
+ * served from REST.
+ *
  * @package property
  */
 class property_uiproject extends phpgwapi_uicommon_jquery
@@ -2044,6 +2054,7 @@ JS;
 		phpgwapi_jquery::load_widget('autocomplete');
 		phpgwapi_jquery::load_widget('file-upload-minimum');
 
+		self::add_javascript('property', 'base', 'rest-client-utils.js');
 		self::add_javascript('property', 'base', 'navigation-api-boundary.js');
 		self::add_javascript('property', 'base', 'project.edit.js');
 		self::render_template_xsl(array('project', 'datatable_inline', 'multi_upload_file_inline', 'attributes_form'), array(

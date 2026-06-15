@@ -5,6 +5,9 @@
 	$setup_info['bookingfrontend']['enable'] = 1;
 	$setup_info['bookingfrontend']['app_group'] = 'office';
 
+	// All bookingfrontend migrations are safe to seed on existing installs
+	$setup_info['bookingfrontend']['migration_legacy_cutoff'] = 'm20260430_000004_update_template_set_from_aalesund_v2.php';
+
 	$setup_info['bookingfrontend']['description'] = 'Bergen kommune bookingfrontend';
 
 	$setup_info['bookingfrontend']['author'][] = array
@@ -21,14 +24,7 @@
 
 	$setup_info['bookingfrontend']['depends'][] = array(
 		'appname' => 'booking',
-		'versions' => array(
-		'0.2.112',
-		'0.2.113',
-		'0.2.114',
-		'0.2.115',
-		'0.2.116',
-		'0.2.117'
-		)
+		'versions' => array('1') // migration count: at least 1 migration applied (baseline)
 	);
 
 	$setup_info['bookingfrontend']['depends'][] = array(

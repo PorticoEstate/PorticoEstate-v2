@@ -1,5 +1,49 @@
 var location_code_selection = "";
 var vendor_id = 0;
+
+formatOtherOrderLink = function (key, oData)
+{
+	var rawValue = (oData && oData[key] !== undefined && oData[key] !== null) ? String(oData[key]) : '';
+	if (rawValue && rawValue.indexOf('<a') !== -1)
+	{
+		return rawValue;
+	}
+
+	var orderId = (oData && oData.id !== undefined && oData.id !== null) ? String(oData.id) : rawValue;
+	if (!orderId)
+	{
+		return '';
+	}
+
+	var path = (oData && oData.view_path) ? String(oData.view_path) : 'index.php';
+	var params = (oData && oData.view_params && typeof oData.view_params === 'object')
+		? oData.view_params
+		: {menuaction: 'property.uiworkorder.view', id: orderId};
+	var url = phpGWLink(path, params);
+
+	return '<a href="' + encodeURI(url) + '">' + $('<div/>').text(orderId).html() + '</a>';
+};
+
+formatOtherOrderSelect = function (key, oData)
+{
+	var rawValue = (oData && oData[key] !== undefined && oData[key] !== null) ? String(oData[key]) : '';
+	if (rawValue && rawValue.indexOf('<input') !== -1)
+	{
+		return rawValue;
+	}
+
+	var selectValue = (oData && oData.select_value !== undefined && oData.select_value !== null)
+		? String(oData.select_value)
+		: ((oData && oData.id !== undefined && oData.id !== null) ? String(oData.id) : rawValue);
+
+	if (!selectValue)
+	{
+		return '';
+	}
+
+	return "<input type='radio' name='order_id' value='" + $('<div/>').text(selectValue).html() + "' class='mychecks'/>";
+};
+
 this.fetch_vendor_email = function ()
 {
 	if (document.getElementById('vendor_id').value)
@@ -28,8 +72,7 @@ this.fetch_vendor_contract = function ()
 
 	if ($("#vendor_id").val() != vendor_id)
 	{
-		var oArgs = {menuaction: 'property.uiworkorder.get_vendor_contract', vendor_id: $("#vendor_id").val()};
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = phpGWLink('property/workorder/lookups/vendor-contract', {vendor_id: $("#vendor_id").val()}, true);
 		var htmlString = "";
 
 		$.ajax({
@@ -187,8 +230,7 @@ $(document).ready(function ()
 
 this.get_other_orders = function (location_code, vendor_id)
 {
-	var oArgs = {menuaction:'property.uiworkorder.get_other_orders',location_code:location_code,vendor_id:vendor_id};
-	var strURL = phpGWLink('index.php', oArgs, true);
+	var strURL = phpGWLink('property/workorder/lookups/other-orders', {location_code:location_code,vendor_id:vendor_id}, true);
 	JqueryPortico.updateinlineTableHelper('datatable-container_2', strURL);
 };
 
@@ -198,4 +240,3 @@ this.get_other_deviations = function (location_code, vendor_id)
 	var strURL = phpGWLink('index.php', oArgs, true);
 	JqueryPortico.updateinlineTableHelper('datatable-container_3', strURL);
 };
-

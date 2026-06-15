@@ -9,6 +9,7 @@ use App\modules\property\controllers\TicketController;
 use App\modules\property\controllers\LocationController;
 use App\modules\property\controllers\EntityController;
 use App\modules\property\controllers\ProjectController;
+use App\modules\property\controllers\WorkorderController;
 use App\controllers\GenericRegistryController;
 use Slim\Routing\RouteCollectorProxy;
 use App\modules\property\models\PropertyGenericRegistry;
@@ -76,8 +77,8 @@ $app->group('/property/location', function (RouteCollectorProxy $group) use ($co
 
 	// Hybrid approach routes (explicit form helper orchestration)
 	$group->post('', [$controller, 'postCollection']);
-	$group->post('/add', [$controller, 'add']);
-	$group->put('/{location_code:[^/]+}', [$controller, 'save']);
+	$group->post('/add', [$controller, 'store']);
+	$group->put('/{location_code:[^/]+}', [$controller, 'update']);
 	$group->get('/list', [$controller, 'listLocations']);
 	$group->post('/list', [$controller, 'listLocations']);
 	$group->post('/datatable', [$controller, 'index']);
@@ -194,7 +195,8 @@ $app->group('/property/project', function (RouteCollectorProxy $group) use ($con
 	$group->post('/{id:[0-9]+}/other-projects', [$controller, 'getOtherProjects']);
 	$group->get('/attachments', [$controller, 'getAttachment']);
 	$group->post('/attachments', [$controller, 'getAttachment']);
-	$group->get('/external-project', [$controller, 'getExternalProject']);
+	$group->get('/lookups/external-project', [$controller, 'getExternalProject']);
+	$group->post('/lookups/external-project', [$controller, 'getExternalProject']);
 	$group->get('/reports/download', [$controller, 'downloadProjects']);
 	$group->get('/reports/missing-project-budget', [$controller, 'checkMissingProjectBudget']);
 	$group->get('/lookups/category', [$controller, 'getCategoryLookup']);
@@ -215,12 +217,36 @@ $app->group('/property/project', function (RouteCollectorProxy $group) use ($con
 
 $app->group('/property/workorder', function (RouteCollectorProxy $group) use ($container)
 {
-	$controllerClass = '\\App\\modules\\property\\controllers\\WorkorderController';
-	$controller = new $controllerClass($container);
+	$controller = new WorkorderController($container);
 
+	$group->get('', [$controller, 'index']);
+	$group->post('', [$controller, 'index']);
+	$group->get('/lookups/vendor-contract', [$controller, 'getVendorContract']);
+	$group->post('/lookups/vendor-contract', [$controller, 'getVendorContract']);
+	$group->post('/create', [$controller, 'store']);
+	$group->put('/{id:[0-9]+}', [$controller, 'update']);
+	$group->delete('/{id:[0-9]+}', [$controller, 'destroy']);
+	$group->get('/lookups/eco-service', [$controller, 'getEcoService']);
+	$group->post('/lookups/eco-service', [$controller, 'getEcoService']);
+	$group->get('/lookups/ecodimb', [$controller, 'getEcodimb']);
+	$group->post('/lookups/ecodimb', [$controller, 'getEcodimb']);
+	$group->get('/lookups/b-account', [$controller, 'getBAccount']);
+	$group->post('/lookups/b-account', [$controller, 'getBAccount']);
+	$group->get('/lookups/category', [$controller, 'getCategory']);
+	$group->post('/lookups/category', [$controller, 'getCategory']);
+	$group->get('/lookups/unspsc-code', [$controller, 'getUnspscCode']);
+	$group->post('/lookups/unspsc-code', [$controller, 'getUnspscCode']);
+	$group->get('/lookups/other-orders', [$controller, 'getOtherOrders']);
+	$group->post('/lookups/other-orders', [$controller, 'getOtherOrders']);
+	$group->get('/reports/download', [$controller, 'download']);
+	$group->post('/{id:[0-9]+}/receive-order', [$controller, 'receiveOrder']);
 	$group->get('/{id:[0-9]+}/files', [$controller, 'getFiles']);
 	$group->post('/{id:[0-9]+}/files', [$controller, 'getFiles']);
+	$group->get('/files/view', [$controller, 'viewFile']);
+	$group->get('/{id:[0-9]+}/files/image', [$controller, 'viewImage']);
 	$group->post('/{id:[0-9]+}/files/actions', [$controller, 'updateFileData']);
+	$group->get('/{id:[0-9]+}/multi-upload', [$controller, 'buildMultiUploadFile']);
+	$group->map(['POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'], '/{id:[0-9]+}/multi-upload', [$controller, 'handleMultiUploadFile']);
 	$group->get('/{id:[0-9]+}/files-attachments', [$controller, 'getFilesAttachments']);
 	$group->post('/{id:[0-9]+}/files-attachments', [$controller, 'getFilesAttachments']);
 })

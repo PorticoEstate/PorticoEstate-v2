@@ -184,10 +184,28 @@ class ApplicationService
 		}
 
 		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';
-		$this->repo->addComment($appId, $authorName, $comment, 'comment');
+		$commentId = $this->repo->addComment($appId, $authorName, $comment, 'comment');
 
 		// Send email notification (non-fatal on failure)
 		$this->sendNotificationSafe($appId);
+
+		// Create in-app notification for the applicant (non-fatal)
+		try {
+			$customerSsn = $row['customer_ssn'] ?? '';
+			if (!empty($customerSsn)) {
+				$notificationService = new NotificationService();
+				$notificationService->createCommentNotification(
+					$appId,
+					$commentId,
+					$authorName,
+					$comment,
+					'bb_user',
+					$customerSsn
+				);
+			}
+		} catch (\Throwable $e) {
+			error_log("Failed to create applicant notification for application {$appId}: " . $e->getMessage());
+		}
 	}
 
 	// ── Add internal note ──────────────────────────────────────────────
@@ -294,8 +312,14 @@ class ApplicationService
 
 	/**
 	 * Reject an application: status change, deactivate associations, handle combined apps.
+	 *
+	 * @param bool $cascade When true (default) the rejection propagates to every related
+	 *                      application in a combined cart. When false only $appId is
+	 *                      rejected — used by the per-application "Avslå" so a case
+	 *                      officer can reject one sub-application while keeping its
+	 *                      siblings open.
 	 */
-	public function rejectApplication(int $appId, int $accountId, string $reason, bool $sendEmail): void
+	public function rejectApplication(int $appId, int $accountId, string $reason, bool $sendEmail, bool $cascade = true): void
 	{
 		$row = $this->repo->getById($appId);
 		if (!$row) {
@@ -313,8 +337,8 @@ class ApplicationService
 		$this->repo->updateStatus($appId, 'REJECTED');
 		$this->repo->deactivateAssociations($appId);
 
-		// Handle combined applications
-		if ($this->combineApplications) {
+		// Handle combined applications (skipped for a single-application rejection)
+		if ($cascade && $this->combineApplications) {
 			$relatedInfo = $this->repo->getRelatedApplications($appId);
 			if ($relatedInfo['total_count'] > 1) {
 				$relatedIds = array_filter(

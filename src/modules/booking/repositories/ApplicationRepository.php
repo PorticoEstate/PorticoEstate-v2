@@ -87,6 +87,26 @@ class ApplicationRepository
 	}
 
 	/**
+	 * Resource (and building) names are stored HTML-entity-encoded in the DB, and
+	 * some are double-encoded (e.g. "&amp;#40;" for "("). Decode repeatedly until
+	 * stable so the display value is clean before it reaches the re-encoding view
+	 * layer. (The proper fix is to clean the stored data, but this keeps the UI
+	 * correct regardless.)
+	 */
+	private function decodeEntities(?string $value): string
+	{
+		$value = (string) $value;
+		for ($i = 0; $i < 3 && strpos($value, '&') !== false; $i++) {
+			$decoded = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+			if ($decoded === $value) {
+				break;
+			}
+			$value = $decoded;
+		}
+		return $value;
+	}
+
+	/**
 	 * Returns full resource rows (id, name, building_id, etc.) for an application.
 	 */
 	public function fetchResources(int $applicationId): array
@@ -100,7 +120,11 @@ class ApplicationRepository
 			 WHERE ar.application_id = :id"
 		);
 		$stmt->execute([':id' => $applicationId]);
-		return $stmt->fetchAll(PDO::FETCH_ASSOC);
+		$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		foreach ($rows as &$row) {
+			$row['name'] = $this->decodeEntities($row['name']);
+		}
+		return $rows;
 	}
 
 	/**
@@ -119,7 +143,7 @@ class ApplicationRepository
 		$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 		$map = [];
 		foreach ($rows as $r) {
-			$map[(int) $r['id']] = $r['name'];
+			$map[(int) $r['id']] = $this->decodeEntities($r['name']);
 		}
 		return $map;
 	}
@@ -406,7 +430,7 @@ class ApplicationRepository
 		$stmt = $this->db->prepare("SELECT name FROM bb_building WHERE id = :id");
 		$stmt->execute([':id' => $buildingId]);
 		$row = $stmt->fetch(PDO::FETCH_ASSOC);
-		return $row ? $row['name'] : '';
+		return $row ? $this->decodeEntities($row['name']) : '';
 	}
 
 	// ── Organization ────────────────────────────────────────────────────
@@ -423,6 +447,9 @@ class ApplicationRepository
 			);
 			$stmt->execute([':num' => $orgNumber]);
 			$row = $stmt->fetch(PDO::FETCH_ASSOC);
+			if ($row) {
+				$row['name'] = $this->decodeEntities($row['name']);
+			}
 			return $row ?: null;
 		} catch (\Throwable $e) {
 			return null;
@@ -436,7 +463,7 @@ class ApplicationRepository
 		$stmt = $this->db->prepare("SELECT name FROM bb_activity WHERE id = :id");
 		$stmt->execute([':id' => $activityId]);
 		$row = $stmt->fetch(PDO::FETCH_ASSOC);
-		return $row ? $row['name'] : null;
+		return $row ? $this->decodeEntities($row['name']) : null;
 	}
 
 	// ── Case officer ────────────────────────────────────────────────────
@@ -522,7 +549,7 @@ class ApplicationRepository
 			$orders[$oid]['lines'][] = [
 				'line_id'            => (int) $row['line_id'],
 				'article_mapping_id' => (int) $row['article_mapping_id'],
-				'name'               => $row['article_name'],
+				'name'               => $this->decodeEntities($row['article_name']),
 				'unit'               => $row['unit'],
 				'quantity'           => (int) ($row['quantity'] ?? 0),
 				'amount'             => $amount,
@@ -578,7 +605,7 @@ class ApplicationRepository
 		$stmt->execute([':status' => $status, ':id' => $applicationId]);
 	}
 
-	public function addComment(int $applicationId, string $author, string $comment, string $type = 'comment'): void
+	public function addComment(int $applicationId, string $author, string $comment, string $type = 'comment'): int
 	{
 		$stmt = $this->db->prepare(
 			"INSERT INTO bb_application_comment (application_id, time, author, comment, type)
@@ -590,6 +617,8 @@ class ApplicationRepository
 			':comment' => $comment,
 			':type'    => $type,
 		]);
+
+		return (int) $this->db->lastInsertId();
 	}
 
 	// ── Internal notes (write) ──────────────────────────────────────────

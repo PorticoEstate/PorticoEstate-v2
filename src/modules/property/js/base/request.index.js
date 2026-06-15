@@ -36,13 +36,14 @@ var addFooterDatatable2 = function (nRow, aaData, iStart, iEnd, aiDisplay, oTabl
 	}
 };
 
-var oArgs_request = {menuaction: 'property.uirequest.edit'};
-var sUrl_request = phpGWLink('index.php', oArgs_request);
-
 var linkToRequest = function (key, oData)
 {
 	var id = oData[key];
-	return '<a href="' + sUrl_request + '&id=' + id + '">' + id + '</a>';
+	var url = phpGWLink('index.php', {
+		menuaction: 'property.uirequest.edit',
+		id: id
+	});
+	return '<a href="' + url + '">' + id + '</a>';
 };
 
 var formatRadio = function (key, oData)

@@ -11,25 +11,42 @@
 		{
 			var typeId = query.type_id || '';
 			var lookupTenant = query.lookup_tenant || '';
-			var target = 'index.php?menuaction=property.uilocation.edit&location_code=' + encodeURIComponent(locationCode);
+			var params = {
+				menuaction: 'property.uilocation.edit',
+				location_code: locationCode
+			};
 
 			if (typeId)
 			{
-				target += '&type_id=' + encodeURIComponent(typeId);
+				params.type_id = typeId;
 			}
 			if (lookupTenant)
 			{
-				target += '&lookup_tenant=' + encodeURIComponent(lookupTenant);
+				params.lookup_tenant = lookupTenant;
 			}
 
-			return target;
+			return global.phpGWLink('index.php', params);
 		}
 
 		function buildSaveRequest()
 		{
 			var clickHistory = query.click_history || '';
 			var queryParts = [];
-			var originalLocationCode = (query.location_code || deps.getLocationFieldValue(form, 'input[name="location_code"]') || '').trim();
+			var originalLocationCode = (
+				query.location_code
+				|| deps.getLocationFieldValue(form, 'input[name="location_code"]')
+				|| deps.getLocationFieldValue(form, 'input[name="values[location_code]"]')
+				|| ''
+			).trim();
+
+			if (!originalLocationCode)
+			{
+				var pathMatch = parsed.pathname ? parsed.pathname.match(/\/property\/location\/([^\/?#]+)/) : null;
+				if (pathMatch && pathMatch[1])
+				{
+					originalLocationCode = decodeURIComponent(pathMatch[1]);
+				}
+			}
 			var rawLocationId = '';
 
 			if (typeof global.location_id !== 'undefined' && global.location_id !== null)
@@ -77,19 +94,23 @@
 
 		function buildEditUrl(type, entityId, catId, id)
 		{
-			return 'index.php?menuaction=property.uientity.edit'
-				+ '&type=' + encodeURIComponent(type)
-				+ '&entity_id=' + encodeURIComponent(entityId)
-				+ '&cat_id=' + encodeURIComponent(catId)
-				+ '&id=' + encodeURIComponent(id);
+			return global.phpGWLink('index.php', {
+				menuaction: 'property.uientity.edit',
+				type: type,
+				entity_id: entityId,
+				cat_id: catId,
+				id: id
+			});
 		}
 
 		function buildIndexUrl(type, entityId, catId)
 		{
-			return 'index.php?menuaction=property.uientity.index'
-				+ '&entity_id=' + encodeURIComponent(entityId)
-				+ '&cat_id=' + encodeURIComponent(catId)
-				+ '&type=' + encodeURIComponent(type);
+			return global.phpGWLink('index.php', {
+				menuaction: 'property.uientity.index',
+				entity_id: entityId,
+				cat_id: catId,
+				type: type
+			});
 		}
 
 		function buildSaveRequest(submitterName)
@@ -181,20 +202,10 @@
 
 		function buildEditUrl(projectId)
 		{
-			var clickHistory = query.click_history || '';
-			if (!clickHistory && typeof global.strBaseURL !== 'undefined' && global.strBaseURL)
-			{
-				var baseQuery = deps.parseURL(global.strBaseURL).searchObject || {};
-				clickHistory = baseQuery.click_history || '';
-			}
-
-			var url = 'index.php?menuaction=property.uiproject.edit&id=' + encodeURIComponent(projectId);
-			if (clickHistory)
-			{
-				url += '&click_history=' + encodeURIComponent(clickHistory);
-			}
-
-			return url;
+			return global.phpGWLink('index.php', {
+				menuaction: 'property.uiproject.edit',
+				id: projectId
+			});
 		}
 
 		function buildSaveRequest(currentProjectId)

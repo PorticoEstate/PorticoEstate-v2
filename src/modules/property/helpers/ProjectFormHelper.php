@@ -2,6 +2,8 @@
 
 namespace App\modules\property\helpers;
 
+use App\modules\phpgwapi\services\Settings;
+
 class ProjectFormHelper
 {
 	/**
@@ -279,6 +281,182 @@ class ProjectFormHelper
 
 		$state['receipt'] = is_array($receipt) ? $receipt : array();
 		$state['id'] = (int)($state['receipt']['id'] ?? $state['values']['id'] ?? 0);
+		$state = $this->applyNotifyWorkflow($state);
 		return $state;
+	}
+
+	protected function applyNotifyWorkflow(array $state): array
+	{
+		$id = (int)($state['id'] ?? 0);
+		$values = is_array($state['values'] ?? null) ? $state['values'] : array();
+		if ($id <= 0 || empty($values))
+		{
+			return $state;
+		}
+
+		$serverSettings = Settings::getInstance()->get('server');
+		$serverSettings = is_array($serverSettings) ? $serverSettings : array();
+		if (empty($serverSettings['smtp_server']))
+		{
+			return $state;
+		}
+
+		$user = Settings::getInstance()->get('user');
+		$user = is_array($user) ? $user : array();
+		$apps = Settings::getInstance()->get('apps');
+		$apps = is_array($apps) ? $apps : array();
+
+		$accountId = (int)($user['account_id'] ?? 0);
+		$userPreferences = is_array($user['preferences'] ?? null) ? $user['preferences'] : array();
+		$commonPreferences = is_array($userPreferences['common'] ?? null) ? $userPreferences['common'] : array();
+		$propertyPreferences = is_array($userPreferences['property'] ?? null) ? $userPreferences['property'] : array();
+
+		$historylog = CreateObject('property.historylog', 'project');
+		$send = CreateObject('phpgwapi.send');
+		$boCommon = CreateObject('property.bocommon');
+
+		$toArray = array();
+		$toArraySms = array();
+		$noticeOwner = (array)($state['receipt']['notice_owner'] ?? array());
+
+		if (!empty($state['receipt']['notice_owner']) && is_array($state['receipt']['notice_owner']))
+		{
+			$coordinatorId = (int)($values['coordinator'] ?? 0);
+			if ($accountId !== $coordinatorId
+				&& !empty($propertyPreferences['notify_project_owner']))
+			{
+				$prefsCoordinator = $boCommon->create_preferences('common', $coordinatorId);
+				if (!empty($prefsCoordinator['email']))
+				{
+					$toArray[] = (string)$prefsCoordinator['email'];
+				}
+			}
+		}
+
+		$locationId = 0;
+		$locations = CreateObject('phpgwapi.locations');
+		if ($locations && method_exists($locations, 'get_id'))
+		{
+			$locationId = (int)$locations->get_id('property', '.project');
+		}
+
+		$notifyList = execMethod('property.notify.read', array(
+			'location_id' => $locationId,
+			'location_item_id' => $id,
+		));
+		$notifyList = is_array($notifyList) ? $notifyList : array();
+
+		$subject = lang('project %1 has been edited', $id);
+
+		if (!empty($apps['sms']))
+		{
+			$smsText = "{$subject}. \r\n" . (string)($user['fullname'] ?? '') . " \r\n" . (string)($commonPreferences['email'] ?? '');
+			$sms = CreateObject('sms.sms');
+
+			foreach ($notifyList as $entry)
+			{
+				if (!empty($entry['is_active'])
+					&& ($entry['notification_method'] ?? '') === 'sms'
+					&& !empty($entry['sms']))
+				{
+					$sms->websend2pv($accountId, $entry['sms'], $smsText);
+					$toArraySms[] = "{$entry['first_name']} {$entry['last_name']}({$entry['sms']})";
+					$this->appendReceiptMessage($state, lang('%1 is notified', "{$entry['first_name']} {$entry['last_name']}"));
+				}
+			}
+
+			if ($toArraySms)
+			{
+				$historylog->add('MS', $id, implode(',', $toArraySms));
+			}
+		}
+
+		foreach ($notifyList as $entry)
+		{
+			if (!empty($entry['is_active'])
+				&& ($entry['notification_method'] ?? '') === 'email'
+				&& !empty($entry['email']))
+			{
+				$toArray[] = "{$entry['first_name']} {$entry['last_name']}<{$entry['email']}>";
+			}
+		}
+
+		if (!$toArray)
+		{
+			return $state;
+		}
+
+		$to = implode(';', $toArray);
+		$fromName = (string)($user['fullname'] ?? '');
+		$fromEmail = (string)($commonPreferences['email'] ?? '');
+
+		$body = '<a href ="' . \phpgw::link('/index.php', array(
+			'menuaction' => 'property.uiproject.edit',
+			'id' => $id,
+		), false, true) . '">' . lang('project %1 has been edited', $id) . '</a>' . "\n";
+
+		foreach ($noticeOwner as $notice)
+		{
+			$body .= $notice . "\n";
+		}
+
+		$body .= lang('Altered by') . ': ' . $fromName . "\n";
+		$body .= lang('remark') . ': ' . (string)($values['remark'] ?? '') . "\n";
+		$body = nl2br($body);
+
+		$returnCode = false;
+		try
+		{
+			$returnCode = (bool)$send->msg('email', $to, $subject, $body, false, false, false, $fromEmail, $fromName, 'html');
+		}
+		catch (\Exception $e)
+		{
+			$this->appendReceiptError($state, $e->getMessage());
+		}
+
+		if (!$returnCode)
+		{
+			$this->appendReceiptError($state, "uiproject::edit: sending message to '{$to}' subject='{$subject}' failed !!!");
+			if (isset($send->err['desc']))
+			{
+				$this->appendReceiptError($state, (string)$send->err['desc']);
+			}
+			return $state;
+		}
+
+		$historylog->add('ON', $id, lang('%1 is notified', $to));
+		$this->appendReceiptMessage($state, lang('%1 is notified', $to));
+
+		return $state;
+	}
+
+	private function appendReceiptMessage(array &$state, string $msg): void
+	{
+		if (!isset($state['receipt']) || !is_array($state['receipt']))
+		{
+			$state['receipt'] = array();
+		}
+
+		if (!isset($state['receipt']['message']) || !is_array($state['receipt']['message']))
+		{
+			$state['receipt']['message'] = array();
+		}
+
+		$state['receipt']['message'][] = array('msg' => $msg);
+	}
+
+	private function appendReceiptError(array &$state, string $msg): void
+	{
+		if (!isset($state['receipt']) || !is_array($state['receipt']))
+		{
+			$state['receipt'] = array();
+		}
+
+		if (!isset($state['receipt']['error']) || !is_array($state['receipt']['error']))
+		{
+			$state['receipt']['error'] = array();
+		}
+
+		$state['receipt']['error'][] = array('msg' => $msg);
 	}
 }

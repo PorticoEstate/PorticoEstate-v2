@@ -3,6 +3,7 @@
 namespace Tests\Controllers
 {
 	require_once __DIR__ . '/../../vendor/autoload.php';
+		require_once __DIR__ . '/../../src/helpers/Sanitizer.php';
 
 	use App\modules\property\controllers\ProjectController;
 	use App\modules\property\helpers\ProjectFormHelper;
@@ -1209,6 +1210,51 @@ namespace Tests\Controllers
 
 			$decoded = json_decode($this->responseBody, true);
 			$this->assertSame('2000', $decoded['ResultSet']['Result'][0]['id']);
+		}
+
+		public function testGetExternalProjectReturnsLegacyResultShape(): void
+		{
+			$bo = new class
+			{
+			};
+
+			$bocommon = new class
+			{
+				public function get_external_project(): array
+				{
+					return array('ResultSet' => array('Result' => array(array('id' => '3000', 'name' => 'External Project'))));
+				}
+			};
+
+			$workorderBo = new class
+			{
+				public object $cats;
+				public function __construct()
+				{
+					$this->cats = new class
+					{
+						public function return_single(int $catId): array { return array(); }
+						public function return_sorted_array(): array { return array(); }
+					};
+				}
+			};
+
+			$notifyService = new class
+			{
+				public function refresh_notify_contact_2(): array
+				{
+					return array();
+				}
+			};
+
+			$this->request->method('getQueryParams')->willReturn(array());
+			$this->request->method('getParsedBody')->willReturn(array());
+
+			$controller = $this->makeControllerWithLookupDeps($bo, $bocommon, $workorderBo, $notifyService);
+			$controller->getExternalProject($this->request, $this->response);
+
+			$decoded = json_decode($this->responseBody, true);
+			$this->assertSame('3000', $decoded['ResultSet']['Result'][0]['id']);
 		}
 
 		public function testGetCategoryLookupSetsInactiveWhenCategoryNotAllowed(): void

@@ -26,7 +26,7 @@ class ArticleMapping
     /** @OA\Property(type="integer") @Expose */
     public $article_id;
 
-    /** @OA\Property(type="string") @Expose */
+    /** @OA\Property(type="string") @Expose @EscapeString(mode="default") */
     public $article_name;
 
     /** @OA\Property(type="string") @Expose */

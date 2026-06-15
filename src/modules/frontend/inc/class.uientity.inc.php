@@ -654,10 +654,10 @@ class frontend_uientity extends frontend_uicommon
 			$location_data = $bolocation->initiate_ui_location(array(
 				'values' => $values['location_data'],
 				'type_id' => (int)$category['location_level'],
-				'no_link' => $_no_link, // disable lookup links for location type less than type_id
-				'lookup_type' => $lookup_type,
-				'tenant' => $lookup_tenant,
-				'lookup_entity' => $lookup_entity,
+				'no_link' => (int)$category['location_link_level'], // disable lookup links for location type less than type_id
+				'lookup_type' => $mode == 'edit' ? 'form2' : 'view2',
+				'tenant' => $category['lookup_tenant'],
+				'lookup_entity' => false,//$lookup_entity,
 				'entity_data' => isset($values['p']) ? $values['p'] : ''
 			));
 		}

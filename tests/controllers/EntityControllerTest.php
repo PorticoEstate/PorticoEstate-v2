@@ -648,10 +648,8 @@ class EntityControllerTest extends TestCase
 		$method = new \ReflectionMethod(EntityController::class, 'applyRelationInfoPayload');
 		$method->setAccessible(true);
 
-		$this->request->method('getParsedBody')->willReturn($body);
-
 		/** @var array<string, mixed> $post */
-		$post = $method->invoke($controller, $values, $bo, $this->request);
+				$post = $method->invoke($controller, $values, $bo, $body);
 
 		$this->assertSame('100-200', $post['location_code']);
 		$this->assertSame('100', $post['location']['loc1']);
@@ -1197,6 +1195,9 @@ class EntityControllerTest extends TestCase
 		$this->assertSame('9', $decoded['data'][1]['target_id']);
 		$this->assertSame('workorder', $decoded['data'][1]['type']);
 		$this->assertSame('WO title', $decoded['data'][1]['title']);
+				$this->assertSame('/index.php', $decoded['data'][1]['target_path']);
+				$this->assertSame('property.uiworkorder.view', $decoded['data'][1]['target_params']['menuaction']);
+				$this->assertSame(9, $decoded['data'][1]['target_params']['id']);
 	}
 
 	// ── getDocuments() ───────────────────────────────────────────────────────

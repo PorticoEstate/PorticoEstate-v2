@@ -19,6 +19,10 @@ export class OrderLineDto {
   @Expose()
   article_mapping_id: number;
 
+  /** Article category: 1 = resource (rental), 2 = service (add-on article) */
+  @Expose()
+  article_cat_id: number;
+
   @Expose()
   quantity: number;
 

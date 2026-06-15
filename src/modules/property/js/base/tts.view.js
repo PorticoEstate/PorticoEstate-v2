@@ -1,11 +1,14 @@
 var d;
 var vendor_id = 0;
 var amount = 0;
-var sUrl_workorder = phpGWLink('index.php', {'menuaction': 'property.uiworkorder.edit'});
 
 formatLinkproject = function (key, oData)
 {
-	return "<a href=" + sUrl_workorder + "&id=" + oData[key] + ">" + oData[key] + "</a>";
+	var url = phpGWLink('index.php', {
+		menuaction: 'property.uiworkorder.edit',
+		id: oData[key]
+	});
+	return "<a href=" + url + ">" + oData[key] + "</a>";
 };
 
 

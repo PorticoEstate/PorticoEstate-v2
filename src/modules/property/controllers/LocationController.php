@@ -286,7 +286,7 @@ class LocationController
 			return $this->index($request, $response);
 		}
 
-		return $this->add($request, $response);
+		return $this->store($request, $response);
 	}
 
 	/**
@@ -1281,7 +1281,7 @@ class LocationController
 	 *     @OA\Response(response=403, description="Forbidden - no add access")
 	 * )
 	 */
-	public function add(Request $request, Response $response): Response
+	public function store(Request $request, Response $response): Response
 	{
 		if (!$this->hasAcl(self::ACL_ADD))
 		{
@@ -1332,7 +1332,7 @@ class LocationController
 	 *     @OA\Response(response=403, description="Forbidden - no edit access")
 	 * )
 	 */
-	public function save(Request $request, Response $response, array $args): Response
+	public function update(Request $request, Response $response, array $args): Response
 	{
 		if (!$this->hasAcl(self::ACL_EDIT))
 		{

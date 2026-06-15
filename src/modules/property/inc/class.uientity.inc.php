@@ -122,8 +122,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		'add_inventory'				 => true,
 		'edit_inventory'			 => true,
 		'inventory_calendar'		 => false,
-		'handle_multi_upload_file'	 => true,
-		'build_multi_upload_file'	 => true,
 	);
 
 	/**
@@ -300,120 +298,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		return $values;
 	}
 
-	/**
-	 * Process file uploads and deletions for an entity item after save.
-	 *
-	 * Deletes files listed in 'file_action' and 'file_jasperaction', then
-	 * uploads any new 'file' or 'jasperfile' from $_FILES to the VFS.
-	 *
-	 * @param array $values Entity values array including 'id', 'location', and file action lists.
-	 * @return void
-	 * @throws Exception If the entity ID is missing from $values.
-	 */
-	/**
-	 * Handle a multi-file upload for an entity item (AJAX endpoint).
-	 *
-	 * Reads id, entity_id, cat_id, and type from GET. Stores uploaded files
-	 * in the entity category VFS directory and returns a JSON status response.
-	 *
-	 * @deprecated Use EntityController::handleMultiUploadFile() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/multi-upload.
-	 * @return void Output is written directly.
-	 */
-	public function handle_multi_upload_file(): void
-	{
-		$id			 = Sanitizer::get_var('id', 'int', 'GET');
-		$entity_id	 = Sanitizer::get_var('entity_id');
-		$cat_id		 = Sanitizer::get_var('cat_id');
-		$type		 = Sanitizer::get_var('type');
-
-		$multi_upload_action = phpgw::link(
-			'/property/entity/' . rawurlencode((string)$type)
-			. '/' . rawurlencode((string)$entity_id)
-			. '/' . rawurlencode((string)$cat_id)
-			. '/' . rawurlencode((string)$id)
-			. '/multi-upload'
-		);
-
-		phpgw::import_class('property.multiuploader');
-
-		$values = $this->bo->read_single(array(
-			'entity_id'	 => $entity_id,
-			'cat_id'	 => $cat_id,
-			'id'		 => $id
-		));
-
-		$loc1 = isset($values['location_data']['loc1']) && $values['location_data']['loc1'] ? $values['location_data']['loc1'] : 'dummy';
-		if ($this->type_app[$this->type] == 'catch')
-		{
-			$loc1 = 'dummy';
-		}
-
-		$options = array();
-		$options['base_dir']	 = "{$this->category_dir}/{$loc1}/{$id}";
-		$options['upload_dir']	 = $this->serverSettings['files_dir'] . '/property/' . $options['base_dir'] . '/';
-		$options['script_url']	 = html_entity_decode($multi_upload_action);
-		$upload_handler			 = new property_multiuploader($options, false);
-
-		switch ($_SERVER['REQUEST_METHOD'])
-		{
-			case 'OPTIONS':
-			case 'HEAD':
-				$upload_handler->head();
-				break;
-			case 'GET':
-				$upload_handler->get();
-				break;
-			case 'PATCH':
-			case 'PUT':
-			case 'POST':
-				$upload_handler->add_file();
-				break;
-			case 'DELETE':
-				$upload_handler->delete_file();
-				break;
-			default:
-				header('HTTP/1.1 405 Method Not Allowed');
-		}
-
-		$this->phpgwapi_common->phpgw_exit();
-	}
-
-	/**
-	 * Render the multi-file upload widget for an entity item (noframework popup).
-	 *
-	 * @deprecated Use EntityController::buildMultiUploadFile() via /property/entity/{type}/{entity_id}/{cat_id}/{id}/multi-upload.
-	 * @return void Output is rendered directly via XSL template.
-	 */
-	public function build_multi_upload_file(): void
-	{
-		phpgwapi_jquery::init_multi_upload_file();
-
-		$id			 = Sanitizer::get_var('id');
-		$entity_id	 = Sanitizer::get_var('_entity_id');
-		$cat_id		 = Sanitizer::get_var('_cat_id');
-		$type		 = Sanitizer::get_var('_type');
-
-		$this->flags['noframework']	 = true;
-		$this->flags['nofooter']		 = true;
-		Settings::getInstance()->update('flags', ['noframework' => true, 'nofooter' => true]);
-
-		$multi_upload_action = phpgw::link(
-			'/index.php',
-			array(
-				'menuaction' => 'property.uientity.handle_multi_upload_file',
-				'id'		 => $id,
-				'entity_id'	 => $entity_id,
-				'cat_id'	 => $cat_id,
-				'type'		 => $type
-			)
-		);
-
-		$data = array(
-			'multi_upload_action' => $multi_upload_action
-		);
-
-		self::render_template_xsl(['files', 'multi_upload_file'], $data, '', 'multi_upload');
-	}
 
 	/**
 	 * Build a select-list of available attribute filter choices for the entity list view.
@@ -2393,6 +2277,7 @@ JS;
 		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $appname . ': ' . $function_msg;
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
 
+		self::add_javascript('property', 'base', 'rest-client-utils.js');
 		self::add_javascript('property', 'base', 'navigation-api-boundary.js');
 		self::add_javascript('property', 'base', 'entity.edit.js');
 		phpgwapi_jquery::load_widget('glider');

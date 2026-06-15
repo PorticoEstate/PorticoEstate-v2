@@ -35,6 +35,19 @@
 			'ix' => array(),
 			'uc' => array('app_name')
 		),
+		'phpgw_migrations' => array(
+			'fd' => array(
+				'id' => array('type' => 'auto', 'precision' => 4, 'nullable' => False),
+				'module' => array('type' => 'varchar', 'precision' => 50, 'nullable' => False),
+				'migration' => array('type' => 'varchar', 'precision' => 255, 'nullable' => False),
+				'batch' => array('type' => 'int', 'precision' => 4, 'nullable' => False, 'default' => 1),
+				'executed_at' => array('type' => 'timestamp', 'nullable' => False, 'default' => 'current_timestamp')
+			),
+			'pk' => array('id'),
+			'fk' => array(),
+			'ix' => array(),
+			'uc' => array(array('module', 'migration'))
+		),
 		'phpgw_acl' => array(
 			'fd' => array(
 				'acl_account' => array('type' => 'int', 'precision' => 4),

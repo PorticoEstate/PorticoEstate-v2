@@ -46,10 +46,28 @@
 				); 
 			}
 			
+			$migrationService = null;
 			foreach($app_info as $app)
 			{
 				$_db_version  = $app['db_version'];
 				$app_name	  = $app['app_name'];
+
+				/*
+				 * Migration-based modules track their version as a migration count,
+				 * not a legacy x.y.z string, so cmp_version_long() against
+				 * setup.inc.php's version would always report a mismatch. For these,
+				 * "current" means there are no pending migrations.
+				 */
+				$migrationService = $migrationService ?? new \App\modules\phpgwapi\services\Migration\MigrationService();
+				if($migrationService->moduleHasMigrations($app_name))
+				{
+					if(!$migrationService->hasPendingMigrations($app_name))
+					{
+						$_current[$app_name] = True;
+					}
+					continue;
+				}
+
 				$_versionfile = $phpgwapi_common->get_app_dir($app_name) . '/setup/setup.inc.php';
 				if(file_exists($_versionfile))
 				{

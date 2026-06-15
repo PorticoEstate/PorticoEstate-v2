@@ -5,6 +5,7 @@ use App\modules\bookingfrontend\controllers\BuildingController;
 use App\modules\bookingfrontend\controllers\applications\CheckoutController;
 use App\modules\bookingfrontend\controllers\applications\CommentsController;
 use App\modules\bookingfrontend\controllers\applications\HospitalityOrderController;
+use App\modules\bookingfrontend\controllers\NotificationController;
 use App\modules\bookingfrontend\controllers\ScheduleEntityController;
 use App\modules\bookingfrontend\controllers\CompletedReservationController;
 use App\modules\bookingfrontend\controllers\DataStore;
@@ -167,6 +168,13 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	});
 
 	$group->get('/invoices', CompletedReservationController::class . ':getReservations');
+
+	// Notification endpoints
+	$group->group('/notifications', function (RouteCollectorProxy $group) {
+		$group->get('', NotificationController::class . ':getNotifications');
+		$group->get('/unread-count', NotificationController::class . ':getUnreadCount');
+		$group->put('/{entity_type}/{entity_id}/mark-read', NotificationController::class . ':markAsRead');
+	});
 
 	// Document verification endpoint
 	$group->get('/documents/pictures/verify', DataStore::class . ':verifyAllPictures');

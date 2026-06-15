@@ -225,11 +225,14 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const {data: serverSettings} = useServerSettings();
 	const {addToast} = useToast();
 
-
+	// Mirror the calendar's selection gate (full-calendar-view.tsx): when a building
+	// has no seasons, it is closed unless an admin has opted out.
+	const closeWhenNoSeasons = serverSettings?.bookingfrontend_config?.close_calendar_without_season ?? true;
 
 	const isWithinBusinessHours = useCallback((date: Date, resourceIds: string[] = []): boolean => {
-		if (!props.seasons) {
-			return true;
+		// No seasons defined at all: closed or open depending on admin config
+		if (!props.seasons || props.seasons.length === 0) {
+			return !closeWhenNoSeasons;
 		}
 		const dt = DateTime.fromJSDate(date);
 		const dayOfWeek = dt.weekday;
@@ -249,9 +252,10 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			return season.active && dt >= seasonStart && dt <= seasonEnd && hasMatchingResources;
 		});
 
-		// If no active seasons for this date, consider it within hours (will be validated elsewhere)
+		// No active season covers this date (out of season): closed, mirroring the
+		// calendar's isDateCoveredBySeason gate.
 		if (activeSeasons.length === 0) {
-			return true;
+			return false;
 		}
 
 		// Get all boundaries for this day from active seasons
@@ -282,7 +286,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		return dayBoundaries.some(boundary =>
 			boundary.from_ <= timeStr && boundary.to_ >= timeStr
 		);
-	}, [props.seasons]);
+	}, [props.seasons, closeWhenNoSeasons]);
 
 	const defaultStartEnd = useMemo(() => {
 		// Helper function to create default timestamps

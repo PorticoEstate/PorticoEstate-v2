@@ -466,7 +466,10 @@
 	transform: translateX(-50%);
 	z-index: 1100;
 	min-width: 300px;
-	text-align: center;
+	/* Keep the default alert layout: the ds-alert icon is an absolutely-positioned
+	   ::before with reserved inline-start padding. Centering the text pulls it back
+	   over the icon, so leave the message start-aligned beside the icon. */
+	text-align: start;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 	animation: app-toast-in 0.25s ease-out;
 }

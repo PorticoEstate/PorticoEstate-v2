@@ -163,6 +163,7 @@ namespace Tests\Controllers
 			$this->assertStringContainsString("'query'\t\t\t\t\t => false", $contents);
 			$this->assertStringContainsString("phpGWLink('property/workorder/' + aData['workorder_id'], {})", $contents);
 			$this->assertStringContainsString("execute_ajax(requestUrl, function(result)", $contents);
+			$this->assertStringContainsString("JqueryPortico.updateinlineTableHelper('datatable-container_8', strURL);", $contents);
 			$this->assertStringNotContainsString('workorder_rest_save_form_action', $contents);
 			$this->assertStringNotContainsString("'property.uiworkorder.save'", $contents);
 			$this->assertStringNotContainsString("'property.uiworkorder.delete'", $contents);

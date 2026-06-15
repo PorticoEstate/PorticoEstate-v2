@@ -1042,8 +1042,9 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 
 				if(action=='delete_file')
 				{
-					var strURL = phpGWLink('property/workorder/{$id}/files-attachments', {phpgw_return_as:'json'}, true);
+					var strURL = phpGWLink('property/workorder/{$id}/files-attachments', {phpgw_return_as:'json'});
 					refresh_glider(strURL);
+					JqueryPortico.updateinlineTableHelper('datatable-container_8', strURL);
 				}
 			},
 			error: function(data) {

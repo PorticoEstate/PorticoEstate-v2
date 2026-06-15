@@ -930,9 +930,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 
 		//---file tagging
 
-		$requestUrl	 = json_encode(phpgw::link('/property/workorder/' . $id . '/files/actions', array(
-			'phpgw_return_as' => 'json'
-		)));
+		$requestUrl	 = json_encode(phpgw::link('/property/workorder/' . $id . '/files/actions'));
 		$requestUrl = str_replace('&amp;', '&', $requestUrl);
 
 		$buttons = array(
@@ -1042,7 +1040,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 
 				if(action=='delete_file')
 				{
-					var strURL = phpGWLink('property/workorder/{$id}/files-attachments', {phpgw_return_as:'json'});
+					var strURL = phpGWLink('property/workorder/{$id}/files-attachments');
 					refresh_glider(strURL);
 					JqueryPortico.updateinlineTableHelper('datatable-container_8', strURL);
 				}
@@ -1059,9 +1057,7 @@ JS;
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_1',
-			'requestUrl' => json_encode(phpgw::link('/property/workorder/' . $id . '/files', array(
-				'phpgw_return_as' => 'json'
-			))),
+			'requestUrl' => json_encode(phpgw::link('/property/workorder/' . $id . '/files')),
 			'data'		 => json_encode(array()),
 			'ColumnDefs' => $files_def,
 
@@ -1317,9 +1313,7 @@ JS;
 			'container'	 => 'datatable-container_6',
 			//				'requestUrl' => "''",
 			//				'data'		 => json_encode($attachmen_list),
-			'requestUrl' => json_encode(phpgw::link('/property/project/attachments', array(
-				'phpgw_return_as' => 'json'
-			))),
+			'requestUrl' => json_encode(phpgw::link('/property/project/attachments')),
 			'data'		 => json_encode(array()),
 
 			'ColumnDefs' => $attachmen_def,

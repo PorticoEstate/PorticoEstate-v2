@@ -43,8 +43,8 @@ namespace Tests\Controllers
 			$routesPath = __DIR__ . '/../../src/modules/property/routes/Routes.php';
 			$contents = (string)file_get_contents($routesPath);
 
-			$this->assertStringContainsString("\$group->post('/add', [\$controller, 'add']);", $contents);
-			$this->assertStringContainsString("\$group->put('/{location_code:[^/]+}', [\$controller, 'save']);", $contents);
+			$this->assertStringContainsString("\$group->post('/add', [\$controller, 'store']);", $contents);
+			$this->assertStringContainsString("\$group->put('/{location_code:[^/]+}', [\$controller, 'update']);", $contents);
 		}
 
 		public function testUilocationEditFormActionUsesRestEndpoint(): void

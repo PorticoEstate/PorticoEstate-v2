@@ -38,7 +38,17 @@ phpgw::import_class('phpgwapi.uicommon_jquery');
 phpgw::import_class('phpgwapi.jquery');
 
 /**
- * Description
+ * Legacy UI shell for Project pages.
+ *
+ * Project data and mutation flows are progressively being served by
+ * {@see \App\modules\property\controllers\ProjectController} via
+ * `/property/project/*` routes, while legacy menuaction handlers remain in
+ * place for page navigation and HTML/XSL rendering.
+ *
+ * The remaining public menuaction entries in this class are intentionally
+ * shell-oriented. `query` is already disabled because collection data is now
+ * served from REST.
+ *
  * @package property
  */
 class property_uiproject extends phpgwapi_uicommon_jquery

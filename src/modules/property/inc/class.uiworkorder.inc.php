@@ -70,32 +70,14 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 	var $jqcal;
 	var $public_functions = array(
 		'columns'					 => true,
-		'query'						 => true,
-		'download'					 => true,
+		'query'					 => false,
 		'index'						 => true,
 		'view'						 => true,
 		'add'						 => true,
 		'edit'						 => true,
-		'save'						 => true,
-		'delete'					 => true,
-		'view_file'					 => true,
-		'columns'					 => true,
 		'add_invoice'				 => true,
 		'recalculate'				 => true,
-		'save'						 => true,
-		'get_vendor_contract'		 => true,
-		'get_eco_service'			 => true,
-		'get_ecodimb'				 => true,
-		'get_b_account'				 => true,
-		'get_unspsc_code'			 => true,
-		'receive_order'				 => true,
-		'handle_multi_upload_file'	 => true,
-		'build_multi_upload_file'	 => true,
-		'get_files'					 => true,
-		'get_files_attachments'		 => true,
-		'view_image'				 => true,
-		'get_other_orders'			 => true,
-		'update_file_data'			 => true
+		'get_vendor_contract'		 => false,
 	);
 
 	function __construct()
@@ -141,385 +123,6 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		$this->accounts_obj = new Accounts();
 	}
 
-	function download()
-	{
-		if (!$this->acl_read)
-		{
-			phpgw::no_access();
-			return;
-		}
-
-		$values	 = $this->query();
-		$uicols	 = $this->bo->uicols;
-		$this->bocommon->download($values, $uicols['name'], $uicols['descr'], $uicols['input_type']);
-	}
-
-	function view_file()
-	{
-		if (!$this->acl_read)
-		{
-			phpgw::redirect_link('/index.php', array(
-				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1,
-				'acl_location'	 => $this->acl_location
-			));
-		}
-		ExecMethod('property.bofiles.get_file', Sanitizer::get_var('file_id', 'int'));
-	}
-
-	function view_image()
-	{
-		$this->flags['noheader']	 = true;
-		$this->flags['nofooter']	 = true;
-		$this->flags['xslt_app']	 = false;
-		Settings::getInstance()->update('flags', ['noheader' => true, 'nofooter' => true, 'xslt_app' => false]);
-
-
-		if (!$this->acl_read)
-		{
-			$this->phpgwapi_common->phpgw_exit();
-		}
-
-		$thumb	 = Sanitizer::get_var('thumb', 'bool');
-		$img_id	 = Sanitizer::get_var('img_id', 'int');
-
-		$bofiles = CreateObject('property.bofiles');
-
-		if ($img_id)
-		{
-			$file_info	 = $bofiles->vfs->get_info($img_id);
-			$file		 = "{$file_info['directory']}/{$file_info['name']}";
-		}
-		else
-		{
-			$file = urldecode(Sanitizer::get_var('file'));
-		}
-
-		$source		 = "{$bofiles->rootdir}{$file}";
-		$thumbfile	 = "$source.thumb";
-
-		// prevent path traversal
-		if (preg_match('/\.\./', $source))
-		{
-			return false;
-		}
-
-		$re_create = false;
-		if ($bofiles->is_image($source) && $thumb && $re_create)
-		{
-			$bofiles->resize_image($source, $thumbfile, $thumb_size = 100);
-			readfile($thumbfile);
-		}
-		else if ($thumb && is_file($thumbfile))
-		{
-			readfile($thumbfile);
-		}
-		else if ($bofiles->is_image($source) && $thumb)
-		{
-			$bofiles->resize_image($source, $thumbfile, $thumb_size = 100);
-			readfile($thumbfile);
-		}
-		else if ($img_id)
-		{
-			$bofiles->get_file($img_id);
-		}
-		else
-		{
-			$bofiles->view_file('', $file);
-		}
-	}
-
-	function get_files()
-	{
-		$id = Sanitizer::get_var('id', 'int');
-		$filter_tags = Sanitizer::get_var('tags');
-
-		if (!$this->acl_read)
-		{
-			return;
-		}
-
-		$link_file_data = array(
-			'menuaction' => 'property.uiworkorder.view_file',
-		);
-
-
-		$link_view_file = phpgw::link('/index.php', $link_file_data);
-
-		$values = $this->bo->get_files($id);
-
-		$content_files	 = array();
-		$img_types		 = array(
-			'image/jpeg',
-			'image/png',
-			'image/gif'
-		);
-
-		$sort_array = array();
-		$z = 0;
-		foreach ($values as $_entry)
-		{
-			if ($filter_tags && !$_entry['tags'])
-			{
-				continue;
-			}
-			else if ($filter_tags && $_entry['tags'])
-			{
-				$filter_check = json_decode($_entry['tags'], true);
-
-				if (!array_intersect($filter_check, $filter_tags))
-				{
-					continue;
-				}
-			}
-
-			$tags = array();
-			if ($_entry['tags'])
-			{
-				$tags = json_decode($_entry['tags'], true);
-				foreach ($tags as &$tag)
-				{
-					$tag = Db::getInstance()->stripslashes($tag);
-				}
-				unset($tag);
-			}
-
-			$sort_array[] = $_entry['name'];
-			$content_files[] = array(
-				'file_id'		 => $_entry['file_id'],
-				'tags'			 => $tags,
-				'file_name'		 => '<a href="' . $link_view_file . '&amp;file_id=' . $_entry['file_id'] . '" target="_blank" title="' . lang('click to view file') . '">' . $_entry['name'] . '</a>',
-				//					'delete_file'	 => '<input type="checkbox" name="values[file_action][]" value="' . $_entry['file_id'] . '" title="' . lang('Check to delete file') . '">',
-				'attach_file'	 => '<input type="checkbox" name="values[file_attach][]" value="' . $_entry['file_id'] . '" title="' . lang('Check to attach file') . '">'
-			);
-			if (in_array($_entry['mime_type'], $img_types))
-			{
-				$content_files[$z]['file_name']		 = $_entry['name'];
-				$content_files[$z]['img_id']		 = $_entry['file_id'];
-				$content_files[$z]['img_url']		 = self::link(array(
-					'menuaction' => 'property.uiworkorder.view_image',
-					'img_id'	 => $_entry['file_id'],
-					'file'		 => $_entry['directory'] . '/' . $_entry['file_name']
-				));
-				$content_files[$z]['thumbnail_flag'] = 'thumb=1';
-			}
-			$z++;
-		}
-
-		array_multisort($sort_array, SORT_ASC, $content_files);
-
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-
-			$total_records = count($content_files);
-
-			return array(
-				'data'				 => $content_files,
-				'draw'				 => Sanitizer::get_var('draw', 'int'),
-				'recordsTotal'		 => $total_records,
-				'recordsFiltered'	 => $total_records
-			);
-		}
-		return $content_files;
-	}
-
-	public function update_file_data()
-	{
-		if (!$this->acl_edit)
-		{
-			phpgw::no_access();
-		}
-
-		$location_id = Sanitizer::get_var('location_id', 'int');
-		$location_item_id = Sanitizer::get_var('location_item_id', 'int');
-		$ids = Sanitizer::get_var('ids', 'int');
-		$action = Sanitizer::get_var('action', 'string');
-		$tags = Sanitizer::get_var('tags', 'string');
-
-		$bofiles = CreateObject('property.bofiles');
-
-		if ($action == 'delete_file' && $ids && $location_item_id)
-		{
-			$bofiles->delete_file("/workorder/{$location_item_id}/", array('file_action' => $ids));
-		}
-		else if ($action == 'set_tag' && $ids)
-		{
-			$bofiles->set_tags($ids, $tags);
-		}
-		else if ($action == 'remove_tag' && $ids)
-		{
-			$bofiles->remove_tags($ids, $tags);
-		}
-
-		return $action;
-	}
-
-
-	function get_files_attachments()
-	{
-		$id = Sanitizer::get_var('id', 'int');
-
-		if (!$this->acl_read)
-		{
-			return;
-		}
-
-		$z = 0;
-		$img_types		 = array(
-			'image/jpeg',
-			'image/png',
-			'image/gif'
-		);
-
-		$values = $this->bo->read_single($id);
-
-		$file_attachments	 = isset($values['file_attachments']) && is_array($values['file_attachments']) ? $values['file_attachments'] : array();
-
-		$content_attachments = array();
-		$link_view_file = phpgw::link('/index.php', array('menuaction' => 'property.uiworkorder.view_file'));
-		$lang_view_file		 = lang('click to view file');
-		$lang_select_file	 = lang('Check to attach file');
-		$lang_workorder		 = lang('workorder');
-
-		$sort_array = array();
-
-		foreach ($values['files'] as $_entry)
-		{
-			$_checked = '';
-			if (in_array($_entry['file_id'], $file_attachments))
-			{
-				$_checked = 'checked="checked"';
-			}
-			$sort_array[] = $_entry['name'];
-
-			$content_attachments[] = array(
-				'source'		 => $lang_workorder,
-				'file_id'		 => $_entry['file_id'],
-				'file_name'		 => "<a href='{$link_view_file}&amp;file_id={$_entry['file_id']}' target='_blank' title='{$lang_view_file}'>{$_entry['name']}</a>",
-				'attach_file'	 => "<input type='checkbox' $_checked  name='values[file_attach][]' value='{$_entry['file_id']}' title='{$lang_select_file}'>"
-			);
-			if (in_array($_entry['mime_type'], $img_types))
-			{
-				$content_attachments[$z]['file_name']		 = $_entry['name'];
-				$content_attachments[$z]['img_id']		 = $_entry['file_id'];
-				$content_attachments[$z]['img_url']		 = self::link(array(
-					'menuaction' => 'property.uiworkorder.view_image',
-					'img_id'	 => $_entry['file_id']
-				));
-			}
-			$z++;
-		}
-		unset($_entry);
-
-		$link_view_file			 = phpgw::link('/property/project/files/view');
-		$boproject		 = CreateObject('property.boproject');
-		$files			 = $boproject->get_files($values['project_id']);
-		$lang_project	 = lang('project');
-
-		foreach ($files as $_entry)
-		{
-			$_checked = '';
-			if (in_array($_entry['file_id'], $file_attachments))
-			{
-				$_checked = 'checked="checked"';
-			}
-			$sort_array[] = $_entry['name'];
-
-			$content_attachments[] = array(
-				'source'		 => $lang_project,
-				'file_name'		 => "<a href='{$link_view_file}&amp;file_id={$_entry['file_id']}' target='_blank' title='{$lang_view_file}'>{$_entry['name']}</a>",
-				'attach_file'	 => "<input type='checkbox' $_checked  name='values[file_attach][]' value='{$_entry['file_id']}' title='{$lang_select_file}'>"
-			);
-
-			if (in_array($_entry['mime_type'], $img_types))
-			{
-				$content_attachments[$z]['file_name']		 = $_entry['name'];
-				$content_attachments[$z]['img_id']		 = $_entry['file_id'];
-				$content_attachments[$z]['img_url']		 = self::link(array(
-					'menuaction' => 'property.uiworkorder.view_image',
-					'img_id'	 => $_entry['file_id']
-				));
-			}
-			$z++;
-		}
-
-		array_multisort($sort_array, SORT_ASC, $content_attachments);
-
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-
-			$total_records = count($content_attachments);
-
-			return array(
-				'data'				 => $content_attachments,
-				'draw'				 => Sanitizer::get_var('draw', 'int'),
-				'recordsTotal'		 => $total_records,
-				'recordsFiltered'	 => $total_records
-			);
-		}
-		return $content_attachments;
-	}
-
-	public function handle_multi_upload_file()
-	{
-		$id = Sanitizer::get_var('id', 'int', 'GET');
-
-		phpgw::import_class('property.multiuploader');
-
-		$options = array();
-		$options['base_dir']	 = 'workorder/' . $id;
-		$options['upload_dir']	 = $this->serverSettings['files_dir'] . '/property/' . $options['base_dir'] . '/';
-		$options['script_url']	 = html_entity_decode(self::link(array(
-			'menuaction' => 'property.uiworkorder.handle_multi_upload_file',
-			'id'		 => $id
-		)));
-		$upload_handler			 = new property_multiuploader($options, false);
-
-		switch ($_SERVER['REQUEST_METHOD'])
-		{
-			case 'OPTIONS':
-			case 'HEAD':
-				$upload_handler->head();
-				break;
-			case 'GET':
-				$upload_handler->get();
-				break;
-			case 'PATCH':
-			case 'PUT':
-			case 'POST':
-				$upload_handler->add_file();
-				break;
-			case 'DELETE':
-				$upload_handler->delete_file();
-				break;
-			default:
-				$upload_handler->header('HTTP/1.1 405 Method Not Allowed');
-		}
-
-		$this->phpgwapi_common->phpgw_exit();
-	}
-
-	public function build_multi_upload_file()
-	{
-		phpgwapi_jquery::init_multi_upload_file();
-		$id = Sanitizer::get_var('id', 'int');
-
-		$this->flags['noframework']	 = true;
-		$this->flags['nofooter']		 = true;
-		Settings::getInstance()->update('flags', ['noframework' => true, 'nofooter' => true]);
-
-		$multi_upload_action = phpgw::link('/index.php', array(
-			'menuaction' => 'property.uiworkorder.handle_multi_upload_file',
-			'id'		 => $id
-		));
-
-		$data = array(
-			'multi_upload_action' => $multi_upload_action
-		);
-
-		phpgwapi_xslttemplates::getInstance()->add_file(array('files', 'multi_upload_file'));
-		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('multi_upload' => $data));
-	}
 
 	function columns()
 	{
@@ -715,60 +318,15 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 
 	public function query()
 	{
-		$start_date	 = $this->start_date;
-		$end_date	 = $this->end_date;
-
-		if ($start_date && empty($end_date))
-		{
-			$dateformat	 = $this->userSettings['preferences']['common']['dateformat'];
-			$end_date	 = $this->phpgwapi_common->show_date(mktime(0, 0, 0, date("m"), date("d"), date("Y")), $dateformat);
-		}
-
-		$search	 = Sanitizer::get_var('search');
-		$order	 = Sanitizer::get_var('order');
-		$draw	 = Sanitizer::get_var('draw', 'int');
-		$columns = Sanitizer::get_var('columns');
-		$export	 = Sanitizer::get_var('export', 'bool');
-
-		$params = array(
-			'start'		 => Sanitizer::get_var('start', 'int', 'REQUEST', 0),
-			'results'	 => Sanitizer::get_var('length', 'int', 'REQUEST', 0),
-			'query'		 => $search['value'],
-			'order'		 => $columns[$order[0]['column']]['data'],
-			'sort'		 => $order[0]['dir'],
-			'allrows'	 => Sanitizer::get_var('length', 'int') == -1 || $export,
-			'start_date'	 => $start_date ? urldecode($start_date) : '',
-			'end_date'		 => $end_date ? urldecode($end_date) : '',
-		);
-
-		$values = $this->bo->read($params);
-		if ($export)
-		{
-			return $values;
-		}
-		$result_data					 = array(
-			'results' => $values
-		);
-		$result_data['total_records']	 = $this->bo->total_records;
-		$result_data['draw']			 = $draw;
-
-		return $this->jquery_results($result_data);
+		return [];
 	}
 
 	function index()
 	{
 		if (!$this->acl_read)
 		{
-			phpgw::redirect_link('/index.php', array(
-				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1,
-				'acl_location'	 => $this->acl_location
-			));
-		}
-
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			return $this->query();
+			phpgw::no_access();
+			return;
 		}
 
 		$lookup			 = Sanitizer::get_var('lookup', 'bool');
@@ -839,24 +397,21 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 				)
 			),
 			'datatable'		 => array(
-				'source'		 => self::link(array(
-					'menuaction'		 => 'property.uiworkorder.index',
-					'lookup'			 => $lookup,
-					'make_relation'		 => $make_relation,
-					'relation_id'		 => $relation_id,
-					'relation_type'		 => $relation_type,
-					'district_id'		 => $this->district_id,
-					'start_date'		 => $start_date,
-					'end_date'			 => $end_date,
-					'b_group'			 => $this->b_group,
-					'b_account'			 => $this->b_account,
-					'paid'				 => $this->paid,
-					'obligation'		 => $this->obligation,
-					'ecodimb'			 => $this->ecodimb,
-					'phpgw_return_as'	 => 'json'
+				'source'		 => phpgw::link('/property/workorder', array(
+					'lookup'		 => $lookup,
+					'make_relation'	 => $make_relation,
+					'relation_id'	 => $relation_id,
+					'relation_type'	 => $relation_type,
+					'district_id'	 => $this->district_id,
+					'start_date'	 => $start_date,
+					'end_date'		 => $end_date,
+					'b_group'		 => $this->b_group,
+					'b_account'		 => $this->b_account,
+					'paid'			 => $this->paid,
+					'obligation'	 => $this->obligation,
+					'ecodimb'		 => $this->ecodimb,
 				)),
-				'download'		 => self::link(array(
-					'menuaction' => 'property.uiworkorder.download',
+				'download'		 => phpgw::link('/property/workorder/reports/download', array(
 					'start_date' => $start_date,
 					'end_date'	 => $end_date,
 					'b_group'	 => $this->b_group,
@@ -1032,10 +587,21 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 					'my_name'		 => 'delete',
 					'text'			 => lang('delete'),
 					'confirm_msg'	 => lang('do you really want to delete this entry'),
-					'action'		 => phpgw::link('/index.php', array(
-						'menuaction' => 'property.uiworkorder.delete'
-					)),
-					'parameters'	 => json_encode($parameters)
+					'type'			 => 'custom',
+					'custom_code'	 => "
+									var api = oTable.api();
+									var selected = api.rows( { selected: true } ).data();
+									for ( var n = 0; n < selected.length; ++n )
+									{
+										var aData = selected[n];
+										var requestUrl = phpGWLink('property/workorder/' + aData['workorder_id'], {});
+										execute_ajax(requestUrl, function(result){
+											var message = result && result.message ? result.message : result;
+											document.getElementById('message').innerHTML += '<br/>' + message;
+											api.draw('page');
+										}, {}, 'DELETE', 'json');
+									}
+								"
 				);
 			}
 			unset($parameters);
@@ -1081,244 +647,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 
 		self::render_template_xsl('datatable2', $data);
 	}
-	/*
-		 * Overrides with incoming data from POST
-		 */
 
-	private function _populate()
-	{
-		$id						 = Sanitizer::get_var('id');
-		$boproject				 = CreateObject('property.boproject');
-		$config					 = CreateObject('phpgwapi.config', 'property');
-		$config->read();
-		$project_id				 = Sanitizer::get_var('project_id', 'int');
-		$values					 = Sanitizer::get_var('values');
-		$values['vendor_id']	 = Sanitizer::get_var('vendor_id', 'int');
-		$values['vendor_name']	 = Sanitizer::get_var('vendor_name', 'string');
-		$values['event_id']		 = Sanitizer::get_var('event_id', 'int');
-		$origin					 = Sanitizer::get_var('origin');
-		$origin_id				 = Sanitizer::get_var('origin_id', 'int');
-
-		if (!$id)
-		{
-			$p_entity_id								 = Sanitizer::get_var('p_entity_id', 'int');
-			$p_cat_id									 = Sanitizer::get_var('p_cat_id', 'int');
-			$values['p'][$p_entity_id]['p_entity_id']	 = $p_entity_id;
-			$values['p'][$p_entity_id]['p_cat_id']		 = $p_cat_id;
-			$values['p'][$p_entity_id]['p_num']			 = Sanitizer::get_var('p_num');
-		}
-
-
-		if ($project_id && !isset($values['project_id']))
-		{
-			$values['project_id'] = $project_id;
-		}
-
-		$project = (isset($values['project_id']) ? $boproject->read_single_mini($values['project_id']) : '');
-
-		if (phpgw::is_repost())
-		{
-			$this->receipt['error'][] = array(
-				'msg' => lang('Hmm... looks like a repost!')
-			);
-		}
-
-		if (isset($config->config_data['invoice_acl']) && $config->config_data['invoice_acl'] == 'dimb' && !empty($values['do_approve']))
-		{
-			if (!$this->acl_manage)
-			{
-				foreach ($values['do_approve'] as $_account_id => $_dummy)
-				{
-					if ($_account_id != $this->account)
-					{
-						continue;
-					}
-
-					$approve_role = execMethod('property.boinvoice.check_role', $project['ecodimb'] ? $project['ecodimb'] : $values['ecodimb']);
-					if (!$approve_role['is_janitor'] && !$approve_role['is_supervisor'] && !$approve_role['is_budget_responsible'])
-					{
-						$this->receipt['error'][]	 = array(
-							'msg' => lang('you are not approved for this dimb: %1', $project['ecodimb'] ? $project['ecodimb'] : $values['ecodimb'])
-						);
-						$error_id					 = true;
-					}
-
-					if (!$approve_role['is_supervisor'] && !$approve_role['is_budget_responsible'])
-					{
-						$this->receipt['error'][]	 = array(
-							'msg' => lang('you do not have permission to approve this order')
-						);
-						$values['approved']			 = false;
-						$error_id					 = true;
-					}
-				}
-			}
-		}
-
-		$insert_record = Cache::session_get('property', 'insert_record');
-
-		if (is_array($insert_record))
-		{
-			$values = $this->bocommon->collect_locationdata($values, $insert_record);
-		}
-
-		if (isset($values['new_project_id']) && $values['new_project_id'] && !$boproject->read_single_mini($values['new_project_id']))
-		{
-			$this->receipt['error'][] = array(
-				'msg' => lang('the project %1 does not exist', $values['new_project_id'])
-			);
-		}
-
-		if (isset($values['new_project_id']) && $values['new_project_id'] && $values['new_project_id'] == $values['project_id'])
-		{
-			unset($values['new_project_id']);
-		}
-
-		if (!$values['title'])
-		{
-			$this->receipt['error'][] = array(
-				'msg' => lang('Please enter a workorder title !')
-			);
-		}
-		if (!$values['project_id'])
-		{
-			$this->receipt['error'][] = array(
-				'msg' => lang('Please select a valid project !')
-			);
-		}
-
-
-		if (!$values['status'])
-		{
-			$this->receipt['error'][] = array(
-				'msg' => lang('Please select a status !')
-			);
-		}
-
-		if (isset($config->config_data['workorder_require_vendor']) && $config->config_data['workorder_require_vendor'] == 1 && !$values['vendor_id'])
-		{
-			$this->receipt['error'][] = array(
-				'msg' => lang('no vendor')
-			);
-		}
-
-		if (!$values['b_account_id'])
-		{
-			$this->receipt['error'][] = array(
-				'msg' => lang('Please select a budget account !')
-			);
-		}
-		else
-		{
-			$_b_account = execMethod('property.bogeneric.read_single', array(
-				'id'			 => $values['b_account_id'],
-				'location_info'	 => array(
-					'type' => 'budget_account'
-				)
-			));
-
-			if (!empty($_b_account['ecodimb']))
-			{
-
-				if (!empty($values['ecodimb']) && $values['ecodimb'] != $_b_account['ecodimb'])
-				{
-					$this->receipt['message'][] = array('msg' => "Ansvar er overstyrt av binding til art: {$values['ecodimb']} -> {$_b_account['ecodimb']}");
-				}
-
-				$values['ecodimb'] = $_b_account['ecodimb'];
-			}
-
-			if (!$_b_account || !$_b_account['active'])
-			{
-				$values['b_account_id']		 = '';
-				$values['b_account_name']	 = '';
-				$this->receipt['error'][]	 = array(
-					'msg' => lang('Please select a valid budget account !')
-				);
-			}
-		}
-
-		if (empty($values['ecodimb']))
-		{
-			$values['ecodimb'] = $project['ecodimb'];
-			if (!$values['ecodimb'])
-			{
-				$this->receipt['error'][]	 = array('msg' => lang('Please select dimb!'));
-				$error_id					 = true;
-			}
-			else
-			{
-				$_ecodimb = execMethod('property.bogeneric.read_single', array(
-					'id'			 => $values['ecodimb'],
-					'location_info'	 => array(
-						'type' => 'dimb'
-					)
-				));
-				if (!$_ecodimb || !$_ecodimb['active'])
-				{
-					$values['ecodimb']			 = '';
-					$values['ecodimb_name']		 = '';
-					$this->receipt['error'][]	 = array(
-						'msg' => lang('Please select a valid dimb!')
-					);
-				}
-			}
-		}
-
-		if (isset($values['budget']) && $values['budget'] && !ctype_digit(ltrim($values['budget'], '-')))
-		{
-			$this->receipt['error'][] = array(
-				'msg' => lang('budget') . ': ' . lang('Please enter an integer !')
-			);
-		}
-
-		if (!$id && (!$values['contract_sum'] && !$values['budget']))
-		{
-			$this->receipt['error'][] = array(
-				'msg' => lang('please enter either a budget or contrakt sum')
-			);
-		}
-
-		if (((int)$values['contract_sum'] && (int)$values['budget']) && (abs($values['contract_sum']) > abs($values['budget'])))
-		{
-			$values['budget'] = $values['contract_sum'];
-		}
-
-		if (isset($values['addition_rs']) && $values['addition_rs'] && !ctype_digit(ltrim($values['addition_rs'], '-')))
-		{
-			$this->receipt['error'][] = array(
-				'msg' => lang('Rig addition') . ': ' . lang('Please enter an integer !')
-			);
-		}
-
-		if (isset($values['cat_id']) && $values['cat_id'])
-		{
-			$_category = $this->cats->return_single($values['cat_id']);
-			if (!$_category[0]['active'])
-			{
-				$this->receipt['error'][] = array(
-					'msg' => lang('invalid category')
-				);
-			}
-		}
-
-		if (isset($values['addition_percentage']) && $values['addition_percentage'] && !ctype_digit($values['addition_percentage']))
-		{
-			$this->receipt['error'][] = array(
-				'msg' => lang('Percentage addition') . ': ' . lang('Please enter an integer !')
-			);
-		}
-
-		if (!empty($values['approval']) && !empty($config->config_data['workorder_approval']))
-		{
-			if (!empty($config->config_data['workorder_approval_status']))
-			{
-				$values['status'] = $config->config_data['workorder_approval_status'];
-			}
-		}
-
-		return $values;
-	}
 
 	private function _handle_files($values)
 	{
@@ -1374,527 +703,6 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		}
 	}
 
-	public function save()
-	{
-		if (!$_POST)
-		{
-			return $this->edit();
-		}
-
-		$id			 = Sanitizer::get_var('id', 'int');
-		$config		 = CreateObject('phpgwapi.config', 'property');
-		$location_id = $this->locations->get_id('property', $this->acl_location);
-		$config->read();
-
-		/*
-			 * Overrides with incoming data from POST
-			 */
-		$values = $this->_populate();
-
-		if ($id)
-		{
-			$action			 = 'edit';
-			$values['id']	 = $id;
-		}
-
-		if ($values['copy_workorder'])
-		{
-			$action = 'add';
-			$_values = $this->bo->read_single($id);
-			$values['budget'] = $_values['budget'] ? $_values['budget'] : 1;
-		}
-
-		if ($this->receipt['error'])
-		{
-			$this->edit($values);
-		}
-		else
-		{
-			try
-			{
-				$receipt		 = $this->bo->save($values, $action);
-				$values['id']	 = $receipt['id'];
-				$id				 = $receipt['id'];
-				$_receipt_message = (array)$this->receipt['message'];
-				$this->receipt	 = $receipt;
-				if ($_receipt_message)
-				{
-					$this->receipt['message'] = array_merge($this->receipt['message'], $_receipt_message);
-				}
-			}
-			catch (Exception $e)
-			{
-				if ($e)
-				{
-					Cache::message_set($e->getMessage(), 'error');
-					$this->edit($values);
-					return;
-				}
-			}
-
-			$historylog = CreateObject('property.historylog', 'workorder');
-
-			$this->_handle_files($values);
-
-			// start approval
-
-			$send = CreateObject('phpgwapi.send');
-
-
-			$_budget_amount	 = $this->bo->get_budget_amount($id);
-			$sosubstitute	 = CreateObject('property.sosubstitute');
-
-			$workorder_status = execMethod('property.bogeneric.read_single', array(
-				'id'			 => $values['status'],
-				'location_info'	 => array(
-					'type' => 'workorder_status'
-				)
-			));
-
-			if (empty($workorder_status['closed']) && !empty($values['approval'])  && $config->config_data['workorder_approval'])
-			{
-				if (empty($this->serverSettings['smtp_server']))
-				{
-					$receipt['error'][] = array('msg' => lang('SMTP server is not set! (admin section)'));
-				}
-
-				$coordinator_name	 = $this->userSettings['fullname'];
-				$coordinator_email	 = $this->userSettings['preferences']['common']['email'];
-
-
-				$approval_level = !empty($config->config_data['approval_level']) ? $config->config_data['approval_level'] : 'order';
-
-				switch ($approval_level)
-				{
-					case 'project':
-						$approval_menuaction = 'property.uiproject.edit';
-						$subject			 = lang('Approval') . ": {$values['project_id']}";
-						$message			 = '<a href ="' . phpgw::link('/index.php', array(
-							'menuaction' => $approval_menuaction,
-							'id'		 => $values['project_id']
-						), false, true) . '">' . lang('project %1 needs approval', $values['project_id']) . '</a>';
-
-						//already approved?
-						$_budget_amount = $this->bo->get_accumulated_budget_amount($values['project_id']);
-
-						$pending_action = CreateObject('property.sopending_action');
-
-						foreach ($values['approval'] as $_account_id => $_address)
-						{
-							$action_params_approved = array(
-								'appname'			 => 'property',
-								'location'			 => '.project',
-								'id'				 => $values['project_id'],
-								'responsible'		 => $_account_id,
-								'responsible_type'	 => 'user',
-								'action'			 => 'approval',
-								'remark'			 => '',
-								'deadline'			 => '',
-								'closed'			 => true,
-								'data'				 => array('limit' => (int)$_budget_amount)
-							);
-
-							$approvals = $pending_action->get_pending_action($action_params_approved);
-							$approved = false;
-
-							if (!empty($approvals[0]['action_performed']))
-							{
-								if (isset($approvals[0]['data']['limit']) && ((int)$approvals[0]['data']['limit'] >= $_budget_amount))
-								{
-									$approved = true;
-								}
-								else if (empty($approvals[0]['data']['limit']))
-								{
-									$approved = true;
-								}
-							}
-
-							//Not approved
-							if (!$approved)
-							{
-								Cache::message_set("NB: Sjekk at rammene for prosjektet er innenfor totalen av bestillingene: " . number_format((float)$_budget_amount, 0, ".", " "), 'message');
-
-								$substitute = $sosubstitute->get_substitute($_account_id);
-
-								$notify_on_request = array($_account_id);
-								if ($substitute)
-								{
-									$notify_on_request[] = $substitute;
-								}
-
-								$pending_action->set_pending_action($action_params_approved);
-								if (isset($config->config_data['project_approval_status']) && $config->config_data['project_approval_status'])
-								{
-									$_project_status = $config->config_data['project_approval_status'];
-									createObject('property.soproject')->set_status($values['project_id'], $_project_status);
-								}
-
-								$toarray = array();
-								foreach ($notify_on_request as $__account_id)
-								{
-									$prefs = $this->bocommon->create_preferences('common', $__account_id);
-									if (!empty($prefs['email']))
-									{
-										$_address = $prefs['email'];
-									}
-									else
-									{
-										$email_domain	 = !empty($this->serverSettings['email_domain']) ? $this->serverSettings['email_domain'] : 'bergen.kommune.no';
-										$_address		 = $this->accounts_obj->id2lid($__account_id) . "@{$email_domain}";
-									}
-
-									$toarray[] = $_address;
-								}
-
-								try
-								{
-									CreateObject('property.historylog', 'project')->add('AP', $values['project_id'], $this->accounts_obj->get($_account_id)->__toString() . "::{$_budget_amount}");
-
-									$to = implode(';', $toarray);
-									$cc = '';
-									$bcc = '';
-									$rcpt = $send->msg('email', $to, $subject, stripslashes($message), '', $cc, $bcc, $coordinator_email, $coordinator_name, 'html');
-									if ($rcpt)
-									{
-										Cache::message_set(lang('%1 is notified', $to), 'message');
-									}
-								}
-								catch (Exception $exc)
-								{
-									Cache::message_set($exc->getMessage(), 'error');
-								}
-
-								//add request for order as well
-								$action_params = array(
-									'appname'			 => 'property',
-									'location'			 => '.project.workorder',
-									'id'				 => $id,
-									'responsible'		 => $_account_id,
-									'responsible_type'	 => 'user',
-									'action'			 => 'approval',
-									'remark'			 => '',
-									'deadline'			 => ''
-								);
-
-								if (!execMethod('property.sopending_action.get_pending_action', $action_params))
-								{
-									execMethod('property.sopending_action.set_pending_action', $action_params);
-								}
-							}
-							else // implicite approved
-							{
-								$action_params = array(
-									'appname'			 => 'property',
-									'location'			 => '.project.workorder',
-									'id'				 => $id,
-									'responsible'		 => $_account_id,
-									'responsible_type'	 => 'user',
-									'action'			 => 'approval',
-									'remark'			 => '',
-									'deadline'			 => ''
-								);
-
-								if (!execMethod('property.sopending_action.get_pending_action', $action_params))
-								{
-									execMethod('property.sopending_action.set_pending_action', $action_params);
-								}
-								execMethod('property.sopending_action.close_pending_action', $action_params);
-								$lang_implicitly = lang('implicitly from project');
-								$historylog->add('OA', $id, $this->accounts_obj->get($_account_id)->__toString() . ", {$lang_implicitly}::{$_budget_amount}");
-							}
-						}
-
-						$_orders			 = $this->bo->get_order_list($values['project_id']);
-						break;
-					default:
-						$approval_menuaction = 'property.uiworkorder.edit';
-						$subject			 = lang('Approval') . ": {$id}";
-						$message			 = '<a href ="' . phpgw::link('/index.php', array(
-							'menuaction' => $approval_menuaction,
-							'id'		 => $id
-						), false, true) . '">' . lang('Workorder %1 needs approval', $id) . '</a>';
-						$_orders			 = array($id);
-
-						$action_params	 = array(
-							'appname'			 => 'property',
-							'location'			 => '.project.workorder',
-							'id'				 => $id,
-							'responsible'		 => '',
-							'responsible_type'	 => 'user',
-							'action'			 => 'approval',
-							'remark'			 => '',
-							'deadline'			 => ''
-						);
-						$bcc			 = ''; //$coordinator_email;
-						foreach ($values['approval'] as $_account_id => $_address)
-						{
-							$substitute = $sosubstitute->get_substitute($_account_id);
-
-							/**
-							 * Alert the substitute
-							 */
-							$notify_on_request = array($_account_id);
-							if ($substitute)
-							{
-								$notify_on_request[] = $substitute;
-							}
-
-							$toarray = array();
-							foreach ($notify_on_request as $__account_id)
-							{
-								$prefs = $this->bocommon->create_preferences('common', $__account_id);
-								if (!empty($prefs['email']))
-								{
-									$_address = $prefs['email'];
-								}
-								else
-								{
-									$email_domain	 = !empty($this->serverSettings['email_domain']) ? $this->serverSettings['email_domain'] : 'bergen.kommune.no';
-									$_address		 = $this->accounts_obj->id2lid($__account_id) . "@{$email_domain}";
-								}
-								$toarray[] = $_address;
-							}
-
-							$to = implode(';', $toarray);
-							$cc = '';
-
-							if ($approval_level == 'order')
-							{
-								foreach ($_orders as $_order_id)
-								{
-									$action_params['responsible']	 = $_account_id;
-									$action_params['id']			 = $_order_id;
-									try
-									{
-										$historylog->add('AP', $id, $this->accounts_obj->get($_account_id)->__toString() . "::{$_budget_amount}");
-										execMethod('property.sopending_action.set_pending_action', $action_params);
-										$rcpt = $send->msg('email', $to, $subject, stripslashes($message), '', $cc, $bcc, $coordinator_email, $coordinator_name, 'html');
-										if ($rcpt)
-										{
-											Cache::message_set(lang('%1 is notified', $to), 'message');
-										}
-									}
-									catch (Exception $exc)
-									{
-										Cache::message_set($exc->getMessage(), 'error');
-									}
-								}
-							}
-						}
-						break;
-				}
-			}
-
-			if (!empty($values['do_approve']) && is_array($values['do_approve']))
-			{
-				$action_params = array(
-					'appname'			 => 'property',
-					'location'			 => '.project.workorder',
-					'id'				 => $id,
-					'responsible'		 => '',
-					'responsible_type'	 => 'user',
-					'action'			 => 'approval',
-					'remark'			 => '',
-					'deadline'			 => ''
-				);
-
-				foreach ($values['do_approve'] as $_account_id => $_dummy)
-				{
-					$users_for_substitute = $sosubstitute->get_users_for_substitute($_account_id);
-
-					$approvals = execMethod('property.sopending_action.get_pending_action', $action_params);
-
-					$take_responsibility_for = array($_account_id);
-					foreach ($approvals as $approval)
-					{
-						if (in_array($approval['responsible'], $users_for_substitute))
-						{
-							$take_responsibility_for[] = $approval['responsible'];
-						}
-					}
-					foreach ($take_responsibility_for as $__account_id)
-					{
-						$action_params['responsible'] = $__account_id;
-						if (!execMethod('property.sopending_action.get_pending_action', $action_params))
-						{
-							execMethod('property.sopending_action.set_pending_action', $action_params);
-						}
-						execMethod('property.sopending_action.close_pending_action', $action_params);
-						$historylog->add('OA', $id, $this->accounts_obj->get($__account_id)->__toString() . "::{$_budget_amount}");
-					}
-					unset($action_params['responsible']);
-				}
-			}
-
-			//end approval
-			$toarray	 = array();
-			$toarray_sms = array();
-
-			if (isset($receipt['notice_owner']) && is_array($receipt['notice_owner']))
-			//						&& isset($this->userSettings['preferences']['property']['notify_project_owner']) && $this->userSettings['preferences']['property']['notify_project_owner'])
-			{
-				$project = (isset($values['project_id']) ? CreateObject('property.boproject')->read_single_mini($values['project_id']) : '');
-
-				if ($this->account != $project['coordinator'] && $config->config_data['notify_project_owner']  && $config->config_data['mailnotification'])
-				{
-					$prefs_coordinator = $this->bocommon->create_preferences('common', $project['coordinator']);
-					if (isset($prefs_coordinator['email']) && $prefs_coordinator['email'])
-					{
-						$toarray[] = $prefs_coordinator['email'];
-					}
-				}
-				if ($this->account != $values['user_id'])
-				{
-					$prefs_user = $this->bocommon->create_preferences('common', $values['user_id']);
-					if (isset($prefs_user['email']) && $prefs_user['email'])
-					{
-						$toarray[] = $prefs_user['email'];
-					}
-				}
-			}
-
-			$notify_list = execMethod(
-				'property.notify.read',
-				array(
-					'location_id'		 => $location_id,
-					'location_item_id'	 => $id
-				)
-			);
-
-			$subject = lang('workorder %1 has been edited', $id);
-			if (isset($this->userSettings['apps']['sms']))
-			{
-				$sms_text	 = "{$subject}. \r\n{$this->userSettings['fullname']} \r\n{$this->userSettings['preferences']['common']['email']}";
-				$sms		 = CreateObject('sms.sms');
-
-				foreach ($notify_list as $entry)
-				{
-					if ($entry['is_active'] && $entry['notification_method'] == 'sms' && $entry['sms'])
-					{
-						$sms->websend2pv($this->account, $entry['sms'], $sms_text);
-						$toarray_sms[]			 = "{$entry['first_name']} {$entry['last_name']}({$entry['sms']})";
-						$receipt['message'][]	 = array(
-							'msg' => lang('%1 is notified', "{$entry['first_name']} {$entry['last_name']}")
-						);
-					}
-				}
-				unset($entry);
-
-				if ($toarray_sms)
-				{
-					$historylog->add('MS', $id, implode(',', $toarray_sms));
-				}
-			}
-
-			reset($notify_list);
-			foreach ($notify_list as $entry)
-			{
-				if ($entry['is_active'] && $entry['notification_method'] == 'email' && $entry['email'])
-				{
-					$toarray[] = "{$entry['first_name']} {$entry['last_name']}<{$entry['email']}>";
-				}
-			}
-			unset($entry);
-
-			if ($toarray)
-			{
-				$to			 = implode(';', $toarray);
-				$from_name	 = $this->userSettings['fullname'];
-				$from_email	 = $this->userSettings['preferences']['common']['email'];
-				$body		 = '<a href ="' . phpgw::link('/index.php', array(
-					'menuaction' => 'property.uiworkorder.edit',
-					'id'		 => $id
-				), false, true) . '">' . lang('workorder %1 has been edited', $id) . '</a>' . "\n";
-				foreach ($receipt['notice_owner'] as $notice)
-				{
-					$body .= $notice . "\n";
-				}
-				$body	 .= lang('Altered by') . ': ' . $from_name . "\n";
-				if (empty($values['remark']))
-				{
-					$body	 .= lang('remark') . ': ' . $values['remark'] . "\n";
-				}
-				$body	 = nl2br($body);
-
-
-				$send = CreateObject('phpgwapi.send');
-
-				try
-				{
-					$send->msg('email', $to, $subject, $body, false, false, false, $from_email, $from_name, 'html');
-					$historylog->add('ON', $id, lang('%1 is notified', $to));
-					$this->receipt['message'][] = array(
-						'msg' => lang('%1 is notified', $to)
-					);
-				}
-				catch (Exception $e)
-				{
-					$this->receipt['error'][]	 = array(
-						'msg' => "uiworkorder::edit: sending message to '$to' subject='$subject' failed !!!"
-					);
-					$this->receipt['error'][]	 = array(
-						'msg' => $send->err['desc']
-					);
-				}
-			}
-
-			if (Sanitizer::get_var('send_workorder', 'bool') && !$this->receipt['error'])
-			{
-				phpgw::redirect_link(
-					'/index.php',
-					array(
-						'menuaction'	 => 'property.uiwo_hour.view',
-						'workorder_id'	 => $id,
-						'from'			 => 'index'
-					)
-				);
-			}
-
-			if (Sanitizer::get_var('calculate_workorder', 'bool') && !$this->receipt['error'])
-			{
-				phpgw::redirect_link(
-					'/index.php',
-					array(
-						'menuaction'	 => 'property.uiwo_hour.index',
-						'workorder_id'	 => $id,
-					)
-				);
-			}
-
-			if (Sanitizer::get_var('phpgw_return_as') == 'json')
-			{
-				if (!$this->receipt['error'])
-				{
-					$result = array(
-						'status' => 'updated'
-					);
-				}
-				else
-				{
-					$result = array(
-						'status' => 'error'
-					);
-				}
-				$result['receipt'] = $receipt;
-
-				return $result;
-			}
-
-			if ($id)
-			{
-				self::message_set($this->receipt);
-				$active_tab = Sanitizer::get_var('active_tab');
-				self::redirect(array(
-					'menuaction' => 'property.uiworkorder.edit',
-					'id'		 => $id,
-					'active_tab' => $active_tab
-				));
-			}
-			$this->edit($values);
-
-			return;
-		}
-	}
 
 	function edit($values = array(), $mode = 'edit')
 	{
@@ -1952,72 +760,14 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		$boproject	 = CreateObject('property.boproject');
 		$bolocation	 = CreateObject('property.bolocation');
 		$config		 = CreateObject('phpgwapi.config', 'property');
+		$datatable_def = array();
 		$location_id = $this->locations->get_id('property', $this->acl_location);
 		$config->read();
 		$project_id	 = Sanitizer::get_var('project_id', 'int');
 		$origin		 = Sanitizer::get_var('origin');
 		$origin_id	 = Sanitizer::get_var('origin_id', 'int');
 
-		if ($origin == '.ticket' && $origin_id && !$values['descr'])
-		{
-			$boticket		 = CreateObject('property.botts');
-			$ticket			 = $boticket->read_single($origin_id);
-			$values['descr'] = strip_tags($ticket['details']);
-			$values['title'] = $ticket['subject'] ? $ticket['subject'] : $ticket['category_name'];
-			$ticket_notes	 = $boticket->read_additional_notes($origin_id);
-			$i				 = count($ticket_notes) - 1;
-			if (isset($ticket_notes[$i]['value_note']) && $ticket_notes[$i]['value_note'])
-			{
-				$values['descr'] .= ": " . $ticket_notes[$i]['value_note'];
-			}
-
-			$values['location_data'] = $ticket['location_data'];
-		}
-		else if ($origin && preg_match("/(^.entity.|^.catch.)/i", $origin) && $origin_id)
-		{
-			$_origin				 = explode('.', $origin);
-			$_boentity				 = CreateObject('property.boentity', false, $_origin[1], $_origin[2], $_origin[3]);
-			$_entity				 = $_boentity->read_single(array(
-				'entity_id'	 => $_origin[2],
-				'cat_id'	 => $_origin[3],
-				'id'		 => $origin_id,
-				'view'		 => true
-			));
-			$values['location_data'] = $_entity['location_data'];
-			unset($_origin);
-			unset($_boentity);
-			unset($_entity);
-		}
-		else if ($origin == '.project.request' && $origin_id)
-		{
-			$_borequest				 = CreateObject('property.borequest', false);
-			$_request				 = $_borequest->read_single($origin_id, array(), true);
-			$values['descr']		 = $_request['descr'];
-			$values['title']		 = $_request['title'];
-			$values['location_data'] = $_request['location_data'];
-			unset($_origin);
-			unset($_borequest);
-			unset($_request);
-		}
-
-		if (isset($values['origin']) && $values['origin'])
-		{
-			$origin		 = $values['origin'];
-			$origin_id	 = $values['origin_id'];
-		}
-
-		$interlink = &$this->bo->interlink;
-		if (isset($origin) && $origin)
-		{
-			$values['origin_data'][0]['location']	 = $origin;
-			$values['origin_data'][0]['descr']		 = $interlink->get_location_name($origin);
-			$values['origin_data'][0]['data'][]		 = array(
-				'id'	 => $origin_id,
-				'link'	 => $interlink->get_relation_link(array(
-					'location' => $origin
-				), $origin_id),
-			);
-		}
+		$this->_resolve_origin_details($values, $origin, $origin_id);
 
 		if ($project_id && !isset($values['project_id']))
 		{
@@ -2088,64 +838,7 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 				}
 			}
 
-			if ($project['key_fetch'] && !$values['key_fetch'])
-			{
-				$values['key_fetch'] = $project['key_fetch'];
-			}
-
-			if ($project['key_deliver'] && !$values['key_deliver'])
-			{
-				$values['key_deliver'] = $project['key_deliver'];
-			}
-
-			if ($project['start_date'] && !$values['start_date'])
-			{
-				$_start_date = max(time(), phpgwapi_datetime::date_to_timestamp($project['start_date']));
-				$values['start_date'] = $this->phpgwapi_common->show_date($_start_date, $this->userSettings['preferences']['common']['dateformat']);
-				if ($project['project_type_id'] == 1) //operation
-				{
-					phpgw::import_class('phpgwapi.datetime');
-					if ($project['end_date'] && phpgwapi_datetime::date_to_timestamp($project['end_date']) < time())
-					{
-						$values['start_date'] = $project['end_date'];
-					}
-				}
-			}
-
-			$last_day_of_year = mktime(13, 0, 0, 12, 31, date("Y"));
-
-
-			if ($project['end_date'] && !$values['end_date'])
-			{
-				if ($project['project_type_id'] == 1 && isset($config->config_data['delay_operation_workorder_end_date']) && $config->config_data['delay_operation_workorder_end_date'] == 1) //operation
-				{
-					$values['end_date'] = $this->phpgwapi_common->show_date($last_day_of_year, $this->userSettings['preferences']['common']['dateformat']);
-				}
-				else
-				{
-					$values['end_date'] = $project['end_date'];
-				}
-			}
-			else if (!$project['end_date'] && !$values['end_date'])
-			{
-				if ($project['project_type_id'] == 1 && isset($config->config_data['delay_operation_workorder_end_date']) && $config->config_data['delay_operation_workorder_end_date'] == 1) //operation
-				{
-					$values['end_date'] = $this->phpgwapi_common->show_date($last_day_of_year, $this->userSettings['preferences']['common']['dateformat']);
-				}
-				else
-				{
-					$values['end_date'] = $this->phpgwapi_common->show_date(time(), $this->userSettings['preferences']['common']['dateformat']);
-				}
-			}
-
-			if ($project['name'] && !isset($values['title']))
-			{
-				$values['title'] = $project['name'];
-			}
-			if ($project['descr'] && !isset($values['descr']))
-			{
-				$values['descr'] = $project['descr'];
-			}
+			$this->_apply_project_defaults_to_values($values, $project, $config);
 		}
 
 
@@ -2172,148 +865,17 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 			$this->cat_id = $values['cat_id'];
 		}
 
-		if (isset($config->config_data['location_at_workorder']) && $config->config_data['location_at_workorder'])
-		{
-			$admin_location	 = &$bolocation->soadmin_location;
-			$location_types	 = $admin_location->select_location_type();
-			$max_level		 = count($location_types);
+		$location_context = $this->_initialize_location_context($values, $project, $mode, $bolocation, $config);
+		$location_data = $location_context['location_data'];
+		$location_template_type = $location_context['location_template_type'];
+		$_location_data = $location_context['_location_data'];
 
-			$location_level			 = isset($project['location_data']['location_code']) && $project['inherit_location'] ? count(explode('-', $project['location_data']['location_code'])) : 0;
-			$location_template_type	 = 'form';
-			$_location_data			 = array();
-
-			if (!$values['location_data'] && ($values['location_code'] || $values['location']))
-			{
-				$location_code			 = isset($values['location_code']) && $values['location_code'] ? $values['location_code'] : implode("-", $values['location']);
-				$values['extra']['view'] = true;
-				$values['location_data'] = $bolocation->read_single($location_code, $values['extra']);
-			}
-
-			if ($values['location_data'])
-			{
-				$_location_data = $values['location_data'];
-			}
-			else if (isset($values['location']) && is_array($values['location']))
-			{
-				$location_code			 = implode("-", $values['location']);
-				$values['extra']['view'] = true;
-				$_location_data			 = $bolocation->read_single($location_code, $values['extra']);
-			}
-			else
-			{
-				if (isset($project['location_data']) && $project['location_data'] && $project['inherit_location'])
-				{
-					$_location_data = $project['location_data'];
-				}
-			}
-
-			if ($mode == 'view')
-			{
-				$location_template_type = 'view';
-			}
-
-			$location_data = $bolocation->initiate_ui_location(array(
-				'values'			 => $_location_data,
-				'type_id'			 => $mode == 'edit' ? $max_level : count(explode('-', $_location_data['location_code'])),
-				'no_link'			 => false, // disable lookup links for location type less than type_id
-				'tenant'			 => true,
-				'block_parent'		 => $location_level,
-				'lookup_type'		 => $location_template_type,
-				'lookup_entity'		 => $this->bocommon->get_lookup_entity('project'),
-				'entity_data'		 => (isset($values['p']) ? $values['p'] : ''),
-				'filter_location'	 => $project['inherit_location'] ? $project['location_data']['location_code'] : false,
-				'required_level'	 => 1
-			));
-		}
-		else
-		{
-			$location_template_type	 = 'view';
-			$_location_data			 = !empty($project['location_data']) ? $project['location_data'] : '';
-			$location_data			 = $bolocation->initiate_ui_location(array(
-				'values'		 => $_location_data,
-				'type_id'		 => (isset($project['location_data']['location_code']) ? count(explode('-', $project['location_data']['location_code'])) : ''),
-				'no_link'		 => false, // disable lookup links for location type less than type_id
-				'tenant'		 => (isset($project['location_data']['tenant_id']) ? $project['location_data']['tenant_id'] : ''),
-				'lookup_type'	 => 'view'
-			));
-		}
-
-		if (!empty($project['contact_phone']) || !empty($values['contact_phone']))
-		{
-			for ($i = 0; $i < count($location_data['location']); $i++)
-			{
-				if ($location_data['location'][$i]['input_name'] == 'contact_phone')
-				{
-					$location_data['location'][$i]['value'] = $values['contact_phone'] ? $values['contact_phone'] : $project['contact_phone'];
-				}
-			}
-		}
-
-		$vendor_data = $this->bocommon->initiate_ui_vendorlookup(array(
-			'vendor_id'		 => $values['vendor_id'],
-			'vendor_name'	 => $values['vendor_name'],
-			'type'			 => $mode,
-			'required'		 => isset($config->config_data['workorder_require_vendor']) && $config->config_data['workorder_require_vendor'] == 1
-		));
-
-
-		$b_group_data = $this->bocommon->initiate_ui_budget_account_lookup(array(
-			'b_account_id'	 => $project['b_account_group'],
-			'role'			 => 'group',
-			'type'			 => $mode
-		));
-
-		$b_account_data = $this->bocommon->initiate_ui_budget_account_lookup(array(
-			'b_account_id'	 => $values['b_account_id'] ? $values['b_account_id'] : $project['b_account_id'],
-			//				'b_account_name' => $values['b_account_name'],
-			'disabled'		 => '',
-			'parent'		 => $project['b_account_group'],
-			'type'			 => $mode,
-			'required'		 => true
-		));
-
-		$b_account_list_favorite = ExecMethod('property.sob_account_user.get_favorite', $this->account);
-
-		if ($b_account_list_favorite)
-		{
-			$b_account_list = $b_account_list_favorite;
-		}
-		else
-		{
-			$b_account_list = execMethod('property.bogeneric.get_list', array(
-				'type'		 => 'budget_account',
-				'selected'	 => $values['b_account_id'] ? $values['b_account_id'] : $project['b_account_id'],
-				'add_empty'	 => true,
-				'filter'	 => array('active' => 1)
-			));
-		}
-
-		$_b_account_found = false;
-		foreach ($b_account_list as &$entry)
-		{
-			$entry['name'] = "{$entry['id']} {$entry['name']}";
-			if (!empty($b_account_data['value_b_account_id']) && $b_account_data['value_b_account_id'] == $entry['id'])
-			{
-				$_b_account_found = true;
-			}
-		}
-		if (!empty($b_account_data['value_b_account_id']) && !$_b_account_found)
-		{
-			array_unshift($b_account_list, array(
-				'id'	 => $b_account_data['value_b_account_id'],
-				'name'	 => "{$b_account_data['value_b_account_id']} {$b_account_data['value_b_account_name']}"
-			));
-		}
-
-		unset($entry);
-
-		$ecodimb_data = $this->bocommon->initiate_ecodimb_lookup(
-			array(
-				'ecodimb'		 => $values['ecodimb'] ? $values['ecodimb'] : $project['ecodimb'],
-				'ecodimb_descr'	 => $values['ecodimb_descr'],
-				'disabled'		 => $project['ecodimb'] || $mode == 'view'
-			)
-		);
+		$vendor_budget_context = $this->_initialize_vendor_budget_context($values, $project, $mode, $config);
+		$vendor_data = $vendor_budget_context['vendor_data'];
+		$b_group_data = $vendor_budget_context['b_group_data'];
+		$b_account_data = $vendor_budget_context['b_account_data'];
+		$b_account_list = $vendor_budget_context['b_account_list'];
+		$ecodimb_data = $vendor_budget_context['ecodimb_data'];
 
 		$event_criteria	 = array(
 			'location'	 => $this->acl_location,
@@ -2337,94 +899,10 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		$sum_estimated_cost		 = number_format((float)$sum_estimated_cost, 2, $this->decimal_separator, '.');
 		$values['calculation']	 = number_format((float)$values['calculation'], 2, $this->decimal_separator, '.');
 
-		$link_data = array(
-			'menuaction' => 'property.uiworkorder.save',
-			'id'		 => $id
-		);
-
-		$workorder_status = (isset($this->userSettings['preferences']['property']['workorder_status']) ? $this->userSettings['preferences']['property']['workorder_status'] : '');
-		if (!$values['status'])
-		{
-			$values['status'] = $workorder_status;
-		}
-
-		$this->jqcal->add_listener(
-			'values_start_date',
-			'date',
-			'',
-			array(
-				'min_date' => date('F j, Y, g:i a', phpgwapi_datetime::date_to_timestamp($project['start_date'])),
-				//			'max_date' => date('F j, Y, g:i a', phpgwapi_datetime::date_to_timestamp($project['end_date'])),
-			)
-		);
-
-		$this->jqcal->add_listener(
-			'values_end_date',
-			'date',
-			'',
-			array(
-				'min_date' => date("F j, Y, g:i a", phpgwapi_datetime::date_to_timestamp($project['start_date'])),
-				//			'max_date' => date("F j, Y, g:i a", phpgwapi_datetime::date_to_timestamp($project['end_date'])),
-			)
-		);
-
-		$this->jqcal->add_listener('values_tender_deadline');
-		$this->jqcal->add_listener('values_tender_received');
-		$this->jqcal->add_listener('values_inspection_on_completion');
-
-		$history_def = array(
-			array(
-				'key'		 => 'number',
-				'label'		 => '#',
-				'sortable'	 => true,
-				'resizeable' => true
-			),
-			array(
-				'key'		 => 'value_date',
-				'label'		 => lang('Date'),
-				'sortable'	 => false,
-				'resizeable' => true
-			),
-			array(
-				'key'		 => 'value_user',
-				'label'		 => lang('User'),
-				'sortable'	 => false,
-				'resizeable' => true
-			),
-			array(
-				'key'		 => 'value_action',
-				'label'		 => lang('Action'),
-				'sortable'	 => true,
-				'resizeable' => true
-			),
-			array(
-				'key'		 => 'value_old_value',
-				'label'		 => lang('old value'),
-				'sortable'	 => false,
-				'resizeable' => true
-			),
-			array(
-				'key'		 => 'value_new_value',
-				'label'		 => lang('New Value'),
-				'sortable'	 => false,
-				'resizeable' => true
-			)
-		);
-
-		$datatable_def[] = array(
-			'container'	 => 'datatable-container_0',
-			'requestUrl' => "''",
-			'data'		 => json_encode($record_history),
-			'ColumnDefs' => $history_def,
-			'config'	 => array(
-				array(
-					'disableFilter' => true
-				),
-				array(
-					'disablePagination' => true
-				)
-			)
-		);
+		$form_action = $this->_resolve_workorder_form_action($mode, $id);
+		$this->_apply_default_workorder_status($values);
+		$this->_add_workorder_date_listeners($project);
+		$this->_append_history_datatable($datatable_def, $record_history);
 
 		$files_def = array(
 			array(
@@ -2650,19 +1128,6 @@ JS;
 			{
 				$_disable_link	 = true;
 				$voucher_id		 = $entry['external_voucher_id'];
-
-				//					if ($entry['voucher_id'] > 0)
-				//					{
-				//						$link_data_invoice1['voucher_id'] = $entry['voucher_id'];
-				//						$link_data_invoice1['query'] = $entry['voucher_id'];
-				//						$url = phpgw::link('/index.php', $link_data_invoice1);
-				//					}
-				//					else
-				//					{
-				//						$link_data_invoice1['voucher_id'] = abs($entry['voucher_id']);
-				//						$link_data_invoice1['paid'] = 'true';
-				//						$url = phpgw::link('/index.php', $link_data_invoice1);
-				//					}
 			}
 
 			$link_voucher_id = "<a href='" . $url . "'>" . $voucher_out_id . "</a>";
@@ -2699,47 +1164,6 @@ JS;
 			$approved_amount += $entry['approved_amount'];
 		}
 		unset($entry);
-
-		if ($invoices)
-		{
-			$invoice_config = CreateObject('admin.soconfig', $this->locations->get_id('property', '.invoice'));
-		}
-
-		//			$attachmen_list = array();
-		//			foreach ($invoices as $entry)
-		//			{
-		//				$directory_attachment = rtrim($invoice_config->config_data['import']['local_path'], '/') . '/attachment/' . $entry['external_voucher_id'];
-		//				try
-		//				{
-		//					$dir = new DirectoryIterator("$directory_attachment/");
-		//					if (is_object($dir))
-		//					{
-		//						foreach ($dir as $file)
-		//						{
-		//							if ($file->isDot() || !$file->isFile() || !$file->isReadable())
-		//							{
-		//								continue;
-		//							}
-		//
-		//							$url = self::link(array(
-		//									'menuaction' => 'property.uitts.show_attachment',
-		//									'file_name'	 => urlencode((string)$file),
-		//									'key'		 => $entry['external_voucher_id']
-		//							));
-		//
-		//							$attachmen_list[] = array(
-		//								'voucher_id' => $entry['external_voucher_id'],
-		//								'file_name'	 => "<a href='{$url}' target='_blank'>" . (string)$file . "</a>"
-		//							);
-		//						}
-		//					}
-		//				}
-		//				catch (Exception $e)
-		//				{
-		//
-		//				}
-		//			}
-		//			unset($entry);
 
 		$attachmen_def = array(
 			array(
@@ -3176,31 +1600,7 @@ JS;
 			}
 		}
 
-
-		//---
-		//
-		//			$_b_account			 = execMethod('property.bogeneric.read_single', array(
-		//					'id'		 =>  $values['b_account_id'] ? $values['b_account_id'] : $project['b_account_id'],
-		//					'location_info'	 => array(
-		//						'type' => 'budget_account')));
-		//			$_b_account_group	 = $_b_account['category'];
-		//
-		//			$parent_categories = array();
-		//
-		//			if (!empty($_b_account_group))
-		//			{
-		//				$sogeneric	 = CreateObject('property.sogeneric');
-		//				$sogeneric->get_location_info('b_account_category', false);
-		//				$account_group_data = $sogeneric->read_single(array('id' => (int)$_b_account_group), array());
-		//
-		//				if (isset($account_group_data['project_category']) && $account_group_data['project_category'])
-		//				{
-		//					$parent_categories = explode(',',trim($account_group_data['project_category'],','));
-		//				}
-		//			}
-		//----
-
-		$_cat_sub	 = $this->cats->return_sorted_array(0, false, '', '', '', false, $parent_categories);
+		$_cat_sub	 = $this->cats->return_sorted_array(0, false);
 
 		$selected_cat		 = $values['cat_id'] ? $values['cat_id'] : $project['cat_id'];
 		$validatet_category	 = '';
@@ -3373,7 +1773,8 @@ JS;
 		$image_list		 = array();
 
 		$content_attachments = array();
-		$link_view_file		 = phpgw::link('/index.php', array('menuaction' => 'property.uiworkorder.view_file'));
+		$link_view_file		 = phpgw::link('/property/workorder/files/view');
+		$view_image_url		 = phpgw::link('/property/workorder/' . (int)$id . '/files/image');
 		$lang_view_file		 = lang('click to view file');
 		$lang_select_file	 = lang('Check to attach file');
 		$lang_workorder		 = lang('workorder');
@@ -3402,8 +1803,7 @@ JS;
 				$sort_array2[] = $_entry['name'];
 				$content_attachments[$z]['file_name']	 = $_entry['name'];
 				$content_attachments[$z]['img_id']		 = $_entry['file_id'];
-				$content_attachments[$z]['img_url']		 = self::link(array(
-					'menuaction' => 'property.uiworkorder.view_image',
+				$content_attachments[$z]['img_url']		 = phpgw::link($view_image_url, array(
 					'img_id'	 => $_entry['file_id'],
 					'file'		 => $_entry['directory'] . '/' . $_entry['file_name']
 				));
@@ -3443,8 +1843,7 @@ JS;
 				$sort_array2[] = $_entry['name'];
 				$content_attachments[$z]['file_name']	 = $_entry['name'];
 				$content_attachments[$z]['img_id']		 = $_entry['file_id'];
-				$content_attachments[$z]['img_url']		 = self::link(array(
-					'menuaction' => 'property.uiworkorder.view_image',
+				$content_attachments[$z]['img_url']		 = phpgw::link($view_image_url, array(
 					'img_id'	 => $_entry['file_id'],
 					'file'		 => $_entry['directory'] . '/' . $_entry['file_name']
 				));
@@ -3518,7 +1917,6 @@ JS;
 			'value_coordinator'						 => $value_coordinator,
 			'event_data'							 => $event_data,
 			'link_claim'							 => $link_claim,
-			'lang_claim'							 => lang('claim'),
 			'suppressmeter'							 => isset($config->config_data['project_suppressmeter']) && $config->config_data['project_suppressmeter'] ? 1 : '',
 			'suppresscoordination'					 => $suppresscoordination,
 			'enable_unspsc'							 => $enable_unspsc,
@@ -3534,10 +1932,6 @@ JS;
 			'value_origin'							 => isset($values['origin_data']) ? $values['origin_data'] : '',
 			'value_origin_type'						 => isset($origin) ? $origin : '',
 			'value_origin_id'						 => isset($origin_id) ? $origin_id : '',
-			'lang_calculate'						 => lang('Calculate Workorder'),
-			'lang_calculate_statustext'				 => lang('Calculate workorder by adding items from vendors prizebook or adding general hours'),
-			'lang_send'								 => $this->bo->order_sent_adress ? lang('ReSend Workorder') : lang('Send Workorder'),
-			'lang_send_statustext'					 => lang('send this workorder to vendor'),
 			'project_link'							 => phpgw::link('/index.php', array(
 				'menuaction' => 'property.uiproject.edit'
 			)),
@@ -3552,30 +1946,15 @@ JS;
 			'value_tender_delay'					 => $values['tender_delay'],
 			'value_inspection_on_completion'		 => $values['inspection_on_completion'],
 			'value_end_date_delay'					 => $values['end_date_delay'],
-			'lang_copy_workorder'					 => lang('Copy workorder ?'),
-			'lang_copy_workorder_statustext'		 => lang('Choose Copy Workorder to copy this workorder to a new workorder'),
-			'lang_contact_phone'					 => lang('Contact phone'),
 			'contact_phone'							 => (isset($project['contact_phone']) ? $project['contact_phone'] : ''),
-			'lang_charge_tenant'					 => lang('Charge tenant'),
-			'lang_charge_tenant_statustext'			 => lang('Choose charge tenant if the tenant i to pay for this project'),
 			'charge_tenant'							 => (isset($values['charge_tenant']) ? $values['charge_tenant'] : ''),
-			'lang_power_meter'						 => lang('Power meter'),
-			'lang_power_meter_statustext'			 => lang('Enter the power meter'),
 			'value_power_meter'						 => (isset($project['power_meter']) ? $project['power_meter'] : ''),
-			'lang_addition_rs'						 => lang('Rig addition'),
-			'lang_addition_rs_statustext'			 => lang('Enter any round sum addition per order'),
 			'value_addition_rs'						 => (isset($values['addition_rs']) ? $values['addition_rs'] : ''),
-			'lang_addition_percentage'				 => lang('Percentage addition'),
-			'lang_addition_percentage_statustext'	 => lang('Enter any persentage addition per unit'),
 			'value_addition_percentage'				 => (isset($values['addition_percentage']) ? $values['addition_percentage'] : ''),
-			'lang_budget'							 => lang('Budget'),
 			'value_budget'							 => isset($this->receipt['error']) && $this->receipt['error'] ? $_POST['values']['budget'] : '',
 			'check_for_budget'						 => abs($budget),
 			'local_value_budget'					 => $budget,
 			'accumulated_budget_amount'				 => $accumulated_budget_amount ? $accumulated_budget_amount : $budget,
-			'lang_budget_statustext'				 => lang('Enter the budget'),
-			'lang_incl_tax'							 => lang('incl tax'),
-			'lang_calculation'						 => lang('Calculation'),
 			'value_calculation'						 => (isset($values['calculation']) ? $values['calculation'] : ''),
 			'value_sum_estimated_cost'				 => $sum_estimated_cost,
 			'value_contract_sum'					 => isset($this->receipt['error']) && $this->receipt['error'] ? $_POST['values']['contract_sum'] : '',
@@ -3584,42 +1963,22 @@ JS;
 			'vendor_data'							 => $vendor_data,
 			'location_data'							 => $location_data,
 			'location_template_type'				 => $location_template_type,
-			'form_action'							 => $mode == 'edit' ? phpgw::link('/index.php', $link_data) : phpgw::link('/home/'), //avoid accidents
+			'form_action'							 => $form_action, //avoid accidents
 			'done_action'							 => phpgw::link('/index.php', array(
 				'menuaction' => 'property.uiworkorder.index'
 			)),
-			'lang_year'								 => lang('Year'),
-			'lang_save'								 => lang('save'),
-			'lang_done'								 => lang('done'),
-			'lang_title'							 => lang('Title'),
 			'value_title'							 => $values['title'],
-			'lang_project_name'						 => lang('Project name'),
 			'value_project_name'					 => (isset($project['name']) ? $project['name'] : ''),
-			'lang_project_id'						 => lang('Project ID'),
 			'value_project_id'						 => $values['project_id'],
-			'lang_workorder_id'						 => lang('Workorder ID'),
 			'value_workorder_id'					 => (isset($id) ? $id : ''),
-			'lang_title_statustext'					 => lang('Enter Workorder title'),
-			'lang_other_branch'						 => lang('Other branch'),
-			'lang_other_branch_statustext'			 => lang('Enter other branch if not found in the list'),
 			'value_other_branch'					 => (isset($project['other_branch']) ? $project['other_branch'] : ''),
-			'lang_descr_statustext'					 => lang('Enter a short description of the workorder'),
-			'lang_descr'							 => lang('Description'),
 			'value_descr'							 => $values['descr'],
-			'lang_remark_statustext'				 => lang('Enter a remark to add to the history of the order'),
-			'lang_remark'							 => lang('remark'),
 			'value_remark'							 => (isset($values['remark']) ? $values['remark'] : ''),
-			'lang_done_statustext'					 => lang('Back to the list'),
-			'lang_save_statustext'					 => lang('Save the workorder'),
-			'lang_cat_sub'							 => lang('category'),
 			'cat_sub_list'							 => $this->bocommon->select_list($selected_cat, $cat_sub),
 			'cat_sub_name'							 => 'values[cat_id]',
-			'lang_cat_sub_statustext'				 => lang('select sub category'),
 			'validatet_category'					 => $validatet_category,
 			'sum_workorder_budget'					 => (isset($values['sum_workorder_budget']) ? $values['sum_workorder_budget'] : ''),
 			'workorder_budget'						 => (isset($values['workorder_budget']) ? $values['workorder_budget'] : ''),
-			'lang_coordinator'						 => lang('Coordinator'),
-			'lang_sum'								 => lang('Sum'),
 			'select_user_name'						 => 'values[coordinator]',
 			'user_list'								 => array(
 				'options' => $user_list
@@ -3627,41 +1986,18 @@ JS;
 			'status_list'							 => $this->bo->select_status_list('select', $values['status']),
 			'status_name'							 => 'values[status]',
 			'status_required'						 => true,
-			'lang_no_status'						 => lang('Select status'),
-			'lang_status'							 => lang('Status'),
-			'lang_status_statustext'				 => lang('What is the current status of this workorder ?'),
-			'lang_confirm_status'					 => lang('Confirm status'),
-			'lang_confirm_statustext'				 => lang('Confirm status to the history'),
 			'branch_list'							 => $boproject->select_branch_p_list($project['project_id']),
-			'lang_branch'							 => lang('branch'),
-			'lang_branch_statustext'				 => lang('Select the branches for this project'),
 			'key_responsible_list'					 => $boproject->select_branch_list($project['key_responsible']),
-			'lang_key_responsible'					 => lang('key responsible'),
 			'key_fetch_list'						 => $this->bo->select_key_location_list((isset($values['key_fetch']) ? $values['key_fetch'] : '')),
-			'lang_no_key_fetch'						 => lang('Where to fetch the key'),
-			'lang_key_fetch'						 => lang('key fetch location'),
-			'lang_key_fetch_statustext'				 => lang('Select where to fetch the key'),
 			'key_deliver_list'						 => $this->bo->select_key_location_list((isset($values['key_deliver']) ? $values['key_deliver'] : '')),
-			'lang_no_key_deliver'					 => lang('Where to deliver the key'),
-			'lang_key_deliver'						 => lang('key deliver location'),
-			'lang_key_deliver_statustext'			 => lang('Select where to deliver the key'),
 			'value_approved'						 => isset($values['approved']) ? $values['approved'] : '',
 			'value_continuous'						 => isset($values['continuous']) ? $values['continuous'] : '',
 			'value_fictive_periodization'			 => isset($values['fictive_periodization']) ? $values['fictive_periodization'] : '',
 			'need_approval'							 => !empty($config->config_data['workorder_approval']),
-			'lang_ask_approval'						 => lang('Ask for approval'),
-			'lang_ask_approval_statustext'			 => lang('Check this to send a mail to your supervisor for approval'),
 			'currency'								 => $this->userSettings['preferences']['common']['currency'],
-			'link_view_file'						 => phpgw::link('/index.php', $link_file_data),
+			'link_view_file'						 => phpgw::link('/property/workorder/files/view'),
 			'link_to_files'							 => (isset($config->config_data['files_url']) ? $config->config_data['files_url'] : ''),
 			'files'									 => isset($values['files']) ? $values['files'] : '',
-			'lang_files'							 => lang('files'),
-			'lang_filename'							 => lang('Filename'),
-			'lang_file_action'						 => lang('Delete file'),
-			'lang_view_file_statustext'				 => lang('click to view file'),
-			'lang_file_action_statustext'			 => lang('Check to delete file'),
-			'lang_upload_file'						 => lang('Upload file'),
-			'lang_file_statustext'					 => lang('Select file to upload'),
 			'value_billable_hours'					 => $values['billable_hours'],
 			'base_java_url'							 => "{menuaction:'property.bocommon.get_vendor_email',phpgw_return_as:'json'}",
 			'location_item_id'						 => $id,
@@ -3669,8 +2005,6 @@ JS;
 				'menuaction' => 'property.uiworkorder.edit',
 				'id'		 => $id
 			)),
-			'lang_edit_statustext'					 => lang('Edit this entry '),
-			'lang_edit'								 => lang('Edit'),
 			'value_extra_mail_address'				 => $value_extra_mail_address,
 			'lean'									 => $_lean ? 1 : 0,
 			'decimal_separator'						 => $this->decimal_separator,
@@ -3696,7 +2030,7 @@ JS;
 			'value_order_received_amount'			 => (int)$values['order_received_amount'],
 			'value_delivery_address'				 => $delivery_address,
 			'multiple_uploader'						 => true,
-			'multi_upload_action' => phpgw::link('/index.php', array('menuaction' => 'property.uiworkorder.handle_multi_upload_file', 'id' => $id)),
+			'multi_upload_action' => phpgw::link('/property/workorder/' . (int)$id . '/multi-upload'),
 			'image_list'							 => $image_list,
 			'tag_list'							 => array('options' => $bofiles->get_all_tags())
 		);
@@ -3724,6 +2058,398 @@ JS;
 		), array(
 			'edit' => $data
 		));
+	}
+
+	private function _resolve_workorder_form_action($mode, $id)
+	{
+		return $mode == 'edit'
+			? ($id
+				? phpgw::link('/property/workorder/' . (int)$id, array())
+				: phpgw::link('/property/workorder/create', array()))
+			: phpgw::link('/home/');
+	}
+
+	private function _apply_default_workorder_status(array &$values)
+	{
+		$workorder_status = isset($this->userSettings['preferences']['property']['workorder_status'])
+			? $this->userSettings['preferences']['property']['workorder_status']
+			: '';
+
+		if (!$values['status'])
+		{
+			$values['status'] = $workorder_status;
+		}
+	}
+
+	private function _add_workorder_date_listeners(array $project)
+	{
+		$this->jqcal->add_listener(
+			'values_start_date',
+			'date',
+			'',
+			array(
+				'min_date' => date('F j, Y, g:i a', phpgwapi_datetime::date_to_timestamp($project['start_date'])),
+				//			'max_date' => date('F j, Y, g:i a', phpgwapi_datetime::date_to_timestamp($project['end_date'])),
+			)
+		);
+
+		$this->jqcal->add_listener(
+			'values_end_date',
+			'date',
+			'',
+			array(
+				'min_date' => date("F j, Y, g:i a", phpgwapi_datetime::date_to_timestamp($project['start_date'])),
+				//			'max_date' => date("F j, Y, g:i a", phpgwapi_datetime::date_to_timestamp($project['end_date'])),
+			)
+		);
+
+		$this->jqcal->add_listener('values_tender_deadline');
+		$this->jqcal->add_listener('values_tender_received');
+		$this->jqcal->add_listener('values_inspection_on_completion');
+	}
+
+	private function _resolve_origin_details(array &$values, &$origin, &$origin_id)
+	{
+		if ($origin == '.ticket' && $origin_id && !$values['descr'])
+		{
+			$boticket		 = CreateObject('property.botts');
+			$ticket			 = $boticket->read_single($origin_id);
+			$values['descr'] = strip_tags($ticket['details']);
+			$values['title'] = $ticket['subject'] ? $ticket['subject'] : $ticket['category_name'];
+			$ticket_notes	 = $boticket->read_additional_notes($origin_id);
+			$i				 = count($ticket_notes) - 1;
+			if (isset($ticket_notes[$i]['value_note']) && $ticket_notes[$i]['value_note'])
+			{
+				$values['descr'] .= ": " . $ticket_notes[$i]['value_note'];
+			}
+
+			$values['location_data'] = $ticket['location_data'];
+		}
+		else if ($origin && preg_match("/(^.entity.|^.catch.)/i", $origin) && $origin_id)
+		{
+			$_origin				 = explode('.', $origin);
+			$_boentity				 = CreateObject('property.boentity', false, $_origin[1], $_origin[2], $_origin[3]);
+			$_entity				 = $_boentity->read_single(array(
+				'entity_id'	 => $_origin[2],
+				'cat_id'	 => $_origin[3],
+				'id'		 => $origin_id,
+				'view'		 => true
+			));
+			$values['location_data'] = $_entity['location_data'];
+			unset($_origin);
+			unset($_boentity);
+			unset($_entity);
+		}
+		else if ($origin == '.project.request' && $origin_id)
+		{
+			$_borequest				 = CreateObject('property.borequest', false);
+			$_request				 = $_borequest->read_single($origin_id, array(), true);
+			$values['descr']		 = $_request['descr'];
+			$values['title']		 = $_request['title'];
+			$values['location_data'] = $_request['location_data'];
+			unset($_origin);
+			unset($_borequest);
+			unset($_request);
+		}
+
+		if (isset($values['origin']) && $values['origin'])
+		{
+			$origin		 = $values['origin'];
+			$origin_id	 = $values['origin_id'];
+		}
+
+		$interlink = &$this->bo->interlink;
+		if (isset($origin) && $origin)
+		{
+			$values['origin_data'][0]['location']	 = $origin;
+			$values['origin_data'][0]['descr']		 = $interlink->get_location_name($origin);
+			$values['origin_data'][0]['data'][]		 = array(
+				'id'	 => $origin_id,
+				'link'	 => $interlink->get_relation_link(array(
+					'location' => $origin
+				), $origin_id),
+			);
+		}
+	}
+
+	private function _apply_project_defaults_to_values(array &$values, array $project, $config)
+	{
+		if ($project['key_fetch'] && !$values['key_fetch'])
+		{
+			$values['key_fetch'] = $project['key_fetch'];
+		}
+
+		if ($project['key_deliver'] && !$values['key_deliver'])
+		{
+			$values['key_deliver'] = $project['key_deliver'];
+		}
+
+		if ($project['start_date'] && !$values['start_date'])
+		{
+			$_start_date = max(time(), phpgwapi_datetime::date_to_timestamp($project['start_date']));
+			$values['start_date'] = $this->phpgwapi_common->show_date($_start_date, $this->userSettings['preferences']['common']['dateformat']);
+			if ($project['project_type_id'] == 1) //operation
+			{
+				phpgw::import_class('phpgwapi.datetime');
+				if ($project['end_date'] && phpgwapi_datetime::date_to_timestamp($project['end_date']) < time())
+				{
+					$values['start_date'] = $project['end_date'];
+				}
+			}
+		}
+
+		$last_day_of_year = mktime(13, 0, 0, 12, 31, date("Y"));
+
+		if ($project['end_date'] && !$values['end_date'])
+		{
+			if ($project['project_type_id'] == 1 && isset($config->config_data['delay_operation_workorder_end_date']) && $config->config_data['delay_operation_workorder_end_date'] == 1) //operation
+			{
+				$values['end_date'] = $this->phpgwapi_common->show_date($last_day_of_year, $this->userSettings['preferences']['common']['dateformat']);
+			}
+			else
+			{
+				$values['end_date'] = $project['end_date'];
+			}
+		}
+		else if (!$project['end_date'] && !$values['end_date'])
+		{
+			if ($project['project_type_id'] == 1 && isset($config->config_data['delay_operation_workorder_end_date']) && $config->config_data['delay_operation_workorder_end_date'] == 1) //operation
+			{
+				$values['end_date'] = $this->phpgwapi_common->show_date($last_day_of_year, $this->userSettings['preferences']['common']['dateformat']);
+			}
+			else
+			{
+				$values['end_date'] = $this->phpgwapi_common->show_date(time(), $this->userSettings['preferences']['common']['dateformat']);
+			}
+		}
+
+		if ($project['name'] && !isset($values['title']))
+		{
+			$values['title'] = $project['name'];
+		}
+		if ($project['descr'] && !isset($values['descr']))
+		{
+			$values['descr'] = $project['descr'];
+		}
+	}
+
+	private function _append_history_datatable(array &$datatable_def, array $record_history)
+	{
+		$history_def = array(
+			array(
+				'key'		 => 'number',
+				'label'		 => '#',
+				'sortable'	 => true,
+				'resizeable' => true
+			),
+			array(
+				'key'		 => 'value_date',
+				'label'		 => lang('Date'),
+				'sortable'	 => false,
+				'resizeable' => true
+			),
+			array(
+				'key'		 => 'value_user',
+				'label'		 => lang('User'),
+				'sortable'	 => false,
+				'resizeable' => true
+			),
+			array(
+				'key'		 => 'value_action',
+				'label'		 => lang('Action'),
+				'sortable'	 => true,
+				'resizeable' => true
+			),
+			array(
+				'key'		 => 'value_old_value',
+				'label'		 => lang('old value'),
+				'sortable'	 => false,
+				'resizeable' => true
+			),
+			array(
+				'key'		 => 'value_new_value',
+				'label'		 => lang('New Value'),
+				'sortable'	 => false,
+				'resizeable' => true
+			)
+		);
+
+		$datatable_def[] = array(
+			'container'	 => 'datatable-container_0',
+			'requestUrl' => "''",
+			'data'		 => json_encode($record_history),
+			'ColumnDefs' => $history_def,
+			'config'	 => array(
+				array(
+					'disableFilter' => true
+				),
+				array(
+					'disablePagination' => true
+				)
+			)
+		);
+	}
+
+	private function _initialize_location_context(array &$values, array $project, $mode, $bolocation, $config)
+	{
+		if (isset($config->config_data['location_at_workorder']) && $config->config_data['location_at_workorder'])
+		{
+			$admin_location	 = &$bolocation->soadmin_location;
+			$location_types	 = $admin_location->select_location_type();
+			$max_level		 = count($location_types);
+
+			$location_level			 = isset($project['location_data']['location_code']) && $project['inherit_location'] ? count(explode('-', $project['location_data']['location_code'])) : 0;
+			$location_template_type	 = 'form';
+			$_location_data			 = array();
+
+			if (!$values['location_data'] && ($values['location_code'] || $values['location']))
+			{
+				$location_code			 = isset($values['location_code']) && $values['location_code'] ? $values['location_code'] : implode("-", $values['location']);
+				$values['extra']['view'] = true;
+				$values['location_data'] = $bolocation->read_single($location_code, $values['extra']);
+			}
+
+			if ($values['location_data'])
+			{
+				$_location_data = $values['location_data'];
+			}
+			else if (isset($values['location']) && is_array($values['location']))
+			{
+				$location_code			 = implode("-", $values['location']);
+				$values['extra']['view'] = true;
+				$_location_data			 = $bolocation->read_single($location_code, $values['extra']);
+			}
+			else
+			{
+				if (isset($project['location_data']) && $project['location_data'] && $project['inherit_location'])
+				{
+					$_location_data = $project['location_data'];
+				}
+			}
+
+			if ($mode == 'view')
+			{
+				$location_template_type = 'view';
+			}
+
+			$location_data = $bolocation->initiate_ui_location(array(
+				'values'			 => $_location_data,
+				'type_id'			 => $mode == 'edit' ? $max_level : count(explode('-', $_location_data['location_code'])),
+				'no_link'			 => false, // disable lookup links for location type less than type_id
+				'tenant'			 => true,
+				'block_parent'		 => $location_level,
+				'lookup_type'		 => $location_template_type,
+				'lookup_entity'		 => $this->bocommon->get_lookup_entity('project'),
+				'entity_data'		 => (isset($values['p']) ? $values['p'] : ''),
+				'filter_location'	 => $project['inherit_location'] ? $project['location_data']['location_code'] : false,
+				'required_level'	 => 1
+			));
+		}
+		else
+		{
+			$location_template_type	 = 'view';
+			$_location_data			 = !empty($project['location_data']) ? $project['location_data'] : '';
+			$location_data			 = $bolocation->initiate_ui_location(array(
+				'values'		 => $_location_data,
+				'type_id'		 => (isset($project['location_data']['location_code']) ? count(explode('-', $project['location_data']['location_code'])) : ''),
+				'no_link'		 => false, // disable lookup links for location type less than type_id
+				'tenant'		 => (isset($project['location_data']['tenant_id']) ? $project['location_data']['tenant_id'] : ''),
+				'lookup_type'	 => 'view'
+			));
+		}
+
+		if (!empty($project['contact_phone']) || !empty($values['contact_phone']))
+		{
+			for ($i = 0; $i < count($location_data['location']); $i++)
+			{
+				if ($location_data['location'][$i]['input_name'] == 'contact_phone')
+				{
+					$location_data['location'][$i]['value'] = $values['contact_phone'] ? $values['contact_phone'] : $project['contact_phone'];
+				}
+			}
+		}
+
+		return array(
+			'location_data' => $location_data,
+			'location_template_type' => $location_template_type,
+			'_location_data' => $_location_data
+		);
+	}
+
+	private function _initialize_vendor_budget_context(array $values, array $project, $mode, $config)
+	{
+		$vendor_data = $this->bocommon->initiate_ui_vendorlookup(array(
+			'vendor_id'		 => $values['vendor_id'],
+			'vendor_name'	 => $values['vendor_name'],
+			'type'			 => $mode,
+			'required'		 => isset($config->config_data['workorder_require_vendor']) && $config->config_data['workorder_require_vendor'] == 1
+		));
+
+		$b_group_data = $this->bocommon->initiate_ui_budget_account_lookup(array(
+			'b_account_id'	 => $project['b_account_group'],
+			'role'			 => 'group',
+			'type'			 => $mode
+		));
+
+		$b_account_data = $this->bocommon->initiate_ui_budget_account_lookup(array(
+			'b_account_id'	 => $values['b_account_id'] ? $values['b_account_id'] : $project['b_account_id'],
+			//				'b_account_name' => $values['b_account_name'],
+			'disabled'		 => '',
+			'parent'		 => $project['b_account_group'],
+			'type'			 => $mode,
+			'required'		 => true
+		));
+
+		$b_account_list_favorite = ExecMethod('property.sob_account_user.get_favorite', $this->account);
+
+		if ($b_account_list_favorite)
+		{
+			$b_account_list = $b_account_list_favorite;
+		}
+		else
+		{
+			$b_account_list = execMethod('property.bogeneric.get_list', array(
+				'type'		 => 'budget_account',
+				'selected'	 => $values['b_account_id'] ? $values['b_account_id'] : $project['b_account_id'],
+				'add_empty'	 => true,
+				'filter'	 => array('active' => 1)
+			));
+		}
+
+		$_b_account_found = false;
+		foreach ($b_account_list as &$entry)
+		{
+			$entry['name'] = "{$entry['id']} {$entry['name']}";
+			if (!empty($b_account_data['value_b_account_id']) && $b_account_data['value_b_account_id'] == $entry['id'])
+			{
+				$_b_account_found = true;
+			}
+		}
+		if (!empty($b_account_data['value_b_account_id']) && !$_b_account_found)
+		{
+			array_unshift($b_account_list, array(
+				'id'	 => $b_account_data['value_b_account_id'],
+				'name'	 => "{$b_account_data['value_b_account_id']} {$b_account_data['value_b_account_name']}"
+			));
+		}
+
+		unset($entry);
+
+		$ecodimb_data = $this->bocommon->initiate_ecodimb_lookup(
+			array(
+				'ecodimb'		 => $values['ecodimb'] ? $values['ecodimb'] : $project['ecodimb'],
+				'ecodimb_descr'	 => $values['ecodimb_descr'],
+				'disabled'		 => $project['ecodimb'] || $mode == 'view'
+			)
+		);
+
+		return array(
+			'vendor_data' => $vendor_data,
+			'b_group_data' => $b_group_data,
+			'b_account_data' => $b_account_data,
+			'b_account_list' => $b_account_list,
+			'ecodimb_data' => $ecodimb_data
+		);
 	}
 
 	function add()
@@ -3774,63 +2500,7 @@ JS;
 		));
 	}
 
-	function delete()
-	{
-		$id = Sanitizer::get_var('id');
 
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-			$this->bo->delete($id);
-			return "id " . $id . " " . lang("has been deleted");
-		}
-
-		if (!$this->acl_delete)
-		{
-			phpgw::redirect_link('/index.php', array(
-				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 8,
-				'acl_location'	 => $this->acl_location
-			));
-		}
-		//$id = Sanitizer::get_var('id', 'int');
-		$confirm = Sanitizer::get_var('confirm', 'bool', 'POST');
-
-		$link_data = array(
-			'menuaction' => 'property.uiworkorder.index'
-		);
-
-		if (Sanitizer::get_var('confirm', 'bool', 'POST'))
-		{
-			$this->bo->delete($id);
-			phpgw::redirect_link('/index.php', $link_data);
-		}
-
-		phpgwapi_xslttemplates::getInstance()->add_file(array(
-			'app_delete'
-		));
-
-		$data = array(
-			'done_action'			 => phpgw::link('/index.php', $link_data),
-			'delete_action'			 => phpgw::link('/index.php', array(
-				'menuaction' => 'property.uiworkorder.delete',
-				'id'		 => $id
-			)),
-			'lang_confirm_msg'		 => lang('do you really want to delete this entry'),
-			'lang_yes'				 => lang('yes'),
-			'lang_yes_statustext'	 => lang('Delete the entry'),
-			'lang_no_statustext'	 => lang('Back to the list'),
-			'lang_no'				 => lang('no')
-		);
-
-		$appname		 = lang('workorder');
-		$function_msg	 = lang('delete workorder');
-
-		$this->flags['app_header'] = lang('property') . ' - ' . $appname . ': ' . $function_msg;
-		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
-		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array(
-			'delete' => $data
-		));
-	}
 
 	function view()
 	{
@@ -4194,9 +2864,6 @@ JS;
 			'type_list'					 => array(
 				'options' => $boinvoice->get_type_list(isset($values['typeid']) ? $values['typeid'] : '')
 			),
-			'tax_code_list'				 => array(
-				'options' => $boinvoice->tax_code_list(isset($values['tax_code']) ? $values['tax_code'] : '')
-			),
 			'janitor_list'				 => array(
 				'options_lid' => $this->bocommon->get_user_list_right(32, isset($values['janitor']) && $values['janitor'] ? $values['janitor'] : $account_lid, '.invoice')
 			),
@@ -4335,105 +3002,8 @@ JS;
 		return $contract_list;
 	}
 
-	/**
-	 * Gets vendor canidated to be used as vendor - called as ajax from edit form
-	 *
-	 * @param string  $query
-	 *
-	 * @return array
-	 */
-	public function get_eco_service()
-	{
-		if (!$this->acl_read)
-		{
-			return;
-		}
-		return $this->bocommon->get_eco_service();
-	}
 
-	public function get_unspsc_code()
-	{
-		if (!$this->acl_read)
-		{
-			return;
-		}
-		return $this->bocommon->get_unspsc_code();
-	}
 
-	public function get_ecodimb()
-	{
-		if (!$this->acl_read)
-		{
-			return;
-		}
-
-		return $this->bocommon->get_ecodimb();
-	}
-
-	public function get_b_account()
-	{
-		if (!$this->acl_read)
-		{
-			return;
-		}
-		return $this->bocommon->get_b_account();
-	}
-
-	public function receive_order()
-	{
-		if (!$this->acl_edit)
-		{
-			return;
-		}
-
-		$id				 = Sanitizer::get_var('id', 'int');
-		$received_amount = Sanitizer::get_var('received_amount', 'float');
-		return $this->bo->receive_order($id, $received_amount);
-	}
-
-	function get_other_orders($vendor_id = 0, $location_code = '')
-	{
-		if (!$this->acl_read)
-		{
-			return array();
-		}
-
-		if (!$vendor_id)
-		{
-			$vendor_id = Sanitizer::get_var('vendor_id', 'int');
-		}
-
-		if (!$location_code)
-		{
-			$location_code = Sanitizer::get_var('location_code', 'string');
-		}
-
-		$values = $this->bo->get_other_orders($vendor_id, $location_code);
-
-		$dateformat = $this->userSettings['preferences']['common']['dateformat'];
-		foreach ($values as &$entry)
-		{
-			$link				 = self::link(array('menuaction' => 'property.uiworkorder.view', 'id' => $entry['id']));
-			$entry['url']		 = "<a href='{$link}'>{$entry['id']}</a>";
-			$entry['start_date'] = $this->phpgwapi_common->show_date($entry['start_date'], $dateformat);
-			$entry['select']	 = "<input type='radio' name='order_id' value='{$entry['id']}' class='mychecks'/>";
-		}
-
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
-		{
-
-			$total_records = count($values);
-
-			return array(
-				'data'				 => $values,
-				'draw'				 => Sanitizer::get_var('draw', 'int'),
-				'recordsTotal'		 => $total_records,
-				'recordsFiltered'	 => $total_records
-			);
-		}
-
-		return $values;
-	}
 	private function _get_eco_service_name($id)
 	{
 		return $this->bocommon->get_eco_service_name($id);

@@ -14,7 +14,10 @@ function calculate_order()
 		return;
 	}
 	document.getElementsByName("calculate_workorder")[0].value = 1;
-	check_and_submit_valid_session();
+	check_and_submit_valid_session(function ()
+	{
+		submit_workorder_via_api('calculate');
+	});
 }
 
 function submit_workorder()
@@ -36,7 +39,10 @@ function submit_workorder()
 	}
 	else
 	{
-		check_and_submit_valid_session();
+		check_and_submit_valid_session(function ()
+		{
+			submit_workorder_via_api('save');
+		});
 	}
 }
 
@@ -48,7 +54,10 @@ function send_order()
 		return;
 	}
 	document.getElementsByName("send_workorder")[0].value = 1;
-	check_and_submit_valid_session();
+	check_and_submit_valid_session(function ()
+	{
+		submit_workorder_via_api('send');
+	});
 }
 
 check_button_names = function ()
@@ -72,12 +81,9 @@ check_button_names = function ()
 
 function receive_order(workorder_id)
 {
-	var oArgs = {
-		menuaction: 'property.uiworkorder.receive_order',
-		id: workorder_id,
+	var strURL = phpGWLink('property/workorder/' + workorder_id + '/receive-order', {
 		received_amount: $("#order_received_amount").val()
-	};
-	var strURL = phpGWLink('index.php', oArgs, true);
+	}, true);
 	$.ajax({
 		type: 'POST',
 		dataType: 'json',
@@ -109,10 +115,14 @@ function receive_order(workorder_id)
 	});
 }
 
-function check_and_submit_valid_session()
+function check_and_submit_valid_session(onValid)
 {
 	var oArgs = { menuaction: 'property.bocommon.confirm_session' };
 	var strURL = phpGWLink('index.php', oArgs, true);
+	var validCallback = (typeof onValid === 'function') ? onValid : function ()
+	{
+		document.form.submit();
+	};
 
 	$.ajax({
 		type: 'POST',
@@ -129,7 +139,7 @@ function check_and_submit_valid_session()
 				}
 				else
 				{
-					document.form.submit();
+					validCallback();
 				}
 			}
 		},
@@ -139,6 +149,364 @@ function check_and_submit_valid_session()
 		},
 		timeout: 5000
 	});
+}
+
+function createWorkorderApiClient(form)
+{
+	return {
+		buildSaveRequest: function (currentOrderId)
+		{
+			var parsedOrderId = parseInt(currentOrderId, 10);
+			if (!isNaN(parsedOrderId) && parsedOrderId > 0)
+			{
+				return {
+					url: phpGWLink('property/workorder/' + parsedOrderId, {}),
+					method: 'PUT'
+				};
+			}
+
+			return {
+				url: phpGWLink('property/workorder/create', {}),
+				method: 'POST'
+			};
+		}
+	};
+}
+
+function isWorkorderCopyRequested(form)
+{
+	var copyWorkorderField = form ? form.querySelector('input[name="values[copy_workorder]"]') : null;
+	return !!(copyWorkorderField && copyWorkorderField.checked);
+}
+
+function normalizeWorkorderSaveRequest(saveRequest, currentOrderId, forceCreate)
+{
+	var parsedOrderId = parseInt(currentOrderId, 10);
+	var isCreate = !!forceCreate || isNaN(parsedOrderId) || parsedOrderId <= 0;
+	var method = (saveRequest && saveRequest.method) ? String(saveRequest.method).toUpperCase() : 'POST';
+	var url = (saveRequest && saveRequest.url) ? saveRequest.url : phpGWLink('property/workorder/create', {});
+
+	if (isCreate)
+	{
+		method = 'POST';
+
+		if (!url || url.indexOf('/property/workorder/create') === -1)
+		{
+			url = phpGWLink('property/workorder/create', {});
+		}
+	}
+
+	return {
+		url: url,
+		method: method
+	};
+}
+
+function getFirstWorkorderFormDataValue(formData, keys)
+{
+	for (var i = 0; i < keys.length; i++)
+	{
+		var value = formData.get(keys[i]);
+		if (value !== null && String(value) !== '')
+		{
+			return String(value);
+		}
+	}
+
+	return '';
+}
+
+function deriveWorkorderLocationCode(formData)
+{
+	var partsByLevel = {};
+
+	formData.forEach(function (rawValue, key)
+	{
+		var value = (rawValue === null || rawValue === undefined) ? '' : String(rawValue).trim();
+		if (!value)
+		{
+			return;
+		}
+
+		var match = key.match(/^values\[location\]\[loc(\d+)\]$/)
+			|| key.match(/^location\[loc(\d+)\]$/)
+			|| key.match(/^values\[loc(\d+)\]$/)
+			|| key.match(/^loc(\d+)$/);
+
+		if (!match)
+		{
+			return;
+		}
+
+		var level = parseInt(match[1], 10);
+		if (!Number.isFinite(level) || level <= 0)
+		{
+			return;
+		}
+
+		if (!Object.prototype.hasOwnProperty.call(partsByLevel, level))
+		{
+			partsByLevel[level] = value;
+		}
+	});
+
+	var levels = Object.keys(partsByLevel).map(function (level)
+	{
+		return parseInt(level, 10);
+	}).filter(function (level)
+	{
+		return Number.isFinite(level) && level > 0;
+	}).sort(function (a, b)
+	{
+		return a - b;
+	});
+
+	if (!levels.length)
+	{
+		return '';
+	}
+
+	var locationParts = [];
+	for (var i = 0; i < levels.length; i++)
+	{
+		locationParts.push(partsByLevel[levels[i]]);
+	}
+
+	return locationParts.join('-');
+}
+
+function enrichWorkorderRelationInfo(formData)
+{
+	var locationCode = getFirstWorkorderFormDataValue(formData, [
+		'RelationInfo[location_code]',
+		'values[location_code]',
+		'location_code'
+	]);
+
+	if (locationCode === '')
+	{
+		locationCode = deriveWorkorderLocationCode(formData);
+	}
+
+	if (locationCode !== '')
+	{
+		formData.set('RelationInfo[location_code]', locationCode);
+	}
+
+	var relationFields = ['tenant_id', 'p_num', 'p_entity_id', 'p_cat_id', 'origin', 'origin_id'];
+
+	for (var i = 0; i < relationFields.length; i++)
+	{
+		var field = relationFields[i];
+		var relationKey = 'RelationInfo[' + field + ']';
+		var value = getFirstWorkorderFormDataValue(formData, [
+			relationKey,
+			'values[' + field + ']',
+			field
+		]);
+
+		if (value !== '')
+		{
+			formData.set(relationKey, value);
+		}
+	}
+}
+
+function submit_workorder_via_api(actionType)
+{
+	var form = document.form;
+	if (!form)
+	{
+		return;
+	}
+
+	var action = actionType || 'save';
+
+	var copyWorkorderRequested = isWorkorderCopyRequested(form);
+	var saveRequestRaw = createWorkorderApiClient(form).buildSaveRequest(order_id);
+	var saveRequest = normalizeWorkorderSaveRequest(saveRequestRaw, order_id, copyWorkorderRequested);
+	var formData = new FormData(form);
+	formData.set('phpgw_return_as', 'json');
+	formData.set('save', '1');
+	if (copyWorkorderRequested && Number(order_id) > 0)
+	{
+		formData.set('copy_workorder_from', String(order_id));
+	}
+	enrichWorkorderRelationInfo(formData);
+
+	if (!window.fetch)
+	{
+		submit_workorder_via_api_xhr(saveRequest, formData, action);
+		return;
+	}
+
+	fetch(saveRequest.url, {
+		method: saveRequest.method,
+		credentials: 'same-origin',
+		body: formData
+	})
+		.then(function (response)
+		{
+			return response.json().catch(function ()
+			{
+				return null;
+			}).then(function (data)
+			{
+				if (!response.ok)
+				{
+					var error = new Error('Workorder save failed');
+					error.responseData = data;
+					throw error;
+				}
+				return data;
+			});
+		})
+		.then(function (data)
+		{
+			handle_workorder_save_success(data, action);
+		})
+		.catch(function (error)
+		{
+			handle_workorder_save_error(error && error.responseData ? error.responseData : null);
+		});
+}
+
+function submit_workorder_via_api_xhr(saveRequest, formData, action)
+{
+	var xhr = new XMLHttpRequest();
+	xhr.open(saveRequest.method, saveRequest.url, true);
+	xhr.withCredentials = true;
+
+	xhr.onreadystatechange = function ()
+	{
+		if (xhr.readyState !== 4)
+		{
+			return;
+		}
+
+		var data = null;
+		if (xhr.responseText)
+		{
+			try
+			{
+				data = JSON.parse(xhr.responseText);
+			}
+			catch (e)
+			{
+				data = null;
+			}
+		}
+
+		if (xhr.status >= 200 && xhr.status < 300)
+		{
+			handle_workorder_save_success(data, action);
+			return;
+		}
+
+		handle_workorder_save_error(data);
+	};
+
+	xhr.send(formData);
+}
+
+function clearWorkorderFormAlerts()
+{
+	var notices = document.querySelectorAll('.workorder-submit-alert');
+	for (var i = 0; i < notices.length; i++)
+	{
+		notices[i].remove();
+	}
+}
+
+function renderWorkorderFormAlert(messages, type)
+{
+	var form = document.form;
+	if (!form)
+	{
+		window.alert(messages[0] || '');
+		return;
+	}
+
+	clearWorkorderFormAlerts();
+
+	var alert = document.createElement('div');
+	alert.className = 'workorder-submit-alert text-center alert alert-' + type;
+	alert.setAttribute('role', 'alert');
+
+	for (var i = 0; i < messages.length; i++)
+	{
+		if (i > 0)
+		{
+			alert.appendChild(document.createElement('br'));
+		}
+		alert.appendChild(document.createTextNode(messages[i]));
+	}
+
+	form.insertBefore(alert, form.firstChild);
+	form.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+function handle_workorder_save_success(data, action)
+{
+	var hasErrors = !!(data && data.receipt && data.receipt.error && data.receipt.error.length);
+	if (hasErrors)
+	{
+		var errorMessages = data.receipt.error.map(function (entry)
+		{
+			return (entry && entry.msg) ? entry.msg : 'Could not save workorder';
+		});
+		renderWorkorderFormAlert(errorMessages, 'danger');
+		return;
+	}
+
+	var id = (data && data.data && data.data.id) ? data.data.id : order_id;
+
+	if (action === 'send')
+	{
+		window.location.href = phpGWLink('index.php', {
+			menuaction: 'property.uiwo_hour.view',
+			workorder_id: id,
+			from: 'index'
+		});
+		return;
+	}
+
+	if (action === 'calculate')
+	{
+		window.location.href = phpGWLink('index.php', {
+			menuaction: 'property.uiwo_hour.index',
+			workorder_id: id
+		});
+		return;
+	}
+
+	var successMsg = order_id ? 'Arbeidsordren er lagret' : 'Arbeidsordren er opprettet';
+	renderWorkorderFormAlert([successMsg], 'success');
+	setTimeout(function ()
+	{
+		window.location.href = phpGWLink('index.php', {
+			menuaction: 'property.uiworkorder.edit',
+			id: id,
+			active_tab: $('#active_tab').val()
+		});
+	}, 1200);
+}
+
+function handle_workorder_save_error(responseData)
+{
+	var messages = [];
+	if (responseData && responseData.receipt && responseData.receipt.error && responseData.receipt.error.length)
+	{
+		messages = responseData.receipt.error.map(function (entry)
+		{
+			return (entry && entry.msg) ? entry.msg : '';
+		}).filter(function (m) { return !!m; });
+	}
+	if (!messages.length)
+	{
+		messages = ['Feil ved lagring. Vennligst prøv igjen.'];
+	}
+	renderWorkorderFormAlert(messages, 'danger');
 }
 
 this.validate_form = function ()
@@ -196,8 +564,7 @@ this.fetch_vendor_contract = function ()
 
 	if ($("#vendor_id").val() != vendor_id)
 	{
-		var oArgs = { menuaction: 'property.uiworkorder.get_vendor_contract', vendor_id: $("#vendor_id").val() };
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = phpGWLink('property/workorder/lookups/vendor-contract', { vendor_id: $("#vendor_id").val() }, true);
 		var htmlString = "";
 
 		$.ajax({
@@ -257,17 +624,14 @@ JqueryPortico.FormatterActive = function (key, oData)
 	return "<div align=\"center\">" + oData['active'] + oData['active_orig'] + "</div>";
 };
 
-var oArgs = { menuaction: 'property.uiworkorder.get_eco_service' };
-var strURL = phpGWLink('index.php', oArgs, true);
+var strURL = phpGWLink('property/workorder/lookups/eco-service', {}, true);
 JqueryPortico.autocompleteHelper(strURL, 'service_name', 'service_id', 'service_container');
 
-var oArgs = { menuaction: 'property.uiworkorder.get_ecodimb' };
-var strURL = phpGWLink('index.php', oArgs, true);
+var strURL = phpGWLink('property/workorder/lookups/ecodimb', {}, true);
 JqueryPortico.autocompleteHelper(strURL, 'ecodimb_name', 'ecodimb', 'ecodimb_container');
 
 
-var oArgs = { menuaction: 'property.uiworkorder.get_unspsc_code' };
-var strURL = phpGWLink('index.php', oArgs, true);
+var strURL = phpGWLink('property/workorder/lookups/unspsc-code', {}, true);
 JqueryPortico.autocompleteHelper(strURL, 'unspsc_code_name', 'unspsc_code', 'unspsc_code_container');
 
 
@@ -409,8 +773,10 @@ $(document).ready(function ()
 
 		var b_account_id = $('#b_account_id').val();
 
-		var oArgs = { menuaction: 'property.boworkorder.get_category', cat_id: data.id, b_account_id: b_account_id };
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = phpGWLink('property/workorder/lookups/category', {
+			cat_id: data.id,
+			b_account_id: b_account_id
+		}, true);
 
 		$.ajax({
 			type: 'POST',
@@ -456,8 +822,7 @@ $(document).ready(function ()
 		validate_order_category({ id: cat_id });
 	}
 
-	var oArgs = { menuaction: 'property.uiworkorder.get_b_account' };
-	var strURL = phpGWLink('index.php', oArgs, true);
+	var strURL = phpGWLink('property/workorder/lookups/b-account', {}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'b_account_name', 'b_account_id', 'b_account_container', null, null, null, validate_change_budget_account);
 
 	$("#workorder_edit").on("submit", function (e)

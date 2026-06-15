@@ -577,7 +577,7 @@
 							}
 						}
 
-						$this->bo->so->update_id_string();
+						$this->bo->so->update_id_string($allocation['id']);
 
 						if ($isJsonRequest) {
 							self::sendJsonResponse([
@@ -707,6 +707,7 @@
 									$receipt = $this->bo->add($allocation);
 									$allocation['id'] = $receipt['id'];
 									$last_successful_id = $receipt['id'];
+									$this->bo->so->update_id_string($allocation['id']);
 
 									if(!empty($purchase_order['lines']) && empty($allocation['application_id']))
 									{
@@ -739,7 +740,6 @@
 					
 					if ($step == 3)
 					{
-						$this->bo->so->update_id_string();
 						
 						// Check if this came from recurring application and redirect back to application
 						$recurring_app_id = Sanitizer::get_var('recurring_application_id', 'int', 'GET');
@@ -1033,7 +1033,7 @@
 						/** END purchase order */
 						$receipt = $this->bo->update($allocation);
 
-						$this->bo->so->update_id_string();
+						$this->bo->so->update_id_string($allocation['id']);
 						$this->send_mailnotification_to_organization($organization, lang('Allocation changed'), Sanitizer::get_var('mail', 'html', 'POST'));
 						self::redirect(array('menuaction' => 'booking.uiallocation.show', 'id' => $allocation['id']));
 					}

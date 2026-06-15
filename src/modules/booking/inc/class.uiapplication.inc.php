@@ -1813,7 +1813,7 @@ class booking_uiapplication extends booking_uicommon
 					}
 				}
 				/** End attachment * */
-				$this->bo->so->update_id_string();
+				$this->bo->so->update_id_string($application['id']);
 				$this->bo->so->update_from_field($application['id']);
 				if ($is_partial1)
 				{
@@ -2681,9 +2681,9 @@ class booking_uiapplication extends booking_uicommon
 								$event['from_'] = $checkdate['from_'];
 								$event['to_'] = $checkdate['to_'];
 								$receipt = $booking_boevent->so->add($event);
+								$booking_boevent->so->update_id_string($receipt['id']);
 							}
 
-							$booking_boevent->so->update_id_string();
 							createObject('booking.sopurchase_order')->identify_purchase_order($application['id'], $receipt['id'], 'event');
 
 							$this->add_payment(array($application['id']));

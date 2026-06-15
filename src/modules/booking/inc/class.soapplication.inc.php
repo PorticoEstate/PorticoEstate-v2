@@ -482,11 +482,15 @@ class booking_soapplication extends booking_socommon
 		return $results;
 	}
 
-	public function update_id_string()
+	public function update_id_string($application_id = null)
 	{
 		$table_name	 = $this->table_name;
 		$db			 = $this->db;
 		$sql		 = "UPDATE $table_name SET id_string = cast(id AS varchar)";
+		if ($application_id)
+		{
+			$sql .= " WHERE id = " . (int)$application_id;
+		}
 		$db->query($sql, __LINE__, __FILE__);
 	}
 

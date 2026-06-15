@@ -59,6 +59,9 @@ if (!isset($phpgw_domain[$domain])) {
 $dbConf = $phpgw_domain[$domain];
 $dsn = \App\Database\Db::CreateDsn($dbConf);
 $db = \App\Database\Db::getInstance($dsn, $dbConf['db_user'], $dbConf['db_pass']);
+// Db's constructor does not store the config — set it so code that relies on
+// get_config() (Db2, SchemaProc db_type detection, etc.) works from the CLI
+$db->set_config($dbConf);
 
 if (!$db->isConnected()) {
 	die("Error: Could not connect to database for domain '{$domain}'\n");

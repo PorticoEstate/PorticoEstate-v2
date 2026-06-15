@@ -677,11 +677,11 @@ class booking_uievent extends booking_uicommon
 							$receipt = $this->bo->add($event);
 							$allids[] = array($receipt['id']);
 						}
+						$this->bo->so->update_id_string($receipt['id']);
 					}
 					if ($allids)
 					{
 						$this->bo->so->update_comment($allids);
-						$this->bo->so->update_id_string();
 					}
 
 					/**
@@ -725,7 +725,7 @@ class booking_uievent extends booking_uicommon
 					$this->add_comment($event, lang('Event was created'));
 					$receipt = $this->bo->add($event);
 					$this->sopurchase_order->copy_purchase_order_from_application($event, $receipt['id'], 'event');
-					$this->bo->so->update_id_string();
+					$this->bo->so->update_id_string($receipt['id']);
 				}
 				if ($isJsonRequest) {
 					self::sendJsonResponse([

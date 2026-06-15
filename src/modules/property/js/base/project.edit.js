@@ -98,11 +98,15 @@ var project_file_link = function (key, oData)
 
 	if (!fileId)
 	{
-		return $('<div/>').text(fileName).html();
+		return PorticoClientUtils.escapeHtml(fileName);
 	}
 
 	var url = phpGWLink('property/project/files/view', {file_id: fileId});
-	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener" title="' + $('<div/>').text(lang['click to view file'] || 'click to view file').html() + '">' + $('<div/>').text(fileName).html() + '</a>';
+	return PorticoClientUtils.buildAnchorHtml(fileName, url, {
+		target: '_blank',
+		rel: 'noopener',
+		title: lang['click to view file'] || 'click to view file'
+	});
 };
 
 var project_attachment_link = function (key, oData)
@@ -117,7 +121,7 @@ var project_attachment_link = function (key, oData)
 
 	if (!voucherId)
 	{
-		return $('<div/>').text(fileName).html();
+		return PorticoClientUtils.escapeHtml(fileName);
 	}
 
 	var url = phpGWLink('index.php', {
@@ -126,50 +130,10 @@ var project_attachment_link = function (key, oData)
 		key: voucherId
 	});
 
-	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener">' + $('<div/>').text(fileName).html() + '</a>';
-};
-
-var project_file_link = function (key, oData)
-{
-	var fileName = (oData && oData[key]) ? String(oData[key]) : '';
-	var fileId = (oData && oData.file_id) ? String(oData.file_id) : '';
-
-	if (!fileName)
-	{
-		return '';
-	}
-
-	if (!fileId)
-	{
-		return $('<div/>').text(fileName).html();
-	}
-
-	var url = phpGWLink('property/project/files/view', {file_id: fileId});
-	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener" title="' + $('<div/>').text(lang['click to view file'] || 'click to view file').html() + '">' + $('<div/>').text(fileName).html() + '</a>';
-};
-
-var project_attachment_link = function (key, oData)
-{
-	var fileName = (oData && oData[key]) ? String(oData[key]) : '';
-	var voucherId = (oData && oData.voucher_id) ? String(oData.voucher_id) : '';
-
-	if (!fileName)
-	{
-		return '';
-	}
-
-	if (!voucherId)
-	{
-		return $('<div/>').text(fileName).html();
-	}
-
-	var url = phpGWLink('index.php', {
-		menuaction: 'property.uitts.show_attachment',
-		file_name: fileName,
-		key: voucherId
+	return PorticoClientUtils.buildAnchorHtml(fileName, url, {
+		target: '_blank',
+		rel: 'noopener'
 	});
-
-	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener">' + $('<div/>').text(fileName).html() + '</a>';
 };
 
 //this.local_DrawCallback_1 = function (container)

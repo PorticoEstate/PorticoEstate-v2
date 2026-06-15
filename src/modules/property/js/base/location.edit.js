@@ -32,12 +32,13 @@ formatLocationDocumentLink = function (key, oData)
 
 	if (!url)
 	{
-		return $('<div/>').text(name).html();
+		return PorticoClientUtils.escapeHtml(name);
 	}
 
-	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener">'
-		+ $('<div/>').text(name).html()
-		+ '</a>';
+	return PorticoClientUtils.buildAnchorHtml(name, url, {
+		target: '_blank',
+		rel: 'noopener'
+	});
 };
 
 $(document).ready(function ()

@@ -180,12 +180,116 @@
 		form.insertBefore(alert, form.firstChild);
 	}
 
+	function escapeHtml(value)
+	{
+		if (value === null || value === undefined)
+		{
+			return '';
+		}
+
+		var div = document.createElement('div');
+		div.textContent = String(value);
+		return div.innerHTML;
+	}
+
+	function resolveLinkUrl(path, params)
+	{
+		if (!path)
+		{
+			return '';
+		}
+
+		if (params && typeof params === 'object' && typeof global.phpGWLink === 'function')
+		{
+			return global.phpGWLink(path, params);
+		}
+
+		return String(path);
+	}
+
+	function buildAnchorHtml(text, url, options)
+	{
+		var safeText = escapeHtml(text);
+		if (!safeText)
+		{
+			return '';
+		}
+
+		if (!url)
+		{
+			return safeText;
+		}
+
+		options = options || {};
+		var attrs = ['href="' + escapeHtml(encodeURI(String(url))) + '"'];
+
+		if (options.target)
+		{
+			attrs.push('target="' + escapeHtml(options.target) + '"');
+		}
+
+		if (options.rel)
+		{
+			attrs.push('rel="' + escapeHtml(options.rel) + '"');
+		}
+		else if (options.target === '_blank')
+		{
+			attrs.push('rel="noopener"');
+		}
+
+		if (options.title)
+		{
+			attrs.push('title="' + escapeHtml(options.title) + '"');
+		}
+
+		return '<a ' + attrs.join(' ') + '>' + safeText + '</a>';
+	}
+
+	function buildCheckboxHtml(options)
+	{
+		options = options || {};
+		var value = (options.value === null || options.value === undefined) ? '' : String(options.value);
+		if (!value)
+		{
+			return '';
+		}
+
+		var attrs = ['type="checkbox"'];
+		if (options.checked)
+		{
+			attrs.push('checked="checked"');
+		}
+
+		if (options.className)
+		{
+			attrs.push('class="' + escapeHtml(options.className) + '"');
+		}
+
+		if (options.name)
+		{
+			attrs.push('name="' + escapeHtml(options.name) + '"');
+		}
+
+		attrs.push('value="' + escapeHtml(value) + '"');
+
+		if (options.title)
+		{
+			attrs.push('title="' + escapeHtml(options.title) + '"');
+		}
+
+		return '<input ' + attrs.join(' ') + '>';
+	}
+
 	global.PorticoClientUtils = global.PorticoClientUtils || {
 		parseURL: parseURL,
 		parseFormKeyTokens: parseFormKeyTokens,
 		setNestedValue: setNestedValue,
 		formDataToObject: formDataToObject,
 		clearFormAlerts: clearFormAlerts,
-		renderFormAlert: renderFormAlert
+		renderFormAlert: renderFormAlert,
+		escapeHtml: escapeHtml,
+		resolveLinkUrl: resolveLinkUrl,
+		buildAnchorHtml: buildAnchorHtml,
+		buildCheckboxHtml: buildCheckboxHtml
 	};
 })(window);

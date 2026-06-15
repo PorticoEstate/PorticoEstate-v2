@@ -30,30 +30,24 @@ formatWorkorderDataCell = function (mode, key, oData)
 
 		if (oData && oData.img_id !== undefined && oData.img_id !== null)
 		{
-			return $('<div/>').text(rawValue).html();
+			return PorticoClientUtils.escapeHtml(rawValue);
 		}
 
 		var path = (oData && oData.file_view_path) ? String(oData.file_view_path) : '';
 		var params = (oData && oData.file_view_params && typeof oData.file_view_params === 'object')
 			? oData.file_view_params
 			: null;
-		var url = '';
-
-		if (path && params)
-		{
-			url = phpGWLink(path, params);
-		}
-		else if (path)
-		{
-			url = path;
-		}
+		var url = PorticoClientUtils.resolveLinkUrl(path, params);
 
 		if (!url)
 		{
-			return $('<div/>').text(rawValue).html();
+			return PorticoClientUtils.escapeHtml(rawValue);
 		}
 
-		return '<a href="' + encodeURI(url) + '" target="_blank" title="' + $('<div/>').text('click to view file').html() + '">' + $('<div/>').text(rawValue).html() + '</a>';
+		return PorticoClientUtils.buildAnchorHtml(rawValue, url, {
+			target: '_blank',
+			title: 'click to view file'
+		});
 	}
 
 	if (mode === 'checkbox')
@@ -75,10 +69,12 @@ formatWorkorderDataCell = function (mode, key, oData)
 		var inputName = (oData && oData.attach_file_name) ? String(oData.attach_file_name) : 'values[file_attach][]';
 		var title = (oData && oData.attach_file_title) ? String(oData.attach_file_title) : 'Check to attach file';
 
-		return "<input type='checkbox' " + (checked ? "checked='checked' " : '')
-			+ "name='" + $('<div/>').text(inputName).html() + "' "
-			+ "value='" + $('<div/>').text(value).html() + "' "
-			+ "title='" + $('<div/>').text(title).html() + "'>";
+		return PorticoClientUtils.buildCheckboxHtml({
+			checked: checked,
+			name: inputName,
+			value: value,
+			title: title
+		});
 	}
 
 	return rawValue;

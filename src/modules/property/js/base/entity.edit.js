@@ -66,12 +66,13 @@ formatEntityFileLink = function (key, oData)
 
 	if (!url)
 	{
-		return $('<div/>').text(name).html();
+		return PorticoClientUtils.escapeHtml(name);
 	}
 
-	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener">'
-		+ $('<div/>').text(name).html()
-		+ '</a>';
+	return PorticoClientUtils.buildAnchorHtml(name, url, {
+		target: '_blank',
+		rel: 'noopener'
+	});
 };
 
 formatEntityDeleteFileCheckbox = function (key, oData)
@@ -82,8 +83,11 @@ formatEntityDeleteFileCheckbox = function (key, oData)
 		return '';
 	}
 
-	return "<input type='checkbox' name='values[file_action][]' value='" + $('<div/>').text(fileId).html()
-		+ "' title='" + $('<div/>').text('Check to delete file').html() + "'>";
+	return PorticoClientUtils.buildCheckboxHtml({
+		name: 'values[file_action][]',
+		value: fileId,
+		title: 'Check to delete file'
+	});
 };
 
 formatEntityRelatedLink = function (key, oData)
@@ -98,23 +102,9 @@ formatEntityRelatedLink = function (key, oData)
 	var params = (oData && oData.related_params && typeof oData.related_params === 'object')
 		? oData.related_params
 		: null;
-	var url = '';
+	var url = PorticoClientUtils.resolveLinkUrl(path, params);
 
-	if (path && params)
-	{
-		url = phpGWLink(path, params);
-	}
-	else if (path)
-	{
-		url = path;
-	}
-
-	if (!url)
-	{
-		return $('<div/>').text(text).html();
-	}
-
-	return '<a href="' + encodeURI(url) + '">' + $('<div/>').text(text).html() + '</a>';
+	return PorticoClientUtils.buildAnchorHtml(text, url);
 };
 
 formatEntityTargetLink = function (key, oData)
@@ -129,23 +119,9 @@ formatEntityTargetLink = function (key, oData)
 	var params = (oData && oData.target_params && typeof oData.target_params === 'object')
 		? oData.target_params
 		: null;
-	var url = '';
+	var url = PorticoClientUtils.resolveLinkUrl(path, params);
 
-	if (path && params)
-	{
-		url = phpGWLink(path, params);
-	}
-	else if (path)
-	{
-		url = path;
-	}
-
-	if (!url)
-	{
-		return $('<div/>').text(text).html();
-	}
-
-	return '<a href="' + encodeURI(url) + '">' + $('<div/>').text(text).html() + '</a>';
+	return PorticoClientUtils.buildAnchorHtml(text, url);
 };
 
 formatEntityDocumentLink = function (key, oData)
@@ -177,12 +153,13 @@ formatEntityDocumentLink = function (key, oData)
 
 	if (!url)
 	{
-		return $('<div/>').text(name).html();
+		return PorticoClientUtils.escapeHtml(name);
 	}
 
-	return '<a href="' + encodeURI(url) + '" target="_blank" rel="noopener">'
-		+ $('<div/>').text(name).html()
-		+ '</a>';
+	return PorticoClientUtils.buildAnchorHtml(name, url, {
+		target: '_blank',
+		rel: 'noopener'
+	});
 };
 
 this.fileuploader = function ()

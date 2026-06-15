@@ -14,7 +14,6 @@ import {
     ArrowsCirclepathIcon,
     PersonFillIcon,
     TenancyIcon,
-    PlusIcon,
     MagnifyingGlassIcon,
 } from '@navikt/aksel-icons';
 import {useSearchParams, useRouter, usePathname} from 'next/navigation';
@@ -245,12 +244,6 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
                         {t('bookingfrontend.applications_description')}
                     </p>
                 </div>
-                <Button variant="primary" data-size="sm" asChild>
-                    <NXLink href="/user/applications/new">
-                        <PlusIcon fontSize="1.1rem"/>
-                        {t('bookingfrontend.new application')}
-                    </NXLink>
-                </Button>
             </div>
 
             {/* Quick stats */}

@@ -273,13 +273,13 @@ class property_uiexternal_communication extends phpgwapi_uicommon
 		);
 
 		$other_orders_def = array(
-			array('key' => 'url', 'label' => lang('id'), 'sortable' => true),
+			array('key' => 'url', 'label' => lang('id'), 'sortable' => true, 'formatter' => 'formatOtherOrderLink'),
 			array('key' => 'location_code', 'label' => lang('location'), 'sortable' => true),
 			array('key' => 'name', 'label' => lang('name'), 'sortable' => false),
 			array('key' => 'start_date', 'label' => lang('start date'), 'sortable' => false),
 			array('key' => 'coordinator', 'label' => lang('coordinator'), 'sortable' => true),
 			array('key' => 'status', 'label' => lang('status'), 'sortable' => true),
-			array('key' => 'select', 'label' => lang('select'), 'sortable' => false, 'formatter' => 'JqueryPortico.FormatterCenter'),
+			array('key' => 'select', 'label' => lang('select'), 'sortable' => false, 'formatter' => 'formatOtherOrderSelect'),
 		);
 
 		$datatable_def[] = array(

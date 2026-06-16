@@ -1051,3 +1051,8 @@ load_more	bookingfrontend	en	Load more
 no_unread_notifications	bookingfrontend	en	No unread notifications
 close_calendar_without_season	bookingfrontend	en	Close calendar when building has no season
 close_calendar_without_season_note	bookingfrontend	en	When enabled, buildings without a defined season are shown as closed
+cancel_booking	bookingfrontend	en	Cancel booking
+confirm_cancel_booking_title	bookingfrontend	en	Cancel booking
+confirm_cancel_booking_description	bookingfrontend	en	Are you sure you want to cancel this booking?
+withdraw_unavailable_started	bookingfrontend	en	The booking has already started and can no longer be withdrawn.
+withdraw_unavailable_deadline	bookingfrontend	en	The cancellation deadline has passed.

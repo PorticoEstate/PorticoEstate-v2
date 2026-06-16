@@ -1167,3 +1167,5 @@ no_changes	booking	nn	Ingen endringar registrert
 exit_edit_mode	booking	nn	Avslutt redigering
 hospitality_orders	booking	nn	Bevertningsbestillingar
 cancellation_deadline_warning	booking	nn	Denne bestillinga er innanfor avbestillingsfristen for ressurs %1. Avbestilling kan påverke kunden.
+missing_organization	booking	nn	Manglande organisasjon
+no_active_season_found_for_this_date	booking	nn	Ingen aktiv sesong funne for denne datoen

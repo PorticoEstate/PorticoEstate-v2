@@ -93,6 +93,12 @@ class HospitalityArticle
     public $service_name_json;
 
     /**
+     * @OA\Property(type="object", nullable=true, description="Multi-language description JSON from bb_service")
+     * @Expose
+     */
+    public $service_description_json;
+
+    /**
      * @OA\Property(type="string")
      * @Expose
      */
@@ -145,6 +151,9 @@ class HospitalityArticle
         }
         if (is_string($this->service_name_json)) {
             $this->service_name_json = json_decode($this->service_name_json, true);
+        }
+        if (is_string($this->service_description_json)) {
+            $this->service_description_json = json_decode($this->service_description_json, true);
         }
 
         $this->effective_price = $this->override_price ?? $this->base_price;

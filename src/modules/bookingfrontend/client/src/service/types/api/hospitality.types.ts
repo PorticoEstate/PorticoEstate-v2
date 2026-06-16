@@ -46,6 +46,7 @@ export interface IHospitalityArticle {
     article_name: string;
     article_code: string;
     service_name_json: Record<string, string> | null;
+    service_description_json: Record<string, string> | null;
     unit: string;
     base_price: string;
     base_tax_code: number;

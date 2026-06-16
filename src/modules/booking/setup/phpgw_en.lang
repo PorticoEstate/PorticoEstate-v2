@@ -1100,3 +1100,95 @@ short_description	booking	en	Short description
 no_active_season_found_for_this_date	booking	en	No active season found for this date
 missing_organization	booking	en	Missing organization
 cancellation_deadline_warning	booking	en	This booking is within the cancellation deadline for resource %1. Cancellation may affect the customer.
+%1 resources mapped as articles	booking	en	%1 resources mapped as articles in the catalogue
+Building or facility name	booking	en	Building or facility name
+Building type	booking	en	Building type
+Copy application	booking	en	Copy application
+Could not copy application	booking	en	Could not copy application
+Enter additional invoice information here	booking	en	Enter additional invoice information here
+From date	booking	en	From date
+Message to send with approval	booking	en	Message to send with approval
+Reverse	booking	en	Reverse
+Search for events	booking	en	Search for events
+Search for organizations	booking	en	Search for organizations
+Show my events	booking	en	Show my events
+To date	booking	en	To date
+access instruction	booking	en	Access instruction
+activate application articles	booking	en	Activate articles in application
+activate prepayment	booking	en	Activate prepayment (Vipps)
+add message	booking	en	Add message
+additional invoice information	booking	en	Additional invoice information
+alternative article code	booking	en	Alternative article code
+are you sure you want to approve?	booking	en	Are you sure you want to approve?
+article code	booking	en	Article code
+article group	booking	en	Article group
+article id	booking	en	Article ID
+article mapping	booking	en	Article mapping
+billing delay	booking	en	Billing delay (working days)
+booking_async_task_anonyminizer	booking	en	Anonymise customer register
+booking_async_task_clean_up_old_posts	booking	en	Deactivate old applications and seasons
+booking_async_task_delete_access_log	booking	en	Delete access log for anonymous frontend user
+booking_async_task_postToAccountingSystem	booking	en	Transfer accounting to accounting system
+buffer deadline	booking	en	Buffer/deadline
+co_address	booking	en	C/O address
+commerce	booking	en	Product catalogue
+completed	booking	en	Completed
+completed reservations	booking	en	Ready for invoicing
+content	booking	en	Content
+copied from %1	booking	en	Copied from %1
+currency	booking	en	Currency
+customer list	booking	en	Customer list
+customer list format	booking	en	Customer list format
+day	booking	en	Day
+deactivate in frontend	booking	en	Deactivated in frontend
+deleted	booking	en	Deleted
+deny application if booked	booking	en	Block application if booked
+details	booking	en	Details
+differentiate org payer	booking	en	Differentiate between organization and payer
+e_lock_system	booking	en	Access control system
+each	booking	en	Each
+export_help_text	booking	en	Data used for file transfer
+external_account_helptext	booking	en	Data used for invoice export of external customers
+hidden in frontend	booking	en	Hidden in frontend
+hour	booking	en	Hour
+in tax register	booking	en	Registered in the VAT register
+internal notes	booking	en	Internal notes
+interrupted	booking	en	Interrupted
+kg	booking	en	Kg
+limit number	booking	en	Limit on number
+limit number horizont	booking	en	Limit horizon (days)
+m	booking	en	Meter
+m2	booking	en	Square meter
+mapping	booking	en	Mapping
+mapping updated	booking	en	Mapping updated
+meter	booking	en	Meter
+minutes	booking	en	Minutes
+missing entry. Id %1 is invalid	booking	en	This entry does not exist. Id %1 is invalid
+multi domain	booking	en	Cross-instance support
+my assigned applications	booking	en	My assigned applications
+my assigned buildings	booking	en	My assigned buildings
+partially refunded	booking	en	Partially refunded
+payment method	booking	en	Payment method
+payments	booking	en	Payments
+please choose at least 1 season	booking	en	Please choose at least 1 season
+please enter a mail body	booking	en	Please enter a mail body
+please enter a mail subject	booking	en	Please enter a mail subject
+prizing	booking	en	Pricing
+reason for rejection	booking	en	Reason for rejection
+receipt	booking	en	Receipt
+refund	booking	en	Refund
+refunded	booking	en	Refunded
+season %1 copied to %2	booking	en	Season %1 copied to %2
+select at least one recipient	booking	en	Select at least one recipient
+selected	booking	en	Selected
+send sms	booking	en	Send SMS
+skip bas	booking	en	Do not trigger BAS
+sms alert	booking	en	SMS alert
+sorry - insufficient rights	booking	en	Sorry - you are not authorized for this action
+square meter	booking	en	Square meter
+tax code	booking	en	Tax code
+unit cost	booking	en	Unit cost
+unit price	booking	en	Unit price
+update service-resource-mapping?	booking	en	Update service-resource mapping?
+update user address	booking	en	Update user address
+zip code	booking	en	Zip code

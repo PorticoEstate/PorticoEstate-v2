@@ -102,6 +102,7 @@ class HospitalityArticleRepository
                        am.unit,
                        am.tax_code AS base_tax_code,
                        s.name_json AS service_name_json,
+                       s.description_json AS service_description_json,
                        ap.price AS base_price
                 FROM bb_hospitality_article ha
                 JOIN bb_article_mapping am ON ha.article_mapping_id = am.id
@@ -127,6 +128,7 @@ class HospitalityArticleRepository
                        am.unit,
                        am.tax_code AS base_tax_code,
                        s.name_json AS service_name_json,
+                       s.description_json AS service_description_json,
                        ap.price AS base_price
                 FROM bb_hospitality_article ha
                 JOIN bb_article_mapping am ON ha.article_mapping_id = am.id
@@ -149,6 +151,7 @@ class HospitalityArticleRepository
                        am.unit,
                        am.tax_code AS base_tax_code,
                        s.name_json AS service_name_json,
+                       s.description_json AS service_description_json,
                        ap.price AS base_price
                 FROM bb_hospitality_article ha
                 JOIN bb_article_mapping am ON ha.article_mapping_id = am.id

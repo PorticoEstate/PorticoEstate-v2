@@ -2,7 +2,8 @@
 import {FC, useEffect, useMemo, useState} from 'react';
 import {Alert, Button, Details, Field, Label, Select} from '@digdir/designsystemet-react';
 import {MinusCircleIcon, PlusCircleIcon, ChatElipsisIcon} from '@navikt/aksel-icons';
-import {useTrans} from '@/app/i18n/ClientTranslationProvider';
+import {useClientTranslation} from '@/app/i18n/ClientTranslationProvider';
+import {fallbackLng} from '@/app/i18n/settings';
 import Dialog from '@/components/dialog/mobile-dialog';
 import {
     IHospitality,
@@ -48,6 +49,11 @@ function generateTimeSlots(fromHour: number, fromMinute: number, toHour: number,
     return slots;
 }
 
+function localizeField(field: Record<string, string> | null | undefined, lang: string): string | null {
+    if (!field) return null;
+    return field[lang] || field[fallbackLng.key] || Object.values(field).find(v => !!v) || null;
+}
+
 function getCutoffMs(hospitality: IHospitality): number | null {
     if (!hospitality.order_by_time_value || !hospitality.order_by_time_unit) return null;
     const value = hospitality.order_by_time_value;
@@ -88,7 +94,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     applications,
     existingOrder,
 }) => {
-    const t = useTrans();
+    const {t, i18n} = useClientTranslation();
     const hospitality = selectedHospitality;
     const {data: menu, isLoading: menuLoading} = useHospitalityMenu(open && hospitality ? hospitality.id : undefined);
     const createMutation = useCreateHospitalityOrder(applicationId);
@@ -325,14 +331,16 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         const amount = qty * price;
         const commentText = comments[article.id] || '';
         const commentVisible = visibleComments.has(article.id);
+        const description = localizeField(article.description, i18n.language)
+            ?? localizeField(article.service_description_json, i18n.language);
         return (
             <div key={article.id} className={styles.menuItem}>
                 <div className={styles.menuRow}>
                     <span className={styles.menuName}>
                         {article.article_name}
-                        {article.description && (
+                        {description && (
                             <span className={styles.menuDesc}>
-                                {Object.values(article.description)[0]}
+                                {description}
                             </span>
                         )}
                     </span>

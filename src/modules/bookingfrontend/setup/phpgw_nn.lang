@@ -988,3 +988,66 @@ all	bookingfrontend	nn	Alle
 unread	bookingfrontend	nn	Ulesne
 load_more	bookingfrontend	nn	Last inn fleire
 no_unread_notifications	bookingfrontend	nn	Ingen ulesne varsel
+user_data	bookingfrontend	nn	Brukardata
+user_data_description	bookingfrontend	nn	Slik viser AktivKommune deg som søkjar. Endringar i namn og personnummer blir henta frå ID-porten.
+applications_description	bookingfrontend	nn	Alle søknader om leige du har sendt inn — som privatperson eller på vegner av ein organisasjon.
+waiting_for_response	bookingfrontend	nn	Ventar på svar
+finished	bookingfrontend	nn	Avslutta
+search_applications_placeholder	bookingfrontend	nn	Søk i tittel lokale eller organisasjon
+refresh	bookingfrontend	nn	Oppdater
+no_applications_match	bookingfrontend	nn	Ingen søknader matcha søket.
+first_date	bookingfrontend	nn	Første dato
+sent	bookingfrontend	nn	Sendt
+back_to_applications	bookingfrontend	nn	Tilbake til søknader
+case_history	bookingfrontend	nn	Saksgang
+updated	bookingfrontend	nn	Oppdatert
+times_and_venue	bookingfrontend	nn	Tider og lokale
+requested_times	bookingfrontend	nn	Førespurde tidsrom
+about_the_event	bookingfrontend	nn	Om arrangementet
+communication_with_case_officer	bookingfrontend	nn	Kommunikasjon med saksbehandlar
+send_message	bookingfrontend	nn	Send melding
+reply_to_case_officer	bookingfrontend	nn	Svar saksbehandlaren
+reply_placeholder	bookingfrontend	nn	Skriv eit svar … (synleg for deg og saksbehandlar)
+email_notification_on_reply	bookingfrontend	nn	Du vil få e-postvarsel når saksbehandlar svarar.
+quick_facts	bookingfrontend	nn	Snøggfakta
+contact_person	bookingfrontend	nn	Kontaktperson
+responsible_applicant	bookingfrontend	nn	Ansvarleg søkjar
+tips_while_waiting	bookingfrontend	nn	Tips medan du ventar
+processing_time_info	bookingfrontend	nn	Saksbehandlingstid er normalt 5-10 verkedagar. Du kan svare i kommentartråden dersom du har spørsmål eller vil endre noko.
+withdraw_application	bookingfrontend	nn	Trekk søknad
+confirm_cancel_title	bookingfrontend	nn	Trekk søknad
+confirm_cancel_description	bookingfrontend	nn	Er du sikker på at du vil trekkje denne søknaden? Handlinga kan ikkje angrast.
+application_pending_title	bookingfrontend	nn	Søknaden er til behandling
+application_pending_description	bookingfrontend	nn	Saksbehandlar vil ta stilling til søknaden din. Du kan følgje med i kommentartråden under.
+application_accepted_title	bookingfrontend	nn	Søknaden er godkjend
+application_accepted_description	bookingfrontend	nn	Du har no reservert tidene som er lista under.
+application_rejected_title	bookingfrontend	nn	Søknaden vart dessverre avslått
+application_rejected_description	bookingfrontend	nn	Du kan lese grunngjevinga i kommentartråden under eller kopiere søknaden som utgangspunkt for ein ny.
+on_behalf_of_organization	bookingfrontend	nn	På vegner av organisasjon
+invoice_after_event	bookingfrontend	nn	Faktura blir sendt etter at arrangementet er gjennomført.
+price_confirmed_on_approval	bookingfrontend	nn	Endeleg pris blir stadfesta når søknaden er godkjend.
+date	bookingfrontend	nn	dato
+num_dates	bookingfrontend	nn	datoar
+messages	bookingfrontend	nn	meldingar
+active_delegate	bookingfrontend	nn	Aktivt delegat
+organizations_you_represent	bookingfrontend	nn	Organisasjonar du representerer
+notifications_and_communication	bookingfrontend	nn	Varsel og kommunikasjon
+email_notifications	bookingfrontend	nn	E-postvarsel
+email_notifications_description	bookingfrontend	nn	Få e-post når status på søknadene dine endrar seg eller saksbehandlar kommenterer.
+sms_notifications	bookingfrontend	nn	SMS-varsel
+sms_notifications_description	bookingfrontend	nn	Få SMS dagen før ei booking eller dersom ein søknad nærmar seg svarfrist.
+newsletter	bookingfrontend	nn	Nyheitsbrev
+newsletter_description	bookingfrontend	nn	Tips om ledige lokale sesongopning og nye fasilitetar.
+logged_in_with_idporten	bookingfrontend	nn	Innlogga med ID-porten
+verified_via_idporten	bookingfrontend	nn	Verifisert via ID-porten
+ssn_from_idporten	bookingfrontend	nn	Personnummer blir henta frå ID-porten og kan ikkje endrast her.
+place	bookingfrontend	nn	Stad
+time_slots	bookingfrontend	nn	tidsrom
+download	bookingfrontend	nn	Last ned
+open_document	bookingfrontend	nn	Opne
+status_new	bookingfrontend	nn	Innsendt
+status_pending	bookingfrontend	nn	Til behandling
+status_accepted	bookingfrontend	nn	Godkjend
+status_rejected	bookingfrontend	nn	Avslått
+status_cancelled	bookingfrontend	nn	Trekt
+status_draft	bookingfrontend	nn	Kladd

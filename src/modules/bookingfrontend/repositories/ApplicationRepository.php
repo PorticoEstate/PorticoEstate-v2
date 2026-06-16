@@ -7,13 +7,15 @@ use App\modules\bookingfrontend\models\User;
 use PDO;
 use App\Database\Db;
 use App\modules\bookingfrontend\models\Application;
-use App\modules\bookingfrontend\models\Document;
+use App\modules\booking\models\Document;
 use App\modules\bookingfrontend\models\Resource;
 use App\modules\bookingfrontend\repositories\ResourceRepository;
 use App\modules\bookingfrontend\models\Order;
 use App\modules\bookingfrontend\models\OrderLine;
 use App\modules\bookingfrontend\models\helper\Date;
-use App\modules\bookingfrontend\services\DocumentService;
+use App\modules\booking\services\DocumentService;
+use App\modules\booking\repositories\DocumentRepository;
+use App\modules\booking\repositories\HospitalityOrderRepository;
 
 class ApplicationRepository
 {
@@ -58,7 +60,7 @@ class ApplicationRepository
             $application->agegroups = $this->fetchAgeGroups($application->id);
             $application->audience = $this->fetchTargetAudience($application->id);
             $application->documents = $this->fetchDocuments($application->id);
-            $applications[] = $application->serialize([]);
+            $applications[] = $application->serialize(['user_ssn' => $this->userHelper->ssn]);
         }
 
         return $applications;
@@ -92,7 +94,7 @@ class ApplicationRepository
             $application->agegroups = $this->fetchAgeGroups($application->id);
             $application->audience = $this->fetchTargetAudience($application->id);
             $application->documents = $this->fetchDocuments($application->id);
-            $applications[] = $application->serialize([]);
+            $applications[] = $application->serialize(['user_ssn' => $this->userHelper->ssn]);
         }
 
         return $applications;
@@ -107,10 +109,14 @@ class ApplicationRepository
      */
     public function getApplicationsBySsnAndOrganizations(string $ssn, bool $includeOrganizations = false): array
     {
-        // Base query for personal applications
+        // Base query for personal applications.
+        // Exclude organization applications: even though they now also store the
+        // applicant's customer_ssn, they must only surface via the organization
+        // branches below (tagged 'organization'), otherwise they would appear twice.
         $sql = "SELECT *, 'personal' as application_type FROM bb_application
             WHERE customer_ssn = :ssn
-            AND status != 'NEWPARTIAL1'";
+            AND status != 'NEWPARTIAL1'
+            AND (customer_identifier_type IS NULL OR customer_identifier_type != 'organization_number')";
 
         $params = [':ssn' => $ssn];
 
@@ -156,12 +162,13 @@ class ApplicationRepository
                     }
                     $orgNumbersStr = implode(',', $orgNumberPlaceholders);
 
+                    // No customer_ssn guard here: org applications created by this
+                    // user now carry their own customer_ssn, and the personal branch
+                    // above already excludes organization applications, so there is
+                    // no overlap to dedupe against.
                     $sql .= " UNION SELECT *, 'organization' as application_type FROM bb_application
                         WHERE customer_organization_number IN ({$orgNumbersStr})
-                        AND status != 'NEWPARTIAL1'
-                        AND (customer_ssn IS NULL OR customer_ssn != :ssn2)";
-
-                    $params[':ssn2'] = $ssn; // Avoid duplicates
+                        AND status != 'NEWPARTIAL1'";
                 }
             }
         }
@@ -185,7 +192,7 @@ class ApplicationRepository
             $application->documents = $this->fetchDocuments($application->id);
 
             // Add metadata about application type
-            $serialized = $application->serialize([]);
+            $serialized = $application->serialize(['user_ssn' => $this->userHelper->ssn]);
             $serialized['application_type'] = $result['application_type'];
             $applications[] = $serialized;
         }
@@ -294,6 +301,10 @@ class ApplicationRepository
      */
     private function deleteAssociatedData(int $application_id): void
     {
+        // Delete hospitality orders (lines, changelog, documents, then orders)
+        $hospitalityOrderRepo = new HospitalityOrderRepository();
+        $hospitalityOrderRepo->deleteByApplicationId($application_id);
+
         // First, delete documents (including physical files)
         $this->deleteApplicationDocuments($application_id);
 
@@ -652,6 +663,8 @@ class ApplicationRepository
                 ]);
             }
         }
+
+        $this->syncApplicationFromDate($applicationId);
     }
 
     /**
@@ -701,6 +714,8 @@ class ApplicationRepository
                 ':to_' => $this->formatDateForDatabase($date['to_'])
             ]);
         }
+
+        $this->syncApplicationFromDate($applicationId);
     }
 
     /**
@@ -871,7 +886,7 @@ class ApplicationRepository
      */
     public function fetchOrders(int $application_id): array
     {
-        $sql = "SELECT po.*, pol.*, am.unit,
+        $sql = "SELECT po.*, pol.*, am.unit, am.article_cat_id,
                 CASE WHEN r.name IS NULL THEN s.name ELSE r.name END AS name
                 FROM bb_purchase_order po
                 JOIN bb_purchase_order_line pol ON po.id = pol.order_id
@@ -983,6 +998,18 @@ class ApplicationRepository
     private function generateSecret(int $length = 16): string
     {
         return bin2hex(random_bytes($length));
+    }
+
+    /**
+     * Update bb_application.from_ to the earliest date from bb_application_date
+     */
+    public function syncApplicationFromDate(int $applicationId): void
+    {
+        $sql = "UPDATE bb_application SET from_ = (
+            SELECT MIN(from_) FROM bb_application_date WHERE application_id = :app_id
+        ) WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':app_id' => $applicationId, ':id' => $applicationId]);
     }
 
     /**

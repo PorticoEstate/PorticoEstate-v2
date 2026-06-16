@@ -417,6 +417,7 @@ class booking_uibooking extends booking_uicommon
 
 	public function add()
 	{
+		$isJsonRequest = self::handleJsonPost();
 		$errors = array();
 		$booking = array();
 		$booking['cost'] = 0;
@@ -569,6 +570,13 @@ class booking_uibooking extends booking_uicommon
 					$booking['secret'] = $this->generate_secret();
 					$receipt = $this->bo->add($booking);
 				}
+				if ($isJsonRequest) {
+					self::sendJsonResponse([
+						'id' => $receipt['id'],
+						'type' => 'booking',
+						'edit_url' => '/?menuaction=booking.uibooking.show&id=' . $receipt['id'],
+					], 201);
+				}
 				self::redirect(array('menuaction' => 'booking.uimassbooking.schedule', 'id' => $booking['building_id']));
 			}
 			else if (($_POST['recurring'] == 'on' || $_POST['outseason'] == 'on') && !$_errors && $step > 1)
@@ -638,6 +646,7 @@ class booking_uibooking extends booking_uicommon
 								$allocation['active'] = '1';
 								$allocation['completed'] = '0';
 								$receipt = $this->allocation_bo->add($allocation);
+								$this->allocation_bo->so->update_id_string($receipt['id']);
 								$booking['allocation_id'] = $receipt['id'];
 								if ($application_id != '0')
 								{
@@ -646,7 +655,6 @@ class booking_uibooking extends booking_uicommon
 								$booking['secret'] = $this->generate_secret();
 								$receipt = $this->bo->add($booking);
 								$booking['allocation_id'] = '';
-								$this->allocation_bo->so->update_id_string();
 							}
 							else
 							{
@@ -1078,6 +1086,32 @@ class booking_uibooking extends booking_uicommon
 		$jqcal2 = CreateObject('phpgwapi.jqcal2');
 		$jqcal2->add_listener('field_repeat_until', 'date');
 
+		// Check if booking is inside a cancellation deadline window
+		$cancellation_warning = '';
+		if (!empty($booking['resources']) && !empty($booking['from_']))
+		{
+			$from = new \DateTime($booking['from_'], new \DateTimeZone('Europe/Oslo'));
+			$now = new \DateTime('now', new \DateTimeZone('Europe/Oslo'));
+			$db = \App\Database\Db::getInstance();
+			$resourceIds = array_map('intval', $booking['resources']);
+			$placeholders = implode(',', $resourceIds);
+			$stmt = $db->prepare("SELECT name, cancellation_deadline_value, cancellation_deadline_unit FROM bb_resource WHERE id IN ({$placeholders})");
+			$stmt->execute();
+			while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
+			{
+				$seconds = self::deadlineToSeconds((int)$row['cancellation_deadline_value'], $row['cancellation_deadline_unit']);
+				if ($seconds > 0)
+				{
+					$cutoff = (clone $from)->modify("-{$seconds} seconds");
+					if ($now > $cutoff)
+					{
+						$cancellation_warning = lang('cancellation_deadline_warning', $row['name']);
+						break;
+					}
+				}
+			}
+		}
+
 		if ($step < 2)
 		{
 			self::render_template_xsl('booking_delete', array(
@@ -1087,6 +1121,7 @@ class booking_uibooking extends booking_uicommon
 				'interval' => $field_interval,
 				'repeat_until' => $repeat_until,
 				'delete_allocation' => $delete_allocation,
+				'cancellation_warning' => $cancellation_warning,
 			));
 		}
 		elseif ($step == 2)
@@ -1283,5 +1318,16 @@ class booking_uibooking extends booking_uicommon
 			'comment' => $comment,
 			'cost' => (float)$cost
 		);
+	}
+
+	private static function deadlineToSeconds(int $value, ?string $unit): int
+	{
+		if (!$value || !$unit) return 0;
+		switch ($unit) {
+			case 'hours': return $value * 3600;
+			case 'days': return $value * 86400;
+			case 'weeks': return $value * 604800;
+			default: return 0;
+		}
 	}
 }

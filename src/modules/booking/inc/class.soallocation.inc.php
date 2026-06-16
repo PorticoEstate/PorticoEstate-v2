@@ -125,7 +125,7 @@
 				return; /* Basic validation failed */
 			}
 
-			if (false == (boolean)intval($entity['active']))
+			if (false == (bool)intval($entity['active']))
 			{
 				return; //Don't care about if allocation is within necessary boundaries if dealing with inactivated entity
 			}
@@ -359,11 +359,15 @@
 			return	$db->transaction_commit();
 		}
 
-		public function update_id_string()
+		public function update_id_string($allocation_id = null)
 		{
 			$db = $this->db;
 			$table_name = $this->table_name;
 			$sql = "UPDATE $table_name SET id_string = cast(id AS varchar)";
+			if ($allocation_id)
+			{
+				$sql .= " WHERE id = " . (int)$allocation_id;
+			}
 			$db->query($sql, __LINE__, __FILE__);
 		}
 

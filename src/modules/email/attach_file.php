@@ -150,7 +150,7 @@
 	&& ($file_tmp_name != '')
 	&& ($file_tmp_name != 'none'))
 	{
-		srand((double)microtime()*1000000);
+		srand((float)microtime()*1000000);
 		$random_number = rand(100000000,999999999);
 		$newfilename = md5($file_tmp_name.', '.$file_name.', '.$GLOBALS['phpgw_info']['user']['sessionid'].time().getenv('REMOTE_ADDR').$random_number);
 

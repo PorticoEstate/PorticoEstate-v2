@@ -1,11 +1,14 @@
 var d;
 var vendor_id = 0;
 var amount = 0;
-var sUrl_workorder = phpGWLink('index.php', {'menuaction': 'property.uiworkorder.edit'});
 
 formatLinkproject = function (key, oData)
 {
-	return "<a href=" + sUrl_workorder + "&id=" + oData[key] + ">" + oData[key] + "</a>";
+	var url = phpGWLink('index.php', {
+		menuaction: 'property.uiworkorder.edit',
+		id: oData[key]
+	});
+	return "<a href=" + url + ">" + oData[key] + "</a>";
 };
 
 
@@ -531,8 +534,8 @@ window.on_location_updated = function (location_code)
 {
 	location_code = location_code || $("#loc1").val();
 
-	var oArgs = {menuaction: 'property.uilocation.get_location_exception', location_code: location_code};
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var oArgs = {location_code: location_code};
+	var requestUrl = phpGWLink('property/location/location-exception', oArgs);
 
 	$.ajax({
 		type: 'POST',
@@ -595,7 +598,7 @@ $(document).ready(function ()
 		language: "no",
 		createTag: function (params)
 		{
-			var term = $.trim(params.term);
+			var term = (params.term || '').trim();
 
 			if (term === '')
 			{

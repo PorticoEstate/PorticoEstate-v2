@@ -3,7 +3,7 @@
 namespace App\modules\bookingfrontend\controllers\applications;
 
 use App\modules\bookingfrontend\helpers\ApplicationHelper;
-use App\modules\bookingfrontend\helpers\ResponseHelper;
+use App\helpers\ResponseHelper;
 use App\modules\bookingfrontend\services\applications\ApplicationCommentsService;
 use App\modules\bookingfrontend\services\applications\ApplicationService;
 use Psr\Http\Message\ResponseInterface;

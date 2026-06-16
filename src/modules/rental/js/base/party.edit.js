@@ -9,7 +9,7 @@ $(document).ready(function ()
 	var previous_party_query = '';
 	$('#contract_query').on('keyup change', function ()
 	{
-		if ($.trim($(this).val()) != $.trim(previous_party_query))
+		if (($(this).val() || '').trim() != (previous_party_query || '').trim())
 		{
 			filterDataContract('search', {'value': $(this).val()});
 			previous_party_query = $(this).val();
@@ -24,7 +24,7 @@ $(document).ready(function ()
 	var previous_status_date;
 	$("#status_date").on('keyup change', function ()
 	{
-		if ($.trim($(this).val()) != $.trim(previous_status_date))
+		if (($(this).val() || '').trim() != (previous_status_date || '').trim())
 		{
 			filterDataContract('status_date', $(this).val());
 			previous_status_date = $(this).val();
@@ -46,7 +46,7 @@ $(document).ready(function ()
 	var previous_document_query = '';
 	$('#document_query').on('keyup change', function ()
 	{
-		if ($.trim($(this).val()) != $.trim(previous_document_query))
+		if (($(this).val() || '').trim() != (previous_document_query || '').trim())
 		{
 			filterDataDocument('search', {'value': $(this).val()});
 			previous_document_query = $(this).val();
@@ -68,7 +68,7 @@ $(document).ready(function ()
 			alert('no file selected');
 			return false;
 		}
-		if ($.trim($('#document_title').val()) === '')
+		if (($('#document_title').val() || '').trim() === '')
 		{
 			alert('enter document title');
 			return false;

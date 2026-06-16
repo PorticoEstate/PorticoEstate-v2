@@ -1,4 +1,4 @@
-import {createContext, FC, PropsWithChildren, useContext, useMemo} from 'react';
+import {createContext, FC, PropsWithChildren, useCallback, useContext, useMemo, useRef, useState} from 'react';
 import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
 import {usePartialApplications} from "@/service/hooks/api-hooks";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
@@ -14,6 +14,8 @@ interface CalendarContextType {
 	enabledResources: Set<string>
 	setResourcesHidden: (value: boolean) => void
 	resourcesHidden: boolean
+	resourceHighlight: boolean;
+	triggerResourceHighlight: () => void;
 	currentBuilding?: number | string;
 	currentOrganization?: number | string;
 	calendarViewMode: ICalendarViewMode;
@@ -39,6 +41,11 @@ export const useCalenderViewMode = () => {
 export const useResourcesHidden = () => {
 	const ctx = useCalendarContext();
 	return {resourcesHidden: ctx.resourcesHidden, setResourcesHidden: ctx.setResourcesHidden};
+}
+
+export const useResourceHighlight = () => {
+	const ctx = useCalendarContext();
+	return {resourceHighlight: ctx.resourceHighlight, triggerResourceHighlight: ctx.triggerResourceHighlight};
 }
 export const useCurrentBuilding = () => {
 	const ctx = useCalendarContext();
@@ -68,13 +75,26 @@ export const useCalendarContext = () => {
 	return context;
 };
 
-interface CalendarContextProps extends Omit<CalendarContextType, 'tempEvents' | 'calendarViewMode'> {
+interface CalendarContextProps extends Omit<CalendarContextType, 'tempEvents' | 'calendarViewMode' | 'resourceHighlight' | 'triggerResourceHighlight'> {
 	seasons?: Season[];
 }
 
 const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) => {
 	const {data: cartItems} = usePartialApplications();
 	const {data: resources} = useBuildingResources(props.currentBuilding);
+	const [resourceHighlight, setResourceHighlight] = useState(false);
+	const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const triggerResourceHighlight = useCallback(() => {
+		if (highlightTimerRef.current) {
+			clearTimeout(highlightTimerRef.current);
+		}
+		setResourceHighlight(true);
+		highlightTimerRef.current = setTimeout(() => {
+			setResourceHighlight(false);
+			highlightTimerRef.current = null;
+		}, 2000);
+	}, []);
 
 
 	const viewMode: ICalendarViewMode = useMemo(() => {
@@ -177,6 +197,8 @@ const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) =>
 			currentOrganization: props.currentOrganization,
 			setResourcesHidden: props.setResourcesHidden,
 			resourcesHidden: props.resourcesHidden,
+			resourceHighlight,
+			triggerResourceHighlight,
 			tempEvents: tempEvents,
 			enabledResources: props.enabledResources,
 			setEnabledResources: props.setEnabledResources,

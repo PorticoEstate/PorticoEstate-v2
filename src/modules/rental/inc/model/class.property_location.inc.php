@@ -58,7 +58,7 @@
 
 		public function set_area_gros( $area_gros )
 		{
-			$this->area_gros = (double)$area_gros;
+			$this->area_gros = (float)$area_gros;
 		}
 
 		public function get_area_gros()
@@ -68,7 +68,7 @@
 
 		public function set_area_net( $area_net )
 		{
-			$this->area_net = (double)$area_net;
+			$this->area_net = (float)$area_net;
 		}
 
 		public function get_area_net()

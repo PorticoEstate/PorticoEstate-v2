@@ -1,0 +1,280 @@
+// Notification bell + dropdown — translated 1:1 from the Claude Design preview
+// (preview/notification-bell.html). Uses Designsystemet (--ds-*) tokens so it
+// adopts the app's live theme, while keeping the prototype's exact dimensions.
+
+.bellWrap {
+	position: relative;
+	display: inline-flex;
+}
+
+// ---- Tertiary trigger button (mirrors Designsystemet Button variant=tertiary)
+.trigger {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	font: inherit;
+	font-weight: 500;
+	font-size: 0.9375rem;
+	color: var(--ds-color-neutral-text-default);
+	background: transparent;
+	border: none;
+	border-radius: var(--ds-border-radius-md, 6px);
+	padding: 0.5rem 0.75rem;
+	cursor: pointer;
+	transition: background-color 0.12s ease;
+
+	&:hover {
+		background: var(--ds-color-surface-hover, var(--ds-color-neutral-surface-hover));
+	}
+}
+
+.badgeWrap {
+	position: relative;
+	display: inline-flex;
+}
+
+.badge {
+	position: absolute;
+	top: -6px;
+	right: -7px;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 4px;
+	border-radius: 999px;
+	background: var(--ds-color-danger-base-default);
+	color: #fff;
+	font-size: 0.6875rem;
+	font-weight: 600;
+	display: grid;
+	place-items: center;
+	border: 2px solid var(--ds-color-neutral-background-default, #fff);
+	line-height: 1;
+}
+
+// ---- Dropdown panel
+.panel {
+	position: absolute;
+	top: calc(100% + 8px);
+	right: 0;
+	width: 380px;
+	max-width: calc(100vw - 2rem);
+	background: var(--ds-color-neutral-background-default, #fff);
+	border: 1px solid var(--ds-color-border-subtle);
+	border-radius: var(--ds-border-radius-lg, 12px);
+	box-shadow: 0 6px 24px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.08);
+	overflow: hidden;
+	z-index: 40;
+}
+
+.panelHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	padding: 0.85rem 1rem;
+	border-bottom: 1px solid var(--ds-color-border-subtle);
+}
+
+.panelTitle {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+.markAll {
+	font: inherit;
+	font-size: 0.8125rem;
+	font-weight: 500;
+	color: var(--ds-color-accent-base-default);
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	padding: 0.25rem 0.4rem;
+	border-radius: var(--ds-border-radius-md, 6px);
+	white-space: nowrap;
+
+	&:hover {
+		background: var(--ds-color-surface-hover, var(--ds-color-neutral-surface-hover));
+		text-decoration: underline;
+	}
+}
+
+.list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	max-height: 460px;
+	overflow-y: auto;
+	// No sideways scroll — long titles/messages wrap instead.
+	overflow-x: hidden;
+	// Facebook-style: keep scroll momentum inside the panel; don't bleed into
+	// the page behind once you hit the top/bottom of the list.
+	overscroll-behavior: contain;
+	scroll-behavior: smooth;
+
+	// Thin, subtle, rounded scrollbar that sits inside the rounded panel.
+	scrollbar-width: thin;
+	scrollbar-color: var(--ds-color-border-default, rgba(0, 0, 0, 0.25)) transparent;
+
+	&::-webkit-scrollbar {
+		width: 8px;
+	}
+
+	&::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	&::-webkit-scrollbar-thumb {
+		background-color: var(--ds-color-border-default, rgba(0, 0, 0, 0.25));
+		border-radius: 999px;
+		// Inset the thumb so it reads as a slim pill, like FB's overlay bar.
+		border: 2px solid transparent;
+		background-clip: content-box;
+	}
+
+	&:hover::-webkit-scrollbar-thumb,
+	&::-webkit-scrollbar-thumb:hover {
+		background-color: var(--ds-color-text-subtle, rgba(0, 0, 0, 0.4));
+	}
+}
+
+.item {
+	box-sizing: border-box;
+	display: flex;
+	gap: 0.75rem;
+	width: 100%;
+	padding: 0.8rem 1rem;
+	text-align: left;
+	text-decoration: none;
+	color: inherit;
+	background: transparent;
+	border: none;
+	border-bottom: 1px solid var(--ds-color-border-subtle);
+	cursor: pointer;
+	font: inherit;
+	transition: background-color 0.12s ease;
+
+	&:last-child {
+		border-bottom: none;
+	}
+
+	&:hover,
+	&:focus-visible {
+		background: var(--ds-color-surface-subtle, var(--ds-color-neutral-surface-tinted));
+	}
+}
+
+.itemUnread {
+	background: var(--ds-color-accent-surface-tinted);
+
+	&:hover,
+	&:focus-visible {
+		background: var(--ds-color-accent-surface-hover, var(--ds-color-accent-surface-tinted));
+	}
+}
+
+.avatar {
+	flex: none;
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	background: var(--ds-color-surface-subtle, var(--ds-color-neutral-surface-tinted));
+	color: var(--ds-color-text-subtle, var(--ds-color-neutral-text-subtle));
+	display: grid;
+	place-items: center;
+}
+
+.itemUnread .avatar {
+	background: var(--ds-color-neutral-background-default, #fff);
+	color: var(--ds-color-accent-base-default);
+}
+
+.body {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.15rem;
+}
+
+.titleRow {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+	min-width: 0;
+}
+
+.title {
+	margin: 0;
+	min-width: 0;
+	font-size: 0.875rem;
+	line-height: 1.35;
+	font-weight: 400;
+	overflow-wrap: anywhere;
+}
+
+.itemUnread .title {
+	font-weight: 600;
+}
+
+.dot {
+	flex: none;
+	width: 8px;
+	height: 8px;
+	margin-top: 6px;
+	border-radius: 50%;
+	background: var(--ds-color-accent-base-default);
+}
+
+.message {
+	margin: 0;
+	font-size: 0.8125rem;
+	color: var(--ds-color-text-subtle, var(--ds-color-neutral-text-subtle));
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	overflow-wrap: anywhere;
+}
+
+.time {
+	margin: 0;
+	font-size: 0.75rem;
+	color: var(--ds-color-text-subtle, var(--ds-color-neutral-text-subtle));
+}
+
+.empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 2.75rem 1rem;
+	color: var(--ds-color-text-subtle, var(--ds-color-neutral-text-subtle));
+	text-align: center;
+	font-size: 0.9375rem;
+}
+
+.loading {
+	display: flex;
+	justify-content: center;
+	padding: 2.75rem 1rem;
+}
+
+.panelFooter {
+	display: flex;
+	justify-content: center;
+	padding: 0.7rem 1rem;
+	border-top: 1px solid var(--ds-color-border-subtle);
+}
+
+.footerLink {
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: var(--ds-color-accent-base-default);
+	text-decoration: none;
+
+	&:hover {
+		text-decoration: underline;
+	}
+}

@@ -589,48 +589,50 @@
 			//echo 'get_loaded_extensions returns:<br /><pre>'; print_r(get_loaded_extensions()); echo '</pre>';
 			//echo 'phpinfo returns:<br /><pre>'; print_r(phpinfo()); echo '</pre>';
 			
-			echo 'SA_MESSAGES: ['.(string)SA_MESSAGES.']<br />'."\r\n";
-			echo 'SA_RECENT: ['.(string)SA_RECENT.']<br />'."\r\n";
-			echo 'SA_UNSEEN: ['.(string)SA_UNSEEN.']<br />'."\r\n";
-			echo 'SA_UIDNEXT: ['.(string)SA_UIDNEXT.']<br />'."\r\n";
-			echo 'SA_UIDVALIDITY: ['.(string)SA_UIDVALIDITY.']<br />'."\r\n";
-			echo 'SA_ALL: ['.(string)SA_ALL.']<br />'."\r\n";
-			
-			echo 'SORTDATE: ['.(string)SORTDATE.']<br />'."\r\n";
-			echo 'SORTARRIVAL: ['.(string)SORTARRIVAL.']<br />'."\r\n";
-			echo 'SORTFROM: ['.(string)SORTFROM.']<br />'."\r\n";
-			echo 'SORTSUBJECT: ['.(string)SORTSUBJECT.']<br />'."\r\n";
-			echo 'SORTTO: ['.(string)SORTTO.']<br />'."\r\n";
-			echo 'SORTCC: ['.(string)SORTCC.']<br />'."\r\n";
-			echo 'SORTSIZE: ['.(string)SORTSIZE.']<br />'."\r\n";
-			
-			echo 'TYPETEXT: ['.(string)TYPETEXT.']<br />'."\r\n";
-			echo 'TYPEMULTIPART: ['.(string)TYPEMULTIPART.']<br />'."\r\n";
-			echo 'TYPEMESSAGE: ['.(string)TYPEMESSAGE.']<br />'."\r\n";
-			echo 'TYPEAPPLICATION: ['.(string)TYPEAPPLICATION.']<br />'."\r\n";
-			echo 'TYPEAUDIO: ['.(string)TYPEAUDIO.']<br />'."\r\n";
-			echo 'TYPEIMAGE: ['.(string)TYPEIMAGE.']<br />'."\r\n";
-			echo 'TYPEVIDEO: ['.(string)TYPEVIDEO.']<br />'."\r\n";
-			echo 'TYPEOTHER: ['.(string)TYPEOTHER.']<br />'."\r\n";
-			echo 'TYPEMODEL: ['.(string)TYPEMODEL.']<br />'."\r\n";
-			
-			echo 'ENC7BIT: ['.(string)ENC7BIT.']<br />'."\r\n";
-			echo 'ENC8BIT: ['.(string)ENC8BIT.']<br />'."\r\n";
-			echo 'ENCBINARY: ['.(string)ENCBINARY.']<br />'."\r\n";
-			echo 'ENCBASE64: ['.(string)ENCBASE64.']<br />'."\r\n";
-			echo 'ENCQUOTEDPRINTABLE: ['.(string)ENCQUOTEDPRINTABLE.']<br />'."\r\n";
-			echo 'ENCOTHER: ['.(string)ENCOTHER.']<br />'."\r\n";
-			echo 'ENCUU: ['.(string)ENCUU.']<br />'."\r\n";
-			
-			echo 'FT_UID: ['.(string)FT_UID.']<br />'."\r\n";
-			echo 'FT_PEEK: ['.(string)FT_PEEK.']<br />'."\r\n";
-			echo 'FT_NOT: ['.(string)FT_NOT.']<br />'."\r\n";
-			echo 'FT_INTERNAL: ['.(string)FT_INTERNAL.']<br />'."\r\n";
-			echo 'FT_PREFETCHTEXT: ['.(string)FT_PREFETCHTEXT.']<br />'."\r\n";
-  
-			echo 'SE_UID: ['.(string)SE_UID.']<br />'."\r\n";
-			echo 'SE_FREE: ['.(string)SE_FREE.']<br />'."\r\n";
-			echo 'SE_NOPREFETCH: ['.(string)SE_NOPREFETCH.']<br />'."\r\n";
+			$imap_constants = array(
+				'SA_MESSAGES' => 1,
+				'SA_RECENT' => 2,
+				'SA_UNSEEN' => 4,
+				'SA_UIDNEXT' => 8,
+				'SA_UIDVALIDITY' => 16,
+				'SA_ALL' => 31,
+				'SORTDATE' => 0,
+				'SORTARRIVAL' => 1,
+				'SORTFROM' => 2,
+				'SORTSUBJECT' => 3,
+				'SORTTO' => 4,
+				'SORTCC' => 5,
+				'SORTSIZE' => 6,
+				'TYPETEXT' => 0,
+				'TYPEMULTIPART' => 1,
+				'TYPEMESSAGE' => 2,
+				'TYPEAPPLICATION' => 3,
+				'TYPEAUDIO' => 4,
+				'TYPEIMAGE' => 5,
+				'TYPEVIDEO' => 6,
+				'TYPEOTHER' => 8,
+				'TYPEMODEL' => 7,
+				'ENC7BIT' => 0,
+				'ENC8BIT' => 1,
+				'ENCBINARY' => 2,
+				'ENCBASE64' => 3,
+				'ENCQUOTEDPRINTABLE' => 4,
+				'ENCOTHER' => 5,
+				'ENCUU' => 6,
+				'FT_UID' => 1,
+				'FT_PEEK' => 2,
+				'FT_NOT' => 4,
+				'FT_INTERNAL' => 8,
+				'FT_PREFETCHTEXT' => 16,
+				'SE_UID' => 1,
+				'SE_FREE' => 2,
+				'SE_NOPREFETCH' => 4,
+			);
+
+			foreach ($imap_constants as $name => $value)
+			{
+				echo $name . ': [' . (string) $value . ']<br />' . "\r\n";
+			}
 			
 		}
 		

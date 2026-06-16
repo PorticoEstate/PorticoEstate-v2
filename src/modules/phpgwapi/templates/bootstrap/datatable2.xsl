@@ -1503,7 +1503,46 @@ console.log(app_method_referrer);
 							},
 							fnOnEdited: function(status, sOldValue, sNewCellDisplayValue, aPos0, aPos1, aPos2)
 							{
-								document.getElementById("message").innerHTML += '<br/>' + status;
+								var feedbackText = '';
+								var feedbackStatus = '';
+
+								if (typeof status === 'object' && status !== null)
+								{
+									feedbackStatus = status.status || '';
+									feedbackText = status.message || status.status || '';
+								}
+								else if (typeof status === 'string')
+								{
+									try
+									{
+										var parsedStatus = JSON.parse(status);
+										if (parsedStatus && typeof parsedStatus === 'object')
+										{
+											feedbackStatus = parsedStatus.status || '';
+											feedbackText = parsedStatus.message || parsedStatus.status || '';
+										}
+									}
+									catch (e)
+									{
+										feedbackText = status;
+									}
+								}
+
+								if (!feedbackText)
+								{
+									feedbackText = String(status);
+								}
+
+								if (feedbackStatus === 'success')
+								{
+									feedbackText = 'OK: ' + feedbackText;
+								}
+								else if (feedbackStatus === 'error')
+								{
+									feedbackText = 'ERROR: ' + feedbackText;
+								}
+
+								document.getElementById("message").innerHTML += '<br/>' + feedbackText;
 								setTimeout(function(){
 									document.getElementById("message").innerHTML = '';
 								}, 1000);
@@ -1780,7 +1819,7 @@ console.log(app_method_referrer);
 				var previous_<xsl:value-of select="id"/>;
 				$("#filter_<xsl:value-of select="id"/>").on('keyup change', function ()
 				{
-				if ( $.trim($(this).val()) != $.trim(previous_<xsl:value-of select="id"/>) )
+				if ( $(this).val().trim() != (previous_<xsl:value-of select="id"/> || '').trim() )
 				{
 				filterData('<xsl:value-of select="id"/>', $(this).val());
 				previous_<xsl:value-of select="id"/> = $(this).val();

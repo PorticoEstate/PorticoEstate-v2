@@ -78,6 +78,22 @@
 	define ('SE_UID',1); // used with IMAP_SORT, IMAP_SEARCH,
 	define ('SE_FREE',2); // Return the search program to free storage after finishing NOT used by PHP
 	define ('SE_NOPREFETCH',4); // used with IMAP_SORT , don't really understand it though
+	
+	// PHP 8.4+ removed constants - define PorticoEstate IMAP compatibility layer
+	defined('PE_IMAP_TYPETEXT') || define('PE_IMAP_TYPETEXT', 0);
+	defined('PE_IMAP_TYPEMULTIPART') || define('PE_IMAP_TYPEMULTIPART', 1);
+	defined('PE_IMAP_TYPEMESSAGE') || define('PE_IMAP_TYPEMESSAGE', 2);
+	defined('PE_IMAP_TYPEAPPLICATION') || define('PE_IMAP_TYPEAPPLICATION', 3);
+	defined('PE_IMAP_TYPEAUDIO') || define('PE_IMAP_TYPEAUDIO', 4);
+	defined('PE_IMAP_TYPEIMAGE') || define('PE_IMAP_TYPEIMAGE', 5);
+	defined('PE_IMAP_TYPEVIDEO') || define('PE_IMAP_TYPEVIDEO', 6);
+	defined('PE_IMAP_TYPEOTHER') || define('PE_IMAP_TYPEOTHER', 8);
+	defined('PE_IMAP_ENC7BIT') || define('PE_IMAP_ENC7BIT', 0);
+	defined('PE_IMAP_ENC8BIT') || define('PE_IMAP_ENC8BIT', 1);
+	defined('PE_IMAP_ENCBINARY') || define('PE_IMAP_ENCBINARY', 2);
+	defined('PE_IMAP_ENCBASE64') || define('PE_IMAP_ENCBASE64', 3);
+	defined('PE_IMAP_ENCQUOTEDPRINTABLE') || define('PE_IMAP_ENCQUOTEDPRINTABLE', 4);
+	defined('PE_IMAP_ENCOTHER') || define('PE_IMAP_ENCOTHER', 5);
 		//SE_UID	Return UIDs instead of sequence numbers
 		//SE_NOPREFETCH	Don't prefetch searched messages.
 	
@@ -1266,14 +1282,14 @@
 		{
 			switch ($type_int)
 			{
-				case TYPETEXT		: $type_str = 'text'; break;
-				case TYPEMULTIPART	: $type_str = 'multipart'; break;
-				case TYPEMESSAGE		: $type_str = 'message'; break;
-				case TYPEAPPLICATION	: $type_str = 'application'; break;
-				case TYPEAUDIO		: $type_str = 'audio'; break;
-				case TYPEIMAGE		: $type_str = 'image'; break;
-				case TYPEVIDEO		: $type_str = 'video'; break;
-				case TYPEOTHER		: $type_str = 'other'; break;
+				case PE_IMAP_TYPETEXT		: $type_str = 'text'; break;
+				case PE_IMAP_TYPEMULTIPART	: $type_str = 'multipart'; break;
+				case PE_IMAP_TYPEMESSAGE		: $type_str = 'message'; break;
+				case PE_IMAP_TYPEAPPLICATION	: $type_str = 'application'; break;
+				case PE_IMAP_TYPEAUDIO		: $type_str = 'audio'; break;
+				case PE_IMAP_TYPEIMAGE		: $type_str = 'image'; break;
+				case PE_IMAP_TYPEVIDEO		: $type_str = 'video'; break;
+				case PE_IMAP_TYPEOTHER		: $type_str = 'other'; break;
 				default			: $type_str = 'unknown';
 			}
 			return $type_str;
@@ -1310,12 +1326,12 @@
 		{
 			switch ($encoding_int)
 			{
-				case ENC7BIT	: $encoding_str = '7bit'; break;
-				case ENC8BIT	: $encoding_str = '8bit'; break;
-				case ENCBINARY	: $encoding_str = 'binary';  break;
-				case ENCBASE64	: $encoding_str = 'base64'; break;
-				case ENCQUOTEDPRINTABLE : $encoding_str = 'quoted-printable'; break;
-				case ENCOTHER	: $encoding_str = 'other';  break;
+				case PE_IMAP_ENC7BIT	: $encoding_str = '7bit'; break;
+				case PE_IMAP_ENC8BIT	: $encoding_str = '8bit'; break;
+				case PE_IMAP_ENCBINARY	: $encoding_str = 'binary';  break;
+				case PE_IMAP_ENCBASE64	: $encoding_str = 'base64'; break;
+				case PE_IMAP_ENCQUOTEDPRINTABLE : $encoding_str = 'quoted-printable'; break;
+				case PE_IMAP_ENCOTHER	: $encoding_str = 'other';  break;
 				case ENCUU	: $encoding_str = 'uu';  break;
 				default		: $encoding_str = 'other';
 			}

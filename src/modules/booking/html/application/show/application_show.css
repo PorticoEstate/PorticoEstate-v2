@@ -1,0 +1,491 @@
+/* ── Application Show ────────────────────────────────────── */
+
+.app-show {
+	/*max-width: 960px;*/
+	/*margin: 0 auto;*/
+}
+
+/* Loading */
+.app-show__loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 4rem 1rem;
+	gap: 1rem;
+	color: var(--ds-color-text-subtle, #68707c);
+}
+
+/* Header */
+.app-show__header {
+	padding-top: 1rem;
+	margin-bottom: 1.5rem;
+}
+
+.app-show__title-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	flex-wrap: wrap;
+	margin-bottom: 0.5rem;
+}
+
+.app-show__title-left {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+}
+
+.app-show__title {
+	font-size: 1.5rem;
+	font-weight: 600;
+	margin: 0;
+}
+
+/* Key-facts card (meta) */
+.app-show__meta {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+	gap: 1rem 1.5rem;
+	margin-bottom: 1.5rem;
+}
+
+.app-show__meta dl {
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.15rem;
+}
+
+.app-show__meta dt {
+	font-size: 0.8125rem;
+	font-weight: 500;
+	color: var(--ds-color-neutral-text-subtle, #68707c);
+}
+
+.app-show__meta dd {
+	margin: 0;
+	font-size: 0.9375rem;
+	color: var(--ds-color-neutral-text-default, #1e293b);
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	flex-wrap: wrap;
+}
+
+/* Tabs (Designsystemet) */
+.app-show__tabs-wrap {
+	margin-bottom: 1.5rem;
+}
+
+.ds-tabs [role="tabpanel"] {
+	padding: 1.25rem 0 0;
+}
+
+/* Section cards */
+.app-show__card {
+	margin-bottom: 1.25rem;
+}
+
+.app-show__card-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	margin-bottom: 1rem;
+}
+
+.app-show__card-title {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.app-show__card-icon {
+	display: inline-flex;
+	color: var(--ds-color-neutral-text-subtle, #68707c);
+}
+
+.app-show__card-icon svg {
+	width: 1.125rem;
+	height: 1.125rem;
+}
+
+.app-show__card-aside {
+	color: var(--ds-color-neutral-text-subtle, #68707c);
+	font-size: 0.8125rem;
+}
+
+/* Definition grid (label/value pairs) */
+.app-show__def {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.75rem 1.5rem;
+	margin: 0;
+}
+
+.app-show__def--3 {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.app-show__def-wide {
+	grid-column: 1 / -1;
+}
+
+.app-show__def > div {
+	display: flex;
+	flex-direction: column;
+	gap: 0.15rem;
+	min-width: 0;
+}
+
+.app-show__def dt {
+	font-size: 0.8125rem;
+	font-weight: 500;
+	color: var(--ds-color-neutral-text-subtle, #68707c);
+}
+
+.app-show__def dd {
+	margin: 0;
+	font-size: 0.9375rem;
+	color: var(--ds-color-neutral-text-default, #1e293b);
+	overflow-wrap: anywhere;
+}
+
+/* Inline tag row (e.g. target audience) */
+.app-show__tags-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+/* Tables nested inside cards */
+.app-show__card .ds-table {
+	width: 100%;
+}
+
+/* Right-align numeric columns (Digdir tables have no built-in num helper) */
+.app-show__card .ds-table th.app-show__num,
+.app-show__card .ds-table td.app-show__num {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
+/* Comments / Notes list */
+.app-show__comment {
+	padding: 0.75rem;
+	border-bottom: 1px solid var(--ds-color-border-subtle, #f1f5f9);
+}
+
+.app-show__comment:last-child {
+	border-bottom: none;
+}
+
+.app-show__comment-meta {
+	font-size: 0.8125rem;
+	color: var(--ds-color-text-subtle, #68707c);
+	margin-bottom: 0.25rem;
+}
+
+.app-show__comment-text {
+	font-size: 0.875rem;
+}
+
+/* Related application card grid */
+.app-show__card-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+	margin-bottom: 1.5rem;
+}
+
+.app-show__app-card {
+	width: 388px;
+	display: flex;
+	flex-direction: column;
+	/* tighten ds-card's inter-row spacing for this compact card */
+	--dsc-card-content-margin-block: var(--ds-size-2) 0;
+}
+
+.app-show__app-card--current {
+	--dsc-card-border-color: var(--ds-color-accent-border-default);
+	--dsc-card-background: var(--ds-color-accent-surface-default);
+}
+
+.app-show__app-card-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	font-weight: 600;
+}
+
+.app-show__app-card-meta {
+	font-size: 0.8125rem;
+	color: var(--ds-color-text-subtle, #68707c);
+}
+
+.app-show__app-card-dates {
+	font-size: 0.8125rem;
+	color: var(--ds-color-text-subtle, #68707c);
+}
+
+.app-show__app-card-field {
+	font-size: 0.8125rem;
+}
+
+.app-show__app-card-actions {
+	margin-top: auto;
+	padding-top: 0.75rem;
+}
+
+/* Empty state */
+.app-show__empty {
+	padding: 1rem;
+	text-align: center;
+	color: var(--ds-color-text-subtle, #68707c);
+	font-size: 0.875rem;
+	font-style: italic;
+}
+
+/* Toolbar */
+.app-show__toolbar-container:empty {
+	display: none;
+}
+
+.app-show__toolbar {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+/* Designsystemet dropdown menus (toolbar) */
+.app-show__menu-trigger .app-show__icon {
+	width: 1.125rem;
+	height: 1.125rem;
+}
+
+.app-show__menu {
+	min-width: 17rem;
+	max-width: 22rem;
+}
+
+.app-show__menu h3 {
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--ds-color-neutral-text-subtle, #68707c);
+}
+
+.app-show__menu-sep {
+	border: none;
+	border-top: 1px solid var(--ds-color-neutral-border-subtle, #e5e7eb);
+	margin: 0.25rem 0;
+}
+
+.app-show__menu .ds-dropdown__item {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	text-align: left;
+	background: none;
+	border: none;
+	border-radius: var(--ds-border-radius-sm, 0.25rem);
+	color: var(--ds-color-neutral-text-default, #1e293b);
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.app-show__menu .ds-dropdown__item:hover {
+	background: var(--ds-color-neutral-surface-hover, #f1f5f9);
+}
+
+.app-show__menu .ds-dropdown__item[aria-disabled="true"] {
+	opacity: 0.45;
+	pointer-events: none;
+}
+
+.app-show__menu .ds-dropdown__item > svg {
+	width: 1.125rem;
+	height: 1.125rem;
+	flex: none;
+	color: var(--ds-color-neutral-text-subtle, #68707c);
+}
+
+.app-show__menu .ds-dropdown__item[data-color="success"] > svg {
+	color: var(--ds-color-success-base-default, #068718);
+}
+
+.app-show__menu .ds-dropdown__item[data-color="danger"] > svg {
+	color: var(--ds-color-danger-base-default, #c01b1b);
+}
+
+.app-show__menu .ds-dropdown__item > span {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.app-show__menu .ds-dropdown__item-desc {
+	font-size: 0.75rem;
+	font-weight: 400;
+	color: var(--ds-color-neutral-text-subtle, #68707c);
+}
+
+/* Split button (primary action + dropdown caret) */
+.app-show__split {
+	display: inline-flex;
+}
+
+.app-show__split > .ds-button:first-child {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+.app-show__split-toggle {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	padding-inline: var(--ds-size-2);
+	min-width: 0;
+}
+
+.app-show__split-toggle svg {
+	width: 1rem;
+	height: 1rem;
+}
+
+.app-show__split-menu {
+	min-width: 12rem;
+}
+
+/* Designsystemet dialog */
+.app-show__dialog-footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.5rem;
+}
+
+/* Control text sizing.
+   Digdir's `data-size` only sets font-size on typography components — for
+   buttons/menu items the text is `inherit`. The legacy frame's base font is
+   12px while Digdir spacing is rem-based (16px), so inherited control text
+   ends up too small. Pin control text to a rem-based scale to match. */
+.app-show .ds-button,
+.app-show__dialog .ds-button,
+.app-show__menu .ds-dropdown__item {
+	font-size: 0.875rem;
+	line-height: 1.4;
+}
+
+.app-show .ds-button[data-size="sm"],
+.app-show__dialog .ds-button[data-size="sm"] {
+	font-size: 0.8125rem;
+}
+
+/* Designsystemet alert spacing */
+.app-show__alert {
+	margin: 0 0 1rem;
+}
+
+.app-show__toolbar-disabled {
+	opacity: 0.4;
+	pointer-events: none;
+	cursor: default;
+}
+
+/* Terms footer */
+.app-show__terms-footer {
+	padding: 0.75rem 1rem;
+	font-size: 0.875rem;
+	font-style: italic;
+	color: var(--ds-color-text-subtle, #68707c);
+}
+
+/* Schedule link icon */
+.app-show__schedule-link {
+	display: inline-flex;
+	align-items: center;
+	cursor: pointer;
+	text-decoration: none;
+	color: var(--ds-color-accent-text-subtle, #2a5566);
+}
+
+/* Collision schedule icon (in dates table) stays a warning colour */
+.app-show__schedule-link[data-schedule-date] {
+	color: var(--ds-color-danger-text-default, #dc2626);
+	margin-left: 0.5rem;
+}
+
+.app-show__schedule-link svg {
+	width: 0.95rem;
+	height: 0.95rem;
+}
+
+.app-show__schedule-link:hover {
+	opacity: 0.7;
+}
+
+/* Recurring section */
+.app-show__recurring-badges {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+}
+
+/* Create-all button shares the badges row, pushed to the far right */
+.app-show__recurring-create {
+	margin-left: auto;
+}
+
+.app-show__loading-inline {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2rem;
+}
+
+.app-show__conflict-text {
+	font-size: 0.75rem;
+	color: var(--ds-color-text-subtle, #68707c);
+}
+
+/* Dialog form fields stack with consistent spacing */
+.app-show__dialog .ds-field + .ds-field {
+	margin-top: 1rem;
+}
+
+/* Toast */
+.app-show__toast {
+	position: fixed;
+	top: 1rem;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 1100;
+	min-width: 300px;
+	/* Keep the default alert layout: the ds-alert icon is an absolutely-positioned
+	   ::before with reserved inline-start padding. Centering the text pulls it back
+	   over the icon, so leave the message start-aligned beside the icon. */
+	text-align: start;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	animation: app-toast-in 0.25s ease-out;
+}
+
+@keyframes app-toast-in {
+	from { opacity: 0; transform: translateX(-50%) translateY(-1rem); }
+	to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+	.app-show__def,
+	.app-show__def--3 {
+		grid-template-columns: 1fr;
+	}
+	.app-show__app-card {
+		width: 100%;
+	}
+}

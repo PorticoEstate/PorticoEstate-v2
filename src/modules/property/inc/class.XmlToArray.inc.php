@@ -458,14 +458,8 @@
 			{
 				$this->_logError('parse', 'XML parser failed: '
 					. ucfirst(xml_error_string(xml_get_error_code($parser))));
-				xml_parser_free($parser);
 				return;
 			}
-			xml_parser_free($parser);
-
-			$tree	 = array();
-			$i		 = 0;
-
 			$tagname = ( $this->_lower_case_tags ) ? strtolower($vals[$i]['tag']) : $vals[$i]['tag'];
 			if (isset($vals[$i]['attributes']))
 			{

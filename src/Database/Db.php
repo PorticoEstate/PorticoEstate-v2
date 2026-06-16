@@ -31,6 +31,11 @@ class Db
 	public $join = 'JOIN';
 	public $left_join = 'LEFT JOIN';
 
+	private function failWithError($message)
+	{
+		throw new \RuntimeException($message);
+	}
+
 	private function __construct($dsn, $username = null, $password = null, $options = null)
 	{
 		if ($dsn === '')
@@ -324,9 +329,34 @@ class Db
 		return $value;
 	}
 
+	public function marshal($value, $type)
+	{
+		$type = strtolower($type);
+		if ($value === null)
+		{
+			return '';
+		}
+		else if (in_array($type, array('int', 'integer', 'smallint', 'bigint')))
+		{
+			return intval($value);
+		}
+		else if (in_array($type, array('decimal', 'float', 'double')))
+		{
+			return floatval($value);
+		}
+		else if ($type == 'json')
+		{
+			return json_encode($value, JSON_THROW_ON_ERROR);
+		}
+		else
+		{
+			return $this->db_addslashes($value);
+		}
+	}
+
 	function valid_field_type($type)
 	{
-		$valid_types = array('int', 'decimal', 'string', 'json');
+		$valid_types = array('int', 'decimal', 'string', 'json', 'text', 'varchar', 'char', 'float', 'double', 'integer', 'smallint', 'bigint');
 		return in_array($type, $valid_types);
 	}
 
@@ -905,13 +935,12 @@ class Db
 				{
 					$msg = "SQL: {$sql}<br/><br/> in File: $file<br/><br/> on Line: $line<br/><br/>";
 					$msg .= 'Error: ' . ($e->getMessage());
-					trigger_error($msg, E_USER_ERROR);
+					$this->failWithError($msg);
 				}
 				else
 				{
-					trigger_error("$sql\n" . $e->getMessage(), E_USER_ERROR);
+					$this->failWithError("$sql\n" . $e->getMessage());
 				}
-				exit;
 			}
 			else if ($this->Exception_On_Error && $this->Halt_On_Error == 'yes')
 			{
@@ -927,6 +956,75 @@ class Db
 		return true;
 	}
 
+	/**
+	 * Execute a prepared query with named parameters and optional LIMIT/OFFSET pagination.
+	 *
+	 * Uses PDO::prepare()/execute() so callers can safely bind user-supplied values.
+	 * Pass $num_rows = null to fetch all rows without any LIMIT clause (useful for
+	 * COUNT queries and single-record lookups).  Pass $num_rows = 0 to use the
+	 * application default page size (same behaviour as limit_query()).
+	 *
+	 * @param string   $sql
+	 * @param array    $params    Named placeholder values, e.g. [':id' => 5]
+	 * @param int      $offset    Row offset for pagination (ignored when $num_rows is null)
+	 * @param mixed    $line
+	 * @param string   $file
+	 * @param int|null $num_rows  Rows per page, 0 = default page size, null = no LIMIT
+	 * @return bool
+	 */
+	public function limit_query_with_params($sql, array $params = array(), $offset = 0, $line = '', $file = '', $num_rows = 0)
+	{
+		if (in_array($this->config['db_type'], array('mssql', 'mssqlnative', 'sqlsrv')))
+		{
+			if (preg_match('/(^SELECT)/i', $sql) && !preg_match('/TOP 100 PERCENT/i', $sql))
+			{
+				$sql = str_replace(array('SELECT', 'SELECT TOP 100 PERCENT DISTINCT'), array('SELECT TOP 100 PERCENT', 'SELECT DISTINCT TOP 100 PERCENT'), $sql);
+			}
+		}
+
+		if ($num_rows !== null)
+		{
+			$sql = $this->get_offset($sql, $offset, $num_rows);
+		}
+
+		$this->_get_fetchmode();
+
+		try
+		{
+			$statement_object = $this->db->prepare($sql);
+			$statement_object->execute($params);
+			$this->affected_rows = $statement_object->rowCount();
+			$this->resultSet = $statement_object->fetchAll($this->pdo_fetchmode);
+		}
+		catch (PDOException $e)
+		{
+			if ($e && !$this->Exception_On_Error && $this->Halt_On_Error == 'yes')
+			{
+				$this->transaction_abort();
+
+				if ($file)
+				{
+					$this->failWithError('Error: ' . $e->getMessage() . "<br>SQL: $sql\n in File: $file\n on Line: $line\n");
+				}
+				else
+				{
+					$this->failWithError("$sql\n" . $e->getMessage());
+				}
+			}
+			else if ($this->Exception_On_Error && $this->Halt_On_Error == 'yes')
+			{
+				$this->transaction_abort();
+				throw $e;
+			}
+			else if ($this->Exception_On_Error && $this->Halt_On_Error != 'yes')
+			{
+				throw $e;
+			}
+		}
+
+		$this->delayPointer = true;
+		return true;
+	}
 
 	/**
 	 * Execute a query with limited result set
@@ -938,7 +1036,6 @@ class Db
 	 * @param integer $num_rows number of rows to return (optional), if unset will use $GLOBALS['phpgw_info']['user']['preferences']['common']['maxmatchs']
 	 * @return integer current query id if sucesful and null if fails
 	 */
-
 	function limit_query($sql, $offset, $line = '', $file = '', $num_rows = 0)
 	{
 		//			self::sanitize($sql);//killing performance
@@ -965,13 +1062,12 @@ class Db
 
 				if ($file)
 				{
-					trigger_error('Error: ' . $e->getMessage() . "<br>SQL: $sql\n in File: $file\n on Line: $line\n", E_USER_ERROR);
+					$this->failWithError('Error: ' . $e->getMessage() . "<br>SQL: $sql\n in File: $file\n on Line: $line\n");
 				}
 				else
 				{
-					trigger_error("$sql\n" . $e->getMessage(), E_USER_ERROR);
+					$this->failWithError("$sql\n" . $e->getMessage());
 				}
-				exit;
 			}
 			else if ($this->Exception_On_Error && $this->Halt_On_Error == 'yes')
 			{

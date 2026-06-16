@@ -247,6 +247,7 @@ const CheckoutContent: FC = () => {
                 console.log('🐛 CheckoutContent: About to call checkoutMutation.mutateAsync with data:', {
                     organizerName: eventDetails.organizerName,
                     customerType: billingDetails?.customerType || 'ssn',
+                    organizationId: billingDetails.organizationId,
                     organizationNumber: billingDetails.organizationNumber,
                     organizationName: billingDetails.organizationName,
                     contactName: billingDetails.contactName,
@@ -263,6 +264,7 @@ const CheckoutContent: FC = () => {
             checkoutMutation.mutateAsync({
                 organizerName: eventDetails.organizerName,
                 customerType: billingDetails?.customerType || 'ssn',
+                organizationId: billingDetails.organizationId,
                 organizationNumber: billingDetails.organizationNumber,
                 organizationName: billingDetails.organizationName,
                 contactName: billingDetails.contactName,
@@ -349,6 +351,7 @@ const CheckoutContent: FC = () => {
             const paymentData = {
                 organizerName: eventDetails.organizerName,
                 customerType: billingDetails?.customerType || 'ssn',
+                organizationId: billingDetails.organizationId,
                 organizationNumber: billingDetails.organizationNumber,
                 organizationName: billingDetails.organizationName,
                 contactName: billingDetails.contactName,
@@ -431,6 +434,7 @@ const CheckoutContent: FC = () => {
                 onVippsPayment={shouldShowExternalPaymentOptions ? handleVippsPayment : undefined}
                 paymentEligibility={paymentEligibility}
                 vippsLoading={vippsPaymentMutation.isPending}
+                submitting={checkoutMutation.isPending}
                 documentsValidated={!regulationDocuments?.length || areAllDocumentsChecked}
                 documentsSectionRef={documentsSectionRef}
                 showDocumentsSection={true}

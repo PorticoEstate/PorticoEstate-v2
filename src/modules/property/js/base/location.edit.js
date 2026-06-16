@@ -2,6 +2,45 @@
 var link_history = null;
 var set_history_data = 0;
 
+formatLocationDocumentLink = function (key, oData)
+{
+	var name = (oData && oData[key]) ? String(oData[key]) : '';
+	var url = (oData && oData.document_url) ? String(oData.document_url) : '';
+	var source = (oData && oData.document_source) ? String(oData.document_source) : '';
+	if (!name)
+	{
+		return '';
+	}
+
+	if (!url)
+	{
+		if (source === 'generic' && oData && oData.id)
+		{
+			url = phpGWLink('index.php', {
+				menuaction: 'property.uigeneric_document.view_file',
+				file_id: oData.id
+			});
+		}
+		else if (source === 'location' && oData && oData.id)
+		{
+			url = phpGWLink('index.php', {
+				menuaction: 'property.uidocument.view_file',
+				id: oData.id
+			});
+		}
+	}
+
+	if (!url)
+	{
+		return PorticoClientUtils.escapeHtml(name);
+	}
+
+	return PorticoClientUtils.buildAnchorHtml(name, url, {
+		target: '_blank',
+		rel: 'noopener'
+	});
+};
+
 $(document).ready(function ()
 {
 	$('#doc_type').change( function()
@@ -100,8 +139,8 @@ this.onActionsClick = function (action)
 		data.control_start_date = $("#control_start_date").val();
 		data.repeat_type = $("#repeat_type").val();
 
-		var oArgs = {menuaction: 'property.controller_helper.update_control_serie', location_id : location_id, id: item_id };
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var oArgs = {location_id : location_id, id: item_id };
+		var requestUrl = phpGWLink('property/location/component/update-control-serie', oArgs);
 		$.ajax({
 			type: 'POST',
 			dataType: 'json',
@@ -121,42 +160,21 @@ this.onActionsClick = function (action)
 		});
 
 
-		var oArgs2 = {menuaction: 'property.uilocation.get_controls_at_component', location_id : location_id, id: item_id};
-		var requestUrl2 = phpGWLink('index.php', oArgs2, true);
+		var oArgs2 = {location_id : location_id, id: item_id};
+		var requestUrl2 = phpGWLink('property/location/component/controls', oArgs2);
 		JqueryPortico.updateinlineTableHelper('datatable-container_4', requestUrl2);
 	}
 }
 
 function parseURL(url)
 {
-	var parser = document.createElement('a'),
-		searchObject = {},
-		queries, split, i;
-	// Let the browser do the work
-	parser.href = url;
-	// Convert query string to object
-	queries = parser.search.replace(/^\?/, '').split('&');
-	for (i = 0; i < queries.length; i++)
-	{
-		split = queries[i].split('=');
-		searchObject[split[0]] = split[1];
-	}
-	return {
-		protocol: parser.protocol,
-		host: parser.host,
-		hostname: parser.hostname,
-		port: parser.port,
-		pathname: parser.pathname,
-		search: parser.search,
-		searchObject: searchObject,
-		hash: parser.hash
-	};
+	return PorticoClientUtils.parseURL(url);
 }
 
 add_control = function ()
 {
 	oArgs = {location_id:location_id, id: item_id};
-	oArgs.menuaction = 'property.controller_helper.add_control';
+	var requestUrl = null;
 	oArgs.control_id = $("#control_id").val();
 	oArgs.control_responsible = $("#control_responsible").val();
 	oArgs.control_start_date = $("#control_start_date").val();
@@ -170,7 +188,7 @@ add_control = function ()
 	oArgs.repeat_interval = $("#repeat_interval").val();
 	oArgs.controle_time = $("#controle_time").val();
 	oArgs.service_time = $("#service_time").val();
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	requestUrl = phpGWLink('property/location/component/add-control', oArgs);
 //								alert(requestUrl);
 
 	$("#controller_receipt").html("");
@@ -196,8 +214,8 @@ add_control = function ()
 		}
 	});
 
-	var oArgs2 = {menuaction: 'property.uilocation.get_controls_at_component', location_id: location_id, id: item_id};
-	var requestUrl2 = phpGWLink('index.php', oArgs2, true);
+	var oArgs2 = {location_id: location_id, id: item_id};
+	var requestUrl2 = phpGWLink('property/location/component/controls', oArgs2);
 	JqueryPortico.updateinlineTableHelper('datatable-container_4', requestUrl2);
 };
 
@@ -207,8 +225,8 @@ function updateCaseTable(check_list_id)
 	{
 		return;
 	}
-	var oArgs = {menuaction: 'property.uilocation.get_cases_for_checklist', check_list_id: check_list_id};
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var oArgs = {check_list_id: check_list_id};
+	var requestUrl = phpGWLink('property/location/component/cases-for-checklist', oArgs);
 	JqueryPortico.updateinlineTableHelper('datatable-container_6', requestUrl);
 }
 
@@ -218,12 +236,12 @@ $(document).ready(function ()
 	var click_action_on_table = false;
 	$("#check_lst_time_span").change(function ()
 	{
-		var oArgs = {menuaction: 'property.uilocation.get_checklists', location_id: location_id, id: item_id, year: $(this).val()};
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var oArgs = {location_id: location_id, id: item_id, year: $(this).val()};
+		var requestUrl = phpGWLink('property/location/component/checklists', oArgs);
 		var _oTable = JqueryPortico.updateinlineTableHelper('datatable-container_5', requestUrl);
 
-		oArgs = {menuaction: 'property.uilocation.get_cases', location_id: location_id, id: item_id, year: $(this).val()};
-		requestUrl = phpGWLink('index.php', oArgs, true);
+		oArgs = {location_id: location_id, id: item_id, year: $(this).val()};
+		requestUrl = phpGWLink('property/location/component/cases', oArgs);
 		JqueryPortico.updateinlineTableHelper('datatable-container_6', requestUrl);
 
 		if (click_action_on_table == false)
@@ -251,4 +269,414 @@ $(document).ready(function ()
 		updateCaseTable(check_list_id);
 	});
 
+});
+
+function parseFormKeyTokens(key)
+{
+	return PorticoClientUtils.parseFormKeyTokens(key);
+}
+
+function setNestedValue(target, key, value)
+{
+	PorticoClientUtils.setNestedValue(target, key, value);
+}
+
+function formDataToObject(formData)
+{
+	return PorticoClientUtils.formDataToObject(formData);
+}
+
+function getLocationFieldValue(form, selector)
+{
+	var el = form.querySelector(selector);
+	if (!el)
+	{
+		return '';
+	}
+	return (el.value || '').trim();
+}
+
+function buildLocationCodeFromLocationForm(form)
+{
+	var explicitLocationCode = getLocationFieldValue(form, 'input[name="location_code"]');
+	if (explicitLocationCode)
+	{
+		return explicitLocationCode;
+	}
+
+	var locationParts = [];
+	var locationInputs = form.querySelectorAll('input[name]');
+	for (var i = 0; i < locationInputs.length; i++)
+	{
+		var input = locationInputs[i];
+		var name = input.getAttribute('name') || '';
+		var match = name.match(/^loc(\d+)$/);
+		if (!match)
+		{
+			continue;
+		}
+
+		var value = (input.value || '').trim();
+		if (!value)
+		{
+			continue;
+		}
+
+		locationParts.push({
+			level: parseInt(match[1], 10),
+			value: value
+		});
+	}
+
+	if (!locationParts.length)
+	{
+		return '';
+	}
+
+	locationParts.sort(function (a, b)
+	{
+		return a.level - b.level;
+	});
+
+	return locationParts.map(function (part)
+	{
+		return part.value;
+	}).join('-');
+}
+
+function createLocationNavigationClient(form)
+{
+	if (window.PorticoBoundaryClients && typeof window.PorticoBoundaryClients.createLocationClients === 'function')
+	{
+		return window.PorticoBoundaryClients.createLocationClients(form, {
+			parseURL: parseURL,
+			getLocationFieldValue: getLocationFieldValue
+		}).navigation;
+	}
+
+	var parsed = parseURL(form.action);
+	var query = parsed.searchObject || {};
+
+	return {
+		buildEditUrl: function (locationCode)
+		{
+			var typeId = query.type_id || '';
+			var lookupTenant = query.lookup_tenant || '';
+			var target = 'index.php?menuaction=property.uilocation.edit&location_code=' + encodeURIComponent(locationCode);
+
+			if (typeId)
+			{
+				target += '&type_id=' + encodeURIComponent(typeId);
+			}
+			if (lookupTenant)
+			{
+				target += '&lookup_tenant=' + encodeURIComponent(lookupTenant);
+			}
+
+			return target;
+		}
+	};
+}
+
+function createLocationApiClient(form)
+{
+	if (window.PorticoBoundaryClients && typeof window.PorticoBoundaryClients.createLocationClients === 'function')
+	{
+		return window.PorticoBoundaryClients.createLocationClients(form, {
+			parseURL: parseURL,
+			getLocationFieldValue: getLocationFieldValue
+		}).api;
+	}
+
+	var parsed = parseURL(form.action);
+	var query = parsed.searchObject || {};
+
+	return {
+		buildSaveRequest: function ()
+		{
+			var clickHistory = query.click_history || '';
+			var queryParts = [];
+			var originalLocationCode = (
+				query.location_code
+				|| getLocationFieldValue(form, 'input[name="location_code"]')
+				|| getLocationFieldValue(form, 'input[name="values[location_code]"]')
+				|| ''
+			).trim();
+
+			if (!originalLocationCode)
+			{
+				var pathMatch = parsed.pathname ? parsed.pathname.match(/\/property\/location\/([^\/?#]+)/) : null;
+				if (pathMatch && pathMatch[1])
+				{
+					originalLocationCode = decodeURIComponent(pathMatch[1]);
+				}
+			}
+			var rawLocationId = '';
+
+			if (typeof location_id !== 'undefined' && location_id !== null)
+			{
+				rawLocationId = String(location_id);
+			}
+
+			var routeLocationId = parseInt(rawLocationId, 10);
+			var hasExistingLocation = (!isNaN(routeLocationId) && routeLocationId > 0) || !!originalLocationCode;
+			var isUpdate = hasExistingLocation && !!originalLocationCode;
+			var requestUrl = isUpdate
+				? '/property/location/' + encodeURIComponent(originalLocationCode)
+				: '/property/location';
+
+			if (clickHistory)
+			{
+				queryParts.push('click_history=' + encodeURIComponent(clickHistory));
+			}
+
+			if (queryParts.length)
+			{
+				requestUrl += '?' + queryParts.join('&');
+			}
+
+			return {
+				url: requestUrl,
+				method: isUpdate ? 'PUT' : 'POST'
+			};
+		}
+	};
+}
+
+function buildLocationRestRequest(form)
+{
+	return createLocationApiClient(form).buildSaveRequest();
+}
+
+function clearLocationFormAlerts(form)
+{
+	PorticoClientUtils.clearFormAlerts(form, '.rest-submit-alert');
+}
+
+function renderLocationFormErrorAlert(form, messages)
+{
+	PorticoClientUtils.renderFormAlert(form, messages, {
+		selector: '.rest-submit-alert',
+		className: 'rest-submit-alert form-error alert alert-danger',
+		headingText: 'Saving location failed',
+		headingTag: 'strong',
+		useList: true
+	});
+}
+
+function renderLocationFormSuccessAlert(form, message)
+{
+	PorticoClientUtils.renderFormAlert(form, message, {
+		selector: '.rest-submit-alert',
+		className: 'rest-submit-alert text-center alert alert-success',
+		role: 'alert'
+	});
+}
+
+function toErrorMessageArray(data)
+{
+	if (!data)
+	{
+		return ['Failed to save location. Please try again.'];
+	}
+
+	if (Array.isArray(data.errors) && data.errors.length)
+	{
+		return data.errors.map(function (entry)
+		{
+			if (typeof entry === 'string')
+			{
+				return entry;
+			}
+			if (entry && typeof entry.msg === 'string')
+			{
+				return entry.msg;
+			}
+			return '';
+		}).filter(function (msg)
+		{
+			return !!msg;
+		});
+	}
+
+	if (typeof data.message === 'string' && data.message)
+	{
+		return [data.message];
+	}
+
+	return ['Failed to save location. Please try again.'];
+}
+
+function buildLocationEditRedirectUrl(locationCode, form)
+{
+	return createLocationNavigationClient(form).buildEditUrl(locationCode);
+}
+
+$(document).ready(function ()
+{
+	var form = document.getElementById('form');
+	if (!form || !window.fetch)
+	{
+		return;
+	}
+
+	var isSubmitting = false;
+	var clickedSubmitter = null;
+
+	function findSaveSubmitter()
+	{
+		return form.querySelector('input[type="submit"][name="save"], button[type="submit"][name="save"]');
+	}
+
+	function shouldHandleRestSubmit(submitter)
+	{
+		if (submitter && submitter.name === 'save')
+		{
+			return true;
+		}
+
+		// Browser Enter-key submits can omit submitter; default to REST save when save button exists.
+		return !submitter && !!findSaveSubmitter();
+	}
+
+	function setSubmitButtonsDisabled(disabled)
+	{
+		var buttons = form.querySelectorAll('input[type="submit"], button[type="submit"]');
+		for (var i = 0; i < buttons.length; i++)
+		{
+			buttons[i].disabled = disabled;
+		}
+	}
+
+	$(form).on('click', 'input[type="submit"], button[type="submit"]', function ()
+	{
+		clickedSubmitter = this;
+	});
+
+	$(form).on('submit', function (e)
+	{
+		if (typeof $.fn.isValid === 'function')
+		{
+			var conf = $.extend({}, form.validationConfig || {}, {
+				modules: (form.validationConfig && form.validationConfig.modules) || 'location, date, security, file',
+				validateOnBlur: false,
+				scrollToTopOnError: true,
+				errorMessagePosition: 'top',
+				validateHiddenInputs: true
+			});
+
+			var valid = $('form').isValid(false, conf);
+			if (!valid)
+			{
+				e.preventDefault();
+				return false;
+			}
+		}
+
+		var submitter = (e.originalEvent && e.originalEvent.submitter)
+			? e.originalEvent.submitter
+			: clickedSubmitter;
+
+		if (!shouldHandleRestSubmit(submitter))
+		{
+			return true;
+		}
+
+		var restRequest = buildLocationRestRequest(form);
+		if (!restRequest)
+		{
+			return true;
+		}
+
+		if (isSubmitting)
+		{
+			e.preventDefault();
+			return false;
+		}
+
+		e.preventDefault();
+		clearLocationFormAlerts(form);
+		isSubmitting = true;
+		setSubmitButtonsDisabled(true);
+
+		var formData = new FormData(form);
+		if (submitter && submitter.name)
+		{
+			formData.set(submitter.name, submitter.value || '1');
+		}
+		else
+		{
+			formData.set('save', '1');
+		}
+
+		var dynamicLocationCode = buildLocationCodeFromLocationForm(form);
+		if (dynamicLocationCode)
+		{
+			formData.set('location_code', dynamicLocationCode);
+		}
+
+		fetch(restRequest.url, {
+			method: restRequest.method,
+			headers: {'Content-Type': 'application/json'},
+			credentials: 'same-origin',
+			body: JSON.stringify(formDataToObject(formData))
+		})
+			.then(function (response)
+			{
+				return response.json()
+					.catch(function ()
+					{
+						return null;
+					})
+					.then(function (data)
+					{
+						if (!response.ok)
+						{
+							var error = new Error('REST save failed');
+							error.responseData = data;
+							throw error;
+						}
+
+						return data;
+					});
+			})
+			.then(function (data)
+			{
+				if (!data || data.status === 'error')
+				{
+					isSubmitting = false;
+					setSubmitButtonsDisabled(false);
+					renderLocationFormErrorAlert(form, toErrorMessageArray(data));
+					form.scrollIntoView({behavior: 'smooth', block: 'start'});
+					return;
+				}
+
+				var savedLocationCode = data.location_code || (data.receipt && data.receipt.location_code) || '';
+				if (!savedLocationCode)
+				{
+					isSubmitting = false;
+					setSubmitButtonsDisabled(false);
+					renderLocationFormErrorAlert(form, ['Save succeeded, but no location code was returned']);
+					return;
+				}
+
+				renderLocationFormSuccessAlert(form, 'Location saved successfully');
+				form.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+				var redirectUrl = buildLocationEditRedirectUrl(savedLocationCode, form);
+				setTimeout(function ()
+				{
+					window.location.href = redirectUrl;
+				}, 700);
+			})
+			.catch(function (error)
+			{
+				isSubmitting = false;
+				setSubmitButtonsDisabled(false);
+				renderLocationFormErrorAlert(form, toErrorMessageArray(error && error.responseData));
+				form.scrollIntoView({behavior: 'smooth', block: 'start'});
+			});
+
+		return false;
+	});
 });

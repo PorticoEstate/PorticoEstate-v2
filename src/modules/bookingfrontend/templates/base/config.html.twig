@@ -1,0 +1,202 @@
+{# Config template #}
+{% block header %}
+<form method="POST" action="{{ action_url }}">
+	<table class="pure-table pure-table-bordered pure-table-striped pure-form">
+		<tr class="th">\n        <td colspan="2">&nbsp;<b>{{ lang('{{ title }}') }}</b></td>\n    </tr>\n\n    {# {{ title }} section #}
+		{% endblock %}
+		{% block body %}
+		<tr>
+			<td colspan="2">&nbsp;</td>
+		</tr>
+		<tr>
+			<td colspan="2">&nbsp;<b>{{ lang('bookingfrontend_settings') }}</b></td>
+		</tr>
+
+		<tr >
+			<td>{{ lang('develope_mode') }}:</td>
+			<td>
+				<select name="newsettings[develope_mode]" class="pure-u-1">
+					<option value="">{{ lang('No') }}</option>
+					<option value="True"{{ selected_develope_mode_True|raw }}>{{ lang('Yes') }}</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td>{{ lang('site_title') }}</td>
+			<td><input name="newsettings[site_title]" value="{{ value_site_title|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('footer_info') }}</td>
+			<td><input name="newsettings[footer_info]" value="{{ value_footer_info|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('footer_privacy_link') }}</td>
+			<td><input name="newsettings[footer_privacy_link]" value="{{ value_footer_privacy_link|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('remote_authentication') }}:</td>
+			<td>
+				<select name="newsettings[authentication_method]" class="pure-u-1">
+					{{ hook_authentication|raw }}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td>{{ lang('get_name_from_external_source') }}:</td>
+			<td>
+				<select name="newsettings[get_name_from_external]" class="pure-u-1">
+					{{ hook_get_name_from_external|raw }}
+				</select>
+			</td>
+		</tr>
+
+
+		<tr>
+			<td>{{ lang('bypass_external_login') }}:</td>
+			<td>
+				<select name="newsettings[bypass_external_login]" class="pure-u-1">
+					<option value="">{{ lang('No') }}</option>
+					<option value="True"{{ selected_bypass_external_login_True|raw }}>{{ lang('Yes') }}</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td>{{ lang('Use_cookies_to_pass_sessionid') }}:</td>
+			<td>
+				<select name="newsettings[usecookies]" class="pure-u-1">
+					<option value="">{{ lang('No') }}</option>
+					<option value="True"{{ selected_usecookies_True|raw }}>{{ lang('Yes') }}</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td>{{ lang('cookie_domain_for_sessions') }} - {{ lang('if_Same_as_framework_leave_empty') }}</td>
+			<td><input name="newsettings[cookie_domain]" value="{{ value_cookie_domain|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('Anonymous_user') }}:</td>
+			<td><input name="newsettings[anonymous_user]" value="{{ value_anonymous_user|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('Anonymous_password') }}:</td>
+			<td>
+				<input type="password" name="newsettings[anonymous_passwd]" value="{{ value_anonymous_passwd|raw }}" autocomplete="off"
+				   readonly="readonly" onfocus="this.removeAttribute('readonly');" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('custom_login_url') }}:</td>
+			<td><input name="newsettings[custom_login_url]" value="{{ value_custom_login_url|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('custom_login_url_parameter') }}:</td>
+			<td><input name="newsettings[login_parameter]" value="{{ value_login_parameter|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('login_apikey') }} MinId2:</td>
+			<td><input name="newsettings[apikey]" value="{{ value_apikey|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('login_webservicehost') }} MinId2:</td>
+			<td><input name="newsettings[webservicehost]" value="{{ value_webservicehost|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('login_apikey') }} Fiks folkeregister:</td>
+			<td><input name="newsettings[apikey_fiks_folkeregister]" value="{{ value_apikey_fiks_folkeregister|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('login_role_id') }} Fiks folkeregister:</td>
+			<td><input name="newsettings[role_id_fiks_folkeregister]" value="{{ value_role_id_fiks_folkeregister|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('username') }} Fiks folkeregister:</td>
+			<td><input name="newsettings[username_fiks_folkeregister]" value="{{ value_username_fiks_folkeregister|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('password') }} Fiks folkeregister:</td>
+			<td><input type="password" name="newsettings[password_fiks_folkeregister]" value="{{ value_password_fiks_folkeregister|raw }}" autocomplete="off"
+				readonly="readonly" onfocus="this.removeAttribute('readonly');" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('login_webservicehost') }} Fiks folkeregister:</td>
+			<td><input name="newsettings[webservicehost_fiks_folkeregister]" value="{{ value_webservicehost_fiks_folkeregister|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('Debug_external_logn') }}:</td>
+			<td>
+				<select name="newsettings[debug]" class="pure-u-1">
+					<option value="" {{ selected_debug_|raw }}> {{ lang('NO') }}: </option>
+					<option value="1" {{ selected_debug_1|raw }}> {{ lang('YES') }}: </option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td>{{ lang('Debug_local_login') }}:</td>
+			<td>
+				<select name="newsettings[debug_local_login]" class="pure-u-1">
+					<option value="" {{ selected_debug_local_login_|raw }}> {{ lang('NO') }}: </option>
+					<option value="1" {{ selected_debug_local_login_1|raw }}> {{ lang('YES') }}: </option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td>{{ lang('test_organization') }}:</td>
+			<td><input name="newsettings[test_organization]" value="{{ value_test_organization|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('test_person') }}:</td>
+			<td><input name="newsettings[test_ssn]" value="{{ value_test_ssn|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('google_tracker_id') }}:</td>
+			<td><input name="newsettings[tracker_id]" value="{{ value_tracker_id|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td> {{ lang('Matomo url') }}: </td>
+			<td><input name="newsettings[tracker_matomo_url]" value="{{ value_tracker_matomo_url|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td> {{ lang('Matomo site id') }}: </td>
+			<td><input type="number" name="newsettings[tracker_matomo_id]" value="{{ value_tracker_matomo_id|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('support_email_address') }}:</td>
+			<td><input name="newsettings[support_address]" value="{{ value_support_address|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('url_to_external_logout') }}:
+				<br/> {{ lang('Redirect_is_computed_if_url_ends_with') }} '='
+			</td>
+			<td><input name="newsettings[external_logout]" value="{{ value_external_logout|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('bookingfrontend_host') }}:
+				<br/> {{ lang('Needed_for_the_return_from_the_external_logout') }}
+			</td>
+			<td><input name="newsettings[bookingfrontend_host]" value="{{ value_bookingfrontend_host|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('manual') }}:</td>
+			<td><input name="newsettings[bookingfrontend_manual]" value="{{ value_bookingfrontend_manual|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr>
+			<td>{{ lang('uustatus') }}:</td>
+			<td><input name="newsettings[url_uustatus]" value="{{ value_url_uustatus|raw }}" class="pure-u-1"/></td>
+		</tr>
+
+
+		{% endblock %}
+		{% block footer %}
+		<tr class="th">
+			<td colspan="2">
+				&nbsp;
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2" align="center">
+				<input type="submit" name="submit" value="{{ lang('submit') }}" class="pure-button"/>
+				<input type="submit" name="cancel" value="{{ lang('cancel') }}" class="pure-button"/>
+			</td>
+		</tr>
+	</table>
+</form>
+{% endblock %}

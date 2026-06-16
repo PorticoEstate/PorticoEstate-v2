@@ -13,19 +13,19 @@
  */
 
 /*
-	   This program is free software: you can redistribute it and/or modify
-	   it under the terms of the GNU General Public License as published by
-	   the Free Software Foundation, either version 2 of the License, or
-	   (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 2 of the License, or
+   (at your option) any later version.
 
-	   This program is distributed in the hope that it will be useful,
-	   but WITHOUT ANY WARRANTY; without even the implied warranty of
-	   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	   GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-	   You should have received a copy of the GNU General Public License
-	   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-	 */
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 use App\helpers\Template;
 use App\modules\phpgwapi\security\Acl;
@@ -36,24 +36,21 @@ use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Hooks;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Locations;
+use App\modules\phpgwapi\services\Twig;
 
 
 /*
-	 * phpGroupWare - Administration - ACL manager logic
-	 *
-	 * @package phpgroupware
-	 * @subpackage admin
-	 *
-	 * @internal FIXME this is shitty insecure code - someone needs to fix this
-	 */
+ * phpGroupWare - Administration - ACL manager logic
+ *
+ * @package phpgroupware
+ * @subpackage admin
+ *
+ * @internal FIXME this is shitty insecure code - someone needs to fix this
+ */
 
 class admin_uiaclmanager
 {
 	var $account_id;
-	/**
-	 * @var object $_template reference to global template object
-	 */
-	protected $_template;
 
 	/**
 	 *@var object $_boacl business logic
@@ -111,15 +108,12 @@ class admin_uiaclmanager
 			phpgw::redirect_link('/index.php');
 		}
 
-		$this->_template	= new Template();
-		$this->_boacl		= CreateObject('admin.boaclmanager');
+		$this->_boacl = CreateObject('admin.boaclmanager');
 
 		$this->flags['menu_selection'] = 'admin::admin::addressmasters';
 		Settings::getInstance()->set('flags', $this->flags);
 		$this->phpgwapi_common = new phpgwapi_common();
 		$this->hooks = new Hooks();
-
-		
 	}
 
 	/**
@@ -130,7 +124,6 @@ class admin_uiaclmanager
 	protected function _common_header()
 	{
 		$this->phpgwapi_common->phpgw_header();
-		$this->_template->set_root(PHPGW_APP_TPL);
 	}
 
 	/**
@@ -144,42 +137,37 @@ class admin_uiaclmanager
 
 		$this->hooks->process('acl_manager', array('preferences'));
 
-		$this->_template->set_file('app_list', 'acl_applist.tpl');
-		$this->_template->set_block('app_list', 'list');
-		$this->_template->set_block('app_list', 'app_row');
-		$this->_template->set_block('app_list', 'app_row_noicon');
-		$this->_template->set_block('app_list', 'link_row');
-		$this->_template->set_block('app_list', 'spacer_row');
-
-		$this->_template->set_var('lang_header', lang('ACL Manager'));
+		// Initialize variables for template
+		$rows = '';
 
 		if (is_array($GLOBALS['acl_manager']))
 		{
 			foreach ($GLOBALS['acl_manager'] as $app => $locations)
 			{
 				$icon = $this->phpgwapi_common->image($app, array('navbar.gif', $app . '.gif'));
-				$this->_template->set_var('icon_backcolor', $GLOBALS['phpgw_info']['theme']['row_off']);
-				$this->_template->set_var('link_backcolor', $GLOBALS['phpgw_info']['theme']['row_off']);
-				$this->_template->set_var('app_name', lang($GLOBALS['phpgw_info']['navbar'][$app]['title']));
-				$this->_template->set_var('a_name', $app);
-				$this->_template->set_var('app_icon', $icon);
+				
+				// Prepare app row data
+				$appData = [
+					'icon_backcolor' => $GLOBALS['phpgw_info']['theme']['row_off'],
+					'link_backcolor' => $GLOBALS['phpgw_info']['theme']['row_off'],
+					'app_name'       => lang($GLOBALS['phpgw_info']['navbar'][$app]['title']),
+					'a_name'         => $app,
+					'app_icon'       => $icon
+				];
 
-				if ($icon)
-				{
-					$this->_template->fp('rows', 'app_row', true);
-				}
-				else
-				{
-					$this->_template->fp('rows', 'app_row_noicon', true);
+				// Render app row with Twig
+				if ($icon) {
+					$rows .= Twig::getInstance()->renderBlock('acl_applist.html.twig', 'app_row', $appData, 'admin');
+				} else {
+					$rows .= Twig::getInstance()->renderBlock('acl_applist.html.twig', 'app_row_noicon', $appData, 'admin');
 				}
 
-				//while (is_array($locations) && list($loc, $value) = each($locations))
 				if (is_array($locations))
 				{
 					foreach ($locations as $loc => $value)
 					{
 						$total_rights = 0;
-						//while (list($k, $v) = each($value['rights']))
+						
 						if (is_array($value['rights']))
 						{
 							foreach ($value['rights'] as $k => $v)
@@ -199,17 +187,31 @@ class admin_uiaclmanager
 								'account_id' => $this->userSettings['account_id']
 							);
 
-							$this->_template->set_var('link_location', phpgw::link('/index.php', $link_values));
-							$this->_template->set_var('lang_location', lang($value['name']));
-							$this->_template->fp('rows', 'link_row', true);
+							// Prepare link row data
+							$linkData = [
+								'link_location' => phpgw::link('/index.php', $link_values),
+								'lang_location' => lang($value['name'])
+							];
+							
+							// Render link row with Twig
+							$rows .= Twig::getInstance()->renderBlock('acl_applist.html.twig', 'link_row', $linkData, 'admin');
 						}
 					}
 				}
 
-				$this->_template->parse('rows', 'spacer_row', true);
+				// Add spacer row
+				$rows .= Twig::getInstance()->renderBlock('acl_applist.html.twig', 'spacer_row', [], 'admin');
 			}
 		}
-		$this->_template->pfp('out', 'list');
+
+		// Prepare final template data
+		$templateData = [
+			'lang_header' => lang('ACL Manager'),
+			'rows'        => $rows
+		];
+
+		// Render the template with Twig
+		echo Twig::getInstance()->renderBlock('acl_applist.html.twig', 'list', $templateData, 'admin');
 	}
 
 	/**
@@ -228,15 +230,11 @@ class admin_uiaclmanager
 
 		$this->hooks->single('acl_manager', $acl_app);
 
-
 		$this->_common_header();
-		$this->_template->set_file('form', 'acl_manager_form.tpl');
 
 		$acc = createobject('phpgwapi.accounts', $account_id);
 		$afn = (string) $this->accounts->get($account_id);
 
-		$msg = lang('Check items to <b>%1</b> to %2 for %3', $acl_manager['name'], $acl_app, $afn);
-		$this->_template->set_var('lang_message', $msg);
 		$link_values = array(
 			'menuaction' => 'admin.boaclmanager.submit',
 			'acl_app'    => $acl_app,
@@ -246,15 +244,10 @@ class admin_uiaclmanager
 
 		$this->acl->set_account_id($account_id);
 		$this->acl->read();
-
-		$this->_template->set_var('form_action', phpgw::link('/index.php', $link_values));
-		$this->_template->set_var('lang_title', lang('ACL Manager'));
-
 		$grants = $this->acl->get_rights($location, $acl_app);
 
 		$select = <<<HTML
 				<select name="acl_rights[]" multiple size="7">
-
 HTML;
 
 		foreach ($acl_manager['rights'] as $name => $value)
@@ -271,20 +264,25 @@ HTML;
 
 				$select .= <<<HTML
 					<option value="{$value}{$s}">{$name}</option>
-
 HTML;
 			}
 		}
-		$select = <<<HTML
+		$select .= <<<HTML
 				</select>
-
 HTML;
 
-		$this->_template->set_var('select_values', $select);
-		$this->_template->set_var('lang_submit', lang('submit'));
-		$this->_template->set_var('lang_cancel', lang('cancel'));
+		// Prepare template data
+		$templateData = [
+			'lang_message'   => lang('Check items to <b>%1</b> to %2 for %3', $acl_manager['name'], $acl_app, $afn),
+			'form_action'    => phpgw::link('/index.php', $link_values),
+			'lang_title'     => lang('ACL Manager'),
+			'select_values'  => $select,
+			'lang_submit'    => lang('submit'),
+			'lang_cancel'    => lang('cancel')
+		];
 
-		$this->_template->pfp('out', 'form');
+		// Render the template with Twig
+		echo Twig::getInstance()->renderBlock('acl_manager_form.html.twig', 'form', $templateData, 'admin');
 	}
 
 	/**

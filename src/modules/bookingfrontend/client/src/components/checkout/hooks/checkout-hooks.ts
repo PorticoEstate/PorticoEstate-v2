@@ -24,6 +24,7 @@ export interface CheckoutFormData {
     customerType: 'ssn' | 'organization_number';
 
     // Organization Details (optional based on customerType)
+    organizationId?: number;
     organizationNumber?: string;
     organizationName?: string;
 

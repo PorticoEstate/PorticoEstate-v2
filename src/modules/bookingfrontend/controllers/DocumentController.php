@@ -2,9 +2,9 @@
 
 namespace App\modules\bookingfrontend\controllers;
 
-use App\modules\bookingfrontend\models\Document;
-use App\modules\bookingfrontend\services\DocumentService;
-use App\modules\bookingfrontend\repositories\DocumentRepository;
+use App\modules\booking\models\Document;
+use App\modules\booking\services\DocumentService;
+use App\modules\booking\repositories\DocumentRepository;
 use App\helpers\ResponseHelper;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -263,7 +263,6 @@ class DocumentController
 
         // Rotate image
         $rotated = imagerotate($source, -$degrees, 0);
-        imagedestroy($source);
 
         if (!$rotated) {
             return $sourceFile;
@@ -289,7 +288,6 @@ class DocumentController
                 break;
         }
 
-        imagedestroy($rotated);
 
         return $success ? $tempFile : $sourceFile;
     }

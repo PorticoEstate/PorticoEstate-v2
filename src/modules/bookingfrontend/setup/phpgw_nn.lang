@@ -950,3 +950,104 @@ activity_and_organizer	bookingfrontend	nn	Aktivitet og arrangør
 title_help_text	bookingfrontend	nn	Vert vist offentleg i kalender og på infoskjerm. Skriv kva som skjer og kven som brukar rommet. Unngå sensitiv informasjon.
 title_placeholder	bookingfrontend	nn	T.d. "Trening – IL Brodd" eller "Bursdag – Kari Hansen"
 vipps_only_for_direct_bookings	bookingfrontend	nn	Vipps-betaling gjeld berre for direktebookingar. Søknader som krev saksbehandling vert sende inn til godkjenning.
+select_resource_before_application	bookingfrontend	nn	Du må velje ein ressurs før du kan opprette ein søknad
+hospitality	bookingfrontend	nn	Bevertning
+add_hospitality_order	bookingfrontend	nn	Legg til bevertning
+select_serving_date	bookingfrontend	nn	Velg dato
+select_serving_time	bookingfrontend	nn	Velg tid
+serving_time	bookingfrontend	nn	Serveringstid
+delivery_location	bookingfrontend	nn	Leveringsstad
+order_cutoff_warning	bookingfrontend	nn	Bestillinga må leggjast inn minst %1 %2 før serveringstidspunkt
+special_requirements	bookingfrontend	nn	Spesielle krav
+order_total	bookingfrontend	nn	Ordretotal
+article	bookingfrontend	nn	artikkel
+serving_at	bookingfrontend	nn	Servering i
+select_hospitality	bookingfrontend	nn	Vel servering
+cancellation_deadline_info	bookingfrontend	nn	Kan avbestillast innan %1
+cancellation_deadline_passed	bookingfrontend	nn	Avbestillingsfristen har gått ut
+cancellation_deadline_passed_warning	bookingfrontend	nn	Avbestillingsfristen har gått ut. Viss du bestiller vil du ikkje kunne avbestille.
+combined_application	bookingfrontend	nn	Kombinert søknad
+organization_number	bookingfrontend	nn	Organisasjonsnummer
+recurring_application	bookingfrontend	nn	Gjentakande
+age_group	bookingfrontend	nn	Aldersgruppe
+upload_document	bookingfrontend	nn	Last opp dokument
+delete_document	bookingfrontend	nn	Slett dokument
+file_too_large	bookingfrontend	nn	Fila er for stor (maks 2MB)
+invalid_file_type	bookingfrontend	nn	Ugyldig filtype
+upload_failed	bookingfrontend	nn	Opplasting feila
+reply	bookingfrontend	nn	Svar
+no documents available	bookingfrontend	nn	Ingen dokument tilgjengeleg
+new_comment_notification	bookingfrontend	nn	%1 har skrive ein kommentar
+close_calendar_without_season	bookingfrontend	nn	Steng kalender når bygg manglar sesong
+close_calendar_without_season_note	bookingfrontend	nn	Når aktiv blir bygg utan definert sesong vist som stengde
+notifications_title	bookingfrontend	nn	Varsel
+no_notifications	bookingfrontend	nn	Ingen varsel
+mark_all_read	bookingfrontend	nn	Marker alle som lese
+see_all_notifications	bookingfrontend	nn	Sjå alle varsel
+all	bookingfrontend	nn	Alle
+unread	bookingfrontend	nn	Ulesne
+load_more	bookingfrontend	nn	Last inn fleire
+no_unread_notifications	bookingfrontend	nn	Ingen ulesne varsel
+user_data	bookingfrontend	nn	Brukardata
+user_data_description	bookingfrontend	nn	Slik viser AktivKommune deg som søkjar. Endringar i namn og personnummer blir henta frå ID-porten.
+applications_description	bookingfrontend	nn	Alle søknader om leige du har sendt inn — som privatperson eller på vegner av ein organisasjon.
+waiting_for_response	bookingfrontend	nn	Ventar på svar
+finished	bookingfrontend	nn	Avslutta
+search_applications_placeholder	bookingfrontend	nn	Søk i tittel lokale eller organisasjon
+refresh	bookingfrontend	nn	Oppdater
+no_applications_match	bookingfrontend	nn	Ingen søknader matcha søket.
+first_date	bookingfrontend	nn	Første dato
+sent	bookingfrontend	nn	Sendt
+back_to_applications	bookingfrontend	nn	Tilbake til søknader
+case_history	bookingfrontend	nn	Saksgang
+updated	bookingfrontend	nn	Oppdatert
+times_and_venue	bookingfrontend	nn	Tider og lokale
+requested_times	bookingfrontend	nn	Førespurde tidsrom
+about_the_event	bookingfrontend	nn	Om arrangementet
+communication_with_case_officer	bookingfrontend	nn	Kommunikasjon med saksbehandlar
+send_message	bookingfrontend	nn	Send melding
+reply_to_case_officer	bookingfrontend	nn	Svar saksbehandlaren
+reply_placeholder	bookingfrontend	nn	Skriv eit svar … (synleg for deg og saksbehandlar)
+email_notification_on_reply	bookingfrontend	nn	Du vil få e-postvarsel når saksbehandlar svarar.
+quick_facts	bookingfrontend	nn	Snøggfakta
+contact_person	bookingfrontend	nn	Kontaktperson
+responsible_applicant	bookingfrontend	nn	Ansvarleg søkjar
+tips_while_waiting	bookingfrontend	nn	Tips medan du ventar
+processing_time_info	bookingfrontend	nn	Saksbehandlingstid er normalt 5-10 verkedagar. Du kan svare i kommentartråden dersom du har spørsmål eller vil endre noko.
+withdraw_application	bookingfrontend	nn	Trekk søknad
+confirm_cancel_title	bookingfrontend	nn	Trekk søknad
+confirm_cancel_description	bookingfrontend	nn	Er du sikker på at du vil trekkje denne søknaden? Handlinga kan ikkje angrast.
+application_pending_title	bookingfrontend	nn	Søknaden er til behandling
+application_pending_description	bookingfrontend	nn	Saksbehandlar vil ta stilling til søknaden din. Du kan følgje med i kommentartråden under.
+application_accepted_title	bookingfrontend	nn	Søknaden er godkjend
+application_accepted_description	bookingfrontend	nn	Du har no reservert tidene som er lista under.
+application_rejected_title	bookingfrontend	nn	Søknaden vart dessverre avslått
+application_rejected_description	bookingfrontend	nn	Du kan lese grunngjevinga i kommentartråden under eller kopiere søknaden som utgangspunkt for ein ny.
+on_behalf_of_organization	bookingfrontend	nn	På vegner av organisasjon
+invoice_after_event	bookingfrontend	nn	Faktura blir sendt etter at arrangementet er gjennomført.
+price_confirmed_on_approval	bookingfrontend	nn	Endeleg pris blir stadfesta når søknaden er godkjend.
+date	bookingfrontend	nn	dato
+num_dates	bookingfrontend	nn	datoar
+messages	bookingfrontend	nn	meldingar
+active_delegate	bookingfrontend	nn	Aktivt delegat
+organizations_you_represent	bookingfrontend	nn	Organisasjonar du representerer
+notifications_and_communication	bookingfrontend	nn	Varsel og kommunikasjon
+email_notifications	bookingfrontend	nn	E-postvarsel
+email_notifications_description	bookingfrontend	nn	Få e-post når status på søknadene dine endrar seg eller saksbehandlar kommenterer.
+sms_notifications	bookingfrontend	nn	SMS-varsel
+sms_notifications_description	bookingfrontend	nn	Få SMS dagen før ei booking eller dersom ein søknad nærmar seg svarfrist.
+newsletter	bookingfrontend	nn	Nyheitsbrev
+newsletter_description	bookingfrontend	nn	Tips om ledige lokale sesongopning og nye fasilitetar.
+logged_in_with_idporten	bookingfrontend	nn	Innlogga med ID-porten
+verified_via_idporten	bookingfrontend	nn	Verifisert via ID-porten
+ssn_from_idporten	bookingfrontend	nn	Personnummer blir henta frå ID-porten og kan ikkje endrast her.
+place	bookingfrontend	nn	Stad
+time_slots	bookingfrontend	nn	tidsrom
+download	bookingfrontend	nn	Last ned
+open_document	bookingfrontend	nn	Opne
+status_new	bookingfrontend	nn	Innsendt
+status_pending	bookingfrontend	nn	Til behandling
+status_accepted	bookingfrontend	nn	Godkjend
+status_rejected	bookingfrontend	nn	Avslått
+status_cancelled	bookingfrontend	nn	Trekt
+status_draft	bookingfrontend	nn	Kladd

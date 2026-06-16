@@ -257,6 +257,20 @@ class Resource
     public $booking_buffer_deadline;
 
     /**
+     * @ORM\Column(type="integer", nullable=true)
+     * @Expose
+     * @OA\Property(description="Cancellation deadline value (in the configured unit)", type="integer", nullable=true)
+     */
+    public $cancellation_deadline_value;
+
+    /**
+     * @ORM\Column(type="string", length=10, nullable=true)
+     * @Expose
+     * @OA\Property(description="Cancellation deadline unit (hours, days, weeks)", type="string", nullable=true)
+     */
+    public $cancellation_deadline_unit;
+
+    /**
      * @ORM\Column(type="json", nullable=true)
      * @Expose
      * @OA\Property(description="Description in JSON format", type="object", nullable=true)

@@ -28,8 +28,7 @@ this.fetch_vendor_contract = function ()
 
 	if ($("#vendor_id").val() != vendor_id)
 	{
-		var oArgs = {menuaction: 'property.uiworkorder.get_vendor_contract', vendor_id: $("#vendor_id").val()};
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = phpGWLink('property/workorder/lookups/vendor-contract', {vendor_id: $("#vendor_id").val()}, true);
 		var htmlString = "";
 
 		$.ajax({
@@ -109,8 +108,7 @@ $(document).ready(function ()
 
 	$("#global_category_id").change(function ()
 	{
-		var oArgs = {menuaction: 'property.boworkorder.get_category', cat_id: $(this).val()};
-		var requestUrl = phpGWLink('index.php', oArgs, true);
+		var requestUrl = phpGWLink('property/workorder/lookups/category', {cat_id: $(this).val()}, true);
 
 		var htmlString = "";
 
@@ -138,23 +136,17 @@ $(document).ready(function ()
 	});
 });
 
-var oArgs = {menuaction: 'property.uitts.get_eco_service'};
-var strURL = phpGWLink('index.php', oArgs, true);
+var strURL = phpGWLink('property/workorder/lookups/eco-service', {}, true);
 JqueryPortico.autocompleteHelper(strURL, 'service_name', 'service_id', 'service_container');
 
-var oArgs = {menuaction: 'property.uitts.get_ecodimb'};
-var strURL = phpGWLink('index.php', oArgs, true);
+var strURL = phpGWLink('property/workorder/lookups/ecodimb', {}, true);
 JqueryPortico.autocompleteHelper(strURL, 'ecodimb_name', 'ecodimb', 'ecodimb_container');
 
-var oArgs = {menuaction: 'property.uitts.get_b_account'};
-var strURL = phpGWLink('index.php', oArgs, true);
+var strURL = phpGWLink('property/workorder/lookups/b-account', {}, true);
 JqueryPortico.autocompleteHelper(strURL, 'b_account_name', 'b_account_id', 'b_account_container');
 
-var oArgs = {menuaction: 'property.uitts.get_external_project'};
-var strURL = phpGWLink('index.php', oArgs, true);
+var strURL = phpGWLink('property/project/lookups/external-project', {});
 JqueryPortico.autocompleteHelper(strURL, 'external_project_name', 'external_project_id', 'external_project_container');
 
-var oArgs = {menuaction: 'property.uitts.get_unspsc_code'};
-var strURL = phpGWLink('index.php', oArgs, true);
+var strURL = phpGWLink('property/workorder/lookups/unspsc-code', {}, true);
 JqueryPortico.autocompleteHelper(strURL, 'unspsc_code_name', 'unspsc_code', 'unspsc_code_container');
-

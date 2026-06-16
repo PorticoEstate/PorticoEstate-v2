@@ -1,0 +1,43 @@
+{# Config template #}
+{% block header %}
+<form method="POST" action="{{ action_url }}">
+<table class="pure-table pure-table-bordered">
+   <tr bgcolor="{{ th_bg }}">
+    <td colspan="2"><font color="{{ th_text }}">&nbsp;<b>{{ title }}</b></font></td>
+   </tr>
+{% endblock %}
+{% block body %}
+   <tr bgcolor="{{ row_on }}">
+    <td colspan="2">&nbsp;</td>
+   </tr>
+
+   <tr bgcolor="{{ row_off }}">
+    <td colspan="2">&nbsp;<b>{{ lang('Mail_settings') }}</b></td>
+   </tr>
+
+   <tr bgcolor="{{ row_on }}">
+    <td>{{ lang('IMAP_admin_user') }}:</td>
+    <td><input name="newsettings[imapAdminUser]" value="{{ value_imapAdminUser|raw }}"></td>
+   </tr>
+
+   <tr bgcolor="{{ row_off }}">
+    <td>{{ lang('IMAP_admin_password') }}:</td>
+    <td><input name="newsettings[imapAdminPassword]" value="{{ value_imapAdminPassword|raw }}"></td>
+   </tr>
+
+{% endblock %}
+{% block footer %}
+  <tr bgcolor="{{ th_bg }}">
+    <td colspan="2">
+&nbsp;
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <input type="submit" name="submit" value="{{ lang('submit') }}">
+      <input type="submit" name="cancel" value="{{ lang('cancel') }}">
+    </td>
+  </tr>
+</table>
+</form>
+{% endblock %}

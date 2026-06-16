@@ -1,0 +1,33 @@
+.articlesSection {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--ds-color-neutral-border-default);
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+// Application title row grouping its article lines
+.groupRow td {
+    background: var(--ds-color-neutral-surface-default);
+    font-weight: var(--ds-font-weight-semibold);
+}
+
+// Indent article lines under their application title
+.lineName {
+    padding-left: 2rem;
+}
+
+.articlesTotal {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.75rem;
+    padding: 0.5rem 0;
+    font-weight: 500;
+}

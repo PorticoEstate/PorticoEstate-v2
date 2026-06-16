@@ -1,20 +1,28 @@
 
+function buildDashboardProjectEditUrl(projectId)
+{
+	return phpGWLink('index.php', {
+		menuaction: 'property.uiproject.edit',
+		id: projectId
+	});
+}
 
 var project_link = function (key, oData)
 {
-	let sUrl_project = phpGWLink('index.php', { menuaction: 'property.uiproject.edit' });
-	
 	if (oData[key] > 0)
 	{
-		return "<a href=" + sUrl_project + "&id=" + oData[key] + ">" + oData[key] + "</a>";
+		return "<a href=" + buildDashboardProjectEditUrl(oData[key]) + ">" + oData[key] + "</a>";
 	}
 };
 
 var ticket_link = function (key, oData)
 {
-	let sUrl_ticket = phpGWLink('index.php', { menuaction: 'property.uitts.view' });
 	if (oData[key] > 0)
 	{
-		return "<a href=" + sUrl_ticket + "&id=" + oData[key] + ">" + oData[key] + "</a>";
+		let url = phpGWLink('index.php', {
+			menuaction: 'property.uitts.view',
+			id: oData[key]
+		});
+		return "<a href=" + url + ">" + oData[key] + "</a>";
 	}
 }

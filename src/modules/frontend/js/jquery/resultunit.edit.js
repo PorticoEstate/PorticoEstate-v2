@@ -1,7 +1,7 @@
 
 function searchUser()
 {
-	if ($.trim($('#username').val()) === '')
+	if (($('#username').val() || '').trim() === '')
 	{
 		alert('enter username');
 		return false;

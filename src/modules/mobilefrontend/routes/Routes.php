@@ -22,14 +22,15 @@ $app->post('/mobilefrontend/login.php', LoginHelper::class . ':processLogin')->a
 $app->get('/mobilefrontend/login_ui[/{params:.*}]', LoginHelper::class . ':processLogin')->add(new LoginMiddleware($app->getContainer()));
 $app->post('/mobilefrontend/login_ui[/{params:.*}]', LoginHelper::class . ':processLogin')->add(new LoginMiddleware($app->getContainer()));
 
-$app->get('/mobilefrontend/logout', function ()
+$app->get('/mobilefrontend/logout', function () use ($app)
 {
 	$custom_frontend = 'mobilefrontend';
+	$settings = $app->getContainer()->get('settings');
 	Settings::getInstance()->update(
 		'flags',
 		[
 			'custom_frontend' => $custom_frontend,
-			'session_name' => $this->settings['session_name'][$custom_frontend]
+			'session_name' => $settings['session_name'][$custom_frontend]
 		]
 	);
 	$sessions = \App\modules\phpgwapi\security\Sessions::getInstance();

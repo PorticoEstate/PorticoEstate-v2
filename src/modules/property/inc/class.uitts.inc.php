@@ -580,7 +580,7 @@ HTML;
 			case 'DELETE':
 				if ($this->simple)
 				{
-					$upload_handler->header('HTTP/1.1 405 Method Not Allowed');
+					header('HTTP/1.1 405 Method Not Allowed');
 				}
 				else
 				{
@@ -588,7 +588,7 @@ HTML;
 				}
 				break;
 			default:
-				$upload_handler->header('HTTP/1.1 405 Method Not Allowed');
+				header('HTTP/1.1 405 Method Not Allowed');
 		}
 
 		$this->phpgwapi_common->phpgw_exit();
@@ -807,8 +807,7 @@ HTML;
 
 		$values_combo_box[1] = $this->bocommon->select_district_list('filter', $this->district_id);
 		array_unshift($values_combo_box[1],  array('id' => '', 'name' => lang('no district')));
-		$link				 = self::link(array(
-			'menuaction'		 => 'property.uilocation.get_part_of_town',
+		$link				 = \phpgw::link('/property/location/part-of-town', array(
 			'district_id'		 => $this->district_id,
 			'part_of_town_id'	 => $this->part_of_town_id,
 			'phpgw_return_as'	 => 'json'
@@ -1076,7 +1075,7 @@ HTML;
 
 		phpgwapi_jquery::load_widget('numberformat');
 
-		self::add_javascript('property', 'portico', 'tts.index.js', false, array('combine' => true));
+		self::add_javascript('property', 'base', 'tts.index.js', false, array('combine' => true));
 
 		$start_date	 = !empty($this->start_date) ? urldecode($this->start_date) : '';
 		$end_date	 = !empty($this->end_date) ? urldecode($this->end_date) : '';
@@ -1892,7 +1891,7 @@ HTML;
 		$appname		 = lang('helpdesk');
 		$function_msg	 = lang('add ticket');
 		phpgwapi_jquery::load_widget('select2');
-		self::add_javascript('property', 'portico', 'tts.add.js', false, array('combine' => false));
+		self::add_javascript('property', 'base', 'tts.add.js', false, array('combine' => false));
 		//			self::add_javascript('phpgwapi', 'core', 'files_drag_drop.js', true, array('combine' => true ));
 		phpgwapi_jquery::load_widget('file-upload-minimum');
 
@@ -3689,8 +3688,7 @@ JS;
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_10',
-			'requestUrl' => json_encode(self::link(array(
-				'menuaction' => 'property.uiproject.get_orders',
+			'requestUrl' => json_encode(phpgw::link('/property/project/0/orders', array(
 				'project_id' => $project_ids,
 				'order_id' => $order_ids,
 				'phpgw_return_as' => 'json'
@@ -4140,7 +4138,7 @@ JS;
 		phpgwapi_jquery::load_widget('file-upload-minimum');
 		phpgwapi_jquery::load_widget('glider');
 		phpgwapi_jquery::load_widget('select2');
-		self::add_javascript('property', 'portico', 'tts.view.js', false, array('combine' => false));
+		self::add_javascript('property', 'base', 'tts.view.js', false, array('combine' => false));
 
 		$this->_insert_custom_js();
 		//-----------------------datatable settings---

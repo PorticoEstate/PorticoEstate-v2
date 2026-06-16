@@ -38,12 +38,14 @@ interface BillingFormProps {
 	areAllDocumentsChecked?: boolean;
 	showDocumentsError?: boolean;
 	vippsLoading?: boolean;
+	submitting?: boolean;
 	applications?: IApplication[];
 }
 
 type OrganizationOption = {
 	value: string;
 	label: string;
+	orgId?: number;
 };
 
 const BillingForm: FC<BillingFormProps> = ({
@@ -62,6 +64,7 @@ const BillingForm: FC<BillingFormProps> = ({
 											   areAllDocumentsChecked = true,
 											   showDocumentsError = false,
 											   vippsLoading = false,
+											   submitting = false,
 											   applications = []
 										   }) => {
 	const t = useTrans();
@@ -272,6 +275,7 @@ const BillingForm: FC<BillingFormProps> = ({
 		// If switching to private (ssn)
 		if (customerType === 'ssn') {
 			// Reset org-related fields
+			setValue('organizationId', undefined);
 			setValue('organizationNumber', '');
 			setValue('organizationName', '');
 			// Reset address fields to user's default values
@@ -332,12 +336,27 @@ const BillingForm: FC<BillingFormProps> = ({
 	// Handler for Vipps payment that validates form first
 	const handleVippsPaymentClick = () => {
 		// Trigger form validation and call Vipps payment if valid
-		handleSubmit((data) => {
-			// Only called if form validation passes
-			if (onVippsPayment && !vippsLoading) {
-				onVippsPayment();
+		handleSubmit(
+			(data) => {
+				// Only called if form validation passes
+				if (onVippsPayment && !vippsLoading) {
+					onVippsPayment();
+				}
+			},
+			(errors) => {
+				// Scroll to first validation error field
+				setTimeout(() => {
+					for (const key of Object.keys(errors)) {
+						const el = document.querySelector(`[name="${key}"]`)
+							|| document.querySelector(`[data-field="${key}"]`);
+						if (el) {
+							el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+							return;
+						}
+					}
+				}, 0);
 			}
-		})();
+		)();
 	};
 
 	return (
@@ -358,6 +377,17 @@ const BillingForm: FC<BillingFormProps> = ({
 							if (process.env.NODE_ENV === 'development') {
 								console.error('🐛 BillingForm: Form validation failed with errors:', errors);
 							}
+							// Scroll to first validation error field
+							setTimeout(() => {
+								for (const key of Object.keys(errors)) {
+									const el = document.querySelector(`[name="${key}"]`)
+										|| document.querySelector(`[data-field="${key}"]`);
+									if (el) {
+										el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+										return;
+									}
+								}
+							}, 0);
 						}
 					)(e);
 				}}
@@ -404,7 +434,7 @@ const BillingForm: FC<BillingFormProps> = ({
 							name="organizationNumber"
 							control={control}
 							render={({field}) => (
-								<Field>
+								<Field data-field="organizationNumber">
 									<Label>
 										{t('bookingfrontend.organization')} <span className="required-asterisk">*</span>
 									</Label>
@@ -419,12 +449,15 @@ const BillingForm: FC<BillingFormProps> = ({
 										cacheOptions
 											defaultOptions={myOrganizations?.map(org => ({
 												value: org.organization_number,
-												label: `${org.organization_number} [${org.name}]`
+												label: `${org.organization_number} [${org.name}]`,
+												orgId: org.id
 											}))}
 											loadOptions={loadOptions}
 											onChange={(newValue) => {
-												const value = (newValue as OrganizationOption)?.value || '';
+												const selected = newValue as OrganizationOption | null;
+												const value = selected?.value || '';
 												field.onChange(value);
+												setValue('organizationId', selected?.orgId);
 												void handleOrgChange(value);
 												// Clear created org when user selects a different option
 												if (createdOrg && value !== createdOrg.value) {
@@ -436,7 +469,8 @@ const BillingForm: FC<BillingFormProps> = ({
 													? createdOrg
 													: myOrganizations?.map(org => ({
 														value: org.organization_number,
-														label: `${org.organization_number} [${org.name}]`
+														label: `${org.organization_number} [${org.name}]`,
+														orgId: org.id
 													})).find(option => option.value === field.value)
 											}
 											isClearable
@@ -688,7 +722,8 @@ const BillingForm: FC<BillingFormProps> = ({
 								{/* Invoice Payment Button */}
 								<Button
 									type="submit"
-									disabled={vippsLoading}
+									loading={submitting}
+									disabled={vippsLoading || submitting}
 									className={styles.invoiceButton}
 								>
 									{t('bookingfrontend.pay_later_with_invoice')}
@@ -706,6 +741,8 @@ const BillingForm: FC<BillingFormProps> = ({
 						<Button
 							variant="primary"
 							type="submit"
+							loading={submitting}
+							disabled={submitting}
 						>
 							{t('bookingfrontend.submit_application')}
 						</Button>

@@ -2,7 +2,7 @@
 
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Cache;
-use App\helpers\Template;
+use App\helpers\twig\TwigTemplate;
 
 phpgw::import_class('phpgwapi.template_portico');
 phpgw::import_class('phpgwapi.common');
@@ -26,16 +26,11 @@ if (!empty($serverSettings['cache_refresh_token']))
 	$cache_refresh_token = "?n={$serverSettings['cache_refresh_token']}";
 }
 
-$template = new Template(PHPGW_TEMPLATE_DIR);
-
-$template->set_unknowns('remove');
-$template->set_file('head', 'head.tpl');
-$template->set_block('head', 'stylesheet', 'stylesheets');
-$template->set_block('head', 'javascript', 'javascripts');
+$templateDir = PHPGW_TEMPLATE_DIR;
+$twigDir = PHPGW_TEMPLATE_DIR . '/twig';
 
 $serverSettings['no_jscombine'] = false;
 Settings::getInstance()->set('server', $serverSettings);
-
 
 phpgw::import_class('phpgwapi.jquery');
 phpgwapi_jquery::load_widget('core');
@@ -53,6 +48,8 @@ if (empty($flags['noframework']) && empty($flags['nonavbar']))
 	$javascripts[] = "/phpgwapi/templates/bootstrap/js/sidenav.js";
 }
 
+// Prepare JavaScript files
+$jsUris = [];
 
 if (!$serverSettings['no_jscombine'])
 {
@@ -68,8 +65,10 @@ if (!$serverSettings['no_jscombine'])
 
 	$cachedir	 = urlencode("{$serverSettings['temp_dir']}/combine_cache");
 	$jsfiles	 = implode(',', $_jsfiles);
-	$template->set_var('javascript_uri', "{$webserver_url}/phpgwapi/inc/combine.php?cachedir={$cachedir}&type=javascript&files={$jsfiles}");
-	$template->parse('javascripts', 'javascript', true);
+	
+	// For Twig
+	$jsUris[] = "{$webserver_url}/phpgwapi/inc/combine.php?cachedir={$cachedir}&type=javascript&files={$jsfiles}";
+	
 	unset($jsfiles);
 	unset($_jsfiles);
 }
@@ -79,13 +78,13 @@ else
 	{
 		if (file_exists(PHPGW_SERVER_ROOT . $javascript))
 		{
-			$template->set_var('javascript_uri', $webserver_url . $javascript . $cache_refresh_token);
-			$template->parse('javascripts', 'javascript', true);
+			// For Twig
+			$jsUris[] = $webserver_url . $javascript . $cache_refresh_token;
 		}
 	}
 }
 
-
+// Prepare stylesheets
 $stylesheets = array();
 $stylesheets[] = "/phpgwapi/templates/pure/css/global.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/version_3/pure-min.css";
@@ -112,7 +111,6 @@ if ($app != 'frontend')
 	}
 }
 
-
 if (isset($userSettings['preferences']['common']['theme']))
 {
 	$stylesheets[] = "/phpgwapi/templates/bootstrap/css/{$userSettings['preferences']['common']['theme']}.css";
@@ -124,12 +122,14 @@ if (isset($userSettings['preferences']['common']['theme']))
 	$stylesheets[] = "/{$app}/templates/bootstrap/css/{$userSettings['preferences']['common']['theme']}.css";
 }
 
+$cssUris = [];
+
 foreach ($stylesheets as $stylesheet)
 {
 	if (file_exists(PHPGW_SERVER_ROOT . $stylesheet))
 	{
-		$template->set_var('stylesheet_uri', $webserver_url . $stylesheet . $cache_refresh_token);
-		$template->parse('stylesheets', 'stylesheet', true);
+		// For Twig
+		$cssUris[] = $webserver_url . $stylesheet . $cache_refresh_token;
 	}
 }
 
@@ -155,9 +155,9 @@ if (isset($flags['menu_selection']))
 	phpgwapi_template_portico::store_local('navbar_config', $navbar_config);
 }
 
-$_navbar_config			= json_encode($navbar_config);
+$_navbar_config = json_encode($navbar_config);
 $concent_script = '';
-$privacy_url		= !empty($serverSettings['privacy_url']) ? $serverSettings['privacy_url'] : ''; //https://www.bergen.kommune.no/omkommunen/personvern';
+$privacy_url = !empty($serverSettings['privacy_url']) ? $serverSettings['privacy_url'] : ''; //https://www.bergen.kommune.no/omkommunen/personvern';
 
 if ($privacy_url)
 {
@@ -237,7 +237,7 @@ $tpl_vars = array(
 	'javascript'		 => $phpgwapi_common->get_javascript($cache_refresh_token),
 	'img_icon'			 => $phpgwapi_common->find_image('phpgwapi', 'favicon.ico'),
 	'site_title'		 => "{$serverSettings['site_title']}",
-	'str_base_url'			 => phpgw::link('/', array(), true, false, true),
+	'str_base_url'		 => phpgw::link('/', array(), true, false, true),
 	'webserver_url'		 => $webserver_url,
 	'userlang'			 => $userSettings['preferences']['common']['lang'],
 	'win_on_events'		 => $phpgwapi_common->get_on_events(),
@@ -246,20 +246,31 @@ $tpl_vars = array(
 	'lang_collapse_all'	 => lang('collapse all'),
 	'lang_expand_all'	 => lang('expand all'),
 	'concent_script'	 => $concent_script,
-	'sessionid'			 => $userSettings['sessionid']
+	'sessionid'			 => $userSettings['sessionid'],
+	
+	// Variables for Twig templates
+	'javascripts'       => $jsUris,
+	'stylesheets'       => $cssUris
 );
 
-$template->set_var($tpl_vars);
+// Use Twig to render the template
+try {
+	$twig = \App\modules\phpgwapi\services\Twig::getInstance();
+	echo $twig->render('head.twig', $tpl_vars);
+} catch (\Twig\Error\Error $e) {
+	error_log("Failed to render head.twig: " . $e->getMessage());
+	// Output minimal fallback
+	echo "<!DOCTYPE html><html><head><title>Error</title></head><body>";
+	echo "Template rendering error. Please check logs.";
+	die();
+}
 
-$template->pfp('out', 'head');
 unset($tpl_vars);
 
 flush();
 
-
 if (isset($flags['noframework']))
 {
-	//		echo '<body style="margin-left: 35px;">';
 	echo '<body class="container-fluid">';
 	register_shutdown_function('parse_footer_end_noframe');
 }

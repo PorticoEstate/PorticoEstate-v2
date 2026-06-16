@@ -3,6 +3,9 @@
 // Toggle for client-side WebSocket logging
 export const WEBSOCKET_CLIENT_DEBUG = false;
 
+// Toggle for logging ALL Socket.IO traffic (every emit/receive)
+export const SOCKETIO_TRAFFIC_DEBUG = true;
+
 /**
  * Helper function for consistent WebSocket logging
  * @param area the component responsible

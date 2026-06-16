@@ -1,0 +1,90 @@
+{% extends layout|default('@views/_layout.twig') %}
+
+{% block title %}{{ lang('booking.purchase_orders') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/application/show/application_show.css') }}</style>
+<style>{{ source('@views/hospitality/show/hospitality_show.css') }}</style>
+<style>{{ source('@views/hospitality/order_show/order_show.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<div id="order-show"
+	 class="app-show"
+	 data-order-id="{{ order_id }}"
+	 data-order-url="{{ phpgw_link('/booking/hospitality-orders/' ~ order_id) }}"
+	 data-orders-base-url="{{ phpgw_link('/booking/hospitality-orders') }}"
+	 data-hospitality-base-url="{{ phpgw_link('/booking/hospitality') }}"
+	 data-can-write="{{ can_write ? '1' : '0' }}"
+	 data-lang-loading="{{ lang('common.loading') }}"
+	 data-lang-error="{{ lang('common.error') }}"
+	 data-lang-name="{{ lang('common.name') }}"
+	 data-lang-description="{{ lang('common.description') }}"
+	 data-lang-yes="{{ lang('common.yes') }}"
+	 data-lang-no="{{ lang('common.no') }}"
+	 data-lang-save="{{ lang('common.save') }}"
+	 data-lang-cancel="{{ lang('booking.cancel_action') }}"
+	 data-lang-edit="{{ lang('common.edit') }}"
+	 data-lang-delete="{{ lang('common.delete') }}"
+	 data-lang-details="{{ lang('booking.details') }}"
+	 data-lang-created="{{ lang('booking.created') }}"
+	 data-lang-modified="{{ lang('booking.modified') }}"
+	 data-lang-status="{{ lang('common.status') }}"
+	 data-lang-comment="{{ lang('booking.comment') }}"
+	 data-lang-amount="{{ lang('booking.amount') }}"
+	 data-lang-application="{{ lang('booking.application') }}"
+	 data-lang-location="{{ lang('booking.location') }}"
+	 data-lang-article="{{ lang('booking.Article') }}"
+	 data-lang-quantity="{{ lang('booking.quantity') }}"
+	 data-lang-price="{{ lang('booking.price') }}"
+	 data-lang-unit="{{ lang('booking.unit') }}"
+	 data-lang-saved="{{ lang('booking.saved') }}"
+	 data-lang-back-to-hospitality="{{ lang('booking.back_to_list') }}"
+	 data-lang-hospitality="{{ lang('booking.hospitality') }}"
+	 data-lang-orders="{{ lang('booking.purchase_orders') }}"
+	 data-lang-special-requirements="{{ lang('booking.special_requirements') }}"
+	 data-lang-order-lines="{{ lang('booking.order_lines') }}"
+	 data-lang-total="{{ lang('booking.total') }}"
+	 data-lang-confirm-order="{{ lang('booking.confirm_order') }}"
+	 data-lang-deliver-order="{{ lang('booking.deliver_order') }}"
+	 data-lang-cancel-order="{{ lang('booking.cancel_order') }}"
+	 data-lang-confirmed="{{ lang('booking.confirmed') }}"
+	 data-lang-delivered="{{ lang('booking.delivered') }}"
+	 data-lang-cancelled="{{ lang('booking.cancelled') }}"
+	 data-lang-pending-status="{{ lang('booking.pending_status') }}"
+	 data-lang-serving-time="{{ lang('booking.serving_time') }}"
+	 data-lang-select-date="{{ lang('booking.select_date') }}"
+	 data-lang-select-time="{{ lang('booking.select_time') }}"
+	 data-applications-base-url="{{ phpgw_link('/booking/applications') }}"
+	 data-lang-confirm-status-change="{{ lang('booking.confirm_delete') }}"
+	 data-lang-changelog="{{ lang('booking.changelog') }}"
+	 data-lang-changelog-comment="{{ lang('booking.changelog_comment') }}"
+	 data-lang-changelog-comment-required="{{ lang('booking.changelog_comment_required') }}"
+	 data-lang-changelog-comment-placeholder="{{ lang('booking.changelog_comment_placeholder') }}"
+	 data-lang-no-changes="{{ lang('booking.no_changes') }}"
+	 data-lang-exit-edit-mode="{{ lang('booking.exit_edit_mode') }}"
+>
+	{# Loading state #}
+	<div id="order-loading" class="app-show__loading">
+		<div class="app-show__spinner"></div>
+		<p>{{ lang('common.loading') }}...</p>
+	</div>
+
+	{# Error state #}
+	<div id="order-error" class="app-show__error" hidden>
+		<p id="order-error-message"></p>
+	</div>
+
+	{# Content #}
+	<div id="order-content" hidden>
+		<div id="order-header" class="app-show__header"></div>
+		<div id="order-details"></div>
+		<div id="order-lines"></div>
+		<div id="order-changelog"></div>
+	</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/hospitality/order_show/order_show.js') }}</script>
+{% endblock %}

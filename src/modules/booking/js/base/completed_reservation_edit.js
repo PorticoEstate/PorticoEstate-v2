@@ -1,6 +1,6 @@
 
 
-JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction: 'booking.uiorganization.index'}, true),
+JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction: 'booking.uiorganization.index', filter_active: 1}, true),
 	'field_org_name', 'field_org_id', 'org_container');
 
 $(document).ready(function ()

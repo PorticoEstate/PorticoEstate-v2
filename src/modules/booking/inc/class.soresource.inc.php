@@ -42,6 +42,8 @@ class booking_soresource extends booking_socommon
 				'hidden_in_frontend' => array('type' => 'int', 'required' => false),
 				'activate_prepayment' => array('type' => 'int', 'required' => false),
 				'booking_buffer_deadline' => array('type' => 'int', 'required' => false),
+				'cancellation_deadline_value' => array('type' => 'int', 'required' => false),
+				'cancellation_deadline_unit' => array('type' => 'string', 'required' => false),
 				'deny_application_if_booked' => array('type' => 'int', 'required' => false),
 				'building_id' => array(
 					'type' => 'int',

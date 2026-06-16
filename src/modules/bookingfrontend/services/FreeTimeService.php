@@ -26,8 +26,12 @@ class FreeTimeService
 	{
 		$this->db = Db::getInstance();
 		$userSettings = Settings::getInstance()->get('user');
-		$this->timezone = !empty($userSettings['preferences']['common']['timezone'])
-			? $userSettings['preferences']['common']['timezone'] : 'UTC';
+		// Timeslots are physical venue times and the stored data (DB datetimes, season
+		// boundaries and simple_booking timestamps) is all expressed in venue-local time.
+		// Generation must therefore use the venue timezone regardless of the viewer's
+		// preference, otherwise anonymous users (who have no preference and previously
+		// fell back to 'UTC') see openings shifted by the Oslo offset (e.g. 00:00 -> 02:00).
+		$this->timezone = 'Europe/Oslo';
 		$this->dateTimeZone = new \DateTimeZone($this->timezone);
 		$this->dateformat = !empty($userSettings['preferences']['common']['dateformat'])
 			? $userSettings['preferences']['common']['dateformat'] : 'd/m-Y';
@@ -92,7 +96,10 @@ class FreeTimeService
 			}
 		}
 
-		$endDate = new \DateTime();
+		// Build "now" in the venue timezone so the month boundary rolls over at local
+		// midnight on the 1st. A bare new \DateTime() runs in PHP's default UTC, which
+		// flips "last day of this month" at 00:00 UTC = 02:00 Oslo (issue #1080).
+		$endDate = new \DateTime('now', $this->dateTimeZone);
 		$endDate->add(new \DateInterval("P{$bookingMonthHorizon}M"));
 		$endDate->modify('last day of this month');
 		return $endDate->getTimestamp();
@@ -210,8 +217,10 @@ class FreeTimeService
 
 			// simple_booking_end_date
 			if ($resource['simple_booking_end_date']) {
-				$simpleBookingEndDate = new \DateTime(date('Y-m-d', $resource['simple_booking_end_date']));
-				$simpleBookingEndDate->setTimezone($this->dateTimeZone);
+				// Interpret the stored date in the venue timezone (mirrors the
+				// simple_booking_start_date handling above) instead of building it in
+				// PHP's default UTC and then shifting, which could skew the day boundary.
+				$simpleBookingEndDate = new \DateTime(date('Y-m-d', $resource['simple_booking_end_date']), $this->dateTimeZone);
 				if ($simpleBookingEndDate < $to) {
 					$to = clone $simpleBookingEndDate;
 				}

@@ -16,6 +16,7 @@ use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Settings;
 use App\helpers\Template;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
+use App\modules\phpgwapi\services\Twig;
 
 
 class admin_uiaccess_history
@@ -45,7 +46,6 @@ class admin_uiaccess_history
 		$nextmatches = createobject('phpgwapi.nextmatchs');
 		$_accounts = new Accounts();
 
-
 		$account_id	= Sanitizer::get_var('account_id', 'int', 'REQUEST', 0);
 		$start		= Sanitizer::get_var('start', 'int', 'GET', 0);
 		$sort		= Sanitizer::get_var('sort', 'int', 'POST', 0);
@@ -66,26 +66,16 @@ class admin_uiaccess_history
 
 		$this->phpgwapi_common->phpgw_header(true);
 
-		$t   = new Template();
-		$t->set_root(PHPGW_APP_TPL);
-		$t->set_file('accesslog', 'accesslog.tpl');
-		$t->set_block('accesslog', 'list');
-		$t->set_block('accesslog', 'row');
-		$t->set_block('accesslog', 'row_empty');
-
 		$total_records = $bo->total($account_id);
 
-		$var = array(
+		// Prepare data for Twig template
+		$templateData = array(
 			'nextmatchs_left'	 => $nextmatches->left('/index.php', $start, $total_records, '&menuaction=admin.uiaccess_history.list_history&account_id=' . $account_id),
 			'nextmatchs_right'	 => $nextmatches->right('/index.php', $start, $total_records, '&menuaction=admin.uiaccess_history.list_history&account_id=' . $account_id),
-			'showing'			 => $nextmatches->show_hits($total_records, $start),
-			//				'nm_search'			 => $nextmatches->search(array('query' => $query)),
-			'lang_loginid'		 => lang('LoginID'),
-			'lang_ip'			 => lang('IP'),
-			'lang_login'		 => lang('Login'),
-			'lang_logout'		 => lang('Logout'),
-			'lang_total'		 => lang('Total'),
+			'showing'			 => $nextmatches->show_hits($total_records, $start)
+			// Lang strings will be handled in the template
 		);
+		
 		$__account	 = $_accounts->get($account_id);
 		if ($__account->enabled)
 		{
@@ -94,7 +84,6 @@ class admin_uiaccess_history
 				'name'	 => $__account->__toString()
 			);
 		}
-
 
 		$account_list	 = "<div><form class='pure-form' method='POST' action=''>";
 		$account_list	 .= '<select name="account_id" id="account_id" onChange="this.form.submit();" style="width:50%;">';
@@ -150,52 +139,59 @@ class admin_uiaccess_history
 					</script>
 HTML;
 
-		$var['select_user'] =  $account_list;
+		$templateData['select_user'] =  $account_list;
 
 		if ($account_id)
 		{
-			$var['link_return_to_view_account'] = '<a href="' . phpgw::link(
+			$templateData['link_return_to_view_account'] = '<a href="' . phpgw::link(
 				'/index.php',
 				array(
 					'menuaction' => 'admin.uiaccounts.view',
 					'account_id' => $account_id
 				)
 			) . '">' . lang('Return to view account') . '</a>';
-			$var['lang_last_x_logins'] = lang('Last %1 logins for %2', $total_records, $this->phpgwapi_common->grab_owner_name($account_id));
+			$templateData['lang_last_x_logins'] = lang('Last %1 logins for %2', $total_records, $this->phpgwapi_common->grab_owner_name($account_id));
 		}
 		else
 		{
-			$var['lang_last_x_logins'] = lang('Last %1 logins', $total_records);
+			$templateData['lang_last_x_logins'] = lang('Last %1 logins', $total_records);
 		}
 
-		$var['actionurl']	= phpgw::link('/index.php', array('menuaction' => 'admin.uiaccess_history.list_history'));
+		$templateData['actionurl'] = phpgw::link('/index.php', array('menuaction' => 'admin.uiaccess_history.list_history'));
 
-		$t->set_var($var);
-
+		// Process records for the template
+		$rows_access = '';
 		$records = $bo->list_history($account_id, $start, $order, $sort);
+		
 		if (is_array($records))
 		{
 			foreach ($records as &$record)
 			{
-				$nextmatches->template_alternate_row_class($t);
+				$row_class = $nextmatches->alternate_row_class();
 
-				$var = array(
+				// Prepare data for row block
+				$rowData = array(
+					'tr_class'    => $row_class,
 					'row_loginid' => $record['loginid'],
 					'row_ip'      => $record['ip'],
 					'row_li'      => $record['li'],
 					'row_lo'      => $record['account_id'] ? $record['lo'] : '<b>' . lang($record['sessionid']) . '</b>',
 					'row_total'   => ($record['lo'] ? $record['total'] : '&nbsp;')
 				);
-				$t->set_var($var);
-				$t->fp('rows_access', 'row', true);
+				
+				// Render the row block and append to rows
+				$rows_access .= Twig::getInstance()->renderBlock('accesslog.html.twig', 'row', $rowData, 'admin');
 			}
 		}
 
 		if (!$total_records && $account_id)
 		{
-			$nextmatches->template_alternate_row_class($t);
-			$t->set_var('row_message', lang('No login history exists for this user'));
-			$t->fp('rows_access', 'row_empty', true);
+			$row_class = $nextmatches->alternate_row_class();
+			$rowEmptyData = array(
+				'tr_class'    => $row_class,
+				'row_message' => lang('No login history exists for this user')
+			);
+			$rows_access .= Twig::getInstance()->renderBlock('accesslog.html.twig', 'row_empty', $rowEmptyData, 'admin');
 		}
 
 		$loggedout = $bo->return_logged_out($account_id);
@@ -209,20 +205,19 @@ HTML;
 			$percent = '0';
 		}
 
-		$var = array(
-			'footer_total' => lang('Total records') . ': ' . $total_records
-		);
+		$templateData['rows_access'] = $rows_access;
+		$templateData['footer_total'] = lang('Total records') . ': ' . $total_records;
 
 		if ($account_id)
 		{
-			$var['lang_percent'] = lang('Percent this user has logged out') . ': ' . $percent . '%';
+			$templateData['lang_percent'] = lang('Percent this user has logged out') . ': ' . $percent . '%';
 		}
 		else
 		{
-			$var['lang_percent'] = lang('Percent of users that logged out') . ': ' . $percent . '%';
+			$templateData['lang_percent'] = lang('Percent of users that logged out') . ': ' . $percent . '%';
 		}
 
-		$t->set_var($var);
-		$t->pfp('out', 'list');
+		// Render the template with Twig
+		echo Twig::getInstance()->renderBlock('accesslog.html.twig', 'list', $templateData, 'admin');
 	}
 }

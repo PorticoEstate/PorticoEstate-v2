@@ -1192,3 +1192,12 @@ unit price	booking	en	Unit price
 update service-resource-mapping?	booking	en	Update service-resource mapping?
 update user address	booking	en	Update user address
 zip code	booking	en	Zip code
+release_history	booking	en	Release history
+release_history_intro	booking	en	Commits grouped by the versions that have run.
+release_history_error	booking	en	Could not load release history
+commits_count	booking	en	%s commits
+no_new_commits	booking	en	No new commits
+commits_unavailable	booking	en	Commits unavailable
+currently_running	booking	en	Currently running
+by_author	booking	en	by
+loading_commits	booking	en	Loading commits...

@@ -1051,3 +1051,8 @@ status_accepted	bookingfrontend	nn	Godkjend
 status_rejected	bookingfrontend	nn	Avslått
 status_cancelled	bookingfrontend	nn	Trekt
 status_draft	bookingfrontend	nn	Kladd
+cancel_booking	bookingfrontend	nn	Avbestill
+confirm_cancel_booking_title	bookingfrontend	nn	Avbestill booking
+confirm_cancel_booking_description	bookingfrontend	nn	Er du sikker på at du vil avbestille denne bookinga?
+withdraw_unavailable_started	bookingfrontend	nn	Tida har allereie starta, og søknaden kan ikkje trekkjast.
+withdraw_unavailable_deadline	bookingfrontend	nn	Avbestillingsfristen er passert.

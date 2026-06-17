@@ -96,6 +96,16 @@ function durationHours(from: string, to: string): number {
     return Math.round((DateTime.fromISO(to).toMillis() - DateTime.fromISO(from).toMillis()) / 3600000 * 10) / 10;
 }
 
+function deadlineToSeconds(value?: number | null, unit?: 'hours' | 'days' | 'weeks' | null): number {
+    if (!value || !unit) return 0;
+    switch (unit) {
+        case 'hours': return value * 3600;
+        case 'days': return value * 86400;
+        case 'weeks': return value * 604800;
+        default: return 0;
+    }
+}
+
 // --- Sub-components ---
 
 const StatusTimeline: FC<{ application: IApplication; t: (k: string) => string }> = ({application, t}) => {
@@ -489,6 +499,33 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
     const isOrg = application.application_type === 'organization';
     const orderTotal = application.orders.reduce((s, o) => s + o.sum, 0);
 
+    // Withdrawal/cancellation eligibility.
+    // Allowed for not-yet-finalized (NEW/PENDING) and approved (ACCEPTED) applications,
+    // but blocked once the booking has started or the resource cancellation deadline has passed.
+    const canRequestWithdrawal = isPending || isAccepted;
+    const now = DateTime.now();
+    const earliestFrom = application.dates.length > 0
+        ? application.dates.reduce<DateTime>((min, d) => {
+            const from = DateTime.fromISO(d.from_);
+            return from < min ? from : min;
+        }, DateTime.fromISO(application.dates[0].from_))
+        : null;
+    const hasStarted = !!earliestFrom && now >= earliestFrom;
+    const deadlinePassed = !!earliestFrom && application.resources.some(r => {
+        const seconds = deadlineToSeconds(r.cancellation_deadline_value, r.cancellation_deadline_unit);
+        return seconds > 0 && now > earliestFrom.minus({seconds});
+    });
+    const withdrawalBlockedReason = hasStarted
+        ? t('bookingfrontend.withdraw_unavailable_started')
+        : deadlinePassed
+            ? t('bookingfrontend.withdraw_unavailable_deadline')
+            : null;
+    const withdrawalDisabled = !!withdrawalBlockedReason;
+    // Approved bookings are "cancelled", not-yet-approved ones are "withdrawn"
+    const withdrawLabel = isAccepted
+        ? t('bookingfrontend.cancel_booking')
+        : t('bookingfrontend.withdraw_application');
+
     return (
         <main>
             {/* Back link */}
@@ -528,16 +565,23 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                     </div>
                 </div>
                 <div className={styles.appActions}>
-                    {isPending && (
-                        <Button
-                            data-color="danger"
-                            variant="secondary"
-                            data-size="sm"
-                            onClick={() => setConfirmCancelOpen(true)}
-                        >
-                            <XMarkOctagonIcon fontSize="0.9rem"/>
-                            {t('bookingfrontend.withdraw_application')}
-                        </Button>
+                    {canRequestWithdrawal && (
+                        <div className={styles.withdrawAction}>
+                            <Button
+                                data-color="danger"
+                                variant="secondary"
+                                data-size="sm"
+                                disabled={withdrawalDisabled}
+                                title={withdrawalBlockedReason || undefined}
+                                onClick={() => setConfirmCancelOpen(true)}
+                            >
+                                <XMarkOctagonIcon fontSize="0.9rem"/>
+                                {withdrawLabel}
+                            </Button>
+                            {withdrawalBlockedReason && (
+                                <span className={styles.withdrawHint}>{withdrawalBlockedReason}</span>
+                            )}
+                        </div>
                     )}
                     {(isAccepted || isRejected || isCancelled) && (
                         <Button variant="secondary" data-size="sm" onClick={() => setShowCopyDialog(true)}>
@@ -926,10 +970,14 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
             >
                 <Dialog.Block>
                     <Heading level={2} data-size="sm">
-                        {t('bookingfrontend.confirm_cancel_title')}
+                        {isAccepted
+                            ? t('bookingfrontend.confirm_cancel_booking_title')
+                            : t('bookingfrontend.confirm_cancel_title')}
                     </Heading>
                     <Paragraph style={{margin: '12px 0'}}>
-                        {t('bookingfrontend.confirm_cancel_description')}
+                        {isAccepted
+                            ? t('bookingfrontend.confirm_cancel_booking_description')
+                            : t('bookingfrontend.confirm_cancel_description')}
                     </Paragraph>
                 </Dialog.Block>
                 <Dialog.Block>
@@ -945,7 +993,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                             {cancelStatus.isPending
                                 ? <Spinner data-size="xs" aria-hidden="true"/>
                                 : null}
-                            {t('bookingfrontend.withdraw_application')}
+                            {withdrawLabel}
                         </Button>
                     </div>
                 </Dialog.Block>

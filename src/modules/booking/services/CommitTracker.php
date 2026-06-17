@@ -64,11 +64,25 @@ class CommitTracker
 	private function readGitHead(): ?string
 	{
 		$root = defined('SRC_ROOT_PATH') ? dirname(SRC_ROOT_PATH) : getcwd();
-		$cmd = 'git -C ' . escapeshellarg($root) . ' rev-parse HEAD 2>/dev/null';
+
+		// `-c safe.directory` is passed inline because PHP-FPM runs as www-data
+		// while the checkout is often owned by the deploy user. Without it git
+		// refuses with "detected dubious ownership" and returns nothing. The
+		// entrypoint's `git config --global` only covers root, not www-data.
+		$cmd = 'git -c ' . escapeshellarg('safe.directory=' . $root)
+			. ' -C ' . escapeshellarg($root) . ' rev-parse HEAD 2>&1';
 		$out = @shell_exec($cmd);
 		$hash = is_string($out) ? trim($out) : '';
 
-		return preg_match('/^[0-9a-f]{40}$/', $hash) === 1 ? $hash : null;
+		if (preg_match('/^[0-9a-f]{40}$/', $hash) === 1) {
+			return $hash;
+		}
+
+		if ($hash !== '') {
+			error_log('CommitTracker: could not read git HEAD: ' . substr($hash, 0, 200));
+		}
+
+		return null;
 	}
 
 	/**

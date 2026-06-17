@@ -2,6 +2,7 @@
 
 use Slim\Routing\RouteCollectorProxy;
 use App\modules\booking\controllers\UserController;
+use App\modules\booking\controllers\VersionController;
 use App\modules\booking\helpers\RedirectHelper;
 use App\modules\phpgwapi\security\AccessVerifier;
 use App\modules\phpgwapi\security\ApiKeyVerifier;
@@ -21,6 +22,7 @@ use App\modules\booking\viewcontrollers\DocumentViewController;
 use App\modules\booking\viewcontrollers\ConfigViewController;
 use App\modules\booking\viewcontrollers\RegistryViewController;
 use App\modules\booking\viewcontrollers\ApplicationViewController;
+use App\modules\booking\viewcontrollers\ReleaseViewController;
 use App\modules\booking\controllers\ApplicationController;
 use App\modules\phpgwapi\controllers\ConfigController;
 use App\modules\booking\controllers\EmailCompareController;
@@ -30,6 +32,16 @@ use App\modules\booking\controllers\HospitalityOrderController;
 use App\modules\booking\controllers\ArticleMappingController;
 use App\modules\booking\viewcontrollers\HospitalityViewController;
 use App\modules\booking\viewcontrollers\HospitalityOrderViewController;
+
+// Running-commit / version tracking (public, no auth). Registered before the
+// /booking catch-all redirect handler below; FastRoute matches these static
+// paths ahead of the variable /booking[/{params:.*}] route.
+$app->get('/booking/version', VersionController::class . ':current');
+$app->get('/booking/version/history', VersionController::class . ':index');
+
+// Release history page (public, no auth) — registered before the /booking
+// catch-all so it isn't swallowed by the redirect handler.
+$app->get('/booking/view/releases', ReleaseViewController::class . ':index');
 
 $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 {

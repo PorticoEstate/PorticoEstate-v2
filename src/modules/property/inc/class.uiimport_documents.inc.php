@@ -79,6 +79,7 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 		'step_3_clean_up'				 => true,
 		'view_file'						 => true,
 		'unzip_files'					 => true,
+		'upload_metadata'				 => true,
 		'set_value'						 => true
 	);
 
@@ -127,10 +128,8 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 
 	public function download()
 	{
-		if (!$order_id)
-		{
-			$order_id = Sanitizer::get_var('order_id', 'int');
-		}
+
+		$order_id = Sanitizer::get_var('order_id', 'int');
 
 		$secret = Sanitizer::get_var('secret');
 
@@ -154,6 +153,16 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 
 		$list_files = $this->_get_dir_contents($this->order_path_dir);
 
+		$hint_values = $this->get_metadata_hint_values();
+		$hint_document_category = implode('::', $hint_values['document_category']);
+		$hint_branch = implode('::', $hint_values['branch']);
+		$hint_building_part = implode('::', $hint_values['building_part']);
+		$export_format = isset($this->userSettings['preferences']['common']['export_format'])
+			&& $this->userSettings['preferences']['common']['export_format']
+			? $this->userSettings['preferences']['common']['export_format']
+			: 'csv';
+		$include_csv_hint_columns = $export_format === 'csv';
+
 		$values = array();
 		foreach ($list_files as $file_info)
 		{
@@ -163,6 +172,13 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 			$entry['document_category'] = !empty($entry['document_category']) ? implode("::", $entry['document_category']) : '';
 			$entry['branch'] = !empty($entry['branch']) ? implode("::", $entry['branch']) : '';
 			$entry['building_part'] = !empty($entry['building_part']) ? implode("::", $entry['building_part']) : '';
+
+			if ($include_csv_hint_columns)
+			{
+				$entry['hint_document_category'] = $hint_document_category;
+				$entry['hint_branch'] = $hint_branch;
+				$entry['hint_building_part'] = $hint_building_part;
+			}
 
 			$values[] = $entry;
 		}
@@ -191,8 +207,94 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 		$descr[] = lang('import ok');
 		$name[]	 = 'import_failed';
 		$descr[] = lang('import failed');
+		if ($include_csv_hint_columns)
+		{
+			$name[]	 = 'hint_document_category';
+			$descr[] = lang('valid document categories (hint)');
+			$name[]	 = 'hint_branch';
+			$descr[] = lang('valid branch (hint)');
+			$name[]	 = 'hint_building_part';
+			$descr[] = lang('valid building part (hint)');
+		}
 
-		$this->bocommon->download($values, $name, $descr);
+		$export_options = array(
+			'additional_sheets' => array(
+				array(
+					'title' => 'Hints',
+					'columns' => array(
+						array(
+							'header' => lang('document categories'),
+							'values' => $hint_values['document_category'],
+						),
+						array(
+							'header' => lang('branch'),
+							'values' => $hint_values['branch'],
+						),
+						array(
+							'header' => lang('building part'),
+							'values' => $hint_values['building_part'],
+						),
+					),
+				),
+			),
+		);
+
+		$this->bocommon->download($values, $name, $descr, array(), array(), '', $export_options);
+	}
+
+	private function get_metadata_hint_values()
+	{
+		$hint_values = array(
+			'document_category' => array(),
+			'branch' => array(),
+			'building_part' => array()
+		);
+
+		try
+		{
+			$import_document_files = new import_document_files();
+
+			$document_categories = (array)$import_document_files->get_document_categories();
+			$branch_list = (array)$import_document_files->get_branch_list();
+			$building_part_list = (array)$import_document_files->get_building_part_list();
+
+			foreach ($document_categories as $entry)
+			{
+				$value = trim((string)($entry['id'] ?? $entry['name'] ?? ''));
+				if ($value !== '')
+				{
+					$hint_values['document_category'][$value] = $value;
+				}
+			}
+
+			foreach ($branch_list as $entry)
+			{
+				$value = trim((string)($entry['id'] ?? $entry['name'] ?? ''));
+				if ($value !== '')
+				{
+					$hint_values['branch'][$value] = $value;
+				}
+			}
+
+			foreach ($building_part_list as $entry)
+			{
+				$value = trim((string)($entry['id'] ?? $entry['name'] ?? ''));
+				if ($value !== '')
+				{
+					$hint_values['building_part'][$value] = $value;
+				}
+			}
+		}
+		catch (Exception $e)
+		{
+			// Keep hints optional: export still works if BraArkiv lookup is unavailable.
+		}
+
+		$hint_values['document_category'] = array_values($hint_values['document_category']);
+		$hint_values['branch'] = array_values($hint_values['branch']);
+		$hint_values['building_part'] = array_values($hint_values['building_part']);
+
+		return $hint_values;
 	}
 
 	private function _msg_data($receipt)
@@ -405,20 +507,20 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 	{
 		if (!$this->acl_edit)
 		{
-			phpgw::no_access();
+			return phpgw::no_access();
 		}
 
 		$action = Sanitizer::get_var('action', 'string');
 		$files = Sanitizer::get_var('files', 'raw');
-		$document_category = Sanitizer::get_var('document_category', 'string');
-		$branch = Sanitizer::get_var('branch', 'string');
-		$building_part = Sanitizer::get_var('building_part', 'string');
 		$order_id = Sanitizer::get_var('order_id', 'int');
 		$cadastral_unit = Sanitizer::get_var('cadastral_unit', 'string');
 		$location_code = Sanitizer::get_var('location_code', 'string');
 		$building_number = Sanitizer::get_var('building_number', 'string');
 		$remark_detail = Sanitizer::get_var('remark_detail', 'string');
 
+		$document_category = Sanitizer::get_var('document_category', 'string');
+		$branch = Sanitizer::get_var('branch', 'string');
+		$building_part = Sanitizer::get_var('building_part', 'string');
 
 		if (!$order_id)
 		{
@@ -1802,6 +1904,261 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 		}
 	}
 
+	function upload_metadata()
+	{
+		if (!$this->acl_edit)
+		{
+			return;
+		}
+
+		$order_id = Sanitizer::get_var('order_id', 'int');
+
+		$secret = Sanitizer::get_var('secret');
+
+		$order_type = $this->bocommon->socommon->get_order_type($order_id);
+
+
+		$list_files = array();
+
+		if (empty($this->path_upload_dir))
+		{
+			return false;
+		}
+		//Get the spreadsheet data from $_FILES and extract the metadata per file, then save the metadata in the metadata.json file in the order directory
+
+		$metadata_file_name = Sanitizer::get_var('metadata_file_name', 'raw');
+		if ($metadata_file_name && preg_match('/\.\./', $metadata_file_name))
+		{
+			return array(
+				'status' => 'error',
+				'message' => lang('Invalid metadata filename')
+			);
+		}
+
+		$tmp_name = null;
+
+		if (!empty($_FILES['metadata_file']))
+		{
+			if (is_array($_FILES['metadata_file']['error']))
+			{
+				foreach ($_FILES['metadata_file']['error'] as $idx => $error_code)
+				{
+					if ($error_code == UPLOAD_ERR_OK)
+					{
+						$tmp_name = $_FILES['metadata_file']['tmp_name'][$idx];
+						break;
+					}
+				}
+			}
+			else if ($_FILES['metadata_file']['error'] == UPLOAD_ERR_OK)
+			{
+				$tmp_name = $_FILES['metadata_file']['tmp_name'];
+			}
+		}
+
+		// Blueimp jQuery File Upload sends files under the "files" key.
+		if (!$tmp_name && !empty($_FILES['files']))
+		{
+			if (is_array($_FILES['files']['error']))
+			{
+				foreach ($_FILES['files']['error'] as $idx => $error_code)
+				{
+					if ($error_code == UPLOAD_ERR_OK)
+					{
+						$tmp_name = $_FILES['files']['tmp_name'][$idx];
+						break;
+					}
+				}
+			}
+			else if ($_FILES['files']['error'] == UPLOAD_ERR_OK)
+			{
+				$tmp_name = $_FILES['files']['tmp_name'];
+			}
+		}
+
+		if (!$tmp_name && $metadata_file_name)
+		{
+			$tmp_name = $this->order_path_dir . $metadata_file_name;
+			if (!is_file($tmp_name))
+			{
+				return array(
+					'status' => 'error',
+					'message' => lang('No metadata file uploaded or there was an upload error')
+				);
+			}
+		}
+
+		if (!$tmp_name)
+		{
+			return array(
+				'status' => 'error',
+				'message' => lang('No metadata file uploaded or there was an upload error')
+			);
+		}
+
+		$metadata = $this->_extract_metadata_from_spreadsheet($tmp_name);
+		if ($metadata === false)
+		{
+			return array(
+				'status' => 'error',
+				'message' => lang('Failed to extract metadata from the uploaded file')
+			);
+		}
+
+		$current_metadata = $this->_get_metadata($order_id);
+		if (!is_array($current_metadata))
+		{
+			$current_metadata = array();
+		}
+
+		$merged_metadata = array_replace($current_metadata, $metadata);
+
+		if ($this->_set_metadata($order_id, $merged_metadata))
+		{
+			return array(
+				'status' => 'ok',
+				'message' => lang('Metadata uploaded successfully')
+			);
+		}
+
+		return array(
+			'status' => 'error',
+			'message' => lang('Failed to save metadata')
+		);
+
+	}
+
+	private function _extract_metadata_from_spreadsheet($spreadsheet_path)
+	{
+		if (!$spreadsheet_path || !is_file($spreadsheet_path))
+		{
+			return false;
+		}
+
+		try
+		{
+			$spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($spreadsheet_path);
+		}
+		catch (Exception $e)
+		{
+			return false;
+		}
+
+		$sheet = $spreadsheet->setActiveSheetIndex(0);
+		$highest_column = $sheet->getHighestDataColumn();
+		$highest_column_index = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highest_column);
+		$highest_row = (int)$sheet->getHighestDataRow();
+
+		if ($highest_column_index < 1 || $highest_row < 2)
+		{
+			return array();
+		}
+
+		$header_row = 1;
+		$headers = array();
+		for ($col = 1; $col <= $highest_column_index; $col++)
+		{
+			$header = trim((string)$sheet->getCell([$col, $header_row])->getCalculatedValue());
+			$headers[$col] = $header;
+		}
+
+		$header_map = array(
+			'file_name' => 'file_name',
+			'file name' => 'file_name',
+			'filnavn' => 'file_name',
+			'cadastral_unit' => 'cadastral_unit',
+			'cadastral unit' => 'cadastral_unit',
+			'matrikkelenhet' => 'cadastral_unit',
+			'building_number' => 'building_number',
+			'building number' => 'building_number',
+			'bygningsnummer' => 'building_number',
+			'location_code' => 'location_code',
+			'location code' => 'location_code',
+			'lokaliserings kode' => 'location_code',
+			'document_category' => 'document_category',
+			'document categories' => 'document_category',
+			'dokumentkategorier' => 'document_category',
+			'branch' => 'branch',
+			'fag' => 'branch',
+			'building_part' => 'building_part',
+			'building part' => 'building_part',
+			'bygningsdel' => 'building_part',
+			'remark' => 'remark',
+			'merknad' => 'remark',
+			'remark_detail' => 'remark_detail',
+			'remark 2' => 'remark_detail',
+			'merknad 2' => 'remark_detail',
+			'import ok' => 'import_ok',
+			'import_ok' => 'import_ok',
+			'import failed' => 'import_failed',
+			'import_failed' => 'import_failed',
+			'import feilet' => 'import_failed'
+		);
+
+		$metadata = array();
+		for ($row = $header_row + 1; $row <= $highest_row; $row++)
+		{
+			$entry = array();
+			for ($col = 1; $col <= $highest_column_index; $col++)
+			{
+				$source_header = strtolower(trim((string)$headers[$col]));
+				if (!$source_header || !isset($header_map[$source_header]))
+				{
+					continue;
+				}
+
+				$target_key = $header_map[$source_header];
+				$value = $sheet->getCell([$col, $row])->getCalculatedValue();
+				if ($value === null || $value === '')
+				{
+					continue;
+				}
+
+				if (in_array($target_key, array('document_category', 'branch', 'building_part')))
+				{
+					$entry[$target_key] = $this->_normalize_multi_value($value);
+				}
+				else
+				{
+					$entry[$target_key] = trim((string)$value);
+				}
+			}
+
+			if (empty($entry['file_name']))
+			{
+				continue;
+			}
+
+			$file_name = $entry['file_name'];
+			unset($entry['file_name']);
+			$metadata[$file_name] = $entry;
+		}
+
+		return $metadata;
+	}
+
+	private function _normalize_multi_value($value)
+	{
+		if (is_array($value))
+		{
+			return array_values(array_filter(array_map('trim', $value)));
+		}
+
+		$tokens = preg_split('/(::|;|,)/', (string)$value);
+		if (!$tokens)
+		{
+			return array();
+		}
+
+		$tokens = array_map('trim', $tokens);
+		$tokens = array_filter($tokens, function ($item)
+		{
+			return $item !== '';
+		});
+
+		return array_values(array_unique($tokens));
+	}
+	
 	function unzip_files()
 	{
 

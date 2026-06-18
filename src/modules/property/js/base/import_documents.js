@@ -97,6 +97,76 @@ $(document).ready(function ()
 		}
 	});
 
+	//fileupload_spreadsheet
+	//Initialize the jQuery File Upload widget:
+	$('#fileupload_spreadsheet').fileupload({
+		limitConcurrentUploads: 1,
+		maxChunkSize: 8388000,
+		dataType: "json",
+		add: function (e, data)
+		{
+			//console.log($(this));
+
+			data.context = $('<p class="file">')
+				.append($('<span>').text(data.files[0].name))
+				.appendTo($("#content_upload_spreadsheet"));
+			data.submit();
+		},
+		progress: function (e, data)
+		{
+			var progress = parseInt((data.loaded / data.total) * 100, 10);
+			data.context.css("background-position-x", 100 - progress + "%");
+		},
+		progressall: function (e, data)
+		{
+			var progress = parseInt(data.loaded / data.total * 100, 10);
+			if (progress === 100)
+			{
+				try
+				{
+					refresh_files();
+				}
+				catch (e)
+				{
+				}
+			}
+		},
+		done: function (e, data)
+		{
+			if (data.result && data.result.files && data.result.files[0] && data.result.files[0].error)
+			{
+				data.context
+					.removeClass("file")
+					.addClass("error")
+					.find("span")
+					.text(data.result.files[0].name + ', Error: ' + data.result.files[0].error);
+			}
+			else
+			{
+				data.context
+					.addClass("done");
+				window.setTimeout(function ()
+				{
+					data.context.remove();
+				}, 1000);
+				if (data.result && data.result.status === 'ok')
+				{
+					refresh_files();
+				}
+				else if (data.result && data.result.message)
+				{
+					alert(data.result.message);
+				}
+				else
+				{
+					alert('Error: metadata upload failed');
+				}
+			}
+
+		}
+	});
+
+
 	$("#document_category").select2({
 		placeholder: $(this).data('placeholder'),
 		language: "no",
@@ -126,6 +196,7 @@ $(document).ready(function ()
 		$(thisRadio).prop("checked", true);
 		$("#upload_alternative_2").hide(50);
 		$("#upload_alternative_1").show(50);
+		$("#upload_alternative_3").hide(50);
 	});
 	$("#select_upload_alternative_2").click(function ()
 	{
@@ -133,10 +204,16 @@ $(document).ready(function ()
 		$(thisRadio).prop("checked", true);
 		$("#upload_alternative_1").hide(50);
 		$("#upload_alternative_2").show(50);
+		$("#upload_alternative_3").hide(50);
 	});
-
-
-
+	$("#select_upload_alternative_3").click(function ()
+	{
+		var thisRadio = $(this).find("input[type=radio]");
+		$(thisRadio).prop("checked", true);
+		$("#upload_alternative_1").hide(50);
+		$("#upload_alternative_2").hide(50);
+		$("#upload_alternative_3").show(50);
+	});
 });
 
 this.onActionsClick_filter_files = function (action, ids)
@@ -317,7 +394,13 @@ this.get_order_info = function ()
 						'option',
 						'url',
 						phpGWLink('index.php', {menuaction: 'property.uiimport_documents.handle_import_files', order_id: order_id, zipped: true})
-						);
+					);
+					$('#fileupload_spreadsheet').fileupload(
+						'option',
+						'url',
+						phpGWLink('index.php', {menuaction: 'property.uiimport_documents.upload_metadata', order_id: order_id, spreadsheet: true})
+					);
+
 				}
 
 				$("#vendor_name").text(data.vendor_name);

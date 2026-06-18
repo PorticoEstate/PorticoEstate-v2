@@ -2062,7 +2062,7 @@ class BoCommon
 		);
 	}
 
-	public function performDownload($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
+	public function performDownload($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_options = array())
 	{
 		set_time_limit(500);
 		$this->flags['noheader'] = true;
@@ -2094,17 +2094,24 @@ class BoCommon
 				$this->performCsvOut($list, $name, $descr, $input_type, $identificator, $filename);
 				break;
 			case 'excel':
-				$this->performXlsxOut($list, $name, $descr, $input_type, $identificator, $filename);
+				if (!empty($export_options['additional_sheets']))
+				{
+					$this->performPhpspreadsheetOut($list, $name, $descr, $input_type, $identificator, $filename, 'excel', $export_options);
+				}
+				else
+				{
+					$this->performXlsxOut($list, $name, $descr, $input_type, $identificator, $filename);
+				}
 				break;
 			case 'ods':
-				$this->performPhpspreadsheetOut($list, $name, $descr, $input_type, $identificator, $filename, 'ods');
+				$this->performPhpspreadsheetOut($list, $name, $descr, $input_type, $identificator, $filename, 'ods', $export_options);
 				break;
 		}
 
 		return $this->flags;
 	}
 
-	public function performPhpspreadsheetOut($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_format = 'excel')
+	public function performPhpspreadsheetOut($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_format = 'excel', $export_options = array())
 	{
 		if ($filename)
 		{
@@ -2132,7 +2139,10 @@ class BoCommon
 		$filename .= "_{$date_time}.{$suffix}";
 
 		$browser = CreateObject('phpgwapi.browser');
-		$browser->content_header($filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+		$content_type = $export_format === 'ods'
+			? 'application/vnd.oasis.opendocument.spreadsheet'
+			: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+		$browser->content_header($filename, $content_type);
 
 		$spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
 
@@ -2218,7 +2228,11 @@ class BoCommon
 			}
 		}
 
-		if ($export_format = 'ods')
+		$this->appendAdditionalSheets($spreadsheet, $export_options);
+
+		$spreadsheet->setActiveSheetIndex(0);
+
+		if ($export_format === 'ods')
 		{
 			$objWriter = new \PhpOffice\PhpSpreadsheet\Writer\Ods($spreadsheet);
 		}
@@ -2227,6 +2241,62 @@ class BoCommon
 			$objWriter = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
 		}
 		$objWriter->save('php://output');
+	}
+
+	private function appendAdditionalSheets(\PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet, array $export_options)
+	{
+		if (empty($export_options['additional_sheets']) || !is_array($export_options['additional_sheets']))
+		{
+			return;
+		}
+
+		$sheet_index = 0;
+		foreach ($export_options['additional_sheets'] as $sheet_data)
+		{
+			$columns = isset($sheet_data['columns']) && is_array($sheet_data['columns']) ? $sheet_data['columns'] : array();
+			if (!$columns)
+			{
+				continue;
+			}
+
+			$title = isset($sheet_data['title']) ? trim((string)$sheet_data['title']) : '';
+			if ($title === '')
+			{
+				$title = "Sheet_" . ($sheet_index + 2);
+			}
+			$title = mb_substr($title, 0, 31);
+			$base_title = $title;
+			$suffix = 1;
+			while ($spreadsheet->getSheetByName($title) !== null)
+			{
+				$suffix_text = '_' . $suffix;
+				$trim_length = 31 - strlen($suffix_text);
+				$title = mb_substr($base_title, 0, $trim_length) . $suffix_text;
+				$suffix++;
+			}
+
+			$sheet = $spreadsheet->createSheet();
+			$sheet->setTitle($title);
+
+			$col_index = 1;
+			foreach ($columns as $column)
+			{
+				$header = isset($column['header']) ? (string)$column['header'] : "Column {$col_index}";
+				$sheet->setCellValue([$col_index, 1], $header);
+
+				$values = isset($column['values']) && is_array($column['values']) ? array_values($column['values']) : array();
+				$row_index = 2;
+				foreach ($values as $value)
+				{
+					$sheet->setCellValue([$col_index, $row_index], (string)$value);
+					$row_index++;
+				}
+
+				$col_index++;
+			}
+
+			$sheet_index++;
+		}
 	}
 
 	public function performXlsxOut($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
@@ -3231,14 +3301,14 @@ class BoCommon
 		$this->flags = $this->noAccess();
 	}
 
-	public function download($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')
+	public function download($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_options = array())
 	{
-		$this->flags = $this->performDownload($list, $name, $descr, $input_type, $identificator, $filename);
+		$this->flags = $this->performDownload($list, $name, $descr, $input_type, $identificator, $filename, $export_options);
 	}
 
-	public function phpspreadsheet_out($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_format = 'excel')
+	public function phpspreadsheet_out($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_format = 'excel', $export_options = array())
 	{
-		return $this->performPhpspreadsheetOut($list, $name, $descr, $input_type, $identificator, $filename, $export_format);
+		return $this->performPhpspreadsheetOut($list, $name, $descr, $input_type, $identificator, $filename, $export_format, $export_options);
 	}
 
 	public function xslx_out($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '')

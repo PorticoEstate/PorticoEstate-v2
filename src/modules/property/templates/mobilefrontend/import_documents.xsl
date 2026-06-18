@@ -153,8 +153,6 @@
 				</div>
 				<p id="select_upload_alternative_2">
 					<input  type="radio" name = "upload_alternative"></input> Alternativ 2: laste opp alle dokumentene fra samme katalog</p>
-
-
 				<div id="upload_alternative_2" class="{$group_class}" style="display:none">
 					<label>
 						<xsl:value-of select="php:function('lang', 'upload files')"/>
@@ -172,6 +170,18 @@
 						</xsl:with-param>
 					</xsl:call-template>
 				</div>
+
+				<p id="select_upload_alternative_3">
+					<input type="radio" name="upload_alternative"></input> Alternativ 3: laste opp regneark for tagging med metadata</p>
+				<div id="upload_alternative_3" class="{$group_class}" style="display:none">
+					<label>
+						<xsl:value-of select="php:function('lang', 'upload spreadsheet')" />
+					</label>
+
+					<input type="file" id="fileupload_spreadsheet" class="{$input_class}"></input>
+					<div class="content_upload_download" id="content_upload_spreadsheet"></div>
+				</div>
+
 				<fieldset  class="pure-form pure-form-aligned">
 					<div class="{$group_class}">
 						<label>

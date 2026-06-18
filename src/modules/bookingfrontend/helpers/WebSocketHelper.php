@@ -343,49 +343,65 @@ class WebSocketHelper
     }
 
     /**
-     * Fork a process to send WebSocket notifications asynchronously
+     * Run a callback asynchronously so it never blocks the HTTP response.
      *
-     * @param callable $callback The function to execute in the child process
-     * @return bool True if forking was successful, false otherwise
+     * Strategy, in order of preference:
+     *  1. pcntl_fork  — true background child (CLI / when the extension is loaded).
+     *  2. fastcgi_finish_request — under php-fpm, flush the response to the client first,
+     *     then run the callback during shutdown. The DB connection stays valid (unlike a
+     *     fork), so callbacks that touch the database are safe.
+     *  3. Synchronous — last resort when neither is available.
+     *
+     * @param callable $callback The work to run
+     * @return bool True if the work was deferred (won't block the response), false if run synchronously
      */
     public static function forkNotification(callable $callback): bool
     {
-        // Check if pcntl is available
-        if (!function_exists('pcntl_fork')) {
-            error_log("pcntl_fork not available, running notification synchronously");
-            $callback();
-            return false;
+        // Preferred: fork a real background process
+        if (function_exists('pcntl_fork')) {
+            $pid = pcntl_fork();
+
+            if ($pid == -1) {
+                error_log("Failed to fork process for notification");
+                $callback();
+                return false;
+            }
+
+            // Parent process (return immediately)
+            if ($pid) {
+                return true;
+            }
+
+            // Child process
+            try {
+                $callback();
+                if (function_exists('posix_kill')) {
+                    posix_kill(getmypid(), SIGTERM);
+                }
+                exit(0);
+            } catch (\Throwable $e) {
+                error_log("Error in forked notification process: " . $e->getMessage());
+                exit(1);
+            }
         }
 
-        // Fork the process
-        $pid = pcntl_fork();
-
-        // Fork failed
-        if ($pid == -1) {
-            error_log("Failed to fork process for WebSocket notification");
-            $callback();
-            return false;
-        }
-
-        // Parent process (return immediately)
-        if ($pid) {
+        // php-fpm fallback: finish the response, then run the work during shutdown
+        if (function_exists('fastcgi_finish_request')) {
+            register_shutdown_function(function () use ($callback) {
+                // Flush the response so the client is not kept waiting for the callback
+                fastcgi_finish_request();
+                try {
+                    $callback();
+                } catch (\Throwable $e) {
+                    error_log("Error in deferred notification: " . $e->getMessage());
+                }
+            });
             return true;
         }
 
-        // Child process
-        try {
-            // Run the callback function
-            $callback();
-
-            // Exit the child process
-            if (function_exists('posix_kill')) {
-                posix_kill(getmypid(), SIGTERM);
-            }
-            exit(0);
-        } catch (Exception $e) {
-            error_log("Error in forked WebSocket notification process: " . $e->getMessage());
-            exit(1);
-        }
+        // Last resort: run synchronously
+        $callback();
+        return false;
     }
 
     /**

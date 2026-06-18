@@ -305,14 +305,12 @@ HTML;
 			{
 				$valarray	 = explode('_', $value);
 				$type		 = $valarray[0];
-				$new		 = array();
-				$newval		 = '';
-
-				while ($chunk = next($valarray))
-				{
-					$new[] = $chunk;
-				}
-				$newval = implode(' ', $new);
+				/* Everything after the type prefix. Use array_slice rather than a
+				   `while ($chunk = next())` loop, which silently dropped falsy chunks
+				   such as "0" — breaking selected/checked/value detection for options
+				   whose value is 0 (e.g. a No/0 <select>). */
+				$new		 = array_slice($valarray, 1);
+				$newval		 = implode(' ', $new);
 
 				switch ($type)
 				{

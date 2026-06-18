@@ -643,19 +643,33 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 			// Check each day in the selection span
 			for (let date = selectionStart.startOf('day'); date <= selectionEnd.startOf('day'); date = date.plus({days: 1})) {
-				// Find the season that applies to this specific day
-				const daysSeason = props.seasons.find(season => {
+				// Find all active seasons that cover this day AND match the enabled
+				// resources. A building can have several overlapping seasons covering
+				// the same dates with different opening hours (e.g. one resource open
+				// 09:00-14:30, another 14:30-20:00). Picking just the first season by
+				// date would validate against the wrong resource's hours and wrongly
+				// flag every selection as "outside opening hours".
+				const daysSeasons = props.seasons.filter(season => {
 					if (!season.active) return false;
 					const seasonStart = DateTime.fromISO(season.from_);
 					const seasonEnd = DateTime.fromISO(season.to_);
-					return date >= seasonStart.startOf('day') && date <= seasonEnd.endOf('day');
+					if (date < seasonStart.startOf('day') || date > seasonEnd.endOf('day')) return false;
+
+					// When no resources are enabled, consider all seasons
+					return enabledResources.size === 0
+						? true
+						: season.resources.some(seasonResource =>
+							enabledResources.has(seasonResource.id.toString())
+						);
 				});
 
-				if (!daysSeason) continue; // No season = allow (fallback)
+				if (daysSeasons.length === 0) continue; // No matching season = allow (fallback)
 
-				// Get boundaries for this day's weekday
+				// Get boundaries for this day's weekday across all matching seasons
 				const dayOfWeek = date.weekday;
-				const dayBoundaries = daysSeason.boundaries.filter(b => b.wday === dayOfWeek);
+				const dayBoundaries = daysSeasons.flatMap(season =>
+					season.boundaries.filter(b => b.wday === dayOfWeek)
+				);
 
 				if (dayBoundaries.length === 0) continue; // No boundaries = allow (fallback)
 

@@ -60,6 +60,20 @@
     flex-shrink: 0;
 }
 
+.withdrawAction {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.withdrawHint {
+    font-size: 12px;
+    color: var(--ds-color-neutral-text-subtle);
+    text-align: right;
+    max-width: 220px;
+}
+
 // Two-column grid
 .detailGrid {
     display: grid;

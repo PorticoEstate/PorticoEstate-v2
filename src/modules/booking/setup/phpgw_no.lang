@@ -1192,3 +1192,12 @@ short_description	booking	no	Kort beskrivelse
 no_active_season_found_for_this_date	booking	no	Ingen aktiv sesong funnet for denne datoen
 missing_organization	booking	no	Manglende organisasjon
 cancellation_deadline_warning	booking	no	Denne bestillingen er innenfor avbestillingsfristen for ressurs %1. Avbestilling kan påvirke kunden.
+release_history	booking	no	Versjonshistorikk
+release_history_intro	booking	no	Oversikt over commits gruppert etter versjonene som har kjørt.
+release_history_error	booking	no	Kunne ikke laste versjonshistorikk
+commits_count	booking	no	%s commits
+no_new_commits	booking	no	Ingen nye commits
+commits_unavailable	booking	no	Commits utilgjengelig
+currently_running	booking	no	Kjører nå
+by_author	booking	no	av
+loading_commits	booking	no	Laster commits...

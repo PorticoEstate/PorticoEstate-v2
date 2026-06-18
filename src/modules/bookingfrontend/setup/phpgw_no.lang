@@ -1052,3 +1052,8 @@ see_all_notifications	bookingfrontend	no	Se alle varsler
 unread	bookingfrontend	no	Uleste
 load_more	bookingfrontend	no	Last inn flere
 no_unread_notifications	bookingfrontend	no	Ingen uleste varsler
+cancel_booking	bookingfrontend	no	Avbestill
+confirm_cancel_booking_title	bookingfrontend	no	Avbestill booking
+confirm_cancel_booking_description	bookingfrontend	no	Er du sikker på at du vil avbestille denne bookingen?
+withdraw_unavailable_started	bookingfrontend	no	Tiden har allerede startet, og søknaden kan ikke trekkes.
+withdraw_unavailable_deadline	bookingfrontend	no	Avbestillingsfristen er passert.

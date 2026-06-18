@@ -5,6 +5,7 @@ namespace App\modules\bookingfrontend\services\applications;
 use App\Database\Db;
 use App\modules\booking\services\NotificationService;
 use App\modules\bookingfrontend\helpers\UserHelper;
+use App\modules\bookingfrontend\helpers\WebSocketHelper;
 use App\modules\bookingfrontend\interfaces\CommentsServiceInterface;
 use App\modules\bookingfrontend\models\ApplicationComment;
 use App\modules\bookingfrontend\models\User;
@@ -17,6 +18,8 @@ class ApplicationCommentsService implements CommentsServiceInterface
     private $db;
     private $userSettings;
 	private UserHelper $userHelper;
+	/** @var array Notifications queued during a transaction, dispatched (forked) after commit */
+	private array $pendingNotifications = [];
 
 	public function __construct()
     {
@@ -119,18 +122,19 @@ class ApplicationCommentsService implements CommentsServiceInterface
             // Update application's frontend_modified timestamp
             $this->updateApplicationModified($applicationId);
 
-            // Send admin notification
-            $this->sendAdminNotification($applicationId, $comment);
+            // Queue notifications (admin email + case officer) to be dispatched after the
+            // outermost commit. Sending inline would block the response on a slow/unreachable
+            // SMTP server and hold the transaction open the whole time.
+            $this->pendingNotifications[] = [
+                'applicationId' => $applicationId,
+                'commentId' => (int) $commentId,
+                'author' => $author,
+                'comment' => $comment,
+            ];
 
             if ($ownTransaction) {
                 $this->db->commit();
-            }
-
-            // Create in-app notification for the case officer (non-fatal)
-            try {
-                $this->notifyCaseOfficer($applicationId, (int) $commentId, $author, $comment);
-            } catch (Exception $e) {
-                error_log("Failed to create case officer notification for application {$applicationId}: " . $e->getMessage());
+                $this->flushPendingNotifications();
             }
 
             // Convert to ApplicationComment model and return serialized
@@ -140,6 +144,7 @@ class ApplicationCommentsService implements CommentsServiceInterface
         } catch (Exception $e) {
             if ($ownTransaction && $this->db->inTransaction()) {
                 $this->db->rollBack();
+                $this->pendingNotifications = [];
             }
             throw $e;
         }
@@ -178,12 +183,16 @@ class ApplicationCommentsService implements CommentsServiceInterface
 
             $this->db->commit();
 
+            // Dispatch queued notifications now that the transaction has committed
+            $this->flushPendingNotifications();
+
             return $createdComments;
 
         } catch (Exception $e) {
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
+            $this->pendingNotifications = [];
             throw $e;
         }
     }
@@ -318,6 +327,43 @@ class ApplicationCommentsService implements CommentsServiceInterface
             'phpgw_accounts',
             strval($caseOfficerId)
         );
+    }
+
+    /**
+     * Dispatch any queued notifications. Runs in a forked child process so the slow
+     * admin email send (synchronous SMTP) never blocks the HTTP response. Must only be
+     * called after the surrounding transaction has committed, so the forked child does
+     * not share an open transaction on the database connection.
+     */
+    private function flushPendingNotifications(): void
+    {
+        if (empty($this->pendingNotifications)) {
+            return;
+        }
+
+        $pending = $this->pendingNotifications;
+        $this->pendingNotifications = [];
+
+        WebSocketHelper::forkNotification(function () use ($pending) {
+            foreach ($pending as $notification) {
+                try {
+                    $this->sendAdminNotification($notification['applicationId'], $notification['comment']);
+                } catch (Exception $e) {
+                    error_log("Failed to send admin notification for application {$notification['applicationId']}: " . $e->getMessage());
+                }
+
+                try {
+                    $this->notifyCaseOfficer(
+                        $notification['applicationId'],
+                        $notification['commentId'],
+                        $notification['author'],
+                        $notification['comment']
+                    );
+                } catch (Exception $e) {
+                    error_log("Failed to create case officer notification for application {$notification['applicationId']}: " . $e->getMessage());
+                }
+            }
+        });
     }
 
 }

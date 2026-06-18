@@ -721,6 +721,8 @@ set_up_data_array = function (field_name)
 set_up_multiselect2 = function (td, field_name)
 {
 	select_id++;
+	const currentSelectId = 'select_id_' + select_id;
+	const rowFileName = $(td).closest('tr').children('td').first().text().trim();
 	let data_list = [];
 	$("#" + field_name + " > option").each(function ()
 	{
@@ -736,7 +738,7 @@ set_up_multiselect2 = function (td, field_name)
 
 
 	let selected;
-	htmlString = '<select id="select_id_' + select_id + '" name="' + field_name + '" multiple="true" class="select_' + field_name + '">';
+	htmlString = '<select id="' + currentSelectId + '" name="' + field_name + '" multiple="true" class="select_' + field_name + '">';
 
 	data_list.forEach(function (category)
 	{
@@ -752,7 +754,86 @@ set_up_multiselect2 = function (td, field_name)
 
 	$(obj).append(htmlString);
 
-	$('#select_id_' + select_id).multiselect({
+	const positionFloatingMenu = function ($button, $menu)
+	{
+		const offset = $button.offset();
+		if (!offset)
+		{
+			return;
+		}
+
+		const menuWidth = Math.max($button.outerWidth(), 240);
+		$menu.css({
+			position: 'absolute',
+			left: offset.left,
+			top: offset.top + $button.outerHeight(),
+			width: menuWidth,
+			zIndex: 20000,
+			maxHeight: '320px',
+			overflowY: 'auto'
+		});
+	};
+
+	const floatMenuOutsideWrapper = function ($select)
+	{
+		const $group = $select.next('.btn-group');
+		const $button = $group.find('button.multiselect');
+		const $menu = $group.find('ul.multiselect-container, div.multiselect-container, .dropdown-menu').first();
+		if (!$button.length || !$menu.length)
+		{
+			return;
+		}
+
+		const namespace = '.floating_' + currentSelectId;
+		$menu.data('origin-group', $group);
+		$menu.appendTo('body').addClass('floating-multiselect-menu');
+		positionFloatingMenu($button, $menu);
+
+		$menu.off('wheel' + namespace).on('wheel' + namespace, function (e)
+		{
+			const evt = e.originalEvent;
+			const delta = evt ? evt.deltaY : 0;
+			const top = this.scrollTop;
+			const max = this.scrollHeight - this.clientHeight;
+
+			if ((delta < 0 && top > 0) || (delta > 0 && top < max))
+			{
+				e.stopPropagation();
+			}
+		});
+
+		$(window).off('resize' + namespace + ' scroll' + namespace).on('resize' + namespace + ' scroll' + namespace, function ()
+		{
+			positionFloatingMenu($button, $menu);
+		});
+	};
+
+	const restoreMenu = function ($select)
+	{
+		const $group = $select.next('.btn-group');
+		const namespace = '.floating_' + currentSelectId;
+		const $menu = $('body > .multiselect-container.floating-multiselect-menu, body > ul.dropdown-menu.floating-multiselect-menu, body > .dropdown-menu.floating-multiselect-menu');
+
+		$menu.each(function ()
+		{
+			const $thisMenu = $(this);
+			const $origin = $thisMenu.data('origin-group');
+			if ($origin && $origin.length && $origin.is($group))
+			{
+				$thisMenu
+					.removeClass('floating-multiselect-menu')
+					.removeAttr('style')
+					.off('wheel' + namespace)
+					.appendTo($group);
+			}
+		});
+
+		$(window).off('resize' + namespace + ' scroll' + namespace);
+	};
+
+	const $currentSelect = $('#' + currentSelectId);
+
+	$currentSelect.multiselect({
 		buttonClass: 'form-select',
 		widthSynchronizationMode: 'always',
 		buttonWidth: '200px',
@@ -762,7 +843,6 @@ set_up_multiselect2 = function (td, field_name)
 		},
 		onChange: function (option, checked, select)
 		{
-			let file_name = $(option).parent().parent().parent().parent().parent().children('td')[0].innerText;
 			let order_id = $('#order_id').val();
 
 			$.ajax({
@@ -770,7 +850,7 @@ set_up_multiselect2 = function (td, field_name)
 				dataType: 'json',
 				url: phpGWLink('index.php', {menuaction: 'property.uiimport_documents.set_value'}, true),
 				data: {
-					id: order_id + '::' + file_name,
+					id: order_id + '::' + rowFileName,
 					field_name: field_name,
 					checked: checked === true ? 1 : 0,
 					value: [$(option).val()],
@@ -791,5 +871,38 @@ set_up_multiselect2 = function (td, field_name)
 
 
 		}
+	});
+
+	const $currentGroup = $currentSelect.next('.btn-group');
+	const namespace = '.floating_' + currentSelectId;
+	const retryFloat = function ()
+	{
+		window.setTimeout(function ()
+		{
+			floatMenuOutsideWrapper($currentSelect);
+		}, 0);
+		window.setTimeout(function ()
+		{
+			floatMenuOutsideWrapper($currentSelect);
+		}, 60);
+		window.setTimeout(function ()
+		{
+			floatMenuOutsideWrapper($currentSelect);
+		}, 180);
+	};
+
+	$currentGroup.off('shown.bs.dropdown' + namespace).on('shown.bs.dropdown' + namespace, function ()
+	{
+		retryFloat();
+	});
+
+	$currentGroup.find('button.multiselect').off('click' + namespace).on('click' + namespace, function ()
+	{
+		retryFloat();
+	});
+
+	$currentGroup.off('hide.bs.dropdown' + namespace).on('hide.bs.dropdown' + namespace, function ()
+	{
+		restoreMenu($currentSelect);
 	});
 };

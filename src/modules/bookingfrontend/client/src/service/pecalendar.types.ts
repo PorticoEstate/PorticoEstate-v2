@@ -117,7 +117,9 @@ export interface IEventOLD {
 	is_public?: number
 }
 
-export type IShortResource = Pick<IResource, 'active' | 'name' | 'id' | 'activity_id' | 'simple_booking' | 'building_id' | 'activate_prepayment' | 'deactivate_application' | 'deactivate_calendar' | 'simple_booking_start_date' | 'direct_booking' | 'participant_limit'>;
+export type IShortResource = Pick<IResource, 'active' | 'name' | 'id' | 'activity_id' | 'simple_booking' | 'building_id' | 'activate_prepayment' | 'deactivate_application' | 'deactivate_calendar' | 'simple_booking_start_date' | 'direct_booking' | 'participant_limit'>
+    // Present on fully-serialized resources (e.g. application.resources); absent on short serializations
+    & Partial<Pick<IResource, 'cancellation_deadline_value' | 'cancellation_deadline_unit'>>;
 
 export interface IEventDate {
 	from_: string

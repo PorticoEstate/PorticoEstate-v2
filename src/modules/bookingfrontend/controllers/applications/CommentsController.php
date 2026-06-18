@@ -149,6 +149,49 @@ class CommentsController
      * Update application status with comment
      * PUT /api/applications/{id}/status
      */
+    /**
+     * Returns an error message if the application may not be cancelled/withdrawn
+     * (booking already started, or resource cancellation deadline passed), otherwise null.
+     */
+    private function getCancellationBlockedError(int $applicationId): ?string
+    {
+        $dates = $this->applicationService->applicationRepository->fetchDates($applicationId);
+        $resources = $this->applicationService->applicationRepository->fetchResources($applicationId);
+
+        if (empty($dates)) {
+            return null;
+        }
+
+        $tz = new \DateTimeZone('Europe/Oslo');
+        $earliestFrom = null;
+        foreach ($dates as $date) {
+            $from = new \DateTime($date['from_'], $tz);
+            if ($earliestFrom === null || $from < $earliestFrom) {
+                $earliestFrom = $from;
+            }
+        }
+
+        $now = new \DateTime('now', $tz);
+        if ($earliestFrom && $now >= $earliestFrom) {
+            return 'The booking has already started';
+        }
+
+        foreach ($resources as $resource) {
+            $deadlineSeconds = ApplicationController::deadlineToSeconds(
+                $resource['cancellation_deadline_value'] ?? null,
+                $resource['cancellation_deadline_unit'] ?? null
+            );
+            if ($deadlineSeconds > 0) {
+                $cutoff = (clone $earliestFrom)->modify("-{$deadlineSeconds} seconds");
+                if ($now > $cutoff) {
+                    return 'Cancellation deadline has passed for this booking';
+                }
+            }
+        }
+
+        return null;
+    }
+
     public function updateApplicationStatus(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
@@ -188,6 +231,15 @@ class CommentsController
                 ], 400, $response);
             }
 
+            // When withdrawing/cancelling, the booking must not have started and the
+            // resource cancellation deadline must not have passed.
+            if ($newStatus === 'CANCELLED') {
+                $blockedError = $this->getCancellationBlockedError($applicationId);
+                if ($blockedError !== null) {
+                    return ResponseHelper::sendErrorResponse(['error' => $blockedError], 409, $response);
+                }
+            }
+
             // Get optional additional comment
             $additionalComment = isset($data['comment']) ? trim($data['comment']) : null;
             if ($additionalComment && strlen($additionalComment) > 10000) {
@@ -198,10 +250,16 @@ class CommentsController
 
             // Update status and add comments
             $createdComments = $this->commentsService->addStatusChangeComment(
-                $applicationId, 
-                $newStatus, 
+                $applicationId,
+                $newStatus,
                 $additionalComment
             );
+
+            // When cancelling, deactivate any linked schedule entities (events/allocations/
+            // bookings) so they no longer occupy the calendar.
+            if ($newStatus === 'CANCELLED') {
+                $this->applicationService->applicationRepository->deactivateAssociatedEntities($applicationId);
+            }
 
             return ResponseHelper::sendJSONResponse([
                 'comments' => $createdComments,

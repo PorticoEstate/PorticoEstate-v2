@@ -1,0 +1,39 @@
+{% extends layout|default('@views/_layout.twig') %}
+
+{% block title %}{{ lang('booking.release_history') }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="/assets/designsystemet/index.css">
+<style>{{ source('@views/releases/releases.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<div id="release-history" class="release-history">
+	<h2>{{ lang('booking.release_history') }}</h2>
+	<p class="release-history__intro">{{ lang('booking.release_history_intro') }}</p>
+
+	<div id="release-error" class="ds-alert is-hidden" data-color="danger"></div>
+
+	<div id="release-list" class="release-history__list" aria-live="polite"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+	window.__releaseHistory = {
+		repo: '{{ repo|e('js') }}',
+		// Recorded commits, newest first. Each is a version boundary.
+		versions: {{ versions|json_encode|raw }},
+		lang: {
+			loading: '{{ lang("booking.loading_commits")|e('js') }}',
+			commits_count: '{{ lang("booking.commits_count")|e('js') }}',
+			no_commits: '{{ lang("booking.no_new_commits")|e('js') }}',
+			unavailable: '{{ lang("booking.commits_unavailable")|e('js') }}',
+			running: '{{ lang("booking.currently_running")|e('js') }}',
+			by: '{{ lang("booking.by_author")|e('js') }}',
+			error: '{{ lang("booking.release_history_error")|e('js') }}'
+		}
+	};
+</script>
+<script>{{ source('@views/releases/releases.js') }}</script>
+{% endblock %}

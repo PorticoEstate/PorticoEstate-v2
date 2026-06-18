@@ -250,10 +250,16 @@ class CommentsController
 
             // Update status and add comments
             $createdComments = $this->commentsService->addStatusChangeComment(
-                $applicationId, 
-                $newStatus, 
+                $applicationId,
+                $newStatus,
                 $additionalComment
             );
+
+            // When cancelling, deactivate any linked schedule entities (events/allocations/
+            // bookings) so they no longer occupy the calendar.
+            if ($newStatus === 'CANCELLED') {
+                $this->applicationService->applicationRepository->deactivateAssociatedEntities($applicationId);
+            }
 
             return ResponseHelper::sendJSONResponse([
                 'comments' => $createdComments,

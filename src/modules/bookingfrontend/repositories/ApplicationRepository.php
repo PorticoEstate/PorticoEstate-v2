@@ -879,6 +879,43 @@ class ApplicationRepository
     }
 
     /**
+     * Deactivate the schedule entities (events/allocations/bookings) created from an
+     * application. Used when an approved application is cancelled/withdrawn, so the
+     * linked entries disappear from the calendar (queries filter on active = 1).
+     *
+     * @param int $application_id The application ID
+     * @return array Affected entities as [['type' => string, 'id' => int, 'from_' => string, 'to_' => string], ...]
+     */
+    public function deactivateAssociatedEntities(int $application_id): array
+    {
+        // bb_application_association is a view over bb_booking/bb_allocation/bb_event
+        $sql = "SELECT type, id, from_, to_ FROM bb_application_association
+            WHERE application_id = :application_id AND active = 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':application_id' => $application_id]);
+        $associations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $tableByType = [
+            'event' => 'bb_event',
+            'allocation' => 'bb_allocation',
+            'booking' => 'bb_booking',
+        ];
+
+        $affected = [];
+        foreach ($associations as $association) {
+            $table = $tableByType[$association['type']] ?? null;
+            if ($table === null) {
+                continue;
+            }
+            $update = $this->db->prepare("UPDATE {$table} SET active = 0 WHERE id = :id");
+            $update->execute([':id' => (int)$association['id']]);
+            $affected[] = $association;
+        }
+
+        return $affected;
+    }
+
+    /**
      * Fetch orders for an application
      *
      * @param int $application_id The application ID

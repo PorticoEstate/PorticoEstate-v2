@@ -117,35 +117,41 @@ const StatusTimeline: FC<{ application: IApplication; t: (k: string) => string }
         const idx = order.indexOf(key);
         const cur = order.indexOf(status);
         if (rejected) return key === 'new' || key === 'pending';
+        // 'accepted' is a terminal success state — mark it done (green) once reached.
+        if (key === 'accepted') return status === 'accepted';
         return cur > idx;
     };
     const isCurrent = (key: string) => {
-        if (rejected) return false;
+        if (rejected) return key === 'final';
         return key === status;
     };
 
+    // Three-step flow: Ny → Under behandling → Akseptert.
+    // If the application is rejected/cancelled, the final node is replaced by
+    // the terminal state instead of "Akseptert".
     const steps = [
         {key: 'new', label: t('bookingfrontend.new'), date: fmtSqlDate(application.created)},
         {key: 'pending', label: t('bookingfrontend.pending'), date: application.status !== 'NEW' ? fmtSqlDate(application.modified) : '—'},
-        {key: 'accepted', label: t('bookingfrontend.accepted'), date: status === 'accepted' ? fmtSqlDate(application.modified) : '—'},
+        rejected
+            ? {
+                key: 'final',
+                label: status === 'cancelled' ? t('bookingfrontend.cancelled') : t('bookingfrontend.rejected'),
+                date: fmtSqlDate(application.modified),
+            }
+            : {
+                key: 'accepted',
+                label: t('bookingfrontend.accepted'),
+                date: status === 'accepted' ? fmtSqlDate(application.modified) : '—',
+            },
     ];
-
-    if (rejected) {
-        steps.push({
-            key: 'rejected',
-            label: status === 'cancelled' ? t('bookingfrontend.cancelled') : t('bookingfrontend.rejected'),
-            date: fmtSqlDate(application.modified),
-        });
-    } else {
-        steps.push({key: 'done', label: t('bookingfrontend.finished'), date: '—'});
-    }
 
     return (
         <div className={styles.statusTimeline}>
             {steps.map((step, i) => {
                 const done = isDoneUpTo(step.key);
                 const current = isCurrent(step.key);
-                const danger = step.key === 'rejected';
+                // When the application is rejected/cancelled the whole path is danger.
+                const danger = rejected;
                 let cls = '';
                 if (danger) cls = styles.danger;
                 else if (done) cls = styles.done;

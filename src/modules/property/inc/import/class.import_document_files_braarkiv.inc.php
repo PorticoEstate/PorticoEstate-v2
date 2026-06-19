@@ -508,8 +508,9 @@ class import_document_files
 		$_where		 = "Byggnr = {$byggNummer} AND Innhold='{$DokumentTittel}'";
 
 		$bra5ServiceSearch	 = new Bra5ServiceSearch();
+		$test = $bra5ServiceSearch->searchAndGetDocuments(new Bra5StructSearchAndGetDocuments($this->secKey, $this->baseclassname, $this->classname, $_where, $_maxhits = 1))->getSearchAndGetDocumentsResult()->SearchAndGetDocumentsResult->DocumentInfo;
 
-		if ($bra5ServiceSearch->searchAndGetDocuments(new Bra5StructSearchAndGetDocuments($this->secKey, $this->baseclassname, $this->classname, $_where, $_maxhits = 1)))
+		if ($test)
 		{
 			$this->receipt['error'][] = array('msg' => "{$file}: is a duplicate");
 			return false;
@@ -540,7 +541,22 @@ class import_document_files
 		//			echo "</br>SOAP REQUEST:\n</br>";
 		//			echo $bra5ServiceCreate->getSoapClient()->__getLastRequest();
 
-		$document_id = $bra5ServiceCreate->getResult()->getCreateDocumentResult()->ID;
+
+		$result = $bra5ServiceCreate->getResult()->getCreateDocumentResult();
+
+		$document_id = null;
+		if (is_object($result))
+		{
+			$document_id = $result->ID
+				?? ($result->createDocumentResult->ID ?? null);
+
+			if (!$document_id && method_exists($result, 'getID'))
+			{
+				$document_id = $result->getID();
+			}
+		}
+
+		//		$document_id = $bra5ServiceCreate->getResult()->getCreateDocumentResult()->ID;
 
 		if (!$document_id)
 		{

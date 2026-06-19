@@ -1209,6 +1209,7 @@
 			$this->flash_form_errors($errors);
 			self::add_javascript('booking', 'base', 'allocation.js');
 
+			$from_raw = $allocation['from_'];
 			$allocation['from_'] = pretty_timestamp($allocation['from_']);
 			$allocation['to_'] = pretty_timestamp($allocation['to_']);
 
@@ -1230,7 +1231,7 @@
 			$cancellation_warning = '';
 			if (!empty($allocation['resources']) && !empty($allocation['from_']))
 			{
-				$from = new \DateTime($allocation['from_'], new \DateTimeZone('Europe/Oslo'));
+				$from = new \DateTime($from_raw, new \DateTimeZone('Europe/Oslo'));
 				$now = new \DateTime('now', new \DateTimeZone('Europe/Oslo'));
 				$db = \App\Database\Db::getInstance();
 				$resourceIds = array_map('intval', $allocation['resources']);

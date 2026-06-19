@@ -420,6 +420,10 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 
 	private function get_building_number($location_code)
 	{
+		if (!$location_code)
+		{
+			return array();
+		}
 
 		$db = Db::getInstance();
 		$metadata = $db->metadata('fm_location4');
@@ -439,6 +443,7 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 		$field = $info[1];
 		$targe_level = (int)substr($info[0], -1);
 		$search_level = count($location_arr);
+		$sql = '';
 
 		if ($search_level == $targe_level)
 		{
@@ -459,6 +464,11 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 		else if ($search_level < $targe_level)
 		{
 			$sql = "SELECT DISTINCT {$field} FROM {$table} WHERE location_code like '{$location_code}%'";
+		}
+
+		if ($sql === '')
+		{
+			return array();
 		}
 
 		$db->query($sql, __LINE__, __FILE__);
@@ -1556,17 +1566,16 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 	private function check_upload_dir($order_id)
 	{
 		$rs = $this->create_document_dir($order_id);
+		$receipt = array();
 		if (!$rs)
 		{
-			$receipt['error'] = lang('failed to create directory') . ': ' . "{$this->path_upload_dir}/{$order_id}";
+			return $receipt['error'] = lang('failed to create directory') . ': ' . "{$this->path_upload_dir}/{$order_id}";
 		}
 
 		if (!is_writable("{$this->path_upload_dir}/{$order_id}"))
 		{
-			$receipt['error'] = lang('Not have permission to access the directory') . ': ' . "{$this->path_upload_dir}/{$order_id}";
+			return $receipt['error'] = lang('Not have permission to access the directory') . ': ' . "{$this->path_upload_dir}/{$order_id}";
 		}
-
-		return $receipt;
 	}
 
 	private function create_document_dir($order_id)
@@ -2287,7 +2296,14 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 	{
 		set_time_limit(5 * 60);
 
-		$archive = RarArchive::open($file);
+		$rar_archive_class = 'RarArchive';
+		if (!class_exists($rar_archive_class))
+		{
+			$this->receipt['error'][] = array('msg' => lang('Rar extension is not available'));
+			return false;
+		}
+
+		$archive = $rar_archive_class::open($file);
 		if ($archive === FALSE)
 		{
 			$this->receipt['error'][] = array('msg' => lang('Failed opening file %1', $file));

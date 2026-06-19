@@ -1201,3 +1201,5 @@ commits_unavailable	booking	no	Commits utilgjengelig
 currently_running	booking	no	Kjører nå
 by_author	booking	no	av
 loading_commits	booking	no	Laster commits...
+activate	booking	no	Aktiver
+activateAssociationConfirm	booking	no	Aktiver denne koblingen igjen?

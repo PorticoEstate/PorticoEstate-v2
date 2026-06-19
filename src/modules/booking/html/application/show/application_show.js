@@ -903,6 +903,32 @@
 			});
 		});
 
+		// Delegated event: association activate button
+		root.addEventListener('click', function (e) {
+			var btn = e.target.closest('.app-show__assoc-activate');
+			if (!btn) return;
+			if (!confirm(lang('activateAssociationConfirm') !== 'activateAssociationConfirm' ? lang('activateAssociationConfirm') : 'Reactivate this association?')) return;
+			var assocId = btn.dataset.assocId;
+			var assocType = btn.dataset.assocType;
+			btn.disabled = true;
+			btn.textContent = '...';
+			fetch(apiUrl + '/associations/' + assocId + '/activate', {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ type: assocType })
+			}).then(function (res) {
+				if (!res.ok) throw new Error('HTTP ' + res.status);
+				return res.json();
+			}).then(function () {
+				window.location.reload();
+			}).catch(function (err) {
+				btn.disabled = false;
+				btn.textContent = lang('activate');
+				alert(lang('error') + ': ' + err.message);
+			});
+		});
+
 		// Documents
 		var docs = data.documents || [];
 		if (docs.length > 0) {
@@ -983,7 +1009,7 @@
 					if (a.active === 1 || a.active === '1') {
 						assocHtml += '<td><button type="button" class="ds-button app-show__assoc-delete" data-variant="primary" data-color="danger" data-size="sm" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' + lang('delete') + '</button></td>';
 					} else {
-						assocHtml += '<td></td>';
+						assocHtml += '<td><button type="button" class="ds-button app-show__assoc-activate" data-variant="secondary" data-color="success" data-size="sm" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' + lang('activate') + '</button></td>';
 					}
 				}
 				assocHtml += '</tr>';

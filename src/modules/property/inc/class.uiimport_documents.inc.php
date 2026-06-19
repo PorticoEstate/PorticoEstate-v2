@@ -167,8 +167,9 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 		foreach ($list_files as $file_info)
 		{
 
-			$entry = $file_tags[$file_info['path_relative_filename']];
-			$entry['file_name'] = $file_info['path_relative_filename'];
+			$file_name = $this->normalize_file_name($file_info['path_relative_filename']);
+			$entry = $file_tags[$file_name] ?? array();
+			$entry['file_name'] = $file_name;
 			$entry['document_category'] = !empty($entry['document_category']) ? implode("::", $entry['document_category']) : '';
 			$entry['branch'] = !empty($entry['branch']) ? implode("::", $entry['branch']) : '';
 			$entry['building_part'] = !empty($entry['building_part']) ? implode("::", $entry['building_part']) : '';
@@ -483,7 +484,7 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 			return;
 		}
 		$file_name = $this->_get_metadata_file_name($order_id);
-		if(!is_file($file_name))
+		if (!is_file($file_name))
 		{
 			$this->check_upload_dir($order_id);
 		}
@@ -747,7 +748,7 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 		$list_files = $this->_get_dir_contents($this->order_path_dir);
 		foreach ($list_files as $file_info)
 		{
-			$file_name = $file_info['path_relative_filename'];
+			$file_name = $this->normalize_file_name($file_info['path_relative_filename']);
 
 			if (!empty($file_tags[$file_name]['import_ok']))
 			{
@@ -1147,12 +1148,12 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 
 		$sort_key	 = array();
 		$values		 = array();
-		//			$debug = true;
+		$debug		 = false;
 		$missing_value = '<span style="color:red;">*</span>';
 		foreach ($list_files as &$file_info)
 		{
 
-			$file_name = $file_info['path_relative_filename'];
+			$file_name = $this->normalize_file_name($file_info['path_relative_filename']);
 
 			if ($query && !preg_match("/$query/i", $file_name))
 			{
@@ -1228,7 +1229,7 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 		}
 		else
 		{
-			$page		 = ceil(($start / $num_rows));
+			$page		 = intdiv($start, $num_rows);
 			$values_part = array_chunk($values, $num_rows);
 			$out		 = (array)$values_part[$page];
 		}
@@ -1332,7 +1333,7 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 
 		foreach ($list_files as $file_info)
 		{
-			$file_name = $file_info['path_relative_filename'];
+			$file_name = $this->normalize_file_name($file_info['path_relative_filename']);
 
 			if ($query && !preg_match("/$query/i", $file_name))
 			{
@@ -1400,7 +1401,7 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 		}
 		else
 		{
-			$page		 = ceil(($start / $num_rows));
+			$page		 = intdiv($start, $num_rows);
 			$values_part = array_chunk($values, $num_rows);
 			$out		 = (array)$values_part[$page];
 		}
@@ -1718,7 +1719,7 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 		}
 		else
 		{
-			$page		 = ceil(($start / $num_rows));
+			$page		 = intdiv($start, $num_rows);
 			$values_part = array_chunk($values, $num_rows);
 			$out		 = $values_part[$page];
 		}
@@ -1765,7 +1766,7 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 		$list_files = array();
 		foreach ($_list_files as $file_info)
 		{
-			$file_name = $file_info['path_relative_filename'];
+			$file_name = $this->normalize_file_name($file_info['path_relative_filename']);
 
 			if ($query && !preg_match("/$query/i", $file_name))
 			{
@@ -1785,7 +1786,7 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 
 		foreach ($list_files as $file_info)
 		{
-			$file_name = $file_info['path_relative_filename'];
+			$file_name = $this->normalize_file_name($file_info['path_relative_filename']);
 
 			if ($query && !preg_match("/$query/i", $file_name))
 			{
@@ -2025,7 +2026,6 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 			'status' => 'error',
 			'message' => lang('Failed to save metadata')
 		);
-
 	}
 
 	private function _extract_metadata_from_spreadsheet($spreadsheet_path)
@@ -2129,7 +2129,7 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 				continue;
 			}
 
-			$file_name = $entry['file_name'];
+			$file_name = $this->normalize_file_name($entry['file_name']);
 			unset($entry['file_name']);
 			$metadata[$file_name] = $entry;
 		}
@@ -2158,7 +2158,18 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 
 		return array_values(array_unique($tokens));
 	}
-	
+
+	private function normalize_file_name($file_name)
+	{
+		if (!is_string($file_name))
+		{
+			return '';
+		}
+
+		$file_name = str_replace(array("\r", "\n"), '', $file_name);
+		return trim($file_name);
+	}
+
 	function unzip_files()
 	{
 
@@ -2314,7 +2325,7 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 		$id_arr = explode('::', $id);
 
 		$order_id = $id_arr[0];
-		$file_name = $id_arr[1];
+		$file_name = isset($id_arr[1]) ? $this->normalize_file_name($id_arr[1]) : '';
 
 		$file_tags = $this->_get_metadata($order_id);
 

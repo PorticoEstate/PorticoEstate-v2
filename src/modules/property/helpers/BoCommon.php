@@ -2073,15 +2073,19 @@ class BoCommon
 		$export_format = isset($this->userSettings['preferences']['common']['export_format']) && $this->userSettings['preferences']['common']['export_format'] ? $this->userSettings['preferences']['common']['export_format'] : 'csv';
 		$php_version = (float)PHP_VERSION;
 
-		$html2text = createObject('phpgwapi.html2text');
+		$html2text = null;
 		if (isset($list) && is_array($list))
 		{
 			foreach ($list as &$entry)
 			{
 				foreach ($entry as $col => &$value)
 				{
-					if ($value && !is_array($value))
+					if (is_string($value) && $value !== '' && $this->containsHtmlMarkup($value))
 					{
+						if ($html2text === null)
+						{
+							$html2text = createObject('phpgwapi.html2text');
+						}
 						$html2text->setHTML($value);
 						$value = trim($html2text->getText());
 					}
@@ -2109,6 +2113,21 @@ class BoCommon
 		}
 
 		return $this->flags;
+	}
+
+	private function containsHtmlMarkup($value)
+	{
+		if (!is_string($value) || $value === '')
+		{
+			return false;
+		}
+
+		if (strpos($value, '<') === false || strpos($value, '>') === false)
+		{
+			return false;
+		}
+
+		return preg_match('/<\s*\/?\s*[a-z][^>]*>/i', $value) === 1;
 	}
 
 	public function performPhpspreadsheetOut($list, $name, $descr, $input_type = array(), $identificator = array(), $filename = '', $export_format = 'excel', $export_options = array())

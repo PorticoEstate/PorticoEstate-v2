@@ -15,6 +15,7 @@ $(document).ready(function ()
 
 	//Initialize the jQuery File Upload widget:
 	$('#fileupload_zip').fileupload({
+		dropZone: $('#upload_alternative_1'),
 		limitConcurrentUploads: 1,
 		maxChunkSize: 8388000,
 		dataType: "json",
@@ -100,6 +101,7 @@ $(document).ready(function ()
 	//fileupload_spreadsheet
 	//Initialize the jQuery File Upload widget:
 	$('#fileupload_spreadsheet').fileupload({
+		dropZone: $('#upload_alternative_3'),
 		limitConcurrentUploads: 1,
 		maxChunkSize: 8388000,
 		dataType: "json",
@@ -190,29 +192,35 @@ $(document).ready(function ()
 		get_order_info();
 	}
 
+	const setActiveUploadAlternative = function (alternative)
+	{
+		$("#upload_alternative_1").toggle(alternative === 1);
+		$("#upload_alternative_2").toggle(alternative === 2);
+		$("#upload_alternative_3").toggle(alternative === 3);
+
+		// Keep only the chosen uploader enabled to avoid parallel handlers.
+		$("#fileupload_zip").prop("disabled", alternative !== 1);
+		$("#fileupload").prop("disabled", alternative !== 2);
+		$("#fileupload_spreadsheet").prop("disabled", alternative !== 3);
+
+		$("#select_upload_alternative_1 input[type=radio]").prop("checked", alternative === 1);
+		$("#select_upload_alternative_2 input[type=radio]").prop("checked", alternative === 2);
+		$("#select_upload_alternative_3 input[type=radio]").prop("checked", alternative === 3);
+	};
+
+	setActiveUploadAlternative(2);
+
 	$("#select_upload_alternative_1").click(function ()
 	{
-		var thisRadio = $(this).find("input[type=radio]");
-		$(thisRadio).prop("checked", true);
-		$("#upload_alternative_2").hide(50);
-		$("#upload_alternative_1").show(50);
-		$("#upload_alternative_3").hide(50);
+		setActiveUploadAlternative(1);
 	});
 	$("#select_upload_alternative_2").click(function ()
 	{
-		var thisRadio = $(this).find("input[type=radio]");
-		$(thisRadio).prop("checked", true);
-		$("#upload_alternative_1").hide(50);
-		$("#upload_alternative_2").show(50);
-		$("#upload_alternative_3").hide(50);
+		setActiveUploadAlternative(2);
 	});
 	$("#select_upload_alternative_3").click(function ()
 	{
-		var thisRadio = $(this).find("input[type=radio]");
-		$(thisRadio).prop("checked", true);
-		$("#upload_alternative_1").hide(50);
-		$("#upload_alternative_2").hide(50);
-		$("#upload_alternative_3").show(50);
+		setActiveUploadAlternative(3);
 	});
 });
 

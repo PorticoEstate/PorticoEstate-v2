@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Set UTF-8 locale for all operations including file name handling
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export LANGUAGE=en_US.UTF-8
+
 git config --global --add safe.directory /var/www/html
 
 # Log entrypoint output to a file for debugging
@@ -7,6 +12,7 @@ ENTRYPOINT_LOG="/tmp/entrypoint.log"
 echo "=== Entrypoint started at $(date -Iseconds) ===" > "$ENTRYPOINT_LOG" 2>&1 || echo "FAILED TO WRITE LOG" >&2
 log() { echo "$1"; echo "$1" >> "$ENTRYPOINT_LOG" 2>/dev/null || true; }
 log "Shell: $SHELL, Bash: $BASH_VERSION, PID: $$"
+log "Locale settings: LANG=$LANG, LC_ALL=$LC_ALL"
 log "pwd: $(pwd), whoami: $(whoami)"
 
 # Install WebSocket health check cron job if exists

@@ -754,6 +754,42 @@ class ApplicationController
 		}
 	}
 
+	// ── POST /booking/applications/{id}/associations/{assocId}/activate ──
+
+	public function activateAssociation(Request $request, Response $response, array $args): Response
+	{
+		$id = $this->getApplicationId($args);
+		$assocId = (int) ($args['assocId'] ?? 0);
+		if (!$id || !$assocId) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Missing application or association ID'], 400);
+		}
+
+		// Verify case officer
+		$app = $this->repo->getById($id);
+		if (!$app) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Application not found'], 404);
+		}
+		if ((int) ($app['case_officer_id'] ?? 0) !== $this->currentAccountId) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Only the case officer can activate associations'], 403);
+		}
+
+		$body = json_decode((string) $request->getBody(), true) ?: [];
+		$type = $body['type'] ?? '';
+		if (!in_array($type, ['allocation', 'booking', 'event'])) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Invalid association type'], 400);
+		}
+
+		try {
+			$success = $this->repo->reactivateAssociation($type, $assocId);
+			if (!$success) {
+				return ResponseHelper::sendErrorResponse(['error' => 'Association not found'], 404);
+			}
+			return ResponseHelper::sendJSONResponse(['status' => 'ok'], 200, $response);
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
+		}
+	}
+
 	// ── GET /booking/applications/{id}/recurring-preview ────────────────
 
 	/**

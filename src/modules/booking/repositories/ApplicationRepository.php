@@ -655,6 +655,23 @@ class ApplicationRepository
 	 */
 	public function deactivateAssociation(string $type, int $associationId): bool
 	{
+		return $this->setAssociationActive($type, $associationId, 0);
+	}
+
+	/**
+	 * Reactivate a single association (allocation/booking/event) by type and ID.
+	 */
+	public function reactivateAssociation(string $type, int $associationId): bool
+	{
+		return $this->setAssociationActive($type, $associationId, 1);
+	}
+
+	/**
+	 * Set the active flag on a single association. Returns false for an unknown
+	 * type or when no matching row exists.
+	 */
+	private function setAssociationActive(string $type, int $associationId, int $active): bool
+	{
 		$tableMap = [
 			'allocation' => 'bb_allocation',
 			'booking'    => 'bb_booking',
@@ -665,9 +682,9 @@ class ApplicationRepository
 			return false;
 		}
 		$stmt = $this->db->prepare(
-			"UPDATE {$table} SET active = 0 WHERE id = :id"
+			"UPDATE {$table} SET active = :active WHERE id = :id"
 		);
-		$stmt->execute([':id' => $associationId]);
+		$stmt->execute([':active' => $active, ':id' => $associationId]);
 		return $stmt->rowCount() > 0;
 	}
 

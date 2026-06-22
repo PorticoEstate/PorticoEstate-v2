@@ -82,8 +82,8 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	const { addToast } = useToast();
 	const isOrg = useIsOrganization();
 	const {data: serverSettings} = useServerSettings();
-	// Admin-configurable: buildings without any seasons are fully closed by default
-	const closeWhenNoSeasons = serverSettings?.bookingfrontend_config?.close_calendar_without_season ?? true;
+	// Admin-configurable: buildings without any seasons are open by default
+	const closeWhenNoSeasons = serverSettings?.bookingfrontend_config?.close_calendar_without_season ?? false;
 
 	useEffect(() => {
 		if (calendarRef.current) {

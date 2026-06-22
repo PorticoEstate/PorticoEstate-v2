@@ -93,7 +93,7 @@ class BookingfrontendConfig
 	 * @Expose
 	 * @ParseBool
      */
-    public $close_calendar_without_season = true;
+    public $close_calendar_without_season = false;
 
     public function __construct(?array $data)
     {

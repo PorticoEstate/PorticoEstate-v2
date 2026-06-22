@@ -226,8 +226,8 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const {addToast} = useToast();
 
 	// Mirror the calendar's selection gate (full-calendar-view.tsx): when a building
-	// has no seasons, it is closed unless an admin has opted out.
-	const closeWhenNoSeasons = serverSettings?.bookingfrontend_config?.close_calendar_without_season ?? true;
+	// has no seasons, it is open unless an admin has opted in to closing it.
+	const closeWhenNoSeasons = serverSettings?.bookingfrontend_config?.close_calendar_without_season ?? false;
 
 	const isWithinBusinessHours = useCallback((date: Date, resourceIds: string[] = []): boolean => {
 		// No seasons defined at all: closed or open depending on admin config

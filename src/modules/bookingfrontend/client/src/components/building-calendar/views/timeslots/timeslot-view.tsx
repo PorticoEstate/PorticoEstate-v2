@@ -107,20 +107,22 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 			horizonEnd = now.plus({ days: resourceData.booking_day_horizon });
 		}
 
-		// Find active season that contains current date
-		const activeSeason = seasons?.find(season => {
-			const seasonStart = DateTime.fromISO(season.from_);
-			const seasonEnd = DateTime.fromISO(season.to_);
-			return now >= seasonStart && now <= seasonEnd;
-		});
+		// Bound booking by the configured seasons. A resource can be covered by several
+		// consecutive seasons (e.g. one ending 30 Jun, the next running 1–31 Jul), so we
+		// must clamp to the furthest-out season that hasn't ended yet — NOT just the single
+		// season active today. Using "the season containing now" wrongly hid every slot in
+		// later seasons. Use end-of-day so slots on a season's own last day are not cut off.
+		const latestSeasonEnd = (seasons ?? [])
+			.map(season => DateTime.fromISO(season.to_).endOf('day'))
+			.filter(seasonEnd => seasonEnd >= now)
+			.reduce<DateTime | null>((latest, seasonEnd) => (latest && latest > seasonEnd ? latest : seasonEnd), null);
 
-		// If there's a season limit, use the minimum of horizon and season end
-		if (activeSeason) {
-			const seasonEnd = DateTime.fromISO(activeSeason.to_);
+		// If there's a season limit, use the minimum of horizon and the latest season end
+		if (latestSeasonEnd) {
 			if (horizonEnd) {
-				return horizonEnd < seasonEnd ? horizonEnd : seasonEnd;
+				return horizonEnd < latestSeasonEnd ? horizonEnd : latestSeasonEnd;
 			}
-			return seasonEnd;
+			return latestSeasonEnd;
 		}
 
 		// Return horizon limit (or null if no limits configured)

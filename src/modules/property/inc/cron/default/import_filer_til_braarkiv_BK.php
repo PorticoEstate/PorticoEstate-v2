@@ -54,6 +54,15 @@ class import_filer_til_braarkiv_BK extends property_cron_parent
 		$file_map,
 		$all_files, $join;
 
+	/**
+	 * Initialize cron metadata, load BraArkiv configuration and open a SOAP session.
+	 *
+	 * The constructor validates required configuration values and performs login
+	 * against BraArkiv to retrieve a security key used by subsequent SOAP calls.
+	 *
+	 * @throws Exception When BraArkiv is not configured or login fails.
+	 * @return void
+	 */
 	public function __construct()
 	{
 		parent::__construct();
@@ -127,6 +136,14 @@ class import_filer_til_braarkiv_BK extends property_cron_parent
 		$this->file_map = array();
 	}
 
+	/**
+	 * Create default BraArkiv configuration section and attributes, then redirect.
+	 *
+	 * This helper is called when configuration is missing and sends the user to
+	 * the admin configuration UI so credentials and pickup catalog can be added.
+	 *
+	 * @return void
+	 */
 	private function init_config()
 	{
 		$receipt_section = $this->config->add_section(
@@ -181,6 +198,19 @@ class import_filer_til_braarkiv_BK extends property_cron_parent
 		);
 	}
 
+	/**
+	 * Execute the full import workflow for one spreadsheet batch.
+	 *
+	 * Workflow summary:
+	 * 1. Locate and parse one eligible spreadsheet from pickup catalog.
+	 * 2. Process each row and upload referenced files with metadata.
+	 * 3. Track processed file paths in a .process file.
+	 * 4. Write/append ID-to-file mapping output.
+	 * 5. Create lock marker when all entries in the spreadsheet are successful.
+	 * 6. Log runtime and collect missing-file diagnostics.
+	 *
+	 * @return void
+	 */
 	function execute()
 	{
 		set_time_limit(1000);
@@ -273,6 +303,13 @@ class import_filer_til_braarkiv_BK extends property_cron_parent
 		$this->receipt['message'][]	 = array('msg' => $msg);
 	}
 
+	/**
+	 * Debug helper that requests and prints one document payload from BraArkiv.
+	 *
+	 * Intended for manual troubleshooting of SOAP responses.
+	 *
+	 * @return void
+	 */
 	function get_document_test()
 	{
 		$fileid = 20869646; // org
@@ -288,6 +325,12 @@ class import_filer_til_braarkiv_BK extends property_cron_parent
 		$this->phpgwapi_common->phpgw_exit();
 	}
 
+	/**
+	 * Write an entry to fm_cron_log for this cron run.
+	 *
+	 * @param string $receipt Message text to persist in the cron log.
+	 * @return void
+	 */
 	function cron_log($receipt = '')
 	{
 
@@ -305,6 +348,15 @@ class import_filer_til_braarkiv_BK extends property_cron_parent
 		$this->db->query($sql, __LINE__, __FILE__);
 	}
 
+	/**
+	 * Build a normalized list of files to import based on spreadsheet rows.
+	 *
+	 * The method reads the selected spreadsheet, maps each row to a structured
+	 * array expected by process_file(), and tracks all referenced files for final
+	 * missing-file reporting.
+	 *
+	 * @return array<int, array<string, string>> Import rows keyed by metadata names.
+	 */
 	function get_files()
 	{
 		$path = rtrim($this->config->config_data['braArkiv']['pickup_catalog'], '/');
@@ -347,6 +399,21 @@ class import_filer_til_braarkiv_BK extends property_cron_parent
 		 * Leses fra regneark
 		 */
 
+	/**
+	 * Find one spreadsheet to process and return its data rows.
+	 *
+	 * Rules:
+	 * - Accept only xls, xlsx, ods, csv.
+	 * - Skip hidden files.
+	 * - Skip already locked spreadsheet batches.
+	 * - Create .process marker for the selected spreadsheet.
+	 *
+	 * The first worksheet is parsed and converted into row arrays, where header
+	 * detection supports either first-row or second-row headers.
+	 *
+	 * @param string $path Directory containing spreadsheet input files.
+	 * @return array<int, array<int, mixed>> Raw spreadsheet rows for mapping.
+	 */
 	function get_data($path)
 	{
 
@@ -435,8 +502,13 @@ class import_filer_til_braarkiv_BK extends property_cron_parent
 	}
 
 	/**
+	 * Process one mapped spreadsheet row and import its referenced file.
 	 *
-	 * @param type $file
+	 * The method resolves lock-file state, skips already handled files, invokes
+	 * uploadFile() for active files, and records success/error receipt messages.
+	 *
+	 * @param array<string, string> $file_info Normalized row from get_files().
+	 * @return bool True when file was imported or already handled, false on failure.
 	 */
 	function process_file($file_info)
 	{
@@ -489,6 +561,25 @@ class import_filer_til_braarkiv_BK extends property_cron_parent
 		return $ok;
 	}
 
+	/**
+	 * Create a BraArkiv document with metadata and upload associated file content.
+	 *
+	 * Validates file extension, creates the document record through SOAP, extracts
+	 * document ID from create response, and sends file data in chunked transfer.
+	 *
+	 * @param string $gnr Matrikkel gnr.
+	 * @param string $bnr Matrikkel bnr.
+	 * @param string $byggNummer Building identifier.
+	 * @param string $file Absolute file path.
+	 * @param string $DokumentTittel Document title.
+	 * @param string $kategorier Semicolon separated categories.
+	 * @param string $bygningsdeler Semicolon separated building parts.
+	 * @param string $fag Semicolon separated discipline values.
+	 * @param string $lokasjonskode Location code.
+	 * @param string $remark Optional note.
+	 * @throws Exception When document creation fails at SOAP layer.
+	 * @return bool True when document and file upload complete successfully.
+	 */
 	function uploadFile($gnr, $bnr, $byggNummer, $file, $DokumentTittel, $kategorier, $bygningsdeler, $fag, $lokasjonskode, $remark = '')
 	{
 
@@ -542,10 +633,14 @@ class import_filer_til_braarkiv_BK extends property_cron_parent
 	}
 
 	/**
-	 * 	Initierer en ny overføring.
-	 * @param string $file
-	 * @param integer $document_id
-	 * @return boolean true on success
+	 * Send file content to BraArkiv using chunked base64 SOAP transfer.
+	 *
+	 * The transfer is performed in three phases: init transaction, send chunks,
+	 * and end transaction. A mapping row is always added to file_map.
+	 *
+	 * @param string $file Absolute file path.
+	 * @param int $document_id BraArkiv document ID created beforehand.
+	 * @return bool True when transfer completes successfully.
 	 */
 	public function write($file, $document_id = 0)
 	{
@@ -590,6 +685,24 @@ class import_filer_til_braarkiv_BK extends property_cron_parent
 		return $ok;
 	}
 
+	/**
+	 * Build the Bra5 document metadata structure used in createDocument call.
+	 *
+	 * Adds core attributes such as location, matrikkel, building number, title,
+	 * file date, categories, discipline, building parts and optional remark.
+	 *
+	 * @param string $gnr Matrikkel gnr.
+	 * @param string $bnr Matrikkel bnr.
+	 * @param string $byggNummer Building identifier.
+	 * @param string $dokumentTittel Document title.
+	 * @param string $kategorier Semicolon separated categories.
+	 * @param string $bygningsdeler Semicolon separated building parts.
+	 * @param string $fag Semicolon separated discipline values.
+	 * @param string $lokasjonskode Location code.
+	 * @param string $file_date Document date in Y-m-d format.
+	 * @param string $remark Optional note.
+	 * @return Bra5StructDocument Document payload for SOAP create call.
+	 */
 	private function setupDocument($gnr, $bnr, $byggNummer, $dokumentTittel, $kategorier, $bygningsdeler, $fag, $lokasjonskode, $file_date, $remark = '')
 	{
 		/*
@@ -679,29 +792,59 @@ class AttributeFactory
 
 	private $attribute;
 
+	/**
+	 * Create a Bra5 attribute wrapper with the given BraArkiv attribute type.
+	 *
+	 * @param string|int $_attribType Bra5EnumBraArkivAttributeType value.
+	 * @return void
+	 */
 	function __construct($_attribType)
 	{
 		$this->attribute	 = new Bra5StructAttribute($_usesLookupValues	 = false, $_attribType);
 	}
 
+	/**
+	 * Set whether the attribute uses lookup values in BraArkiv.
+	 *
+	 * @param bool $_usesLookupValues True to enforce lookup semantics.
+	 * @return self
+	 */
 	public function setUsesLookupValues($_usesLookupValues)
 	{
 		$this->attribute->setUsesLookupValues($_usesLookupValues);
 		return $this;
 	}
 
+	/**
+	 * Override the BraArkiv attribute type.
+	 *
+	 * @param string|int $type Bra5EnumBraArkivAttributeType value.
+	 * @return self
+	 */
 	public function setType($type)
 	{
 		$this->attribute->setAttribType($type);
 		return $this;
 	}
 
+	/**
+	 * Set BraArkiv attribute name.
+	 *
+	 * @param string $attributeName Logical attribute name in archive schema.
+	 * @return self
+	 */
 	public function setName($attributeName)
 	{
 		$this->attribute->setName($attributeName);
 		return $this;
 	}
 
+	/**
+	 * Set one string value as attribute payload.
+	 *
+	 * @param string $value Single value.
+	 * @return self
+	 */
 	public function setStringValue($value)
 	{
 		$values = array($value);
@@ -709,6 +852,12 @@ class AttributeFactory
 		return $this;
 	}
 
+	/**
+	 * Set multiple string values as SOAP typed payload.
+	 *
+	 * @param array<int, string> $values String values to assign.
+	 * @return self
+	 */
 	public function setStringArrayValue($values)
 	{
 		foreach ($values as &$value)
@@ -722,6 +871,15 @@ class AttributeFactory
 		return $this;
 	}
 
+	/**
+	 * Set matrikkel payload for Eiendom attribute.
+	 *
+	 * @param string|int $gnr Gardsnummer.
+	 * @param string|int $bnr Bruksnummer.
+	 * @param string|int $fnr Festenummer.
+	 * @param string|int $snr Seksjonsnummer.
+	 * @return self
+	 */
 	public function setMatrikkelValue($gnr, $bnr, $fnr, $snr)
 	{
 		$gnrBnrValue = new Bra5StructArrayOfAnyType();
@@ -737,6 +895,12 @@ class AttributeFactory
 		return $this;
 	}
 
+	/**
+	 * Set date payload for date-based archive attributes.
+	 *
+	 * @param string $date Date value as string (typically Y-m-d).
+	 * @return self
+	 */
 	public function setDateValue($date)
 	{
 		$datoValue	 = new Bra5StructArrayOfAnyType();
@@ -746,6 +910,11 @@ class AttributeFactory
 		return $this;
 	}
 
+	/**
+	 * Return the built Bra5StructAttribute instance.
+	 *
+	 * @return Bra5StructAttribute
+	 */
 	public function build()
 	{
 		return $this->attribute;

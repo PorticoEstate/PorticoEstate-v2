@@ -316,6 +316,37 @@
     white-space: nowrap;
 }
 
+.reservedRow {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--ds-color-neutral-border-subtle);
+
+    &:last-child {
+        border-bottom: none;
+    }
+}
+
+.reservedMain {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+// Actions reused from the building-calendar popper (edit/cancel/create booking),
+// laid out horizontally and aligned under the date info (badge width 56 + gap 16).
+.reservedActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-left: 72px;
+
+    @media (max-width: 640px) {
+        padding-left: 0;
+    }
+}
+
 // Comments thread
 .commentList {
     display: flex;

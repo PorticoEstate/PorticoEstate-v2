@@ -15,7 +15,9 @@ export default async function ResourceShowWithDate(props: ResourceShowWithDatePr
         params: {
             id: props.params.id,
         },
-        // Pass the date parameter as a custom property
-        initialDate: props.params.date
+        // Pass the date parameter through searchParams
+        searchParams: {
+            initialDate: props.params.date,
+        },
     });
 }

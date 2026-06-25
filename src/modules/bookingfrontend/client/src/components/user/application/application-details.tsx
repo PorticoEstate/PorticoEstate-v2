@@ -11,8 +11,10 @@ import {
     useUpdateApplicationStatus,
     useUploadApplicationDocument,
     useDeleteApplicationDocument,
+    useApplicationScheduleEntities,
     markNotificationsAsRead,
 } from "@/service/hooks/api-hooks";
+import {IAPIEvent, IAPIAllocation, IAPIBooking} from "@/service/pecalendar.types";
 import {SubscriptionManager} from "@/service/websocket/subscription-manager";
 import {
     Heading,
@@ -169,7 +171,13 @@ const StatusTimeline: FC<{ application: IApplication; t: (k: string) => string }
     );
 };
 
-const DatesList: FC<{ dates: IApplicationDate[] }> = ({dates}) => {
+interface DateRowItem {
+    from_: string;
+    to_: string;
+    id?: number | string;
+}
+
+const DatesList: FC<{ dates: DateRowItem[] }> = ({dates}) => {
     const sorted = useMemo(
         () => [...dates].sort((a, b) => DateTime.fromISO(a.from_).toMillis() - DateTime.fromISO(b.from_).toMillis()),
         [dates]
@@ -196,6 +204,93 @@ const DatesList: FC<{ dates: IApplicationDate[] }> = ({dates}) => {
                             </div>
                         </div>
                         <div className={styles.dateDuration}>{hours} t</div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+type ReservedEntity =
+    | { type: 'event'; entity: IAPIEvent }
+    | { type: 'allocation'; entity: IAPIAllocation }
+    | { type: 'booking'; entity: IAPIBooking };
+
+// Builds a deep link into the calendar that jumps straight to the reserved entity.
+// Smart target: the focused resource calendar when the entity is on a single resource,
+// otherwise the building calendar (which can show an entity spanning several resources).
+// Shape: /{building|resource}/{id}/{YYYY-MM-DD}/{event|allocation|booking}/{entity_id}
+function buildCalendarLink(row: ReservedEntity): string | null {
+    const entity = row.entity;
+    const date = DateTime.fromISO(entity.from_).toISODate();
+    if (!date) return null;
+    const resources = entity.resources || [];
+
+    if (resources.length === 1) {
+        return `/resource/${resources[0].id}/${date}/${row.type}/${entity.id}`;
+    }
+
+    const buildingId = row.type === 'event'
+        ? (row.entity.building_id ?? resources[0]?.building_id)
+        : resources[0]?.building_id;
+    if (!buildingId) return null;
+    return `/building/${buildingId}/${date}/${row.type}/${entity.id}`;
+}
+
+// Renders the actual reserved schedule entities (events/allocations/bookings) created
+// for an accepted application. Each row links into the calendar at the entity's date so
+// the user can see (and act on) the reservation in context.
+const ReservedTimesList: FC<{
+    entities: { events: IAPIEvent[]; allocations: IAPIAllocation[]; bookings: IAPIBooking[] };
+}> = ({entities}) => {
+    const t = useTrans();
+
+    const rows = useMemo<ReservedEntity[]>(() => {
+        const all: ReservedEntity[] = [
+            ...entities.events.map(e => ({type: 'event' as const, entity: e})),
+            ...entities.allocations.map(e => ({type: 'allocation' as const, entity: e})),
+            ...entities.bookings.map(e => ({type: 'booking' as const, entity: e})),
+        ].filter(r => r.entity.active === 1);
+        return all.sort((a, b) =>
+            DateTime.fromISO(a.entity.from_).toMillis() - DateTime.fromISO(b.entity.from_).toMillis()
+        );
+    }, [entities]);
+
+    return (
+        <div className={styles.datesList}>
+            {rows.map(row => {
+                const entity = row.entity;
+                const f = fmtDate(entity.from_);
+                const to = fmtDate(entity.to_);
+                const sameDay = f.full === to.full;
+                const hours = durationHours(entity.from_, entity.to_);
+                const calendarLink = buildCalendarLink(row);
+
+                return (
+                    <div key={`${row.type}-${entity.id}`} className={styles.reservedRow}>
+                        <div className={styles.reservedMain}>
+                            <div className={styles.dateBadge}>
+                                <span className={styles.day}>{f.day}</span>
+                                <span className={styles.month}>{f.mon}</span>
+                            </div>
+                            <div className={styles.dateInfo}>
+                                <div className={styles.primary}>{f.weekday} {f.full}</div>
+                                <div className={styles.secondary}>
+                                    kl. {f.time}{sameDay ? `–${to.time}` : ` → ${to.full} kl. ${to.time}`}
+                                </div>
+                            </div>
+                            <div className={styles.dateDuration}>{hours} t</div>
+                        </div>
+                        {calendarLink && (
+                            <div className={styles.reservedActions}>
+                                <Button asChild variant="tertiary" data-color="accent" data-size="sm">
+                                    <Link href={calendarLink}>
+                                        <CalendarIcon fontSize="1.1rem"/>
+                                        {t('bookingfrontend.show_in_calendar')}
+                                    </Link>
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 );
             })}
@@ -346,6 +441,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
     const {data: regulationDocuments} = useResourceRegulationDocuments(application?.resources || []);
     const {data: audience} = useBuildingAudience(application?.building_id);
     const {data: applicationDocuments} = useApplicationDocuments(props.applicationId);
+    const {data: scheduleEntities} = useApplicationScheduleEntities(props.applicationId, props.secret);
     const cancelStatus = useUpdateApplicationStatus();
     const uploadDocumentMutation = useUploadApplicationDocument();
     const deleteDocumentMutation = useDeleteApplicationDocument();
@@ -504,6 +600,12 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
     const isCancelled = application.status === 'CANCELLED';
     const isOrg = application.application_type === 'organization';
     const orderTotal = application.orders.reduce((s, o) => s + o.sum, 0);
+
+    // Actual schedule entities (events/allocations/bookings) created and activated for this
+    // application. Only the active ones represent confirmed reservations.
+    const hasReservedTimes = !!scheduleEntities
+        && [...scheduleEntities.events, ...scheduleEntities.allocations, ...scheduleEntities.bookings]
+            .some(e => e.active === 1);
 
     // Withdrawal/cancellation eligibility.
     // Allowed for not-yet-finalized (NEW/PENDING) and approved (ACCEPTED) applications,
@@ -668,6 +770,14 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                                 </div>
                             </Field>
                         </div>
+                        {hasReservedTimes && scheduleEntities && (
+                            <>
+                                <h3 className={styles.sectionCaption}>
+                                    {t('bookingfrontend.reserved_times')}
+                                </h3>
+                                <ReservedTimesList entities={scheduleEntities}/>
+                            </>
+                        )}
                         <h3 className={styles.sectionCaption}>
                             {t('bookingfrontend.requested_times')}
                         </h3>

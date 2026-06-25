@@ -1057,3 +1057,7 @@ confirm_cancel_booking_title	bookingfrontend	no	Avbestill booking
 confirm_cancel_booking_description	bookingfrontend	no	Er du sikker på at du vil avbestille denne bookingen?
 withdraw_unavailable_started	bookingfrontend	no	Tiden har allerede startet, og søknaden kan ikke trekkes.
 withdraw_unavailable_deadline	bookingfrontend	no	Avbestillingsfristen er passert.
+reserved_times	bookingfrontend	no	Reserverte tider
+show_in_calendar	bookingfrontend	no	Vis i kalender
+allow_old_template	bookingfrontend	no	Tillat gammel mal
+allow_old_template_note	bookingfrontend	no	Når aktiv kan brukere som har valgt den gamle malen bli værende på den. Når av tvinges de nye sidene for adresser som har en ny versjon.

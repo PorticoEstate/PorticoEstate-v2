@@ -14,6 +14,7 @@ import ShortDectionAccordion from "@/components/building-page/short-description-
 import {Button} from "@digdir/designsystemet-react";
 import Link from "next/link";
 import BuildingIcon from "@/icons/BuildingIcon";
+import {HighlightEntity} from "@/components/building-calendar/building-calendar.types";
 
 interface ResourceParams {
     id: string;
@@ -21,12 +22,13 @@ interface ResourceParams {
 
 interface ResourceProps {
     params: ResourceParams;
-    initialDate?: string;
+    searchParams?: { initialDate?: string; highlightType?: string; highlightId?: string };
 }
 
 
 
 const Resource = async (props: ResourceProps) => {
+    const initialDate = props.searchParams?.initialDate;
     // Convert the id to a number
     const resourceId = parseInt(props.params.id, 10);
 
@@ -63,6 +65,11 @@ const Resource = async (props: ResourceProps) => {
         new Map(allDocs.map(doc => [doc.id, doc])).values()
     );
 
+    const highlightEvent: HighlightEntity | undefined =
+        props.searchParams?.highlightType && props.searchParams?.highlightId
+            ? {type: props.searchParams.highlightType as HighlightEntity['type'], id: parseInt(props.searchParams.highlightId, 10)}
+            : undefined;
+
     const {t} = await getTranslation();
     return (
         <main>
@@ -88,7 +95,7 @@ const Resource = async (props: ResourceProps) => {
                 {/*    <ResourceSubscriptionTest resourceId={resourceId} />*/}
                 {/*)}*/}
             </section>
-                <BuildingCalendar building_id={`${building.id}`} resource_id={`${resourceId}`} initialDate={props.initialDate}/>
+                <BuildingCalendar building_id={`${building.id}`} resource_id={`${resourceId}`} initialDate={initialDate} highlightEvent={highlightEvent}/>
                 {/*<BuildingContact building={building}/>*/}
         </main>
 );

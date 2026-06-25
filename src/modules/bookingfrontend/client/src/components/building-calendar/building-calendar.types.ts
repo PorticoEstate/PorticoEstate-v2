@@ -6,6 +6,13 @@ import {IApplication} from "@/service/types/api/application.types";
 
 export type ValidCalendarType = IEvent['type'] | 'temporary' | 'background'
 
+// A specific schedule entity to focus/highlight when the calendar is opened
+// via a deep link (e.g. from an application's reserved times list).
+export interface HighlightEntity {
+    type: IEvent['type'];
+    id: number;
+}
+
 export interface FCEventContentArg<T = EventImpl> extends Omit<EventContentArg, 'event'> {
     event: T
 }

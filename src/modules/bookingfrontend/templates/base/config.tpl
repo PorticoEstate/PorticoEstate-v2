@@ -200,6 +200,15 @@
 				</select>
 			</td>
 		</tr>
+		<tr>
+			<td>{lang_allow_old_template}:<br/><small>{lang_allow_old_template_note}</small></td>
+			<td>
+				<select name="newsettings[allow_old_template]" class="pure-u-1">
+					<option value="0"{selected_allow_old_template_0}>{lang_No}</option>
+					<option value="1"{selected_allow_old_template_1}>{lang_Yes}</option>
+				</select>
+			</td>
+		</tr>
 
 		<!-- END body -->
 		<!-- BEGIN footer -->

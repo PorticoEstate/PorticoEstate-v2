@@ -249,7 +249,10 @@ class EmailService
 
             // Build subject and body based on application status
             $subject = $config['application_mail_subject'];
-            $link = $external_site_address . '/bookingfrontend/?menuaction=bookingfrontend.uiapplication.show&id=' . $primaryApplication['id'] . '&secret=' . $primaryApplication['secret'];
+            // New Next.js client route. The lang segment is omitted on purpose:
+            // the client middleware redirects to the user's preferred language and
+            // preserves the secret query parameter.
+            $link = $external_site_address . '/bookingfrontend/client/user/applications/' . $primaryApplication['id'] . '?secret=' . $primaryApplication['secret'];
 
             $body = $this->buildEmailBodyForGroup($applications, $config, $created, $resourcename, $link, $allELockInstructions);
 
@@ -337,7 +340,10 @@ class EmailService
 
             // Build subject and body based on application status
             $subject = $config['application_mail_subject'];
-            $link = $external_site_address . '/bookingfrontend/?menuaction=bookingfrontend.uiapplication.show&id=' . $application['id'] . '&secret=' . $application['secret'];
+            // New Next.js client route. The lang segment is omitted on purpose:
+            // the client middleware redirects to the user's preferred language and
+            // preserves the secret query parameter.
+            $link = $external_site_address . '/bookingfrontend/client/user/applications/' . $application['id'] . '?secret=' . $application['secret'];
 
             $body = $this->buildEmailBody($application, $config, $created, $resourcename, $link, $e_lock_instructions);
 

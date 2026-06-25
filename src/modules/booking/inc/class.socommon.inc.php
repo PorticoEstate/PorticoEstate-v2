@@ -299,6 +299,82 @@ abstract class booking_socommon
 		return $joins;
 	}
 
+	protected function find_matching_parenthesis($sql, $open_pos)
+	{
+		$len = strlen($sql);
+		$depth = 0;
+		for ($i = $open_pos; $i < $len; $i++)
+		{
+			$ch = $sql[$i];
+			if ($ch === '(')
+			{
+				$depth++;
+			}
+			else if ($ch === ')')
+			{
+				$depth--;
+				if ($depth === 0)
+				{
+					return $i;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Rewrites safe patterns of "<outer_col> IN (SELECT DISTINCT <inner_col> FROM ... WHERE ...)"
+	 * to EXISTS form to avoid unnecessary DISTINCT/materialization overhead.
+	 */
+	protected function rewrite_in_select_distinct_to_exists($clause)
+	{
+		if (!is_string($clause) || stripos($clause, ' IN (') === false || stripos($clause, 'SELECT DISTINCT') === false)
+		{
+			return $clause;
+		}
+
+		if (!preg_match_all('/([a-zA-Z_][a-zA-Z0-9_\.]*)\s+IN\s*\(/i', $clause, $matches, PREG_OFFSET_CAPTURE))
+		{
+			return $clause;
+		}
+
+		for ($i = count($matches[0]) - 1; $i >= 0; $i--)
+		{
+			$outer_expr = $matches[1][$i][0];
+			$match_text = $matches[0][$i][0];
+			$match_pos = $matches[0][$i][1];
+			$open_pos = $match_pos + strlen($match_text) - 1;
+
+			$close_pos = $this->find_matching_parenthesis($clause, $open_pos);
+			if ($close_pos === false)
+			{
+				continue;
+			}
+
+			$inner_sql = trim(substr($clause, $open_pos + 1, $close_pos - $open_pos - 1));
+
+			if (!preg_match('/^SELECT\s+DISTINCT\s+([a-zA-Z_][a-zA-Z0-9_\.]*)\s+FROM\s+(.+)\s+WHERE\s+(.+)$/is', $inner_sql, $parts))
+			{
+				continue;
+			}
+
+			$inner_key = $parts[1];
+			$inner_from = trim($parts[2]);
+			$inner_where = trim($parts[3]);
+
+			if ($inner_key === '' || $inner_from === '' || $inner_where === '')
+			{
+				continue;
+			}
+
+			$replacement = "EXISTS (SELECT 1 FROM {$inner_from} WHERE ({$inner_where}) AND {$inner_key}={$outer_expr})";
+			$clause = substr_replace($clause, $replacement, $match_pos, $close_pos - $match_pos + 1);
+		}
+
+		return $clause;
+	}
+
 	public function marshal_field_value($field, $value)
 	{
 		if (!is_array($field_def = $this->fields[$field]))
@@ -704,7 +780,13 @@ abstract class booking_socommon
 				{
 					continue;
 				}
-				$clauses[] = strtr(join(' AND ', (array)$val), array('%%table%%' => $this->table_name));
+				$mapped_where_clauses = array();
+				foreach ($where_clauses as $where_clause)
+				{
+					$normalized_clause = strtr($where_clause, array('%%table%%' => $this->table_name));
+					$mapped_where_clauses[] = $this->rewrite_in_select_distinct_to_exists($normalized_clause);
+				}
+				$clauses[] = join(' AND ', $mapped_where_clauses);
 			}
 		}
 

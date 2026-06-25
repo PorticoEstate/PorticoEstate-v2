@@ -9,14 +9,19 @@ import BuildingPhotos from "@/components/building-page/building-photos/building-
 import DocumentsSection from "@/components/shared/documents-section/documents-section";
 import {fetchTowns} from "@/service/api/api-utils";
 import ShortDectionAccordion from "@/components/building-page/short-description-section";
+import {HighlightEntity} from "@/components/building-calendar/building-calendar.types";
 
 interface BuildingShowProps {
     params: { id: string };
-    searchParams?: { initialDate?: string };
+    searchParams?: { initialDate?: string; highlightType?: string; highlightId?: string };
 }
 
 const BuildingShow = async (props: BuildingShowProps) => {
     const initialDate = props.searchParams?.initialDate;
+    const highlightEvent: HighlightEntity | undefined =
+        props.searchParams?.highlightType && props.searchParams?.highlightId
+            ? {type: props.searchParams.highlightType as HighlightEntity['type'], id: parseInt(props.searchParams.highlightId, 10)}
+            : undefined;
     // Convert the id to a number
     const buildingId = parseInt(props.params.id, 10);
 
@@ -54,7 +59,7 @@ const BuildingShow = async (props: BuildingShowProps) => {
                 <DocumentsSection documents={documents} type="building" />
             </section>
             {/*<hr className={`my-2`}/>*/}
-            <BuildingCalendar building_id={props.params.id} initialDate={initialDate}/>
+            <BuildingCalendar building_id={props.params.id} initialDate={initialDate} highlightEvent={highlightEvent}/>
             <BuildingContact building={building}/>
         </main>
     );

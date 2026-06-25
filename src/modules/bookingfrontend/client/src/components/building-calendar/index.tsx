@@ -4,6 +4,7 @@ import {fetchSSRBuilding, fetchSSRBuildingResources} from "@/service/api/buildin
 import CalendarWrapper from "@/components/building-calendar/CalendarWrapper";
 import NotFound from "next/dist/client/components/not-found-error";
 import {IBuilding} from "@/service/types/Building";
+import {HighlightEntity} from "@/components/building-calendar/building-calendar.types";
 
 interface BuildingCalendarProps {
     building_id?: string;
@@ -12,10 +13,11 @@ interface BuildingCalendarProps {
     initialDate?: string; // ISO date string format
     readOnly?: boolean;
     buildings?: IBuilding[];
+    highlightEvent?: HighlightEntity;
 }
 
 const BuildingCalendar = async (props: BuildingCalendarProps) => {
-    const {building_id, organization_id, resource_id, initialDate: initialDateStr, readOnly = false, buildings} = props;
+    const {building_id, organization_id, resource_id, initialDate: initialDateStr, readOnly = false, buildings, highlightEvent} = props;
 
     if (!building_id && !organization_id) {
         throw new Error('Either building_id or organization_id must be provided');
@@ -47,6 +49,7 @@ const BuildingCalendar = async (props: BuildingCalendarProps) => {
                     building={building}
                     resourceId={resource_id}
                     readOnly={readOnly}
+                    highlightEvent={highlightEvent}
                 />
             );
         } else {

@@ -7,7 +7,8 @@ import EventPopper from "@/components/building-calendar/modules/event/popper/eve
 import CalendarInnerHeader from "@/components/building-calendar/modules/header/calendar-inner-header";
 import {
 	FCallEvent,
-	FCallTempEvent
+	FCallTempEvent,
+	HighlightEntity
 } from "@/components/building-calendar/building-calendar.types";
 import {useCalenderViewMode, useEnabledResources, useResourceHighlight, useTempEvents} from "@/components/building-calendar/calendar-context";
 import {IBuilding, Season} from "@/service/types/Building";
@@ -28,6 +29,7 @@ interface BuildingCalendarProps {
 	initialDate: DateTime;
 	initialEnabledResources: Set<string>;
 	readOnly?: boolean;
+	highlightEvent?: HighlightEntity;
 }
 
 Settings.defaultLocale = "nb";
@@ -290,6 +292,7 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 					currentTempEvent={currentTempEvent}
 					onDateChange={props.onDateChange}
 					handleDateSelect={readOnly || isOrganizationMode ? undefined : handleDateSelect}
+					highlightEvent={props.highlightEvent}
 				/>
 
 			)}

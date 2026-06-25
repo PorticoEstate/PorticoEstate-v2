@@ -1058,3 +1058,5 @@ withdraw_unavailable_started	bookingfrontend	en	The booking has already started 
 withdraw_unavailable_deadline	bookingfrontend	en	The cancellation deadline has passed.
 reserved_times	bookingfrontend	en	Reserved times
 show_in_calendar	bookingfrontend	en	Show in calendar
+allow_old_template	bookingfrontend	en	Allow old template
+allow_old_template_note	bookingfrontend	en	When enabled, users who selected the old template stay on it. When disabled, the new pages are forced for paths that have a new version.

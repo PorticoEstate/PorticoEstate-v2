@@ -1203,3 +1203,5 @@ by_author	booking	no	av
 loading_commits	booking	no	Laster commits...
 activate	booking	no	Aktiver
 activateAssociationConfirm	booking	no	Aktiver denne koblingen igjen?
+view_application	booking	no	Se søknad
+approved_time	booking	no	Godkjent tid

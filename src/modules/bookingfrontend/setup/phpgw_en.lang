@@ -1056,3 +1056,5 @@ confirm_cancel_booking_title	bookingfrontend	en	Cancel booking
 confirm_cancel_booking_description	bookingfrontend	en	Are you sure you want to cancel this booking?
 withdraw_unavailable_started	bookingfrontend	en	The booking has already started and can no longer be withdrawn.
 withdraw_unavailable_deadline	bookingfrontend	en	The cancellation deadline has passed.
+reserved_times	bookingfrontend	en	Reserved times
+show_in_calendar	bookingfrontend	en	Show in calendar

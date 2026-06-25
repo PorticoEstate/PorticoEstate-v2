@@ -235,6 +235,70 @@ abstract class booking_socommon
 		return array($cols, $joins);
 	}
 
+	/**
+	 * Build only the joins required to evaluate conditions in count queries.
+	 */
+	protected function _get_count_joins($query = '', $filters = array())
+	{
+		$joins = array();
+		$added_joins = array();
+		$include_all_joins = array_key_exists('where', $filters);
+
+		foreach ($this->fields as $field => $params)
+		{
+			if (isset($params['manytomany']) && $params['manytomany'])
+			{
+				continue;
+			}
+
+			$needs_join = false;
+			if ($include_all_joins)
+			{
+				$needs_join = (!empty($params['join']) || !empty($params['multiple_join']));
+			}
+			else
+			{
+				if (!empty($query) && !empty($params['query']) && (!empty($params['join']) || !empty($params['multiple_join'])))
+				{
+					$needs_join = true;
+				}
+
+				if (array_key_exists($field, $filters) && (!empty($params['join']) || !empty($params['multiple_join'])))
+				{
+					$needs_join = true;
+				}
+			}
+
+			if (!$needs_join)
+			{
+				continue;
+			}
+
+			if (!empty($params['join']))
+			{
+				$join_table_alias = $this->build_join_table_alias($field, $params);
+				$join_key = "join:{$join_table_alias}";
+				if (!isset($added_joins[$join_key]))
+				{
+					$joins[] = "LEFT JOIN {$params['join']['table']} AS {$join_table_alias} ON({$join_table_alias}.{$params['join']['key']}={$this->table_name}.{$params['join']['fkey']})";
+					$added_joins[$join_key] = true;
+				}
+			}
+			else if (!empty($params['multiple_join']))
+			{
+				$join_statement = $params['multiple_join']['statement'];
+				$join_key = "multiple:{$join_statement}";
+				if (!isset($added_joins[$join_key]))
+				{
+					$joins[] = " {$join_statement}";
+					$added_joins[$join_key] = true;
+				}
+			}
+		}
+
+		return $joins;
+	}
+
 	public function marshal_field_value($field, $value)
 	{
 		if (!is_array($field_def = $this->fields[$field]))
@@ -682,9 +746,11 @@ abstract class booking_socommon
 		$cols = join(',', $cols_joins[0]);
 		$joins = join(' ', $cols_joins[1]);
 		$condition = $this->_get_conditions($query, $filters);
+		$count_joins = join(' ', $this->_get_count_joins($query, $filters));
 
 		// Calculate total number of records
-		$this->db->query("SELECT count(1) AS count FROM $this->table_name $joins WHERE $condition", __LINE__, __FILE__);
+		$count_expression = (!empty($count_joins) && isset($this->fields['id'])) ? "count(DISTINCT {$this->table_name}.id)" : 'count(1)';
+		$this->db->query("SELECT {$count_expression} AS count FROM $this->table_name $count_joins WHERE $condition", __LINE__, __FILE__);
 		$this->db->next_record();
 		$total_records = (int)$this->db->f('count');
 

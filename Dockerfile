@@ -63,8 +63,10 @@ RUN apt-get update && apt-get install -y \
 
 RUN touch /etc/cron.d/cronjob && chmod 0644 /etc/cron.d/cronjob
 
-# Generate the specified locale
-RUN locale-gen --purge en_US.UTF-8
+# Generate locale files for en_US.UTF-8
+RUN if ! grep -q "^en_US.UTF-8 UTF-8" /etc/locale.gen; then echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen; fi && \
+    locale-gen en_US.UTF-8 && \
+    localedef -i en_US -f UTF-8 en_US.UTF-8 || true
 
 # Set environment variables
 ENV LC_ALL=en_US.UTF-8

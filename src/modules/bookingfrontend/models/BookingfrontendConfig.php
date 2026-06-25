@@ -95,6 +95,17 @@ class BookingfrontendConfig
      */
     public $close_calendar_without_season = false;
 
+    /**
+     * When true, users who explicitly selected the old template stay on it.
+     * When false (default), the new client is forced for paths that have a
+     * new-client alternative (see phpgwapi StartPoint redirect map).
+     *
+     * @OA\Property(type="boolean")
+	 * @Expose
+	 * @ParseBool
+     */
+    public $allow_old_template = false;
+
     public function __construct(?array $data)
     {
         if (is_array($data))

@@ -1203,3 +1203,5 @@ by_author	booking	en	by
 loading_commits	booking	en	Loading commits...
 activate	booking	en	Activate
 activateAssociationConfirm	booking	en	Reactivate this association?
+view_application	booking	en	View application
+approved_time	booking	en	Approved time

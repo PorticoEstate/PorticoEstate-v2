@@ -9,7 +9,7 @@ import {IBuilding, Season} from "@/service/types/Building";
 import {useLoadingContext} from "@/components/loading-wrapper/LoadingContext";
 import {useBuildingSchedule, useOrganizationSchedule, usePartialApplications} from "@/service/hooks/api-hooks";
 import CalendarProvider from "@/components/building-calendar/calendar-context";
-import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
+import {FCallTempEvent, HighlightEntity} from "@/components/building-calendar/building-calendar.types";
 import {useQueryClient} from "@tanstack/react-query";
 import styles from "@/components/building-calendar/building-calender.module.scss";
 import CalendarResourceFilter from "@/components/building-calendar/modules/resource-filter/calender-resource-filter";
@@ -29,6 +29,7 @@ interface CalendarWrapperProps {
     initialDate: Date;
     resourceId?: string;
     readOnly?: boolean;
+    highlightEvent?: HighlightEntity;
 }
 
 
@@ -43,6 +44,7 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
                                                              buildings,
                                                              resourceId,
                                                              readOnly = false,
+                                                             highlightEvent,
                                                          }) => {
     const initialEnabledResources = new Set<string>(
         resourceId ? [resourceId] : []
@@ -384,6 +386,7 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
                     buildings={buildings}
                     readOnly={readOnly}
                     initialEnabledResources={enabledResources}
+                    highlightEvent={highlightEvent}
                 />
             </div>
         </CalendarProvider>

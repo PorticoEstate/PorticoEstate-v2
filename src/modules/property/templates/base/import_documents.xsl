@@ -135,6 +135,8 @@
 					<input type="radio" name = "upload_alternative"></input> Alternativ 1: laste opp alle dokumentene som en pakket fil (ZIP eller RAR)</p>
 				<p id="select_upload_alternative_2">
 					<input  type="radio" name = "upload_alternative"></input> Alternativ 2: laste opp alle dokumentene fra samme katalog</p>
+				<p id="select_upload_alternative_3">
+					<input type="radio" name="upload_alternative"></input> Alternativ 3: laste opp regneark for tagging med metadata</p>
 
 				<fieldset  class="pure-form pure-form-aligned">
 					<div id="upload_alternative_1" class="pure-form pure-form-aligned" style="display:none">
@@ -157,6 +159,16 @@
 								<xsl:value-of select="multi_upload_action"/>
 							</xsl:with-param>
 						</xsl:call-template>
+					</div>
+
+					<div id="upload_alternative_3" class="pure-form pure-form-aligned" style="display:none">
+						<div class="pure-control-group">
+							<label>
+								<xsl:value-of select="php:function('lang', 'upload spreadsheet')"/>
+							</label>
+							<input type="file" id="fileupload_spreadsheet" class="pure-input-3-4"></input>
+							<div class="content_upload_download" id="content_upload_spreadsheet"></div>
+						</div>
 					</div>
 
 					<div class="accordion" id="accordionExample">

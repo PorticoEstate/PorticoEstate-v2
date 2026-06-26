@@ -195,8 +195,17 @@
 			<td>{lang_close_calendar_without_season}:<br/><small>{lang_close_calendar_without_season_note}</small></td>
 			<td>
 				<select name="newsettings[close_calendar_without_season]" class="pure-u-1">
-					<option value="1"{selected_close_calendar_without_season_1}>{lang_Yes}</option>
 					<option value="0"{selected_close_calendar_without_season_0}>{lang_No}</option>
+					<option value="1"{selected_close_calendar_without_season_1}>{lang_Yes}</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td>{lang_allow_old_template}:<br/><small>{lang_allow_old_template_note}</small></td>
+			<td>
+				<select name="newsettings[allow_old_template]" class="pure-u-1">
+					<option value="0"{selected_allow_old_template_0}>{lang_No}</option>
+					<option value="1"{selected_allow_old_template_1}>{lang_Yes}</option>
 				</select>
 			</td>
 		</tr>

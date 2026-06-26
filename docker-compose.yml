@@ -44,6 +44,9 @@ services:
             <<: *common-variables
             docker: "true"
             ENABLE_ASYNC_CRON: "1"
+            LANG: en_US.UTF-8
+            LC_ALL: en_US.UTF-8
+            LANGUAGE: en_US.UTF-8
         ports:
             - "8088:80"
         volumes:

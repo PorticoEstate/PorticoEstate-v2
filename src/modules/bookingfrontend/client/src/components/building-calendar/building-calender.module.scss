@@ -146,3 +146,24 @@
 .closedHours {
     --fc-bg-event-color: rgba(211, 211, 211);
 }
+
+
+// Deep-linked entity from an application's reserved times: pull it above
+// neighbouring events and pulse a focus ring so it's easy to spot.
+.highlightedEvent {
+    z-index: 5 !important;
+    outline: 2px solid var(--ds-color-accent-border-strong);
+    outline-offset: 1px;
+    border-radius: 4px;
+    box-shadow: 0 0 0 4px var(--ds-color-accent-surface-hover);
+    animation: highlightedEventPulse 1.4s ease-in-out 3;
+}
+
+@keyframes highlightedEventPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 2px var(--ds-color-accent-surface-hover);
+    }
+    50% {
+        box-shadow: 0 0 0 7px var(--ds-color-accent-surface-active);
+    }
+}

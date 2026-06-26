@@ -455,22 +455,24 @@ class StartPoint
 
 		$this->validate_object_method();
 
-		// Check for develop mode redirect - ONLY for GET requests and not for JSON returns
+		// Redirect legacy pages to the new client - ONLY for GET requests and not for JSON returns
 		if ($app == 'bookingfrontend' && $_SERVER['REQUEST_METHOD'] === 'GET' && Sanitizer::get_var('phpgw_return_as', 'string', 'GET') !== 'json') {
 			$template_set = Sanitizer::get_var('template_set', 'string', 'COOKIE');
 
-			// Only skip redirect if user has explicitly selected original template
-			if ($template_set != 'bookingfrontend') {
-				$config_frontend = CreateObject('phpgwapi.config', 'bookingfrontend')->read();
-				$develop_mode = isset($config_frontend['develope_mode']) && $config_frontend['develope_mode'] === 'True';
+			$config_frontend = CreateObject('phpgwapi.config', 'bookingfrontend')->read();
+			$allow_old_template = isset($config_frontend['allow_old_template']) && $config_frontend['allow_old_template'] == '1';
 
+			// When the old template is allowed, honour an explicit opt-out (template_set
+			// cookie). Otherwise force the new client for every path that has an
+			// alternative (the redirect map below only matches those paths).
+			if (!$allow_old_template || $template_set != 'bookingfrontend') {
 				// Handle homepage redirect with no menuaction
-				if ($develop_mode && !isset($_GET['menuaction']) || $_GET['menuaction'] === 'bookingfrontend.uisearch.index') {
+				if (!isset($_GET['menuaction']) || $_GET['menuaction'] === 'bookingfrontend.uisearch.index') {
 					\phpgw::redirect_link('/bookingfrontend/client/');
 				}
 
 				// Handle redirects with menuaction
-				if ($develop_mode && isset($_GET['menuaction'])) {
+				if (isset($_GET['menuaction'])) {
 					$menuaction = $_GET['menuaction'];
 
 				// Skip search index since it's handled above
@@ -486,7 +488,7 @@ class StartPoint
 					'bookingfrontend.uiorganization.show' => '/bookingfrontend/client/organization/%id%',
 					'bookingfrontend.uiorganization.edit' => '/bookingfrontend/client/organization/%id%/edit',
 					'bookingfrontend.uieventsearch.show' => '/bookingfrontend/client/search/event',
-//					'bookingfrontend.uiapplication.show' => '/bookingfrontend/client/user/applications/%id%',
+					'bookingfrontend.uiapplication.show' => '/bookingfrontend/client/user/applications/%id%',
 
 						// Add more mappings as needed
 					];
@@ -537,7 +539,7 @@ class StartPoint
 
 			if ($app == 'bookingfrontend')
 			{
-				// Check for develop mode when no menuaction is provided and default to homepage
+				// No menuaction provided - default to the client homepage
 				if ($_SERVER['REQUEST_METHOD'] === 'GET' && Sanitizer::get_var('phpgw_return_as', 'string', 'GET') !== 'json') {
 					// Check cookie first, if unset use the assigned template
 					$template_set = Sanitizer::get_var('template_set', 'string', 'COOKIE');
@@ -546,13 +548,11 @@ class StartPoint
 						$template_set = $userSettings['preferences']['common']['template_set'] ?? '';
 					}
 
-					if ($template_set == 'bookingfrontend_2') {
-						$config_frontend = CreateObject('phpgwapi.config', 'bookingfrontend')->read();
-						$develop_mode = isset($config_frontend['develope_mode']) && $config_frontend['develope_mode'] === 'True';
+					$config_frontend = CreateObject('phpgwapi.config', 'bookingfrontend')->read();
+					$allow_old_template = isset($config_frontend['allow_old_template']) && $config_frontend['allow_old_template'] == '1';
 
-						if ($develop_mode) {
-							\phpgw::redirect_link('/bookingfrontend/client/no/');
-						}
+					if (!$allow_old_template || $template_set == 'bookingfrontend_2') {
+						\phpgw::redirect_link('/bookingfrontend/client/no/');
 					}
 				}
 

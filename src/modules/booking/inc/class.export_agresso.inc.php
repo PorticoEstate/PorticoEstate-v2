@@ -185,12 +185,14 @@ class export_agresso
 		$user = $this->config->config_data['invoice_ftp_user'];
 		$pass = $this->config->config_data['invoice_ftp_password'];
 		$privateKey = $this->config->config_data['invoice_ssh_private_key'];
+		$passPhrase = null; // Set to null if privateKey is not used or has no passphrase
 
 		// Use private key if available, otherwise use password
 		if (!empty($privateKey))
 		{
 			$password = null;
 			$privateKeyToUse = $privateKey;
+			$passPhrase = !empty($pass) ? $pass : null; // Set passphrase if password is provided
 		}
 		else
 		{
@@ -204,7 +206,7 @@ class export_agresso
 				$user, // username (required)
 				$password, // password (optional, default: null) set to null if privateKey is used
 				$privateKeyToUse, // private key (optional, default: null) can be used instead of password, set to null if password is set
-				null, // passphrase (optional, default: null), set to null if privateKey is not used or has no passphrase
+				$passPhrase, // passphrase (optional, default: null), set to null if privateKey is not used or has no passphrase
 				$port, // port (optional, default: 22)
 				false, // use agent (optional, default: false)
 				10, // timeout (optional, default: 10)

@@ -1,4 +1,4 @@
-import React, {Dispatch, FC, useCallback, useEffect, useMemo, useState} from 'react';
+import React, {Dispatch, FC, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import { IResource } from '@/service/types/resource.types';
 import interactionPlugin, {EventResizeDoneArg} from "@fullcalendar/interaction";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -10,7 +10,8 @@ import {
 	FCallBaseEvent,
 	FCallEvent,
 	FCallTempEvent, FCEventClickArg,
-	FCEventContentArg
+	FCEventContentArg,
+	HighlightEntity
 } from "@/components/building-calendar/building-calendar.types";
 import styles from "@/components/building-calendar/building-calender.module.scss";
 import FullCalendar from "@fullcalendar/react";
@@ -48,7 +49,8 @@ interface FullCalendarViewProps {
 	seasons?: Season[],
 	onDateChange: Dispatch<DatesSetArg>,
 	currentTempEvent?: Partial<FCallTempEvent>,
-	handleDateSelect?: (selectInfo?: Partial<DateSelectArg>) => void
+	handleDateSelect?: (selectInfo?: Partial<DateSelectArg>) => void,
+	highlightEvent?: HighlightEntity
 }
 
 const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
@@ -62,7 +64,8 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		currentDate,
 		seasons,
 		currentTempEvent,
-		handleDateSelect
+		handleDateSelect,
+		highlightEvent
 	} = props;
 	const isMobile = useIsMobile();
 	const [calendarEvents, setCalendarEvents] = useState<(FCallBaseEvent)[]>([]);
@@ -82,8 +85,8 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	const { addToast } = useToast();
 	const isOrg = useIsOrganization();
 	const {data: serverSettings} = useServerSettings();
-	// Admin-configurable: buildings without any seasons are fully closed by default
-	const closeWhenNoSeasons = serverSettings?.bookingfrontend_config?.close_calendar_without_season ?? true;
+	// Admin-configurable: buildings without any seasons are open by default
+	const closeWhenNoSeasons = serverSettings?.bookingfrontend_config?.close_calendar_without_season ?? false;
 
 	useEffect(() => {
 		if (calendarRef.current) {
@@ -501,6 +504,31 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		/>
 	}
 	const tempEventArr = useMemo(() => Object.values(storedTempEvents), [storedTempEvents])
+
+	// Matches a rendered calendar event against the deep-link highlight target.
+	// Both id and type must match — a booking and an event can share a numeric id.
+	const isHighlightMatch = useCallback((event: { id?: string | number; extendedProps?: any }) => {
+		if (!highlightEvent) return false;
+		return String(event.id) === String(highlightEvent.id)
+			&& event.extendedProps?.type === highlightEvent.type;
+	}, [highlightEvent]);
+
+	// Scroll the highlighted entity into view once when arriving via a deep link.
+	const highlightHandledRef = useRef<string | null>(null);
+	useEffect(() => {
+		highlightHandledRef.current = null;
+	}, [highlightEvent?.type, highlightEvent?.id]);
+
+	const handleEventDidMount = useCallback((info: { event: { id?: string | number; extendedProps?: any }; el: HTMLElement }) => {
+		if (!isHighlightMatch(info.event)) return;
+		const key = `${highlightEvent!.type}-${highlightEvent!.id}`;
+		if (highlightHandledRef.current === key) return;
+		highlightHandledRef.current = key;
+		// Defer until the calendar has finished laying out the week.
+		setTimeout(() => {
+			info.el.scrollIntoView({behavior: 'smooth', block: 'center'});
+		}, 300);
+	}, [isHighlightMatch, highlightEvent]);
 
 	const handleEventClick = useCallback((clickInfo: FCEventClickArg<FCallBaseEvent>) => {
 		// Check if the clicked event is a background event
@@ -1014,8 +1042,14 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 					}
 				}
 
+				// Highlight the entity targeted by a deep link from an application's reserved times.
+				if (isHighlightMatch(event)) {
+					classNames += ` ${styles.highlightedEvent}`;
+				}
+
 				return classNames.trim();
 			}}
+			eventDidMount={handleEventDidMount}
 			// editable={true}
 			// selectOverlap={(stillEvent, movingEvent) => {
 			//     console.log(stillEvent);

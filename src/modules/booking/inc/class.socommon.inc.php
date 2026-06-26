@@ -235,6 +235,146 @@ abstract class booking_socommon
 		return array($cols, $joins);
 	}
 
+	/**
+	 * Build only the joins required to evaluate conditions in count queries.
+	 */
+	protected function _get_count_joins($query = '', $filters = array())
+	{
+		$joins = array();
+		$added_joins = array();
+		$include_all_joins = array_key_exists('where', $filters);
+
+		foreach ($this->fields as $field => $params)
+		{
+			if (isset($params['manytomany']) && $params['manytomany'])
+			{
+				continue;
+			}
+
+			$needs_join = false;
+			if ($include_all_joins)
+			{
+				$needs_join = (!empty($params['join']) || !empty($params['multiple_join']));
+			}
+			else
+			{
+				if (!empty($query) && !empty($params['query']) && (!empty($params['join']) || !empty($params['multiple_join'])))
+				{
+					$needs_join = true;
+				}
+
+				if (array_key_exists($field, $filters) && (!empty($params['join']) || !empty($params['multiple_join'])))
+				{
+					$needs_join = true;
+				}
+			}
+
+			if (!$needs_join)
+			{
+				continue;
+			}
+
+			if (!empty($params['join']))
+			{
+				$join_table_alias = $this->build_join_table_alias($field, $params);
+				$join_key = "join:{$join_table_alias}";
+				if (!isset($added_joins[$join_key]))
+				{
+					$joins[] = "LEFT JOIN {$params['join']['table']} AS {$join_table_alias} ON({$join_table_alias}.{$params['join']['key']}={$this->table_name}.{$params['join']['fkey']})";
+					$added_joins[$join_key] = true;
+				}
+			}
+			else if (!empty($params['multiple_join']))
+			{
+				$join_statement = $params['multiple_join']['statement'];
+				$join_key = "multiple:{$join_statement}";
+				if (!isset($added_joins[$join_key]))
+				{
+					$joins[] = " {$join_statement}";
+					$added_joins[$join_key] = true;
+				}
+			}
+		}
+
+		return $joins;
+	}
+
+	protected function find_matching_parenthesis($sql, $open_pos)
+	{
+		$len = strlen($sql);
+		$depth = 0;
+		for ($i = $open_pos; $i < $len; $i++)
+		{
+			$ch = $sql[$i];
+			if ($ch === '(')
+			{
+				$depth++;
+			}
+			else if ($ch === ')')
+			{
+				$depth--;
+				if ($depth === 0)
+				{
+					return $i;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Rewrites safe patterns of "<outer_col> IN (SELECT DISTINCT <inner_col> FROM ... WHERE ...)"
+	 * to EXISTS form to avoid unnecessary DISTINCT/materialization overhead.
+	 */
+	protected function rewrite_in_select_distinct_to_exists($clause)
+	{
+		if (!is_string($clause) || stripos($clause, ' IN (') === false || stripos($clause, 'SELECT DISTINCT') === false)
+		{
+			return $clause;
+		}
+
+		if (!preg_match_all('/([a-zA-Z_][a-zA-Z0-9_\.]*)\s+IN\s*\(/i', $clause, $matches, PREG_OFFSET_CAPTURE))
+		{
+			return $clause;
+		}
+
+		for ($i = count($matches[0]) - 1; $i >= 0; $i--)
+		{
+			$outer_expr = $matches[1][$i][0];
+			$match_text = $matches[0][$i][0];
+			$match_pos = $matches[0][$i][1];
+			$open_pos = $match_pos + strlen($match_text) - 1;
+
+			$close_pos = $this->find_matching_parenthesis($clause, $open_pos);
+			if ($close_pos === false)
+			{
+				continue;
+			}
+
+			$inner_sql = trim(substr($clause, $open_pos + 1, $close_pos - $open_pos - 1));
+
+			if (!preg_match('/^SELECT\s+DISTINCT\s+([a-zA-Z_][a-zA-Z0-9_\.]*)\s+FROM\s+(.+)\s+WHERE\s+(.+)$/is', $inner_sql, $parts))
+			{
+				continue;
+			}
+
+			$inner_key = $parts[1];
+			$inner_from = trim($parts[2]);
+			$inner_where = trim($parts[3]);
+
+			if ($inner_key === '' || $inner_from === '' || $inner_where === '')
+			{
+				continue;
+			}
+
+			$replacement = "EXISTS (SELECT 1 FROM {$inner_from} WHERE ({$inner_where}) AND {$inner_key}={$outer_expr})";
+			$clause = substr_replace($clause, $replacement, $match_pos, $close_pos - $match_pos + 1);
+		}
+
+		return $clause;
+	}
+
 	public function marshal_field_value($field, $value)
 	{
 		if (!is_array($field_def = $this->fields[$field]))
@@ -640,7 +780,13 @@ abstract class booking_socommon
 				{
 					continue;
 				}
-				$clauses[] = strtr(join(' AND ', (array)$val), array('%%table%%' => $this->table_name));
+				$mapped_where_clauses = array();
+				foreach ($where_clauses as $where_clause)
+				{
+					$normalized_clause = strtr($where_clause, array('%%table%%' => $this->table_name));
+					$mapped_where_clauses[] = $this->rewrite_in_select_distinct_to_exists($normalized_clause);
+				}
+				$clauses[] = join(' AND ', $mapped_where_clauses);
 			}
 		}
 
@@ -682,9 +828,11 @@ abstract class booking_socommon
 		$cols = join(',', $cols_joins[0]);
 		$joins = join(' ', $cols_joins[1]);
 		$condition = $this->_get_conditions($query, $filters);
+		$count_joins = join(' ', $this->_get_count_joins($query, $filters));
 
 		// Calculate total number of records
-		$this->db->query("SELECT count(1) AS count FROM $this->table_name $joins WHERE $condition", __LINE__, __FILE__);
+		$count_expression = (!empty($count_joins) && isset($this->fields['id'])) ? "count(DISTINCT {$this->table_name}.id)" : 'count(1)';
+		$this->db->query("SELECT {$count_expression} AS count FROM $this->table_name $count_joins WHERE $condition", __LINE__, __FILE__);
 		$this->db->next_record();
 		$total_records = (int)$this->db->f('count');
 

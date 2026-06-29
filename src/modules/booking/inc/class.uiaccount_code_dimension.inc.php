@@ -1,6 +1,7 @@
 <?php
 
 use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\services\Cache;
 
 phpgw::import_class('booking.uicommon');
 
@@ -23,34 +24,97 @@ class booking_uiaccount_code_dimension extends booking_uicommon
 	{
 		$config = CreateObject('phpgwapi.config', 'booking');
 		$config->read();
+		$is_test_sftp = false;
 
 		if ($_SERVER['REQUEST_METHOD'] == 'POST')
 		{
-			foreach ($_POST as $dim => $value)
+			$is_test_sftp = (bool) Sanitizer::get_var('test_sftp_connection', 'bool', 'POST');
+
+			if ($is_test_sftp)
 			{
-				if($dim == 'invoice_ssh_private_key' && $value == '*** PRIVATE KEY SET ***')				
+				$effective_config = $config->config_data;
+
+				foreach ($_POST as $dim => $value)
 				{
-					continue;
+					if (!is_string($value))
+					{
+						continue;
+					}
+
+					$value = trim($value);
+					if ($dim == 'invoice_ssh_private_key' && $value == '*** PRIVATE KEY SET ***')
+					{
+						continue;
+					}
+					if ($dim == 'sftp_key_passphrase' && $value == '*** PASSPHRASE SET ***')
+					{
+						continue;
+					}
+
+					if (strlen($value) > 0)
+					{
+						$effective_config[$dim] = $value;
+					}
 				}
-			
-				if (strlen(trim($value)) > 0)
+
+				try
 				{
-					$config->value($dim, trim($value));
+					phpgw::import_class('booking.export_agresso');
+					$export_agresso = new export_agresso();
+					$test_result = $export_agresso->test_sftp_connection($effective_config);
+
+					if (!empty($test_result['success']))
+					{
+						Cache::message_set($test_result['message'], 'message');
+					}
+					else
+					{
+						Cache::message_set($test_result['message'], 'error');
+					}
 				}
-				else
+				catch (Exception $e)
 				{
-					unset($config->config_data[$dim]);
+					Cache::message_set(lang('SFTP connection test failed: %1', $e->getMessage()), 'error');
 				}
+
+				$config->config_data = $effective_config;
 			}
+			else
+			{
+				foreach ($_POST as $dim => $value)
+				{
+					if($dim == 'invoice_ssh_private_key' && $value == '*** PRIVATE KEY SET ***')				
+					{
+						continue;
+					}
+					if($dim == 'sftp_key_passphrase' && $value == '*** PASSPHRASE SET ***')
+					{
+						continue;
+					}
+				
+					if (strlen(trim($value)) > 0)
+					{
+						$config->value($dim, trim($value));
+					}
+					else
+					{
+						unset($config->config_data[$dim]);
+					}
+				}
 
-			$config->config_data['differentiate_org_payer'] = Sanitizer::get_var('differentiate_org_payer', 'int', 'POST');
+				$config->config_data['differentiate_org_payer'] = Sanitizer::get_var('differentiate_org_payer', 'int', 'POST');
 
-			$config->save_repository();
+				$config->save_repository();
+			}
 		}
 
-		if(!empty($config->config_data['invoice_ssh_private_key']))
+		if(!$is_test_sftp && !empty($config->config_data['invoice_ssh_private_key']))
 		{
 			$config->config_data['invoice_ssh_private_key'] = '*** PRIVATE KEY SET ***';
+		}
+		if(!$is_test_sftp && !empty($config->config_data['sftp_key_passphrase']))
+		{
+			$config->config_data['sftp_key_passphrase'] = '*** PASSPHRASE SET ***';
 		}
 
 		$tabs = array();

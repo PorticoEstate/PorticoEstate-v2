@@ -550,6 +550,16 @@
 				</div>
 				<div class="pure-control-group">
 					<label>
+						SFTP key passphrase
+					</label>
+					<input id="field_sftp_key_passphrase" name="sftp_key_passphrase" type="password">
+						<xsl:attribute name="value">
+							<xsl:value-of select="config_data/sftp_key_passphrase"/>
+						</xsl:attribute>
+					</input>
+				</div>
+				<div class="pure-control-group">
+					<label>
 						<xsl:value-of select="php:function('lang', 'SSH Private Key')"/>
 						<span style="display:block;font-size:10px;font-weight:normal;margin-top:-8px;">
 							<xsl:value-of select="php:function('lang', 'Leave empty to use password authentication')"/>
@@ -578,6 +588,11 @@
 			<input type="submit" class="button pure-button pure-button-primary">
 				<xsl:attribute name="value">
 					<xsl:value-of select="php:function('lang', 'Save')"/>
+				</xsl:attribute>
+			</input>
+			<input type="submit" class="button pure-button" name="test_sftp_connection" value="1">
+				<xsl:attribute name="value">
+					<xsl:value-of select="php:function('lang', 'Test SFTP connection')"/>
 				</xsl:attribute>
 			</input>
 		</div>

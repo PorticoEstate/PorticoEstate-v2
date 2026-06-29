@@ -173,6 +173,7 @@ export interface IBookingConfig {
     invoice_export_path?: string;
     invoice_ftp_host?: string;
     invoice_ftp_password?: string;
+    sftp_key_passphrase?: string;
     invoice_ftp_user?: string;
     invoice_last_id?: number;
     landing_sections?: Array<string>;

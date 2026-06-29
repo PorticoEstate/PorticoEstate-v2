@@ -345,6 +345,11 @@ class BookingConfig
     /**
      * @OA\Property(type="string")
      */
+    public $sftp_key_passphrase;
+
+    /**
+     * @OA\Property(type="string")
+     */
 
     public $invoice_ssh_private_key;
 

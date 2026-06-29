@@ -176,58 +176,7 @@ class export_agresso
 		{
 			$newfile = basename($filnavn);
 		}
-		$host_info		 = explode(':', $this->config->config_data['invoice_ftp_host']);
-
-		$host	 = $host_info[0];
-		$port	 = isset($host_info[1]) && $host_info[1] ? $host_info[1] : 22;
-
-		//			$host = $this->config->config_data['invoice_ftp_host'];
-		$user = $this->config->config_data['invoice_ftp_user'];
-		$login_password = $this->config->config_data['invoice_ftp_password'];
-		$privateKey = $this->config->config_data['invoice_ssh_private_key'];
-		$passPhrase = !empty($this->config->config_data['sftp_key_passphrase'])
-			? $this->config->config_data['sftp_key_passphrase']
-			: null;
-
-		// Use private key if available, otherwise use password
-		if (!empty($privateKey))
-		{
-			$password = null;
-			$privateKeyToUse = $privateKey;
-		}
-		else
-		{
-			$password = $login_password;
-			$privateKeyToUse = null;
-			$passPhrase = null;
-		}
-
-		$filesystem = new Filesystem(new SftpAdapter(
-			new SftpConnectionProvider(
-				$host, // host (required)
-				$user, // username (required)
-				$password, // password (optional, default: null) set to null if privateKey is used
-				$privateKeyToUse, // private key (optional, default: null) can be used instead of password, set to null if password is set
-				$passPhrase, // passphrase (optional, default: null), set to null if privateKey is not used or has no passphrase
-				$port, // port (optional, default: 22)
-				false, // use agent (optional, default: false)
-				10, // timeout (optional, default: 10)
-				40, // max tries (optional, default: 4)
-				null, // host fingerprint (optional, default: null),
-				null, // connectivity checker (must be an implementation of 'League\Flysystem\PhpseclibV2\ConnectivityChecker' to check if a connection can be established (optional, omit if you don't need some special handling for setting reliable connections)
-			),
-			$basedir, // root path (required)
-			PortableVisibilityConverter::fromArray([
-				'file' => [
-					'public' => 0640,
-					'private' => 0604,
-				],
-				'dir' => [
-					'public' => 0740,
-					'private' => 7604,
-				],
-			])
-		));
+		$filesystem = $this->create_sftp_filesystem($this->config->config_data);
 
 		try
 		{
@@ -242,13 +191,100 @@ class export_agresso
 		return $transfer_ok;
 	}
 
+	public function test_sftp_connection(array $config_data = array())
+	{
+		$effective_config = $config_data ?: $this->config->config_data;
+
+		if (empty($effective_config['invoice_ftp_host']) || empty($effective_config['invoice_ftp_user']))
+		{
+			return array(
+				'success' => false,
+				'message' => lang('SFTP test failed: host and user are required')
+			);
+		}
+
+		try
+		{
+			$filesystem = $this->create_sftp_filesystem($effective_config, 5, 2);
+			foreach ($filesystem->listContents('.', false) as $item)
+			{
+				break;
+			}
+
+			return array(
+				'success' => true,
+				'message' => lang('SFTP connection test succeeded')
+			);
+		}
+		catch (\Throwable $e)
+		{
+			return array(
+				'success' => false,
+				'message' => lang('SFTP test failed: %1', $e->getMessage())
+			);
+		}
+	}
+
+	private function create_sftp_filesystem(array $config_data, int $timeout = 10, int $max_tries = 40)
+	{
+		$basedir = rtrim($config_data['invoice_ftp_basedir'] ?? '', '/');
+		$host_info = explode(':', $config_data['invoice_ftp_host'] ?? '');
+
+		$host = $host_info[0];
+		$port = isset($host_info[1]) && $host_info[1] ? $host_info[1] : 22;
+		$user = $config_data['invoice_ftp_user'] ?? '';
+		$login_password = $config_data['invoice_ftp_password'] ?? null;
+		$privateKey = $config_data['invoice_ssh_private_key'] ?? null;
+		$passPhrase = !empty($config_data['sftp_key_passphrase'])
+			? $config_data['sftp_key_passphrase']
+			: null;
+
+		if (!empty($privateKey))
+		{
+			$password = null;
+			$privateKeyToUse = $privateKey;
+		}
+		else
+		{
+			$password = $login_password;
+			$privateKeyToUse = null;
+			$passPhrase = null;
+		}
+
+		return new Filesystem(new SftpAdapter(
+			new SftpConnectionProvider(
+				$host,
+				$user,
+				$password,
+				$privateKeyToUse,
+				$passPhrase,
+				$port,
+				false,
+				$timeout,
+				$max_tries,
+				null,
+				null
+			),
+			$basedir,
+			PortableVisibilityConverter::fromArray([
+				'file' => [
+					'public' => 0640,
+					'private' => 0604,
+				],
+				'dir' => [
+					'public' => 0740,
+					'private' => 7604,
+				],
+			])
+		));
+	}
+
 	protected function transfer($filnavn)
 	{
+		$transfer_ok = false;
 
 		if ($this->config->config_data['invoice_export_method'] == 'ftp')
 		{
-
-			$transfer_ok = false;
 			$ftp = $this->phpftp_connect();
 			$basedir = $this->config->config_data['invoice_ftp_basedir'];
 

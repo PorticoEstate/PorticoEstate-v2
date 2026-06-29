@@ -32,6 +32,10 @@ class booking_uiaccount_code_dimension extends booking_uicommon
 				{
 					continue;
 				}
+				if($dim == 'sftp_key_passphrase' && $value == '*** PASSPHRASE SET ***')
+				{
+					continue;
+				}
 			
 				if (strlen(trim($value)) > 0)
 				{
@@ -51,6 +55,10 @@ class booking_uiaccount_code_dimension extends booking_uicommon
 		if(!empty($config->config_data['invoice_ssh_private_key']))
 		{
 			$config->config_data['invoice_ssh_private_key'] = '*** PRIVATE KEY SET ***';
+		}
+		if(!empty($config->config_data['sftp_key_passphrase']))
+		{
+			$config->config_data['sftp_key_passphrase'] = '*** PASSPHRASE SET ***';
 		}
 
 		$tabs = array();

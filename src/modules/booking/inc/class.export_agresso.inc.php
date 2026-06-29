@@ -183,21 +183,23 @@ class export_agresso
 
 		//			$host = $this->config->config_data['invoice_ftp_host'];
 		$user = $this->config->config_data['invoice_ftp_user'];
-		$pass = $this->config->config_data['invoice_ftp_password'];
+		$login_password = $this->config->config_data['invoice_ftp_password'];
 		$privateKey = $this->config->config_data['invoice_ssh_private_key'];
-		$passPhrase = null; // Set to null if privateKey is not used or has no passphrase
+		$passPhrase = !empty($this->config->config_data['sftp_key_passphrase'])
+			? $this->config->config_data['sftp_key_passphrase']
+			: null;
 
 		// Use private key if available, otherwise use password
 		if (!empty($privateKey))
 		{
 			$password = null;
 			$privateKeyToUse = $privateKey;
-			$passPhrase = !empty($pass) ? $pass : null; // Set passphrase if password is provided
 		}
 		else
 		{
-			$password = $pass;
+			$password = $login_password;
 			$privateKeyToUse = null;
+			$passPhrase = null;
 		}
 
 		$filesystem = new Filesystem(new SftpAdapter(

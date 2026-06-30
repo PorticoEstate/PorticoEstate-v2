@@ -135,7 +135,7 @@ class Settings
 		
 		if (!isset($this->config_data['server']['template_set']))
 		{
-			$this->config_data['server']['template_set'] = '';
+			$this->config_data['server']['template_set'] = null;
 		}
 		
 		$data_cache[$modules[0]] = $this->config_data;

@@ -208,6 +208,8 @@ class Applications
 				$this->process->init_process();
 			}
 
+			$migrationService = new \App\modules\phpgwapi\services\Migration\MigrationService();
+
 			if (!empty($remove) && is_array($remove))
 			{
 				$this->process->oProc->m_odb->transaction_begin();
@@ -261,7 +263,6 @@ class Applications
 					$header .=  '<h3>' . $this->setup->lang('Processing: %1', $this->setup->lang($appname)) . "</h3>\n<ul>";
 					$terror = array($setup_info[$appname]);
 
-					$migrationService = $migrationService ?? new \App\modules\phpgwapi\services\Migration\MigrationService();
 					if (
 						isset($setup_info[$appname]['tables'])
 						&& is_array($setup_info[$appname]['tables'])
@@ -321,6 +322,12 @@ class Applications
 				{
 					if ($migrationService->moduleHasMigrations($appname))
 					{
+						if (isset($setup_info[$appname]['status']) && in_array($setup_info[$appname]['status'], ['D', 'P'], true))
+						{
+							$header .= '<li><b>Migration skipped:</b> ' . $this->setup->lang('Dependencies are not satisfied for %1', $this->setup->lang($appname)) . "</li>\n";
+							continue;
+						}
+
 						$applied = $migrationService->getAppliedMigrations($appname);
 						$legacyVersion = $setup_info[$appname]['currentver'] ?? null;
 						$isLegacyTransition = $this->setup->app_registered($appname)
@@ -381,6 +388,12 @@ class Applications
 
 					if ($migrationService->moduleHasMigrations($appname))
 					{
+						if (isset($setup_info[$appname]['status']) && in_array($setup_info[$appname]['status'], ['D', 'P'], true))
+						{
+							$header .= '<li><b>Migration skipped:</b> ' . $this->setup->lang('Dependencies are not satisfied for %1', $this->setup->lang($appname)) . "</li>\n";
+							continue;
+						}
+
 						// Migration-based upgrade
 						$applied = $migrationService->getAppliedMigrations($appname);
 						$legacyVersion = $setup_info[$appname]['currentver'] ?? null;
@@ -707,6 +720,7 @@ class Applications
 
 			$apps = '';
 			$i = 0;
+			$migrationService = new \App\modules\phpgwapi\services\Migration\MigrationService();
 
 			// Generate the app rows
 			foreach ($setup_info as $key => $value)
@@ -778,8 +792,10 @@ class Applications
 						case 'U':
 							$appVars['instimg'] = 'package-generic.png';
 							$appVars['instalt'] = $this->setup->lang('Not Completed');
+							$hasNoAppliedMigrations = $migrationService->moduleHasMigrations($value['name'])
+								&& count($migrationService->getAppliedMigrations($value['name'])) === 0;
 
-							if (!isset($value['currentver']) || !$value['currentver'])
+							if (!isset($value['currentver']) || !$value['currentver'] || $hasNoAppliedMigrations)
 							{
 								$appVars['bg_class'] = "row_install_{$row}";
 								$appVars['appinfo'] = "[{$value['status']}] " . $this->setup->lang('Please install');

@@ -1070,6 +1070,15 @@ class Process
 				continue;
 			}
 
+			// Never migrate unregistered apps in auto-pass. Migration execution here
+			// is only for apps explicitly included in install/upgrade flow.
+			if (!$this->setup->app_registered($appname)) {
+				if ($DEBUG) {
+					echo '<br>process->runMigrations(): Skipping unregistered app ' . $appname . "\n";
+				}
+				continue;
+			}
+
 			// Auto-detect legacy→migration transition:
 			// Module is registered with a real legacy version (contains dots) but has zero tracked migrations.
 			// Fresh installs have currentver='0' — not a legacy transition.
@@ -1118,13 +1127,8 @@ class Process
 				$info['currentver'] = $migrationService->getTargetVersion($appname);
 				$info['version'] = $info['currentver'];
 				$this->update_setup_info($info, $appname);
-				if ($this->setup->app_registered($appname)) {
-					$this->setup->update_app($appname);
-					$this->setup->update_hooks($appname);
-				} else {
-					$this->setup->register_app($appname);
-					$this->setup->register_hooks($appname);
-				}
+				$this->setup->update_app($appname);
+				$this->setup->update_hooks($appname);
 				continue;
 			}
 
@@ -1152,15 +1156,8 @@ class Process
 				$info['currentver'] = $migrationService->getTargetVersion($appname);
 				$info['version'] = $info['currentver'];
 				$this->update_setup_info($info, $appname);
-
-				if ($this->setup->app_registered($appname)) {
-					$this->setup->update_app($appname);
-					$this->setup->update_hooks($appname);
-				} else {
-					// Ensure app is registered even if prior registration was lost
-					$this->setup->register_app($appname);
-					$this->setup->register_hooks($appname);
-				}
+				$this->setup->update_app($appname);
+				$this->setup->update_hooks($appname);
 
 				if ($DEBUG) {
 					echo '<br>process->runMigrations(): All migrations applied for ' . $appname . "\n";

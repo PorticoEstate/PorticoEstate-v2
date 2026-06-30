@@ -239,13 +239,26 @@ class Detection
 
 					if ($migrationService->moduleHasMigrations($depAppName))
 					{
-						// Migration-based dependency: version is migration count
-						// Satisfied if applied count >= required count
-						$appliedCount = (int) $migrationService->getCurrentVersion($depAppName);
+						// Migration-based dependency supports both:
+						// 1) numeric required versions (minimum applied migration count)
+						// 2) legacy dotted versions (resolved through legacy_version_map.php)
+						$appliedMigrations = $migrationService->getAppliedMigrations($depAppName);
+						$appliedCount = count($appliedMigrations);
 
 						foreach ($depvalue['versions'] as $requiredVersion)
 						{
-							if ($appliedCount >= (int) $requiredVersion)
+							$requiredVersion = (string) $requiredVersion;
+
+							// Minimum applied migration count dependency, e.g. '1'
+							if (ctype_digit($requiredVersion) && $appliedCount >= (int) $requiredVersion)
+							{
+								$setup_info['depends'][$depkey]['status'] = True;
+								break;
+							}
+
+							// Legacy semantic version dependency, e.g. '0.2.103'
+							$requiredMigration = $migrationService->findMigrationForLegacyVersion($depAppName, $requiredVersion);
+							if ($requiredMigration !== null && in_array($requiredMigration, $appliedMigrations, true))
 							{
 								$setup_info['depends'][$depkey]['status'] = True;
 								break;

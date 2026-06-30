@@ -129,7 +129,7 @@ class Accounts
 		$defaultprefs = array(
 			'common' => array(
 				'maxmatchs'		=> 10,
-				'template_set'	=> 'bootstrap',
+				'template_set'	=> 'digdir',
 				'theme'			=> '',
 				'tz_offset'		=> 0,
 				'dateformat'	=> 'Y/m/d',

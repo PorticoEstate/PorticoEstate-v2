@@ -88,8 +88,20 @@ namespace Tests\Controllers
 			$this->assertStringContainsString('enrichWorkorderRelationInfo(formData);', $contents);
 			$this->assertStringContainsString("function submit_workorder_via_api_xhr", $contents);
 			$this->assertStringContainsString("new XMLHttpRequest()", $contents);
+			$this->assertStringContainsString("formatWorkorderFileLink = function", $contents);
+			$this->assertStringContainsString("formatWorkorderAttachFile = function", $contents);
 			$this->assertStringNotContainsString("if (!form || !window.fetch)", $contents);
 			$this->assertStringNotContainsString("if (!form || !window.fetch)\n\t{\n\t\tform.submit();", $contents);
+		}
+
+		public function testWorkorderShellUsesFileFormattersForRestPayloads(): void
+		{
+			$uiPath = __DIR__ . '/../../src/modules/property/inc/class.uiworkorder.inc.php';
+			$contents = (string)file_get_contents($uiPath);
+
+			$this->assertStringContainsString("rest-client-utils.js", $contents);
+			$this->assertStringContainsString("formatWorkorderFileLink", $contents);
+			$this->assertStringContainsString("formatWorkorderAttachFile", $contents);
 		}
 
 		public function testWorkorderCopyUsesCreateEndpointAndPostMethod(): void
@@ -152,6 +164,7 @@ namespace Tests\Controllers
 			$this->assertStringContainsString("'query'\t\t\t\t\t => false", $contents);
 			$this->assertStringContainsString("phpGWLink('property/workorder/' + aData['workorder_id'], {})", $contents);
 			$this->assertStringContainsString("execute_ajax(requestUrl, function(result)", $contents);
+			$this->assertStringContainsString("JqueryPortico.updateinlineTableHelper('datatable-container_8', strURL);", $contents);
 			$this->assertStringNotContainsString('workorder_rest_save_form_action', $contents);
 			$this->assertStringNotContainsString("'property.uiworkorder.save'", $contents);
 			$this->assertStringNotContainsString("'property.uiworkorder.delete'", $contents);

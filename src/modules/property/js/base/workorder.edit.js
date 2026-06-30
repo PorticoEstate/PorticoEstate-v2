@@ -7,6 +7,89 @@ var accumulated_budget_amount;
 var vendor_id;
 var project_ecodimb;
 
+formatWorkorderDataCell = function (mode, key, oData)
+{
+	var rawValue = (oData && oData[key] !== undefined && oData[key] !== null) ? String(oData[key]) : '';
+
+	if (mode === 'link' && rawValue && rawValue.indexOf('<a') !== -1)
+	{
+		return rawValue;
+	}
+
+	if (mode === 'checkbox' && rawValue && rawValue.indexOf('<input') !== -1)
+	{
+		return rawValue;
+	}
+
+	if (mode === 'link')
+	{
+		if (!rawValue)
+		{
+			return '';
+		}
+
+		if (oData && oData.img_id !== undefined && oData.img_id !== null)
+		{
+			return PorticoClientUtils.escapeHtml(rawValue);
+		}
+
+		var path = (oData && oData.file_view_path) ? String(oData.file_view_path) : '';
+		var params = (oData && oData.file_view_params && typeof oData.file_view_params === 'object')
+			? oData.file_view_params
+			: null;
+		var url = PorticoClientUtils.resolveLinkUrl(path, params);
+
+		if (!url)
+		{
+			return PorticoClientUtils.escapeHtml(rawValue);
+		}
+
+		return PorticoClientUtils.buildAnchorHtml(rawValue, url, {
+			target: '_blank',
+			title: 'click to view file'
+		});
+	}
+
+	if (mode === 'checkbox')
+	{
+		var value = (oData && oData.attach_file_value !== undefined && oData.attach_file_value !== null)
+			? String(oData.attach_file_value)
+			: rawValue;
+		if (!value && oData && oData.file_id !== undefined && oData.file_id !== null)
+		{
+			value = String(oData.file_id);
+		}
+
+		if (!value)
+		{
+			return '';
+		}
+
+		var checked = !!(oData && (oData.attach_file_checked === true || oData.attach_file_checked === 1 || oData.attach_file_checked === '1' || oData.attach_file_checked === 'true'));
+		var inputName = (oData && oData.attach_file_name) ? String(oData.attach_file_name) : 'values[file_attach][]';
+		var title = (oData && oData.attach_file_title) ? String(oData.attach_file_title) : 'Check to attach file';
+
+		return PorticoClientUtils.buildCheckboxHtml({
+			checked: checked,
+			name: inputName,
+			value: value,
+			title: title
+		});
+	}
+
+	return rawValue;
+};
+
+formatWorkorderFileLink = function (key, oData)
+{
+	return formatWorkorderDataCell('link', key, oData);
+};
+
+formatWorkorderAttachFile = function (key, oData)
+{
+	return formatWorkorderDataCell('checkbox', key, oData);
+};
+
 function calculate_order()
 {
 	if (!validate_form())
@@ -411,39 +494,20 @@ function submit_workorder_via_api_xhr(saveRequest, formData, action)
 
 function clearWorkorderFormAlerts()
 {
-	var notices = document.querySelectorAll('.workorder-submit-alert');
-	for (var i = 0; i < notices.length; i++)
-	{
-		notices[i].remove();
-	}
+	PorticoClientUtils.clearFormAlerts(document.form, '.workorder-submit-alert');
 }
 
 function renderWorkorderFormAlert(messages, type)
 {
-	var form = document.form;
-	if (!form)
+	PorticoClientUtils.renderFormAlert(document.form, messages, {
+		selector: '.workorder-submit-alert',
+		className: 'workorder-submit-alert text-center alert alert-' + type,
+		role: 'alert'
+	});
+	if (document.form)
 	{
-		window.alert(messages[0] || '');
-		return;
+		document.form.scrollIntoView({behavior: 'smooth', block: 'start'});
 	}
-
-	clearWorkorderFormAlerts();
-
-	var alert = document.createElement('div');
-	alert.className = 'workorder-submit-alert text-center alert alert-' + type;
-	alert.setAttribute('role', 'alert');
-
-	for (var i = 0; i < messages.length; i++)
-	{
-		if (i > 0)
-		{
-			alert.appendChild(document.createElement('br'));
-		}
-		alert.appendChild(document.createTextNode(messages[i]));
-	}
-
-	form.insertBefore(alert, form.firstChild);
-	form.scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 
 function handle_workorder_save_success(data, action)

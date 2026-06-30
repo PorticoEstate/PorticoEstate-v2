@@ -77,8 +77,8 @@ $app->group('/property/location', function (RouteCollectorProxy $group) use ($co
 
 	// Hybrid approach routes (explicit form helper orchestration)
 	$group->post('', [$controller, 'postCollection']);
-	$group->post('/add', [$controller, 'add']);
-	$group->put('/{location_code:[^/]+}', [$controller, 'save']);
+	$group->post('/add', [$controller, 'store']);
+	$group->put('/{location_code:[^/]+}', [$controller, 'update']);
 	$group->get('/list', [$controller, 'listLocations']);
 	$group->post('/list', [$controller, 'listLocations']);
 	$group->post('/datatable', [$controller, 'index']);

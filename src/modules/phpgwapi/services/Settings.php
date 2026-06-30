@@ -132,6 +132,12 @@ class Settings
 		{
 			$this->config_data['server']['webserver_url'] = '';
 		}
+		
+		if (!isset($this->config_data['server']['template_set']))
+		{
+			$this->config_data['server']['template_set'] = '';
+		}
+		
 		$data_cache[$modules[0]] = $this->config_data;
 		//	DebugArray::debug($this->config_data);
 

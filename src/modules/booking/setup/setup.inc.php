@@ -104,7 +104,17 @@ $setup_info['booking']['tables'] = [
 	'bb_purchase_order_line',
 	'bb_webhook_subscriptions',
 	'bb_webhook_delivery_log',
-	'bb_notification'
+	'bb_notification',
+	'bb_running_commit',
+	'bb_hospitality_remote_location',
+	'bb_hospitality_order_line',
+	'bb_hospitality_order',
+	'bb_hospitality_order_document',
+	'bb_hospitality_order_changelog',
+	'bb_hospitality_order',
+	'bb_hospitality_article_group',
+	'bb_hospitality_article',
+	'bb_hospitality'
 ];
 
 $setup_info['booking']['description'] = 'Bergen kommune booking';

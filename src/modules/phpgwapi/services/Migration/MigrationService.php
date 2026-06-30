@@ -36,14 +36,18 @@ class MigrationService
 
 	public function hasMigrationsTable(): bool
 	{
-		$this->db->query(
-			"SELECT COUNT(*) AS cnt FROM information_schema.tables "
-			. "WHERE table_schema = 'public' AND table_name = 'phpgw_migrations'",
-			__LINE__,
-			__FILE__
-		);
-		$this->db->next_record();
-		return (int) $this->db->Record['cnt'] > 0;
+		// $this->db->query(
+		// 	"SELECT COUNT(*) AS cnt FROM information_schema.tables "
+		// 	. "WHERE table_schema = 'public' AND table_name = 'phpgw_migrations'",
+		// 	__LINE__,
+		// 	__FILE__
+		// );
+		// $this->db->next_record();
+		// return (int) $this->db->Record['cnt'] > 0;
+
+		$tables = $this->db->table_names();
+		$hasMigrationsTable = in_array('phpgw_migrations', $tables, true);
+		return $hasMigrationsTable;
 	}
 
 	public function ensureMigrationsTable(): void

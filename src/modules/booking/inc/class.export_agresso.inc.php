@@ -234,7 +234,7 @@ class export_agresso
 		$port = isset($host_info[1]) && $host_info[1] ? $host_info[1] : 22;
 		$user = $config_data['invoice_ftp_user'] ?? '';
 		$login_password = $config_data['invoice_ftp_password'] ?? null;
-		$privateKey = $config_data['invoice_ssh_private_key'] ?? null;
+		$privateKey = $this->normalize_private_key($config_data['invoice_ssh_private_key'] ?? null);
 		$passPhrase = !empty($config_data['sftp_key_passphrase'])
 			? $config_data['sftp_key_passphrase']
 			: null;
@@ -277,6 +277,32 @@ class export_agresso
 				],
 			])
 		));
+	}
+
+	private function normalize_private_key($private_key)
+	{
+		if (!is_string($private_key) || $private_key === '')
+		{
+			return null;
+		}
+
+		$normalized = trim($private_key);
+		$normalized = str_replace(["\r\n", "\r"], "\n", $normalized);
+
+		// Handle keys pasted as a single line with literal \n sequences.
+		if (strpos($normalized, '\\n') !== false && strpos($normalized, "\n") === false)
+		{
+			$normalized = str_replace('\\n', "\n", $normalized);
+		}
+
+		$normalized = preg_replace('/[ \t]+\n/', "\n", $normalized);
+
+		if (strpos($normalized, '-----BEGIN') !== false && substr($normalized, -1) !== "\n")
+		{
+			$normalized .= "\n";
+		}
+
+		return $normalized;
 	}
 
 	protected function transfer($filnavn)

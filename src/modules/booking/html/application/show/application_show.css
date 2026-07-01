@@ -384,6 +384,13 @@
 	color: inherit;
 }
 
+/* Inline group picker: shown when a multi-group-org booking needs an explicit
+   group choice. Selecting a group resubmits the create with group_id. */
+.app-show__group-picker {
+	margin-top: 0.25rem;
+	max-width: 16rem;
+}
+
 /* Designsystemet dialog */
 .app-show__dialog-footer {
 	display: flex;

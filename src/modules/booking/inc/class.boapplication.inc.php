@@ -145,16 +145,18 @@ class booking_boapplication extends booking_bocommon
 	}
 
 
-	function send_notification($application, $created = false, $assocciated = false)
+	function send_notification($application, $created = false, $assocciated = false, $is_comment_reply = false)
 	{
-		// Skip email notifications for PENDING status
-		if ($application['status'] == 'PENDING' && !$created) {
+		// Skip email notifications for PENDING status — but NOT for an explicit
+		// case-officer comment reply, which must always reach the applicant
+		// (the skip is only meant to suppress passive status-only PENDING events).
+		if ($application['status'] == 'PENDING' && !$created && !$is_comment_reply) {
 			return true;
 		}
-		
+
 		// Use modern EmailService for email notifications
 		$emailService = new EmailService();
-		$success = $emailService->sendApplicationNotification($application, $created, $assocciated);
+		$success = $emailService->sendApplicationNotification($application, $created, $assocciated, $is_comment_reply);
 		
 		// Handle additional notifications to case officers (BCC functionality)
 		if ($created) {

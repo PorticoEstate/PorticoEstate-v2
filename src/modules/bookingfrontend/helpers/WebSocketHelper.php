@@ -343,6 +343,59 @@ class WebSocketHelper
     }
 
     /**
+     * Broadcast an `entity_event` to everyone currently in an entity room (e.g. all
+     * clients viewing an application) — used for live thread/detail updates.
+     *
+     * Routed by the Node server's `notifications`-channel handler via `target: 'entity'`
+     * → `entityRoomId($entityType, $entityId)`; the whole payload is re-emitted to the
+     * room as a `message`, so `type` stays `entity_event` for the client to filter on.
+     *
+     * @param string     $entityType e.g. 'application'
+     * @param int|string $entityId
+     * @param string     $eventType  client-facing event name, e.g. 'new_comment'
+     * @param array      $data       event payload delivered under `data`
+     * @return bool Success status
+     */
+    public static function sendEntityEvent(string $entityType, $entityId, string $eventType, array $data = []): bool
+    {
+        $payload = [
+            'type'       => 'entity_event',
+            'target'     => 'entity',
+            'entityType' => $entityType,
+            'entityId'   => $entityId,
+            'eventType'  => $eventType,
+            'data'       => $data,
+            'timestamp'  => date('c'),
+        ];
+
+        return self::sendRedisNotification($payload, 'notifications');
+    }
+
+    /**
+     * Push a payload to a user's identity room so it reaches every tab/session that
+     * user has open (e.g. a notification-bell update) regardless of which page they are on.
+     *
+     * Routed by the Node server's `notifications`-channel handler via `target: 'user'`
+     * → `userRoomId($userType, $identifier)`; the whole payload is re-emitted to the room.
+     *
+     * @param string $userType   e.g. 'phpgw_accounts' or 'bb_user'
+     * @param string $identifier account id or SSN
+     * @param array  $payload    client-facing message (keeps its own `type`, e.g. 'notification_event')
+     * @return bool Success status
+     */
+    public static function sendToUserRoom(string $userType, string $identifier, array $payload): bool
+    {
+        $payload['target']     = 'user';
+        $payload['userType']   = $userType;
+        $payload['identifier'] = $identifier;
+        if (!isset($payload['timestamp'])) {
+            $payload['timestamp'] = date('c');
+        }
+
+        return self::sendRedisNotification($payload, 'notifications');
+    }
+
+    /**
      * Run a callback asynchronously so it never blocks the HTTP response.
      *
      * Strategy, in order of preference:

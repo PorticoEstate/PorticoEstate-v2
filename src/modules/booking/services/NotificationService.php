@@ -3,7 +3,7 @@
 namespace App\modules\booking\services;
 
 use App\modules\booking\repositories\NotificationRepository;
-use App\WebSocket\helpers\WebSocketHelper;
+use App\modules\bookingfrontend\helpers\WebSocketHelper;
 
 /**
  * Service for creating and managing in-app notifications.

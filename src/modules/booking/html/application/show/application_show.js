@@ -766,6 +766,11 @@
 		// Build params map for each date (for the create dropdown)
 		var dateParamsMap = {};
 
+		// Allocations are org-level grants: an individual/SSN application has no
+		// organisation, so the Allocation option is hidden for those (booking/event
+		// only). Booking/event remain available to individuals.
+		var hasOrg = !!(app.customer_organization_id || app.customer_organization_number);
+
 		if (dates.length > 0 && !isRecurring) {
 			var datesHtml = '<table class="ds-table" data-size="sm" data-zebra id="dates-table"><thead><tr>';
 			if (isCombined) datesHtml += '<th>' + lang('application') + '</th>';
@@ -810,7 +815,7 @@
 						'<button type="button" class="ds-button" data-variant="primary" data-color="accent" data-size="sm" data-create="event" data-date-id="' + d.id + '">' + esc(lang('createEvent')) + '</button>' +
 						'<button type="button" class="ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '" aria-label="' + esc(lang('dateActions')) + '">' + ICONS.chevron + '</button>' +
 						'<div class="ds-dropdown app-show__menu app-show__split-menu" popover id="' + menuId + '"><ul>' +
-						'<li><button type="button" class="ds-dropdown__item" data-create="allocation" data-date-id="' + d.id + '"><span>' + esc(lang('createAllocation')) + '</span></button></li>' +
+						(hasOrg ? '<li><button type="button" class="ds-dropdown__item" data-create="allocation" data-date-id="' + d.id + '"><span>' + esc(lang('createAllocation')) + '</span></button></li>' : '') +
 						'<li><button type="button" class="ds-dropdown__item" data-create="booking" data-date-id="' + d.id + '"><span>' + esc(lang('createBooking')) + '</span></button></li>' +
 						// Reject only this sub-application (combined carts) — siblings stay open.
 						(isCombined ? '<li><button type="button" class="ds-dropdown__item" data-color="danger" data-reject-app="' + esc(d.application_id) + '"><span>' + esc(lang('rejectApplication')) + '</span></button></li>' : '') +
@@ -904,22 +909,22 @@
 			clearConflict(cell);
 
 			postJsonToLegacy(url, params).then(function (result) {
-				// Success: no navigation. Swap this button in place for a
-				// success check + an "Edit" link to the new entity; the other
-				// create actions for this date stay available.
-				var isMenuItem = btn.classList.contains('ds-dropdown__item');
+				// Success: no navigation. The slot is now fulfilled — one entity
+				// exists for THIS date/time slot — so replace the whole split
+				// (all create options for the slot) with a success check + an
+				// "Edit" link to the new entity. Different date/slots are
+				// independent (each row has its own split), so they're untouched.
 				var link = document.createElement('a');
 				link.href = result.edit_url;
-				link.className = isMenuItem ? 'ds-dropdown__item' : 'ds-button';
+				link.className = 'ds-button';
+				link.setAttribute('data-variant', 'tertiary');
 				link.setAttribute('data-color', 'success');
+				link.setAttribute('data-size', 'sm');
 				link.setAttribute('data-created', btn.dataset.create);
 				link.setAttribute('aria-label', lang('edit'));
-				if (!isMenuItem) {
-					link.setAttribute('data-variant', 'tertiary');
-					link.setAttribute('data-size', 'sm');
-				}
 				link.innerHTML = ICONS.checkCircle + '<span>' + esc(lang('edit')) + '</span>';
-				btn.replaceWith(link);
+				var split = btn.closest('.app-show__split');
+				(split || btn).replaceWith(link);
 				clearConflict(cell);
 			}).catch(function (err) {
 				// Failure: re-enable so the officer can retry, and show the

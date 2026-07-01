@@ -360,10 +360,9 @@
 	min-width: 12rem;
 }
 
-/* In-place "created" state: the Edit link that replaces a create button on
-   success. Menu-item replacements reuse the dropdown-item rules above; the
-   split's primary button needs its success check icon sized and coloured. */
-.app-show__split > .ds-button[data-created] > svg {
+/* In-place "created" state: the Edit link that replaces the whole split for a
+   fulfilled slot. Size + colour its success check icon. */
+.app-show .ds-button[data-created] > svg {
 	width: 1.125rem;
 	height: 1.125rem;
 	color: var(--ds-color-success-base-default, #068718);

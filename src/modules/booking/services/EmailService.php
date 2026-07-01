@@ -305,8 +305,11 @@ class EmailService
      * @param array $application Application data
      * @param bool $created Whether this is a new application (true) or status update (false)
      * @param bool $assocciated Whether this is an associated booking (unused in legacy code)
+     * @param bool $isCommentReply When true this is an explicit case-officer reply to the
+     *                             applicant: render the comment email regardless of status,
+     *                             and skip acceptance-only extras (attachments, building notify).
      */
-    public function sendApplicationNotification(array $application, bool $created = false, bool $assocciated = false): bool
+    public function sendApplicationNotification(array $application, bool $created = false, bool $assocciated = false, bool $isCommentReply = false): bool
     {
         // Skip if SMTP is not configured
         if (!(isset($this->serverSettings['smtp_server']) && $this->serverSettings['smtp_server'])) {
@@ -345,11 +348,11 @@ class EmailService
             // preserves the secret query parameter.
             $link = $external_site_address . '/bookingfrontend/client/user/applications/' . $application['id'] . '?secret=' . $application['secret'];
 
-            $body = $this->buildEmailBody($application, $config, $created, $resourcename, $link, $e_lock_instructions);
+            $body = $this->buildEmailBody($application, $config, $created, $resourcename, $link, $e_lock_instructions, $isCommentReply);
 
-            // Get attachments for accepted applications
+            // Get attachments for accepted applications (never for a plain comment reply)
             $attachments = [];
-            if ($application['status'] == 'ACCEPTED') {
+            if (!$isCommentReply && $application['status'] == 'ACCEPTED') {
                 $attachments = $this->getRelatedFiles($application);
             }
 
@@ -379,7 +382,9 @@ class EmailService
             );
 
             // Send notification to building contacts for accepted applications
-            if ($application['status'] == 'ACCEPTED' &&
+            // (never for a plain comment reply — that is just a message to the applicant)
+            if (!$isCommentReply &&
+                $application['status'] == 'ACCEPTED' &&
                 isset($config['application_notify_on_accepted']) &&
                 $config['application_notify_on_accepted'] == 1) {
 
@@ -771,7 +776,7 @@ class EmailService
     /**
      * Build email body based on application status (single application)
      */
-    protected function buildEmailBody(array $application, array $config, bool $created, string $resourcename, string $link, array $e_lock_instructions): string
+    protected function buildEmailBody(array $application, array $config, bool $created, string $resourcename, string $link, array $e_lock_instructions, bool $isCommentReply = false): string
     {
         $twig = $this->getEmailTwigHelper();
 
@@ -787,6 +792,15 @@ class EmailService
             'comment' => $application['comment'] ?? '',
             'signature' => $config['application_mail_signature'],
         ];
+
+        // An explicit case-officer reply is always a comment email, regardless of the
+        // application's current status — so the applicant sees the message itself rather
+        // than a status-update body.
+        if ($isCommentReply) {
+            return $twig->render('@views/emails/application_comment.twig', array_merge($baseData, [
+                'comment_added_mail' => $config['application_comment_added_mail'],
+            ]));
+        }
 
         if ($created) {
             $dates = !empty($application['dates']) ? $this->formatDates($application['dates']) : [];

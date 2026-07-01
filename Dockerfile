@@ -230,7 +230,9 @@ WORKDIR /var/www/html
 COPY composer.json composer.lock* ./
 
 # Install all dependencies during build time
-RUN XDEBUG_MODE=off composer install --no-dev --optimize-autoloader
+# --prefer-source git-clones packages (git is installed above) instead of downloading
+# GitHub dist zips, which intermittently fail with HTTP 400 from codeload when unauthenticated.
+RUN XDEBUG_MODE=off composer install --no-dev --optimize-autoloader --prefer-source
 
 # Install Node.js 22 LTS and npm via NodeSource
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \

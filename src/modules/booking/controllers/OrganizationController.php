@@ -15,6 +15,10 @@ use PDO;
  * (team) within an organization. Single-group orgs are resolved server-side on
  * create; organizations with several active groups need an explicit choice, so
  * the client lists them here and passes the chosen group_id.
+ *
+ * The client obtains the correct {id} from the booking-create failure response
+ * (`organization_id`, the org the create actually resolved) — so the groups
+ * listed always belong to the create's organization.
  */
 class OrganizationController
 {
@@ -22,7 +26,8 @@ class OrganizationController
 	 * GET /booking/organizations/{id}/groups
 	 *
 	 * The organization's ACTIVE groups as [{id, name}], name-sorted.
-	 * {id} is the organization id (bb_organization.id — what bb_group.organization_id references).
+	 * {id} is the organization id (bb_organization.id — what bb_group.organization_id references),
+	 * i.e. the `organization_id` echoed in the booking-create 422.
 	 */
 	public function groups(Request $request, Response $response, array $args): Response
 	{

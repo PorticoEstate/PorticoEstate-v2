@@ -741,6 +741,9 @@ class booking_uibooking extends booking_uicommon
 					'conflict_details' => implode(', ', $conflict_details),
 					'conflict_links'   => $conflict_links,
 					'conflict_count'   => count($conflict_details),
+					// The org the create resolved (for the Tier 2 group picker: it lists this
+					// org's groups via GET /booking/organizations/{organization_id}/groups).
+					'organization_id'  => $org_id ?: null,
 				), 422);
 			}
 

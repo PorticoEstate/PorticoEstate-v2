@@ -21,19 +21,21 @@ use App\modules\phpgwapi\controllers\Accounts\Accounts;
 	*/
 
 phpgw::import_class('phpgwapi.sbox');
+phpgw::import_class('phpgwapi.uicommon_jquery');
 
 /**
  * Todo user interface
  *  
  * @package todo
  */
-class todo_uitodo
+class todo_uitodo extends phpgwapi_uicommon_jquery
 {
 	var $grants;
 	var $historylog;
 	var $t;
 	var $public_functions = array(
 		'show_list'	=> True,
+		'query'		  => True,
 		'view'      => True,
 		'add'       => True,
 		'edit'      => True,
@@ -57,6 +59,8 @@ class todo_uitodo
 
 	function __construct()
 	{
+		parent::__construct('todo');
+
 		$this->userSettings = Settings::getInstance()->get('user');
 		$this->botodo		= CreateObject('todo.botodo', True);
 		$this->nextmatchs	= CreateObject('phpgwapi.nextmatchs');
@@ -134,237 +138,217 @@ class todo_uitodo
 
 	function show_list()
 	{
-		$this->phpgwapi_common->phpgw_header(true);
-		echo $this->show_list_body(True);
+		if (Sanitizer::get_var('phpgw_return_as') == 'json')
+		{
+			return $this->query();
+		}
+
+		$cat_id = Sanitizer::get_var('cat_id', 'int', 'REQUEST', 0);
+		$filter = Sanitizer::get_var('filter', 'string', 'REQUEST', $this->filter ? $this->filter : 'none');
+
+		$filters = array(
+			array(
+				'type' => 'filter',
+				'name' => 'cat_id',
+				'text' => lang('Category') . ':',
+				'list' => $this->get_category_filter_list($cat_id)
+			),
+			array(
+				'type' => 'filter',
+				'name' => 'filter',
+				'text' => lang('Filter') . ':',
+				'list' => array(
+					array('id' => 'none', 'name' => lang('All'), 'selected' => $filter === 'none' ? 1 : 0),
+					array('id' => 'private', 'name' => lang('Private'), 'selected' => $filter === 'private' ? 1 : 0)
+				)
+			)
+		);
+
+		$data = array(
+			'datatable_name' => lang('todo list'),
+			'form' => array(
+				'toolbar' => array(
+					'item' => $filters,
+				)
+			),
+			'datatable' => array(
+				'source' => self::link(array(
+					'menuaction' => 'todo.uitodo.show_list',
+					'phpgw_return_as' => 'json'
+				)),
+				'sorted_by' => array('key' => 0, 'dir' => 'asc'),
+				'field' => array(
+					array('key' => 'id', 'label' => lang('ID')),
+					array('key' => 'title', 'label' => lang('title')),
+					array('key' => 'status', 'label' => lang('Status')),
+					array('key' => 'pri', 'label' => lang('Urgency')),
+					array('key' => 'sdate', 'label' => lang('start date')),
+					array('key' => 'edate', 'label' => lang('end date')),
+					array('key' => 'owner', 'label' => lang('created by')),
+					array('key' => 'assigned', 'label' => lang('assigned to'), 'sortable' => false),
+					array('key' => 'view', 'label' => lang('View'), 'sortable' => false),
+					array('key' => 'edit', 'label' => lang('Edit'), 'sortable' => false),
+					array('key' => 'delete', 'label' => lang('Delete'), 'sortable' => false),
+					array('key' => 'subadd', 'label' => lang('Add Sub'), 'sortable' => false),
+					array('key' => 'link', 'hidden' => true),
+				)
+			)
+		);
+
+		$data['datatable']['new_item'] = self::link(array('menuaction' => 'todo.uitodo.add'));
+
+		self::render_template_xsl('datatable2', $data);
 	}
 
-	function show_list_body($show_page_header = True)
+	function query()
 	{
-		$this->t->set_file('todo_list_t', 'list.tpl');
-		$this->t->set_block('todo_list_t', 'page_header', 'page_header');
-		$this->t->set_block('todo_list_t', 'table_header', 'table_header');
-		$this->t->set_block('todo_list_t', 'todo_list', 'todo_list');
-		$this->t->set_block('todo_list_t', 'table_footer', 'table_footer');
-		$this->t->set_block('todo_list_t', 'page_footer', 'page_footer');
+		$search = Sanitizer::get_var('search');
+		$order = Sanitizer::get_var('order');
+		$columns = Sanitizer::get_var('columns');
 
-		$body = '';
-		$this->set_app_langs();
+		$start = Sanitizer::get_var('start', 'int', 'REQUEST', 0);
+		$length = Sanitizer::get_var('length', 'int', 'REQUEST', 0);
+		$filter = Sanitizer::get_var('filter', 'string', 'REQUEST', 'none');
+		$cat_id = Sanitizer::get_var('cat_id', 'int', 'REQUEST', 0);
 
-		$this->t->set_var('lang_action', lang('todo list'));
-		$this->t->set_var('lang_all', lang('All'));
+		$sort_map = array(
+			'id' => 'todo_id',
+			'title' => 'todo_title',
+			'status' => 'todo_status',
+			'pri' => 'todo_pri',
+			'sdate' => 'todo_startdate',
+			'edate' => 'todo_enddate',
+			'owner' => 'todo_owner',
+		);
 
-		if (!$this->start)
+		$sort = 'todo_id';
+		$dir = 'ASC';
+
+		if (is_array($order) && isset($order[0]['column']) && isset($columns[$order[0]['column']]['data']))
 		{
-			$this->start = 0;
+			$column_key = $columns[$order[0]['column']]['data'];
+			if (isset($sort_map[$column_key]))
+			{
+				$sort = $sort_map[$column_key];
+			}
+
+			$order_dir = isset($order[0]['dir']) ? strtolower($order[0]['dir']) : 'asc';
+			$dir = $order_dir === 'desc' ? 'DESC' : 'ASC';
 		}
 
-		$todo_list = $this->botodo->_list($this->start, True, $this->query, $this->filter, $this->order, $this->sort, $this->cat_id, 'all');
+		$params = array(
+			'start' => $start,
+			'limit' => $length ? $length : null,
+			'query' => is_array($search) && isset($search['value']) ? $search['value'] : '',
+			'filter' => $filter,
+			'order' => $sort,
+			'sort' => $dir,
+			'cat_id' => $cat_id,
+			'tree' => 'all',
+		);
 
-		// --------------------- nextmatch variable template-declarations ------------------------
+		$todo_list = $this->botodo->_list($params);
 
-		if ($show_page_header)
+		$results = array();
+		foreach ($todo_list as $todo)
 		{
-			$left = $this->nextmatchs->left('/index.php', $this->start, $this->botodo->total_records, '&menuaction=todo.uitodo.show_list');
-			$right = $this->nextmatchs->right('/index.php', $this->start, $this->botodo->total_records, '&menuaction=todo.uitodo.show_list');
-			$this->t->set_var('left', $left);
-			$this->t->set_var('right', $right);
+			$assigned = $this->botodo->list_assigned($todo['assigned']);
+			$assigned .= $this->botodo->list_assigned($todo['assigned_group']);
 
-			$this->t->set_var('total_matchs', $this->nextmatchs->show_hits($this->botodo->total_records, $this->start));
-
-			// ------------------------- end nextmatch template --------------------------------------
-
-			$this->t->set_var('cat_action', phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.show_list')));
-			$this->t->set_var('categories', $this->cats->formatted_list('select', 'all', $this->cat_id, 'True'));
-			$this->t->set_var('filter_action', phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.show_list')));
-			$this->t->set_var('filter_list', $this->nextmatchs->filter(1, array('yours' => 1, 'filter' => $this->filter)));
-			$this->t->set_var('search_action', phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.show_list')));
-			$this->t->set_var('search_list', $this->nextmatchs->search(array('search_obj' => 1, 'query' => $this->query)));
-
-			$body .= $this->t->fp('out', 'page_header');
+			$results[] = array(
+				'id' => $todo['id'],
+				'title' => $this->format_todo_title($todo),
+				'status' => $todo['status'],
+				'pri' => $this->format_priority($todo['pri']),
+				'sdate' => $todo['sdate'],
+				'edate' => $todo['edate'] ? $todo['edate'] : '&nbsp;',
+				'owner' => $todo['owner'],
+				'assigned' => $assigned,
+				'link' => phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.view', 'todo_id' => $todo['id'])),
+				'view' => '<a href="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.view', 'todo_id' => $todo['id']))
+					. '">' . lang('View') . '</a>',
+				'edit' => $this->botodo->check_perms($todo['owner_id'], $this->grants, ACL_EDIT)
+					? '<a href="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.edit', 'todo_id' => $todo['id']))
+						. '">' . lang('Edit') . '</a>'
+					: '&nbsp;',
+				'delete' => $this->botodo->check_perms($todo['owner_id'], $this->grants, ACL_DELETE)
+					? '<a href="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.delete', 'todo_id' => $todo['id']))
+						. '">' . lang('Delete') . '</a>'
+					: '&nbsp;',
+				'subadd' => $this->botodo->check_perms($todo['owner_id'], $this->grants, ACL_ADD)
+					? '<a href="' . phpgw::link('/index.php', array(
+						'menuaction' => 'todo.uitodo.add',
+						'parent' => $todo['id'],
+						'cat_id' => $cat_id
+					)) . '">' . lang('Add Sub') . '</a>'
+					: '&nbsp;'
+			);
 		}
 
-		// ---------------- list header variable template-declarations --------------------------
+		return $this->jquery_results(array(
+			'total_records' => $this->botodo->total_records,
+			'results' => $results
+		));
+	}
 
-		$this->t->set_var('sort_status', $this->nextmatchs->show_sort_order($this->sort, 'todo_status', $this->order, '/todo/index.php', lang('Status')));
-		$this->t->set_var('sort_urgency', $this->nextmatchs->show_sort_order($this->sort, 'todo_pri', $this->order, '/todo/index.php', lang('Urgency')));
-		$this->t->set_var('sort_title', $this->nextmatchs->show_sort_order($this->sort, 'todo_title', $this->order, '/todo/index.php', lang('title')));
-		$this->t->set_var('sort_sdate', $this->nextmatchs->show_sort_order($this->sort, 'todo_startdate', $this->order, '/todo/index.php', lang('start date')));
-		$this->t->set_var('sort_edate', $this->nextmatchs->show_sort_order($this->sort, 'todo_enddate', $this->order, '/todo/index.php', lang('end date')));
-		$this->t->set_var('sort_owner', $this->nextmatchs->show_sort_order($this->sort, 'todo_owner', $this->order, '/todo/index.php', lang('created by')));
-		$this->t->set_var('sort_assigned', $this->nextmatchs->show_sort_order($this->sort, 'todo_assigned', $this->order, '/todo/index.php', lang('assigned to')));
-		$this->t->set_var('h_lang_sub', lang('Add Sub'));
-		$this->t->set_var('h_lang_view', lang('View'));
-		$this->t->set_var('h_lang_edit', lang('Edit'));
+	private function get_category_filter_list($selected_cat_id)
+	{
+		$categories = $this->cats->return_sorted_array(0, false, '', '', '', true, 0, false);
 
-		$body .= $this->t->fp('out', 'table_header');
+		$list = array(
+			array(
+				'id' => 0,
+				'name' => lang('All'),
+				'selected' => empty($selected_cat_id) ? 1 : 0
+			)
+		);
 
-		// -------------- end header declaration --------------------------------------- 
-
-		$tr_class = '';
-		for ($i = 0; $i < count($todo_list); $i++)
+		foreach ($categories as $category)
 		{
-			$this->t->set_var('tr_class', $this->nextmatchs->alternate_row_class($tr_class));
-			$level = $todo_list[$i]['level'];
-
-			$title = phpgw::strip_html($todo_list[$i]['title']);
-
-			if (!$title)
-			{
-				$words = explode(' ', phpgw::strip_html($todo_list[$i]['descr']));
-				$title = "$words[0] $words[1] $words[2] $words[3] ...";
-			}
-
-			if ($level == 0)
-			{
-				$title = '<b>' . $title . '</b>';
-			}
-			else
-			{
-				$space = '&nbsp;&nbsp;';
-				$spaceset = str_repeat($space, $level);
-				$title = $spaceset . $title;
-			}
-
-			switch ($todo_list[$i]['pri'])
-			{
-				case 1:
-					$pri = lang('Low');
-					break;
-				case 2:
-					$pri = '<b>' . lang('normal') . '</b>';
-					break;
-				case 3:
-					$pri = '<font color="#CC0000"><b>' . lang('high') . '</b></font>';
-					break;
-			}
-
-			if ($todo_list[$i]['edate_epoch'] == 0)
-			{
-				$datedueout = '&nbsp;';
-			}
-			else
-			{
-				$datedue = $todo_list[$i]['edate_epoch'];
-				$datedue = $datedue - $this->botodo->datetime->tz_offset;
-
-				$month	= $this->phpgwapi_common->show_date(time(), 'n');
-				$day	= $this->phpgwapi_common->show_date(time(), 'd');
-				$year	= $this->phpgwapi_common->show_date(time(), 'Y');
-				$currentdate = mktime(2, 0, 0, $month, $day, $year);
-
-				if (($currentdate >= $datedue) && ($todo_list[$i]['status'] < 100))
-				{
-					$datedueout =  '<font color="#CC0000"><b>';
-				}
-				else
-				{
-					$datedueout = '';
-				}
-
-				$datedueout .= $todo_list[$i]['edate'];
-				if ($currentdate >= $datedue)
-				{
-					$datedueout .= '</b></font>';
-				}
-			}
-
-			$assigned = $this->botodo->list_assigned($todo_list[$i]['assigned']);
-			$assigned .= $this->botodo->list_assigned($todo_list[$i]['assigned_group']);
-
-			// --------------- template declaration for list records -------------------------------------
-
-			$this->t->set_var(array(
-				'status'		=> $todo_list[$i]['status'],
-				'pri'			=> $pri,
-				'title'			=> $title,
-				'datecreated'	=> $todo_list[$i]['sdate'],
-				'datedue'		=> $datedueout,
-				'owner'			=> $todo_list[$i]['owner'],
-				'assigned'		=> $assigned
-			));
-
-			$this->t->set_var('view', '<a href="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.view', 'todo_id' => $todo_list[$i]['id']))
-				. '">' . lang('View') . '</a>');
-
-			if ($this->botodo->check_perms($todo_list[$i]['owner_id'], $this->grants, ACL_EDIT))
-			{
-				$this->t->set_var('edit', '<a href="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.edit', 'todo_id' => $todo_list[$i]['id']))
-					. '">' . lang('Edit') . '</a>');
-			}
-			else
-			{
-				$this->t->set_var('edit', '&nbsp;');
-			}
-
-			if ($this->botodo->check_perms($todo_list[$i]['owner_id'], $this->grants, ACL_DELETE))
-			{
-				$this->t->set_var('delete', '<a href="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.delete', 'todo_id' => $todo_list[$i]['id']))
-					. '">' . lang('Delete') . '</a>');
-			}
-			else
-			{
-				$this->t->set_var('delete', '&nbsp;');
-			}
-
-			if ($this->botodo->check_perms($todo_list[$i]['owner_id'], $this->grants, ACL_ADD))
-			{
-				$this->t->set_var('subadd', '<a href="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.add', 'parent' => $todo_list[$i]['id'], 'cat_id' => $this->cat_id))
-					. '">' . lang('Add Sub') . '</a>');
-			}
-			else
-			{
-				$this->t->set_var('subadd', '&nbsp;');
-			}
-
-			$body .= $this->t->fp('out', 'todo_list');
+			$list[] = array(
+				'id' => (int) $category['id'],
+				'name' => $category['name'],
+				'selected' => ((int) $selected_cat_id === (int) $category['id']) ? 1 : 0
+			);
 		}
 
-		$body .= $this->t->fp('out', 'table_footer');
+		return $list;
+	}
 
-		// ------------------------- end record declaration ------------------------
-
-		// --------------- template declaration for Add Form --------------------------
-
-		if ($show_page_header)
+	private function format_priority($priority)
+	{
+		switch ((int) $priority)
 		{
-			$cat = array();
-			if ($this->cat_id && $this->cat_id != 0)
-			{
-				$cat = $this->cats->return_single($this->cat_id);
-			}
-
-			if (!count($cat) || $cat[0]['app_name'] == 'phpgw' || $cat[0]['owner'] == '-1' || !$this->cat_id)
-			{
-				$this->t->set_var('add', '<form method="POST" action="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.add', 'cat_id' => $this->cat_id))
-					. '"><input type="submit" name="Add" value="' . lang('Add') . '"></form>');
-			}
-			else
-			{
-				if ($this->botodo->check_perms($cat[0]['owner'], $this->grants, ACL_ADD) || $cat[0]['owner'] == $this->userSettings['account_id'])
-				{
-					$this->t->set_var('add', '<form method="POST" action="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.add', 'cat_id' => $this->cat_id))
-						. '"><input type="submit" name="Add" value="' . lang('Add') . '"></form>');
-				}
-				else
-				{
-					$this->t->set_var('add', '');
-				}
-			}
-
-			// ----------------------- end Add form declaration ----------------------------
-
-			// ------------ get actual date and year for matrixview arguments --------------
-
-			$year = date('Y');
-			$month = date('m');
-
-			$this->t->set_var('matrixview', '<a href="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.matrix', 'month' => $month, 'year' => $year)) . '">'
-				. lang('View matrix of actual month') . "</a>\n");
-
-			$body .= $this->t->fp('out', 'page_footer');
+			case 1:
+				return lang('Low');
+			case 2:
+				return '<b>' . lang('normal') . '</b>';
+			case 3:
+				return '<font color="#CC0000"><b>' . lang('high') . '</b></font>';
+			default:
+				return '';
 		}
-		$this->save_sessiondata();
-		return $body;
+	}
+
+	private function format_todo_title($todo)
+	{
+		$title = phpgw::strip_html($todo['title']);
+
+		if (!$title)
+		{
+			$words = explode(' ', phpgw::strip_html($todo['descr']));
+			$title = implode(' ', array_slice($words, 0, 4)) . ' ...';
+		}
+
+		if ((int) $todo['level'] === 0)
+		{
+			return '<b>' . $title . '</b>';
+		}
+
+		$space = '&nbsp;&nbsp;';
+		$spaceset = str_repeat($space, (int) $todo['level']);
+
+		return $spaceset . $title;
 	}
 
 	function formatted_user($type, $selected = '')
@@ -634,6 +618,7 @@ class todo_uitodo
 		 */
 
 
+		$pri = '';
 		switch ($values['pri'])
 		{
 			case 1:

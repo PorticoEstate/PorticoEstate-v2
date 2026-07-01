@@ -21,12 +21,40 @@ if (
 	&& $userSettings['preferences']['todo']['mainscreen_showevents'] == True
 )
 {
-	$todo = CreateObject('todo.ui');
-	$todo->bo->start = 0;
-	$todo->bo->limit = 5;
-	$todo->start = 0;
-	$todo->limit = 5;
-	$extra_data = '<td>' . "\n" . $todo->show_list_body(False) . '</td>' . "\n";
+	$botodo = CreateObject('todo.botodo', True);
+	$todo_items = $botodo->_list(0, 5, '', '', 'todo_startdate', 'ASC', 0, 'all');
+
+	$content = '';
+	if (is_array($todo_items) && count($todo_items))
+	{
+		$content .= '<ul class="todo-home-list">';
+		foreach ($todo_items as $item)
+		{
+			$title = phpgw::strip_html($item['title']);
+			if (!$title)
+			{
+				$words = explode(' ', phpgw::strip_html($item['descr']));
+				$title = implode(' ', array_slice($words, 0, 4)) . ' ...';
+			}
+
+			$url = phpgw::link('/index.php', array(
+				'menuaction' => 'todo.uitodo.view',
+				'todo_id' => (int) $item['id']
+			));
+
+			$content .= '<li><a href="' . $url . '">' . $title . '</a></li>';
+		}
+		$content .= '</ul>';
+	}
+	else
+	{
+		$content .= '<p>' . lang('No entries') . '</p>';
+	}
+
+	$content .= '<p><a href="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.show_list'))
+		. '">' . lang('Show all') . '</a></p>';
+
+	$extra_data = '<td>' . "\n" . $content . '</td>' . "\n";
 
 	$applications = new Applications();
 	$app_id = $applications->name2id('todo');

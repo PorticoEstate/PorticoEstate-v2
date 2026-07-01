@@ -681,6 +681,35 @@ class booking_uibooking extends booking_uicommon
 					}
 				}
 			}
+			// Single-date create failed (e.g. a collision) — return conflict details as JSON so the
+			// caller can show the overlap inline instead of navigating away.
+			if ($isJsonRequest && $_errors && $_POST['recurring'] != 'on' && $_POST['outseason'] != 'on')
+			{
+				$conflict_details = array();
+				$conflict_links = array();
+				$collisions = (!empty($booking['resources']) && is_array($booking['resources']))
+					? createObject('booking.soapplication')->get_collision_details($booking['resources'], $booking['from_'], $booking['to_'])
+					: array();
+				foreach ($collisions as $detail)
+				{
+					$link = '';
+					switch ($detail['type'])
+					{
+						case 'allocation': $link = self::link(array('menuaction' => 'booking.uiallocation.edit', 'id' => $detail['id'])); break;
+						case 'booking':    $link = self::link(array('menuaction' => 'booking.uibooking.edit', 'id' => $detail['id'])); break;
+						case 'event':      $link = self::link(array('menuaction' => 'booking.uievent.edit', 'id' => $detail['id'])); break;
+					}
+					$conflict_details[] = $detail['name'];
+					$conflict_links['item_' . count($conflict_links)] = array('name' => $detail['name'], 'link' => $link, 'type' => $detail['type']);
+				}
+				self::sendJsonResponse(array(
+					'errors'           => $_errors,
+					'conflict_details' => implode(', ', $conflict_details),
+					'conflict_links'   => $conflict_links,
+					'conflict_count'   => count($conflict_details),
+				), 422);
+			}
+
 			$booking['from_'] = pretty_timestamp($booking['from_']);
 			$booking['to_'] = pretty_timestamp($booking['to_']);
 		}

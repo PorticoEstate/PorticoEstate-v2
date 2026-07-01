@@ -754,9 +754,29 @@
 					}
 				}
 			}
+			// Single-date create failed (e.g. a collision) — return conflict details as JSON so the
+			// caller can show the overlap inline instead of navigating away. Recurring conflicts are
+			// already reported per-date above; this covers the single-date path only.
+			if ($isJsonRequest && $errors && $_POST['outseason'] != 'on' && !Sanitizer::get_var('repeat_until', 'bool'))
+			{
+				$conflict_details = array();
+				$conflict_links = array();
+				foreach ($this->get_conflict_details($allocation['resources'], $allocation['from_'], $allocation['to_']) as $conflict)
+				{
+					$conflict_details[] = $conflict['name'];
+					$conflict_links['item_' . count($conflict_links)] = $conflict;
+				}
+				self::sendJsonResponse(array(
+					'errors'           => $errors,
+					'conflict_details' => implode(', ', $conflict_details),
+					'conflict_links'   => $conflict_links,
+					'conflict_count'   => count($conflict_details),
+				), 422);
+			}
+
 			if (Sanitizer::get_var('building_name', 'string') == '' && empty($allocation['building_name']))
 			{
-	
+
 				array_set_default($allocation, 'resources', array());
 				$weekday = 'monday';
 			}

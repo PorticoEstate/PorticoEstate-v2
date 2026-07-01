@@ -1205,3 +1205,4 @@ activate	booking	en	Activate
 activateAssociationConfirm	booking	en	Reactivate this association?
 view_application	booking	en	View application
 approved_time	booking	en	Approved time
+overlaps_with	booking	en	Overlaps with

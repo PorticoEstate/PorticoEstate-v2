@@ -740,7 +740,31 @@ class booking_uievent extends booking_uicommon
 				));
 			}
 			if ($isJsonRequest) {
-				self::sendJsonResponse(['errors' => $errors], 422);
+				// Create failed (e.g. a collision) — return conflict details as JSON so the
+				// caller can show the overlap inline instead of navigating away.
+				$conflict_details = array();
+				$conflict_links = array();
+				$collisions = (!empty($event['resources']) && is_array($event['resources']))
+					? createObject('booking.soapplication')->get_collision_details($event['resources'], $event['from_'], $event['to_'])
+					: array();
+				foreach ($collisions as $detail)
+				{
+					$link = '';
+					switch ($detail['type'])
+					{
+						case 'allocation': $link = self::link(array('menuaction' => 'booking.uiallocation.edit', 'id' => $detail['id'])); break;
+						case 'booking':    $link = self::link(array('menuaction' => 'booking.uibooking.edit', 'id' => $detail['id'])); break;
+						case 'event':      $link = self::link(array('menuaction' => 'booking.uievent.edit', 'id' => $detail['id'])); break;
+					}
+					$conflict_details[] = $detail['name'];
+					$conflict_links['item_' . count($conflict_links)] = array('name' => $detail['name'], 'link' => $link, 'type' => $detail['type']);
+				}
+				self::sendJsonResponse(array(
+					'errors'           => $errors,
+					'conflict_details' => implode(', ', $conflict_details),
+					'conflict_links'   => $conflict_links,
+					'conflict_count'   => count($conflict_details),
+				), 422);
 			}
 		}
 		if ($errors['event'])

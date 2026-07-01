@@ -360,6 +360,31 @@
 	min-width: 12rem;
 }
 
+/* In-place "created" state: the Edit link that replaces a create button on
+   success. Menu-item replacements reuse the dropdown-item rules above; the
+   split's primary button needs its success check icon sized and coloured. */
+.app-show__split > .ds-button[data-created] > svg {
+	width: 1.125rem;
+	height: 1.125rem;
+	color: var(--ds-color-success-base-default, #068718);
+}
+
+/* Inline overlap message shown under a create button when the create fails on
+   a collision ("Overlaps with: <edit links>"). */
+.app-show__conflict {
+	margin-top: 0.25rem;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.25rem 0;
+	font-size: 0.8125rem;
+	color: var(--ds-color-danger-base-default, #c01b1b);
+}
+
+.app-show__conflict a {
+	color: inherit;
+}
+
 /* Designsystemet dialog */
 .app-show__dialog-footer {
 	display: flex;

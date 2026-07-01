@@ -168,7 +168,9 @@
 			body: JSON.stringify(data)
 		}).then(function (res) {
 			return res.json().then(function (json) {
-				if (!res.ok) throw { status: res.status, errors: json.errors || {} };
+				// Forward the FULL failure body (errors + conflict_details /
+				// conflict_links / conflict_count) so callers can show overlaps.
+				if (!res.ok) throw Object.assign({ status: res.status, errors: {} }, json);
 				return json;
 			});
 		});
@@ -823,6 +825,58 @@
 			html += section(lang('dates'), datesHtml, { icon: ICONS.calendar });
 		}
 
+		// Decode HTML entities in a string. conflict_links[].link comes from the
+		// legacy self::link() and is entity-encoded (&amp;). Setting it via the
+		// .href *property* does NOT decode, so a bare &amp; would break the query
+		// — decode first. (textarea.value is the standard, XSS-safe decode.)
+		function decodeEntities(str) {
+			if (str == null) return '';
+			var ta = document.createElement('textarea');
+			ta.innerHTML = String(str);
+			return ta.value;
+		}
+
+		// Remove any inline overlap message from a date's action cell.
+		function clearConflict(cell) {
+			if (!cell) return;
+			var prev = cell.querySelector('.app-show__conflict');
+			if (prev) prev.remove();
+		}
+
+		// Render the inline overlap message for a failed create. On a real
+		// overlap the endpoint returns conflict_links ({ item_N: {name,link,type} });
+		// we show "Overlaps with: <edit links>" so the officer can resolve it
+		// without navigating away. Falls back to plain error text otherwise.
+		function renderConflict(cell, err) {
+			if (!cell) return;
+			clearConflict(cell);
+			var box = document.createElement('div');
+			box.className = 'app-show__conflict';
+			box.setAttribute('role', 'alert');
+
+			var links = err && err.conflict_links && typeof err.conflict_links === 'object'
+				? Object.keys(err.conflict_links).map(function (k) { return err.conflict_links[k]; })
+				: [];
+			if (links.length) {
+				box.appendChild(document.createTextNode(lang('overlapsWith') + ': '));
+				links.forEach(function (c, i) {
+					if (i) box.appendChild(document.createTextNode(', '));
+					var a = document.createElement('a');
+					a.href = decodeEntities(c.link) || '#';
+					a.target = '_blank';
+					a.rel = 'noopener noreferrer';
+					a.textContent = decodeEntities(c.name) || ('#' + (i + 1));
+					box.appendChild(a);
+				});
+			} else {
+				var msg = lang('error');
+				var flat = err && err.errors ? [].concat.apply([], Object.values(err.errors)).filter(Boolean) : [];
+				if (flat.length) msg += ': ' + flat.join(', ');
+				box.textContent = msg;
+			}
+			cell.appendChild(box);
+		}
+
 		// Delegated event: date action split button (primary + dropdown items)
 		root.addEventListener('click', function (e) {
 			var btn = e.target.closest('[data-create]');
@@ -839,22 +893,41 @@
 			var url = urls[btn.dataset.create];
 			if (!url) return;
 
-			// Disable the whole split group while submitting
-			var group = btn.closest('.app-show__split');
-			var groupBtns = group ? group.querySelectorAll('button') : [btn];
-			groupBtns.forEach(function (b) { b.disabled = true; });
+			// Disable only the clicked button while submitting. The three
+			// create actions (allocation/booking/event) for a date are
+			// independent, so creating one must not lock the others.
+			btn.disabled = true;
+			btn.setAttribute('aria-busy', 'true');
+
+			// Clear any overlap message left from a previous attempt on this date.
+			var cell = btn.closest('td');
+			clearConflict(cell);
 
 			postJsonToLegacy(url, params).then(function (result) {
-				// Redirect to the edit page for the newly created entity
-				window.location.href = result.edit_url;
-			}).catch(function (err) {
-				groupBtns.forEach(function (b) { b.disabled = false; });
-				var msg = lang('error');
-				if (err.errors) {
-					var errMsgs = Object.values(err.errors).filter(Boolean);
-					if (errMsgs.length) msg += ': ' + errMsgs.join(', ');
+				// Success: no navigation. Swap this button in place for a
+				// success check + an "Edit" link to the new entity; the other
+				// create actions for this date stay available.
+				var isMenuItem = btn.classList.contains('ds-dropdown__item');
+				var link = document.createElement('a');
+				link.href = result.edit_url;
+				link.className = isMenuItem ? 'ds-dropdown__item' : 'ds-button';
+				link.setAttribute('data-color', 'success');
+				link.setAttribute('data-created', btn.dataset.create);
+				link.setAttribute('aria-label', lang('edit'));
+				if (!isMenuItem) {
+					link.setAttribute('data-variant', 'tertiary');
+					link.setAttribute('data-size', 'sm');
 				}
-				alert(msg);
+				link.innerHTML = ICONS.checkCircle + '<span>' + esc(lang('edit')) + '</span>';
+				btn.replaceWith(link);
+				clearConflict(cell);
+			}).catch(function (err) {
+				// Failure: re-enable so the officer can retry, and show the
+				// overlap inline ("Overlaps with: <links>") from the endpoint's
+				// conflict_links — no navigation, no alert (#pe-queue/59).
+				btn.disabled = false;
+				btn.removeAttribute('aria-busy');
+				renderConflict(cell, err);
 			});
 		});
 

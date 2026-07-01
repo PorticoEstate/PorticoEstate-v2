@@ -1205,3 +1205,4 @@ activate	booking	no	Aktiver
 activateAssociationConfirm	booking	no	Aktiver denne koblingen igjen?
 view_application	booking	no	Se søknad
 approved_time	booking	no	Godkjent tid
+overlaps_with	booking	no	Overlapper med

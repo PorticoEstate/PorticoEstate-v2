@@ -530,6 +530,23 @@
 				$_POST['from_'] = $allocation['from_'];
 				$_POST['to_'] = $allocation['to_'];
 
+				// One-click create from an application (single-date path): derive the season from
+				// building + date when none was supplied, mirroring the recurring branch's lookup.
+				if (empty($allocation['season_id']) && !empty($allocation['building_id']) && !empty($allocation['from_']))
+				{
+					$season_date = date('Y-m-d', strtotime($allocation['from_']));
+					$season_match = $this->season_bo->read(array('filters' => array(
+						'active' => 1,
+						'building_id' => $allocation['building_id'],
+						'where' => array("%%table%%.from_ <= '{$season_date}'", "%%table%%.to_ >= '{$season_date}'")
+					), 'results' => 1));
+					if (!empty($season_match['results'][0]))
+					{
+						$allocation['season_id'] = $season_match['results'][0]['id'];
+						$_POST['season_id'] = $allocation['season_id'];
+					}
+				}
+
 				$errors = $this->bo->validate($allocation);
 
 				if (!$errors)

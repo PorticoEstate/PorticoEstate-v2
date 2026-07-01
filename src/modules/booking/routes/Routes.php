@@ -3,6 +3,7 @@
 use Slim\Routing\RouteCollectorProxy;
 use App\modules\booking\controllers\UserController;
 use App\modules\booking\controllers\VersionController;
+use App\modules\booking\controllers\OrganizationController;
 use App\modules\booking\helpers\RedirectHelper;
 use App\modules\phpgwapi\security\AccessVerifier;
 use App\modules\phpgwapi\security\ApiKeyVerifier;
@@ -72,6 +73,7 @@ $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 		$group->delete('/{id}', OrganizationDocumentController::class . ':destroy');
 	});
 
+	$group->get('/organizations/{id:[0-9]+}/groups', OrganizationController::class . ':groups');
 	$group->get('/organizations/documents/{id}/download', OrganizationDocumentController::class . ':downloadDocument');
 	$group->get('/resources/documents/{id}/download', ResourceDocumentController::class . ':downloadDocument');
 

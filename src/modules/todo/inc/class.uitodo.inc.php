@@ -35,7 +35,6 @@ class todo_uitodo extends phpgwapi_uicommon_jquery
 	var $t;
 	var $public_functions = array(
 		'show_list'	=> True,
-		'query'		  => True,
 		'view'      => True,
 		'add'       => True,
 		'edit'      => True,
@@ -138,68 +137,27 @@ class todo_uitodo extends phpgwapi_uicommon_jquery
 
 	function show_list()
 	{
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
+		$redirect_params = array();
+		$cat_id = Sanitizer::get_var('cat_id', 'int', 'REQUEST', 0);
+		$filter = Sanitizer::get_var('filter', 'string', 'REQUEST', 'none');
+
+		if ($cat_id)
 		{
-			return $this->query();
+			$redirect_params['cat_id'] = $cat_id;
 		}
 
-		$cat_id = Sanitizer::get_var('cat_id', 'int', 'REQUEST', 0);
-		$filter = Sanitizer::get_var('filter', 'string', 'REQUEST', $this->filter ? $this->filter : 'none');
+		if ($filter)
+		{
+			$redirect_params['filter'] = $filter;
+		}
 
-		$filters = array(
-			array(
-				'type' => 'filter',
-				'name' => 'cat_id',
-				'text' => lang('Category') . ':',
-				'list' => $this->get_category_filter_list($cat_id)
-			),
-			array(
-				'type' => 'filter',
-				'name' => 'filter',
-				'text' => lang('Filter') . ':',
-				'list' => array(
-					array('id' => 'none', 'name' => lang('All'), 'selected' => $filter === 'none' ? 1 : 0),
-					array('id' => 'private', 'name' => lang('Private'), 'selected' => $filter === 'private' ? 1 : 0)
-				)
-			)
-		);
-
-		$data = array(
-			'datatable_name' => lang('todo list'),
-			'form' => array(
-				'toolbar' => array(
-					'item' => $filters,
-				)
-			),
-			'datatable' => array(
-				'source' => self::link(array(
-					'menuaction' => 'todo.uitodo.show_list',
-					'phpgw_return_as' => 'json'
-				)),
-				'sorted_by' => array('key' => 0, 'dir' => 'asc'),
-				'field' => array(
-					array('key' => 'id', 'label' => lang('ID')),
-					array('key' => 'title', 'label' => lang('title')),
-					array('key' => 'status', 'label' => lang('Status')),
-					array('key' => 'pri', 'label' => lang('Urgency')),
-					array('key' => 'sdate', 'label' => lang('start date')),
-					array('key' => 'edate', 'label' => lang('end date')),
-					array('key' => 'owner', 'label' => lang('created by')),
-					array('key' => 'assigned', 'label' => lang('assigned to'), 'sortable' => false),
-					array('key' => 'view', 'label' => lang('View'), 'sortable' => false),
-					array('key' => 'edit', 'label' => lang('Edit'), 'sortable' => false),
-					array('key' => 'delete', 'label' => lang('Delete'), 'sortable' => false),
-					array('key' => 'subadd', 'label' => lang('Add Sub'), 'sortable' => false),
-					array('key' => 'link', 'hidden' => true),
-				)
-			)
-		);
-
-		$data['datatable']['new_item'] = self::link(array('menuaction' => 'todo.uitodo.add'));
-
-		self::render_template_xsl('datatable2', $data);
+		phpgw::redirect_link('/todo/view/todos', $redirect_params);
 	}
 
+	/**
+	 * Compatibility shim for phpgwapi_uicommon_jquery.
+	 * Todo list data is now served by /todo/todos via TodoController.
+	 */
 	function query()
 	{
 		$search = Sanitizer::get_var('search');
@@ -207,7 +165,7 @@ class todo_uitodo extends phpgwapi_uicommon_jquery
 		$columns = Sanitizer::get_var('columns');
 
 		$start = Sanitizer::get_var('start', 'int', 'REQUEST', 0);
-		$length = Sanitizer::get_var('length', 'int', 'REQUEST', 0);
+		$length = Sanitizer::get_var('length', 'int', 'REQUEST', 25);
 		$filter = Sanitizer::get_var('filter', 'string', 'REQUEST', 'none');
 		$cat_id = Sanitizer::get_var('cat_id', 'int', 'REQUEST', 0);
 
@@ -236,119 +194,21 @@ class todo_uitodo extends phpgwapi_uicommon_jquery
 			$dir = $order_dir === 'desc' ? 'DESC' : 'ASC';
 		}
 
-		$params = array(
-			'start' => $start,
-			'limit' => $length ? $length : null,
-			'query' => is_array($search) && isset($search['value']) ? $search['value'] : '',
-			'filter' => $filter,
-			'order' => $sort,
-			'sort' => $dir,
-			'cat_id' => $cat_id,
-			'tree' => 'all',
+		$todo_list = $this->botodo->_list(
+			$start,
+			$length,
+			is_array($search) && isset($search['value']) ? $search['value'] : '',
+			$filter,
+			$sort,
+			$dir,
+			$cat_id,
+			'all'
 		);
-
-		$todo_list = $this->botodo->_list($params);
-
-		$results = array();
-		foreach ($todo_list as $todo)
-		{
-			$assigned = $this->botodo->list_assigned($todo['assigned']);
-			$assigned .= $this->botodo->list_assigned($todo['assigned_group']);
-
-			$results[] = array(
-				'id' => $todo['id'],
-				'title' => $this->format_todo_title($todo),
-				'status' => $todo['status'],
-				'pri' => $this->format_priority($todo['pri']),
-				'sdate' => $todo['sdate'],
-				'edate' => $todo['edate'] ? $todo['edate'] : '&nbsp;',
-				'owner' => $todo['owner'],
-				'assigned' => $assigned,
-				'link' => phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.view', 'todo_id' => $todo['id'])),
-				'view' => '<a href="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.view', 'todo_id' => $todo['id']))
-					. '">' . lang('View') . '</a>',
-				'edit' => $this->botodo->check_perms($todo['owner_id'], $this->grants, ACL_EDIT)
-					? '<a href="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.edit', 'todo_id' => $todo['id']))
-						. '">' . lang('Edit') . '</a>'
-					: '&nbsp;',
-				'delete' => $this->botodo->check_perms($todo['owner_id'], $this->grants, ACL_DELETE)
-					? '<a href="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.delete', 'todo_id' => $todo['id']))
-						. '">' . lang('Delete') . '</a>'
-					: '&nbsp;',
-				'subadd' => $this->botodo->check_perms($todo['owner_id'], $this->grants, ACL_ADD)
-					? '<a href="' . phpgw::link('/index.php', array(
-						'menuaction' => 'todo.uitodo.add',
-						'parent' => $todo['id'],
-						'cat_id' => $cat_id
-					)) . '">' . lang('Add Sub') . '</a>'
-					: '&nbsp;'
-			);
-		}
 
 		return $this->jquery_results(array(
 			'total_records' => $this->botodo->total_records,
-			'results' => $results
+			'results' => is_array($todo_list) ? $todo_list : array()
 		));
-	}
-
-	private function get_category_filter_list($selected_cat_id)
-	{
-		$categories = $this->cats->return_sorted_array(0, false, '', '', '', true, 0, false);
-
-		$list = array(
-			array(
-				'id' => 0,
-				'name' => lang('All'),
-				'selected' => empty($selected_cat_id) ? 1 : 0
-			)
-		);
-
-		foreach ($categories as $category)
-		{
-			$list[] = array(
-				'id' => (int) $category['id'],
-				'name' => $category['name'],
-				'selected' => ((int) $selected_cat_id === (int) $category['id']) ? 1 : 0
-			);
-		}
-
-		return $list;
-	}
-
-	private function format_priority($priority)
-	{
-		switch ((int) $priority)
-		{
-			case 1:
-				return lang('Low');
-			case 2:
-				return '<b>' . lang('normal') . '</b>';
-			case 3:
-				return '<font color="#CC0000"><b>' . lang('high') . '</b></font>';
-			default:
-				return '';
-		}
-	}
-
-	private function format_todo_title($todo)
-	{
-		$title = phpgw::strip_html($todo['title']);
-
-		if (!$title)
-		{
-			$words = explode(' ', phpgw::strip_html($todo['descr']));
-			$title = implode(' ', array_slice($words, 0, 4)) . ' ...';
-		}
-
-		if ((int) $todo['level'] === 0)
-		{
-			return '<b>' . $title . '</b>';
-		}
-
-		$space = '&nbsp;&nbsp;';
-		$spaceset = str_repeat($space, (int) $todo['level']);
-
-		return $spaceset . $title;
 	}
 
 	function formatted_user($type, $selected = '')

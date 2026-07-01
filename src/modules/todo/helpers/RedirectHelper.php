@@ -6,10 +6,6 @@ class RedirectHelper
 {
 	public function process()
 	{
-		$parms = array(
-			'menuaction' => 'todo.uitodo.show_list'
-		);
-
-		\phpgw::redirect_link('/', $parms);
+		\phpgw::redirect_link('/todo/view/todos');
 	}
 }

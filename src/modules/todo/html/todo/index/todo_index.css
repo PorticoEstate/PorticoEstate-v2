@@ -1,0 +1,63 @@
+.todo-app {
+	padding: 1rem;
+}
+
+.todo-app__toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	margin-bottom: 1rem;
+}
+
+.todo-app__search,
+.todo-app__select {
+	padding: 0.5rem;
+	border: 1px solid #c6c6c6;
+	border-radius: 4px;
+}
+
+.todo-app__search {
+	min-width: 260px;
+}
+
+.todo-app__button {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid #20568f;
+	border-radius: 4px;
+	background: #2a72ba;
+	color: #fff;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.todo-app__button:hover {
+	background: #225f9c;
+}
+
+.todo-app__button--secondary {
+	background: #fff;
+	color: #20568f;
+}
+
+.todo-app__message {
+	padding: 0.5rem 0;
+}
+
+.todo-app__message--error {
+	color: #b30000;
+}
+
+.todo-app__table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.todo-app__table th,
+.todo-app__table td {
+	padding: 0.5rem;
+	border-bottom: 1px solid #e5e5e5;
+	text-align: left;
+	vertical-align: top;
+}

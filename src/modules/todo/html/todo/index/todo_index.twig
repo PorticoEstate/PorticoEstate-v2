@@ -1,0 +1,84 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('todo') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/todo/index/todo_index.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<div id="todo-app"
+	class="todo-app"
+	data-api-url="{{ phpgw_link('/todo/todos') }}"
+	data-view-url="{{ phpgw_link('/index.php', {'menuaction': 'todo.uitodo.view'}) }}"
+	data-add-url="{{ phpgw_link('/index.php', {'menuaction': 'todo.uitodo.add'}) }}"
+	data-edit-url="{{ phpgw_link('/index.php', {'menuaction': 'todo.uitodo.edit'}) }}"
+	data-delete-url="{{ phpgw_link('/index.php', {'menuaction': 'todo.uitodo.delete'}) }}"
+	data-subadd-url="{{ phpgw_link('/index.php', {'menuaction': 'todo.uitodo.add'}) }}"
+	data-lang-loading="{{ lang('common.loading') }}"
+	data-lang-error="{{ lang('common.error') }}"
+	data-lang-empty="{{ lang('No entries') }}"
+	data-lang-new="{{ lang('new') }}"
+	data-lang-csv="{{ lang('CSV download') }}"
+	data-lang-view="{{ lang('View') }}"
+	data-lang-edit="{{ lang('Edit') }}"
+	data-lang-delete="{{ lang('Delete') }}"
+	data-lang-add-sub="{{ lang('Add Sub') }}"
+	data-lang-search="{{ lang('common.search') }}"
+	data-lang-category="{{ lang('Category') }}"
+	data-lang-filter="{{ lang('Filter') }}"
+	data-lang-all="{{ lang('All') }}"
+	data-lang-private="{{ lang('Private') }}"
+	data-lang-id="{{ lang('ID') }}"
+	data-lang-title="{{ lang('Title') }}"
+	data-lang-status="{{ lang('Status') }}"
+	data-lang-urgency="{{ lang('Urgency') }}"
+	data-lang-start="{{ lang('start date') }}"
+	data-lang-end="{{ lang('end date') }}"
+	data-lang-owner="{{ lang('created by') }}"
+	data-lang-assigned="{{ lang('assigned to') }}"
+>
+	<div class="todo-app__toolbar">
+		<select id="todo-cat" class="todo-app__select">
+			{% for category in categories %}
+				<option value="{{ category.id }}">{{ category.name }}</option>
+			{% endfor %}
+		</select>
+
+		<input id="todo-search" class="todo-app__search" type="search" placeholder="{{ lang('common.search') }}" />
+		<select id="todo-filter" class="todo-app__select">
+			<option value="none">{{ lang('All') }}</option>
+			<option value="private">{{ lang('Private') }}</option>
+		</select>
+		<a id="todo-new" class="todo-app__button" href="{{ phpgw_link('/index.php', {'menuaction': 'todo.uitodo.add'}) }}">{{ lang('new') }}</a>
+		<button id="todo-csv" class="todo-app__button todo-app__button--secondary" type="button">{{ lang('CSV download') }}</button>
+	</div>
+
+	<div id="todo-loading" class="todo-app__message">{{ lang('common.loading') }}...</div>
+	<div id="todo-error" class="todo-app__message todo-app__message--error" hidden></div>
+
+	<table id="todo-table" class="todo-app__table" hidden>
+		<thead>
+			<tr>
+				<th>{{ lang('ID') }}</th>
+				<th>{{ lang('Title') }}</th>
+				<th>{{ lang('Status') }}</th>
+				<th>{{ lang('Urgency') }}</th>
+				<th>{{ lang('start date') }}</th>
+				<th>{{ lang('end date') }}</th>
+				<th>{{ lang('created by') }}</th>
+				<th>{{ lang('assigned to') }}</th>
+				<th>{{ lang('View') }}</th>
+				<th>{{ lang('Edit') }}</th>
+				<th>{{ lang('Delete') }}</th>
+				<th>{{ lang('Add Sub') }}</th>
+			</tr>
+		</thead>
+		<tbody id="todo-table-body"></tbody>
+	</table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/todo/index/todo_index.js') }}</script>
+{% endblock %}

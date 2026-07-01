@@ -1065,8 +1065,6 @@ class booking_uibooking extends booking_uicommon
 		phpgwapi_jquery::load_widget('autocomplete');
 		self::add_javascript('booking', 'base', 'booking.js');
 
-		$booking['from_'] = pretty_timestamp($booking['from_']);
-		$booking['to_'] = pretty_timestamp($booking['to_']);
 
 		$booking['resources_json'] = json_encode(array_map('intval', (array)$booking['resources']));
 		$booking['cancel_link'] = self::link(array(
@@ -1111,6 +1109,9 @@ class booking_uibooking extends booking_uicommon
 				}
 			}
 		}
+
+		$booking['from_'] = pretty_timestamp($booking['from_']);
+		$booking['to_'] = pretty_timestamp($booking['to_']);
 
 		if ($step < 2)
 		{

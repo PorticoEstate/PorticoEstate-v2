@@ -186,8 +186,10 @@ class ApplicationService
 		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';
 		$commentId = $this->repo->addComment($appId, $authorName, $comment, 'comment');
 
-		// Send email notification (non-fatal on failure)
-		$this->sendNotificationSafe($appId);
+ 		// Send email notification (non-fatal on failure). Pass the officer's reply text
+		// so the applicant email contains the actual message — without it the email is
+		// rebuilt from the DB row alone and the reply body is empty.
+		$this->sendNotificationSafe($appId, $comment);
 
 		// Create in-app notification for the applicant (non-fatal)
 		try {
@@ -459,16 +461,27 @@ class ApplicationService
 
 	/**
 	 * Send notification email, suppressing exceptions (logs on failure).
+	 *
+	 * @param string|null $commentText When set (case-officer reply path), the text is
+	 *                                 threaded into the email body so the applicant sees
+	 *                                 the actual message. Left null for status-change
+	 *                                 notifications (accept/reject), which are unchanged.
 	 */
-	private function sendNotificationSafe(int $appId): void
+	private function sendNotificationSafe(int $appId, ?string $commentText = null): void
 	{
 		try {
 			$row = $this->repo->getById($appId);
 			if (!$row) return;
 
 			$emailApp = $this->buildEmailApplicationData($appId, $row);
+			// A non-null comment text means this is an explicit case-officer reply: render
+			// the comment email (regardless of status) and carry the message text.
+			$isCommentReply = $commentText !== null;
+			if ($isCommentReply) {
+				$emailApp['comment'] = $commentText;
+			}
 			$emailService = new EmailService();
-			$emailService->sendApplicationNotification($emailApp);
+			$emailService->sendApplicationNotification($emailApp, false, false, $isCommentReply);
 		} catch (\Throwable $e) {
 			error_log("Failed to send notification for application {$appId}: " . $e->getMessage());
 		}

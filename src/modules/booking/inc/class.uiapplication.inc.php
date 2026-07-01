@@ -3980,6 +3980,7 @@ class booking_uiapplication extends booking_uicommon
 
 			$update = false;
 			$notify = false;
+			$is_comment_reply = false; // true only for an explicit case-officer comment reply
 			$recurring_summary = null; // Track when recurring allocations are created
 
 			$return_after_action = false;
@@ -4374,6 +4375,7 @@ class booking_uiapplication extends booking_uicommon
 				$this->add_comment($application, $application['comment']);
 				$update = true;
 				$notify = true;
+				$is_comment_reply = true; // explicit reply to applicant — must email regardless of PENDING status
 				$return_after_action = true;
 			}
 
@@ -4395,8 +4397,9 @@ class booking_uiapplication extends booking_uicommon
 				if ($this->combine_applications && !empty($related_info['application_ids']) && count($related_info['application_ids']) > 1) {
 					$recipient = $this->sendGroupNotification($related_info['application_ids'], $_application);
 				} else {
-					// Single application notification
-					$recipient = $this->bo->send_notification($_application);
+					// Single application notification — pass the comment-reply flag so a
+					// case-officer reply bypasses the PENDING email-skip and renders the comment body.
+					$recipient = $this->bo->send_notification($_application, false, false, $is_comment_reply);
 				}
 
 				if ($recipient)

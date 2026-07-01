@@ -1183,3 +1183,4 @@ approved_time	booking	nn	Godkjend tid
 overlaps_with	booking	nn	Overlappar med
 select_group	booking	nn	Vel gruppe/lag
 loading	booking	nn	Lastar
+error	booking	nn	Feil

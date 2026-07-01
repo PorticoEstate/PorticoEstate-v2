@@ -941,7 +941,7 @@
 			var groupsUrl = apiUrl.replace(/\/applications\/\d+.*$/, '/organizations/' + orgId + '/groups');
 			fetchJson(groupsUrl).then(function (groups) {
 				groups = groups || [];
-				if (!groups.length) { renderConflict(cell, err); return; }
+				if (!groups.length) { clearGroupPicker(cell); renderConflict(cell, err); return; }
 				select.innerHTML = '<option value="">' + esc(lang('selectGroup')) + '…</option>' +
 					groups.map(function (g) {
 						return '<option value="' + esc(g.id) + '">' + esc(g.name) + '</option>';
@@ -970,6 +970,7 @@
 					});
 				});
 			}).catch(function () {
+				clearGroupPicker(cell);
 				renderConflict(cell, err);
 			});
 		}

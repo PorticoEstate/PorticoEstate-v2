@@ -1207,3 +1207,4 @@ view_application	booking	no	Se søknad
 approved_time	booking	no	Godkjent tid
 overlaps_with	booking	no	Overlapper med
 select_group	booking	no	Velg gruppe/lag
+loading	booking	no	Laster

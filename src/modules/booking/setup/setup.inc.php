@@ -111,7 +111,6 @@ $setup_info['booking']['tables'] = [
 	'bb_hospitality_order',
 	'bb_hospitality_order_document',
 	'bb_hospitality_order_changelog',
-	'bb_hospitality_order',
 	'bb_hospitality_article_group',
 	'bb_hospitality_article',
 	'bb_hospitality'

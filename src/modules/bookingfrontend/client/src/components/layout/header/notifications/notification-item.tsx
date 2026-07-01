@@ -10,7 +10,7 @@ import nn from 'timeago.js/lib/lang/nn_NO';
 import en from 'timeago.js/lib/lang/en_US';
 import {INotification} from "@/service/types/api/notification.types";
 import {useTrans, useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
-import {renderNotificationTitle} from "./notification-utils";
+import {renderNotificationTitle, notificationDate} from "./notification-utils";
 import styles from "./notifications.module.scss";
 
 // Same locale registration as application-comment.tsx so TimeAgo renders in NB/NN/EN.
@@ -58,7 +58,7 @@ const NotificationItem: FC<NotificationItemProps> = ({notification, onSelect}) =
 					</Paragraph>
 				)}
 				<Paragraph data-size="xs" className={styles.time}>
-					<TimeAgo datetime={notification.created} locale={i18n.language}/>
+					<TimeAgo datetime={notificationDate(notification.created)} locale={i18n.language}/>
 				</Paragraph>
 			</span>
 		</>

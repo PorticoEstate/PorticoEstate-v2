@@ -85,9 +85,9 @@ function parse_navbar($force = False)
 	$template_selector = <<<HTML
 
 	   <select id = "template_selector" class="btn btn-link btn-sm nav-item dropdown no-arrow nav-link text-white dropdown-toggle" style="height:2rem">
-		<option class="nav-link text-white" value="portico"{$selecte_portico}>Portico</option>
-		<option class="nav-link text-white" value="bootstrap"{$selecte_bootstrap}>Bootstrap</option>
-		<option class="nav-link text-white" value="digdir"{$selecte_digdir}>Digdir</option>
+		<option value="portico"{$selecte_portico} style="color:#212529;background-color:#ffffff;">Portico</option>
+		<option value="bootstrap"{$selecte_bootstrap} style="color:#212529;background-color:#ffffff;">Bootstrap</option>
+		<option value="digdir"{$selecte_digdir} style="color:#212529;background-color:#ffffff;">Digdir</option>
 	   </select>
 HTML;
 

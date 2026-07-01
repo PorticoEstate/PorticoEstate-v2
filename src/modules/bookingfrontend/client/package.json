@@ -45,7 +45,7 @@
         "@types/turndown": "^5.0.5",
         "@uiw/react-md-editor": "^4.0.8",
         "accept-language": "^3.0.20",
-        "axios": "^1.7.4",
+        "axios": "^1.16.0",
         "he": "^1.2.0",
         "html-react-parser": "^5.1.16",
         "i18next": "^23.14.0",

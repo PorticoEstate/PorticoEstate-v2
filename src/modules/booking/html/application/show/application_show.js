@@ -953,7 +953,10 @@
 					if (!gid) return;
 					select.disabled = true;
 					btn.disabled = true;
-					var p = Object.assign({}, params, { group_id: gid });
+					// Resend WITH the resolved org id too, so the create pins to the
+					// same org it first resolved (the chosen group belongs to it) —
+					// not a re-resolution that might pick a different org.
+					var p = Object.assign({}, params, { group_id: gid, organization_id: orgId });
 					postJsonToLegacy(url, p).then(function (result) {
 						collapseToEditLink(btn, cell, result);
 					}).catch(function (err2) {

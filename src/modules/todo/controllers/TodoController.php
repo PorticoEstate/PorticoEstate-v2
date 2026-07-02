@@ -10,6 +10,14 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class TodoController
 {
+	private function normalizeLineBreaks(string $value): string
+	{
+		$normalized = preg_replace('/<br\s*\/?>/i', "\n", $value);
+		$normalized = str_replace(["\r\n", "\r"], "\n", (string) $normalized);
+
+		return (string) $normalized;
+	}
+
 	private function getCommonQueryParams(Request $request): array
 	{
 		$query = $request->getQueryParams();
@@ -94,6 +102,7 @@ class TodoController
 
 		$assigned = $botodo->list_assigned($botodo->format_assigned((string) ($item['assigned'] ?? '')));
 		$assigned .= $botodo->list_assigned($botodo->format_assigned((string) ($item['assigned_group'] ?? '')));
+		$assigned = $this->normalizeLineBreaks((string) $assigned);
 		$phpgwapiCommon = new \phpgwapi_common();
 
 		$categoryName = '';
@@ -165,6 +174,7 @@ class TodoController
 
 			$assigned = $botodo->list_assigned($todo['assigned'] ?? '');
 			$assigned .= $botodo->list_assigned($todo['assigned_group'] ?? '');
+			$assigned = $this->normalizeLineBreaks((string) $assigned);
 
 			$rows[] = [
 				'id' => $id,

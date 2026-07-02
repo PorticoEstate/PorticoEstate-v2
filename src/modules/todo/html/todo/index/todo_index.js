@@ -46,6 +46,15 @@
 			.replace(/'/g, '&#039;');
 	}
 
+	function renderMultiline(value) {
+		var normalized = String(value == null ? '' : value)
+			.replace(/<br\s*\/?>/gi, '\n')
+			.replace(/\r\n/g, '\n')
+			.replace(/\r/g, '\n');
+
+		return escapeHtml(normalized).replace(/\n/g, '<br>');
+	}
+
 	function setState(state, errorMessage) {
 		loadingEl.hidden = state !== 'loading';
 		errorEl.hidden = state !== 'error';
@@ -76,7 +85,7 @@
 				'<td>' + escapeHtml(item.sdate || '') + '</td>' +
 				'<td>' + escapeHtml(item.edate || '') + '</td>' +
 				'<td>' + escapeHtml(item.owner || '') + '</td>' +
-				'<td>' + escapeHtml(item.assigned || '') + '</td>' +
+				'<td>' + renderMultiline(item.assigned || '') + '</td>' +
 				'<td>' + makeActionLink(actions.view, root.dataset.langView || 'View') + '</td>' +
 				'<td>' + makeActionLink(actions.edit, root.dataset.langEdit || 'Edit') + '</td>' +
 				'<td>' + makeActionLink(actions.delete, root.dataset.langDelete || 'Delete') + '</td>' +

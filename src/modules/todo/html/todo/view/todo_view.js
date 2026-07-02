@@ -14,6 +14,24 @@
 	var editUrl = root.dataset.editUrl || '';
 	var deleteUrl = root.dataset.deleteUrl || '';
 
+	function escapeHtml(value) {
+		return String(value == null ? '' : value)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/\"/g, '&quot;')
+			.replace(/'/g, '&#039;');
+	}
+
+	function renderMultiline(value) {
+		var normalized = String(value == null ? '' : value)
+			.replace(/<br\s*\/?>/gi, '\n')
+			.replace(/\r\n/g, '\n')
+			.replace(/\r/g, '\n');
+
+		return escapeHtml(normalized).replace(/\n/g, '<br>');
+	}
+
 	function setText(id, value) {
 		var el = document.getElementById(id);
 		if (!el) {
@@ -44,7 +62,10 @@
 		setText('todo-view-edate', detail.edate);
 		setText('todo-view-access', detail.access);
 		setText('todo-view-owner', detail.owner);
-		setText('todo-view-assigned', detail.assigned);
+		var assignedEl = document.getElementById('todo-view-assigned');
+		if (assignedEl) {
+			assignedEl.innerHTML = renderMultiline(detail.assigned);
+		}
 
 		if (editLink) {
 			if (editUrl) {

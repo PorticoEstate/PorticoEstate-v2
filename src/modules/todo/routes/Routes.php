@@ -14,6 +14,7 @@ $app->group('/todo', function (RouteCollectorProxy $group)
 	{
 		$viewGroup->get('/todos', TodoViewController::class . ':index');
 		$viewGroup->get('/todos/add', TodoViewController::class . ':add');
+		$viewGroup->get('/todos/{id:[0-9]+}', TodoViewController::class . ':view');
 		$viewGroup->get('/todos/{id:[0-9]+}/edit', TodoViewController::class . ':edit');
 	});
 

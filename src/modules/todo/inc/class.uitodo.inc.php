@@ -441,6 +441,15 @@ class todo_uitodo extends phpgwapi_uicommon_jquery
 
 	function view()
 	{
+		// Bridge legacy menuaction entrypoint to the new Twig client view page.
+		$todo_id = Sanitizer::get_var('todo_id', 'int', 'REQUEST', 0);
+		if ($todo_id)
+		{
+			phpgw::redirect_link('/todo/view/todos/' . $todo_id);
+		}
+
+		phpgw::redirect_link('/todo/view/todos');
+
 		$this->phpgwapi_common->phpgw_header(true);
 
 		$values = $this->botodo->read($_REQUEST['todo_id']);

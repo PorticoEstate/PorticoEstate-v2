@@ -1,0 +1,59 @@
+.todo-view {
+	padding: 1rem;
+	max-width: 980px;
+}
+
+.todo-view__title {
+	margin: 0 0 1rem;
+}
+
+.todo-view__message {
+	margin-bottom: 1rem;
+}
+
+.todo-view__message--error {
+	padding: 0.75rem;
+	border: 1px solid #d38e8e;
+	background: #fdeaea;
+	color: #7b1f1f;
+}
+
+.todo-view__grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 0.9rem 1rem;
+}
+
+.todo-view__grid dt {
+	font-weight: 600;
+	margin-bottom: 0.15rem;
+}
+
+.todo-view__grid dd {
+	margin: 0;
+	word-break: break-word;
+}
+
+.todo-view__full {
+	grid-column: 1 / -1;
+}
+
+.todo-view__actions {
+	margin-top: 1rem;
+	display: flex;
+	gap: 0.75rem;
+}
+
+.todo-view__button {
+	padding: 0.5rem 0.9rem;
+	border: 1px solid #20568f;
+	border-radius: 4px;
+	background: #2a72ba;
+	color: #fff;
+	text-decoration: none;
+}
+
+.todo-view__button--secondary {
+	background: #fff;
+	color: #20568f;
+}

@@ -4,6 +4,7 @@ namespace App\modules\todo\controllers;
 
 use App\helpers\ResponseHelper;
 use App\modules\phpgwapi\security\Acl;
+use App\modules\phpgwapi\services\Settings;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -73,14 +74,91 @@ class TodoController
 		return str_repeat('  ', (int) $todo['level']) . $title;
 	}
 
+	private function mapTodoDetail(array $item, $botodo): array
+	{
+		$userSettings = Settings::getInstance()->get('user');
+		$dateFormat = (string) ($userSettings['preferences']['common']['dateformat'] ?? 'Y-m-d');
+
+		$ownerId = (int) ($item['owner'] ?? 0);
+		$ownerName = (string) ($item['owner'] ?? '');
+		$cached = $botodo->cached_accounts($ownerId);
+		if (is_object($cached) && isset($cached->lid, $cached->firstname, $cached->lastname))
+		{
+			$phpgwapiCommon = new \phpgwapi_common();
+			$ownerName = (string) $phpgwapiCommon->display_fullname(
+				(string) $cached->lid,
+				(string) $cached->firstname,
+				(string) $cached->lastname
+			);
+		}
+
+		$assigned = $botodo->list_assigned($botodo->format_assigned((string) ($item['assigned'] ?? '')));
+		$assigned .= $botodo->list_assigned($botodo->format_assigned((string) ($item['assigned_group'] ?? '')));
+		$phpgwapiCommon = new \phpgwapi_common();
+
+		$categoryName = '';
+		if (!empty($item['cat']))
+		{
+			$cats = \CreateObject('phpgwapi.categories');
+			$categoryName = (string) $cats->id2name((int) $item['cat']);
+		}
+
+		$parentTitle = '';
+		$parentId = (int) ($item['parent'] ?? 0);
+		if ($parentId > 0)
+		{
+			$parent = $botodo->read($parentId);
+			if (is_array($parent))
+			{
+				$parentTitle = (string) \phpgw::strip_html((string) ($parent['title'] ?? ''));
+			}
+		}
+
+		$tzOffset = (int) ($botodo->datetime->tz_offset ?? 0);
+		$sdateTs = (int) ($item['sdate'] ?? 0);
+		$edateTs = (int) ($item['edate'] ?? 0);
+
+		$startDate = '';
+		if ($sdateTs > 0)
+		{
+			$startDate = (string) $phpgwapiCommon->show_date($sdateTs - $tzOffset, $dateFormat);
+		}
+
+		$endDate = '';
+		if ($edateTs > 0)
+		{
+			$endDate = (string) $phpgwapiCommon->show_date($edateTs - $tzOffset, $dateFormat);
+		}
+
+		$priority = $this->formatPriority($item['pri'] ?? 0);
+
+		return [
+			'id' => (int) ($item['id'] ?? 0),
+			'title' => (string) \phpgw::strip_html((string) ($item['title'] ?? '')),
+			'descr' => (string) \phpgw::strip_html((string) ($item['descr'] ?? '')),
+			'category' => $categoryName,
+			'parent' => $parentTitle,
+			'status' => (int) ($item['status'] ?? 0),
+			'pri' => $priority,
+			'access' => (string) ($item['access'] ?? ''),
+			'owner' => $ownerName,
+			'assigned' => (string) $assigned,
+			'sdate' => $startDate,
+			'edate' => $endDate,
+		];
+	}
+
 	private function mapTodoItems(array $todoList, $botodo, array $grants, int $catId): array
 	{
+		$userSettings = Settings::getInstance()->get('user');
+		$currentAccountId = (int) ($userSettings['account_id'] ?? 0);
+
 		$rows = [];
 		foreach ($todoList as $todo)
 		{
 			$id = (int) ($todo['id'] ?? 0);
 			$ownerId = (int) ($todo['owner_id'] ?? 0);
-			$canEdit = $botodo->check_perms($ownerId, $grants, ACL_EDIT);
+			$canEdit = $botodo->check_perms($ownerId, $grants, ACL_EDIT) || $ownerId === $currentAccountId;
 			$canDelete = $botodo->check_perms($ownerId, $grants, ACL_DELETE);
 			$canAdd = $botodo->check_perms($ownerId, $grants, ACL_ADD);
 
@@ -97,7 +175,7 @@ class TodoController
 				'owner' => (string) ($todo['owner'] ?? ''),
 				'assigned' => (string) $assigned,
 				'actions' => [
-					'view' => \phpgw::link('/index.php', ['menuaction' => 'todo.uitodo.view', 'todo_id' => $id]),
+					'view' => \phpgw::link('/todo/view/todos/' . $id),
 						'edit' => $canEdit ? \phpgw::link('/todo/view/todos/' . $id . '/edit') : '',
 					'delete' => $canDelete ? \phpgw::link('/index.php', ['menuaction' => 'todo.uitodo.delete', 'todo_id' => $id]) : '',
 					'subadd' => $canAdd ? \phpgw::link('/todo/view/todos/add', ['parent' => $id, 'cat_id' => $catId]) : '',
@@ -288,7 +366,10 @@ class TodoController
 			return ResponseHelper::sendErrorResponse(['error' => 'Todo not found'], 404);
 		}
 
-		return ResponseHelper::sendJSONResponse(['item' => $item]);
+		return ResponseHelper::sendJSONResponse([
+			'item' => $item,
+			'detail' => $this->mapTodoDetail((array) $item, $botodo),
+		]);
 	}
 
 	/**

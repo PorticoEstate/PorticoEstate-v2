@@ -20,7 +20,7 @@
 	data-lang-error="{{ lang('common.error') }}"
 	data-lang-empty="{{ lang('No entries') }}"
 	data-lang-new="{{ lang('new') }}"
-	data-lang-csv="{{ lang('CSV download') }}"
+	data-lang-csv="{{ lang('download') }}"
 	data-lang-view="{{ lang('View') }}"
 	data-lang-edit="{{ lang('Edit') }}"
 	data-lang-delete="{{ lang('Delete') }}"
@@ -60,7 +60,7 @@
 		</select>
 		<a id="todo-matrix" class="todo-app__button todo-app__button--secondary" href="{{ phpgw_link('/todo/view/todos/matrix', {'month': 'now'|date('m'), 'year': 'now'|date('Y')}) }}">{{ lang('view matrix of actual month') }}</a>
 		<a id="todo-new" class="todo-app__button" href="{{ phpgw_link('/todo/view/todos/add') }}">{{ lang('new') }}</a>
-		<button id="todo-csv" class="todo-app__button todo-app__button--secondary" type="button">{{ lang('CSV download') }}</button>
+		<button id="todo-csv" class="todo-app__button todo-app__button--secondary" type="button">{{ lang('download') }}</button>
 	</div>
 
 	<div id="todo-loading" class="todo-app__message">{{ lang('common.loading') }}...</div>

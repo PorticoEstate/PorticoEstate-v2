@@ -16,6 +16,7 @@ do you also want to delete all sub projects ?	todo	nn	Vil du òg slette alle und
 edit main project	todo	nn	Rediger hovudprosjekt
 edit sub project	todo	nn	Rediger underprosjekt
 end date changed	todo	nn	Sluttdato endra
+end date	todo	nn	Sluttdato
 ending date can not be before start date	todo	nn	Sluttdato kan ikkje vere før startdato !
 entry added	todo	nn	Oppføring lagt til
 high	todo	nn	Høg
@@ -30,23 +31,30 @@ parent project	todo	nn	Foreldreprosjekt
 please enter a title	todo	nn	Ver venleg å skrive inn ein tittel !
 returns a the total number of records in the database, must call list_todos first	todo	nn	Returnerer totalt tal oppføringar i databasen, må kalle list_todos først
 show todo items on main screen	todo	nn	Vis oppgåver på hovudskjerm
+start date	todo	nn	Startdato
 start date changed	todo	nn	Startdato endra
 status	todo	nn	Status
 status changed	todo	nn	Status endra
+title	todo	nn	Tittel
 title changed	todo	nn	Tittel endra
+details	todo	nn	Detaljar
+id	todo	nn	ID
+old value	todo	nn	Gammal verdi
+user	todo	nn	Brukar
 todo	common	nn	Å-gjere
 todo list	common	nn	Å-gjere liste
 to do list	common	nn	Å-gjere liste
 todo list - add	todo	nn	Å-gjere liste - legg til
 todo list - edit	todo	nn	Å-gjere liste - rediger
 todo preferences	todo	nn	Innstillingar for oppgåver
+page size	todo	nn	Sidelengde
 urgency	todo	nn	Prioritet
 urgency changed	todo	nn	Prioritet endra
 view matrix of actual month	todo	nn	Vis matrise for inneverande månad
 view todo item	todo	nn	Vis oppgåve
 which groups	todo	nn	Kva grupper
 you can only enter numbers for days from now	todo	nn	Du kan berre skrive inn tal for dagar frå no !
-you have entered an invailed date	todo	nn	Du har skrive inn ein ugyldig dato
+you have entered an invalid date	todo	nn	Du har skrive inn ein ugyldig dato
 you have entered an invalid start date	todo	nn	Du har skrive inn ein ugyldig startdato !
 you have entered an invalid end date	todo	nn	Du har skrive inn ein ugyldig sluttdato !
 add sub project	todo	nn	Legg til underprosjekt

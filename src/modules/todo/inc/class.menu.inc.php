@@ -54,7 +54,7 @@ class todo_menu
 		$menus['navbar'] = array(
 			'todo' => array(
 				'text'	=> $translation->translate('todo', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.show_list')),
+				'url'	=> phpgw::link('/todo/view/todos'),
 				'image'	=> array('todo', 'navbar'),
 				'order'	=> 10,
 				'group'	=> 'office'
@@ -64,7 +64,7 @@ class todo_menu
 		$menus['toolbar'] = array(
 			array(
 				'text'	=> $translation->translate('New', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.add')),
+				'url'	=> phpgw::link('/todo/view/todos/add'),
 			)
 		);
 

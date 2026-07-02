@@ -84,7 +84,7 @@
 
 			<div class="todo-add__field">
 				<label for="todo-assigned">{{ lang('Assigned to user') }}</label>
-				<select id="todo-assigned" class="todo-add__select" name="assigned" multiple size="8">
+				<select id="todo-assigned" class="todo-add__select todo-add__select--multi" name="assigned" multiple size="8" data-placeholder="{{ lang('Select') }} {{ lang('Assigned to user') }}">
 					{% for user in users %}
 						<option value="{{ user.id }}">{{ user.name }}</option>
 					{% endfor %}
@@ -93,7 +93,7 @@
 
 			<div class="todo-add__field">
 				<label for="todo-assigned-group">{{ lang('Assigned to group') }}</label>
-				<select id="todo-assigned-group" class="todo-add__select" name="assigned_group" multiple size="8">
+				<select id="todo-assigned-group" class="todo-add__select todo-add__select--multi" name="assigned_group" multiple size="8" data-placeholder="{{ lang('Select') }} {{ lang('Assigned to group') }}">
 					{% for group in groups %}
 						<option value="{{ group.id }}">{{ group.name }}</option>
 					{% endfor %}

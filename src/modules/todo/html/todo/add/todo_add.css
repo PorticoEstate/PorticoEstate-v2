@@ -72,3 +72,13 @@
 	display: inline-flex;
 	align-items: center;
 }
+
+.todo-add__select2-option {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+}
+
+.todo-add__select2-checkbox {
+	pointer-events: none;
+}

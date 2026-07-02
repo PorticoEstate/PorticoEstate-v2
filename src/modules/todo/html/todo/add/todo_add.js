@@ -10,6 +10,51 @@
 	var apiUrl = root.dataset.apiUrl;
 	var backUrl = root.dataset.backUrl;
 
+	function initSelect2Multi(selector) {
+		if (typeof window.jQuery === 'undefined' || typeof window.jQuery.fn.select2 === 'undefined') {
+			return;
+		}
+
+		var $el = window.jQuery(selector);
+		if (!$el.length) {
+			return;
+		}
+
+		$el.select2({
+			width: '100%',
+			closeOnSelect: false,
+			minimumResultsForSearch: 0,
+			placeholder: $el.data('placeholder') || '',
+			templateResult: function (data) {
+				if (!data.id) {
+					return data.text;
+				}
+
+				var selected = false;
+				if (data.element) {
+					selected = data.element.selected;
+				}
+
+				var span = document.createElement('span');
+				span.className = 'todo-add__select2-option';
+
+				var checkbox = document.createElement('input');
+				checkbox.type = 'checkbox';
+				checkbox.className = 'todo-add__select2-checkbox';
+				checkbox.checked = selected;
+				checkbox.tabIndex = -1;
+
+				var label = document.createElement('span');
+				label.textContent = data.text;
+
+				span.appendChild(checkbox);
+				span.appendChild(label);
+				return span;
+			}
+		});
+
+	}
+
 	function showError(message) {
 		errorEl.hidden = false;
 		errorEl.textContent = message || root.dataset.langError || 'Error';
@@ -63,6 +108,9 @@
 			eday: eDate.day
 		};
 	}
+
+	initSelect2Multi('#todo-assigned');
+	initSelect2Multi('#todo-assigned-group');
 
 	form.addEventListener('submit', function (event) {
 		event.preventDefault();

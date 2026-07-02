@@ -119,6 +119,9 @@ class TodoViewController
 	public function add(Request $request, Response $response): Response
 	{
 		try {
+			\phpgw::import_class('phpgwapi.jquery');
+			\phpgwapi_jquery::load_widget('select2');
+
 			$query = $request->getQueryParams();
 			$componentHtml = $this->twig->render('@views/todo/add/todo_add.twig', [
 				'layout' => '@views/_bare.twig',

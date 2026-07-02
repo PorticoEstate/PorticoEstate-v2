@@ -8,8 +8,11 @@
 	var errorEl = document.getElementById('todo-view-error');
 	var contentEl = document.getElementById('todo-view-content');
 	var editLink = document.getElementById('todo-view-edit');
+	var deleteLink = document.getElementById('todo-view-delete');
 	var apiUrl = root.dataset.apiUrl;
 	var editUrlBase = root.dataset.editUrlBase || '/todo/view/todos';
+	var editUrl = root.dataset.editUrl || '';
+	var deleteUrl = root.dataset.deleteUrl || '';
 
 	function setText(id, value) {
 		var el = document.getElementById(id);
@@ -43,8 +46,20 @@
 		setText('todo-view-owner', detail.owner);
 		setText('todo-view-assigned', detail.assigned);
 
-		if (editLink && detail.id) {
-			editLink.href = editUrlBase + '/' + encodeURIComponent(detail.id) + '/edit';
+		if (editLink) {
+			if (editUrl) {
+				editLink.href = editUrl;
+			} else if (detail.id) {
+				editLink.href = editUrlBase + '/' + encodeURIComponent(detail.id) + '/edit';
+			}
+		}
+
+		if (deleteLink) {
+			if (deleteUrl) {
+				deleteLink.href = deleteUrl;
+			} else if (detail.id) {
+				deleteLink.href = editUrlBase + '/' + encodeURIComponent(detail.id) + '/delete';
+			}
 		}
 	}
 

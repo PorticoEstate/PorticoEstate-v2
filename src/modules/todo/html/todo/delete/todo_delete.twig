@@ -1,0 +1,44 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Delete') }} {{ lang('todo') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/todo/delete/todo_delete.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<div id="todo-delete-app"
+	class="todo-delete"
+	data-api-url="{{ phpgw_link('/todo/todos/' ~ todo_id) }}"
+	data-detail-url="{{ phpgw_link('/todo/todos/' ~ todo_id) }}"
+	data-back-url="{{ phpgw_link('/todo/view/todos') }}"
+	data-lang-loading="{{ lang('common.loading') }}"
+	data-lang-error="{{ lang('common.error') }}"
+	data-lang-confirm="{{ lang('Are you sure you want to delete this entry') }}"
+>
+	<h2 class="todo-delete__title">{{ lang('Delete') }} {{ lang('todo') }}</h2>
+	<div id="todo-delete-loading" class="todo-delete__message">{{ lang('common.loading') }}...</div>
+	<div id="todo-delete-error" class="todo-delete__message todo-delete__message--error" hidden></div>
+
+	<div id="todo-delete-content" hidden>
+		<p class="todo-delete__confirm">{{ lang('Are you sure you want to delete this entry') }}</p>
+		<div class="todo-delete__summary">
+			<strong>{{ lang('Title') }}:</strong> <span id="todo-delete-title">-</span>
+		</div>
+
+		<label id="todo-delete-subs-wrap" class="todo-delete__checkline" hidden>
+			<input id="todo-delete-subs" type="checkbox" />
+			{{ lang('Do you also want to delete all sub projects ?') }}
+		</label>
+
+		<div class="todo-delete__actions">
+			<button id="todo-delete-confirm" class="todo-delete__button" type="button">{{ lang('Yes') }}</button>
+			<a class="todo-delete__button todo-delete__button--secondary" href="{{ phpgw_link('/todo/view/todos') }}">{{ lang('No') }}</a>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/todo/delete/todo_delete.js') }}</script>
+{% endblock %}

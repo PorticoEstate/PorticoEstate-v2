@@ -159,6 +159,34 @@ class TodoViewController
 	}
 
 	/**
+	 * GET /todo/view/todos/{id}/delete
+	 */
+	public function delete(Request $request, Response $response, array $args): Response
+	{
+		try {
+			$id = (int) ($args['id'] ?? 0);
+			if ($id <= 0)
+			{
+				return ResponseHelper::sendErrorResponse(['error' => 'Missing todo ID'], 400);
+			}
+
+			$componentHtml = $this->twig->render('@views/todo/delete/todo_delete.twig', [
+				'layout' => '@views/_bare.twig',
+				'todo_id' => $id,
+			]);
+
+			$html = $this->legacyView->render($componentHtml, ['todo']);
+			$response->getBody()->write($html);
+			return $response->withHeader('Content-Type', 'text/html');
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(
+				['error' => 'Error loading todo delete page: ' . $e->getMessage()],
+				500
+			);
+		}
+	}
+
+	/**
 	 * GET /todo/view/todos/add
 	 */
 	public function add(Request $request, Response $response): Response

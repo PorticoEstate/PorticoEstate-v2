@@ -11,6 +11,8 @@
 	class="todo-view"
 	data-api-url="{{ phpgw_link('/todo/todos/' ~ todo_id) }}"
 	data-edit-url-base="{{ phpgw_link('/todo/view/todos') }}"
+	data-edit-url="{{ phpgw_link('/todo/view/todos/' ~ todo_id ~ '/edit') }}"
+	data-delete-url="{{ phpgw_link('/todo/view/todos/' ~ todo_id ~ '/delete') }}"
 	data-back-url="{{ phpgw_link('/todo/view/todos') }}"
 	data-lang-loading="{{ lang('common.loading') }}"
 	data-lang-error="{{ lang('common.error') }}"
@@ -35,7 +37,8 @@
 		</dl>
 
 		<div class="todo-view__actions">
-			<a class="todo-view__button" id="todo-view-edit" href="#">{{ lang('Edit') }}</a>
+			<a class="todo-view__button" id="todo-view-edit" href="{{ phpgw_link('/todo/view/todos/' ~ todo_id ~ '/edit') }}">{{ lang('Edit') }}</a>
+			<a class="todo-view__button todo-view__button--danger" id="todo-view-delete" href="{{ phpgw_link('/todo/view/todos/' ~ todo_id ~ '/delete') }}">{{ lang('Delete') }}</a>
 			<a class="todo-view__button todo-view__button--secondary" href="{{ phpgw_link('/todo/view/todos') }}">{{ lang('Done') }}</a>
 		</div>
 	</div>

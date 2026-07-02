@@ -57,3 +57,9 @@
 	background: #fff;
 	color: #20568f;
 }
+
+.todo-view__button--danger {
+	background: #a83939;
+	border-color: #8f2e2e;
+	color: #fff;
+}

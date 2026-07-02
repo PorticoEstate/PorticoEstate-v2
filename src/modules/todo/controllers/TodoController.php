@@ -145,6 +145,7 @@ class TodoController
 			'assigned' => (string) $assigned,
 			'sdate' => $startDate,
 			'edate' => $endDate,
+			'has_subs' => (bool) $botodo->exists((int) ($item['id'] ?? 0)),
 		];
 	}
 
@@ -159,7 +160,7 @@ class TodoController
 			$id = (int) ($todo['id'] ?? 0);
 			$ownerId = (int) ($todo['owner_id'] ?? 0);
 			$canEdit = $botodo->check_perms($ownerId, $grants, ACL_EDIT) || $ownerId === $currentAccountId;
-			$canDelete = $botodo->check_perms($ownerId, $grants, ACL_DELETE);
+			$canDelete = $botodo->check_perms($ownerId, $grants, ACL_DELETE) || $ownerId === $currentAccountId;
 			$canAdd = $botodo->check_perms($ownerId, $grants, ACL_ADD);
 
 			$assigned = $botodo->list_assigned($todo['assigned'] ?? '');
@@ -177,7 +178,7 @@ class TodoController
 				'actions' => [
 					'view' => \phpgw::link('/todo/view/todos/' . $id),
 						'edit' => $canEdit ? \phpgw::link('/todo/view/todos/' . $id . '/edit') : '',
-					'delete' => $canDelete ? \phpgw::link('/index.php', ['menuaction' => 'todo.uitodo.delete', 'todo_id' => $id]) : '',
+					'delete' => $canDelete ? \phpgw::link('/todo/view/todos/' . $id . '/delete') : '',
 					'subadd' => $canAdd ? \phpgw::link('/todo/view/todos/add', ['parent' => $id, 'cat_id' => $catId]) : '',
 				],
 			];
@@ -430,9 +431,13 @@ class TodoController
 			return ResponseHelper::sendErrorResponse(['error' => 'Missing todo ID'], 400);
 		}
 
-		$botodo = \CreateObject('todo.botodo', true);
-		$botodo->delete($id);
+		$query = $request->getQueryParams();
+		$subsRaw = $query['subs'] ?? '0';
+		$deleteSubs = in_array((string) $subsRaw, ['1', 'true', 'on', 'yes'], true);
 
-		return ResponseHelper::sendJSONResponse(['deleted' => true]);
+		$botodo = \CreateObject('todo.botodo', true);
+		$botodo->delete($id, $deleteSubs);
+
+		return ResponseHelper::sendJSONResponse(['deleted' => true, 'subs' => $deleteSubs]);
 	}
 }

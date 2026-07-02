@@ -697,6 +697,15 @@ class todo_uitodo extends phpgwapi_uicommon_jquery
 
 	function delete()
 	{
+		// Bridge legacy menuaction entrypoint to the new Twig client delete page.
+		$todo_id = Sanitizer::get_var('todo_id', 'int', 'REQUEST', 0);
+		if ($todo_id)
+		{
+			phpgw::redirect_link('/todo/view/todos/' . $todo_id . '/delete');
+		}
+
+		phpgw::redirect_link('/todo/view/todos');
+
 		$todo_id = isset($_REQUEST['todo_id']) ? (int)$_REQUEST['todo_id'] : 0;
 
 		if (isset($_POST['confirm']) && $_POST['confirm'])

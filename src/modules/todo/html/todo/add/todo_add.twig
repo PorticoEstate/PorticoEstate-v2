@@ -13,6 +13,7 @@
 	data-back-url="{{ phpgw_link('/todo/view/todos') }}"
 	data-default-cat-id="{{ selected_cat_id|default(0) }}"
 	data-default-parent-id="{{ selected_parent_id|default(0) }}"
+	data-date-format="{{ date_format|default('Y-m-d') }}"
 	data-lang-save="{{ lang('Save') }}"
 	data-lang-saving="{{ lang('common.loading') }}"
 	data-lang-error="{{ lang('common.error') }}"
@@ -70,12 +71,12 @@
 
 			<div class="todo-add__field">
 				<label for="todo-sdate">{{ lang('Start Date') }}</label>
-				<input id="todo-sdate" class="todo-add__input" name="sdate" type="date" />
+				<input id="todo-sdate" class="todo-add__input" name="sdate" type="text" autocomplete="off" />
 			</div>
 
 			<div class="todo-add__field">
 				<label for="todo-edate">{{ lang('End Date') }}</label>
-				<input id="todo-edate" class="todo-add__input" name="edate" type="date" />
+				<input id="todo-edate" class="todo-add__input" name="edate" type="text" autocomplete="off" />
 			</div>
 
 			<div class="todo-add__field todo-add__field--full">

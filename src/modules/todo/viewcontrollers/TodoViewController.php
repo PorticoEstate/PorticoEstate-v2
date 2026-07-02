@@ -121,14 +121,18 @@ class TodoViewController
 		try {
 			\phpgw::import_class('phpgwapi.jquery');
 			\phpgwapi_jquery::load_widget('select2');
+			\phpgwapi_jquery::load_widget('datepicker');
 
 			$query = $request->getQueryParams();
+			$userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+			$dateFormat = (string) ($userSettings['preferences']['common']['dateformat'] ?? 'Y-m-d');
 			$componentHtml = $this->twig->render('@views/todo/add/todo_add.twig', [
 				'layout' => '@views/_bare.twig',
 				'categories' => $this->getCategories(),
 				'parentTodos' => $this->getParentTodos(),
 				'users' => $this->getPeopleList('accounts'),
 				'groups' => $this->getPeopleList('groups'),
+				'date_format' => $dateFormat,
 				'selected_cat_id' => isset($query['cat_id']) ? (int) $query['cat_id'] : 0,
 				'selected_parent_id' => isset($query['parent']) ? (int) $query['parent'] : 0,
 			]);

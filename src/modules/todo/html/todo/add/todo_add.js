@@ -9,6 +9,19 @@
 	var errorEl = document.getElementById('todo-add-error');
 	var apiUrl = root.dataset.apiUrl;
 	var backUrl = root.dataset.backUrl;
+	var phpDateFormat = root.dataset.dateFormat || 'Y-m-d';
+
+	function toJqueryDateFormat(phpFormat) {
+		return String(phpFormat || 'Y-m-d')
+			.replace(/Y/g, 'yy')
+			.replace(/y/g, 'y')
+			.replace(/m/g, 'mm')
+			.replace(/n/g, 'm')
+			.replace(/d/g, 'dd')
+			.replace(/j/g, 'd');
+	}
+
+	var jqueryDateFormat = toJqueryDateFormat(phpDateFormat);
 
 	function initSelect2Multi(selector) {
 		if (typeof window.jQuery === 'undefined' || typeof window.jQuery.fn.select2 === 'undefined') {
@@ -66,13 +79,32 @@
 	}
 
 	function splitDate(value) {
-		if (!value || value.indexOf('-') === -1) {
+		if (!value) {
 			return { year: '', month: '', day: '' };
 		}
+
+		if (typeof window.jQuery !== 'undefined' && window.jQuery.datepicker) {
+			try {
+				var parsed = window.jQuery.datepicker.parseDate(jqueryDateFormat, value);
+				return {
+					year: parsed.getFullYear(),
+					month: parsed.getMonth() + 1,
+					day: parsed.getDate()
+				};
+			} catch (err) {
+				// Fall through to ISO fallback for robustness.
+			}
+		}
+
+		if (value.indexOf('-') === -1) {
+			return { year: '', month: '', day: '' };
+		}
+
 		var parts = value.split('-');
 		if (parts.length !== 3) {
 			return { year: '', month: '', day: '' };
 		}
+
 		return {
 			year: parseInt(parts[0], 10) || '',
 			month: parseInt(parts[1], 10) || '',
@@ -111,6 +143,14 @@
 
 	initSelect2Multi('#todo-assigned');
 	initSelect2Multi('#todo-assigned-group');
+
+	if (typeof window.jQuery !== 'undefined' && window.jQuery.fn.datepicker) {
+		window.jQuery('#todo-sdate, #todo-edate').datepicker({
+			dateFormat: jqueryDateFormat,
+			changeMonth: true,
+			changeYear: true
+		});
+	}
 
 	form.addEventListener('submit', function (event) {
 		event.preventDefault();

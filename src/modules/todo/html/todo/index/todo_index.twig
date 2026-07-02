@@ -10,6 +10,7 @@
 <div id="todo-app"
 	class="todo-app"
 	data-api-url="{{ phpgw_link('/todo/todos') }}"
+	data-csv-url="{{ phpgw_link('/todo/todos/export/csv') }}"
 	data-view-url="{{ phpgw_link('/index.php', {'menuaction': 'todo.uitodo.view'}) }}"
 	data-add-url="{{ phpgw_link('/todo/view/todos/add') }}"
 	data-edit-url="{{ phpgw_link('/index.php', {'menuaction': 'todo.uitodo.edit'}) }}"

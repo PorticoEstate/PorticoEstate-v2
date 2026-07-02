@@ -6,7 +6,7 @@
 
 	var apiUrl = root.dataset.apiUrl;
 	var viewUrl = root.dataset.viewUrl;
-	var csvUrl = apiUrl + '/export/csv';
+	var csvUrl = root.dataset.csvUrl;
 	var loadingEl = document.getElementById('todo-loading');
 	var errorEl = document.getElementById('todo-error');
 	var tableEl = document.getElementById('todo-table');
@@ -159,11 +159,16 @@
 	}
 
 	function buildQueryParams() {
-		var params = new URLSearchParams();
+		var params = buildFilterParams();
 		params.set('start', String((currentPage - 1) * pageSize));
 		params.set('limit', String(pageSize));
 		params.set('sort', 'created');
 		params.set('dir', 'DESC');
+		return params;
+	}
+
+	function buildFilterParams() {
+		var params = new URLSearchParams();
 		params.set('filter', filterEl.value || 'none');
 		params.set('search', searchEl.value || '');
 		if (catEl && catEl.value) {
@@ -172,12 +177,20 @@
 		return params;
 	}
 
+	function buildRequestUrl(baseUrl, queryParams) {
+		var url = new URL(baseUrl, window.location.origin);
+		queryParams.forEach(function (value, key) {
+			url.searchParams.set(key, value);
+		});
+		return url.toString();
+	}
+
 	function loadTodos() {
 		setState('loading');
 
 		var params = buildQueryParams();
 
-		fetch(apiUrl + '?' + params.toString(), {
+		fetch(buildRequestUrl(apiUrl, params), {
 			credentials: 'same-origin'
 		})
 			.then(function (res) {
@@ -260,7 +273,7 @@
 
 	if (csvBtn) {
 		csvBtn.addEventListener('click', function () {
-			window.location.href = csvUrl + '?' + buildQueryParams().toString();
+			window.location.href = buildRequestUrl(csvUrl, buildFilterParams());
 		});
 	}
 

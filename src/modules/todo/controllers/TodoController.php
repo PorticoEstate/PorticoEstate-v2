@@ -3,6 +3,7 @@
 namespace App\modules\todo\controllers;
 
 use App\helpers\ResponseHelper;
+use App\modules\property\helpers\BoCommon;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -335,29 +336,33 @@ class TodoController
 		);
 		$items = $this->mapTodoItems(is_array($todoList) ? $todoList : [], $botodo, $grants, (int) $params['cat_id']);
 
-		$fp = fopen('php://temp', 'r+');
-		fputcsv($fp, ['ID', 'Title', 'Status', 'Urgency', 'Start date', 'End date', 'Created by', 'Assigned to']);
+		$list = [];
 		foreach ($items as $item)
 		{
-			fputcsv($fp, [
-				$item['id'],
-				$item['title'],
-				$item['status'],
-				$item['pri'],
-				$item['sdate'],
-				$item['edate'],
-				$item['owner'],
-				$item['assigned'],
-			]);
+			$list[] = [
+				'id' => $item['id'],
+				'title' => $item['title'],
+				'status' => $item['status'],
+				'pri' => $item['pri'],
+				'sdate' => $item['sdate'],
+				'edate' => $item['edate'],
+				'owner' => $item['owner'],
+				'assigned' => $item['assigned'],
+			];
 		}
-		rewind($fp);
-		$csv = (string) stream_get_contents($fp);
-		fclose($fp);
 
-		$response->getBody()->write($csv);
-		return $response
-			->withHeader('Content-Type', 'text/csv; charset=utf-8')
-			->withHeader('Content-Disposition', 'attachment; filename="todo-list.csv"');
+		$boCommon = new BoCommon();
+		$boCommon->userSettings['preferences']['common']['export_format'] = 'csv';
+		$boCommon->performDownload(
+			$list,
+			['id', 'title', 'status', 'pri', 'sdate', 'edate', 'owner', 'assigned'],
+			['ID', 'Title', 'Status', 'Urgency', 'Start date', 'End date', 'Created by', 'Assigned to'],
+			['text', 'text', 'text', 'text', 'text', 'text', 'text', 'text'],
+			[],
+			'todo-list.csv'
+		);
+
+		return $response;
 	}
 
 	/**

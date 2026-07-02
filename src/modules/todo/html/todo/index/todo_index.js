@@ -21,12 +21,22 @@
 	var pageSizeEl = document.getElementById('todo-page-size');
 	var prevBtn = document.getElementById('todo-page-prev');
 	var nextBtn = document.getElementById('todo-page-next');
+	var sortButtons = Array.prototype.slice.call(root.querySelectorAll('.todo-app__sort'));
 	var initialParams = new URLSearchParams(window.location.search);
 	var initialCatId = initialParams.get('cat_id') || '0';
 	var defaultPageSize = parseInt(root.dataset.defaultPageSize || '25', 10) || 25;
 	var pageSize = defaultPageSize;
 	var currentPage = Math.max(parseInt(initialParams.get('page') || '1', 10) || 1, 1);
 	var totalItems = 0;
+	var allowedSortKeys = {
+		id: true,
+		title: true,
+		priority: true,
+		created: true,
+		due: true
+	};
+	var sortKey = allowedSortKeys[initialParams.get('sort')] ? initialParams.get('sort') : 'created';
+	var sortDir = String(initialParams.get('dir') || 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
 	if (initialParams.get('filter')) {
 		filterEl.value = initialParams.get('filter');
@@ -86,6 +96,19 @@
 		return escapeHtml(normalized).replace(/\n/g, '<br>');
 	}
 
+	function updateSortButtons() {
+		sortButtons.forEach(function (button) {
+			var key = button.getAttribute('data-sort-key') || '';
+			var active = key === sortKey;
+			button.classList.toggle('is-active', active);
+			button.setAttribute('aria-sort', active ? (sortDir === 'ASC' ? 'ascending' : 'descending') : 'none');
+			button.textContent = button.textContent.replace(/\s[↑↓]$/, '');
+			if (active) {
+				button.textContent += sortDir === 'ASC' ? ' ↑' : ' ↓';
+			}
+		});
+	}
+
 	function setState(state, errorMessage) {
 		loadingEl.hidden = state !== 'loading';
 		errorEl.hidden = state !== 'error';
@@ -114,6 +137,12 @@
 		}
 		if (pageSize !== defaultPageSize) {
 			params.set('limit', String(pageSize));
+		}
+		if (sortKey !== 'created') {
+			params.set('sort', sortKey);
+		}
+		if (sortDir !== 'DESC') {
+			params.set('dir', sortDir);
 		}
 
 		var query = params.toString();
@@ -170,8 +199,8 @@
 		var params = buildFilterParams();
 		params.set('start', String((currentPage - 1) * pageSize));
 		params.set('limit', String(pageSize));
-		params.set('sort', 'created');
-		params.set('dir', 'DESC');
+		params.set('sort', sortKey);
+		params.set('dir', sortDir);
 		return params;
 	}
 
@@ -281,9 +310,34 @@
 
 	if (csvBtn) {
 		csvBtn.addEventListener('click', function () {
-			window.location.href = buildRequestUrl(csvUrl, buildFilterParams());
+			var params = buildFilterParams();
+			params.set('sort', sortKey);
+			params.set('dir', sortDir);
+			window.location.href = buildRequestUrl(csvUrl, params);
 		});
 	}
+
+	sortButtons.forEach(function (button) {
+		button.addEventListener('click', function () {
+			var key = button.getAttribute('data-sort-key') || '';
+			if (!allowedSortKeys[key]) {
+				return;
+			}
+
+			if (sortKey === key) {
+				sortDir = sortDir === 'ASC' ? 'DESC' : 'ASC';
+			} else {
+				sortKey = key;
+				sortDir = 'ASC';
+			}
+
+			currentPage = 1;
+			updateSortButtons();
+			loadTodos();
+		});
+	});
+
+	updateSortButtons();
 
 	loadTodos();
 })();

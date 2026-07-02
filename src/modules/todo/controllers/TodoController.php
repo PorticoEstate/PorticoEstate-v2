@@ -284,7 +284,9 @@ class TodoController
 			'status' => 'todo_status',
 			'priority' => 'todo_pri',
 			'created' => 'todo_startdate',
+			'start_date' => 'todo_startdate',
 			'due' => 'todo_enddate',
+			'end_date' => 'todo_enddate',
 			'owner' => 'todo_owner',
 		];
 

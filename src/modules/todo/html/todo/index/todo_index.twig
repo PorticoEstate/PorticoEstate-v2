@@ -69,12 +69,22 @@
 	<table id="todo-table" class="todo-app__table" hidden>
 		<thead>
 			<tr>
-				<th>{{ lang('ID') }}</th>
-				<th>{{ lang('Title') }}</th>
+				<th>
+					<button type="button" class="todo-app__sort" data-sort-key="id">{{ lang('ID') }}</button>
+				</th>
+				<th>
+					<button type="button" class="todo-app__sort" data-sort-key="title">{{ lang('Title') }}</button>
+				</th>
 				<th>{{ lang('Status') }}</th>
-				<th>{{ lang('Urgency') }}</th>
-				<th>{{ lang('start date') }}</th>
-				<th>{{ lang('end date') }}</th>
+				<th>
+					<button type="button" class="todo-app__sort" data-sort-key="priority">{{ lang('Urgency') }}</button>
+				</th>
+				<th>
+					<button type="button" class="todo-app__sort" data-sort-key="created">{{ lang('start date') }}</button>
+				</th>
+				<th>
+					<button type="button" class="todo-app__sort" data-sort-key="due">{{ lang('end date') }}</button>
+				</th>
 				<th>{{ lang('created by') }}</th>
 				<th>{{ lang('assigned to') }}</th>
 				<th>{{ lang('View') }}</th>

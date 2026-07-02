@@ -258,30 +258,9 @@ class todo_botodo
 		{
 			foreach ($assi as $a)
 			{
-
-				/**
-				 * Begin Orlando Fix
-				 * 
-				 * I had to comment the conditionals because variable $adata
-				 * doesn't return the 'type' field of the accounts
-				 */
-
 				$adata = $this->cached_accounts($a);
-
-				/*if ($adata[$a]['type'] == 'u')
-					{
-						$aout  .= $this->phpgwapi_common->display_fullname($adata[$a]['lid'],
-										$adata[$a]['firstname'],$adata[$a]['lastname']) . '<br>';
-					}
-					elseif($adata[$a]['type'] == 'g')
-					{
-						$aout .= $adata[$a]['firstname'] . ' ' . lang('Group') . '<br>';
-					}*/
-
 				$aout  .= $this->phpgwapi_common->display_fullname($adata->lid, $adata->firstname, $adata->lastname) . '<br>';
-				/**
-				 * End Orlando Fix
-				 */
+
 			}
 		}
 		return $aout;

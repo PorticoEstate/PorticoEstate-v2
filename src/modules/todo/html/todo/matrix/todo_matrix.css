@@ -1,0 +1,28 @@
+.todo-matrix {
+	padding: 1rem;
+}
+
+.todo-matrix__toolbar {
+	margin-bottom: 0.75rem;
+}
+
+.todo-matrix__back {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.45rem 0.8rem;
+	border: 1px solid #20568f;
+	border-radius: 4px;
+	background: #fff;
+	color: #20568f;
+	text-decoration: none;
+}
+
+.todo-matrix__content table {
+	border-collapse: collapse;
+}
+
+.todo-matrix__content td,
+.todo-matrix__content th {
+	padding: 0.25rem 0.4rem;
+	vertical-align: top;
+}

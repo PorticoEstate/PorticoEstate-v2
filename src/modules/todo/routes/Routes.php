@@ -13,6 +13,7 @@ $app->group('/todo', function (RouteCollectorProxy $group)
 	$group->group('/view', function (RouteCollectorProxy $viewGroup)
 	{
 		$viewGroup->get('/todos', TodoViewController::class . ':index');
+		$viewGroup->map(['GET', 'POST'], '/todos/matrix', TodoViewController::class . ':matrix');
 		$viewGroup->get('/todos/add', TodoViewController::class . ':add');
 		$viewGroup->get('/todos/{id:[0-9]+}', TodoViewController::class . ':view');
 		$viewGroup->get('/todos/{id:[0-9]+}/delete', TodoViewController::class . ':delete');

@@ -105,6 +105,97 @@ class TodoViewController
 	}
 
 	/**
+	 * GET|POST /todo/view/todos/matrix
+	 */
+	public function matrix(Request $request, Response $response): Response
+	{
+		try {
+			$body = (array) ($request->getParsedBody() ?: []);
+			$query = $request->getQueryParams();
+
+			$month = isset($query['month']) ? (int) $query['month'] : (isset($body['month']) ? (int) $body['month'] : (int) date('n'));
+			$year = isset($query['year']) ? (int) $query['year'] : (isset($body['year']) ? (int) $body['year'] : (int) date('Y'));
+
+			if ($month < 1 || $month > 12)
+			{
+				$month = (int) date('n');
+			}
+			if ($year < 1970 || $year > 2100)
+			{
+				$year = (int) date('Y');
+			}
+
+			$colors = [
+				'#cc0033',
+				'#006600',
+				'#00ccff',
+				'#ff6600',
+				'#0000ff',
+			];
+
+			$botodo = \CreateObject('todo.botodo', true);
+			$matrix = \CreateObject('phpgwapi.matrixview', $month, $year);
+			$entries = $botodo->_list(0, 0, '', '', '', '', '', 'mains');
+
+			$o = 0;
+			foreach ((array) $entries as $entry)
+			{
+				$o++;
+				$ind = $o % count($colors);
+
+				if ((int) ($entry['sdate_epoch'] ?? 0) <= 0 || (int) ($entry['edate_epoch'] ?? 0) <= 0)
+				{
+					continue;
+				}
+
+				$id = (int) ($entry['id'] ?? 0);
+				$title = '<a href="' . \phpgw::link('/todo/view/todos/' . $id) . '">' . \phpgw::strip_html((string) ($entry['title'] ?? '')) . '</a>';
+				$startd = date('Ymd', (int) $entry['sdate_epoch']);
+				$endd = date('Ymd', (int) $entry['edate_epoch']);
+				$matrix->setPeriod($title, $startd, $endd, $colors[$ind]);
+
+				$subentries = $botodo->_list(0, 0, '', '', '', '', '', 'subs', $id);
+				foreach ((array) $subentries as $subentry)
+				{
+					if ((int) ($subentry['sdate_epoch'] ?? 0) <= 0 || (int) ($subentry['edate_epoch'] ?? 0) <= 0)
+					{
+						continue;
+					}
+
+					$subId = (int) ($subentry['id'] ?? 0);
+					$subTitle = '<a href="' . \phpgw::link('/todo/view/todos/' . $subId) . '">' . \phpgw::strip_html((string) ($subentry['title'] ?? '')) . '</a>';
+					$subStart = date('Ymd', (int) $subentry['sdate_epoch']);
+					$subEnd = date('Ymd', (int) $subentry['edate_epoch']);
+					$matrix->setPeriod($subTitle, $subStart, $subEnd, $colors[$ind]);
+				}
+			}
+
+			ob_start();
+			$matrix->out(\phpgw::link('/todo/view/todos/matrix'));
+			$matrixHtml = (string) ob_get_clean();
+
+			$componentHtml = $this->twig->render('@views/todo/matrix/todo_matrix.twig', [
+				'layout' => '@views/_bare.twig',
+				'matrix_html' => $matrixHtml,
+			]);
+
+			$html = $this->legacyView->render($componentHtml, ['todo']);
+			$response->getBody()->write($html);
+			return $response->withHeader('Content-Type', 'text/html');
+		} catch (Exception $e) {
+			if (ob_get_level() > 0)
+			{
+				ob_end_clean();
+			}
+
+			return ResponseHelper::sendErrorResponse(
+				['error' => 'Error loading todo matrix page: ' . $e->getMessage()],
+				500
+			);
+		}
+	}
+
+	/**
 	 * GET /todo/view/todos
 	 */
 	public function index(Request $request, Response $response): Response

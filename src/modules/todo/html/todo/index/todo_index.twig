@@ -50,6 +50,7 @@
 			<option value="none">{{ lang('All') }}</option>
 			<option value="private">{{ lang('Private') }}</option>
 		</select>
+		<a id="todo-matrix" class="todo-app__button todo-app__button--secondary" href="{{ phpgw_link('/todo/view/todos/matrix', {'month': 'now'|date('m'), 'year': 'now'|date('Y')}) }}">{{ lang('view matrix of actual month') }}</a>
 		<a id="todo-new" class="todo-app__button" href="{{ phpgw_link('/todo/view/todos/add') }}">{{ lang('new') }}</a>
 		<button id="todo-csv" class="todo-app__button todo-app__button--secondary" type="button">{{ lang('CSV download') }}</button>
 	</div>

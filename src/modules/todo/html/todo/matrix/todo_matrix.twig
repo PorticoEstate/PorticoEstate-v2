@@ -1,0 +1,18 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Matrix') }} {{ lang('todo') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/todo/matrix/todo_matrix.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<div class="todo-matrix">
+	<div class="todo-matrix__toolbar">
+		<a class="todo-matrix__back" href="{{ phpgw_link('/todo/view/todos') }}">{{ lang('Done') }}</a>
+	</div>
+	<div class="todo-matrix__content">
+		{{ matrix_html|raw }}
+	</div>
+</div>
+{% endblock %}

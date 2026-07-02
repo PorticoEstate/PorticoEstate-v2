@@ -748,50 +748,12 @@ class todo_uitodo extends phpgwapi_uicommon_jquery
 
 	function matrix()
 	{
-		$o = 0;
-		$month = isset($_REQUEST['month']) ? (int) $_REQUEST['month'] : date('n');
-		$year = isset($_REQUEST['year']) ? (int) $_REQUEST['year'] : date('Y');
+		$month = Sanitizer::get_var('month', 'int', 'REQUEST', (int) date('n'));
+		$year = Sanitizer::get_var('year', 'int', 'REQUEST', (int) date('Y'));
 
-		$this->phpgwapi_common->phpgw_header(true);
-
-		$colors = array(
-			'#cc0033',
-			'#006600',
-			'#00ccff',
-			'#ff6600',
-			'#0000ff'
-		);
-
-		$matrix  = CreateObject('phpgwapi.matrixview', $month, $year);
-
-
-		$entries = $this->botodo->_list(0, 0, '', '', '', '', '', 'mains');
-
-		foreach ($entries as $entry)
-		{
-			++$o;
-			$ind = $o % count($colors);
-
-			if ($entry['sdate_epoch'] > 0 && $entry['edate_epoch'] > 0)
-			{
-				$title = '<a href="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.view', 'todo_id' => $entry['id'])) . '">' . phpgw::strip_html($entry['title']) . '</a>';
-				$startd = date('Y', $entry['sdate_epoch']) . date('m', $entry['sdate_epoch']) . date('d', $entry['sdate_epoch']);
-				$endd = date('Y', $entry['edate_epoch']) . date('m', $entry['edate_epoch']) . date('d', $entry['edate_epoch']);
-				$matrix->setPeriod($title, $startd, $endd, $colors[$ind]);
-
-				$subentries = $this->botodo->_list(0, 0, '', '', '', '', '', 'subs', $entry['id']);
-				foreach ($subentries as $subentry)
-				{
-					if ($subentry['sdate_epoch'] > 0 && $subentry['edate_epoch'] > 0)
-					{
-						$title = '<a href="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.view', 'todo_id' => $subentry['id'])) . '">' . phpgw::strip_html($subentry['title']) . '</a>';
-						$startd = date('Y', $subentry['sdate_epoch']) . date('m', $subentry['sdate_epoch']) . date('d', $subentry['sdate_epoch']);
-						$endd = date('Y', $subentry['edate_epoch']) . date('m', $subentry['edate_epoch']) . date('d', $subentry['edate_epoch']);
-						$matrix->setPeriod(phpgw::strip_html($subentry['title']), $startd, $endd, $colors[$ind]);
-					}
-				}
-			}
-		}
-		$matrix->out(phpgw::link('/', array('menuaction' => 'todo.uitodo.matrix')));
+		phpgw::redirect_link('/todo/view/todos/matrix', array(
+			'month' => $month,
+			'year' => $year,
+		));
 	}
 }

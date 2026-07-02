@@ -48,6 +48,18 @@ class TodoViewController
 	{
 		$botodo = \CreateObject('todo.botodo', true);
 		$todos = $botodo->_list(0, 0, '', '', '', '', 0, 'all');
+		$excludedIds = [];
+		if ($excludeId > 0)
+		{
+			$excludedIds[] = $excludeId;
+			$descendants = (string) $botodo->sotodo->find_subs((string) $excludeId);
+			if ($descendants !== '')
+			{
+				$excludedIds = array_merge($excludedIds, array_filter(array_map('intval', explode(',', $descendants))));
+			}
+			$excludedIds = array_values(array_unique($excludedIds));
+		}
+
 		$options = [
 			['id' => 0, 'title' => lang('None')],
 		];
@@ -55,7 +67,7 @@ class TodoViewController
 		foreach ((array) $todos as $todo)
 		{
 			$id = (int) ($todo['id'] ?? 0);
-			if ($excludeId > 0 && $id === $excludeId)
+			if ($excludeId > 0 && in_array($id, $excludedIds, true))
 			{
 				continue;
 			}

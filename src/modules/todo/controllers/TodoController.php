@@ -12,6 +12,28 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class TodoController
 {
+	private function isCircularParentAssignment($botodo, int $todoId, int $parentId): bool
+	{
+		if ($parentId <= 0)
+		{
+			return false;
+		}
+
+		if ($parentId === $todoId)
+		{
+			return true;
+		}
+
+		$descendants = (string) $botodo->sotodo->find_subs((string) $todoId);
+		if ($descendants === '')
+		{
+			return false;
+		}
+
+		$descendantIds = array_filter(array_map('intval', explode(',', $descendants)));
+		return in_array($parentId, $descendantIds, true);
+	}
+
 	private function getTodoHistoryHtml(int $id): string
 	{
 		$historylog = \CreateObject('phpgwapi.historylog', 'todo');
@@ -450,6 +472,12 @@ class TodoController
 		$values['id'] = $id;
 
 		$botodo = \CreateObject('todo.botodo', true);
+		$parentId = (int) ($values['parent'] ?? 0);
+		if ($this->isCircularParentAssignment($botodo, $id, $parentId))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'Invalid parent selection: circular references are not allowed'], 400);
+		}
+
 		$error = $botodo->check_values($values);
 		if (is_array($error) && count($error)) {
 			return ResponseHelper::sendErrorResponse(['error' => implode('; ', $error)], 400);

@@ -13,6 +13,7 @@ $app->group('/todo', function (RouteCollectorProxy $group)
 	$group->group('/view', function (RouteCollectorProxy $viewGroup)
 	{
 		$viewGroup->get('/todos', TodoViewController::class . ':index');
+		$viewGroup->get('/todos/add', TodoViewController::class . ':add');
 	});
 
 	$group->group('/todos', function (RouteCollectorProxy $todoGroup)

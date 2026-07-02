@@ -11,7 +11,7 @@
 	class="todo-app"
 	data-api-url="{{ phpgw_link('/todo/todos') }}"
 	data-view-url="{{ phpgw_link('/index.php', {'menuaction': 'todo.uitodo.view'}) }}"
-	data-add-url="{{ phpgw_link('/index.php', {'menuaction': 'todo.uitodo.add'}) }}"
+	data-add-url="{{ phpgw_link('/todo/view/todos/add') }}"
 	data-edit-url="{{ phpgw_link('/index.php', {'menuaction': 'todo.uitodo.edit'}) }}"
 	data-delete-url="{{ phpgw_link('/index.php', {'menuaction': 'todo.uitodo.delete'}) }}"
 	data-subadd-url="{{ phpgw_link('/index.php', {'menuaction': 'todo.uitodo.add'}) }}"
@@ -50,7 +50,7 @@
 			<option value="none">{{ lang('All') }}</option>
 			<option value="private">{{ lang('Private') }}</option>
 		</select>
-		<a id="todo-new" class="todo-app__button" href="{{ phpgw_link('/index.php', {'menuaction': 'todo.uitodo.add'}) }}">{{ lang('new') }}</a>
+		<a id="todo-new" class="todo-app__button" href="{{ phpgw_link('/todo/view/todos/add') }}">{{ lang('new') }}</a>
 		<button id="todo-csv" class="todo-app__button todo-app__button--secondary" type="button">{{ lang('CSV download') }}</button>
 	</div>
 

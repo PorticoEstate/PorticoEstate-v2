@@ -100,7 +100,7 @@ class TodoController
 					'view' => \phpgw::link('/index.php', ['menuaction' => 'todo.uitodo.view', 'todo_id' => $id]),
 					'edit' => $canEdit ? \phpgw::link('/index.php', ['menuaction' => 'todo.uitodo.edit', 'todo_id' => $id]) : '',
 					'delete' => $canDelete ? \phpgw::link('/index.php', ['menuaction' => 'todo.uitodo.delete', 'todo_id' => $id]) : '',
-					'subadd' => $canAdd ? \phpgw::link('/index.php', ['menuaction' => 'todo.uitodo.add', 'parent' => $id, 'cat_id' => $catId]) : '',
+					'subadd' => $canAdd ? \phpgw::link('/todo/view/todos/add', ['parent' => $id, 'cat_id' => $catId]) : '',
 				],
 			];
 		}
@@ -124,7 +124,38 @@ class TodoController
 	private function readPayload(Request $request): array
 	{
 		$data = $request->getParsedBody();
-		return is_array($data) ? $data : [];
+		if (!is_array($data))
+		{
+			$raw = (string) $request->getBody();
+			if ($raw !== '')
+			{
+				$decoded = json_decode($raw, true);
+				if (is_array($decoded))
+				{
+					$data = $decoded;
+				}
+			}
+		}
+
+		$data = is_array($data) ? $data : [];
+
+		if (isset($data['assigned']) && is_array($data['assigned']))
+		{
+			$data['assigned'] = implode(',', array_filter($data['assigned'], static function ($value)
+			{
+				return $value !== '' && $value !== null;
+			}));
+		}
+
+		if (isset($data['assigned_group']) && is_array($data['assigned_group']))
+		{
+			$data['assigned_group'] = implode(',', array_filter($data['assigned_group'], static function ($value)
+			{
+				return $value !== '' && $value !== null;
+			}));
+		}
+
+		return $data;
 	}
 
 	private function mapSortKey(string $key): string

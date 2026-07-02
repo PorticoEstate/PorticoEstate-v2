@@ -270,6 +270,26 @@ class todo_uitodo extends phpgwapi_uicommon_jquery
 
 	function add()
 	{
+		// Bridge legacy menuaction entrypoint to the new Twig client add page.
+		if (!Sanitizer::get_var('submit', 'bool') && !Sanitizer::get_var('values'))
+		{
+			$redirect_params = array();
+			$cat_id = Sanitizer::get_var('cat_id', 'int', 'REQUEST', 0);
+			$parent = Sanitizer::get_var('parent', 'int', 'REQUEST', 0);
+
+			if ($cat_id)
+			{
+				$redirect_params['cat_id'] = $cat_id;
+			}
+
+			if ($parent)
+			{
+				$redirect_params['parent'] = $parent;
+			}
+
+			phpgw::redirect_link('/todo/view/todos/add', $redirect_params);
+		}
+
 		$cat_id			= Sanitizer::get_var('cat_id', 'int', 'REQUEST', 0);
 		$new_cat		= Sanitizer::get_var('new_cat', 'int', 'REQUEST', 0);
 		$values			= Sanitizer::get_var('values');

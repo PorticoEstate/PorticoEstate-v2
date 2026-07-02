@@ -1,0 +1,74 @@
+.todo-add {
+	padding: 1rem;
+	max-width: 980px;
+}
+
+.todo-add__title {
+	margin: 0 0 1rem;
+}
+
+.todo-add__error {
+	margin-bottom: 1rem;
+	padding: 0.75rem;
+	border: 1px solid #d38e8e;
+	background: #fdeaea;
+	color: #7b1f1f;
+}
+
+.todo-add__grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 1rem;
+}
+
+.todo-add__field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+}
+
+.todo-add__field--full {
+	grid-column: 1 / -1;
+}
+
+.todo-add__input,
+.todo-add__select,
+.todo-add__textarea {
+	padding: 0.5rem;
+	border: 1px solid #c6c6c6;
+	border-radius: 4px;
+}
+
+.todo-add__textarea {
+	min-height: 130px;
+	resize: vertical;
+}
+
+.todo-add__checkline {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+
+.todo-add__actions {
+	margin-top: 1rem;
+	display: flex;
+	gap: 0.75rem;
+}
+
+.todo-add__button {
+	padding: 0.5rem 0.9rem;
+	border: 1px solid #20568f;
+	border-radius: 4px;
+	background: #2a72ba;
+	color: #fff;
+	cursor: pointer;
+}
+
+.todo-add__button--secondary {
+	background: #fff;
+	color: #20568f;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+}

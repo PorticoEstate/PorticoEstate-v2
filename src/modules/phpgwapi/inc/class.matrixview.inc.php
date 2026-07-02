@@ -210,13 +210,21 @@ class phpgwapi_matrixview
 		$this->sumdays = $in['mday'];
 		$this->monthname = $in['month'];
 
+		echo '<div class="phpgw-matrixview">' . "\n";
 		$this->out_monthyear($form_link);
-
-		echo "<table border=\"0\" align=\"center\">\n";
+		echo '<div class="phpgw-matrixview__table-wrap">' . "\n";
+		echo '<table class="phpgw-matrixview__table">' . "\n";
 
 		$this->out_header();
 		$this->out_ruler();
-		echo '<tbody>';
+		echo '<tbody class="phpgw-matrixview__body">';
+
+		if (!$this->items_count)
+		{
+			echo '<tr class="phpgw-matrixview__row phpgw-matrixview__row--empty">' . "\n";
+			echo '<td class="phpgw-matrixview__empty" colspan="' . ($this->sumdays + 1) . '">' . lang('No entries') . '</td>' . "\n";
+			echo '</tr>' . "\n";
+		}
 
 		// loop through number of items
 		for ($z = 0; $z < $this->items_count; $z++)
@@ -226,8 +234,8 @@ class phpgwapi_matrixview
 			$itemname  = $this->items_content[$z][0];
 			$itemcolor = $this->items_color[$z];
 
-			echo '<tr>' . "\n";
-			echo '<td>' . $itemname . '</td>' . "\n";
+			echo '<tr class="phpgw-matrixview__row">' . "\n";
+			echo '<th class="phpgw-matrixview__item" scope="row">' . $itemname . '</th>' . "\n";
 
 			// loop through days of desired month
 			for ($r = 1; $r < $this->sumdays + 1; $r++)
@@ -243,13 +251,20 @@ class phpgwapi_matrixview
 				{
 					$color = $this->color_emptyfield;
 				}
-				echo '<td bgcolor="' . $color . '" width="20">&nbsp;</td>' . "\n";
+
+				$cellClass = isset($this->items_content[$z][$r]) && $this->items_content[$z][$r] == 'x'
+					? 'phpgw-matrixview__day phpgw-matrixview__day--active'
+					: 'phpgw-matrixview__day phpgw-matrixview__day--empty';
+
+				echo '<td class="' . $cellClass . '" style="background-color: ' . $color . ';">&nbsp;</td>' . "\n";
 			}
 
 			echo '</tr>' . "\n";
 		}
 		echo '</tbody>';
 		echo '</table>';
+		echo '</div>' . "\n";
+		echo '</div>' . "\n";
 	}
 
 	/**
@@ -261,13 +276,13 @@ class phpgwapi_matrixview
 	 */
 	function out_header()
 	{
-		echo "<thead>\n";
-		echo '<tr>' . "\n";
-		echo '<td>' . lang('Title') . '</td>' . "\n";
+		echo '<thead class="phpgw-matrixview__head">' . "\n";
+		echo '<tr class="phpgw-matrixview__header-row">' . "\n";
+		echo '<th class="phpgw-matrixview__header phpgw-matrixview__header--title">' . lang('Title') . '</th>' . "\n";
 
 		for ($i = 1; $i < $this->sumdays + 1; $i++)
 		{
-			echo "<td>{$i}</td>\n";
+			echo '<th class="phpgw-matrixview__header phpgw-matrixview__header--day">' . $i . '</th>' . "\n";
 		}
 
 		echo '</tr>' . "\n";
@@ -284,7 +299,9 @@ class phpgwapi_matrixview
 	function out_ruler()
 	{
 		$span = $this->sumdays + 1;
-		echo "<tfoot>\n<tr>\n<td colspan=\"{$span}\">&nbsp;</td>\n</tr>\n</tfoot>\n";
+		echo '<tfoot class="phpgw-matrixview__foot">' . "\n";
+		echo '<tr><td class="phpgw-matrixview__foot-cell" colspan="' . $span . '">&nbsp;</td></tr>' . "\n";
+		echo '</tfoot>' . "\n";
 	}
 
 	/**
@@ -296,52 +313,44 @@ class phpgwapi_matrixview
 	 */
 	function out_monthyear($form_link)
 	{
-		echo '<form action="' . $form_link . '" method="post">' . "\n";
-		echo '<h2>' . lang($this->monthname) . " $this->year</h2>\n";
-		echo '<table border="0" width="100%" cellpadding="0" cellspacing="0">' . "\n";
-		echo '<tr>' . "\n";
+		echo '<form class="phpgw-matrixview__filters" action="' . $form_link . '" method="post">' . "\n";
+		echo '<div class="phpgw-matrixview__headerbar">' . "\n";
+		echo '<h2 class="phpgw-matrixview__title">' . lang($this->monthname) . " $this->year</h2>\n";
 
 		if ($this->selection == 1)
 		{
-			echo '<td colspan="2" align="right">' . "\n";
-			echo '<select name="month">';
+			echo '<div class="phpgw-matrixview__controls">' . "\n";
+			echo '<select class="phpgw-matrixview__select" name="month">';
 
 			for ($i = 1; $i < 13; $i++)
 			{
+				$sel = '';
 				if ($this->month == $i)
 				{
 					$sel = ' selected';
 				}
-				else
-				{
-					unset($sel);
-				}
-				echo "<option value=\"{$i}\" $sel>{$i}</option>";
+				echo '<option value="' . $i . '"' . $sel . '>' . lang(date('F', mktime(0, 0, 0, $i, 1, $this->year))) . '</option>';
 			}
 
 			echo '</select>' . "\n";
-			echo '<select name="year">';
+			echo '<select class="phpgw-matrixview__select" name="year">';
 
 			for ($i = date('Y') - 2; $i < date('Y') + 5; $i++)
 			{
+				$sel = '';
 				if ($this->year == $i)
 				{
 					$sel = ' selected';
 				}
-				else
-				{
-					unset($sel);
-				}
-				echo "<option value=\"{$i}\" $sel>{$i}</option>";
+				echo '<option value="' . $i . '"' . $sel . '>' . $i . '</option>';
 			}
 
 			echo '</select>' . "\n";
-			echo '&nbsp;&nbsp;<input type="submit" name="selection" value="' . lang('Filter') . '">&nbsp;&nbsp;';
-			echo '</td>' . "\n";
+			echo '<button class="phpgw-matrixview__submit" type="submit" name="selection" value="1">' . lang('Filter') . '</button>';
+			echo '</div>' . "\n";
 		}
 
-		echo '</tr>' . "\n";
-		echo '</table>' . "\n";
+		echo '</div>' . "\n";
 		echo '</form>' . "\n";
 	}
 }

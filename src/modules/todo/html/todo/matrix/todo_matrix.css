@@ -1,9 +1,12 @@
 .todo-matrix {
 	padding: 1rem;
+	max-width: 100%;
 }
 
 .todo-matrix__toolbar {
 	margin-bottom: 0.75rem;
+	display: flex;
+	justify-content: flex-end;
 }
 
 .todo-matrix__back {
@@ -17,12 +20,169 @@
 	text-decoration: none;
 }
 
-.todo-matrix__content table {
-	border-collapse: collapse;
+.todo-matrix__back:hover {
+	background: #eef5fc;
 }
 
-.todo-matrix__content td,
-.todo-matrix__content th {
-	padding: 0.25rem 0.4rem;
+.todo-matrix__content {
+	padding: 1rem;
+	border: 1px solid #d8e2ee;
+	border-radius: 12px;
+	background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+	box-shadow: 0 10px 30px rgba(32, 86, 143, 0.08);
+	overflow: hidden;
+}
+
+.todo-matrix__content .phpgw-matrixview {
+	display: grid;
+	gap: 1rem;
+}
+
+.todo-matrix__content .phpgw-matrixview__headerbar {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.todo-matrix__content .phpgw-matrixview__title {
+	margin: 0;
+	font-size: 1.35rem;
+	color: #12385f;
+}
+
+.todo-matrix__content .phpgw-matrixview__controls {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.todo-matrix__content .phpgw-matrixview__select,
+.todo-matrix__content .phpgw-matrixview__submit {
+	padding: 0.5rem 0.75rem;
+	border: 1px solid #c8d5e4;
+	border-radius: 8px;
+	font: inherit;
+	background: #fff;
+	color: #163f68;
+}
+
+.todo-matrix__content .phpgw-matrixview__submit {
+	border-color: #20568f;
+	background: #2a72ba;
+	color: #fff;
+	cursor: pointer;
+}
+
+.todo-matrix__content .phpgw-matrixview__submit:hover {
+	background: #225f9c;
+}
+
+.todo-matrix__content .phpgw-matrixview__table-wrap {
+	overflow-x: auto;
+	padding-bottom: 0.25rem;
+}
+
+
+.todo-matrix__content .phpgw-matrixview__table {
+	min-width: max-content;
+	width: 100%;
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+
+.todo-matrix__content .phpgw-matrixview__header,
+.todo-matrix__content .phpgw-matrixview__item,
+.todo-matrix__content .phpgw-matrixview__day,
+.todo-matrix__content .phpgw-matrixview__empty {
+	padding: 0.45rem 0.5rem;
 	vertical-align: top;
+	border-bottom: 1px solid #edf2f7;
+}
+
+.todo-matrix__content .phpgw-matrixview__head .phpgw-matrixview__header {
+	position: sticky;
+	top: 0;
+	background: #eef5fc;
+	color: #153d66;
+	font-weight: 700;
+	text-align: center;
+	z-index: 1;
+}
+
+.todo-matrix__content .phpgw-matrixview__header--title,
+.todo-matrix__content .phpgw-matrixview__item {
+	position: sticky;
+	left: 0;
+	text-align: left;
+	background: #fff;
+	z-index: 2;
+}
+
+.todo-matrix__content .phpgw-matrixview__head .phpgw-matrixview__header--title {
+	background: #eef5fc;
+	z-index: 3;
+}
+
+.todo-matrix__content .phpgw-matrixview__item {
+	min-width: 240px;
+	max-width: 320px;
+	font-weight: 600;
+	color: #183e66;
+	word-break: break-word;
+}
+
+.todo-matrix__content .phpgw-matrixview__item a {
+	color: #20568f;
+	text-decoration: none;
+}
+
+.todo-matrix__content .phpgw-matrixview__item a:hover {
+	text-decoration: underline;
+}
+
+.todo-matrix__content .phpgw-matrixview__header--day,
+.todo-matrix__content .phpgw-matrixview__day {
+	min-width: 2rem;
+	text-align: center;
+}
+
+.todo-matrix__content .phpgw-matrixview__day {
+	height: 2rem;
+	padding: 0;
+	border: 1px solid #fff;
+	background-clip: padding-box;
+}
+
+.todo-matrix__content .phpgw-matrixview__day--active {
+	box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.todo-matrix__content .phpgw-matrixview__day--empty {
+	opacity: 0.5;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.todo-matrix__content .phpgw-matrixview__foot {
+	display: none;
+}
+
+.todo-matrix__content .phpgw-matrixview__empty {
+	padding: 1rem;
+	text-align: center;
+	color: #5f7287;
+	background: #fbfdff;
+}
+
+@media (max-width: 900px) {
+	.todo-matrix__content {
+		padding: 0.75rem;
+	}
+
+	.todo-matrix__content .phpgw-matrixview__item {
+		min-width: 180px;
+	}
 }

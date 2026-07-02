@@ -79,6 +79,11 @@ class phpgwapi_historylog
 		$locations_obj = new Locations();
 
 		$location_id = $locations_obj->get_id($appname, $location);
+		if(! $location_id && $location === '.')
+		{
+			$location_id = $locations_obj->get_id($appname, 'run');
+		}
+
 		$this->location_id = (int) $location_id;
 		$this->db      = Db::getInstance();
 		$this->phpgwapi_common = new \phpgwapi_common();

@@ -48,6 +48,7 @@ todo list - add	todo	no	Å-gjøre liste - legg til
 todo list - edit	todo	no	Å-gjøre liste - rediger
 todo preferences	todo	no	Innstillinger for oppgaver
 page size	todo	no	Sidelengde
+search	todo	no	Søk
 urgency	todo	no	Prioritet
 urgency changed	todo	no	Prioritet endret
 view matrix of actual month	todo	no	Vis matrise for inneværende måned

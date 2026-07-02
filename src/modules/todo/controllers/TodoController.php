@@ -195,7 +195,6 @@ class TodoController
 			$ownerId = (int) ($todo['owner_id'] ?? 0);
 			$canEdit = $botodo->check_perms($ownerId, $grants, ACL_EDIT) || $ownerId === $currentAccountId;
 			$canDelete = $botodo->check_perms($ownerId, $grants, ACL_DELETE) || $ownerId === $currentAccountId;
-			$canAdd = $botodo->check_perms($ownerId, $grants, ACL_ADD);
 
 			$assigned = $botodo->list_assigned($todo['assigned'] ?? '');
 			$assigned .= $botodo->list_assigned($todo['assigned_group'] ?? '');
@@ -214,7 +213,10 @@ class TodoController
 					'view' => \phpgw::link('/todo/view/todos/' . $id),
 						'edit' => $canEdit ? \phpgw::link('/todo/view/todos/' . $id . '/edit') : '',
 					'delete' => $canDelete ? \phpgw::link('/todo/view/todos/' . $id . '/delete') : '',
-					'subadd' => $canAdd ? \phpgw::link('/todo/view/todos/add', ['parent' => $id, 'cat_id' => $catId]) : '',
+					'subadd' => \phpgw::link('/todo/view/todos/add', [
+						'parent' => $id,
+						'cat_id' => (int) ($todo['cat'] ?? $catId),
+					]),
 				],
 			];
 		}

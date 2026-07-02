@@ -46,7 +46,7 @@ class TodoViewController
 	private function getParentTodos(int $excludeId = 0): array
 	{
 		$botodo = \CreateObject('todo.botodo', true);
-		$todos = $botodo->_list(0, 0, '', '', '', '', 0, 'mains');
+		$todos = $botodo->_list(0, 0, '', '', '', '', 0, 'all');
 		$options = [
 			['id' => 0, 'title' => lang('None')],
 		];
@@ -64,6 +64,12 @@ class TodoViewController
 			{
 				$descr = \phpgw::strip_html((string) ($todo['descr'] ?? ''));
 				$title = trim(implode(' ', array_slice(explode(' ', $descr), 0, 4)) . ' ...');
+			}
+
+			$level = (int) ($todo['level'] ?? 0);
+			if ($level > 0)
+			{
+				$title = str_repeat('-- ', $level) . $title;
 			}
 
 			$options[] = [

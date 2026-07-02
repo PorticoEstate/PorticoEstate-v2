@@ -57,7 +57,15 @@
 		if (!url) {
 			return '&nbsp;';
 		}
-		return '<a href="' + escapeHtml(url) + '">' + escapeHtml(label) + '</a>';
+		return '<a href="' + escapeAttribute(url) + '">' + escapeHtml(label) + '</a>';
+	}
+
+	function escapeAttribute(value) {
+		return String(value == null ? '' : value)
+			.replace(/"/g, '&quot;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/'/g, '&#039;');
 	}
 
 	function escapeHtml(value) {
@@ -143,7 +151,7 @@
 			var href = actions.view || (viewUrl + '&todo_id=' + encodeURIComponent(item.id));
 			row.innerHTML = '' +
 				'<td>' + escapeHtml(item.id || '') + '</td>' +
-				'<td><a href="' + href + '">' + escapeHtml(item.title || '') + '</a></td>' +
+				'<td><a href="' + escapeAttribute(href) + '">' + escapeHtml(item.title || '') + '</a></td>' +
 				'<td>' + escapeHtml(item.status || '') + '</td>' +
 				'<td>' + escapeHtml(item.pri || '') + '</td>' +
 				'<td>' + escapeHtml(item.sdate || '') + '</td>' +
@@ -153,7 +161,7 @@
 				'<td>' + makeActionLink(actions.view, root.dataset.langView || 'View') + '</td>' +
 				'<td>' + makeActionLink(actions.edit, root.dataset.langEdit || 'Edit') + '</td>' +
 				'<td>' + makeActionLink(actions.delete, root.dataset.langDelete || 'Delete') + '</td>' +
-				'<td>' + makeActionLink(actions.subadd, root.dataset.langAddSub || 'Add Sub') + '</td>';
+				'<td>' + makeActionLink(actions.subadd, root.dataset.langAddSub || 'Add Sub Project') + '</td>';
 			tbodyEl.appendChild(row);
 		});
 	}

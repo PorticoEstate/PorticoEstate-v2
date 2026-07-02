@@ -37,6 +37,13 @@
 	data-lang-end="{{ lang('end date') }}"
 	data-lang-owner="{{ lang('created by') }}"
 	data-lang-assigned="{{ lang('assigned to') }}"
+	data-lang-prev="{{ lang('Previous') }}"
+	data-lang-next="{{ lang('Next') }}"
+	data-lang-page="{{ lang('Page') }}"
+	data-lang-of="{{ lang('of') }}"
+	data-lang-showing="{{ lang('Showing') }}"
+	data-lang-page-size="{{ lang('Page size') }}"
+	data-default-page-size="{{ default_page_size|default(25) }}"
 >
 	<div class="todo-app__toolbar">
 		<select id="todo-cat" class="todo-app__select">
@@ -77,6 +84,21 @@
 		</thead>
 		<tbody id="todo-table-body"></tbody>
 	</table>
+
+	<div id="todo-pagination" class="todo-app__pagination" hidden>
+		<div id="todo-pagination-summary" class="todo-app__pagination-summary"></div>
+		<div class="todo-app__pagination-controls">
+			<label class="todo-app__pagination-label" for="todo-page-size">{{ lang('Page size') }}</label>
+			<select id="todo-page-size" class="todo-app__select todo-app__select--compact">
+				{% for option in page_size_options|default([default_page_size|default(25)]) %}
+					<option value="{{ option }}">{{ option }}</option>
+				{% endfor %}
+			</select>
+			<button id="todo-page-prev" class="todo-app__button todo-app__button--secondary" type="button">{{ lang('Previous') }}</button>
+			<span id="todo-page-status" class="todo-app__pagination-status"></span>
+			<button id="todo-page-next" class="todo-app__button todo-app__button--secondary" type="button">{{ lang('Next') }}</button>
+		</div>
+	</div>
 </div>
 {% endblock %}
 

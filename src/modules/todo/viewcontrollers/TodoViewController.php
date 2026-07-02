@@ -201,9 +201,29 @@ class TodoViewController
 	public function index(Request $request, Response $response): Response
 	{
 		try {
+			$userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+			$maxMatches = isset($userSettings['preferences']['common']['maxmatchs']) ? (int) $userSettings['preferences']['common']['maxmatchs'] : 25;
+			if ($maxMatches < 1)
+			{
+				$maxMatches = 25;
+			}
+
+			$pageSizeOptions = [];
+			foreach ([1, 2, 4] as $multiplier)
+			{
+				$value = $maxMatches * $multiplier;
+				if ($value > 0 && $value <= 2000)
+				{
+					$pageSizeOptions[] = $value;
+				}
+			}
+			$pageSizeOptions = array_values(array_unique($pageSizeOptions));
+
 			$componentHtml = $this->twig->render('@views/todo/index/todo_index.twig', [
 				'layout' => '@views/_bare.twig',
 				'categories' => $this->getCategories(),
+				'page_size_options' => $pageSizeOptions,
+				'default_page_size' => $maxMatches,
 			]);
 
 			$html = $this->legacyView->render(

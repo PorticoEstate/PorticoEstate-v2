@@ -15,8 +15,18 @@
 	var filterEl = document.getElementById('todo-filter');
 	var catEl = document.getElementById('todo-cat');
 	var csvBtn = document.getElementById('todo-csv');
+	var paginationEl = document.getElementById('todo-pagination');
+	var paginationSummaryEl = document.getElementById('todo-pagination-summary');
+	var pageStatusEl = document.getElementById('todo-page-status');
+	var pageSizeEl = document.getElementById('todo-page-size');
+	var prevBtn = document.getElementById('todo-page-prev');
+	var nextBtn = document.getElementById('todo-page-next');
 	var initialParams = new URLSearchParams(window.location.search);
 	var initialCatId = initialParams.get('cat_id') || '0';
+	var defaultPageSize = parseInt(root.dataset.defaultPageSize || '25', 10) || 25;
+	var pageSize = defaultPageSize;
+	var currentPage = Math.max(parseInt(initialParams.get('page') || '1', 10) || 1, 1);
+	var totalItems = 0;
 
 	if (initialParams.get('filter')) {
 		filterEl.value = initialParams.get('filter');
@@ -28,6 +38,19 @@
 
 	if (catEl && initialCatId) {
 		catEl.value = initialCatId;
+	}
+
+	if (pageSizeEl) {
+		var initialLimit = parseInt(initialParams.get('limit') || String(defaultPageSize), 10);
+		var hasMatchingOption = Array.prototype.some.call(pageSizeEl.options, function (option) {
+			return parseInt(option.value, 10) === initialLimit;
+		});
+
+		if (hasMatchingOption) {
+			pageSize = initialLimit;
+		}
+
+		pageSizeEl.value = String(pageSize);
 	}
 
 	function makeActionLink(url, label) {
@@ -59,9 +82,50 @@
 		loadingEl.hidden = state !== 'loading';
 		errorEl.hidden = state !== 'error';
 		tableEl.hidden = state !== 'ready';
+		if (paginationEl) {
+			paginationEl.hidden = state !== 'ready';
+		}
 		if (state === 'error') {
 			errorEl.textContent = errorMessage || root.dataset.langError;
 		}
+	}
+
+	function updateBrowserUrl() {
+		var params = new URLSearchParams();
+		if (searchEl.value) {
+			params.set('search', searchEl.value);
+		}
+		if (filterEl.value && filterEl.value !== 'none') {
+			params.set('filter', filterEl.value);
+		}
+		if (catEl && catEl.value && catEl.value !== '0') {
+			params.set('cat_id', catEl.value);
+		}
+		if (currentPage > 1) {
+			params.set('page', String(currentPage));
+		}
+		if (pageSize !== defaultPageSize) {
+			params.set('limit', String(pageSize));
+		}
+
+		var query = params.toString();
+		var url = window.location.pathname + (query ? '?' + query : '');
+		window.history.replaceState(null, '', url);
+	}
+
+	function renderPagination(itemCount) {
+		if (!paginationEl || !paginationSummaryEl || !pageStatusEl || !prevBtn || !nextBtn) {
+			return;
+		}
+
+		var totalPages = Math.max(Math.ceil(totalItems / pageSize), 1);
+		var startItem = totalItems === 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
+		var endItem = totalItems === 0 ? 0 : startItem + itemCount - 1;
+
+		paginationSummaryEl.textContent = (root.dataset.langShowing || 'Showing') + ' ' + startItem + '-' + endItem + ' / ' + totalItems;
+		pageStatusEl.textContent = (root.dataset.langPage || 'Page') + ' ' + currentPage + ' ' + (root.dataset.langOf || 'of') + ' ' + totalPages;
+		prevBtn.disabled = currentPage <= 1;
+		nextBtn.disabled = currentPage >= totalPages || totalItems === 0;
 	}
 
 	function renderRows(items) {
@@ -96,8 +160,8 @@
 
 	function buildQueryParams() {
 		var params = new URLSearchParams();
-		params.set('start', '0');
-		params.set('limit', '100');
+		params.set('start', String((currentPage - 1) * pageSize));
+		params.set('limit', String(pageSize));
 		params.set('sort', 'created');
 		params.set('dir', 'DESC');
 		params.set('filter', filterEl.value || 'none');
@@ -123,7 +187,17 @@
 				return res.json();
 			})
 			.then(function (payload) {
+				totalItems = parseInt(payload.total || 0, 10) || 0;
+				var totalPages = Math.max(Math.ceil(totalItems / pageSize), 1);
+				if (currentPage > totalPages) {
+					currentPage = totalPages;
+					loadTodos();
+					return;
+				}
+
 				renderRows(payload.items || []);
+				renderPagination((payload.items || []).length);
+				updateBrowserUrl();
 				setState('ready');
 			})
 			.catch(function (err) {
@@ -133,16 +207,55 @@
 
 	var searchTimer = null;
 	searchEl.addEventListener('input', function () {
+		currentPage = 1;
 		if (searchTimer) {
 			clearTimeout(searchTimer);
 		}
 		searchTimer = setTimeout(loadTodos, 250);
 	});
 
-	filterEl.addEventListener('change', loadTodos);
+	filterEl.addEventListener('change', function () {
+		currentPage = 1;
+		loadTodos();
+	});
 
 	if (catEl) {
-		catEl.addEventListener('change', loadTodos);
+		catEl.addEventListener('change', function () {
+			currentPage = 1;
+			loadTodos();
+		});
+	}
+
+	if (pageSizeEl) {
+		pageSizeEl.addEventListener('change', function () {
+			var selectedSize = parseInt(pageSizeEl.value || String(defaultPageSize), 10) || defaultPageSize;
+			pageSize = selectedSize;
+			currentPage = 1;
+			loadTodos();
+		});
+	}
+
+	if (prevBtn) {
+		prevBtn.addEventListener('click', function () {
+			if (currentPage <= 1) {
+				return;
+			}
+
+			currentPage -= 1;
+			loadTodos();
+		});
+	}
+
+	if (nextBtn) {
+		nextBtn.addEventListener('click', function () {
+			var totalPages = Math.max(Math.ceil(totalItems / pageSize), 1);
+			if (currentPage >= totalPages) {
+				return;
+			}
+
+			currentPage += 1;
+			loadTodos();
+		});
 	}
 
 	if (csvBtn) {

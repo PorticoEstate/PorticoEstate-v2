@@ -6,6 +6,8 @@ use App\modules\todo\viewcontrollers\TodoViewController;
 use App\modules\phpgwapi\security\AccessVerifier;
 use App\modules\phpgwapi\middleware\SessionsMiddleware;
 use Slim\Routing\RouteCollectorProxy;
+/** @var \Slim\App $app */
+/** @var \DI\Container $container */
 
 
 $app->group('/todo', function (RouteCollectorProxy $group)

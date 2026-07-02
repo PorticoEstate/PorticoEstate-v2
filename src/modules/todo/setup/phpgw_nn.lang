@@ -1,17 +1,52 @@
-access type	todo	nn	Access type
-are you sure you want to delete this entry	todo	nn	Er du sikker på at du vil slette denne entry?
-clear form	todo	nn	Slett innhold
-completed	todo	nn	ferdig
-created by	todo	nn	Laget av
+access type	todo	nn	Tilgangstype
+access changed	todo	nn	Tilgang endra
+add main project	todo	nn	Legg til hovudprosjekt
+adds or edits a todo item	todo	nn	Legg til eller redigerer ei oppgåve
+are you sure you want to delete this entry	todo	nn	Er du sikker på at du vil slette denne oppføringa?
+assigned to	todo	nn	Tildelt til
+category changed	todo	nn	Kategori endra
+clear form	todo	nn	Tøm innhald
+completed	todo	nn	Ferdig
+created by	todo	nn	Laga av
 date due	todo	nn	Ferdig før
+deletes a todo item	todo	nn	Slettar ei oppgåve
+description can not exceed 8000 characters in length	todo	nn	Skildringa kan ikkje vere lengre enn 8000 teikn !
+description changed	todo	nn	Skildring endra
+do you also want to delete all sub projects ?	todo	nn	Vil du òg slette alle underprosjekt ?
+edit main project	todo	nn	Rediger hovudprosjekt
+edit sub project	todo	nn	Rediger underprosjekt
+end date changed	todo	nn	Sluttdato endra
+ending date can not be before start date	todo	nn	Sluttdato kan ikkje vere før startdato !
+entry added	todo	nn	Oppføring lagt til
+high	todo	nn	Høg
 last updated	todo	nn	Sist oppdatert
+low	todo	nn	Låg
+nobody	todo	nn	Ingen
+normal	todo	nn	Normal
+or: days from startdate:	todo	nn	eller: dagar frå startdato:
+or: select for today:	todo	nn	eller: vel for i dag:
+parent changed	todo	nn	Forelder endra
+parent project	todo	nn	Foreldreprosjekt
+please enter a title	todo	nn	Ver venleg å skrive inn ein tittel !
+returns a the total number of records in the database, must call list_todos first	todo	nn	Returnerer totalt tal oppføringar i databasen, må kalle list_todos først
+show todo items on main screen	todo	nn	Vis oppgåver på hovudskjerm
+start date changed	todo	nn	Startdato endra
 status	todo	nn	Status
-todo	common	nn	Å-gjøre
-todo list	common	nn	Å-gjøre liste
-to do list	common	nn	Å-gjøre liste
-todo list - add	todo	nn	Å-gjøre liste - legg til
-todo list - edit	todo	nn	Å-gjøre liste - edit
+status changed	todo	nn	Status endra
+title changed	todo	nn	Tittel endra
+todo	common	nn	Å-gjere
+todo list	common	nn	Å-gjere liste
+to do list	common	nn	Å-gjere liste
+todo list - add	todo	nn	Å-gjere liste - legg til
+todo list - edit	todo	nn	Å-gjere liste - rediger
+todo preferences	todo	nn	Innstillingar for oppgåver
 urgency	todo	nn	Prioritet
-which groups	todo	nn	Hvilke grupper
-you have entered an invailed date	todo	nn	du har skrevet inn en ugyldig dato
+urgency changed	todo	nn	Prioritet endra
+view matrix of actual month	todo	nn	Vis matrise for inneverande månad
+view todo item	todo	nn	Vis oppgåve
+which groups	todo	nn	Kva grupper
+you can only enter numbers for days from now	todo	nn	Du kan berre skrive inn tal for dagar frå no !
+you have entered an invailed date	todo	nn	Du har skrive inn ein ugyldig dato
+you have entered an invalid start date	todo	nn	Du har skrive inn ein ugyldig startdato !
+you have entered an invalid end date	todo	nn	Du har skrive inn ein ugyldig sluttdato !
 add sub project	todo	nn	Legg til underprosjekt

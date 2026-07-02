@@ -524,6 +524,18 @@ class todo_uitodo extends phpgwapi_uicommon_jquery
 
 	function edit()
 	{
+		// Bridge legacy menuaction entrypoint to the new Twig client edit page.
+		if (!Sanitizer::get_var('submit', 'bool') && !Sanitizer::get_var('values'))
+		{
+			$todo_id = Sanitizer::get_var('todo_id', 'int', 'REQUEST', 0);
+			if ($todo_id)
+			{
+				phpgw::redirect_link('/todo/view/todos/' . $todo_id . '/edit');
+			}
+
+			phpgw::redirect_link('/todo/view/todos');
+		}
+
 		$todo_id = isset($_REQUEST['todo_id']) ? (int) $_REQUEST['todo_id'] : 0;
 		$cat_id = isset($_POST['cat_id']) ? (int) $_POST['cat_id'] : 0;
 		$new_cat = isset($_POST['new_cat']) ? (int) $_POST['new_cat'] : 0;

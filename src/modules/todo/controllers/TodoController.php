@@ -98,7 +98,7 @@ class TodoController
 				'assigned' => (string) $assigned,
 				'actions' => [
 					'view' => \phpgw::link('/index.php', ['menuaction' => 'todo.uitodo.view', 'todo_id' => $id]),
-					'edit' => $canEdit ? \phpgw::link('/index.php', ['menuaction' => 'todo.uitodo.edit', 'todo_id' => $id]) : '',
+						'edit' => $canEdit ? \phpgw::link('/todo/view/todos/' . $id . '/edit') : '',
 					'delete' => $canDelete ? \phpgw::link('/index.php', ['menuaction' => 'todo.uitodo.delete', 'todo_id' => $id]) : '',
 					'subadd' => $canAdd ? \phpgw::link('/todo/view/todos/add', ['parent' => $id, 'cat_id' => $catId]) : '',
 				],

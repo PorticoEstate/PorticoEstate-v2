@@ -14,6 +14,17 @@ class TodoViewController
 	protected TwigHelper $twig;
 	protected LegacyViewHelper $legacyView;
 
+	private function formatDateForInput($timestamp, string $dateFormat): string
+	{
+		$ts = (int) $timestamp;
+		if ($ts <= 0)
+		{
+			return '';
+		}
+
+		return date($dateFormat, $ts);
+	}
+
 	private function getPeopleList(string $type): array
 	{
 		$botodo = \CreateObject('todo.botodo', true);
@@ -32,7 +43,7 @@ class TodoViewController
 		return $options;
 	}
 
-	private function getParentTodos(): array
+	private function getParentTodos(int $excludeId = 0): array
 	{
 		$botodo = \CreateObject('todo.botodo', true);
 		$todos = $botodo->_list(0, 0, '', '', '', '', 0, 'mains');
@@ -42,6 +53,12 @@ class TodoViewController
 
 		foreach ((array) $todos as $todo)
 		{
+			$id = (int) ($todo['id'] ?? 0);
+			if ($excludeId > 0 && $id === $excludeId)
+			{
+				continue;
+			}
+
 			$title = (string) ($todo['title'] ?? '');
 			if (!$title)
 			{
@@ -50,7 +67,7 @@ class TodoViewController
 			}
 
 			$options[] = [
-				'id' => (int) ($todo['id'] ?? 0),
+				'id' => $id,
 				'title' => $title,
 			];
 		}
@@ -143,6 +160,71 @@ class TodoViewController
 		} catch (Exception $e) {
 			return ResponseHelper::sendErrorResponse(
 				['error' => 'Error loading todo add page: ' . $e->getMessage()],
+				500
+			);
+		}
+	}
+
+	/**
+	 * GET /todo/view/todos/{id}/edit
+	 */
+	public function edit(Request $request, Response $response, array $args): Response
+	{
+		try {
+			$id = (int) ($args['id'] ?? 0);
+			if ($id <= 0)
+			{
+				return ResponseHelper::sendErrorResponse(['error' => 'Missing todo ID'], 400);
+			}
+
+			$botodo = \CreateObject('todo.botodo', true);
+			$item = $botodo->read($id);
+			if (!is_array($item) || !count($item))
+			{
+				return ResponseHelper::sendErrorResponse(['error' => 'Todo not found'], 404);
+			}
+
+			\phpgw::import_class('phpgwapi.jquery');
+			\phpgwapi_jquery::load_widget('select2');
+			\phpgwapi_jquery::load_widget('datepicker');
+
+			$userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+			$dateFormat = (string) ($userSettings['preferences']['common']['dateformat'] ?? 'Y-m-d');
+
+			$assignedIds = $botodo->format_assigned((string) ($item['assigned'] ?? ''));
+			$assignedGroupIds = $botodo->format_assigned((string) ($item['assigned_group'] ?? ''));
+
+			$todo = [
+				'id' => $id,
+				'title' => (string) ($item['title'] ?? ''),
+				'descr' => (string) ($item['descr'] ?? ''),
+				'cat' => (int) ($item['cat'] ?? 0),
+				'parent' => (int) ($item['parent'] ?? 0),
+				'pri' => (int) ($item['pri'] ?? 2),
+				'status' => (int) ($item['status'] ?? 0),
+				'sdate' => $this->formatDateForInput($item['sdate'] ?? 0, $dateFormat),
+				'edate' => $this->formatDateForInput($item['edate'] ?? 0, $dateFormat),
+				'access_private' => (string) ($item['access'] ?? '') === 'private',
+				'assigned_ids' => is_array($assignedIds) ? $assignedIds : [],
+				'assigned_group_ids' => is_array($assignedGroupIds) ? $assignedGroupIds : [],
+			];
+
+			$componentHtml = $this->twig->render('@views/todo/edit/todo_edit.twig', [
+				'layout' => '@views/_bare.twig',
+				'todo' => $todo,
+				'categories' => $this->getCategories(),
+				'parentTodos' => $this->getParentTodos($id),
+				'users' => $this->getPeopleList('accounts'),
+				'groups' => $this->getPeopleList('groups'),
+				'date_format' => $dateFormat,
+			]);
+
+			$html = $this->legacyView->render($componentHtml, ['todo']);
+			$response->getBody()->write($html);
+			return $response->withHeader('Content-Type', 'text/html');
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(
+				['error' => 'Error loading todo edit page: ' . $e->getMessage()],
 				500
 			);
 		}

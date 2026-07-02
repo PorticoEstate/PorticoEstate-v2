@@ -37,10 +37,7 @@ if (
 				$title = implode(' ', array_slice($words, 0, 4)) . ' ...';
 			}
 
-			$url = phpgw::link('/index.php', array(
-				'menuaction' => 'todo.uitodo.view',
-				'todo_id' => (int) $item['id']
-			));
+			$url = phpgw::link('/todo/view/todos/' . (int) $item['id']);
 
 			$content .= '<li><a href="' . $url . '">' . $title . '</a></li>';
 		}
@@ -51,7 +48,7 @@ if (
 		$content .= '<p>' . lang('No entries') . '</p>';
 	}
 
-	$content .= '<p><a href="' . phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.show_list'))
+	$content .= '<p><a href="' . phpgw::link('/todo/view/todos')
 		. '">' . lang('Show all') . '</a></p>';
 
 	$extra_data = '<td>' . "\n" . $content . '</td>' . "\n";

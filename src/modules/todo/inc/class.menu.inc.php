@@ -105,7 +105,7 @@ class todo_menu
 		$menus['navigation'] =  array(
 			array(
 				'text'	=> $translation->translate('New', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'todo.uitodo.add')),
+				'url'	=> phpgw::link('/todo/view/todos/add'),
 			)
 		);
 

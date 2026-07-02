@@ -6,6 +6,7 @@ use App\helpers\ResponseHelper;
 use App\modules\property\helpers\BoCommon;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -187,6 +188,7 @@ class TodoController
 	{
 		$userSettings = Settings::getInstance()->get('user');
 		$currentAccountId = (int) ($userSettings['account_id'] ?? 0);
+		$accountsObj = new Accounts();
 
 		$rows = [];
 		foreach ($todoList as $todo)
@@ -207,7 +209,7 @@ class TodoController
 				'pri' => $this->formatPriority($todo['pri'] ?? 0),
 				'sdate' => (string) ($todo['sdate'] ?? ''),
 				'edate' => (string) ($todo['edate'] ?? ''),
-				'owner' => (string) ($todo['owner'] ?? ''),
+				'owner' => (string) ($todo['owner'] ? $accountsObj->id2name((int) $todo['owner']) : ''),
 				'assigned' => (string) $assigned,
 				'actions' => [
 					'view' => \phpgw::link('/todo/view/todos/' . $id),

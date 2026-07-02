@@ -2,6 +2,7 @@
 
 namespace App\modules\todo\viewcontrollers;
 
+use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
 use App\helpers\ResponseHelper;
@@ -206,8 +207,10 @@ class TodoViewController
 	 */
 	public function index(Request $request, Response $response): Response
 	{
+		Settings::getInstance()->update('flags', ['app_header' => lang('todo') . '::' . lang('list projects')]);
+
 		try {
-			$userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+			$userSettings = Settings::getInstance()->get('user');
 			$maxMatches = isset($userSettings['preferences']['common']['maxmatchs']) ? (int) $userSettings['preferences']['common']['maxmatchs'] : 25;
 			if ($maxMatches < 1)
 			{

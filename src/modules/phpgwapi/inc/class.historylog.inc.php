@@ -36,6 +36,39 @@ class phpgwapi_historylog
 	);
 	var $alternate_handlers = array();
 
+	private function apply_alternate_handler($handler, $value)
+	{
+		if (!$handler)
+		{
+			return $value;
+		}
+
+		if (is_callable($handler))
+		{
+			return call_user_func($handler, $value);
+		}
+
+		if (is_string($handler))
+		{
+			if (preg_match('/^\$this->([a-zA-Z_][a-zA-Z0-9_]*)->([a-zA-Z_][a-zA-Z0-9_]*)$/', $handler, $matches))
+			{
+				$property = $matches[1];
+				$method = $matches[2];
+				if (isset($this->$property) && is_object($this->$property) && is_callable(array($this->$property, $method)))
+				{
+					return $this->$property->$method($value);
+				}
+			}
+
+			if (function_exists($handler))
+			{
+				return $handler($value);
+			}
+		}
+
+		return $value;
+	}
+
 	function __construct($appname, $location = '.')
 	{
 		$flags = Settings::getInstance()->get('flags');
@@ -184,13 +217,9 @@ class phpgwapi_historylog
 
 			if ($this->alternate_handlers[$value['status']])
 			{
-				eval('\$s = ' . $this->alternate_handlers[$value['status']] . '(' . $value['new_value'] . ');');
-				$this->template->set_var('row_new_value', $s);
-				unset($s);
-
-				eval('\$s = ' . $this->alternate_handlers[$value['status']] . '(' . $value['old_value'] . ');');
-				$this->template->set_var('row_old_value', $s);
-				unset($s);
+				$handler = $this->alternate_handlers[$value['status']];
+				$this->template->set_var('row_new_value', $this->apply_alternate_handler($handler, $value['new_value']));
+				$this->template->set_var('row_old_value', $this->apply_alternate_handler($handler, $value['old_value']));
 			}
 			else
 			{

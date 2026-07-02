@@ -67,6 +67,28 @@
 	vertical-align: top;
 }
 
+.todo-app__title-link {
+	display: inline-block;
+	color: inherit;
+	text-decoration: none;
+}
+
+.todo-app__title-link:hover {
+	text-decoration: underline;
+}
+
+.todo-app__title {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding-left: calc(var(--todo-level, 0) * 1rem);
+}
+
+.todo-app__title-marker {
+	color: #6f7f8f;
+	font-weight: 600;
+}
+
 .todo-app__pagination {
 	display: flex;
 	justify-content: space-between;

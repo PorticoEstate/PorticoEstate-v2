@@ -100,12 +100,7 @@ class TodoController
 			$title = trim(implode(' ', array_slice($words, 0, 4)) . ' ...');
 		}
 
-		if ((int) ($todo['level'] ?? 0) <= 0)
-		{
-			return $title;
-		}
-
-		return str_repeat('  ', (int) $todo['level']) . $title;
+		return $title;
 	}
 
 	private function mapTodoDetail(array $item, $botodo): array
@@ -205,6 +200,7 @@ class TodoController
 			$rows[] = [
 				'id' => $id,
 				'title' => $this->formatTodoTitle((array) $todo),
+				'level' => max(0, (int) ($todo['level'] ?? 0)),
 				'status' => (string) ($todo['status'] ?? ''),
 				'pri' => $this->formatPriority($todo['pri'] ?? 0),
 				'sdate' => (string) ($todo['sdate'] ?? ''),

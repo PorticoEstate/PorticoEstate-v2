@@ -96,6 +96,19 @@
 		return escapeHtml(normalized).replace(/\n/g, '<br>');
 	}
 
+	function renderTitleCell(item, href) {
+		var level = Math.max(parseInt(item.level || 0, 10) || 0, 0);
+		var marker = level > 0 ? '<span class="todo-app__title-marker" aria-hidden="true">↳</span>' : '';
+		var title = escapeHtml(item.title || '');
+
+		return '<a class="todo-app__title-link" href="' + escapeAttribute(href) + '">' +
+			'<span class="todo-app__title" style="--todo-level:' + level + '">' +
+			marker +
+			title +
+			'</span>' +
+		'</a>';
+	}
+
 	function updateSortButtons() {
 		sortButtons.forEach(function (button) {
 			var key = button.getAttribute('data-sort-key') || '';
@@ -180,7 +193,7 @@
 			var href = actions.view || (viewUrl + '&todo_id=' + encodeURIComponent(item.id));
 			row.innerHTML = '' +
 				'<td>' + escapeHtml(item.id || '') + '</td>' +
-				'<td><a href="' + escapeAttribute(href) + '">' + escapeHtml(item.title || '') + '</a></td>' +
+				'<td>' + renderTitleCell(item, href) + '</td>' +
 				'<td>' + escapeHtml(item.status || '') + '</td>' +
 				'<td>' + escapeHtml(item.pri || '') + '</td>' +
 				'<td>' + escapeHtml(item.sdate || '') + '</td>' +

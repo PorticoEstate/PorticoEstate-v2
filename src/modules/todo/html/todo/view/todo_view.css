@@ -24,6 +24,59 @@
 	gap: 0.9rem 1rem;
 }
 
+.todo-view__tabs {
+	display: flex;
+	gap: 0.5rem;
+	margin: 0 0 1rem;
+	border-bottom: 1px solid #cbd7e3;
+	padding-bottom: 0.5rem;
+}
+
+.todo-view__tab {
+	appearance: none;
+	border: 1px solid #9fb7cf;
+	border-bottom: 0;
+	border-radius: 6px 6px 0 0;
+	background: #eef4fa;
+	color: #184a7a;
+	padding: 0.55rem 0.9rem;
+	font: inherit;
+	cursor: pointer;
+}
+
+.todo-view__tab--active {
+	background: #fff;
+	color: #102c4a;
+	border-color: #cbd7e3;
+	position: relative;
+	bottom: -1px;
+}
+
+.todo-view__panel {
+	padding-top: 0.25rem;
+}
+
+.todo-view__history {
+	overflow-x: auto;
+}
+
+.todo-view__history table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.todo-view__history th,
+.todo-view__history td {
+	padding: 0.5rem 0.6rem;
+	vertical-align: top;
+	text-align: left;
+	border-bottom: 1px solid #dde6ef;
+}
+
+.todo-view__history th {
+	font-weight: 600;
+}
+
 .todo-view__grid dt {
 	font-weight: 600;
 	margin-bottom: 0.15rem;

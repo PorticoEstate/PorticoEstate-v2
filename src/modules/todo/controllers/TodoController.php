@@ -11,6 +11,30 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class TodoController
 {
+	private function getTodoHistoryHtml(int $id): string
+	{
+		$historylog = \CreateObject('phpgwapi.historylog', 'todo');
+		$historylog->types = array(
+			'A' => lang('Entry added'),
+			'C' => lang('Category changed'),
+			'S' => lang('Start date changed'),
+			'E' => lang('End date changed'),
+			'U' => lang('Urgency changed'),
+			's' => lang('Status changed'),
+			'T' => lang('Title changed'),
+			'D' => lang('Description changed'),
+			'a' => lang('Access changed'),
+			'P' => lang('Parent changed'),
+		);
+
+		$historylog->alternate_handlers = array(
+			'S' => '$this->phpgwapi_common->show_date',
+			'E' => '$this->phpgwapi_common->show_date',
+		);
+
+		return (string) $historylog->return_html(array(), '', '', $id);
+	}
+
 	private function normalizeLineBreaks(string $value): string
 	{
 		$normalized = preg_replace('/<br\s*\/?>/i', "\n", $value);
@@ -385,6 +409,7 @@ class TodoController
 		return ResponseHelper::sendJSONResponse([
 			'item' => $item,
 			'detail' => $this->mapTodoDetail((array) $item, $botodo),
+			'history_html' => $this->getTodoHistoryHtml($id),
 		]);
 	}
 

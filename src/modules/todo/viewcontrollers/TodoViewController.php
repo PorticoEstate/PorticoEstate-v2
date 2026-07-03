@@ -198,7 +198,7 @@ class TodoViewController
 				'matrix_html' => $matrixHtml,
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['todo']);
+			$html = $this->legacyView->render($componentHtml, ['todo', 'matrix']);
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
 		} catch (Exception $e) {
@@ -219,7 +219,6 @@ class TodoViewController
 	 */
 	public function index(Request $request, Response $response): Response
 	{
-		Settings::getInstance()->update('flags', ['app_header' => lang('todo') . '::' . lang('list projects')]);
 
 		try {
 			$userSettings = Settings::getInstance()->get('user');
@@ -279,7 +278,7 @@ class TodoViewController
 				'todo_id' => $id,
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['todo']);
+			$html = $this->legacyView->render($componentHtml, ['todo', 'view']);
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
 		} catch (Exception $e) {
@@ -307,7 +306,7 @@ class TodoViewController
 				'todo_id' => $id,
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['todo']);
+			$html = $this->legacyView->render($componentHtml, ['todo', 'delete']);
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
 		} catch (Exception $e) {
@@ -342,7 +341,7 @@ class TodoViewController
 				'selected_parent_id' => isset($query['parent']) ? (int) $query['parent'] : 0,
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['todo']);
+			$html = $this->legacyView->render($componentHtml, ['todo', 'add']);
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
 		} catch (Exception $e) {
@@ -407,7 +406,7 @@ class TodoViewController
 				'date_format' => $dateFormat,
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['todo']);
+			$html = $this->legacyView->render($componentHtml, ['todo', 'edit']);
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
 		} catch (Exception $e) {

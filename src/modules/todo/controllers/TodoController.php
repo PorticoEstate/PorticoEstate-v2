@@ -145,7 +145,11 @@ class TodoController
 
 	private function getTodoHistoryData(int $id): array
 	{
-		$historylog = \CreateObject('phpgwapi.historylog', 'todo');
+		$historylog = \CreateObject('phpgwapi.historylog', 'todo', '.todo');
+		$userSettings = Settings::getInstance()->get('user');
+		$dateFormat = (string) ($userSettings['preferences']['common']['dateformat'] ?? 'Y-m-d');
+		$dateTimeFormat = trim($dateFormat . ' H:i');
+		$phpgwapiCommon = new \phpgwapi_common();
 		$statusLabels = array(
 			'A' => lang('Entry added'),
 			'C' => lang('Category changed'),
@@ -164,6 +168,22 @@ class TodoController
 		foreach ($rows as $row)
 		{
 			$statusCode = (string) ($row['status'] ?? '');
+			$rawDatetime = $row['datetime'] ?? '';
+			$formattedDatetime = (string) $rawDatetime;
+			if (is_numeric($rawDatetime))
+			{
+				$timestamp = (int) $rawDatetime;
+				if ($timestamp > 9999999999)
+				{
+					$timestamp = (int) floor($timestamp / 1000);
+				}
+
+				if ($timestamp > 0)
+				{
+					$formattedDatetime = (string) $phpgwapiCommon->show_date($timestamp, $dateTimeFormat);
+				}
+			}
+
 			$normalized[] = [
 				'id' => (int) ($row['id'] ?? 0),
 				'record_id' => (int) ($row['record_id'] ?? 0),
@@ -172,7 +192,7 @@ class TodoController
 				'status_label' => (string) ($statusLabels[$statusCode] ?? $statusCode),
 				'new_value' => (string) ($row['new_value'] ?? ''),
 				'old_value' => (string) ($row['old_value'] ?? ''),
-				'datetime' => (string) ($row['datetime'] ?? ''),
+				'datetime' => $formattedDatetime,
 				'publish' => $row['publish'] ?? null,
 			];
 		}

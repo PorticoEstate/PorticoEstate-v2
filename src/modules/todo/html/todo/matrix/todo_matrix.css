@@ -140,6 +140,45 @@
 	text-decoration: none;
 }
 
+.todo-matrix__content .todo-matrix__node {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.1rem;
+	line-height: 1.2;
+	padding: 0.08rem 0.35rem;
+	border-radius: 4px;
+}
+
+.todo-matrix__content .todo-matrix__node-prefix {
+	color: #5b6f84;
+	font-family: monospace;
+	white-space: nowrap;
+	font-weight: 400;
+}
+
+.todo-matrix__content .todo-matrix__node--level-0 {
+	font-weight: 700;
+}
+
+.todo-matrix__content .todo-matrix__node--level-1,
+.todo-matrix__content .todo-matrix__node--level-2,
+.todo-matrix__content .todo-matrix__node--level-3,
+.todo-matrix__content .todo-matrix__node--level-4,
+.todo-matrix__content .todo-matrix__node--level-5,
+.todo-matrix__content .todo-matrix__node--level-6 {
+	font-weight: 600;
+}
+
+.todo-matrix__content .todo-matrix__node--band-a {
+	background: #f4f8fc;
+	box-shadow: inset 3px 0 0 #d5e3f2;
+}
+
+.todo-matrix__content .todo-matrix__node--band-b {
+	background: #f9fbfe;
+	box-shadow: inset 3px 0 0 #e3ecf6;
+}
+
 .todo-matrix__content .phpgw-matrixview__item a:hover {
 	text-decoration: underline;
 }

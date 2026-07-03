@@ -80,6 +80,36 @@ class TodoViewController
 		return date($dateFormat, $ts);
 	}
 
+	private function buildMatrixHierarchyPrefix(int $level): string
+	{
+		$level = max(0, $level);
+		if ($level === 0)
+		{
+			return '<span class="todo-matrix__node-prefix todo-matrix__node-prefix--root"></span>';
+		}
+
+		$spacer = str_repeat('&nbsp;&nbsp;&nbsp;', $level);
+		return '<span class="todo-matrix__node-prefix" aria-hidden="true">' . $spacer . '&boxur;&nbsp;</span>';
+	}
+
+	private function buildMatrixTitle(array $entry, string $bandClass = ''): string
+	{
+		$id = (int) ($entry['id'] ?? 0);
+		$level = max(0, (int) ($entry['level'] ?? 0));
+		$title = 	\phpgw::strip_html((string) ($entry['title'] ?? ''));
+		if ($title === '')
+		{
+			$title = lang('Untitled');
+		}
+
+		$prefix = $this->buildMatrixHierarchyPrefix($level);
+		$link = '<a href="' . \phpgw::link('/todo/view/todos/' . $id) . '">' . $title . '</a>';
+		$bandClass = trim($bandClass);
+		$bandClassPart = $bandClass ? ' ' . $bandClass : '';
+
+		return '<span class="todo-matrix__node todo-matrix__node--level-' . $level . $bandClassPart . '">' . $prefix . $link . '</span>';
+	}
+
 	private function getPeopleList(string $type): array
 	{
 		$botodo = \CreateObject('todo.botodo', true);
@@ -208,39 +238,35 @@ class TodoViewController
 
 			$botodo = \CreateObject('todo.botodo', true);
 			$matrix = \CreateObject('phpgwapi.matrixview', $month, $year);
-			$entries = $botodo->_list(0, 0, '', '', '', '', '', 'mains');
+			$entries = $botodo->_list(0, 0, '', '', '', '', '', 'all');
 
-			$o = 0;
+			$groupColors = [];
+			$groupBands = [];
+			$colorIndex = 0;
 			foreach ((array) $entries as $entry)
 			{
-				$o++;
-				$ind = $o % count($colors);
-
 				if ((int) ($entry['sdate_epoch'] ?? 0) <= 0 || (int) ($entry['edate_epoch'] ?? 0) <= 0)
 				{
 					continue;
 				}
 
-				$id = (int) ($entry['id'] ?? 0);
-				$title = '<a href="' . \phpgw::link('/todo/view/todos/' . $id) . '">' . \phpgw::strip_html((string) ($entry['title'] ?? '')) . '</a>';
+				$groupId = (int) ($entry['main'] ?? 0);
+				if ($groupId <= 0)
+				{
+					$groupId = (int) ($entry['id'] ?? 0);
+				}
+
+				if (!isset($groupColors[$groupId]))
+				{
+					$groupColors[$groupId] = $colors[$colorIndex % count($colors)];
+					$groupBands[$groupId] = ($colorIndex % 2 === 0) ? 'todo-matrix__node--band-a' : 'todo-matrix__node--band-b';
+					$colorIndex++;
+				}
+
+				$title = $this->buildMatrixTitle((array) $entry, (string) ($groupBands[$groupId] ?? ''));
 				$startd = date('Ymd', (int) $entry['sdate_epoch']);
 				$endd = date('Ymd', (int) $entry['edate_epoch']);
-				$matrix->setPeriod($title, $startd, $endd, $colors[$ind]);
-
-				$subentries = $botodo->_list(0, 0, '', '', '', '', '', 'subs', $id);
-				foreach ((array) $subentries as $subentry)
-				{
-					if ((int) ($subentry['sdate_epoch'] ?? 0) <= 0 || (int) ($subentry['edate_epoch'] ?? 0) <= 0)
-					{
-						continue;
-					}
-
-					$subId = (int) ($subentry['id'] ?? 0);
-					$subTitle = '<a href="' . \phpgw::link('/todo/view/todos/' . $subId) . '">' . \phpgw::strip_html((string) ($subentry['title'] ?? '')) . '</a>';
-					$subStart = date('Ymd', (int) $subentry['sdate_epoch']);
-					$subEnd = date('Ymd', (int) $subentry['edate_epoch']);
-					$matrix->setPeriod($subTitle, $subStart, $subEnd, $colors[$ind]);
-				}
+				$matrix->setPeriod($title, $startd, $endd, $groupColors[$groupId]);
 			}
 
 			ob_start();

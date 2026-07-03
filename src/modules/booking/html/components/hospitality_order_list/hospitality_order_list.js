@@ -66,6 +66,22 @@ class HospitalityOrderList {
 		return map[(status || '').toLowerCase()] || 'neutral';
 	}
 
+	// Translate a status value to its label via the caller's lang() (same keys
+	// as order_show). Falls back to the raw value if the caller didn't provide
+	// the key, so it degrades to plain text rather than a broken !key.
+	_statusLabel(status) {
+		var keyMap = {
+			pending: 'pendingStatus',
+			confirmed: 'confirmed',
+			delivered: 'delivered',
+			cancelled: 'cancelled'
+		};
+		var key = keyMap[(status || '').toLowerCase()];
+		var label = key ? this.lang(key) : '';
+		if (!label || label === key || label.charAt(0) === '!') return status || '';
+		return label;
+	}
+
 	_render() {
 		var self = this;
 		var orders = this.orders;
@@ -94,7 +110,7 @@ class HospitalityOrderList {
 
 		orders.forEach(function (order) {
 			var statusColor = self._statusColor(order.status);
-			var statusTag = '<span class="ds-tag" data-color="' + statusColor + '">' + self._esc(order.status) + '</span>';
+			var statusTag = '<span class="ds-tag" data-color="' + statusColor + '">' + self._esc(self._statusLabel(order.status)) + '</span>';
 			var amount = order.total_amount != null ? Number(order.total_amount).toFixed(2) : '&mdash;';
 
 			html += '<tr class="hospitality-order-list__row" data-order-link="' + self._esc(order.id) + '" style="cursor:pointer">';

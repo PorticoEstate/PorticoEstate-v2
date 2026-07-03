@@ -1,6 +1,6 @@
 {% extends layout|default('@views/_layout.twig') %}
 
-{% block title %}{{ lang('Hospitality') }}{% endblock %}
+{% block title %}{{ lang('booking.hospitality') }}{% endblock %}
 
 {% block content %}
 {% include '@views/components/datatable/datatable.twig' %}
@@ -18,18 +18,31 @@
 			delete: {{ permissions.delete ? 'true' : 'false' }}
 		},
 		lang: {
-			name: '{{ lang("Hospitality")|e('js') }}',
-			add: '{{ lang("add")|e('js') }}',
-			edit: '{{ lang("Edit")|e('js') }}',
-emptyTable: '{{ lang("No entries found")|e('js') }}',
-			yes: '{{ lang("common.yes")|e('js') }}',
-			no: '{{ lang("common.no")|e('js') }}',
-			all: '{{ lang("All")|e('js') }}',
-			active: '{{ lang("Active")|e('js') }}',
+			name: '{{ lang("booking.hospitality")|e('js') }}',
+			add: '{{ lang("booking.add")|e('js') }}',
+			edit: '{{ lang("booking.edit")|e('js') }}',
+			emptyTable: '{{ lang("booking.no_entries_found")|e('js') }}',
+			yes: '{{ lang("booking.yes")|e('js') }}',
+			no: '{{ lang("booking.no")|e('js') }}',
+			all: '{{ lang("booking.all")|e('js') }}',
+			active: '{{ lang("booking.active")|e('js') }}',
 			resource_name: '{{ lang("booking.main_resource")|e('js') }}',
 			remote_serving: '{{ lang("booking.remote_serving")|e('js') }}',
 			allow_on_site_hospitality: '{{ lang("booking.allow_on_site_hospitality")|e('js') }}',
-				create_hospitality_settings: '{{ lang("booking.create_hospitality_settings")|e('js') }}'
+			create_hospitality_settings: '{{ lang("booking.create_hospitality_settings")|e('js') }}',
+			dt_search: '{{ lang("booking.dt_search")|e('js') }}',
+			dt_info: '{{ lang("booking.dt_info")|e('js') }}',
+			dt_info_empty: '{{ lang("booking.dt_info_empty")|e('js') }}',
+			dt_info_filtered: '{{ lang("booking.dt_info_filtered")|e('js') }}',
+			dt_length_menu: '{{ lang("booking.dt_length_menu")|e('js') }}',
+			dt_zero_records: '{{ lang("booking.dt_zero_records")|e('js') }}',
+			dt_first: '{{ lang("booking.dt_first")|e('js') }}',
+			dt_last: '{{ lang("booking.dt_last")|e('js') }}',
+			dt_next: '{{ lang("booking.dt_next")|e('js') }}',
+			dt_previous: '{{ lang("booking.dt_previous")|e('js') }}',
+			filter: '{{ lang("booking.filter")|e('js') }}',
+			reset_filter: '{{ lang("booking.reset_filter")|e('js') }}',
+			active_filters: '{{ lang("booking.active_filters")|e('js') }}'
 		}
 	};
 </script>

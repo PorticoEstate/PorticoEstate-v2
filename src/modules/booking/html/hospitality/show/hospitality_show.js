@@ -878,7 +878,7 @@
 			html += '<div class="hosp-show__group-header" aria-expanded="true" data-group-toggle="' + group.id + '">';
 
 			if (canWrite) {
-				html += '<span class="hosp-show__drag-handle" data-drag-handle-group="' + group.id + '" title="Drag to reorder">' + gripIcon + '</span>';
+				html += '<span class="hosp-show__drag-handle" data-drag-handle-group="' + group.id + '" title="' + esc(lang('dragToReorder')) + '">' + gripIcon + '</span>';
 			}
 
 			html += '<div class="hosp-show__group-title">' + chevronIcon + ' ' + esc(group.name) + ' ' + activeTag +
@@ -957,7 +957,7 @@
 				(groupId ? ' data-group-id="' + groupId + '" data-article-index="' + i + '"' : '') + '>';
 
 			if (canWrite && groupId) {
-				html += '<span class="hosp-show__drag-handle" data-drag-handle-article="' + a.id + '" title="Drag to reorder">' + gripIcon + '</span>';
+				html += '<span class="hosp-show__drag-handle" data-drag-handle-article="' + a.id + '" title="' + esc(lang('dragToReorder')) + '">' + gripIcon + '</span>';
 			}
 
 			html += '<span class="hosp-show__article-name">' + esc(a.article_name || a.name) + '</span>';
@@ -1178,7 +1178,7 @@
 				'<label class="app-show__modal-label" for="modal-detail-unit" style="margin-top:0.75rem">' + esc(lang('unit')) + '</label>' +
 				'<select id="modal-detail-unit" class="app-show__modal-textarea" style="min-height:auto;height:2.25rem">' +
 				['each', 'kg', 'm', 'm2', 'minute', 'hour', 'day'].map(function (u) {
-					return '<option value="' + u + '"' + (article.unit === u ? ' selected' : '') + '>' + u + '</option>';
+					return '<option value="' + u + '"' + (article.unit === u ? ' selected' : '') + '>' + esc(lang('unit_' + u)) + '</option>';
 				}).join('') +
 				'</select>' +
 				'<label class="app-show__modal-label" style="margin-top:0.75rem">' + esc(lang('taxCode')) + '</label>' +

@@ -15,7 +15,7 @@ A Case officer will review your application as soon as possible.	booking	nn	Ein 
 A Case officer will review your applications as soon as possible.	booking	nn	En saksbehandler vil behandle søknadene så fort som mulig.
 accept application	booking	nn	Godta søknaden
 acceptance_message	booking	nn	Melding til søkjar
-accepted	booking	nn	GODKJENT
+accepted	booking	nn	Godkjent
 access code format	booking	nn	Kodeformat: #__key__
 Access denied	booking	nn	Ingen tilgang
 access instruction	booking	nn	informasjon for tilgang
@@ -87,8 +87,8 @@ Allocations with still existing bookings (%1)	booking	nn	Tildelingar som ikkje v
 allocations_cannot_be_created_conflicts	booking	nn	Tildelingar som ikkje kan opprettast grunna konfliktar
 allocations_created_with_conflicts	booking	nn	Tildelingar oppretta (nokre med konflikt)
 allocations_to_be_created	booking	nn	Tildelingar som vil bli oppretta
-allow_on_site_hospitality	booking	nn	{{%1}} tillèt bestilling på staden
-allow_on_site_hospitality_desc	booking	nn	Tilknytte ressursar kan bestille servering i {{%1}}
+allow_on_site_hospitality	booking	nn	%1 tillèt bestilling på staden
+allow_on_site_hospitality_desc	booking	nn	Tilknytte ressursar kan bestille servering i %1
 alternative article code	booking	nn	Alternativ artikkelkode
 amount	booking	nn	Beløp
 and	booking	nn	og
@@ -788,8 +788,8 @@ participants per agegroupe	booking	nn	Deltaker per aldersguppe
 payment method	booking	nn	Refundér
 payments	booking	nn	Betalingar
 PDF-export to archive	booking	nn	Eksporter saken som pdf til arkiv
-Pending	booking	nn	UNDER HANDSAMING
-pending	booking	nn	UNDER HANDSAMING
+Pending	booking	nn	Under handsaming
+pending	booking	nn	Under handsaming
 percent	booking	nn	Prosent
 permission add	booking	nn	Legg til tilgang
 Permission already exists	booking	nn	Tilgangen finnest
@@ -868,8 +868,8 @@ related_applications	booking	nn	Relaterte søknader
 remark	booking	nn	Merknad
 Reminder sent. Not responded to	booking	nn	Purring sendt. Ikkje besvart
 remote_locations	booking	nn	Eksterne lokasjonar
-remote_serving	booking	nn	{{%1}} kan levere
-remote_serving_desc	booking	nn	{{%1}} kan levere til alle tilknytte ressursar
+remote_serving	booking	nn	%1 kan levere
+remote_serving_desc	booking	nn	%1 kan levere til alle tilknytte ressursar
 remote_serving_disabled	booking	nn	Ekstern servering er deaktivert for denne bevertinga. Aktiver det i Detaljar-fana for å administrere eksterne lokasjonar.
 remove	booking	nn	Fjern
 remove_focal_point	booking	nn	Fjern fokuspunkt
@@ -1185,3 +1185,29 @@ select_group	booking	nn	Vel gruppe/lag
 loading	booking	nn	Lastar
 error	booking	nn	Feil
 hidden_from_frontend	booking	nn	Skjult frå frontend
+add	booking	nn	Legg til
+yes	booking	nn	Ja
+no	booking	nn	Nei
+no_entries_found	booking	nn	Ingen oppføringar funne
+dt_search	booking	nn	Søk
+dt_info	booking	nn	Viser _START_ til _END_ av _TOTAL_ oppføringar
+dt_info_empty	booking	nn	Ingen oppføringar å vise
+dt_info_filtered	booking	nn	(filtrert frå _MAX_ totalt)
+dt_length_menu	booking	nn	Vis _MENU_ oppføringar
+dt_zero_records	booking	nn	Ingen samsvarande oppføringar funne
+dt_first	booking	nn	Første
+dt_last	booking	nn	Siste
+dt_next	booking	nn	Neste
+dt_previous	booking	nn	Førre
+filter	booking	nn	Filter
+reset_filter	booking	nn	Nullstill filter
+active_filters	booking	nn	Aktive filter
+drag_to_reorder	booking	nn	Dra for å endre rekkefølgje
+unit_each	booking	nn	stk
+unit_kg	booking	nn	kg
+unit_m	booking	nn	m
+unit_m2	booking	nn	m²
+unit_minute	booking	nn	minutt
+unit_hour	booking	nn	time
+unit_day	booking	nn	dag
+removed	booking	nn	fjerna

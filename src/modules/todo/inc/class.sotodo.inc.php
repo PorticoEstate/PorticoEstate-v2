@@ -71,19 +71,55 @@ class todo_sotodo
 		return '';
 	}
 
+	private function resolve_order_column($order = '')
+	{
+		$map = array(
+			'todo_id' => 'todo_id',
+			'todo_title' => 'todo_title',
+			'todo_status' => 'todo_status',
+			'todo_pri' => 'todo_pri',
+			'todo_startdate' => 'todo_startdate',
+			'todo_enddate' => 'todo_enddate',
+			'todo_owner' => 'todo_owner',
+			'todo_datecreated' => 'todo_datecreated',
+		);
+
+		$order = (string) $order;
+		if (!$order || !isset($map[$order]))
+		{
+			return '';
+		}
+
+		return $map[$order];
+	}
+
+	private function build_order_method($order_column = '', $sort = '')
+	{
+		$sort = strtoupper((string) $sort) === 'DESC' ? 'DESC' : 'ASC';
+
+		if (!$order_column)
+		{
+			return 'ORDER BY phpgw_todo.todo_id_main ASC, phpgw_todo.todo_level ASC, phpgw_todo.todo_id_parent ASC, phpgw_todo.todo_datecreated ASC, phpgw_todo.todo_id ASC';
+		}
+
+		return 'ORDER BY '
+			. 'root_order_value ' . $sort . ', '
+			. 'phpgw_todo.todo_id_main ' . $sort . ', '
+			. 'phpgw_todo.todo_level ASC, '
+			. 'phpgw_todo.todo_id_parent ASC, '
+			. 'phpgw_todo.todo_datecreated ASC, '
+			. 'phpgw_todo.todo_id ASC';
+	}
+
 	function read_todos($start = 0, $limit = True, $query = '', $filter = '', $order = '', $sort = '', $cat_id = '', $tree = '', $parent = '')
 	{
 		$type = $this->type($tree);
-
-		if ($order)
+		$order_column = $this->resolve_order_column($order);
+		$ordermethod = $this->build_order_method($order_column, $sort);
+		$root_order_select = '';
+		if ($order_column)
 		{
-			$order = $this->db->db_addslashes($order);
-			$sort = $this->db->db_addslashes($sort);
-			$ordermethod = "ORDER BY $order $sort";
-		}
-		else
-		{
-			$ordermethod = 'ORDER BY todo_id_main, todo_id_parent, todo_level, todo_datecreated ASC';
+			$root_order_select = ', (SELECT root.' . $order_column . ' FROM phpgw_todo root WHERE root.todo_id = phpgw_todo.todo_id_main) AS root_order_value';
 		}
 
 		$filter = strtolower($filter);
@@ -174,7 +210,7 @@ class todo_sotodo
 		{
 			$parentmethod = ' AND todo_id_parent=' . (int) $parent;
 		}
-		$sql = "SELECT DISTINCT phpgw_todo.* FROM phpgw_todo"
+		$sql = "SELECT DISTINCT phpgw_todo.*{$root_order_select} FROM phpgw_todo"
 			. " {$this->join} phpgw_accounts ON ( phpgw_todo.todo_owner = phpgw_accounts.account_id)"
 			. " {$this->join} phpgw_group_map ON (phpgw_accounts.account_id = phpgw_group_map.account_id)"
 			. " WHERE $filtermethod $querymethod $type $parentmethod ";

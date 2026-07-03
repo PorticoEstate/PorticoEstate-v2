@@ -102,6 +102,10 @@ class HospitalityOrderController
 					if (!(int)$a['active']) {
 						continue;
 					}
+					// Articles flagged hidden-from-frontend are officer-only — exclude from the public menu.
+					if (!empty($a['deactivate_in_frontend'])) {
+						continue;
+					}
 					$article = (new HospitalityArticle($a))->serialize();
 					$pricing = $this->articleRepo->resolveEffectivePricing((int)$a['id']);
 					if ($pricing) {
@@ -117,6 +121,10 @@ class HospitalityOrderController
 			$allArticles = $this->articleRepo->getArticlesByHospitality($hospitalityId, true);
 			$ungroupedArticles = [];
 			foreach ($allArticles as $a) {
+				// Articles flagged hidden-from-frontend are officer-only — exclude from the public menu.
+				if (!empty($a['deactivate_in_frontend'])) {
+					continue;
+				}
 				if (empty($a['article_group_id'])) {
 					$article = (new HospitalityArticle($a))->serialize();
 					$pricing = $this->articleRepo->resolveEffectivePricing((int)$a['id']);

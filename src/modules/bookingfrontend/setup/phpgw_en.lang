@@ -1060,3 +1060,6 @@ reserved_times	bookingfrontend	en	Reserved times
 show_in_calendar	bookingfrontend	en	Show in calendar
 allow_old_template	bookingfrontend	en	Allow old template
 allow_old_template_note	bookingfrontend	en	When enabled, users who selected the old template stay on it. When disabled, the new pages are forced for paths that have a new version.
+working_days	bookingfrontend	en	working days
+open_days_label	bookingfrontend	en	Open days
+working_days_deadline_note	bookingfrontend	en	deadlines are counted in working days

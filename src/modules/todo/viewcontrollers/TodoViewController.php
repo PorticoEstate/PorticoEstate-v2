@@ -15,6 +15,59 @@ class TodoViewController
 	protected TwigHelper $twig;
 	protected LegacyViewHelper $legacyView;
 
+	private function getDatatableI18n(): array
+	{
+		$user = Settings::getInstance()->get('user');
+		$rowsPerPage = isset($user['preferences']['common']['maxmatchs']) && (int) $user['preferences']['common']['maxmatchs'] > 0
+			? (int) $user['preferences']['common']['maxmatchs']
+			: 10;
+
+		$lengthmenu = [[], []];
+		for ($i = 1; $i < 4; $i++)
+		{
+			$lengthmenu[0][] = $i * $rowsPerPage;
+			$lengthmenu[1][] = $i * $rowsPerPage;
+		}
+
+		return [
+			'datatable' => [
+				'emptyTable' => json_encode(lang('No data available in table')),
+				'info' => json_encode(lang('Showing _START_ to _END_ of _TOTAL_ entries')),
+				'infoEmpty' => json_encode(lang('Showing 0 to 0 of 0 entries')),
+				'infoFiltered' => json_encode(lang('(filtered from _MAX_ total entries)')),
+				'infoPostFix' => json_encode(''),
+				'thousands' => json_encode(','),
+				'lengthMenu' => json_encode(lang('Show _MENU_ entries')),
+				'loadingRecords' => json_encode(lang('Loading...')),
+				'processing' => json_encode(lang('Processing...')),
+				'search' => json_encode(lang('search')),
+				'zeroRecords' => json_encode(lang('No matching records found')),
+				'paginate' => json_encode([
+					'first' => lang('first'),
+					'last' => lang('last'),
+					'next' => lang('next'),
+					'previous' => lang('prev'),
+				]),
+				'aria' => json_encode([
+					'sortAscending' => lang(': activate to sort column ascending'),
+					'sortDescending' => lang(': activate to sort column descending'),
+				]),
+				'select' => json_encode([
+					'rows' => [
+						'0' => '',
+						'_' => '%d ' . lang('rows selected'),
+					],
+				]),
+			],
+			'lengthmenu' => ['_' => json_encode($lengthmenu)],
+			'lengthmenu_allrows' => ['_' => json_encode([-1, lang('all')])],
+			'csv_download' => ['_' => json_encode([
+				'show_button' => !empty($user['preferences']['common']['csv_download']),
+				'title' => lang('download visible data'),
+			])],
+		];
+	}
+
 	private function formatDateForInput($timestamp, string $dateFormat): string
 	{
 		$ts = (int) $timestamp;
@@ -213,6 +266,21 @@ class TodoViewController
 			);
 		}
 	}
+	/**
+	 *
+	 * @param string $app
+	 * @param string $pkg will always look within template set, then fallback to $pkg
+	 * @param string $name name of the javascript file to include
+	 * @param bool $end_of_page
+	 * @param array $config
+	 * @return bool
+	 */
+
+	public static function add_javascript($app, $pkg, $name, $end_of_page = false, $config = array())
+	{
+
+		return \phpgwapi_js::getInstance()->validate_file($pkg, str_replace('.js', '', $name), $app, $end_of_page, $config);
+	}
 
 	/**
 	 * GET /todo/view/todos
@@ -221,29 +289,55 @@ class TodoViewController
 	{
 
 		try {
-			$userSettings = Settings::getInstance()->get('user');
-			$maxMatches = isset($userSettings['preferences']['common']['maxmatchs']) ? (int) $userSettings['preferences']['common']['maxmatchs'] : 25;
-			if ($maxMatches < 1)
-			{
-				$maxMatches = 25;
-			}
+			\phpgw::import_class('phpgwapi.jquery');
+			\phpgw::import_class('phpgwapi.css');
+			\phpgw::import_class('phpgwapi.js');
+			\phpgwapi_jquery::load_widget('core');
+			\phpgwapi_jquery::load_widget('contextMenu');
+			self::add_javascript('phpgwapi', "jquery", 'common.js', false, array('combine' => true));
+			self::add_javascript('phpgwapi', 'DataTables2', 'datatables.min.js', false, array('combine' => true));
+			self::add_javascript('phpgwapi', 'DataTables2', 'plugins/dataTables.inputPaging.js', false, array('combine' => true));
+			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.min.js', false, array('combine' => true));
+			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.min.js', false, array('combine' => true));
+			\phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables2/datatables.min.css');
+			\phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables2/plugins/dataTables.inputPaging.min.css');
 
-			$pageSizeOptions = [];
-			foreach ([1, 2, 4] as $multiplier)
-			{
-				$value = $maxMatches * $multiplier;
-				if ($value > 0 && $value <= 2000)
-				{
-					$pageSizeOptions[] = $value;
-				}
-			}
-			$pageSizeOptions = array_values(array_unique($pageSizeOptions));
 
-			$componentHtml = $this->twig->render('@views/todo/index/todo_index.twig', [
+
+			$query = $request->getQueryParams();
+			$selectedCat = isset($query['cat_id']) ? (int) $query['cat_id'] : 0;
+			$selectedFilter = isset($query['filter']) ? (string) $query['filter'] : 'none';
+			$search = isset($query['search']) ? (string) $query['search'] : '';
+
+			$categories = array_map(static function (array $category) use ($selectedCat): array
+			{
+				$category['selected'] = ((int) ($category['id'] ?? 0) === $selectedCat) ? '1' : '0';
+				return $category;
+			}, $this->getCategories());
+
+			$filters = [
+				[
+					'id' => 'none',
+					'name' => lang('All'),
+					'selected' => $selectedFilter === 'none' ? '1' : '0',
+				],
+				[
+					'id' => 'private',
+					'name' => lang('Private'),
+					'selected' => $selectedFilter === 'private' ? '1' : '0',
+				],
+			];
+
+			$componentHtml = $this->twig->render('@views/todo/index/todo_datatable.twig', [
 				'layout' => '@views/_bare.twig',
-				'categories' => $this->getCategories(),
-				'page_size_options' => $pageSizeOptions,
-				'default_page_size' => $maxMatches,
+				'categories' => $categories,
+				'filters' => $filters,
+				'search_query' => $search,
+				'jquery_phpgw_i18n' => $this->getDatatableI18n(),
+				'matrix_url' => \phpgw::link('/todo/view/todos/matrix', [
+					'month' => date('m'),
+					'year' => date('Y'),
+				]),
 			]);
 
 			$html = $this->legacyView->render(
@@ -278,7 +372,7 @@ class TodoViewController
 				'todo_id' => $id,
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['todo', 'view']);
+			$html = $this->legacyView->render($componentHtml, ['todo', 'view'], 'todo');
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
 		} catch (Exception $e) {
@@ -306,7 +400,7 @@ class TodoViewController
 				'todo_id' => $id,
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['todo', 'delete']);
+			$html = $this->legacyView->render($componentHtml, ['todo', 'delete'], 'todo');
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
 		} catch (Exception $e) {
@@ -341,7 +435,7 @@ class TodoViewController
 				'selected_parent_id' => isset($query['parent']) ? (int) $query['parent'] : 0,
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['todo', 'add']);
+			$html = $this->legacyView->render($componentHtml, ['todo', 'add'], 'todo');
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
 		} catch (Exception $e) {
@@ -406,7 +500,7 @@ class TodoViewController
 				'date_format' => $dateFormat,
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['todo', 'edit']);
+			$html = $this->legacyView->render($componentHtml, ['todo', 'edit'], 'todo');
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
 		} catch (Exception $e) {

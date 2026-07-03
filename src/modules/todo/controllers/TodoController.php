@@ -12,6 +12,21 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class TodoController
 {
+	private function mapDataTableColumnToSortKey(string $columnKey): string
+	{
+		$map = [
+			'id' => 'id',
+			'title' => 'title',
+			'status' => 'status',
+			'pri' => 'priority',
+			'sdate' => 'created',
+			'edate' => 'due',
+			'owner' => 'owner',
+		];
+
+		return $map[$columnKey] ?? 'id';
+	}
+
 	private function isCircularParentAssignment($botodo, int $todoId, int $parentId): bool
 	{
 		if ($parentId <= 0)
@@ -66,12 +81,24 @@ class TodoController
 		return (string) $normalized;
 	}
 
+	private function normalizeUrl(string $url): string
+	{
+		return html_entity_decode($url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+	}
+
 	private function getCommonQueryParams(Request $request): array
 	{
 		$query = $request->getQueryParams();
+		$body = (array) ($request->getParsedBody() ?: []);
+		$params = array_merge($query, $body);
 
-		$start = isset($query['start']) ? (int) $query['start'] : 0;
-		$limit = isset($query['limit']) ? (int) $query['limit'] : 100;
+		$draw = isset($params['draw']) ? (int) $params['draw'] : 0;
+		$start = isset($params['start']) ? (int) $params['start'] : 0;
+		$limit = isset($params['limit']) ? (int) $params['limit'] : 100;
+		if (isset($params['length']))
+		{
+			$limit = (int) $params['length'];
+		}
 		if ($limit < 1)
 		{
 			$limit = 100;
@@ -81,13 +108,37 @@ class TodoController
 			$limit = 2000;
 		}
 
-		$search = isset($query['search']) ? (string) $query['search'] : '';
-		$filter = isset($query['filter']) ? (string) $query['filter'] : 'none';
-		$catId = isset($query['cat_id']) ? (int) $query['cat_id'] : 0;
-		$sort = $this->mapSortKey((string) ($query['sort'] ?? 'id'));
-		$dir = strtoupper((string) ($query['dir'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
+		$search = '';
+		if (isset($params['search']) && is_array($params['search']))
+		{
+			$search = (string) ($params['search']['value'] ?? '');
+		}
+		else if (isset($params['search']))
+		{
+			$search = (string) $params['search'];
+		}
+
+		$filter = isset($params['filter']) ? (string) $params['filter'] : 'none';
+		$catId = isset($params['cat_id']) ? (int) $params['cat_id'] : 0;
+
+		$sortKey = (string) ($params['sort'] ?? 'id');
+		$dir = strtoupper((string) ($params['dir'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
+
+		if (empty($params['sort']) && isset($params['order'][0]) && is_array($params['order'][0]))
+		{
+			$dtOrder = $params['order'][0];
+			$columnIndex = isset($dtOrder['column']) ? (int) $dtOrder['column'] : -1;
+			if ($columnIndex >= 0 && isset($params['columns'][$columnIndex]['data']))
+			{
+				$sortKey = $this->mapDataTableColumnToSortKey((string) $params['columns'][$columnIndex]['data']);
+			}
+			$dir = strtoupper((string) ($dtOrder['dir'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
+		}
+
+		$sort = $this->mapSortKey($sortKey);
 
 		return [
+			'draw' => $draw,
 			'start' => $start,
 			'limit' => $limit,
 			'search' => $search,
@@ -221,6 +272,7 @@ class TodoController
 
 			$rows[] = [
 				'id' => $id,
+				'cat_id' => (int) ($todo['cat'] ?? $catId),
 				'title' => $this->formatTodoTitle((array) $todo),
 				'level' => max(0, (int) ($todo['level'] ?? 0)),
 				'status' => (string) ($todo['status'] ?? ''),
@@ -230,13 +282,13 @@ class TodoController
 				'owner' => (string) ($todo['owner'] ? $accountsObj->id2name((int) $todo['owner']) : ''),
 				'assigned' => (string) $assigned,
 				'actions' => [
-					'view' => \phpgw::link('/todo/view/todos/' . $id),
-						'edit' => $canEdit ? \phpgw::link('/todo/view/todos/' . $id . '/edit') : '',
-					'delete' => $canDelete ? \phpgw::link('/todo/view/todos/' . $id . '/delete') : '',
-					'subadd' => \phpgw::link('/todo/view/todos/add', [
+					'view' => $this->normalizeUrl(\phpgw::link('/todo/view/todos/' . $id)),
+					'edit' => $canEdit ? $this->normalizeUrl(\phpgw::link('/todo/view/todos/' . $id . '/edit')) : '',
+					'delete' => $canDelete ? $this->normalizeUrl(\phpgw::link('/todo/view/todos/' . $id . '/delete')) : '',
+					'subadd' => $this->normalizeUrl(\phpgw::link('/todo/view/todos/add', [
 						'parent' => $id,
 						'cat_id' => (int) ($todo['cat'] ?? $catId),
-					]),
+					])),
 				],
 			];
 		}
@@ -331,6 +383,16 @@ class TodoController
 			'all'
 		);
 		$items = $this->mapTodoItems(is_array($todoList) ? $todoList : [], $botodo, $grants, (int) $params['cat_id']);
+
+		if ((int) ($params['draw'] ?? 0) > 0)
+		{
+			return ResponseHelper::sendJSONResponse([
+				'draw' => (int) $params['draw'],
+				'recordsTotal' => (int) $botodo->total_records,
+				'recordsFiltered' => (int) $botodo->total_records,
+				'data' => $items,
+			]);
+		}
 
 		return ResponseHelper::sendJSONResponse([
 			'total' => (int) $botodo->total_records,
@@ -442,6 +504,24 @@ class TodoController
 	 */
 	public function store(Request $request, Response $response): Response
 	{
+		$query = $request->getQueryParams();
+		$parsedBody = $request->getParsedBody();
+		$parsedBody = is_array($parsedBody) ? $parsedBody : [];
+
+		// DataTables server-side requests use POST to this endpoint in datatable2.
+		// Route those requests to the list handler instead of create.
+		if (
+			isset($parsedBody['draw'])
+			|| isset($parsedBody['columns'])
+			|| isset($parsedBody['order'])
+			|| isset($query['draw'])
+			|| isset($query['columns'])
+			|| isset($query['order'])
+		)
+		{
+			return $this->index($request, $response);
+		}
+
 		$values = $this->readPayload($request);
 		$botodo = \CreateObject('todo.botodo', true);
 

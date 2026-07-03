@@ -1,0 +1,118 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('todo') }}{% endblock %}
+
+{% block styles %}
+<style>
+	.todo-title {
+		display: inline-block;
+		white-space: nowrap;
+	}
+	.todo-title__marker {
+		display: inline-block;
+		margin-right: 0.35rem;
+		color: #7a8a9a;
+		font-weight: 700;
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+<script>
+	function todoEscapeHtml(value)
+	{
+		return String(value === undefined || value === null ? '' : value)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#039;');
+	}
+
+	function todoFormatTitle(key, row)
+	{
+		var level = parseInt(row.level || 0, 10);
+		if (isNaN(level) || level < 0)
+		{
+			level = 0;
+		}
+
+		var marker = '';
+		if (level > 0)
+		{
+			marker = '<span class="todo-title__marker">' + '&#9500;'.repeat(Math.min(level, 4)) + '</span>';
+		}
+
+		var title = todoEscapeHtml(row.title || '');
+		var margin = level * 1.1;
+		return '<span class="todo-title" style="margin-left:' + margin + 'rem">' + marker + title + '</span>';
+	}
+</script>
+
+{% set datatable = {
+	'source': phpgw_link('/todo/todos'),
+	'download': phpgw_link('/todo/todos/export/csv'),
+	'new_item': phpgw_link('/todo/view/todos/add'),
+	'extra_buttons': [
+		{
+			'text': lang('view matrix of actual month'),
+			'url': matrix_url|default(phpgw_link('/todo/view/todos/matrix')),
+			'className': 'app-button--secondary'
+		}
+	],
+	'actions': [
+		{
+			'my_name': 'view',
+			'text': lang('view'),
+			'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.view'}),
+			'parameters': {'parameter': [{'name': 'id', 'source': 'id'}]}|json_encode
+		},
+		{
+			'my_name': 'edit',
+			'text': lang('edit'),
+			'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.edit'}),
+			'parameters': {'parameter': [{'name': 'id', 'source': 'id'}]}|json_encode
+		},
+		{
+			'my_name': 'delete',
+			'text': lang('delete'),
+			'confirm_msg': lang('do you really want to delete this entry'),
+			'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.delete'}),
+			'parameters': {'parameter': [{'name': 'id', 'source': 'id'}]}|json_encode
+		},
+		{
+			'my_name': 'new',
+			'text': lang('add sub project'),
+			'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.add'}),
+			'parameters': {'parameter': [{'name': 'parent', 'source': 'id'}, {'name': 'cat_id', 'source': 'cat_id'}]}|json_encode
+		}
+	],
+	'query': search_query|default(''),
+	'sorted_by': {'key': 0, 'dir': 'asc'},
+	'field': [
+		{'key': 'id', 'label': lang('ID'), 'sortable': 1, 'searchable': 0, 'hidden': 0},
+		{'key': 'title', 'label': lang('Title'), 'sortable': 1, 'searchable': 1, 'hidden': 0, 'formatter': 'todoFormatTitle'},
+		{'key': 'status', 'label': lang('Status'), 'sortable': 0, 'searchable': 1, 'hidden': 0},
+		{'key': 'pri', 'label': lang('Urgency'), 'sortable': 1, 'searchable': 0, 'hidden': 0},
+		{'key': 'sdate', 'label': lang('start date'), 'sortable': 1, 'searchable': 0, 'hidden': 0},
+		{'key': 'edate', 'label': lang('end date'), 'sortable': 1, 'searchable': 0, 'hidden': 0},
+		{'key': 'owner', 'label': lang('created by'), 'sortable': 0, 'searchable': 1, 'hidden': 0},
+		{'key': 'assigned', 'label': lang('assigned to'), 'sortable': 0, 'searchable': 1, 'hidden': 0}
+	]
+} %}
+
+{% set form = {
+	'toolbar': {
+		'item': [
+			{'name': 'cat_id', 'text': lang('Category'), 'type': 'filter', 'list': categories|default([])},
+			{'name': 'filter', 'text': lang('Filter'), 'type': 'filter', 'list': filters|default([])}
+		]
+	}
+} %}
+
+{% include 'datatable2.twig' with {
+	'data': {'filters': {}},
+	'datatable': datatable,
+	'form': form
+} %}
+{% endblock %}

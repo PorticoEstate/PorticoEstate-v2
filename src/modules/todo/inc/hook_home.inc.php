@@ -85,8 +85,9 @@ if ($showOnMain)
 		'outerborderwidth' => '0',
 		'header_background_image' => (new \phpgwapi_common())->image('phpgwapi', 'bg_filler', '.png', False),
 	));
-	$portalbox->draw($extra_data);
+	$html = $portalbox->draw($extra_data);
 
+	echo $html;
 	$flags['currentapp'] = $saveApp;
 	Settings::getInstance()->set('flags', $flags);
 

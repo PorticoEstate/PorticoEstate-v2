@@ -78,6 +78,15 @@ class Hospitality
     public $order_by_time_unit;
 
     /**
+     * Business-days bitmask: which weekdays the catering is open, so the order-deadline
+     * calc can skip closed days. Bit (ISO weekday - 1) set = open (bit0=Mon .. bit6=Sun).
+     * 127 = all days open (default). Consumed by the client deadline calc.
+     * @OA\Property(type="integer", nullable=true, description="Open-days bitmask; bit0=Mon..bit6=Sun; 127=all open")
+     * @Expose
+     */
+    public $open_days = 127;
+
+    /**
      * @OA\Property(type="string", format="date-time")
      * @Expose
      */

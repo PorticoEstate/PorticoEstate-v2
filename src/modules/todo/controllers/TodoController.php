@@ -7,9 +7,85 @@ use App\modules\property\helpers\BoCommon;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
+use OpenApi\Annotations as OA;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
+/**
+ * @OA\Tag(
+ *     name="Todo",
+ *     description="REST API for todo items"
+ * )
+ *
+ * @OA\Schema(
+ *     schema="TodoItem",
+ *     type="object",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="cat_id", type="integer"),
+ *     @OA\Property(property="title", type="string"),
+ *     @OA\Property(property="level", type="integer"),
+ *     @OA\Property(property="status", type="integer", minimum=0, maximum=100),
+ *     @OA\Property(property="pri", type="string"),
+ *     @OA\Property(property="sdate", type="string"),
+ *     @OA\Property(property="edate", type="string"),
+ *     @OA\Property(property="owner", type="string"),
+ *     @OA\Property(property="assigned", type="string")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="TodoDetail",
+ *     type="object",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="title", type="string"),
+ *     @OA\Property(property="descr", type="string"),
+ *     @OA\Property(property="category", type="string"),
+ *     @OA\Property(property="parent", type="string"),
+ *     @OA\Property(property="status", type="integer", minimum=0, maximum=100),
+ *     @OA\Property(property="pri", type="string"),
+ *     @OA\Property(property="access", type="string"),
+ *     @OA\Property(property="owner", type="string"),
+ *     @OA\Property(property="assigned", type="string"),
+ *     @OA\Property(property="sdate", type="string"),
+ *     @OA\Property(property="edate", type="string"),
+ *     @OA\Property(property="has_subs", type="boolean")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="TodoCategory",
+ *     type="object",
+ *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="name", type="string")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="TodoUpsertRequest",
+ *     type="object",
+ *     @OA\Property(property="title", type="string"),
+ *     @OA\Property(property="descr", type="string"),
+ *     @OA\Property(property="cat", type="integer"),
+ *     @OA\Property(property="parent", type="integer"),
+ *     @OA\Property(property="pri", type="integer"),
+ *     @OA\Property(property="status", type="integer", minimum=0, maximum=100),
+ *     @OA\Property(property="access", type="boolean"),
+ *     @OA\Property(property="assigned", oneOf={@OA\Schema(type="string"), @OA\Schema(type="array", @OA\Items(type="string"))}),
+ *     @OA\Property(property="assigned_group", oneOf={@OA\Schema(type="string"), @OA\Schema(type="array", @OA\Items(type="string"))}),
+ *     @OA\Property(property="sday", type="integer"),
+ *     @OA\Property(property="smonth", type="integer"),
+ *     @OA\Property(property="syear", type="integer"),
+ *     @OA\Property(property="eday", type="integer"),
+ *     @OA\Property(property="emonth", type="integer"),
+ *     @OA\Property(property="eyear", type="integer")
+ * )
+ *
+ * @OA\Schema(
+ *     schema="TodoErrorResponse",
+ *     type="object",
+ *     @OA\Property(property="error", type="string"),
+ *     @OA\Property(property="reason", type="string"),
+ *     @OA\Property(property="todo_id", type="integer"),
+ *     @OA\Property(property="parent_id", type="integer")
+ * )
+ */
 class TodoController
 {
 	private function mapDataTableColumnToSortKey(string $columnKey): string
@@ -365,6 +441,38 @@ class TodoController
 
 	/**
 	 * GET /todo/todos
+	 *
+	 * @OA\Get(
+	 *     path="/todo/todos",
+	 *     summary="List todo items",
+	 *     tags={"Todo"},
+	 *     @OA\Parameter(name="start", in="query", @OA\Schema(type="integer", default=0)),
+	 *     @OA\Parameter(name="limit", in="query", @OA\Schema(type="integer", default=100)),
+	 *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="filter", in="query", @OA\Schema(type="string", default="none")),
+	 *     @OA\Parameter(name="cat_id", in="query", @OA\Schema(type="integer", default=0)),
+	 *     @OA\Parameter(name="sort", in="query", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="dir", in="query", @OA\Schema(type="string", enum={"ASC", "DESC"}, default="ASC")),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Todo list",
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             @OA\Property(property="total", type="integer"),
+	 *             @OA\Property(property="items", type="array", @OA\Items(ref="#/components/schemas/TodoItem"))
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=401,
+	 *         description="Unauthorized",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Internal server error",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     )
+	 * )
 	 */
 	public function index(Request $request, Response $response): Response
 	{
@@ -402,6 +510,30 @@ class TodoController
 
 	/**
 	 * GET /todo/categories
+	 *
+	 * @OA\Get(
+	 *     path="/todo/categories",
+	 *     summary="List todo categories",
+	 *     tags={"Todo"},
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Category list",
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             @OA\Property(property="items", type="array", @OA\Items(ref="#/components/schemas/TodoCategory"))
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=401,
+	 *         description="Unauthorized",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Internal server error",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     )
+	 * )
 	 */
 	public function categories(Request $request, Response $response): Response
 	{
@@ -425,6 +557,23 @@ class TodoController
 
 	/**
 	 * GET /todo/todos/export/csv
+	 *
+	 * @OA\Get(
+	 *     path="/todo/todos/export/csv",
+	 *     summary="Export todo list as CSV",
+	 *     tags={"Todo"},
+	 *     @OA\Response(response=200, description="CSV file"),
+	 *     @OA\Response(
+	 *         response=401,
+	 *         description="Unauthorized",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Internal server error",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     )
+	 * )
 	 */
 	public function exportCsv(Request $request, Response $response): Response
 	{
@@ -477,6 +626,38 @@ class TodoController
 
 	/**
 	 * GET /todo/todos/{id}
+	 *
+	 * @OA\Get(
+	 *     path="/todo/todos/{id}",
+	 *     summary="Get single todo",
+	 *     tags={"Todo"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Todo item",
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             @OA\Property(property="item", type="object"),
+	 *             @OA\Property(property="detail", ref="#/components/schemas/TodoDetail"),
+	 *             @OA\Property(property="history_html", type="string")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=404,
+	 *         description="Todo not found",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=401,
+	 *         description="Unauthorized",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Internal server error",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     )
+	 * )
 	 */
 	public function show(Request $request, Response $response, array $args): Response
 	{
@@ -501,6 +682,36 @@ class TodoController
 
 	/**
 	 * POST /todo/todos
+	 *
+	 * @OA\Post(
+	 *     path="/todo/todos",
+	 *     summary="Create todo",
+	 *     tags={"Todo"},
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoUpsertRequest")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=201,
+	 *         description="Created",
+	 *         @OA\JsonContent(type="object", @OA\Property(property="id", type="integer"))
+	 *     ),
+	 *     @OA\Response(
+	 *         response=400,
+	 *         description="Validation error",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=401,
+	 *         description="Unauthorized",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Internal server error",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     )
+	 * )
 	 */
 	public function store(Request $request, Response $response): Response
 	{
@@ -540,6 +751,42 @@ class TodoController
 
 	/**
 	 * PUT /todo/todos/{id}
+	 *
+	 * @OA\Put(
+	 *     path="/todo/todos/{id}",
+	 *     summary="Update todo",
+	 *     tags={"Todo"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoUpsertRequest")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Updated",
+	 *         @OA\JsonContent(type="object", @OA\Property(property="id", type="integer"))
+	 *     ),
+	 *     @OA\Response(
+	 *         response=400,
+	 *         description="Invalid request",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=404,
+	 *         description="Todo not found",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=401,
+	 *         description="Unauthorized",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Internal server error",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     )
+	 * )
 	 */
 	public function update(Request $request, Response $response, array $args): Response
 	{
@@ -573,6 +820,49 @@ class TodoController
 
 	/**
 	 * PATCH /todo/todos/{id}/status
+	 *
+	 * @OA\Patch(
+	 *     path="/todo/todos/{id}/status",
+	 *     summary="Update todo completion percentage",
+	 *     tags={"Todo"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(
+	 *             required={"status"},
+	 *             @OA\Property(property="status", type="integer", minimum=0, maximum=100)
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Status updated",
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             @OA\Property(property="id", type="integer"),
+	 *             @OA\Property(property="status", type="integer", minimum=0, maximum=100)
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=400,
+	 *         description="Invalid status value",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=404,
+	 *         description="Todo not found",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=401,
+	 *         description="Unauthorized",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Internal server error",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     )
+	 * )
 	 */
 	public function updateStatus(Request $request, Response $response, array $args): Response
 	{
@@ -636,6 +926,43 @@ class TodoController
 
 	/**
 	 * DELETE /todo/todos/{id}
+	 *
+	 * @OA\Delete(
+	 *     path="/todo/todos/{id}",
+	 *     summary="Delete todo",
+	 *     tags={"Todo"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="subs", in="query", required=false, @OA\Schema(type="boolean", default=false)),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Delete result",
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             @OA\Property(property="deleted", type="boolean"),
+	 *             @OA\Property(property="subs", type="boolean")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=403,
+	 *         description="Delete denied",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=404,
+	 *         description="Todo not found",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=401,
+	 *         description="Unauthorized",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Internal server error",
+	 *         @OA\JsonContent(ref="#/components/schemas/TodoErrorResponse")
+	 *     )
+	 * )
 	 */
 	public function destroy(Request $request, Response $response, array $args): Response
 	{

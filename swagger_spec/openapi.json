@@ -8640,7 +8640,7 @@
                 ],
                 "summary": "Create a new location",
                 "description": "Creates a new location record with provided field values and custom attributes. Legacy alias \/property\/location\/add is still supported for backward compatibility.",
-                "operationId": "aadef3c5bbb5e9c38ffc667e0aa23a92",
+                "operationId": "c5d0f21e32e72206d5253ca353ff1711",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -9709,7 +9709,7 @@
                 ],
                 "summary": "Update an existing location",
                 "description": "Updates a location record with field changes, custom attribute modifications, and optional rename via location_code_original threading",
-                "operationId": "b15d5b022a534fed78955d3ccf6e4a8b",
+                "operationId": "4362891b158eb5cfa9b9ab662c9f161b",
                 "parameters": [
                     {
                         "name": "location_code",
@@ -11404,6 +11404,616 @@
                     }
                 }
             }
+        },
+        "\/todo\/todos": {
+            "get": {
+                "tags": [
+                    "Todo"
+                ],
+                "summary": "List todo items",
+                "description": "GET \/todo\/todos",
+                "operationId": "1aaab10719ee532a05c66c69999fdf71",
+                "parameters": [
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 100
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "default": "none"
+                        }
+                    },
+                    {
+                        "name": "cat_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "dir",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "default": "ASC",
+                            "enum": [
+                                "ASC",
+                                "DESC"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Todo list",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "total": {
+                                            "type": "integer"
+                                        },
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/TodoItem"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Todo"
+                ],
+                "summary": "Create todo",
+                "description": "POST \/todo\/todos",
+                "operationId": "edffa6843bd693a6158c7b9de91f38aa",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/TodoUpsertRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/todo\/categories": {
+            "get": {
+                "tags": [
+                    "Todo"
+                ],
+                "summary": "List todo categories",
+                "description": "GET \/todo\/categories",
+                "operationId": "a2d1089f9cd02a1a0a18aebfec81df40",
+                "responses": {
+                    "200": {
+                        "description": "Category list",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/TodoCategory"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/todo\/todos\/export\/csv": {
+            "get": {
+                "tags": [
+                    "Todo"
+                ],
+                "summary": "Export todo list as CSV",
+                "description": "GET \/todo\/todos\/export\/csv",
+                "operationId": "2f2a3be82a3b7f637b96dc82c37c45dc",
+                "responses": {
+                    "200": {
+                        "description": "CSV file"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/todo\/todos\/{id}": {
+            "get": {
+                "tags": [
+                    "Todo"
+                ],
+                "summary": "Get single todo",
+                "description": "GET \/todo\/todos\/{id}",
+                "operationId": "6018b4c996401c3bed72e7c3859664d0",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Todo item",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "item": {
+                                            "type": "object"
+                                        },
+                                        "detail": {
+                                            "$ref": "#\/components\/schemas\/TodoDetail"
+                                        },
+                                        "history_html": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Todo not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Todo"
+                ],
+                "summary": "Update todo",
+                "description": "PUT \/todo\/todos\/{id}",
+                "operationId": "f19b56d46553a6094cd7efb5dcf732ed",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/TodoUpsertRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Todo not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Todo"
+                ],
+                "summary": "Delete todo",
+                "description": "DELETE \/todo\/todos\/{id}",
+                "operationId": "6c3f749bcb5f0d6153b0db5d60d07762",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "subs",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Delete result",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "deleted": {
+                                            "type": "boolean"
+                                        },
+                                        "subs": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Delete denied",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Todo not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/todo\/todos\/{id}\/status": {
+            "patch": {
+                "tags": [
+                    "Todo"
+                ],
+                "summary": "Update todo completion percentage",
+                "description": "PATCH \/todo\/todos\/{id}\/status",
+                "operationId": "59949f3960541815d3da46d44c312bec",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "integer",
+                                        "maximum": 100,
+                                        "minimum": 0
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Status updated",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "status": {
+                                            "type": "integer",
+                                            "maximum": 100,
+                                            "minimum": 0
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid status value",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Todo not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/TodoErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -11981,6 +12591,10 @@
                         }
                     },
                     "close_calendar_without_season": {
+                        "type": "boolean"
+                    },
+                    "allow_old_template": {
+                        "description": "When true, users who explicitly selected the old template stay on it.\nWhen false (default), the new client is forced for paths that have a\nnew-client alternative (see phpgwapi StartPoint redirect map).",
                         "type": "boolean"
                     }
                 },
@@ -13233,6 +13847,189 @@
                     }
                 },
                 "type": "object"
+            },
+            "TodoItem": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "cat_id": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "level": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "maximum": 100,
+                        "minimum": 0
+                    },
+                    "pri": {
+                        "type": "string"
+                    },
+                    "sdate": {
+                        "type": "string"
+                    },
+                    "edate": {
+                        "type": "string"
+                    },
+                    "owner": {
+                        "type": "string"
+                    },
+                    "assigned": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "TodoDetail": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "descr": {
+                        "type": "string"
+                    },
+                    "category": {
+                        "type": "string"
+                    },
+                    "parent": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "maximum": 100,
+                        "minimum": 0
+                    },
+                    "pri": {
+                        "type": "string"
+                    },
+                    "access": {
+                        "type": "string"
+                    },
+                    "owner": {
+                        "type": "string"
+                    },
+                    "assigned": {
+                        "type": "string"
+                    },
+                    "sdate": {
+                        "type": "string"
+                    },
+                    "edate": {
+                        "type": "string"
+                    },
+                    "has_subs": {
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "TodoCategory": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "TodoUpsertRequest": {
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    },
+                    "descr": {
+                        "type": "string"
+                    },
+                    "cat": {
+                        "type": "integer"
+                    },
+                    "parent": {
+                        "type": "integer"
+                    },
+                    "pri": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "maximum": 100,
+                        "minimum": 0
+                    },
+                    "access": {
+                        "type": "boolean"
+                    },
+                    "assigned": {
+                        "oneOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        ]
+                    },
+                    "assigned_group": {
+                        "oneOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        ]
+                    },
+                    "sday": {
+                        "type": "integer"
+                    },
+                    "smonth": {
+                        "type": "integer"
+                    },
+                    "syear": {
+                        "type": "integer"
+                    },
+                    "eday": {
+                        "type": "integer"
+                    },
+                    "emonth": {
+                        "type": "integer"
+                    },
+                    "eyear": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "TodoErrorResponse": {
+                "properties": {
+                    "error": {
+                        "type": "string"
+                    },
+                    "reason": {
+                        "type": "string"
+                    },
+                    "todo_id": {
+                        "type": "integer"
+                    },
+                    "parent_id": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
             }
         },
         "securitySchemes": {
@@ -13307,6 +14104,10 @@
         {
             "name": "Workorder",
             "description": "REST API for workorder resources"
+        },
+        {
+            "name": "Todo",
+            "description": "REST API for todo items"
         },
         {
             "name": "Relationships",

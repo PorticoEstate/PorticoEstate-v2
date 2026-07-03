@@ -29,7 +29,16 @@ use Psr\Http\Message\ServerRequestInterface as Request;
  *     @OA\Property(property="sdate", type="string"),
  *     @OA\Property(property="edate", type="string"),
  *     @OA\Property(property="owner", type="string"),
- *     @OA\Property(property="assigned", type="string")
+ *     @OA\Property(
+ *         property="assigned_entries",
+ *         type="array",
+ *         @OA\Items(
+ *             type="object",
+ *             @OA\Property(property="id", type="integer"),
+ *             @OA\Property(property="type", type="string", enum={"user", "group"}),
+ *             @OA\Property(property="name", type="string")
+ *         )
+ *     )
  * )
  *
  * @OA\Schema(
@@ -44,7 +53,16 @@ use Psr\Http\Message\ServerRequestInterface as Request;
  *     @OA\Property(property="pri", type="string"),
  *     @OA\Property(property="access", type="string"),
  *     @OA\Property(property="owner", type="string"),
- *     @OA\Property(property="assigned", type="string"),
+ *     @OA\Property(
+ *         property="assigned_entries",
+ *         type="array",
+ *         @OA\Items(
+ *             type="object",
+ *             @OA\Property(property="id", type="integer"),
+ *             @OA\Property(property="type", type="string", enum={"user", "group"}),
+ *             @OA\Property(property="name", type="string")
+ *         )
+ *     ),
  *     @OA\Property(property="sdate", type="string"),
  *     @OA\Property(property="edate", type="string"),
  *     @OA\Property(property="has_subs", type="boolean")
@@ -162,14 +180,6 @@ class TodoController
 		return $normalized;
 	}
 
-	private function normalizeLineBreaks(string $value): string
-	{
-		$normalized = preg_replace('/<br\s*\/?>/i', "\n", $value);
-		$normalized = str_replace(["\r\n", "\r"], "\n", (string) $normalized);
-
-		return (string) $normalized;
-	}
-
 	private function normalizeUrl(string $url): string
 	{
 		return html_entity_decode($url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -265,6 +275,99 @@ class TodoController
 		return $title;
 	}
 
+	private function normalizeAssignedIds($botodo, $raw): array
+	{
+		if (is_array($raw))
+		{
+			$values = $raw;
+		}
+		else
+		{
+			$values = $botodo->format_assigned((string) $raw);
+		}
+
+		$ids = [];
+		foreach ((array) $values as $value)
+		{
+			$id = (int) $value;
+			if ($id > 0)
+			{
+				$ids[] = $id;
+			}
+		}
+
+		return array_values(array_unique($ids));
+	}
+
+	private function resolveAssignedName($botodo, int $accountId): string
+	{
+		$cached = $botodo->cached_accounts($accountId);
+		if (is_object($cached) && isset($cached->lid, $cached->firstname, $cached->lastname))
+		{
+			$phpgwapiCommon = new \phpgwapi_common();
+			return (string) $phpgwapiCommon->display_fullname(
+				(string) $cached->lid,
+				(string) $cached->firstname,
+				(string) $cached->lastname
+			);
+		}
+
+		$accountsObj = new Accounts();
+		return (string) $accountsObj->id2name($accountId);
+	}
+
+	private function mapAssignedEntries($botodo, array $item): array
+	{
+		$entries = [];
+		$seen = [];
+
+		$userIds = $this->normalizeAssignedIds($botodo, $item['assigned'] ?? '');
+		foreach ($userIds as $userId)
+		{
+			$key = 'user:' . $userId;
+			if (isset($seen[$key]))
+			{
+				continue;
+			}
+			$seen[$key] = true;
+
+			$entries[] = [
+				'id' => $userId,
+				'type' => 'user',
+				'name' => $this->resolveAssignedName($botodo, $userId),
+			];
+		}
+
+		$groupIds = $this->normalizeAssignedIds($botodo, $item['assigned_group'] ?? '');
+		foreach ($groupIds as $groupId)
+		{
+			$key = 'group:' . $groupId;
+			if (isset($seen[$key]))
+			{
+				continue;
+			}
+			$seen[$key] = true;
+
+			$entries[] = [
+				'id' => $groupId,
+				'type' => 'group',
+				'name' => $this->resolveAssignedName($botodo, $groupId),
+			];
+		}
+
+		return $entries;
+	}
+
+	private function assignedEntriesToText(array $entries): string
+	{
+		$lines = array_values(array_filter(array_map(static function ($entry)
+		{
+			return (string) ($entry['name'] ?? '');
+		}, $entries)));
+
+		return implode("\n", $lines);
+	}
+
 	private function mapTodoDetail(array $item, $botodo): array
 	{
 		$userSettings = Settings::getInstance()->get('user');
@@ -283,9 +386,7 @@ class TodoController
 			);
 		}
 
-		$assigned = $botodo->list_assigned($botodo->format_assigned((string) ($item['assigned'] ?? '')));
-		$assigned .= $botodo->list_assigned($botodo->format_assigned((string) ($item['assigned_group'] ?? '')));
-		$assigned = $this->normalizeLineBreaks((string) $assigned);
+		$assignedEntries = $this->mapAssignedEntries($botodo, (array) $item);
 		$phpgwapiCommon = new \phpgwapi_common();
 
 		$categoryName = '';
@@ -334,7 +435,7 @@ class TodoController
 			'pri' => $priority,
 			'access' => (string) ($item['access'] ?? ''),
 			'owner' => $ownerName,
-			'assigned' => (string) $assigned,
+			'assigned_entries' => $assignedEntries,
 			'sdate' => $startDate,
 			'edate' => $endDate,
 			'has_subs' => (bool) $botodo->exists((int) ($item['id'] ?? 0)),
@@ -355,9 +456,7 @@ class TodoController
 			$canEdit = $botodo->check_perms($ownerId, $grants, ACL_EDIT) || $ownerId === $currentAccountId;
 			$canDelete = $botodo->check_perms($ownerId, $grants, ACL_DELETE) || $ownerId === $currentAccountId;
 
-			$assigned = $botodo->list_assigned($todo['assigned'] ?? '');
-			$assigned .= $botodo->list_assigned($todo['assigned_group'] ?? '');
-			$assigned = $this->normalizeLineBreaks((string) $assigned);
+			$assignedEntries = $this->mapAssignedEntries($botodo, (array) $todo);
 
 			$rows[] = [
 				'id' => $id,
@@ -369,7 +468,7 @@ class TodoController
 				'sdate' => (string) ($todo['sdate'] ?? ''),
 				'edate' => (string) ($todo['edate'] ?? ''),
 				'owner' => (string) ($todo['owner'] ? $accountsObj->id2name((int) $todo['owner']) : ''),
-				'assigned' => (string) $assigned,
+				'assigned_entries' => $assignedEntries,
 				'actions' => [
 					'view' => $this->normalizeUrl(\phpgw::link('/todo/view/todos/' . $id)),
 					'edit' => $canEdit ? $this->normalizeUrl(\phpgw::link('/todo/view/todos/' . $id . '/edit')) : '',
@@ -619,7 +718,7 @@ class TodoController
 				'sdate' => $item['sdate'],
 				'edate' => $item['edate'],
 				'owner' => $item['owner'],
-				'assigned' => $item['assigned'],
+				'assigned' => $this->assignedEntriesToText((array) ($item['assigned_entries'] ?? [])),
 			];
 		}
 

@@ -47,6 +47,38 @@
 		var margin = level * 1.1;
 		return '<span class="todo-title" style="margin-left:' + margin + 'rem">' + marker + title + '</span>';
 	}
+
+	function todoRenderMultiline(value)
+	{
+		var normalized = String(value === undefined || value === null ? '' : value)
+			.replace(/<br\s*\/?>/gi, '\n')
+			.replace(/\r\n/g, '\n')
+			.replace(/\r/g, '\n');
+
+		return todoEscapeHtml(normalized).replace(/\n/g, '<br>');
+	}
+
+	function renderAssigned(key, row)
+	{
+		var entries = Array.isArray(row && row.assigned_entries) ? row.assigned_entries : [];
+		if (entries.length)
+		{
+			var lines = entries
+				.map(function (entry) {
+					return entry && entry.name != null ? String(entry.name) : '';
+				})
+				.filter(function (line) {
+					return line !== '';
+				});
+
+			if (lines.length)
+			{
+				return lines.map(function (line) { return todoEscapeHtml(line); }).join('<br>');
+			}
+		}
+
+		return '-';
+	}
 </script>
 
 {% set actions = [
@@ -127,7 +159,7 @@
 		{'key': 'sdate', 'label': lang('start date'), 'sortable': 1, 'searchable': 0, 'hidden': 0},
 		{'key': 'edate', 'label': lang('end date'), 'sortable': 1, 'searchable': 0, 'hidden': 0},
 		{'key': 'owner', 'label': lang('created by'), 'sortable': 0, 'searchable': 1, 'hidden': 0},
-		{'key': 'assigned', 'label': lang('assigned to'), 'sortable': 0, 'searchable': 1, 'hidden': 0}
+		{'key': 'assigned_entries', 'label': lang('assigned to'), 'sortable': 0, 'searchable': 1, 'hidden': 0, 'formatter': 'renderAssigned'}
 	]
 } %}
 

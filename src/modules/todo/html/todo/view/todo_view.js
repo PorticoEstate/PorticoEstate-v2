@@ -100,6 +100,31 @@
 		historyEl.innerHTML = html;
 	}
 
+	function renderAssigned(detail) {
+		var assignedEl = document.getElementById('todo-view-assigned');
+		if (!assignedEl) {
+			return;
+		}
+
+		var entries = Array.isArray(detail && detail.assigned_entries) ? detail.assigned_entries : [];
+		if (entries.length) {
+			var lines = entries
+				.map(function (entry) {
+					return entry && entry.name != null ? String(entry.name) : '';
+				})
+				.filter(function (line) {
+					return line !== '';
+				});
+
+			if (lines.length) {
+				assignedEl.innerHTML = lines.map(function (line) { return escapeHtml(line); }).join('<br>');
+				return;
+			}
+		}
+
+		assignedEl.innerHTML = '-';
+	}
+
 	function setText(id, value) {
 		var el = document.getElementById(id);
 		if (!el) {
@@ -130,10 +155,7 @@
 		setText('todo-view-edate', detail.edate);
 		setText('todo-view-access', detail.access);
 		setText('todo-view-owner', detail.owner);
-		var assignedEl = document.getElementById('todo-view-assigned');
-		if (assignedEl) {
-			assignedEl.innerHTML = renderMultiline(detail.assigned);
-		}
+		renderAssigned(detail);
 
 		if (editLink) {
 			if (editUrl) {

@@ -288,6 +288,12 @@
     overflow: hidden;
 }
 
+/* Hospitality-level info/routine text (#374) — preserve admin line breaks. */
+.hospitalityInfo {
+    white-space: pre-wrap;
+    margin-bottom: var(--ds-size-2, 0.5rem);
+}
+
 .totalRow {
     display: flex;
     align-items: center;

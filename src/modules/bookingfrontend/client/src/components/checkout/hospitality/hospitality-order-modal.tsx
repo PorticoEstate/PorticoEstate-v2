@@ -530,6 +530,13 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         </Alert>
                     )}
 
+                    {/* Hospitality-level info / routine text from admin (#374) */}
+                    {menu?.hospitality_description && (
+                        <Alert data-color="info" data-size="sm" className={styles.hospitalityInfo}>
+                            {menu.hospitality_description}
+                        </Alert>
+                    )}
+
                     {/* Article menu */}
                     <div className={styles.menuList}>
                         {menu?.groups.map(group => {

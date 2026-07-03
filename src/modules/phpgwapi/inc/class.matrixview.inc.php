@@ -346,7 +346,6 @@ class phpgwapi_matrixview
 			}
 
 			echo '</select>' . "\n";
-			echo '<button class="phpgw-matrixview__submit" type="submit" name="selection" value="1">' . lang('Filter') . '</button>';
 			echo '</div>' . "\n";
 		}
 

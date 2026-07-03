@@ -16,6 +16,23 @@
 	var langSaving = root.dataset.langSaving || 'Saving...';
 	var langUpdateFailed = root.dataset.langUpdateFailed || 'Failed to update status';
 
+	var filterForm = root.querySelector('.phpgw-matrixview__filters');
+	if (filterForm) {
+		filterForm.addEventListener('change', function (event) {
+			var target = event.target;
+			if (!target || !target.matches('.phpgw-matrixview__select')) {
+				return;
+			}
+
+			if (typeof filterForm.requestSubmit === 'function') {
+				filterForm.requestSubmit();
+				return;
+			}
+
+			filterForm.submit();
+		});
+	}
+
 	function clampStatus(value) {
 		var normalized = String(value == null ? '' : value).trim();
 		if (!/^\d+$/.test(normalized)) {

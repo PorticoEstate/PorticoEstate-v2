@@ -4,8 +4,8 @@
 		return;
 	}
 
-	var statusApiBase = root.dataset.statusApiBase || '';
-	if (!statusApiBase) {
+	var statusApiTemplate = root.dataset.statusApiTemplate || '';
+	if (!statusApiTemplate || statusApiTemplate.indexOf('__TODO_ID__') === -1) {
 		return;
 	}
 
@@ -17,8 +17,13 @@
 	var langUpdateFailed = root.dataset.langUpdateFailed || 'Failed to update status';
 
 	function clampStatus(value) {
-		var parsed = parseInt(value, 10);
-		if (isNaN(parsed)) {
+		var normalized = String(value == null ? '' : value).trim();
+		if (!/^\d+$/.test(normalized)) {
+			return null;
+		}
+
+		var parsed = Number(normalized);
+		if (!Number.isInteger(parsed)) {
 			return null;
 		}
 		if (parsed < 0 || parsed > 100) {
@@ -42,8 +47,12 @@
 		}
 	}
 
+	function buildStatusUrl(todoId) {
+		return statusApiTemplate.replace('__TODO_ID__', encodeURIComponent(String(todoId)));
+	}
+
 	function updateStatus(button, todoId, status) {
-		return fetch(statusApiBase + '/' + todoId + '/status', {
+		return fetch(buildStatusUrl(todoId), {
 			method: 'PATCH',
 			headers: {
 				'Content-Type': 'application/json',

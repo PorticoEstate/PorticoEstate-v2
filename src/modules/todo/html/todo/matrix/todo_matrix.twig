@@ -8,7 +8,7 @@
 
 {% block content %}
 <div class="todo-matrix"
-	data-status-api-base="{{ phpgw_link('/todo/todos') }}"
+	data-status-api-template="{{ phpgw_link('/todo/todos/__TODO_ID__/status') }}"
 	data-lang-completed="{{ lang('Completed') }}"
 	data-lang-click-to-edit="{{ lang('click to edit') }}"
 	data-lang-enter-completed="{{ lang('Enter completed percentage (0-100)') }}"

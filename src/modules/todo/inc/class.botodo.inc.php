@@ -173,7 +173,7 @@ class todo_botodo
 		return $this->accounts_obj->get($account_id);
 	}
 
-	function employee_list($type)
+	function employee_list(string $type)
 	{
 		$employees = $this->accounts_obj->get_list($type);
 		return $employees;
@@ -189,20 +189,6 @@ class todo_botodo
 		return $a;
 	}
 
-	function list_assigned($assi = '')
-	{
-		$aout = '';
-		if (is_array($assi))
-		{
-			foreach ($assi as $a)
-			{
-				$adata = $this->cached_accounts($a);
-				$aout  .= $this->phpgwapi_common->display_fullname($adata->lid, $adata->firstname, $adata->lastname) . '<br>';
-
-			}
-		}
-		return $aout;
-	}
 
 	function _list($start = 0, $limit = '', $query = '', $filter = '', $order = '', $sort = '', $cat_id = 0, $tree = '', $parent = '')
 	{

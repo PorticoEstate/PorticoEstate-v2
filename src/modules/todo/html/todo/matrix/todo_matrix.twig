@@ -15,6 +15,10 @@
 	data-lang-invalid-status="{{ lang('Status must be a number between 0 and 100') }}"
 	data-lang-saving="{{ lang('common.loading') }}"
 	data-lang-update-failed="{{ lang('Failed to update status') }}"
+	data-csrf-name-key="{{ csrf.name_key|default('') }}"
+	data-csrf-value-key="{{ csrf.value_key|default('') }}"
+	data-csrf-name="{{ csrf.name|default('') }}"
+	data-csrf-value="{{ csrf.value|default('') }}"
 >
 	<div class="todo-matrix__toolbar">
 		<a class="todo-matrix__back" href="{{ phpgw_link('/todo/view/todos') }}">{{ lang('Done') }}</a>

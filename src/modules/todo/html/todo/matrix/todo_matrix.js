@@ -15,9 +15,31 @@
 	var langInvalidStatus = root.dataset.langInvalidStatus || 'Status must be a number between 0 and 100';
 	var langSaving = root.dataset.langSaving || 'Saving...';
 	var langUpdateFailed = root.dataset.langUpdateFailed || 'Failed to update status';
+	var csrfNameKey = root.dataset.csrfNameKey || '';
+	var csrfValueKey = root.dataset.csrfValueKey || '';
+	var csrfName = root.dataset.csrfName || '';
+	var csrfValue = root.dataset.csrfValue || '';
+
+	function appendHiddenCsrfInput(form, name, value) {
+		if (!name || !value) {
+			return;
+		}
+
+		var input = form.querySelector('input[name="' + name + '"]');
+		if (!input) {
+			input = document.createElement('input');
+			input.type = 'hidden';
+			input.name = name;
+			form.appendChild(input);
+		}
+		input.value = value;
+	}
 
 	var filterForm = root.querySelector('.phpgw-matrixview__filters');
 	if (filterForm) {
+		appendHiddenCsrfInput(filterForm, csrfNameKey, csrfName);
+		appendHiddenCsrfInput(filterForm, csrfValueKey, csrfValue);
+
 		filterForm.addEventListener('change', function (event) {
 			var target = event.target;
 			if (!target || !target.matches('.phpgw-matrixview__select')) {
@@ -69,14 +91,28 @@
 	}
 
 	function updateStatus(button, todoId, status) {
+		var headers = {
+			'Content-Type': 'application/json',
+			'Accept': 'application/json'
+		};
+		if (csrfNameKey && csrfValueKey && csrfName && csrfValue) {
+			headers[csrfNameKey] = csrfName;
+			headers[csrfValueKey] = csrfValue;
+			headers['X-CSRF-NAME'] = csrfName;
+			headers['X-CSRF-VALUE'] = csrfValue;
+		}
+
+		var payload = { status: status };
+		if (csrfNameKey && csrfValueKey && csrfName && csrfValue) {
+			payload[csrfNameKey] = csrfName;
+			payload[csrfValueKey] = csrfValue;
+		}
+
 		return fetch(buildStatusUrl(todoId), {
 			method: 'PATCH',
-			headers: {
-				'Content-Type': 'application/json',
-				'Accept': 'application/json'
-			},
+			headers: headers,
 			credentials: 'same-origin',
-			body: JSON.stringify({ status: status })
+			body: JSON.stringify(payload)
 		}).then(function (response) {
 			return response.json().catch(function () { return {}; }).then(function (data) {
 				if (!response.ok) {

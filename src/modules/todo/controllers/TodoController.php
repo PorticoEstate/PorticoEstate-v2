@@ -205,6 +205,28 @@ class TodoController
 		return html_entity_decode($url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 	}
 
+	private function normalizeIdListCsv($value): string
+	{
+		$rawValues = is_array($value) ? $value : explode(',', (string) $value);
+		$ids = [];
+
+		foreach ($rawValues as $raw)
+		{
+			$id = (int) $raw;
+			if ($id > 0)
+			{
+				$ids[] = $id;
+			}
+		}
+
+		return implode(',', array_values(array_unique($ids)));
+	}
+
+	private function sanitizePlainText($value): string
+	{
+		return trim((string) \phpgw::strip_html((string) $value));
+	}
+
 	private function getCommonQueryParams(Request $request): array
 	{
 		$query = $request->getQueryParams();
@@ -526,20 +548,37 @@ class TodoController
 
 		$data = is_array($data) ? $data : [];
 
-		if (isset($data['assigned']) && is_array($data['assigned']))
+		if (isset($data['title']))
 		{
-			$data['assigned'] = implode(',', array_filter($data['assigned'], static function ($value)
-			{
-				return $value !== '' && $value !== null;
-			}));
+			$data['title'] = $this->sanitizePlainText($data['title']);
 		}
 
-		if (isset($data['assigned_group']) && is_array($data['assigned_group']))
+		if (isset($data['descr']))
 		{
-			$data['assigned_group'] = implode(',', array_filter($data['assigned_group'], static function ($value)
+			$data['descr'] = $this->sanitizePlainText($data['descr']);
+		}
+
+		foreach (['cat', 'parent', 'pri', 'status', 'sday', 'smonth', 'syear', 'eday', 'emonth', 'eyear', 'daysfromstart'] as $intField)
+		{
+			if (isset($data[$intField]))
 			{
-				return $value !== '' && $value !== null;
-			}));
+				$data[$intField] = (int) $data[$intField];
+			}
+		}
+
+		if (isset($data['access']))
+		{
+			$data['access'] = in_array(strtolower((string) $data['access']), ['1', 'true', 'yes', 'on'], true);
+		}
+
+		if (isset($data['assigned']))
+		{
+			$data['assigned'] = $this->normalizeIdListCsv($data['assigned']);
+		}
+
+		if (isset($data['assigned_group']))
+		{
+			$data['assigned_group'] = $this->normalizeIdListCsv($data['assigned_group']);
 		}
 
 		return $data;

@@ -17,6 +17,10 @@
 	data-lang-save="{{ lang('Save') }}"
 	data-lang-saving="{{ lang('common.loading') }}"
 	data-lang-error="{{ lang('common.error') }}"
+	data-csrf-name-key="{{ csrf.name_key|default('') }}"
+	data-csrf-value-key="{{ csrf.value_key|default('') }}"
+	data-csrf-name="{{ csrf.name|default('') }}"
+	data-csrf-value="{{ csrf.value|default('') }}"
 >
 	<h2 class="todo-add__title">{{ lang('Add') }} {{ lang('todo') }}</h2>
 	<div id="todo-add-error" class="todo-add__error" hidden></div>

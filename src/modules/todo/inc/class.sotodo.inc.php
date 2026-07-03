@@ -129,7 +129,8 @@ class todo_sotodo
 			$filter = 'none';
 		}
 
-		$filtermethod = "(( todo_owner = {$this->account} OR todo_assigned = '{$this->account}'";
+		$account_id = (int) $this->account;
+		$filtermethod = "(( todo_owner = {$account_id} OR todo_assigned = '{$account_id}'";
 
 		/**
 		 * Begin Orlando Fix
@@ -142,7 +143,7 @@ class todo_sotodo
 			$filtermethod .= " OR assigned_group IN('0'";
 			foreach ($this->user_groups as $group)
 			{
-				$filtermethod .= ",'" . $group->id . "' ";
+				$filtermethod .= ", '" . (int) ($group->id ?? 0) . "' ";
 			}
 			$filtermethod .= ')';
 		}
@@ -160,10 +161,17 @@ class todo_sotodo
 			{
 				foreach ($this->grants['accounts'] as $user => $_right)
 				{
-					$public_user_list[] = $user;
+					$public_user_list[] = (int) $user;
 				}
+				$public_user_list = array_values(array_filter(array_unique($public_user_list), static function ($id)
+				{
+					return $id > 0;
+				}));
 				reset($public_user_list);
-				$filtermethod .= " OR (todo_access='public' AND todo_owner IN(" . implode(',', $public_user_list) . "))";
+				if ($public_user_list)
+				{
+					$filtermethod .= " OR (todo_access='public' AND todo_owner IN(" . implode(',', $public_user_list) . '))';
+				}
 			}
 
 			$public_group_list = array();
@@ -171,12 +179,19 @@ class todo_sotodo
 			{
 				foreach ($this->grants['groups'] as $user => $_right)
 				{
-					$public_group_list[] = $user;
+					$public_group_list[] = (int) $user;
 				}
+				$public_group_list = array_values(array_filter(array_unique($public_group_list), static function ($id)
+				{
+					return $id > 0;
+				}));
 				unset($user);
 				reset($public_group_list);
-				$filtermethod .= " OR todo_access='public' AND phpgw_group_map.group_id IN(" . implode(',', $public_group_list) . "))";
-				$where = 'AND';
+				if ($public_group_list)
+				{
+					$filtermethod .= " OR todo_access='public' AND phpgw_group_map.group_id IN(" . implode(',', $public_group_list) . '))';
+					$where = 'AND';
+				}
 			}
 			if ($public_user_list && !$public_group_list)
 			{

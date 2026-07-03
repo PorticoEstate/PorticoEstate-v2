@@ -9,6 +9,10 @@
 	var errorEl = document.getElementById('todo-edit-error');
 	var apiUrl = root.dataset.apiUrl;
 	var backUrl = root.dataset.backUrl;
+	var csrfNameKey = root.dataset.csrfNameKey || '';
+	var csrfValueKey = root.dataset.csrfValueKey || '';
+	var csrfName = root.dataset.csrfName || '';
+	var csrfValue = root.dataset.csrfValue || '';
 	var phpDateFormat = root.dataset.dateFormat || 'Y-m-d';
 
 	function toJqueryDateFormat(phpFormat) {
@@ -120,8 +124,7 @@
 	function buildPayload() {
 		var sDate = splitDate(form.elements.sdate.value);
 		var eDate = splitDate(form.elements.edate.value);
-
-		return {
+		var payload = {
 			title: form.elements.title.value || '',
 			descr: form.elements.descr.value || '',
 			cat: parseInt(form.elements.cat.value || '0', 10) || 0,
@@ -138,6 +141,13 @@
 			emonth: eDate.month,
 			eday: eDate.day
 		};
+
+		if (csrfNameKey && csrfValueKey && csrfName && csrfValue) {
+			payload[csrfNameKey] = csrfName;
+			payload[csrfValueKey] = csrfValue;
+		}
+
+		return payload;
 	}
 
 	initSelect2Multi('#todo-assigned');
@@ -159,12 +169,20 @@
 		saveBtn.disabled = true;
 		saveBtn.textContent = root.dataset.langSaving || oldText;
 
+		var headers = {
+			'Content-Type': 'application/json',
+			'Accept': 'application/json'
+		};
+		if (csrfNameKey && csrfValueKey && csrfName && csrfValue) {
+			headers[csrfNameKey] = csrfName;
+			headers[csrfValueKey] = csrfValue;
+			headers['X-CSRF-NAME'] = csrfName;
+			headers['X-CSRF-VALUE'] = csrfValue;
+		}
+
 		fetch(apiUrl, {
 			method: 'PUT',
-			headers: {
-				'Content-Type': 'application/json',
-				'Accept': 'application/json'
-			},
+			headers: headers,
 			credentials: 'same-origin',
 			body: JSON.stringify(buildPayload())
 		})

@@ -14,6 +14,10 @@
 	var detailUrl = root.dataset.detailUrl;
 	var apiUrl = root.dataset.apiUrl;
 	var backUrl = root.dataset.backUrl;
+	var csrfNameKey = root.dataset.csrfNameKey || '';
+	var csrfValueKey = root.dataset.csrfValueKey || '';
+	var csrfName = root.dataset.csrfName || '';
+	var csrfValue = root.dataset.csrfValue || '';
 
 	function getDeleteReasonMessage(reason, fallback) {
 		switch (reason) {
@@ -75,12 +79,20 @@
 			url += '?subs=1';
 		}
 
+		var headers = {
+			'Accept': 'application/json'
+		};
+		if (csrfNameKey && csrfValueKey && csrfName && csrfValue) {
+			headers[csrfNameKey] = csrfName;
+			headers[csrfValueKey] = csrfValue;
+			headers['X-CSRF-NAME'] = csrfName;
+			headers['X-CSRF-VALUE'] = csrfValue;
+		}
+
 		fetch(url, {
 			method: 'DELETE',
 			credentials: 'same-origin',
-			headers: {
-				'Accept': 'application/json'
-			}
+			headers: headers
 		})
 			.then(function (response) {
 				return response.json().catch(function () { return {}; }).then(function (data) {

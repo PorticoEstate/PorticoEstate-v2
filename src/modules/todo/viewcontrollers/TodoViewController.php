@@ -207,6 +207,19 @@ class TodoViewController
 		return $options;
 	}
 
+	private function getCsrfData(Request $request): array
+	{
+		$nameKey = 'csrf_name';
+		$valueKey = 'csrf_value';
+
+		return [
+			'name_key' => $nameKey,
+			'value_key' => $valueKey,
+			'name' => (string) ($request->getAttribute($nameKey) ?? ''),
+			'value' => (string) ($request->getAttribute($valueKey) ?? ''),
+		];
+	}
+
 	public function __construct()
 	{
 		$this->legacyView = new LegacyViewHelper();
@@ -282,6 +295,7 @@ class TodoViewController
 			$componentHtml = $this->twig->render('@views/todo/matrix/todo_matrix.twig', [
 				'layout' => '@views/_bare.twig',
 				'matrix_html' => $matrixHtml,
+				'csrf' => $this->getCsrfData($request),
 			]);
 
 			$html = $this->legacyView->render($componentHtml, ['todo', 'matrix']);
@@ -404,6 +418,7 @@ class TodoViewController
 			$componentHtml = $this->twig->render('@views/todo/view/todo_view.twig', [
 				'layout' => '@views/_bare.twig',
 				'todo_id' => $id,
+				'csrf' => $this->getCsrfData($request),
 			]);
 
 			$html = $this->legacyView->render($componentHtml, ['todo', 'view'], 'todo');
@@ -432,6 +447,7 @@ class TodoViewController
 			$componentHtml = $this->twig->render('@views/todo/delete/todo_delete.twig', [
 				'layout' => '@views/_bare.twig',
 				'todo_id' => $id,
+				'csrf' => $this->getCsrfData($request),
 			]);
 
 			$html = $this->legacyView->render($componentHtml, ['todo', 'delete'], 'todo');
@@ -464,6 +480,7 @@ class TodoViewController
 				'parentTodos' => $this->getParentTodos(),
 				'users' => $this->getPeopleList('accounts'),
 				'groups' => $this->getPeopleList('groups'),
+				'csrf' => $this->getCsrfData($request),
 				'date_format' => $dateFormat,
 				'selected_cat_id' => isset($query['cat_id']) ? (int) $query['cat_id'] : 0,
 				'selected_parent_id' => isset($query['parent']) ? (int) $query['parent'] : 0,
@@ -531,6 +548,7 @@ class TodoViewController
 				'parentTodos' => $this->getParentTodos($id),
 				'users' => $this->getPeopleList('accounts'),
 				'groups' => $this->getPeopleList('groups'),
+				'csrf' => $this->getCsrfData($request),
 				'date_format' => $dateFormat,
 			]);
 

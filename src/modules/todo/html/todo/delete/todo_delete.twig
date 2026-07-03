@@ -19,6 +19,10 @@
 	data-lang-delete-denied-parent="{{ lang('Delete denied: insufficient rights on parent entry') }}"
 	data-lang-delete-parent-not-found="{{ lang('Delete denied: parent entry not found') }}"
 	data-lang-delete-not-found="{{ lang('Todo entry not found') }}"
+	data-csrf-name-key="{{ csrf.name_key|default('') }}"
+	data-csrf-value-key="{{ csrf.value_key|default('') }}"
+	data-csrf-name="{{ csrf.name|default('') }}"
+	data-csrf-value="{{ csrf.value|default('') }}"
 >
 	<h2 class="todo-delete__title">{{ lang('Delete') }} {{ lang('todo') }}</h2>
 	<div id="todo-delete-loading" class="todo-delete__message">{{ lang('common.loading') }}...</div>

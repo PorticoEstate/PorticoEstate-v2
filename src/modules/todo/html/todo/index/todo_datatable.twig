@@ -58,6 +58,21 @@
 		return todoEscapeHtml(normalized).replace(/\n/g, '<br>');
 	}
 
+	function renderIdLink(key, row)
+	{
+		var id = row && row.id != null ? String(row.id) : '';
+		if (!id)
+		{
+			return '';
+		}
+
+		var href = row && row.actions && row.actions.view
+			? String(row.actions.view)
+			: ('/todo/view/todos/' + encodeURIComponent(id));
+
+		return '<a href="' + todoEscapeHtml(href) + '">' + todoEscapeHtml(id) + '</a>';
+	}
+
 	function renderAssigned(key, row)
 	{
 		var entries = Array.isArray(row && row.assigned_entries) ? row.assigned_entries : [];
@@ -152,7 +167,7 @@
 	'query': search_query|default(''),
 	'sorted_by': {'key': 0, 'dir': 'asc'},
 	'field': [
-		{'key': 'id', 'label': lang('ID'), 'sortable': 1, 'searchable': 0, 'hidden': 0},
+		{'key': 'id', 'label': lang('ID'), 'sortable': 1, 'searchable': 0, 'hidden': 0, 'formatter': 'renderIdLink'},
 		{'key': 'title', 'label': lang('Title'), 'sortable': 1, 'searchable': 1, 'hidden': 0, 'formatter': 'todoFormatTitle'},
 		{'key': 'status', 'label': lang('Status'), 'sortable': 0, 'searchable': 1, 'hidden': 0},
 		{'key': 'pri', 'label': lang('Urgency'), 'sortable': 1, 'searchable': 0, 'hidden': 0},

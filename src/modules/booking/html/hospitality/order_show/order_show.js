@@ -835,7 +835,7 @@
 		var html = '<div class="order-show__menu-item" data-article-id="' + line.hospitality_article_id + '">';
 
 		html += '<div class="order-show__menu-row">';
-		html += '<span class="order-show__menu-name">' + esc(line.article_name || '?') + ' <em style="opacity:0.6">(removed)</em></span>';
+		html += '<span class="order-show__menu-name">' + esc(line.article_name || '?') + ' <em style="opacity:0.6">(' + esc(lang('removed')) + ')</em></span>';
 		html += '<span class="order-show__menu-unit">' + esc(line.unit || '') + '</span>';
 		html += '<span class="order-show__menu-price">' + Number(line.unit_price || 0).toFixed(2) + '</span>';
 

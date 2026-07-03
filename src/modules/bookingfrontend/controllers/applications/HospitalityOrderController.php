@@ -9,6 +9,7 @@ use App\modules\bookingfrontend\services\applications\ApplicationService;
 use App\modules\booking\repositories\HospitalityRepository;
 use App\modules\booking\repositories\HospitalityArticleRepository;
 use App\modules\booking\repositories\HospitalityOrderRepository;
+use App\modules\booking\services\HospitalityDeadlineCalculator;
 use App\modules\booking\models\Hospitality;
 use App\modules\booking\models\HospitalityArticleGroup;
 use App\modules\booking\models\HospitalityArticle;
@@ -62,10 +63,18 @@ class HospitalityOrderController
 
 			$hospitalities = $this->hospitalityRepo->getActiveByResourceIds($resourceIds);
 
-			// Enrich each hospitality with delivery locations relevant to this application
+			// Enrich each hospitality with delivery locations relevant to this application.
+			// These are raw repo rows (not Hospitality models), so derive the decoded
+			// open_days_list here too — the client keys the working-days deadline display
+			// off the array, not the raw bitmask (single source = the calculator).
 			foreach ($hospitalities as &$h) {
 				$h['delivery_locations'] = $this->hospitalityRepo->getDeliveryLocations((int)$h['id']);
+				$mask = isset($h['open_days']) && $h['open_days'] !== null
+					? (int)$h['open_days']
+					: HospitalityDeadlineCalculator::ALL_DAYS_OPEN;
+				$h['open_days_list'] = HospitalityDeadlineCalculator::decodeOpenDays($mask);
 			}
+			unset($h);
 
 			return ResponseHelper::sendJSONResponse($hospitalities, 200, $response);
 		} catch (Exception $e) {

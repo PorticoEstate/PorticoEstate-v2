@@ -96,6 +96,8 @@ class TodoViewController
 	{
 		$id = (int) ($entry['id'] ?? 0);
 		$level = max(0, (int) ($entry['level'] ?? 0));
+		$status = (int) ($entry['status'] ?? 0);
+		$status = max(0, min(100, $status));
 		$title = 	\phpgw::strip_html((string) ($entry['title'] ?? ''));
 		if ($title === '')
 		{
@@ -104,10 +106,14 @@ class TodoViewController
 
 		$prefix = $this->buildMatrixHierarchyPrefix($level);
 		$link = '<a href="' . \phpgw::link('/todo/view/todos/' . $id) . '">' . $title . '</a>';
+		$statusHtml = '<span class="todo-matrix__status" title="' . lang('Completed') . ': ' . $status . '%">'
+			. '<span class="todo-matrix__status-value">' . $status . '%</span>'
+			. '<span class="todo-matrix__status-bar" aria-hidden="true"><span class="todo-matrix__status-fill" style="width:' . $status . '%"></span></span>'
+			. '</span>';
 		$bandClass = trim($bandClass);
 		$bandClassPart = $bandClass ? ' ' . $bandClass : '';
 
-		return '<span class="todo-matrix__node todo-matrix__node--level-' . $level . $bandClassPart . '">' . $prefix . $link . '</span>';
+		return '<span class="todo-matrix__node todo-matrix__node--level-' . $level . $bandClassPart . '">' . $prefix . $link . $statusHtml . '</span>';
 	}
 
 	private function getPeopleList(string $type): array

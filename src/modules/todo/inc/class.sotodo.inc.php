@@ -45,10 +45,10 @@ class todo_sotodo
 		$this->db          = Db::getInstance();
 		$this->join        = $this->db->join;
 
-		$this->grants      = Acl::getInstance()->get_grants2('todo', '.');
+		$this->grants      = Acl::getInstance()->get_grants2('todo', '.todo');
 		$this->account     = $userSettings['account_id'];
 		$this->user_groups = $accounts_obj->membership($this->account);
-		$this->historylog  = CreateObject('phpgwapi.historylog', 'todo', '.');
+		$this->historylog  = CreateObject('phpgwapi.historylog', 'todo', '.todo');
 
 		// This is so our transactions follow across classes
 		$this->historylog->db = &$this->db;

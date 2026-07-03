@@ -71,11 +71,19 @@ class todo_menu
 		if (isset($userSettings['apps']['admin']))
 		{
 			$menus['admin'] = array(
-				array(
+				'categories' =>array(
 					'text'	=> $translation->translate('Global Categories', array(), true),
 					'url'	=> phpgw::link('/index.php', array('menuaction' => 'admin.uicategories.index', 'appname' => 'todo', 'global_cats' => 1))
-				)
+				),
+				'acl' => array(
+					'text' => $translation->translate('Configure Access Permissions', array(), true),
+					'url' => phpgw::link('/index.php', array(
+						'menuaction' => 'preferences.uiadmin_acl.list_acl',
+						'acl_app' => 'todo'
+					))
+				),
 			);
+
 		}
 
 		if (isset($userSettings['apps']['preferences']))

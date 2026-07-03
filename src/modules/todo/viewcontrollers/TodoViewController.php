@@ -3,6 +3,7 @@
 namespace App\modules\todo\viewcontrollers;
 
 use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
 use App\helpers\ResponseHelper;
@@ -332,6 +333,7 @@ class TodoViewController
 				'layout' => '@views/_bare.twig',
 				'categories' => $categories,
 				'filters' => $filters,
+				'acl_delete' => (bool) Acl::getInstance()->check('.todo', ACL_DELETE, 'todo'),
 				'search_query' => $search,
 				'jquery_phpgw_i18n' => $this->getDatatableI18n(),
 				'matrix_url' => \phpgw::link('/todo/view/todos/matrix', [

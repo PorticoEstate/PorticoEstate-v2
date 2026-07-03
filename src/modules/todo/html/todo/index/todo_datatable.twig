@@ -49,6 +49,39 @@
 	}
 </script>
 
+{% set actions = [
+	{
+		'my_name': 'view',
+		'text': lang('view'),
+		'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.view'}),
+		'parameters': {'parameter': [{'name': 'id', 'source': 'id'}]}|json_encode
+	},
+	{
+		'my_name': 'edit',
+		'text': lang('edit'),
+		'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.edit'}),
+		'parameters': {'parameter': [{'name': 'id', 'source': 'id'}]}|json_encode
+	},
+	{
+		'my_name': 'new',
+		'text': lang('add sub project'),
+		'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.add'}),
+		'parameters': {'parameter': [{'name': 'parent', 'source': 'id'}, {'name': 'cat_id', 'source': 'cat_id'}]}|json_encode
+	}
+] %}
+
+{% if acl_delete|default(false) %}
+	{% set actions = actions|merge([
+		{
+			'my_name': 'delete',
+			'text': lang('delete'),
+			'confirm_msg': lang('do you really want to delete this entry'),
+			'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.delete'}),
+			'parameters': {'parameter': [{'name': 'id', 'source': 'id'}]}|json_encode
+		}
+	]) %}
+{% endif %}
+
 {% set datatable = {
 	'source': phpgw_link('/todo/todos'),
 	'download': phpgw_link('/todo/todos/export/csv'),
@@ -60,33 +93,7 @@
 			'className': 'app-button--secondary'
 		}
 	],
-	'actions': [
-		{
-			'my_name': 'view',
-			'text': lang('view'),
-			'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.view'}),
-			'parameters': {'parameter': [{'name': 'id', 'source': 'id'}]}|json_encode
-		},
-		{
-			'my_name': 'edit',
-			'text': lang('edit'),
-			'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.edit'}),
-			'parameters': {'parameter': [{'name': 'id', 'source': 'id'}]}|json_encode
-		},
-		{
-			'my_name': 'delete',
-			'text': lang('delete'),
-			'confirm_msg': lang('do you really want to delete this entry'),
-			'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.delete'}),
-			'parameters': {'parameter': [{'name': 'id', 'source': 'id'}]}|json_encode
-		},
-		{
-			'my_name': 'new',
-			'text': lang('add sub project'),
-			'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.add'}),
-			'parameters': {'parameter': [{'name': 'parent', 'source': 'id'}, {'name': 'cat_id', 'source': 'cat_id'}]}|json_encode
-		}
-	],
+	'actions': actions,
 	'query': search_query|default(''),
 	'sorted_by': {'key': 0, 'dir': 'asc'},
 	'field': [

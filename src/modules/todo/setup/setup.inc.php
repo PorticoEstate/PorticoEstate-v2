@@ -12,13 +12,13 @@
  */
 
 $setup_info['todo']['name']		= 'todo';
-$setup_info['todo']['version']		= '0.9.15.003';
+$setup_info['todo']['version']		= '1.0.0.000';
 $setup_info['todo']['app_order']	= 9;
 $setup_info['todo']['tables']		= array('phpgw_todo');
 $setup_info['todo']['enable']		= 1;
 $setup_info['todo']['app_group']	= 'office';
 
-$setup_info['todo']['description'] = 'phpGroupWare\'s standard ToDo list';
+$setup_info['todo']['description'] = 'Basic ToDo list';
 
 $setup_info['todo']['author'][] = array(
 	'name'	=> 'Joseph Engo',
@@ -34,9 +34,14 @@ $setup_info['todo']['author'][] = array(
 	'email'	=> 'ceb@phpgroupware.org'
 );
 
+$setup_info['todo']['author'][] = array(
+	'name'	=> 'Sigurd Nes',
+	'email'	=> 'sigurdne@gmail.com'
+);
+
 $setup_info['todo']['maintainer'][] = array(
-	'name'	=> 'Bettina Gille',
-	'email'	=> 'ceb@phpgroupware.org'
+	'name'	=> 'Sigurd Nes',
+	'email'	=> 'sigurdne@gmail.com'
 );
 
 /* The hooks this app includes, needed for hooks registration */

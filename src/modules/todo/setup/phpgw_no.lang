@@ -59,3 +59,7 @@ you have entered an invalid date	todo	no	Du har skrevet inn en ugyldig dato
 you have entered an invalid start date	todo	no	Du har skrevet inn en ugyldig startdato !
 you have entered an invalid end date	todo	no	Du har skrevet inn en ugyldig sluttdato !
 add sub project	todo	no	Legg til underprosjekt
+all	todo	no	Alle
+select	todo	no	Velg
+assigned to user	todo	no	Tildelt til bruker
+assigned to group	todo	no	Tildelt til gruppe

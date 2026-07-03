@@ -139,6 +139,9 @@ class HospitalityOrderController
 			return ResponseHelper::sendJSONResponse([
 				'hospitality_id' => $hospitalityId,
 				'hospitality_name' => $hospitality['name'],
+				// Hospitality-level admin info/routine text shown to the applicant
+				// on the catering surface (#374). May be null/empty.
+				'hospitality_description' => $hospitality['description'] ?? null,
 				'groups' => $groups,
 				'ungrouped_articles' => $ungroupedArticles,
 			], 200, $response);

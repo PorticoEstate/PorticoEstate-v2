@@ -22,6 +22,8 @@ export interface IDeliveryLocation {
 export interface IHospitalityMenu {
     hospitality_id: number;
     hospitality_name: string;
+    /** Hospitality-level admin info/routine text shown to the applicant (#374). */
+    hospitality_description?: string | null;
     groups: IHospitalityArticleGroup[];
     ungrouped_articles: IHospitalityArticle[];
 }

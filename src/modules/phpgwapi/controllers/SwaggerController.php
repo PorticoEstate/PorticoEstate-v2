@@ -72,7 +72,7 @@ class SwaggerController
 
     $prefixes = ['/' . $module];
 
-    if (in_array($module, ['property', 'booking', 'rental', 'admin'], true))
+    if (in_array($module, ['property', 'booking', 'rental', 'admin', 'todo'], true))
     {
       $prefixes[] = '/{module}/registry';
     }

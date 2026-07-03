@@ -488,16 +488,7 @@ class TodoController
 				'sdate' => (string) ($todo['sdate'] ?? ''),
 				'edate' => (string) ($todo['edate'] ?? ''),
 				'owner' => (string) ($todo['owner'] ? $accountsObj->id2name((int) $todo['owner']) : ''),
-				'assigned_entries' => $assignedEntries,
-				'actions' => [
-					'view' => $this->normalizeUrl(\phpgw::link('/todo/view/todos/' . $id)),
-					'edit' => $canEdit ? $this->normalizeUrl(\phpgw::link('/todo/view/todos/' . $id . '/edit')) : '',
-					'delete' => $canDelete ? $this->normalizeUrl(\phpgw::link('/todo/view/todos/' . $id . '/delete')) : '',
-					'subadd' => $this->normalizeUrl(\phpgw::link('/todo/view/todos/add', [
-						'parent' => $id,
-						'cat_id' => (int) ($todo['cat'] ?? $catId),
-					])),
-				],
+				'assigned_entries' => $assignedEntries
 			];
 		}
 

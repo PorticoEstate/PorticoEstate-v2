@@ -55,10 +55,13 @@
 	 data-lang-new="{{ lang('booking.new') }}"
 	 data-lang-pending="{{ lang('booking.pending') }}"
 	 data-lang-service-configuration="{{ lang('booking.service_configuration') }}"
-	 data-lang-remote-serving="{{ lang('booking.remote_serving') }}"
-	 data-lang-remote-serving-desc="{{ lang('booking.remote_serving_desc') }}"
-	 data-lang-allow-on-site-hospitality="{{ lang('booking.allow_on_site_hospitality') }}"
-	 data-lang-allow-on-site-hospitality-desc="{{ lang('booking.allow_on_site_hospitality_desc') }}"
+	 {# These 4 values carry a %1 (resource name) filled client-side by lang() in hospitality_show.js.
+	    Pass '%1' as the arg so server-side lang() preserves the literal "%1" through render;
+	    without an arg the bare %1 would be stripped and the name lost. #}
+	 data-lang-remote-serving="{{ lang('booking.remote_serving', '%1') }}"
+	 data-lang-remote-serving-desc="{{ lang('booking.remote_serving_desc', '%1') }}"
+	 data-lang-allow-on-site-hospitality="{{ lang('booking.allow_on_site_hospitality', '%1') }}"
+	 data-lang-allow-on-site-hospitality-desc="{{ lang('booking.allow_on_site_hospitality_desc', '%1') }}"
 	 data-lang-order-deadline="{{ lang('booking.order_deadline') }}"
 	 data-lang-order-deadline-desc="{{ lang('booking.order_deadline_desc') }}"
 	 data-lang-cancellation-deadline="{{ lang('booking.cancellation_deadline') }}"

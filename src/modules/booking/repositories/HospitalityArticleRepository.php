@@ -175,9 +175,9 @@ class HospitalityArticleRepository
 
         $sql = "INSERT INTO bb_hospitality_article
                 (hospitality_id, article_group_id, article_mapping_id,
-                 description, sort_order, active, override_price, override_tax_code)
+                 description, sort_order, active, override_price, override_tax_code, deactivate_in_frontend)
                 VALUES (:hospitality_id, :article_group_id, :article_mapping_id,
-                        :description, :sort_order, :active, :override_price, :override_tax_code)";
+                        :description, :sort_order, :active, :override_price, :override_tax_code, :deactivate_in_frontend)";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             ':hospitality_id' => $data['hospitality_id'],
@@ -188,6 +188,7 @@ class HospitalityArticleRepository
             ':active' => $data['active'] ?? 1,
             ':override_price' => $data['override_price'] ?? null,
             ':override_tax_code' => $data['override_tax_code'] ?? null,
+            ':deactivate_in_frontend' => !empty($data['deactivate_in_frontend']) ? 1 : null,
         ]);
         return (int) $this->db->lastInsertId();
     }
@@ -198,7 +199,7 @@ class HospitalityArticleRepository
         $params = [':id' => $id];
         $allowedFields = [
             'article_group_id', 'description', 'sort_order',
-            'active', 'override_price', 'override_tax_code',
+            'active', 'override_price', 'override_tax_code', 'deactivate_in_frontend',
         ];
 
         foreach ($allowedFields as $field) {
@@ -206,6 +207,9 @@ class HospitalityArticleRepository
                 $value = $data[$field];
                 if ($field === 'description' && is_array($value)) {
                     $value = json_encode($value);
+                }
+                if ($field === 'deactivate_in_frontend') {
+                    $value = !empty($value) ? 1 : null;
                 }
                 $updates[] = "{$field} = :{$field}";
                 $params[":{$field}"] = $value;

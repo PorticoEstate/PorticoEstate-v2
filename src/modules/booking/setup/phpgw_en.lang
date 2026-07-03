@@ -1209,3 +1209,4 @@ overlaps_with	booking	en	Overlaps with
 select_group	booking	en	Select group/team
 loading	booking	en	Loading
 error	booking	en	Error
+hidden_from_frontend	booking	en	Hidden from frontend

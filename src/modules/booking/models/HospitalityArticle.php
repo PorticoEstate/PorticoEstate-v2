@@ -60,6 +60,14 @@ class HospitalityArticle
     public $active = 1;
 
     /**
+     * When set, the article is hidden from the frontend/public menu but remains
+     * usable by the case officer (mirrors bb_article_mapping.deactivate_in_frontend).
+     * @OA\Property(type="integer", nullable=true)
+     * @Expose
+     */
+    public $deactivate_in_frontend;
+
+    /**
      * @OA\Property(type="number", format="float", nullable=true)
      * @Expose
      */

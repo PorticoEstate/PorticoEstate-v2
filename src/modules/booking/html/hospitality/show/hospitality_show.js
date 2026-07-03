@@ -1156,6 +1156,10 @@
 
 		body += '<label class="app-show__modal-checkbox"><input type="checkbox" id="modal-article-active"' + (isEdit ? (article.active ? ' checked' : '') : ' checked') + '> ' + esc(lang('active')) + '</label>';
 
+		// "Hidden from frontend" — distinct from Active: keeps the article usable
+		// in admin but hides it from the public/applicant menu (deactivate_in_frontend).
+		body += '<label class="app-show__modal-checkbox"><input type="checkbox" id="modal-article-hidden-frontend"' + (isEdit && article.deactivate_in_frontend ? ' checked' : '') + '> ' + esc(lang('hiddenFromFrontend')) + '</label>';
+
 		// Expandable "Article Details" section (edit mode only)
 		if (isEdit) {
 			var chevronSvg = '<svg class="hosp-show__details-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>';
@@ -1405,6 +1409,7 @@
 
 					data.sort_order = parseInt(document.getElementById('modal-article-sort').value, 10) || 0;
 					data.active = document.getElementById('modal-article-active').checked ? 1 : 0;
+					data.deactivate_in_frontend = document.getElementById('modal-article-hidden-frontend').checked ? 1 : 0;
 
 					// Multi-language description
 					if (descMlt) data.description = descMlt.getValue();

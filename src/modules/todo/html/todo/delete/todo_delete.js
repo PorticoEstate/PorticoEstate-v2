@@ -15,6 +15,21 @@
 	var apiUrl = root.dataset.apiUrl;
 	var backUrl = root.dataset.backUrl;
 
+	function getDeleteReasonMessage(reason, fallback) {
+		switch (reason) {
+			case 'insufficient_grants_owner':
+				return root.dataset.langDeleteDeniedOwner || fallback;
+			case 'insufficient_grants_parent':
+				return root.dataset.langDeleteDeniedParent || fallback;
+			case 'parent_not_found':
+				return root.dataset.langDeleteParentNotFound || fallback;
+			case 'not_found':
+				return root.dataset.langDeleteNotFound || fallback;
+			default:
+				return fallback;
+		}
+	}
+
 	function showError(message) {
 		loadingEl.hidden = true;
 		contentEl.hidden = true;
@@ -70,7 +85,8 @@
 			.then(function (response) {
 				return response.json().catch(function () { return {}; }).then(function (data) {
 					if (!response.ok) {
-						throw new Error(data.error || ('HTTP ' + response.status));
+						var fallbackMessage = data.error || ('HTTP ' + response.status);
+						throw new Error(getDeleteReasonMessage(data.reason, fallbackMessage));
 					}
 					return data;
 				});

@@ -468,12 +468,11 @@ class todo_botodo
 
 		if ($subs)
 		{
-			$this->sotodo->delete_todo($todo_id, True);
+			return $this->sotodo->delete_todo($todo_id, True);
 		}
 		else
 		{
-			$this->sotodo->delete_todo($todo_id);
+			return $this->sotodo->delete_todo($todo_id);
 		}
-		return True;
 	}
 }

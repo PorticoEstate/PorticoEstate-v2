@@ -379,10 +379,89 @@ class todo_sotodo
 		return $list;
 	}
 
+	private function has_delete_grant_for_owner(int $owner_id): bool
+	{
+		if ($owner_id === (int) $this->account)
+		{
+			return true;
+		}
+
+		if (isset($this->grants['accounts'][$owner_id]) && ($this->grants['accounts'][$owner_id] & ACL_DELETE))
+		{
+			return true;
+		}
+
+		$accounts_obj = new Accounts();
+		$owner_membership = $accounts_obj->membership($owner_id);
+		foreach ((array) ($this->grants['groups'] ?? []) as $group_id => $right)
+		{
+			if (isset($owner_membership[$group_id]) && ($right & ACL_DELETE))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private function read_todo_acl_row(int $todo_id): ?array
+	{
+		$stmt = $this->db->prepare('SELECT todo_id, todo_owner, todo_id_parent FROM phpgw_todo WHERE todo_id = :todo_id');
+		$stmt->execute([':todo_id' => $todo_id]);
+		$row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+		if (!$row)
+		{
+			return null;
+		}
+
+		return [
+			'id' => (int) $row['todo_id'],
+			'owner' => (int) $row['todo_owner'],
+			'parent' => (int) $row['todo_id_parent'],
+		];
+	}
+
+	private function deny_delete(string $reason, string $message, int $todo_id = 0, int $parent_id = 0): array
+	{
+		return [
+			'ok' => false,
+			'reason' => $reason,
+			'message' => $message,
+			'todo_id' => $todo_id,
+			'parent_id' => $parent_id,
+		];
+	}
+
 	function delete_todo($todo_id, $sub = False)
 	{
 		$todo_id = (int) $todo_id;
-		$this->db->transaction_begin();
+		$todo_acl_row = $this->read_todo_acl_row($todo_id);
+		if (!$todo_acl_row)
+		{
+			return $this->deny_delete('not_found', lang('Todo entry not found'), $todo_id);
+		}
+
+		if (!$this->has_delete_grant_for_owner((int) $todo_acl_row['owner']))
+		{
+			return $this->deny_delete('insufficient_grants_owner', lang('Delete denied: insufficient rights on todo owner'), $todo_id);
+		}
+
+		$parent_id = (int) $todo_acl_row['parent'];
+		if ($parent_id > 0)
+		{
+			$parent_acl_row = $this->read_todo_acl_row($parent_id);
+			if (!$parent_acl_row)
+			{
+				return $this->deny_delete('parent_not_found', lang('Delete denied: parent entry not found'), $todo_id, $parent_id);
+			}
+
+			if (!$this->has_delete_grant_for_owner((int) $parent_acl_row['owner']))
+			{
+				return $this->deny_delete('insufficient_grants_parent', lang('Delete denied: insufficient rights on parent entry'), $todo_id, $parent_id);
+			}
+		}
+
 		$sub_todos = $this->find_subs($todo_id);
 		$delete_ids = array($todo_id);
 		$parent = 0;
@@ -398,10 +477,24 @@ class todo_sotodo
 			}
 		}
 
+		foreach (array_values(array_unique($delete_ids)) as $candidate_id)
+		{
+			$candidate_acl_row = $this->read_todo_acl_row((int) $candidate_id);
+			if (!$candidate_acl_row)
+			{
+				return $this->deny_delete('not_found', lang('Todo entry not found'), (int) $candidate_id);
+			}
+
+			if (!$this->has_delete_grant_for_owner((int) $candidate_acl_row['owner']))
+			{
+				return $this->deny_delete('insufficient_grants_owner', lang('Delete denied: insufficient rights on todo owner'), (int) $candidate_id);
+			}
+		}
+
+		$this->db->transaction_begin();
+
 		$placeholders = array();
-		$params = array(
-			':owner' => (int) $this->owner,
-		);
+		$params = array();
 		foreach (array_values(array_unique($delete_ids)) as $index => $delete_id)
 		{
 			$key = ':todo_id_' . $index;
@@ -409,10 +502,10 @@ class todo_sotodo
 			$params[$key] = (int) $delete_id;
 		}
 
-		$delete_sql = 'DELETE FROM phpgw_todo WHERE todo_id IN (' . implode(', ', $placeholders) . ")"
-			. " AND ((todo_access='public' AND todo_owner != :owner) OR (todo_owner = :owner))";
+		$delete_sql = 'DELETE FROM phpgw_todo WHERE todo_id IN (' . implode(', ', $placeholders) . ')';
 		$stmt = $this->db->prepare($delete_sql);
 		$stmt->execute($params);
+		$deleted_count = (int) $stmt->rowCount();
 
 		if (!$sub && $sub_todos)
 		{
@@ -438,6 +531,13 @@ class todo_sotodo
 		}
 		$this->historylog->delete($todo_id);
 		$this->db->transaction_commit();
+
+		return [
+			'ok' => true,
+			'deleted' => $deleted_count,
+			'subs' => (bool) $sub,
+			'todo_id' => $todo_id,
+		];
 	}
 
 	function edit_todo($values)

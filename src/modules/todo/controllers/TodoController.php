@@ -586,8 +586,36 @@ class TodoController
 		$deleteSubs = in_array((string) $subsRaw, ['1', 'true', 'on', 'yes'], true);
 
 		$botodo = \CreateObject('todo.botodo', true);
-		$botodo->delete($id, $deleteSubs);
+		$deleteResult = $botodo->delete($id, $deleteSubs);
 
-		return ResponseHelper::sendJSONResponse(['deleted' => true, 'subs' => $deleteSubs]);
+		if (is_array($deleteResult) && empty($deleteResult['ok']))
+		{
+			$reason = (string) ($deleteResult['reason'] ?? 'delete_denied');
+			$message = (string) ($deleteResult['message'] ?? lang('Delete denied'));
+
+			$statusCode = 403;
+			if ($reason === 'not_found' || $reason === 'parent_not_found')
+			{
+				$statusCode = 404;
+			}
+
+			return ResponseHelper::sendErrorResponse([
+				'error' => $message,
+				'reason' => $reason,
+				'todo_id' => (int) ($deleteResult['todo_id'] ?? $id),
+				'parent_id' => (int) ($deleteResult['parent_id'] ?? 0),
+			], $statusCode);
+		}
+
+		if ($deleteResult === false)
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'Failed to delete todo'], 500);
+		}
+
+		return ResponseHelper::sendJSONResponse([
+			'deleted' => true,
+			'subs' => $deleteSubs,
+			'result' => is_array($deleteResult) ? $deleteResult : null,
+		]);
 	}
 }

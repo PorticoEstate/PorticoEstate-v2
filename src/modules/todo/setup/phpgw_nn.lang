@@ -63,3 +63,4 @@ all	todo	nn	Alle
 select	todo	nn	Vel
 assigned to user	todo	nn	Tildelt til brukar
 assigned to group	todo	nn	Tildelt til gruppe
+%1 Group	common	nn	%1 Gruppe

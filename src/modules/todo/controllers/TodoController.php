@@ -125,10 +125,10 @@ class TodoController
 		return in_array($parentId, $descendantIds, true);
 	}
 
-	private function getTodoHistoryHtml(int $id): string
+	private function getTodoHistoryData(int $id): array
 	{
 		$historylog = \CreateObject('phpgwapi.historylog', 'todo');
-		$historylog->types = array(
+		$statusLabels = array(
 			'A' => lang('Entry added'),
 			'C' => lang('Category changed'),
 			'S' => lang('Start date changed'),
@@ -141,12 +141,25 @@ class TodoController
 			'P' => lang('Parent changed'),
 		);
 
-		$historylog->alternate_handlers = array(
-			'S' => '$this->phpgwapi_common->show_date',
-			'E' => '$this->phpgwapi_common->show_date',
-		);
+		$rows = (array) $historylog->return_array(array(), array(), '', '', $id);
+		$normalized = array();
+		foreach ($rows as $row)
+		{
+			$statusCode = (string) ($row['status'] ?? '');
+			$normalized[] = [
+				'id' => (int) ($row['id'] ?? 0),
+				'record_id' => (int) ($row['record_id'] ?? 0),
+				'owner' => (string) ($row['owner'] ?? ''),
+				'status' => $statusCode,
+				'status_label' => (string) ($statusLabels[$statusCode] ?? $statusCode),
+				'new_value' => (string) ($row['new_value'] ?? ''),
+				'old_value' => (string) ($row['old_value'] ?? ''),
+				'datetime' => (string) ($row['datetime'] ?? ''),
+				'publish' => $row['publish'] ?? null,
+			];
+		}
 
-		return (string) $historylog->return_html(array(), '', '', $id);
+		return $normalized;
 	}
 
 	private function normalizeLineBreaks(string $value): string
@@ -639,7 +652,21 @@ class TodoController
 	 *             type="object",
 	 *             @OA\Property(property="item", type="object"),
 	 *             @OA\Property(property="detail", ref="#/components/schemas/TodoDetail"),
-	 *             @OA\Property(property="history_html", type="string")
+	 *             @OA\Property(
+	 *                 property="history",
+	 *                 type="array",
+	 *                 @OA\Items(
+	 *                     type="object",
+	 *                     @OA\Property(property="id", type="integer"),
+	 *                     @OA\Property(property="record_id", type="integer"),
+	 *                     @OA\Property(property="owner", type="string"),
+	 *                     @OA\Property(property="status", type="string"),
+	 *                     @OA\Property(property="status_label", type="string"),
+	 *                     @OA\Property(property="new_value", type="string"),
+	 *                     @OA\Property(property="old_value", type="string"),
+	 *                     @OA\Property(property="datetime", type="string")
+	 *                 )
+	 *             )
 	 *         )
 	 *     ),
 	 *     @OA\Response(
@@ -676,7 +703,7 @@ class TodoController
 		return ResponseHelper::sendJSONResponse([
 			'item' => $item,
 			'detail' => $this->mapTodoDetail((array) $item, $botodo),
-			'history_html' => $this->getTodoHistoryHtml($id),
+			'history' => $this->getTodoHistoryData($id),
 		]);
 	}
 

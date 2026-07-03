@@ -18,6 +18,12 @@
 	var editUrlBase = root.dataset.editUrlBase || '/todo/view/todos';
 	var editUrl = root.dataset.editUrl || '';
 	var deleteUrl = root.dataset.deleteUrl || '';
+	var historyLabelUser = root.dataset.langHistoryUser || 'User';
+	var historyLabelDate = root.dataset.langHistoryDate || 'Date';
+	var historyLabelAction = root.dataset.langHistoryAction || 'Action';
+	var historyLabelNewValue = root.dataset.langHistoryNewValue || 'New Value';
+	var historyLabelOldValue = root.dataset.langHistoryOldValue || 'Old Value';
+	var historyLabelEmpty = root.dataset.langHistoryEmpty || 'No history for this record';
 
 	function setActiveTab(tabName) {
 		var showHistory = tabName === 'history';
@@ -57,6 +63,41 @@
 			.replace(/\r/g, '\n');
 
 		return escapeHtml(normalized).replace(/\n/g, '<br>');
+	}
+
+	function renderHistoryTable(historyRows) {
+		if (!historyEl) {
+			return;
+		}
+
+		var rows = Array.isArray(historyRows) ? historyRows : [];
+		if (!rows.length) {
+			historyEl.innerHTML = '<p>' + escapeHtml(historyLabelEmpty) + '</p>';
+			return;
+		}
+
+		var html = ''
+			+ '<table>'
+			+ '<thead><tr>'
+			+ '<th>' + escapeHtml(historyLabelDate) + '</th>'
+			+ '<th>' + escapeHtml(historyLabelUser) + '</th>'
+			+ '<th>' + escapeHtml(historyLabelAction) + '</th>'
+			+ '<th>' + escapeHtml(historyLabelNewValue) + '</th>'
+			+ '<th>' + escapeHtml(historyLabelOldValue) + '</th>'
+			+ '</tr></thead><tbody>';
+
+		rows.forEach(function (row) {
+			html += '<tr>'
+				+ '<td>' + escapeHtml(row && row.datetime != null ? row.datetime : '') + '</td>'
+				+ '<td>' + escapeHtml(row && row.owner != null ? row.owner : '') + '</td>'
+				+ '<td>' + escapeHtml(row && row.status_label != null ? row.status_label : (row && row.status != null ? row.status : '')) + '</td>'
+				+ '<td>' + renderMultiline(row && row.new_value != null ? row.new_value : '') + '</td>'
+				+ '<td>' + renderMultiline(row && row.old_value != null ? row.old_value : '') + '</td>'
+				+ '</tr>';
+		});
+
+		html += '</tbody></table>';
+		historyEl.innerHTML = html;
 	}
 
 	function setText(id, value) {
@@ -137,9 +178,7 @@
 				throw new Error(root.dataset.langError || 'Error');
 			}
 
-			if (historyEl) {
-				historyEl.innerHTML = payload.history_html || '';
-			}
+			renderHistoryTable(payload.history || []);
 
 			showContent(payload.detail);
 		})

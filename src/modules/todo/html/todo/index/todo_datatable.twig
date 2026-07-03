@@ -53,20 +53,38 @@
 	{
 		'my_name': 'view',
 		'text': lang('view'),
-		'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.view'}),
-		'parameters': {'parameter': [{'name': 'id', 'source': 'id'}]}|json_encode
+		'type': 'custom',
+		'custom_code': "
+			var api = oTable.api();
+			var selected = api.rows({ selected: true }).data();
+			if (!selected.length) { return false; }
+			var aData = selected[0];
+			window.open('/todo/view/todos/' + aData['id'], '_self');
+		"
 	},
 	{
 		'my_name': 'edit',
 		'text': lang('edit'),
-		'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.edit'}),
-		'parameters': {'parameter': [{'name': 'id', 'source': 'id'}]}|json_encode
+		'type': 'custom',
+		'custom_code': "
+			var api = oTable.api();
+			var selected = api.rows({ selected: true }).data();
+			if (!selected.length) { return false; }
+			var aData = selected[0];
+			window.open('/todo/view/todos/' + aData['id'] + '/edit', '_self');
+		"
 	},
 	{
 		'my_name': 'new',
 		'text': lang('add sub project'),
-		'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.add'}),
-		'parameters': {'parameter': [{'name': 'parent', 'source': 'id'}, {'name': 'cat_id', 'source': 'cat_id'}]}|json_encode
+		'type': 'custom',
+		'custom_code': "
+			var api = oTable.api();
+			var selected = api.rows({ selected: true }).data();
+			if (!selected.length) { return false; }
+			var aData = selected[0];
+			window.open('/todo/view/todos/add?parent=' + aData['id'] + '&cat_id=' + aData['cat_id'], '_self');
+		"
 	}
 ] %}
 
@@ -75,9 +93,14 @@
 		{
 			'my_name': 'delete',
 			'text': lang('delete'),
-			'confirm_msg': lang('do you really want to delete this entry'),
-			'action': phpgw_link('/index.php', {'menuaction': 'todo.uitodo.delete'}),
-			'parameters': {'parameter': [{'name': 'id', 'source': 'id'}]}|json_encode
+			'type': 'custom',
+			'custom_code': "
+				var api = oTable.api();
+				var selected = api.rows({ selected: true }).data();
+				if (!selected.length) { return false; }
+				var aData = selected[0];
+				window.open('/todo/view/todos/' + aData['id'] + '/delete', '_self');
+			"
 		}
 	]) %}
 {% endif %}

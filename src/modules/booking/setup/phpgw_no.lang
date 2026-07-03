@@ -1209,3 +1209,20 @@ overlaps_with	booking	no	Overlapper med
 select_group	booking	no	Velg gruppe/lag
 loading	booking	no	Laster
 error	booking	no	Feil
+add	booking	no	Legg til|en:Add|nn:Legg til
+yes	booking	no	Ja
+no	booking	no	Nei
+no_entries_found	booking	no	Ingen oppføringer funnet
+dt_search	booking	no	Søk
+dt_info	booking	no	Viser _START_ til _END_ av _TOTAL_ oppføringer
+dt_info_empty	booking	no	Ingen oppføringer å vise
+dt_info_filtered	booking	no	(filtrert fra _MAX_ totalt)
+dt_length_menu	booking	no	Vis _MENU_ oppføringer
+dt_zero_records	booking	no	Ingen samsvarende oppføringer funnet
+dt_first	booking	no	Første
+dt_last	booking	no	Siste
+dt_next	booking	no	Neste
+dt_previous	booking	no	Forrige
+filter	booking	no	Filter
+reset_filter	booking	no	Nullstill filter
+active_filters	booking	no	Aktive filtre

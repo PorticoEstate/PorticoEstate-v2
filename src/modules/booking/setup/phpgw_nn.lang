@@ -1184,3 +1184,20 @@ overlaps_with	booking	nn	Overlappar med
 select_group	booking	nn	Vel gruppe/lag
 loading	booking	nn	Lastar
 error	booking	nn	Feil
+add	booking	nn	Legg til
+yes	booking	nn	Ja
+no	booking	nn	Nei
+no_entries_found	booking	nn	Ingen oppføringar funne
+dt_search	booking	nn	Søk
+dt_info	booking	nn	Viser _START_ til _END_ av _TOTAL_ oppføringar
+dt_info_empty	booking	nn	Ingen oppføringar å vise
+dt_info_filtered	booking	nn	(filtrert frå _MAX_ totalt)
+dt_length_menu	booking	nn	Vis _MENU_ oppføringar
+dt_zero_records	booking	nn	Ingen samsvarande oppføringar funne
+dt_first	booking	nn	Første
+dt_last	booking	nn	Siste
+dt_next	booking	nn	Neste
+dt_previous	booking	nn	Førre
+filter	booking	nn	Filter
+reset_filter	booking	nn	Nullstill filter
+active_filters	booking	nn	Aktive filter

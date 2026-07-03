@@ -72,6 +72,10 @@ class TwigHelper
 		// phpgwapi base + template set
 		$this->addPathIfExists(PHPGW_SERVER_ROOT . '/phpgwapi/templates/base');
 		$this->addPathIfExists(PHPGW_SERVER_ROOT . '/phpgwapi/templates/' . $templateSet);
+		// Shared Twig partials can live in digdir even when another template set is active.
+		if ($templateSet !== 'digdir') {
+			$this->addPathIfExists(PHPGW_SERVER_ROOT . '/phpgwapi/templates/digdir');
+		}
 
 		// Designsystemet component templates
 		if ($this->designSystem->isEnabled()) {

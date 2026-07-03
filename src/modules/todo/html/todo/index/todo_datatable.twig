@@ -1,0 +1,195 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('todo') }}{% endblock %}
+
+{% block styles %}
+<style>
+	.todo-title {
+		display: inline-block;
+		white-space: nowrap;
+	}
+	.todo-title__marker {
+		display: inline-block;
+		margin-right: 0.35rem;
+		color: #7a8a9a;
+		font-weight: 700;
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+<script>
+	function todoEscapeHtml(value)
+	{
+		return String(value === undefined || value === null ? '' : value)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#039;');
+	}
+
+	function todoFormatTitle(key, row)
+	{
+		var level = parseInt(row.level || 0, 10);
+		if (isNaN(level) || level < 0)
+		{
+			level = 0;
+		}
+
+		var marker = '';
+		if (level > 0)
+		{
+			marker = '<span class="todo-title__marker">' + '&#9500;'.repeat(Math.min(level, 4)) + '</span>';
+		}
+
+		var title = todoEscapeHtml(row.title || '');
+		var margin = level * 1.1;
+		return '<span class="todo-title" style="margin-left:' + margin + 'rem">' + marker + title + '</span>';
+	}
+
+	function todoRenderMultiline(value)
+	{
+		var normalized = String(value === undefined || value === null ? '' : value)
+			.replace(/<br\s*\/?>/gi, '\n')
+			.replace(/\r\n/g, '\n')
+			.replace(/\r/g, '\n');
+
+		return todoEscapeHtml(normalized).replace(/\n/g, '<br>');
+	}
+
+	function renderIdLink(key, row)
+	{
+		var id = row && row.id != null ? String(row.id) : '';
+		if (!id)
+		{
+			return '';
+		}
+
+		var href = row && row.actions && row.actions.view
+			? String(row.actions.view)
+			: ('/todo/view/todos/' + encodeURIComponent(id));
+
+		return '<a href="' + todoEscapeHtml(href) + '">' + todoEscapeHtml(id) + '</a>';
+	}
+
+	function renderAssigned(key, row)
+	{
+		var entries = Array.isArray(row && row.assigned_entries) ? row.assigned_entries : [];
+		if (entries.length)
+		{
+			var lines = entries
+				.map(function (entry) {
+					return entry && entry.name != null ? String(entry.name) : '';
+				})
+				.filter(function (line) {
+					return line !== '';
+				});
+
+			if (lines.length)
+			{
+				return lines.map(function (line) { return todoEscapeHtml(line); }).join('<br>');
+			}
+		}
+
+		return '-';
+	}
+</script>
+
+{% set actions = [
+	{
+		'my_name': 'view',
+		'text': lang('view'),
+		'type': 'custom',
+		'custom_code': "
+			var api = oTable.api();
+			var selected = api.rows({ selected: true }).data();
+			if (!selected.length) { return false; }
+			var aData = selected[0];
+			window.open('/todo/view/todos/' + aData['id'], '_self');
+		"
+	},
+	{
+		'my_name': 'edit',
+		'text': lang('edit'),
+		'type': 'custom',
+		'custom_code': "
+			var api = oTable.api();
+			var selected = api.rows({ selected: true }).data();
+			if (!selected.length) { return false; }
+			var aData = selected[0];
+			window.open('/todo/view/todos/' + aData['id'] + '/edit', '_self');
+		"
+	},
+	{
+		'my_name': 'new',
+		'text': lang('add sub project'),
+		'type': 'custom',
+		'custom_code': "
+			var api = oTable.api();
+			var selected = api.rows({ selected: true }).data();
+			if (!selected.length) { return false; }
+			var aData = selected[0];
+			window.open('/todo/view/todos/add?parent=' + aData['id'] + '&cat_id=' + aData['cat_id'], '_self');
+		"
+	}
+] %}
+
+{% if acl_delete|default(false) %}
+	{% set actions = actions|merge([
+		{
+			'my_name': 'delete',
+			'text': lang('delete'),
+			'type': 'custom',
+			'custom_code': "
+				var api = oTable.api();
+				var selected = api.rows({ selected: true }).data();
+				if (!selected.length) { return false; }
+				var aData = selected[0];
+				window.open('/todo/view/todos/' + aData['id'] + '/delete', '_self');
+			"
+		}
+	]) %}
+{% endif %}
+
+{% set datatable = {
+	'source': phpgw_link('/todo/todos'),
+	'download': phpgw_link('/todo/todos/export/csv'),
+	'new_item': phpgw_link('/todo/view/todos/add'),
+	'extra_buttons': [
+		{
+			'text': lang('view matrix of actual month'),
+			'url': matrix_url|default(phpgw_link('/todo/view/todos/matrix')),
+			'className': 'app-button--secondary'
+		}
+	],
+	'actions': actions,
+	'query': search_query|default(''),
+	'sorted_by': {'key': 0, 'dir': 'asc'},
+	'field': [
+		{'key': 'id', 'label': lang('ID'), 'sortable': 1, 'searchable': 0, 'hidden': 0, 'formatter': 'renderIdLink'},
+		{'key': 'title', 'label': lang('Title'), 'sortable': 1, 'searchable': 1, 'hidden': 0, 'formatter': 'todoFormatTitle'},
+		{'key': 'status', 'label': lang('Status'), 'sortable': 0, 'searchable': 1, 'hidden': 0},
+		{'key': 'pri', 'label': lang('Urgency'), 'sortable': 1, 'searchable': 0, 'hidden': 0},
+		{'key': 'sdate', 'label': lang('start date'), 'sortable': 1, 'searchable': 0, 'hidden': 0},
+		{'key': 'edate', 'label': lang('end date'), 'sortable': 1, 'searchable': 0, 'hidden': 0},
+		{'key': 'owner', 'label': lang('created by'), 'sortable': 0, 'searchable': 1, 'hidden': 0},
+		{'key': 'assigned_entries', 'label': lang('assigned to'), 'sortable': 0, 'searchable': 1, 'hidden': 0, 'formatter': 'renderAssigned'}
+	]
+} %}
+
+{% set form = {
+	'toolbar': {
+		'item': [
+			{'name': 'cat_id', 'text': lang('Category'), 'type': 'filter', 'list': categories|default([])},
+			{'name': 'filter', 'text': lang('Filter'), 'type': 'filter', 'list': filters|default([])}
+		]
+	}
+} %}
+
+{% include 'datatable2.twig' with {
+	'data': {'filters': {}},
+	'datatable': datatable,
+	'form': form
+} %}
+{% endblock %}

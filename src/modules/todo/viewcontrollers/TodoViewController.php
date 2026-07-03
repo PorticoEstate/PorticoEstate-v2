@@ -106,10 +106,10 @@ class TodoViewController
 
 		$prefix = $this->buildMatrixHierarchyPrefix($level);
 		$link = '<a href="' . \phpgw::link('/todo/view/todos/' . $id) . '">' . $title . '</a>';
-		$statusHtml = '<span class="todo-matrix__status" title="' . lang('Completed') . ': ' . $status . '%">'
+		$statusHtml = '<button type="button" class="todo-matrix__status" data-todo-id="' . $id . '" data-status="' . $status . '" title="' . lang('Completed') . ': ' . $status . '% - ' . lang('click to edit') . '">'
 			. '<span class="todo-matrix__status-value">' . $status . '%</span>'
 			. '<span class="todo-matrix__status-bar" aria-hidden="true"><span class="todo-matrix__status-fill" style="width:' . $status . '%"></span></span>'
-			. '</span>';
+			. '</button>';
 		$bandClass = trim($bandClass);
 		$bandClassPart = $bandClass ? ' ' . $bandClass : '';
 

@@ -1,0 +1,113 @@
+(function () {
+	var root = document.querySelector('.todo-matrix');
+	if (!root) {
+		return;
+	}
+
+	var statusApiBase = root.dataset.statusApiBase || '';
+	if (!statusApiBase) {
+		return;
+	}
+
+	var langCompleted = root.dataset.langCompleted || 'Completed';
+	var langClickToEdit = root.dataset.langClickToEdit || 'Click to edit';
+	var langEnterCompleted = root.dataset.langEnterCompleted || 'Enter completed percentage (0-100)';
+	var langInvalidStatus = root.dataset.langInvalidStatus || 'Status must be a number between 0 and 100';
+	var langSaving = root.dataset.langSaving || 'Saving...';
+	var langUpdateFailed = root.dataset.langUpdateFailed || 'Failed to update status';
+
+	function clampStatus(value) {
+		var parsed = parseInt(value, 10);
+		if (isNaN(parsed)) {
+			return null;
+		}
+		if (parsed < 0 || parsed > 100) {
+			return null;
+		}
+		return parsed;
+	}
+
+	function setStatusVisual(button, status) {
+		button.dataset.status = String(status);
+		button.title = langCompleted + ': ' + status + '% - ' + langClickToEdit;
+
+		var valueEl = button.querySelector('.todo-matrix__status-value');
+		if (valueEl) {
+			valueEl.textContent = status + '%';
+		}
+
+		var fillEl = button.querySelector('.todo-matrix__status-fill');
+		if (fillEl) {
+			fillEl.style.width = status + '%';
+		}
+	}
+
+	function updateStatus(button, todoId, status) {
+		return fetch(statusApiBase + '/' + todoId + '/status', {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json',
+				'Accept': 'application/json'
+			},
+			credentials: 'same-origin',
+			body: JSON.stringify({ status: status })
+		}).then(function (response) {
+			return response.json().catch(function () { return {}; }).then(function (data) {
+				if (!response.ok) {
+					throw new Error(data.error || ('HTTP ' + response.status));
+				}
+				return data;
+			});
+		});
+	}
+
+	root.addEventListener('click', function (event) {
+		var button = event.target.closest('.todo-matrix__status[data-todo-id]');
+		if (!button) {
+			return;
+		}
+
+		event.preventDefault();
+		if (button.dataset.busy === '1') {
+			return;
+		}
+
+		var todoId = parseInt(button.dataset.todoId || '0', 10);
+		if (!todoId) {
+			return;
+		}
+
+		var currentStatus = parseInt(button.dataset.status || '0', 10) || 0;
+		var entered = window.prompt(langEnterCompleted, String(currentStatus));
+		if (entered === null) {
+			return;
+		}
+
+		var nextStatus = clampStatus(entered);
+		if (nextStatus === null) {
+			window.alert(langInvalidStatus);
+			return;
+		}
+		if (nextStatus === currentStatus) {
+			return;
+		}
+
+		button.dataset.busy = '1';
+		button.disabled = true;
+		var previousTitle = button.title;
+		button.title = langSaving;
+
+		updateStatus(button, todoId, nextStatus)
+			.then(function () {
+				setStatusVisual(button, nextStatus);
+			})
+			.catch(function (error) {
+				window.alert((error && error.message) ? error.message : langUpdateFailed);
+				button.title = previousTitle;
+			})
+			.finally(function () {
+				button.disabled = false;
+				button.dataset.busy = '0';
+			});
+	});
+})();

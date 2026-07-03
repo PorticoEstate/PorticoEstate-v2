@@ -186,6 +186,26 @@
 	margin-left: 0.1rem;
 	font-size: 0.76rem;
 	color: #44617e;
+	border: 1px solid #c7d7e7;
+	background: #ffffff;
+	padding: 0.12rem 0.3rem;
+	border-radius: 999px;
+	cursor: pointer;
+}
+
+.todo-matrix__content .todo-matrix__status:hover {
+	background: #f1f6fc;
+	border-color: #9fb9d4;
+}
+
+.todo-matrix__content .todo-matrix__status:focus {
+	outline: 2px solid #2a72ba;
+	outline-offset: 1px;
+}
+
+.todo-matrix__content .todo-matrix__status:disabled {
+	opacity: 0.65;
+	cursor: wait;
 }
 
 .todo-matrix__content .todo-matrix__status-value {

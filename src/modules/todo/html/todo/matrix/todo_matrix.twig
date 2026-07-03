@@ -7,7 +7,15 @@
 {% endblock %}
 
 {% block content %}
-<div class="todo-matrix">
+<div class="todo-matrix"
+	data-status-api-base="{{ phpgw_link('/todo/todos') }}"
+	data-lang-completed="{{ lang('Completed') }}"
+	data-lang-click-to-edit="{{ lang('click to edit') }}"
+	data-lang-enter-completed="{{ lang('Enter completed percentage (0-100)') }}"
+	data-lang-invalid-status="{{ lang('Status must be a number between 0 and 100') }}"
+	data-lang-saving="{{ lang('common.loading') }}"
+	data-lang-update-failed="{{ lang('Failed to update status') }}"
+>
 	<div class="todo-matrix__toolbar">
 		<a class="todo-matrix__back" href="{{ phpgw_link('/todo/view/todos') }}">{{ lang('Done') }}</a>
 	</div>
@@ -15,4 +23,8 @@
 		{{ matrix_html|raw }}
 	</div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/todo/matrix/todo_matrix.js') }}</script>
 {% endblock %}

@@ -572,6 +572,69 @@ class TodoController
 	}
 
 	/**
+	 * PATCH /todo/todos/{id}/status
+	 */
+	public function updateStatus(Request $request, Response $response, array $args): Response
+	{
+		$id = (int) ($args['id'] ?? 0);
+		if (!$id)
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'Missing todo ID'], 400);
+		}
+
+		$payload = $this->readPayload($request);
+		if (!isset($payload['status']))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'Missing status value'], 400);
+		}
+
+		$status = (int) $payload['status'];
+		if ($status < 0 || $status > 100)
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'Status must be between 0 and 100'], 400);
+		}
+
+		$botodo = \CreateObject('todo.botodo', true);
+		$current = $botodo->read($id);
+		if (!$current)
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'Todo not found'], 404);
+		}
+
+		$values = [
+			'id' => $id,
+			'title' => (string) ($current['title'] ?? ''),
+			'descr' => (string) ($current['descr'] ?? ''),
+			'cat' => (int) ($current['cat'] ?? 0),
+			'parent' => (int) ($current['parent'] ?? 0),
+			'pri' => (int) ($current['pri'] ?? 2),
+			'status' => $status,
+			'access' => ((string) ($current['access'] ?? '') === 'private'),
+			'assigned' => (string) ($current['assigned'] ?? ''),
+			'assigned_group' => (string) ($current['assigned_group'] ?? ''),
+			'sdate' => (int) ($current['sdate'] ?? 0),
+			'edate' => (int) ($current['edate'] ?? 0),
+		];
+
+		$error = $botodo->check_values($values);
+		if (is_array($error) && count($error))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => implode('; ', $error)], 400);
+		}
+
+		$ok = $botodo->save($values, 'edit');
+		if (!$ok)
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'Failed to update todo status'], 500);
+		}
+
+		return ResponseHelper::sendJSONResponse([
+			'id' => $id,
+			'status' => $status,
+		]);
+	}
+
+	/**
 	 * DELETE /todo/todos/{id}
 	 */
 	public function destroy(Request $request, Response $response, array $args): Response

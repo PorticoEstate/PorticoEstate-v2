@@ -29,6 +29,7 @@ $app->group('/todo', function (RouteCollectorProxy $group)
 		$todoGroup->post('', TodoController::class . ':store');
 		$todoGroup->get('/{id:[0-9]+}', TodoController::class . ':show');
 		$todoGroup->put('/{id:[0-9]+}', TodoController::class . ':update');
+		$todoGroup->patch('/{id:[0-9]+}/status', TodoController::class . ':updateStatus');
 		$todoGroup->delete('/{id:[0-9]+}', TodoController::class . ':destroy');
 	});
 

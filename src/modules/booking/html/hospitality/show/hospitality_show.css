@@ -489,3 +489,63 @@
 	font-size: 0.8125rem;
 	color: var(--ds-color-danger-text-default, #b3261e);
 }
+
+/* ── app-show field-row + section layout ──────────────────────────────
+   Shared by both pages that source this sheet: hospitality_show and
+   hospitality/order_show. Both render .app-show__field/__label/__value and
+   .app-show__section* markup, but those layout rules were dropped from
+   application_show.css during its Designsystemet migration, leaving the
+   detail rows collapsed (label and value run together). This restores the
+   row/section layout. Layout only — text colours reuse the DS tokens the
+   app-show scheme already uses; no redesign, no markup/class changes. */
+.app-show__section {
+	margin-bottom: 1.5rem;
+}
+
+.app-show__section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	margin-bottom: 0.5rem;
+}
+
+.app-show__section-header h3 {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+.app-show__field {
+	display: flex;
+	align-items: flex-start;
+	gap: 1rem;
+	padding: 0.25rem 0;
+}
+
+.app-show__label {
+	flex: 0 0 14rem;
+	font-size: 0.8125rem;
+	font-weight: 500;
+	line-height: 1.4;
+	color: var(--ds-color-neutral-text-subtle, #68707c);
+}
+
+.app-show__value {
+	flex: 1 1 auto;
+	min-width: 0;
+	font-size: 0.9375rem;
+	color: var(--ds-color-neutral-text-default, #1e293b);
+	overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+	.app-show__field {
+		flex-direction: column;
+		gap: 0.15rem;
+	}
+
+	.app-show__label {
+		flex-basis: auto;
+	}
+}

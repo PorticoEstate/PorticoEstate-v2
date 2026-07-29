@@ -1210,3 +1210,7 @@ select_group	booking	en	Select group/team
 loading	booking	en	Loading
 error	booking	en	Error
 hidden_from_frontend	booking	en	Hidden from frontend
+open_days	booking	en	Open days
+open_days_all	booking	en	All days
+open_days_min_one	booking	en	Select at least one day
+open_days_desc	booking	en	Weekdays the service is open. Used to calculate the order deadline in working days.

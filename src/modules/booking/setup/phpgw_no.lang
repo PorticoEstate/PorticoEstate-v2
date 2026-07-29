@@ -1210,3 +1210,7 @@ select_group	booking	no	Velg gruppe/lag
 loading	booking	no	Laster
 error	booking	no	Feil
 hidden_from_frontend	booking	no	Skjult fra frontend
+open_days	booking	no	Åpne dager
+open_days_all	booking	no	Alle dager
+open_days_min_one	booking	no	Velg minst én dag
+open_days_desc	booking	no	Ukedager tjenesten er åpen. Brukes til å beregne bestillingsfristen i virkedager.

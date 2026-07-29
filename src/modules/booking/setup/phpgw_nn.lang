@@ -1185,3 +1185,7 @@ select_group	booking	nn	Vel gruppe/lag
 loading	booking	nn	Lastar
 error	booking	nn	Feil
 hidden_from_frontend	booking	nn	Skjult frå frontend
+open_days	booking	nn	Opne dagar
+open_days_all	booking	nn	Alle dagar
+open_days_min_one	booking	nn	Vel minst éin dag
+open_days_desc	booking	nn	Vekedagar tenesta er open. Brukast til å rekne ut bestillingsfristen i verkedagar.

@@ -1065,3 +1065,4 @@ working_days	bookingfrontend	no	virkedager
 open_days_label	bookingfrontend	no	Åpningsdager
 working_days_deadline_note	bookingfrontend	no	frister telles i virkedager
 serving_day_closed	bookingfrontend	no	Kjøkkenet er stengt den valgte dagen. Velg en dag kjøkkenet holder åpent.
+closed_on_weekday	bookingfrontend	no	Stengt %1

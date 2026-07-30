@@ -121,6 +121,49 @@ export function computeHospitalityDeadline(
         : subtractWorkingHours(eventTime, value, open, holidaySet);
 }
 
+/**
+ * Venue-local timezone. serving_time_iso is stored naive-UTC and serialised back local, so
+ * "which weekday is the kitchen being asked to serve on" must be answered in venue wall-clock,
+ * NOT UTC and NOT the browser's zone — otherwise a 22:30Z Saturday instant (00:30 Sunday in
+ * Oslo) would be judged differently here than by the backend. Mirrors HospitalityOrderController.
+ */
+export const VENUE_TIMEZONE = 'Europe/Oslo';
+
+const VENUE_WEEKDAY_INDEX: Record<string, number> = {
+    Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7,
+};
+
+let venueWeekdayFormat: Intl.DateTimeFormat | null = null;
+
+/** ISO weekday (1=Mon..7=Sun) of an instant, read in venue-local time. */
+export function isoWeekdayInVenueTz(instant: Date): number {
+    if (!venueWeekdayFormat) {
+        venueWeekdayFormat = new Intl.DateTimeFormat('en-US', {
+            timeZone: VENUE_TIMEZONE,
+            weekday: 'short',
+        });
+    }
+    // Fixed en-US 3-letter weekday keeps the lookup locale-independent.
+    return VENUE_WEEKDAY_INDEX[venueWeekdayFormat.format(instant)] ?? isoWeekday(instant);
+}
+
+/**
+ * Is the catering open on the venue-local weekday of this instant? (#373)
+ *
+ * Mirrors the backend serving-day rule: bit (ISO weekday - 1) set = open, 127 = all open, and
+ * an empty/zero mask also means all open. Undefined/empty open_days_list → open (pre-#373).
+ */
+export function isServingDayOpen(instant: Date, openDaysList?: number[] | null): boolean {
+    return openDaySet(openDaysList).has(isoWeekdayInVenueTz(instant));
+}
+
+/** Localised name of an ISO weekday (1=Mon..7=Sun), e.g. "søndag". */
+export function formatWeekdayName(isoWeekdayNumber: number, lang: string, style: 'long' | 'short' = 'long'): string {
+    const fmt = new Intl.DateTimeFormat(localeFor(lang), {weekday: style});
+    // 2024-01-01 is a Monday → ISO weekday n maps to that date + (n-1) days.
+    return fmt.format(new Date(2024, 0, 1 + (isoWeekdayNumber - 1)));
+}
+
 /** Map the app language (no/nn/en) to a BCP-47 locale for Intl weekday formatting. */
 function localeFor(lang: string): string {
     if (lang === 'nn') return 'nn-NO';

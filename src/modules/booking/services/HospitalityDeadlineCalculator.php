@@ -67,7 +67,7 @@ class HospitalityDeadlineCalculator
         }
 
         $cursor = \DateTimeImmutable::createFromInterface($eventTime);
-        $openDays = $this->normalizeMask($openDays);
+        $openDays = self::normalizeMask($openDays);
         $holidaySet = array_flip($holidays);
 
         // Fast path: all days open and no holidays → plain calendar arithmetic.
@@ -99,7 +99,21 @@ class HospitalityDeadlineCalculator
         return $list;
     }
 
-    private function normalizeMask(int $openDays): int
+    /**
+     * Is the catering open on the given ISO weekday (1=Mon .. 7=Sun)?
+     *
+     * Used by the serving-day restriction (#373): an order may not be placed for a day the
+     * kitchen is closed. It deliberately shares the mask semantics of the deadline arithmetic
+     * above so the two can never drift apart — the mask is clamped to its 7 weekday bits, and
+     * an empty mask (0) means "all days open", matching both {@see normalizeMask()} here and
+     * the client's openDaySet(), which treats an empty open-days list as unrestricted.
+     */
+    public static function isOpenOnWeekday(int $openDays, int $isoWeekday): bool
+    {
+        return in_array($isoWeekday, self::decodeOpenDays(self::normalizeMask($openDays)), true);
+    }
+
+    private static function normalizeMask(int $openDays): int
     {
         $openDays = self::clampMask($openDays);
         // A zero mask ("every day closed") would make the deadline unsatisfiable; treat it as

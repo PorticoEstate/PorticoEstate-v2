@@ -1063,3 +1063,4 @@ allow_old_template_note	bookingfrontend	nn	Når aktiv kan brukarar som har valt 
 working_days	bookingfrontend	nn	virkedagar
 open_days_label	bookingfrontend	nn	Opningsdagar
 working_days_deadline_note	bookingfrontend	nn	fristar tel i virkedagar
+serving_day_closed	bookingfrontend	nn	Kjøkenet er stengt den valde dagen. Vel ein dag kjøkenet held ope.

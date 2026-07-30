@@ -1063,3 +1063,4 @@ allow_old_template_note	bookingfrontend	en	When enabled, users who selected the 
 working_days	bookingfrontend	en	working days
 open_days_label	bookingfrontend	en	Open days
 working_days_deadline_note	bookingfrontend	en	deadlines are counted in working days
+serving_day_closed	bookingfrontend	en	The kitchen is closed on the selected day. Please choose a day when the kitchen is open.

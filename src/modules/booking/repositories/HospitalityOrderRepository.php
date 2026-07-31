@@ -15,6 +15,39 @@ class HospitalityOrderRepository
         $this->db = Db::getInstance();
     }
 
+    /**
+     * Normalise an incoming serving time to the naive-UTC form the serving_time_iso column
+     * holds (the model serialises it back to local via @Timestamp(sourceTimezone="UTC")).
+     *
+     * Offset-aware ISO-8601 such as "2026-08-18T23:00:00+02:00" is perfectly valid input from
+     * mobile and integration clients, but the column is `timestamp without time zone`, so
+     * Postgres silently DROPS the offset and stores the local wall clock — moving the true
+     * instant (23:00 Oslo would be read back as 01:00 the next day). Converting here, at the
+     * single write choke point, keeps every caller correct rather than relying on each one to
+     * remember.
+     *
+     * Idempotent: a value that is already naive UTC is parsed as UTC and returned unchanged,
+     * so callers that normalise before handing data over are unaffected.
+     */
+    public static function toStorageTimestamp(?string $servingTime): ?string
+    {
+        if ($servingTime === null || $servingTime === '') {
+            return null;
+        }
+
+        try {
+            // The fallback zone applies only to strings carrying no offset of their own — i.e.
+            // values already in the column's naive-UTC form.
+            $dt = new \DateTimeImmutable($servingTime, new \DateTimeZone('UTC'));
+        } catch (\Exception $e) {
+            // Format is validated by the controllers; pass anything still unparseable through
+            // untouched rather than silently discarding a serving time here.
+            return $servingTime;
+        }
+
+        return $dt->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+    }
+
     // -- Orders --
 
     public function getById(int $id): ?array
@@ -109,7 +142,7 @@ class HospitalityOrderRepository
             ':status' => $data['status'] ?? HospitalityOrder::STATUS_PENDING,
             ':comment' => $data['comment'] ?? null,
             ':special_requirements' => $data['special_requirements'] ?? null,
-            ':serving_time_iso' => $data['serving_time_iso'] ?? null,
+            ':serving_time_iso' => self::toStorageTimestamp($data['serving_time_iso'] ?? null),
             ':created_by' => $data['created_by'] ?? null,
             ':modified_by' => $data['created_by'] ?? null,
         ]);
@@ -125,7 +158,9 @@ class HospitalityOrderRepository
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $data)) {
                 $updates[] = "{$field} = :{$field}";
-                $params[":{$field}"] = $data[$field];
+                $params[":{$field}"] = $field === 'serving_time_iso'
+                    ? self::toStorageTimestamp($data[$field])
+                    : $data[$field];
             }
         }
 

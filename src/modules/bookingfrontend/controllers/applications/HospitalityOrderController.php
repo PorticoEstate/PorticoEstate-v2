@@ -100,14 +100,11 @@ class HospitalityOrderController
 			return true; // being set for the first time
 		}
 
-		try {
-			$incoming = (new \DateTimeImmutable($incomingIso))->setTimezone(new \DateTimeZone('UTC'));
-			$stored = new \DateTimeImmutable($storedUtc, new \DateTimeZone('UTC'));
-		} catch (Exception $e) {
-			return true; // cannot compare → validate to be safe
-		}
-
-		return $incoming->format('Y-m-d H:i:s') !== $stored->format('Y-m-d H:i:s');
+		// Compare true INSTANTS, not wall clocks: both sides go through the same normalisation
+		// the write path uses, so "2026-06-07T16:00:00+02:00" and the stored "14:00:00" are
+		// recognised as the same moment and the order is not falsely treated as moved.
+		return HospitalityOrderRepository::toStorageTimestamp($incomingIso)
+			!== HospitalityOrderRepository::toStorageTimestamp($storedUtc);
 	}
 
 	/**

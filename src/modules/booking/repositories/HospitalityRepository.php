@@ -65,10 +65,10 @@ class HospitalityRepository
         $sql = "INSERT INTO bb_hospitality
                 (resource_id, name, description, active, remote_serving_enabled,
                  allow_on_site_hospitality, include_in_checkout_payment,
-                 order_by_time_value, order_by_time_unit, created_by, modified_by)
+                 order_by_time_value, order_by_time_unit, open_days, created_by, modified_by)
                 VALUES (:resource_id, :name, :description, :active, :remote_serving_enabled,
                         :allow_on_site_hospitality, :include_in_checkout_payment,
-                        :order_by_time_value, :order_by_time_unit, :created_by, :modified_by)";
+                        :order_by_time_value, :order_by_time_unit, :open_days, :created_by, :modified_by)";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             ':resource_id' => $data['resource_id'],
@@ -80,6 +80,7 @@ class HospitalityRepository
             ':include_in_checkout_payment' => $data['include_in_checkout_payment'] ?? 0,
             ':order_by_time_value' => $data['order_by_time_value'] ?? null,
             ':order_by_time_unit' => $data['order_by_time_unit'] ?? null,
+            ':open_days' => isset($data['open_days']) ? (int) $data['open_days'] : 127,
             ':created_by' => $data['created_by'],
             ':modified_by' => $data['created_by'],
         ]);
@@ -94,7 +95,7 @@ class HospitalityRepository
         $allowedFields = [
             'resource_id', 'name', 'description', 'active',
             'remote_serving_enabled', 'allow_on_site_hospitality', 'include_in_checkout_payment',
-            'order_by_time_value', 'order_by_time_unit',
+            'order_by_time_value', 'order_by_time_unit', 'open_days',
         ];
 
         foreach ($allowedFields as $field) {
@@ -249,7 +250,7 @@ class HospitalityRepository
         $sql = "SELECT DISTINCT h.id, h.name, h.resource_id, r.name AS resource_name,
                        h.remote_serving_enabled, h.allow_on_site_hospitality,
                        h.include_in_checkout_payment,
-                       h.order_by_time_value, h.order_by_time_unit,
+                       h.order_by_time_value, h.order_by_time_unit, h.open_days,
                        r.cancellation_deadline_value AS resource_cancellation_deadline_value,
                        r.cancellation_deadline_unit AS resource_cancellation_deadline_unit
                 FROM bb_hospitality h

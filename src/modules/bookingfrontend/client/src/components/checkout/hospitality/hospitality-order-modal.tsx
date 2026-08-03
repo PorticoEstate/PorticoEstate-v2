@@ -1,6 +1,6 @@
 'use client';
 import {FC, useEffect, useMemo, useState} from 'react';
-import {Alert, Button, Details, Field, Label, Select} from '@digdir/designsystemet-react';
+import {Alert, Button, Details, Field, Label, Paragraph, Select} from '@digdir/designsystemet-react';
 import {MinusCircleIcon, PlusCircleIcon, ChatElipsisIcon} from '@navikt/aksel-icons';
 import {useClientTranslation} from '@/app/i18n/ClientTranslationProvider';
 import {fallbackLng} from '@/app/i18n/settings';
@@ -17,6 +17,14 @@ import {
     useUpdateHospitalityOrder,
 } from '../hooks/hospitality-hooks';
 import {formatCurrency} from '@/utils/cost-utils';
+import {
+    computeHospitalityDeadline,
+    isWorkingDaysMode,
+    formatOpenDays,
+    isServingDayOpen,
+    isoWeekdayInVenueTz,
+    formatWeekdayName,
+} from '@/utils/hospitality-deadline';
 import styles from './hospitality.module.scss';
 
 interface HospitalityOrderModalProps {
@@ -52,14 +60,6 @@ function generateTimeSlots(fromHour: number, fromMinute: number, toHour: number,
 function localizeField(field: Record<string, string> | null | undefined, lang: string): string | null {
     if (!field) return null;
     return field[lang] || field[fallbackLng.key] || Object.values(field).find(v => !!v) || null;
-}
-
-function getCutoffMs(hospitality: IHospitality): number | null {
-    if (!hospitality.order_by_time_value || !hospitality.order_by_time_unit) return null;
-    const value = hospitality.order_by_time_value;
-    if (hospitality.order_by_time_unit === 'hours') return value * 3600000;
-    if (hospitality.order_by_time_unit === 'days') return value * 86400000;
-    return null;
 }
 
 /** Build date options from application dates. Each option is a unique date+timerange from one application date entry. */
@@ -143,19 +143,69 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         );
     }, [selectedDateOption]);
 
-    // Cutoff check
-    const cutoffCheck = useMemo(() => {
-        if (!selectedDateOption || !selectedTime || !hospitality) return {valid: true, message: ''};
-        const cutoffMs = getCutoffMs(hospitality);
-        if (!cutoffMs) return {valid: true, message: ''};
-
+    /**
+     * The exact instant that will be sent as serving_time_iso. Derived once so the cutoff check,
+     * the serving-day check and the save all judge the same instant the backend will.
+     */
+    const servingInstant = useMemo(() => {
+        if (!selectedDateOption || !selectedTime) return null;
         const dateStr = selectedDateOption.from.toISOString().split('T')[0];
-        const servingDate = new Date(`${dateStr}T${selectedTime}:00`);
-        const timeDiff = servingDate.getTime() - Date.now();
+        return new Date(`${dateStr}T${selectedTime}:00`);
+    }, [selectedDateOption, selectedTime]);
 
-        if (timeDiff < cutoffMs) {
+    /**
+     * Serving time of the order as currently stored. The backend re-validates the serving day
+     * only when the instant actually moves, so an order placed before a weekday was closed stays
+     * editable (lines/comment/location) as long as its serving time is unchanged (#373).
+     */
+    const storedServingMs = useMemo(() => {
+        if (!existingOrder?.serving_time_iso) return null;
+        return new Date(existingOrder.serving_time_iso).getTime();
+    }, [existingOrder]);
+
+    /** The date option holding the existing order's serving day — kept selectable even if closed. */
+    const grandfatheredDateKey = useMemo(() => {
+        if (!existingOrder?.serving_time_iso) return null;
+        const storedYmd = new Date(existingOrder.serving_time_iso).toISOString().split('T')[0];
+        return dateOptions.find(d => d.from.toISOString().split('T')[0] === storedYmd)?.key ?? null;
+    }, [existingOrder, dateOptions]);
+
+    /**
+     * Serving-day check — blocks ordering on a weekday the catering is closed (#373).
+     * Mirrors the backend rule exactly: venue-local weekday, and skipped when the serving
+     * instant is unchanged (so legacy orders on a now-closed day stay editable).
+     */
+    const servingDayCheck = useMemo(() => {
+        if (!hospitality || !servingInstant) return {valid: true, message: ''};
+        if (storedServingMs !== null && servingInstant.getTime() === storedServingMs) {
+            return {valid: true, message: ''};
+        }
+        if (isServingDayOpen(servingInstant, hospitality.open_days_list)) {
+            return {valid: true, message: ''};
+        }
+        return {valid: false, message: t('bookingfrontend.serving_day_closed')};
+    }, [hospitality, servingInstant, storedServingMs, t]);
+
+    // Cutoff check — cutoff instant honours working days (mirrors the backend calc)
+    const cutoffCheck = useMemo(() => {
+        if (!servingInstant || !hospitality) return {valid: true, message: ''};
+
+        const cutoffDate = computeHospitalityDeadline(
+            servingInstant,
+            hospitality.order_by_time_value,
+            hospitality.order_by_time_unit,
+            hospitality.open_days_list
+        );
+        if (!cutoffDate) return {valid: true, message: ''};
+
+        if (Date.now() > cutoffDate.getTime()) {
+            const workingDaysMode = isWorkingDaysMode(hospitality.open_days_list)
+                && hospitality.order_by_time_unit === 'days';
             const unitLabel = hospitality.order_by_time_unit === 'hours'
-                ? t('bookingfrontend.hours').toLowerCase() : t('bookingfrontend.days').toLowerCase();
+                ? t('bookingfrontend.hours').toLowerCase()
+                : workingDaysMode
+                    ? t('bookingfrontend.working_days').toLowerCase()
+                    : t('bookingfrontend.days').toLowerCase();
             const msg = t('bookingfrontend.order_cutoff_warning')
                 .replace('%1', String(hospitality.order_by_time_value))
                 .replace('%2', unitLabel);
@@ -165,7 +215,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             };
         }
         return {valid: true, message: ''};
-    }, [selectedDateOption, selectedTime, hospitality, t]);
+    }, [servingInstant, hospitality, t]);
 
     // Cancellation deadline warning (informational, does not block ordering)
     const cancellationWarning = useMemo(() => {
@@ -174,15 +224,10 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         const unit = hospitality.resource_cancellation_deadline_unit;
         if (!val || !unit) return null;
 
-        let cutoffMs: number;
-        switch (unit) {
-            case 'hours': cutoffMs = val * 3600000; break;
-            case 'days': cutoffMs = val * 86400000; break;
-            case 'weeks': cutoffMs = val * 604800000; break;
-            default: return null;
-        }
+        // Cancellation lead-time comes from the resource; open-days come from the hospitality.
+        const cancelBy = computeHospitalityDeadline(selectedDateOption.from, val, unit, hospitality.open_days_list);
+        if (!cancelBy) return null;
 
-        const cancelBy = new Date(selectedDateOption.from.getTime() - cutoffMs);
         if (Date.now() > cancelBy.getTime()) {
             return t('bookingfrontend.cancellation_deadline_passed_warning');
         }
@@ -257,7 +302,8 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
 
     const hasItems = Object.values(quantities).some(q => q > 0);
     const dateSelected = !!selectedDateKey;
-    const menuEnabled = !!hospitality && dateSelected && !!locationId && !!selectedTime && cutoffCheck.valid;
+    const menuEnabled = !!hospitality && dateSelected && !!locationId && !!selectedTime
+        && cutoffCheck.valid && servingDayCheck.valid;
     const canSave = hasItems && menuEnabled;
 
     const increment = (id: number) =>
@@ -270,10 +316,9 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         });
 
     const handleSave = async () => {
-        if (!canSave || !selectedDateOption || !hospitality) return;
+        if (!canSave || !servingInstant || !hospitality) return;
 
-        const dateStr = selectedDateOption.from.toISOString().split('T')[0];
-        const servingTimeIso = new Date(`${dateStr}T${selectedTime}:00`).toISOString();
+        const servingTimeIso = servingInstant.toISOString();
 
         const lines = Object.entries(quantities)
             .filter(([, qty]) => qty > 0)
@@ -478,9 +523,26 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                                 }}
                             >
                                 <option value="">{t('bookingfrontend.select_serving_date')}</option>
-                                {dateOptions.map(d => (
-                                    <option key={d.key} value={d.key}>{d.label}</option>
-                                ))}
+                                {dateOptions.map(d => {
+                                    // Closed days stay visible (a vanishing booking date is confusing)
+                                    // but are not selectable. The existing order's own day is left
+                                    // selectable — the backend only re-validates when the serving
+                                    // instant moves, so that order stays editable.
+                                    const closed = !isServingDayOpen(d.from, hospitality.open_days_list);
+                                    const closedNote = closed
+                                        ? ` — ${t('bookingfrontend.closed_on_weekday')
+                                            .replace('%1', formatWeekdayName(isoWeekdayInVenueTz(d.from), i18n.language))}`
+                                        : '';
+                                    return (
+                                        <option
+                                            key={d.key}
+                                            value={d.key}
+                                            disabled={closed && d.key !== grandfatheredDateKey}
+                                        >
+                                            {d.label}{closedNote}
+                                        </option>
+                                    );
+                                })}
                             </Select>
                         </Field>
 
@@ -515,6 +577,22 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                             </Select>
                         </Field>
                     </div>
+
+                    {/* Working-days info: which days the catering is open (deadlines counted in working days) */}
+                    {isWorkingDaysMode(hospitality.open_days_list) && (
+                        <Paragraph data-size="sm" style={{margin: '0 0 0.5rem'}}>
+                            {t('bookingfrontend.open_days_label')}:{' '}
+                            <strong>{formatOpenDays(hospitality.open_days_list, i18n.language)}</strong>
+                            {' — '}{t('bookingfrontend.working_days_deadline_note')}
+                        </Paragraph>
+                    )}
+
+                    {/* Serving-day block — catering closed on the selected weekday (#373) */}
+                    {selectedTime && !servingDayCheck.valid && (
+                        <Alert data-color="danger" data-size="sm">
+                            {servingDayCheck.message}
+                        </Alert>
+                    )}
 
                     {/* Cutoff warning (blocks ordering) */}
                     {selectedTime && !cutoffCheck.valid && (

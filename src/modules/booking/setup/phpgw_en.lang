@@ -1236,3 +1236,7 @@ unit_minute	booking	en	minute
 unit_hour	booking	en	hour
 unit_day	booking	en	day
 removed	booking	en	removed
+open_days	booking	en	Open days
+open_days_all	booking	en	All days
+open_days_min_one	booking	en	Select at least one day
+open_days_desc	booking	en	Weekdays the service is open. Used to calculate the order deadline in working days.

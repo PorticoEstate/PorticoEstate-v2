@@ -1236,3 +1236,7 @@ unit_minute	booking	no	minutt
 unit_hour	booking	no	time
 unit_day	booking	no	dag
 removed	booking	no	fjernet
+open_days	booking	no	Åpne dager
+open_days_all	booking	no	Alle dager
+open_days_min_one	booking	no	Velg minst én dag
+open_days_desc	booking	no	Ukedager tjenesten er åpen. Brukes til å beregne bestillingsfristen i virkedager.

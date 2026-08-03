@@ -79,7 +79,24 @@ AppDatatable.init({
 		order: [[0, 'asc']],
 		pageLength: 25,
 		lang: {
-			emptyTable: L.emptyTable
+			search: L.dt_search,
+			emptyTable: L.emptyTable,
+			info: L.dt_info,
+			infoEmpty: L.dt_info_empty,
+			infoFiltered: L.dt_info_filtered,
+			lengthMenu: L.dt_length_menu,
+			zeroRecords: L.dt_zero_records,
+			paginate: {
+				first: L.dt_first,
+				last: L.dt_last,
+				next: L.dt_next,
+				previous: L.dt_previous
+			}
+		},
+		filterLang: {
+			filter: L.filter,
+			resetFilter: L.reset_filter,
+			activeFilters: L.active_filters
 		}
 	});
 })();

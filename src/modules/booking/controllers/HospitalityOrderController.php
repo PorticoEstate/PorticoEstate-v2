@@ -128,9 +128,9 @@ class HospitalityOrderController
 	 */
 	private function servingTimeToStorage(string $servingTimeIso): string
 	{
-		$dt = new \DateTime($servingTimeIso);
-		$dt->setTimezone(new \DateTimeZone('UTC'));
-		return $dt->format('Y-m-d H:i:s');
+		// The conversion itself lives on the repository, at the write choke point, so the admin
+		// and bookingfrontend paths cannot drift into two conventions.
+		return (string)HospitalityOrderRepository::toStorageTimestamp($servingTimeIso);
 	}
 
 	/**

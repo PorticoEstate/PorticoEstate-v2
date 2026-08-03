@@ -7,19 +7,9 @@ import {IApplication} from '@/service/types/api/application.types';
 import {IHospitality, IHospitalityOrder} from '@/service/types/api/hospitality.types';
 import {useApplicationGroupHospitalities, useDeleteHospitalityOrder} from '../hooks/hospitality-hooks';
 import {formatCurrency} from '@/utils/cost-utils';
+import {computeHospitalityDeadline} from '@/utils/hospitality-deadline';
 import HospitalityOrderModal from './hospitality-order-modal';
 import styles from './hospitality.module.scss';
-
-function getCancellationCutoffMs(hospitality: IHospitality): number | null {
-    if (!hospitality.resource_cancellation_deadline_value || !hospitality.resource_cancellation_deadline_unit) return null;
-    const value = hospitality.resource_cancellation_deadline_value;
-    switch (hospitality.resource_cancellation_deadline_unit) {
-        case 'hours': return value * 3600000;
-        case 'days': return value * 86400000;
-        case 'weeks': return value * 604800000;
-        default: return null;
-    }
-}
 
 interface HospitalitySectionProps {
     applicationIds: number[];
@@ -116,24 +106,25 @@ const HospitalitySection: FC<HospitalitySectionProps> = ({applicationIds, applic
         const orderedHospitalityIds = new Set(orders.map(o => o.hospitality_id));
         const orderedHospitalities = hospitalities.filter(h => orderedHospitalityIds.has(h.id));
 
-        // Find the strictest cancellation deadline across ordered hospitalities
-        let strictestCutoffMs: number | null = null;
-        let strictestValue: number | null = null;
-        let strictestUnit: string | null = null;
+        // Most restrictive = the earliest cancel-by instant across ordered hospitalities.
+        // Each deadline honours that hospitality's working-days config (mirrors the backend calc).
+        let strictestCancelBy: Date | null = null;
         for (const h of orderedHospitalities) {
-            const cutoffMs = getCancellationCutoffMs(h);
-            if (cutoffMs && (strictestCutoffMs === null || cutoffMs > strictestCutoffMs)) {
-                strictestCutoffMs = cutoffMs;
-                strictestValue = h.resource_cancellation_deadline_value;
-                strictestUnit = h.resource_cancellation_deadline_unit;
+            const cancelBy = computeHospitalityDeadline(
+                earliestFrom,
+                h.resource_cancellation_deadline_value,
+                h.resource_cancellation_deadline_unit,
+                h.open_days_list
+            );
+            if (cancelBy && (strictestCancelBy === null || cancelBy < strictestCancelBy)) {
+                strictestCancelBy = cancelBy;
             }
         }
-        if (!strictestCutoffMs) return null;
+        if (!strictestCancelBy) return null;
 
-        const cancelBy = new Date(earliestFrom.getTime() - strictestCutoffMs);
-        const isPastDeadline = Date.now() > cancelBy.getTime();
+        const isPastDeadline = Date.now() > strictestCancelBy.getTime();
 
-        return {cancelBy, value: strictestValue, unit: strictestUnit, isPastDeadline};
+        return {cancelBy: strictestCancelBy, isPastDeadline};
     }, [orders, hospitalities, applications]);
 
     if (isLoading || hospitalities.length === 0) {

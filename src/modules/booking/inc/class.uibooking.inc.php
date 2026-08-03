@@ -527,6 +527,40 @@ class booking_uibooking extends booking_uicommon
 			array_set_default($_POST, 'resources', array());
 			$this->agegroup_bo->extract_form_data($booking);
 
+			// One-click create from an application (single-date path): derive the season from
+			// building + date, and — for a single-group organization — its sole active group,
+			// when the caller didn't supply them. Multi-group orgs need an explicit choice (Tier 2).
+			if (empty($booking['season_id']) && !empty($booking['building_id']) && !empty($booking['from_']))
+			{
+				$season_date = date('Y-m-d', strtotime($booking['from_']));
+				$season_match = $this->season_bo->read(array('filters' => array(
+					'active' => 1,
+					'building_id' => $booking['building_id'],
+					'where' => array("%%table%%.from_ <= '{$season_date}'", "%%table%%.to_ >= '{$season_date}'")
+				), 'results' => 1));
+				if (!empty($season_match['results'][0]))
+				{
+					$booking['season_id'] = $season_match['results'][0]['id'];
+					$_POST['season_id'] = $booking['season_id'];
+				}
+			}
+			$org_id = (int) ($booking['organization_id'] ?? 0);
+			if (!$org_id)
+			{
+				$org_id = (int) Sanitizer::get_var('organization_id', 'int', 'POST');
+			}
+			if (empty($booking['group_id']) && $org_id)
+			{
+				$org_groups = $this->group_bo->so->read(array('results' => -1, 'filters' => array(
+					'active' => 1, 'organization_id' => $org_id
+				)));
+				if (!empty($org_groups['results']) && count($org_groups['results']) === 1)
+				{
+					$booking['group_id'] = $org_groups['results'][0]['id'];
+					$_POST['group_id'] = $booking['group_id'];
+				}
+			}
+
 			$errors = $this->bo->validate($booking);
 			$_errors = $errors;
 			unset($_errors['event']);
@@ -681,6 +715,38 @@ class booking_uibooking extends booking_uicommon
 					}
 				}
 			}
+			// Single-date create failed (e.g. a collision) — return conflict details as JSON so the
+			// caller can show the overlap inline instead of navigating away.
+			if ($isJsonRequest && $_errors && $_POST['recurring'] != 'on' && $_POST['outseason'] != 'on')
+			{
+				$conflict_details = array();
+				$conflict_links = array();
+				$collisions = (!empty($booking['resources']) && is_array($booking['resources']))
+					? createObject('booking.soapplication')->get_collision_details($booking['resources'], $booking['from_'], $booking['to_'])
+					: array();
+				foreach ($collisions as $detail)
+				{
+					$link = '';
+					switch ($detail['type'])
+					{
+						case 'allocation': $link = self::link(array('menuaction' => 'booking.uiallocation.edit', 'id' => $detail['id'])); break;
+						case 'booking':    $link = self::link(array('menuaction' => 'booking.uibooking.edit', 'id' => $detail['id'])); break;
+						case 'event':      $link = self::link(array('menuaction' => 'booking.uievent.edit', 'id' => $detail['id'])); break;
+					}
+					$conflict_details[] = $detail['name'];
+					$conflict_links['item_' . count($conflict_links)] = array('name' => $detail['name'], 'link' => $link, 'type' => $detail['type']);
+				}
+				self::sendJsonResponse(array(
+					'errors'           => $_errors,
+					'conflict_details' => implode(', ', $conflict_details),
+					'conflict_links'   => $conflict_links,
+					'conflict_count'   => count($conflict_details),
+					// The org the create resolved (for the Tier 2 group picker: it lists this
+					// org's groups via GET /booking/organizations/{organization_id}/groups).
+					'organization_id'  => $org_id ?: null,
+				), 422);
+			}
+
 			$booking['from_'] = pretty_timestamp($booking['from_']);
 			$booking['to_'] = pretty_timestamp($booking['to_']);
 		}

@@ -360,6 +360,37 @@
 	min-width: 12rem;
 }
 
+/* In-place "created" state: the Edit link that replaces the whole split for a
+   fulfilled slot. Size + colour its success check icon. */
+.app-show .ds-button[data-created] > svg {
+	width: 1.125rem;
+	height: 1.125rem;
+	color: var(--ds-color-success-base-default, #068718);
+}
+
+/* Inline overlap message shown under a create button when the create fails on
+   a collision ("Overlaps with: <edit links>"). */
+.app-show__conflict {
+	margin-top: 0.25rem;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.25rem 0;
+	font-size: 0.8125rem;
+	color: var(--ds-color-danger-base-default, #c01b1b);
+}
+
+.app-show__conflict a {
+	color: inherit;
+}
+
+/* Inline group picker: shown when a multi-group-org booking needs an explicit
+   group choice. Selecting a group resubmits the create with group_id. */
+.app-show__group-picker {
+	margin-top: 0.25rem;
+	max-width: 16rem;
+}
+
 /* Designsystemet dialog */
 .app-show__dialog-footer {
 	display: flex;

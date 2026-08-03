@@ -69,20 +69,11 @@ const HospitalityOrderRow: FC<HospitalityOrderRowProps> = ({order, onEdit, forma
 
 const HospitalitySection: FC<HospitalitySectionProps> = ({applicationIds, applications}) => {
     const t = useTrans();
-    const {hospitalities, orders, isLoading, applicationHospitalityMap} = useApplicationGroupHospitalities(applicationIds);
+    const {hospitalities, orders, isLoading} = useApplicationGroupHospitalities(applicationIds);
 
     const [activeHospitality, setActiveHospitality] = useState<IHospitality | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingOrder, setEditingOrder] = useState<IHospitalityOrder | undefined>(undefined);
-
-    const getApplicationIdForHospitality = (hospitalityId: number): number | undefined => {
-        for (const [appId, hIds] of applicationHospitalityMap) {
-            if (hIds.includes(hospitalityId)) {
-                return appId;
-            }
-        }
-        return applicationIds[0];
-    };
 
     const hospitalityTotal = useMemo(() => {
         return orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
@@ -226,7 +217,6 @@ const HospitalitySection: FC<HospitalitySectionProps> = ({applicationIds, applic
                 hospitalities={hospitalities}
                 selectedHospitality={activeHospitality}
                 onHospitalitySelect={handleHospitalitySelected}
-                applicationId={activeHospitality ? (getApplicationIdForHospitality(activeHospitality.id) || applicationIds[0]) : applicationIds[0]}
                 applications={applications}
                 existingOrder={editingOrder}
             />

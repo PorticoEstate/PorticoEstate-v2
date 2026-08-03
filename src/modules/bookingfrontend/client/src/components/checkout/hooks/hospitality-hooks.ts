@@ -59,11 +59,14 @@ export function useHospitalityOrders(applicationId: number | undefined) {
     });
 }
 
-export function useCreateHospitalityOrder(applicationId: number) {
+export function useCreateHospitalityOrder(applicationId: number | undefined) {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (data: CreateHospitalityOrderRequest) => {
+            if (!applicationId) {
+                throw new Error('Cannot create a hospitality order without an application');
+            }
             const url = phpGWLink(['bookingfrontend', 'applications', applicationId, 'hospitality-orders']);
             const response = await fetch(url, {
                 method: 'POST',
@@ -84,11 +87,14 @@ export function useCreateHospitalityOrder(applicationId: number) {
     });
 }
 
-export function useUpdateHospitalityOrder(applicationId: number) {
+export function useUpdateHospitalityOrder(applicationId: number | undefined) {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async ({orderId, data}: { orderId: number; data: UpdateHospitalityOrderRequest }) => {
+            if (!applicationId) {
+                throw new Error('Cannot update a hospitality order without an application');
+            }
             const url = phpGWLink(['bookingfrontend', 'applications', applicationId, 'hospitality-orders', orderId]);
             const response = await fetch(url, {
                 method: 'PUT',
@@ -168,17 +174,9 @@ export function useApplicationGroupHospitalities(applicationIds: number[]) {
         }
     });
 
-    // Map: applicationId -> hospitality IDs available for that application
-    const applicationHospitalityMap = new Map<number, number[]>();
-    queries.forEach((q, i) => {
-        const appId = applicationIds[i];
-        applicationHospitalityMap.set(appId, q.data?.map(h => h.id) || []);
-    });
-
     return {
         hospitalities,
         orders: allOrders,
         isLoading,
-        applicationHospitalityMap,
     };
 }

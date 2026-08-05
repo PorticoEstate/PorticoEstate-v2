@@ -32,7 +32,7 @@ use App\modules\phpgwapi\services\Settings;
 
 /**
  * Description
- * example cron : /usr/local/bin/php -q /var/www/html/phpgroupware/property/inc/cron/cron.php default deceased_tenants_BK_EBF
+ * example cron : /usr/local/bin/php -q /var/www/html/src/modules/property/inc/cron/cron.php default deceased_tenants_BK_EBF
  * @package property
  */
 include_class('property', 'cron_parent', 'inc/cron/');
@@ -549,20 +549,28 @@ class boei
 		}
 
 		$external_db = Settings::getInstance()->get('external_db');
+		if (empty($external_db['boei']))
+		{
+			throw new RuntimeException('Missing external_db.boei configuration');
+		}
 
 		$host_info		 = explode(':', $external_db['boei']['db_host']);
 		$host	 = $host_info[0];
 		$port	 = isset($host_info[1]) && $host_info[1] ? $host_info[1] : $external_db['boei']['db_port'];
 
 		$dsn = "sqlsrv:Server={$host},{$port};Database={$external_db['boei']['db_name']}";
+		$options = [
+			PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+		];
+		$db = null;
 		try
 		{
-			$db = new \App\Database\Db2($dsn, $external_db['boei']['db_user'], $external_db['boei']['db_pass']);
+			$db = new \App\Database\Db2($dsn, $external_db['boei']['db_user'], $external_db['boei']['db_pass'], $options);
 			$this->connected = true;
 		}
 		catch (Exception $e)
 		{
-			$status = lang('unable_to_connect_to_database');
+			throw new RuntimeException('Unable to connect to BOEI database: ' . $e->getMessage(), 0, $e);
 		}
 
 		$this->db = $db;

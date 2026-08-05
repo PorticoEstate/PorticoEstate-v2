@@ -626,13 +626,13 @@
 			inputHtml = '<textarea class="hosp-show__edit-input ds-input" data-edit-field="' + esc(fieldName) + '">' + esc(currentValue) + '</textarea>';
 		} else if (fieldType === 'datetime') {
 			inputHtml = '<div class="hosp-show__edit-form" data-edit-field="' + esc(fieldName) + '" data-field-type="datetime">' +
-				'<select class="hosp-show__edit-input ds-select" data-edit-date>';
+				'<select class="hosp-show__edit-input ds-input" data-edit-date>';
 			inputHtml += '<option value="">' + esc(lang('selectDate')) + '</option>';
 			appDatesData.forEach(function (d, i) {
 				inputHtml += '<option value="' + i + '">' + esc(fmtShortDate(new Date(d.from_))) + '</option>';
 			});
 			inputHtml += '</select>' +
-				'<select class="hosp-show__edit-input ds-select" data-edit-time disabled>' +
+				'<select class="hosp-show__edit-input ds-input" data-edit-time disabled>' +
 				'<option value="">' + esc(lang('selectTime')) + '</option>' +
 				'</select></div>';
 		} else {

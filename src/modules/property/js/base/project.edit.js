@@ -1002,6 +1002,8 @@ function check_and_submit_valid_session()
 	var form = document.form;
 	if (!form)
 	{
+		isProjectSubmitting = false;
+		setProjectSubmitButtonsDisabled(false);
 		return;
 	}
 
@@ -1141,6 +1143,8 @@ validate_submit = function ()
 
 	if (!validate_form())
 	{
+		isProjectSubmitting = false;
+		setProjectSubmitButtonsDisabled(false);
 		return;
 	}
 
@@ -1150,6 +1154,8 @@ validate_submit = function ()
 		$('#tab-content').responsiveTabs('activate', 1);
 		$("#submitform").val(lang['next']);
 		$("#active_tab").val('general');
+		isProjectSubmitting = false;
+		setProjectSubmitButtonsDisabled(false);
 	}
 	else if (active_tab === 'general' && Number(project_id) === 0)
 	{
@@ -1157,6 +1163,8 @@ validate_submit = function ()
 		$('#tab-content').responsiveTabs('activate', 2);
 		$("#submitform").val(lang['save']);
 		$("#active_tab").val('budget');
+		isProjectSubmitting = false;
+		setProjectSubmitButtonsDisabled(false);
 	}
 	else
 	{

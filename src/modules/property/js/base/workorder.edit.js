@@ -90,6 +90,17 @@ formatWorkorderAttachFile = function (key, oData)
 	return formatWorkorderDataCell('checkbox', key, oData);
 };
 
+function set_workorder_submit_disabled(disabled)
+{
+	var isDisabled = !!disabled;
+	$("#save_button, #save_button_bottom").prop('disabled', isDisabled);
+}
+
+function reset_workorder_submit_state()
+{
+	set_workorder_submit_disabled(false);
+}
+
 function calculate_order()
 {
 	if (!validate_form())
@@ -109,6 +120,7 @@ function submit_workorder()
 
 	if (!validate_form())
 	{
+		reset_workorder_submit_state();
 		return;
 	}
 
@@ -119,6 +131,7 @@ function submit_workorder()
 		$("#save_button").val(lang['save']);
 		$("#save_button_bottom").val(lang['save']);
 		$("#active_tab").val('budget');
+		reset_workorder_submit_state();
 	}
 	else
 	{
@@ -217,6 +230,7 @@ function check_and_submit_valid_session(onValid)
 			{
 				if (data['sessionExpired'] == true)
 				{
+					reset_workorder_submit_state();
 					window.alert('sessionExpired - please log in');
 					JqueryPortico.lightboxlogin();//defined in common.js
 				}
@@ -225,9 +239,14 @@ function check_and_submit_valid_session(onValid)
 					validCallback();
 				}
 			}
+			else
+			{
+				reset_workorder_submit_state();
+			}
 		},
 		failure: function (o)
 		{
+			reset_workorder_submit_state();
 			window.alert('failure - try again - once');
 		},
 		timeout: 5000
@@ -400,6 +419,7 @@ function submit_workorder_via_api(actionType)
 	var form = document.form;
 	if (!form)
 	{
+		reset_workorder_submit_state();
 		return;
 	}
 
@@ -520,6 +540,7 @@ function handle_workorder_save_success(data, action)
 			return (entry && entry.msg) ? entry.msg : 'Could not save workorder';
 		});
 		renderWorkorderFormAlert(errorMessages, 'danger');
+		reset_workorder_submit_state();
 		return;
 	}
 
@@ -571,6 +592,7 @@ function handle_workorder_save_error(responseData)
 		messages = ['Feil ved lagring. Vennligst prøv igjen.'];
 	}
 	renderWorkorderFormAlert(messages, 'danger');
+	reset_workorder_submit_state();
 }
 
 this.validate_form = function ()

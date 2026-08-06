@@ -958,6 +958,7 @@ $(document).ready(function ()
 			var test = $('form').isValid(false, conf);
 			if (!test)
 			{
+				setSubmitButtonsDisabled(false);
 				e.preventDefault();
 				return false;
 			}
@@ -966,6 +967,7 @@ $(document).ready(function ()
 		var missingReadonlyMessages = getMissingReadonlyRequiredMessages(form);
 		if (missingReadonlyMessages.length)
 		{
+			setSubmitButtonsDisabled(false);
 			e.preventDefault();
 			renderFormErrorAlert(form, missingReadonlyMessages);
 			form.scrollIntoView({behavior: 'smooth', block: 'start'});

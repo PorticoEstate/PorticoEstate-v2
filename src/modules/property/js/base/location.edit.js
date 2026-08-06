@@ -568,6 +568,7 @@ $(document).ready(function ()
 			var valid = $('form').isValid(false, conf);
 			if (!valid)
 			{
+				setSubmitButtonsDisabled(false);
 				e.preventDefault();
 				return false;
 			}

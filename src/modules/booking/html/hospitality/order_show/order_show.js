@@ -626,13 +626,13 @@
 			inputHtml = '<textarea class="hosp-show__edit-input ds-input" data-edit-field="' + esc(fieldName) + '">' + esc(currentValue) + '</textarea>';
 		} else if (fieldType === 'datetime') {
 			inputHtml = '<div class="hosp-show__edit-form" data-edit-field="' + esc(fieldName) + '" data-field-type="datetime">' +
-				'<select class="hosp-show__edit-input ds-select" data-edit-date>';
+				'<select class="hosp-show__edit-input ds-input" data-edit-date>';
 			inputHtml += '<option value="">' + esc(lang('selectDate')) + '</option>';
 			appDatesData.forEach(function (d, i) {
 				inputHtml += '<option value="' + i + '">' + esc(fmtShortDate(new Date(d.from_))) + '</option>';
 			});
 			inputHtml += '</select>' +
-				'<select class="hosp-show__edit-input ds-select" data-edit-time disabled>' +
+				'<select class="hosp-show__edit-input ds-input" data-edit-time disabled>' +
 				'<option value="">' + esc(lang('selectTime')) + '</option>' +
 				'</select></div>';
 		} else {
@@ -835,7 +835,7 @@
 		var html = '<div class="order-show__menu-item" data-article-id="' + line.hospitality_article_id + '">';
 
 		html += '<div class="order-show__menu-row">';
-		html += '<span class="order-show__menu-name">' + esc(line.article_name || '?') + ' <em style="opacity:0.6">(removed)</em></span>';
+		html += '<span class="order-show__menu-name">' + esc(line.article_name || '?') + ' <em style="opacity:0.6">(' + esc(lang('removed')) + ')</em></span>';
 		html += '<span class="order-show__menu-unit">' + esc(line.unit || '') + '</span>';
 		html += '<span class="order-show__menu-price">' + Number(line.unit_price || 0).toFixed(2) + '</span>';
 

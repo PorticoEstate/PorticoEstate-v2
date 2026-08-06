@@ -243,7 +243,7 @@ export class BookingService implements OnModuleInit {
          JOIN bb_application_resource ar ON a.id = ar.application_id
          JOIN bb_application_date ad ON a.id = ad.application_id
          WHERE ar.resource_id = $1
-         AND a.status NOT IN ('REJECTED')
+         AND a.status NOT IN ('REJECTED', 'CANCELLED')
          AND a.active = 1
          AND ((ad.from_ < $2 AND ad.to_ > $3)
            AND NOT (ad.from_ = $2 OR ad.to_ = $3))
@@ -303,7 +303,7 @@ export class BookingService implements OnModuleInit {
            WHERE ar.resource_id = $1
            AND a.customer_ssn = $2
            AND a.created >= NOW() - (INTERVAL '1 day' * $3)
-           AND a.status != 'REJECTED'
+           AND a.status NOT IN ('REJECTED', 'CANCELLED')
            AND a.active = 1`,
           [resourceId, ssn, resource.booking_limit_number_horizont],
         );
@@ -1024,7 +1024,7 @@ export class BookingService implements OnModuleInit {
          WHERE ar.resource_id = $1
          AND a.customer_ssn = $2
          AND a.created >= NOW() - (INTERVAL '1 day' * $3)
-         AND a.status != 'REJECTED'
+         AND a.status NOT IN ('REJECTED', 'CANCELLED')
          AND a.active = 1`,
         [resourceId, ssn, resource.booking_limit_number_horizont],
       );
@@ -1087,7 +1087,7 @@ export class BookingService implements OnModuleInit {
          JOIN bb_application_date ad ON a.id = ad.application_id
          WHERE ar.resource_id = $1
          AND a.active = 1
-         AND a.status != 'REJECTED'
+         AND a.status NOT IN ('REJECTED', 'CANCELLED')
          AND ((ad.from_ BETWEEN $2 AND $3)
            OR (ad.to_ BETWEEN $2 AND $3)
            OR ($2 BETWEEN ad.from_ AND ad.to_)

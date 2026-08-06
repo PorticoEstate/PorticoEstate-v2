@@ -64,7 +64,7 @@ class LegacyViewHelper
 
 		if (is_array($appNameOrPath)) {
 			$appName = $appNameOrPath[0];
-			$menuSelection = implode('::', $appNameOrPath);
+			$menuSelection = !empty($menuSelection) ? $menuSelection : implode('::', $appNameOrPath);
 			$appHeader = implode('::', array_map(fn($s) => lang($s), $appNameOrPath));
 			$this->setFlags($appName, $menuSelection, $appHeader);
 		} else {

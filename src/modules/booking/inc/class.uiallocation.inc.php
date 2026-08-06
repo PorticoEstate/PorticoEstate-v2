@@ -530,6 +530,23 @@
 				$_POST['from_'] = $allocation['from_'];
 				$_POST['to_'] = $allocation['to_'];
 
+				// One-click create from an application (single-date path): derive the season from
+				// building + date when none was supplied, mirroring the recurring branch's lookup.
+				if (empty($allocation['season_id']) && !empty($allocation['building_id']) && !empty($allocation['from_']))
+				{
+					$season_date = date('Y-m-d', strtotime($allocation['from_']));
+					$season_match = $this->season_bo->read(array('filters' => array(
+						'active' => 1,
+						'building_id' => $allocation['building_id'],
+						'where' => array("%%table%%.from_ <= '{$season_date}'", "%%table%%.to_ >= '{$season_date}'")
+					), 'results' => 1));
+					if (!empty($season_match['results'][0]))
+					{
+						$allocation['season_id'] = $season_match['results'][0]['id'];
+						$_POST['season_id'] = $allocation['season_id'];
+					}
+				}
+
 				$errors = $this->bo->validate($allocation);
 
 				if (!$errors)
@@ -754,9 +771,29 @@
 					}
 				}
 			}
+			// Single-date create failed (e.g. a collision) — return conflict details as JSON so the
+			// caller can show the overlap inline instead of navigating away. Recurring conflicts are
+			// already reported per-date above; this covers the single-date path only.
+			if ($isJsonRequest && $errors && $_POST['outseason'] != 'on' && !Sanitizer::get_var('repeat_until', 'bool'))
+			{
+				$conflict_details = array();
+				$conflict_links = array();
+				foreach ($this->get_conflict_details($allocation['resources'], $allocation['from_'], $allocation['to_']) as $conflict)
+				{
+					$conflict_details[] = $conflict['name'];
+					$conflict_links['item_' . count($conflict_links)] = $conflict;
+				}
+				self::sendJsonResponse(array(
+					'errors'           => $errors,
+					'conflict_details' => implode(', ', $conflict_details),
+					'conflict_links'   => $conflict_links,
+					'conflict_count'   => count($conflict_details),
+				), 422);
+			}
+
 			if (Sanitizer::get_var('building_name', 'string') == '' && empty($allocation['building_name']))
 			{
-	
+
 				array_set_default($allocation, 'resources', array());
 				$weekday = 'monday';
 			}

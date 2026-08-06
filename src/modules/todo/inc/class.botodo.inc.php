@@ -34,27 +34,14 @@ class todo_botodo
 	/**
 	 * @var bool $debug enable debugging
 	 */
-	var $debug = false;
+	var bool $debug = false;
 
-	var $public_functions = array(
-		'cached_accounts'  => True,
-		'_list'            => True,
-		'check_perms'      => True,
-		'check_values'     => True,
-		'select_todo_list' => True,
-		'save'             => True,
-		'_read'            => True,
-		'delete'           => True,
-		'exists'           => True,
-		'list_methods'     => True
-	);
+	var todo_sotodo $sotodo;
 
-	var $sotodo;
-
-	var $total_records = 0;
-	var $use_session = False;
-	var $phpgwapi_common;
-	var	$accounts_obj;
+	var int $total_records = 0;
+	var bool $use_session = False;
+	var phpgwapi_common $phpgwapi_common;
+	var	Accounts $accounts_obj;
 
 
 	function __construct($session = False)
@@ -129,55 +116,6 @@ class todo_botodo
 		$this->accounts_obj = new Accounts();
 	}
 
-	function list_methods($_type)
-	{
-		if (is_array($_type))
-		{
-			$_type = $_type['type'];
-		}
-
-		switch ($_type)
-		{
-			case 'xmlrpc':
-				$xml_functions = array(
-					'list_methods' => array(
-						'function'  => 'list_methods',
-						'signature' => array(array(xmlrpcStruct, xmlrpcString)),
-						'docstring' => lang('Read this list of methods.')
-					),
-					'list' => array(
-						'function'  => '_list',
-						'signature' => array(array(xmlrpcStruct, xmlrpcStruct)),
-						'docstring' => lang('Returns an array of todo items')
-					),
-					'save' => array(
-						'function'  => 'save',
-						'signature' => array(array(xmlrpcBoolean, xmlrpcStruct)),
-						'docstring' => lang('Adds or edits a todo item')
-					),
-					'delete' => array(
-						'function'  => 'delete',
-						'signature' => array(array(xmlrpcBoolean, xmlrpcInt)),
-						'docstring' => lang('Deletes a todo item')
-					),
-					'total_records' => array(
-						'function'  => 'total_records',
-						'signature' => array(array(xmlrpcInt)),
-						'docstring' => lang('Returns a the total number of records in the database, must call list_todos first')
-					)
-				);
-				return $xml_functions;
-				break;
-
-			case 'soap':
-				return $this->soap_functions;
-				break;
-
-			default:
-				return array();
-				break;
-		}
-	}
 
 	function get_grants()
 	{
@@ -235,7 +173,7 @@ class todo_botodo
 		return $this->accounts_obj->get($account_id);
 	}
 
-	function employee_list($type)
+	function employee_list(string $type)
 	{
 		$employees = $this->accounts_obj->get_list($type);
 		return $employees;
@@ -251,41 +189,6 @@ class todo_botodo
 		return $a;
 	}
 
-	function list_assigned($assi = '')
-	{
-		$aout = '';
-		if (is_array($assi))
-		{
-			foreach ($assi as $a)
-			{
-
-				/**
-				 * Begin Orlando Fix
-				 * 
-				 * I had to comment the conditionals because variable $adata
-				 * doesn't return the 'type' field of the accounts
-				 */
-
-				$adata = $this->cached_accounts($a);
-
-				/*if ($adata[$a]['type'] == 'u')
-					{
-						$aout  .= $this->phpgwapi_common->display_fullname($adata[$a]['lid'],
-										$adata[$a]['firstname'],$adata[$a]['lastname']) . '<br>';
-					}
-					elseif($adata[$a]['type'] == 'g')
-					{
-						$aout .= $adata[$a]['firstname'] . ' ' . lang('Group') . '<br>';
-					}*/
-
-				$aout  .= $this->phpgwapi_common->display_fullname($adata->lid, $adata->firstname, $adata->lastname) . '<br>';
-				/**
-				 * End Orlando Fix
-				 */
-			}
-		}
-		return $aout;
-	}
 
 	function _list($start = 0, $limit = '', $query = '', $filter = '', $order = '', $sort = '', $cat_id = 0, $tree = '', $parent = '')
 	{
@@ -489,12 +392,11 @@ class todo_botodo
 
 		if ($subs)
 		{
-			$this->sotodo->delete_todo($todo_id, True);
+			return $this->sotodo->delete_todo($todo_id, True);
 		}
 		else
 		{
-			$this->sotodo->delete_todo($todo_id);
+			return $this->sotodo->delete_todo($todo_id);
 		}
-		return True;
 	}
 }

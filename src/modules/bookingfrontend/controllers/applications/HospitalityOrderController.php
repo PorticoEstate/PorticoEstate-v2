@@ -9,6 +9,7 @@ use App\modules\bookingfrontend\services\applications\ApplicationService;
 use App\modules\booking\repositories\HospitalityRepository;
 use App\modules\booking\repositories\HospitalityArticleRepository;
 use App\modules\booking\repositories\HospitalityOrderRepository;
+use App\modules\booking\services\HospitalityDeadlineCalculator;
 use App\modules\booking\models\Hospitality;
 use App\modules\booking\models\HospitalityArticleGroup;
 use App\modules\booking\models\HospitalityArticle;
@@ -19,6 +20,14 @@ use Exception;
 
 class HospitalityOrderController
 {
+	/**
+	 * Venue-local timezone. serving_time_iso is stored as naive UTC (the model serializes it
+	 * back with @Timestamp(sourceTimezone="UTC")), so an incoming offset-aware ISO-8601 has to
+	 * be converted to local wall-clock before asking which weekday the kitchen is being asked
+	 * to serve. Mirrors the same convention in booking\controllers\HospitalityOrderController.
+	 */
+	private const LOCAL_TIMEZONE = 'Europe/Oslo';
+
 	private ApplicationHelper $applicationHelper;
 	private ApplicationService $applicationService;
 	private UserHelper $userHelper;
@@ -34,6 +43,68 @@ class HospitalityOrderController
 		$this->hospitalityRepo = new HospitalityRepository();
 		$this->articleRepo = new HospitalityArticleRepository();
 		$this->orderRepo = new HospitalityOrderRepository();
+	}
+
+	/**
+	 * Reject orders whose serving day falls on a weekday the catering is closed (#373).
+	 *
+	 * open_days is the single source of truth for both this restriction and the order-deadline
+	 * countback; the bit logic lives in HospitalityDeadlineCalculator so the two stay in
+	 * lock-step. open_days = 127 (all days open, the default) never rejects — pre-#373
+	 * behaviour is unchanged.
+	 *
+	 * The client runs the same check for UX, but that is bypassable; this is the enforcement
+	 * point.
+	 *
+	 * @param array $hospitality Row from HospitalityRepository (needs open_days).
+	 * @return array|null Error payload to return with a 400, or null when the day is allowed.
+	 */
+	private function validateServingDay(string $servingTimeIso, array $hospitality): ?array
+	{
+		$mask = isset($hospitality['open_days']) && $hospitality['open_days'] !== null
+			? (int)$hospitality['open_days']
+			: HospitalityDeadlineCalculator::ALL_DAYS_OPEN;
+
+		try {
+			$servingTime = (new \DateTimeImmutable($servingTimeIso))
+				->setTimezone(new \DateTimeZone(self::LOCAL_TIMEZONE));
+		} catch (Exception $e) {
+			// The caller already checked the format; treat anything still unparseable as a bad
+			// request rather than letting it escape as a 500.
+			return ['error' => 'Invalid serving_time_iso format'];
+		}
+
+		$isoWeekday = (int)$servingTime->format('N');
+		if (HospitalityDeadlineCalculator::isOpenOnWeekday($mask, $isoWeekday)) {
+			return null;
+		}
+
+		return [
+			'error' => lang('serving_day_closed'),
+			'serving_weekday' => $isoWeekday,
+			'open_days_list' => HospitalityDeadlineCalculator::decodeOpenDays($mask),
+		];
+	}
+
+	/**
+	 * Has the serving time actually moved? Used so that changing an order's lines or comment
+	 * does not re-validate — and therefore cannot reject — an existing order that sits on a day
+	 * the catering has since closed (#373 grandfathering).
+	 *
+	 * @param string      $incomingIso Offset-aware ISO-8601 from the request.
+	 * @param string|null $storedUtc   Naive UTC timestamp as held in serving_time_iso.
+	 */
+	private function servingTimeChanged(string $incomingIso, ?string $storedUtc): bool
+	{
+		if (empty($storedUtc)) {
+			return true; // being set for the first time
+		}
+
+		// Compare true INSTANTS, not wall clocks: both sides go through the same normalisation
+		// the write path uses, so "2026-06-07T16:00:00+02:00" and the stored "14:00:00" are
+		// recognised as the same moment and the order is not falsely treated as moved.
+		return HospitalityOrderRepository::toStorageTimestamp($incomingIso)
+			!== HospitalityOrderRepository::toStorageTimestamp($storedUtc);
 	}
 
 	/**
@@ -62,10 +133,18 @@ class HospitalityOrderController
 
 			$hospitalities = $this->hospitalityRepo->getActiveByResourceIds($resourceIds);
 
-			// Enrich each hospitality with delivery locations relevant to this application
+			// Enrich each hospitality with delivery locations relevant to this application.
+			// These are raw repo rows (not Hospitality models), so derive the decoded
+			// open_days_list here too — the client keys the working-days deadline display
+			// off the array, not the raw bitmask (single source = the calculator).
 			foreach ($hospitalities as &$h) {
 				$h['delivery_locations'] = $this->hospitalityRepo->getDeliveryLocations((int)$h['id']);
+				$mask = isset($h['open_days']) && $h['open_days'] !== null
+					? (int)$h['open_days']
+					: HospitalityDeadlineCalculator::ALL_DAYS_OPEN;
+				$h['open_days_list'] = HospitalityDeadlineCalculator::decodeOpenDays($mask);
 			}
+			unset($h);
 
 			return ResponseHelper::sendJSONResponse($hospitalities, 200, $response);
 		} catch (Exception $e) {
@@ -102,6 +181,10 @@ class HospitalityOrderController
 					if (!(int)$a['active']) {
 						continue;
 					}
+					// Articles flagged hidden-from-frontend are officer-only — exclude from the public menu.
+					if (!empty($a['deactivate_in_frontend'])) {
+						continue;
+					}
 					$article = (new HospitalityArticle($a))->serialize();
 					$pricing = $this->articleRepo->resolveEffectivePricing((int)$a['id']);
 					if ($pricing) {
@@ -117,6 +200,10 @@ class HospitalityOrderController
 			$allArticles = $this->articleRepo->getArticlesByHospitality($hospitalityId, true);
 			$ungroupedArticles = [];
 			foreach ($allArticles as $a) {
+				// Articles flagged hidden-from-frontend are officer-only — exclude from the public menu.
+				if (!empty($a['deactivate_in_frontend'])) {
+					continue;
+				}
 				if (empty($a['article_group_id'])) {
 					$article = (new HospitalityArticle($a))->serialize();
 					$pricing = $this->articleRepo->resolveEffectivePricing((int)$a['id']);
@@ -131,6 +218,9 @@ class HospitalityOrderController
 			return ResponseHelper::sendJSONResponse([
 				'hospitality_id' => $hospitalityId,
 				'hospitality_name' => $hospitality['name'],
+				// Hospitality-level admin info/routine text shown to the applicant
+				// on the catering surface (#374). May be null/empty.
+				'hospitality_description' => $hospitality['description'] ?? null,
 				'groups' => $groups,
 				'ungrouped_articles' => $ungroupedArticles,
 			], 200, $response);
@@ -227,6 +317,12 @@ class HospitalityOrderController
 				$servingTime = strtotime($body['serving_time_iso']);
 				if ($servingTime === false) {
 					return ResponseHelper::sendErrorResponse(['error' => 'Invalid serving_time_iso format'], 400, $response);
+				}
+
+				// The kitchen cannot be booked for a day it is closed (#373).
+				$dayError = $this->validateServingDay($body['serving_time_iso'], $hospitality);
+				if ($dayError !== null) {
+					return ResponseHelper::sendErrorResponse($dayError, 400, $response);
 				}
 			}
 
@@ -357,6 +453,21 @@ class HospitalityOrderController
 				if (!empty($body['serving_time_iso']) && strtotime($body['serving_time_iso']) === false) {
 					return ResponseHelper::sendErrorResponse(['error' => 'Invalid serving_time_iso format'], 400, $response);
 				}
+
+				// Only validate the serving day when it actually moves (#373). An order placed
+				// before the catering closed that weekday stays editable — resending its
+				// unchanged serving time, or editing only lines/comment, is never rejected.
+				if (!empty($body['serving_time_iso'])
+					&& $this->servingTimeChanged($body['serving_time_iso'], $order['serving_time_iso'] ?? null)) {
+					$hospitality = $this->hospitalityRepo->getById((int)$order['hospitality_id']);
+					if ($hospitality) {
+						$dayError = $this->validateServingDay($body['serving_time_iso'], $hospitality);
+						if ($dayError !== null) {
+							return ResponseHelper::sendErrorResponse($dayError, 400, $response);
+						}
+					}
+				}
+
 				$updateData['serving_time_iso'] = $body['serving_time_iso'];
 			}
 			if (array_key_exists('location_resource_id', $body)) {

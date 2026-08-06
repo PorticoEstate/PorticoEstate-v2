@@ -2,10 +2,50 @@
 {
 	'use strict';
 
+	var clickHistoryStore = global.__porticoClickHistoryStore || {};
+	global.__porticoClickHistoryStore = clickHistoryStore;
+
+	function generateClickHistoryToken()
+	{
+		return String(Date.now()) + '-' + Math.random().toString(36).slice(2);
+	}
+
+	function getStoreKey(prefix, form)
+	{
+		var action = (form && form.action) ? String(form.action) : '';
+		return prefix + '|' + action;
+	}
+
+	function resolveInitialToken(query, deps)
+	{
+		var token = (query && query.click_history) ? String(query.click_history) : '';
+		if (!token && typeof global.strBaseURL !== 'undefined' && global.strBaseURL)
+		{
+			token = ((deps.parseURL(global.strBaseURL).searchObject || {}).click_history || '').toString();
+		}
+		return token || generateClickHistoryToken();
+	}
+
+	function getClickHistoryToken(storeKey, query, deps)
+	{
+		if (!clickHistoryStore[storeKey])
+		{
+			clickHistoryStore[storeKey] = resolveInitialToken(query, deps);
+		}
+		return clickHistoryStore[storeKey];
+	}
+
+	function refreshClickHistoryToken(storeKey)
+	{
+		clickHistoryStore[storeKey] = generateClickHistoryToken();
+		return clickHistoryStore[storeKey];
+	}
+
 	function createLocationClients(form, deps)
 	{
 		var parsed = deps.parseURL(form.action);
 		var query = parsed.searchObject || {};
+		var tokenStoreKey = getStoreKey('location', form);
 
 		function buildEditUrl(locationCode)
 		{
@@ -30,7 +70,6 @@
 
 		function buildSaveRequest()
 		{
-			var clickHistory = query.click_history || '';
 			var queryParts = [];
 			var originalLocationCode = (
 				query.location_code
@@ -61,6 +100,7 @@
 				? '/property/location/' + encodeURIComponent(originalLocationCode)
 				: '/property/location';
 
+			var clickHistory = getClickHistoryToken(tokenStoreKey, query, deps);
 			if (clickHistory)
 			{
 				queryParts.push('click_history=' + encodeURIComponent(clickHistory));
@@ -82,7 +122,11 @@
 				buildEditUrl: buildEditUrl
 			},
 			api: {
-				buildSaveRequest: buildSaveRequest
+				buildSaveRequest: buildSaveRequest,
+				refreshClickHistoryToken: function ()
+				{
+					return refreshClickHistoryToken(tokenStoreKey);
+				}
 			}
 		};
 	}
@@ -91,6 +135,7 @@
 	{
 		var parsed = deps.parseURL(form.action);
 		var query = parsed.searchObject || {};
+		var tokenStoreKey = getStoreKey('entity', form);
 
 		function buildEditUrl(type, entityId, catId, id)
 		{
@@ -118,8 +163,6 @@
 			var type = query.type || '';
 			var entityId = query.entity_id || '';
 			var catId = query.cat_id || '';
-			var isApply = (submitterName === 'values[apply]');
-			var clickHistory = isApply ? '' : (query.click_history || '');
 
 			if (!type || !entityId || !catId)
 			{
@@ -154,17 +197,13 @@
 				url += '/' + id;
 			}
 
-			if (!isApply && !clickHistory && typeof global.strBaseURL !== 'undefined' && global.strBaseURL)
-			{
-				var baseQuery = deps.parseURL(global.strBaseURL).searchObject || {};
-				clickHistory = baseQuery.click_history || '';
-			}
-
 			var queryParts = [];
 			if (typeof bypass !== 'undefined' && bypass !== null && bypass !== '')
 			{
 				queryParts.push('bypass=' + encodeURIComponent(bypass));
 			}
+
+			var clickHistory = getClickHistoryToken(tokenStoreKey, query, deps);
 			if (clickHistory)
 			{
 				queryParts.push('click_history=' + encodeURIComponent(clickHistory));
@@ -190,7 +229,11 @@
 				buildIndexUrl: buildIndexUrl
 			},
 			api: {
-				buildSaveRequest: buildSaveRequest
+				buildSaveRequest: buildSaveRequest,
+				refreshClickHistoryToken: function ()
+				{
+					return refreshClickHistoryToken(tokenStoreKey);
+				}
 			}
 		};
 	}
@@ -199,6 +242,7 @@
 	{
 		var parsed = deps.parseURL(form.action);
 		var query = parsed.searchObject || {};
+		var tokenStoreKey = getStoreKey('project', form);
 
 		function buildEditUrl(projectId)
 		{
@@ -215,20 +259,12 @@
 			var basePath = isUpdate
 				? '/property/project/' + encodeURIComponent(projectId)
 				: '/property/project/create';
-
-			var clickHistory = query.click_history || '';
-			if (!clickHistory && typeof global.strBaseURL !== 'undefined' && global.strBaseURL)
-			{
-				var baseQuery = deps.parseURL(global.strBaseURL).searchObject || {};
-				clickHistory = baseQuery.click_history || '';
-			}
-
 			var queryParts = [];
+			var clickHistory = getClickHistoryToken(tokenStoreKey, query, deps);
 			if (clickHistory)
 			{
 				queryParts.push('click_history=' + encodeURIComponent(clickHistory));
 			}
-
 			var requestUrl = basePath;
 			if (queryParts.length)
 			{
@@ -246,7 +282,11 @@
 				buildEditUrl: buildEditUrl
 			},
 			api: {
-				buildSaveRequest: buildSaveRequest
+				buildSaveRequest: buildSaveRequest,
+				refreshClickHistoryToken: function ()
+				{
+					return refreshClickHistoryToken(tokenStoreKey);
+				}
 			}
 		};
 	}

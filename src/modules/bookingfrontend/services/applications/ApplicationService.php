@@ -941,7 +941,7 @@ class ApplicationService
             WHERE ar.resource_id = :resource_id
             AND a.customer_ssn = :ssn
             AND a.created >= NOW() - (INTERVAL '1 day' * :horizon_days)
-            AND a.status != 'REJECTED'
+            AND a.status NOT IN ('REJECTED', 'CANCELLED')
             AND a.active = 1";
 
         $stmt = $this->db->prepare($sql);

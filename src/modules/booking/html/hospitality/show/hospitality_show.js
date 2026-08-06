@@ -354,6 +354,73 @@
 			'</span></div>';
 	}
 
+	// ── Open-days (business-days) weekday selector ──────────────────────
+	// Bitmask contract: bit0=Mon .. bit6=Sun (127=all open, 31=Mon–Fri).
+	// The API also exposes the decoded open_days_list (ISO 1=Mon..7=Sun).
+	var WEEKDAYS = [
+		{ iso: 1, key: 'monday' },
+		{ iso: 2, key: 'tuesday' },
+		{ iso: 3, key: 'wednesday' },
+		{ iso: 4, key: 'thursday' },
+		{ iso: 5, key: 'friday' },
+		{ iso: 6, key: 'saturday' },
+		{ iso: 7, key: 'sunday' }
+	];
+
+	// Short chip label: first 3 chars of the translated full weekday name.
+	function weekdayShort(key) {
+		var full = lang(key);
+		return full ? full.substring(0, 3) : key;
+	}
+
+	// Decode a hospitality record's open_days into ISO day numbers (1=Mon..7=Sun).
+	// Prefers the API-decoded open_days_list; falls back to the raw bitmask.
+	function openDaysToIso(h) {
+		if (Array.isArray(h.open_days_list)) return h.open_days_list.slice();
+		var mask = (h.open_days == null) ? 127 : Number(h.open_days);
+		var days = [];
+		for (var i = 0; i < 7; i++) {
+			if (mask & (1 << i)) days.push(i + 1);
+		}
+		return days;
+	}
+
+	// Encode ISO day numbers into the bitmask (bit0=Mon..bit6=Sun).
+	function isoToOpenDaysMask(isoDays) {
+		var mask = 0;
+		isoDays.forEach(function (d) { mask |= (1 << (d - 1)); });
+		return mask;
+	}
+
+	function openDaysDisplay(h) {
+		var iso = openDaysToIso(h);
+		if (!iso.length) return '&mdash;';
+		if (iso.length === 7) return esc(lang('open_days_all'));
+		return iso.slice().sort(function (a, b) { return a - b; })
+			.map(function (d) { return esc(weekdayShort(WEEKDAYS[d - 1].key)); })
+			.join(', ');
+	}
+
+	function openDaysField(label, h, opts) {
+		opts = opts || {};
+		var displayHtml = openDaysDisplay(h);
+		var descHtml = opts.description
+			? '<div class="hosp-show__field-desc">' + esc(opts.description) + '</div>'
+			: '';
+
+		if (!canWrite) {
+			return fieldHtml(label, displayHtml + descHtml);
+		}
+
+		return '<div class="app-show__field" data-editable="open_days" data-field-type="weekdays">' +
+			'<span class="app-show__label">' + esc(label) + '</span>' +
+			'<span class="app-show__value">' +
+			'<span class="hosp-show__display">' + displayHtml + '</span>' +
+			'<button type="button" class="hosp-show__edit-trigger" title="' + esc(lang('edit')) + '">' + penIcon + '</button>' +
+			descHtml +
+			'</span></div>';
+	}
+
 	// Helper: notify collab about edit start/stop
 	function collabStartEditing(scope) {
 		if (window.__hospWs && window.__hospWs.collab) {
@@ -388,6 +455,8 @@
 				value: hospitalityData.order_by_time_value || '',
 				unit: hospitalityData.order_by_time_unit || 'hours'
 			};
+		} else if (fieldType === 'weekdays') {
+			currentValue = openDaysToIso(hospitalityData);
 		} else {
 			currentValue = hospitalityData[fieldName] != null ? String(hospitalityData[fieldName]) : '';
 		}
@@ -407,6 +476,18 @@
 				'<option value="hours"' + (currentValue.unit === 'hours' ? ' selected' : '') + '>' + esc(lang('hours')) + '</option>' +
 				'<option value="days"' + (currentValue.unit === 'days' ? ' selected' : '') + '>' + esc(lang('days')) + '</option>' +
 				'</select></div>';
+		} else if (fieldType === 'weekdays') {
+			var selected = {};
+			currentValue.forEach(function (d) { selected[d] = true; });
+			formHtml += '<div class="hosp-show__weekday-chips" role="group" aria-label="' + esc(lang('open_days')) + '">';
+			WEEKDAYS.forEach(function (wd) {
+				formHtml += '<label class="ds-chip hosp-show__weekday-chip" title="' + esc(lang(wd.key)) + '">' +
+					'<input type="checkbox" class="hosp-show__weekday-input" value="' + wd.iso + '"' + (selected[wd.iso] ? ' checked' : '') + '> ' +
+					esc(weekdayShort(wd.key)) +
+					'</label>';
+			});
+			formHtml += '</div>';
+			formHtml += '<div class="hosp-show__edit-error" role="alert" hidden></div>';
 		} else {
 			formHtml += '<input type="text" class="hosp-show__edit-input" value="' + esc(currentValue) + '">';
 		}
@@ -435,6 +516,22 @@
 				var unitInput = valueSpan.querySelector('[data-sub="unit"]');
 				payload.order_by_time_value = valInput.value ? parseInt(valInput.value, 10) : null;
 				payload.order_by_time_unit = unitInput.value;
+			} else if (fieldType === 'weekdays') {
+				var checkedInputs = valueSpan.querySelectorAll('.hosp-show__weekday-input:checked');
+				var isoDays = Array.prototype.map.call(checkedInputs, function (cb) {
+					return parseInt(cb.value, 10);
+				});
+				// Guard: mask 0 (no days) is treated as "all open" by the deadline
+				// calc, which is confusing — require at least one day selected.
+				if (!isoDays.length) {
+					var errEl = valueSpan.querySelector('.hosp-show__edit-error');
+					if (errEl) {
+						errEl.textContent = lang('open_days_min_one');
+						errEl.hidden = false;
+					}
+					return;
+				}
+				payload.open_days = isoToOpenDaysMask(isoDays);
 			} else {
 				payload[fieldName] = input.value;
 			}
@@ -517,6 +614,9 @@
 		});
 		svcHtml += deadlineField(lang('orderDeadline'), h.order_by_time_value, h.order_by_time_unit, {
 			description: lang('orderDeadlineDesc')
+		});
+		svcHtml += openDaysField(lang('open_days'), h, {
+			description: lang('open_days_desc')
 		});
 
 		// Cancellation deadline (read-only, sourced from main resource)
@@ -878,7 +978,7 @@
 			html += '<div class="hosp-show__group-header" aria-expanded="true" data-group-toggle="' + group.id + '">';
 
 			if (canWrite) {
-				html += '<span class="hosp-show__drag-handle" data-drag-handle-group="' + group.id + '" title="Drag to reorder">' + gripIcon + '</span>';
+				html += '<span class="hosp-show__drag-handle" data-drag-handle-group="' + group.id + '" title="' + esc(lang('dragToReorder')) + '">' + gripIcon + '</span>';
 			}
 
 			html += '<div class="hosp-show__group-title">' + chevronIcon + ' ' + esc(group.name) + ' ' + activeTag +
@@ -957,7 +1057,7 @@
 				(groupId ? ' data-group-id="' + groupId + '" data-article-index="' + i + '"' : '') + '>';
 
 			if (canWrite && groupId) {
-				html += '<span class="hosp-show__drag-handle" data-drag-handle-article="' + a.id + '" title="Drag to reorder">' + gripIcon + '</span>';
+				html += '<span class="hosp-show__drag-handle" data-drag-handle-article="' + a.id + '" title="' + esc(lang('dragToReorder')) + '">' + gripIcon + '</span>';
 			}
 
 			html += '<span class="hosp-show__article-name">' + esc(a.article_name || a.name) + '</span>';
@@ -1156,6 +1256,10 @@
 
 		body += '<label class="app-show__modal-checkbox"><input type="checkbox" id="modal-article-active"' + (isEdit ? (article.active ? ' checked' : '') : ' checked') + '> ' + esc(lang('active')) + '</label>';
 
+		// "Hidden from frontend" — distinct from Active: keeps the article usable
+		// in admin but hides it from the public/applicant menu (deactivate_in_frontend).
+		body += '<label class="app-show__modal-checkbox"><input type="checkbox" id="modal-article-hidden-frontend"' + (isEdit && article.deactivate_in_frontend ? ' checked' : '') + '> ' + esc(lang('hiddenFromFrontend')) + '</label>';
+
 		// Expandable "Article Details" section (edit mode only)
 		if (isEdit) {
 			var chevronSvg = '<svg class="hosp-show__details-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>';
@@ -1174,7 +1278,7 @@
 				'<label class="app-show__modal-label" for="modal-detail-unit" style="margin-top:0.75rem">' + esc(lang('unit')) + '</label>' +
 				'<select id="modal-detail-unit" class="app-show__modal-textarea" style="min-height:auto;height:2.25rem">' +
 				['each', 'kg', 'm', 'm2', 'minute', 'hour', 'day'].map(function (u) {
-					return '<option value="' + u + '"' + (article.unit === u ? ' selected' : '') + '>' + u + '</option>';
+					return '<option value="' + u + '"' + (article.unit === u ? ' selected' : '') + '>' + esc(lang('unit_' + u)) + '</option>';
 				}).join('') +
 				'</select>' +
 				'<label class="app-show__modal-label" style="margin-top:0.75rem">' + esc(lang('taxCode')) + '</label>' +
@@ -1405,6 +1509,7 @@
 
 					data.sort_order = parseInt(document.getElementById('modal-article-sort').value, 10) || 0;
 					data.active = document.getElementById('modal-article-active').checked ? 1 : 0;
+					data.deactivate_in_frontend = document.getElementById('modal-article-hidden-frontend').checked ? 1 : 0;
 
 					// Multi-language description
 					if (descMlt) data.description = descMlt.getValue();

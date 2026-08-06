@@ -10,6 +10,54 @@ class SwaggerController
 {
   private const PROPERTY_SUBMODULES = ['entity', 'location', 'project', 'workorder'];
 
+  private function getCurrentServerUrl(Request $request): string
+  {
+    $uri = $request->getUri();
+    $scheme = $uri->getScheme() ?: 'http';
+    $host = $uri->getHost() ?: 'localhost';
+    $port = $uri->getPort();
+
+    $defaultPort = ($scheme === 'https') ? 443 : 80;
+    $portPart = ($port !== null && $port !== $defaultPort) ? ':' . $port : '';
+
+    return $scheme . '://' . $host . $portPart;
+  }
+
+  private function withCurrentServer(array $spec, Request $request): array
+  {
+    $currentUrl = $this->getCurrentServerUrl($request);
+    $servers = [];
+
+    $servers[] = [
+      'url' => $currentUrl,
+      'description' => 'Current server',
+    ];
+
+    foreach ((array) ($spec['servers'] ?? []) as $server)
+    {
+      if (!is_array($server))
+      {
+        continue;
+      }
+
+      $url = (string) ($server['url'] ?? '');
+      if ($url === '' || $url === $currentUrl)
+      {
+        continue;
+      }
+
+      $servers[] = $server;
+    }
+
+    $spec['servers'] = $servers;
+    if (empty($spec['openapi']))
+    {
+      $spec['openapi'] = '3.0.0';
+    }
+
+    return $spec;
+  }
+
   private function getSpecFilePath(): string
   {
     return __DIR__ . '/../../../../swagger_spec/openapi.json';
@@ -24,7 +72,7 @@ class SwaggerController
 
     $prefixes = ['/' . $module];
 
-    if (in_array($module, ['property', 'booking', 'rental', 'admin'], true))
+    if (in_array($module, ['property', 'booking', 'rental', 'admin', 'todo'], true))
     {
       $prefixes[] = '/{module}/registry';
     }
@@ -60,7 +108,7 @@ class SwaggerController
    */
   public function index(Request $request, Response $response): Response
   {
-    $html = <<<HTML
+    $html = <<<'HTML'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,7 +132,7 @@ class SwaggerController
       const protocol = window.location.protocol;
       const hostname = window.location.hostname;
       const port = window.location.port ? window.location.port : (protocol === 'https:' ? '443' : '80');
-      const baseUrl = `\${protocol}//\${hostname}:\${port}`;
+      const baseUrl = `${protocol}//${hostname}:${port}`;
       
       // First, fetch the OpenAPI spec file
       fetch('/swagger/spec')
@@ -94,11 +142,11 @@ class SwaggerController
           if (!spec.servers) {
             spec.servers = [];
           }
-          // Add current server as first option
-          spec.servers.unshift({
-            url: baseUrl,
-            description: "Current server"
-          });
+          spec.servers = [
+            { url: baseUrl, description: "Current server" }
+          ].concat(spec.servers.filter(function(server) {
+            return server && server.url && server.url !== baseUrl;
+          }));
           
           // Make sure openapi version exists
           if (!spec.openapi) {
@@ -143,7 +191,9 @@ HTML;
   {
   try
   {
-    return $this->jsonResponse($response, $this->loadSpecData());
+    $spec = $this->loadSpecData();
+    $spec = $this->withCurrentServer($spec, $request);
+    return $this->jsonResponse($response, $spec);
   }
   catch (\RuntimeException $exception)
   {
@@ -223,6 +273,7 @@ HTML;
       }));
     }
 
+    $spec = $this->withCurrentServer($spec, $request);
     return $this->jsonResponse($response, $spec);
   }
 }

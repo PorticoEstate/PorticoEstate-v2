@@ -435,7 +435,7 @@ HTML;
 	 * @param string $lid Account login id
 	 * @param string $firstname Firstname
 	 * @param string $lastname Lastname
-	 * @return Fullname
+	 * @return string $name Fullname
 	 */
 	public function display_fullname($lid = '', $firstname = '', $lastname = '')
 	{

@@ -1060,3 +1060,10 @@ reserved_times	bookingfrontend	en	Reserved times
 show_in_calendar	bookingfrontend	en	Show in calendar
 allow_old_template	bookingfrontend	en	Allow old template
 allow_old_template_note	bookingfrontend	en	When enabled, users who selected the old template stay on it. When disabled, the new pages are forced for paths that have a new version.
+working_days	bookingfrontend	en	working days
+open_days_label	bookingfrontend	en	Open days
+working_days_deadline_note	bookingfrontend	en	deadlines are counted in working days
+serving_day_closed	bookingfrontend	en	The kitchen is closed on the selected day. Please choose a day when the kitchen is open.
+closed_on_weekday	bookingfrontend	en	Closed %1
+date_belongs_to_other_application	bookingfrontend	en	Belongs to another booking
+hospitality_cannot_change_application	bookingfrontend	en	The catering order cannot be moved to another booking. Delete this order and create a new one on the correct booking.

@@ -1061,3 +1061,10 @@ reserved_times	bookingfrontend	no	Reserverte tider
 show_in_calendar	bookingfrontend	no	Vis i kalender
 allow_old_template	bookingfrontend	no	Tillat gammel mal
 allow_old_template_note	bookingfrontend	no	Når aktiv kan brukere som har valgt den gamle malen bli værende på den. Når av tvinges de nye sidene for adresser som har en ny versjon.
+working_days	bookingfrontend	no	virkedager
+open_days_label	bookingfrontend	no	Åpningsdager
+working_days_deadline_note	bookingfrontend	no	frister telles i virkedager
+serving_day_closed	bookingfrontend	no	Kjøkkenet er stengt den valgte dagen. Velg en dag kjøkkenet holder åpent.
+closed_on_weekday	bookingfrontend	no	Stengt %1
+date_belongs_to_other_application	bookingfrontend	no	Tilhører en annen booking
+hospitality_cannot_change_application	bookingfrontend	no	Bevertningen kan ikke flyttes til en annen booking. Slett bestillingen og opprett en ny på riktig booking.

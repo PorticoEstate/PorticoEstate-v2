@@ -337,7 +337,15 @@ var HospitalityOrderModal = (function () {
 					labelField: '_label',
 					mapResponse: function (data) {
 						return (Array.isArray(data) ? data : []).map(function (app) {
-							app._label = '#' + app.id + ' - ' + (app.status || '') + (app.contact_name ? ' (' + app.contact_name + ')' : '');
+							// Translate the application status via the injected lang();
+							// fall back to the raw value if the key is missing.
+							var st = '';
+							if (app.status) {
+								var key = String(app.status).toLowerCase();
+								st = lang(key);
+								if (!st || st === key || st.charAt(0) === '!') st = app.status;
+							}
+							app._label = '#' + app.id + (st ? ' - ' + st : '') + (app.contact_name ? ' (' + app.contact_name + ')' : '');
 							return app;
 						});
 					},

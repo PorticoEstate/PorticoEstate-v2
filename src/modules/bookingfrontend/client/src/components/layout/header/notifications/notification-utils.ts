@@ -1,4 +1,5 @@
 'use client'
+import {DateTime} from "luxon";
 import {INotification} from "@/service/types/api/notification.types";
 
 /**
@@ -33,6 +34,34 @@ export function renderNotificationTitle(
 	}
 
 	return substituteParams(resolved, data.title_params);
+}
+
+/**
+ * Normalize a notification timestamp to an absolute instant.
+ *
+ * The bell receives `created` from two sources with different formats:
+ *  - REST (`GET /bookingfrontend/notifications`): a naive SQL timestamp in UTC
+ *    with no zone marker, e.g. "2026-07-01 08:57:28.88399" — the
+ *    `bb_notification.created` column is a `timestamp` (no tz) and the database
+ *    runs in UTC.
+ *  - WebSocket (`notification_event`): an ISO-8601 string WITH an offset from
+ *    PHP `date('c')`, e.g. "2026-07-01T08:57:28+00:00".
+ *
+ * timeago.js parses a marker-less string as *local* time, which renders the
+ * REST timestamps 2h off in CEST. Parsing the naive value as UTC — while
+ * respecting an explicit offset when one is present — yields the correct
+ * instant for both sources.
+ */
+export function notificationDate(raw: string): Date {
+	// ISO path (WebSocket): `setZone` respects an embedded offset; `zone: 'utc'`
+	// is only the fallback zone for a marker-less ISO value.
+	const iso = DateTime.fromISO(raw, {zone: 'utc', setZone: true});
+	if (iso.isValid) {
+		return iso.toJSDate();
+	}
+	// SQL path (REST): "YYYY-MM-DD HH:mm:ss[.SSS]" — naive UTC, space separator.
+	const sql = DateTime.fromSQL(raw, {zone: 'utc'});
+	return sql.isValid ? sql.toJSDate() : new Date(raw);
 }
 
 /**

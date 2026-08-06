@@ -3,6 +3,7 @@
 namespace App\modules\booking\models;
 
 use App\traits\SerializableTrait;
+use App\modules\booking\services\HospitalityDeadlineCalculator;
 
 /**
  * @OA\Schema(
@@ -76,6 +77,23 @@ class Hospitality
      * @Expose
      */
     public $order_by_time_unit;
+
+    /**
+     * Business-days bitmask: which weekdays the catering is open, so the order-deadline
+     * calc can skip closed days. Bit (ISO weekday - 1) set = open (bit0=Mon .. bit6=Sun).
+     * 127 = all days open (default). Consumed by the client deadline calc.
+     * @OA\Property(type="integer", nullable=true, description="Open-days bitmask; bit0=Mon..bit6=Sun; 127=all open")
+     * @Expose
+     */
+    public $open_days = 127;
+
+    /**
+     * Decoded open_days: sorted ISO weekday numbers that are open (1=Mon .. 7=Sun).
+     * Computed from the open_days bitmask so the client deadline calc needs no bit-ops.
+     * @OA\Property(type="array", @OA\Items(type="integer"), description="Open ISO weekdays, e.g. [1,2,3,4,5]")
+     * @Expose
+     */
+    public $open_days_list;
 
     /**
      * @OA\Property(type="string", format="date-time")
@@ -156,5 +174,9 @@ class Hospitality
                 $this->$key = $value;
             }
         }
+
+        // Derive the decoded open-days list from the bitmask (single source of truth).
+        $mask = $this->open_days === null ? HospitalityDeadlineCalculator::ALL_DAYS_OPEN : (int) $this->open_days;
+        $this->open_days_list = HospitalityDeadlineCalculator::decodeOpenDays($mask);
     }
 }

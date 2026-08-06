@@ -216,7 +216,7 @@
 
 			if (f.type === 'select') {
 				input = document.createElement('select');
-				input.className = 'ds-select';
+				input.className = 'ds-input';
 				input.id = 'filter-' + f.name;
 				if (f.multiple) input.multiple = true;
 				(f.options || []).forEach(function (opt) {
@@ -750,7 +750,7 @@
 				},
 				length: {
 					container: 'dt-length',
-					select: 'dt-input ds-select'
+					select: 'dt-input ds-input'
 				},
 				paging: {
 					button: 'ds-button',

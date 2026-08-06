@@ -285,7 +285,8 @@ class Html
 				// Use renderBlock to render the multi_domain block
 				$multiDomainHtml = $this->twig->renderBlock('login_stage_header.html.twig', 'B_multi_domain', [
 					'domains' => $domainsHtml,
-					'lang_select' => $loginData['lang_select']
+					'lang_select' => $loginData['lang_select'],
+					'ConfigLoginMSG' => $loginData['ConfigLoginMSG']
 				]);
 				$loginData['V_login_stage_header'] = $multiDomainHtml;
 			}
@@ -296,7 +297,9 @@ class Html
 				
 				// Use renderBlock to render the single_domain block
 				$singleDomainHtml = $this->twig->renderBlock('login_stage_header.html.twig', 'B_single_domain', [
-					'default_domain_zero' => $default_domain
+					'default_domain_zero' => $default_domain,
+					'lang_select' => $loginData['lang_select'],
+					'ConfigLoginMSG' => $loginData['ConfigLoginMSG']
 				]);
 				$loginData['V_login_stage_header'] = $singleDomainHtml;
 			}

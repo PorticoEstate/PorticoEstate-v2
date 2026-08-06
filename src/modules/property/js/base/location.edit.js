@@ -357,6 +357,21 @@ function createLocationNavigationClient(form)
 	var parsed = parseURL(form.action);
 	var query = parsed.searchObject || {};
 
+	function generateLocationClickHistoryToken()
+	{
+		return String(Date.now()) + '-' + Math.random().toString(36).slice(2);
+	}
+
+	if (!window.__locationClickHistoryToken)
+	{
+		var source = query.click_history || '';
+		if (!source && typeof strBaseURL !== 'undefined' && strBaseURL)
+		{
+			source = (parseURL(strBaseURL).searchObject || {}).click_history || '';
+		}
+		window.__locationClickHistoryToken = source || generateLocationClickHistoryToken();
+	}
+
 	return {
 		buildEditUrl: function (locationCode)
 		{
@@ -394,7 +409,6 @@ function createLocationApiClient(form)
 	return {
 		buildSaveRequest: function ()
 		{
-			var clickHistory = query.click_history || '';
 			var queryParts = [];
 			var originalLocationCode = (
 				query.location_code
@@ -425,9 +439,9 @@ function createLocationApiClient(form)
 				? '/property/location/' + encodeURIComponent(originalLocationCode)
 				: '/property/location';
 
-			if (clickHistory)
+			if (window.__locationClickHistoryToken)
 			{
-				queryParts.push('click_history=' + encodeURIComponent(clickHistory));
+				queryParts.push('click_history=' + encodeURIComponent(window.__locationClickHistoryToken));
 			}
 
 			if (queryParts.length)
@@ -439,6 +453,11 @@ function createLocationApiClient(form)
 				url: requestUrl,
 				method: isUpdate ? 'PUT' : 'POST'
 			};
+		},
+		refreshClickHistoryToken: function ()
+		{
+			window.__locationClickHistoryToken = generateLocationClickHistoryToken();
+			return window.__locationClickHistoryToken;
 		}
 	};
 }
@@ -568,6 +587,7 @@ $(document).ready(function ()
 			var valid = $('form').isValid(false, conf);
 			if (!valid)
 			{
+				setSubmitButtonsDisabled(false);
 				e.preventDefault();
 				return false;
 			}
@@ -582,7 +602,8 @@ $(document).ready(function ()
 			return true;
 		}
 
-		var restRequest = buildLocationRestRequest(form);
+		var locationApiClient = createLocationApiClient(form);
+		var restRequest = locationApiClient.buildSaveRequest();
 		if (!restRequest)
 		{
 			return true;
@@ -642,6 +663,10 @@ $(document).ready(function ()
 			})
 			.then(function (data)
 			{
+				if (locationApiClient && typeof locationApiClient.refreshClickHistoryToken === 'function')
+				{
+					locationApiClient.refreshClickHistoryToken();
+				}
 				if (!data || data.status === 'error')
 				{
 					isSubmitting = false;
@@ -671,6 +696,10 @@ $(document).ready(function ()
 			})
 			.catch(function (error)
 			{
+				if (locationApiClient && typeof locationApiClient.refreshClickHistoryToken === 'function')
+				{
+					locationApiClient.refreshClickHistoryToken();
+				}
 				isSubmitting = false;
 				setSubmitButtonsDisabled(false);
 				renderLocationFormErrorAlert(form, toErrorMessageArray(error && error.responseData));

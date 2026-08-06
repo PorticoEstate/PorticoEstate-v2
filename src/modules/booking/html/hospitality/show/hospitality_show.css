@@ -476,3 +476,190 @@
 .hosp-show__back-link:hover {
 	text-decoration: underline;
 }
+
+/* Open-days weekday selector (chips are styled by designsystemet .ds-chip) */
+.hosp-show__weekday-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.375rem;
+}
+
+.hosp-show__edit-error {
+	margin-top: 0.375rem;
+	font-size: 0.8125rem;
+	color: var(--ds-color-danger-text-default, #b3261e);
+}
+
+/* ── app-show scaffolding: tabs, section cards, field rows, states, modal ──
+   Restored verbatim from the pre-Designsystemet-migration application_show.css
+   (these .app-show__* rules were dropped by f1000c6c2 when the application page
+   migrated to DS component classes). The hospitality admin pages — hospitality_show
+   and hospitality/order_show, plus the order list/modal components they include —
+   render this .app-show__* markup but borrowed its CSS from application_show.css.
+   This sheet is sourced by BOTH pages, so restoring the rules here fixes both.
+   Custom layout only; no DS-scheme, markup, or class changes. */
+
+/* Tabs (custom underline tab bar — never a DS Tabs component) */
+.app-show__tabs {
+	display: flex;
+	gap: 0;
+	border-bottom: 2px solid var(--ds-color-border-subtle, #e5e7eb);
+	margin-bottom: 1.5rem;
+}
+
+.app-show__tab {
+	padding: 0.75rem 1.25rem;
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 0.9375rem;
+	font-weight: 500;
+	color: var(--ds-color-text-subtle, #68707c);
+	border-bottom: 2px solid transparent;
+	margin-bottom: -2px;
+	transition: color 0.15s, border-color 0.15s;
+}
+
+.app-show__tab:hover {
+	color: var(--ds-color-text-default, #1e293b);
+}
+
+.app-show__tab--active {
+	color: var(--ds-color-accent-text-default, #0062ba);
+	border-bottom-color: var(--ds-color-accent-base-default, #0062ba);
+}
+
+.app-show__tab-content {
+	padding-top: 0.5rem;
+}
+
+/* Sections (bordered cards with tinted header) */
+.app-show__section {
+	margin-bottom: 1.5rem;
+	border: 1px solid var(--ds-color-border-subtle, #e5e7eb);
+	border-radius: var(--ds-border-radius-md, 0.5rem);
+	overflow: hidden;
+}
+
+.app-show__section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0.75rem 1rem;
+	background: var(--ds-color-surface-tinted, #f8fafc);
+	border-bottom: 1px solid var(--ds-color-border-subtle, #e5e7eb);
+}
+
+.app-show__section-header h3 {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+.app-show__section-body {
+	padding: 1rem;
+}
+
+.app-show__section-body .ds-table {
+	font-size: 0.875rem;
+}
+
+/* Data rows */
+.app-show__field {
+	display: flex;
+	gap: 0.5rem;
+	padding: 0.5rem 0;
+	border-bottom: 1px solid var(--ds-color-border-subtle, #f1f5f9);
+}
+
+.app-show__field:last-child {
+	border-bottom: none;
+}
+
+.app-show__label {
+	flex: 0 0 10rem;
+	font-weight: 500;
+	color: var(--ds-color-text-subtle, #68707c);
+	font-size: 0.875rem;
+}
+
+.app-show__value {
+	flex: 1;
+	font-size: 0.875rem;
+}
+
+/* Header meta */
+.app-show__meta-item {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+}
+
+/* Loading / error states */
+.app-show__spinner {
+	width: 2rem;
+	height: 2rem;
+	border: 3px solid var(--ds-color-border-subtle, #d1d5db);
+	border-top-color: var(--ds-color-accent-base-default, #0062ba);
+	border-radius: 50%;
+	animation: app-spin 0.8s linear infinite;
+}
+
+@keyframes app-spin {
+	to { transform: rotate(360deg); }
+}
+
+.app-show__error {
+	padding: 2rem;
+	background: var(--ds-color-danger-surface-default, #fef2f2);
+	border: 1px solid var(--ds-color-danger-border-default, #dc2626);
+	border-radius: var(--ds-border-radius-md, 0.5rem);
+	color: var(--ds-color-danger-text-default, #dc2626);
+}
+
+/* Order create/edit modal */
+.app-show__modal-label {
+	display: block;
+	font-weight: 500;
+	margin-bottom: 0.5rem;
+	font-size: 0.875rem;
+}
+
+.app-show__modal-textarea {
+	display: block;
+	width: 100%;
+	min-height: 6rem;
+	padding: 0.5rem 0.75rem;
+	font-size: 0.875rem;
+	font-family: inherit;
+	border: 1px solid var(--ds-color-border-default, #dee2e6);
+	border-radius: var(--ds-border-radius-md, 0.375rem);
+	resize: vertical;
+	box-sizing: border-box;
+}
+
+.app-show__modal-textarea:focus {
+	outline: none;
+	border-color: var(--ds-color-accent-base-default, #0062ba);
+	box-shadow: 0 0 0 2px rgba(0, 98, 186, 0.15);
+}
+
+.app-show__modal-select {
+	display: block;
+	width: 100%;
+	padding: 0.5rem 0.75rem;
+	font-size: 0.875rem;
+	font-family: inherit;
+	border: 1px solid var(--ds-color-border-default, #dee2e6);
+	border-radius: var(--ds-border-radius-md, 0.375rem);
+	background: var(--ds-color-background-default, #fff);
+}
+
+.app-show__modal-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-top: 0.75rem;
+	font-size: 0.875rem;
+	cursor: pointer;
+}

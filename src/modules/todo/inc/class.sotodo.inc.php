@@ -12,6 +12,7 @@
  */
 
 use App\Database\Db;
+use App\traits\DbRowTrait;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
@@ -24,6 +25,8 @@ use App\modules\phpgwapi\services\Log;
  */
 class todo_sotodo
 {
+	use DbRowTrait;
+
 	var $db;
 	var $grants;
 	var $historylog;
@@ -42,10 +45,10 @@ class todo_sotodo
 		$this->db          = Db::getInstance();
 		$this->join        = $this->db->join;
 
-		$this->grants      = Acl::getInstance()->get_grants2('todo', '.');
+		$this->grants      = Acl::getInstance()->get_grants2('todo', '.todo');
 		$this->account     = $userSettings['account_id'];
 		$this->user_groups = $accounts_obj->membership($this->account);
-		$this->historylog  = CreateObject('phpgwapi.historylog', 'todo', '.');
+		$this->historylog  = CreateObject('phpgwapi.historylog', 'todo', '.todo');
 
 		// This is so our transactions follow across classes
 		$this->historylog->db = &$this->db;
@@ -68,19 +71,55 @@ class todo_sotodo
 		return '';
 	}
 
+	private function resolve_order_column($order = '')
+	{
+		$map = array(
+			'todo_id' => 'todo_id',
+			'todo_title' => 'todo_title',
+			'todo_status' => 'todo_status',
+			'todo_pri' => 'todo_pri',
+			'todo_startdate' => 'todo_startdate',
+			'todo_enddate' => 'todo_enddate',
+			'todo_owner' => 'todo_owner',
+			'todo_datecreated' => 'todo_datecreated',
+		);
+
+		$order = (string) $order;
+		if (!$order || !isset($map[$order]))
+		{
+			return '';
+		}
+
+		return $map[$order];
+	}
+
+	private function build_order_method($order_column = '', $sort = '')
+	{
+		$sort = strtoupper((string) $sort) === 'DESC' ? 'DESC' : 'ASC';
+
+		if (!$order_column)
+		{
+			return 'ORDER BY phpgw_todo.todo_id_main ASC, phpgw_todo.todo_level ASC, phpgw_todo.todo_id_parent ASC, phpgw_todo.todo_datecreated ASC, phpgw_todo.todo_id ASC';
+		}
+
+		return 'ORDER BY '
+			. 'root_order_value ' . $sort . ', '
+			. 'phpgw_todo.todo_id_main ' . $sort . ', '
+			. 'phpgw_todo.todo_level ASC, '
+			. 'phpgw_todo.todo_id_parent ASC, '
+			. 'phpgw_todo.todo_datecreated ASC, '
+			. 'phpgw_todo.todo_id ASC';
+	}
+
 	function read_todos($start = 0, $limit = True, $query = '', $filter = '', $order = '', $sort = '', $cat_id = '', $tree = '', $parent = '')
 	{
 		$type = $this->type($tree);
-
-		if ($order)
+		$order_column = $this->resolve_order_column($order);
+		$ordermethod = $this->build_order_method($order_column, $sort);
+		$root_order_select = '';
+		if ($order_column)
 		{
-			$order = $this->db->db_addslashes($order);
-			$sort = $this->db->db_addslashes($sort);
-			$ordermethod = "ORDER BY $order $sort";
-		}
-		else
-		{
-			$ordermethod = 'ORDER BY todo_id_main, todo_id_parent, todo_level, todo_datecreated ASC';
+			$root_order_select = ', (SELECT root.' . $order_column . ' FROM phpgw_todo root WHERE root.todo_id = phpgw_todo.todo_id_main) AS root_order_value';
 		}
 
 		$filter = strtolower($filter);
@@ -90,7 +129,8 @@ class todo_sotodo
 			$filter = 'none';
 		}
 
-		$filtermethod = "(( todo_owner = {$this->account} OR todo_assigned = '{$this->account}'";
+		$account_id = (int) $this->account;
+		$filtermethod = "(( todo_owner = {$account_id} OR todo_assigned = '{$account_id}'";
 
 		/**
 		 * Begin Orlando Fix
@@ -103,7 +143,7 @@ class todo_sotodo
 			$filtermethod .= " OR assigned_group IN('0'";
 			foreach ($this->user_groups as $group)
 			{
-				$filtermethod .= ",'" . $group->id . "' ";
+				$filtermethod .= ", '" . (int) ($group->id ?? 0) . "' ";
 			}
 			$filtermethod .= ')';
 		}
@@ -121,10 +161,17 @@ class todo_sotodo
 			{
 				foreach ($this->grants['accounts'] as $user => $_right)
 				{
-					$public_user_list[] = $user;
+					$public_user_list[] = (int) $user;
 				}
+				$public_user_list = array_values(array_filter(array_unique($public_user_list), static function ($id)
+				{
+					return $id > 0;
+				}));
 				reset($public_user_list);
-				$filtermethod .= " OR (todo_access='public' AND todo_owner IN(" . implode(',', $public_user_list) . "))";
+				if ($public_user_list)
+				{
+					$filtermethod .= " OR (todo_access='public' AND todo_owner IN(" . implode(',', $public_user_list) . '))';
+				}
 			}
 
 			$public_group_list = array();
@@ -132,16 +179,23 @@ class todo_sotodo
 			{
 				foreach ($this->grants['groups'] as $user => $_right)
 				{
-					$public_group_list[] = $user;
+					$public_group_list[] = (int) $user;
 				}
+				$public_group_list = array_values(array_filter(array_unique($public_group_list), static function ($id)
+				{
+					return $id > 0;
+				}));
 				unset($user);
 				reset($public_group_list);
-				$filtermethod .= " OR todo_access='public' AND phpgw_group_map.group_id IN(" . implode(',', $public_group_list) . "))";
-				$where = 'AND';
+				if ($public_group_list)
+				{
+					$filtermethod .= " OR todo_access='public' AND phpgw_group_map.group_id IN(" . implode(',', $public_group_list) . '))';
+					$where = 'AND';
+				}
 			}
 			if ($public_user_list && !$public_group_list)
 			{
-		//		$filtermethod .= ')';
+				//		$filtermethod .= ')';
 			}
 		}
 
@@ -171,10 +225,10 @@ class todo_sotodo
 		{
 			$parentmethod = ' AND todo_id_parent=' . (int) $parent;
 		}
-		$sql = "SELECT DISTINCT phpgw_todo.* FROM phpgw_todo"
-		. " {$this->join} phpgw_accounts ON ( phpgw_todo.todo_owner = phpgw_accounts.account_id)"
-		. " {$this->join} phpgw_group_map ON (phpgw_accounts.account_id = phpgw_group_map.account_id)"
-		. " WHERE $filtermethod $querymethod $type $parentmethod ";
+		$sql = "SELECT DISTINCT phpgw_todo.*{$root_order_select} FROM phpgw_todo"
+			. " {$this->join} phpgw_accounts ON ( phpgw_todo.todo_owner = phpgw_accounts.account_id)"
+			. " {$this->join} phpgw_group_map ON (phpgw_accounts.account_id = phpgw_group_map.account_id)"
+			. " WHERE $filtermethod $querymethod $type $parentmethod ";
 
 		$sql2 = "SELECT count(*) as cnt FROM ({$sql}) as t";
 
@@ -204,8 +258,8 @@ class todo_sotodo
 				'owner_id'			=> $this->db->f('todo_owner'),
 				'access'			=> $this->db->f('todo_access'),
 				'cat'				=> (int)$this->db->f('todo_cat'),
-				'title'				=> $this->db->f('todo_title', true),
-				'descr'				=> $this->db->f('todo_des', true),
+				'title'				=> $this->dbStrip($this->db->f('todo_title')),
+				'descr'				=> $this->dbStrip($this->db->f('todo_des')),
 				'pri'				=> (int)$this->db->f('todo_pri'),
 				'status'			=> (int)$this->db->f('todo_status'),
 				'sdate'				=> $this->db->f('todo_startdate'),
@@ -221,28 +275,32 @@ class todo_sotodo
 
 	function read_single_todo($todo_id)
 	{
-		$this->db->query('SELECT * FROM phpgw_todo WHERE todo_id = ' . (int) $todo_id, __LINE__, __FILE__);
+		$stmt = $this->db->prepare('SELECT * FROM phpgw_todo WHERE todo_id = :todo_id');
+		$stmt->execute([':todo_id' => (int) $todo_id]);
 
-		$todo = array();
-		if ($this->db->next_record())
+		$row = $stmt->fetch(\PDO::FETCH_ASSOC);
+		if (!$row)
 		{
-			$todo['id']				= $this->db->f('todo_id');
-			$todo['main']			= $this->db->f('todo_id_main');
-			$todo['parent']			= $this->db->f('todo_id_parent');
-			$todo['level']			= $this->db->f('todo_level');
-			$todo['owner']			= $this->db->f('todo_owner');
-			$todo['access']			= $this->db->f('todo_access');
-			$todo['cat']			= $this->db->f('todo_cat');
-			$todo['title']			= $this->db->f('todo_title');
-			$todo['descr']			= $this->db->f('todo_des');
-			$todo['pri']			= $this->db->f('todo_pri');
-			$todo['status']			= $this->db->f('todo_status');
-			$todo['sdate']			= $this->db->f('todo_startdate');
-			$todo['edate']			= $this->db->f('todo_enddate');
-			$todo['assigned']		= $this->db->f('todo_assigned');
-			$todo['assigned_group']	= $this->db->f('assigned_group');
+			return array();
 		}
-		return $todo;
+
+		return array(
+			'id'				=> $row['todo_id'],
+			'main'			=> $row['todo_id_main'],
+			'parent'			=> $row['todo_id_parent'],
+			'level'			=> $row['todo_level'],
+			'owner'			=> $row['todo_owner'],
+			'access'			=> $row['todo_access'],
+			'cat'				=> $row['todo_cat'],
+			'title'			=> $this->dbStrip($row['todo_title']),
+			'descr'			=> $this->dbStrip($row['todo_des']),
+			'pri'				=> $row['todo_pri'],
+			'status'			=> $row['todo_status'],
+			'sdate'			=> $row['todo_startdate'],
+			'edate'			=> $row['todo_enddate'],
+			'assigned'		=> $row['todo_assigned'],
+			'assigned_group'	=> $row['assigned_group'],
+		);
 	}
 
 	function add_todo($values)
@@ -264,10 +322,10 @@ class todo_sotodo
 			$values['level']	= $this->return_value($values['parent'], 'level') + 1;
 		}
 
-		$values['title'] = $this->db->db_addslashes($values['title']);
-		$values['descr'] = $this->db->db_addslashes($values['descr']);
-		$values['assigned'] = $this->db->db_addslashes($values['assigned']);
-		$values['assigned_group'] = $this->db->db_addslashes($values['assigned_group']);
+		$title = (string) ($values['title'] ?? '');
+		$descr = (string) ($values['descr'] ?? '');
+		$assigned = (string) ($values['assigned'] ?? '');
+		$assigned_group = (string) ($values['assigned_group'] ?? '');
 
 		/**
 		 * Begin Orlando Fix
@@ -276,26 +334,28 @@ class todo_sotodo
 		 * because it didn't accept null values, and it now stores the actual time()
 		 */
 		$this->db->transaction_begin();
-		$sql =   "insert into phpgw_todo (todo_id_main,todo_id_parent,todo_level,todo_owner,todo_access,todo_cat,todo_des,todo_title,todo_pri,todo_status,todo_datecreated,todo_startdate,todo_enddate,todo_assigned,assigned_group,entry_date) "
-			. "values ("
-			. (int)$values['main']
-			. "," . (int)$values['parent']
-			. "," . (int)$values['level']
-			. " ," . $this->account . ","
-			. (int)!!$values['access']
-			. "," . (int)$values['cat']
-			. ",'" . $values['descr'] . "' "
-			. ",'" . $values['title'] . "' "
-			. "," . (int)$values['pri']
-			. "," . (int)$values['status']
-			. ",'" . time() . "'"
-			. ",'" . (int)$values['sdate'] . "' "
-			. ',' . (int)$values['edate']
-			. ",'" . $values['assigned']
-			. "','" . $values['assigned_group'] . "'"
-			. "," . time() . ")";
-
-		$this->db->query($sql, __LINE__, __FILE__);
+		$sql = 'INSERT INTO phpgw_todo (todo_id_main, todo_id_parent, todo_level, todo_owner, todo_access, todo_cat, todo_des, todo_title, todo_pri, todo_status, todo_datecreated, todo_startdate, todo_enddate, todo_assigned, assigned_group, entry_date)'
+			. ' VALUES (:main, :parent, :level, :owner, :access, :cat, :descr, :title, :pri, :status, :datecreated, :sdate, :edate, :assigned, :assigned_group, :entry_date)';
+		$stmt = $this->db->prepare($sql);
+		$now = time();
+		$stmt->execute([
+			':main' => (int) $values['main'],
+			':parent' => (int) $values['parent'],
+			':level' => (int) $values['level'],
+			':owner' => (int) $this->account,
+			':access' => (int) !!$values['access'],
+			':cat' => (int) $values['cat'],
+			':descr' => $descr,
+			':title' => $title,
+			':pri' => (int) $values['pri'],
+			':status' => (int) $values['status'],
+			':datecreated' => $now,
+			':sdate' => (int) $values['sdate'],
+			':edate' => (int) $values['edate'],
+			':assigned' => $assigned,
+			':assigned_group' => $assigned_group,
+			':entry_date' => $now,
+		]);
 		$todo_id = $this->db->get_last_insert_id('phpgw_todo', 'todo_id');
 		/**
 		 * End Orlando Fix
@@ -303,7 +363,8 @@ class todo_sotodo
 
 		if (!$values['parent'] || $values['parent'] == 0)
 		{
-			$this->db->query('update phpgw_todo set todo_id_main=' . $todo_id . ' where todo_id=' . $todo_id, __LINE__, __FILE__);
+			$stmt = $this->db->prepare('UPDATE phpgw_todo SET todo_id_main = :todo_id_main WHERE todo_id = :todo_id');
+			$stmt->execute([':todo_id_main' => (int) $todo_id, ':todo_id' => (int) $todo_id]);
 		}
 		$this->historylog->add('A', $todo_id, '', '');
 		$this->db->transaction_commit();
@@ -316,16 +377,46 @@ class todo_sotodo
 		{
 			return $list;
 		}
-		$query = "SELECT todo_id FROM phpgw_todo WHERE todo_id_parent IN ($list_parents)";
+		$parents = array_filter(array_map('intval', explode(',', (string) $list_parents)));
+		if (!$parents)
+		{
+			return $list;
+		}
+
+		$parent_placeholders = array();
+		$params = array();
+		foreach (array_values($parents) as $index => $parent_id)
+		{
+			$key = ':parent_' . $index;
+			$parent_placeholders[] = $key;
+			$params[$key] = $parent_id;
+		}
+
+		$query = 'SELECT todo_id FROM phpgw_todo WHERE todo_id_parent IN (' . implode(', ', $parent_placeholders) . ')';
+
 		if ($list <> '')
 		{
-			$query .= " AND todo_id NOT IN ($list)";
+			$exclude_ids = array_filter(array_map('intval', explode(',', (string) $list)));
+			if ($exclude_ids)
+			{
+				$exclude_placeholders = array();
+				$offset = count($params);
+				foreach (array_values($exclude_ids) as $index => $exclude_id)
+				{
+					$key = ':exclude_' . ($offset + $index);
+					$exclude_placeholders[] = $key;
+					$params[$key] = $exclude_id;
+				}
+				$query .= ' AND todo_id NOT IN (' . implode(', ', $exclude_placeholders) . ')';
+			}
 		}
-		$this->db->query($query, __LINE__, __FILE__);
+
+		$stmt = $this->db->prepare($query);
+		$stmt->execute($params);
 		$subs = array();
-		while ($this->db->next_record())
+		while ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
 		{
-			$subs[] = $this->db->f('todo_id');
+			$subs[] = (int) $row['todo_id'];
 		}
 		if (count($subs))
 		{
@@ -339,17 +430,97 @@ class todo_sotodo
 		return $list;
 	}
 
+	private function has_delete_grant_for_owner(int $owner_id): bool
+	{
+		if ($owner_id === (int) $this->account)
+		{
+			return true;
+		}
+
+		if (isset($this->grants['accounts'][$owner_id]) && ($this->grants['accounts'][$owner_id] & ACL_DELETE))
+		{
+			return true;
+		}
+
+		$accounts_obj = new Accounts();
+		$owner_membership = $accounts_obj->membership($owner_id);
+		foreach ((array) ($this->grants['groups'] ?? []) as $group_id => $right)
+		{
+			if (isset($owner_membership[$group_id]) && ($right & ACL_DELETE))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private function read_todo_acl_row(int $todo_id): ?array
+	{
+		$stmt = $this->db->prepare('SELECT todo_id, todo_owner, todo_id_parent FROM phpgw_todo WHERE todo_id = :todo_id');
+		$stmt->execute([':todo_id' => $todo_id]);
+		$row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+		if (!$row)
+		{
+			return null;
+		}
+
+		return [
+			'id' => (int) $row['todo_id'],
+			'owner' => (int) $row['todo_owner'],
+			'parent' => (int) $row['todo_id_parent'],
+		];
+	}
+
+	private function deny_delete(string $reason, string $message, int $todo_id = 0, int $parent_id = 0): array
+	{
+		return [
+			'ok' => false,
+			'reason' => $reason,
+			'message' => $message,
+			'todo_id' => $todo_id,
+			'parent_id' => $parent_id,
+		];
+	}
+
 	function delete_todo($todo_id, $sub = False)
 	{
-		$this->db->transaction_begin();
+		$todo_id = (int) $todo_id;
+		$todo_acl_row = $this->read_todo_acl_row($todo_id);
+		if (!$todo_acl_row)
+		{
+			return $this->deny_delete('not_found', lang('Todo entry not found'), $todo_id);
+		}
+
+		if (!$this->has_delete_grant_for_owner((int) $todo_acl_row['owner']))
+		{
+			return $this->deny_delete('insufficient_grants_owner', lang('Delete denied: insufficient rights on todo owner'), $todo_id);
+		}
+
+		$parent_id = (int) $todo_acl_row['parent'];
+		if ($parent_id > 0)
+		{
+			$parent_acl_row = $this->read_todo_acl_row($parent_id);
+			if (!$parent_acl_row)
+			{
+				return $this->deny_delete('parent_not_found', lang('Delete denied: parent entry not found'), $todo_id, $parent_id);
+			}
+
+			if (!$this->has_delete_grant_for_owner((int) $parent_acl_row['owner']))
+			{
+				return $this->deny_delete('insufficient_grants_parent', lang('Delete denied: insufficient rights on parent entry'), $todo_id, $parent_id);
+			}
+		}
+
 		$sub_todos = $this->find_subs($todo_id);
-		$subdelete = '';
+		$delete_ids = array($todo_id);
 		$parent = 0;
 		if ($sub_todos)
 		{
 			if ($sub)
 			{
-				$subdelete = " OR todo_id in ($sub_todos)";
+				$delete_ids = array_merge($delete_ids, array_filter(array_map('intval', explode(',', (string) $sub_todos))));
 			}
 			else
 			{
@@ -357,16 +528,67 @@ class todo_sotodo
 			}
 		}
 
-		$this->db->query('DELETE from phpgw_todo where todo_id=' . intval($todo_id) . $subdelete . " AND ((todo_access='public' "
-			. 'AND todo_owner != ' . $this->owner . ') OR (todo_owner=' . $this->owner . '))', __LINE__, __FILE__);
+		foreach (array_values(array_unique($delete_ids)) as $candidate_id)
+		{
+			$candidate_acl_row = $this->read_todo_acl_row((int) $candidate_id);
+			if (!$candidate_acl_row)
+			{
+				return $this->deny_delete('not_found', lang('Todo entry not found'), (int) $candidate_id);
+			}
+
+			if (!$this->has_delete_grant_for_owner((int) $candidate_acl_row['owner']))
+			{
+				return $this->deny_delete('insufficient_grants_owner', lang('Delete denied: insufficient rights on todo owner'), (int) $candidate_id);
+			}
+		}
+
+		$this->db->transaction_begin();
+
+		$placeholders = array();
+		$params = array();
+		foreach (array_values(array_unique($delete_ids)) as $index => $delete_id)
+		{
+			$key = ':todo_id_' . $index;
+			$placeholders[] = $key;
+			$params[$key] = (int) $delete_id;
+		}
+
+		$delete_sql = 'DELETE FROM phpgw_todo WHERE todo_id IN (' . implode(', ', $placeholders) . ')';
+		$stmt = $this->db->prepare($delete_sql);
+		$stmt->execute($params);
+		$deleted_count = (int) $stmt->rowCount();
 
 		if (!$sub && $sub_todos)
 		{
-			$this->db->query('UPDATE phpgw_todo set todo_id_parent=' . $parent . ' where todo_id_parent=' . $todo_id, __LINE__, __FILE__);
-			$this->db->query("UPDATE phpgw_todo set todo_level=todo_level-1 where todo_id in ($sub_todos)", __LINE__, __FILE__);
+			$stmt = $this->db->prepare('UPDATE phpgw_todo SET todo_id_parent = :parent WHERE todo_id_parent = :todo_id');
+			$stmt->execute([':parent' => (int) $parent, ':todo_id' => $todo_id]);
+
+			$sub_ids = array_filter(array_map('intval', explode(',', (string) $sub_todos)));
+			if ($sub_ids)
+			{
+				$sub_placeholders = array();
+				$sub_params = array();
+				foreach (array_values($sub_ids) as $index => $sub_id)
+				{
+					$key = ':sub_id_' . $index;
+					$sub_placeholders[] = $key;
+					$sub_params[$key] = $sub_id;
+				}
+
+				$level_sql = 'UPDATE phpgw_todo SET todo_level = todo_level - 1 WHERE todo_id IN (' . implode(', ', $sub_placeholders) . ')';
+				$stmt = $this->db->prepare($level_sql);
+				$stmt->execute($sub_params);
+			}
 		}
 		$this->historylog->delete($todo_id);
 		$this->db->transaction_commit();
+
+		return [
+			'ok' => true,
+			'deleted' => $deleted_count,
+			'subs' => (bool) $sub,
+			'todo_id' => $todo_id,
+		];
 	}
 
 	function edit_todo($values)
@@ -433,43 +655,69 @@ class todo_sotodo
 			$this->historylog->add('C', $values['id'], $values['cat'], $old_values['cat']);
 		}
 
-		$values['title'] = $this->db->db_addslashes($values['title']);
-		$values['descr'] = $this->db->db_addslashes($values['descr']);
-
-		$this->db->query("update phpgw_todo set todo_des='" . $values['descr'] . "', todo_id_parent=" . $values['parent']
-			. ', todo_pri=' . intval($values['pri']) . ", todo_status='" . $values['status'] . "', todo_id_main=" . intval($values['main'])
-			. ", todo_access='" . $values['access'] . "', todo_level=" . intval($values['level'])
-			. ', todo_startdate=' . intval($values['sdate']) . ', todo_enddate=' . intval($values['edate']) . ", todo_title='" . $values['title']
-			. "', todo_cat=" . intval($values['cat']) . ", todo_assigned='" . $values['assigned'] . "', assigned_group='" . $values['assigned_group']
-			. "' where todo_id=" . $values['id'], __LINE__, __FILE__);
+		$update_sql = 'UPDATE phpgw_todo SET'
+			. ' todo_des = :descr,'
+			. ' todo_id_parent = :parent,'
+			. ' todo_pri = :pri,'
+			. ' todo_status = :status,'
+			. ' todo_id_main = :main,'
+			. ' todo_access = :access,'
+			. ' todo_level = :level,'
+			. ' todo_startdate = :sdate,'
+			. ' todo_enddate = :edate,'
+			. ' todo_title = :title,'
+			. ' todo_cat = :cat,'
+			. ' todo_assigned = :assigned,'
+			. ' assigned_group = :assigned_group'
+			. ' WHERE todo_id = :id';
+		$stmt = $this->db->prepare($update_sql);
+		$stmt->execute([
+			':descr' => (string) ($values['descr'] ?? ''),
+			':parent' => (int) $values['parent'],
+			':pri' => (int) $values['pri'],
+			':status' => (int) $values['status'],
+			':main' => (int) $values['main'],
+			':access' => (string) ($values['access'] ?? ''),
+			':level' => (int) $values['level'],
+			':sdate' => (int) $values['sdate'],
+			':edate' => (int) $values['edate'],
+			':title' => (string) ($values['title'] ?? ''),
+			':cat' => (int) $values['cat'],
+			':assigned' => (string) ($values['assigned'] ?? ''),
+			':assigned_group' => (string) ($values['assigned_group'] ?? ''),
+			':id' => (int) $values['id'],
+		]);
 		$this->db->transaction_commit();
 	}
 
 	function return_value($todo_id, $action = 'main')
 	{
+		$item = 'todo_id_main';
 		switch ($action)
 		{
 			case 'main':
-				$item = ' todo_id_main ';
+				$item = 'todo_id_main';
 				break;
 			case 'level':
-				$item = ' todo_level ';
+				$item = 'todo_level';
 				break;
 		}
 
-		$this->db->query("select $item from phpgw_todo where todo_id=" . intval($todo_id), __LINE__, __FILE__);
-		if ($this->db->next_record())
+		$stmt = $this->db->prepare("SELECT {$item} AS value FROM phpgw_todo WHERE todo_id = :todo_id");
+		$stmt->execute([':todo_id' => (int) $todo_id]);
+		if ($row = $stmt->fetch(\PDO::FETCH_ASSOC))
 		{
-			return $this->db->f($item);
+			return $row['value'];
 		}
 	}
 
 	function exists($todo_id)
 	{
-		$this->db->query('select count(*) as cnt from phpgw_todo where todo_id_parent=' . intval($todo_id), __LINE__, __FILE__);
-		$this->db->next_record();
+		$stmt = $this->db->prepare('SELECT count(*) as cnt FROM phpgw_todo WHERE todo_id_parent = :todo_id_parent');
+		$stmt->execute([':todo_id_parent' => (int) $todo_id]);
+		$row = $stmt->fetch(\PDO::FETCH_ASSOC) ?: array();
 
-		if ($this->db->f('cnt'))
+		if (!empty($row['cnt']))
 		{
 			return True;
 		}

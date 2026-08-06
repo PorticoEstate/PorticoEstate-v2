@@ -1,0 +1,67 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('View') }} {{ lang('todo') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/todo/view/todo_view.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<div id="todo-view-app"
+	class="todo-view"
+	data-api-url="{{ phpgw_link('/todo/todos/' ~ todo_id) }}"
+	data-edit-url-base="{{ phpgw_link('/todo/view/todos') }}"
+	data-edit-url="{{ phpgw_link('/todo/view/todos/' ~ todo_id ~ '/edit') }}"
+	data-delete-url="{{ phpgw_link('/todo/view/todos/' ~ todo_id ~ '/delete') }}"
+	data-back-url="{{ phpgw_link('/todo/view/todos') }}"
+	data-lang-loading="{{ lang('common.loading') }}"
+	data-lang-error="{{ lang('common.error') }}"
+	data-lang-history-user="{{ lang('User') }}"
+	data-lang-history-date="{{ lang('Date') }}"
+	data-lang-history-action="{{ lang('Action') }}"
+	data-lang-history-new-value="{{ lang('New Value') }}"
+	data-lang-history-old-value="{{ lang('Old Value') }}"
+	data-lang-history-empty="{{ lang('No history for this record') }}"
+>
+	<h2 class="todo-view__title">{{ lang('View') }} {{ lang('todo') }}</h2>
+	<div id="todo-view-loading" class="todo-view__message">{{ lang('common.loading') }}...</div>
+	<div id="todo-view-error" class="todo-view__message todo-view__message--error" hidden></div>
+
+	<div id="todo-view-content" hidden>
+		<div class="todo-view__tabs" role="tablist" aria-label="{{ lang('todo') }}">
+			<button id="todo-view-tab-details" class="todo-view__tab todo-view__tab--active" type="button" role="tab" aria-selected="true" aria-controls="todo-view-panel-details">{{ lang('Details') }}</button>
+			<button id="todo-view-tab-history" class="todo-view__tab" type="button" role="tab" aria-selected="false" aria-controls="todo-view-panel-history">{{ lang('History') }}</button>
+		</div>
+
+		<div id="todo-view-panel-details" class="todo-view__panel" role="tabpanel">
+			<dl class="todo-view__grid">
+				<div><dt>{{ lang('Title') }}</dt><dd id="todo-view-title"></dd></div>
+				<div><dt>{{ lang('Category') }}</dt><dd id="todo-view-category"></dd></div>
+				<div class="todo-view__full"><dt>{{ lang('Description') }}</dt><dd id="todo-view-descr"></dd></div>
+				<div><dt>{{ lang('Parent project') }}</dt><dd id="todo-view-parent"></dd></div>
+				<div><dt>{{ lang('Completed') }}</dt><dd id="todo-view-status"></dd></div>
+				<div><dt>{{ lang('Urgency') }}</dt><dd id="todo-view-pri"></dd></div>
+				<div><dt>{{ lang('Start Date') }}</dt><dd id="todo-view-sdate"></dd></div>
+				<div><dt>{{ lang('End Date') }}</dt><dd id="todo-view-edate"></dd></div>
+				<div><dt>{{ lang('Access') }}</dt><dd id="todo-view-access"></dd></div>
+				<div><dt>{{ lang('Created by') }}</dt><dd id="todo-view-owner"></dd></div>
+				<div class="todo-view__full"><dt>{{ lang('assigned to') }}</dt><dd id="todo-view-assigned"></dd></div>
+			</dl>
+		</div>
+
+		<div id="todo-view-panel-history" class="todo-view__panel" role="tabpanel" hidden>
+			<div id="todo-view-history" class="todo-view__history"></div>
+		</div>
+
+		<div class="todo-view__actions">
+			<a class="todo-view__button" id="todo-view-edit" href="{{ phpgw_link('/todo/view/todos/' ~ todo_id ~ '/edit') }}">{{ lang('Edit') }}</a>
+			<a class="todo-view__button todo-view__button--danger" id="todo-view-delete" href="{{ phpgw_link('/todo/view/todos/' ~ todo_id ~ '/delete') }}">{{ lang('Delete') }}</a>
+			<a class="todo-view__button todo-view__button--secondary" href="{{ phpgw_link('/todo/view/todos') }}">{{ lang('Done') }}</a>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/todo/view/todo_view.js') }}</script>
+{% endblock %}

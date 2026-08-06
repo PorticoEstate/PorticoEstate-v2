@@ -10,6 +10,10 @@ export interface IHospitality {
     order_by_time_unit: 'hours' | 'days' | null;
     resource_cancellation_deadline_value: number | null;
     resource_cancellation_deadline_unit: 'hours' | 'days' | 'weeks' | null;
+    /** Open-days bitmask (bit0=Mon..bit6=Sun; 127=all open). Raw value, kept for completeness. */
+    open_days?: number | null;
+    /** Decoded open weekdays as ISO numbers (1=Mon..7=Sun), e.g. [1,2,3,4,5] for Mon–Fri. Provided by the API so the client needs no bit-ops. */
+    open_days_list?: number[] | null;
     delivery_locations: IDeliveryLocation[];
 }
 
@@ -22,6 +26,8 @@ export interface IDeliveryLocation {
 export interface IHospitalityMenu {
     hospitality_id: number;
     hospitality_name: string;
+    /** Hospitality-level admin info/routine text shown to the applicant (#374). */
+    hospitality_description?: string | null;
     groups: IHospitalityArticleGroup[];
     ungrouped_articles: IHospitalityArticle[];
 }

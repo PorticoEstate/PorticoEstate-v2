@@ -5,8 +5,10 @@
  */
 
 /* Import Designsystemet foundation */
-@import url('/assets/designsystemet/index.css');
-@import url('/assets/design-tokens/admin.css');
+/* Loaded from Slim routes in head loaders:
+ *   {webserver_url}/assets/designsystemet/index.css
+ *   {webserver_url}/assets/design-tokens/admin.css
+ */
 
 /* Root configuration */
 :root {

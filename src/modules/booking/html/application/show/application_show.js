@@ -168,7 +168,9 @@
 			body: JSON.stringify(data)
 		}).then(function (res) {
 			return res.json().then(function (json) {
-				if (!res.ok) throw { status: res.status, errors: json.errors || {} };
+				// Forward the FULL failure body (errors + conflict_details /
+				// conflict_links / conflict_count) so callers can show overlaps.
+				if (!res.ok) throw Object.assign({ status: res.status, errors: {} }, json);
 				return json;
 			});
 		});
@@ -764,6 +766,11 @@
 		// Build params map for each date (for the create dropdown)
 		var dateParamsMap = {};
 
+		// Allocations are org-level grants: an individual/SSN application has no
+		// organisation, so the Allocation option is hidden for those (booking/event
+		// only). Booking/event remain available to individuals.
+		var hasOrg = !!(app.customer_organization_id || app.customer_organization_number);
+
 		if (dates.length > 0 && !isRecurring) {
 			var datesHtml = '<table class="ds-table" data-size="sm" data-zebra id="dates-table"><thead><tr>';
 			if (isCombined) datesHtml += '<th>' + lang('application') + '</th>';
@@ -808,7 +815,7 @@
 						'<button type="button" class="ds-button" data-variant="primary" data-color="accent" data-size="sm" data-create="event" data-date-id="' + d.id + '">' + esc(lang('createEvent')) + '</button>' +
 						'<button type="button" class="ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '" aria-label="' + esc(lang('dateActions')) + '">' + ICONS.chevron + '</button>' +
 						'<div class="ds-dropdown app-show__menu app-show__split-menu" popover id="' + menuId + '"><ul>' +
-						'<li><button type="button" class="ds-dropdown__item" data-create="allocation" data-date-id="' + d.id + '"><span>' + esc(lang('createAllocation')) + '</span></button></li>' +
+						(hasOrg ? '<li><button type="button" class="ds-dropdown__item" data-create="allocation" data-date-id="' + d.id + '"><span>' + esc(lang('createAllocation')) + '</span></button></li>' : '') +
 						'<li><button type="button" class="ds-dropdown__item" data-create="booking" data-date-id="' + d.id + '"><span>' + esc(lang('createBooking')) + '</span></button></li>' +
 						// Reject only this sub-application (combined carts) — siblings stay open.
 						(isCombined ? '<li><button type="button" class="ds-dropdown__item" data-color="danger" data-reject-app="' + esc(d.application_id) + '"><span>' + esc(lang('rejectApplication')) + '</span></button></li>' : '') +
@@ -821,6 +828,151 @@
 			});
 			datesHtml += '</tbody></table>';
 			html += section(lang('dates'), datesHtml, { icon: ICONS.calendar });
+		}
+
+		// Decode HTML entities in a string. conflict_links[].link comes from the
+		// legacy self::link() and is entity-encoded (&amp;). Setting it via the
+		// .href *property* does NOT decode, so a bare &amp; would break the query
+		// — decode first. (textarea.value is the standard, XSS-safe decode.)
+		function decodeEntities(str) {
+			if (str == null) return '';
+			var ta = document.createElement('textarea');
+			ta.innerHTML = String(str);
+			return ta.value;
+		}
+
+		// Remove any inline overlap message from a date's action cell.
+		function clearConflict(cell) {
+			if (!cell) return;
+			var prev = cell.querySelector('.app-show__conflict');
+			if (prev) prev.remove();
+		}
+
+		// Render the inline overlap message for a failed create. On a real
+		// overlap the endpoint returns conflict_links ({ item_N: {name,link,type} });
+		// we show "Overlaps with: <edit links>" so the officer can resolve it
+		// without navigating away. Falls back to plain error text otherwise.
+		function renderConflict(cell, err) {
+			if (!cell) return;
+			clearConflict(cell);
+			var box = document.createElement('div');
+			box.className = 'app-show__conflict';
+			box.setAttribute('role', 'alert');
+
+			var links = err && err.conflict_links && typeof err.conflict_links === 'object'
+				? Object.keys(err.conflict_links).map(function (k) { return err.conflict_links[k]; })
+				: [];
+			if (links.length) {
+				box.appendChild(document.createTextNode(lang('overlapsWith') + ': '));
+				links.forEach(function (c, i) {
+					if (i) box.appendChild(document.createTextNode(', '));
+					var a = document.createElement('a');
+					a.href = decodeEntities(c.link) || '#';
+					a.target = '_blank';
+					a.rel = 'noopener noreferrer';
+					a.textContent = decodeEntities(c.name) || ('#' + (i + 1));
+					box.appendChild(a);
+				});
+			} else {
+				var msg = lang('error');
+				var flat = err && err.errors ? [].concat.apply([], Object.values(err.errors)).filter(Boolean) : [];
+				if (flat.length) msg += ': ' + flat.join(', ');
+				box.textContent = msg;
+			}
+			cell.appendChild(box);
+		}
+
+		// True when a create failed specifically because a group must be chosen.
+		// Single-group orgs auto-derive server-side (Tier 1), so this only fires
+		// for multi-group-org bookings that need an explicit choice.
+		function needsGroup(err) {
+			return !!(err && err.errors && Object.keys(err.errors).some(function (k) {
+				return /group/i.test(k);
+			}));
+		}
+
+		// Remove any inline group picker from a date's action cell.
+		function clearGroupPicker(cell) {
+			if (!cell) return;
+			var prev = cell.querySelector('.app-show__group-picker');
+			if (prev) prev.remove();
+		}
+
+		// Slot fulfilled: replace the whole split (all create options for this
+		// date/slot) with a success check + in-place Edit link, and clear any
+		// conflict / picker left in the cell. Different slots stay untouched.
+		function collapseToEditLink(btn, cell, result) {
+			var link = document.createElement('a');
+			link.href = result.edit_url;
+			link.className = 'ds-button';
+			link.setAttribute('data-variant', 'tertiary');
+			link.setAttribute('data-color', 'success');
+			link.setAttribute('data-size', 'sm');
+			link.setAttribute('data-created', btn.dataset.create);
+			link.setAttribute('aria-label', lang('edit'));
+			link.innerHTML = ICONS.checkCircle + '<span>' + esc(lang('edit')) + '</span>';
+			var split = btn.closest('.app-show__split');
+			(split || btn).replaceWith(link);
+			clearConflict(cell);
+			clearGroupPicker(cell);
+		}
+
+		// Inline group picker for multi-group-org bookings. The booking create
+		// resolves the org from the application (customer_organization_number),
+		// which can differ from customer_organization_id — so list groups for the
+		// org the create actually used (err.organization_id), falling back to
+		// customer_organization_id only if the backend didn't echo it.
+		function renderGroupPicker(cell, btn, params, url, err) {
+			if (!cell) return;
+			clearConflict(cell);
+			clearGroupPicker(cell);
+			var orgId = (err && err.organization_id) || params.customer_organization_id;
+			if (!orgId) { renderConflict(cell, err); return; }
+
+			var box = document.createElement('div');
+			box.className = 'app-show__group-picker';
+			box.innerHTML = '<div class="ds-field" data-size="sm">' +
+				'<label class="ds-label">' + esc(lang('selectGroup')) + '</label>' +
+				'<select class="ds-input" data-size="sm"><option value="">' + esc(lang('loading')) + '…</option></select>' +
+				'</div>';
+			var select = box.querySelector('select');
+			cell.appendChild(box);
+
+			var groupsUrl = apiUrl.replace(/\/applications\/\d+.*$/, '/organizations/' + orgId + '/groups');
+			fetchJson(groupsUrl).then(function (groups) {
+				groups = groups || [];
+				if (!groups.length) { clearGroupPicker(cell); renderConflict(cell, err); return; }
+				select.innerHTML = '<option value="">' + esc(lang('selectGroup')) + '…</option>' +
+					groups.map(function (g) {
+						return '<option value="' + esc(g.id) + '">' + esc(g.name) + '</option>';
+					}).join('');
+				// Selecting a group resubmits the create with group_id set → on
+				// success the slot collapses to ✓ + Edit (same as #59).
+				select.addEventListener('change', function () {
+					var gid = select.value;
+					if (!gid) return;
+					select.disabled = true;
+					btn.disabled = true;
+					// Resend WITH the resolved org id too, so the create pins to the
+					// same org it first resolved (the chosen group belongs to it) —
+					// not a re-resolution that might pick a different org.
+					var p = Object.assign({}, params, { group_id: gid, organization_id: orgId });
+					postJsonToLegacy(url, p).then(function (result) {
+						collapseToEditLink(btn, cell, result);
+					}).catch(function (err2) {
+						btn.disabled = false;
+						if (needsGroup(err2)) {
+							renderGroupPicker(cell, btn, params, url, err2);
+						} else {
+							clearGroupPicker(cell);
+							renderConflict(cell, err2);
+						}
+					});
+				});
+			}).catch(function () {
+				clearGroupPicker(cell);
+				renderConflict(cell, err);
+			});
 		}
 
 		// Delegated event: date action split button (primary + dropdown items)
@@ -839,22 +991,33 @@
 			var url = urls[btn.dataset.create];
 			if (!url) return;
 
-			// Disable the whole split group while submitting
-			var group = btn.closest('.app-show__split');
-			var groupBtns = group ? group.querySelectorAll('button') : [btn];
-			groupBtns.forEach(function (b) { b.disabled = true; });
+			// Disable only the clicked button while submitting. The three
+			// create actions (allocation/booking/event) for a date are
+			// independent, so creating one must not lock the others.
+			btn.disabled = true;
+			btn.setAttribute('aria-busy', 'true');
+
+			// Clear any overlap message / picker left from a previous attempt.
+			var cell = btn.closest('td');
+			clearConflict(cell);
+			clearGroupPicker(cell);
 
 			postJsonToLegacy(url, params).then(function (result) {
-				// Redirect to the edit page for the newly created entity
-				window.location.href = result.edit_url;
+				// Success: the slot is fulfilled — collapse the whole split to a
+				// ✓ + in-place Edit link (see collapseToEditLink).
+				collapseToEditLink(btn, cell, result);
 			}).catch(function (err) {
-				groupBtns.forEach(function (b) { b.disabled = false; });
-				var msg = lang('error');
-				if (err.errors) {
-					var errMsgs = Object.values(err.errors).filter(Boolean);
-					if (errMsgs.length) msg += ': ' + errMsgs.join(', ');
+				// Failure: re-enable so the officer can retry. A multi-group-org
+				// booking that needs a group gets an inline group picker; overlaps
+				// and other errors render inline — no navigation, no alert
+				// (#pe-queue/59, /116).
+				btn.disabled = false;
+				btn.removeAttribute('aria-busy');
+				if (btn.dataset.create === 'booking' && needsGroup(err)) {
+					renderGroupPicker(cell, btn, params, url, err);
+				} else {
+					renderConflict(cell, err);
 				}
-				alert(msg);
 			});
 		});
 

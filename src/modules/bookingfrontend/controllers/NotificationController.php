@@ -51,9 +51,9 @@ class NotificationController
                     'message'     => $row['message'],
                     'link'        => $row['link'],
                     'is_read'     => (bool) $row['is_read'],
-                    'read_at'     => $row['read_at'],
+                    'read_at'     => $this->toIso8601Utc($row['read_at']),
                     'data'        => !empty($row['data']) ? json_decode($row['data'], true) : null,
-                    'created'     => $row['created'],
+                    'created'     => $this->toIso8601Utc($row['created']),
                 ];
             }, $rows);
 
@@ -154,5 +154,25 @@ class NotificationController
 
         $ssn = $bouser->ssn ?? '';
         return !empty($ssn) ? $ssn : null;
+    }
+
+    /**
+     * Normalise a naive DB timestamp (stored in UTC, `timestamp without time zone`)
+     * to an unambiguous ISO-8601 string with offset — matching the WS payload's
+     * date('c') format so the client applies one consistent Europe/Oslo conversion.
+     *
+     * @param string|null $ts Raw DB value (e.g. "2026-07-01 08:57:28.88399") or null
+     * @return string|null ISO-8601 with offset (e.g. "2026-07-01T08:57:28+00:00"), or null
+     */
+    private function toIso8601Utc(?string $ts): ?string
+    {
+        if (empty($ts)) {
+            return null;
+        }
+        try {
+            return (new \DateTime($ts, new \DateTimeZone('UTC')))->format('c');
+        } catch (\Exception $e) {
+            return $ts;
+        }
     }
 }

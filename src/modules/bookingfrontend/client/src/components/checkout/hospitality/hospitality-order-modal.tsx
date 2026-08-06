@@ -1,6 +1,6 @@
 'use client';
 import {FC, useEffect, useMemo, useState} from 'react';
-import {Alert, Button, Details, Field, Label, Select} from '@digdir/designsystemet-react';
+import {Alert, Button, Details, Field, Label, Paragraph, Select} from '@digdir/designsystemet-react';
 import {MinusCircleIcon, PlusCircleIcon, ChatElipsisIcon} from '@navikt/aksel-icons';
 import {useClientTranslation} from '@/app/i18n/ClientTranslationProvider';
 import {fallbackLng} from '@/app/i18n/settings';
@@ -17,6 +17,14 @@ import {
     useUpdateHospitalityOrder,
 } from '../hooks/hospitality-hooks';
 import {formatCurrency} from '@/utils/cost-utils';
+import {
+    computeHospitalityDeadline,
+    isWorkingDaysMode,
+    formatOpenDays,
+    isServingDayOpen,
+    isoWeekdayInVenueTz,
+    formatWeekdayName,
+} from '@/utils/hospitality-deadline';
 import styles from './hospitality.module.scss';
 
 interface HospitalityOrderModalProps {
@@ -25,9 +33,15 @@ interface HospitalityOrderModalProps {
     hospitalities: IHospitality[];
     selectedHospitality: IHospitality | null;
     onHospitalitySelect: (hospitality: IHospitality) => void;
-    applicationId: number;
     applications: IApplication[];
     existingOrder?: IHospitalityOrder;
+}
+
+/** Key of the synthetic option carrying a legacy order's stored serving time. */
+const GRANDFATHERED_DATE_KEY = 'grandfathered';
+
+function formatHm(date: Date): string {
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
 function generateTimeSlots(fromHour: number, fromMinute: number, toHour: number, toMinute: number): string[] {
@@ -54,14 +68,6 @@ function localizeField(field: Record<string, string> | null | undefined, lang: s
     return field[lang] || field[fallbackLng.key] || Object.values(field).find(v => !!v) || null;
 }
 
-function getCutoffMs(hospitality: IHospitality): number | null {
-    if (!hospitality.order_by_time_value || !hospitality.order_by_time_unit) return null;
-    const value = hospitality.order_by_time_value;
-    if (hospitality.order_by_time_unit === 'hours') return value * 3600000;
-    if (hospitality.order_by_time_unit === 'days') return value * 86400000;
-    return null;
-}
-
 /** Build date options from application dates. Each option is a unique date+timerange from one application date entry. */
 function buildDateOptions(applications: IApplication[]) {
     const options: { key: string; from: Date; to: Date; label: string; applicationId: number }[] = [];
@@ -71,7 +77,7 @@ function buildDateOptions(applications: IApplication[]) {
             const to = new Date(d.to_);
             const key = `${app.id}_${d.id}`;
             const dateStr = from.toLocaleDateString('nb-NO', {weekday: 'short', day: 'numeric', month: 'short'});
-            const timeStr = `${String(from.getHours()).padStart(2, '0')}:${String(from.getMinutes()).padStart(2, '0')} - ${String(to.getHours()).padStart(2, '0')}:${String(to.getMinutes()).padStart(2, '0')}`;
+            const timeStr = `${formatHm(from)} - ${formatHm(to)}`;
             options.push({
                 key,
                 from,
@@ -90,15 +96,12 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     hospitalities,
     selectedHospitality,
     onHospitalitySelect,
-    applicationId,
     applications,
     existingOrder,
 }) => {
     const {t, i18n} = useClientTranslation();
     const hospitality = selectedHospitality;
     const {data: menu, isLoading: menuLoading} = useHospitalityMenu(open && hospitality ? hospitality.id : undefined);
-    const createMutation = useCreateHospitalityOrder(applicationId);
-    const updateMutation = useUpdateHospitalityOrder(applicationId);
     const showHospitalitySelector = hospitalities.length > 1 && !existingOrder;
 
     const [selectedDateKey, setSelectedDateKey] = useState('');
@@ -128,13 +131,60 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         );
     }, [hospitality, appResourceIds]);
 
-    const selectedDateOption = useMemo(
-        () => dateOptions.find(d => d.key === selectedDateKey),
-        [dateOptions, selectedDateKey]
+    /**
+     * A legacy order can sit on an application that does not own its serving date — the
+     * mis-attribution this fixes. Its stored instant then matches no date option of its own
+     * application, and it must stay editable: the API re-validates the serving day only when
+     * the instant moves (#373). So the stored time is offered as its own option rather than
+     * leaving the order unsavable.
+     */
+    const grandfatheredOption = useMemo(() => {
+        if (!existingOrder?.serving_time_iso) return null;
+        const stored = new Date(existingOrder.serving_time_iso);
+        const storedYmd = stored.toISOString().split('T')[0];
+        const ownedByApplication = dateOptions.some(d =>
+            d.applicationId === existingOrder.application_id
+            && d.from.toISOString().split('T')[0] === storedYmd
+        );
+        if (ownedByApplication) return null;
+        const dateStr = stored.toLocaleDateString('nb-NO', {weekday: 'short', day: 'numeric', month: 'short'});
+        return {
+            key: GRANDFATHERED_DATE_KEY,
+            from: stored,
+            to: stored,
+            label: `${dateStr} | ${formatHm(stored)}`,
+            applicationId: existingOrder.application_id,
+        };
+    }, [existingOrder, dateOptions]);
+
+    const visibleDateOptions = useMemo(
+        () => grandfatheredOption ? [grandfatheredOption, ...dateOptions] : dateOptions,
+        [grandfatheredOption, dateOptions]
     );
+
+    const selectedDateOption = useMemo(
+        () => visibleDateOptions.find(d => d.key === selectedDateKey),
+        [visibleDateOptions, selectedDateKey]
+    );
+
+    /**
+     * The application this order belongs to. On create it is the application owning the chosen
+     * date option — the option carries it exactly, so no date-range matching is needed and
+     * overlapping ranges stay unambiguous. On edit it is the order's own application: an order
+     * cannot be re-parented, and the API 404s when the URL application id does not match the
+     * stored one.
+     */
+    const targetApplicationId = existingOrder
+        ? existingOrder.application_id
+        : selectedDateOption?.applicationId;
+
+    const createMutation = useCreateHospitalityOrder(targetApplicationId);
+    const updateMutation = useUpdateHospitalityOrder(targetApplicationId);
 
     const timeSlots = useMemo(() => {
         if (!selectedDateOption) return [];
+        // The grandfathered option carries one exact instant — its own stored serving time.
+        if (selectedDateOption.key === GRANDFATHERED_DATE_KEY) return [formatHm(selectedDateOption.from)];
         return generateTimeSlots(
             selectedDateOption.from.getHours(),
             selectedDateOption.from.getMinutes(),
@@ -143,19 +193,79 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         );
     }, [selectedDateOption]);
 
-    // Cutoff check
-    const cutoffCheck = useMemo(() => {
-        if (!selectedDateOption || !selectedTime || !hospitality) return {valid: true, message: ''};
-        const cutoffMs = getCutoffMs(hospitality);
-        if (!cutoffMs) return {valid: true, message: ''};
-
+    /**
+     * The exact instant that will be sent as serving_time_iso. Derived once so the cutoff check,
+     * the serving-day check and the save all judge the same instant the backend will.
+     */
+    const servingInstant = useMemo(() => {
+        if (!selectedDateOption || !selectedTime) return null;
+        // A grandfathered order resends its stored instant exactly: the API skips serving-day
+        // re-validation only while the instant is unchanged.
+        if (selectedDateOption.key === GRANDFATHERED_DATE_KEY) return selectedDateOption.from;
         const dateStr = selectedDateOption.from.toISOString().split('T')[0];
-        const servingDate = new Date(`${dateStr}T${selectedTime}:00`);
-        const timeDiff = servingDate.getTime() - Date.now();
+        return new Date(`${dateStr}T${selectedTime}:00`);
+    }, [selectedDateOption, selectedTime]);
 
-        if (timeDiff < cutoffMs) {
+    /**
+     * Serving time of the order as currently stored. The backend re-validates the serving day
+     * only when the instant actually moves, so an order placed before a weekday was closed stays
+     * editable (lines/comment/location) as long as its serving time is unchanged (#373).
+     */
+    const storedServingMs = useMemo(() => {
+        if (!existingOrder?.serving_time_iso) return null;
+        return new Date(existingOrder.serving_time_iso).getTime();
+    }, [existingOrder]);
+
+    /**
+     * The option holding the existing order's serving day — kept selectable even if closed.
+     * Scoped to the order's own application: matching across applications would keep another
+     * booking's row selectable on a mis-attributed order.
+     */
+    const grandfatheredDateKey = useMemo(() => {
+        if (!existingOrder?.serving_time_iso) return null;
+        const storedYmd = new Date(existingOrder.serving_time_iso).toISOString().split('T')[0];
+        return visibleDateOptions.find(d =>
+            d.applicationId === existingOrder.application_id
+            && d.from.toISOString().split('T')[0] === storedYmd
+        )?.key ?? null;
+    }, [existingOrder, visibleDateOptions]);
+
+    /**
+     * Serving-day check — blocks ordering on a weekday the catering is closed (#373).
+     * Mirrors the backend rule exactly: venue-local weekday, and skipped when the serving
+     * instant is unchanged (so legacy orders on a now-closed day stay editable).
+     */
+    const servingDayCheck = useMemo(() => {
+        if (!hospitality || !servingInstant) return {valid: true, message: ''};
+        if (storedServingMs !== null && servingInstant.getTime() === storedServingMs) {
+            return {valid: true, message: ''};
+        }
+        if (isServingDayOpen(servingInstant, hospitality.open_days_list)) {
+            return {valid: true, message: ''};
+        }
+        return {valid: false, message: t('bookingfrontend.serving_day_closed')};
+    }, [hospitality, servingInstant, storedServingMs, t]);
+
+    // Cutoff check — cutoff instant honours working days (mirrors the backend calc)
+    const cutoffCheck = useMemo(() => {
+        if (!servingInstant || !hospitality) return {valid: true, message: ''};
+
+        const cutoffDate = computeHospitalityDeadline(
+            servingInstant,
+            hospitality.order_by_time_value,
+            hospitality.order_by_time_unit,
+            hospitality.open_days_list
+        );
+        if (!cutoffDate) return {valid: true, message: ''};
+
+        if (Date.now() > cutoffDate.getTime()) {
+            const workingDaysMode = isWorkingDaysMode(hospitality.open_days_list)
+                && hospitality.order_by_time_unit === 'days';
             const unitLabel = hospitality.order_by_time_unit === 'hours'
-                ? t('bookingfrontend.hours').toLowerCase() : t('bookingfrontend.days').toLowerCase();
+                ? t('bookingfrontend.hours').toLowerCase()
+                : workingDaysMode
+                    ? t('bookingfrontend.working_days').toLowerCase()
+                    : t('bookingfrontend.days').toLowerCase();
             const msg = t('bookingfrontend.order_cutoff_warning')
                 .replace('%1', String(hospitality.order_by_time_value))
                 .replace('%2', unitLabel);
@@ -165,7 +275,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             };
         }
         return {valid: true, message: ''};
-    }, [selectedDateOption, selectedTime, hospitality, t]);
+    }, [servingInstant, hospitality, t]);
 
     // Cancellation deadline warning (informational, does not block ordering)
     const cancellationWarning = useMemo(() => {
@@ -174,15 +284,10 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         const unit = hospitality.resource_cancellation_deadline_unit;
         if (!val || !unit) return null;
 
-        let cutoffMs: number;
-        switch (unit) {
-            case 'hours': cutoffMs = val * 3600000; break;
-            case 'days': cutoffMs = val * 86400000; break;
-            case 'weeks': cutoffMs = val * 604800000; break;
-            default: return null;
-        }
+        // Cancellation lead-time comes from the resource; open-days come from the hospitality.
+        const cancelBy = computeHospitalityDeadline(selectedDateOption.from, val, unit, hospitality.open_days_list);
+        if (!cancelBy) return null;
 
-        const cancelBy = new Date(selectedDateOption.from.getTime() - cutoffMs);
         if (Date.now() > cancelBy.getTime()) {
             return t('bookingfrontend.cancellation_deadline_passed_warning');
         }
@@ -216,11 +321,15 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             // Try to match existing serving time to a date option
             if (existingOrder.serving_time_iso) {
                 const existingDate = new Date(existingOrder.serving_time_iso);
-                const match = dateOptions.find(d => {
-                    const dDate = d.from.toISOString().split('T')[0];
-                    const eDate = existingDate.toISOString().split('T')[0];
-                    return dDate === eDate;
-                });
+                // Scoped to the order's OWN application. Matching across applications would
+                // preselect another booking's row on a mis-attributed order — and with two
+                // applications holding dates on the same day it can pick the wrong row even
+                // for a correctly attributed one.
+                const eDate = existingDate.toISOString().split('T')[0];
+                const match = visibleDateOptions.find(d =>
+                    d.applicationId === existingOrder.application_id
+                    && d.from.toISOString().split('T')[0] === eDate
+                );
                 if (match) {
                     setSelectedDateKey(match.key);
                     setSelectedTime(
@@ -238,7 +347,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             setSelectedDateKey('');
             setSelectedTime('');
         }
-    }, [existingOrder, availableLocations, open, dateOptions]);
+    }, [existingOrder, availableLocations, open, visibleDateOptions]);
 
     const allArticles = useMemo(() => {
         if (!menu) return [];
@@ -257,7 +366,8 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
 
     const hasItems = Object.values(quantities).some(q => q > 0);
     const dateSelected = !!selectedDateKey;
-    const menuEnabled = !!hospitality && dateSelected && !!locationId && !!selectedTime && cutoffCheck.valid;
+    const menuEnabled = !!hospitality && dateSelected && !!locationId && !!selectedTime
+        && cutoffCheck.valid && servingDayCheck.valid;
     const canSave = hasItems && menuEnabled;
 
     const increment = (id: number) =>
@@ -270,10 +380,9 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         });
 
     const handleSave = async () => {
-        if (!canSave || !selectedDateOption || !hospitality) return;
+        if (!canSave || !servingInstant || !hospitality || !targetApplicationId) return;
 
-        const dateStr = selectedDateOption.from.toISOString().split('T')[0];
-        const servingTimeIso = new Date(`${dateStr}T${selectedTime}:00`).toISOString();
+        const servingTimeIso = servingInstant.toISOString();
 
         const lines = Object.entries(quantities)
             .filter(([, qty]) => qty > 0)
@@ -478,10 +587,38 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                                 }}
                             >
                                 <option value="">{t('bookingfrontend.select_serving_date')}</option>
-                                {dateOptions.map(d => (
-                                    <option key={d.key} value={d.key}>{d.label}</option>
-                                ))}
+                                {visibleDateOptions.map(d => {
+                                    // Closed days stay visible (a vanishing booking date is confusing)
+                                    // but are not selectable. The existing order's own day is left
+                                    // selectable — the backend only re-validates when the serving
+                                    // instant moves, so that order stays editable.
+                                    const closed = !isServingDayOpen(d.from, hospitality.open_days_list);
+                                    // Dates owned by another application stay visible for the same
+                                    // reason, but an order cannot be moved between applications.
+                                    const otherApplication = !!existingOrder
+                                        && d.applicationId !== existingOrder.application_id;
+                                    const note = otherApplication
+                                        ? ` — ${t('bookingfrontend.date_belongs_to_other_application')}`
+                                        : closed
+                                            ? ` — ${t('bookingfrontend.closed_on_weekday')
+                                                .replace('%1', formatWeekdayName(isoWeekdayInVenueTz(d.from), i18n.language))}`
+                                            : '';
+                                    return (
+                                        <option
+                                            key={d.key}
+                                            value={d.key}
+                                            disabled={otherApplication || (closed && d.key !== grandfatheredDateKey)}
+                                        >
+                                            {d.label}{note}
+                                        </option>
+                                    );
+                                })}
                             </Select>
+                            {existingOrder && dateOptions.some(d => d.applicationId !== existingOrder.application_id) && (
+                                <Paragraph data-size="sm">
+                                    {t('bookingfrontend.hospitality_cannot_change_application')}
+                                </Paragraph>
+                            )}
                         </Field>
 
                         <Field className={styles.topRowField}>
@@ -516,6 +653,22 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         </Field>
                     </div>
 
+                    {/* Working-days info: which days the catering is open (deadlines counted in working days) */}
+                    {isWorkingDaysMode(hospitality.open_days_list) && (
+                        <Paragraph data-size="sm" style={{margin: '0 0 0.5rem'}}>
+                            {t('bookingfrontend.open_days_label')}:{' '}
+                            <strong>{formatOpenDays(hospitality.open_days_list, i18n.language)}</strong>
+                            {' — '}{t('bookingfrontend.working_days_deadline_note')}
+                        </Paragraph>
+                    )}
+
+                    {/* Serving-day block — catering closed on the selected weekday (#373) */}
+                    {selectedTime && !servingDayCheck.valid && (
+                        <Alert data-color="danger" data-size="sm">
+                            {servingDayCheck.message}
+                        </Alert>
+                    )}
+
                     {/* Cutoff warning (blocks ordering) */}
                     {selectedTime && !cutoffCheck.valid && (
                         <Alert data-color="danger" data-size="sm">
@@ -527,6 +680,13 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                     {cancellationWarning && (
                         <Alert data-color="warning" data-size="sm">
                             {cancellationWarning}
+                        </Alert>
+                    )}
+
+                    {/* Hospitality-level info / routine text from admin (#374) */}
+                    {menu?.hospitality_description && (
+                        <Alert data-color="info" data-size="sm" className={styles.hospitalityInfo}>
+                            {menu.hospitality_description}
                         </Alert>
                     )}
 

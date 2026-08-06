@@ -21,6 +21,15 @@
     @include smallmode {
         justify-content: flex-start;
         flex-wrap: wrap;
+
+        // The toolbar's icon-only controls render at ~46x42 and 39x40 from the
+        // designsystemet `data-size="sm"` defaults, which is under the 44x44
+        // touch-target minimum. Only raise the floor on touch widths so the
+        // desktop toolbar keeps its compact sizing.
+        button, [role='button'] {
+            min-width: 2.75rem;
+            min-height: 2.75rem;
+        }
     }
 }
 

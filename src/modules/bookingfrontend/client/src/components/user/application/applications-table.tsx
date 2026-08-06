@@ -299,8 +299,9 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
                             data-size="sm"
                             onClick={() => refetch()}
                             disabled={isFetching}
+                            aria-label={t('bookingfrontend.refresh')}
                         >
-                            <ArrowsCirclepathIcon/>
+                            <ArrowsCirclepathIcon aria-hidden/>
                         </Button>
                     )
                 }}

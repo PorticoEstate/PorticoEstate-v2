@@ -1083,6 +1083,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                 open={confirmCancelOpen}
                 onClose={() => setConfirmCancelOpen(false)}
                 closedby="any"
+                className={styles.cancelDialog}
             >
                 <Dialog.Block>
                     <Heading level={2} data-size="sm">

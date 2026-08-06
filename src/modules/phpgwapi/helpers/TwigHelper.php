@@ -198,8 +198,11 @@ class TwigHelper
 		$webserverUrl = $this->serverSettings['webserver_url'] ?? '';
 		$modulesPath = defined('PHPGW_MODULES_PATH') ? PHPGW_MODULES_PATH : '';
 		$base = $webserverUrl . $modulesPath;
+		$root = rtrim($webserverUrl, '/');
 
 		return [
+			$root . '/assets/designsystemet/index.css',
+			$root . '/assets/design-tokens/admin.css',
 			$base . '/phpgwapi/templates/digdir/css/digdir-native.css',
 		];
 	}

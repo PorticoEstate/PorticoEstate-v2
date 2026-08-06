@@ -140,6 +140,12 @@ foreach ($stylesheets as $stylesheet)
 	}
 }
 
+// Load Designsystemet foundation through Slim asset routes.
+// These must be based on webserver_url (prefix like /portico), not PHPGW_MODULES_PATH.
+$webserver_root = rtrim(($serverSettings['webserver_url'] ?? ''), '/');
+$cssUris[] = $webserver_root . '/assets/designsystemet/index.css' . $cache_refresh_token;
+$cssUris[] = $webserver_root . '/assets/design-tokens/admin.css' . $cache_refresh_token;
+
 // Construct navbar_config by taking into account the current selected menu
 // The only problem with this loop is that leafnodes will be included
 $navbar_config = execMethod('phpgwapi.template_portico.retrieve_local', 'navbar_config');

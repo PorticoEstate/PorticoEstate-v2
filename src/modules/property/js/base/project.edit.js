@@ -657,16 +657,71 @@ function createProjectApiClient(form)
 	};
 }
 
+var projectClickHistoryToken = '';
+
+function generateProjectClickHistoryToken()
+{
+	return String(Date.now()) + '-' + Math.random().toString(36).slice(2);
+}
+
+function getProjectClickHistoryToken()
+{
+	if (projectClickHistoryToken)
+	{
+		return projectClickHistoryToken;
+	}
+
+	var source = parseProjectURL((typeof window.strBaseURL !== 'undefined' && window.strBaseURL) ? window.strBaseURL : window.location.href).searchObject || {};
+	projectClickHistoryToken = source.click_history || '';
+	if (!projectClickHistoryToken)
+	{
+		projectClickHistoryToken = generateProjectClickHistoryToken();
+	}
+
+	return projectClickHistoryToken;
+}
+
+function refreshProjectClickHistoryToken()
+{
+	projectClickHistoryToken = generateProjectClickHistoryToken();
+	return projectClickHistoryToken;
+}
+
+function stripProjectClickHistory(url)
+{
+	if (!url)
+	{
+		return url;
+	}
+
+	return String(url)
+		.replace(/([?&])click_history=[^&]*&?/i, '$1')
+		.replace(/[?&]$/, '')
+		.replace('?&', '?');
+}
+
+function appendProjectClickHistory(url)
+{
+	var cleanedUrl = stripProjectClickHistory(url);
+	var token = getProjectClickHistoryToken();
+	if (!token)
+	{
+		return cleanedUrl;
+	}
+
+	return cleanedUrl + (cleanedUrl.indexOf('?') === -1 ? '?' : '&') + 'click_history=' + encodeURIComponent(token);
+}
+
 function getProjectSaveUrl()
 {
 	var form = document.form;
 	var request = createProjectApiClient(form).buildSaveRequest(project_id);
 	if (request && request.url)
 	{
-		return request.url;
+		return appendProjectClickHistory(request.url);
 	}
 
-	return phpGWLink('property/project/create', {});
+	return appendProjectClickHistory(phpGWLink('property/project/create', {}));
 }
 
 function isProjectCopyRequested(form)
@@ -681,6 +736,7 @@ function normalizeProjectSaveRequest(saveRequest, currentProjectId, forceCreate)
 	var isCreate = !!forceCreate || isNaN(parsedProjectId) || parsedProjectId <= 0;
 	var method = (saveRequest && saveRequest.method) ? String(saveRequest.method).toUpperCase() : (isCreate ? 'POST' : 'PUT');
 	var url = (saveRequest && saveRequest.url) ? saveRequest.url : getProjectSaveUrl();
+	url = appendProjectClickHistory(url);
 
 	if (isCreate)
 	{
@@ -688,12 +744,12 @@ function normalizeProjectSaveRequest(saveRequest, currentProjectId, forceCreate)
 
 		if (url && url.indexOf('/property/project/create') === -1)
 		{
-			url = phpGWLink('property/project/create', {});
+			url = appendProjectClickHistory(phpGWLink('property/project/create', {}));
 		}
 
 		if (!url || url.indexOf('/property/project/create') === -1)
 		{
-			url = phpGWLink('property/project/create', {});
+			url = appendProjectClickHistory(phpGWLink('property/project/create', {}));
 		}
 	}
 
@@ -1022,7 +1078,8 @@ function check_and_submit_valid_session()
 	var formData = buildProjectSaveFormData();
 	var payload = buildProjectSavePayload(formData);
 	var copyProjectRequested = isProjectCopyRequested(form);
-	var saveRequestRaw = createProjectApiClient(form).buildSaveRequest(project_id);
+	var projectApiClient = createProjectApiClient(form);
+	var saveRequestRaw = projectApiClient.buildSaveRequest(project_id);
 	var saveRequest = normalizeProjectSaveRequest(saveRequestRaw, project_id, copyProjectRequested);
 	var requestUrl = saveRequest.url;
 	var projectId = Number(project_id);
@@ -1065,6 +1122,14 @@ function check_and_submit_valid_session()
 		})
 		.then(function (data)
 		{
+			if (projectApiClient && typeof projectApiClient.refreshClickHistoryToken === 'function')
+			{
+				projectApiClient.refreshClickHistoryToken();
+			}
+			else
+			{
+				refreshProjectClickHistoryToken();
+			}
 			var id = (data && data.data && data.data.id) ? data.data.id : (data && data.id ? data.id : project_id);
 			if (data && data.receipt && data.receipt.error && data.receipt.error.length)
 			{
@@ -1079,6 +1144,14 @@ function check_and_submit_valid_session()
 		})
 		.catch(function (error)
 		{
+			if (projectApiClient && typeof projectApiClient.refreshClickHistoryToken === 'function')
+			{
+				projectApiClient.refreshClickHistoryToken();
+			}
+			else
+			{
+				refreshProjectClickHistoryToken();
+			}
 			isProjectSubmitting = false;
 			setProjectSubmitButtonsDisabled(false);
 			renderProjectSaveError(extractProjectErrorMessages(error && error.responseData));

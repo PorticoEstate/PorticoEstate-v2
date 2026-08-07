@@ -661,6 +661,12 @@
 			html += section(lang('invoice'), defGrid(invoiceHtml, 3), { icon: ICONS.invoice });
 		}
 
+		// Declared at function scope, not inside the block below: the dates table
+		// (further down) reads rawAgegroups too, and for a simple booking that
+		// block never runs — leaving the hoisted var undefined and blanking the
+		// whole page when it is dereferenced.
+		var rawAgegroups = data.agegroups || [];
+
 		// Event details, audience, agegroups (hidden for simple bookings)
 		if (!app.simple) {
 			var eventHtml = '';
@@ -690,8 +696,6 @@
 						{ icon: ICONS.target });
 				}
 			}
-
-			var rawAgegroups = data.agegroups || [];
 
 			function renderAgTable(groups) {
 				var tbl = '<table class="ds-table" data-size="sm" data-zebra>' +

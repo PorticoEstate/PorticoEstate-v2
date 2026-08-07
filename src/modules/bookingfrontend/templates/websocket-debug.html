@@ -101,6 +101,18 @@
         const messageType = document.getElementById('messageType');
         const customJson = document.getElementById('customJson');
 
+        function withPrefix(path) {
+            const globalPrefix = (window.__phpgwApiPrefix || '').trim();
+            if (globalPrefix && globalPrefix !== '/') {
+                return globalPrefix.replace(/\/+$/, '') + path;
+            }
+
+            const marker = '/bookingfrontend/';
+            const idx = window.location.pathname.indexOf(marker);
+            const derivedPrefix = idx > 0 ? window.location.pathname.slice(0, idx) : '';
+            return derivedPrefix + path;
+        }
+
         // Auto-detect session ID from cookies
         function getSessionIdFromCookies() {
             const cookies = document.cookie.split(';');
@@ -292,7 +304,7 @@
         function testRedisPublish() {
             addTestResult('Redis Publish Test', 'pending', 'Testing Redis publish via server endpoint...');
             
-            fetch('/bookingfrontend/debug/trigger-partial-update', {
+            fetch(withPrefix('/bookingfrontend/debug/trigger-partial-update'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -323,7 +335,7 @@
                 sessionId: sessionId
             };
             
-            fetch('/bookingfrontend/debug/test-redis', {
+            fetch(withPrefix('/bookingfrontend/debug/test-redis'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -349,7 +361,7 @@
         function getSessionInfo() {
             addTestResult('Session Info', 'pending', 'Fetching session information...');
             
-            fetch('/bookingfrontend/debug/session-info')
+            fetch(withPrefix('/bookingfrontend/debug/session-info'))
             .then(response => response.json())
             .then(data => {
                 log(`Session Info: ${JSON.stringify(data, null, 2)}`);

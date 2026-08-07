@@ -72,6 +72,15 @@ class ArticleSelect {
         return this.lang[key] || key;
     }
 
+    _withPrefix(path) {
+        var prefix = (window.__phpgwApiPrefix || '').trim();
+        if (!prefix || prefix === '/') {
+            return path;
+        }
+
+        return prefix.replace(/\/+$/, '') + path;
+    }
+
     _bindEvents() {
         this.input.addEventListener('focus', this._boundOnFocus);
         this.input.addEventListener('input', this._boundOnInput);
@@ -151,7 +160,7 @@ class ArticleSelect {
         this.loading = true;
 
         var self = this;
-        return fetch('/?menuaction=booking.uiarticle_mapping.index&phpgw_return_as=json&length=-1', {
+        return fetch(this._withPrefix('/?menuaction=booking.uiarticle_mapping.index&phpgw_return_as=json&length=-1'), {
             credentials: 'same-origin'
         })
             .then(function (r) {

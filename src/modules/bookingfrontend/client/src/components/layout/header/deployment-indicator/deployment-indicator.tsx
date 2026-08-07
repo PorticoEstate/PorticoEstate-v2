@@ -1,6 +1,6 @@
 'use client'
 import React, {useEffect, useState} from 'react';
-import {Tooltip, Paragraph, Spinner} from '@digdir/designsystemet-react';
+import {Tooltip, Spinner} from '@digdir/designsystemet-react';
 import styles from './deployment-indicator.module.scss';
 
 interface VersionStatus {
@@ -12,6 +12,7 @@ interface VersionStatus {
 
 const GITHUB_API_URL =
     'https://api.github.com/repos/PorticoEstate/PorticoEstate-v2/branches/testing';
+const BASE_PATH = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
 
 const DeploymentIndicator: React.FC = () => {
     const [status, setStatus] = useState<VersionStatus>({state: 'loading'});
@@ -29,7 +30,7 @@ const DeploymentIndicator: React.FC = () => {
         const checkVersion = async () => {
             try {
                 const [deployedRes, githubRes] = await Promise.all([
-                    fetch('/bookingfrontend/client/api/version'),
+                    fetch(`${BASE_PATH}/bookingfrontend/client/api/version`),
                     fetch(GITHUB_API_URL, {
                         headers: {'Accept': 'application/vnd.github.v3+json'},
                     }),

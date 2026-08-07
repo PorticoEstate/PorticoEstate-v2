@@ -16,6 +16,7 @@ namespace App\modules\phpgwapi\services;
 
 use PHPMailer\PHPMailer\Exception;
 use App\modules\phpgwapi\services\MailerSmtp;
+use App\modules\phpgwapi\services\MailDiskWriter;
 
 /**
  * SMTP mailer
@@ -93,6 +94,16 @@ class Send
 			{
 				$sender = "NoReply";
 			}
+		}
+
+		// OPT-IN MAIL CAPTURE TO DISK FOR TESTING (MAIL_TO_DISK)
+		// When enabled, mail is written to disk INSTEAD of being sent: SMTP is not
+		// contacted at all. Returns true so callers see the same success path as a
+		// real delivery. Unset MAIL_TO_DISK to restore normal sending.
+		if (MailDiskWriter::isEnabled())
+		{
+			MailDiskWriter::capture($to, $subject, $body, $from, $cc, $bcc, $content_type, $attachments);
+			return true;
 		}
 
 		$ret = false;

@@ -357,6 +357,7 @@ function normalizeWorkorderSaveRequest(saveRequest, currentOrderId, forceCreate)
 	var method = (saveRequest && saveRequest.method) ? String(saveRequest.method).toUpperCase() : 'POST';
 	var url = (saveRequest && saveRequest.url) ? saveRequest.url : phpGWLink('property/workorder/create', {});
 	url = appendWorkorderClickHistory(url);
+	url = phpgwEnsureServerPrefix(url);
 
 	if (isCreate)
 	{
@@ -513,7 +514,7 @@ function submit_workorder_via_api(actionType)
 		return;
 	}
 
-	fetch(saveRequest.url, {
+	fetch(phpgwEnsureServerPrefix(saveRequest.url), {
 		method: saveRequest.method,
 		credentials: 'same-origin',
 		body: formData
@@ -549,7 +550,7 @@ function submit_workorder_via_api(actionType)
 function submit_workorder_via_api_xhr(saveRequest, formData, action)
 {
 	var xhr = new XMLHttpRequest();
-	xhr.open(saveRequest.method, saveRequest.url, true);
+	xhr.open(saveRequest.method, phpgwEnsureServerPrefix(saveRequest.url), true);
 	xhr.withCredentials = true;
 
 	xhr.onreadystatechange = function ()

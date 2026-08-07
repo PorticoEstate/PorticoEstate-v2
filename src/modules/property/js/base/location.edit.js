@@ -450,7 +450,7 @@ function createLocationApiClient(form)
 			}
 
 			return {
-				url: requestUrl,
+				url: phpgwEnsureServerPrefix(requestUrl),
 				method: isUpdate ? 'PUT' : 'POST'
 			};
 		},
@@ -636,7 +636,7 @@ $(document).ready(function ()
 			formData.set('location_code', dynamicLocationCode);
 		}
 
-		fetch(restRequest.url, {
+		fetch(phpgwEnsureServerPrefix(restRequest.url), {
 			method: restRequest.method,
 			headers: {'Content-Type': 'application/json'},
 			credentials: 'same-origin',
@@ -691,7 +691,7 @@ $(document).ready(function ()
 				var redirectUrl = buildLocationEditRedirectUrl(savedLocationCode, form);
 				setTimeout(function ()
 				{
-					window.location.href = redirectUrl;
+					window.location.href = phpgwEnsureServerPrefix(redirectUrl);
 				}, 700);
 			})
 			.catch(function (error)

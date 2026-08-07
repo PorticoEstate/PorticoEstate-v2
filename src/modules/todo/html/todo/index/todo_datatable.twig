@@ -19,6 +19,51 @@
 
 {% block content %}
 <script>
+	var todoViewUrlTemplate = '{{ phpgw_link('/todo/view/todos/__TODO_ID__')|e('js') }}';
+	var todoEditUrlTemplate = '{{ phpgw_link('/todo/view/todos/__TODO_ID__/edit')|e('js') }}';
+	var todoDeleteUrlTemplate = '{{ phpgw_link('/todo/view/todos/__TODO_ID__/delete')|e('js') }}';
+	var todoAddUrlBase = '{{ phpgw_link('/todo/view/todos/add')|e('js') }}';
+
+	function ensureServerPrefix(url)
+	{
+		if (typeof phpgwEnsureServerPrefix === 'function')
+		{
+			return phpgwEnsureServerPrefix(url);
+		}
+
+		return url;
+	}
+
+	function withTodoId(template, todoId)
+	{
+		return String(template || '').replace('__TODO_ID__', encodeURIComponent(String(todoId)));
+	}
+
+	function appendQueryParams(url, params)
+	{
+		var normalized = String(url || '');
+		if (!params)
+		{
+			return normalized;
+		}
+
+		var serialized = Object.keys(params)
+			.filter(function (key) {
+				return params[key] !== undefined && params[key] !== null && params[key] !== '';
+			})
+			.map(function (key) {
+				return encodeURIComponent(key) + '=' + encodeURIComponent(String(params[key]));
+			})
+			.join('&');
+
+		if (!serialized)
+		{
+			return normalized;
+		}
+
+		return normalized + (normalized.indexOf('?') === -1 ? '?' : '&') + serialized;
+	}
+
 	function todoEscapeHtml(value)
 	{
 		return String(value === undefined || value === null ? '' : value)
@@ -68,7 +113,9 @@
 
 		var href = row && row.actions && row.actions.view
 			? String(row.actions.view)
-			: ('/todo/view/todos/' + encodeURIComponent(id));
+			: withTodoId(todoViewUrlTemplate, id);
+
+		href = ensureServerPrefix(href);
 
 		return '<a href="' + todoEscapeHtml(href) + '">' + todoEscapeHtml(id) + '</a>';
 	}
@@ -106,7 +153,7 @@
 			var selected = api.rows({ selected: true }).data();
 			if (!selected.length) { return false; }
 			var aData = selected[0];
-			window.open('/todo/view/todos/' + aData['id'], '_self');
+			window.open(ensureServerPrefix((aData['actions'] && aData['actions']['view']) ? String(aData['actions']['view']) : withTodoId(todoViewUrlTemplate, aData['id'])), '_self');
 		"
 	},
 	{
@@ -118,7 +165,7 @@
 			var selected = api.rows({ selected: true }).data();
 			if (!selected.length) { return false; }
 			var aData = selected[0];
-			window.open('/todo/view/todos/' + aData['id'] + '/edit', '_self');
+			window.open(ensureServerPrefix((aData['actions'] && aData['actions']['edit']) ? String(aData['actions']['edit']) : withTodoId(todoEditUrlTemplate, aData['id'])), '_self');
 		"
 	},
 	{
@@ -130,7 +177,8 @@
 			var selected = api.rows({ selected: true }).data();
 			if (!selected.length) { return false; }
 			var aData = selected[0];
-			window.open('/todo/view/todos/add?parent=' + aData['id'] + '&cat_id=' + aData['cat_id'], '_self');
+			var addUrl = (aData['actions'] && aData['actions']['subadd']) ? String(aData['actions']['subadd']) : appendQueryParams(todoAddUrlBase, {parent: aData['id'], cat_id: aData['cat_id']});
+			window.open(ensureServerPrefix(addUrl), '_self');
 		"
 	}
 ] %}
@@ -146,7 +194,7 @@
 				var selected = api.rows({ selected: true }).data();
 				if (!selected.length) { return false; }
 				var aData = selected[0];
-				window.open('/todo/view/todos/' + aData['id'] + '/delete', '_self');
+				window.open(ensureServerPrefix((aData['actions'] && aData['actions']['delete']) ? String(aData['actions']['delete']) : withTodoId(todoDeleteUrlTemplate, aData['id'])), '_self');
 			"
 		}
 	]) %}

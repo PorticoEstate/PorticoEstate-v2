@@ -1244,7 +1244,7 @@ HTML;
 				);
 			}
 
-			phpgwapi_xslttemplates::getInstance()->add_file(array('tts'));
+			phpgwapi_xslttemplates::getInstance()->add_file(array('tts_navigate'));
 			phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('navigate' => array('sub_menu' => $sub_menu)));
 			return;
 		}

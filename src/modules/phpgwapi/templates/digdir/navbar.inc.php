@@ -371,7 +371,9 @@ HTML;
 	}
 	// Language selector — rendered as self-contained JS component via Twig shell
 	$twigService = \App\modules\phpgwapi\services\Twig::getInstance();
-	$language_option = $twigService->render('@components/language-selector/language-selector.twig', []);
+	$language_option = $twigService->render('@components/language-selector/language-selector.twig', [
+		'api_prefix' => rtrim($serverSettings['webserver_url'] ?? '', '/')
+	]);
 	$name_parts = preg_split('/\s+/', trim($user_fullname));
 	$user_initials = count($name_parts) > 1
 		? mb_strtoupper(mb_substr($name_parts[0], 0, 1) . mb_substr(end($name_parts), 0, 1))

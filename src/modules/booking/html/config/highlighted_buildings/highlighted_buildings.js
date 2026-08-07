@@ -15,10 +15,24 @@
 	var alertContainer = document.getElementById('alert-container');
 	var previewRoot = document.getElementById('building-preview-root');
 
+	function getApiPrefix() {
+		var prefix = (window.__phpgwApiPrefix || CFG.webserverUrl || '').trim();
+		if (!prefix || prefix === '/') {
+			return '';
+		}
+
+		return prefix.replace(/\/+$/, '');
+	}
+
+	function withPrefix(path) {
+		var normalizedPath = path.charAt(0) === '/' ? path : '/' + path;
+		return getApiPrefix() + normalizedPath;
+	}
+
 	// --- Init BuildingSelect component ---
 
 	var selector = new BuildingSelect(selectorContainer, {
-		apiUrl: '/booking/buildings',
+		apiUrl: withPrefix('/booking/buildings'),
 		onChange: function (id, name, building) {
 			addBuilding({
 				id: id,
@@ -40,7 +54,7 @@
 	// --- Config loading ---
 
 	function loadConfig() {
-		fetch('/booking/config/bookingfrontend?keys=highlighted_buildings', {
+		fetch(withPrefix('/booking/config/bookingfrontend?keys=highlighted_buildings'), {
 			credentials: 'same-origin'
 		})
 			.then(function (r) { return r.json(); })
@@ -59,7 +73,7 @@
 	}
 
 	function resolveBuildings(ids) {
-		fetch('/booking/buildings', { credentials: 'same-origin' })
+		fetch(withPrefix('/booking/buildings'), { credentials: 'same-origin' })
 			.then(function (r) { return r.json(); })
 			.then(function (allBuildings) {
 				var map = {};
@@ -179,7 +193,7 @@
 		if (pictureCache[buildingId] !== undefined) {
 			return Promise.resolve(pictureCache[buildingId]);
 		}
-		return fetch('/bookingfrontend/buildings/' + buildingId + '/main-picture', {
+		return fetch(withPrefix('/bookingfrontend/buildings/' + buildingId + '/main-picture'), {
 			credentials: 'same-origin'
 		})
 			.then(function (r) {
@@ -216,7 +230,7 @@
 					district: b.district
 				};
 				if (documentIds[i]) {
-					data.imageUrl = window.location.origin + '/bookingfrontend/buildings/document/' + documentIds[i] + '/download';
+					data.imageUrl = window.location.origin + withPrefix('/bookingfrontend/buildings/document/' + documentIds[i] + '/download');
 				}
 				return data;
 			});
@@ -246,7 +260,7 @@
 
 		saveBtn.disabled = true;
 
-		fetch('/booking/config/bookingfrontend', {
+		fetch(withPrefix('/booking/config/bookingfrontend'), {
 			method: 'PUT',
 			credentials: 'same-origin',
 			headers: { 'Content-Type': 'application/json' },

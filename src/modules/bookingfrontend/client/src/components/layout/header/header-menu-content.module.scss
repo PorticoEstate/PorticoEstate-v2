@@ -85,8 +85,11 @@
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
+	// 2.75rem square: the bars stay 27px tall, but the tap target meets the
+	// 44x44 minimum. This is the only route into the user area on mobile.
+	justify-content: center;
 	width: 2.75rem;
-	height: 1.6875rem;
+	height: 2.75rem;
 
 	span {
 		height: 2px;

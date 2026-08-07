@@ -252,6 +252,7 @@ $tpl_vars = array(
 	'site_title'		 => "{$serverSettings['site_title']}",
 	'str_base_url'		 => phpgw::link('/', array(), true, false, true),
 	'webserver_url'		 => $webserver_url,
+	'api_prefix'		 => rtrim(($serverSettings['webserver_url'] ?? ''), '/'),
 	'userlang'			 => $userSettings['preferences']['common']['lang'],
 	'win_on_events'		 => $phpgwapi_common->get_on_events(),
 	'navbar_config'		 => $_navbar_config,

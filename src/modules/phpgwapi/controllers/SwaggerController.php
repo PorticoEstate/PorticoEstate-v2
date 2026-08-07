@@ -5,6 +5,7 @@ namespace App\modules\phpgwapi\controllers;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Database\Db;
+use App\modules\phpgwapi\services\Settings;
 
 class SwaggerController
 {
@@ -108,13 +109,16 @@ class SwaggerController
    */
   public function index(Request $request, Response $response): Response
   {
-    $html = <<<'HTML'
+    $serverSettings = Settings::getInstance()->get('server');
+    $apiPrefix = rtrim((string) ($serverSettings['webserver_url'] ?? ''), '/');
+
+    $html = <<<HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>API Documentation</title>
-    <link rel="stylesheet" href="/vendor/swagger-api/swagger-ui/dist/swagger-ui.css" />
+    <link rel="stylesheet" href="{$apiPrefix}/vendor/swagger-api/swagger-ui/dist/swagger-ui.css" />
     <style>
       html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
       *, *:before, *:after { box-sizing: inherit; }
@@ -124,18 +128,19 @@ class SwaggerController
 <body>
     <div id="swagger-ui"></div>
 
-    <script src="/vendor/swagger-api/swagger-ui/dist/swagger-ui-bundle.js"></script>
-    <script src="/vendor/swagger-api/swagger-ui/dist/swagger-ui-standalone-preset.js"></script>
+    <script src="{$apiPrefix}/vendor/swagger-api/swagger-ui/dist/swagger-ui-bundle.js"></script>
+    <script src="{$apiPrefix}/vendor/swagger-api/swagger-ui/dist/swagger-ui-standalone-preset.js"></script>
     <script>
     window.onload = function() {
+      const apiPrefix = "{$apiPrefix}";
       // Dynamically determine the current host and port
       const protocol = window.location.protocol;
       const hostname = window.location.hostname;
       const port = window.location.port ? window.location.port : (protocol === 'https:' ? '443' : '80');
-      const baseUrl = `${protocol}//${hostname}:${port}`;
+      const baseUrl = protocol + '//' + hostname + ':' + port;
       
       // First, fetch the OpenAPI spec file
-      fetch('/swagger/spec')
+      fetch(apiPrefix + '/swagger/spec')
         .then(response => response.json())
         .then(spec => {
           // Add current server to the spec

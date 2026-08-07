@@ -28,6 +28,18 @@
     flex: 1;
     min-width: 0;
 
+    // `.appHeader` already sets flex-wrap:wrap, but this column never triggers
+    // it: `flex:1; min-width:0` lets it shrink indefinitely while the sibling
+    // action buttons keep their intrinsic ~275px. On narrow screens the column
+    // collapsed to 68px (390) / 38px (360), which clipped the h1, broke the
+    // status badge mid-word and forced the venue line to three lines --
+    // all four reported symptoms came from this one collapse.
+    // Claiming a full row makes the wrap actually happen, dropping the buttons
+    // to their own line.
+    @media (max-width: 640px) {
+        flex-basis: 100%;
+    }
+
     .metaLine {
         display: flex;
         align-items: center;
@@ -627,5 +639,18 @@
 
     &:hover {
         text-decoration: underline;
+    }
+}
+
+// Cancel confirmation dialog.
+// Designsystemet floats the dialog's close button to the inline-end edge using
+// --dsc-dialog-icon-spacing, and a dialog containing .ds-dialog__block children
+// has its own padding set to 0. On narrow screens that leaves the 48px button
+// sitting on the rounded top-right corner, with its border box overlapping the
+// radius. Widening the spacing token insets it without repositioning the button,
+// so it stays a designsystemet-managed control.
+.cancelDialog {
+    @media (max-width: 640px) {
+        --dsc-dialog-icon-spacing: 12px;
     }
 }

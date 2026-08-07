@@ -24,6 +24,20 @@
  *   - All other languages stand alone
  */
 class MultiLanguageText {
+	static getApiPrefix() {
+		var prefix = (window.__phpgwApiPrefix || '').trim();
+		if (!prefix || prefix === '/') {
+			return '';
+		}
+
+		return prefix.replace(/\/+$/, '');
+	}
+
+	static buildApiUrl(path) {
+		var normalizedPath = path.charAt(0) === '/' ? path : '/' + path;
+		return MultiLanguageText.getApiPrefix() + normalizedPath;
+	}
+
 	/**
 	 * Fetch content languages from the platform API.
 	 * Caches the result so only one request is made per page load.
@@ -34,7 +48,7 @@ class MultiLanguageText {
 		if (MultiLanguageText._cachedLanguages) {
 			return Promise.resolve(MultiLanguageText._cachedLanguages);
 		}
-		return fetch('/api/languages', { credentials: 'same-origin' })
+		return fetch(MultiLanguageText.buildApiUrl('/api/languages'), { credentials: 'same-origin' })
 			.then(function (r) {
 				if (!r.ok) throw new Error('HTTP ' + r.status);
 				return r.json();

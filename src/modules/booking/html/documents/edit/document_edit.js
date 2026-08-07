@@ -1,16 +1,30 @@
 (function () {
 	'use strict';
 
+	function getApiPrefix() {
+		var prefix = (window.__phpgwApiPrefix || '').trim();
+		if (!prefix || prefix === '/') {
+			return '';
+		}
+
+		return prefix.replace(/\/+$/, '');
+	}
+
+	function withPrefix(path) {
+		var normalizedPath = path.charAt(0) === '/' ? path : '/' + path;
+		return getApiPrefix() + normalizedPath;
+	}
+
 	var OWNER_ID = window.__documentEdit.ownerId;
 	var DOC_ID = window.__documentEdit.documentId;
-	var DOWNLOAD_URL = '/booking/buildings/documents/' + DOC_ID + '/download';
+	var DOWNLOAD_URL = withPrefix('/booking/buildings/documents/' + DOC_ID + '/download');
 	var LANG = window.__documentEdit.lang;
 
 	// Dynamic API base — updates when building changes
 	var currentOwnerId = OWNER_ID;
 
 	function getApiBase() {
-		return '/booking/buildings/' + currentOwnerId + '/documents/' + DOC_ID;
+		return withPrefix('/booking/buildings/' + currentOwnerId + '/documents/' + DOC_ID);
 	}
 
 	// State
@@ -39,7 +53,7 @@
 	var buildingContainer = document.getElementById('building-select');
 	if (buildingContainer) {
 		buildingSelector = new BuildingSelect(buildingContainer, {
-			apiUrl: '/booking/buildings',
+			apiUrl: withPrefix('/booking/buildings'),
 			value: OWNER_ID,
 			displayValue: window.__documentEdit.buildingName || '',
 			onChange: function (id) {
@@ -103,7 +117,7 @@
 	// -- Categories --
 
 	function loadCategories() {
-		return fetch('/booking/buildings/documents/categories', { credentials: 'same-origin' })
+		return fetch(withPrefix('/booking/buildings/documents/categories'), { credentials: 'same-origin' })
 			.then(function (r) {
 				if (!r.ok) throw new Error('HTTP ' + r.status);
 				return r.json();
@@ -186,7 +200,7 @@
 		}
 
 		// Always use the original owner_id for the PATCH request URL
-		var patchUrl = '/booking/buildings/' + OWNER_ID + '/documents/' + DOC_ID;
+		var patchUrl = withPrefix('/booking/buildings/' + OWNER_ID + '/documents/' + DOC_ID);
 
 		fetch(patchUrl, {
 			method: 'PATCH',

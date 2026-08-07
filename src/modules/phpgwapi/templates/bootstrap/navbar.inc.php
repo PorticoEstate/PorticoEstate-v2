@@ -651,6 +651,9 @@ HTML;
 
 	// Language selector styles and JavaScript
 	if (Sanitizer::get_var('phpgw_return_as') != 'json') {
+		$apiPrefix = rtrim($serverSettings['webserver_url'] ?? '', '/');
+		$apiPrefixJson = json_encode($apiPrefix, JSON_UNESCAPED_SLASHES);
+		echo "<script>window.__phpgwApiPrefix = {$apiPrefixJson};</script>";
 		echo <<<'SCRIPT'
 <style>
 #languageForm .choice {
@@ -705,8 +708,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     flagElement.classList.add(newFlagClass);
                 }
 
-                // Call API endpoint to set language
-                fetch('/api/set-language/' + selectedLang, {
+				// Call API endpoint to set language
+				fetch((window.__phpgwApiPrefix || '') + '/api/set-language/' + selectedLang, {
                     credentials: 'same-origin'
                 })
                 .then(response => response.json())

@@ -7,6 +7,9 @@
 	var loadingEl = document.getElementById('todo-view-loading');
 	var errorEl = document.getElementById('todo-view-error');
 	var contentEl = document.getElementById('todo-view-content');
+	var ensurePrefix = (typeof phpgwEnsureServerPrefix === 'function')
+		? phpgwEnsureServerPrefix
+		: function (url) { return url; };
 	var detailsTabEl = document.getElementById('todo-view-tab-details');
 	var historyTabEl = document.getElementById('todo-view-tab-history');
 	var detailsPanelEl = document.getElementById('todo-view-panel-details');
@@ -14,10 +17,10 @@
 	var historyEl = document.getElementById('todo-view-history');
 	var editLink = document.getElementById('todo-view-edit');
 	var deleteLink = document.getElementById('todo-view-delete');
-	var apiUrl = root.dataset.apiUrl;
-	var editUrlBase = root.dataset.editUrlBase || '/todo/view/todos';
-	var editUrl = root.dataset.editUrl || '';
-	var deleteUrl = root.dataset.deleteUrl || '';
+	var apiUrl = ensurePrefix(root.dataset.apiUrl);
+	var editUrlBase = ensurePrefix(root.dataset.editUrlBase || '/todo/view/todos');
+	var editUrl = ensurePrefix(root.dataset.editUrl || '');
+	var deleteUrl = ensurePrefix(root.dataset.deleteUrl || '');
 	var historyLabelUser = root.dataset.langHistoryUser || 'User';
 	var historyLabelDate = root.dataset.langHistoryDate || 'Date';
 	var historyLabelAction = root.dataset.langHistoryAction || 'Action';

@@ -4,9 +4,13 @@
 		return;
 	}
 
-	var apiUrl = root.dataset.apiUrl;
-	var viewUrl = root.dataset.viewUrl;
-	var csvUrl = root.dataset.csvUrl;
+	var ensurePrefix = (typeof phpgwEnsureServerPrefix === 'function')
+		? phpgwEnsureServerPrefix
+		: function (url) { return url; };
+
+	var apiUrl = ensurePrefix(root.dataset.apiUrl || '');
+	var viewUrl = ensurePrefix(root.dataset.viewUrl || '');
+	var csvUrl = ensurePrefix(root.dataset.csvUrl || '');
 	var loadingEl = document.getElementById('todo-loading');
 	var errorEl = document.getElementById('todo-error');
 	var tableEl = document.getElementById('todo-table');
@@ -190,7 +194,11 @@
 		items.forEach(function (item) {
 			var row = document.createElement('tr');
 			var actions = item.actions || {};
-			var href = actions.view || (viewUrl + '&todo_id=' + encodeURIComponent(item.id));
+			var viewActionUrl = ensurePrefix(actions.view || '');
+			var editActionUrl = ensurePrefix(actions.edit || '');
+			var deleteActionUrl = ensurePrefix(actions.delete || '');
+			var subaddActionUrl = ensurePrefix(actions.subadd || '');
+			var href = viewActionUrl || ensurePrefix(viewUrl + '&todo_id=' + encodeURIComponent(item.id));
 			row.innerHTML = '' +
 				'<td>' + escapeHtml(item.id || '') + '</td>' +
 				'<td>' + renderTitleCell(item, href) + '</td>' +
@@ -200,10 +208,10 @@
 				'<td>' + escapeHtml(item.edate || '') + '</td>' +
 				'<td>' + escapeHtml(item.owner || '') + '</td>' +
 				'<td>' + renderMultiline(item.assigned || '') + '</td>' +
-				'<td>' + makeActionLink(actions.view, root.dataset.langView || 'View') + '</td>' +
-				'<td>' + makeActionLink(actions.edit, root.dataset.langEdit || 'Edit') + '</td>' +
-				'<td>' + makeActionLink(actions.delete, root.dataset.langDelete || 'Delete') + '</td>' +
-				'<td>' + makeActionLink(actions.subadd, root.dataset.langAddSub || 'Add Sub Project') + '</td>';
+				'<td>' + makeActionLink(viewActionUrl, root.dataset.langView || 'View') + '</td>' +
+				'<td>' + makeActionLink(editActionUrl, root.dataset.langEdit || 'Edit') + '</td>' +
+				'<td>' + makeActionLink(deleteActionUrl, root.dataset.langDelete || 'Delete') + '</td>' +
+				'<td>' + makeActionLink(subaddActionUrl, root.dataset.langAddSub || 'Add Sub Project') + '</td>';
 			tbodyEl.appendChild(row);
 		});
 	}
@@ -326,7 +334,7 @@
 			var params = buildFilterParams();
 			params.set('sort', sortKey);
 			params.set('dir', sortDir);
-			window.location.href = buildRequestUrl(csvUrl, params);
+			window.location.href = ensurePrefix(buildRequestUrl(csvUrl, params));
 		});
 	}
 

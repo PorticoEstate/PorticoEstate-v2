@@ -1,16 +1,66 @@
-access type	todo	no	Access type
-are you sure you want to delete this entry	todo	no	Er du sikker på at du vil slette denne entry?
+access type	todo	no	Tilgangstype
+access changed	todo	no	Tilgang endret
+add main project	todo	no	Legg til hovedprosjekt
+adds or edits a todo item	todo	no	Legger til eller redigerer en oppgave
+are you sure you want to delete this entry	todo	no	Er du sikker på at du vil slette denne oppføringen?
+assigned to	todo	no	Tildelt til
+category changed	todo	no	Kategori endret
 clear form	todo	no	Slett innhold
-completed	todo	no	ferdig
+completed	todo	no	Ferdig
 created by	todo	no	Laget av
 date due	todo	no	Ferdig før
+deletes a todo item	todo	no	Sletter en oppgave
+description can not exceed 8000 characters in length	todo	no	Beskrivelsen kan ikke overstige 8000 tegn !
+description changed	todo	no	Beskrivelse endret
+do you also want to delete all sub projects ?	todo	no	Vil du også slette alle underprosjekter ?
+edit main project	todo	no	Rediger hovedprosjekt
+edit sub project	todo	no	Rediger underprosjekt
+end date changed	todo	no	Sluttdato endret
+end date	todo	no	Sluttdato
+ending date can not be before start date	todo	no	Sluttdato kan ikke være før startdato !
+entry added	todo	no	Oppføring lagt til
+high	todo	no	Høy
 last updated	todo	no	Sist oppdatert
+low	todo	no	Lav
+nobody	todo	no	Ingen
+normal	todo	no	Normal
+or: days from startdate:	todo	no	eller: dager fra startdato:
+or: select for today:	todo	no	eller: velg for i dag:
+parent changed	todo	no	Forelder endret
+parent project	todo	no	Foreldreprosjekt
+please enter a title	todo	no	Vennligst skriv inn en tittel !
+returns a the total number of records in the database, must call list_todos first	todo	no	Returnerer totalt antall oppføringer i databasen, må kalle list_todos først
+show todo items on main screen	todo	no	Vis oppgaver på hovedskjerm
+start date	todo	no	Startdato
+start date changed	todo	no	Startdato endret
 status	todo	no	Status
+status changed	todo	no	Status endret
+title	todo	no	Tittel
+title changed	todo	no	Tittel endret
+details	todo	no	Detaljer
+id	todo	no	ID
+old value	todo	no	Gammel verdi
+user	todo	no	Bruker
 todo	common	no	Å-gjøre
 todo list	common	no	Å-gjøre liste
 to do list	common	no	Å-gjøre liste
 todo list - add	todo	no	Å-gjøre liste - legg til
-todo list - edit	todo	no	Å-gjøre liste - edit
+todo list - edit	todo	no	Å-gjøre liste - rediger
+todo preferences	todo	no	Innstillinger for oppgaver
+page size	todo	no	Sidelengde
+search	todo	no	Søk
 urgency	todo	no	Prioritet
+urgency changed	todo	no	Prioritet endret
+view matrix of actual month	todo	no	Vis matrise for inneværende måned
+view todo item	todo	no	Vis oppgave
 which groups	todo	no	Hvilke grupper
-you have entered an invailed date	todo	no	du har skrevet inn en ugyldig dato
+you can only enter numbers for days from now	todo	no	Du kan bare skrive inn tall for dager fra nå !
+you have entered an invalid date	todo	no	Du har skrevet inn en ugyldig dato
+you have entered an invalid start date	todo	no	Du har skrevet inn en ugyldig startdato !
+you have entered an invalid end date	todo	no	Du har skrevet inn en ugyldig sluttdato !
+add sub project	todo	no	Legg til underprosjekt
+all	todo	no	Alle
+select	todo	no	Velg
+assigned to user	todo	no	Tildelt til bruker
+assigned to group	todo	no	Tildelt til gruppe
+%1 Group	common	no	%1 Gruppe

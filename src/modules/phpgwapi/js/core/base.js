@@ -37,6 +37,44 @@ function phpGWLink(strURL, oArgs, bAsJSON)
 }
 
 /**
+ * Ensure root-relative URLs include configured server prefix when present.
+ *
+ * @param {string} url target URL
+ * @returns {string} prefix-safe URL
+ */
+function phpgwEnsureServerPrefix(url)
+{
+	if (!url)
+	{
+		return url;
+	}
+
+	var normalizedUrl = String(url);
+	if (/^https?:\/\//i.test(normalizedUrl))
+	{
+		return normalizedUrl;
+	}
+
+	if (normalizedUrl.charAt(0) !== '/')
+	{
+		return normalizedUrl;
+	}
+
+	var prefix = (window.__phpgwApiPrefix || '').trim().replace(/\/+$/, '');
+	if (!prefix || prefix === '/')
+	{
+		return normalizedUrl;
+	}
+
+	if (normalizedUrl.indexOf(prefix + '/') === 0 || normalizedUrl === prefix)
+	{
+		return normalizedUrl;
+	}
+
+	return prefix + normalizedUrl;
+}
+
+/**
  * Disable a button
  */
 function buttonDisable(buttonName, hide)

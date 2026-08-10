@@ -202,6 +202,7 @@ this.showlightbox_add_inventory = function (location_id, id)
 		+ '/' + encodeURIComponent(ctx.catId)
 		+ '/' + encodeURIComponent(id)
 		+ '/inventory/add?location_id=' + encodeURIComponent(location_id);
+	sUrl = phpgwEnsureServerPrefix(sUrl);
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
@@ -226,6 +227,7 @@ this.showlightbox_edit_inventory = function (location_id, id, inventory_id)
 		+ '/' + encodeURIComponent(id)
 		+ '/inventory/' + encodeURIComponent(inventory_id)
 		+ '/edit?location_id=' + encodeURIComponent(location_id);
+	sUrl = phpgwEnsureServerPrefix(sUrl);
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
@@ -250,6 +252,7 @@ this.showlightbox_show_calendar = function (location_id, id, inventory_id)
 		+ '/' + encodeURIComponent(id)
 		+ '/inventory/' + encodeURIComponent(inventory_id)
 		+ '/calendar?location_id=' + encodeURIComponent(location_id);
+	sUrl = phpgwEnsureServerPrefix(sUrl);
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
@@ -272,6 +275,7 @@ this.showlightbox_assigned_history = function (serie_id)
 		+ '/' + encodeURIComponent(ctx.entityId)
 		+ '/' + encodeURIComponent(ctx.catId)
 		+ '/assigned-history?serie_id=' + encodeURIComponent(serie_id);
+	sUrl = phpgwEnsureServerPrefix(sUrl);
 
 	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
@@ -295,6 +299,7 @@ this.refresh_inventory = function (location_id, id)
 		+ '/' + encodeURIComponent(catId)
 		+ '/' + encodeURIComponent(id)
 		+ '/inventory';
+	requestUrl = phpgwEnsureServerPrefix(requestUrl);
 
 	var api = oTable3.api();
 	api.ajax.url(requestUrl).load();
@@ -719,14 +724,27 @@ function createEntityApiClient(form)
 	var parsed = parseURL(form.action);
 	var query = parsed.searchObject || {};
 
+	function generateEntityClickHistoryToken()
+	{
+		return String(Date.now()) + '-' + Math.random().toString(36).slice(2);
+	}
+
+	if (!window.__entityClickHistoryToken)
+	{
+		var source = query.click_history || '';
+		if (!source && typeof strBaseURL !== 'undefined' && strBaseURL)
+		{
+			source = (parseURL(strBaseURL).searchObject || {}).click_history || '';
+		}
+		window.__entityClickHistoryToken = source || generateEntityClickHistoryToken();
+	}
+
 	return {
 		buildSaveRequest: function (submitterName)
 		{
 			var type = query.type || '';
 			var entityId = query.entity_id || '';
 			var catId = query.cat_id || '';
-			var isApply = (submitterName === 'values[apply]');
-			var clickHistory = isApply ? '' : (query.click_history || '');
 
 			if (!type || !entityId || !catId)
 			{
@@ -761,20 +779,14 @@ function createEntityApiClient(form)
 				url += '/' + id;
 			}
 
-			if (!isApply && !clickHistory && typeof strBaseURL !== 'undefined' && strBaseURL)
-			{
-				var baseQuery = parseURL(strBaseURL).searchObject || {};
-				clickHistory = baseQuery.click_history || '';
-			}
-
 			var queryParts = [];
 			if (typeof bypass !== 'undefined' && bypass !== null && bypass !== '')
 			{
 				queryParts.push('bypass=' + encodeURIComponent(bypass));
 			}
-			if (clickHistory)
+			if (window.__entityClickHistoryToken)
 			{
-				queryParts.push('click_history=' + encodeURIComponent(clickHistory));
+				queryParts.push('click_history=' + encodeURIComponent(window.__entityClickHistoryToken));
 			}
 			if (queryParts.length)
 			{
@@ -782,13 +794,18 @@ function createEntityApiClient(form)
 			}
 
 			return {
-				url: url,
+				url: phpgwEnsureServerPrefix(url),
 				method: isCreate ? 'POST' : 'PUT',
 				isCreate: isCreate,
 				type: type,
 				entityId: entityId,
 				catId: catId
 			};
+		},
+		refreshClickHistoryToken: function ()
+		{
+			window.__entityClickHistoryToken = generateEntityClickHistoryToken();
+			return window.__entityClickHistoryToken;
 		}
 	};
 }
@@ -958,6 +975,7 @@ $(document).ready(function ()
 			var test = $('form').isValid(false, conf);
 			if (!test)
 			{
+				setSubmitButtonsDisabled(false);
 				e.preventDefault();
 				return false;
 			}
@@ -966,6 +984,7 @@ $(document).ready(function ()
 		var missingReadonlyMessages = getMissingReadonlyRequiredMessages(form);
 		if (missingReadonlyMessages.length)
 		{
+			setSubmitButtonsDisabled(false);
 			e.preventDefault();
 			renderFormErrorAlert(form, missingReadonlyMessages);
 			form.scrollIntoView({behavior: 'smooth', block: 'start'});
@@ -981,7 +1000,8 @@ $(document).ready(function ()
 		}
 
 		var navigationClient = createEntityNavigationClient(form);
-		var restRequest = buildEntityRestRequest(form, submitter ? submitter.name : '');
+		var entityApiClient = createEntityApiClient(form);
+		var restRequest = entityApiClient.buildSaveRequest(submitter ? submitter.name : '');
 		if (!restRequest)
 		{
 			return true;
@@ -1027,7 +1047,7 @@ $(document).ready(function ()
 			};
 		}
 
-		fetch(restRequest.url, fetchOptions)
+		fetch(phpgwEnsureServerPrefix(restRequest.url), fetchOptions)
 			.then(function (response)
 			{
 				return response.json()
@@ -1049,6 +1069,10 @@ $(document).ready(function ()
 			})
 			.then(function (data)
 			{
+				if (entityApiClient && typeof entityApiClient.refreshClickHistoryToken === 'function')
+				{
+					entityApiClient.refreshClickHistoryToken();
+				}
 				var errors = getErrorMessages(data);
 				if (errors.length)
 				{
@@ -1072,7 +1096,7 @@ $(document).ready(function ()
 					);
 					setTimeout(function ()
 					{
-						window.location.href = redirectUrl;
+						window.location.href = phpgwEnsureServerPrefix(redirectUrl);
 					}, 1200);
 				}
 				else if (submitter && submitter.name === 'values[save]')
@@ -1084,7 +1108,7 @@ $(document).ready(function ()
 					);
 					setTimeout(function ()
 					{
-						window.location.href = indexUrl;
+						window.location.href = phpgwEnsureServerPrefix(indexUrl);
 					}, 1200);
 				}
 				else
@@ -1103,6 +1127,10 @@ $(document).ready(function ()
 			})
 		.catch(function (error)
 		{
+			if (entityApiClient && typeof entityApiClient.refreshClickHistoryToken === 'function')
+			{
+				entityApiClient.refreshClickHistoryToken();
+			}
 			isSubmitting = false;
 			setSubmitButtonsDisabled(false);
 			var errors = getErrorMessages(error && error.responseData);

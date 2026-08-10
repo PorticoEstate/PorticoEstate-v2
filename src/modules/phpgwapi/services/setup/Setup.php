@@ -517,6 +517,13 @@
 			$tables = '';
 			if($setup_info[$appname]['version'])
 			{
+				$storedVersion = $setup_info[$appname]['version'];
+				$migrationService = new \App\modules\phpgwapi\services\Migration\MigrationService();
+				if ($migrationService->moduleHasMigrations($appname))
+				{
+					$storedVersion = $migrationService->getCurrentVersion($appname);
+				}
+
 				if (isset($setup_info[$appname]['tables']) && is_array($setup_info[$appname]['tables'])) {
 					$tables = implode(',', $setup_info[$appname]['tables']);
 				}
@@ -538,7 +545,7 @@
 					':enable' => $enable,
 					':order' => intval($setup_info[$appname]['app_order']),
 					':tables' => $tables,
-					':version' => $setup_info[$appname]['version']
+					':version' => $storedVersion
 				]);
 				
 			}
@@ -626,6 +633,13 @@
 			{
 				//echo '<br>' . $setup_info[$appname]['version'];
 				$tables = '';
+				$storedVersion = $setup_info[$appname]['currentver'];
+				$migrationService = new \App\modules\phpgwapi\services\Migration\MigrationService();
+				if ($migrationService->moduleHasMigrations($appname))
+				{
+					$storedVersion = $migrationService->getCurrentVersion($appname);
+				}
+
 				if (isset($setup_info[$appname]['tables']) && is_array($setup_info[$appname]['tables'])) {
 					$tables = implode(',', $setup_info[$appname]['tables']);
 				}
@@ -636,7 +650,7 @@
 					':enabled' => intval($setup_info[$appname]['enable']),
 					':order' => intval($setup_info[$appname]['app_order']),
 					':tables' => $tables,
-					':version' => $setup_info[$appname]['currentver'],
+					':version' => $storedVersion,
 					':appname' => $appname
 				]);
 			}

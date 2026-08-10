@@ -489,53 +489,6 @@ class SetupController
 				$this->db->set_halt_on_error('no');
 				$this->db->transaction_commit();
 
-				// Run migrations for migration-based modules after legacy pass completes
-				$migrationService = new \App\modules\phpgwapi\services\Migration\MigrationService();
-				$setup_info = Settings::getInstance()->get('setup_info');
-				foreach ($setup_info as $appname => $info)
-				{
-					if (!$migrationService->moduleHasMigrations($appname))
-					{
-						continue;
-					}
-					$applied = $migrationService->getAppliedMigrations($appname);
-					$legacyVersion = $info['currentver'] ?? null;
-					$isLegacyTransition = $this->setup->app_registered($appname)
-						&& empty($applied)
-						&& $legacyVersion
-						&& str_contains($legacyVersion, '.');
-
-					if ($isLegacyTransition)
-					{
-						$cutoff = $migrationService->findMigrationForLegacyVersion($appname, $legacyVersion);
-						if (!$cutoff && isset($info['migration_legacy_cutoff']))
-						{
-							$cutoff = $info['migration_legacy_cutoff'];
-						}
-						if ($cutoff)
-						{
-							$migrationService->seedUpTo($appname, $cutoff);
-						}
-					}
-
-					$results = $migrationService->runPending($appname);
-					foreach ($results as $result)
-					{
-						if ($result['status'] === 'failed')
-						{
-							break 2;
-						}
-					}
-
-					$setup_info[$appname]['currentver'] = $migrationService->getTargetVersion($appname);
-					$setup_info[$appname]['version'] = $setup_info[$appname]['currentver'];
-					Settings::getInstance()->update('setup_info', [$appname => $setup_info[$appname]]);
-					if ($this->setup->app_registered($appname))
-					{
-						$this->setup->update_app($appname);
-					}
-				}
-
 				$post_data = array_merge($commonBlockData, [
 					'tableshave' => $this->setup->lang('If you did not receive any errors, your applications have been'),
 					're-check_my_installation' => $this->setup->lang('Re-Check My Installation')

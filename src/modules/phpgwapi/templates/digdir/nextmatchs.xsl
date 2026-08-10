@@ -52,20 +52,20 @@
 		<xsl:value-of select="allrows"/>
 	</xsl:variable>
 
-	<ul class="pagination justify-content-left mt-2">
+	<ul class="list-inline mt-2 d-flex justify-content-start align-items-center gap-2">
 		<xsl:choose>
 			<xsl:when test="number($cur_record) > number(1)">
 				<xsl:variable name="first">
 					<xsl:value-of select="$nextmatchs_url"/>&amp;start=0</xsl:variable>
-				<li class="page-item">
-					<a class="page-link" href="{$first}">
+				<li class="list-inline-item">
+					<a class="pure-button" href="{$first}">
 						<xsl:value-of select="$title_first"/>
 					</a>
 				</li>
 			</xsl:when>
 			<xsl:otherwise>
-				<li class="page-item disabled">
-					<div class="page-link">
+				<li class="list-inline-item">
+					<div class="pure-button pure-button-disabled">
 						<xsl:value-of select="$title_first"/>
 					</div>
 				</li>
@@ -87,10 +87,10 @@
 								<xsl:variable name="prev">
 									<xsl:value-of select="$nextmatchs_url"/>&amp;start=<xsl:value-of select="number($prev_number) - number(1)"/>
 								</xsl:variable>
-								<li class="page-item">
-									<a class="page-link" href="{$prev}" aria-label="{$title_previous}" title="{$title_previous}">
+								<li class="list-inline-item">
+									<a class="pure-button" href="{$prev}" aria-label="{$title_previous}" title="{$title_previous}">
 										<span aria-hidden="true">&#171;</span>
-										<span class="sr-only">
+										<span style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;">
 											<xsl:value-of select="$title_previous"/>
 										</span>
 									</a>
@@ -99,45 +99,45 @@
 							<xsl:otherwise>
 								<xsl:variable name="prev">
 									<xsl:value-of select="$nextmatchs_url"/>&amp;start=0</xsl:variable>
-								<li class="page-item disabled">
-									<a class="page-link" href="{$prev}" aria-label="{$title_previous}" title="{$title_previous}">
+								<li class="list-inline-item">
+									<div class="pure-button pure-button-disabled" aria-label="{$title_previous}" title="{$title_previous}">
 										<span aria-hidden="true">&#171;</span>
-										<span class="sr-only">
+										<span style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;">
 											<xsl:value-of select="$title_previous"/>
 										</span>
-									</a>
+									</div>
 								</li>
 							</xsl:otherwise>
 						</xsl:choose>
 					</xsl:when>
 					<xsl:otherwise>
-						<li class="page-item disabled">
-							<a class="page-link" href="#">
+						<li class="list-inline-item">
+							<div class="pure-button pure-button-disabled">
 								<span aria-hidden="true">
 									<span aria-hidden="true">&#171;</span>
 								</span>
-								<span class="sr-only">
+								<span style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;">
 									<xsl:value-of select="$title_previous"/>
 								</span>
-							</a>
+							</div>
 						</li>
 					</xsl:otherwise>
 				</xsl:choose>
 			</xsl:when>
 			<xsl:otherwise>
-				<li class="page-item disabled">
-					<a class="page-link" href="#" aria-label="{$title_previous}" title="{$title_previous}">
+				<li class="list-inline-item">
+					<div class="pure-button pure-button-disabled" aria-label="{$title_previous}" title="{$title_previous}">
 						<span aria-hidden="true">&#171;</span>
-						<span class="sr-only">
+						<span style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;">
 							<xsl:value-of select="$title_previous"/>
 						</span>
-					</a>
+					</div>
 				</li>
 			</xsl:otherwise>
 		</xsl:choose>
 	
-		<li class="page-item disabled">
-			<div class="page-link">
+		<li class="list-inline-item">
+			<div class="pure-button pure-button-disabled">
 				<xsl:value-of select="lang_showing"/>
 			</div>
 		</li>
@@ -151,35 +151,35 @@
 						<xsl:variable name="next">
 							<xsl:value-of select="$nextmatchs_url"/>&amp;start=<xsl:value-of select="number($next_num) - number(1)"/>
 						</xsl:variable>
-						<li class="page-item">
-							<a class="page-link" href="{$next}" aria-label="{$title_next}" title="{$title_next}">
+						<li class="list-inline-item">
+							<a class="pure-button" href="{$next}" aria-label="{$title_next}" title="{$title_next}">
 								<span aria-hidden="true">&#187;</span>
-								<span class="sr-only">
+								<span style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;">
 									<xsl:value-of select="$title_next"/>
 								</span>
 							</a>
 						</li>
 					</xsl:when>
 					<xsl:otherwise>
-						<li class="page-item disabled">
-							<a class="page-link" href="#">
+						<li class="list-inline-item">
+							<div class="pure-button pure-button-disabled">
 								<span aria-hidden="true">&#187;</span>
-								<span class="sr-only">
+								<span style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;">
 									<xsl:value-of select="$title_next"/>
 								</span>
-							</a>
+							</div>
 						</li>
 					</xsl:otherwise>
 				</xsl:choose>
 			</xsl:when>
 			<xsl:otherwise>
-				<li class="page-item disabled">
-					<a class="page-link" href="#">
+				<li class="list-inline-item">
+					<div class="pure-button pure-button-disabled">
 						<span aria-hidden="true">&#187;</span>
-						<span class="sr-only">
+						<span style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;">
 							<xsl:value-of select="$title_next"/>
 						</span>
-					</a>
+					</div>
 				</li>
 			</xsl:otherwise>
 		</xsl:choose>
@@ -194,15 +194,15 @@
 						<xsl:variable name="last">
 							<xsl:value-of select="$nextmatchs_url"/>&amp;start=<xsl:value-of select="number($last_num)-number(1)"/>
 						</xsl:variable>
-						<li class="page-item">
-							<a class="page-link" href="{$last}">
+						<li class="list-inline-item">
+							<a class="pure-button" href="{$last}">
 								<xsl:value-of select="$title_last"/>
 							</a>
 						</li>
 					</xsl:when>
 					<xsl:otherwise>
-						<li class="page-item disabled">
-							<div class="page-link">
+						<li class="list-inline-item">
+							<div class="pure-button pure-button-disabled">
 								<xsl:value-of select="$title_last"/>
 							</div>
 						</li>
@@ -210,8 +210,8 @@
 				</xsl:choose>
 			</xsl:when>
 			<xsl:otherwise>
-				<li class="page-item disabled">
-					<div class="page-link">
+				<li class="list-inline-item">
+					<div class="pure-button pure-button-disabled">
 						<xsl:value-of select="$title_last"/>
 					</div>
 				</li>
@@ -226,8 +226,8 @@
 							<xsl:value-of select="$nextmatchs_url"/>
 							<xsl:text>&amp;start=0&amp;allrows=0</xsl:text>
 						</xsl:variable>
-						<li class="page-item">
-							<a class="page-link" href="{$all}">
+						<li class="list-inline-item">
+							<a class="pure-button" href="{$all}">
 								<xsl:value-of select="$title_all"/>
 							</a>
 						</li>
@@ -237,8 +237,8 @@
 							<xsl:value-of select="$nextmatchs_url"/>
 							<xsl:text>&amp;allrows=1</xsl:text>
 						</xsl:variable>
-						<li class="page-item">
-							<a class="page-link" href="{$all}">
+						<li class="list-inline-item">
+							<a class="pure-button" href="{$all}">
 								<xsl:value-of select="$title_all"/>
 							</a>
 						</li>

@@ -85,9 +85,9 @@ function parse_navbar($force = False)
 	$template_selector = <<<HTML
 
 	   <select id = "template_selector" class="btn btn-link btn-sm nav-item dropdown no-arrow nav-link text-white dropdown-toggle" style="height:2rem">
-		<option class="nav-link text-white" value="portico"{$selecte_portico}>Portico</option>
-		<option class="nav-link text-white" value="bootstrap"{$selecte_bootstrap}>Bootstrap</option>
-		<option class="nav-link text-white" value="digdir"{$selecte_digdir}>Digdir</option>
+		<option value="portico"{$selecte_portico} style="color:#212529;background-color:#ffffff;">Portico</option>
+		<option value="bootstrap"{$selecte_bootstrap} style="color:#212529;background-color:#ffffff;">Bootstrap</option>
+		<option value="digdir"{$selecte_digdir} style="color:#212529;background-color:#ffffff;">Digdir</option>
 	   </select>
 HTML;
 
@@ -651,6 +651,9 @@ HTML;
 
 	// Language selector styles and JavaScript
 	if (Sanitizer::get_var('phpgw_return_as') != 'json') {
+		$apiPrefix = rtrim($serverSettings['webserver_url'] ?? '', '/');
+		$apiPrefixJson = json_encode($apiPrefix, JSON_UNESCAPED_SLASHES);
+		echo "<script>window.__phpgwApiPrefix = {$apiPrefixJson};</script>";
 		echo <<<'SCRIPT'
 <style>
 #languageForm .choice {
@@ -705,8 +708,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     flagElement.classList.add(newFlagClass);
                 }
 
-                // Call API endpoint to set language
-                fetch('/api/set-language/' + selectedLang, {
+				// Call API endpoint to set language
+				fetch((window.__phpgwApiPrefix || '') + '/api/set-language/' + selectedLang, {
                     credentials: 'same-origin'
                 })
                 .then(response => response.json())

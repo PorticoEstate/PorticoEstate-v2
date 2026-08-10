@@ -13,6 +13,22 @@ class OpcacheController
 {
 	private $phpgwapi_common;
 
+	private function stripOuterDocumentTags(string $html): string
+	{
+		// Keep scripts/styles/content and only remove wrapper tags.
+		$html = preg_replace('/^\s*<!DOCTYPE[^>]*>\s*/i', '', $html, 1) ?? $html;
+		$html = preg_replace('/^\s*<html\b[^>]*>\s*/i', '', $html, 1) ?? $html;
+		$html = preg_replace('/\s*<head\b[^>]*>\s*/i', '', $html, 1) ?? $html;
+		$html = preg_replace('/\s*<meta\b[^>]*>\s*/i', '', $html) ?? $html;
+		$html = preg_replace('/\s*<title\b[^>]*>.*?<\/title>\s*/is', '', $html, 1) ?? $html;
+		$html = preg_replace('/\s*<\/head>\s*/i', '', $html, 1) ?? $html;
+		$html = preg_replace('/\s*<body\b[^>]*>\s*/i', '', $html, 1) ?? $html;
+		$html = preg_replace('/\s*<\/body>\s*$/i', '', $html, 1) ?? $html;
+		$html = preg_replace('/\s*<\/html>\s*$/i', '', $html, 1) ?? $html;
+
+		return $html;
+	}
+
 	public function __construct()
 	{
 		require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
@@ -66,7 +82,12 @@ class OpcacheController
 			$phpgwapi_common->phpgw_header(true);
 		}
 
+		ob_start();
 		require_once $vendordir . '/amnuts/opcache-gui/index.php';
-		return $response;
+		$opcacheGuiHtml = ob_get_clean() ?: '';
+		$opcacheGuiHtml = $this->stripOuterDocumentTags($opcacheGuiHtml);
+
+		$response->getBody()->write($opcacheGuiHtml);
+		return $response->withHeader('Content-Type', 'text/html; charset=UTF-8');
 	}
 }

@@ -117,7 +117,7 @@ jobs:
                         }' \
                         -f owner="PorticoEstate" \
                         -f repo="PorticoEstate-v2" \
-                        -F number=$ISSUE 2>&1)
+                        -F number=$ISSUE 2>&1) || true
 
                       # Check if query failed
                       if echo "$QUERY_RESULT" | grep -q "errors"; then
@@ -130,7 +130,7 @@ jobs:
                         .data.repository.issue.projectItems.nodes[]? |
                         select(.project.id == $projectId) |
                         {id: .id, status: .fieldValueByName.name}
-                      ')
+                      ' 2>/dev/null) || true
 
                       if [ -z "$ITEM_DATA" ] || [ "$ITEM_DATA" == "null" ]; then
                         echo "Issue/PR #$ISSUE not found in project $PROJECT_ID"

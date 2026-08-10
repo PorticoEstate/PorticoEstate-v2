@@ -90,6 +90,17 @@ formatWorkorderAttachFile = function (key, oData)
 	return formatWorkorderDataCell('checkbox', key, oData);
 };
 
+function set_workorder_submit_disabled(disabled)
+{
+	var isDisabled = !!disabled;
+	$("#save_button, #save_button_bottom").prop('disabled', isDisabled);
+}
+
+function reset_workorder_submit_state()
+{
+	set_workorder_submit_disabled(false);
+}
+
 function calculate_order()
 {
 	if (!validate_form())
@@ -109,6 +120,7 @@ function submit_workorder()
 
 	if (!validate_form())
 	{
+		reset_workorder_submit_state();
 		return;
 	}
 
@@ -119,6 +131,7 @@ function submit_workorder()
 		$("#save_button").val(lang['save']);
 		$("#save_button_bottom").val(lang['save']);
 		$("#active_tab").val('budget');
+		reset_workorder_submit_state();
 	}
 	else
 	{
@@ -217,6 +230,7 @@ function check_and_submit_valid_session(onValid)
 			{
 				if (data['sessionExpired'] == true)
 				{
+					reset_workorder_submit_state();
 					window.alert('sessionExpired - please log in');
 					JqueryPortico.lightboxlogin();//defined in common.js
 				}
@@ -225,9 +239,14 @@ function check_and_submit_valid_session(onValid)
 					validCallback();
 				}
 			}
+			else
+			{
+				reset_workorder_submit_state();
+			}
 		},
 		failure: function (o)
 		{
+			reset_workorder_submit_state();
 			window.alert('failure - try again - once');
 		},
 		timeout: 5000
@@ -256,6 +275,75 @@ function createWorkorderApiClient(form)
 	};
 }
 
+var workorderClickHistoryToken = '';
+
+function generateWorkorderClickHistoryToken()
+{
+	return String(Date.now()) + '-' + Math.random().toString(36).slice(2);
+}
+
+function parseWorkorderClickHistoryFromUrl(url)
+{
+	if (!url)
+	{
+		return '';
+	}
+
+	var match = String(url).match(/[?&]click_history=([^&]+)/i);
+	return match ? decodeURIComponent(match[1]) : '';
+}
+
+function getWorkorderClickHistoryToken()
+{
+	if (workorderClickHistoryToken)
+	{
+		return workorderClickHistoryToken;
+	}
+
+	workorderClickHistoryToken = parseWorkorderClickHistoryFromUrl(typeof strBaseURL !== 'undefined' ? strBaseURL : '');
+	if (!workorderClickHistoryToken)
+	{
+		workorderClickHistoryToken = parseWorkorderClickHistoryFromUrl(window.location.href);
+	}
+	if (!workorderClickHistoryToken)
+	{
+		workorderClickHistoryToken = generateWorkorderClickHistoryToken();
+	}
+
+	return workorderClickHistoryToken;
+}
+
+function refreshWorkorderClickHistoryToken()
+{
+	workorderClickHistoryToken = generateWorkorderClickHistoryToken();
+	return workorderClickHistoryToken;
+}
+
+function stripWorkorderClickHistory(url)
+{
+	if (!url)
+	{
+		return url;
+	}
+
+	return String(url)
+		.replace(/([?&])click_history=[^&]*&?/i, '$1')
+		.replace(/[?&]$/, '')
+		.replace('?&', '?');
+}
+
+function appendWorkorderClickHistory(url)
+{
+	var cleanedUrl = stripWorkorderClickHistory(url);
+	var token = getWorkorderClickHistoryToken();
+	if (!token)
+	{
+		return cleanedUrl;
+	}
+
+	return cleanedUrl + (cleanedUrl.indexOf('?') === -1 ? '?' : '&') + 'click_history=' + encodeURIComponent(token);
+}
+
 function isWorkorderCopyRequested(form)
 {
 	var copyWorkorderField = form ? form.querySelector('input[name="values[copy_workorder]"]') : null;
@@ -268,6 +356,8 @@ function normalizeWorkorderSaveRequest(saveRequest, currentOrderId, forceCreate)
 	var isCreate = !!forceCreate || isNaN(parsedOrderId) || parsedOrderId <= 0;
 	var method = (saveRequest && saveRequest.method) ? String(saveRequest.method).toUpperCase() : 'POST';
 	var url = (saveRequest && saveRequest.url) ? saveRequest.url : phpGWLink('property/workorder/create', {});
+	url = appendWorkorderClickHistory(url);
+	url = phpgwEnsureServerPrefix(url);
 
 	if (isCreate)
 	{
@@ -275,7 +365,7 @@ function normalizeWorkorderSaveRequest(saveRequest, currentOrderId, forceCreate)
 
 		if (!url || url.indexOf('/property/workorder/create') === -1)
 		{
-			url = phpGWLink('property/workorder/create', {});
+			url = appendWorkorderClickHistory(phpGWLink('property/workorder/create', {}));
 		}
 	}
 
@@ -400,6 +490,7 @@ function submit_workorder_via_api(actionType)
 	var form = document.form;
 	if (!form)
 	{
+		reset_workorder_submit_state();
 		return;
 	}
 
@@ -423,7 +514,7 @@ function submit_workorder_via_api(actionType)
 		return;
 	}
 
-	fetch(saveRequest.url, {
+	fetch(phpgwEnsureServerPrefix(saveRequest.url), {
 		method: saveRequest.method,
 		credentials: 'same-origin',
 		body: formData
@@ -446,10 +537,12 @@ function submit_workorder_via_api(actionType)
 		})
 		.then(function (data)
 		{
+			refreshWorkorderClickHistoryToken();
 			handle_workorder_save_success(data, action);
 		})
 		.catch(function (error)
 		{
+			refreshWorkorderClickHistoryToken();
 			handle_workorder_save_error(error && error.responseData ? error.responseData : null);
 		});
 }
@@ -457,7 +550,7 @@ function submit_workorder_via_api(actionType)
 function submit_workorder_via_api_xhr(saveRequest, formData, action)
 {
 	var xhr = new XMLHttpRequest();
-	xhr.open(saveRequest.method, saveRequest.url, true);
+	xhr.open(saveRequest.method, phpgwEnsureServerPrefix(saveRequest.url), true);
 	xhr.withCredentials = true;
 
 	xhr.onreadystatechange = function ()
@@ -482,10 +575,12 @@ function submit_workorder_via_api_xhr(saveRequest, formData, action)
 
 		if (xhr.status >= 200 && xhr.status < 300)
 		{
+			refreshWorkorderClickHistoryToken();
 			handle_workorder_save_success(data, action);
 			return;
 		}
 
+		refreshWorkorderClickHistoryToken();
 		handle_workorder_save_error(data);
 	};
 
@@ -520,6 +615,7 @@ function handle_workorder_save_success(data, action)
 			return (entry && entry.msg) ? entry.msg : 'Could not save workorder';
 		});
 		renderWorkorderFormAlert(errorMessages, 'danger');
+		reset_workorder_submit_state();
 		return;
 	}
 
@@ -571,6 +667,7 @@ function handle_workorder_save_error(responseData)
 		messages = ['Feil ved lagring. Vennligst prøv igjen.'];
 	}
 	renderWorkorderFormAlert(messages, 'danger');
+	reset_workorder_submit_state();
 }
 
 this.validate_form = function ()

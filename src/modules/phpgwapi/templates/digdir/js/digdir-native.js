@@ -6,6 +6,15 @@
 (function() {
 	'use strict';
 
+	function withPrefix(path) {
+		const prefix = (window.__phpgwApiPrefix || '').trim();
+		if (!prefix || prefix === '/') {
+			return path;
+		}
+
+		return prefix.replace(/\/+$/, '') + path;
+	}
+
 	// Dropdown functionality
 	class Dropdown {
 		constructor(element) {
@@ -146,7 +155,7 @@
 			const selectedTemplate = this.value;
 
 			// Save to preferences via API
-			fetch('/preferences/section?appname=preferences&type=user&phpgw_return_as=json', {
+			fetch(withPrefix('/preferences/section?appname=preferences&type=user&phpgw_return_as=json'), {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',

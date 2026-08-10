@@ -125,10 +125,12 @@ class HomeHelper
 		}
 
 		$bookmarks = Cache::user_get('phpgwapi', "bookmark_menu", $this->userSettings['id']);
+		$template_set = $this->userSettings['preferences']['common']['template_set'] ?? '';
 
 		$bookmark_section = '';
+		$bookmark_style_block = '';
 
-		if ($this->userSettings['preferences']['common']['template_set'] == 'bootstrap')
+		if ($template_set == 'bootstrap')
 		{
 			$grid_envelope = 'row mt-4';
 			$grid_element = 'col-4 mb-3';
@@ -139,21 +141,107 @@ class HomeHelper
 			$icon_class = 'text-secondary';
 			$icon_wrap_class = 'p-3';
 		}
+		else if ($template_set == 'digdir')
+		{
+			$grid_envelope = 'app-row mt-4';
+			$grid_element = 'app-col-4 u-mb-4';
+			$card_class = 'app-card app-card-bordered app-tile app-bookmark-tile';
+			$card_body_class = 'app-card-body app-text-center';
+			$card_footer_class = 'app-tile-footer app-bookmark-tile-footer';
+			$link_class = 'app-tile-link';
+			$icon_class = 'app-tile-icon app-bookmark-tile-icon';
+			$icon_wrap_class = 'app-tile-icon-wrap app-bookmark-tile-icon-wrap';
+
+			$bookmark_style_block = <<<HTML
+	<style>
+		.app-bookmark-tile {
+			border-color: var(--ds-color-border-subtle, #d9dde3);
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+		}
+		.app-bookmark-tile:hover {
+			border-color: var(--ds-color-accent-border-default, #2a6fc1);
+			box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+		}
+		.app-bookmark-tile-icon-wrap {
+			margin: 0;
+			padding: var(--ds-spacing-6, 1.5rem) var(--ds-spacing-4, 1rem);
+			font-size: 1.5rem;
+			line-height: 1;
+		}
+		.app-bookmark-tile-icon-wrap h1 {
+			margin: 0;
+			font-size: inherit;
+			line-height: 1;
+			font-weight: var(--ds-font-weight-regular, 400);
+		}
+		.app-bookmark-tile-icon {
+			color: var(--ds-color-neutral-text-subtle, #6c757d);
+		}
+		.app-bookmark-tile-footer {
+			font-weight: var(--ds-font-weight-medium, 500);
+			background: var(--ds-color-background-subtle, #f4f6f8);
+			border-top-color: var(--ds-color-border-subtle, #d9dde3);
+		}
+	</style>
+HTML;
+		}
 		else
 		{
 			$grid_envelope = 'app-row mt-4';
 			$grid_element = 'app-col-4 u-mb-4';
-			$card_class = 'app-card app-card-bordered app-tile';
-			$card_body_class = 'app-card-body app-text-center';
-			$card_footer_class = 'app-tile-footer';
+			$card_class = 'app-bookmark-card app-tile';
+			$card_body_class = 'app-bookmark-card-body';
+			$card_footer_class = 'app-tile-footer app-bookmark-tile-footer';
 			$link_class = 'app-tile-link';
-			$icon_class = 'app-tile-icon';
-			$icon_wrap_class = 'app-tile-icon-wrap';
+			$icon_class = 'app-tile-icon app-bookmark-tile-icon';
+			$icon_wrap_class = 'app-tile-icon-wrap app-bookmark-tile-icon-wrap';
+
+			$bookmark_style_block = <<<HTML
+	<style>
+		.app-bookmark-card {
+			height: 100%;
+			background: #fff;
+			border: 1px solid #d9dde3;
+			border-radius: 0.5rem;
+			overflow: hidden;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+		}
+		.app-bookmark-card-body {
+			padding: 1rem;
+			text-align: center;
+		}
+		.app-bookmark-tile:hover {
+			border-color: #2a6fc1;
+			box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+		}
+		.app-bookmark-tile-icon-wrap {
+			margin: 0;
+			padding: 1.5rem 1rem;
+			font-size: 1.5rem;
+			line-height: 1;
+		}
+		.app-bookmark-tile-icon-wrap h1 {
+			margin: 0;
+			font-size: inherit;
+			line-height: 1;
+			font-weight: 400;
+		}
+		.app-bookmark-tile-icon {
+			color: #6c757d;
+		}
+		.app-bookmark-tile-footer {
+			font-weight: 500;
+			background: #f4f6f8;
+			border-top-color: #d9dde3;
+		}
+	</style>
+HTML;
 		}
 
 		if ($bookmarks && is_array($bookmarks))
 		{
 			$bookmark_section = <<<HTML
+	{$bookmark_style_block}
 	<div class="app-container">
 		<div id="container_bookmark" class="{$grid_envelope}">
 HTML;

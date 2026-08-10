@@ -72,6 +72,10 @@ class TwigHelper
 		// phpgwapi base + template set
 		$this->addPathIfExists(PHPGW_SERVER_ROOT . '/phpgwapi/templates/base');
 		$this->addPathIfExists(PHPGW_SERVER_ROOT . '/phpgwapi/templates/' . $templateSet);
+		// Shared Twig partials can live in digdir even when another template set is active.
+		if ($templateSet !== 'digdir') {
+			$this->addPathIfExists(PHPGW_SERVER_ROOT . '/phpgwapi/templates/digdir');
+		}
 
 		// Designsystemet component templates
 		if ($this->designSystem->isEnabled()) {
@@ -194,8 +198,11 @@ class TwigHelper
 		$webserverUrl = $this->serverSettings['webserver_url'] ?? '';
 		$modulesPath = defined('PHPGW_MODULES_PATH') ? PHPGW_MODULES_PATH : '';
 		$base = $webserverUrl . $modulesPath;
+		$root = rtrim($webserverUrl, '/');
 
 		return [
+			$root . '/assets/designsystemet/index.css',
+			$root . '/assets/design-tokens/admin.css',
 			$base . '/phpgwapi/templates/digdir/css/digdir-native.css',
 		];
 	}

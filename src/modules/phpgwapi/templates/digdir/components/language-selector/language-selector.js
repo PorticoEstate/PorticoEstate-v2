@@ -10,7 +10,22 @@
 		constructor(element) {
 			this.element = element;
 			this.data = null;
+			this.apiPrefix = this.getApiPrefix();
 			this.init();
+		}
+
+		getApiPrefix() {
+			const raw = (this.element.dataset.apiPrefix || '').trim();
+			if (!raw || raw === '/') {
+				return '';
+			}
+
+			return raw.replace(/\/+$/, '');
+		}
+
+		buildApiUrl(path) {
+			const normalizedPath = path.startsWith('/') ? path : '/' + path;
+			return this.apiPrefix + normalizedPath;
 		}
 
 		async init() {
@@ -24,7 +39,7 @@
 		}
 
 		async fetchLanguages() {
-			const res = await fetch('/api/languages', { credentials: 'same-origin' });
+			const res = await fetch(this.buildApiUrl('/api/languages'), { credentials: 'same-origin' });
 			if (!res.ok) {
 				throw new Error('Failed to fetch languages: ' + res.status);
 			}
@@ -111,7 +126,7 @@
 			}
 
 			try {
-				const res = await fetch('/api/set-language/' + encodeURIComponent(code), {
+				const res = await fetch(this.buildApiUrl('/api/set-language/' + encodeURIComponent(code)), {
 					credentials: 'same-origin'
 				});
 				const result = await res.json();

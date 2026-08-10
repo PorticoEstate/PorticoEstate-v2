@@ -70,6 +70,9 @@ interface ApplicationCrudInnerProps extends ApplicationCrudProps {
 const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 	const [lastSubmittedData, setLastSubmittedData] = useState<Partial<ApplicationFormData> | null>(null);
 	const [restoredProps, setRestoredProps] = useState<ApplicationCrudProps | null>(null);
+	// True once the form below has been mounted for the currently-open dialog.
+	// Used to stop a transient loading state from unmounting it mid-edit (#1256).
+	const hasMountedFormRef = useRef(false);
 
 	// Only fetch if we have a building_id
 	const building_id = props.building_id || props.selectedTempApplication?.extendedProps?.building_id;
@@ -159,16 +162,27 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 		return null;
 	}
 
-	if (seasonsLoading || userLoading || buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || existingApplication === undefined) {
-		return null;
-	}
-
 	const effectiveProps = restoredProps || props;
 	const isOpen = effectiveProps.selectedTempApplication !== undefined || effectiveProps.applicationId !== undefined;
 
 	if (!isOpen) {
+		// Closed: allow the next open to gate on loading again.
+		hasMountedFormRef.current = false;
 		return null;
 	}
+
+	const dataLoading = seasonsLoading || userLoading || buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || existingApplication === undefined;
+
+	// Gate only the FIRST render of an open dialog. Once the form below is
+	// mounted it owns the user's in-progress input, and that state lives in
+	// its useForm — returning null here unmounts it and the typed values are
+	// gone (#1256). Any refetch can flip one of these flags at any time, so
+	// this must not depend on which query it is.
+	if (dataLoading && !hasMountedFormRef.current) {
+		return null;
+	}
+
+	hasMountedFormRef.current = true;
 
 	return (
 		<div style={{display: isOpen ? 'block' : 'none'}}>
@@ -304,7 +318,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				// Move to middle of next day
 				const tomorrow = DateTime.fromJSDate(startTime).plus({days: 1});
 				// Find active season for tomorrow (use empty resources for initial calculation)
-				const tomorrowActiveSeasons = props.seasons!.filter(season => {
+				// Value-level fallback, never an early return: this memo re-runs when
+				// props.seasons changes, and the form is now kept mounted through
+				// loading/error states (#1256). An empty list falls through to the
+				// existing "no active season tomorrow" path below.
+				const tomorrowActiveSeasons = (props.seasons ?? []).filter(season => {
 					const seasonStart = DateTime.fromISO(season.from_);
 					const seasonEnd = DateTime.fromISO(season.to_);
 					return season.active && tomorrow >= seasonStart && tomorrow <= seasonEnd;

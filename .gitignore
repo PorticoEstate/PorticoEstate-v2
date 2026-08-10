@@ -40,3 +40,9 @@ Thumbs.db
 test_scripts/
 /node_modules/
 /i/
+
+# Captured mail (MAIL_TO_DISK) and dmail viewer build artifacts
+/storage/emails/*
+!/storage/emails/.gitkeep
+/dmail/node_modules/
+/dmail/dist/

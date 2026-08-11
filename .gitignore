@@ -19,7 +19,10 @@ Dockerfile.local
 structure.txt
 docker-compose.override.yml
 
-.env
+# .env* (not just .env): backups like .env.bak carry the same plaintext SMTP
+# password and were showing up in `git status`, one `git add -A` from being committed.
+.env*
+!.env.example
 /portico/tmp/
 
 **/.claude/settings.local.json

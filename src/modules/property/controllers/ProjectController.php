@@ -178,8 +178,8 @@ class ProjectController
 			return array();
 		}
 
-		$contentType = strtolower((string)$request->getHeaderLine('Content-Type'));
-		if (strpos($contentType, 'application/json') !== false)
+		$contentType = (string)$request->getHeaderLine('Content-Type');
+		if (stripos($contentType, 'application/json') !== false)
 		{
 			$json = json_decode($rawBody, true);
 			if (!is_array($json))
@@ -188,6 +188,11 @@ class ProjectController
 			}
 
 			return $json;
+		}
+
+		if (stripos($contentType, 'multipart/form-data') !== false)
+		{
+			return BoCommon::parseMultipartFormData($rawBody, $contentType);
 		}
 
 		$decoded = array();

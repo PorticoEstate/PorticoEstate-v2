@@ -114,6 +114,78 @@ class BoCommon
 		return $this->confirm_session();
 	}
 
+	public static function parseMultipartFormData(string $rawBody, string $contentType): array
+	{
+		$boundary = '';
+		if (preg_match('/boundary=(?:"([^"]+)"|([^;]+))/i', $contentType, $matches))
+		{
+			$boundary = $matches[1] !== '' ? $matches[1] : trim($matches[2]);
+		}
+
+		if ($boundary === '' && preg_match('/^--([^\r\n-][^\r\n]*)/m', $rawBody, $bodyMatches))
+		{
+			$boundary = trim($bodyMatches[1]);
+		}
+
+		if ($boundary === '')
+		{
+			return array();
+		}
+
+		$delimiter = '--' . $boundary;
+		$parts = explode($delimiter, $rawBody);
+		$pairs = array();
+
+		foreach ($parts as $part)
+		{
+			$part = ltrim($part, "\r\n");
+			$part = rtrim($part, "\r\n");
+
+			if ($part === '' || $part === '--')
+			{
+				continue;
+			}
+
+			$segments = preg_split('/(?:\r\n|\n){2}/', $part, 2);
+			if (!is_array($segments) || count($segments) !== 2)
+			{
+				continue;
+			}
+
+			$headers = $segments[0];
+			$value = rtrim((string)$segments[1], "\r\n");
+
+			if (!preg_match('/Content-Disposition:\s*form-data;[^\r\n]*/i', $headers, $dispositionMatch))
+			{
+				continue;
+			}
+
+			$contentDisposition = $dispositionMatch[0];
+			if (!preg_match('/;\s*name="([^"]+)"/i', $contentDisposition, $nameMatch))
+			{
+				continue;
+			}
+
+			$fieldName = $nameMatch[1] ?? '';
+			$isFileField = preg_match('/;\s*filename="[^"]*"/i', $contentDisposition) === 1;
+			if ($fieldName === '' || $isFileField)
+			{
+				continue;
+			}
+
+			$pairs[] = rawurlencode($fieldName) . '=' . rawurlencode($value);
+		}
+
+		if (!$pairs)
+		{
+			return array();
+		}
+
+		$decoded = array();
+		parse_str(implode('&', $pairs), $decoded);
+		return is_array($decoded) ? $decoded : array();
+	}
+
 	public function dateToTimestamp($date = array())
 	{
 		return \phpgwapi_datetime::date_to_timestamp($date);

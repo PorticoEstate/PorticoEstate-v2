@@ -15,6 +15,55 @@ class ApplicationHelper
     }
 
     /**
+     * Whether this request was authorised by the application's own secret link
+     * rather than by a session. Extracted verbatim from canViewApplication so the
+     * two callers cannot drift apart.
+     *
+     * @param array $application The application data to check
+     * @param ServerRequestInterface $request The request to check for secret parameter
+     * @return bool True if the request carries this application's secret
+     */
+    private function hasValidSecret(array $application, ServerRequestInterface $request): bool
+    {
+        $queryParams = $request->getQueryParams();
+        $secret = $queryParams['secret'] ?? null;
+
+        return (bool)$secret
+            && isset($application['secret'])
+            && $application['secret'] === $secret;
+    }
+
+    /**
+     * Resolve who is acting on an application, for the comment `author` column.
+     *
+     * A secret-link caller has no session, so UserHelper cannot name them and
+     * ApplicationCommentsService's fallback yields null against a NOT NULL column.
+     * For them the acting party is the applicant the link was mailed to, which is
+     * what bb_application.contact_name records.
+     *
+     * Returns null for session-authenticated callers so the existing fallback to
+     * the logged-in user's name is left exactly as it was.
+     *
+     * @param array $application The application being commented on
+     * @param ServerRequestInterface $request The request whose authorisation mode decides
+     * @return string|null The author to record, or null to defer to the session user
+     */
+    public function resolveCommentAuthor(array $application, ServerRequestInterface $request): ?string
+    {
+        if ($this->userHelper->is_logged_in()) {
+            return null;
+        }
+
+        if (!$this->hasValidSecret($application, $request)) {
+            return null;
+        }
+
+        $contactName = trim((string)($application['contact_name'] ?? ''));
+
+        return $contactName !== '' ? $contactName : null;
+    }
+
+    /**
      * Check if the current user can view the given application
      * Supports both secret-based access and direct access (org or ssn)
      *
@@ -24,11 +73,7 @@ class ApplicationHelper
      */
     public function canViewApplication(array $application, ServerRequestInterface $request): bool
     {
-        // Check for secret parameter in GET/POST
-        $queryParams = $request->getQueryParams();
-        $secret = $queryParams['secret'] ?? null;
-        
-        if ($secret && isset($application['secret']) && $application['secret'] === $secret) {
+        if ($this->hasValidSecret($application, $request)) {
             return true; // Access allowed with correct secret
         }
 

@@ -6,6 +6,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Send;
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\helpers\EmailTwigHelper;
+use App\modules\phpgwapi\services\Log;
 use Exception;
 
 /**
@@ -467,6 +468,132 @@ class EmailService
 			$send->msg('email', $bcc, $subject, $body, '', '', '', $from, 'AktivKommune', 'html', '', array(), false);
 		} catch (Exception $e) {
             error_log("Failed to send case officer notifications: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send the staff status-change / comment notification.
+     *
+     * Migrated from booking_boapplication::send_admin_notification(). The legacy path
+     * rendered admin_comment_notification.twig — which contains a real
+     * <a href="{{ link }}">Lenke til søknad</a> — and then ran the result through
+     * strip_tags(), which keeps the anchor TEXT and discards its href, before sending
+     * as 'text'. Case officers therefore received the words "Lenke til søknad" with no
+     * address at all, and no way to reach the application.
+     *
+     * Only two things differ from the legacy behaviour, and together they are the fix:
+     * the body is not stripped, and it is sent as 'html' so the anchor renders.
+     *
+     * Everything else is preserved deliberately:
+     *  - the recipient set: configured addresses merged with the building's role
+     *    holders, de-duplicated, with NO notify_on_new filtering
+     *  - one message per recipient, so one bad address cannot suppress the rest
+     *  - the per-recipient operator feedback, which stays gated to the booking
+     *    backend so it is never shown to a citizen
+     *
+     * @param array       $application Application row
+     * @param string|null $message     Status-change comment shown to the case officer
+     */
+    public function sendStatusChangeNotificationToStaff(array $application, ?string $message = null): void
+    {
+        // The legacy method opened with an smtp_server check whose return was commented
+        // out, so it never suppressed anything. It is not reproduced as a live gate here:
+        // adding one would be a behaviour change rather than a migration.
+
+        $config = $this->getBookingConfig();
+        if (!$config)
+        {
+            return;
+        }
+
+        $from = isset($config['email_sender']) && $config['email_sender']
+            ? $config['email_sender']
+            : "noreply<noreply@{$this->serverSettings['hostname']}>";
+
+        $subject = $config['application_comment_mail_subject_caseofficer'] ?? '';
+
+        $mailaddresses = explode("\n", (string)($config['emails'] ?? ''));
+
+        $building_info = $this->getBuildingInfo((int)$application['id']);
+        $extra_mail_addresses = $building_info
+            ? $this->getMailAddresses((int)$building_info['id'], (int)$application['case_officer_id'])
+            : array();
+
+        if (!empty($mailaddresses[0]))
+        {
+            $mailaddresses = array_merge($mailaddresses, array_values($extra_mail_addresses));
+        }
+        else
+        {
+            $mailaddresses = array_values($extra_mail_addresses);
+        }
+
+        // Backend link, with SSL forced on for the duration as the legacy path did
+        $enforce_ssl = $this->serverSettings['enforce_ssl'];
+        $this->serverSettings['enforce_ssl'] = true;
+        $link = \phpgw::link('/index.php', array('menuaction' => 'booking.uiapplication.show', 'id' => $application['id']), false, true, true);
+        $link = str_replace('&amp;', '&', $link);
+        $this->serverSettings['enforce_ssl'] = $enforce_ssl;
+
+        $activity = CreateObject('booking.boactivity')->read_single($application['activity_id']);
+
+        $organization_name = '';
+        if (strlen((string)$application['customer_organization_number']) == 9)
+        {
+            $organization_bo = CreateObject('booking.boorganization');
+            $orgid = $organization_bo->so->get_orgid($application['customer_organization_number']);
+            $organization = $organization_bo->read_single($orgid);
+            $organization_name = $organization['name'];
+        }
+
+        $body = $this->getEmailTwigHelper()->render('@views/emails/admin_comment_notification.twig', [
+            'organization_name' => $organization_name,
+            'contact_name' => $application['contact_name'],
+            // Escaped, not sanitised. $message is citizen-authored and the template
+            // marks it |safe_html, so sending as 'html' would otherwise render whatever
+            // markup a citizen typed - including a live <a href> - inside a mail that
+            // arrives from a municipal sender. Escaping makes it inert; safe_html then
+            // means "do not escape again" rather than "unescape". nl2br keeps multi-line
+            // comments readable, which strip_tags used to do via its \n replacement.
+            // The (string) cast is required: passing null to htmlspecialchars() is
+            // deprecated from PHP 8.1 and this runs 8.4.
+            'message' => nl2br(htmlspecialchars((string)$message, ENT_QUOTES, 'UTF-8')),
+            'building_name' => $application['building_name'],
+            'activity_name' => $activity['name'],
+            'contact_email' => $application['contact_email'],
+            'contact_phone' => $application['contact_phone'],
+            'link' => $link,
+        ]);
+
+        $flags = $this->settings->get('flags');
+        $in_booking_backend = isset($flags['currentapp']) && $flags['currentapp'] == 'booking';
+
+        foreach (array_unique($mailaddresses) as $adr)
+        {
+            try
+            {
+                $this->send->msg('email', $adr, $subject, $body, '', '', '', $from, 'AktivKommune', 'html');
+
+                if ($in_booking_backend)
+                {
+                    Cache::message_set("Epost er sendt til {$adr}");
+                }
+            }
+            catch (Exception $e)
+            {
+                if ($in_booking_backend)
+                {
+                    Cache::message_set("Epost feilet til {$adr}", 'error');
+                }
+
+                $log = new Log();
+                $log->error(array(
+                    'text'	=> 'EmailService::sendStatusChangeNotificationToStaff() : error when trying to send email. Error: %1',
+                    'p1'	=> $e->getMessage(),
+                    'line'	=> __LINE__,
+                    'file'	=> __FILE__
+                ));
+            }
         }
     }
 

@@ -1,0 +1,120 @@
+.container {
+  flex: 1;
+  overflow-y: auto;
+  background: #fff;
+  min-width: 0;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #5f6368;
+  font-size: 14px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.toolbarButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: #f1f3f4;
+  }
+}
+
+.toolbarButtonDanger {
+  composes: toolbarButton;
+  color: #d93025;
+
+  &:hover {
+    background: #fce8e6;
+  }
+}
+
+.trashBanner {
+  padding: 8px 24px;
+  background: #fce8e6;
+  color: #d93025;
+  font-size: 13px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.content {
+  padding: 24px;
+}
+
+.subject {
+  font-size: 22px;
+  font-weight: 400;
+  color: #202124;
+  margin-bottom: 20px;
+  line-height: 1.3;
+}
+
+.meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.senderInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #1a73e8;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.senderName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202124;
+}
+
+.recipient {
+  font-size: 12px;
+  color: #5f6368;
+}
+
+.dateText {
+  font-size: 12px;
+  color: #5f6368;
+  white-space: nowrap;
+}
+
+.emailFrame {
+  width: 100%;
+  border: none;
+  min-height: 200px;
+}

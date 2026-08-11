@@ -315,8 +315,8 @@ class EntityController
 			return array();
 		}
 
-		$contentType = strtolower((string)$request->getHeaderLine('Content-Type'));
-		if (strpos($contentType, 'application/json') !== false)
+		$contentType = (string)$request->getHeaderLine('Content-Type');
+		if (stripos($contentType, 'application/json') !== false)
 		{
 			$decoded = json_decode($rawBody, true);
 			if (!is_array($decoded))
@@ -325,6 +325,11 @@ class EntityController
 			}
 
 			return $decoded;
+		}
+
+		if (stripos($contentType, 'multipart/form-data') !== false)
+		{
+			return BoCommon::parseMultipartFormData($rawBody, $contentType);
 		}
 
 		$decoded = array();

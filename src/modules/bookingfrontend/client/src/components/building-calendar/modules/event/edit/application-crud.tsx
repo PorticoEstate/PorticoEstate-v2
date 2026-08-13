@@ -283,23 +283,20 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			return false;
 		}
 
-		// Special handling for late night hours (23:45:00 or later)
-		// Find the latest boundary for this day
-		const sortedBoundaries = [...dayBoundaries].sort((a, b) =>
-			b.to_.localeCompare(a.to_)
-		);
-
-		const latestBoundaryTo = sortedBoundaries[0]?.to_;
-
-		// If the latest boundary extends to 23:45:00 or later, allow bookings until midnight
-		if (latestBoundaryTo && latestBoundaryTo >= '23:45:00' && timeStr <= '24:00:00') {
-			return true;
-		}
-
-		// Standard check: time falls within any boundary of any active season
-		return dayBoundaries.some(boundary =>
-			boundary.from_ <= timeStr && boundary.to_ >= timeStr
-		);
+		// A boundary reaching 23:45 or later is treated as ending at midnight -- "allow
+		// bookings until midnight", the intent the previous comment documented.
+		//
+		// It extends the END ONLY. The previous form was a separate early return guarded by
+		// `timeStr <= '24:00:00'`, which is TRUE for every possible time: it opened the whole
+		// day, 00:00 included, and the boundary check below was never reached. The same
+		// asymmetric rule is already implemented correctly in two other places --
+		// full-calendar-view.tsx (slotMaxTime, and the closed-block skip after the last
+		// boundary) and getTimeBoundariesForDate in this file -- neither of which has a
+		// morning equivalent.
+		return dayBoundaries.some(boundary => {
+			const effectiveTo = boundary.to_ >= '23:45:00' ? '24:00:00' : boundary.to_;
+			return boundary.from_ <= timeStr && effectiveTo >= timeStr;
+		});
 	}, [props.seasons, closeWhenNoSeasons]);
 
 	const defaultStartEnd = useMemo(() => {

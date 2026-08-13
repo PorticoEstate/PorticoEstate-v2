@@ -35,7 +35,8 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
         deletePartialApplication(id);
     };
 
-    const handleSubmit = () => {
+    // Navigation only -- the application is submitted from the checkout page itself.
+    const handleGoToSubmission = () => {
         props.setOpen(false);
         router.push('/checkout');
     };
@@ -57,7 +58,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
             applications={basketData?.list ?? []}
             onEditApplication={handleEdit}
             onRemoveApplication={handleRemove}
-            onSubmit={handleSubmit}
+            onGoToSubmission={handleGoToSubmission}
             onClose={handleClose}
         />
     );

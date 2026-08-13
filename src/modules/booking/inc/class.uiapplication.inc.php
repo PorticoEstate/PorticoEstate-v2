@@ -47,7 +47,9 @@ class booking_uiapplication extends booking_uicommon
 		'delete'					 => true,
 		'get_activity_data'			 => true,
 		'get_applications'			 => true,
-		'check_collision_for_deny_resources' => true
+		'check_collision_for_deny_resources' => true,
+		'archive_as_rejected'			 => true,
+		'archive_as_accepted'			 => true,
 	);
 	protected $customer_id,
 		$default_module = 'bookingfrontend',
@@ -56,6 +58,7 @@ class booking_uiapplication extends booking_uicommon
 	protected $building_so;
 	protected $errors = array();
 	private $acl_delete;
+	private $acl_edit;
 	protected $combine_applications = false;
 	var $event_bo, $activity_bo, $audience_bo, $assoc_bo, $agegroup_bo, $resource_bo, $building_bo, $organization_bo,
 		$document_building, $document_resource, $fields, $display_name, $accounts_obj, $sessions;
@@ -83,6 +86,8 @@ class booking_uiapplication extends booking_uicommon
 		$this->building_so		 = new booking_sobuilding();
 		$this->application_bo	 = new booking_boapplication();
 		$this->acl_delete		 = $this->acl->check('.application', ACL_DELETE, 'booking');
+		$this->acl_edit			 = $this->acl->check('.application', ACL_EDIT, 'booking');
+
 		$this->accounts_obj		 = new Accounts();
 		$this->sessions			 = Sessions::getInstance();
 
@@ -565,12 +570,22 @@ class booking_uiapplication extends booking_uicommon
 		}
 		phpgwapi_jquery::load_widget('autocomplete');
 		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		$jqcal2 = createObject('phpgwapi.jqcal2');
+		$jqcal2->add_listener('filter_from_');
 
 		$data = array(
 			'datatable_name' => $this->display_name,
 			'form' => array(
 				'toolbar' => array(
-					'item' => array(),
+					'item' => array(
+						array(
+							'type' => 'date-picker',
+							'id' => 'from_',
+							'name' => 'from_',
+							'value' => '',
+							'text' => lang('from') . ':',
+						),
+					),
 				),
 			),
 			'datatable' => array(
@@ -657,6 +672,8 @@ class booking_uiapplication extends booking_uicommon
 			)
 		);
 
+		$data['datatable']['actions'] = array();
+
 		if ($this->acl_delete)
 		{
 			$data['datatable']['actions'][] = array(
@@ -670,10 +687,33 @@ class booking_uiapplication extends booking_uicommon
 				'parameters'	 => json_encode($parameters)
 			);
 		}
-		else
+
+		if ($this->acl_edit)
 		{
-			$data['datatable']['actions'][] = array();
+			$data['datatable']['actions'][] = array(
+				'my_name'		 => 'archive_as rejected',
+				'statustext'	 => lang('archive as rejected'),
+				'text'			 => lang('archive as rejected'),
+				'action'		 => phpgw::link('/index.php', array(
+					'menuaction' => 'booking.uiapplication.archive_as_rejected',
+					'delete'		 => 'dummy' // FIXME to trigger the json
+				)),
+				'parameters'	 => json_encode($parameters)
+			);
+
+			// archive as accepted
+			$data['datatable']['actions'][] = array(
+				'my_name'		 => 'archive_as accepted',
+				'statustext'	 => lang('archive as accepted'),
+				'text'			 => lang('archive as accepted'),
+				'action'		 => phpgw::link('/index.php', array(
+					'menuaction' => 'booking.uiapplication.archive_as_accepted',
+					'delete'		 => 'dummy' // FIXME to trigger the json
+				)),
+				'parameters'	 => json_encode($parameters)
+			);
 		}
+
 
 		$data['datatable']['new_item'] = self::link(array('menuaction' => 'booking.uiapplication.add'));
 
@@ -690,11 +730,11 @@ class booking_uiapplication extends booking_uicommon
 
 		if ($this->combine_applications)
 		{
-			$filters['where'] = "(bb_application.id IN ({$filter_id_sql})) AND (bb_application.parent_id IS NULL OR bb_application.parent_id = bb_application.id)";
+			$filters['where'][] = "(bb_application.id IN ({$filter_id_sql})) AND (bb_application.parent_id IS NULL OR bb_application.parent_id = bb_application.id)";
 		}
 		else
 		{
-			$filters['where'] = "(bb_application.id IN ({$filter_id_sql}))";
+			$filters['where'][] = "(bb_application.id IN ({$filter_id_sql}))";
 		}
 
 		$activity_id = Sanitizer::get_var('activities', 'int', 'REQUEST', null);
@@ -722,6 +762,13 @@ class booking_uiapplication extends booking_uicommon
 			$filters['status'] = 'NEW';
 		}
 
+		$filter_from = Sanitizer::get_var('from_', 'string', 'REQUEST', null);
+
+		if ($filter_from)
+		{
+			$filter_from2 = date('Y-m-d', phpgwapi_datetime::date_to_timestamp($filter_from));
+			$filters['where'][] = "%%table%%" . sprintf(".from_ >= '%s 00:00:00'", Db::getInstance()->db_addslashes($filter_from2));
+		}
 
 		$search = Sanitizer::get_var('search');
 		$order = Sanitizer::get_var('order');
@@ -5163,6 +5210,99 @@ JS;
 			$this->bo->delete_application($application_id);
 			$status = lang('deleted');
 			Db::getInstance()->transaction_commit();
+		}
+		else
+		{
+			$status = lang('error');
+		}
+		return $status;
+	}
+
+	function archive_as_rejected()
+	{
+		if (!$this->acl_edit)
+		{
+			return lang('sorry - insufficient rights');
+		}
+
+		$application_id = Sanitizer::get_var('id', 'int', 'GET');
+
+		if ($application_id)
+		{
+			Db::getInstance()->transaction_begin();
+
+			$application = $this->bo->read_single($application_id);
+			if ($application['status'] !== 'REJECTED')
+			{
+				$comment = lang('Application archived as rejected');
+				createObject('booking.sopurchase_order')->delete_purchase_order($application_id);
+
+				//find related items and set them to inactive
+				$soassociation = new booking_soapplication_association();
+				$associations = $soassociation->read(array('results' => -1, 'filters' => array('application_id' => $application_id)));
+				foreach ($associations['results'] as $association)
+				{
+					if ($association['active'] === 1 )
+					{
+						$association_object = createObject('booking.so' . $association['type']);
+						$association_item = $association_object->read_single($association['id']);
+						if ($association['type'] === 'event')
+						{
+							$this->add_comment($association_item, $comment);
+						}
+						$association_item['active'] = 0;
+						$association_object->update($association_item);
+					}
+				}
+			
+				$application['status'] = 'REJECTED';
+				// add a comment to the application history log
+			
+				$this->add_comment($application, $comment);
+				$this->bo->so->update($application);
+				$status = lang('%1 archived as rejected', $application_id);
+			}
+			else
+			{
+				$status = lang('%1 already rejected', $application_id);
+			}
+
+			Db::getInstance()->transaction_commit();
+		}
+		else
+		{
+			$status = lang('error');
+		}
+		return $status;
+	}
+
+	function archive_as_accepted()
+	{
+		if (!$this->acl_edit)
+		{
+			return lang('sorry - insufficient rights');
+		}
+
+		$application_id = Sanitizer::get_var('id', 'int', 'GET');
+
+		if ($application_id)
+		{
+
+			$application = $this->bo->read_single($application_id);
+			if ($application['status'] !== 'ACCEPTED')
+			{
+				$comment = lang('Application archived as accepted');
+				$application['status'] = 'ACCEPTED';
+				// add a comment to the application history log
+				$this->add_comment($application, $comment);
+				$this->bo->so->update($application);
+				$status = lang('%1 archived as accepted', $application_id);
+			}
+			else
+			{
+				$status = lang('%1 already accepted', $application_id);
+			}
+
 		}
 		else
 		{

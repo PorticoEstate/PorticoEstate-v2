@@ -1,3 +1,7 @@
+%1 already accepted	booking	en	%1 already accepted
+%1 already rejected	booking	en	%1 already rejected
+%1 archived as accepted	booking	en	%1 archived as accepted
+%1 archived as rejected	booking	en	%1 archived as rejected
 %1 e-mails were not sent successfully	booking	en	%1 e-mails were not sent successfully
 %1 e-mails were sent successfully	booking	en	%1 e-mails were sent successfully
 - Actions -	booking	en	- actions -
@@ -87,6 +91,8 @@ amount	booking	en	Amount
 and	booking	en	And
 application	booking	en	Application
 application add	booking	en	Application add
+Application archived as accepted	booking	en	Application archived as accepted
+Application archived as rejected	booking	en	Application archived as rejected
 Application comment email settings	booking	en	Application comment email settings
 application edit	booking	en	Application edit
 Application email settings	booking	en	Application email settings
@@ -102,6 +108,8 @@ Apply for time	booking	en	Apply for time
 apply_focal_point	booking	en	Use
 approval_description	booking	en	You are about to approve this application. The organizer will receive an email with a summary and any comment you add here.
 approve	booking	en	Approve
+archive as accepted	booking	en	Archive as accepted
+archive as rejected	booking	en	Archive as rejected
 archive_key	booking	en	Archive key
 archived	booking	en	Archived
 Are you sure you want to delete?	booking	en	Are you sure you want to delete?

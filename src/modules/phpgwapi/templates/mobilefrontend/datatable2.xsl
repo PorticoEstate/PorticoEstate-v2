@@ -1791,21 +1791,37 @@
 			var api = oTable.api();
 			for (var i in filter_selects)
 			{
-				select = $("#" + filter_selects[i]);
-				select.prop('selectedIndex',0);
-				try
+				var select = $("#" + filter_selects[i]);
+				if (!select.length)
 				{
-					if($("#" + filter_selects[i]).attr('multiple'))
-					{
-						$("#" + filter_selects[i]).multiselect('deselectAll', false);
-			//			$("#" + filter_selects[i]).multiselect({ buttonContainer: '' });
-						$("#" + filter_selects[i]).multiselect('refresh');
-					}
-
-					column_search_is_initated = false;
+					continue;
 				}
-				catch(e)
-				{}
+
+				if (select.is('select[multiple]'))
+				{
+					select.find('option').prop('selected', false);
+					if ($.fn && $.fn.multiselect)
+					{
+						try
+						{
+							select.multiselect('deselectAll', false);
+							select.multiselect('refresh');
+						}
+						catch(e)
+						{}
+					}
+					select.trigger('change');
+				}
+				else
+				{
+					select.prop('selectedIndex', 0);
+					if (select.is('select'))
+					{
+						select.trigger('change');
+					}
+				}
+
+				column_search_is_initated = false;
 			}
 
 			var oControls = $('.dtable_custom_controls:first').find(':input[name]');

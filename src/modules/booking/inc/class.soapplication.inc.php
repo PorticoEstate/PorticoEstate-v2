@@ -326,6 +326,7 @@ class booking_soapplication extends booking_socommon
 
 	function get_tilsyn_email($id)
 	{
+		$id = $this->db->db_addslashes($id);
 		$sql = "SELECT tilsyn_email, tilsyn_email2, email FROM bb_building where id=(select id from bb_building where name = '$id' AND active = 1)";
 		$this->db->limit_query($sql, 0, __LINE__, __FILE__, 1);
 		if (!$this->db->next_record())

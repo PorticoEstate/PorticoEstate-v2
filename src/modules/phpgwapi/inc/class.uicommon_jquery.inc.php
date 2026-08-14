@@ -581,7 +581,7 @@ abstract class phpgwapi_uicommon_jquery
 
 		if ($twig_rootdir)
 		{
-			\App\modules\phpgwapi\services\Twig::getInstance()->addPath($twig_rootdir);
+			\App\modules\phpgwapi\services\Twig::getInstance()->prependPath($twig_rootdir);
 		}
 
 		if (self::$flash_msgs)

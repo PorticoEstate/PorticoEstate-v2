@@ -15,6 +15,7 @@ import {DateTime} from 'luxon';
 import MobileDialog from '@/components/dialog/mobile-dialog';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {useBuilding, useBuildingResources} from '@/service/api/building';
+import {isWithinBusinessHours as isWithinBusinessHoursShared} from '@/service/utils/business-hours';
 import {FCallTempEvent} from '@/components/building-calendar/building-calendar.types';
 import ColourCircle from '@/components/building-calendar/modules/colour-circle/colour-circle';
 import styles from './application-crud.module.scss';
@@ -243,61 +244,17 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	// has no seasons, it is open unless an admin has opted in to closing it.
 	const closeWhenNoSeasons = serverSettings?.bookingfrontend_config?.close_calendar_without_season ?? false;
 
-	const isWithinBusinessHours = useCallback((date: Date, resourceIds: string[] = []): boolean => {
-		// No seasons defined at all: closed or open depending on admin config
-		if (!props.seasons || props.seasons.length === 0) {
-			return !closeWhenNoSeasons;
-		}
-		const dt = DateTime.fromJSDate(date);
-		const dayOfWeek = dt.weekday;
-		const timeStr = dt.toFormat('HH:mm:ss');
-
-		// Get active seasons for the given date that match selected resources
-		const activeSeasons = props.seasons?.filter(season => {
-			const seasonStart = DateTime.fromISO(season.from_);
-			const seasonEnd = DateTime.fromISO(season.to_);
-
-			// Check if season has any resources that match selected resources
-			const hasMatchingResources = resourceIds.length === 0 ||
-				season.resources.some(seasonResource =>
-					resourceIds.includes(seasonResource.id.toString())
-				);
-
-			return season.active && dt >= seasonStart && dt <= seasonEnd && hasMatchingResources;
-		});
-
-		// No active season covers this date (out of season): closed, mirroring the
-		// calendar's isDateCoveredBySeason gate.
-		if (activeSeasons.length === 0) {
-			return false;
-		}
-
-		// Get all boundaries for this day from active seasons
-		const dayBoundaries = activeSeasons.flatMap(season =>
-			season.boundaries.filter(b => b.wday === dayOfWeek)
-		);
-
-		// If no boundaries defined for this day, consider it CLOSED (not within business hours)
-		// This ensures that days missing from season boundaries are treated as closed
-		if (dayBoundaries.length === 0) {
-			return false;
-		}
-
-		// A boundary reaching 23:45 or later is treated as ending at midnight -- "allow
-		// bookings until midnight", the intent the previous comment documented.
-		//
-		// It extends the END ONLY. The previous form was a separate early return guarded by
-		// `timeStr <= '24:00:00'`, which is TRUE for every possible time: it opened the whole
-		// day, 00:00 included, and the boundary check below was never reached. The same
-		// asymmetric rule is already implemented correctly in two other places --
-		// full-calendar-view.tsx (slotMaxTime, and the closed-block skip after the last
-		// boundary) and getTimeBoundariesForDate in this file -- neither of which has a
-		// morning equivalent.
-		return dayBoundaries.some(boundary => {
-			const effectiveTo = boundary.to_ >= '23:45:00' ? '24:00:00' : boundary.to_;
-			return boundary.from_ <= timeStr && effectiveTo >= timeStr;
-		});
-	}, [props.seasons, closeWhenNoSeasons]);
+	// Delegates to the shared implementation so the hospitality order modal judges opening
+	// hours by exactly these rules. Do not re-inline: the three asymmetric exits and the
+	// 23:45 end-extension were fixed here once (f12b1431b) and a second copy is how that
+	// fix gets lost again.
+	//
+	// The `= []` default is preserved for the calendar's existing callers, which rely on it.
+	// The shared function makes resourceIds REQUIRED on purpose -- an empty array means "no
+	// resource filter" and matches every season -- so a NEW caller must pass one explicitly.
+	const isWithinBusinessHours = useCallback((date: Date, resourceIds: string[] = []): boolean =>
+		isWithinBusinessHoursShared(date, resourceIds, props.seasons, closeWhenNoSeasons),
+	[props.seasons, closeWhenNoSeasons]);
 
 	const defaultStartEnd = useMemo(() => {
 		// Helper function to create default timestamps

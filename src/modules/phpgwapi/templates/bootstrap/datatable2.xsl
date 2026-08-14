@@ -38,6 +38,7 @@
 		var filter_selects = {};
 		var customFilters = {}; // Store custom filter values for modern DataTables compatibility
 		var lang = <xsl:value-of select="php:function('js_lang', 'Search')"/>;
+		var remove_filter_lang = <xsl:value-of select="php:function('js_lang', 'remove filter')"/>;
 	</script>
 	<xsl:call-template name="jquery_phpgw_i18n"/>
 	<xsl:apply-templates select="form" />
@@ -51,8 +52,44 @@
 
 
 <xsl:template match="toolbar" xmlns:php="http://php.net/xsl">
+	<style>
+		#active_filters {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 0.35rem;
+		}
+
+		.app-filter-chip {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.35rem;
+			padding: 0.2rem 0.35rem 0.2rem 0.6rem;
+			border: 1px solid #adb5bd;
+			border-radius: 999px;
+			background: #f8f9fa;
+		}
+
+		.app-filter-chip__remove {
+			width: 1.35rem;
+			height: 1.35rem;
+			padding: 0;
+			border: 0;
+			border-radius: 50%;
+			background: transparent;
+			color: inherit;
+			font-size: 1.1rem;
+			line-height: 1;
+			cursor: pointer;
+		}
+
+		.app-filter-chip__remove:hover,
+		.app-filter-chip__remove:focus-visible {
+			background: #e9ecef;
+		}
+	</style>
 	<div class="row ms-1">
-		<div id="active_filters">
+		<div id="active_filters" aria-live="polite">
 		</div>
 	</div>
 	<div class="mt-2 mb-2 ms-1">
@@ -1226,7 +1263,7 @@
 			init_table = function()
 			{
       			var	stateSave = true;
-                if (typeof(table_url.searchObject.clear_state) \!= 'undefined' && table_url.searchObject.clear_state == 1)
+				if (typeof(table_url.searchObject.clear_state) != 'undefined' && table_url.searchObject.clear_state == 1)
                 {
                    stateSave = false;
                    sessionStorage.removeItem('state_' + menuaction);
@@ -1248,7 +1285,7 @@
 						delete aoData.columns;
 						aoData.columns = {};
 
-						if(typeof(aoData.order[0]) \!= 'undefined')
+						if(typeof(aoData.order[0]) != 'undefined')
 						{
 							var column = aoData.order[0].column;
 							var dir = aoData.order[0].dir;
@@ -1262,7 +1299,7 @@
 						
 						for ( var i=0 ; i< _columns.length ; i++ )
 						{
-						if(_columns[i].searchable && _columns[i].search.value \!=="")
+						if(_columns[i].searchable && _columns[i].search.value !=="")
 						{
 							aoData.columns[i] = _columns[i];
 						}
@@ -1287,39 +1324,45 @@
 								aoData[$(this).attr('name')] = checkboxValue;
 								if(checkboxValue === 1)
 								{
-									active_filters_html.push($(this).attr('title'));
+									if ($(this).attr('title'))
+									{
+										active_filters_html.push({name: $(this).attr('name'), title: $(this).attr('title')});
+									}
 								}
 								return;
 							}
 							var test = $(this).val();
 						//	console.log(test.constructor);
-							if ( $(this).attr('name') && test \!= null && test.constructor \!== Array)
+							if ( $(this).attr('name') && test != null && test.constructor !== Array)
 							{
 								var value = $(this).val().replace('"', '"');
 								aoData[ $(this).attr('name') ] = value;
-								if(value && value \!=0 )
+								if(value && value !=0 )
 								{
-									active_filters_html.push($(this).attr('title'));
+									if ($(this).attr('title'))
+									{
+										active_filters_html.push({name: $(this).attr('name'), title: $(this).attr('title')});
+									}
 								}
 							}
-							if ( $(this).attr('name') && test \!= null && test.constructor === Array)
+							if ( $(this).attr('name') && test != null && test.constructor === Array)
 							{
 								value = $(this).val();
 								aoData[ $(this).attr('name') ] = value;
 
 								if(value.length > 0 )
 								{
-									active_filters_html.push($(this).attr('title'));
+									if ($(this).attr('title'))
+									{
+										active_filters_html.push({name: $(this).attr('name'), title: $(this).attr('title')});
+									}
 								}
 								init_multiselect(oControl);
 							}
 
 						});
 
-						if(active_filters_html.length > 0 )
-						{
-							$('#active_filters').html("Aktive filter: " + active_filters_html.join(', '));
-						}
+						renderActiveFilters(active_filters_html);
 						var search_value = $('.dt-search input[aria-controls="datatable-container"]').val();
 
 						if(active_filters_html.length > 0 || search_value || column_search_is_initated)
@@ -1342,7 +1385,7 @@
 
 					},
 					dataSrc: function ( json ) {
-						if (typeof(json.sessionExpired) \!= 'undefined' && json.sessionExpired == true)
+						if (typeof(json.sessionExpired) != 'undefined' && json.sessionExpired == true)
 						{
 							window.alert('sessionExpired - please log in');
 							JqueryPortico.lightboxlogin();//defined in common.js
@@ -1367,12 +1410,12 @@
 							temp[$(this).attr('name')] = checkboxState;
 							return;
 						}
-						if ( $(this).attr('name') && $(this).val() \!= null && $(this).val().constructor \!= Array)
+						if ( $(this).attr('name') && $(this).val() != null && $(this).val().constructor != Array)
 						{
 							sValue[ $(this).attr('name') ] = $(this).val().replace('"', '"');
 							temp[ $(this).attr('name') ] = $(this).val().replace('"', '"');
 						}
-						if ( $(this).attr('name') && $(this).val() \!= null && $(this).val().constructor == Array)
+						if ( $(this).attr('name') && $(this).val() != null && $(this).val().constructor == Array)
 						{
 							sValue[ $(this).attr('name') ] = $(this).val();
 							temp[ $(this).attr('name') ] = $(this).val();
@@ -1389,7 +1432,7 @@
 				fnStateLoadParams: function ( oSettings, oData ) {
 					//Load custom filters
 					var retrievedObject = sessionStorage.getItem('state_' + menuaction);
-					if(typeof(retrievedObject) \!= 'undefined')
+					if(typeof(retrievedObject) != 'undefined')
 					{
 						var params = {};
 
@@ -1406,21 +1449,21 @@
 					{
 						for (var attrname in oData.columns)
 						{
-							if(typeof(oData.columns[attrname].search) \!= 'undefined')
+							if(typeof(oData.columns[attrname].search) != 'undefined')
 							{
 								delete oData.columns[attrname].search;
 							}
 						}
 					}
 					//	console.log(params);
-					if(params \!== null)
+					if(params !== null)
 					{
 						oControls.each(function() {
 							var oControl = $(this);
 							$.each(params, function(index, value) {
 								if ( index == oControl.attr('name') )
 								{
-									if (clear_state \!== true)
+									if (clear_state !== true)
 									{
 										if(oControl.is(':checkbox'))
 										{
@@ -1930,6 +1973,79 @@
 				return cnt;
 			}
 		});
+
+		renderActiveFilters = function(filters)
+		{
+			var container = $('#active_filters').empty();
+			if (!filters.length)
+			{
+				return;
+			}
+
+			container.append(document.createTextNode('Aktive filter: '));
+			$.each(filters, function(index, filter) {
+				var chip = $('<span>', {'class': 'app-filter-chip'});
+				chip.append($('<span>', {'class': 'app-filter-chip__label'}).text(filter.title));
+				chip.append($('<button>', {
+					type: 'button',
+					'class': 'app-filter-chip__remove',
+					title: remove_filter_lang,
+					'aria-label': remove_filter_lang + ' ' + filter.title
+				}).text('\u00D7').on('click', function() {
+					reset_single_filter(filter.name);
+				}));
+				container.append(chip).append(document.createTextNode(' '));
+			});
+		};
+
+		reset_single_filter = function(param)
+		{
+			var controls = $('.dtable_custom_controls:first').find(':input[name]');
+			controls.each(function() {
+				if ($(this).attr('name') !== param)
+				{
+					return;
+				}
+
+				if ($(this).is(':checkbox'))
+				{
+					$(this).prop('checked', false);
+				}
+				else if ($(this).is('select'))
+				{
+					if ($(this).is('[multiple]'))
+					{
+						$(this).find('option').prop('selected', false);
+						if ($.fn && $.fn.multiselect)
+						{
+							try
+							{
+								$(this).multiselect('deselectAll', false);
+								$(this).multiselect('refresh');
+							}
+							catch(e)
+							{}
+						}
+					}
+					else
+					{
+						$(this).prop('selectedIndex', 0);
+					}
+				}
+				else
+				{
+					$(this).val('');
+				}
+			});
+
+			if (/_id$/.test(param))
+			{
+				$('#' + param.replace(/_id$/, '_name')).val('');
+			}
+
+			clearFilterParam(param);
+			oTable.api().ajax.reload();
+		};
 
 		reset_filter = function()
 		{

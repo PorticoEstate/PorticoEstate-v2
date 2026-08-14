@@ -1244,12 +1244,12 @@
 					{
 						temp[attrname] = sValue[attrname];
 					}
-					localStorage.setItem('state_' + menuaction, JSON.stringify(temp));
+					sessionStorage.setItem('state_' + menuaction, JSON.stringify(temp));
 					return sValue;
 				},
 				fnStateLoadParams: function ( oSettings, oData ) {
 					//Load custom filters
-					var retrievedObject = localStorage.getItem('state_' + menuaction);
+					var retrievedObject = sessionStorage.getItem('state_' + menuaction);
 					if(typeof(retrievedObject) != 'undefined')
 					{
 						var	params = {};

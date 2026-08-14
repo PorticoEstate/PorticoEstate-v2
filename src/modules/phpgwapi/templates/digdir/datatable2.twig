@@ -885,19 +885,10 @@
 			init_table = function()
 			{
 				var stateSave = true;
-				var pageReload = false;
-				// Detect page refresh
-				if (performance.getEntriesByType("navigation")[0].type === "reload")
-				{
-					pageReload = true;
-				}
-
-				console.log(app_method);
-				console.log(app_method_referrer);
-				//check referer and if it is the same as the current page, then clear state
-				if(!pageReload && app_method !== app_method_referrer)
+				if (typeof(table_url.searchObject.clear_state) != 'undefined' && table_url.searchObject.clear_state == 1)
 				{
 					stateSave = false;
+					sessionStorage.removeItem('state_' + menuaction);
 				}
 
 				oTable = $('#datatable-container').dataTable({
@@ -1051,12 +1042,12 @@
 						{
 							temp[attrname] = sValue[attrname];
 						}
-						localStorage.setItem('state_' + menuaction, JSON.stringify(temp));
+						sessionStorage.setItem('state_' + menuaction, JSON.stringify(temp));
 						return sValue;
 					},
 					fnStateLoadParams: function ( oSettings, oData ) {
 						//Load custom filters
-						var retrievedObject = localStorage.getItem('state_' + menuaction);
+						var retrievedObject = sessionStorage.getItem('state_' + menuaction);
 						if(typeof(retrievedObject) != 'undefined')
 						{
 							var params = {};

@@ -428,6 +428,35 @@
 				});
 			{% endif %}
 		{% endif %}
+		{% if datatable_config.extra_buttons is defined and datatable_config.extra_buttons is iterable %}
+			{% for btn in datatable_config.extra_buttons %}
+				{% if btn.text is defined and btn.text %}
+					{% if btn.onclick is defined and btn.onclick %}
+						button_def.push({
+							text: "{{ btn.text|e('js') }}",
+							{% if btn.className is defined and btn.className %}
+								className: "{{ btn.className|e('js') }}",
+							{% endif %}
+							action: function (e, dt, node, config) {
+								{{ btn.onclick|raw }};
+							}
+						});
+					{% elseif btn.url is defined and btn.url %}
+						button_def.push({
+							text: "{{ btn.text|e('js') }}",
+							{% if btn.className is defined and btn.className %}
+								className: "{{ btn.className|e('js') }}",
+							{% endif %}
+							sUrl: "{{ btn.url|replace({'&amp;':'&'})|e('js') }}",
+							target: "{{ btn.target|default('_self')|e('js') }}",
+							action: function (e, dt, node, config) {
+								window.open(config.sUrl, config.target || '_self');
+							}
+						});
+					{% endif %}
+				{% endif %}
+			{% endfor %}
+		{% endif %}
 		{% if datatable_config.select_all is defined and datatable_config.select_all == '1' %}
 			button_def.push({
 				text: "{{ lang('select all')|e('js') }}",

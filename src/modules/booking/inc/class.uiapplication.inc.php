@@ -513,7 +513,7 @@ class booking_uiapplication extends booking_uicommon
 			'text'	 => lang('Status') . ':',
 			'list'	 => array(
 				array(
-					'id'	 => 'none',
+					'id'	 => '',
 					'name'	 => lang('Not selected')
 				),
 				array(
@@ -749,7 +749,7 @@ class booking_uiapplication extends booking_uicommon
 		$filters['status'] = 'NEW';
 
 		$test = Sanitizer::get_var('status', 'string', 'REQUEST', null);
-		if (Sanitizer::get_var('status') == 'none')
+		if (!Sanitizer::get_var('status'))
 		{
 			$filters['status'] = array('NEW', 'PENDING', 'REJECTED', 'ACCEPTED');
 		}

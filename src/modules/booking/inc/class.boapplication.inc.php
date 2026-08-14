@@ -360,96 +360,24 @@ class booking_boapplication extends booking_bocommon
 
 
 	/**
-	 * Send message about comment on application to case officer.
+	 * Notify case officers that an application's status changed, or that a comment was added.
+	 *
+	 * Delegated to EmailService. The body that used to live here rendered
+	 * admin_comment_notification.twig - which contains a real
+	 * <a href="{{ link }}">Lenke til soknad</a> - and then ran strip_tags() over the
+	 * result, which keeps the anchor text and throws the href away, before sending as
+	 * 'text'. Case officers received the words "Lenke til soknad" with no address at all.
+	 *
+	 * EmailService renders the same template and sends it as 'html'. Recipients,
+	 * per-recipient delivery and operator feedback are unchanged.
+	 *
+	 * @param array       $application Application row
+	 * @param string|null $message     Status-change comment shown to the case officer
 	 */
 	function send_admin_notification($application, $message = null)
 	{
-		if (!(isset($this->serverSettings['smtp_server']) && $this->serverSettings['smtp_server']))
-		{
-			//				return;
-		}
-		$send = CreateObject('phpgwapi.send');
-
-		$config = CreateObject('phpgwapi.config', 'booking');
-		$config->read();
-
-		$from = isset($config->config_data['email_sender']) && $config->config_data['email_sender'] ? $config->config_data['email_sender'] : "noreply<noreply@{$this->serverSettings['hostname']}>";
-
-		$subject = $config->config_data['application_comment_mail_subject_caseofficer'];
-
-		$mailadresses = $config->config_data['emails'];
-		$mailadresses = explode("\n", $mailadresses);
-
-		$building_info = $this->so->get_building_info($application['id']);
-		$extra_mail_addresses = $this->get_mail_addresses($building_info['id'], $application['case_officer_id']);
-
-		if (!empty($mailadresses[0]))
-		{
-			$mailadresses = array_merge($mailadresses, array_values($extra_mail_addresses));
-		}
-		else
-		{
-			$mailadresses = array_values($extra_mail_addresses);
-		}
-
-		// Generate backend link with SSL enforcement
-		$enforce_ssl = $this->serverSettings['enforce_ssl'];
-		$this->serverSettings['enforce_ssl'] = true;
-		$link = phpgw::link('/index.php', array('menuaction' => 'booking.uiapplication.show', 'id' => $application['id']), false, true, true);
-		$link = str_replace('&amp;', '&', $link);
-		$this->serverSettings['enforce_ssl'] = $enforce_ssl;
-
-		$activity = $this->activity_bo->read_single($application['activity_id']);
-
-		// Determine organization name if applicable
-		$organization_name = '';
-		if (strlen($application['customer_organization_number']) == 9)
-		{
-			$orgid = $this->organization_bo->so->get_orgid($application['customer_organization_number']);
-			$organization = $this->organization_bo->read_single($orgid);
-			$organization_name = $organization['name'];
-		}
-
-		$twig = new EmailTwigHelper('booking');
-		$plain_text = $twig->render('@views/emails/admin_comment_notification.twig', [
-			'organization_name' => $organization_name,
-			'contact_name' => $application['contact_name'],
-			'message' => $message,
-			'building_name' => $application['building_name'],
-			'activity_name' => $activity['name'],
-			'contact_email' => $application['contact_email'],
-			'contact_phone' => $application['contact_phone'],
-			'link' => $link,
-		]);
-
-		// Strip HTML for plain text version
-		$plain_text_stripped = strip_tags(str_replace(['<br />', '<br/>', '<br>'], "\n", $plain_text));
-
-		$_mailadresses = array_unique($mailadresses);
-		foreach ($_mailadresses as $adr)
-		{
-			try
-			{
-				$send->msg('email', $adr, $subject, $plain_text_stripped, '', '', '', $from, 'AktivKommune', 'text');
-
-				if ($this->flags['currentapp'] == 'booking')
-				{
-					Cache::message_set("Epost er sendt til {$adr}");
-				}
-			}
-			catch (Exception $e)
-			{
-				Cache::message_set("Epost feilet til {$adr}", 'error');
-
-				$log = new Log();
-				$log->error(array(
-					'text'	=> 'booking_boapplication::send_admin_notification() : error when trying to send email. Error: %1',
-					'p1'	=> $e->getMessage(),
-					'line'	=> __LINE__,
-					'file'	=> __FILE__
-				));
-			}
-		}
+		$emailService = new EmailService();
+		$emailService->sendStatusChangeNotificationToStaff($application, $message);
 	}
 
 	/**

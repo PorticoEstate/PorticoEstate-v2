@@ -1,0 +1,222 @@
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e0e0e0;
+  overflow: hidden;
+  background: #fff;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202124;
+}
+
+.unreadBadge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: #1a73e8;
+  border-radius: 10px;
+  padding: 1px 7px;
+  line-height: 1.4;
+}
+
+.headerActions {
+  position: relative;
+}
+
+.menuButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #5f6368;
+
+  &:hover {
+    background: #f1f3f4;
+  }
+}
+
+.menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  min-width: 180px;
+  padding: 4px 0;
+  z-index: 100;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  color: #202124;
+  text-align: left;
+
+  &:hover {
+    background: #f1f3f4;
+  }
+}
+
+.loading,
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #5f6368;
+  font-size: 14px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border: none;
+  border-bottom: 1px solid #f1f3f4;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.1s;
+  font-family: inherit;
+
+  &:hover {
+    background: #f2f6fc;
+    box-shadow: inset 0 -1px 0 #dadce0;
+  }
+}
+
+.selected {
+  background: #c2e7ff !important;
+
+  &:hover {
+    background: #b0dcf8 !important;
+  }
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.topRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.sender {
+  font-size: 14px;
+  font-weight: 400;
+  color: #5f6368;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.date {
+  font-size: 12px;
+  color: #5f6368;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.subject {
+  font-size: 13px;
+  color: #5f6368;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.snippet {
+  font-size: 12px;
+  color: #5f6368;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Unread emails get bold text like Gmail
+.unread {
+  .sender {
+    font-weight: 700;
+    color: #202124;
+  }
+
+  .subject {
+    font-weight: 600;
+    color: #202124;
+  }
+
+  .date {
+    font-weight: 600;
+    color: #202124;
+  }
+
+  .snippet {
+    color: #3c4043;
+  }
+}

@@ -1800,10 +1800,10 @@ JS;
 				$sort_array2[] = $_entry['name'];
 				$content_attachments[$z]['file_name']	 = $_entry['name'];
 				$content_attachments[$z]['img_id']		 = $_entry['file_id'];
-				$content_attachments[$z]['img_url']		 = phpgw::link($view_image_url, array(
+				$content_attachments[$z]['img_url']		 = $view_image_url . '?' . http_build_query(array(
 					'img_id'	 => $_entry['file_id'],
 					'file'		 => $_entry['directory'] . '/' . $_entry['file_name']
-				));
+				), '', '&');
 				$content_attachments[$z]['thumbnail_flag'] = 'thumb=1';
 
 				$image_list[] = array(
@@ -1840,10 +1840,10 @@ JS;
 				$sort_array2[] = $_entry['name'];
 				$content_attachments[$z]['file_name']	 = $_entry['name'];
 				$content_attachments[$z]['img_id']		 = $_entry['file_id'];
-				$content_attachments[$z]['img_url']		 = phpgw::link($view_image_url, array(
+				$content_attachments[$z]['img_url']		 = $view_image_url . '?' . http_build_query(array(
 					'img_id'	 => $_entry['file_id'],
 					'file'		 => $_entry['directory'] . '/' . $_entry['file_name']
-				));
+				), "", '&');
 				$content_attachments[$z]['thumbnail_flag'] = 'thumb=1';
 
 				$image_list[] = array(

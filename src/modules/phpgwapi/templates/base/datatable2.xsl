@@ -40,6 +40,7 @@
 		var filter_selects = {};
 		var customFilters = {}; // Store custom filter values for modern DataTables compatibility
 		var lang = <xsl:value-of select="php:function('js_lang', 'Search')"/>;
+		var remove_filter_lang = <xsl:value-of select="php:function('js_lang', 'remove filter')"/>;
 	</script>
 	<xsl:call-template name="jquery_phpgw_i18n"/>
 	<xsl:apply-templates select="form" />
@@ -97,7 +98,13 @@
 		content: "\2212";
 		}
 	</style>
-	<div id="active_filters"></div>
+	<style>
+		#active_filters { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+		.app-filter-chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.35rem 0.2rem 0.6rem; border: 1px solid #adb5bd; border-radius: 999px; background: #f8f9fa; }
+		.app-filter-chip__remove { width: 1.35rem; height: 1.35rem; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 1.1rem; line-height: 1; cursor: pointer; }
+		.app-filter-chip__remove:hover, .app-filter-chip__remove:focus-visible { background: #e9ecef; }
+	</style>
+	<div id="active_filters" aria-live="polite"></div>
 	<div id="reset_filter" style="display: none;">
 		<input id="reset_filter_btn" type="checkbox" onclick="reset_filter();"/>
 		<label for="reset_filter_btn">
@@ -1224,21 +1231,12 @@
 			init_table = function()
 			{
       			var	stateSave = true;
-                var pageReload = false;
-                // Detect page refresh
-                if (performance.getEntriesByType("navigation")[0].type === "reload")
-                {
-                    pageReload = true;
-                }
-
-console.log(app_method);
-console.log(app_method_referrer);
-                //check referer and if it is the same as the current page, then clear state
-                if(!pageReload && app_method !== app_method_referrer)
+                if (typeof(table_url.searchObject.clear_state) != 'undefined' && table_url.searchObject.clear_state == 1)
                 {
                    stateSave = false;
+                   sessionStorage.removeItem('state_' + menuaction);
                 }
- 
+
  				oTable = $('#datatable-container').dataTable({
 				paginate:		disablePagination ? false : true,
 				searchDelay: 	1200,
@@ -1294,7 +1292,10 @@ console.log(app_method_referrer);
 								aoData[$(this).attr('name')] = checkboxValue;
 								if(checkboxValue === 1)
 								{
-									active_filters_html.push($(this).attr('title'));
+									if ($(this).attr('title'))
+									{
+										active_filters_html.push({name: $(this).attr('name'), title: $(this).attr('title')});
+									}
 								}
 								return;
 							}
@@ -1306,7 +1307,10 @@ console.log(app_method_referrer);
 								aoData[ $(this).attr('name') ] = value;
 								if(value && value !=0 )
 								{
-									active_filters_html.push($(this).attr('title'));
+									if ($(this).attr('title'))
+									{
+										active_filters_html.push({name: $(this).attr('name'), title: $(this).attr('title')});
+									}
 								}
 							}
 							if ( $(this).attr('name') && test != null && test.constructor === Array)
@@ -1316,17 +1320,17 @@ console.log(app_method_referrer);
 
 								if(value.length > 0 )
 								{
-									active_filters_html.push($(this).attr('title'));
+									if ($(this).attr('title'))
+									{
+										active_filters_html.push({name: $(this).attr('name'), title: $(this).attr('title')});
+									}
 								}
 								init_multiselect(oControl);
 							}
 
 						});
 
-						if(active_filters_html.length > 0 )
-						{
-							$('#active_filters').html("Aktive filter: " + active_filters_html.join(', '));
-						}
+						renderActiveFilters(active_filters_html);
 						var search_value = $('.dt-search input[aria-controls="datatable-container"]').val();
 
 						if(active_filters_html.length > 0 || search_value || column_search_is_initated)
@@ -1390,12 +1394,12 @@ console.log(app_method_referrer);
 					{
 						temp[attrname] = sValue[attrname];
 					}
-					localStorage.setItem('state_' + menuaction, JSON.stringify(temp));
+					sessionStorage.setItem('state_' + menuaction, JSON.stringify(temp));
 					return sValue;
 				},
 				fnStateLoadParams: function ( oSettings, oData ) {
 					//Load custom filters
-					var retrievedObject = localStorage.getItem('state_' + menuaction);
+					var retrievedObject = sessionStorage.getItem('state_' + menuaction);
 					if(typeof(retrievedObject) != 'undefined')
 					{
 						var	params = {};
@@ -1939,29 +1943,118 @@ console.log(app_method_referrer);
 			}
 		});
 
+		renderActiveFilters = function(filters)
+		{
+			var container = $('#active_filters').empty();
+			if (!filters.length)
+			{
+				return;
+			}
+
+			container.append(document.createTextNode('Aktive filter: '));
+			$.each(filters, function(index, filter) {
+				var chip = $('<span>', {'class': 'app-filter-chip'});
+				chip.append($('<span>', {'class': 'app-filter-chip__label'}).text(filter.title));
+				chip.append($('<button>', {
+					type: 'button',
+					'class': 'app-filter-chip__remove',
+					title: remove_filter_lang,
+					'aria-label': remove_filter_lang + ' ' + filter.title
+				}).text('\u00D7').on('click', function() {
+					reset_single_filter(filter.name);
+				}));
+				container.append(chip).append(document.createTextNode(' '));
+			});
+		};
+
+		reset_single_filter = function(param)
+		{
+			var controls = $('.dtable_custom_controls:first').find(':input[name]');
+			controls.each(function() {
+				if ($(this).attr('name') !== param)
+				{
+					return;
+				}
+
+				if ($(this).is(':checkbox'))
+				{
+					$(this).prop('checked', false);
+				}
+				else if ($(this).is('select'))
+				{
+					if ($(this).is('[multiple]'))
+					{
+						$(this).find('option').prop('selected', false);
+						if ($.fn && $.fn.multiselect)
+						{
+							try
+							{
+								$(this).multiselect('deselectAll', false);
+								$(this).multiselect('refresh');
+							}
+							catch(e)
+							{}
+						}
+					}
+					else
+					{
+						$(this).prop('selectedIndex', 0);
+					}
+				}
+				else
+				{
+					$(this).val('');
+				}
+			});
+
+			if (/_id$/.test(param))
+			{
+				$('#' + param.replace(/_id$/, '_name')).val('');
+			}
+
+			clearFilterParam(param);
+			oTable.api().ajax.reload();
+		};
+
 		reset_filter = function()
 		{
 			// Clear custom filters for modern DataTables compatibility
 			customFilters = {};
-			
+
 			var api = oTable.api();
 			for (var i in filter_selects)
 			{
-				select = $("#" + filter_selects[i]);
-				select.prop('selectedIndex',0);
-				try
+				var select = $("#" + filter_selects[i]);
+				if (!select.length)
 				{
-					if($("#" + filter_selects[i]).attr('multiple'))
-					{
-						$("#" + filter_selects[i]).multiselect('deselectAll', false);
-			//			$("#" + filter_selects[i]).multiselect({ buttonContainer: '' });
-						$("#" + filter_selects[i]).multiselect('refresh');
-					}
-
-					column_search_is_initated = false;
+					continue;
 				}
-				catch(e)
-				{}
+
+				if (select.is('select[multiple]'))
+				{
+					select.find('option').prop('selected', false);
+					if ($.fn && $.fn.multiselect)
+					{
+						try
+						{
+							select.multiselect('deselectAll', false);
+							select.multiselect('refresh');
+						}
+						catch(e)
+						{}
+					}
+					select.trigger('change');
+				}
+				else
+				{
+					select.prop('selectedIndex', 0);
+					if (select.is('select'))
+					{
+						select.trigger('change');
+					}
+				}
+
+				column_search_is_initated = false;
 			}
 
 			var oControls = $('.dtable_custom_controls:first').find(':input[name]');

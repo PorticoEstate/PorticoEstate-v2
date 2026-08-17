@@ -714,10 +714,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				)
 			),
 			'datatable'		 => array(
-				'source'		 => '/property/entity/' . urlencode($this->type)
+				'source'		 => phpgw::link('/property/entity/' . urlencode($this->type)
 					. '/' . (int)$this->entity_id
 					. '/' . (int)$this->cat_id
-					. '/datatable',
+					. '/datatable'),
 				'district_id'		 => $this->district_id,
 				'p_num'				 => $this->p_num,
 				'download'		 => phpgw::link('/property/entity/' . urlencode($this->type)
@@ -953,9 +953,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		if ($this->acl_delete)
 		{
-			$rest_delete_base = '/property/entity/' . urlencode($this->type)
+			$rest_delete_base = phpgw::link('/property/entity/' . urlencode($this->type)
 				. '/' . (int)$this->entity_id
-				. '/' . (int)$this->cat_id;
+				. '/' . (int)$this->cat_id);
 
 			$delete_custom_code = "
 				var selected = fnGetSelected();
@@ -1459,7 +1459,7 @@ JS;
 
 				$datatable_def[] = array(
 					'container'	 => 'datatable-container_0',
-					'requestUrl' => json_encode('/property/entity/' . urlencode($this->type)
+					'requestUrl' => json_encode('property/entity/' . urlencode($this->type)
 						. '/' . (int)$this->entity_id
 						. '/' . (int)$this->cat_id
 						. '/' . (int)$id . '/files'),
@@ -1492,7 +1492,7 @@ JS;
 
 			$datatable_def[] = array(
 				'container'	 => 'datatable-container_1',
-				'requestUrl' => json_encode('/property/entity/' . urlencode($this->type)
+				'requestUrl' => json_encode('property/entity/' . urlencode($this->type)
 					. '/' . (int)$this->entity_id
 					. '/' . (int)$this->cat_id
 					. '/' . (int)$id . '/target'),
@@ -1509,7 +1509,7 @@ JS;
 
 			$datatable_def[] = array(
 				'container'	 => 'datatable-container_2',
-				'requestUrl' => json_encode('/property/entity/' . urlencode($this->type)
+				'requestUrl' => json_encode('property/entity/' . urlencode($this->type)
 					. '/' . (int)$this->entity_id
 					. '/' . (int)$this->cat_id
 					. '/' . (int)$id . '/related'),
@@ -1568,7 +1568,7 @@ JS;
 
 				$datatable_def[] = array(
 					'container'	 => 'datatable-container_3',
-					'requestUrl' => json_encode('/property/entity/' . urlencode($this->type)
+					'requestUrl' => json_encode('property/entity/' . urlencode($this->type)
 						. '/' . (int)$this->entity_id
 						. '/' . (int)$this->cat_id
 						. '/' . (int)$id . '/inventory'),
@@ -2048,7 +2048,7 @@ JS;
 
 			$datatable_def[] = array(
 				'container'  => 'datatable-container_7',
-				'requestUrl' => json_encode('/property/entity/' . urlencode($this->type)
+				'requestUrl' => json_encode('property/entity/' . urlencode($this->type)
 					. '/' . (int)$this->entity_id
 					. '/' . (int)$this->cat_id
 					. '/' . (int)$id . '/documents?location_id=' . (int)$location_id),
@@ -2237,7 +2237,7 @@ JS;
 			'location_data' => $input['location_data'] ?? array(),
 			'lookup_type' => $input['lookup_type'] ?? '',
 			'mode' => $input['mode'] ?? 'edit',
-			'form_action' => '/property/entity/' . urlencode($this->type) . '/' . (int)$this->entity_id . '/' . (int)$this->cat_id . ($id ? '?id=' . (int)$id : ''),
+			'form_action' => phpgw::link('/property/entity/' . urlencode($this->type) . '/' . (int)$this->entity_id . '/' . (int)$this->cat_id . ($id ? '?id=' . (int)$id : '')),
 			'textareacols' => $textareacols,
 			'textarearows' => $textarearows,
 			'tabs' => phpgwapi_jquery::tabview_generate($input['tabs'] ?? array(), $input['active_tab'] ?? ''),
@@ -3186,7 +3186,7 @@ JS;
 			'value_entity_id'			 => $this->entity_id,
 			'tabs'						 => phpgwapi_jquery::tabview_generate($tabs, 0),
 			'value_active_tab'			 => 0,
-			'get_items_per_qr_url'		 => '/property/entity/' . urlencode($this->type) . '/' . (int)$this->entity_id . '/0/items-per-qr',
+			'get_items_per_qr_url'		 => phpgw::link('/property/entity/' . urlencode($this->type) . '/' . (int)$this->entity_id . '/0/items-per-qr'),
 		);
 		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $entity['name'] . ' - ' . lang('summary');
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);

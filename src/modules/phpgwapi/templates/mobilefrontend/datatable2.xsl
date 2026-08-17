@@ -50,6 +50,11 @@
 
 
 <xsl:template match="toolbar" xmlns:php="http://php.net/xsl">
+	<style>
+		#datatable-container_wrapper div.dt-buttons {
+			justify-content: flex-start;
+		}
+	</style>
 	<div class="row ms-1">
 		<div id="active_filters">
 		</div>
@@ -1843,6 +1848,10 @@
 			api.destroy();
 			clear_state = true;
 			init_table();
+			if (oTable && typeof oTable.api !== 'function')
+			{
+				oTable.api = function() { return oTable; };
+			}
 			restore_temporary_hidden_columns();
 			remove_column_search();
 			$('#reset_filter').hide();

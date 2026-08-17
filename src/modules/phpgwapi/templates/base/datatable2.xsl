@@ -103,6 +103,7 @@
 		.app-filter-chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.35rem 0.2rem 0.6rem; border: 1px solid #adb5bd; border-radius: 999px; background: #f8f9fa; }
 		.app-filter-chip__remove { width: 1.35rem; height: 1.35rem; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 1.1rem; line-height: 1; cursor: pointer; }
 		.app-filter-chip__remove:hover, .app-filter-chip__remove:focus-visible { background: #e9ecef; }
+		#datatable-container_wrapper div.dt-buttons { justify-content: flex-start; }
 	</style>
 	<div id="active_filters" aria-live="polite"></div>
 	<div id="reset_filter" style="display: none;">
@@ -2083,6 +2084,10 @@
 			api.destroy();
 			clear_state = true;
 			init_table();
+			if (oTable && typeof oTable.api !== 'function')
+			{
+				oTable.api = function() { return oTable; };
+			}
 			restore_temporary_hidden_columns();
 			remove_column_search();
 			$('#reset_filter').hide();

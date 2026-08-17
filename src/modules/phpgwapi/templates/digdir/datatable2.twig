@@ -62,6 +62,10 @@
 	.app-filter-chip__remove:focus-visible {
 		background: var(--ds-color-background-hover, #e9ecef);
 	}
+
+	#datatable-container_wrapper div.dt-buttons {
+		justify-content: flex-start;
+	}
 </style>
 
 <div id="queryForm">
@@ -1697,9 +1701,19 @@
 
 	reset_single_filter = function(param)
 	{
+		var relatedParam = null;
+		if (/_name$/.test(param))
+		{
+			relatedParam = param.replace(/_name$/, '_id');
+		}
+		else if (/_id$/.test(param))
+		{
+			relatedParam = param.replace(/_id$/, '_name');
+		}
+
 		var controls = $('.dtable_custom_controls:first').find(':input[name]');
 		controls.each(function() {
-			if ($(this).attr('name') !== param)
+			if ($(this).attr('name') !== param && $(this).attr('name') !== relatedParam)
 			{
 				return;
 			}
@@ -1710,12 +1724,19 @@
 			}
 			else if ($(this).is('select'))
 			{
-				if ($(this).is('[multiple]'))
+				try
 				{
-					$(this).multiselect('deselectAll', false);
-					$(this).multiselect('refresh');
+					if ($(this).is('[multiple]'))
+					{
+						$(this).multiselect('deselectAll', false);
+						$(this).multiselect('refresh');
+					}
+					else
+					{
+						$(this).prop('selectedIndex', 0);
+					}
 				}
-				else
+				catch (e)
 				{
 					$(this).prop('selectedIndex', 0);
 				}
@@ -1726,12 +1747,16 @@
 			}
 		});
 
-		if (/_id$/.test(param))
+		if (relatedParam && /_id$/.test(relatedParam))
 		{
-			$('#' + param.replace(/_id$/, '_name')).val('');
+			$('#' + relatedParam.replace(/_id$/, '_name')).val('');
 		}
 
 		clearFilterParam(param);
+		if (relatedParam)
+		{
+			clearFilterParam(relatedParam);
+		}
 		oTable.ajax.reload();
 	};
 

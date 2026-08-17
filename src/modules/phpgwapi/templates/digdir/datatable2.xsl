@@ -1984,6 +1984,10 @@
 			api.destroy();
 			clear_state = true;
 			init_table();
+			if (oTable && typeof oTable.api !== 'function')
+			{
+				oTable.api = function() { return oTable; };
+			}
 			restore_temporary_hidden_columns();
 			remove_column_search();
 			$('#reset_filter').hide();

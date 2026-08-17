@@ -87,6 +87,10 @@
 		.app-filter-chip__remove:focus-visible {
 			background: #e9ecef;
 		}
+
+		#datatable-container_wrapper div.dt-buttons {
+			justify-content: flex-start;
+		}
 	</style>
 	<div class="row ms-1">
 		<div id="active_filters" aria-live="polite">
@@ -2101,6 +2105,10 @@
 			api.destroy();
 			clear_state = true;
 			init_table();
+			if (oTable && typeof oTable.api !== 'function')
+			{
+				oTable.api = function() { return oTable; };
+			}
 			restore_temporary_hidden_columns();
 			remove_column_search();
 			$('#reset_filter').hide();

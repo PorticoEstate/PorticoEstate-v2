@@ -1,0 +1,18 @@
+{
+    "js": [
+        "js/select.dataTables.js",
+        "js/select.dataTables.min.js",
+        "js/select.dataTables.min.mjs",
+        "js/select.dataTables.mjs"
+    ],
+    "css": [
+        "css/select.dataTables.css",
+        "css/select.dataTables.min.css"
+    ],
+    "types": [
+        "types/select.dataTables.d.ts"
+    ],
+    "src-repo": "http://github.com/DataTables/Select",
+    "last-tag": "4.0.0",
+    "last-sync": "2f187333be7f60b09ce6644db27cfeb2c595077a"
+}

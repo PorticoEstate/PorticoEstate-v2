@@ -1,47 +1,24 @@
-(function (factory)
+ (function (factory)
 {
-	let $, dataTable;
-
 	if (typeof define === 'function' && define.amd)
 	{
-		define(['jquery', 'datatables.net'], function (jQuery)
-		{
-			return factory(jQuery, window, document);
-		});
-	} else if (typeof exports === 'object')
-	{
-		$ = require('jquery');
-		dataTable = function (root, $)
-		{
-			if (!$.fn.dataTable)
-			{
-				require('datatables.net')(root, $);
-			}
-		};
-
-		if (typeof window === 'undefined')
-		{
-			module.exports = function (root, $)
-			{
-				root = root || window;
-				$ = $ || require('jquery')(root);
-				dataTable(root, $);
-				return factory($, 0, root.document);
-			};
-		} else
-		{
-			dataTable(window, $);
-			module.exports = factory($, window, window.document);
-		}
-	} else
-	{
-		factory(jQuery, window, document);
+		define(['datatables.net'], factory);
 	}
-})(function ($, window, document)
+	else if (typeof exports === 'object')
+	{
+		module.exports = function (root)
+		{
+			root = root || window;
+			return factory(root.DataTable || require('datatables.net')(root));
+		};
+	}
+	else
+	{
+		factory(window.DataTable);
+	}
+})(function (DataTable)
 {
 	'use strict';
-
-	let DataTable = $.fn.dataTable;
 
 	function toggleButtonState(element, className, state)
 	{

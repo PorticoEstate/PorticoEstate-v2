@@ -1,0 +1,18 @@
+{
+    "js": [
+        "js/dataTables.dataTables.js",
+        "js/dataTables.dataTables.min.js",
+        "js/dataTables.dataTables.min.mjs",
+        "js/dataTables.dataTables.mjs"
+    ],
+    "css": [
+        "css/dataTables.dataTables.css",
+        "css/dataTables.dataTables.min.css"
+    ],
+    "types": [
+        "types/dataTables.dataTables.d.ts"
+    ],
+    "src-repo": "http://github.com/DataTables/DataTablesSrc",
+    "last-tag": "3.0.1",
+    "last-sync": "3d12c894b9da916eedecf021138f47d15ad3a673"
+}

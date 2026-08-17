@@ -115,7 +115,7 @@ abstract class phpgwapi_uicommon_jquery
 		);
 		foreach ($datatable_assets as $datatable_asset)
 		{
-			phpgwapi_js::getInstance()->add_external_file($datatable_asset, false, array('combine' => false));
+			phpgwapi_js::getInstance()->add_external_file($datatable_asset, false, array('combine' => true));
 		}
 		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.min.js', false, array('combine' => true));
 		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js', false, array('combine' => true));

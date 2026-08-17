@@ -174,7 +174,7 @@ returns true if plugin should continue with sending AJAX request, false will abo
             ///Function that starts "Processing" mode i.e. shows "Processing..." dialog while some action is executing(Default function)
             ///</summary>
 
-            if (oTable.api().settings()[0].oFeatures.bProcessing) {
+            if (oTable.settings()[0].features.processing) {
                 $(".dataTables_processing").css('visibility', 'visible');
             }
         }
@@ -185,7 +185,7 @@ returns true if plugin should continue with sending AJAX request, false will abo
             ///It shows processing message only if bProcessing setting is set to true
             ///</summary>
 
-            if (oTable.api().settings()[0].oFeatures.bProcessing) {
+            if (oTable.settings()[0].features.processing) {
                 $(".dataTables_processing").css('visibility', 'hidden');
             }
         }
@@ -268,9 +268,9 @@ returns true if plugin should continue with sending AJAX request, false will abo
                  //   var rowId = oTable.fnGetPosition(this)[0];
                  //   var columnPosition = oTable.fnGetPosition(this)[1];
                  //   var columnId = oTable.fnGetPosition(this)[2];
-                    var sColumnName = oTable.api().settings()[0].aoColumns[columnId].sName;
+                    var sColumnName = oTable.settings()[0].columns[columnId].name;
                     if (sColumnName == null || sColumnName == "")
-                        sColumnName = oTable.api().settings()[0].aoColumns[columnId].sTitle;
+                        sColumnName = oTable.settings()[0].columns[columnId].title;
                     var updateData = null;
                     if (properties.aoColumns == null || properties.aoColumns[columnId] == null) {
                         updateData = $.extend({},
@@ -497,7 +497,7 @@ returns true if plugin should continue with sending AJAX request, false will abo
             if (properties.fnOnNewRowPosted(data)) {
 
                 var oSettings = oTable.api().settings()[0];
-                if (!oSettings.oFeatures.bServerSide) {
+                if (!oSettings.features.serverSide) {
                     jQuery.data(oAddNewRowForm, 'DT_RowId', data);
                     var values = fnTakeRowDataFromFormElements(oAddNewRowForm);
                    
@@ -505,10 +505,10 @@ returns true if plugin should continue with sending AJAX request, false will abo
                     var rtn;
                     //Add values from the form into the table
                     if (oSettings.aoColumns != null && isNaN(parseInt(oSettings.aoColumns[0].mDataProp))) {
-                        rtn = oTable.fnAddData(rowData);
+                        rtn = oTable.rows.add([rowData]).draw(false).rows().indexes().toArray()[0];
                     }
                     else {
-                        rtn = oTable.fnAddData(values);
+                        rtn = oTable.rows.add([values]).draw(false).rows().indexes().toArray()[0];
                     }
 
                    // var oTRAdded = oTable.fnGetNodes(rtn);
@@ -1037,7 +1037,38 @@ returns true if plugin should continue with sending AJAX request, false will abo
         }
         
         
-        oTable = this;
+        oTable = this.DataTable();
+        if (typeof oTable.api !== 'function')
+        {
+            oTable.api = function() { return oTable; };
+        }
+        var dataTableSettings = oTable.settings()[0];
+        if (!dataTableSettings.oFeatures)
+        {
+            dataTableSettings.oFeatures = {
+                bProcessing: dataTableSettings.features.processing,
+                bServerSide: dataTableSettings.features.serverSide
+            };
+        }
+        if (!dataTableSettings.aoColumns)
+        {
+            dataTableSettings.aoColumns = dataTableSettings.columns.map(function(column) {
+                return {
+                    bVisible: column.visible !== false,
+                    mDataProp: column.data,
+                    sName: column.name,
+                    sTitle: column.title
+                };
+            });
+        }
+        if (!dataTableSettings.sAjaxSource)
+        {
+            dataTableSettings.sAjaxSource = dataTableSettings.ajax && dataTableSettings.ajax.url;
+        }
+        if (!dataTableSettings.aoDrawCallback)
+        {
+            dataTableSettings.aoDrawCallback = [];
+        }
 
         var defaults = {
 
@@ -1096,7 +1127,7 @@ returns true if plugin should continue with sending AJAX request, false will abo
         properties.bUseKeyTable = (properties.oKeyTable != null);
 
         return this.each(function () {
-            var sTableId = oTable.dataTableSettings[0].sTableId;
+            var sTableId = oTable.table().node().id;
             //KEYTABLE
             if (properties.bUseKeyTable) {
                 var keys = new KeyTable({
@@ -1124,22 +1155,14 @@ returns true if plugin should continue with sending AJAX request, false will abo
 
             //KEYTABLE
 
-            if (oTable.api().settings()[0].sAjaxSource != null) {
-                oTable.api().settings()[0].aoDrawCallback.push({
-                    "fn": function () {
-                        //Apply jEditable plugin on the table cells
-                        fnApplyEditable(oTable.api().rows().nodes());
-                        $(oTable.api().rows().nodes()).each(function () {
-                        //    var position = oTable.fnGetPosition(this);
-							var position = oTable.api().row(this).index();
-
-                          //  var id = oTable.fnGetData(position)[0];
-							var id = oTable.api().rows( position )[0][0];
-                            properties.fnSetRowID($(this), id);
-                        }
-                        );
-                    },
-                    "sName": "fnApplyEditable"
+            if (oTable.settings()[0].features.serverSide || oTable.settings()[0].ajax) {
+                fnApplyEditable(oTable.api().rows().nodes());
+                $(oTable.api().rows().nodes()).each(function () {
+                    var rowData = oTable.row(this).data();
+                    var id = rowData && rowData.id !== undefined
+                        ? rowData.id
+                        : $(this).find('td:first').text();
+                    properties.fnSetRowID($(this), id);
                 });
 
             } else {

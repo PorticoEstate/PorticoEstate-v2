@@ -1154,7 +1154,12 @@ function check_and_submit_valid_session()
 			}
 			isProjectSubmitting = false;
 			setProjectSubmitButtonsDisabled(false);
-			renderProjectSaveError(extractProjectErrorMessages(error && error.responseData));
+			var messages = extractProjectErrorMessages(error && error.responseData);
+			if (!messages.length)
+			{
+				messages = ['Feil ved lagring. Vennligst prøv igjen.'];
+			}
+			renderProjectFormAlert(messages, 'danger');
 		});
 }
 

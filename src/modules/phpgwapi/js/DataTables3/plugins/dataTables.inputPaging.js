@@ -70,13 +70,13 @@
 		}, options);
 
 		let wrapper = createElement(classes.wrapper);
-		let firstButton = createElement(classes.item, api.i18n('oPaginate.sFirst', '«'),
+		let firstButton = createElement(classes.item, api.i18n('paginate.first', '«'),
 			() => api.page('first').draw(false));
-		let previousButton = createElement(classes.item, api.i18n('oPaginate.sPrevious', '‹'),
+		let previousButton = createElement(classes.item, api.i18n('paginate.previous', '‹'),
 			() => api.page('previous').draw(false));
-		let nextButton = createElement(classes.item, api.i18n('oPaginate.sNext', '›'),
+		let nextButton = createElement(classes.item, api.i18n('paginate.next', '›'),
 			() => api.page('next').draw(false));
-		let lastButton = createElement(classes.item, api.i18n('oPaginate.sLast', '»'),
+		let lastButton = createElement(classes.item, api.i18n('paginate.last', '»'),
 			() => api.page('last').draw(false));
 
 		let inputContainer = createElement(classes.inputItem);

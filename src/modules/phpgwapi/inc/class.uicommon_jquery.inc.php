@@ -107,7 +107,11 @@ abstract class phpgwapi_uicommon_jquery
 			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive-dt/js/responsive.dataTables.min.js',
 			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select/js/dataTables.select.min.js',
 			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select-dt/js/select.dataTables.min.js',
-			'phpgwapi/js/DataTables2/plugins/dataTables.inputPaging.js'
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-scroller/js/dataTables.scroller.min.js',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-scroller-dt/js/scroller.dataTables.min.js',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-fixedcolumns/js/dataTables.fixedColumns.min.js',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-fixedcolumns-dt/js/fixedColumns.dataTables.min.js',
+			'phpgwapi/js/DataTables3/plugins/dataTables.inputPaging.js'
 		);
 		foreach ($datatable_assets as $datatable_asset)
 		{
@@ -120,7 +124,9 @@ abstract class phpgwapi_uicommon_jquery
 			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons-dt/css/buttons.dataTables.min.css',
 			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive-dt/css/responsive.dataTables.min.css',
 			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select-dt/css/select.dataTables.min.css',
-			'phpgwapi/js/DataTables2/plugins/dataTables.inputPaging.min.css'
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-scroller-dt/css/scroller.dataTables.min.css',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-fixedcolumns-dt/css/fixedColumns.dataTables.min.css',
+			'phpgwapi/js/DataTables3/plugins/dataTables.inputPaging.min.css'
 		);
 		foreach ($datatable_styles as $datatable_style)
 		{

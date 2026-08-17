@@ -1131,7 +1131,7 @@ class property_solocation
 				$query_part	 = explode(".", $_query);
 				if (isset($query_part[0]) && isset($query_part[1]) && ctype_digit(trim($query_part[0])) && ctype_digit(trim($query_part[1])))
 				{
-					$_querymethod[]	 = "(fm_location{$type_id}.loc1='" . (int)trim($query_part[0]) . "' AND fm_location{$type_id}.loc{$type_id}='" . (int)trim($query_part[1]) . "')";
+					$_querymethod[]	 = "(fm_location{$type_id}.loc1='" . (int)trim($query_part[0]) . "' AND fm_location{$type_id}.loc{$type_id}='" . trim($query_part[1]) . "')";
 				}
 			}
 			//		else

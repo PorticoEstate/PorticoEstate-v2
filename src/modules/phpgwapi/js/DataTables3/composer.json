@@ -1,0 +1,27 @@
+{
+    "require": {
+        "moment/moment": "^2.30",
+        "stuk/jszip": "^3.0",
+        "bpampuch/pdfmake": "^0.2.23",
+        "datatables.net/datatables.net-dt": "^3.0",
+        "datatables.net/datatables.net-autofill-dt": "^3.0",
+        "datatables.net/datatables.net-buttons-dt": "^4.0",
+        "datatables.net/datatables.net-colreorder-dt": "^3.0",
+        "datatables.net/datatables.net-datetime": "^2.0",
+        "datatables.net/datatables.net-fixedcolumns-dt": "^6.0",
+        "datatables.net/datatables.net-fixedheader-dt": "^5.0",
+        "datatables.net/datatables.net-keytable-dt": "^3.0",
+        "datatables.net/datatables.net-responsive-dt": "^4.0",
+        "datatables.net/datatables.net-rowgroup-dt": "^2.0",
+        "datatables.net/datatables.net-rowreorder-dt": "^2.0",
+        "datatables.net/datatables.net-scroller-dt": "^3.0",
+        "datatables.net/datatables.net-searchbuilder-dt": "^2.0",
+        "datatables.net/datatables.net-select-dt": "^4.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true,
+            "oomphinc/composer-installers-extender": true
+        }
+    }
+}

@@ -98,12 +98,40 @@ abstract class phpgwapi_uicommon_jquery
 		self::add_javascript('phpgwapi', "jquery", 'common.js', false, array('combine' => true));
 
 
-		self::add_javascript('phpgwapi', 'DataTables2', 'datatables.min.js', false, array('combine' => true));
-		self::add_javascript('phpgwapi', 'DataTables2', 'plugins/dataTables.inputPaging.js', false, array('combine' => true));
+		$datatable_assets = array(
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net/js/dataTables.min.js',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-dt/js/dataTables.dataTables.min.js',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons/js/dataTables.buttons.min.js',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons-dt/js/buttons.dataTables.min.js',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive/js/dataTables.responsive.min.js',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive-dt/js/responsive.dataTables.min.js',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select/js/dataTables.select.min.js',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select-dt/js/select.dataTables.min.js',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-scroller/js/dataTables.scroller.min.js',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-scroller-dt/js/scroller.dataTables.min.js',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-fixedcolumns/js/dataTables.fixedColumns.min.js',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-fixedcolumns-dt/js/fixedColumns.dataTables.min.js',
+			'phpgwapi/js/DataTables3/plugins/dataTables.inputPaging.js'
+		);
+		foreach ($datatable_assets as $datatable_asset)
+		{
+			phpgwapi_js::getInstance()->add_external_file($datatable_asset, false, array('combine' => false));
+		}
 		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.min.js', false, array('combine' => true));
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.min.js', false, array('combine' => true));
-		phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables2/datatables.min.css');
-		phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables2/plugins/dataTables.inputPaging.min.css');
+		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js', false, array('combine' => true));
+		$datatable_styles = array(
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-dt/css/dataTables.dataTables.min.css',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons-dt/css/buttons.dataTables.min.css',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive-dt/css/responsive.dataTables.min.css',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select-dt/css/select.dataTables.min.css',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-scroller-dt/css/scroller.dataTables.min.css',
+			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-fixedcolumns-dt/css/fixedColumns.dataTables.min.css',
+			'phpgwapi/js/DataTables3/plugins/dataTables.inputPaging.min.css'
+		);
+		foreach ($datatable_styles as $datatable_style)
+		{
+			phpgwapi_css::getInstance()->add_external_file($datatable_style);
+		}
 
 		//pop up script
 		self::add_javascript('phpgwapi', 'tinybox2', 'packed.js', false, array('combine' => true));

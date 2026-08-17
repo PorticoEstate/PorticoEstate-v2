@@ -1,0 +1,35 @@
+{
+    "name": "datatables.net-autofill",
+    "description": "AutoFill for DataTables",
+    "main": "js/dataTables.autoFill.js",
+    "module": "js/dataTables.autoFill.mjs",
+    "types": "./types/types.d.ts",
+    "version": "3.0.0",
+    "files": [
+        "js/**/*.js",
+        "js/**/*.mjs",
+        "types/**/*.d.ts"
+    ],
+    "keywords": [
+        "AutoFill",
+        "Excel",
+        "Datatables",
+        "table",
+        "filter",
+        "sort"
+    ],
+    "dependencies": {
+        "datatables.net": "^3"
+    },
+    "author": {
+        "name": "SpryMedia Ltd",
+        "url": "http://datatables.net"
+    },
+    "homepage": "https://datatables.net",
+    "bugs": "https://datatables.net/forums",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/DataTables/AutoFill.git"
+    }
+}

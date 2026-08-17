@@ -1,4 +1,5 @@
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
 import {phpGWLink} from "@/service/util";
 import {IApplication} from "@/service/types/api/application.types";
 import {
@@ -43,6 +44,10 @@ export interface CheckoutFormData {
     
     // Documents consent
     documentsRead: boolean;
+
+    // Applicant's UI language at submit. OPTIONAL and never defaulted -- the column is
+    // nullable and NULL means "not known". Declared so the compiler checks the field name.
+    language?: string;
 }
 
 export interface CheckoutResponse {
@@ -53,13 +58,41 @@ export interface CheckoutResponse {
 
 export function useCheckoutApplications() {
     const queryClient = useQueryClient();
+    // The applicant's language at submit. DECLARED on CheckoutFormData (optional) so the
+    // compiler checks the field name, but SET here rather than by the caller: it is ambient
+    // client context, not a form field the citizen filled in, and no caller should have to
+    // remember it. Optional-on-the-type + set-in-the-hook gives both properties.
+    //
+    // ⚠️ CAPTURED AT SUBMIT ON PURPOSE, and it is the only moment it exists. The session
+    // language is not stored on the application today, so every application created without
+    // it has an applicant language that is PERMANENTLY UNRECOVERABLE -- reading it back later
+    // would give the CASEWORKER's language, which is the defect this is groundwork for.
+    //
+    // 🔴 NO `|| 'no'` FALLBACK HERE, DELIBERATELY -- and do not "restore" it to match the
+    // house idiom. `i18n.language || 'no'` IS correct at every other call site, because those
+    // RENDER something and must render a language. This value is STORED.
+    //
+    // The column is nullable, so NULL carries meaning: "we do not know this applicant's
+    // language". A fallback converts that unknown into a CLAIM of Norwegian, and once stored
+    // the two are indistinguishable forever -- nobody can later tell a Bokmål user from a
+    // user whose language we failed to capture.
+    //
+    // ⇒ a DISPLAY default and a STORED default are the same expression with opposite
+    //   consequences. If `i18n.language` is falsy the key is simply absent from the JSON
+    //   body (JSON.stringify drops undefined), the server writes nothing, and the column
+    //   stays NULL -- which is the honest answer.
+    const {i18n} = useClientTranslation();
 
     return useMutation({
         mutationFn: async (checkoutData: CheckoutFormData) => {
             const url = phpGWLink(['bookingfrontend', 'applications', 'partials', 'checkout']);
+            // Typed deliberately: a bare literal inside JSON.stringify() is checked against
+            // `any`, so a misspelled key would ship silently. The annotation is the only
+            // thing making the field name compiler-verified on this path.
+            const payload: CheckoutFormData = {...checkoutData, language: i18n.language};
             const response = await fetch(url, {
                 method: 'POST',
-                body: JSON.stringify(checkoutData),
+                body: JSON.stringify(payload),
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -116,9 +149,20 @@ export function useCheckoutApplications() {
 }
 
 export function useVippsPayment() {
+    // 🔴 SECOND SUBMIT PATH -- keep in step with useCheckoutApplications above.
+    // Vipps is an ALTERNATIVE to the checkout POST, not a step after it:
+    // checkout-content.tsx `handleVippsPayment` builds the same billing payload and calls
+    // this mutation WITHOUT calling checkoutMutation, from its own button (:434).
+    // So a citizen who pays by Vipps never traverses the other hook, and a field attached
+    // only there is invisible to them.
+    //
+    // Same no-fallback rule as above: the column is nullable, NULL means "not known", and a
+    // default here would manufacture a language claim for every Vipps applicant.
+    const {i18n} = useClientTranslation();
+
     return useMutation({
         mutationFn: async (paymentData: VippsPaymentData) => {
-            return await initiateVippsPayment(paymentData);
+            return await initiateVippsPayment({...paymentData, language: i18n.language});
         },
         onSuccess: (data: VippsPaymentResponse) => {
             if (data.success && data.redirect_url) {

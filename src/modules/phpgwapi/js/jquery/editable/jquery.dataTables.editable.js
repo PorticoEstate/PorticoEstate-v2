@@ -174,9 +174,7 @@ returns true if plugin should continue with sending AJAX request, false will abo
             ///Function that starts "Processing" mode i.e. shows "Processing..." dialog while some action is executing(Default function)
             ///</summary>
 
-            if (oTable.settings()[0].features.processing) {
-                $(".dataTables_processing").css('visibility', 'visible');
-            }
+            oTable.processing(true);
         }
 
         function _fnEndProcessingMode() {
@@ -185,9 +183,7 @@ returns true if plugin should continue with sending AJAX request, false will abo
             ///It shows processing message only if bProcessing setting is set to true
             ///</summary>
 
-            if (oTable.settings()[0].features.processing) {
-                $(".dataTables_processing").css('visibility', 'hidden');
-            }
+            oTable.processing(false);
         }
 
         var sOldValue, sNewCellValue, sNewCellDislayValue;
@@ -751,7 +747,7 @@ returns true if plugin should continue with sending AJAX request, false will abo
 
         var oSettings;
         function fnGetDisplayStart() {
-            return oSettings._iDisplayStart;
+            return oTable.page.info().start;
         }
 
         function fnSetDisplayStart() {
@@ -831,8 +827,8 @@ returns true if plugin should continue with sending AJAX request, false will abo
                                         else {
  //                                           var sCellValue = oTable.fnGetData(oTR)[rel];
 											
-											var sCellValue = oTable.api().rows( oTR )[0][rel];
-											console.log('sCellValue: ' + sCellValue);
+                                            var rowData = oTable.row(oTR).data();
+                                            var sCellValue = Array.isArray(rowData) ? rowData[rel] : rowData[rel];
 
                                             if (this.nodeName.toLowerCase() == "select" || this.tagName.toLowerCase() == "select") {
 
@@ -1025,8 +1021,7 @@ returns true if plugin should continue with sending AJAX request, false will abo
                 if (sCellValue != undefined)
 				{
             //        oTable.fnUpdate(sCellValue, iRowID, rel);
-					console.log('sCellValue: ' + sCellValue);
-					oTable.api().cell(this).data( sCellValue );
+                    oTable.cell(iRowID, rel).data(sCellValue);
 				}
             }
 
@@ -1348,9 +1343,7 @@ returns true if plugin should continue with sending AJAX request, false will abo
                         fnDisableDeleteButton();
                     }
                 } else {
-                    $(oTable.api().settings()[0].aoData).each(function () {
-                        $(this.nTr).removeClass(properties.sSelectedRowClass);
-                    });
+                    oTable.rows().nodes().to$().removeClass(properties.sSelectedRowClass);
                     $(event.target.parentNode).addClass(properties.sSelectedRowClass);
                     if (oDeleteRowButton != null) {
                         fnEnableDeleteButton();

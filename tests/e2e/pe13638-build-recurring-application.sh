@@ -56,9 +56,19 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 # a recurring series occupies the same weekday for REPEAT_WEEKS weeks.
 # 1..300 bounds the whole series at 300 + 5*7 = 335 days, inside the one-year
 # user-facing window that pe13650 deliberately clears with its >= 365.
-# RESIDUAL, documented rather than fixed: two runs separated by exactly 0, 7, 14,
-# 21, 28 or 35 seconds modulo 300 reuse a weekday inside the repeat span and can
-# share an occurrence date. A stateless timestamp cannot rule that out.
+#
+# WHAT THIS DOES AND DOES NOT BUY YOU, both measured on 2026-08-18:
+#  - It is NOT needed to avoid rejection. The application path does no conflict
+#    check: app 83974 was created on the byte-identical slot as app 83972 and
+#    both are status NEW. A Flow 1 slot collision is benign.
+#  - It IS needed to keep fixtures TELLABLE APART. Two runs on one day used to
+#    produce two applications on the same date, distinguishable only by name.
+#  - The recurrence is NOT expanded at create time: the create writes exactly ONE
+#    bb_application_date row and leaves the repeat spec in recurring_info. Checked
+#    across 83967..83974, which includes fixtures this script did not make. So the
+#    "series" occupies one date here, unlike pe13650 where 6 rows are written.
+# RESIDUAL: two runs in the SAME second get the same offset -- but then they also
+# get the same label, so nothing is lost that was not already ambiguous.
 _HMS="${STAMP##*-}"
 START_DAYS="${START_DAYS:-$(( 1 + (10#${_HMS:0:2} * 3600 + 10#${_HMS:2:2} * 60 + 10#${_HMS:4:2}) % 300 ))}"
 

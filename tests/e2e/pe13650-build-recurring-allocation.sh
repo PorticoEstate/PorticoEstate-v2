@@ -44,6 +44,10 @@
 #   REPEAT_WEEKS   default 5                  weeks until repeat_until
 #   INTERVAL       default 1                  repeat every N weeks; the UI only offers 1..4
 #   COST           default 750
+#   MAX_SHIFT      default 14                 how many one-day shifts to try when step 1
+#                                             refuses the slot as already occupied. Only
+#                                             applies to the DERIVED offset; if you set
+#                                             START_DAYS yourself the run fails instead.
 #   TAG            default "PE13650 <timestamp>"  written to additional_invoice_information,
 #                                             which PERSISTS -- this is how you find the rows again
 #   BASE           default https://pe-api.test
@@ -81,7 +85,18 @@ STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 # 21, 28 or 35 seconds modulo 300 reuse a weekday inside the repeat span and can
 # share an occurrence date. A stateless timestamp cannot rule that out.
 _HMS="${STAMP#*T}"; _HMS="${_HMS%Z}"
+# Remember whether the caller pinned the offset BEFORE we default it: an explicit
+# START_DAYS must win outright, which means it must also disable the shift below.
+if [ -n "${START_DAYS:-}" ]; then START_DAYS_EXPLICIT=1; else START_DAYS_EXPLICIT=0; fi
 START_DAYS="${START_DAYS:-$(( 371 + (10#${_HMS:0:2} * 3600 + 10#${_HMS:2:2} * 60 + 10#${_HMS:4:2}) % 300 ))}"
+
+# Varying the offset is necessary but NOT sufficient, measured: this window
+# already holds fixtures from earlier runs, and step 1 refuses to overlap ANY of
+# them, not just this session's. A derived offset that happens to land on one
+# fails exactly like the bug this replaces. So when we own the offset we shift it
+# forward a day at a time until step 1 accepts. One day is the right step: a
+# recurring series occupies one weekday, so +1 leaves the whole occupied lattice.
+MAX_SHIFT="${MAX_SHIFT:-14}"
 
 # 17, not 15: the UI run recorded in pe13650-network-recording.md already holds
 # 15:00-16:00 on this resource pair, and step 1 correctly refuses to overlap it.
@@ -137,11 +152,19 @@ ORG_ID="$(echo "$ORG_JSON" | jq -r .id)"
 ORG_NAME="$(echo "$ORG_JSON" | jq -r .name)"
 echo "organization: $ORG_NAME = $ORG_ID"
 
-# ---------------------------------------------------------------- 3. dates ---
-# from_/to_ use the datetimepicker's format d/m-Y H:i; repeat_until uses d/m-Y.
-# Both are LOCAL wall-clock -- bb_allocation.from_/to_ are naive local timestamps.
-# NB: from_/to_ contain a space, so these are '|'-separated, not whitespace-separated.
-IFS='|' read -r FROM_S TO_S REPEAT_UNTIL_S SEASON_DATE <<EOF
+# ------------------------------------------- 3./4. dates, season, preview ---
+# These three are ONE unit and therefore one loop: the dates come from
+# START_DAYS, the season covers the dates, and step 1 either accepts the slot or
+# refuses it. When step 1 refuses AND we own the offset, we move START_DAYS on by
+# a day and re-derive all three, rather than failing the run.
+SEASON_ID_EXPLICIT="${SEASON_ID:+1}"
+ATTEMPT=0
+
+while : ; do
+  # from_/to_ use the datetimepicker's format d/m-Y H:i; repeat_until uses d/m-Y.
+  # Both are LOCAL wall-clock -- bb_allocation.from_/to_ are naive local timestamps.
+  # NB: from_/to_ contain a space, so these are '|'-separated, not whitespace-separated.
+  IFS='|' read -r FROM_S TO_S REPEAT_UNTIL_S SEASON_DATE <<EOF
 $(python3 - "$START_DAYS" "$START_HOUR" "$DURATION_MIN" "$REPEAT_WEEKS" <<'PY'
 import sys, datetime
 days, hour, dur, weeks = (int(x) for x in sys.argv[1:5])
@@ -156,16 +179,16 @@ PY
 )
 EOF
 
-# Season: the one covering the start date for this building, which is what the
-# server itself re-derives per occurrence (class.uiallocation.inc.php:668-683).
-if [ -z "${SEASON_ID:-}" ]; then
-  # The endpoint returns from_/to_ as d/m-Y, so pick the covering season in python
-  # rather than string-comparing them. "Denne interntildelingen ligger utenfor
-  # angitt sesong" is what you get when this is wrong.
-  # NB: the JSON goes in as argv, not on stdin -- a heredoc would replace stdin
-  # and silently discard a pipe.
-  SEASON_JSON="$(J "$BASE/?menuaction=booking.uiseason.index&sort=name&filter_building_id=$BUILDING_ID&filter_now=1&length=-1&phpgw_return_as=json")"
-  SEASON_ID="$(python3 - "$SEASON_DATE" "$SEASON_JSON" <<'PY'
+  # Season: the one covering the start date for this building, which is what the
+  # server itself re-derives per occurrence (class.uiallocation.inc.php:668-683).
+  if [ -z "$SEASON_ID_EXPLICIT" ]; then
+    # The endpoint returns from_/to_ as d/m-Y, so pick the covering season in python
+    # rather than string-comparing them. "Denne interntildelingen ligger utenfor
+    # angitt sesong" is what you get when this is wrong.
+    # NB: the JSON goes in as argv, not on stdin -- a heredoc would replace stdin
+    # and silently discard a pipe.
+    SEASON_JSON="$(J "$BASE/?menuaction=booking.uiseason.index&sort=name&filter_building_id=$BUILDING_ID&filter_now=1&length=-1&phpgw_return_as=json")"
+    SEASON_ID="$(python3 - "$SEASON_DATE" "$SEASON_JSON" <<'PY'
 import sys, json, datetime
 want = datetime.datetime.strptime(sys.argv[1], '%Y-%m-%d').date()
 p = lambda s: datetime.datetime.strptime(s, '%d/%m-%Y').date()
@@ -176,38 +199,57 @@ if not hits:
         want, [(r['id'], r['name'], r['from_'], r['to_']) for r in rows]))
 print(hits[0]['id'])
 PY
-  )" || die "season lookup failed"
-fi
-echo "season: $SEASON_ID"
-echo "slot $FROM_S -> $TO_S (local), every $INTERVAL week(s) until $REPEAT_UNTIL_S"
+    )" || die "season lookup failed"
+  fi
+  echo "season: $SEASON_ID"
+  echo "START_DAYS=$START_DAYS (offset from today)"
+  echo "slot $FROM_S -> $TO_S (local), every $INTERVAL week(s) until $REPEAT_UNTIL_S"
 
-# --------------------------------------------- 4. step 1 -> 2 : the preview ---
-# No `step` in the body: the server defaults it to 1 and increments to 2.
-# `repeat_until` being non-empty is what puts add() on the recurring branch --
-# there is no "recurring" checkbox on this form (unlike edit()).
-FORM=(--data-urlencode "building_id=$BUILDING_ID"
-      --data-urlencode "building_name=$BUILDING_NAME"
-      --data-urlencode "organization_id=$ORG_ID"
-      --data-urlencode "organization_name=$ORG_NAME"
-      --data-urlencode "from_=$FROM_S"
-      --data-urlencode "to_=$TO_S"
-      --data-urlencode "repeat_until=$REPEAT_UNTIL_S"
-      --data-urlencode "field_interval=$INTERVAL"
-      --data-urlencode "season_id=$SEASON_ID"
-      --data-urlencode "cost=$COST"
-      --data-urlencode "additional_invoice_information=$TAG"
-      --data-urlencode "application_id="
-      --data-urlencode "skip_bas=0"
-      --data-urlencode "outseason=")
-for r in $(echo "$RESOURCE_IDS"); do FORM+=(--data-urlencode "resources[]=$r"); done
+  # No `step` in the body: the server defaults it to 1 and increments to 2.
+  # `repeat_until` being non-empty is what puts add() on the recurring branch --
+  # there is no "recurring" checkbox on this form (unlike edit()).
+  FORM=(--data-urlencode "building_id=$BUILDING_ID"
+        --data-urlencode "building_name=$BUILDING_NAME"
+        --data-urlencode "organization_id=$ORG_ID"
+        --data-urlencode "organization_name=$ORG_NAME"
+        --data-urlencode "from_=$FROM_S"
+        --data-urlencode "to_=$TO_S"
+        --data-urlencode "repeat_until=$REPEAT_UNTIL_S"
+        --data-urlencode "field_interval=$INTERVAL"
+        --data-urlencode "season_id=$SEASON_ID"
+        --data-urlencode "cost=$COST"
+        --data-urlencode "additional_invoice_information=$TAG"
+        --data-urlencode "application_id="
+        --data-urlencode "skip_bas=0"
+        --data-urlencode "outseason=")
+  for r in $(echo "$RESOURCE_IDS"); do FORM+=(--data-urlencode "resources[]=$r"); done
 
-PREVIEW="$("${C[@]}" -X POST "${FORM[@]}" "$BASE/?menuaction=booking.uiallocation.add")"
+  PREVIEW="$("${C[@]}" -X POST "${FORM[@]}" "$BASE/?menuaction=booking.uiallocation.add")"
 
-echo "$PREVIEW" | command grep -q 'name="step" value="2"' \
-  || die "step 1 did not advance to the preview. The form re-rendered, which means
-validation failed. Most likely: season_id does not cover the dates, a resource does
-not belong to the building, or from_/to_ are not in d/m-Y H:i.
-$(echo "$PREVIEW" | command grep -o 'class="error"[^<]*<[^>]*>[^<]*' | head -5)"
+  if echo "$PREVIEW" | command grep -q 'name="step" value="2"'; then
+    break
+  fi
+
+  ERRS="$(echo "$PREVIEW" | command grep -o 'class="error"[^<]*<[^>]*>[^<]*' | head -5 || true)"
+
+  # An explicit START_DAYS is an instruction, not a suggestion: do not shift it,
+  # fail instead, so the caller sees that the slot they asked for is unavailable.
+  [ "$START_DAYS_EXPLICIT" = "0" ] \
+    || die "step 1 refused the slot and START_DAYS was set explicitly, so it was NOT
+shifted. The slot you asked for is unavailable, or the form is otherwise invalid.
+$ERRS"
+
+  [ "$ATTEMPT" -lt "$MAX_SHIFT" ] \
+    || die "step 1 still refuses after $MAX_SHIFT one-day shifts from the derived offset.
+That is not ordinary occupancy; season_id may not cover the dates, a resource may not
+belong to the building, or from_/to_ are not in d/m-Y H:i.
+$ERRS"
+
+  ATTEMPT=$((ATTEMPT + 1))
+  START_DAYS=$((START_DAYS + 1))
+  echo "step 1 refused that slot; shifting to START_DAYS=$START_DAYS (shift $ATTEMPT/$MAX_SHIFT). Reason:"
+  echo "$ERRS"
+done
 
 TEMP_ID="$(echo "$PREVIEW" | command grep -o 'name="temp_id" value="[^"]*"' | command sed 's/.*value="//;s/"//')"
 WEEKDAY="$(echo "$PREVIEW"  | command grep -o 'name="weekday" value="[^"]*"'  | command sed 's/.*value="//;s/"//')"

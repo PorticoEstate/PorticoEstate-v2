@@ -1248,3 +1248,15 @@ open_days	booking	no	Åpne dager
 open_days_all	booking	no	Alle dager
 open_days_min_one	booking	no	Velg minst én dag
 open_days_desc	booking	no	Ukedager tjenesten er åpen. Brukes til å beregne bestillingsfristen i virkedager.
+
+approved lower	booking	no	godkjent
+approved times	booking	no	Godkjente tider
+comment added	booking	no	Ny kommentar
+comment from caseofficer	booking	no	Kommentar fra saksbehandler
+e lock instructions	booking	no	Instruksjoner for e-lås
+parts	booking	no	deler
+processed	booking	no	Behandlet
+rejected lower	booking	no	avslått
+sub applications	booking	no	deler
+times not approved	booking	no	Tider du ikke fikk
+total cost all	booking	no	Totalkostnad for alle bookinger

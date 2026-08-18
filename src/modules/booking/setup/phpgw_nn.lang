@@ -1223,3 +1223,15 @@ open_days	booking	nn	Opne dagar
 open_days_all	booking	nn	Alle dagar
 open_days_min_one	booking	nn	Vel minst éin dag
 open_days_desc	booking	nn	Vekedagar tenesta er open. Brukast til å rekne ut bestillingsfristen i verkedagar.
+
+approved lower	booking	nn	godkjend
+approved times	booking	nn	Godkjende tider
+comment added	booking	nn	Ny kommentar
+comment from caseofficer	booking	nn	Kommentar frå saksbehandlar
+e lock instructions	booking	nn	Instruksjonar for e-lås
+parts	booking	nn	delar
+processed	booking	nn	Behandla
+rejected lower	booking	nn	avslått
+sub applications	booking	nn	delar
+times not approved	booking	nn	Tider du ikkje fekk
+total cost all	booking	nn	Totalkostnad for alle bookingar

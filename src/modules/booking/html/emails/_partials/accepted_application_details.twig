@@ -48,7 +48,7 @@
     {# Not approved dates #}
     {% if app.not_approved_dates is defined and app.not_approved_dates is not empty %}
     <div style="background-color: #fdf1f2; border-left: 2px solid #dc3545; padding: 8px 12px; margin-top: 10px; border-radius: 0 3px 3px 0;">
-        <p style="margin: 0 0 4px; font-size: 12px; font-weight: 600; color: #721c24;">{{ lang('booking.times_not_approved')|default('Tider du ikke fikk') }}</p>
+        <p style="margin: 0 0 4px; font-size: 12px; font-weight: 600; color: #721c24;">{{ lang('booking.times not approved')|default('Tider du ikke fikk') }}</p>
         <table cellpadding="0" cellspacing="0" role="presentation" style="font-size: 12px; color: #721c24;">
         {% for date in app.not_approved_dates %}
         <tr><td style="padding: 1px 0;">{{ date }}</td></tr>
@@ -60,7 +60,7 @@
     {# Approved dates #}
     {% if app.approved_dates is defined and app.approved_dates is not empty %}
     <div style="background-color: #ecf6f1; border-left: 2px solid #118849; padding: 8px 12px; margin-top: 10px; border-radius: 0 3px 3px 0;">
-        <p style="margin: 0 0 4px; font-size: 12px; font-weight: 600; color: #06331b;">{{ lang('booking.approved_times')|default('Godkjente tider') }}</p>
+        <p style="margin: 0 0 4px; font-size: 12px; font-weight: 600; color: #06331b;">{{ lang('booking.approved times')|default('Godkjente tider') }}</p>
         <table cellpadding="0" cellspacing="0" role="presentation" style="font-size: 12px; color: #06331b;">
         {% for date in app.approved_dates %}
         <tr><td style="padding: 1px 0;">{{ date }}</td></tr>

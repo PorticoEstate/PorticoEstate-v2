@@ -23,7 +23,7 @@ class EmailService
     private $serverSettings;
     private $userSettings;
     private $send;
-    private $datetimeformat = 'Y-m-d H:i';
+    private $datetimeformat = 'd.m.Y H:i';
     private $userTimezone;
     private ?EmailTwigHelper $emailTwigHelper = null;
 
@@ -55,7 +55,7 @@ class EmailService
      * Format a datetime string with proper timezone handling
      *
      * @param string $datetimeString ISO 8601 datetime string (e.g., "2025-11-06T11:00:00+01:00")
-     * @param string $format Output format (default: 'Y-m-d H:i')
+     * @param string $format Output format (defaults to $this->datetimeformat)
      * @return string Formatted datetime in user's timezone
      */
     private function formatDateTime(string $datetimeString, ?string $format = null): string

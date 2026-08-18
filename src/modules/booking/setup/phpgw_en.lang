@@ -1248,3 +1248,15 @@ open_days	booking	en	Open days
 open_days_all	booking	en	All days
 open_days_min_one	booking	en	Select at least one day
 open_days_desc	booking	en	Weekdays the service is open. Used to calculate the order deadline in working days.
+
+approved lower	booking	en	approved
+approved times	booking	en	Approved times
+comment added	booking	en	New comment
+comment from caseofficer	booking	en	Comment from case officer
+e lock instructions	booking	en	E-lock instructions
+parts	booking	en	Parts
+processed	booking	en	Processed
+rejected lower	booking	en	Rejected
+sub applications	booking	en	Parts
+times not approved	booking	en	Times not approved
+total cost all	booking	en	Total cost for all bookings

@@ -452,14 +452,25 @@
 			$parser	 = xml_parser_create($this->_encoding);
 			xml_parser_set_option($parser, XML_OPTION_CASE_FOLDING, 0);
 			xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE, 0);
+			$vals = array();
+			$index = array();
 			xml_parse_into_struct($parser, $data, $vals, $index) or $err	 = true;
 
 			if ($err)
 			{
 				$this->_logError('parse', 'XML parser failed: '
 					. ucfirst(xml_error_string(xml_get_error_code($parser))));
-				return;
+				return array();
 			}
+
+			if (empty($vals))
+			{
+				$this->_logError('parse', 'XML parser produced no nodes.');
+				return array();
+			}
+
+			$i = 0;
+			$tree = array();
 			$tagname = ( $this->_lower_case_tags ) ? strtolower($vals[$i]['tag']) : $vals[$i]['tag'];
 			if (isset($vals[$i]['attributes']))
 			{

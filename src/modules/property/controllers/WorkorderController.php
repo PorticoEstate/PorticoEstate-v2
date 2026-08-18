@@ -3,6 +3,7 @@
 namespace App\modules\property\controllers;
 
 use App\Database\Db;
+use App\modules\property\helpers\BoCommon;
 use App\modules\property\helpers\WorkorderFormHelper;
 use App\modules\phpgwapi\services\Settings;
 use JsonException;
@@ -152,8 +153,8 @@ class WorkorderController
 			return array();
 		}
 
-		$contentType = strtolower((string)$request->getHeaderLine('Content-Type'));
-		if (strpos($contentType, 'application/json') !== false)
+		$contentType = (string)$request->getHeaderLine('Content-Type');
+		if (stripos($contentType, 'application/json') !== false)
 		{
 			$json = json_decode($rawBody, true);
 			if (!is_array($json))
@@ -164,78 +165,13 @@ class WorkorderController
 			return $json;
 		}
 
-		if (strpos($contentType, 'multipart/form-data') !== false)
+		if (stripos($contentType, 'multipart/form-data') !== false)
 		{
-			return $this->parseMultipartFormData($rawBody, $contentType);
+			return BoCommon::parseMultipartFormData($rawBody, $contentType);
 		}
 
 		$decoded = array();
 		parse_str($rawBody, $decoded);
-		return is_array($decoded) ? $decoded : array();
-	}
-
-	private function parseMultipartFormData(string $rawBody, string $contentType): array
-	{
-		if (!preg_match('/boundary=(?:"([^"]+)"|([^;]+))/i', $contentType, $matches))
-		{
-			return array();
-		}
-
-		$boundary = $matches[1] !== '' ? $matches[1] : trim($matches[2]);
-		if ($boundary === '')
-		{
-			return array();
-		}
-
-		$delimiter = '--' . $boundary;
-		$parts = explode($delimiter, $rawBody);
-		$pairs = array();
-
-		foreach ($parts as $part)
-		{
-			$part = ltrim($part, "\r\n");
-			$part = rtrim($part, "\r\n");
-
-			if ($part === '' || $part === '--')
-			{
-				continue;
-			}
-
-			$segments = preg_split("/\r\n\r\n|\n\n/", $part, 2);
-			if (!is_array($segments) || count($segments) !== 2)
-			{
-				continue;
-			}
-
-			$headers = $segments[0];
-			$value = preg_replace('/\r\n$/', '', (string)$segments[1]);
-			if (!is_string($value))
-			{
-				$value = '';
-			}
-
-			if (!preg_match('/Content-Disposition:\s*form-data;\s*name="([^"]+)"(?:;\s*filename="([^"]*)")?/i', $headers, $nameMatch))
-			{
-				continue;
-			}
-
-			$fieldName = $nameMatch[1] ?? '';
-			$isFileField = isset($nameMatch[2]);
-			if ($fieldName === '' || $isFileField)
-			{
-				continue;
-			}
-
-			$pairs[] = rawurlencode($fieldName) . '=' . rawurlencode($value);
-		}
-
-		if (!$pairs)
-		{
-			return array();
-		}
-
-		$decoded = array();
-		parse_str(implode('&', $pairs), $decoded);
 		return is_array($decoded) ? $decoded : array();
 	}
 

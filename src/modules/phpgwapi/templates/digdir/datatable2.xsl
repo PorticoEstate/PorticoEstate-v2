@@ -1223,26 +1223,16 @@
 							bottom2Start: 'info'
 					}
 			}
-
 			init_table = function()
 			{
-    			var	stateSave = true;
-                var pageReload = false;
-                // Detect page refresh
-                if (performance.getEntriesByType("navigation")[0].type === "reload")
-                {
-                    pageReload = true;
-                }
-
-console.log(app_method);
-console.log(app_method_referrer);
-                //check referer and if it is the same as the current page, then clear state
-                if(!pageReload && app_method !== app_method_referrer)
+      			var	stateSave = true;
+                if (typeof(table_url.searchObject.clear_state) \!= 'undefined' && table_url.searchObject.clear_state == 1)
                 {
                    stateSave = false;
+                   sessionStorage.removeItem('state_' + menuaction);
                 }
- 
-                oTable = $('#datatable-container').dataTable({
+
+ 				oTable = $('#datatable-container').dataTable({
 				paginate:		disablePagination ? false : true,
 				searchDelay: 	1200,
 				processing:		true,
@@ -1258,7 +1248,7 @@ console.log(app_method_referrer);
 						delete aoData.columns;
 						aoData.columns = {};
 
-						if(typeof(aoData.order[0]) != 'undefined')
+						if(typeof(aoData.order[0]) \!= 'undefined')
 						{
 							var column = aoData.order[0].column;
 							var dir = aoData.order[0].dir;
@@ -1272,7 +1262,7 @@ console.log(app_method_referrer);
 						
 						for ( var i=0 ; i< _columns.length ; i++ )
 						{
-						if(_columns[i].searchable && _columns[i].search.value !=="")
+						if(_columns[i].searchable && _columns[i].search.value \!=="")
 						{
 							aoData.columns[i] = _columns[i];
 						}
@@ -1303,16 +1293,16 @@ console.log(app_method_referrer);
 							}
 							var test = $(this).val();
 						//	console.log(test.constructor);
-							if ( $(this).attr('name') && test != null && test.constructor !== Array)
+							if ( $(this).attr('name') && test \!= null && test.constructor \!== Array)
 							{
-								value = $(this).val().replace('"', '"');
+								var value = $(this).val().replace('"', '"');
 								aoData[ $(this).attr('name') ] = value;
-								if(value && value !=0 )
+								if(value && value \!=0 )
 								{
 									active_filters_html.push($(this).attr('title'));
 								}
 							}
-							if ( $(this).attr('name') && test != null && test.constructor === Array)
+							if ( $(this).attr('name') && test \!= null && test.constructor === Array)
 							{
 								value = $(this).val();
 								aoData[ $(this).attr('name') ] = value;
@@ -1352,11 +1342,11 @@ console.log(app_method_referrer);
 
 					},
 					dataSrc: function ( json ) {
-						if (typeof(json.sessionExpired) != 'undefined' && json.sessionExpired == true)
+						if (typeof(json.sessionExpired) \!= 'undefined' && json.sessionExpired == true)
 						{
 							window.alert('sessionExpired - please log in');
 							JqueryPortico.lightboxlogin();//defined in common.js
-		//					oTable.api().ajax.reload( null, false ); // user paging is not reset on reload
+						//				oTable.api().ajax.reload( null, false ); // user paging is not reset on reload
 						}
 						else
 						{
@@ -1377,12 +1367,12 @@ console.log(app_method_referrer);
 							temp[$(this).attr('name')] = checkboxState;
 							return;
 						}
-						if ( $(this).attr('name') && $(this).val() != null && $(this).val().constructor != Array)
+						if ( $(this).attr('name') && $(this).val() \!= null && $(this).val().constructor \!= Array)
 						{
 							sValue[ $(this).attr('name') ] = $(this).val().replace('"', '"');
 							temp[ $(this).attr('name') ] = $(this).val().replace('"', '"');
 						}
-						if ( $(this).attr('name') && $(this).val() != null && $(this).val().constructor == Array)
+						if ( $(this).attr('name') && $(this).val() \!= null && $(this).val().constructor == Array)
 						{
 							sValue[ $(this).attr('name') ] = $(this).val();
 							temp[ $(this).attr('name') ] = $(this).val();
@@ -1393,15 +1383,15 @@ console.log(app_method_referrer);
 					{
 						temp[attrname] = sValue[attrname];
 					}
-					localStorage.setItem('state_' + menuaction, JSON.stringify(temp));
+					sessionStorage.setItem('state_' + menuaction, JSON.stringify(temp));
 					return sValue;
 				},
 				fnStateLoadParams: function ( oSettings, oData ) {
 					//Load custom filters
-					var retrievedObject = localStorage.getItem('state_' + menuaction);
-					if(typeof(retrievedObject) != 'undefined')
+					var retrievedObject = sessionStorage.getItem('state_' + menuaction);
+					if(typeof(retrievedObject) \!= 'undefined')
 					{
-						var	params = {};
+						var params = {};
 
 						try
 						{
@@ -1411,27 +1401,26 @@ console.log(app_method_referrer);
 						{
 						}
 					}
-//					console.log(oData);
+					//	console.log(oData);
 					//traverse oData.columns and remove search value
-				//	if (clear_state == true)
 					{
 						for (var attrname in oData.columns)
 						{
-							if(typeof(oData.columns[attrname].search) != 'undefined')
+							if(typeof(oData.columns[attrname].search) \!= 'undefined')
 							{
 								delete oData.columns[attrname].search;
 							}
 						}
 					}
 					//	console.log(params);
-					if(params !== null)
+					if(params \!== null)
 					{
 						oControls.each(function() {
 							var oControl = $(this);
 							$.each(params, function(index, value) {
 								if ( index == oControl.attr('name') )
 								{
-									if (clear_state !== true)
+									if (clear_state \!== true)
 									{
 										if(oControl.is(':checkbox'))
 										{
@@ -1448,7 +1437,6 @@ console.log(app_method_referrer);
 												 oControl.find("option[value="+e+"]").prop("selected", "selected");
 											});
 
-//											init_multiselect(oControl);
 										}
 										else
 										{
@@ -1459,7 +1447,6 @@ console.log(app_method_referrer);
 
 												if($(oControl).find("option").length > 0)
 												{
-											//		$(oControl).formSelect();
 												}
 											}
 											catch(err)
@@ -1475,7 +1462,7 @@ console.log(app_method_referrer);
 					return true;
 				},
 				fnCreatedRow  : function( nRow, aData, iDataIndex ){
- 				},
+},
 				fnRowCallback: function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
 							if(typeof(aData['priority'])!= undefined && aData['priority'] > 0)
 							{
@@ -1948,25 +1935,41 @@ console.log(app_method_referrer);
 		{
 			// Clear custom filters for modern DataTables compatibility
 			customFilters = {};
-			
+
 			var api = oTable.api();
 			for (var i in filter_selects)
 			{
-				select = $("#" + filter_selects[i]);
-				select.prop('selectedIndex',0);
-				try
+				var select = $("#" + filter_selects[i]);
+				if (!select.length)
 				{
-					if($("#" + filter_selects[i]).attr('multiple'))
-					{
-						$("#" + filter_selects[i]).multiselect('deselectAll', false);
-			//			$("#" + filter_selects[i]).multiselect({ buttonContainer: '' });
-						$("#" + filter_selects[i]).multiselect('refresh');
-					}
-
-					column_search_is_initated = false;
+					continue;
 				}
-				catch(e)
-				{}
+
+				if (select.is('select[multiple]'))
+				{
+					select.find('option').prop('selected', false);
+					if ($.fn && $.fn.multiselect)
+					{
+						try
+						{
+							select.multiselect('deselectAll', false);
+							select.multiselect('refresh');
+						}
+						catch(e)
+						{}
+					}
+					select.trigger('change');
+				}
+				else
+				{
+					select.prop('selectedIndex', 0);
+					if (select.is('select'))
+					{
+						select.trigger('change');
+					}
+				}
+
+				column_search_is_initated = false;
 			}
 
 			var oControls = $('.dtable_custom_controls:first').find(':input[name]');

@@ -2,6 +2,7 @@
 
 namespace App\modules\property\controllers;
 
+use App\modules\property\helpers\BoCommon;
 use JsonException;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -144,8 +145,8 @@ class LocationController
 			return array();
 		}
 
-		$contentType = strtolower((string)$request->getHeaderLine('Content-Type'));
-		if (strpos($contentType, 'application/json') !== false)
+		$contentType = (string)$request->getHeaderLine('Content-Type');
+		if (stripos($contentType, 'application/json') !== false)
 		{
 			$json = json_decode($rawBody, true);
 			if (!is_array($json))
@@ -154,6 +155,11 @@ class LocationController
 			}
 
 			return $json;
+		}
+
+		if (stripos($contentType, 'multipart/form-data') !== false)
+		{
+			return BoCommon::parseMultipartFormData($rawBody, $contentType);
 		}
 
 		$decoded = array();

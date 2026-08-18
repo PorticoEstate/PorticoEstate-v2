@@ -1,3 +1,7 @@
+%1 already accepted	booking	nn	%1 allereie godkjent
+%1 already rejected	booking	nn	%1 allereie avvist
+%1 archived as accepted	booking	nn	%1 arkivert som godkjent
+%1 archived as rejected	booking	nn	%1 arkivert som avvist
 %1 e-mails were not sent successfully	booking	nn	%1 e-postar kunne ikkje sendast (ugyldig adresse)
 %1 e-mails were sent successfully	booking	nn	%1 e-postar vart sendt
 %1 resources mapped as articles	booking	nn	%1 ressursar er kopla opp som artiklar i varekatalogen
@@ -12,7 +16,7 @@
 3 weeks	booking	nn	3 veker
 4 weeks	booking	nn	4 veker
 A Case officer will review your application as soon as possible.	booking	nn	Ein saksbehandler vil behandle søknaden så fort som mogeleg.
-A Case officer will review your applications as soon as possible.	booking	nn	En saksbehandler vil behandle søknadene så fort som mulig.
+A Case officer will review your applications as soon as possible.	booking	nn	Ein saksbehandler vil behandle søknadene så fort som mogeleg.
 accept application	booking	nn	Godta søknaden
 acceptance_message	booking	nn	Melding til søkjar
 accepted	booking	nn	Godkjent
@@ -94,6 +98,8 @@ amount	booking	nn	Beløp
 and	booking	nn	og
 application	booking	nn	Søknad
 application add	booking	nn	Ny søknad
+Application archived as accepted	booking	nn	Søknad arkivert som godkjent
+Application archived as rejected	booking	nn	Søknad arkivert som avvist
 Application comment email settings	booking	nn	Søknadskommentar epostinnstillinger
 application edit	booking	nn	Rediger søknad
 Application email settings	booking	nn	Søknad epostinnstillinger
@@ -111,6 +117,8 @@ approval_description	booking	nn	Du er i ferd med å godkjenne denne søknaden. A
 approve	booking	nn	Godkjenn
 apr	booking	nn	april
 archive_key	booking	nn	Arkivnøkkel
+archive as accepted	booking	nn	Arkiver som godkjent
+archive as rejected	booking	nn	Arkiver som avvist
 archived	booking	nn	Arkivert
 are you sure you want to approve?	booking	nn	Er du sikker på at søknad skal godkjennast?
 Are you sure you want to delete?	booking	nn	Er du sikker på at søknad skal avvisast?

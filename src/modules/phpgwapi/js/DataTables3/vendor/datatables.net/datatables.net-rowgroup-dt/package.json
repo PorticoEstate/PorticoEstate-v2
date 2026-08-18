@@ -1,0 +1,38 @@
+{
+    "name": "datatables.net-rowgroup-dt",
+    "description": "RowGroup for DataTables with styling for [DataTables](https://datatables.net/)",
+    "main": "js/rowGroup.dataTables.js",
+    "module": "js/rowGroup.dataTables.mjs",
+    "style": "css/rowGroup.dataTables.css",
+    "types": "./types/rowGroup.dataTables.d.ts",
+    "version": "2.0.0",
+    "files": [
+        "css/**/*.css",
+        "js/**/*.js",
+        "js/**/*.mjs",
+        "types/**/*.d.ts"
+    ],
+    "keywords": [
+        "RowGroup",
+        "Row Grouping",
+        "Datatables",
+        "table",
+        "filter",
+        "sort"
+    ],
+    "dependencies": {
+        "datatables.net-rowgroup": "2.0.0",
+        "datatables.net-dt": "^3"
+    },
+    "author": {
+        "name": "SpryMedia Ltd",
+        "url": "http://datatables.net"
+    },
+    "homepage": "https://datatables.net",
+    "bugs": "https://datatables.net/forums",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/DataTables/RowGroup.git"
+    }
+}

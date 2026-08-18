@@ -129,6 +129,19 @@ class Login
 
 	public function login()
 	{
+		// preserve destination for redirect after login
+		if (\Sanitizer::get_var('menuaction', 'string', 'GET')  && \Sanitizer::get_var('phpgw_return_as', 'string') != 'json')
+		{
+			unset($_GET['click_history']);
+			unset($_GET['sessionid']);
+			unset($_GET[session_name()]);
+			unset($_GET['bookingfrontendsession']);
+			unset($_GET['kp3']);
+			$cookietime = time() + 60;
+			$this->sessions->phpgw_setcookie('redirect', json_encode($_GET), $cookietime);
+		}
+
+
 		// Handle passkey authentication when selected
 		$login_type = \Sanitizer::get_var('type', 'string', 'GET');
 		if ($login_type === 'passkey')

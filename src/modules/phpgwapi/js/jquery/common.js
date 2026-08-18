@@ -402,9 +402,9 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 
 	if (responsive == true)
 	{
-		responsive_def = {
+				responsive_def = {
 			details: {
-				display: $.fn.dataTable.Responsive.display.childRowImmediate,
+						display: DataTable.Responsive.display.childRowImmediate,
 				type: ''
 			}
 		};
@@ -540,15 +540,15 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 		}
 	}
 
-	var oTable = $("#" + container).dataTable({
+	var oTable = new DataTable("#" + container, {
 		columns: columns,
 		scrollY: scrollY,
 		scrollX: scrollX,
 		scroller: scrollY ? true : false,
 		scrollCollapse: scrollY ? true : false,
 		fixedColumns: fixedColumns,
-		paginate: disablePagination ? false : true,
-		filter: disableFilter ? false : true,
+		paging: disablePagination ? false : true,
+		searching: disableFilter ? false : true,
 		info: disablePagination ? false : true,
 		order: order,
 		processing: true,
@@ -564,22 +564,22 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 		lengthMenu: lengthMenu,
 		pageLength: parseInt(pageLength),
 		language: language,
-		fnInitComplete: function (oSettings, json)
+		initComplete: function (oSettings, json)
 		{
 		},
-		fnDrawCallback: function ()
+		drawCallback: function ()
 		{
 			if (typeof (oTable) != 'undefined')
 			{
-				var api = oTable.api();
+				var api = oTable;
 				api.buttons('.record').enable(false);
-				oTable.makeEditable({
+				$("#" + container).makeEditable({
 					sUpdateURL: editor_action,
 					fnOnEditing: function (input)
 					{
 						var iPos = input.closest("tr").prevAll().length;
 						//		var aData = oTable.fnGetData(iPos);
-						var aData = oTable.api().rows(iPos).data()[0];
+						var aData = oTable.rows(iPos).data()[0];
 						id = aData['id'];
 						cell = input.parents("td");
 						return true;
@@ -627,11 +627,16 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 	});
 
 
+	if (typeof oTable.api !== 'function')
+	{
+		oTable.api = function() { return oTable; };
+	}
+
 	$("#" + container + ' tbody').on('click', 'tr', function ()
 	{
 
 		$(this).toggleClass('selected');
-		var api = oTable.api();
+		var api = oTable;
 		var selectedRows = api.rows('.selected').data().length;
 
 		api.buttons('.record').enable(selectedRows > 0);
@@ -659,7 +664,7 @@ JqueryPortico.updateinlineTableHelper = function (oTable, requestUrl)
 {
 	if (typeof (oTable) == 'string')
 	{
-		var _oTable = $("#" + oTable).dataTable();
+		var _oTable = new DataTable("#" + oTable, { retrieve: true });
 	}
 	else
 	{
@@ -667,13 +672,13 @@ JqueryPortico.updateinlineTableHelper = function (oTable, requestUrl)
 	}
 	if (typeof (requestUrl) == 'undefined')
 	{
-		_oTable.api().draw();
+		_oTable.draw();
 	}
 	else
 	{
-		var api = _oTable.api();
+		var api = _oTable;
 		var settings = api.settings()[0] || {};
-		var draw = (typeof settings.iDraw === 'number') ? settings.iDraw : 1;
+		var draw = (typeof settings.draw === 'number') ? settings.draw : 1;
 		var requestUrlWithDraw = requestUrl;
 
 		if (requestUrlWithDraw.indexOf('draw=') === -1)
@@ -694,7 +699,7 @@ JqueryPortico.updateinlineTableHelper = function (oTable, requestUrl)
 JqueryPortico.fnGetSelected = function (oTable)
 {
 	var aReturn = new Array();
-	var nodes = oTable.api().rows().nodes();
+	var nodes = oTable.rows().nodes();
 	for (var i = 0; i < nodes.length; i++)
 	{
 		if ($(nodes[i]).hasClass('selected'))

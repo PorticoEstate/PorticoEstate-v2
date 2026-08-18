@@ -1,0 +1,19 @@
+{
+    "js": [
+        "js/dataTables.fixedColumns.js",
+        "js/dataTables.fixedColumns.min.js",
+        "js/FixedColumns.js",
+        "js/index.js",
+        "js/dataTables.fixedColumns.min.mjs",
+        "js/dataTables.fixedColumns.mjs"
+    ],
+    "css": [],
+    "types": [
+        "types/FixedColumns.d.ts",
+        "types/index.d.ts",
+        "types/types.d.ts"
+    ],
+    "src-repo": "http://github.com/DataTables/FixedColumns",
+    "last-tag": "6.0.0",
+    "last-sync": "8049aa7a424619cd089c370ea54bf8e892c03407"
+}

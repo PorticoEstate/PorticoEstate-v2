@@ -172,16 +172,19 @@ class SessionsMiddleware implements MiddlewareInterface
 				else
 				{
 					$sessions->phpgw_setcookie('login_second_pass', true, 0);
-					if (Sanitizer::get_var('menuaction', 'string', 'GET')  && Sanitizer::get_var('phpgw_return_as', 'string') != 'json')
-					{
-						unset($_GET['click_history']);
-						unset($_GET['sessionid']);
-						unset($_GET[session_name()]);
-						unset($_GET['bookingfrontendsession']);
-						unset($_GET['kp3']);
-						$cookietime = time() + 60;
-						$sessions->phpgw_setcookie('redirect', json_encode($_GET), $cookietime);
-					}
+
+					/*Handled by the login process */
+					// if (Sanitizer::get_var('menuaction', 'string', 'GET')  && Sanitizer::get_var('phpgw_return_as', 'string') != 'json')
+					// {
+					// 	unset($_GET['click_history']);
+					// 	unset($_GET['sessionid']);
+					// 	unset($_GET[session_name()]);
+					// 	unset($_GET['bookingfrontendsession']);
+					// 	unset($_GET['kp3']);
+					// 	$cookietime = time() + 60;
+					// 	$sessions->phpgw_setcookie('redirect', json_encode($_GET), $cookietime);
+					// }
+
 					\phpgw::redirect_link('/login.php');
 					//\phpgw::redirect_link('/login_ui');
 				}

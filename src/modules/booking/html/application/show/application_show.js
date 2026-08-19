@@ -389,6 +389,14 @@
 		if (tb.show_accept) {
 			if (tb.num_associations === 0) {
 				decisionGroup.push(menuItem(lang('acceptRequiresAssociations'), { disabled: true, color: 'success', icon: icons.checkCircle }));
+			} else if (tb.hospitality_orders_pending > 0) {
+				// Same gate, second reason: every hospitality order must have been
+				// decided first. Only 'pending' counts — a cancelled order is a
+				// decision that was made. Counted server-side alongside
+				// num_associations, so the note at loadRecurringPreview applies here
+				// too: anything that changes the count in-page must re-render the
+				// toolbar rather than wait for a reload.
+				decisionGroup.push(menuItem(lang('acceptRequiresHospitalityProcessed'), { disabled: true, color: 'success', icon: icons.checkCircle }));
 			} else {
 				decisionGroup.push(menuItem(lang('acceptApplication'), {
 					disabled: !isCO, color: 'success', action: 'accept-modal', icon: icons.checkCircle,
@@ -1468,6 +1476,30 @@
 	// ═══════════════════════════════════════════════════════════════════
 
 	var _hospOrdersHospitalities = []; // cached for create modal
+	var _hospOrdersAppIds = []; // the related applications the tab lists orders for
+
+	// Total order count on the tab button, using the same ds-badge idiom as the
+	// recurring section. Like those call sites, no badge is rendered at zero.
+	// The digit comes from content:attr(data-count) in the design system CSS, so
+	// data-count is the value — the button's text content never carries it.
+	function setHospitalityTabBadge(count) {
+		var tabBtn = document.getElementById('tab-btn-hospitality-orders');
+		if (!tabBtn) return;
+
+		var badge = tabBtn.querySelector('.ds-badge');
+		if (!count) {
+			if (badge) badge.remove();
+			return;
+		}
+		if (!badge) {
+			badge = document.createElement('span');
+			badge.className = 'ds-badge';
+			badge.setAttribute('data-color', 'neutral');
+			tabBtn.appendChild(document.createTextNode(' '));
+			tabBtn.appendChild(badge);
+		}
+		badge.setAttribute('data-count', count);
+	}
 
 	function renderHospitalityOrders(data) {
 		var container = document.getElementById('application-hospitality-orders');
@@ -1501,6 +1533,7 @@
 			} else {
 				appIds.push(app.id);
 			}
+			_hospOrdersAppIds = appIds;
 
 			// Build query string
 			var queryParts = appIds.map(function (id) {
@@ -1513,10 +1546,12 @@
 			fetchJson(url).then(function (orders) {
 				var html = '';
 
+				setHospitalityTabBadge((orders || []).length);
+
 				// Create order button
 				html += '<div class="hosp-show__tab-actions" style="margin-bottom:0.75rem">' +
 					'<button type="button" class="ds-button" data-variant="primary" data-color="accent" data-size="sm" data-action="create-hospitality-order">' +
-					esc(lang('createOrder')) + '</button></div>';
+					esc(lang('createHospitalityOrderForApplication')) + '</button></div>';
 
 				html += '<div id="application-hospitality-orders-list"></div>';
 				container.innerHTML = html;
@@ -1525,7 +1560,8 @@
 					orders: orders,
 					lang: lang,
 					columns: { application: false, hospitality: true },
-					emptyText: lang('noOrders')
+					emptyText: lang('noOrders'),
+					applicationId: parseInt(root.dataset.applicationId, 10)
 				});
 			}).catch(function (err) {
 				container.innerHTML = '<p class="app-show__empty">' + esc(lang('error')) + ': ' + esc(err.message) + '</p>';
@@ -1574,25 +1610,43 @@
 					container.innerHTML = '<div class="app-show__loading-inline">' + spinner('sm') + '</div>';
 				}
 				var hospOrdersUrl = root.dataset.hospitalityOrdersUrl.split('?')[0];
-				var related = _hospOrdersHospitalities; // reuse cached
-				var appIds = [appId]; // simplified — just main app for refresh
+				// Same applications the first render listed, not just this one —
+				// otherwise a combined group loses its siblings' orders (and the
+				// tab badge with them) until the page is reloaded.
+				var appIds = _hospOrdersAppIds.length ? _hospOrdersAppIds : [appId];
 				var queryParts = appIds.map(function (id) {
 					return 'application_id[]=' + encodeURIComponent(id);
 				});
 				fetchJson(hospOrdersUrl + '?' + queryParts.join('&')).then(function (orders) {
+					setHospitalityTabBadge((orders || []).length);
 					if (container) {
 						var html = '<div class="hosp-show__tab-actions" style="margin-bottom:0.75rem">' +
 							'<button type="button" class="ds-button" data-variant="primary" data-color="accent" data-size="sm" data-action="create-hospitality-order">' +
-							esc(lang('createOrder')) + '</button></div>' +
+							esc(lang('createHospitalityOrderForApplication')) + '</button></div>' +
 							'<div id="application-hospitality-orders-list"></div>';
 						container.innerHTML = html;
 						new HospitalityOrderList(document.getElementById('application-hospitality-orders-list'), {
 							orders: orders,
 							lang: lang,
 							columns: { application: false, hospitality: true },
-							emptyText: lang('noOrders')
+							emptyText: lang('noOrders'),
+							applicationId: appId
 						});
 					}
+				});
+
+				// A newly created order is 'pending', so it LOCKS accept. The
+				// gating count is captured server-side at page load, so re-fetch
+				// the application and re-render the toolbar — same remedy as the
+				// create-allocations handler above, for the same reason.
+				// renderToolbar only reads .toolbar, and the local `app` in this
+				// handler is null, so render straight from the fresh payload.
+				fetchJson(apiUrl).then(function (freshApp) {
+					if (freshApp && freshApp.toolbar) {
+						renderToolbar(freshApp);
+					}
+				}).catch(function () {
+					// Non-fatal: leave the toolbar as-is if the refresh fails.
 				});
 			}
 		});

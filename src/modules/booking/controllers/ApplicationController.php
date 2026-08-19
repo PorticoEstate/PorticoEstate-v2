@@ -190,9 +190,21 @@ class ApplicationController
 			// (ApplicationViewController::show). Deliberately not stricter: when
 			// hospitality is off there is no orders tab, so a leftover pending row
 			// would block Accept with no interface anywhere to clear it.
-			$hospitalityPending = !empty($bookingConfig['enable_hospitality'])
-				? $this->repo->countPendingHospitalityOrders($relatedInfo['application_ids'])
-				: 0;
+			if (!empty($bookingConfig['enable_hospitality'])) {
+				try {
+					$hospitalityPending = $this->repo->countPendingHospitalityOrders($relatedInfo['application_ids']);
+				} catch (\Throwable $e) {
+					// The count could not be computed. Treat unknown as blocking, the
+					// same way acceptApplication does, so the toolbar never offers an
+					// Accept the endpoint would refuse. This is a sentinel rather than
+					// a measurement — the interface renders a fixed label for this
+					// state and never prints the number itself. The page keeps
+					// rendering: a tab-level count must not take out the whole view.
+					$hospitalityPending = 1;
+				}
+			} else {
+				$hospitalityPending = 0;
+			}
 
 			$result['toolbar'] = [
 				'case_officer_is_current_user' => $isCaseOfficer,

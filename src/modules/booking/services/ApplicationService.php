@@ -18,6 +18,7 @@ class ApplicationService
 {
 	private ApplicationRepository $repo;
 	private bool $combineApplications;
+	private bool $enableHospitality;
 
 	public function __construct(ApplicationRepository $repo)
 	{
@@ -25,6 +26,7 @@ class ApplicationService
 
 		$config = $this->repo->fetchBookingConfig();
 		$this->combineApplications = !empty($config['combined_applications_mode']);
+		$this->enableHospitality = !empty($config['enable_hospitality']);
 	}
 
 	// ── Assign ──────────────────────────────────────────────────────────
@@ -247,6 +249,39 @@ class ApplicationService
 		$numAssoc = $this->repo->countAssociations($appId);
 		if ($numAssoc === 0) {
 			throw new RuntimeException('Cannot accept: no associations (allocations/bookings/events) exist', 400);
+		}
+
+		// Second reason the same gate can refuse: every hospitality order must
+		// have been decided first. Counted over the whole combined group, using
+		// the same ids as ApplicationController's toolbar — the orders tab lists
+		// the group, so a gate scoped to this row alone would refuse and permit
+		// in different places than the interface says it will.
+		//
+		// Gated on enable_hospitality for the same reason the toolbar is: with
+		// hospitality switched off there is no orders tab, so a leftover pending
+		// row would block Accept with no interface anywhere to clear it.
+		if ($this->enableHospitality) {
+			$groupIds = $this->repo->getRelatedApplications($appId)['application_ids'];
+
+			try {
+				$numPending = $this->repo->countPendingHospitalityOrders($groupIds);
+			} catch (\Throwable $e) {
+				// The count could not be computed. A gate must not fail open on an
+				// error it cannot interpret: an unknown count blocks the accept
+				// rather than permitting it. The underlying message is deliberately
+				// not returned to the client.
+				throw new RuntimeException(
+					'Cannot accept: unable to verify whether hospitality orders are still awaiting a decision',
+					503
+				);
+			}
+
+			if ($numPending > 0) {
+				throw new RuntimeException(
+					'Cannot accept: ' . $numPending . ' hospitality order(s) still awaiting a decision',
+					400
+				);
+			}
 		}
 
 		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';

@@ -257,6 +257,15 @@ class ApplicationRepository
 	 * Count hospitality orders still awaiting a decision across the given
 	 * applications. Only 'pending' is unprocessed — 'confirmed' and
 	 * 'cancelled' are both settled decisions and do not count.
+	 *
+	 * Throws on a database failure rather than reporting zero. This count
+	 * gates Accept, and zero is the value that UNLOCKS it: swallowing the
+	 * error here would turn any database fault into a silent permit. Callers
+	 * decide what an uncomputable count means for them — see
+	 * ApplicationService::acceptApplication (blocks) and
+	 * ApplicationController::show (blocks, but keeps the page renderable).
+	 *
+	 * @throws \PDOException on a database failure.
 	 */
 	public function countPendingHospitalityOrders(array $applicationIds): int
 	{
@@ -264,24 +273,20 @@ class ApplicationRepository
 			return 0;
 		}
 
-		try {
-			$params = [];
-			$placeholders = [];
-			foreach (array_values($applicationIds) as $i => $appId) {
-				$placeholders[] = ':app' . $i;
-				$params[':app' . $i] = (int) $appId;
-			}
-
-			$stmt = $this->db->prepare(
-				"SELECT COUNT(*) FROM bb_hospitality_order
-				 WHERE status = 'pending'
-				   AND application_id IN (" . implode(',', $placeholders) . ")"
-			);
-			$stmt->execute($params);
-			return (int) $stmt->fetchColumn();
-		} catch (\Throwable $e) {
-			return 0;
+		$params = [];
+		$placeholders = [];
+		foreach (array_values($applicationIds) as $i => $appId) {
+			$placeholders[] = ':app' . $i;
+			$params[':app' . $i] = (int) $appId;
 		}
+
+		$stmt = $this->db->prepare(
+			"SELECT COUNT(*) FROM bb_hospitality_order
+			 WHERE status = 'pending'
+			   AND application_id IN (" . implode(',', $placeholders) . ")"
+		);
+		$stmt->execute($params);
+		return (int) $stmt->fetchColumn();
 	}
 
 	/**

@@ -251,6 +251,39 @@ class ApplicationRepository
 		}
 	}
 
+	// ── Hospitality orders ──────────────────────────────────────────────
+
+	/**
+	 * Count hospitality orders still awaiting a decision across the given
+	 * applications. Only 'pending' is unprocessed — 'confirmed' and
+	 * 'cancelled' are both settled decisions and do not count.
+	 */
+	public function countPendingHospitalityOrders(array $applicationIds): int
+	{
+		if (empty($applicationIds)) {
+			return 0;
+		}
+
+		try {
+			$params = [];
+			$placeholders = [];
+			foreach (array_values($applicationIds) as $i => $appId) {
+				$placeholders[] = ':app' . $i;
+				$params[':app' . $i] = (int) $appId;
+			}
+
+			$stmt = $this->db->prepare(
+				"SELECT COUNT(*) FROM bb_hospitality_order
+				 WHERE status = 'pending'
+				   AND application_id IN (" . implode(',', $placeholders) . ")"
+			);
+			$stmt->execute($params);
+			return (int) $stmt->fetchColumn();
+		} catch (\Throwable $e) {
+			return 0;
+		}
+	}
+
 	/**
 	 * Fetch linked allocations/bookings/events for this application.
 	 */

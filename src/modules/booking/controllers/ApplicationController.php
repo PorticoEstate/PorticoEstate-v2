@@ -182,12 +182,25 @@ class ApplicationController
 			// Edit URL: always uses current app's own ID (matches legacy edit_link)
 			$editUrl = '/?menuaction=booking.uiapplication.edit&id=' . $id;
 
+			// Hospitality orders awaiting a decision, counted across the same
+			// related applications as num_associations — the orders tab lists the
+			// whole group, so the accept gate has to consider the whole group too.
+			//
+			// Gated on the SAME expression the view uses for enable_hospitality
+			// (ApplicationViewController::show). Deliberately not stricter: when
+			// hospitality is off there is no orders tab, so a leftover pending row
+			// would block Accept with no interface anywhere to clear it.
+			$hospitalityPending = !empty($bookingConfig['enable_hospitality'])
+				? $this->repo->countPendingHospitalityOrders($relatedInfo['application_ids'])
+				: 0;
+
 			$result['toolbar'] = [
 				'case_officer_is_current_user' => $isCaseOfficer,
 				'has_case_officer'             => $hasCaseOfficer,
 				'messenger_enabled'            => $messengerEnabled,
 				'show_accept'                  => in_array($status, ['PENDING', 'REJECTED', 'NEWPARTIAL1']),
 				'num_associations'             => $app->num_associations,
+				'hospitality_orders_pending'   => $hospitalityPending,
 				'show_reject'                  => $status !== 'REJECTED',
 				'display_in_dashboard'         => (int) ($row['display_in_dashboard'] ?? 1),
 				'show_edit_selection'           => $relatedInfo['total_count'] > 1,

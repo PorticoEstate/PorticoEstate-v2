@@ -1260,3 +1260,5 @@ rejected lower	booking	en	Rejected
 sub applications	booking	en	Parts
 times not approved	booking	en	Times not approved
 total cost all	booking	en	Total cost for all bookings
+create_hospitality_order_for_application	booking	en	Add new hospitality order to this application
+accept_requires_hospitality_processed	booking	en	All hospitality orders must be processed before the application can be accepted

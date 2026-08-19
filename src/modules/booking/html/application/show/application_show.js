@@ -1560,7 +1560,8 @@
 					orders: orders,
 					lang: lang,
 					columns: { application: false, hospitality: true },
-					emptyText: lang('noOrders')
+					emptyText: lang('noOrders'),
+					applicationId: parseInt(root.dataset.applicationId, 10)
 				});
 			}).catch(function (err) {
 				container.innerHTML = '<p class="app-show__empty">' + esc(lang('error')) + ': ' + esc(err.message) + '</p>';
@@ -1628,7 +1629,8 @@
 							orders: orders,
 							lang: lang,
 							columns: { application: false, hospitality: true },
-							emptyText: lang('noOrders')
+							emptyText: lang('noOrders'),
+							applicationId: appId
 						});
 					}
 				});

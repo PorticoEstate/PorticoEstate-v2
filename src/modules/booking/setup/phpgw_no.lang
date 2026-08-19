@@ -1262,3 +1262,4 @@ times not approved	booking	no	Tider du ikke fikk
 total cost all	booking	no	Totalkostnad for alle bookinger
 create_hospitality_order_for_application	booking	no	Legg til ny bevertningsbestilling til denne søknaden
 accept_requires_hospitality_processed	booking	no	Alle bevertningsbestillinger må være behandlet før søknaden kan godkjennes
+back_to_application	booking	no	Tilbake til søknaden

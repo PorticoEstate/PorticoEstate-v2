@@ -1237,3 +1237,4 @@ times not approved	booking	nn	Tider du ikkje fekk
 total cost all	booking	nn	Totalkostnad for alle bookingar
 create_hospitality_order_for_application	booking	nn	Legg til ny bevertningsbestilling til denne søknaden
 accept_requires_hospitality_processed	booking	nn	Alle bevertningsbestillingar må vere behandla før søknaden kan godkjennast
+back_to_application	booking	nn	Tilbake til søknaden

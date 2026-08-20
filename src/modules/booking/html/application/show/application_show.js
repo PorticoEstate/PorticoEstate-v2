@@ -77,13 +77,19 @@
 			'</svg>';
 	}
 
+	// bb_application.status is uppercase, the lang keys are lowercase — fold the
+	// case before looking up. lang() echoes the key back on a miss, so fall back
+	// to the raw value rather than render a lowercased status.
 	function statusTag(status) {
 		var colorMap = {
 			'new': 'info', 'pending': 'warning',
 			'accepted': 'success', 'rejected': 'danger'
 		};
-		var color = colorMap[(status || '').toLowerCase()] || 'neutral';
-		return '<span class="ds-tag" data-color="' + color + '">' + esc(status) + '</span>';
+		var key = (status || '').toLowerCase();
+		var color = colorMap[key] || 'neutral';
+		var label = key ? lang(key) : '';
+		if (!label || label === key) label = status || '';
+		return '<span class="ds-tag" data-color="' + color + '">' + esc(label) + '</span>';
 	}
 
 	// A titled card. opts.icon = ICONS key/svg, opts.aside = right-aligned header html.

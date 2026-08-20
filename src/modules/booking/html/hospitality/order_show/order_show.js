@@ -133,12 +133,20 @@
 		return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 	}
 
+	// Emits the local wall clock WITH its UTC offset, matching the API's
+	// @Timestamp(format="c") representation byte for byte. The offset is taken from
+	// the slot's own Date, not from today, so it follows DST at the serving date.
 	function fmtNaiveIso(d) {
+		var offsetMinutes = -d.getTimezoneOffset();
+		var absOffset = Math.abs(offsetMinutes);
 		return d.getFullYear() + '-' +
 			String(d.getMonth() + 1).padStart(2, '0') + '-' +
 			String(d.getDate()).padStart(2, '0') + 'T' +
 			String(d.getHours()).padStart(2, '0') + ':' +
-			String(d.getMinutes()).padStart(2, '0') + ':00';
+			String(d.getMinutes()).padStart(2, '0') + ':00' +
+			(offsetMinutes < 0 ? '-' : '+') +
+			String(Math.floor(absOffset / 60)).padStart(2, '0') + ':' +
+			String(absOffset % 60).padStart(2, '0');
 	}
 
 	function populateEditTimeSlots(timeEl, dateIdx, currentIso) {

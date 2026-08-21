@@ -1,4 +1,4 @@
-$(document).ready(function ()
+$(function ()
 {
 
 	  $("#user_id").on('change', function ()

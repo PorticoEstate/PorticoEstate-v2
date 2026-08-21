@@ -1,5 +1,5 @@
 
-$(document).ready(function ()
+$(function ()
 {
 	$('#entity_group_id').on('change', function ()
 	{

@@ -176,7 +176,7 @@ set_tab = function (active_tab)
 };
 
 
-$(document).ready(function ()
+$(function ()
 {
 
 	formatFileSize = function (bytes)

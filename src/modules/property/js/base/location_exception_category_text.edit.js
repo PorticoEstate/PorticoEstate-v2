@@ -1,4 +1,4 @@
-$(document).ready(function ()
+$(function ()
 {
 
 	  $("#category_id").on('change', function ()

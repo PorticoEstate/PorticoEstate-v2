@@ -799,7 +799,7 @@ JqueryPortico.autocompleteHelper(strURL, 'unspsc_code_name', 'unspsc_code', 'uns
 // from ajax_workorder_edit.js
 
 
-$(document).ready(function ()
+$(function ()
 {
 
 	check_button_names();

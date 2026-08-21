@@ -86,7 +86,7 @@ window.on_vendor_updated = function ()
 };
 
 
-$(document).ready(function ()
+$(function ()
 {
 	$.formUtils.addValidator({
 		name: 'category',

@@ -1,4 +1,4 @@
-$(document).ready(function ()
+$(function ()
 {
 
 	  $("#dimb_id").on('change', function ()

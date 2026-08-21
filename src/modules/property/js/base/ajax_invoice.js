@@ -1,5 +1,5 @@
 var Window1;
-$(document).ready(function ()
+$(function ()
 {
 
 	// When janitor is selected, vouchers are fetched from db and voucer select list is populated

@@ -1,5 +1,5 @@
 
-$(document).ready(function ()
+$(function ()
 {
 	$('.processing-import').hide();
 	$('.processing-sheet').hide();

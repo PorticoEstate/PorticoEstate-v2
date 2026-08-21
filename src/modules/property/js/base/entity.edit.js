@@ -426,7 +426,7 @@ add_control = function ()
 var documents = null;
 var requestUrlDoc = null;
 	
-$(document).ready(function ()
+$(function ()
 {
 	$('#doc_type').on('change', function()
 	{
@@ -935,7 +935,7 @@ function getMissingReadonlyRequiredMessages(form)
 	return messages;
 }
 
-$(document).ready(function ()
+$(function ()
 {
 	var form = document.getElementById('form');
 	if (!form || !window.fetch)

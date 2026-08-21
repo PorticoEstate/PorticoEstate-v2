@@ -573,7 +573,7 @@ window.on_location_updated = function (location_code)
 	});
 };
 
-$(document).ready(function ()
+$(function ()
 {
 	$("#user_id").select2({
 		placeholder: "Select a user",

@@ -83,7 +83,7 @@ $(window).on('load', function ()
 
 });
 
-$(document).ready(function ()
+$(function ()
 {
 	init_multiselect();
 

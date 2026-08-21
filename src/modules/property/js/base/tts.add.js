@@ -158,7 +158,7 @@ ajax_submit_form = function (action)
 };
 
 
-$(document).ready(function ()
+$(function ()
 {
 
 	$("#notify_account_id").select2({

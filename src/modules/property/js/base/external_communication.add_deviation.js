@@ -137,7 +137,7 @@ this.preview = function (id)
 	Window1 = window.open(strURL, 'Search', "left=50,top=100,width=800,height=700,toolbar=no,scrollbars=yes,resizable=yes");
 };
 
-$(document).ready(function ()
+$(function ()
 {
 	var do_preview = $("#do_preview").val();
 
@@ -182,7 +182,7 @@ $(window).on('load', function()
 
 });
 
-$(document).ready(function ()
+$(function ()
 {
 
 	//$("#datatable-container_2 tr").on("click", function (e)

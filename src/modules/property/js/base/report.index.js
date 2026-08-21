@@ -1,5 +1,5 @@
 
-$(document).ready(function ()
+$(function ()
 {
 	  $('#list_dataset').on('change', function()
 	{

@@ -41,7 +41,7 @@ formatLocationDocumentLink = function (key, oData)
 	});
 };
 
-$(document).ready(function ()
+$(function ()
 {
 	$('#doc_type').on('change', function()
 	{
@@ -230,7 +230,7 @@ function updateCaseTable(check_list_id)
 	JqueryPortico.updateinlineTableHelper('datatable-container_6', requestUrl);
 }
 
-$(document).ready(function ()
+$(function ()
 {
 
 	var click_action_on_table = false;
@@ -531,7 +531,7 @@ function buildLocationEditRedirectUrl(locationCode, form)
 	return createLocationNavigationClient(form).buildEditUrl(locationCode);
 }
 
-$(document).ready(function ()
+$(function ()
 {
 	var form = document.getElementById('form');
 	if (!form || !window.fetch)

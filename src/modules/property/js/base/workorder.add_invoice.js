@@ -100,7 +100,7 @@ JqueryPortico.autocompleteHelper(strURL, 'external_project_name', 'external_proj
 // from ajax_workorder_edit.js
 
 
-$(document).ready(function ()
+$(function ()
 {
 
 	$.formUtils.addValidator({

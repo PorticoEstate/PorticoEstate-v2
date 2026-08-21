@@ -192,7 +192,7 @@ this.local_DrawCallback2 = function (container)
 	});
 };
 
-$(document).ready(function ()
+$(function ()
 {
 	check_button_names();
 	load_google_map();

@@ -208,7 +208,7 @@ this.get_reskontro = function (location_code)
 };
 
 
-$(document).ready(function ()
+$(function ()
 {
 	// Initialize file count display
 	$('#files-count').text('0');

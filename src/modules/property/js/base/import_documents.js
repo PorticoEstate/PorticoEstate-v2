@@ -2,7 +2,7 @@
 
 var select_id = 0;
 
-$(document).ready(function ()
+$(function ()
 {
 
 	'use strict';

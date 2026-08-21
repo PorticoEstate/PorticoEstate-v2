@@ -1,4 +1,4 @@
-$(document).ready(function ()
+$(function ()
 {
 
 	  $("#b_account_id").on('change', function ()

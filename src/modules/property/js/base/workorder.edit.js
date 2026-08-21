@@ -1373,12 +1373,10 @@ this.fileuploader = function ()
 this.refresh_files = function ()
 {
 	var strURL = phpGWLink('property/workorder/' + order_id + '/files', {
-		phpgw_return_as: 'json'
 	}, true);
 	JqueryPortico.updateinlineTableHelper('datatable-container_1', strURL);
 
 	strURL = phpGWLink('property/workorder/' + order_id + '/files-attachments', {
-		phpgw_return_as: 'json'
 	}, true);
 	refresh_glider(strURL);
 

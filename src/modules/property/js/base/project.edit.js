@@ -317,14 +317,12 @@ $(document).ready(function ()
 			project_id: project_id,
 			year: $(this).val(),
 			results: -1,
-			phpgw_return_as: 'json'
 		}, true);
 		JqueryPortico.updateinlineTableHelper(oTable1, requestUrl1);
 
 		var requestUrl2 = phpGWLink('property/project/' + project_id + '/vouchers', {
 			project_id: project_id,
 			year: $(this).val(),
-			phpgw_return_as: 'json'
 		}, true);
 		JqueryPortico.updateinlineTableHelper(oTable2, requestUrl2);
 	});
@@ -401,7 +399,6 @@ $(document).ready(function ()
 		var voucher_id = $('td', this).eq(1).text();
 		var requestUrl = phpGWLink('property/project/attachments', {
 			voucher_id: voucher_id,
-			phpgw_return_as: 'json'
 		}, true);
 		JqueryPortico.updateinlineTableHelper('datatable-container_8', requestUrl);
 	});
@@ -420,7 +417,6 @@ $(document).ready(function ()
 		var requestUrl = phpGWLink('property/project/lookups/category', {
 			cat_id: data.id,
 			b_account_id: b_account_id,
-			phpgw_return_as: 'json'
 		}, true);
 
 		$.ajax({
@@ -479,24 +475,19 @@ $(document).ready(function ()
 		validate_order_category({id: cat_id});
 	}
 
-	strURL = phpGWLink('property/project/lookups/b-account', {
-		phpgw_return_as: 'json'
-	}, true);
+	strURL = phpGWLink('property/project/lookups/b-account', {}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'b_account_name', 'b_account_id', 'b_account_container', null, null, null, validate_change_budget_account);
 
 	var strURL = phpGWLink('property/project/lookups/external-project', {
-		phpgw_return_as: 'json'
 	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'external_project_name', 'external_project_id', 'external_project_container', null, null, null, validate_dim_b);
 	
 	strURL = phpGWLink('property/project/lookups/ecodimb', {
-		phpgw_return_as: 'json'
 	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'ecodimb_name', 'ecodimb', 'ecodimb_container');
 	
 	strURL = phpGWLink('property/project/lookups/b-account', {
 		role: 'group',
-		phpgw_return_as: 'json'
 	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'b_account_group_name', 'b_account_group', 'b_account_group_container');
 		
@@ -520,7 +511,6 @@ $(document).ready(function ()
 		}
 		var strURL = phpGWLink('property/project/lookups/b-account', {
 			query: b_account_id,
-			phpgw_return_as: 'json'
 		}, true);
 
 		$.getJSON(strURL, function (Result)
@@ -555,7 +545,6 @@ $(document).ready(function ()
 
 					var strURL = phpGWLink('property/project/lookups/ecodimb', {
 						query: ecodimb_id,
-						phpgw_return_as: 'json'
 					}, true);
 					$.getJSON(strURL, function (Result)
 					{
@@ -1280,7 +1269,6 @@ $(window).on('load', function ()
 
 		var strURL = phpGWLink('property/project/lookups/external-project', {
 			query: external_project_id,
-			phpgw_return_as: 'json'
 		}, true);
 		
 
@@ -1391,7 +1379,6 @@ this.fileuploader = function ()
 this.refresh_files = function ()
 {
 	var strURL = phpGWLink('property/project/' + project_id + '/files', {
-		phpgw_return_as: 'json'
 	}, true);
 
 	refresh_glider(strURL);

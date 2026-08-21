@@ -17,9 +17,9 @@ function formatterArea(key, oData)
 	return amount;
 }
 
-$(document).ready(function ()
+$(function ()
 {
-	$('#invoice_id').change(function ()
+	$('#invoice_id').on('change', function ()
 	{
 		oTable4.dataTableSettings[4]['ajax']['data']['invoice_id'] = $('#invoice_id').val();
 		JqueryPortico.updateinlineTableHelper(oTable4);
@@ -27,7 +27,7 @@ $(document).ready(function ()
 
 	/******************************************************************************/
 
-	$('#document_search_option').change(function ()
+	$('#document_search_option').on('change', function ()
 	{
 		filterDataDocument('search_option', $(this).val());
 	});
@@ -42,7 +42,7 @@ $(document).ready(function ()
 		}
 	});
 
-	$('#document_type_search').change(function ()
+	$('#document_type_search').on('change', function ()
 	{
 		filterDataDocument('document_type', $(this).val());
 	});

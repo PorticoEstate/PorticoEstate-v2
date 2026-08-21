@@ -1,7 +1,7 @@
-$(document).ready(function ()
+$(function ()
 {
 
-	$(".show-control-details").click(function ()
+	$(".show-control-details").on("click", function ()
 	{
 		var clickElem = $(this);
 
@@ -32,7 +32,7 @@ $(document).ready(function ()
 		return false;
 	});
 	
-	$("#popupBox").click(function ()
+	$("#popupBox").on("click", function ()
 	{
 		$("#popupBox").hide();
 		$("#curtain").hide();
@@ -42,7 +42,7 @@ $(document).ready(function ()
 	/* ================================  CONTROL LOCATION ================================== */
 
 	// Update location category based on location type
-	$("#type_id").change(function ()
+	$("#type_id").on("change", function ()
 	{
 		var location_type_id = $(this).val();
 		var oArgs = {menuaction: 'controller.uicontrol_register_to_location.get_location_category'};
@@ -85,7 +85,7 @@ $(document).ready(function ()
 	});
 
 	// FETCHES RELATED CONTROLS WHEN CONTROL AREA IS CHOSEN
-	$("#control_area_list").change(function ()
+	$("#control_area_list").on("change", function ()
 	{
 		var control_area_id = $(this).val();
 		var oArgs = {menuaction: 'controller.uicontrol.get_controls_by_control_area'};
@@ -130,7 +130,7 @@ $(document).ready(function ()
 	});
 	
 	// FETCHES RELATED CONTROL ITEMS WHEN CONTROL AREA IS CHOSEN
-	$("#toolbar select#control_areas").change(function ()
+	$("#toolbar select#control_areas").on("change", function ()
 	{
 		var control_area_id = $(this).val();
 		var oArgs = {menuaction: 'controller.uicontrol_group.get_control_groups_by_control_area'};
@@ -180,7 +180,7 @@ $(document).ready(function ()
 	/* ================================  COMPONENT ================================== */
 
 	// When control area is selected, controls are fetched from db and control select list is populated
-	$("#control_group_area_list").change(function ()
+	$("#control_group_area_list").on("change", function ()
 	{
 		var control_area_id = $(this).val();
 		var oArgs = {menuaction: 'controller.uicontrol_group.get_control_groups_by_control_area', phpgw_return_as: 'json'};
@@ -217,7 +217,7 @@ $(document).ready(function ()
 	});
 
 	//update part of town category based on district
-	$("#district_id").change(function ()
+	$("#district_id").on("change", function ()
 	{
 		var district_id = $(this).val();
 		var oArgs = {menuaction: 'controller.uicontrol_register_to_location.get_district_part_of_town'};
@@ -254,7 +254,7 @@ $(document).ready(function ()
 
 	// file: add_component_to_control.xsl
 	// When component category is selected, corresponding component types are fetched from db and component type select list is populated
-	$("#ifc").change(function ()
+	$("#ifc").on("change", function ()
 	{
 		var ifc_id = $(this).val();
 
@@ -295,7 +295,7 @@ $(document).ready(function ()
 	/* ================================  PROCEDURE ================================== */
 
 	// FETCHES PROCEDURES WHEN A CONTROLAREA IS CHOSEN FORM SELECT LIST
-	$("#control_area_id").change(function ()
+	$("#control_area_id").on("change", function ()
 	{
 		var control_area_id = $(this).val();
 
@@ -335,7 +335,7 @@ $(document).ready(function ()
 
 	/* POPULATE CONTROL GROUP SELECT LIST 
 	 * Fetches control groups from db from selected control area populates control group select list */
-	$("#control_area").change(function ()
+	$("#control_area").on("change", function ()
 	{
 		var control_area_id = $(this).val();
 		if (control_area_id == '')
@@ -375,7 +375,7 @@ $(document).ready(function ()
 
 	/* ================================  CONTROL GROUP ================================== */
 
-	$("#frm_save_control_groups").submit(function (e)
+	$("#frm_save_control_groups").on("submit", function (e)
 	{
 		var thisForm = $(this);
 		var num_checked = $(this).find("input:checked").length;
@@ -409,7 +409,7 @@ $(document).ready(function ()
 		});
 	}
 
-	$("#frm_control_items input[type='checkbox']").click(function ()
+	$("#frm_control_items input[type='checkbox']").on("click", function ()
 	{
 		var thisCbox = $(this);
 
@@ -428,7 +428,7 @@ $(document).ready(function ()
 		}
 	});
 
-	$("#frm_control_items").submit(function (e)
+	$("#frm_control_items").on("submit", function (e)
 	{
 		var thisForm = $(this);
 		var num_checked = $(this).find("input:checked").length;
@@ -526,7 +526,7 @@ $(document).ready(function ()
 	/* =========================  CONTROL  ===================== */
 
 	// SAVE CONTROL DETAILS
-	$("#frm_save_control_details").submit(function (e)
+	$("#frm_save_control_details").on("submit", function (e)
 	{
 		var thisForm = $(this);
 		var $required_input_fields = $(this).find(".required");
@@ -574,7 +574,7 @@ $(document).ready(function ()
 	});
 
 	// HELP TEXT ON SAVING CONTROL DETAILS 
-	$("#control_details input").focus(function (e)
+	$("#control_details input").on("focus", function (e)
 	{
 		var wrpElem = $(this).parents("dd");
 		$(wrpElem).find(".help_text").fadeIn(300);
@@ -586,7 +586,7 @@ $(document).ready(function ()
 		$(wrpElem).find(".help_text").fadeOut(300);
 	});
 
-	$("#control_details select").focus(function (e)
+	$("#control_details select").on("focus", function (e)
 	{
 		var wrpElem = $(this).parents("dd");
 		$(wrpElem).find(".help_text").fadeIn(300);
@@ -599,13 +599,13 @@ $(document).ready(function ()
 	});
 
 	// CONTROL DETAILS ON FOCUS FIELDS 
-	$("#frm_save_control_details input").focus(function (e)
+	$("#frm_save_control_details input").on("focus", function (e)
 	{
 		$("#frm_save_control_details").find(".focus").removeClass("focus");
 		$(this).addClass("focus");
 	});
 
-	$("#frm_save_control_details select").focus(function (e)
+	$("#frm_save_control_details select").on("focus", function (e)
 	{
 		$("#frm_save_control_details").find(".focus").removeClass("focus");
 		$(this).addClass("focus");
@@ -613,7 +613,7 @@ $(document).ready(function ()
 
 
 
-	$("#control_id").change(function ()
+	$("#control_id").on("change", function ()
 	{
 		var control_id = $(this).val();
 		$("#hidden_control_id").val(control_id);
@@ -622,7 +622,7 @@ $(document).ready(function ()
 	//=============================  MESSAGE  ===========================
 
 	// REGISTER MESSAGE
-	$("#frmRegCaseMessage").submit(function (e)
+	$("#frmRegCaseMessage").on("submit", function (e)
 	{
 
 		var thisForm = $(this);
@@ -687,7 +687,7 @@ $(document).ready(function ()
 	// SEARCH LOCATION BOX
 
 	// Changes location level between building and property in serch location select box
-	$("#choose-loc a").click(function ()
+	$("#choose-loc a").on("click", function ()
 	{
 
 		$("#choose-loc a").removeClass("active");
@@ -696,7 +696,7 @@ $(document).ready(function ()
 		var loc_type = $(this).attr("href");
 
 		$("#loc_type").val(loc_type.substring(9, 10));
-		$("#search-location-name").focus();
+		$("#search-location-name").trigger('focus');
 
 		$("#search-location-name").autocomplete("search");
 
@@ -704,7 +704,7 @@ $(document).ready(function ()
 	});
 
 
-	$(".select-location").change(function ()
+	$(".select-location").on("change", function ()
 	{
 		var location_code = $(this).val();
 		var thisForm = $(this).parents("form");
@@ -749,35 +749,35 @@ $(document).ready(function ()
 	});
 
 	// CALENDAR FILTERS  
-	$("#filter-repeat_type").change(function ()
+	$("#filter-repeat_type").on("change", function ()
 	{
 		var repeat_type = $(this).val();
 		var thisForm = $(this).closest("form");
 
 		$(thisForm).find("input[name=repeat_type]").val(repeat_type);
-		$(thisForm).submit();
+		$(thisForm).trigger('submit');
 	});
 
-	$("#filter-role").change(function ()
+	$("#filter-role").on("change", function ()
 	{
 		var role = $(this).val();
 		var thisForm = $(this).closest("form");
 
 		$(thisForm).find("input[name=role]").val(role);
-		$(thisForm).submit();
+		$(thisForm).trigger('submit');
 	});
 	
-	$("#filter-ctrl_status").change(function ()
+	$("#filter-ctrl_status").on("change", function ()
 	{
 		var ctrl_status = $(this).val();
 		var thisForm = $(this).closest("form");
 
 		$(thisForm).find("input[name=current_ctrl_status]").val(ctrl_status);
-		$(thisForm).submit();
+		$(thisForm).trigger('submit');
 	});
 
 	// SHOW INFO BOX: Fetches info about a check list on hover image icon
-	$('a.view_info_box').bind('contextmenu', function ()
+	$('a.view_info_box').on('contextmenu', function ()
 	{
 		var thisA = $(this);
 		var divWrp = $(this).parent();

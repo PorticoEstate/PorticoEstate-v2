@@ -2,14 +2,14 @@ var location_code_selection = "";
 var html5QrcodeScanner;
 /* global get_items_per_qr_url */
 
-$(document).ready(function ()
+$(function ()
 {
 	JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction: 'property.bolocation.get_locations'}, true),
 		'location_name', 'location_code', 'location_container');
 
 });
 
-$(document).ready(function ()
+$(function ()
 {
 
 	$("#location_name").on("autocompleteselect", function (event, ui)
@@ -62,7 +62,7 @@ $(document).ready(function ()
 
 	};
 
-	$("#btn_search").click(function ()
+	 $("#btn_search").on('click', function ()
 	{
 		var entity_id = $("#field_entity_id").val();
 		var type = $("#field_type").val();
@@ -101,7 +101,7 @@ $(document).ready(function ()
 
 
 
-	$("#btn_search_").click(function ()
+	 $("#btn_search_").on('click', function ()
 	{
 		var entity_id = $("#field_entity_id").val();
 		var type = $("#field_type").val();

@@ -426,9 +426,9 @@ add_control = function ()
 var documents = null;
 var requestUrlDoc = null;
 	
-$(document).ready(function ()
+$(function ()
 {
-	$('#doc_type').change( function()
+	$('#doc_type').on('change', function()
 	{
 		paramsTable7['doc_type'] = $(this).val();
 		oTable7.api().draw();				
@@ -446,7 +446,7 @@ $(document).ready(function ()
 	});
 
 	var click_action_on_table = false;
-	$("#check_lst_time_span").change(function ()
+	$("#check_lst_time_span").on('change', function ()
 	{
 		var requestUrl = get_checklists_url + '?location_id=' + encodeURIComponent(location_id) + '&id=' + encodeURIComponent(item_id) + '&year=' + encodeURIComponent($(this).val());
 		var _oTable = JqueryPortico.updateinlineTableHelper('datatable-container_5', requestUrl);
@@ -935,7 +935,7 @@ function getMissingReadonlyRequiredMessages(form)
 	return messages;
 }
 
-$(document).ready(function ()
+$(function ()
 {
 	var form = document.getElementById('form');
 	if (!form || !window.fetch)

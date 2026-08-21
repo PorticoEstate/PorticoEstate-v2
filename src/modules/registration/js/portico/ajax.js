@@ -1,7 +1,7 @@
-$(document).ready(function ()
+$(function ()
 {
 
-	$("#loc1").change(function ()
+	$("#loc1").on('change', function ()
 	{
 
 		if (!$(this).val())
@@ -40,7 +40,7 @@ $(document).ready(function ()
 		});
 	});
 
-	$("#loc2").change(function ()
+	$("#loc2").on('change', function ()
 	{
 
 		if (!$(this).val())
@@ -79,7 +79,7 @@ $(document).ready(function ()
 		});
 	});
 
-	$("#loc3").change(function ()
+	$("#loc3").on('change', function ()
 	{
 
 		if (!$(this).val())
@@ -118,7 +118,7 @@ $(document).ready(function ()
 		});
 	});
 
-	$("#loc4").change(function ()
+	$("#loc4").on('change', function ()
 	{
 
 		if (!$(this).val())
@@ -157,7 +157,7 @@ $(document).ready(function ()
 		});
 	});
 
-	$("#loc5").change(function ()
+	$("#loc5").on('change', function ()
 	{
 
 		if (!$(this).val())

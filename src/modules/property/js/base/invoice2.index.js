@@ -1,6 +1,6 @@
 
 
-$(document).ready(function ()
+$(function ()
 {
 
 	var api = oTable1.api();

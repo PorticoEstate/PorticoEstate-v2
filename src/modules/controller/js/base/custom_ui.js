@@ -1,4 +1,4 @@
-$(document).ready(function ()
+$(function ()
 {
 
 	$("ul.control_items ul:first").find("h4 img").attr("src", "controller/images/arrow_down.png");

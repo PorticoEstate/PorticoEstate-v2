@@ -5,14 +5,14 @@ var strURL = phpGWLink('index.php', oArgs, true);
 JqueryPortico.autocompleteHelper(strURL, 'subject_name', 'subject_id', 'subject_container', 'name');
 
 
-$(document).ready(function ()
+$(function ()
 {
 
 	var oArgs = {menuaction: 'eventplanner.uipermission.object', object_type: $("#object_type").val()};
 	var strURL = phpGWLink('index.php', oArgs, true);
 	JqueryPortico.autocompleteHelper(strURL, 'object_name', 'object_id', 'object_container', 'name');
 
-	$("#object_type").change(function ()
+	$("#object_type").on('change', function ()
 	{
 		$('#object_id').val('');
 		$('#object_name').val('');

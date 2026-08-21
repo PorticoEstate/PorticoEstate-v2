@@ -1,6 +1,6 @@
 /* global set_completet_checklist */
 
-$(document).ready(function ()
+$(function ()
 {
 
 	// UPDATE CHECKLIST STATUS
@@ -26,7 +26,7 @@ $(document).ready(function ()
 		
 		if ($("#update-check-list-status-value").val() == 1)
 		{
-			$("#update-check-list-status").submit();
+			$("#update-check-list-status").trigger('submit');
 		}
 
 	}

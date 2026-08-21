@@ -401,12 +401,12 @@ $(window).on('load', function ()
 		}
 	});
 
-	$("#field_budget").change(function ()
+	$("#field_budget").on('change', function ()
 	{
 		populateTableChkApproval();
 	});
 
-	$("#make_order").change(function ()
+	$("#make_order").on('change', function ()
 	{
 		if ($(this).prop('checked'))
 		{
@@ -573,7 +573,7 @@ window.on_location_updated = function (location_code)
 	});
 };
 
-$(document).ready(function ()
+$(function ()
 {
 	$("#user_id").select2({
 		placeholder: "Select a user",
@@ -635,7 +635,7 @@ $(document).ready(function ()
 		errorMessageKey: ''
 	});
 
-	$("#order_cat_id").change(function ()
+	$("#order_cat_id").on('change', function ()
 	{
 		var oArgs = {menuaction: 'property.boworkorder.get_category', cat_id: $(this).val()};
 		var requestUrl = phpGWLink('index.php', oArgs, true);
@@ -704,7 +704,7 @@ $(document).ready(function ()
 
 	if ($("#center_content").length === 1)
 	{
-		$("#center_content").scroll(function ()
+		$("#center_content").on('scroll', function ()
 		{
 			if ($("#center_content").scrollTop() > offset.top)
 			{
@@ -723,7 +723,7 @@ $(document).ready(function ()
 	}
 	else
 	{
-		$(window).scroll(function ()
+		$(window).on('scroll', function ()
 		{
 			if ($(window).scrollTop() > offset.top)
 			{

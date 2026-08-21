@@ -1,6 +1,6 @@
-$(document).ready(function ()
+$(function ()
 {
-	$(window).scroll(function ()
+	$(window).on("scroll", function ()
 	{
 		if ($(this).scrollTop() > 100)
 		{
@@ -12,7 +12,7 @@ $(document).ready(function ()
 		}
 	});
 
-	$('.scrollup').click(function ()
+	$('.scrollup').on("click", function ()
 	{
 		$("html, body").animate({
 			scrollTop: 0
@@ -114,7 +114,7 @@ $(document).ready(function ()
 	{
 		if ($("#cache_case_id").val())
 		{
-			$('#set_completed_item').submit();
+			$('#set_completed_item').trigger('submit');
 		}
 	});
 
@@ -562,7 +562,7 @@ $(document).ready(function ()
 		return false;
 	});
 
-	$("#choose-building-on-property").change(function ()
+	$("#choose-building-on-property").on("change", function ()
 	{
 		var location_code = $(this).val();
 		var search = location.search.substring(1);
@@ -581,7 +581,7 @@ $(document).ready(function ()
 
 
 	/*
-	 $("#choose-building-on-property.view-cases").change(function () {
+	 $("#choose-building-on-property.view-cases").on("change", function () {
 	 var location_code = $(this).val();
 
 	 var reloadPageUrl = location.pathname + location.search + "&location_code=" + location_code;

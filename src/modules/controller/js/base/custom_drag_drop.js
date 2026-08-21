@@ -6,11 +6,11 @@ var next_elem;
 var prev_elem;
 var list_container_pos_y;
 
-$(document).ready(function ()
+$(function ()
 {
 
 	// On drag item row
-	$(".drag_item a").mousedown(function (e)
+	$(".drag_item a").on("mousedown", function (e)
 	{
 		// Setting placeholder to the clicked row
 		placeholder = $(this).closest('li');
@@ -23,7 +23,7 @@ $(document).ready(function ()
 
 
 	// On drag group
-	$(".drag_group h3 a").mousedown(function (e)
+	$(".drag_group h3 a").on("mousedown", function (e)
 	{
 		// Setting placeholder to the clicked row
 		placeholder = $(this).closest('li');
@@ -34,7 +34,7 @@ $(document).ready(function ()
 	});
 
 	// Saves group and item order
-	$("#saveOrder").click(function (e)
+	$("#saveOrder").on("click", function (e)
 	{
 		e.preventDefault();
 
@@ -101,9 +101,9 @@ function init_drag(placeholder, e)
 
 function start_drag(drag_type)
 {
-	$(document).bind("mouseup", stop_drag);
+	$(document).on("mouseup", stop_drag);
 
-	$(document).bind("mousemove", function (e)
+	$(document).on("mousemove", function (e)
 	{
 		var drag_elem_rel_pos_y = e.pageY - list_container_pos_y;
 
@@ -145,8 +145,8 @@ function stop_drag()
 {
 	$(drag_elem).remove();
 
-	$(document).unbind("mousemove");
-	$(document).unbind("mouseup");
+	$(document).off("mousemove");
+	$(document).off("mouseup");
 }
 
 // Updates order number for hidden field and number in front of row

@@ -1,5 +1,5 @@
 
-$(document).ready(function ()
+$(function ()
 {
 
 	$("#edit_inventory").on("submit", function (e)

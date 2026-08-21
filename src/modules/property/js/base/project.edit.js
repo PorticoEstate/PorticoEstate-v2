@@ -192,7 +192,7 @@ this.local_DrawCallback2 = function (container)
 	});
 };
 
-$(document).ready(function ()
+$(function ()
 {
 	check_button_names();
 	load_google_map();
@@ -287,7 +287,7 @@ $(document).ready(function ()
 	});
 
 
-	// $("#global_category_id").change(function ()
+	// $("#global_category_id").on('change', function ()
 	// {
 	// 	var oArgs = {menuaction: 'property.boworkorder.get_category', cat_id: $(this).val()};
 	// 	var requestUrl = phpGWLink('index.php', oArgs, true);
@@ -311,7 +311,7 @@ $(document).ready(function ()
 	// 	});
 	// });
 
-	$("#order_time_span").change(function ()
+	$("#order_time_span").on('change', function ()
 	{
 		var requestUrl1 = phpGWLink('property/project/' + project_id + '/orders', {
 			project_id: project_id,
@@ -357,7 +357,7 @@ $(document).ready(function ()
 
 	if ($("#center_content").length === 1)
 	{
-		$("#center_content").scroll(function ()
+		$("#center_content").on('scroll', function ()
 		{
 			if ($("#center_content").scrollTop() > offset.top)
 			{
@@ -376,7 +376,7 @@ $(document).ready(function ()
 	}
 	else
 	{
-		$(window).scroll(function ()
+		$(window).on('scroll', function ()
 		{
 			if ($(window).scrollTop() > offset.top)
 			{
@@ -463,7 +463,7 @@ $(document).ready(function ()
 		return data.text;
 	}
 
-	$("#global_category_id").change(function ()
+	$("#global_category_id").on('change', function ()
 	{
 		var cat_id = $(this).val();
 		validate_order_category({id: cat_id});

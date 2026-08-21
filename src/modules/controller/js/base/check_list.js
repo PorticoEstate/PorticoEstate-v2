@@ -1,4 +1,4 @@
-$(document).ready(function ()
+$(function ()
 {
 
 	forward_to_case = function (check_list_id)
@@ -67,7 +67,7 @@ $(document).ready(function ()
 
 	});
 
-	$("#categories").change(function ()
+	$("#categories").on("change", function ()
 	{
 		var check_list_id = $("#check_list_id").val();
 		var cat_id = $(this).val();

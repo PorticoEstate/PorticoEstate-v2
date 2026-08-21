@@ -40,7 +40,7 @@ vis(function ()
 
 
 
-$(document).ready(function ()
+$(function ()
 {
 	update_table();
 
@@ -382,7 +382,7 @@ var strURL = phpGWLink('index.php', oArgs, true);
 JqueryPortico.autocompleteHelper(strURL, 'location_name', 'location_code', 'location_container');
 
 
-$(document).ready(function ()
+$(function ()
 {
 
 	var dialog, dialog2, form, form2;

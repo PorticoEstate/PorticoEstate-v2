@@ -100,7 +100,7 @@ JqueryPortico.autocompleteHelper(strURL, 'external_project_name', 'external_proj
 // from ajax_workorder_edit.js
 
 
-$(document).ready(function ()
+$(function ()
 {
 
 	$.formUtils.addValidator({
@@ -121,7 +121,7 @@ $(document).ready(function ()
 		errorMessageKey: ''
 	});
 
-	$("#global_category_id").change(function ()
+	$("#global_category_id").on('change', function ()
 	{
 		var requestUrl = phpGWLink('property/workorder/lookups/category', {cat_id: $(this).val()}, true);
 

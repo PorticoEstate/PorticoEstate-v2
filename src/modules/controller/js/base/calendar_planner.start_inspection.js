@@ -1,14 +1,14 @@
 
-$(document).ready(function ()
+$(function ()
 {
 
-	$("#current_day_str").change(function ()
+	$("#current_day_str").on("change", function ()
 	{
 		document.getElementById("form").submit();
 	});
 
 
-	$("#control_area_id").change(function ()
+	$("#control_area_id").on("change", function ()
 	{
 		var control_area_id = $(this).val();
 		var oArgs = {menuaction: 'controller.uicontrol.get_controls_by_control_area'};
@@ -70,7 +70,7 @@ $(document).ready(function ()
 		},
 		onDropdownHidden: function (event)
 		{
-			$("#form").submit();
+					 $("#form").trigger('submit');
 		}
 	});
 	$(".btn-group").addClass('w-100');

@@ -1,9 +1,9 @@
 
-$(document).ready(function ()
+$(function ()
 {
     $('.processing').hide();
     
-    $('.selector-add').click(function() 
+    $('.selector-add').on('click', function() 
     {
         var options = [];
         $("#all_persons option:selected").each(function() 
@@ -18,7 +18,7 @@ $(document).ready(function ()
         });
     });
 
-    $('.selector-remove').click(function() 
+    $('.selector-remove').on('click', function() 
     {
         var options = [];
         $("#current_persons option:selected").each(function() 
@@ -33,7 +33,7 @@ $(document).ready(function ()
         });
     });
 
-    $('#all_cats').change( function()
+    $('#all_cats').on('change', function()
     {
         var oArgs = {menuaction: 'addressbook.uicategorize_contacts.get_persons_by_cat'};
         var requestUrl = phpGWLink('index.php', oArgs, true);

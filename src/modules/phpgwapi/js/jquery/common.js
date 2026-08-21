@@ -807,14 +807,17 @@ JqueryPortico.autocompleteHelper = function (baseUrl, field, hidden, container, 
 			source: function (request, response)
 			{
 				//console.log(request.term);
+					var requestData = {
+						query: String(request.term || '').trim()
+					};
+					if (baseUrl.indexOf('phpgw_return_as=json') === -1)
+					{
+						requestData.phpgw_return_as = 'json';
+					}
 				$.ajax({
 					url: baseUrl,
 					dataType: "json",
-					data: {
-						//location_name: request.term,
-						query: request.term,
-						phpgw_return_as: "json"
-					},
+						data: requestData,
 					success: function (data)
 					{
 						var data_t = "";

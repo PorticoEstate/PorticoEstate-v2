@@ -1065,7 +1065,7 @@ class ProjectController
 		}
 
 		$input = array_merge($request->getQueryParams(), $this->requestBodyAsArray($request));
-		$query = isset($input['query']) ? (string)$input['query'] : '';
+		$query = isset($input['query']) ? trim((string)$input['query']) : '';
 		$role = isset($input['role']) ? (string)$input['role'] : '';
 
 		$result = $this->bocommon()->getBAccount($query, $role);

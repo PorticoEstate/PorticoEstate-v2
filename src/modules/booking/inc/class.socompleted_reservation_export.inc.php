@@ -3010,7 +3010,7 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 	/* NOTE: Version 5.5 uses 8 character date fields (YYYYMMDD)*/
 	$date = date('Ymd');
 
-	$batch_id = strtoupper(sprintf('BO%s%s', $account_codes['unit_prefix'], date('ymd')));
+	$batch_id = strtoupper(sprintf('BO%s%s', $account_codes['unit_prefix'], date('ymdHi')));
 	$batch_id = str_pad(substr($batch_id, 0, 25), 25, ' ');
 
 	if (!empty($this->config_data['voucher_client']))

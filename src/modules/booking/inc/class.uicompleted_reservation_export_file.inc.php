@@ -287,7 +287,7 @@ phpgw::import_class('booking.uicommon');
 					$file_name_part = 'AktivbyLG04_';
 					break;
 				case 'AGRESSO_55':
-					$file_name_part = $voucher_client . '_AktivbyLG04_';
+					$file_name_part = $voucher_client . '_AktivbyLG04_' . $id . '_';
 					break;
 				case 'CSV':
 					$file_name_part = 'CSV_';

@@ -189,6 +189,13 @@ JS;
 		}
 	}
 
+	if (Sanitizer::get_var('phpgw_return_as') != 'json')
+	{
+		$apiPrefix = rtrim($serverSettings['webserver_url'] ?? '', '/');
+		$apiPrefixJson = json_encode($apiPrefix, JSON_UNESCAPED_SLASHES);
+		echo "<script>window.__phpgwApiPrefix = {$apiPrefixJson};</script>";
+	}
+
 	(new Hooks())->process('after_navbar');
 	register_shutdown_function('parse_footer_end');
 }

@@ -8,7 +8,7 @@
 
 		function __construct()
 		{
-			parent::__construct();
+			parent::__construct(false, 'entity', 5, 1);
 			if ($this->acl_location != '.entity.5.1')
 			{
 				throw new Exception("'ikt_systemoversikt'  is intended for location = '.entity.5.1'");

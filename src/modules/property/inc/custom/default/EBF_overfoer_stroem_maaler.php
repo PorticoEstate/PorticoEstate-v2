@@ -20,7 +20,7 @@ class overfoer_stroem extends property_boentity
 
 	function __construct()
 	{
-		parent::__construct();
+		parent::__construct(false, 'entity', 2, 17);
 		$this->db		 = Db::getInstance();
 
 		$this->account	 = (int)$this->userSettings['account_id'];

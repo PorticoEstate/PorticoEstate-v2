@@ -12,7 +12,7 @@ class lrs_el_anlegg extends property_boentity
 	var $db, $debug;
 	function __construct()
 	{
-		parent::__construct();
+		parent::__construct(false, 'entity', 1, 11);
 		if ($this->acl_location != '.entity.1.11')
 		{
 			throw new Exception("'lrs_el_anlegg'  is intended for location = '.entity.1.11'");

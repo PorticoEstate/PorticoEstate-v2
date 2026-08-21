@@ -19,7 +19,7 @@ class entity_data_sync extends property_boentity
 
 	function __construct()
 	{
-		parent::__construct();
+		parent::__construct(false, 'entity', 2, 17);
 		$this->db		 = Db::getInstance();
 		$this->location_obj = new Locations();
 

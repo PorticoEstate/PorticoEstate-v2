@@ -17,7 +17,7 @@ class vekterinspeksjon extends property_boentity
 
 	function __construct()
 	{
-		parent::__construct();
+		parent::__construct(false, 'entity', 2, 19);
 		$this->db		 = Db::getInstance();
 		$this->location_obj = new Locations();
 

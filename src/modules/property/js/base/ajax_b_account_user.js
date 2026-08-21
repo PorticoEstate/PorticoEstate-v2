@@ -1,12 +1,12 @@
 $(document).ready(function ()
 {
 
-	$("#b_account_id").change(function ()
+	  $("#b_account_id").on('change', function ()
 	{
 		update_b_account_user_table();
 	});
 
-	$("#user_id").change(function ()
+	  $("#user_id").on('change', function ()
 	{
 		update_b_account_user_table();
 	});

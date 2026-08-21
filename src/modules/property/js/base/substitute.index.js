@@ -1,12 +1,12 @@
 $(document).ready(function ()
 {
 
-	$("#user_id").change(function ()
+	  $("#user_id").on('change', function ()
 	{
 		update_substitute_table();
 	});
 
-	$("#substitute_user_id").change(function ()
+	  $("#substitute_user_id").on('change', function ()
 	{
 		update_substitute_table();
 	});

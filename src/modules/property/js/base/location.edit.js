@@ -43,7 +43,7 @@ formatLocationDocumentLink = function (key, oData)
 
 $(document).ready(function ()
 {
-	$('#doc_type').change( function()
+	$('#doc_type').on('change', function()
 	{
 		paramsTable0['doc_type'] = $(this).val();
 		oTable0.api().draw();				
@@ -234,7 +234,7 @@ $(document).ready(function ()
 {
 
 	var click_action_on_table = false;
-	$("#check_lst_time_span").change(function ()
+	$("#check_lst_time_span").on('change', function ()
 	{
 		var oArgs = {location_id: location_id, id: item_id, year: $(this).val()};
 		var requestUrl = phpGWLink('property/location/component/checklists', oArgs);

@@ -232,7 +232,7 @@ $(document).ready(function ()
 						.append($('<span>').text(data.files[0].name + ' ' + file_size))
 						.appendTo($(".content_upload_download"))
 						.append($('<button type="button" class="start_file_upload" style="display:none">start</button>')
-							.click(function ()
+											.on('click', function ()
 							{
 								data.submit();
 							}));
@@ -296,7 +296,7 @@ $(document).ready(function ()
 		}
 	});
 
-	$(document).bind('dragover', function (e)
+	$(document).on('dragover', function (e)
 	{
 		var dropZone = $('#drop-area'),
 			timeout = window.dropZoneTimeout;
@@ -317,7 +317,7 @@ $(document).ready(function ()
 		}, 100);
 	});
 
-	$(document).bind('drop dragover', function (e)
+	$(document).on('drop dragover', function (e)
 	{
 		e.preventDefault();
 	});

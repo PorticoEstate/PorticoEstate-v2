@@ -1,7 +1,7 @@
 
 $(document).ready(function ()
 {
-	$('#list_dataset').change( function()
+	  $('#list_dataset').on('change', function()
 	{
 		paramsTable0['dataset_id'] = $('#list_dataset').val();
 

@@ -198,7 +198,7 @@ $(document).ready(function ()
 
 	});
 
-	$("#type_id").change(function ()
+	$("#type_id").on('change', function ()
 	{
 		var temp = document.getElementById("new_note").value;
 		if (temp)
@@ -208,7 +208,7 @@ $(document).ready(function ()
 		document.getElementById("new_note").value = temp + "Type: " + $( "#type_id option:selected" ).text();;
 	});
 
-	$("#vendor_contract_id").change(function ()
+	$("#vendor_contract_id").on('change', function ()
 	{
 		var vendor_contract_id = $("#vendor_contract_id").val();
 		if(!vendor_contract_id || vendor_contract_id == -1)

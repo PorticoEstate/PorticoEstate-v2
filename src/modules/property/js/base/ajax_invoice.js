@@ -3,34 +3,34 @@ $(document).ready(function ()
 {
 
 	// When janitor is selected, vouchers are fetched from db and voucer select list is populated
-	$("#janitor_lid").change(function ()
+	  $("#janitor_lid").on('change', function ()
 	{
 		update_voucher_filter();
 	});
 
-	$("#supervisor_lid").change(function ()
+	 $("#supervisor_lid").on('change', function ()
 	{
 		update_voucher_filter();
 	});
 
-	$("#budget_responsible_lid").change(function ()
+	 $("#budget_responsible_lid").on('change', function ()
 	{
 		update_voucher_filter();
 	});
 
-	$("#search").click(function (e)
+	 $("#search").on('click', function (e)
 	{
 		update_voucher_filter();
 	});
 
-	$("#get_template").click(function (e)
+	 $("#get_template").on('click', function (e)
 	{
 		var oArgs_template = {menuaction: 'property.uiinvoice2.get_split_template', voucher_id: $("#voucher_id").val()};
 		var requestUrl_template = phpGWLink('index.php', oArgs_template);
 		window.open(requestUrl_template);
 	});
 
-	$("#voucher_id_filter").change(function ()
+	 $("#voucher_id_filter").on('change', function ()
 	{
 		get_voucher_info($(this).val());
 	});
@@ -121,7 +121,7 @@ $(document).ready(function ()
 		update_form_values(line_id, voucher_id_orig);
 	});
 
-	$("#dim_e").change(function ()
+	 $("#dim_e").on('change', function ()
 	{
 		var oArgs = {menuaction: 'property.boworkorder.get_category', cat_id: $(this).val()};
 		var requestUrl = phpGWLink('index.php', oArgs, true);

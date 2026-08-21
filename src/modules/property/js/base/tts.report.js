@@ -23,7 +23,7 @@ $(document).ready(function ()
 	var ctx = document.getElementById("chart-area");
 	var myPieChart = new Chart(ctx, config);
 
-	$('#btn_search').click(function ()
+	$('#btn_search').on('click', function ()
 	{
 		var oArgs = {menuaction: 'property.uitts.get_data_report'};
 		var requestUrl = phpGWLink('index.php', oArgs, true);
@@ -72,7 +72,7 @@ $(document).ready(function ()
 
 	$("#btn_search").trigger("click");
 
-	$('#btn_print').click(function ()
+	$('#btn_print').on('click', function ()
 	{
 		var canvas = document.getElementById("chart-area");
 		var src = canvas.toDataURL("image/png");

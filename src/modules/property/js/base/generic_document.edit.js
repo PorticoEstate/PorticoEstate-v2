@@ -1,7 +1,7 @@
 
 $(document).ready(function ()
 {
-	$('#entity_group_id').change(function ()
+	$('#entity_group_id').on('change', function ()
 	{
 		var oArgs1 = {menuaction: 'property.uigeneric_document.get_location_filter'};
 		var requestUrl = phpGWLink('index.php', oArgs1, true);
@@ -18,12 +18,12 @@ $(document).ready(function ()
 		);	
 	});
 	
-	$('#location_id').change(function ()
+	$('#location_id').on('change', function ()
 	{
 		getComponents();
 	});
 	
-	$('select#type_id').change( function()
+	$('select#type_id').on('change', function()
 	{
 		var oArgs1 = {menuaction: 'property.uigeneric_document.get_categories_for_type'};
 		var requestUrl = phpGWLink('index.php', oArgs1, true);		
@@ -40,12 +40,12 @@ $(document).ready(function ()
 		);			
 	});
 	
-	$('select#cat_location_id').change( function()
+	$('select#cat_location_id').on('change', function()
 	{	
 		getLocations();
 	});
 
-	$('select#district_id').change( function()
+	$('select#district_id').on('change', function()
 	{
 		var oArgs1 = {menuaction: 'property.uigeneric_document.get_part_of_town'};
 		var requestUrl = phpGWLink('index.php', oArgs1, true);		
@@ -62,7 +62,7 @@ $(document).ready(function ()
 		);				
 	});
 
-	$('select#part_of_town_id').change( function()
+	$('select#part_of_town_id').on('change', function()
 	{
 		getLocations();
 	});

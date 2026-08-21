@@ -971,7 +971,7 @@ $(document).ready(function ()
 		return data.text;
 	}
 
-	$("#order_cat_id").change(function ()
+	$("#order_cat_id").on('change', function ()
 	{
 		var cat_id = $(this).val();
 		validate_order_category({ id: cat_id });
@@ -1102,7 +1102,7 @@ $(document).ready(function ()
 
 	if ($("#center_content").length === 1)
 	{
-		$("#center_content").scroll(function ()
+		$("#center_content").on('scroll', function ()
 		{
 			if ($("#center_content").scrollTop() > offset.top)
 			{
@@ -1121,7 +1121,7 @@ $(document).ready(function ()
 	}
 	else
 	{
-		$(window).scroll(function ()
+		$(window).on('scroll', function ()
 		{
 			if ($(window).scrollTop() > offset.top)
 			{
@@ -1162,12 +1162,12 @@ $(window).on('load', function ()
 		}
 	});
 
-	$("#field_contract_sum").change(function ()
+	$("#field_contract_sum").on('change', function ()
 	{
 		populateTableChkApproval();
 	});
 
-	$("#field_budget").change(function ()
+	$("#field_budget").on('change', function ()
 	{
 		populateTableChkApproval();
 	});

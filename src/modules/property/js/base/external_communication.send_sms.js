@@ -40,7 +40,7 @@ this.get_sms_recipients = function (location_code)
 
 		setTimeout(function ()
 		{
-			$('#sms_recipients').parent().find("button.multiselect").click();
+			$('#sms_recipients').parent().find("button.multiselect").trigger('click');
 			$('#sms_recipients').parent().find("input[type='search'].multiselect-search").focus();
 
 		}, 100);
@@ -66,7 +66,7 @@ $(window).on('load', function ()
 		get_sms_recipients(location_code);
 	});
 
-	$("#send_sms_to_all").change(function ()
+	$("#send_sms_to_all").on('change', function ()
 	{
 		if($(this).is(":checked"))
 		{

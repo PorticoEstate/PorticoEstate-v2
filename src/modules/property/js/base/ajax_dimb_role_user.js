@@ -1,22 +1,22 @@
 $(document).ready(function ()
 {
 
-	$("#dimb_id").change(function ()
+	  $("#dimb_id").on('change', function ()
 	{
 		update_dimb_role_user_table();
 	});
 
-	$("#user_id").change(function ()
+	  $("#user_id").on('change', function ()
 	{
 		update_dimb_role_user_table();
 	});
 
-	$("#role_id").change(function ()
+	 $("#role_id").on('change', function ()
 	{
 		update_dimb_role_user_table();
 	});
 
-	$("#search").click(function (e)
+	 $("#search").on('click', function (e)
 	{
 		update_dimb_role_user_table();
 	});

@@ -294,7 +294,7 @@ $(document).ready(function ()
 					.append($('<span class="file-progress" style="margin-left: 10px; color: #666;"></span>'))
 					.appendTo($(".content_upload_download"))
 					.append($('<button type="button" class="start_file_upload" style="display:none">start</button>')
-						.click(function ()
+											.on('click', function ()
 						{
 							data.submit();
 						}));
@@ -341,7 +341,7 @@ $(document).ready(function ()
 		maxChunkSize: 8388000
 	});
 
-	$(document).bind('dragover', function (e)
+	$(document).on('dragover', function (e)
 	{
 		var dropZone = $('#drop-area'),
 			timeout = window.dropZoneTimeout;
@@ -362,7 +362,7 @@ $(document).ready(function ()
 		}, 100);
 	});
 
-	$(document).bind('drop dragover', function (e)
+	$(document).on('drop dragover', function (e)
 	{
 		e.preventDefault();
 	});

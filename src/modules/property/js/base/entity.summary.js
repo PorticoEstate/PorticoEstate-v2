@@ -62,7 +62,7 @@ $(document).ready(function ()
 
 	};
 
-	$("#btn_search").click(function ()
+	 $("#btn_search").on('click', function ()
 	{
 		var entity_id = $("#field_entity_id").val();
 		var type = $("#field_type").val();
@@ -101,7 +101,7 @@ $(document).ready(function ()
 
 
 
-	$("#btn_search_").click(function ()
+	 $("#btn_search_").on('click', function ()
 	{
 		var entity_id = $("#field_entity_id").val();
 		var type = $("#field_type").val();

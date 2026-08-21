@@ -1,7 +1,7 @@
-$(document).ready(function ()
+$(function ()
 {
 
-	$("#entity_id").change(function ()
+	$("#entity_id").on("change", function ()
 	{
 		$("#attributes").html('');
 		var oArgs = {menuaction: 'property.boadmin_entity.get_category_list', entity_id: $(this).val()};
@@ -35,7 +35,7 @@ $(document).ready(function ()
 		});
 	});
 
-	$("#category_id").change(function ()
+	$("#category_id").on("change", function ()
 	{
 		var oArgs = {menuaction: 'property.boadmin_entity.get_attrib_list', entity_id: $("#entity_id").val(), cat_id: $(this).val()};
 		var requestUrl = phpGWLink('index.php', oArgs, true);

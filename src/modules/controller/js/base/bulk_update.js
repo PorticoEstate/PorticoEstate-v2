@@ -1,6 +1,6 @@
-$(document).ready(function ()
+$(function ()
 {
-	$("#from").change(function ()
+	$("#from").on("change", function ()
 	{
 		var oArgs1 = {menuaction: 'controller.uibulk_update.get_controller_serie', assigned_to: $(this).val(), results: -1};
 		var strURL1 = phpGWLink('index.php', oArgs1, true);

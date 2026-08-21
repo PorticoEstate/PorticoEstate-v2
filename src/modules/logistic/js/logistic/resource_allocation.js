@@ -1,4 +1,4 @@
-$(document).ready(function ()
+$(function ()
 {
 
 	$("#requirement-container_0 tr").on("click", function (e)

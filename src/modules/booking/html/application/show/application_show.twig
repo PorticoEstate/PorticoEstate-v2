@@ -157,6 +157,23 @@
 	 data-lang-accepted="{{ lang('booking.accepted') }}"
 	 data-lang-rejected="{{ lang('booking.rejected') }}"
 	 data-lang-cancelled="{{ lang('booking.cancelled') }}"
+	 {# Article units, association types and document categories are stored as their
+	    own lang keys and rendered straight into the table cells — the client looks
+	    each one up by its raw value, so every value the column can hold needs a key
+	    here or it keeps falling back to the stored word. #}
+	 data-lang-hour="{{ lang('booking.hour') }}"
+	 data-lang-each="{{ lang('booking.each') }}"
+	 data-lang-kg="{{ lang('booking.kg') }}"
+	 data-lang-m="{{ lang('booking.m') }}"
+	 data-lang-m2="{{ lang('booking.m2') }}"
+	 data-lang-minute="{{ lang('booking.minute') }}"
+	 data-lang-day="{{ lang('booking.day') }}"
+	 data-lang-allocation="{{ lang('booking.allocation') }}"
+	 data-lang-event="{{ lang('booking.event') }}"
+	 data-lang-booking="{{ lang('booking.booking') }}"
+	 data-lang-other="{{ lang('booking.other') }}"
+	 data-lang-picture="{{ lang('booking.picture') }}"
+	 data-lang-regulation="{{ lang('booking.regulation') }}"
 	{% if enable_hospitality %}
 	 data-hospitality-orders-url="{{ phpgw_link('/booking/hospitality-orders') }}"
 	 data-hospitality-base-url="{{ phpgw_link('/booking/hospitality') }}"{% endif %}

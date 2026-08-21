@@ -92,6 +92,22 @@
 		return '<span class="ds-tag" data-color="' + color + '">' + esc(label) + '</span>';
 	}
 
+	// Stored enum values (article unit, association type, document category) are
+	// their own lang keys — see class.uiarticle_mapping.inc.php:250, which looks up
+	// lang($article['unit']) the same way. lang() echoes the key back on a miss, so
+	// an unrecognised value keeps rendering exactly as it does today.
+	// Callers must only use this for DISPLAY: the association type is also written
+	// into data-assoc-type and POSTed back as an identifier, which must stay raw.
+	// The two lang() implementations miss differently: the client echoes the key
+	// back, while the PHP lang() that fills the attribute returns '!key'. Treat
+	// both as a miss, or an uninstalled key renders as "!m2" instead of "m2".
+	function enumLabel(value) {
+		if (!value) return '';
+		var label = lang(value);
+		if (!label || label === value || label.charAt(0) === '!') return value;
+		return label;
+	}
+
 	// A titled card. opts.icon = ICONS key/svg, opts.aside = right-aligned header html.
 	function section(title, bodyHtml, opts) {
 		opts = opts || {};
@@ -1119,7 +1135,7 @@
 				var nameCell = doc.download_url
 					? '<a href="' + esc(doc.download_url) + '">' + esc(doc.name) + '</a>'
 					: esc(doc.name);
-				docsHtml += '<tr><td>' + nameCell + '</td><td>' + esc(doc.category) + '</td></tr>';
+				docsHtml += '<tr><td>' + nameCell + '</td><td>' + esc(enumLabel(doc.category)) + '</td></tr>';
 			});
 			docsHtml += '</tbody></table>';
 			html += section(lang('documents'), docsHtml, { icon: ICONS.doc });
@@ -1166,7 +1182,7 @@
 					'<thead><tr><th>' + lang('article') + '</th><th>' + lang('unit') + '</th><th class="app-show__num">' + lang('unitPrice') + '</th><th class="app-show__num">' + lang('tax') + '</th><th class="app-show__num">' + lang('quantity') + '</th><th class="app-show__num">' + lang('sum') + '</th></tr></thead><tbody>';
 				articleKeys.forEach(function (key) {
 					var a = articleMap[key];
-					ordersHtml += '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.unit) + '</td><td class="app-show__num">' + a.unit_price.toFixed(2) + '</td><td class="app-show__num">' + a.tax_per_unit.toFixed(2) + '</td><td class="app-show__num">' + a.quantity + '</td><td class="app-show__num">' + a.total.toFixed(2) + '</td></tr>';
+					ordersHtml += '<tr><td>' + esc(a.name) + '</td><td>' + esc(enumLabel(a.unit)) + '</td><td class="app-show__num">' + a.unit_price.toFixed(2) + '</td><td class="app-show__num">' + a.tax_per_unit.toFixed(2) + '</td><td class="app-show__num">' + a.quantity + '</td><td class="app-show__num">' + a.total.toFixed(2) + '</td></tr>';
 				});
 				ordersHtml += '</tbody>' +
 					'<tfoot><tr><td colspan="5">' + lang('sum') + ':</td><td class="app-show__num">' + grandTotal.toFixed(2) + '</td></tr></tfoot>' +
@@ -1185,7 +1201,7 @@
 			associations.forEach(function (a) {
 				var activeLabel = (a.active === 1 || a.active === '1') ? lang('yes') : lang('no');
 				var costVal = (a.cost != null && a.cost !== '' && Number(a.cost) !== 0) ? Number(a.cost).toFixed(2) : '—';
-				assocHtml += '<tr><td>' + esc(a.id) + '</td><td>' + esc(a.type) + '</td><td>' + fmtDate(a.from_) + '</td><td>' + fmtDate(a.to_) + '</td><td class="app-show__num">' + costVal + '</td><td>' + activeLabel + '</td>';
+				assocHtml += '<tr><td>' + esc(a.id) + '</td><td>' + esc(enumLabel(a.type)) + '</td><td>' + fmtDate(a.from_) + '</td><td>' + fmtDate(a.to_) + '</td><td class="app-show__num">' + costVal + '</td><td>' + activeLabel + '</td>';
 				if (isCO) {
 					if (a.active === 1 || a.active === '1') {
 						assocHtml += '<td><button type="button" class="ds-button app-show__assoc-delete" data-variant="primary" data-color="danger" data-size="sm" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' + lang('delete') + '</button></td>';

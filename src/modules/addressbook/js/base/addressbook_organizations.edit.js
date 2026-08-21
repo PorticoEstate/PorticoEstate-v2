@@ -1,7 +1,7 @@
 
-$(document).ready(function ()
+$(function ()
 {
-    $('.selector-add').click(function() 
+    $('.selector-add').on('click', function() 
     {
         var options = [];
         $("#all_persons option:selected").each(function() 
@@ -17,7 +17,7 @@ $(document).ready(function ()
         });
     });
 
-    $('.selector-remove').click(function() 
+    $('.selector-remove').on('click', function() 
     {
         var options = [];
         $("#current_persons option:selected").each(function() 
@@ -33,12 +33,12 @@ $(document).ready(function ()
         });
     });
     
-    $('.selector-add-categories').click(function() 
+    $('.selector-add-categories').on('click', function() 
     {
         $('#all_categories option:selected').remove().appendTo('#current_categories').removeAttr("selected");
     });
 
-    $('.selector-remove-categories').click(function() 
+    $('.selector-remove-categories').on('click', function() 
     {
         $('#current_categories option:selected').remove().appendTo('#all_categories').removeAttr("selected");
     });

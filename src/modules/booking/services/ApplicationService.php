@@ -784,7 +784,8 @@ class ApplicationService
 
 	private function norwegianDayName(int $timestamp): string
 	{
-		$days = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
-		return $days[(int) date('w', $timestamp)];
+		// Keys live in the 'common' module; date('w') is Sunday-indexed (0 = Sunday).
+		$days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+		return lang($days[(int) date('w', $timestamp)]);
 	}
 }

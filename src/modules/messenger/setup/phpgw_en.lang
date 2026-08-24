@@ -27,8 +27,8 @@ send a message to a single recipient.	messenger	en	Send a message to a single re
 send message to	messenger	en	Send message to
 sorry, %1's account is not currently active	messenger	en	Sorry, %1's account is not currently active
 you didn't enter anything for the message	messenger	en	You didn't enter anything for the message
-you have %1 new message	messenger	en	You have %1 new message
-you have %1 new messages	messenger	en	You have %1 new messages
+you have %1 new message	common	en	You have %1 new message
+you have %1 new messages	common	en	You have %1 new messages
 you have no messages	messenger	en	You have no messages
 you must enter a subject	messenger	en	You must enter a subject
 you must enter the username this message is for	messenger	en	You must enter the username this message is for

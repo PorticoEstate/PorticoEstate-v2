@@ -24,7 +24,7 @@ $flags = Settings::getInstance()->get('flags');
 if (
 	$flags['currentapp'] != 'messenger'
 	&& $flags['currentapp'] != 'welcome'
-	&& !in_array($userSettings['preferences']['common']['template_set'], array('bootstrap', 'bootstrap2'))
+	&& !in_array($userSettings['preferences']['common']['template_set'], array('bootstrap', 'digdir'))
 )
 {
 	$db->query("SELECT COUNT(*) AS msg_cnt FROM phpgw_messenger_messages WHERE message_owner='"

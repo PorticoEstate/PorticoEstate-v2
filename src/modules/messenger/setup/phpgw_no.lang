@@ -28,8 +28,8 @@ send a message to a single recipient.	messenger	no	Send en melding til en enkelt
 send message to	messenger	no	Send melding til
 sorry, %1's account is not currently active	messenger	no	Beklager, %1's konto er ikke aktiv
 you didn't enter anything for the message	messenger	no	Meldingen er tom
-you have %1 new message	messenger	no	Du har %1 ny melding
-you have %1 new messages	messenger	no	Du har %1 nye meldinger
+you have %1 new message	common	no	Du har %1 ny melding
+you have %1 new messages	common	no	Du har %1 nye meldinger
 you have no messages	messenger	no	Du har ingen meldinger
 you must enter a subject	messenger	no	Du må skrive en tittel
 you must enter the username this message is for	messenger	no	Du må velge en addressat for meldingen

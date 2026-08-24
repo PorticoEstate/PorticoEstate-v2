@@ -28,8 +28,8 @@ send a message to a single recipient.	messenger	nn	Send ei melding til ein enkel
 send message to	messenger	nn	Send melding til
 sorry, %1's account is not currently active	messenger	nn	Beklager, %1's konto er ikkje aktiv
 you didn't enter anything for the message	messenger	nn	Meldingen er tom
-you have %1 new message	messenger	nn	Du har %1 ny melding
-you have %1 new messages	messenger	nn	Du har %1 nye meldingar
+you have %1 new message	common	nn	Du har %1 ny melding
+you have %1 new messages	common	nn	Du har %1 nye meldingar
 you have no messages	messenger	nn	Du har ingen meldingar
 you must enter a subject	messenger	nn	Du må skrive ein tittel
 you must enter the username this message is for	messenger	nn	Du må velje ein addressat for meldingen

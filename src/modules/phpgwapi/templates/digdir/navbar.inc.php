@@ -338,11 +338,13 @@ HTML;
 		{
 			$new_messages		 = $total_messages;
 			$new_messages_alert	 = "<span class='app-badge app-badge-danger app-rounded-pill'>{$new_messages}</span>";
+			$messenger_icon_class = ' app-messenger__icon--unread';
 		}
 		else
 		{
 			$new_messages		 = 0;
 			$new_messages_alert	 = '';
+			$messenger_icon_class = '';
 		}
 
 		$link_messages = phpgw::link('/index.php', array('menuaction' => 'messenger.uimessenger.index'));
@@ -351,20 +353,21 @@ HTML;
 		$lang_read_messages = Translation::getInstance()->translate('read messages', array(), false, 'messenger');
 
 		$messenger_option = <<<HTML
-                        <li class="app-nav-item app-dropdown app-no-arrow" onClick="get_messages();">
-                            <a class="app-nav-link app-dropdown-trigger app-text-white" href="#" id="messagesDropdown" role="button"
-                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="fas fa-envelope fa-fw"></i>
+                        <li class="app-nav-item">
+                            <button class="ds-button" data-variant="tertiary" data-color="accent" type="button"
+                                id="messagesDropdown" popovertarget="messagesPopover" aria-expanded="false"
+                                onClick="get_messages();">
+								<i class="fas fa-envelope fa-fw{$messenger_icon_class}"></i>
                                 <!-- Counter - Messages -->
 								{$new_messages_alert}
-                            </a>
+                            </button>
                             <!-- Dropdown - Messages -->
-                            <div class="app-dropdown-list app-dropdown-menu app-dropdown-menu-right app-shadow app-animated-grow-in" aria-labelledby="messagesDropdown">
-                                <h6 class="dropdown-header">
+							<div class="ds-popover ds-dropdown app-messenger__popover" id="messagesPopover" popover="auto" data-variant="default">
+                                <h6>
 									{$lang_messenger}
                                 </h6>
-								<div id="messages"></div>
-                                <a class="dropdown-item small" href="{$link_messages}">{$lang_read_messages}</a>
+                                <div id="messages"></div>
+	                                <a class="ds-button" data-variant="tertiary" href="{$link_messages}">{$lang_read_messages}</a>
                             </div>
                         </li>
 HTML;

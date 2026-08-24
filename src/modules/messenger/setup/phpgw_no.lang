@@ -1,4 +1,4 @@
-read messages	messenger	no	Les meldinger
+read messages	common	no	Les meldinger
 compose	messenger	no	Ny melding
 compose global message	admin	no	Ny global melding
 compose message	messenger	no	Ny melding

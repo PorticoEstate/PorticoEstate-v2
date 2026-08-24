@@ -1,4 +1,4 @@
-read messages	messenger	nn	Les meldingar
+read messages	common	nn	Les meldingar
 compose	messenger	nn	Ny melding
 compose global message	admin	nn	Ny global melding
 compose message	messenger	nn	Ny melding

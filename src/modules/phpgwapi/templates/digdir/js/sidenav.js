@@ -275,12 +275,12 @@ function get_messages()
 					var font_class = '';
 					if (obj[i].status == 'N')
 					{
-						font_class = 'font-weight-bold';
+						font_class = 'app-messenger__message--unread';
 					}
-					htmlString += '<a class="dropdown-item d-flex align-items-center" href="' + obj[i].link + '">';
+					htmlString += '<a class="ds-button app-messenger__message" data-variant="tertiary" href="' + obj[i].link + '">';
 					htmlString += '		<div class="' + font_class + '">';
-					htmlString += '			<div class="text-truncate">' + strip_html(obj[i].subject_text) + '</div>';
-					htmlString += '			<div class="small text-muted">' + strip_html(obj[i].from) + ' · ' + strip_html(obj[i].date) + '</div>';
+					htmlString += '			<div class="app-messenger__subject">' + strip_html(obj[i].subject_text) + '</div>';
+					htmlString += '			<div class="app-messenger__meta">' + strip_html(obj[i].from) + ' · ' + strip_html(obj[i].date) + '</div>';
 					htmlString += '		</div>';
 					htmlString += '</a>';
 				});

@@ -28,7 +28,7 @@ schedule.renderSchedule = function (container, url, date, colFormatter, includeR
 				'Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'
 			],
 			MONTHS_LONG: [
-				'Januar', 'Februar', 'Mars', 'April', 'May', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Desember'
+				'Januar', 'Februar', 'Mars', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Desember'
 			],
 			LBL_TIME: 'Tidsrom',
 			LBL_RESOURCE: 'Ressurs',

@@ -475,6 +475,11 @@ class EntityController
 				{
 					$values['location_name'] = Sanitizer::clean_value((string)$body[$locationNameKey], 'string');
 				}
+				else
+				{
+					include_class('property', 'bolocation');
+					$values['location_name'] = (new \property_bolocation(false))->get_location_name($locationCode);
+				}
 			}
 		}
 

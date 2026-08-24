@@ -11599,3 +11599,75 @@
 			return	'0.9.17.766';
 		}
 	}
+
+/**
+ * Update property version from 0.9.17.766 to 0.9.17.767
+ * add missing values for adress in project and workorder
+ */
+$test[] = '0.9.17.766';
+function property_upgrade0_9_17_766($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$property_bolocation = CreateObject('property.bolocation');
+	//orders
+	$orders = array();
+	$sql = "SELECT id, location_code FROM fm_workorder WHERE COALESCE(address, '') = '' AND COALESCE(location_code, '') != '' ";
+	$oProc->query($sql, __LINE__, __FILE__);
+	while ($oProc->m_odb->next_record())
+	{
+		$orders[] = array(
+			'id' => $oProc->m_odb->f('id'),
+			'location_code' => $oProc->m_odb->f('location_code')
+		);
+	}
+
+	foreach ($orders as $order)
+	{
+		$address = $oProc->m_odb->db_addslashes($property_bolocation->get_location_name($order['location_code']));
+		$sql = "UPDATE fm_workorder SET address = '{$address}' WHERE id = " . (int)$order['id'];
+		$oProc->query($sql, __LINE__, __FILE__);
+	}
+
+
+	//projects
+	$projects = array();
+	$sql = "SELECT id, location_code FROM fm_project WHERE COALESCE(address, '') = '' AND COALESCE(location_code, '') != '' ";
+	$oProc->query($sql, __LINE__, __FILE__);
+	while ($oProc->m_odb->next_record())
+	{
+		$projects[] = array(
+			'id' => $oProc->m_odb->f('id'),
+			'location_code' => $oProc->m_odb->f('location_code')
+		);
+	}
+	foreach ($projects as $project)
+	{
+		$address = $oProc->m_odb->db_addslashes($property_bolocation->get_location_name($project['location_code']));
+		$sql = "UPDATE fm_project SET address = '{$address}' WHERE id = " . (int)$project['id'];
+		$oProc->query($sql, __LINE__, __FILE__);
+	}
+
+	//tickets
+	$tickets = array();
+	$sql = "SELECT id, location_code FROM fm_tts_tickets WHERE COALESCE(address, '') = '' AND COALESCE(location_code, '') != '' ";
+	$oProc->query($sql, __LINE__, __FILE__);
+	while ($oProc->m_odb->next_record())
+	{
+		$tickets[] = array(
+			'id' => $oProc->m_odb->f('id'),
+			'location_code' => $oProc->m_odb->f('location_code')
+		);
+	}
+	foreach ($tickets as $ticket)
+	{
+		$address = $oProc->m_odb->db_addslashes($property_bolocation->get_location_name($ticket['location_code']));
+		$sql = "UPDATE fm_tts_tickets SET address = '{$address}' WHERE id = " . (int)$ticket['id'];
+		$oProc->query($sql, __LINE__, __FILE__);
+	}
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		return	'0.9.17.767';
+	}
+}

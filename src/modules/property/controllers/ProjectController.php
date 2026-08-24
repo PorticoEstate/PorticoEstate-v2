@@ -494,6 +494,11 @@ class ProjectController
 			{
 				$values['location_code'] = implode('-', array_values($location));
 			}
+			if (empty($values['location_name']))
+			{
+				include_class('property', 'bolocation');
+				$values['location_name'] = (new \property_bolocation(false))->get_location_name(implode('-', array_values($location)));
+			}
 		}
 
 		if (!empty($relationInfo['origin']))

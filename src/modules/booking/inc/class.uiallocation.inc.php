@@ -588,9 +588,13 @@
 							if($purchase_order_id)
 							{
 								$purchase_order_result =  $this->sopurchase_order->get_single_purchase_order($purchase_order_id);
-								$this->add_cost_history($allocation, lang('cost is set'), $purchase_order_result['sum']);
-								$allocation['cost'] = $purchase_order_result['sum'];
-								$this->bo->update($allocation);
+								// No lines means the join returned no rows, so 'sum' is unset rather than zero.
+								if (!empty($purchase_order_result['lines']))
+								{
+									$this->add_cost_history($allocation, lang('cost is set'), $purchase_order_result['sum']);
+									$allocation['cost'] = $purchase_order_result['sum'];
+									$this->bo->update($allocation);
+								}
 							}
 						}
 
@@ -740,9 +744,13 @@
 										if($purchase_order_id)
 										{
 											$purchase_order_result =  $this->sopurchase_order->get_single_purchase_order($purchase_order_id);
-											$this->add_cost_history($allocation, lang('cost is set'), $purchase_order_result['sum']);
-											$allocation['cost'] = (float)$purchase_order_result['sum'];
-											$this->bo->update($allocation);
+											// No lines means the join returned no rows, so 'sum' is unset rather than zero.
+											if (!empty($purchase_order_result['lines']))
+											{
+												$this->add_cost_history($allocation, lang('cost is set'), $purchase_order_result['sum']);
+												$allocation['cost'] = (float)$purchase_order_result['sum'];
+												$this->bo->update($allocation);
+											}
 										}
 									}
 								}

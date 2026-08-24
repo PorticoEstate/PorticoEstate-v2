@@ -52,7 +52,7 @@ class Allocation extends BaseModel
 	/**
 	 * @Expose
 	 */
-	public float $cost = 0.00;
+	public ?float $cost = 0.00;
 
 	/**
 	 * @Expose
@@ -67,7 +67,7 @@ class Allocation extends BaseModel
 	/**
 	 * @Expose
 	 */
-	public int $skip_bas = 0;
+	public ?int $skip_bas = 0;
 
 	/**
 	 * @Expose

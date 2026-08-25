@@ -24,6 +24,10 @@ RewriteRule ^ index.php [QSA,L]
   Deny from all
 </FilesMatch>
 
+<Files "docker-compose.yml">
+    Require all denied
+</Files>
+
 # Block access to .git directory and all its contents
 RewriteRule ^.git/ - [F,L]
 RewriteRule ^(.*/)?\.git/ - [F,L]

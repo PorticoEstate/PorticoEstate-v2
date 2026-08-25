@@ -28,6 +28,11 @@ RewriteRule ^ index.php [QSA,L]
     Require all denied
 </Files>
 
+# Hide Dockerfile
+<Files "Dockerfile">
+    Require all denied
+</Files>
+
 # Block access to .git directory and all its contents
 RewriteRule ^.git/ - [F,L]
 RewriteRule ^(.*/)?\.git/ - [F,L]

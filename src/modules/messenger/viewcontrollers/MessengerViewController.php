@@ -5,6 +5,7 @@ namespace App\modules\messenger\viewcontrollers;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
 use App\modules\phpgwapi\security\Acl;
+use Slim\Csrf\Guard;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -207,11 +208,22 @@ class MessengerViewController
 
 	private function render(Request $request, Response $response, string $template, array $data): Response
 	{
+		$csrfName = (string) ($request->getAttribute('csrf_name') ?? '');
+		$csrfValue = (string) ($request->getAttribute('csrf_value') ?? '');
+		if ($csrfName === '' || $csrfValue === '')
+		{
+			$csrfStorage = null;
+			$csrfGuard = new Guard(new \Slim\Psr7\Factory\ResponseFactory(), 'csrf', $csrfStorage, null, 200, 16, true);
+			$request = $csrfGuard->appendNewTokenToRequest($request);
+			$csrfName = (string) $request->getAttribute('csrf_name');
+			$csrfValue = (string) $request->getAttribute('csrf_value');
+		}
+
 		$html = $this->legacyView->render($this->twig->render($template, array_merge($data, [
 			'layout' => '@views/_bare.twig',
 			'csrf' => [
-				'name' => (string) ($request->getAttribute('csrf_name') ?? ''),
-				'value' => (string) ($request->getAttribute('csrf_value') ?? ''),
+				'name' => $csrfName,
+				'value' => $csrfValue,
 			],
 		])), ['messenger']);
 

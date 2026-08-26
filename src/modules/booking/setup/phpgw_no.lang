@@ -1263,3 +1263,13 @@ total cost all	booking	no	Totalkostnad for alle bookinger
 create_hospitality_order_for_application	booking	no	Legg til ny bevertningsbestilling til denne søknaden
 accept_requires_hospitality_processed	booking	no	Alle bevertningsbestillinger må være behandlet før søknaden kan godkjennes
 back_to_application	booking	no	Tilbake til søknaden
+price_applies_to_several_occurrences	booking	no	Prisen gjelder flere tidspunkt
+which_occurrences_get_new_price	booking	no	Denne tildelingen er ett av flere tidspunkt i samme serie. Hvilke tidspunkt skal få den nye prisen?
+update_this_occurrence	booking	no	Oppdater dette
+update_future_occurrences	booking	no	Oppdater fremtidige
+update_all_occurrences	booking	no	Oppdater alle
+some_occurrences_have_own_price	booking	no	Noen tidspunkt har egen pris
+overwrite_manual_prices_question	booking	no	%1 av %2 tidspunkt har en pris som er satt manuelt. Vil du overskrive disse med den nye prisen, eller beholde dem som de er?
+overwrite_all_prices	booking	no	Overskriv alle
+keep_manual_prices	booking	no	Behold de manuelle
+cancel_price_update	booking	no	Avbryt

@@ -885,7 +885,7 @@ class ApplicationController
 		}
 
 		try {
-			$result = $this->service->createRecurringAllocations($id);
+			$result = $this->service->createRecurringAllocations($id, $this->currentAccountId);
 			return ResponseHelper::sendJSONResponse($result, 200, $response);
 		} catch (RuntimeException $e) {
 			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], $this->httpCode($e));

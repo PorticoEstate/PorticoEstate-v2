@@ -1263,3 +1263,13 @@ total cost all	booking	en	Total cost for all bookings
 create_hospitality_order_for_application	booking	en	Add new hospitality order to this application
 accept_requires_hospitality_processed	booking	en	All hospitality orders must be processed before the application can be accepted
 back_to_application	booking	en	Back to application
+price_applies_to_several_occurrences	booking	en	The price applies to several occurrences
+which_occurrences_get_new_price	booking	en	This allocation is one of several occurrences in the same series. Which occurrences should get the new price?
+update_this_occurrence	booking	en	Update this one
+update_future_occurrences	booking	en	Update future ones
+update_all_occurrences	booking	en	Update all
+some_occurrences_have_own_price	booking	en	Some occurrences have their own price
+overwrite_manual_prices_question	booking	en	%1 of %2 occurrences have a price that was set manually. Do you want to overwrite them with the new price, or keep them as they are?
+overwrite_all_prices	booking	en	Overwrite all
+keep_manual_prices	booking	en	Keep the manual prices
+cancel_price_update	booking	en	Cancel

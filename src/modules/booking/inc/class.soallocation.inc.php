@@ -31,6 +31,24 @@
 				'cost' => array('type' => 'decimal', 'required' => true),
 				'completed' => array('type' => 'int', 'required' => true, 'default' => '0'),
 				'additional_invoice_information' => array('type' => 'string', 'required' => false),
+				/**
+				 * Recurrence group, minted once per run of the admin recurring wizard.
+				 * NULL for allocations created before the wizard started minting them and
+				 * for allocations that are not part of a recurrence.
+				 */
+				'allocation_group_id' => array('type' => 'int', 'required' => false),
+				/**
+				 * Raised when a case officer types a price on an individual allocation.
+				 * Never a form input - see booking_uiallocation::$fields.
+				 *
+				 * It means "this price was set by hand AND STILL DIFFERS from the rest of
+				 * the group", which is a statement about the row's present relationship to
+				 * its series and not a record that somebody once typed here. The group
+				 * price cascade leaves a locked member alone; an "Overskriv alle" writes
+				 * over it and CLEARS the flag, because after that it no longer differs.
+				 * See update_price_only().
+				 */
+				'price_locked' => array('type' => 'int', 'required' => false),
 				'organization_name' => array('type' => 'string',
 					'query' => true,
 					'join' => array(
@@ -111,6 +129,264 @@
 			$this->db->query($sql, __LINE__, __FILE__);
 
 			return $receipt;
+		}
+
+		/**
+		 * Mint a new recurrence group id. Called once per run of the recurring
+		 * wizard, before the loop that creates the members.
+		 *
+		 * @return int
+		 */
+		public function next_allocation_group_id()
+		{
+			$this->db->query("SELECT nextval('seq_bb_allocation_group') AS allocation_group_id", __LINE__, __FILE__);
+			$this->db->next_record();
+
+			return (int)$this->db->f('allocation_group_id');
+		}
+
+		/**
+		 * Every distinct recurrence group the application's allocations already
+		 * carry, oldest first. Deactivated members are included on purpose: a
+		 * member that was switched off still belongs to the series, and leaving
+		 * it out would let a re-run mint a second id for a series that has one.
+		 *
+		 * @param int $application_id
+		 * @return int[]
+		 */
+		public function application_allocation_group_ids( $application_id )
+		{
+			$application_id = (int)$application_id;
+
+			if (!$application_id)
+			{
+				return array();
+			}
+
+			$this->db->query("SELECT DISTINCT allocation_group_id FROM bb_allocation"
+				. " WHERE application_id = {$application_id}"
+				. " AND allocation_group_id IS NOT NULL"
+				. " ORDER BY allocation_group_id", __LINE__, __FILE__);
+
+			$ids = array();
+			while ($this->db->next_record())
+			{
+				$ids[] = (int)$this->db->f('allocation_group_id');
+			}
+
+			return $ids;
+		}
+
+		/**
+		 * The recurrence group a run over this application should write.
+		 *
+		 * Reuse before mint: both application paths skip occurrences that already
+		 * exist or that conflict, so a second run creates only the gaps. Minting
+		 * unconditionally would give those gaps a second id and split one series
+		 * across two groups - a later cascade would then reach only the half the
+		 * dialog happened to count.
+		 *
+		 * More than one distinct id means the application is ALREADY split. There
+		 * is no correct answer to pick from here, so the choice is the oldest
+		 * group and it is written to the log rather than made silently.
+		 *
+		 * @param int $application_id
+		 * @return int the group id to write, or 0 when there is no application
+		 */
+		public function find_or_mint_application_group_id( $application_id )
+		{
+			$application_id = (int)$application_id;
+
+			if (!$application_id)
+			{
+				return 0;
+			}
+
+			$existing = $this->application_allocation_group_ids($application_id);
+
+			if (count($existing) > 1)
+			{
+				error_log("booking: application {$application_id} carries more than one"
+					. " allocation_group_id (" . implode(', ', $existing) . ");"
+					. " reusing the oldest, {$existing[0]}");
+			}
+
+			if ($existing)
+			{
+				return $existing[0];
+			}
+
+			return $this->next_allocation_group_id();
+		}
+
+		/**
+		 * The WHERE every scope query shares: one recurrence group, never the
+		 * allocation the officer is editing, and only rows that are still live.
+		 *
+		 * $from_ is the "future only" bound - the occurrences that start at or
+		 * after the edited one. Null means the whole group. The caller passes the
+		 * start time as it STANDS IN THE DATABASE rather than the one just posted,
+		 * so that the number shown in the dialog and the rows the cascade actually
+		 * writes are decided by the same value.
+		 */
+		protected function group_scope_where( $allocation_group_id, $exclude_id, $from_ = null )
+		{
+			$where = " WHERE allocation_group_id = " . (int)$allocation_group_id
+				. " AND id <> " . (int)$exclude_id
+				. " AND active = 1";
+
+			if ($from_)
+			{
+				$where .= " AND from_ >= '" . $this->db->db_addslashes($from_) . "'";
+			}
+
+			return $where;
+		}
+
+		/**
+		 * The members of a recurrence group that a price change may move: everyone
+		 * in scope except the allocation the officer edited, skipping the ones
+		 * whose price was set individually.
+		 *
+		 * @return array of int
+		 */
+		public function get_unlocked_group_member_ids( $allocation_group_id, $exclude_id, $from_ = null )
+		{
+			return $this->get_group_member_ids_by_lock($allocation_group_id, $exclude_id, $from_, 0);
+		}
+
+		/**
+		 * The members in scope that get_unlocked_group_member_ids() deliberately
+		 * leaves behind. Only "Overskriv alle" writes these, and it writes them
+		 * through update_price_only().
+		 *
+		 * @return array of int
+		 */
+		public function get_locked_group_member_ids( $allocation_group_id, $exclude_id, $from_ = null )
+		{
+			return $this->get_group_member_ids_by_lock($allocation_group_id, $exclude_id, $from_, 1);
+		}
+
+		/**
+		 * The ids are collected before returning - the caller reads each allocation
+		 * back through the same connection, which would otherwise discard the rows
+		 * still waiting on this cursor.
+		 *
+		 * @return array of int
+		 */
+		protected function get_group_member_ids_by_lock( $allocation_group_id, $exclude_id, $from_, $price_locked )
+		{
+			if (!(int)$allocation_group_id)
+			{
+				return array();
+			}
+
+			$this->db->query("SELECT id FROM bb_allocation"
+				. $this->group_scope_where($allocation_group_id, $exclude_id, $from_)
+				. " AND price_locked = " . (int)$price_locked
+				. " ORDER BY id", __LINE__, __FILE__);
+
+			$ids = array();
+			while ($this->db->next_record())
+			{
+				$ids[] = (int)$this->db->f('id');
+			}
+
+			return $ids;
+		}
+
+		/**
+		 * How many occurrences a cascade of the given scope would reach, and how
+		 * many of those carry a price somebody set by hand. This is the "%1 of %2"
+		 * the conflict dialog shows, and it is answered here rather than counted in
+		 * the browser because it is the number an officer decides an overwrite on.
+		 *
+		 * The edited allocation is excluded from both figures: it is the row he is
+		 * already looking at, not one of the rows he is being warned about.
+		 *
+		 * @return array total and locked, both int
+		 */
+		public function get_group_scope_summary( $allocation_group_id, $exclude_id, $from_ = null )
+		{
+			$summary = array('total' => 0, 'locked' => 0);
+
+			if (!(int)$allocation_group_id)
+			{
+				return $summary;
+			}
+
+			$this->db->query("SELECT COUNT(*) AS total, COALESCE(SUM(price_locked), 0) AS locked"
+				. " FROM bb_allocation"
+				. $this->group_scope_where($allocation_group_id, $exclude_id, $from_), __LINE__, __FILE__);
+
+			if ($this->db->next_record())
+			{
+				$summary['total'] = (int)$this->db->f('total');
+				$summary['locked'] = (int)$this->db->f('locked');
+			}
+
+			return $summary;
+		}
+
+		/**
+		 * Write a price onto an allocation whose price was set by hand, and nothing
+		 * else. This is the "Overskriv alle" override, and it is deliberately not
+		 * bo->update(): that writes back every column of an entity re-read from the
+		 * database, and these are rows the officer has not seen in a form. A
+		 * statement naming two columns cannot move a date, a resource or an
+		 * organization, and that is the only part of the narrowing enforced by
+		 * something other than convention.
+		 *
+		 * Two of the side effects bo->update() provides therefore have to be
+		 * carried here by hand:
+		 *
+		 *  - the cost history row, because an overwrite of a hand-set price is the
+		 *    one event in this feature that most needs explaining afterwards;
+		 *  - the cost on an un-exported bb_completed_reservation, because that row
+		 *    is what gets invoiced, and leaving it behind would bill the old price.
+		 *
+		 * The third - the webhook notification - is not carried; the reason is in
+		 * booking_uiallocation::cascade_group_price().
+		 *
+		 * price_locked is cleared, and that is the point rather than a detail:
+		 *
+		 *   price_locked = 1 MEANS: this price was set by hand AND STILL DIFFERS
+		 *   from the group. After an overwrite it no longer differs, so THE MARK IS
+		 *   NO LONGER TRUE and it is cleared.
+		 *
+		 * Leaving it standing would make the next "update all" warn about
+		 * occurrences the officer had already deliberately resolved - the feature
+		 * reporting its own output back to him as a conflict.
+		 *
+		 * @return bool
+		 */
+		public function update_price_only( $id, $cost, $author, $comment )
+		{
+			$id = (int)$id;
+
+			if (!$id)
+			{
+				return false;
+			}
+
+			// bb_allocation.cost and bb_allocation_cost.cost are both numeric(10,2).
+			// %F rather than %f: the conversion has to stay decimal-point regardless
+			// of the locale the request happens to run under.
+			$cost = sprintf('%.2F', (float)$cost);
+
+			$this->db->query("INSERT INTO bb_allocation_cost (allocation_id, time, author, comment, cost)"
+				. " VALUES ({$id}, now(), '" . $this->db->db_addslashes($author) . "',"
+				. " '" . $this->db->db_addslashes($comment) . "', {$cost})", __LINE__, __FILE__);
+
+			$this->db->query("UPDATE bb_allocation SET cost = {$cost}, price_locked = 0"
+				. " WHERE id = {$id}", __LINE__, __FILE__);
+
+			$this->db->query("UPDATE bb_completed_reservation SET cost = {$cost}"
+				. " WHERE reservation_type = 'allocation'"
+				. " AND reservation_id = {$id}"
+				. " AND export_file_id IS NULL", __LINE__, __FILE__);
+
+			return true;
 		}
 
 		protected function doValidate( $entity, booking_errorstack $errors )

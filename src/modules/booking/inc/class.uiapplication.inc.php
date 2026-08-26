@@ -4872,6 +4872,12 @@ JS;
 		// Parse recurring settings - match allocation wizard logic
 		$interval = isset($recurring_data['field_interval']) ? (int)$recurring_data['field_interval'] : 1;
 		$repeat_until = null;
+		// Whether the resolved bound is an INCLUSIVE end DATE that has to be advanced
+		// by one whole day - see the comment above the bump further down. Every one of
+		// the five branches that assigns $repeat_until sets this explicitly, including
+		// the one that must NOT be bumped, so the decision is visible at the branch
+		// rather than implied by this initialiser.
+		$bound_is_inclusive = false;
 
 		// Get season info like allocation wizard does
 		$season_bo = createObject('booking.boseason');
@@ -4896,23 +4902,38 @@ JS;
 			// If outseason is enabled, use season end date, otherwise use custom repeat_until
 			if (!empty($recurring_data['outseason'])) {
 				// Use season end date when outseason is enabled
+				// Season end - inclusive (allocation wizard: class.uiallocation.inc.php:789)
 				$repeat_until = new DateTime($season['to_']);
+				$bound_is_inclusive = true;
 				$recurring_data['calculated_repeat_until'] = $repeat_until->format('d/m/Y');
 			} else if (!empty($recurring_data['repeat_until'])) {
 				// Use custom repeat_until date when outseason is not enabled
+				// The date the citizen picked - inclusive (allocation wizard: class.uiallocation.inc.php:783)
 				$repeat_until = new DateTime($recurring_data['repeat_until']);
+				$bound_is_inclusive = true;
 			} else {
 				// Fallback to season end if neither outseason nor repeat_until is set
+				// Season end - inclusive. NOTE: the allocation wizard has no branch of
+				// this shape at all; its recurrence block is gated on
+				// (outseason || repeat_until) at class.uiallocation.inc.php:775, and this
+				// branch is neither. It is bumped BY ANALOGY (season end <-> season end)
+				// on a ruling, not because a measured wizard branch matches it.
 				$repeat_until = new DateTime($season['to_']);
+				$bound_is_inclusive = true;
 				$recurring_data['calculated_repeat_until'] = $repeat_until->format('d/m/Y');
 			}
 		} else {
 			// Fallback - use custom date or 3 months from first date
 			if (!empty($recurring_data['repeat_until'])) {
+				// Same citizen-picked date as above, on the no-season path - inclusive
+				// (allocation wizard: class.uiallocation.inc.php:783)
 				$repeat_until = new DateTime($recurring_data['repeat_until']);
+				$bound_is_inclusive = true;
 			} else {
 				$repeat_until = clone $from_time;
 				$repeat_until->add(new DateInterval('P3M'));
+				// NOT inclusive and NOT bumped - see the comment above the bump below.
+				$bound_is_inclusive = false;
 				$recurring_data['calculated_repeat_until'] = $repeat_until->format('d/m/Y');
 			}
 		}
@@ -4992,6 +5013,47 @@ JS;
 		$max_dato = $to_time->getTimestamp(); // highest date from input (like allocation wizard)
 		$interval_seconds = $interval * 60 * 60 * 24 * 7; // weeks in seconds (like allocation wizard)
 		$repeat_until_timestamp = $repeat_until->getTimestamp();
+
+		// An INCLUSIVE end DATE has to be advanced by one whole day. A citizen who picks
+		// 29.04 means "and including 29.04", but a bare date parses to midnight at the
+		// START of that day, and the loop below compares each occurrence's END datetime
+		// against this bound - so an occurrence on the boundary date (13:00-14:00, say)
+		// is strictly greater than its own day's midnight and gets dropped. The legacy
+		// allocation wizard advances the bound for exactly this reason, and this bump
+		// covers precisely the branches the wizard bumps:
+		//   - the date the citizen picked, season found     (class.uiallocation.inc.php:783)
+		//   - the same date on the no-season path           (class.uiallocation.inc.php:783)
+		//   - the season end via outseason                  (class.uiallocation.inc.php:789)
+		//   - the season end fallback                       (class.uiallocation.inc.php:789
+		//     BY ANALOGY ONLY - the wizard's block is gated on (outseason || repeat_until)
+		//     at :775 and cannot express this branch, so there is no measured wizard
+		//     behaviour behind this one cell; see the note at the branch itself)
+		// all `+ 60 * 60 * 24` there, which is why the wizard lists 5 occurrences where
+		// this page listed 4 on identical input.
+		//
+		// The `+3 months` fallback is DELIBERATELY EXCLUDED. It is not a date anyone
+		// picked and the wizard has no such branch at all. The premise above does not
+		// hold there either: that bound is `clone $from_time` plus P3M, so it carries the
+		// start TIME (13:00), not midnight, and there is nothing to advance past. Bumping
+		// it grows the series by an occurrence no other copy produces - 14 where both the
+		// wizard and services/ApplicationService.php give 13, measured on a weekly series
+		// from 2027-04-01 13:00.
+		//
+		// Raw seconds rather than DateInterval('P1D') on purpose: the wizard
+		// (class.uiallocation.inc.php:783/:789) and services/ApplicationService.php:646
+		// both add `60 * 60 * 24`, and a calendar-aware +1 day would diverge from both
+		// across a DST transition - the one place these three copies must not differ.
+		// Applied to the timestamp rather than to $repeat_until itself so the bump
+		// cannot leak into anything else derived from that object. Today nothing is:
+		// $recurring_data arrives BY VALUE and the 'calculated_repeat_until' the
+		// template renders is the caller's own copy (see :4844), so the assignments in
+		// the branches above are dead. Keep it that way - making the parameter a
+		// reference, or returning it, would put a display date one day past the one the
+		// citizen picked if the bump were applied to the object instead.
+		if ($bound_is_inclusive) {
+			$repeat_until_timestamp += 60 * 60 * 24;
+		}
+
 		$i = 0;
 		$max_iterations = 50; // Safety limit
 
@@ -5524,6 +5586,12 @@ JS;
 		// Create allocation BO to handle the creation
 		$allocation_bo = createObject('booking.boallocation');
 
+		// One recurrence group for the whole application, resolved before the loop.
+		// The loop below skips occurrences that already exist, so a second approval
+		// run creates only the gaps - it has to join the group the first run made
+		// rather than mint a second one and split the series.
+		$allocation_group_id = $allocation_bo->so->find_or_mint_application_group_id($application['id']);
+
 		// Get resource names for display
 		$resource_names = array();
 		if (!empty($application['resources'])) {
@@ -5601,7 +5669,8 @@ JS;
 				'completed' => '0',
 				'cost' => '0',
 				'organization_id' => $org_id,
-				'skip_bas' => 0
+				'skip_bas' => 0,
+				'allocation_group_id' => $allocation_group_id
 			);
 
 			// Add season info - required for allocation creation

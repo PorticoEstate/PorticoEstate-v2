@@ -5586,6 +5586,12 @@ JS;
 		// Create allocation BO to handle the creation
 		$allocation_bo = createObject('booking.boallocation');
 
+		// One recurrence group for the whole application, resolved before the loop.
+		// The loop below skips occurrences that already exist, so a second approval
+		// run creates only the gaps - it has to join the group the first run made
+		// rather than mint a second one and split the series.
+		$allocation_group_id = $allocation_bo->so->find_or_mint_application_group_id($application['id']);
+
 		// Get resource names for display
 		$resource_names = array();
 		if (!empty($application['resources'])) {
@@ -5663,7 +5669,8 @@ JS;
 				'completed' => '0',
 				'cost' => '0',
 				'organization_id' => $org_id,
-				'skip_bas' => 0
+				'skip_bas' => 0,
+				'allocation_group_id' => $allocation_group_id
 			);
 
 			// Add season info - required for allocation creation

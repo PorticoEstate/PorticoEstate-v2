@@ -721,7 +721,7 @@ class ApplicationService
 	 *
 	 * @throws RuntimeException if the application is not found or not recurring.
 	 */
-	public function createRecurringAllocations(int $appId): array
+	public function createRecurringAllocations(int $appId, int $accountId): array
 	{
 		$app = $this->repo->getById($appId);
 		if (!$app) {
@@ -755,6 +755,8 @@ class ApplicationService
 		if (empty($resourceIds)) {
 			throw new RuntimeException('Cannot create allocations: no resources linked', 400);
 		}
+
+		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';
 
 		$created = [];
 		$failed = [];
@@ -797,6 +799,7 @@ class ApplicationService
 						'date' => $item['date_display'],
 						'time' => $item['time_display'],
 					];
+					$this->attachPurchaseOrder((int) $allocation->id, $appId, $authorName);
 				} else {
 					$failed[] = [
 						'date'   => $item['date_display'],
@@ -813,11 +816,115 @@ class ApplicationService
 			}
 		}
 
+		if ($created) {
+			$groupId = $this->resolveAllocationGroupId($appId);
+			$this->repo->setAllocationGroupForIds(array_column($created, 'id'), $groupId);
+		}
+
 		return [
 			'created'         => $created,
 			'failed'          => $failed,
 			'total_attempted' => $totalAttempted,
 		];
+	}
+
+	/**
+	 * Carry the application's purchase order onto an allocation just created
+	 * for it, and price the allocation from the result.
+	 *
+	 * This mirrors the legacy recurring arm (uiallocation:898-909), which is the
+	 * only behaviour that has ever been observed to work end to end: the REST
+	 * path had no call site for this at all, so allocations it created were left
+	 * at cost 0 with no order and could not be invoiced - the invoicing cron
+	 * resolves an allocation's order strictly by
+	 * `reservation_type='allocation' AND reservation_id=<id>`
+	 * (socompleted_reservation::find_expired_orders), so an allocation carrying
+	 * no order is simply never billed.
+	 *
+	 * sopurchase_order::copy_purchase_order_from_application is relocate-then-
+	 * mint by construction: the first call finds the application's still
+	 * unplaced order and MOVES it onto this allocation; every later call finds
+	 * nothing unplaced and mints a child copy of the parent order instead. So
+	 * calling it once per allocation reproduces the legacy outcome - first
+	 * member takes the order, the rest get copies - with no ordering logic here.
+	 *
+	 * It has no guard of its own, though. Branch one self-disarms once the order
+	 * has moved, but branch two would mint a fresh duplicate copy on every
+	 * re-entry, and a second run over an application is normal rather than
+	 * exceptional (the loop above skips occurrences that already exist or that
+	 * conflict, so a re-run creates only the gaps). The lookup below is that
+	 * guard: an allocation that already carries an order is left alone.
+	 */
+	private function attachPurchaseOrder(int $allocationId, int $appId, string $author): void
+	{
+		if ($allocationId <= 0 || $appId <= 0) {
+			return;
+		}
+
+		if ($this->repo->findPurchaseOrderIdForAllocation($allocationId) !== null) {
+			return;
+		}
+
+		$sopurchaseOrder = \CreateObject('booking.sopurchase_order');
+
+		$orderId = $sopurchaseOrder->copy_purchase_order_from_application(
+			['application_id' => $appId],
+			$allocationId,
+			'allocation'
+		);
+
+		if (!$orderId) {
+			return;
+		}
+
+		$order = $sopurchaseOrder->get_single_purchase_order($orderId);
+
+		// Test the lines, not the sum. An order with no lines returns no rows at
+		// all, so 'sum' is unset rather than zero and assigning it would write
+		// NULL to cost. An order that genuinely totals zero is a real price and
+		// must still be written.
+		if (empty($order['lines'])) {
+			return;
+		}
+
+		// Column-scoped writer: it updates bb_allocation.cost and appends the
+		// bb_allocation_cost history row in one place, which is what the legacy
+		// arm does with add_cost_history() + $allocation['cost'] + bo->update().
+		\CreateObject('booking.soallocation')->update_price_only(
+			$allocationId,
+			(float) $order['sum'],
+			$author,
+			lang('booking.cost is set')
+		);
+	}
+
+	/**
+	 * The recurrence group a run over this application should write.
+	 *
+	 * Reuse before mint: the loop above skips occurrences that already exist or
+	 * that conflict, so a second run creates only the gaps. Minting
+	 * unconditionally would give those gaps a second id and split one series
+	 * across two groups - a later cascade would then reach only the half the
+	 * scope dialog happened to count.
+	 *
+	 * More than one distinct id means the application is ALREADY split. There is
+	 * no correct answer to pick from here, so the choice is the oldest group and
+	 * it is written to the log rather than made silently.
+	 */
+	private function resolveAllocationGroupId(int $appId): int
+	{
+		$existing = $this->repo->findAllocationGroupIdsForApplication($appId);
+
+		if (count($existing) > 1) {
+			error_log(sprintf(
+				'booking: application %d carries more than one allocation_group_id (%s); reusing the oldest, %d',
+				$appId,
+				implode(', ', $existing),
+				$existing[0]
+			));
+		}
+
+		return $existing ? $existing[0] : $this->repo->nextAllocationGroupId();
 	}
 
 	// ── Helpers ─────────────────────────────────────────────────────────

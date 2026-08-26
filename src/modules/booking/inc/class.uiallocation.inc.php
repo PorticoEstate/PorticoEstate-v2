@@ -24,6 +24,7 @@
 			'delete' => true,
 			'info' => true,
 			'toggle_show_inactive' => true,
+			'cascade_preview' => true,
 		);
 		protected
 			$organization_bo, $building_bo, $season_bo, $resource_bo, $sopurchase_order, $fields, $display_name,$export_filters;
@@ -320,6 +321,270 @@
 			);
 		}
 
+		/**
+		 * Carry a price the officer set on one allocation across to the rest of its
+		 * recurrence group.
+		 *
+		 * $from_ narrows the reach to the occurrences starting at or after that
+		 * time - the "Oppdater fremtidige" scope. Null reaches the whole group.
+		 *
+		 * $overwrite_locked is the "Overskriv alle" answer to the second dialog.
+		 * False - the default, and what "Behold de manuelle" posts - leaves the
+		 * members whose price was set individually completely alone: no cost
+		 * change, no history row, and their mark untouched.
+		 *
+		 * The two populations are written by two different mechanisms on purpose:
+		 *
+		 *  - unlocked members go through bo->update(), which is what keeps the
+		 *    three things a bare write drops: the cost history row, the webhook
+		 *    notification, and the cost on the un-exported bb_completed_reservation
+		 *    row. This path is byte-for-byte the same under both buttons, so
+		 *    choosing to overwrite never changes what happens to the rest;
+		 *  - locked members go through so->update_price_only(), a statement naming
+		 *    only cost and price_locked. These are rows the officer never opened in
+		 *    a form, and a writer that cannot name a date cannot move one.
+		 *
+		 * The webhook is the one side effect the override does not carry. It
+		 * announces "an allocation changed" to external subscribers and is fired
+		 * inside a try/catch that swallows its own failures, so it is advisory, not
+		 * part of the record - unlike the history row and the invoice cost, which
+		 * are. Naming it here so the omission is a decision and not an oversight.
+		 *
+		 * THE PRICE MOVES AS PURCHASE-ORDER LINES, NOT AS A NUMBER.
+		 *
+		 * With activate_application_articles on, bb_allocation.cost is not what the
+		 * system reads: the edit page below renders the price from the purchase
+		 * order and leaves cost readOnly, and async_task_update_reservation_state
+		 * invoices the order and then writes the order's sum back over cost. A
+		 * cascade that moved cost alone was therefore invisible on the page,
+		 * unbilled, and reverted the moment the occurrence expired - it looked like
+		 * a cascade that had not run, and it was measured as one.
+		 *
+		 * So each member's own order is rewritten from the source's lines first,
+		 * and its cost is then taken from what that order TOTALS, which
+		 * get_single_purchase_order() reports tax-inclusive. Nothing here computes
+		 * a price; it copies one and reads the receipt.
+		 *
+		 * Two members can come back untouched, and both must also keep their cost:
+		 * one whose order has been billed, and one whose completed reservation has
+		 * already been exported. Writing a cost onto a member whose order stayed
+		 * stale would re-create the exact split this method exists to close, so a
+		 * skip is a skip of the whole member. The officer is told which.
+		 *
+		 * With articles off - or with a source that has no lines to copy - none of
+		 * this applies: cost IS the price there, and the cascade behaves as it did
+		 * before, writing the number and nothing else.
+		 *
+		 * @return array the ids that were moved
+		 */
+		protected function cascade_group_price( $allocation_group_id, $source_id, $cost, $from_ = null, $overwrite_locked = false, $application_id = 0, $articles_active = false )
+		{
+			$moved = array();
+			$skipped = array();
+
+			// The source's order, resolved once. get_purchase_order() joins its lines,
+			// so an order with none comes back empty - which is the same answer as
+			// having no order at all, and wants the same treatment.
+			$source_order = $articles_active
+				? $this->sopurchase_order->get_purchase_order(0, 'allocation', $source_id)
+				: array();
+
+			$source_order_id = !empty($source_order['order_id']) ? (int)$source_order['order_id'] : 0;
+			$carry_order = $source_order_id && !empty($source_order['lines']) && (int)$application_id;
+
+			$member_ids = $this->bo->so->get_unlocked_group_member_ids($allocation_group_id, $source_id, $from_);
+
+			foreach ($member_ids as $member_id)
+			{
+				$member = $this->bo->read_single($member_id);
+
+				if (!$member)
+				{
+					continue;
+				}
+
+				$member_cost = $cost;
+
+				if ($carry_order)
+				{
+					$carried = $this->sopurchase_order->cascade_order_to_allocation(
+						$source_order_id, $application_id, $member_id);
+
+					if ($carried['status'] !== 'written')
+					{
+						$skipped[$member_id] = $carried['status'];
+						continue;
+					}
+
+					// The receipt, not the request: this is what the member's order now
+					// totals, tax included. It should equal $cost, and if a rounding
+					// artefact ever makes it not, the order is the one that gets invoiced.
+					if ($carried['sum'] !== null)
+					{
+						$member_cost = $carried['sum'];
+					}
+				}
+
+				// A fixed string rather than lang('cost is set'): that key is emitted by
+				// seven other call sites, so a history row carrying it says nothing about
+				// where the price came from. A cascade has to stay recognisable as one
+				// after the fact.
+				$this->add_cost_history($member, 'Pris kopiert fra tildeling i serien', $member_cost);
+				$member['cost'] = $member_cost;
+				$this->bo->update($member);
+				$moved[] = $member_id;
+			}
+
+			if (!$overwrite_locked)
+			{
+				$this->report_cascade_skips($skipped);
+				return $moved;
+			}
+
+			foreach ($this->bo->so->get_locked_group_member_ids($allocation_group_id, $source_id, $from_) as $member_id)
+			{
+				$member_cost = $cost;
+
+				if ($carry_order)
+				{
+					$carried = $this->sopurchase_order->cascade_order_to_allocation(
+						$source_order_id, $application_id, $member_id);
+
+					if ($carried['status'] !== 'written')
+					{
+						$skipped[$member_id] = $carried['status'];
+						continue;
+					}
+
+					if ($carried['sum'] !== null)
+					{
+						$member_cost = $carried['sum'];
+					}
+				}
+
+				// Its own literal, for the same reason the cascade has one: overwriting
+				// a price an officer typed is a different event from moving one nobody
+				// touched, and six months later the history row is all that is left of
+				// the distinction.
+				$this->bo->so->update_price_only($member_id, $member_cost, $this->current_account_fullname(),
+					'Pris kopiert fra tildeling i serien (overskrev manuell pris)');
+				$moved[] = $member_id;
+			}
+
+			$this->report_cascade_skips($skipped);
+
+			return $moved;
+		}
+
+		/**
+		 * Say out loud which occurrences the cascade refused to touch.
+		 *
+		 * A skip here is never a failure - it is the feature declining to re-price
+		 * something that has already been invoiced or exported - but it is the one
+		 * outcome an officer cannot see from the result page, because the skipped
+		 * occurrence looks exactly like one the cascade never reached. Silence would
+		 * leave him believing the whole series moved.
+		 *
+		 * The text is a fixed Norwegian literal, like the history comments this
+		 * feature already writes. Adding a translation key would be the tidier
+		 * answer and is left for whoever owns the .lang files.
+		 */
+		protected function report_cascade_skips( $skipped )
+		{
+			if (empty($skipped))
+			{
+				return;
+			}
+
+			$reasons = array(
+				'skipped_billed'	 => 'allerede fakturert',
+				'skipped_exported'	 => 'allerede eksportert',
+				'skipped_no_order'	 => 'mangler ordre',
+			);
+
+			$parts = array();
+
+			foreach ($skipped as $member_id => $status)
+			{
+				$why = isset($reasons[$status]) ? $reasons[$status] : $status;
+				$parts[] = "#{$member_id} ({$why})";
+			}
+
+			Cache::message_set('Prisen ble ikke kopiert til alle tildelinger i serien.'
+				. ' Disse er uendret: ' . implode(', ', $parts) . '.', 'error');
+		}
+
+		/**
+		 * The two numbers behind the price dialogs, answered from the database.
+		 *
+		 * The browser knows which allocation is on screen and nothing else. It does
+		 * not know how many occurrences share this one's recurrence group, which of
+		 * them start later, or which carry a price somebody typed by hand - and the
+		 * second dialog asks the officer to overwrite exactly those. A count he is
+		 * about to make a destructive decision on is not something to derive from
+		 * whatever the page happens to be holding, so it is derived here, per scope,
+		 * from bb_allocation.
+		 *
+		 * The strings come back with it. The client-side lang() is DOM-backed and
+		 * fails silently to the raw key, and these dialogs are built entirely in
+		 * script with nothing in the template to read a translation off; sending the
+		 * text along with the numbers removes the failure mode instead of guarding
+		 * against it.
+		 *
+		 * Read-only. Nothing here writes.
+		 */
+		public function cascade_preview()
+		{
+			$id = Sanitizer::get_var('id', 'int');
+			$allocation = $this->bo->read_single($id);
+
+			if (!$allocation)
+			{
+				self::sendJsonResponse(array('grouped' => false), 404);
+			}
+
+			$group = !empty($allocation['allocation_group_id']) ? (int)$allocation['allocation_group_id'] : 0;
+
+			$scopes = array(
+				// "this" is the scope that reaches nothing, so its counts are not a
+				// query result - they are what the scope means.
+				'this' => array('total' => 0, 'locked' => 0),
+				'future' => $this->bo->so->get_group_scope_summary($group, $id, $allocation['from_']),
+				'all' => $this->bo->so->get_group_scope_summary($group, $id),
+			);
+
+			// The warning sentence is built here, per scope, rather than shipped as a
+			// template for the browser to fill in. Its two numbers are the whole
+			// content of the warning - they are what the officer weighs an overwrite
+			// against - so the server says them itself and nothing downstream gets an
+			// opportunity to count differently.
+			foreach ($scopes as $name => $scope)
+			{
+				$scopes[$name]['conflict_body'] = lang('overwrite_manual_prices_question', $scope['locked'], $scope['total']);
+			}
+
+			self::sendJsonResponse(array(
+				'grouped' => $group > 0,
+				'scopes' => $scopes,
+				'labels' => array(
+					'scope_title' => lang('price_applies_to_several_occurrences'),
+					'scope_body' => lang('which_occurrences_get_new_price'),
+					'scope_this' => lang('update_this_occurrence'),
+					'scope_future' => lang('update_future_occurrences'),
+					'scope_all' => lang('update_all_occurrences'),
+					'conflict_title' => lang('some_occurrences_have_own_price'),
+					'overwrite_all' => lang('overwrite_all_prices'),
+					'keep_manual' => lang('keep_manual_prices'),
+					// Its own key rather than lang('Cancel'): booking's 'cancel' is
+					// "Tilbake", which is what the link back to the list says, and this
+					// button abandons an unsaved edit instead. lang('common.cancel') is
+					// not the way round it either - that lookup cannot reach common (see
+					// Translation::translate, the $only_common branch).
+					'cancel' => lang('cancel_price_update'),
+				),
+			));
+		}
+
 		public function add()
 		{
 			$isJsonRequest = self::handleJsonPost();
@@ -475,6 +740,10 @@
 				}
 				$allocation['active'] = '1';
 				$allocation['completed'] = '0';
+				// A new allocation is never price locked. Seeded here rather than left to
+				// the column default because this entity is also handed to bo->update()
+				// further down, and authorize_write() turns an absent key into a NULL.
+				$allocation['price_locked'] = 0;
 
 				$weekday = Sanitizer::get_var('weekday', 'string', 'POST');
 
@@ -649,6 +918,11 @@
 					{
 						$temp_id = Sanitizer::get_var('temp_id');
 						$purchase_order = Cache::session_get('booking', $temp_id);
+
+						// One recurrence group per run of the wizard. It survives the
+						// unset($allocation['id']) at the top of the loop below, so every
+						// member this run creates is written with the same group id.
+						$allocation['allocation_group_id'] = $this->bo->so->next_allocation_group_id();
 					}
 
 
@@ -1030,12 +1304,33 @@
 				phpgw::no_access('booking', lang('missing entry. Id %1 is invalid', $id));
 			}
 
+			// The price as it stands in the database, taken before anything in this
+			// request can move it. The cascade decision below is made against this and
+			// not against $_POST['cost_orig']: that is a hidden field, so the client
+			// that claims the price changed is also the client that supplies the
+			// baseline it is compared to.
+			$stored_cost = isset($allocation['cost']) ? (float)$allocation['cost'] : null;
+
+			// The start time as stored, for the same reason. "Oppdater fremtidige"
+			// means "from this occurrence onwards", and the occurrence the officer
+			// pointed at is the one that was on screen - not a new date he may be
+			// moving it to in the same save. cascade_preview() counted against this
+			// value, so the cascade has to bound itself by it or the dialog told him
+			// something that did not happen.
+			$stored_from = isset($allocation['from_']) ? $allocation['from_'] : null;
+
 			$allocation['building'] = $this->building_bo->so->read_single($allocation['building_id']);
 			$allocation['building_name'] = $allocation['building']['name'];
 			$errors = array();
 			$tabs = array();
 			$tabs['generic'] = array('label' => lang('edit allocation'), 'link' => '#allocations_edit');
 			$active_tab = 'generic';
+
+			// Read up here rather than beside the render below, because the POST branch
+			// needs to know whether articles are on before it can decide what the price
+			// even is.
+			$config = CreateObject('phpgwapi.config', 'booking')->read();
+			$articles_active = !empty($config['activate_application_articles']);
 
 			if ($_SERVER['REQUEST_METHOD'] == 'POST')
 			{
@@ -1045,11 +1340,6 @@
 				array_set_default($_POST, 'resources', array());
 				$allocation = array_merge($allocation, extract_values($_POST, $this->fields));
 				$organization = $this->organization_bo->read_single(intval(Sanitizer::get_var('organization_id', 'int', 'POST')));
-
-				if ($_POST['cost'] != $_POST['cost_orig'])
-				{
-					$this->add_cost_history($allocation, Sanitizer::get_var('cost_comment'), Sanitizer::get_var('cost', 'float'));
-				}
 
 				$errors = $this->bo->validate($allocation);
 				if (!$errors)
@@ -1064,19 +1354,87 @@
 						$purchase_order['reservation_type'] = 'allocation';
 						$purchase_order['reservation_id'] = $id;
 
+						// The total the machine derived from the article lines, and whether
+						// it wrote its own history row for it.
+						$purchase_order_sum = null;
+						$purchase_order_logged = false;
+
 						if(!empty($purchase_order['lines']))
 						{
 							$purchase_order_id = $this->sopurchase_order->add_purchase_order($purchase_order);
 							$purchase_order_result =  $this->sopurchase_order->get_single_purchase_order($purchase_order_id);
+							if($purchase_order_result['sum'])
+							{
+								$purchase_order_sum = (float)$purchase_order_result['sum'];
+							}
 							if($purchase_order_result['sum'] && $purchase_order_result['sum'] != $allocation['cost'])
 							{
 								$this->add_cost_history($allocation, lang('cost is set'), $purchase_order_result['sum']);
 								$allocation['cost'] = $purchase_order_result['sum'];
+								$purchase_order_logged = true;
 							}
 						}
 
 						/** END purchase order */
+
+						// What the price actually became this request. With articles on,
+						// the cost field is readonly and purchase_order_edit.js is what
+						// fills it, so the posted figure is the browser echoing itself and
+						// the only trustworthy number is the one the purchase order just
+						// derived - no lines, no derivation, no price change. With
+						// articles off that script is never loaded (:955, :1177), nothing
+						// else writes the field, and the posted cost is the officer's own.
+						$effective_cost = $articles_active
+							? $purchase_order_sum
+							: (isset($allocation['cost']) ? (float)$allocation['cost'] : null);
+
+						// cost is numeric(10,2); comparing at the column's own scale keeps
+						// a float artefact from reading as a price change. A stored NULL is
+						// no baseline at all, so any derived price counts as a change.
+						$price_changed = ($effective_cost !== null)
+							&& ($stored_cost === null || round($effective_cost, 2) !== round($stored_cost, 2));
+
+						if ($price_changed && !$purchase_order_logged)
+						{
+							$this->add_cost_history($allocation, Sanitizer::get_var('cost_comment'), $effective_cost);
+						}
+
+						// The officer set this occurrence's price by hand this request, so record it: a later
+						// "update all" from ANOTHER occurrence must be able to count it and warn. Only the SOURCE
+						// of a change is marked here; members that merely RECEIVE the cascade are written by
+						// cascade_group_price(), which never sets this flag. On a save with no price change,
+						// price_locked keeps the value read from the DB row - a bare save marks nothing.
+						if ($price_changed)
+						{
+							$allocation['price_locked'] = 1;
+						}
+
 						$receipt = $this->bo->update($allocation);
+
+						// The price the officer set reaches the rest of the recurrence,
+						// but only after his own allocation has actually been persisted.
+						//
+						// How far it reaches is what the scope dialog asked him, and an
+						// ABSENT answer is not "do nothing": a form posted without these
+						// fields - a script-less browser, a direct POST, anything written
+						// against this endpoint before the dialogs existed - gets the
+						// behaviour that shipped before them, which is a cascade to every
+						// unlocked member of the group. Silence keeps the old contract; it
+						// does not invent a new one.
+						$cascade_scope = Sanitizer::get_var('cascade_scope', 'string', 'POST');
+
+						if ($price_changed && !empty($allocation['allocation_group_id']) && $cascade_scope !== 'this')
+						{
+							$this->cascade_group_price(
+								$allocation['allocation_group_id'],
+								$allocation['id'],
+								$effective_cost,
+								$cascade_scope === 'future' ? $stored_from : null,
+								(bool)Sanitizer::get_var('cascade_overwrite_locked', 'int', 'POST'),
+								!empty($allocation['application_id']) ? (int)$allocation['application_id'] : 0,
+								$articles_active
+							);
+						}
 
 						$this->bo->so->update_id_string($allocation['id']);
 						$this->send_mailnotification_to_organization($organization, lang('Allocation changed'), Sanitizer::get_var('mail', 'html', 'POST'));
@@ -1094,8 +1452,6 @@
 
 			$this->flash_form_errors($errors);
 			self::add_javascript('booking', 'base', 'allocation.js');
-
-			$config = CreateObject('phpgwapi.config', 'booking')->read();
 
 			$purchase_order = $this->sopurchase_order->get_purchase_order(0, 'allocation', $allocation['id']);
 

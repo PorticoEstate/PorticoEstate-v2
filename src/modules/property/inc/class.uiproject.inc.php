@@ -1985,8 +1985,9 @@ JS;
 			'currency'							 => $this->userSettings['preferences']['common']['currency'],
 			'base_java_url'						 => "{menuaction:'property.bocommon.get_vendor_email',phpgw_return_as:'json'}",
 			'location_item_id'					 => $id,
-			'edit_action'						 => phpgw::link('/property/uiproject/edit', array(
-				'id'		 => $id
+			'edit_action'						 => phpgw::link('/index.php', array(
+													'menuaction' => 'property.uiproject.edit',
+													'id'		 => $id
 			)),
 			'decimal_separator'					 => $this->decimal_separator,
 			'validator'							 => phpgwapi_jquery::formvalidator_generate(array(

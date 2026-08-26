@@ -115,8 +115,8 @@ class messenger_bomessenger
 
 		if (is_array($errors))
 		{
-			ExecMethod('messenger.uimessenger.compose', $errors);
-			//$this->ui->compose($errors);
+			phpgw::redirect_link('/messenger/view/compose-global');
+			return False;
 		}
 		else
 		{
@@ -231,7 +231,8 @@ class messenger_bomessenger
 
 		if (count($errors))
 		{
-			ExecMethod('messenger.uimessenger.compose', $errors);
+			phpgw::redirect_link('/messenger/view/compose');
+			return False;
 		}
 		else
 		{
@@ -403,8 +404,8 @@ class messenger_bomessenger
 		$errors = $this->check_for_missing_fields($n_message);
 		if ($errors)
 		{
-			ExecMethod('messenger.uimessenger.reply', array($errors, $n_message));
-			//$this->ui->reply($errors, $n_message);
+			phpgw::redirect_link('/messenger/view/messages/' . (int) $message_id . '/reply');
+			return False;
 		}
 		else
 		{
@@ -426,8 +427,8 @@ class messenger_bomessenger
 
 		if ($errors)
 		{
-			ExecMethod('messenger.uimessenger.forward', array($errors, $message));
-			//$this->ui->forward($errors, $n_message);
+			phpgw::redirect_link('/messenger/view/messages/' . (int) $message_id . '/forward');
+			return False;
 		}
 		else
 		{

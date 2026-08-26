@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		event.preventDefault();
 		const payload = Object.fromEntries(new FormData(form).entries());
 		payload.account_groups = Array.from(groups.selectedOptions).map(option => option.value).filter(Boolean);
+		payload.csrf_name = app.dataset.csrfName;
+		payload.csrf_value = app.dataset.csrfValue;
 		fetch(app.dataset.actionUrl, {method: 'POST', headers: {'Content-Type': 'application/json', 'csrf_name': app.dataset.csrfName, 'csrf_value': app.dataset.csrfValue}, body: JSON.stringify(payload)})
 			.then(response => response.json().then(data => ({ok: response.ok, data: data})))
 			.then(result => { if (!result.ok) { error.textContent = (result.data.errors || [result.data.error]).join('\n'); error.hidden = false; return; } window.location.href = app.dataset.backUrl; });

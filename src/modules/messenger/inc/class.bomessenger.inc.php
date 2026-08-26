@@ -99,7 +99,7 @@ class messenger_bomessenger
 		$acl = Acl::getInstance();
 		if (!$acl->check('run', 1, 'admin') || $cancel)
 		{
-			phpgw::redirect_link('/index.php', array('menuaction' => 'messenger.uimessenger.index'));
+			phpgw::redirect_link('/messenger/view/inbox');
 			return False;
 		}
 
@@ -130,7 +130,7 @@ class messenger_bomessenger
 				$this->so->send_message($message, True);
 			}
 			$this->so->db->transaction_commit();
-			phpgw::redirect_link('/index.php', array('menuaction' => 'messenger.uimessenger.index'));
+			phpgw::redirect_link('/messenger/view/inbox');
 		}
 	}
 
@@ -223,7 +223,7 @@ class messenger_bomessenger
 
 		if ($cancel)
 		{
-			phpgw::redirect_link('/index.php', array('menuaction' => 'messenger.uimessenger.index'));
+			phpgw::redirect_link('/messenger/view/inbox');
 			exit;
 		}
 
@@ -236,7 +236,7 @@ class messenger_bomessenger
 		else
 		{
 			$this->so->send_message($message);
-			phpgw::redirect_link('/index.php', array('menuaction' => 'messenger.uimessenger.index'));
+			phpgw::redirect_link('/messenger/view/inbox');
 		}
 	}
 
@@ -375,7 +375,7 @@ class messenger_bomessenger
 
 		if (!is_array($messages))
 		{
-			phpgw::redirect_link('/index.php', array('menuaction' => 'messenger.uimessenger.index'));
+			phpgw::redirect_link('/messenger/view/inbox');
 			return False;
 		}
 		$this->so->transaction_begin();
@@ -385,14 +385,14 @@ class messenger_bomessenger
 			$this->so->delete_message($message_id);
 		}
 		$this->so->transaction_commit();
-		phpgw::redirect_link('/index.php', array('menuaction' => 'messenger.uimessenger.index'));
+		phpgw::redirect_link('/messenger/view/inbox');
 	}
 
 	function reply($message_id = '', $n_message = '')
 	{
 		if (Sanitizer::get_var('cancel', 'bool') == true)
 		{
-			phpgw::redirect_link('/index.php', array('menuaction' => 'messenger.uimessenger.index'));
+			phpgw::redirect_link('/messenger/view/inbox');
 		}
 		if (!$message_id)
 		{
@@ -410,7 +410,7 @@ class messenger_bomessenger
 		{
 			$this->so->send_message($n_message);
 			$this->so->update_message_status('R', $message_id);
-			phpgw::redirect_link('/index.php', array('menuaction' => 'messenger.uimessenger.index'));
+			phpgw::redirect_link('/messenger/view/inbox');
 		}
 	}
 
@@ -433,7 +433,7 @@ class messenger_bomessenger
 		{
 			$this->so->send_message($message);
 			$this->so->update_message_status('F', $message_id);
-			phpgw::redirect_link('/index.php', array('menuaction' => 'messenger.uimessenger.index'));
+			phpgw::redirect_link('/messenger/view/inbox');
 		}
 	}
 

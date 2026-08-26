@@ -109,6 +109,9 @@ class MessengerViewController
 
 	public function compose(Request $request, Response $response): Response
 	{
+		\phpgw::import_class('phpgwapi.jquery');
+		\phpgwapi_jquery::load_widget('select2');
+
 		return $this->render($request, $response, '@views/messenger/compose/messenger_compose.twig', [
 			'mode' => 'compose',
 			'api_url' => \phpgw::link('/messenger/messages'),
@@ -154,6 +157,12 @@ class MessengerViewController
 	private function messageForm(Request $request, Response $response, array $args, string $mode): Response
 	{
 		$id = (int) ($args['id'] ?? 0);
+		if ($mode === 'forward')
+		{
+			\phpgw::import_class('phpgwapi.jquery');
+			\phpgwapi_jquery::load_widget('select2');
+		}
+
 		return $this->render($request, $response, '@views/messenger/' . $mode . '/messenger_' . $mode . '.twig', [
 			'mode' => $mode,
 			'api_url' => \phpgw::link('/messenger/messages/' . $id),

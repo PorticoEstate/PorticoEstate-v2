@@ -1,0 +1,88 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Inbox') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/messenger/inbox/messenger_inbox.css') }}</style>
+{% endblock %}
+
+{% block content %}
+{% set view_url_template = view_url|default(phpgw_link('/messenger/view/messages/__MESSAGE_ID__')) %}
+{% set delete_url_template = delete_url|default(phpgw_link('/messenger/view/messages/__MESSAGE_ID__/delete')) %}
+
+<script>
+	function messengerEscapeHtml(value)
+	{
+		return String(value === undefined || value === null ? '' : value)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#039;');
+	}
+
+	function messengerFormatCell(key, row)
+	{
+		var value = messengerEscapeHtml(row[key]);
+		return row.status === 'N' ? '<strong>' + value + '</strong>' : value;
+	}
+</script>
+
+{% set actions = [
+	{
+		'my_name': 'view',
+		'text': lang('View'),
+		'type': 'custom',
+		'custom_code': "
+			var api = oTable.api();
+			var selected = api.rows({ selected: true }).data();
+			if (!selected.length) { return false; }
+			var href = '" ~ view_url_template|e('js') ~ "'.replace('__MESSAGE_ID__', encodeURIComponent(selected[0].id));
+			window.open(href, '_self');
+		"
+	},
+	{
+		'my_name': 'delete',
+		'text': lang('Delete'),
+		'type': 'custom',
+		'confirm_msg': lang('do you really want to delete this entry'),
+		'custom_code': "
+			var api = oTable.api();
+			var selected = api.rows({ selected: true }).data();
+			if (!selected.length) { return false; }
+			var href = '" ~ delete_url_template|e('js') ~ "'.replace('__MESSAGE_ID__', encodeURIComponent(selected[0].id));
+			window.open(href, '_self');
+		"
+	}
+] %}
+
+{% set datatable = {
+	'source': api_url,
+	'new_item': compose_url,
+	'select_all': '1',
+	'sorted_by': {'key': 0, 'dir': 'desc'},
+	'actions': actions,
+	'field': [
+		{'key': 'id', 'label': lang('ID'), 'sortable': 1, 'searchable': 0, 'hidden': 0, 'formatter': 'messengerFormatCell'},
+		{'key': 'date', 'label': lang('Date'), 'sortable': 1, 'searchable': 0, 'hidden': 0, 'formatter': 'messengerFormatCell'},
+		{'key': 'from', 'label': lang('From'), 'sortable': 1, 'searchable': 1, 'hidden': 0, 'formatter': 'messengerFormatCell'},
+		{'key': 'subject', 'label': lang('Subject'), 'sortable': 1, 'searchable': 1, 'hidden': 0, 'formatter': 'messengerFormatCell'},
+		{'key': 'status', 'label': lang('Status'), 'sortable': 0, 'searchable': 0, 'hidden': 1},
+		{'key': 'status_text', 'label': lang('Status'), 'sortable': 0, 'searchable': 0, 'hidden': 0, 'formatter': 'messengerFormatCell'},
+	]
+} %}
+
+{% set form = {
+	'toolbar': {
+		'item': [
+			{'name': 'status', 'text': lang('Status'), 'type': 'filter', 'list': statuses|default([])}
+		]
+	}
+} %}
+
+{% include 'datatable2.twig' with {
+	'data': {'filters': {}},
+	'datatable': datatable,
+	'form': form
+} %}
+{% endblock %}

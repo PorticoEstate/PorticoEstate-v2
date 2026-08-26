@@ -45,3 +45,4 @@ read message	messenger	no	Les melding
 select	messenger	no	Velg
 content	messenger	no	Melding
 you must select a user to send this message to	messenger	no	Velg en bruker å sende meldingen til
+old	messenger	no	Lest

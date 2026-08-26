@@ -240,6 +240,21 @@ class messenger_bomessenger
 		}
 	}
 
+	
+	private function get_status_text($status)
+	{
+		
+		static $status_texts = [
+			'N' => lang('New'),
+			'R' => lang('Replied'),
+			'O' => lang('Old'),
+			'F' => lang('Forwarded'),
+		];
+	
+		return isset($status_texts[$status]) ? $status_texts[$status] : '';
+	}
+	
+	
 	function read_inbox($params)
 	{
 		$_messages = array();
@@ -248,6 +263,8 @@ class messenger_bomessenger
 
 		foreach ($messages as $message)
 		{
+
+			$message['status_text'] = $this->get_status_text($message['status']);
 			if ($message['from'] == -1)
 			{
 				$cached['-1'] = -1;
@@ -271,7 +288,7 @@ class messenger_bomessenger
 			if ($message['status'] == 'N')
 			{
 				$message['subject'] = '<b>' . $message['subject'] . '</b>';
-				$message['status'] = '&nbsp;';
+//				$message['status'] = '&nbsp;';
 				$message['date'] = '<b>' . $this->phpgwapi_common->show_date($message['date']) . '</b>';
 				$message['from'] = '<b>' . $cached_names[$message['from']] . '</b>';
 			}
@@ -283,13 +300,14 @@ class messenger_bomessenger
 
 			if ($message['status'] == 'O')
 			{
-				$message['status'] = '&nbsp;';
+//				$message['status'] = '&nbsp;';
 			}
 
 			$_messages[] = array(
 				'id' => $message['id'],
 				'from' => $message['from'],
 				'status' => $message['status'],
+				'status_text' => $message['status_text'],
 				'date' => $message['date'],
 				'subject' => $message['subject']
 			);

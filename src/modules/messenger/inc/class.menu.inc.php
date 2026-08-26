@@ -135,7 +135,7 @@ class messenger_menu
 		if ($acl->check('.compose_global', ACL_ADD, 'messenger'))
 		{
 			$menus['navigation']['compose_global'] = array(
-				'url' => phpgw::link('/index.php', array('menuaction' => 'messenger.uimessenger.compose_global')),
+				'url' => phpgw::link('/messenger/view/compose-global'),
 				'text' => $translation->translate('compose global', array(), false, 'messenger'),
 			);
 		}

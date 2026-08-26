@@ -138,6 +138,20 @@ class MessengerViewController
 		]);
 	}
 
+	public function composeGlobal(Request $request, Response $response): Response
+	{
+		if (!Acl::getInstance()->check('.compose_global', Acl::ADD, 'messenger') && !Acl::getInstance()->check('run', Acl::ADD, 'admin'))
+		{
+			$response->getBody()->write(lang('Access not permitted'));
+			return $response->withStatus(403)->withHeader('Content-Type', 'text/plain');
+		}
+
+		return $this->render($request, $response, '@views/messenger/compose_global/messenger_compose_global.twig', [
+			'api_url' => \phpgw::link('/messenger/messages/global'),
+			'inbox_url' => \phpgw::link('/messenger/view/inbox'),
+		]);
+	}
+
 	public function read(Request $request, Response $response, array $args): Response
 	{
 		$id = (int) ($args['id'] ?? 0);

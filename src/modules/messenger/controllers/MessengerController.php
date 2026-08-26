@@ -208,6 +208,37 @@ class MessengerController
 		return $this->json($response, ['sent' => true, 'receipt' => $receipt]);
 	}
 
+	public function storeGlobal(Request $request, Response $response): Response
+	{
+		$acl = Acl::getInstance();
+		if (!$acl->check('.compose_global', Acl::ADD, 'messenger') && !$acl->check('run', Acl::ADD, 'admin'))
+		{
+			return $this->json($response, ['error' => 'Access not permitted'], 403);
+		}
+
+		$payload = $this->payload($request);
+		$subject = trim((string) ($payload['subject'] ?? ''));
+		$content = trim((string) ($payload['content'] ?? ''));
+		if ($subject === '' || $content === '')
+		{
+			return $this->json($response, ['error' => 'Global message validation failed', 'errors' => array_values(array_filter([
+				$subject === '' ? lang('Missing subject') : '',
+				$content === '' ? lang('Missing content') : '',
+			]))], 422);
+		}
+
+		$bo = $this->businessObject();
+		$accounts = new Accounts();
+		$bo->so->transaction_begin();
+		foreach ((array) $accounts->get_list('accounts') as $account)
+		{
+			$bo->so->send_message(['to' => (int) $account->id, 'subject' => $subject, 'content' => $content], true);
+		}
+		$bo->so->transaction_commit();
+
+		return $this->json($response, ['sent' => true]);
+	}
+
 	public function store(Request $request, Response $response): Response
 	{
 		$parsedBody = $request->getParsedBody();

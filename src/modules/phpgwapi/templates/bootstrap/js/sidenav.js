@@ -256,8 +256,7 @@ function get_messages()
 	//	var profile_img = phpGWLink('phpgwapi/templates/bootstrap/images/undraw_profile.svg', {}, false);
 
 	var htmlString = '';
-	var oArgs = { menuaction: 'messenger.uimessenger.index', status: 'N' };
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var requestUrl = phpGWLink('messenger/messages', { status: 'N', draw: 1 }, true);
 	$.ajax({
 		type: 'GET',
 		url: requestUrl,

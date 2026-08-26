@@ -45,3 +45,4 @@ read message	messenger	nn	Les melding
 select	messenger	nn	Velg
 content	messenger	nn	Melding
 you must select a user to send this message to	messenger	nn	Vel ein bruker å sende meldingen til
+old	messenger	nn	Lest

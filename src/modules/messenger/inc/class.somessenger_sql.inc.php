@@ -44,7 +44,7 @@ class messenger_somessenger extends messenger_somessenger_
 			$filtermethod = " AND (message_subject {$this->like} '%$query%'"
 				. " OR message_content {$this->like} '%$query%')";
 		}
-		if (!empty($params['status']) && in_array($params['status'], array('N', 'O')))
+		if (!empty($params['status']) && in_array($params['status'], array('N', 'R', 'O', 'F'), true))
 		{
 			$status = $this->db->db_addslashes(strtoupper($params['status']));
 			$filtermethod .= " AND message_status = '$status'";

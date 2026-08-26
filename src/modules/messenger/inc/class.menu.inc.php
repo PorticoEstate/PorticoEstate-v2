@@ -57,7 +57,7 @@ class messenger_menu
 		$menus['navbar'] = array(
 			'messenger' => array(
 				'text' => lang('messenger'),
-				'url' => phpgw::link('/index.php', array('menuaction' => "messenger.uimessenger.index")),
+				'url' => phpgw::link('/messenger/view/inbox'),
 				'image' => array('messenger', 'navbar'),
 				'order' => 35,
 				'group' => 'office'
@@ -113,7 +113,7 @@ class messenger_menu
 
 		$menus['navigation'] = array(
 			'inbox' => array(
-				'url' => phpgw::link('/index.php', array('menuaction' => 'messenger.uimessenger.index')),
+				'url' => phpgw::link('/messenger/view/inbox'),
 				'text' => $translation->translate('inbox', array(), false, 'messenger'),
 				'image' => array('messenger', 'navbar')
 			)
@@ -121,21 +121,21 @@ class messenger_menu
 		if ($acl->check('.compose', ACL_ADD, 'messenger'))
 		{
 			$menus['navigation']['compose'] = array(
-				'url' => phpgw::link('/index.php', array('menuaction' => 'messenger.uimessenger.compose')),
+				'url' => phpgw::link('/messenger/view/compose'),
 				'text' => $translation->translate('compose', array(), false, 'messenger'),
 			);
 		}
 		if ($acl->check('.compose_groups', ACL_ADD, 'messenger'))
 		{
 			$menus['navigation']['compose_groups'] = array(
-				'url' => phpgw::link('/index.php', array('menuaction' => 'messenger.uimessenger.compose_groups')),
+				'url' => phpgw::link('/messenger/view/compose-groups'),
 				'text' => $translation->translate('compose groups', array(), false, 'messenger'),
 			);
 		}
 		if ($acl->check('.compose_global', ACL_ADD, 'messenger'))
 		{
 			$menus['navigation']['compose_global'] = array(
-				'url' => phpgw::link('/index.php', array('menuaction' => 'messenger.uimessenger.compose_global')),
+				'url' => phpgw::link('/messenger/view/compose-global'),
 				'text' => $translation->translate('compose global', array(), false, 'messenger'),
 			);
 		}

@@ -366,7 +366,7 @@ HTML;
 			$new_messages_alert	 = '';
 		}
 
-		$link_messages = phpgw::link('/index.php', array('menuaction' => 'messenger.uimessenger.index'));
+		$link_messages = phpgw::link('/messenger/view/inbox');
 
 		$lang_messenger = Translation::getInstance()->translate('messenger', array(), true);
 		$lang_read_messages = Translation::getInstance()->translate('read messages', array(), false, 'messenger');

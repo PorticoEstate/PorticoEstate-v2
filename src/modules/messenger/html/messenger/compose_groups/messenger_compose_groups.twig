@@ -1,19 +1,32 @@
 {% extends layout|default('@views/_bare.twig') %}
 {% block title %}{{ lang('Compose global message') }}{% endblock %}
-{% block styles %}<style>{{ source('@views/messenger/compose_groups/messenger_compose_groups.css') }}</style>{% endblock %}
+{% block styles %}
+	<style>{{ source('@views/messenger/compose_groups/messenger_compose_groups.css') }}</style>
+{% endblock %}
 {% block content %}
 <div id="messenger-compose-groups-app" class="messenger-message-page" data-api-url="{{ api_url|e }}" data-action-url="{{ action_url|e }}" data-back-url="{{ inbox_url|e }}" data-placeholder="{{ lang('Select')|e('html_attr') }}" data-csrf-name="{{ csrf.name|e('html_attr') }}" data-csrf-value="{{ csrf.value|e('html_attr') }}">
 	<h1>{{ lang('Compose message') }} {{ lang('to groups') }}</h1>
 	<div id="messenger-compose-groups-error" class="messenger-message messenger-message--error" hidden></div>
 	<form id="messenger-compose-groups-form" class="messenger-form">
 		<label for="messenger-groups">{{ lang('Groups') }}</label>
-		<select id="messenger-groups" name="account_groups[]" multiple required><option value="">{{ lang('Select') }}</option></select>
+		<select id="messenger-groups" name="account_groups[]" multiple required>
+			<option value="">{{ lang('Select') }}</option>
+		</select>
+
 		<label for="messenger-groups-subject">{{ lang('Subject') }}</label>
 		<input id="messenger-groups-subject" name="subject" required>
+
 		<label for="messenger-groups-content">{{ lang('Message') }}</label>
 		<textarea id="messenger-groups-content" name="content" rows="12" required></textarea>
-		<div class="messenger-form__actions"><button class="messenger-button" type="submit">{{ lang('Send') }}</button><a class="messenger-button messenger-button--secondary" href="{{ inbox_url|e }}">{{ lang('Cancel') }}</a></div>
+
+		<div class="messenger-form__actions">
+			<button class="messenger-button" type="submit">{{ lang('Send') }}</button>
+			<a class="messenger-button messenger-button--secondary" href="{{ inbox_url|e }}">{{ lang('Cancel') }}</a>
+		</div>
 	</form>
 </div>
 {% endblock %}
-{% block scripts %}<script>{{ source('@views/messenger/compose_groups/messenger_compose_groups.js') }}</script>{% endblock %}
+
+{% block scripts %}
+	<script>{{ source('@views/messenger/compose_groups/messenger_compose_groups.js') }}</script>
+{% endblock %}

@@ -128,7 +128,7 @@ class messenger_menu
 		if ($acl->check('.compose_groups', ACL_ADD, 'messenger'))
 		{
 			$menus['navigation']['compose_groups'] = array(
-				'url' => phpgw::link('/index.php', array('menuaction' => 'messenger.uimessenger.compose_groups')),
+				'url' => phpgw::link('/messenger/view/compose-groups'),
 				'text' => $translation->translate('compose groups', array(), false, 'messenger'),
 			);
 		}

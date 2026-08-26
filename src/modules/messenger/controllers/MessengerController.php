@@ -4,6 +4,9 @@ namespace App\modules\messenger\controllers;
 
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use App\modules\phpgwapi\controllers\Accounts\Accounts;
+use App\modules\phpgwapi\security\Acl;
+use App\modules\phpgwapi\services\Settings;
 
 class MessengerController
 {
@@ -127,6 +130,82 @@ class MessengerController
 		}
 
 		return $this->json($response, ['data' => $users]);
+	}
+
+	public function groups(Request $request, Response $response): Response
+	{
+		if (!Acl::getInstance()->check('.compose_groups', Acl::ADD, 'messenger'))
+		{
+			return $this->json($response, ['error' => 'Access not permitted'], 403);
+		}
+
+		return $this->json($response, ['data' => $this->availableGroups()]);
+	}
+
+	private function availableGroups(): array
+	{
+		$accounts = new Accounts();
+		$allGroups = $accounts->get_list('groups');
+		$validGroups = array_keys($allGroups);
+		$bo = $this->businessObject();
+		if (!Acl::getInstance()->check('run', Acl::READ, 'admin'))
+		{
+			$validGroups = [];
+			$userSettings = Settings::getInstance()->get('user');
+			foreach ((array) ($userSettings['apps'] ?? []) as $app => $unused)
+			{
+				if (Acl::getInstance()->check('admin', Acl::ADD, $app))
+				{
+					$validGroups = array_merge($validGroups, Acl::getInstance()->get_ids_for_location('run', Acl::READ, $app));
+				}
+			}
+			$validGroups = array_unique(array_map('intval', $validGroups));
+		}
+
+		$groups = [];
+		foreach ($allGroups as $group)
+		{
+			if (in_array((int) $group->id, $validGroups, true))
+			{
+				$groups[] = ['id' => (int) $group->id, 'name' => (string) $group];
+			}
+		}
+		return $groups;
+	}
+
+	public function storeGroups(Request $request, Response $response): Response
+	{
+		if (!Acl::getInstance()->check('.compose_groups', Acl::ADD, 'messenger'))
+		{
+			return $this->json($response, ['error' => 'Access not permitted'], 403);
+		}
+
+		$payload = $this->payload($request);
+		$groups = array_values(array_filter(array_map('intval', (array) ($payload['account_groups'] ?? [])), static fn (int $id): bool => $id > 0));
+		$subject = trim((string) ($payload['subject'] ?? ''));
+		$content = trim((string) ($payload['content'] ?? ''));
+		if (!$groups || $subject === '' || $content === '')
+		{
+			return $this->json($response, ['error' => 'Group message validation failed', 'errors' => array_values(array_filter([
+				!$groups ? lang('Missing groups') : '',
+				$subject === '' ? lang('Missing subject') : '',
+				$content === '' ? lang('Missing content') : '',
+			]))], 422);
+		}
+
+		$allowedIds = array_column($this->availableGroups(), 'id');
+		$groups = array_values(array_intersect($groups, $allowedIds));
+		if (!$groups)
+		{
+			return $this->json($response, ['error' => 'No permitted groups selected'], 403);
+		}
+
+		$receipt = $this->businessObject()->send_to_groups([
+			'account_groups' => $groups,
+			'subject' => $subject,
+			'content' => $content,
+		]);
+		return $this->json($response, ['sent' => true, 'receipt' => $receipt]);
 	}
 
 	public function store(Request $request, Response $response): Response

@@ -4,6 +4,7 @@ namespace App\modules\messenger\viewcontrollers;
 
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
+use App\modules\phpgwapi\security\Acl;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -116,6 +117,24 @@ class MessengerViewController
 			'mode' => 'compose',
 			'api_url' => \phpgw::link('/messenger/messages'),
 			'users_url' => \phpgw::link('/messenger/messages/users'),
+		]);
+	}
+
+	public function composeGroups(Request $request, Response $response): Response
+	{
+		if (!Acl::getInstance()->check('.compose_groups', Acl::ADD, 'messenger'))
+		{
+			$response->getBody()->write(lang('Access not permitted'));
+			return $response->withStatus(403)->withHeader('Content-Type', 'text/plain');
+		}
+
+		\phpgw::import_class('phpgwapi.jquery');
+		\phpgwapi_jquery::load_widget('select2');
+
+		return $this->render($request, $response, '@views/messenger/compose_groups/messenger_compose_groups.twig', [
+			'api_url' => \phpgw::link('/messenger/messages/groups'),
+			'action_url' => \phpgw::link('/messenger/messages/groups'),
+			'inbox_url' => \phpgw::link('/messenger/view/inbox'),
 		]);
 	}
 

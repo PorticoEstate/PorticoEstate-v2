@@ -65,6 +65,7 @@ $app->group('/messenger', function (RouteCollectorProxy $group) use ($messengerC
 	{
 		$viewGroup->get('/inbox', MessengerViewController::class . ':inbox');
 		$viewGroup->get('/compose', MessengerViewController::class . ':compose');
+		$viewGroup->get('/compose-groups', MessengerViewController::class . ':composeGroups');
 		$viewGroup->get('/messages/{id:[0-9]+}', MessengerViewController::class . ':read');
 		$viewGroup->get('/messages/{id:[0-9]+}/reply', MessengerViewController::class . ':reply');
 		$viewGroup->get('/messages/{id:[0-9]+}/forward', MessengerViewController::class . ':forward');
@@ -73,7 +74,9 @@ $app->group('/messenger', function (RouteCollectorProxy $group) use ($messengerC
 
 	$group->get('/messages', MessengerController::class . ':index');
 	$group->get('/messages/users', MessengerController::class . ':users');
+	$group->get('/messages/groups', MessengerController::class . ':groups');
 	$group->post('/messages', MessengerController::class . ':store')->add($messengerCsrfMiddleware);
+	$group->post('/messages/groups', MessengerController::class . ':storeGroups')->add($messengerCsrfMiddleware);
 	$group->get('/messages/{id:[0-9]+}', MessengerController::class . ':show');
 	$group->post('/messages/{id:[0-9]+}/reply', MessengerController::class . ':reply')->add($messengerCsrfMiddleware);
 	$group->post('/messages/{id:[0-9]+}/forward', MessengerController::class . ':forward')->add($messengerCsrfMiddleware);

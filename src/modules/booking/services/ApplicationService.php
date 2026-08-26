@@ -574,6 +574,10 @@ class ApplicationService
 		// Determine end date
 		$repeatUntilTs = null;
 		$seasonInfo = null;
+		// Whether the resolved bound is an INCLUSIVE end DATE that has to be
+		// advanced by one whole day - see the comment above the bump below. Every
+		// branch that assigns $repeatUntilTs sets this explicitly.
+		$boundIsInclusive = false;
 		$buildingId = (int) ($app['building_id'] ?? 0);
 
 		if ($buildingId > 0) {
@@ -587,23 +591,59 @@ class ApplicationService
 				];
 
 				if (!empty($recurringData['outseason'])) {
-					// Use season end date
+					// Use season end date - inclusive (legacy :789)
 					$repeatUntilTs = strtotime($season['to_']);
+					$boundIsInclusive = true;
 				}
 			}
 		}
 
 		if ($repeatUntilTs === null && !empty($recurringData['repeat_until'])) {
+			// The date the citizen picked - inclusive (legacy :783)
 			$repeatUntilTs = strtotime($recurringData['repeat_until']);
+			$boundIsInclusive = true;
 		}
 
 		// Fallback: season end or +3 months from first date (matches legacy DateInterval P3M)
 		if (!$repeatUntilTs) {
 			if ($seasonInfo) {
+				// Season end - inclusive (legacy :789), same as the outseason path
 				$repeatUntilTs = strtotime($seasonInfo['to_']);
+				$boundIsInclusive = true;
 			} else {
+				// NOT inclusive and NOT bumped - see the comment below
 				$repeatUntilTs = strtotime('+3 months', $fromTs);
+				$boundIsInclusive = false;
 			}
+		}
+
+		// An INCLUSIVE end DATE has to be advanced by one whole day. A citizen who
+		// picks 24.09 means "and including 24.09", but a bare date parses to
+		// midnight at the START of that day, and the loop below compares each
+		// occurrence's END datetime against this bound - so an occurrence on the
+		// boundary date (13:00-14:00, say) is strictly greater than its own day's
+		// midnight and gets dropped, at every interval. The legacy allocation
+		// wizard advances the bound for exactly this reason, and this bump covers
+		// precisely the branches legacy does:
+		//   - the date the citizen picked  (class.uiallocation.inc.php:783)
+		//   - the season end, both paths   (class.uiallocation.inc.php:789)
+		// both `+ 60 * 60 * 24`, which is why legacy lists 5 occurrences where this
+		// path listed 4 on identical input.
+		//
+		// The `+3 months` fallback is DELIBERATELY EXCLUDED. It is not a date
+		// anyone picked and it has no legacy analogue: class.uiapplication.inc.php
+		// :4914-4915 is `clone $from_time; ->add(new DateInterval('P3M'))` with no
+		// +1 day, and the allocation wizard has no such branch at all. The premise
+		// above does not hold there either - strtotime('+3 months', $fromTs) carries
+		// the start TIME (13:00), not midnight, so there is nothing to advance past.
+		// Bumping it grew the series by an occurrence legacy never produced (14
+		// where legacy gives 13, on a weekly series from 2026-04-02 13:00).
+		//
+		// Raw seconds rather than day-aware arithmetic on purpose: legacy expands
+		// the whole series in raw seconds ($interval = weeks * 60*60*24*7), so only
+		// raw seconds reproduces it across a DST transition too.
+		if ($boundIsInclusive) {
+			$repeatUntilTs += 86400;
 		}
 
 		// Fetch resources and existing allocations

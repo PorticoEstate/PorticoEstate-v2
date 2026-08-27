@@ -1086,15 +1086,57 @@ class ApplicationRepository
     }
 
     /**
-     * Update bb_application.from_ to the earliest date from bb_application_date
+     * Update bb_application.from_ to the earliest date the application covers.
+     *
+     * For a plain application that is its own dates. For a combined application the
+     * value spans the parent AND its active children, so a child's earlier date has
+     * to reach the parent -- taking MIN over the row's own dates alone would leave a
+     * combined parent reporting a start it does not actually have.
+     *
+     * Two statements, because either end of the relation can be the row that just
+     * changed: the first re-derives THIS row (as a parent, if it is one), the second
+     * re-derives its parent (if it is a child). The second is a no-op for every row
+     * whose parent_id is NULL or equal to its own id.
      */
     public function syncApplicationFromDate(int $applicationId): void
     {
         $sql = "UPDATE bb_application SET from_ = (
-            SELECT MIN(from_) FROM bb_application_date WHERE application_id = :app_id
+            SELECT MIN(all_dates.from_) FROM (
+                SELECT d.from_ FROM bb_application_date d WHERE d.application_id = :app_id
+                UNION ALL
+                SELECT cd.from_
+                  FROM bb_application c
+                  JOIN bb_application_date cd ON cd.application_id = c.id
+                 WHERE c.parent_id = :app_id_children
+                   AND c.id != c.parent_id
+                   AND c.active = 1
+            ) all_dates
         ) WHERE id = :id";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([':app_id' => $applicationId, ':id' => $applicationId]);
+        $stmt->execute([
+            ':app_id' => $applicationId,
+            ':app_id_children' => $applicationId,
+            ':id' => $applicationId
+        ]);
+
+        $sql = "UPDATE bb_application SET from_ = (
+            SELECT MIN(all_dates.from_) FROM (
+                SELECT d.from_ FROM bb_application_date d WHERE d.application_id = bb_application.id
+                UNION ALL
+                SELECT cd.from_
+                  FROM bb_application c
+                  JOIN bb_application_date cd ON cd.application_id = c.id
+                 WHERE c.parent_id = bb_application.id
+                   AND c.id != c.parent_id
+                   AND c.active = 1
+            ) all_dates
+        )
+        WHERE id = (
+            SELECT parent_id FROM bb_application
+             WHERE id = :app_id AND parent_id IS NOT NULL AND parent_id != id
+        )";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':app_id' => $applicationId]);
     }
 
     /**

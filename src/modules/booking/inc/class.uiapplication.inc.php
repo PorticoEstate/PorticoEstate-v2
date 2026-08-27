@@ -809,14 +809,18 @@ class booking_uiapplication extends booking_uicommon
 				$application['case_officer_name'] = $this->accounts_obj->get($application['case_officer_id'])->__toString();
 			}
 
-			$dates = array();
-			foreach ($application['dates'] as $data)
-			{
-				$dates[] = $data['from_'];
-				break;
-			}
-			$fromdate = implode(',', $dates);
-			$application['from_'] = pretty_timestamp($fromdate);
+			// The Fra column shows bb_application.from_, which the writers keep at the
+			// earliest date the application covers -- for a combined application that
+			// spans the parent AND its active children.
+			//
+			// This used to take $application['dates'][0] instead. Two things were wrong
+			// with that: the dates manytomany carries no 'order' (socommon only emits an
+			// ORDER BY when one is declared), so element 0 was whichever row Postgres
+			// happened to return first and not necessarily the earliest; and a parent's
+			// own dates say nothing about a child that starts earlier.
+			$application['from_'] = !empty($application['from_'])
+				? pretty_timestamp($application['from_'])
+				: '';
 
 			// Add child application count only if combining applications
 			if ($this->combine_applications)

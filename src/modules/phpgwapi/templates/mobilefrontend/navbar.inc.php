@@ -331,11 +331,12 @@ HTML;
 	$var['current_app_title'] = isset($flags['app_header']) ? $flags['app_header'] : lang($flags['currentapp']);
 	$flags['menu_selection'] = isset($flags['menu_selection']) ? $flags['menu_selection'] : '';
 	$breadcrumb_selection = !empty($flags['breadcrumb_selection']) ? $flags['breadcrumb_selection'] : $flags['menu_selection'];
-	// breadcrumbs
-
+	$request_uri = Sanitizer::get_var('REQUEST_URI', 'string', 'SERVER');
+	$request_uri = html_entity_decode($request_uri, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+	// breadcrumbs: keep route URLs as actual paths, preserve legacy menuaction links otherwise.
 	$current_url = array(
 		'id'	=> $breadcrumb_selection,
-		'url' => '?' . http_build_query($extra_vars),
+		'url' => $request_uri ?: ('?' . http_build_query($extra_vars)),
 		'name'	=> $var['current_app_title']
 	);
 	$breadcrumbs = Cache::session_get('phpgwapi', 'breadcrumbs');

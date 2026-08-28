@@ -268,7 +268,7 @@ function get_messages()
 		{
 			if (data)
 			{
-				var obj = data.data;
+				var obj = data.data || [];
 				$.each(obj, function (i)
 				{
 					var font_class = '';
@@ -276,9 +276,10 @@ function get_messages()
 					{
 						font_class = 'app-messenger__message--unread';
 					}
-					htmlString += '<a class="ds-button app-messenger__message" data-variant="tertiary" href="' + obj[i].link + '">';
+					var link = phpGWLink('messenger/view/messages/' + obj[i].id, {}, true);
+					htmlString += '<a class="ds-button app-messenger__message" data-variant="tertiary" href="' + link + '">';
 					htmlString += '		<div class="' + font_class + '">';
-					htmlString += '			<div class="app-messenger__subject">' + strip_html(obj[i].subject_text) + '</div>';
+					htmlString += '			<div class="app-messenger__subject">' + strip_html(obj[i].subject) + '</div>';
 					htmlString += '			<div class="app-messenger__meta">' + strip_html(obj[i].from) + ' · ' + strip_html(obj[i].date) + '</div>';
 					htmlString += '		</div>';
 					htmlString += '</a>';

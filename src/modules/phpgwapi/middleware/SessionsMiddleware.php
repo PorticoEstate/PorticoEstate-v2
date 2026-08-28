@@ -152,9 +152,11 @@ class SessionsMiddleware implements MiddlewareInterface
 			}
 			else if ($second_pass)
 			{
+				// a stale second-pass cookie can land us here on the actual deep-link
+				// request itself, so capture it before bouncing to the login form
+				(new Login())->rememberRedirectDestination();
 				$sessions->phpgw_setcookie('login_second_pass', false);
 				\phpgw::redirect_link('/login_ui');
-				//return $this->sendErrorResponse(['msg' => 'A valid session could not be found'], 401);
 			}
 			else
 			{

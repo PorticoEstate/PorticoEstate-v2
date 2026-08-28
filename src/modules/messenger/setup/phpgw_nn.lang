@@ -1,6 +1,6 @@
 read messages	common	nn	Les meldingar
 compose	messenger	nn	Ny melding
-compose global message	admin	nn	Ny global melding
+compose global message	messenger	nn	Ny global melding
 compose message	messenger	nn	Ny melding
 delete a message.	messenger	nn	slett ei melding.
 delete selected	messenger	nn	Slett valgt
@@ -46,3 +46,4 @@ select	messenger	nn	Velg
 content	messenger	nn	Melding
 you must select a user to send this message to	messenger	nn	Vel ein bruker å sende meldingen til
 old	messenger	nn	Lest
+to groups	messenger	nn	Til grupper

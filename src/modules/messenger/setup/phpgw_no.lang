@@ -1,6 +1,6 @@
 read messages	common	no	Les meldinger
 compose	messenger	no	Ny melding
-compose global message	admin	no	Ny global melding
+compose global message	messenger	no	Ny global melding
 compose message	messenger	no	Ny melding
 delete a message.	messenger	no	slett en melding.
 delete selected	messenger	no	Slett valgt
@@ -46,3 +46,4 @@ select	messenger	no	Velg
 content	messenger	no	Melding
 you must select a user to send this message to	messenger	no	Velg en bruker å sende meldingen til
 old	messenger	no	Lest
+to groups	messenger	no	Til grupper

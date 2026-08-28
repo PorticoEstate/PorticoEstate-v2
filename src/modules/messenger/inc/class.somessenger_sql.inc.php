@@ -15,11 +15,18 @@
 /* $Id$ */
 
 use App\Database\Db;
+use App\traits\DbRowTrait;
+use PDO;
+
 
 class messenger_somessenger extends messenger_somessenger_
 {
+	use DbRowTrait;
 
 	var $db, $connected, $like;
+
+	/** @var string[] columns allowed in ORDER BY, to avoid injecting arbitrary SQL via $params['order'] */
+	private static $sortable_columns = array('message_id', 'message_from', 'message_status', 'message_date', 'message_subject');
 
 	function __construct()
 	{
@@ -31,43 +38,51 @@ class messenger_somessenger extends messenger_somessenger_
 
 	function update_message_status($status, $message_id)
 	{
-		$this->db->query("update phpgw_messenger_messages set message_status='$status' where message_id='"
-			. $message_id . "' and message_owner='" . $this->owner . "'", __LINE__, __FILE__);
+		$stmt = $this->db->prepare('UPDATE phpgw_messenger_messages SET message_status = :status'
+			. ' WHERE message_id = :message_id AND message_owner = :owner');
+		$stmt->execute([
+			':status' => $status,
+			':message_id' => $message_id,
+			':owner' => $this->owner,
+		]);
 	}
 
 	function read_inbox($params)
 	{
 		$filtermethod = '';
+		$queryParams = [':owner' => $this->owner];
+
 		if (!empty($params['query']))
 		{
-			$query = $this->db->db_addslashes($params['query']);
-			$filtermethod = " AND (message_subject {$this->like} '%$query%'"
-				. " OR message_content {$this->like} '%$query%')";
+			$filtermethod = " AND (message_subject {$this->like} :search1 OR message_content {$this->like} :search2)";
+			$queryParams[':search1'] = '%' . $params['query'] . '%';
+			$queryParams[':search2'] = '%' . $params['query'] . '%';
 		}
 		if (!empty($params['status']) && in_array($params['status'], array('N', 'R', 'O', 'F'), true))
 		{
-			$status = $this->db->db_addslashes(strtoupper($params['status']));
-			$filtermethod .= " AND message_status = '$status'";
+			$filtermethod .= " AND message_status = :status";
+			$queryParams[':status'] = strtoupper($params['status']);
 		}
 		$sortmethod = '';
-		if (!empty($params['sort']) && !empty($params['order']))
+		if (!empty($params['order']) && in_array($params['order'], self::$sortable_columns, true))
 		{
-			$sortmethod = " ORDER BY {$params['order']} {$params['sort']}";
+			$sort = strtoupper($params['sort']) === 'DESC' ? 'DESC' : 'ASC';
+			$sortmethod = " ORDER BY {$params['order']} {$sort}";
 		}
 
-		$this->db->limit_query("SELECT * FROM phpgw_messenger_messages"
-			. " WHERE message_owner='{$this->owner}'"
-			. "{$filtermethod}{$sortmethod}", $params['start'], __LINE__, __FILE__);
+		$sql = "SELECT * FROM phpgw_messenger_messages WHERE message_owner = :owner{$filtermethod}{$sortmethod}";
+
+		$this->db->limit_query_with_params($sql, $queryParams, (int)$params['start'], __LINE__, __FILE__);
 
 		$messages = array();
-		while ($this->db->next_record())
+		foreach ($this->db->resultSet as $row)
 		{
 			$messages[] = array(
-				'id' => $this->db->f('message_id'),
-				'from' => $this->db->f('message_from'),
-				'status' => $this->db->f('message_status'),
-				'date' => $this->db->f('message_date'),
-				'subject' => $this->db->f('message_subject', true)
+				'id' => $row['message_id'],
+				'from' => $row['message_from'],
+				'status' => $row['message_status'],
+				'date' => $row['message_date'],
+				'subject' => $this->dbStrip($row['message_subject'])
 			);
 		}
 		return $messages;
@@ -75,18 +90,23 @@ class messenger_somessenger extends messenger_somessenger_
 
 	function read_message($message_id)
 	{
-		$this->db->query("SELECT * FROM phpgw_messenger_messages WHERE message_id='"
-			. $message_id . "' and message_owner='" . $this->owner . "'", __LINE__, __FILE__);
-		$this->db->next_record();
+		$stmt = $this->db->prepare('SELECT * FROM phpgw_messenger_messages'
+			. ' WHERE message_id = :message_id AND message_owner = :owner');
+		$stmt->execute([
+			':message_id' => $message_id,
+			':owner' => $this->owner,
+		]);
+		$row = $stmt->fetch(PDO::FETCH_ASSOC);
+
 		$message = array(
-			'id' => $this->db->f('message_id'),
-			'from' => $this->db->f('message_from'),
-			'status' => $this->db->f('message_status'),
-			'date' => $this->db->f('message_date'),
-			'subject' => $this->db->f('message_subject', true),
-			'content' => htmlspecialchars_decode($this->db->f('message_content', true))
+			'id' => $row['message_id'],
+			'from' => $row['message_from'],
+			'status' => $row['message_status'],
+			'date' => $row['message_date'],
+			'subject' => $this->dbStrip($row['message_subject']),
+			'content' => $this->dbStrip($row['message_content'])
 		);
-		if ($this->db->f('message_status') == 'N')
+		if ($row['message_status'] == 'N')
 		{
 			$this->update_message_status('O', $message_id);
 		}
@@ -105,25 +125,36 @@ class messenger_somessenger extends messenger_somessenger_
 			$message['to'] = $this->accounts_obj->name2id($message['to']);
 		}
 
-		$this->db->query("insert into phpgw_messenger_messages (message_owner, message_from, message_status, "
-			. "message_date, message_subject, message_content) values ('"
-			. $message['to'] . "','" . $this->owner . "','N','" . time() . "','"
-			. addslashes($message['subject']) . "','" . addslashes($message['content'])
-			. "')", __LINE__, __FILE__);
+		$stmt = $this->db->prepare('INSERT INTO phpgw_messenger_messages'
+			. ' (message_owner, message_from, message_status, message_date, message_subject, message_content)'
+			. ' VALUES (:to, :from, :status, :date, :subject, :content)');
+		$stmt->execute([
+			':to' => $message['to'],
+			':from' => $this->owner,
+			':status' => 'N',
+			':date' => time(),
+			':subject' => $message['subject'],
+			':content' => $message['content'],
+		]);
 	}
 
 	function total_messages($extra_where_clause = '')
 	{
-		$this->db->query("select count(*) as cnt from phpgw_messenger_messages where message_owner='"
-			. $this->owner . "' " . $extra_where_clause, __LINE__, __FILE__);
-		$this->db->next_record();
-		return $this->db->f('cnt');
+		$stmt = $this->db->prepare('SELECT count(*) as cnt FROM phpgw_messenger_messages'
+			. ' WHERE message_owner = :owner ' . $extra_where_clause);
+		$stmt->execute([':owner' => $this->owner]);
+		$row = $stmt->fetch(PDO::FETCH_ASSOC);
+		return $row['cnt'];
 	}
 
 	function delete_message($message_id)
 	{
-		$this->db->query("delete from phpgw_messenger_messages where message_id='$message_id' and "
-			. "message_owner='" . $this->owner . "'", __LINE__, __FILE__);
+		$stmt = $this->db->prepare('DELETE FROM phpgw_messenger_messages'
+			. ' WHERE message_id = :message_id AND message_owner = :owner');
+		$stmt->execute([
+			':message_id' => $message_id,
+			':owner' => $this->owner,
+		]);
 	}
 
 	function transaction_begin()

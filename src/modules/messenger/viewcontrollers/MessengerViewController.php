@@ -8,11 +8,13 @@ use App\modules\phpgwapi\security\Acl;
 use Slim\Csrf\Guard;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use App\modules\phpgwapi\services\Settings;
 
 class MessengerViewController
 {
 	private TwigHelper $twig;
 	private LegacyViewHelper $legacyView;
+	private $menuSelection = 'messenger';
 
 	public function __construct()
 	{
@@ -61,6 +63,7 @@ class MessengerViewController
 
 	public function inbox(Request $request, Response $response): Response
 	{
+		$this->menuSelection = 'messenger::inbox';
 		\phpgw::import_class('phpgwapi.jquery');
 		\phpgw::import_class('phpgwapi.css');
 		\phpgw::import_class('phpgwapi.js');
@@ -113,7 +116,7 @@ class MessengerViewController
 	{
 		\phpgw::import_class('phpgwapi.jquery');
 		\phpgwapi_jquery::load_widget('select2');
-
+		$this->menuSelection = 'messenger::compose';
 		return $this->render($request, $response, '@views/messenger/compose/messenger_compose.twig', [
 			'mode' => 'compose',
 			'api_url' => \phpgw::link('/messenger/messages'),
@@ -123,6 +126,7 @@ class MessengerViewController
 
 	public function composeGroups(Request $request, Response $response): Response
 	{
+		$this->menuSelection = 'messenger::compose_groups';
 		if (!Acl::getInstance()->check('.compose_groups', Acl::ADD, 'messenger'))
 		{
 			$response->getBody()->write(lang('Access not permitted'));
@@ -141,6 +145,7 @@ class MessengerViewController
 
 	public function composeGlobal(Request $request, Response $response): Response
 	{
+		$this->menuSelection = 'messenger::compose_global';
 		if (!Acl::getInstance()->check('.compose_global', Acl::ADD, 'messenger') && !Acl::getInstance()->check('run', Acl::ADD, 'admin'))
 		{
 			$response->getBody()->write(lang('Access not permitted'));
@@ -155,6 +160,7 @@ class MessengerViewController
 
 	public function read(Request $request, Response $response, array $args): Response
 	{
+		$this->menuSelection = 'messenger::inbox';
 		$id = (int) ($args['id'] ?? 0);
 		return $this->render($request, $response, '@views/messenger/view/messenger_view.twig', [
 			'mode' => 'read',
@@ -190,6 +196,7 @@ class MessengerViewController
 
 	private function messageForm(Request $request, Response $response, array $args, string $mode): Response
 	{
+		$this->menuSelection = 'messenger::compose';
 		$id = (int) ($args['id'] ?? 0);
 		if ($mode === 'forward')
 		{
@@ -225,7 +232,7 @@ class MessengerViewController
 				'name' => $csrfName,
 				'value' => $csrfValue,
 			],
-		])), ['messenger']);
+		])), ['messenger'], $this->menuSelection);
 
 		$response->getBody()->write($html);
 		return $response->withHeader('Content-Type', 'text/html');

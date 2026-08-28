@@ -15,6 +15,7 @@ class TodoViewController
 {
 	protected TwigHelper $twig;
 	protected LegacyViewHelper $legacyView;
+	private $menuSelection = 'todo';
 
 	private function getDatatableI18n(): array
 	{
@@ -231,6 +232,8 @@ class TodoViewController
 	 */
 	public function matrix(Request $request, Response $response): Response
 	{
+		$this->menuSelection = 'todo::todos';
+
 		try {
 			$body = (array) ($request->getParsedBody() ?: []);
 			$query = $request->getQueryParams();
@@ -298,7 +301,7 @@ class TodoViewController
 				'csrf' => $this->getCsrfData($request),
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['todo', 'matrix']);
+			$html = $this->legacyView->render($componentHtml, ['todo', 'matrix'], $this->menuSelection);
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
 		} catch (Exception $e) {
@@ -334,6 +337,7 @@ class TodoViewController
 	 */
 	public function index(Request $request, Response $response): Response
 	{
+		$this->menuSelection = 'todo::todos';
 
 		try {
 			\phpgw::import_class('phpgwapi.jquery');
@@ -406,7 +410,8 @@ class TodoViewController
 
 			$html = $this->legacyView->render(
 				$componentHtml,
-				['todo']
+				['todo'],
+				$this->menuSelection
 			);
 
 			$response->getBody()->write($html);
@@ -424,6 +429,7 @@ class TodoViewController
 	 */
 	public function view(Request $request, Response $response, array $args): Response
 	{
+		$this->menuSelection = 'todo::todos';
 		try {
 			$id = (int) ($args['id'] ?? 0);
 			if ($id <= 0)
@@ -437,7 +443,7 @@ class TodoViewController
 				'csrf' => $this->getCsrfData($request),
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['todo', 'view'], 'todo');
+			$html = $this->legacyView->render($componentHtml, ['todo', 'view'], $this->menuSelection);
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
 		} catch (Exception $e) {
@@ -453,6 +459,7 @@ class TodoViewController
 	 */
 	public function delete(Request $request, Response $response, array $args): Response
 	{
+		$this->menuSelection = 'todo::todos';
 		try {
 			$id = (int) ($args['id'] ?? 0);
 			if ($id <= 0)
@@ -466,7 +473,7 @@ class TodoViewController
 				'csrf' => $this->getCsrfData($request),
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['todo', 'delete'], 'todo');
+			$html = $this->legacyView->render($componentHtml, ['todo', 'delete'], $this->menuSelection);
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
 		} catch (Exception $e) {
@@ -482,6 +489,7 @@ class TodoViewController
 	 */
 	public function add(Request $request, Response $response): Response
 	{
+		$this->menuSelection = 'todo::add';
 		try {
 			\phpgw::import_class('phpgwapi.jquery');
 			\phpgwapi_jquery::load_widget('select2');
@@ -502,7 +510,7 @@ class TodoViewController
 				'selected_parent_id' => isset($query['parent']) ? (int) $query['parent'] : 0,
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['todo', 'add'], 'todo');
+			$html = $this->legacyView->render($componentHtml, ['todo', 'add'], $this->menuSelection);
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
 		} catch (Exception $e) {
@@ -518,6 +526,7 @@ class TodoViewController
 	 */
 	public function edit(Request $request, Response $response, array $args): Response
 	{
+		$this->menuSelection = 'todo::todos';
 		try {
 			$id = (int) ($args['id'] ?? 0);
 			if ($id <= 0)
@@ -568,7 +577,7 @@ class TodoViewController
 				'date_format' => $dateFormat,
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['todo', 'edit'], 'todo');
+			$html = $this->legacyView->render($componentHtml, ['todo', 'edit'], $this->menuSelection);
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
 		} catch (Exception $e) {

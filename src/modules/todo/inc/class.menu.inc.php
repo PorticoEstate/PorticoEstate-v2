@@ -71,7 +71,7 @@ class todo_menu
 		if (isset($userSettings['apps']['admin']))
 		{
 			$menus['admin'] = array(
-				'categories' =>array(
+				'categories' => array(
 					'text'	=> $translation->translate('Global Categories', array(), true),
 					'url'	=> phpgw::link('/index.php', array('menuaction' => 'admin.uicategories.index', 'appname' => 'todo', 'global_cats' => 1))
 				),
@@ -83,7 +83,6 @@ class todo_menu
 					))
 				),
 			);
-
 		}
 
 		if (isset($userSettings['apps']['preferences']))
@@ -110,14 +109,20 @@ class todo_menu
 			);
 		}
 
-		$menus['navigation'] =  array(
-			array(
-				'text'	=> $translation->translate('New', array(), true),
-				'url'	=> phpgw::link('/todo/view/todos/add'),
+		$menus['navigation'] = array(
+			'todos' => array(
+				'url' => phpgw::link('/todo/view/todos'),
+				'text' => $translation->translate('todo', array(), false, 'todo'),
+				'image' => array('todo', 'navbar')
 			)
 		);
 
-		$menus['folders'] = phpgwapi_menu::get_categories('todo');
+		$menus['navigation']['add'] = array(
+			'url' => phpgw::link('/todo/view/todos/add'),
+			'text' => $translation->translate('New', array(), true, false, 'todo'),
+		);
+
+		//	$menus['folders'] = phpgwapi_menu::get_categories('todo');
 		Settings::getInstance()->update('flags', ['currentapp' => $incoming_app]);
 
 		return $menus;

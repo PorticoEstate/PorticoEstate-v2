@@ -28,6 +28,9 @@ class messenger_somessenger extends messenger_somessenger_
 	/** @var string[] columns allowed in ORDER BY, to avoid injecting arbitrary SQL via $params['order'] */
 	private static $sortable_columns = array('message_id', 'message_from', 'message_status', 'message_date', 'message_subject');
 
+	/**
+	 * Connect to the database and pick up the driver-specific ILIKE/LIKE operator.
+	 */
 	function __construct()
 	{
 		parent::__construct();
@@ -36,6 +39,10 @@ class messenger_somessenger extends messenger_somessenger_
 		$this->connected = true;
 	}
 
+	/**
+	 * @param string $status One of the N/R/O/F message status codes
+	 * @param int $message_id
+	 */
 	function update_message_status($status, $message_id)
 	{
 		$stmt = $this->db->prepare('UPDATE phpgw_messenger_messages SET message_status = :status'
@@ -47,6 +54,10 @@ class messenger_somessenger extends messenger_somessenger_
 		]);
 	}
 
+	/**
+	 * @param array $params Criteria: 'query' (text search), 'status', 'order'/'sort', 'start' (offset)
+	 * @return array List of messages, subject decoded via dbStrip()
+	 */
 	function read_inbox($params)
 	{
 		$filtermethod = '';
@@ -88,6 +99,12 @@ class messenger_somessenger extends messenger_somessenger_
 		return $messages;
 	}
 
+	/**
+	 * Fetch a message and mark it read (status 'O') if it was new.
+	 *
+	 * @param int $message_id
+	 * @return array The message, with subject/content decoded via dbStrip()
+	 */
 	function read_message($message_id)
 	{
 		$stmt = $this->db->prepare('SELECT * FROM phpgw_messenger_messages'
@@ -113,6 +130,10 @@ class messenger_somessenger extends messenger_somessenger_
 		return $message;
 	}
 
+	/**
+	 * @param array $message Message data with keys 'to' (id or account name), 'subject', 'content'
+	 * @param bool $global_message Send as a global message (owner -1) instead of to a single recipient
+	 */
 	function send_message($message, $global_message = False)
 	{
 		if ($global_message)
@@ -138,6 +159,10 @@ class messenger_somessenger extends messenger_somessenger_
 		]);
 	}
 
+	/**
+	 * @param string $extra_where_clause Additional raw SQL appended to the WHERE clause
+	 * @return int Number of messages owned by the current user
+	 */
 	function total_messages($extra_where_clause = '')
 	{
 		$stmt = $this->db->prepare('SELECT count(*) as cnt FROM phpgw_messenger_messages'
@@ -147,6 +172,9 @@ class messenger_somessenger extends messenger_somessenger_
 		return $row['cnt'];
 	}
 
+	/**
+	 * @param int $message_id
+	 */
 	function delete_message($message_id)
 	{
 		$stmt = $this->db->prepare('DELETE FROM phpgw_messenger_messages'
@@ -157,11 +185,17 @@ class messenger_somessenger extends messenger_somessenger_
 		]);
 	}
 
+	/**
+	 * Start a database transaction.
+	 */
 	function transaction_begin()
 	{
 		$this->db->transaction_begin();
 	}
 
+	/**
+	 * Commit the current database transaction.
+	 */
 	function transaction_commit()
 	{
 		$this->db->transaction_commit();

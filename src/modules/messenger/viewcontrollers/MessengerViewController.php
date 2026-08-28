@@ -16,17 +16,35 @@ class MessengerViewController
 	private LegacyViewHelper $legacyView;
 	private $menuSelection = 'messenger';
 
+	/**
+	 * Set up the legacy view bridge and the Twig renderer for the messenger app.
+	 */
 	public function __construct()
 	{
 		$this->legacyView = new LegacyViewHelper();
 		$this->twig = new TwigHelper('messenger');
 	}
 
+	/**
+	 * Register/validate a legacy static JS asset for inclusion in the page.
+	 *
+	 * @param string $app Application name the asset belongs to
+	 * @param string $package Asset package/group name
+	 * @param string $name File name of the asset (with or without .js extension)
+	 * @param bool $endOfPage Whether to load the asset at the end of the page
+	 * @param array $config Extra loader options, e.g. ['combine' => true]
+	 * @return mixed Return value of phpgwapi_js::validate_file()
+	 */
 	public static function add_javascript($app, $package, $name, $endOfPage = false, array $config = [])
 	{
 		return \phpgwapi_js::getInstance()->validate_file($package, str_replace('.js', '', $name), $app, $endOfPage, $config);
 	}
 
+	/**
+	 * Build the DataTables i18n/localization strings used by the inbox grid.
+	 *
+	 * @return array Nested array of DataTables option => localized value(s)
+	 */
 	private function getDatatableI18n(): array
 	{
 		return [
@@ -61,6 +79,13 @@ class MessengerViewController
 		];
 	}
 
+	/**
+	 * Render the inbox page, registering the DataTables assets it depends on.
+	 *
+	 * @param Request $request
+	 * @param Response $response
+	 * @return Response
+	 */
 	public function inbox(Request $request, Response $response): Response
 	{
 		$this->menuSelection = 'inbox';
@@ -113,6 +138,13 @@ class MessengerViewController
 		]);
 	}
 
+	/**
+	 * Render the compose (new message) form.
+	 *
+	 * @param Request $request
+	 * @param Response $response
+	 * @return Response
+	 */
 	public function compose(Request $request, Response $response): Response
 	{
 		\phpgw::import_class('phpgwapi.jquery');
@@ -125,6 +157,13 @@ class MessengerViewController
 		]);
 	}
 
+	/**
+	 * Render the compose-to-groups form, if the current user has permission.
+	 *
+	 * @param Request $request
+	 * @param Response $response
+	 * @return Response 403 plain-text response when access is denied
+	 */
 	public function composeGroups(Request $request, Response $response): Response
 	{
 		$this->menuSelection = 'compose_groups';
@@ -144,6 +183,13 @@ class MessengerViewController
 		]);
 	}
 
+	/**
+	 * Render the compose-global-message form, if the current user has permission.
+	 *
+	 * @param Request $request
+	 * @param Response $response
+	 * @return Response 403 plain-text response when access is denied
+	 */
 	public function composeGlobal(Request $request, Response $response): Response
 	{
 		$this->menuSelection = 'compose_global';
@@ -159,6 +205,14 @@ class MessengerViewController
 		]);
 	}
 
+	/**
+	 * Render the message-view page for a single message.
+	 *
+	 * @param Request $request
+	 * @param Response $response
+	 * @param array $args Route arguments, expects 'id'
+	 * @return Response
+	 */
 	public function read(Request $request, Response $response, array $args): Response
 	{
 		$this->menuSelection = 'inbox';
@@ -174,16 +228,40 @@ class MessengerViewController
 		]);
 	}
 
+	/**
+	 * Render the reply form for a message.
+	 *
+	 * @param Request $request
+	 * @param Response $response
+	 * @param array $args Route arguments, expects 'id'
+	 * @return Response
+	 */
 	public function reply(Request $request, Response $response, array $args): Response
 	{
 		return $this->messageForm($request, $response, $args, 'reply');
 	}
 
+	/**
+	 * Render the forward form for a message.
+	 *
+	 * @param Request $request
+	 * @param Response $response
+	 * @param array $args Route arguments, expects 'id'
+	 * @return Response
+	 */
 	public function forward(Request $request, Response $response, array $args): Response
 	{
 		return $this->messageForm($request, $response, $args, 'forward');
 	}
 
+	/**
+	 * Render the delete-confirmation page for a message.
+	 *
+	 * @param Request $request
+	 * @param Response $response
+	 * @param array $args Route arguments, expects 'id'
+	 * @return Response
+	 */
 	public function delete(Request $request, Response $response, array $args): Response
 	{
 		$id = (int) ($args['id'] ?? 0);
@@ -195,6 +273,15 @@ class MessengerViewController
 		]);
 	}
 
+	/**
+	 * Shared renderer for the reply/forward form, keyed by $mode.
+	 *
+	 * @param Request $request
+	 * @param Response $response
+	 * @param array $args Route arguments, expects 'id'
+	 * @param string $mode Either 'reply' or 'forward'
+	 * @return Response
+	 */
 	private function messageForm(Request $request, Response $response, array $args, string $mode): Response
 	{
 		$this->menuSelection = 'compose';
@@ -214,6 +301,15 @@ class MessengerViewController
 		]);
 	}
 
+	/**
+	 * Render a Twig template through the legacy view wrapper, ensuring a CSRF token is present.
+	 *
+	 * @param Request $request
+	 * @param Response $response
+	 * @param string $template Twig template path
+	 * @param array $data Template variables
+	 * @return Response HTML response with the rendered page
+	 */
 	private function render(Request $request, Response $response, string $template, array $data): Response
 	{
 		$csrfName = (string) ($request->getAttribute('csrf_name') ?? '');

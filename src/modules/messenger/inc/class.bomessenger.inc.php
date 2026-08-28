@@ -33,6 +33,9 @@ class messenger_bomessenger
 	);
 	var $soap_functions = array();
 
+	/**
+	 * Set up the storage object and cache the current user/account context.
+	 */
 	function __construct()
 	{
 		$this->so = createobject('messenger.somessenger');
@@ -41,6 +44,14 @@ class messenger_bomessenger
 		$this->phpgwapi_common = new \phpgwapi_common();
 	}
 
+	/**
+	 * List the users the current user is allowed to send messages to.
+	 *
+	 * Restricted to members of the configured group(s) unless the current
+	 * user is an admin, in which case all enabled accounts are returned.
+	 *
+	 * @return array Map of account_id => display name
+	 */
 	function get_available_users()
 	{
 		$users = array();
@@ -81,6 +92,12 @@ class messenger_bomessenger
 		return $users;
 	}
 
+	/**
+	 * Validate and send a message to every account (admin only), then redirect.
+	 *
+	 * @param array|string $data Array with 'message'/'send'/'cancel', or '' to read from Sanitizer
+	 * @return bool|void False when the caller lacks permission or the request was cancelled/invalid
+	 */
 	function send_global_message($data = '')
 	{
 		if (is_array($data))
@@ -134,6 +151,12 @@ class messenger_bomessenger
 		}
 	}
 
+	/**
+	 * Validate a message's recipient and required fields.
+	 *
+	 * @param array $message Message data with keys 'to', 'subject', 'content'
+	 * @return array List of localized error strings, empty when valid
+	 */
 	function check_for_missing_fields($message)
 	{
 		$errors = array();
@@ -170,11 +193,20 @@ class messenger_bomessenger
 		return $errors;
 	}
 
+	/**
+	 * @return bool Whether the underlying message store connection is active
+	 */
 	function is_connected()
 	{
 		return $this->so->connected;
 	}
 
+	/**
+	 * Send a message to every member of one or more account groups.
+	 *
+	 * @param array $values Form data with 'account_groups', 'subject', 'content'
+	 * @return array Receipt entries confirming delivery per recipient
+	 */
 	public function send_to_groups($values)
 	{
 		foreach ($values['account_groups'] as $group)
@@ -206,6 +238,12 @@ class messenger_bomessenger
 		return $receipt;
 	}
 
+	/**
+	 * Validate and send a single message to its recipient, then redirect.
+	 *
+	 * @param array|string $data Array with 'message'/'send'/'cancel', or '' to read from $_POST
+	 * @return bool|void False when required fields are missing
+	 */
 	function send_message($data = '')
 	{
 		if (is_array($data))
@@ -242,6 +280,10 @@ class messenger_bomessenger
 	}
 
 	
+	/**
+	 * @param string $status One of the N/R/O/F message status codes
+	 * @return string Localized label for the status code, empty string if unknown
+	 */
 	private function get_status_text($status)
 	{
 		
@@ -256,6 +298,12 @@ class messenger_bomessenger
 	}
 	
 	
+	/**
+	 * Fetch the inbox listing and format it for display (status text, account names, dates).
+	 *
+	 * @param array $params Filter/sort/pagination criteria, passed through to the storage object
+	 * @return array List of formatted message rows
+	 */
 	function read_inbox($params)
 	{
 		$_messages = array();
@@ -316,6 +364,12 @@ class messenger_bomessenger
 		return $_messages;
 	}
 
+	/**
+	 * Fetch a single message and format it for display (date, sender name).
+	 *
+	 * @param int $message_id
+	 * @return array The message, with 'from' resolved to a display name
+	 */
 	function read_message($message_id)
 	{
 		$message = $this->so->read_message($message_id);
@@ -336,6 +390,14 @@ class messenger_bomessenger
 		return $message;
 	}
 
+	/**
+	 * Fetch a message and prepare a quoted reply/forward draft from it.
+	 *
+	 * @param int $message_id The original message being replied to/forwarded
+	 * @param string $type Prefix added to the subject, e.g. 'Re' or 'Fwd'
+	 * @param array|string $n_message New message data, or '' to read 'n_message' from Sanitizer
+	 * @return array The original message with 'subject', 'content' and 'from_fullname' prepared for the reply
+	 */
 	function read_message_for_reply($message_id, $type, $n_message = '')
 	{
 		if (!$n_message)
@@ -367,6 +429,12 @@ class messenger_bomessenger
 		return $message;
 	}
 
+	/**
+	 * Delete one or more messages, then redirect back to the inbox.
+	 *
+	 * @param array|string $messages List of message IDs, or '' to read 'messages' from Sanitizer
+	 * @return bool|void False when $messages does not resolve to an array
+	 */
 	function delete_message($messages = '')
 	{
 		if (!$messages)
@@ -389,6 +457,13 @@ class messenger_bomessenger
 		phpgw::redirect_link('/messenger/view/inbox');
 	}
 
+	/**
+	 * Validate and send a reply, mark the original message as replied, then redirect.
+	 *
+	 * @param int|string $message_id ID of the message being replied to, or '' to read from Sanitizer
+	 * @param array|string $n_message New message data, or '' to read 'n_message' from Sanitizer
+	 * @return bool|void False when required fields are missing
+	 */
 	function reply($message_id = '', $n_message = '')
 	{
 		if (Sanitizer::get_var('cancel', 'bool') == true)
@@ -415,6 +490,13 @@ class messenger_bomessenger
 		}
 	}
 
+	/**
+	 * Validate and send a forwarded message, mark the original as forwarded, then redirect.
+	 *
+	 * @param int|string $message_id ID of the message being forwarded, or '' to read from Sanitizer
+	 * @param array|string $n_message Unused when $message_id is empty; forwarded content is read from Sanitizer as 'message'
+	 * @return bool|void False when required fields are missing
+	 */
 	function forward($message_id = '', $n_message = '')
 	{
 		if (!$message_id)
@@ -438,11 +520,21 @@ class messenger_bomessenger
 		}
 	}
 
+	/**
+	 * @param string $extra_where_clause Additional raw SQL appended to the WHERE clause
+	 * @return int Number of messages in the current user's inbox
+	 */
 	function total_messages($extra_where_clause = '')
 	{
 		return $this->so->total_messages($extra_where_clause);
 	}
 
+	/**
+	 * Describe this class's remotely callable methods, for XML-RPC/SOAP discovery.
+	 *
+	 * @param string|array $_type 'xmlrpc' or 'soap', or an array with a 'type'/[0] entry
+	 * @return array Method signatures/docstrings for the requested protocol
+	 */
 	function list_methods($_type = 'xmlrpc')
 	{
 		/*

@@ -532,6 +532,10 @@ class booking_uiapplication extends booking_uicommon
 				array(
 					'id'	 => 'ACCEPTED',
 					'name'	 => lang('ACCEPTED')
+				),
+				array(
+					'id'	 => 'CANCELLED',
+					'name'	 => lang('CANCELLED')
 				)
 			)
 		);
@@ -751,7 +755,7 @@ class booking_uiapplication extends booking_uicommon
 		$test = Sanitizer::get_var('status', 'string', 'REQUEST', null);
 		if (!Sanitizer::get_var('status'))
 		{
-			$filters['status'] = array('NEW', 'PENDING', 'REJECTED', 'ACCEPTED');
+			$filters['status'] = array('NEW', 'PENDING', 'REJECTED', 'ACCEPTED', 'CANCELLED');
 		}
 		elseif (isset($test))
 		{

@@ -82,6 +82,52 @@ class bookingfrontend_uiallocation extends booking_uiallocation
 		$from_org = Sanitizer::get_var('from_org', 'boolean', "REQUEST", false);
 		$jqcal2 = CreateObject('phpgwapi.jqcal2');
 
+		/**
+		 * Both branches below reach the allocation by id alone and neither compares it to the
+		 * caller, so establish here - before anything is rendered and before any delete is
+		 * attempted - that the caller may cancel THIS allocation.
+		 *
+		 * TWO callers are accepted, because two different pages offer this same link:
+		 *
+		 * 1. An organization admin of the organization that owns the allocation. Unlike a
+		 *    booking - whose ownership is indirect, through bb_booking.group_id ->
+		 *    bb_group.organization_id - an allocation carries bb_allocation.organization_id
+		 *    directly, so is_organization_admin() is applied to that column with no intermediate
+		 *    resolution. This is the path the original guard added, and it is unchanged.
+		 *
+		 * 2. The holder of the emailed application secret, for an allocation of THAT
+		 *    application. uiapplication::show() authenticates its whole page on the secret alone
+		 *    and offers this cancel link with no ownership predicate of any kind. A secret holder
+		 *    is not logged in, and is_organization_admin() returns false on its first line when
+		 *    nobody is logged in, so check 1 alone would refuse the very citizen the link was
+		 *    mailed to. The secret is therefore accepted here, but only as narrowly as it is
+		 *    accepted there: it is compared against bb_application.secret in the same shape
+		 *    uiapplication::show() compares it, and it is SCOPED to the allocation's own
+		 *    application - bb_allocation.application_id must be the application the secret
+		 *    authenticates, and that column is read from the ALLOCATION, never from the request.
+		 *    A valid secret never reaches another application's allocation.
+		 *
+		 * Neither check can be delegated to ACL: every bookingfrontend request runs as the shared
+		 * bookingguest account, so an ACL grant here would apply to every visitor or to no one.
+		 * These two checks are the guard.
+		 */
+		$requested_allocation = $this->bo->read_single(intval(Sanitizer::get_var('allocation_id', 'int')));
+		$bouser = new UserHelper();
+
+		$secret = Sanitizer::get_var('secret', 'string');
+		$secret_ok = false;
+		if (!empty($requested_allocation['application_id']) && !empty($secret))
+		{
+			$owning_application = $this->application_bo->read_single($requested_allocation['application_id']);
+			$secret_ok = !empty($owning_application['secret']) && $owning_application['secret'] == $secret;
+		}
+
+		if (empty($requested_allocation) || (!$bouser->is_organization_admin($requested_allocation['organization_id']) && !$secret_ok))
+		{
+			phpgw::no_access('bookingfrontend', lang('access_denied'));
+			return;
+		}
+
 		if ($config->config_data['user_can_delete_allocations'] != 'yes')
 		{
 
@@ -895,6 +941,39 @@ class bookingfrontend_uiallocation extends booking_uiallocation
 		$config->read();
 
 		$allocation = $this->bo->read_single(intval(Sanitizer::get_var('allocation_id', 'int')));
+
+		/**
+		 * edit() is listed in public_functions and nothing below compares the allocation to the
+		 * caller. It renders the allocation, its organization and its application, and its POST
+		 * branch writes: a system message carrying the organization's name and contact details, a
+		 * comment on the application, and an update of the application's equipment. Establish
+		 * here - before the record read above is used for anything, and before the POST branch -
+		 * that the caller may act on THIS allocation.
+		 *
+		 * The two accepted callers are the same ones cancel() accepts, for the same reasons, and
+		 * the shape below is deliberately identical to the guard in cancel(): an organization
+		 * admin of bb_allocation.organization_id, or the holder of the secret of the allocation's
+		 * OWN application, scoped by bb_allocation.application_id read from the allocation and
+		 * never from the request. uiapplication::show() builds this edit link on the same
+		 * secret-only page that carries the cancel link, so both entry points must accept both
+		 * callers or the citizen loses one of the two buttons that page offers.
+		 */
+		$bouser = new UserHelper();
+
+		$secret = Sanitizer::get_var('secret', 'string');
+		$secret_ok = false;
+		if (!empty($allocation['application_id']) && !empty($secret))
+		{
+			$owning_application = $this->application_bo->read_single($allocation['application_id']);
+			$secret_ok = !empty($owning_application['secret']) && $owning_application['secret'] == $secret;
+		}
+
+		if (empty($allocation) || (!$bouser->is_organization_admin($allocation['organization_id']) && !$secret_ok))
+		{
+			phpgw::no_access('bookingfrontend', lang('access_denied'));
+			return;
+		}
+
 		$from_org = Sanitizer::get_var('from_org', 'boolean', "REQUEST", false);
 		$original_from = $allocation['from_'];
 		$organization = $this->organization_bo->read_single($allocation['organization_id']);

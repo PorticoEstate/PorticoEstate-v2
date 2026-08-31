@@ -5,7 +5,7 @@
     "@digdir/designsystemet-css": "^1.12.1",
     "@digdir/designsystemet-web": "^1.12.1",
     "@dnd-kit/dom": "^0.3.2",
-    "@porticoestate/design-tokens": "https://github.com/PorticoEstate/digdir-design-tokens.git#4afd61eedebd7523d6ea4b119ef23a2dfb3f65d5",
+    "@porticoestate/design-tokens": "https://github.com/PorticoEstate/digdir-design-tokens.git",
     "blueimp-file-upload": "^10.32.0",
     "jqtree": "^1.8.11",
     "jquery": "^4.0.0",

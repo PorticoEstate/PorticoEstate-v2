@@ -60,24 +60,63 @@
 				window.open(url_lost_password, '_blank');
 			}
 		</script>
-		<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
-		<script src="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.js" data-cfasync="false"></script>
+		<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css" />
+		<script src="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.umd.js" data-cfasync="false"></script>
+		<style>
+			/* Reproduce the black/yellow look of the legacy cookieconsent@3 popup */
+			:root {
+				--cc-bg: #000;
+				--cc-primary-color: #fff;
+				--cc-secondary-color: #fff;
+				--cc-btn-primary-bg: #f1d600;
+				--cc-btn-primary-border-color: #f1d600;
+				--cc-btn-primary-color: #000;
+				--cc-btn-primary-hover-bg: #d4bb00;
+				--cc-btn-primary-hover-border-color: #d4bb00;
+			}
+		</style>
 		<script>
 			window.addEventListener("load", function ()
 			{
-				window.cookieconsent.initialise({
-					palette: {
-						"popup": {
-							"background": "#000"
-						},
-						"button": {
-							"background": "#f1d600"
-						}
-					},
+				CookieConsent.run({
 					cookie: {
 						name: 'cookieconsent_login'
+					},
+					guiOptions: {
+						consentModal: {
+							layout: 'bar inline',
+							position: 'bottom',
+							equalWeightButtons: false,
+							flipButtons: false
+						}
+					},
+					categories: {
+						necessary: {
+							enabled: true,
+							readOnly: true
+						}
+					},
+					language: {
+						default: 'no',
+						autoDetect: 'document',
+						translations: {
+							en: {
+								consentModal: {
+									title: '',
+									description: 'This website uses cookies to ensure you get the best experience on our website.',
+									acceptAllBtn: 'Got it!'
+								}
+							},
+							no: {
+								consentModal: {
+									title: '',
+									description: 'Dette nettstedet bruker informasjonskapsler for å sikre at du får den beste opplevelsen på nettsiden vår.',
+									acceptAllBtn: 'Jeg forstår!'
+								}
+							}
+						}
 					}
-				})
+				});
 			});
 		</script>
 	</head>

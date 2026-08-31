@@ -1,0 +1,43 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ lang('Compose message') }}{% endblock %}
+{% block styles %}
+	<style>{{ source('@views/compose/messenger_compose.css') }}</style>
+{% endblock %}
+
+{% block content %}
+	<div
+		id="messenger-compose-app"
+		class="messenger-message-page"
+		data-api-url="{{ api_url|e }}"
+		data-users-url="{{ users_url|e }}"
+		data-back-url="{{ phpgw_link('/messenger/view/inbox')|e }}"
+		data-placeholder="{{ lang('Select')|e('html_attr') }}"
+		data-csrf-name="{{ csrf.name|e('html_attr') }}"
+		data-csrf-value="{{ csrf.value|e('html_attr') }}"
+	>
+		<h1>{{ lang('Compose message') }}</h1>
+		<div id="messenger-compose-error" class="messenger-message messenger-message--error" hidden></div>
+
+		<form id="messenger-compose-form" class="messenger-form">
+			<label for="messenger-to">{{ lang('to') }}</label>
+			<select id="messenger-to" name="to" required>
+				<option value="" selected>{{ lang('Select') }}</option>
+			</select>
+
+			<label for="messenger-subject">{{ lang('Subject') }}</label>
+			<input id="messenger-subject" name="subject" required>
+
+			<label for="messenger-content">{{ lang('Message') }}</label>
+			<textarea id="messenger-content" name="content" rows="12" required></textarea>
+
+			<div class="messenger-form__actions">
+				<button class="messenger-button messenger-button--primary" type="submit">{{ lang('Send') }}</button>
+				<a class="messenger-button messenger-button--secondary" href="{{ phpgw_link('/messenger/view/inbox') }}">{{ lang('Cancel') }}</a>
+			</div>
+		</form>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+	<script>{{ source('@views/compose/messenger_compose.js') }}</script>
+{% endblock %}

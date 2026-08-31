@@ -181,51 +181,78 @@ if ($privacy_url)
 	$lang_privacy_policy = lang('privacy policy');
 
 	$concent_script = <<<JS
-		<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
-		<script src="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.js" data-cfasync="false"></script>
+		<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css" />
+		<script src="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.umd.js" data-cfasync="false"></script>
+		<style>
+			/* Reproduce the black/yellow look of the legacy cookieconsent@3 popup */
+			:root {
+				--cc-bg: #000;
+				--cc-primary-color: #fff;
+				--cc-secondary-color: #fff;
+				--cc-btn-primary-bg: #f1d600;
+				--cc-btn-primary-border-color: #f1d600;
+				--cc-btn-primary-color: #000;
+				--cc-btn-primary-hover-bg: #d4bb00;
+				--cc-btn-primary-hover-border-color: #d4bb00;
+				--cc-link-color: #f1d600;
+				--cc-link-color-hover: #ffe873;
+				--cc-footer-bg: #000;
+				--cc-footer-color: #fff;
+				--cc-footer-border-color: #333;
+			}
+		</style>
 		<script>
 
 			window.addEventListener("load", function ()
 			{
-				window.cookieconsent.initialise({
-					type: 'opt-out',
-					"palette": {
-						"popup": {
-							"background": "#000"
-						},
-						"button": {
-							"background": "#f1d600"
-						}
-					},
-					"showLink": true,
-					content: {
-							header: 'Cookies used on the website!',
-							message: '{$privacy_message}',
-							dismiss: 'Got it!',
-							allow: '{$lang_approve}',
-							deny: '{$lang_decline}',
-							link: '{$lang_read_more}',
-							href: '{$privacy_url}',
-							close: '&#x274c;',
-							policy: '{$lang_privacy_policy}',
-							target: '_blank',
-					},
-					position: "top",
+				// Mirrors the old opt-out behaviour: declining logs the user out
+				function handleConsent()
+				{
+					if (!CookieConsent.acceptedCategory('tracking'))
+					{
+						document.cookie = "cookieconsent_backend=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+						window.location.replace(phpGWLink('logout_ui'));
+					}
+				}
+
+				CookieConsent.run({
 					cookie: {
 						name: 'cookieconsent_backend'
 					},
-					law: {
-					 regionalLaw: true,
-					},
-					revokable:false,
-					onStatusChange: function(status) {
-						if(!this.hasConsented())
-						{
-							document.cookie = "cookieconsent_backend=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-							window.location.replace(phpGWLink('/logout_ui'));
+					guiOptions: {
+						consentModal: {
+							layout: 'bar inline',
+							position: 'top',
+							equalWeightButtons: true,
+							flipButtons: false
 						}
-					 }
-				})
+					},
+					categories: {
+						necessary: {
+							enabled: true,
+							readOnly: true
+						},
+						tracking: {
+							enabled: false
+						}
+					},
+					onFirstConsent: handleConsent,
+					onChange: handleConsent,
+					language: {
+						default: 'en',
+						translations: {
+							en: {
+								consentModal: {
+									title: 'Cookies used on the website!',
+									description: '{$privacy_message}',
+									acceptAllBtn: '{$lang_approve}',
+									acceptNecessaryBtn: '{$lang_decline}',
+									footer: '<a href="{$privacy_url}" target="_blank">{$lang_read_more} - {$lang_privacy_policy}</a>'
+								}
+							}
+						}
+					}
+				});
 			});
 
 		</script>

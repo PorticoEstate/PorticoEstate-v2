@@ -93,7 +93,14 @@ class TwigHelper
 		$this->addPathIfExists($appTpl, $this->appName);
 		$this->addPathIfExists($appTpl);
 
-		// App component views (co-located twig/css/js)
+		// App component views (co-located twig/css/js), e.g. html/<view>/foo.twig
+		//
+		// Lookup order for '@views/<view>/...' (first match wins):
+		//   1. html/<template_set>/<view>/...  - template-set-specific override (e.g. html/digdir/compose/)
+		//   2. html/base/<view>/...            - shared/default implementation (e.g. html/base/compose/)
+		//   3. html/<view>/...                 - legacy flat layout, kept for modules not yet migrated
+		$this->addPathIfExists($appDir . '/html/' . $templateSet, 'views');
+		$this->addPathIfExists($appDir . '/html/base', 'views');
 		$this->addPathIfExists($appDir . '/html', 'views');
 	}
 

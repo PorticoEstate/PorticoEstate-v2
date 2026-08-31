@@ -122,7 +122,7 @@ class MessengerViewController
 			\phpgwapi_css::getInstance()->add_external_file($asset);
 		}
 
-		return $this->render($request, $response, '@views/messenger/inbox/messenger_inbox.twig', [
+		return $this->render($request, $response, '@views/inbox/messenger_inbox.twig', [
 			'api_url' => \phpgw::link('/messenger/messages'),
 			'compose_url' => \phpgw::link('/messenger/view/compose'),
 			'view_url' => \phpgw::link('/messenger/view/messages/__MESSAGE_ID__'),
@@ -150,7 +150,7 @@ class MessengerViewController
 		\phpgw::import_class('phpgwapi.jquery');
 		\phpgwapi_jquery::load_widget('select2');
 		$this->menuSelection = 'compose';
-		return $this->render($request, $response, '@views/messenger/compose/messenger_compose.twig', [
+		return $this->render($request, $response, '@views/compose/messenger_compose.twig', [
 			'mode' => 'compose',
 			'api_url' => \phpgw::link('/messenger/messages'),
 			'users_url' => \phpgw::link('/messenger/messages/users'),
@@ -176,7 +176,7 @@ class MessengerViewController
 		\phpgw::import_class('phpgwapi.jquery');
 		\phpgwapi_jquery::load_widget('select2');
 
-		return $this->render($request, $response, '@views/messenger/compose_groups/messenger_compose_groups.twig', [
+		return $this->render($request, $response, '@views/compose_groups/messenger_compose_groups.twig', [
 			'api_url' => \phpgw::link('/messenger/messages/groups'),
 			'action_url' => \phpgw::link('/messenger/messages/groups'),
 			'inbox_url' => \phpgw::link('/messenger/view/inbox'),
@@ -199,7 +199,7 @@ class MessengerViewController
 			return $response->withStatus(403)->withHeader('Content-Type', 'text/plain');
 		}
 
-		return $this->render($request, $response, '@views/messenger/compose_global/messenger_compose_global.twig', [
+		return $this->render($request, $response, '@views/compose_global/messenger_compose_global.twig', [
 			'api_url' => \phpgw::link('/messenger/messages/global'),
 			'inbox_url' => \phpgw::link('/messenger/view/inbox'),
 		]);
@@ -217,7 +217,7 @@ class MessengerViewController
 	{
 		$this->menuSelection = 'inbox';
 		$id = (int) ($args['id'] ?? 0);
-		return $this->render($request, $response, '@views/messenger/view/messenger_view.twig', [
+		return $this->render($request, $response, '@views/view/messenger_view.twig', [
 			'mode' => 'read',
 			'api_url' => \phpgw::link('/messenger/messages/' . $id),
 			'inbox_url' => \phpgw::link('/messenger/view/inbox'),
@@ -265,7 +265,7 @@ class MessengerViewController
 	public function delete(Request $request, Response $response, array $args): Response
 	{
 		$id = (int) ($args['id'] ?? 0);
-		return $this->render($request, $response, '@views/messenger/delete/messenger_delete.twig', [
+		return $this->render($request, $response, '@views/delete/messenger_delete.twig', [
 			'api_url' => \phpgw::link('/messenger/messages'),
 			'message_url' => \phpgw::link('/messenger/view/messages/' . $id),
 			'inbox_url' => \phpgw::link('/messenger/view/inbox'),
@@ -292,7 +292,7 @@ class MessengerViewController
 			\phpgwapi_jquery::load_widget('select2');
 		}
 
-		return $this->render($request, $response, '@views/messenger/' . $mode . '/messenger_' . $mode . '.twig', [
+		return $this->render($request, $response, '@views/' . $mode . '/messenger_' . $mode . '.twig', [
 			'mode' => $mode,
 			'api_url' => \phpgw::link('/messenger/messages/' . $id),
 			'action_url' => \phpgw::link('/messenger/messages/' . $id . '/' . $mode),

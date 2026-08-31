@@ -295,7 +295,7 @@ class TodoViewController
 			$matrix->out(\phpgw::link('/todo/view/todos/matrix'));
 			$matrixHtml = (string) ob_get_clean();
 
-			$componentHtml = $this->twig->render('@views/todo/matrix/todo_matrix.twig', [
+			$componentHtml = $this->twig->render('@views/matrix/todo_matrix.twig', [
 				'layout' => '@views/_bare.twig',
 				'matrix_html' => $matrixHtml,
 				'csrf' => $this->getCsrfData($request),
@@ -395,7 +395,7 @@ class TodoViewController
 				],
 			];
 
-			$componentHtml = $this->twig->render('@views/todo/index/todo_datatable.twig', [
+			$componentHtml = $this->twig->render('@views/index/todo_datatable.twig', [
 				'layout' => '@views/_bare.twig',
 				'categories' => $categories,
 				'filters' => $filters,
@@ -437,7 +437,7 @@ class TodoViewController
 				return ResponseHelper::sendErrorResponse(['error' => 'Missing todo ID'], 400);
 			}
 
-			$componentHtml = $this->twig->render('@views/todo/view/todo_view.twig', [
+			$componentHtml = $this->twig->render('@views/view/todo_view.twig', [
 				'layout' => '@views/_bare.twig',
 				'todo_id' => $id,
 				'csrf' => $this->getCsrfData($request),
@@ -467,7 +467,7 @@ class TodoViewController
 				return ResponseHelper::sendErrorResponse(['error' => 'Missing todo ID'], 400);
 			}
 
-			$componentHtml = $this->twig->render('@views/todo/delete/todo_delete.twig', [
+			$componentHtml = $this->twig->render('@views/delete/todo_delete.twig', [
 				'layout' => '@views/_bare.twig',
 				'todo_id' => $id,
 				'csrf' => $this->getCsrfData($request),
@@ -498,7 +498,7 @@ class TodoViewController
 			$query = $request->getQueryParams();
 			$userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
 			$dateFormat = (string) ($userSettings['preferences']['common']['dateformat'] ?? 'Y-m-d');
-			$componentHtml = $this->twig->render('@views/todo/add/todo_add.twig', [
+			$componentHtml = $this->twig->render('@views/add/todo_add.twig', [
 				'layout' => '@views/_bare.twig',
 				'categories' => $this->getCategories(),
 				'parentTodos' => $this->getParentTodos(),
@@ -566,7 +566,7 @@ class TodoViewController
 				'assigned_group_ids' => is_array($assignedGroupIds) ? $assignedGroupIds : [],
 			];
 
-			$componentHtml = $this->twig->render('@views/todo/edit/todo_edit.twig', [
+			$componentHtml = $this->twig->render('@views/edit/todo_edit.twig', [
 				'layout' => '@views/_bare.twig',
 				'todo' => $todo,
 				'categories' => $this->getCategories(),

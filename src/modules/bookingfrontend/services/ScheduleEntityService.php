@@ -48,12 +48,14 @@ class ScheduleEntityService
             $sql = "SELECT e.*,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name
                     FROM bb_event e
                     JOIN bb_event_resource er ON e.id = er.event_id
                     JOIN bb_resource r ON er.resource_id = r.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON e.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE e.application_id = ? AND e.active = 1
                     ORDER BY e.from_ ASC";
 
@@ -158,7 +160,8 @@ class ScheduleEntityService
                         g.shortname as group_shortname,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name,
                         s.name as season_name
                     FROM bb_booking b
@@ -166,7 +169,8 @@ class ScheduleEntityService
                     JOIN bb_resource r ON br.resource_id = r.id
                     JOIN bb_group g ON b.group_id = g.id
                     JOIN bb_season s ON b.season_id = s.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON b.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE b.application_id = ? AND b.active = 1
                     ORDER BY b.from_ ASC";
 
@@ -628,8 +632,10 @@ class ScheduleEntityService
         return [
             'id' => $data['resource_id'],
             'name' => $data['resource_name'],
-            'activity_id' => $data['activity_id'] ?? null,
-            'activity_name' => $data['activity_name'] ?? null,
+            'activity_id' => array_key_exists('resource_activity_id', $data)
+                ? $data['resource_activity_id'] : ($data['activity_id'] ?? null),
+            'activity_name' => array_key_exists('resource_activity_name', $data)
+                ? $data['resource_activity_name'] : ($data['activity_name'] ?? null),
             'building_id' => $data['building_id'] ?? null,
         ];
     }
@@ -730,7 +736,8 @@ class ScheduleEntityService
                         g.shortname as group_shortname,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name,
                         s.name as season_name
                     FROM bb_booking b
@@ -738,7 +745,8 @@ class ScheduleEntityService
                     JOIN bb_resource r ON br.resource_id = r.id
                     JOIN bb_group g ON b.group_id = g.id
                     JOIN bb_season s ON b.season_id = s.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON b.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE r.id IN (" . implode(',', array_map('intval', $resource_ids)) . ")
                     AND b.active = 1
                     AND s.active = 1
@@ -779,12 +787,14 @@ class ScheduleEntityService
             $sql = "SELECT e.*,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name
                     FROM bb_event e
                     JOIN bb_event_resource er ON e.id = er.event_id
                     JOIN bb_resource r ON er.resource_id = r.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON e.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE r.id IN (" . implode(',', array_map('intval', $resource_ids)) . ")
                     AND e.active = 1
                     AND ((e.from_ >= ? AND e.from_ < ?)
@@ -902,7 +912,8 @@ class ScheduleEntityService
                         g.shortname as group_shortname,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name,
                         s.name as season_name
                     FROM bb_booking b
@@ -910,7 +921,8 @@ class ScheduleEntityService
                     JOIN bb_resource r ON br.resource_id = r.id
                     JOIN bb_group g ON b.group_id = g.id
                     JOIN bb_season s ON b.season_id = s.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON b.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE r.id = ?
                     AND b.active = 1
                     AND s.active = 1
@@ -951,12 +963,14 @@ class ScheduleEntityService
             $sql = "SELECT e.*,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name
                     FROM bb_event e
                     JOIN bb_event_resource er ON e.id = er.event_id
                     JOIN bb_resource r ON er.resource_id = r.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON e.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE r.id = ?
                     AND e.active = 1
                     AND ((e.from_ >= ? AND e.from_ < ?)
@@ -1202,7 +1216,8 @@ class ScheduleEntityService
                         g.shortname as group_shortname,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name,
                         s.name as season_name,
                         building.name as building_name
@@ -1213,7 +1228,8 @@ class ScheduleEntityService
                     JOIN bb_season s ON b.season_id = s.id
                     JOIN bb_building_resource br2 ON r.id = br2.resource_id
                     JOIN bb_building building ON br2.building_id = building.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON b.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE b.group_id IN (" . implode(',', array_map('intval', $group_ids)) . ")
                     AND b.active = 1
                     AND s.active = 1
@@ -1249,7 +1265,8 @@ class ScheduleEntityService
             $sql = "SELECT e.*,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name,
                         building.name as building_name
                     FROM bb_event e
@@ -1257,7 +1274,8 @@ class ScheduleEntityService
                     JOIN bb_resource r ON er.resource_id = r.id
                     JOIN bb_building_resource br ON r.id = br.resource_id
                     JOIN bb_building building ON br.building_id = building.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON e.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE e.customer_organization_id = :organization_id
                     AND e.active = 1
                     AND ((e.from_ >= :from AND e.from_ < :to)

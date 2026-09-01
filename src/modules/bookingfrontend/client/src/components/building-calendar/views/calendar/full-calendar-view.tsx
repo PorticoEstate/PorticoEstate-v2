@@ -62,11 +62,19 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		events,
 		setCurrentDate,
 		currentDate,
-		seasons,
+		seasons: rawSeasons,
 		currentTempEvent,
 		handleDateSelect,
 		highlightEvent
 	} = props;
+	// A season may legitimately have no resources, and the API then omits the
+	// `resources` key altogether rather than sending an empty array. Normalise
+	// once here so every `season.resources` read below is on an array. Absence
+	// of `seasons` itself is preserved, since several branches test for it.
+	const seasons = useMemo(
+		() => rawSeasons?.map(season => Array.isArray(season.resources) ? season : {...season, resources: []}),
+		[rawSeasons]
+	);
 	const isMobile = useIsMobile();
 	const [calendarEvents, setCalendarEvents] = useState<(FCallBaseEvent)[]>([]);
 	const [slotMinTime, setSlotMinTime] = useState('00:00:00');
@@ -103,11 +111,11 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	const generateBusinessHours = useCallback(() => {
 		// For business hours, we'll use a simplified approach that doesn't mix seasons
 		// The detailed season handling will be done in renderBackgroundEvents
-		if (!viewStart || !viewEnd || !props.seasons) return [];
+		if (!viewStart || !viewEnd || !seasons) return [];
 
 		// Find the primary season that covers most of the view period
 		const viewMiddle = viewStart.plus({milliseconds: viewEnd.diff(viewStart).milliseconds / 2});
-		const primarySeason = props.seasons.find(season => {
+		const primarySeason = seasons.find(season => {
 			if (!season.active) return false;
 			const seasonStart = DateTime.fromISO(season.from_);
 			const seasonEnd = DateTime.fromISO(season.to_);
@@ -131,7 +139,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			startTime: boundary.from_,
 			endTime: boundary.to_
 		}));
-	}, [props.seasons, viewStart, viewEnd, enabledResources]);
+	}, [seasons, viewStart, viewEnd, enabledResources]);
 
 	// Determine whether a given date falls within any active season (matching the
 	// enabled resources). Used to close times that no season covers. When the
@@ -180,7 +188,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 		// Check all season boundaries
 // Check season boundaries that are relevant to the current calendar view
-		props.seasons?.forEach(season => {
+		seasons?.forEach(season => {
 			if (!season.active) return;
 
 			const seasonStart = DateTime.fromISO(season.from_);
@@ -217,7 +225,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		});
 
 		// If seasons is not set and isOrg is true, set default times for organizations
-		if (!props.seasons && isOrg) {
+		if (!seasons && isOrg) {
 			if (minTime === '24:00:00') minTime = '08:00:00';
 			if (maxTime === '00:00:00') maxTime = '23:00:00';
 		}
@@ -238,7 +246,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				? '24:00:00'          // Allow until midnight
 				: maxTime             // Otherwise respect the boundary
 		);
-	}, [props.seasons, events, isOrg, viewStart, viewEnd, enabledResources]);
+	}, [seasons, events, isOrg, viewStart, viewEnd, enabledResources]);
 
 	useEffect(() => {
 		calculateAbsoluteMinMaxTimes();
@@ -665,7 +673,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 		// Check if selection is within business hours for each specific day
 		// Only do this validation if we have seasons and this is a final selection (not just validation calls)
-		if (props.seasons && span.start && span.end && span.allDay === false) {
+		if (seasons && span.start && span.end && span.allDay === false) {
 			const selectionStart = DateTime.fromJSDate(span.start);
 			const selectionEnd = DateTime.fromJSDate(span.end);
 
@@ -677,7 +685,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				// 09:00-14:30, another 14:30-20:00). Picking just the first season by
 				// date would validate against the wrong resource's hours and wrongly
 				// flag every selection as "outside opening hours".
-				const daysSeasons = props.seasons.filter(season => {
+				const daysSeasons = seasons.filter(season => {
 					if (!season.active) return false;
 					const seasonStart = DateTime.fromISO(season.from_);
 					const seasonEnd = DateTime.fromISO(season.to_);

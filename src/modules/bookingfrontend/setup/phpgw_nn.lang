@@ -1068,3 +1068,8 @@ closed_on_weekday	bookingfrontend	nn	Stengt %1
 date_belongs_to_other_application	bookingfrontend	nn	Høyrer til ei anna booking
 hospitality_cannot_change_application	bookingfrontend	nn	Bevertninga kan ikkje flyttast til ei anna booking. Slett bestillinga og opprett ei ny på rett booking.
 go_to_submission	bookingfrontend	nn	Gå til innsending
+log_in_as_org_admin_to_manage_allocation	bookingfrontend	nn	Logg inn som organisasjonsadministrator for å administrere denne tildelinga.
+cancelling_booking_frees_hour_back_to_allocation	bookingfrontend	nn	Å avbestille ei interntildeling frigjer timen tilbake til tildelinga.
+manage_allocation	bookingfrontend	nn	Administrer tildeling
+manage_event	bookingfrontend	nn	Administrer arrangement
+manage_booking	bookingfrontend	nn	Administrer interntildeling

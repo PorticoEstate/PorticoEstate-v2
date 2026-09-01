@@ -46,7 +46,7 @@ export interface IAPIBooking extends IAPIScheduleEntity {
 	season_id: number;       // @Expose + NOT NULL
 	activity_id: number;     // @Expose + NOT NULL
 	reminder: number;        // @Expose + default 0
-	secret: string;         // @Expose + NOT NULL
+	secret?: string;        // conditional @Expose(when={group_id=$user_group_id}) - ABSENT unless the viewer is in the booking's group
 	sms_total?: number;     // @Expose + nullable
 	group_name: string;     // @Expose (computed)
 	activity_name: string;  // @Expose (computed)

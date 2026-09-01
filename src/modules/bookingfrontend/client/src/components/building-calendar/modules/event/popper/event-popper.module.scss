@@ -8,7 +8,10 @@
     flex-grow: 1;
 
     @include tablet {
-        //max-width: 300px;
+        /* design 1a: "Compact — 300 px · glance-first". Desktop only; inside the
+           mobile dialog the card still fills the sheet. */
+        max-width: 300px;
+        box-sizing: border-box;
         border-radius: 4px;
         padding-bottom: 1.5rem;
         padding-top: 1.5rem;
@@ -24,8 +27,8 @@
     //}
     min-width: 300px;
     //padding: 0;
-	padding-left: 1.5rem;
-	padding-right: 1.5rem;
+	padding-left: 1rem;
+	padding-right: 1rem;
     .eventPopperContent, .eventPopperFooter, .eventPopperActions {
         //padding-left: 1.5rem;
         //padding-right: 1.5rem;
@@ -61,8 +64,10 @@
 
     .eventPopperActions {
         display: flex;
-        justify-content: flex-end;
-        gap: 8px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+        padding-bottom: 0.25rem;
     }
 
 
@@ -94,6 +99,14 @@
 		}
 		.headerContent {
 
+		}
+
+		/* design 1a: badge + id on one line, title beneath */
+		.headerHeading {
+			display: flex;
+			flex-direction: column;
+			gap: 0.25rem;
+			min-width: 0;
 		}
 
 
@@ -152,4 +165,78 @@
         }
 
     }
+}
+
+/* ---- design direction 1a ("Compact", 300 px, glance-first) ---- */
+
+.entityLine {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+}
+
+/* the badge's dot is the ENTITY TYPE's colour, taken from the design */
+.entityBadge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	height: 20px;
+	padding: 0 0.5rem;
+	border-radius: 10px;
+	background: $grey-64;
+	font-size: 0.6875rem;
+	line-height: 1.1;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	white-space: nowrap;
+
+	.entityDot {
+		width: 8px;
+		height: 8px;
+		min-width: 8px;
+		border-radius: 50%;
+		background: #616161;
+	}
+
+	&[data-entity='allocation'] .entityDot {
+		background: #800080;
+	}
+
+	&[data-entity='event'] .entityDot {
+		background: #28358B;
+	}
+
+	&[data-entity='booking'] .entityDot {
+		background: #999EC1;
+	}
+}
+
+.entityId {
+	font-size: 0.6875rem;
+	line-height: 1.1;
+	color: #616161;
+}
+
+.eventName {
+	margin: 0;
+	font-size: 1.25rem;
+	line-height: 1.625rem;
+	font-weight: 700;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.popperDivider {
+	height: 1px;
+	background: $grey-64;
+	margin: 0.75rem 0;
+}
+
+/* the design's small grey footnotes: the gated-copy line and the
+   "cancelling frees the hour back" note */
+.popperNotice {
+	font-size: 0.6875rem;
+	line-height: 1.25;
+	color: #616161;
 }

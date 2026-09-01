@@ -6,7 +6,7 @@ import {useMemo} from "react";
 import {IBookingUser} from "@/service/types/api.types";
 
 
-export const isOrgAdmin = (user: IBookingUser | undefined, eventData: IEvent) => {
+export const isOrgAdmin = (user: IBookingUser | undefined, eventData: IEvent): boolean => {
 	if (!user) {
 		return false;
 	}
@@ -23,10 +23,15 @@ export const isOrgAdmin = (user: IBookingUser | undefined, eventData: IEvent) =>
 			eventOrgId = eventData.organization_id;
 			break;
 		case 'booking':
-			break;
+			// A booking carries no organisation id — it belongs to a GROUP, and the
+			// payload gives us no group list to match the user against. The server
+			// has already answered the question: Booking::$secret is annotated
+			// @Expose(when={"group_id=$user_group_id"}), so the field is serialised
+			// only when the viewer is a member of the booking's own group. Its
+			// presence is therefore the access signal, and its absence is a refusal.
+			return typeof eventData.secret === 'string' && eventData.secret.length > 0;
 		default:
 			return false;
-			break;
 	}
 
 	if (eventOrgId !== undefined) {
@@ -36,6 +41,8 @@ export const isOrgAdmin = (user: IBookingUser | undefined, eventData: IEvent) =>
 	if (eventOrgNumber !== undefined) {
 		return !!user.delegates?.some(org => org.active && org.organization_number === eventOrgNumber);
 	}
+
+	return false;
 }
 
 export function FCallEventConverter(event: IEvent, enabledResources: Set<string>, user: IBookingUser | undefined): { mainEvent: FCallEvent | null, backgroundEvent: FCallBackgroundEvent | null } {

@@ -1068,3 +1068,8 @@ closed_on_weekday	bookingfrontend	en	Closed %1
 date_belongs_to_other_application	bookingfrontend	en	Belongs to another booking
 hospitality_cannot_change_application	bookingfrontend	en	The catering order cannot be moved to another booking. Delete this order and create a new one on the correct booking.
 go_to_submission	bookingfrontend	en	Continue to submission
+log_in_as_org_admin_to_manage_allocation	bookingfrontend	en	Log in as an organisation admin to manage this allocation.
+cancelling_booking_frees_hour_back_to_allocation	bookingfrontend	en	Cancelling a booking frees the hour back to the allocation.
+manage_allocation	bookingfrontend	en	Manage allocation
+manage_event	bookingfrontend	en	Manage event
+manage_booking	bookingfrontend	en	Manage booking

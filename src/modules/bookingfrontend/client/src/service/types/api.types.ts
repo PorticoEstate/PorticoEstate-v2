@@ -191,9 +191,21 @@ export interface IBookingConfig {
     split_pool4_ids?: string;
     support_address?: string;
     user_can_delete?: boolean;
-    user_can_delete_allocations?: boolean;
-    user_can_delete_bookings?: boolean;
-    user_can_delete_events?: boolean;
+    /*
+     * NOT plain booleans on the wire. The PHP side annotates these @ParseBool, and
+     * parseStringBoolean (SerializableTrait.php) coerces only 'yes'|'true'|'1' and
+     * 'no'|'false'|''|'0'; ANY other stored string is returned unchanged, so it
+     * arrives here as a non-empty — therefore TRUTHY — string. 'never' is the one an
+     * admin can pick from a select (booking/templates/base/settings.xsl), and
+     * booking/inc/class.uisettings.inc.php stores any posted value without a
+     * whitelist, so other strings are reachable too.
+     * ⇒ ALWAYS gate on `=== true`. `if (flag)` switches the affordance ON under the
+     *   MOST restrictive setting. Verified in-browser: 'never' and 'maybe' both hide
+     *   the cancel button under `=== true` and both SHOW it under bare truthiness.
+     */
+    user_can_delete_allocations?: boolean | string;
+    user_can_delete_bookings?: boolean | string;
+    user_can_delete_events?: boolean | string;
     enable_hospitality?: boolean;
     voucher_client?: string;
     voucher_responsible?: string;

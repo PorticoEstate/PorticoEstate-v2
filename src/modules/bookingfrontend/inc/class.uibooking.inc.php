@@ -1271,6 +1271,52 @@ class bookingfrontend_uibooking extends booking_uibooking
 
 		$from_org = Sanitizer::get_var('from_org', 'boolean', 'REQUEST', false);
 
+		/**
+		 * Both branches below reach the booking by id alone and neither compares it to the
+		 * caller, so establish here - before anything is rendered and before any delete is
+		 * attempted - that the caller may cancel THIS booking.
+		 *
+		 * TWO callers are accepted, because two different pages offer this same link:
+		 *
+		 * 1. An organization admin of the group that owns the booking. A booking carries no
+		 *    organization_id of its own; ownership is indirect, through
+		 *    bb_booking.group_id -> bb_group.organization_id. is_group_admin() is exactly that
+		 *    resolution: it looks the group's organization up and delegates to
+		 *    is_organization_admin(). This is the predicate that gates the cancel link on the
+		 *    booking pages - info() and info_determine_cancel_link().
+		 *
+		 * 2. The holder of the emailed application secret, for a booking of THAT application.
+		 *    uiapplication::show() authenticates its whole page on the secret alone and
+		 *    offers this cancel link with no ownership predicate of any kind. A secret
+		 *    holder is not logged in, and is_organization_admin() returns false on its first
+		 *    line when nobody is logged in, so check 1 alone would refuse the very citizen the
+		 *    link was mailed to. The secret is therefore accepted here, but only as narrowly as
+		 *    it is accepted there: it is compared against bb_application.secret in the same
+		 *    shape uiapplication::show() compares it, and it is SCOPED to the booking's own
+		 *    application - booking.application_id must be the application the secret
+		 *    authenticates. A valid secret never reaches another application's booking.
+		 *
+		 * Neither check can be delegated to ACL: every bookingfrontend request runs as the
+		 * shared bookingguest account, so an ACL grant here would apply to every visitor or to
+		 * no one. These two checks are the guard.
+		 */
+		$requested_booking = $this->bo->read_single($id);
+		$bouser = new UserHelper();
+
+		$secret = Sanitizer::get_var('secret', 'string');
+		$secret_ok = false;
+		if (!empty($requested_booking['application_id']) && !empty($secret))
+		{
+			$owning_application = CreateObject('booking.boapplication')->read_single($requested_booking['application_id']);
+			$secret_ok = !empty($owning_application['secret']) && $owning_application['secret'] == $secret;
+		}
+
+		if (empty($requested_booking) || (!$bouser->is_group_admin($requested_booking['group_id']) && !$secret_ok))
+		{
+			phpgw::no_access('bookingfrontend', lang('access_denied'));
+			return;
+		}
+
 		if ($config->config_data['user_can_delete_bookings'] != 'yes')
 		{
 			Cache::message_set('user can not delete bookings', 'error');

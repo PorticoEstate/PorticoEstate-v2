@@ -71,6 +71,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	// `resources` key altogether rather than sending an empty array. Normalise
 	// once here so every `season.resources` read below is on an array. Absence
 	// of `seasons` itself is preserved, since several branches test for it.
+	// Still load-bearing: useBuildingSeasons now normalises too, but `rawSeasons` is a prop from the SSR fetchBuildingSeasons in building-calendar/index.tsx, which never touches that hook.
 	const seasons = useMemo(
 		() => rawSeasons?.map(season => Array.isArray(season.resources) ? season : {...season, resources: []}),
 		[rawSeasons]

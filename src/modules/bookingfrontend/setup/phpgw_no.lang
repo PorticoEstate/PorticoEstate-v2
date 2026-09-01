@@ -1101,3 +1101,4 @@ allocation_request_mode_notice	bookingfrontend	no	Denne kommunen lar ikke organi
 allocation_series_changed_re_previewed	bookingfrontend	no	Serien er endret siden forrige steg. Listen er oppdatert - se over på nytt før du bekrefter.
 allocation_cancelled_summary	bookingfrontend	no	{{count}} forekomster ble avbestilt
 allocation_cancel_skipped_summary	bookingfrontend	no	{{count}} forekomster ble ikke avbestilt
+cancel_mode_unavailable	bookingfrontend	no	Utilgjengelig

@@ -1100,3 +1100,4 @@ allocation_request_mode_notice	bookingfrontend	nn	Denne kommunen lèt ikkje orga
 allocation_series_changed_re_previewed	bookingfrontend	nn	Serien er endra sidan førre steg. Lista er oppdatert - sjå over på nytt før du stadfestar.
 allocation_cancelled_summary	bookingfrontend	nn	{{count}} førekomstar vart avbestilte
 allocation_cancel_skipped_summary	bookingfrontend	nn	{{count}} førekomstar vart ikkje avbestilte
+cancel_mode_unavailable	bookingfrontend	nn	Utilgjengeleg

@@ -1100,3 +1100,4 @@ allocation_request_mode_notice	bookingfrontend	en	This municipality does not let
 allocation_series_changed_re_previewed	bookingfrontend	en	The series changed since the previous step. The list has been refreshed - review it again before confirming.
 allocation_cancelled_summary	bookingfrontend	en	{{count}} occurrences were cancelled
 allocation_cancel_skipped_summary	bookingfrontend	en	{{count}} occurrences were not cancelled
+cancel_mode_unavailable	bookingfrontend	en	Unavailable

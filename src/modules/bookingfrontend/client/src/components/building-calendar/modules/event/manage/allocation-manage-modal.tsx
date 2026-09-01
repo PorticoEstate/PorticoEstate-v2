@@ -100,9 +100,25 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 	const canDelete = bookingConfig?.user_can_delete_allocations === true;
 	const isRequestMode = !settingsUnresolved && !canDelete;
 
-	const cancelLabel = isRequestMode
-		? t('bookingfrontend.request_cancellation')
-		: t('bookingfrontend.cancel_allocation');
+	/**
+	 * ONE discriminator, read by every surface that names the mode.
+	 *
+	 * The step title and the confirm button are never on screen together — the title belongs to
+	 * the scope step, the button to the confirm step — so nothing on the page makes it visible
+	 * when the two disagree. They did: the button had already been made three-way while this
+	 * label stayed two-valued, and in the unresolved state the heading went on announcing
+	 * "Avbestill tildeling" — the confident claim, from the branch that is merely NOT request
+	 * mode. Deriving the mode once and switching both on it is the fix; adding a second
+	 * three-way expression beside this one would only move the collapse one line over.
+	 */
+	const cancelMode: 'unresolved' | 'request' | 'delete' =
+		settingsUnresolved ? 'unresolved' : isRequestMode ? 'request' : 'delete';
+
+	const cancelLabel = cancelMode === 'unresolved'
+		? t('bookingfrontend.cancel_mode_unavailable')
+		: cancelMode === 'request'
+			? t('bookingfrontend.request_cancellation')
+			: t('bookingfrontend.cancel_allocation');
 
 	const occurrenceLabel = useMemo(() => {
 		const from = DateTime.fromISO(allocation.from_ as unknown as string);
@@ -456,9 +472,9 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 						onClick={confirmCancel}
 					>
 						{cancelMutation.isPending && <Spinner aria-hidden={true} data-size="xs"/>}
-						{settingsUnresolved
-							? t('common.loading')
-							: isRequestMode
+						{cancelMode === 'unresolved'
+							? t('bookingfrontend.cancel_mode_unavailable')
+							: cancelMode === 'request'
 								? t('bookingfrontend.send_request_for_n_occurrences', {count: cancellableCount})
 								: t('bookingfrontend.cancel_n_occurrences', {count: cancellableCount})}
 					</Button>

@@ -1073,3 +1073,30 @@ cancelling_booking_frees_hour_back_to_allocation	bookingfrontend	en	Cancelling a
 manage_allocation	bookingfrontend	en	Manage allocation
 manage_event	bookingfrontend	en	Manage event
 manage_booking	bookingfrontend	en	Manage booking
+cancel_allocation	bookingfrontend	en	Cancel allocation
+close	bookingfrontend	en	Close
+request_cancellation	bookingfrontend	en	Request cancellation
+step_1_of_2	bookingfrontend	en	Step 1 of 2
+step_2_of_2	bookingfrontend	en	Step 2 of 2
+what_should_be_cancelled	bookingfrontend	en	What should be cancelled?
+cancel_scope_occurrence	bookingfrontend	en	Only {{date}}
+cancel_scope_occurrence_detail	bookingfrontend	en	1 occurrence · the others stay
+cancel_scope_season	bookingfrontend	en	The rest of the season
+cancel_scope_season_detail	bookingfrontend	en	Every remaining occurrence to the end of the season
+cancel_scope_until	bookingfrontend	en	Repeating until a date I choose
+cancel_until_date	bookingfrontend	en	Until
+cancel_every_n_weeks	bookingfrontend	en	Every (weeks)
+message_to_building	bookingfrontend	en	Message to the building
+review_and_confirm	bookingfrontend	en	Review and confirm
+free_to_cancel	bookingfrontend	en	Free to cancel
+blocked_by_live_booking	bookingfrontend	en	Blocked by booking {{group}} #{{id}}
+blocked_by_inactive_booking	bookingfrontend	en	Blocked by an inactive booking {{group}} #{{id}}
+blocked_by_inactive_booking_help	bookingfrontend	en	The booking is not active but still blocks the date.
+dates_without_allocation	bookingfrontend	en	{{count}} dates in the period have no allocation
+occurrences_can_be_cancelled	bookingfrontend	en	{{cancellable}} of {{total}} occurrences can be cancelled
+cancel_n_occurrences	bookingfrontend	en	Cancel {{count}} occurrences
+send_request_for_n_occurrences	bookingfrontend	en	Send request for {{count}} occurrences
+allocation_request_mode_notice	bookingfrontend	en	This municipality does not let organisations delete allocations. Contact a case worker.
+allocation_series_changed_re_previewed	bookingfrontend	en	The series changed since the previous step. The list has been refreshed - review it again before confirming.
+allocation_cancelled_summary	bookingfrontend	en	{{count}} occurrences were cancelled
+allocation_cancel_skipped_summary	bookingfrontend	en	{{count}} occurrences were not cancelled

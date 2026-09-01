@@ -1,4 +1,4 @@
-import React, {FC} from 'react';
+import React, {FC, useState} from 'react';
 import {IAPIAllocation} from "@/service/pecalendar.types";
 import {IBookingUser} from "@/service/types/api.types";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import {isFutureDate, phpGWLink} from "@/service/util";
 import {DateTime} from "luxon";
 import {PlusIcon} from "@navikt/aksel-icons";
 import {Button} from "@digdir/designsystemet-react";
+import AllocationManageModal from "@/components/building-calendar/modules/event/manage/allocation-manage-modal";
 
 interface AllocationPopperActionsProps {
 	allocation: IAPIAllocation;
@@ -19,13 +20,13 @@ interface AllocationPopperActionsProps {
  *
  * The design carries INFO + LOW-RISK ACTIONS ONLY: the heavy operations (edit
  * time, edit resources, move, cancel) all move into the 1c management modal,
- * reached through the single primary "Manage allocation" button. Until 1c is
- * built that button targets the legacy edit page, which is where those
- * operations live today.
+ * reached through the single primary "Manage allocation" button. That modal now
+ * exists, so the button opens it here rather than the legacy edit page.
  */
 const AllocationPopperActions: FC<AllocationPopperActionsProps> = (props) => {
 	const {allocation} = props;
 	const t = useTrans();
+	const [manageOpen, setManageOpen] = useState<boolean>(false);
 	const fromUnix = Date.parse(allocation.from_) / 1000;
 	const toUnix = Date.parse(allocation.to_) / 1000;
 	const isInFuture = isFutureDate(DateTime.fromISO(allocation.from_));
@@ -48,16 +49,20 @@ const AllocationPopperActions: FC<AllocationPopperActionsProps> = (props) => {
 					</Link>
 				</Button>
 			)}
-			{/* design: sc-if showManage -> {{ manageLabel }}, the primary action */}
-			<Button asChild variant={'primary'} data-color={'accent'}>
-				<Link href={phpGWLink('bookingfrontend/', {
-					menuaction: 'bookingfrontend.uiallocation.edit',
-					allocation_id: allocation.id,
-				}, false)} target="_blank"
-					  className={styles.actionButton}>
-					{t('bookingfrontend.manage_allocation')}
-				</Link>
+			{/* design: sc-if showManage -> {{ manageLabel }}, the primary action, opening 1c */}
+			<Button
+				variant={'primary'}
+				data-color={'accent'}
+				className={styles.actionButton}
+				onClick={() => setManageOpen(true)}
+			>
+				{t('bookingfrontend.manage_allocation')}
 			</Button>
+			<AllocationManageModal
+				allocation={allocation}
+				open={manageOpen}
+				onClose={() => setManageOpen(false)}
+			/>
 		</React.Fragment>
 	);
 }

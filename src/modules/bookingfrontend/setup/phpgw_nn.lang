@@ -1073,3 +1073,30 @@ cancelling_booking_frees_hour_back_to_allocation	bookingfrontend	nn	Å avbestill
 manage_allocation	bookingfrontend	nn	Administrer tildeling
 manage_event	bookingfrontend	nn	Administrer arrangement
 manage_booking	bookingfrontend	nn	Administrer interntildeling
+cancel_allocation	bookingfrontend	nn	Avbestill tildeling
+close	bookingfrontend	nn	Lukk
+request_cancellation	bookingfrontend	nn	Be om avbestilling
+step_1_of_2	bookingfrontend	nn	Steg 1 av 2
+step_2_of_2	bookingfrontend	nn	Steg 2 av 2
+what_should_be_cancelled	bookingfrontend	nn	Kva skal avbestillast?
+cancel_scope_occurrence	bookingfrontend	nn	Berre {{date}}
+cancel_scope_occurrence_detail	bookingfrontend	nn	1 førekomst · dei andre står
+cancel_scope_season	bookingfrontend	nn	Resten av sesongen
+cancel_scope_season_detail	bookingfrontend	nn	Alle attståande førekomstar ut sesongen
+cancel_scope_until	bookingfrontend	nn	Gjentakande til ein dato eg vel
+cancel_until_date	bookingfrontend	nn	Til og med
+cancel_every_n_weeks	bookingfrontend	nn	Kvar (veker)
+message_to_building	bookingfrontend	nn	Melding til bygget
+review_and_confirm	bookingfrontend	nn	Sjå over og stadfest
+free_to_cancel	bookingfrontend	nn	Kan avbestillast
+blocked_by_live_booking	bookingfrontend	nn	Blokkert av interntildeling {{group}} #{{id}}
+blocked_by_inactive_booking	bookingfrontend	nn	Blokkert av ei inaktiv interntildeling {{group}} #{{id}}
+blocked_by_inactive_booking_help	bookingfrontend	nn	Interntildelinga er ikkje aktiv men blokkerer likevel datoen.
+dates_without_allocation	bookingfrontend	nn	{{count}} datoar i perioden har inga tildeling
+occurrences_can_be_cancelled	bookingfrontend	nn	{{cancellable}} av {{total}} førekomstar kan avbestillast
+cancel_n_occurrences	bookingfrontend	nn	Avbestill {{count}} førekomstar
+send_request_for_n_occurrences	bookingfrontend	nn	Send førespurnad for {{count}} førekomstar
+allocation_request_mode_notice	bookingfrontend	nn	Denne kommunen lèt ikkje organisasjonar slette tildelingar sjølv. Ta kontakt med saksbehandlar.
+allocation_series_changed_re_previewed	bookingfrontend	nn	Serien er endra sidan førre steg. Lista er oppdatert - sjå over på nytt før du stadfestar.
+allocation_cancelled_summary	bookingfrontend	nn	{{count}} førekomstar vart avbestilte
+allocation_cancel_skipped_summary	bookingfrontend	nn	{{count}} førekomstar vart ikkje avbestilte

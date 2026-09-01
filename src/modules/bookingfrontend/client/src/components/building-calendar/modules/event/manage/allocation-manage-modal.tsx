@@ -1,0 +1,491 @@
+'use client'
+import React, {FC, useCallback, useMemo, useState} from 'react';
+import {DateTime} from "luxon";
+import {Alert, Button, Fieldset, Heading, Label, Paragraph, Radio, Spinner, Textarea, Textfield} from "@digdir/designsystemet-react";
+import Dialog from "@/components/dialog/mobile-dialog";
+import {useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {useServerSettings} from "@/service/hooks/api-hooks";
+import {useCurrentBuilding} from "@/components/building-calendar/calendar-context";
+import {IAPIAllocation} from "@/service/pecalendar.types";
+import styles from "./allocation-manage-modal.module.scss";
+import {
+	AllocationCancelScope,
+	IAllocationCancelOccurrence,
+	IAllocationCancelPreview,
+	IAllocationCancelResult,
+	isDeadBlocked,
+	realOccurrences,
+} from "@/service/api/allocation-cancellation";
+import {useAllocationCancel, useAllocationCancelPreview} from "@/service/hooks/allocation-cancellation-hooks";
+
+interface AllocationManageModalProps {
+	allocation: IAPIAllocation;
+	open: boolean;
+	onClose: () => void;
+}
+
+type Step = 'scope' | 'confirm' | 'done';
+
+/**
+ * Design 1c — the allocation management modal, as the two-step cancellation it is built around.
+ *
+ * WHAT THIS DOES NOT RENDER, and why. The design's 1c opens on an OVERVIEW screen carrying the
+ * organisation's contact person, the owning application number and its approval date, "3 bookings
+ * under it", the comment thread, "You are: Admin for …", the participant count and the computed
+ * cancellation deadline. The design→backend contract measured those one by one: the contact
+ * person and phone are the legacy `contacts[0]` entity and are not on the served Organization;
+ * `application_id` is deliberately not exposed on the allocation payload; `check_for_booking`
+ * returns a bare id with no name; there is no bb_allocation_comment table at all; and the
+ * deadline's computed instant is not served for an allocation. None of it is reachable, so none
+ * of it is drawn — this component renders the summary the payload actually supports and then the
+ * cancel flow. Inventing those cells was the alternative and it is not an option.
+ *
+ * The recipient recap the design draws in step 2 ("To: case worker · 6 user organisations …") is
+ * likewise absent: nothing in the shipped endpoint computes or returns a recipient set.
+ */
+const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open, onClose}) => {
+	const t = useTrans();
+	const serverSettings = useServerSettings();
+	const currentBuilding = useCurrentBuilding();
+
+	const buildingId = typeof currentBuilding === 'string'
+		? Number(currentBuilding)
+		: currentBuilding;
+
+	const [step, setStep] = useState<Step>('scope');
+	const [scope, setScope] = useState<AllocationCancelScope>('occurrence');
+	const [repeatUntil, setRepeatUntil] = useState<string>('');
+	const [fieldInterval, setFieldInterval] = useState<string>('1');
+	const [message, setMessage] = useState<string>('');
+	const [preview, setPreview] = useState<IAllocationCancelPreview | null>(null);
+	const [result, setResult] = useState<IAllocationCancelResult | null>(null);
+	const [staleRepreviewed, setStaleRepreviewed] = useState<boolean>(false);
+	const [requestModeRefusal, setRequestModeRefusal] = useState<boolean>(false);
+
+	const previewMutation = useAllocationCancelPreview();
+	const cancelMutation = useAllocationCancel(Number.isFinite(buildingId as number) ? buildingId as number : undefined);
+
+	/**
+	 * Request mode.
+	 *
+	 * Gated on `=== true`, NEVER on truthiness. SerializableTrait::parseStringBoolean coerces
+	 * only yes|true|1|no|false|''|0 and returns any other stored string UNCHANGED, so an admin
+	 * value the parser does not know — 'never' is selectable for allocations on
+	 * booking/templates/base/settings.xsl — arrives here as a non-empty, therefore truthy,
+	 * string while every PHP consumer reads it as off. `if (flag)` would switch the affordance
+	 * ON under the most restrictive setting available. With cancel gone from the popper card,
+	 * this modal is the only remaining Lane-3 reader of this flag.
+	 *
+	 * RENDER ONLY. No request or notification flow is built here: the server answers the
+	 * request-mode branch with 409 rather than porting legacy's case-worker notification, and
+	 * making that branch reachable from this client would be new behaviour, not a port.
+	 *
+	 * THREE STATES, NOT TWO — and this is the whole point of the shape below.
+	 *
+	 * The flag can be known-TRUE, known-FALSE, or NOT KNOWN: the settings query is in flight,
+	 * or it failed, or it answered without a booking_config at all. `!canDelete` collapsed the
+	 * last two of those into request mode, so a client that had been told NOTHING rendered the
+	 * confident claim "this municipality does not let you delete" and offered a button reading
+	 * "send a request" whose onClick has always been the real, immediate delete. Label and
+	 * action were driven by two different expressions and only one of them was honest.
+	 *
+	 * It is the same failure as reading this flag with `if (flag)` — a two-valued expression
+	 * standing in for a world with more than two values — and it is why `canDelete === false`
+	 * alone is NOT the fix: that only moves the collapse from one branch to the other. Both
+	 * user-facing modes must therefore be positively known, and the unresolved state is a
+	 * THIRD outcome that asserts nothing and offers nothing.
+	 */
+	const bookingConfig = serverSettings.data?.booking_config;
+	const settingsUnresolved = serverSettings.isPending || serverSettings.isError || bookingConfig == null;
+	const canDelete = bookingConfig?.user_can_delete_allocations === true;
+	const isRequestMode = !settingsUnresolved && !canDelete;
+
+	const cancelLabel = isRequestMode
+		? t('bookingfrontend.request_cancellation')
+		: t('bookingfrontend.cancel_allocation');
+
+	const occurrenceLabel = useMemo(() => {
+		const from = DateTime.fromISO(allocation.from_ as unknown as string);
+		return from.isValid ? from.toFormat('cccc d. LLLL yyyy') : String(allocation.from_);
+	}, [allocation.from_]);
+
+	const formatOccurrence = useCallback((occurrence: IAllocationCancelOccurrence) => {
+		const from = DateTime.fromSQL(occurrence.from_);
+		const to = DateTime.fromSQL(occurrence.to_);
+		if (!from.isValid) {
+			return occurrence.from_;
+		}
+		return to.isValid
+			? `${from.toFormat('ccc d. LLL yyyy')}, ${from.toFormat('HH:mm')} – ${to.toFormat('HH:mm')}`
+			: from.toFormat('ccc d. LLL yyyy HH:mm');
+	}, []);
+
+	const requestBody = useCallback(() => ({
+		scope,
+		...(scope === 'until' ? {repeat_until: repeatUntil} : {}),
+		field_interval: Number(fieldInterval) || 1,
+		message,
+	}), [scope, repeatUntil, fieldInterval, message]);
+
+	const runPreview = useCallback(async () => {
+		const fresh = await previewMutation.mutateAsync({
+			allocationId: allocation.id,
+			body: requestBody(),
+		});
+		setPreview(fresh);
+		return fresh;
+	}, [allocation.id, previewMutation, requestBody]);
+
+	const goToConfirm = useCallback(async () => {
+		setStaleRepreviewed(false);
+		setRequestModeRefusal(false);
+		try {
+			await runPreview();
+			setStep('confirm');
+		} catch {
+			// The mutation's own error state renders the message; staying on step 1 is correct.
+		}
+	}, [runPreview]);
+
+	/**
+	 * The destructive step, and the TOCTOU recovery.
+	 *
+	 * The confirm_token is the one the CURRENT preview returned. If a booking was created under
+	 * any occurrence between the two steps the server refuses with 409 and the token is stale.
+	 * The recovery is to re-run the PREVIEW and show the user the changed series — never to
+	 * retry the cancel, which would re-submit a set the user never saw.
+	 */
+	const confirmCancel = useCallback(async () => {
+		if (!preview) {
+			return;
+		}
+		setStaleRepreviewed(false);
+		setRequestModeRefusal(false);
+		try {
+			const cancelled = await cancelMutation.mutateAsync({
+				allocationId: allocation.id,
+				body: {...requestBody(), confirm_token: preview.confirm_token},
+			});
+			setResult(cancelled);
+			setStep('done');
+		} catch (error: any) {
+			if (error?.isRequestMode === true) {
+				setRequestModeRefusal(true);
+				return;
+			}
+			if (error?.isStaleToken === true) {
+				try {
+					await runPreview();
+					setStaleRepreviewed(true);
+				} catch {
+					// The preview's own error state renders; the stale cancel is not retried.
+				}
+			}
+		}
+	}, [allocation.id, cancelMutation, preview, requestBody, runPreview]);
+
+	const handleClose = useCallback(() => {
+		setStep('scope');
+		setPreview(null);
+		setResult(null);
+		setStaleRepreviewed(false);
+		setRequestModeRefusal(false);
+		previewMutation.reset();
+		cancelMutation.reset();
+		onClose();
+	}, [cancelMutation, onClose, previewMutation]);
+
+	// The occurrences the series actually has. `preview.total` counts every date the walk
+	// visited, including weeks with no allocation at all, so it is not the denominator the
+	// design's "N of M" means.
+	const existing = preview ? realOccurrences(preview) : [];
+	const cancellableCount = existing.filter((o) => o.cancellable).length;
+
+	const renderScopeStep = () => (
+		<div className={styles.step}>
+			{isRequestMode && (
+				<Alert data-color="warning">
+					<Paragraph data-size="sm">{t('bookingfrontend.allocation_request_mode_notice')}</Paragraph>
+				</Alert>
+			)}
+
+			<div className={styles.panel}>
+				<Fieldset>
+					<Fieldset.Legend className={styles.panelTitle}>
+						{t('bookingfrontend.what_should_be_cancelled')}
+					</Fieldset.Legend>
+
+					<div className={styles.scopeOption}>
+						<Radio
+							name="allocation-cancel-scope"
+							value="occurrence"
+							checked={scope === 'occurrence'}
+							onChange={() => setScope('occurrence')}
+							label={t('bookingfrontend.cancel_scope_occurrence', {date: occurrenceLabel})}
+						/>
+						<span className={styles.scopeDetail}>
+							{t('bookingfrontend.cancel_scope_occurrence_detail')}
+						</span>
+					</div>
+
+					<div className={styles.scopeOption}>
+						<Radio
+							name="allocation-cancel-scope"
+							value="season"
+							checked={scope === 'season'}
+							onChange={() => setScope('season')}
+							label={t('bookingfrontend.cancel_scope_season')}
+						/>
+						<span className={styles.scopeDetail}>
+							{t('bookingfrontend.cancel_scope_season_detail')}
+						</span>
+					</div>
+
+					<div className={styles.scopeOption}>
+						<Radio
+							name="allocation-cancel-scope"
+							value="until"
+							checked={scope === 'until'}
+							onChange={() => setScope('until')}
+							label={t('bookingfrontend.cancel_scope_until')}
+						/>
+						{scope === 'until' && (
+							<div className={styles.untilFields}>
+								<Textfield
+									className={styles.untilField}
+									type="date"
+									label={t('bookingfrontend.cancel_until_date')}
+									value={repeatUntil}
+									onChange={(e) => setRepeatUntil(e.target.value)}
+								/>
+								<Textfield
+									className={styles.intervalField}
+									type="number"
+									min={1}
+									label={t('bookingfrontend.cancel_every_n_weeks')}
+									value={fieldInterval}
+									onChange={(e) => setFieldInterval(e.target.value)}
+								/>
+							</div>
+						)}
+					</div>
+				</Fieldset>
+			</div>
+
+			<div className={styles.panel}>
+				<Label htmlFor="allocation-cancel-message" className={styles.panelTitle}>
+					{t('bookingfrontend.message_to_building')}
+				</Label>
+				<Textarea
+					id="allocation-cancel-message"
+					rows={3}
+					value={message}
+					onChange={(e) => setMessage(e.target.value)}
+				/>
+			</div>
+
+			{previewMutation.isError && (
+				<Alert data-color="danger">
+					<Paragraph data-size="sm">{previewMutation.error?.message}</Paragraph>
+				</Alert>
+			)}
+		</div>
+	);
+
+	const renderOccurrenceRow = (occurrence: IAllocationCancelOccurrence) => {
+		const dead = isDeadBlocked(occurrence);
+		const blocker = occurrence.blocking_bookings[0];
+		const dotClass = occurrence.cancellable
+			? styles.cancellable
+			: dead
+				? styles.blockedDead
+				: styles.blockedLive;
+
+		return (
+			<div className={styles.occurrenceRow} key={`${occurrence.index}-${occurrence.from_}`}>
+				<span className={styles.occurrenceWhen}>
+					<span className={`${styles.statusDot} ${dotClass}`} aria-hidden={true}/>
+					<span>{formatOccurrence(occurrence)}</span>
+				</span>
+				<span className={styles.occurrenceNote}>
+					{occurrence.cancellable && t('bookingfrontend.free_to_cancel')}
+					{!occurrence.cancellable && blocker && (
+						<>
+							<span className={styles.blockerDetail}>
+								{dead
+									? t('bookingfrontend.blocked_by_inactive_booking', {
+										group: blocker.group_name ?? '',
+										id: blocker.id,
+									})
+									: t('bookingfrontend.blocked_by_live_booking', {
+										group: blocker.group_name ?? '',
+										id: blocker.id,
+									})}
+							</span>
+							{dead && (
+								<span className={styles.blockerDetail}>
+									{t('bookingfrontend.blocked_by_inactive_booking_help')}
+								</span>
+							)}
+						</>
+					)}
+				</span>
+			</div>
+		);
+	};
+
+	const renderConfirmStep = () => {
+		if (!preview) {
+			return null;
+		}
+
+		return (
+			<div className={styles.step}>
+				{staleRepreviewed && (
+					<Alert data-color="warning">
+						<Paragraph data-size="sm">{t('bookingfrontend.allocation_series_changed_re_previewed')}</Paragraph>
+					</Alert>
+				)}
+
+				{requestModeRefusal && (
+					<Alert data-color="warning">
+						<Paragraph data-size="sm">{t('bookingfrontend.allocation_request_mode_notice')}</Paragraph>
+					</Alert>
+				)}
+
+				<div className={styles.occurrenceList}>
+					{existing.map(renderOccurrenceRow)}
+				</div>
+
+				{preview.no_allocation > 0 && (
+					<span className={styles.mutedFootnote}>
+						{t('bookingfrontend.dates_without_allocation', {count: preview.no_allocation})}
+					</span>
+				)}
+
+				{message.trim() !== '' && (
+					<div className={styles.panel}>
+						<span className={styles.eyebrow}>{t('bookingfrontend.message_to_building')}</span>
+						<span className={styles.messageEcho}>{message}</span>
+					</div>
+				)}
+
+				{cancelMutation.isError && !requestModeRefusal && !staleRepreviewed && (
+					<Alert data-color="danger">
+						<Paragraph data-size="sm">{cancelMutation.error?.message}</Paragraph>
+					</Alert>
+				)}
+			</div>
+		);
+	};
+
+	const renderDoneStep = () => {
+		if (!result) {
+			return null;
+		}
+		// `skipped_count` counts every date the walk visited and did not delete, which includes
+		// the weeks that never had an allocation at all. Reporting that number back as
+		// "N occurrences were not cancelled" would tell the user the flow spared occurrences
+		// that do not exist. Only genuinely blocked occurrences are counted here, for the same
+		// reason the step-2 denominator excludes them.
+		const skippedReal = result.skipped.filter((s) => s.status !== 'no_allocation').length;
+
+		return (
+			<div className={styles.step}>
+				<Alert data-color="success">
+					<Paragraph data-size="sm">
+						{t('bookingfrontend.allocation_cancelled_summary', {count: result.deleted_count})}
+					</Paragraph>
+				</Alert>
+				{skippedReal > 0 && (
+					<span className={styles.mutedFootnote}>
+						{t('bookingfrontend.allocation_cancel_skipped_summary', {count: skippedReal})}
+					</span>
+				)}
+			</div>
+		);
+	};
+
+	const title = (
+		<div>
+			<span className={styles.eyebrow}>
+				{step === 'scope' && `${t('bookingfrontend.step_1_of_2')} · #${allocation.id}`}
+				{step === 'confirm' && `${t('bookingfrontend.step_2_of_2')} · #${allocation.id}`}
+				{step === 'done' && `#${allocation.id}`}
+			</span>
+			<Heading level={2} data-size="xs" className={styles.stepTitle}>
+				{step === 'confirm'
+					? t('bookingfrontend.occurrences_can_be_cancelled', {
+						cancellable: cancellableCount,
+						total: existing.length,
+					})
+					: cancelLabel}
+			</Heading>
+		</div>
+	);
+
+	const footer = (
+		<div className={styles.footer}>
+			{/* On the result step the only action left is closing, and it is the primary button
+			    on the right — a second "Close" on the left would just be the same action twice. */}
+			{step !== 'done' ? (
+				<Button variant="tertiary" onClick={step === 'confirm' ? () => setStep('scope') : handleClose}>
+					{step === 'confirm' ? t('bookingfrontend.back') : t('bookingfrontend.close')}
+				</Button>
+			) : <span/>}
+			<div className={styles.footerActions}>
+				{step === 'scope' && (
+					<Button
+						variant="primary"
+						data-color="accent"
+						disabled={previewMutation.isPending || (scope === 'until' && repeatUntil === '')}
+						onClick={goToConfirm}
+					>
+						{previewMutation.isPending && <Spinner aria-hidden={true} data-size="xs"/>}
+						{t('bookingfrontend.review_and_confirm')}
+					</Button>
+				)}
+				{/* `settingsUnresolved` gates the affordance itself, not just its wording: this
+				    onClick is the real delete in every mode, so the button must not be clickable
+				    in a state whose consequences the client cannot describe. */}
+				{step === 'confirm' && (
+					<Button
+						variant="primary"
+						data-color="danger"
+						disabled={cancelMutation.isPending || cancellableCount === 0 || settingsUnresolved}
+						onClick={confirmCancel}
+					>
+						{cancelMutation.isPending && <Spinner aria-hidden={true} data-size="xs"/>}
+						{settingsUnresolved
+							? t('common.loading')
+							: isRequestMode
+								? t('bookingfrontend.send_request_for_n_occurrences', {count: cancellableCount})
+								: t('bookingfrontend.cancel_n_occurrences', {count: cancellableCount})}
+					</Button>
+				)}
+				{step === 'done' && (
+					<Button variant="primary" data-color="accent" onClick={handleClose}>
+						{t('bookingfrontend.close')}
+					</Button>
+				)}
+			</div>
+		</div>
+	);
+
+	return (
+		<Dialog
+			open={open}
+			onClose={handleClose}
+			dialogId={`allocation-manage-${allocation.id}`}
+			title={title}
+			footer={footer}
+			closeOnBackdropClick={false}
+		>
+			{step === 'scope' && renderScopeStep()}
+			{step === 'confirm' && renderConfirmStep()}
+			{step === 'done' && renderDoneStep()}
+		</Dialog>
+	);
+};
+
+export default AllocationManageModal;

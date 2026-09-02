@@ -178,3 +178,50 @@
     margin: 0;
     padding-left: 1.25rem;
 }
+
+/* Overview step (design 1c's landing screen). */
+.overviewHeader {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.overviewOrgName {
+    margin: 0;
+    font-size: 1.25rem;
+    line-height: 1.625rem;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+.overviewGrid {
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+    gap: 0.625rem 1.5rem;
+    font-size: 1rem;
+    line-height: 1.5rem;
+}
+
+.overviewLabel {
+    font-weight: 700;
+}
+
+.resourceChips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+.resourceChip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 12px;
+    border-radius: 5rem;
+    border: 1px solid var(--ds-color-neutral-border-default);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+}

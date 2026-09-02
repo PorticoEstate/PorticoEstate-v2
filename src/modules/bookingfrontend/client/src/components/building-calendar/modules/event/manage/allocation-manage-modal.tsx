@@ -1,10 +1,10 @@
 'use client'
-import React, {FC, useCallback, useMemo, useState} from 'react';
+import React, {FC, useCallback, useMemo, useRef, useState} from 'react';
 import {DateTime} from "luxon";
-import {Alert, Button, Fieldset, Heading, Label, Paragraph, Radio, Spinner, Textarea, Textfield} from "@digdir/designsystemet-react";
+import {Alert, Button, Fieldset, Heading, Label, Paragraph, Radio, Spinner, Textarea, Textfield, Tooltip} from "@digdir/designsystemet-react";
 import Dialog from "@/components/dialog/mobile-dialog";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
-import {useServerSettings} from "@/service/hooks/api-hooks";
+import {useBuildingSeasons, useServerSettings} from "@/service/hooks/api-hooks";
 import {useCurrentBuilding} from "@/components/building-calendar/calendar-context";
 import {IAPIAllocation} from "@/service/pecalendar.types";
 import styles from "./allocation-manage-modal.module.scss";
@@ -24,21 +24,25 @@ interface AllocationManageModalProps {
 	onClose: () => void;
 }
 
-type Step = 'scope' | 'confirm' | 'done';
+type Step = 'overview' | 'scope' | 'confirm' | 'done';
 
 /**
- * Design 1c — the allocation management modal, as the two-step cancellation it is built around.
+ * Design 1c — the allocation management modal, now opening on the OVERVIEW screen 1c draws
+ * before its two-step cancellation.
  *
- * WHAT THIS DOES NOT RENDER, and why. The design's 1c opens on an OVERVIEW screen carrying the
+ * WHAT THE OVERVIEW DOES NOT RENDER, and why. The design's overview also carries the
  * organisation's contact person, the owning application number and its approval date, "3 bookings
  * under it", the comment thread, "You are: Admin for …", the participant count and the computed
  * cancellation deadline. The design→backend contract measured those one by one: the contact
  * person and phone are the legacy `contacts[0]` entity and are not on the served Organization;
- * `application_id` is deliberately not exposed on the allocation payload; `check_for_booking`
- * returns a bare id with no name; there is no bb_allocation_comment table at all; and the
+ * `application_id` is deliberately not exposed on the allocation payload (present in the TS type,
+ * `nullable` + no `@Expose`, so it is `undefined` at runtime and invisible to `tsc`); `check_for_
+ * booking` returns a bare id with no name; there is no bb_allocation_comment table at all; and the
  * deadline's computed instant is not served for an allocation. None of it is reachable, so none
- * of it is drawn — this component renders the summary the payload actually supports and then the
- * cancel flow. Inventing those cells was the alternative and it is not an option.
+ * of it is drawn. What IS reachable — organisation, building, resources, the occurrence's period
+ * and the season's name — comes straight off the `allocation` prop the modal already receives on
+ * open (season name resolved via `useBuildingSeasons`); no `cancel-preview` call is made to build
+ * this screen, since that mutation only fires once the user has chosen to cancel.
  *
  * The recipient recap the design draws in step 2 ("To: case worker · 6 user organisations …") is
  * likewise absent: nothing in the shipped endpoint computes or returns a recipient set.
@@ -52,7 +56,13 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 		? Number(currentBuilding)
 		: currentBuilding;
 
-	const [step, setStep] = useState<Step>('scope');
+	// `season_id` is on the prop; the season's NAME is not, so it is resolved through the same
+	// hook the calendar itself uses. This is a read already cached under ['building_seasons',
+	// buildingId] whenever the calendar view is open behind this modal.
+	const buildingSeasons = useBuildingSeasons(Number.isFinite(buildingId as number) ? buildingId as number : undefined);
+	const seasonName = buildingSeasons.data?.find((season) => season.id === allocation.season_id)?.name;
+
+	const [step, setStep] = useState<Step>('overview');
 	const [scope, setScope] = useState<AllocationCancelScope>('occurrence');
 	const [repeatUntil, setRepeatUntil] = useState<string>('');
 	const [fieldInterval, setFieldInterval] = useState<string>('1');
@@ -124,6 +134,39 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 		const from = DateTime.fromISO(allocation.from_ as unknown as string);
 		return from.isValid ? from.toFormat('cccc d. LLLL yyyy') : String(allocation.from_);
 	}, [allocation.from_]);
+
+	// The overview's period cell: the same date as occurrenceLabel, plus the start-end times.
+	const overviewPeriodLabel = useMemo(() => {
+		const from = DateTime.fromISO(allocation.from_ as unknown as string);
+		const to = DateTime.fromISO(allocation.to_ as unknown as string);
+		if (!from.isValid) {
+			return String(allocation.from_);
+		}
+		return to.isValid
+			? `${occurrenceLabel}, ${from.toFormat('HH:mm')}–${to.toFormat('HH:mm')}`
+			: occurrenceLabel;
+	}, [allocation.from_, allocation.to_, occurrenceLabel]);
+
+	/**
+	 * The long-organisation-name reveal, same technique as the popper card's title (#19569): a
+	 * ResizeObserver on the heading itself decides truncation, and the Tooltip node is only
+	 * mounted — so only tabbable and only announced — when the name actually overflows. A
+	 * short name never gets the affordance at all, not just a closed one.
+	 */
+	const [isOrgNameTruncated, setIsOrgNameTruncated] = useState(false);
+	const orgNameResizeObserver = useRef<ResizeObserver | null>(null);
+	const measureOrgNameTruncation = useCallback((el: HTMLHeadingElement) => {
+		setIsOrgNameTruncated(el.scrollWidth > el.clientWidth);
+	}, []);
+	const orgNameRef = useCallback((el: HTMLHeadingElement | null) => {
+		orgNameResizeObserver.current?.disconnect();
+		orgNameResizeObserver.current = null;
+		if (el) {
+			measureOrgNameTruncation(el);
+			orgNameResizeObserver.current = new ResizeObserver(() => measureOrgNameTruncation(el));
+			orgNameResizeObserver.current.observe(el);
+		}
+	}, [measureOrgNameTruncation]);
 
 	const formatOccurrence = useCallback((occurrence: IAllocationCancelOccurrence) => {
 		const from = DateTime.fromSQL(occurrence.from_);
@@ -201,7 +244,7 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 	}, [allocation.id, cancelMutation, preview, requestBody, runPreview]);
 
 	const handleClose = useCallback(() => {
-		setStep('scope');
+		setStep('overview');
 		setPreview(null);
 		setResult(null);
 		setStaleRepreviewed(false);
@@ -216,6 +259,53 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 	// design's "N of M" means.
 	const existing = preview ? realOccurrences(preview) : [];
 	const cancellableCount = existing.filter((o) => o.cancellable).length;
+
+	const renderOverviewStep = () => {
+		const orgNameHeading = (
+			<h3
+				ref={orgNameRef}
+				className={styles.overviewOrgName}
+				tabIndex={isOrgNameTruncated ? 0 : undefined}
+			>
+				{allocation.organization_name}
+			</h3>
+		);
+
+		return (
+			<div className={styles.step}>
+				<div className={styles.panel}>
+					<div className={styles.overviewHeader}>
+						{isOrgNameTruncated
+							? <Tooltip content={allocation.organization_name}>{orgNameHeading}</Tooltip>
+							: orgNameHeading}
+					</div>
+
+					<div className={styles.overviewGrid}>
+						<span className={styles.overviewLabel}>{t('booking.date and time')}</span>
+						<span>{overviewPeriodLabel}</span>
+
+						<span className={styles.overviewLabel}>{t('bookingfrontend.building')}</span>
+						<span>{allocation.building_name}</span>
+
+						<span className={styles.overviewLabel}>{t('booking.resources')}</span>
+						<span className={styles.resourceChips}>
+							{allocation.resources.map((resource) => (
+								<span key={resource.id} className={styles.resourceChip}>{resource.name}</span>
+							))}
+						</span>
+
+						<span className={styles.overviewLabel}>{t('bookingfrontend.season')}</span>
+						{/* #19645: `seasonName` is undefined in FOUR states (pending, errored,
+						    buildingId not finite/skipToken, or resolved-but-season_id absent) and
+						    only the first is actually loading. `isLoading` (pending AND fetching)
+						    is true ONLY during a genuine fetch, so the other three fall through to
+						    the neutral em-dash instead of a false "Laster inn…" claim. */}
+						<span>{seasonName ? seasonName : buildingSeasons.isLoading ? t('bookingfrontend.loading...') : '—'}</span>
+					</div>
+				</div>
+			</div>
+		);
+	};
 
 	const renderScopeStep = () => (
 		<div className={styles.step}>
@@ -311,11 +401,19 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 	const renderOccurrenceRow = (occurrence: IAllocationCancelOccurrence) => {
 		const dead = isDeadBlocked(occurrence);
 		const blocker = occurrence.blocking_bookings[0];
-		const dotClass = occurrence.cancellable
-			? styles.cancellable
-			: dead
-				? styles.blockedDead
-				: styles.blockedLive;
+		// #19645: `occurrence.cancellable` answers "is this date blocked by a booking
+		// underneath", not "may you cancel" — the same distinction the confirm
+		// heading (:526) already draws on `cancelMode`. Reusing that ONE
+		// discriminator here — instead of a second expression — means an
+		// unresolved setting can no longer show a green dot and "Kan avbestilles"
+		// beside a button reading "Utilgjengelig". Blocked rows are untouched:
+		// they answer a question that has nothing to do with the setting.
+		const assertsCancellable = occurrence.cancellable && cancelMode !== 'unresolved';
+		const dotClass = !occurrence.cancellable
+			? (dead ? styles.blockedDead : styles.blockedLive)
+			: assertsCancellable
+				? styles.cancellable
+				: '';
 
 		return (
 			<div className={styles.occurrenceRow} key={`${occurrence.index}-${occurrence.from_}`}>
@@ -324,7 +422,7 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 					<span>{formatOccurrence(occurrence)}</span>
 				</span>
 				<span className={styles.occurrenceNote}>
-					{occurrence.cancellable && t('bookingfrontend.free_to_cancel')}
+					{assertsCancellable && t('bookingfrontend.free_to_cancel')}
 					{!occurrence.cancellable && blocker && (
 						<>
 							<span className={styles.blockerDetail}>
@@ -425,17 +523,26 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 	const title = (
 		<div>
 			<span className={styles.eyebrow}>
+				{step === 'overview' && `#${allocation.id}`}
 				{step === 'scope' && `${t('bookingfrontend.step_1_of_2')} · #${allocation.id}`}
 				{step === 'confirm' && `${t('bookingfrontend.step_2_of_2')} · #${allocation.id}`}
 				{step === 'done' && `#${allocation.id}`}
 			</span>
 			<Heading level={2} data-size="xs" className={styles.stepTitle}>
-				{step === 'confirm'
-					? t('bookingfrontend.occurrences_can_be_cancelled', {
-						cancellable: cancellableCount,
-						total: existing.length,
-					})
-					: cancelLabel}
+				{step === 'overview'
+					? t('bookingfrontend.manage_allocation')
+					: step === 'confirm'
+						// #19526: this heading MUST NOT assert cancellability while the setting that
+						// decides it is unresolved — reusing the ONE `cancelMode` discriminator
+						// (bookingfrontend.cancel_mode_unavailable, the same "Utilgjengelig" text the
+						// confirm button already shows in this state) rather than adding a second one.
+						? (cancelMode === 'unresolved'
+							? cancelLabel
+							: t('bookingfrontend.occurrences_can_be_cancelled', {
+								cancellable: cancellableCount,
+								total: existing.length,
+							}))
+						: cancelLabel}
 			</Heading>
 		</div>
 	);
@@ -445,11 +552,27 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 			{/* On the result step the only action left is closing, and it is the primary button
 			    on the right — a second "Close" on the left would just be the same action twice. */}
 			{step !== 'done' ? (
-				<Button variant="tertiary" onClick={step === 'confirm' ? () => setStep('scope') : handleClose}>
-					{step === 'confirm' ? t('bookingfrontend.back') : t('bookingfrontend.close')}
+				<Button
+					variant="tertiary"
+					onClick={
+						step === 'confirm' ? () => setStep('scope')
+							: step === 'scope' ? () => setStep('overview')
+								: handleClose
+					}
+				>
+					{step === 'overview' ? t('bookingfrontend.close') : t('bookingfrontend.back')}
 				</Button>
 			) : <span/>}
 			<div className={styles.footerActions}>
+				{step === 'overview' && (
+					<Button
+						variant="primary"
+						data-color="accent"
+						onClick={() => setStep('scope')}
+					>
+						{cancelLabel}
+					</Button>
+				)}
 				{step === 'scope' && (
 					<Button
 						variant="primary"
@@ -497,6 +620,7 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 			footer={footer}
 			closeOnBackdropClick={false}
 		>
+			{step === 'overview' && renderOverviewStep()}
 			{step === 'scope' && renderScopeStep()}
 			{step === 'confirm' && renderConfirmStep()}
 			{step === 'done' && renderDoneStep()}

@@ -1,10 +1,10 @@
 'use client'
-import React, {FC, useMemo} from 'react';
+import React, {FC, useCallback, useMemo, useRef, useState} from 'react';
 import {FCallEvent} from "@/components/building-calendar/building-calendar.types";
 import styles from "@/components/building-calendar/modules/event/popper/event-popper.module.scss";
 import {formatEventTime, phpGWLink} from "@/service/util";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
-import {Button, Paragraph} from "@digdir/designsystemet-react";
+import {Button, Paragraph, Tooltip} from "@digdir/designsystemet-react";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import PopperContentSharedWrapper
 	from "@/components/building-calendar/modules/event/popper/content/popper-content-shared-wrapper";
@@ -61,6 +61,26 @@ const EventPopperContent: FC<EventPopperContentProps> = (props) => {
 		return isOrgAdmin(user, eventData)
 	}, [user, eventData]);
 
+	// Defect A follow-up (#19569): the tooltip must only attach when the title
+	// actually overflows, and it must stay correct across a live resize — the
+	// popper card's width can change without a remount, so a mount-only
+	// measurement would go stale. A ResizeObserver on the h3 itself (not a
+	// window resize listener) reacts to whatever caused ITS box to change.
+	const [isTitleTruncated, setIsTitleTruncated] = useState(false);
+	const titleResizeObserver = useRef<ResizeObserver | null>(null);
+	const measureTitleTruncation = useCallback((el: HTMLHeadingElement) => {
+		setIsTitleTruncated(el.scrollWidth > el.clientWidth);
+	}, []);
+	const eventNameRef = useCallback((el: HTMLHeadingElement | null) => {
+		titleResizeObserver.current?.disconnect();
+		titleResizeObserver.current = null;
+		if (el) {
+			measureTitleTruncation(el);
+			titleResizeObserver.current = new ResizeObserver(() => measureTitleTruncation(el));
+			titleResizeObserver.current.observe(el);
+		}
+	}, [measureTitleTruncation]);
+
 	const showLink = useMemo(() => {
 		let participant_limit = 0;
 		if (IEventIsAPIEvent(eventData)) {
@@ -115,7 +135,20 @@ const EventPopperContent: FC<EventPopperContentProps> = (props) => {
 												</span>
 												<span className={styles.entityId}>#{event.id}</span>
 											</div>
-											<h3 className={styles.eventName}>{event.title}</h3>
+											{(() => {
+												const titleHeading = (
+													<h3
+														ref={eventNameRef}
+														className={styles.eventName}
+														tabIndex={isTitleTruncated ? 0 : undefined}
+													>
+														{event.title}
+													</h3>
+												);
+												return isTitleTruncated ? (
+													<Tooltip content={event.title}>{titleHeading}</Tooltip>
+												) : titleHeading;
+											})()}
 										</div>
 									}
 		>

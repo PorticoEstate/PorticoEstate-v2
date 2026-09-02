@@ -1,0 +1,39 @@
+{
+    "name": "datatables.net-fixedheader-dt",
+    "description": "FixedHeader for DataTables with styling for [DataTables](https://datatables.net/)",
+    "main": "js/fixedHeader.dataTables.js",
+    "module": "js/fixedHeader.dataTables.mjs",
+    "style": "css/fixedHeader.dataTables.css",
+    "types": "./types/fixedHeader.dataTables.d.ts",
+    "version": "5.0.0",
+    "files": [
+        "css/**/*.css",
+        "js/**/*.js",
+        "js/**/*.mjs",
+        "types/**/*.d.ts"
+    ],
+    "keywords": [
+        "FixedHeader",
+        "Fixed Headers",
+        "Sticky",
+        "Datatables",
+        "table",
+        "filter",
+        "sort"
+    ],
+    "dependencies": {
+        "datatables.net-fixedheader": "5.0.0",
+        "datatables.net-dt": "^3"
+    },
+    "author": {
+        "name": "SpryMedia Ltd",
+        "url": "http://datatables.net"
+    },
+    "homepage": "https://datatables.net",
+    "bugs": "https://datatables.net/forums",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/DataTables/FixedHeader.git"
+    }
+}

@@ -256,8 +256,7 @@ function get_messages()
 	//	var profile_img = phpGWLink('phpgwapi/templates/bootstrap/images/undraw_profile.svg', {}, false);
 
 	var htmlString = '';
-	var oArgs = { menuaction: 'messenger.uimessenger.index', status: 'N' };
-	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var requestUrl = phpGWLink('messenger/messages', { status: 'N', draw: 1 }, true);
 	$.ajax({
 		type: 'GET',
 		url: requestUrl,
@@ -266,7 +265,7 @@ function get_messages()
 		{
 			if (data)
 			{
-				var obj = data.data;
+				var obj = data.data || [];
 				$.each(obj, function (i)
 				{
 					var font_class = '';
@@ -274,9 +273,10 @@ function get_messages()
 					{
 						font_class = 'font-weight-bold';
 					}
-					htmlString += '<a class="dropdown-item d-flex align-items-center" href="' + obj[i].link + '">';
+					var link = phpGWLink('messenger/view/messages/' + obj[i].id, {}, true);
+					htmlString += '<a class="dropdown-item d-flex align-items-center" href="' + link + '">';
 					htmlString += '		<div class="' + font_class + '">';
-					htmlString += '			<div class="text-truncate">' + strip_html(obj[i].subject_text) + '</div>';
+					htmlString += '			<div class="text-truncate">' + strip_html(obj[i].subject) + '</div>';
 					htmlString += '			<div class="small text-muted">' + strip_html(obj[i].from) + ' · ' + strip_html(obj[i].date) + '</div>';
 					htmlString += '		</div>';
 					htmlString += '</a>';

@@ -1,7 +1,7 @@
 %1 already accepted	booking	no	%1 allerede godkjent
-%1 already rejected	booking	no	%1 allerede avvist
+%1 already rejected	booking	no	%1 allerede avslått
 %1 archived as accepted	booking	no	%1 arkivert som godkjent
-%1 archived as rejected	booking	no	%1 arkivert som avvist
+%1 archived as rejected	booking	no	%1 arkivert som avslått
 %1 e-mails were not sent successfully	booking	no	%1 e-poster kunne ikke sendes (ugyldig adresse)
 %1 e-mails were sent successfully	booking	no	%1 e-poster ble sendt
 %1 resources mapped as articles	booking	no	%1 ressurser er mappet opp som artikler i varekatalogen
@@ -99,7 +99,7 @@ and	booking	no	og
 application	booking	no	Søknad
 application add	booking	no	Ny søknad
 Application archived as accepted	booking	no	Søknad arkivert som godkjent
-Application archived as rejected	booking	no	Søknad arkivert som avvist
+Application archived as rejected	booking	no	Søknad arkivert som avslått
 Application comment email settings	booking	no	Søknad kommentar epost innstillinger
 application edit	booking	no	Rediger søknad
 Application email settings	booking	no	Søknad epost innstillinger
@@ -117,7 +117,7 @@ approval_description	booking	no	Du er i ferd med å godkjenne denne søknaden. A
 approve	booking	no	Godkjenn
 archive_key	booking	no	Arkivnøkkel
 archive as accepted	booking	no	Arkiver som godkjent
-archive as rejected	booking	no	Arkiver som avvist
+archive as rejected	booking	no	Arkiver som avslått
 archived	booking	no	Arkivert
 are you sure you want to approve?	booking	no	Er du sikker på at søknad skal godkjennes?
 Are you sure you want to delete?	booking	no	Er du sikker på at søknad skal avvises?
@@ -1248,3 +1248,28 @@ open_days	booking	no	Åpne dager
 open_days_all	booking	no	Alle dager
 open_days_min_one	booking	no	Velg minst én dag
 open_days_desc	booking	no	Ukedager tjenesten er åpen. Brukes til å beregne bestillingsfristen i virkedager.
+
+approved lower	booking	no	godkjent
+approved times	booking	no	Godkjente tider
+comment added	booking	no	Ny kommentar
+comment from caseofficer	booking	no	Kommentar fra saksbehandler
+e lock instructions	booking	no	Instruksjoner for e-lås
+parts	booking	no	deler
+processed	booking	no	Behandlet
+rejected lower	booking	no	avslått
+sub applications	booking	no	deler
+times not approved	booking	no	Tider du ikke fikk
+total cost all	booking	no	Totalkostnad for alle bookinger
+create_hospitality_order_for_application	booking	no	Legg til ny bevertningsbestilling til denne søknaden
+accept_requires_hospitality_processed	booking	no	Alle bevertningsbestillinger må være behandlet før søknaden kan godkjennes
+back_to_application	booking	no	Tilbake til søknaden
+price_applies_to_several_occurrences	booking	no	Prisen gjelder flere tidspunkt
+which_occurrences_get_new_price	booking	no	Denne tildelingen er ett av flere tidspunkt i samme serie. Hvilke tidspunkt skal få den nye prisen?
+update_this_occurrence	booking	no	Oppdater dette
+update_future_occurrences	booking	no	Oppdater fremtidige
+update_all_occurrences	booking	no	Oppdater alle
+some_occurrences_have_own_price	booking	no	Noen tidspunkt har egen pris
+overwrite_manual_prices_question	booking	no	%1 av %2 tidspunkt har en pris som er satt manuelt. Vil du overskrive disse med den nye prisen, eller beholde dem som de er?
+overwrite_all_prices	booking	no	Overskriv alle
+keep_manual_prices	booking	no	Behold de manuelle
+cancel_price_update	booking	no	Avbryt

@@ -1,0 +1,39 @@
+{
+    "name": "datatables.net-searchbuilder-dt",
+    "description": "Advanced Search Builder for DataTables with styling for [DataTables](http://datatables.net/)",
+    "main": [
+        "js/searchBuilder.datatables.js",
+        "css/searchBuilder.datatables.css"
+    ],
+    "keywords": [
+        "Search",
+	    "Filtering",
+        "DataTables",
+        "jQuery",
+        "table",
+        "DataTables"
+    ],
+    "dependencies": {
+        "jquery": ">=1.7",
+        "datatables.net-dt": ">=1.10.19",
+        "datatables.net-dt-searchbuilder": ">=1.0.0"
+    },
+    "moduleType": [
+        "globals",
+        "amd",
+        "node"
+    ],
+    "ignore": [
+        "composer.json",
+        "datatables.json",
+        "package.json"
+    ],
+    "authors": [
+        {
+            "name": "SpryMedia Ltd",
+            "homepage": "https://datatables.net"
+        }
+    ],
+    "homepage": "https://datatables.net",
+    "license": "MIT"
+}

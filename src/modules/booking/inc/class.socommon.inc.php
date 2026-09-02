@@ -354,6 +354,17 @@ abstract class booking_socommon
 
 			$inner_sql = trim(substr($clause, $open_pos + 1, $close_pos - $open_pos - 1));
 
+			/**
+			 * The EXISTS form wraps the subquery's WHERE in parentheses and appends a correlation
+			 * term, so any trailing clause would be relocated inside that parenthesised boolean and
+			 * produce invalid SQL. Leave a subquery this rewrite cannot safely carry in its legal
+			 * IN (...) form rather than guess where the clause belongs.
+			 */
+			if (preg_match('/\b(ORDER\s+BY|GROUP\s+BY|HAVING|LIMIT|OFFSET|FETCH\s+(?:FIRST|NEXT)|FOR\s+(?:UPDATE|SHARE))\b/is', $inner_sql))
+			{
+				continue;
+			}
+
 			if (!preg_match('/^SELECT\s+DISTINCT\s+([a-zA-Z_][a-zA-Z0-9_\.]*)\s+FROM\s+(.+)\s+WHERE\s+(.+)$/is', $inner_sql, $parts))
 			{
 				continue;

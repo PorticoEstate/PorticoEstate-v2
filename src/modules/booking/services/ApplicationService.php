@@ -18,6 +18,7 @@ class ApplicationService
 {
 	private ApplicationRepository $repo;
 	private bool $combineApplications;
+	private bool $enableHospitality;
 
 	public function __construct(ApplicationRepository $repo)
 	{
@@ -25,6 +26,7 @@ class ApplicationService
 
 		$config = $this->repo->fetchBookingConfig();
 		$this->combineApplications = !empty($config['combined_applications_mode']);
+		$this->enableHospitality = !empty($config['enable_hospitality']);
 	}
 
 	// ── Assign ──────────────────────────────────────────────────────────
@@ -247,6 +249,39 @@ class ApplicationService
 		$numAssoc = $this->repo->countAssociations($appId);
 		if ($numAssoc === 0) {
 			throw new RuntimeException('Cannot accept: no associations (allocations/bookings/events) exist', 400);
+		}
+
+		// Second reason the same gate can refuse: every hospitality order must
+		// have been decided first. Counted over the whole combined group, using
+		// the same ids as ApplicationController's toolbar — the orders tab lists
+		// the group, so a gate scoped to this row alone would refuse and permit
+		// in different places than the interface says it will.
+		//
+		// Gated on enable_hospitality for the same reason the toolbar is: with
+		// hospitality switched off there is no orders tab, so a leftover pending
+		// row would block Accept with no interface anywhere to clear it.
+		if ($this->enableHospitality) {
+			$groupIds = $this->repo->getRelatedApplications($appId)['application_ids'];
+
+			try {
+				$numPending = $this->repo->countPendingHospitalityOrders($groupIds);
+			} catch (\Throwable $e) {
+				// The count could not be computed. A gate must not fail open on an
+				// error it cannot interpret: an unknown count blocks the accept
+				// rather than permitting it. The underlying message is deliberately
+				// not returned to the client.
+				throw new RuntimeException(
+					'Cannot accept: unable to verify whether hospitality orders are still awaiting a decision',
+					503
+				);
+			}
+
+			if ($numPending > 0) {
+				throw new RuntimeException(
+					'Cannot accept: ' . $numPending . ' hospitality order(s) still awaiting a decision',
+					400
+				);
+			}
 		}
 
 		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';
@@ -539,6 +574,10 @@ class ApplicationService
 		// Determine end date
 		$repeatUntilTs = null;
 		$seasonInfo = null;
+		// Whether the resolved bound is an INCLUSIVE end DATE that has to be
+		// advanced by one whole day - see the comment above the bump below. Every
+		// branch that assigns $repeatUntilTs sets this explicitly.
+		$boundIsInclusive = false;
 		$buildingId = (int) ($app['building_id'] ?? 0);
 
 		if ($buildingId > 0) {
@@ -552,23 +591,59 @@ class ApplicationService
 				];
 
 				if (!empty($recurringData['outseason'])) {
-					// Use season end date
+					// Use season end date - inclusive (legacy :789)
 					$repeatUntilTs = strtotime($season['to_']);
+					$boundIsInclusive = true;
 				}
 			}
 		}
 
 		if ($repeatUntilTs === null && !empty($recurringData['repeat_until'])) {
+			// The date the citizen picked - inclusive (legacy :783)
 			$repeatUntilTs = strtotime($recurringData['repeat_until']);
+			$boundIsInclusive = true;
 		}
 
 		// Fallback: season end or +3 months from first date (matches legacy DateInterval P3M)
 		if (!$repeatUntilTs) {
 			if ($seasonInfo) {
+				// Season end - inclusive (legacy :789), same as the outseason path
 				$repeatUntilTs = strtotime($seasonInfo['to_']);
+				$boundIsInclusive = true;
 			} else {
+				// NOT inclusive and NOT bumped - see the comment below
 				$repeatUntilTs = strtotime('+3 months', $fromTs);
+				$boundIsInclusive = false;
 			}
+		}
+
+		// An INCLUSIVE end DATE has to be advanced by one whole day. A citizen who
+		// picks 24.09 means "and including 24.09", but a bare date parses to
+		// midnight at the START of that day, and the loop below compares each
+		// occurrence's END datetime against this bound - so an occurrence on the
+		// boundary date (13:00-14:00, say) is strictly greater than its own day's
+		// midnight and gets dropped, at every interval. The legacy allocation
+		// wizard advances the bound for exactly this reason, and this bump covers
+		// precisely the branches legacy does:
+		//   - the date the citizen picked  (class.uiallocation.inc.php:783)
+		//   - the season end, both paths   (class.uiallocation.inc.php:789)
+		// both `+ 60 * 60 * 24`, which is why legacy lists 5 occurrences where this
+		// path listed 4 on identical input.
+		//
+		// The `+3 months` fallback is DELIBERATELY EXCLUDED. It is not a date
+		// anyone picked and it has no legacy analogue: class.uiapplication.inc.php
+		// :4914-4915 is `clone $from_time; ->add(new DateInterval('P3M'))` with no
+		// +1 day, and the allocation wizard has no such branch at all. The premise
+		// above does not hold there either - strtotime('+3 months', $fromTs) carries
+		// the start TIME (13:00), not midnight, so there is nothing to advance past.
+		// Bumping it grew the series by an occurrence legacy never produced (14
+		// where legacy gives 13, on a weekly series from 2026-04-02 13:00).
+		//
+		// Raw seconds rather than day-aware arithmetic on purpose: legacy expands
+		// the whole series in raw seconds ($interval = weeks * 60*60*24*7), so only
+		// raw seconds reproduces it across a DST transition too.
+		if ($boundIsInclusive) {
+			$repeatUntilTs += 86400;
 		}
 
 		// Fetch resources and existing allocations
@@ -646,7 +721,7 @@ class ApplicationService
 	 *
 	 * @throws RuntimeException if the application is not found or not recurring.
 	 */
-	public function createRecurringAllocations(int $appId): array
+	public function createRecurringAllocations(int $appId, int $accountId): array
 	{
 		$app = $this->repo->getById($appId);
 		if (!$app) {
@@ -680,6 +755,8 @@ class ApplicationService
 		if (empty($resourceIds)) {
 			throw new RuntimeException('Cannot create allocations: no resources linked', 400);
 		}
+
+		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';
 
 		$created = [];
 		$failed = [];
@@ -722,6 +799,7 @@ class ApplicationService
 						'date' => $item['date_display'],
 						'time' => $item['time_display'],
 					];
+					$this->attachPurchaseOrder((int) $allocation->id, $appId, $authorName);
 				} else {
 					$failed[] = [
 						'date'   => $item['date_display'],
@@ -738,6 +816,11 @@ class ApplicationService
 			}
 		}
 
+		if ($created) {
+			$groupId = $this->resolveAllocationGroupId($appId);
+			$this->repo->setAllocationGroupForIds(array_column($created, 'id'), $groupId);
+		}
+
 		return [
 			'created'         => $created,
 			'failed'          => $failed,
@@ -745,11 +828,111 @@ class ApplicationService
 		];
 	}
 
+	/**
+	 * Carry the application's purchase order onto an allocation just created
+	 * for it, and price the allocation from the result.
+	 *
+	 * This mirrors the legacy recurring arm (uiallocation:898-909), which is the
+	 * only behaviour that has ever been observed to work end to end: the REST
+	 * path had no call site for this at all, so allocations it created were left
+	 * at cost 0 with no order and could not be invoiced - the invoicing cron
+	 * resolves an allocation's order strictly by
+	 * `reservation_type='allocation' AND reservation_id=<id>`
+	 * (socompleted_reservation::find_expired_orders), so an allocation carrying
+	 * no order is simply never billed.
+	 *
+	 * sopurchase_order::copy_purchase_order_from_application is relocate-then-
+	 * mint by construction: the first call finds the application's still
+	 * unplaced order and MOVES it onto this allocation; every later call finds
+	 * nothing unplaced and mints a child copy of the parent order instead. So
+	 * calling it once per allocation reproduces the legacy outcome - first
+	 * member takes the order, the rest get copies - with no ordering logic here.
+	 *
+	 * It has no guard of its own, though. Branch one self-disarms once the order
+	 * has moved, but branch two would mint a fresh duplicate copy on every
+	 * re-entry, and a second run over an application is normal rather than
+	 * exceptional (the loop above skips occurrences that already exist or that
+	 * conflict, so a re-run creates only the gaps). The lookup below is that
+	 * guard: an allocation that already carries an order is left alone.
+	 */
+	private function attachPurchaseOrder(int $allocationId, int $appId, string $author): void
+	{
+		if ($allocationId <= 0 || $appId <= 0) {
+			return;
+		}
+
+		if ($this->repo->findPurchaseOrderIdForAllocation($allocationId) !== null) {
+			return;
+		}
+
+		$sopurchaseOrder = \CreateObject('booking.sopurchase_order');
+
+		$orderId = $sopurchaseOrder->copy_purchase_order_from_application(
+			['application_id' => $appId],
+			$allocationId,
+			'allocation'
+		);
+
+		if (!$orderId) {
+			return;
+		}
+
+		$order = $sopurchaseOrder->get_single_purchase_order($orderId);
+
+		// Test the lines, not the sum. An order with no lines returns no rows at
+		// all, so 'sum' is unset rather than zero and assigning it would write
+		// NULL to cost. An order that genuinely totals zero is a real price and
+		// must still be written.
+		if (empty($order['lines'])) {
+			return;
+		}
+
+		// Column-scoped writer: it updates bb_allocation.cost and appends the
+		// bb_allocation_cost history row in one place, which is what the legacy
+		// arm does with add_cost_history() + $allocation['cost'] + bo->update().
+		\CreateObject('booking.soallocation')->update_price_only(
+			$allocationId,
+			(float) $order['sum'],
+			$author,
+			lang('booking.cost is set')
+		);
+	}
+
+	/**
+	 * The recurrence group a run over this application should write.
+	 *
+	 * Reuse before mint: the loop above skips occurrences that already exist or
+	 * that conflict, so a second run creates only the gaps. Minting
+	 * unconditionally would give those gaps a second id and split one series
+	 * across two groups - a later cascade would then reach only the half the
+	 * scope dialog happened to count.
+	 *
+	 * More than one distinct id means the application is ALREADY split. There is
+	 * no correct answer to pick from here, so the choice is the oldest group and
+	 * it is written to the log rather than made silently.
+	 */
+	private function resolveAllocationGroupId(int $appId): int
+	{
+		$existing = $this->repo->findAllocationGroupIdsForApplication($appId);
+
+		if (count($existing) > 1) {
+			error_log(sprintf(
+				'booking: application %d carries more than one allocation_group_id (%s); reusing the oldest, %d',
+				$appId,
+				implode(', ', $existing),
+				$existing[0]
+			));
+		}
+
+		return $existing ? $existing[0] : $this->repo->nextAllocationGroupId();
+	}
+
 	// ── Helpers ─────────────────────────────────────────────────────────
 
 	private function norwegianDayName(int $timestamp): string
 	{
-		$days = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
-		return $days[(int) date('w', $timestamp)];
+		// Keys live in the 'common' module; date('w') is Sunday-indexed (0 = Sunday).
+		$days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+		return lang($days[(int) date('w', $timestamp)]);
 	}
 }

@@ -189,6 +189,21 @@
 		// Initialize template selector
 		initTemplateSelector();
 
+		// Position the messenger popover below its toolbar trigger
+		const messengerPopover = document.getElementById('messagesPopover');
+		const messengerTrigger = document.getElementById('messagesDropdown');
+		if (messengerPopover && messengerTrigger) {
+			messengerPopover.addEventListener('toggle', (e) => {
+				messengerTrigger.setAttribute('aria-expanded', e.newState === 'open');
+				if (e.newState === 'open') {
+					const rect = messengerTrigger.getBoundingClientRect();
+					messengerPopover.style.top = rect.bottom + 'px';
+					messengerPopover.style.left = 'auto';
+					messengerPopover.style.right = (window.innerWidth - rect.right) + 'px';
+				}
+			});
+		}
+
 		// Handle responsive behavior
 		handleResponsive();
 		window.addEventListener('resize', handleResponsive);

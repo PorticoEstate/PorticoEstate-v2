@@ -187,8 +187,8 @@ class Twig
     private function registerPaths()
     {
         // Register base phpgwapi paths
-        $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/base');
         $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/' . $this->serverSettings['template_set']);
+        $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/base');
 
         // Register Designsystemet component templates if using digdir template
         if ($this->designSystem->isEnabled()) {
@@ -255,7 +255,7 @@ class Twig
      * @param string|null $namespace
      * @return void
      */
-    public function addPath(string $path, string $namespace = null): void
+    public function addPath(string $path, string|null $namespace = null): void
     {
         if (!is_dir($path)) {
             return;
@@ -268,6 +268,26 @@ class Twig
             } else {
                 $this->loader->addPath($path);
             }
+        }
+    }
+
+    /**
+     * Prepend a template search path at runtime.
+     *
+     * @param string $path
+     * @param string|null $namespace
+     * @return void
+     */
+    public function prependPath(string $path, string|null $namespace = null): void
+    {
+        if (!is_dir($path)) {
+            return;
+        }
+
+        $namespace ??= FilesystemLoader::MAIN_NAMESPACE;
+        $paths = $this->loader->getPaths($namespace);
+        if (!in_array($path, $paths, true)) {
+            $this->loader->prependPath($path, $namespace);
         }
     }
 

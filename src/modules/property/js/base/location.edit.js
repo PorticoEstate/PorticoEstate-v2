@@ -41,9 +41,9 @@ formatLocationDocumentLink = function (key, oData)
 	});
 };
 
-$(document).ready(function ()
+$(function ()
 {
-	$('#doc_type').change( function()
+	$('#doc_type').on('change', function()
 	{
 		paramsTable0['doc_type'] = $(this).val();
 		oTable0.api().draw();				
@@ -230,11 +230,11 @@ function updateCaseTable(check_list_id)
 	JqueryPortico.updateinlineTableHelper('datatable-container_6', requestUrl);
 }
 
-$(document).ready(function ()
+$(function ()
 {
 
 	var click_action_on_table = false;
-	$("#check_lst_time_span").change(function ()
+	$("#check_lst_time_span").on('change', function ()
 	{
 		var oArgs = {location_id: location_id, id: item_id, year: $(this).val()};
 		var requestUrl = phpGWLink('property/location/component/checklists', oArgs);
@@ -531,7 +531,7 @@ function buildLocationEditRedirectUrl(locationCode, form)
 	return createLocationNavigationClient(form).buildEditUrl(locationCode);
 }
 
-$(document).ready(function ()
+$(function ()
 {
 	var form = document.getElementById('form');
 	if (!form || !window.fetch)

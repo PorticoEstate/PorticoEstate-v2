@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <version>2.0.0</version>
+        <id>datatables.net-searchbuilder-dt</id>
+        <description>This is SearchBuilder for DataTables with styling for [DataTables](https://datatables.net/)</description>
+        <repository type="git" url="https://github.com/DataTables/SearchBuilder"/>
+        <authors>SpryMedia Ltd</authors>
+        <projectUrl>http://datatables.net</projectUrl>
+        <license type="expression">MIT</license>
+        <tags>SearchBuilder  Filtering  Search   Datatables table</tags>
+        <dependencies>
+            <dependency id="datatables.net-searchbuilder" version="2.0.0"/>
+            <dependency id="datatables.net-dt" version="[3.0.0, 4.0.0)"/>
+        </dependencies>
+        <contentFiles>
+            <files include="**/*" buildAction="Content"/>
+        </contentFiles>
+        <readme>Readme.md</readme>
+    </metadata>
+    <files>
+        <file src="Readme.md" target=""/>
+        <file src="js/searchBuilder.dataTables.js" target="content\Scripts"/>
+        <file src="js/searchBuilder.dataTables.js" target="contentFiles\any\any\wwwroot\js"/>
+        <file src="js/searchBuilder.dataTables.min.js" target="content\Scripts"/>
+        <file src="js/searchBuilder.dataTables.min.js" target="contentFiles\any\any\wwwroot\js"/>
+        <file src="js/searchBuilder.dataTables.min.mjs" target="content\Scripts"/>
+        <file src="js/searchBuilder.dataTables.min.mjs" target="contentFiles\any\any\wwwroot\js"/>
+        <file src="js/searchBuilder.dataTables.mjs" target="content\Scripts"/>
+        <file src="js/searchBuilder.dataTables.mjs" target="contentFiles\any\any\wwwroot\js"/>
+        <file src="css/searchBuilder.dataTables.css" target="content\Content"/>
+        <file src="css/searchBuilder.dataTables.css" target="contentFiles\any\any\wwwroot\css"/>
+        <file src="css/searchBuilder.dataTables.min.css" target="content\Content"/>
+        <file src="css/searchBuilder.dataTables.min.css" target="contentFiles\any\any\wwwroot\css"/>
+    </files>
+</package>

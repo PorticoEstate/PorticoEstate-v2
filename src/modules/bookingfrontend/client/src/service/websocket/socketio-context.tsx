@@ -64,9 +64,14 @@ export const SocketIOProvider: React.FC<SocketIOProviderProps> = ({
         break;
 
       case 'session_update_confirmation':
-        if (data.success) {
-          setSessionConnected(true);
-        }
+        // sessionConnected is a CLAIM that the push channel will deliver, and
+        // isWebSocketActive (which disables the 30s REST poll) is derived from
+        // it. If the server refused the binding, that claim is false and must
+        // not be left standing from an earlier successful bind — otherwise a
+        // rejected client goes on believing it is bound, which is the exact
+        // failure this rejection exists to prevent. Falling back to false is
+        // not disabling the channel; it is telling the truth about it.
+        setSessionConnected(!!data.success);
         break;
 
       case 'notification':

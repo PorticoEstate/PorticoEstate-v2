@@ -1,7 +1,7 @@
 %1 already accepted	booking	nn	%1 allereie godkjent
-%1 already rejected	booking	nn	%1 allereie avvist
+%1 already rejected	booking	nn	%1 allereie avslått
 %1 archived as accepted	booking	nn	%1 arkivert som godkjent
-%1 archived as rejected	booking	nn	%1 arkivert som avvist
+%1 archived as rejected	booking	nn	%1 arkivert som avslått
 %1 e-mails were not sent successfully	booking	nn	%1 e-postar kunne ikkje sendast (ugyldig adresse)
 %1 e-mails were sent successfully	booking	nn	%1 e-postar vart sendt
 %1 resources mapped as articles	booking	nn	%1 ressursar er kopla opp som artiklar i varekatalogen
@@ -99,7 +99,7 @@ and	booking	nn	og
 application	booking	nn	Søknad
 application add	booking	nn	Ny søknad
 Application archived as accepted	booking	nn	Søknad arkivert som godkjent
-Application archived as rejected	booking	nn	Søknad arkivert som avvist
+Application archived as rejected	booking	nn	Søknad arkivert som avslått
 Application comment email settings	booking	nn	Søknadskommentar epostinnstillinger
 application edit	booking	nn	Rediger søknad
 Application email settings	booking	nn	Søknad epostinnstillinger
@@ -118,7 +118,7 @@ approve	booking	nn	Godkjenn
 apr	booking	nn	april
 archive_key	booking	nn	Arkivnøkkel
 archive as accepted	booking	nn	Arkiver som godkjent
-archive as rejected	booking	nn	Arkiver som avvist
+archive as rejected	booking	nn	Arkiver som avslått
 archived	booking	nn	Arkivert
 are you sure you want to approve?	booking	nn	Er du sikker på at søknad skal godkjennast?
 Are you sure you want to delete?	booking	nn	Er du sikker på at søknad skal avvisast?
@@ -1223,3 +1223,28 @@ open_days	booking	nn	Opne dagar
 open_days_all	booking	nn	Alle dagar
 open_days_min_one	booking	nn	Vel minst éin dag
 open_days_desc	booking	nn	Vekedagar tenesta er open. Brukast til å rekne ut bestillingsfristen i verkedagar.
+
+approved lower	booking	nn	godkjend
+approved times	booking	nn	Godkjende tider
+comment added	booking	nn	Ny kommentar
+comment from caseofficer	booking	nn	Kommentar frå saksbehandlar
+e lock instructions	booking	nn	Instruksjonar for e-lås
+parts	booking	nn	delar
+processed	booking	nn	Behandla
+rejected lower	booking	nn	avslått
+sub applications	booking	nn	delar
+times not approved	booking	nn	Tider du ikkje fekk
+total cost all	booking	nn	Totalkostnad for alle bookingar
+create_hospitality_order_for_application	booking	nn	Legg til ny bevertningsbestilling til denne søknaden
+accept_requires_hospitality_processed	booking	nn	Alle bevertningsbestillingar må vere behandla før søknaden kan godkjennast
+back_to_application	booking	nn	Tilbake til søknaden
+price_applies_to_several_occurrences	booking	nn	Prisen gjeld fleire tidspunkt
+which_occurrences_get_new_price	booking	nn	Denne tildelinga er eitt av fleire tidspunkt i same serie. Kva for tidspunkt skal få den nye prisen?
+update_this_occurrence	booking	nn	Oppdater dette
+update_future_occurrences	booking	nn	Oppdater framtidige
+update_all_occurrences	booking	nn	Oppdater alle
+some_occurrences_have_own_price	booking	nn	Nokre tidspunkt har eigen pris
+overwrite_manual_prices_question	booking	nn	%1 av %2 tidspunkt har ein pris som er sett manuelt. Vil du overskrive desse med den nye prisen, eller behalde dei som dei er?
+overwrite_all_prices	booking	nn	Overskriv alle
+keep_manual_prices	booking	nn	Behald dei manuelle
+cancel_price_update	booking	nn	Avbryt

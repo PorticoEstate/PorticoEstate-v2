@@ -381,6 +381,12 @@ export class BookingService implements OnModuleInit {
         [applicationId, formattedFrom, formattedTo],
       );
 
+      // PHP: saveApplicationDates() ends with $this->syncApplicationFromDate($id)
+      // (ApplicationRepository.php). bb_application.from_ is the application's earliest
+      // date and the admin applications list reads it directly, so an insert that skips
+      // this leaves the row blank there forever -- nothing else recomputes it.
+      await this.syncApplicationFromDate(client, applicationId);
+
       // Auto-assign mandatory articles
       await this.autoAssignMandatoryArticles(client, applicationId, resourceId, from, to);
 
@@ -613,6 +619,9 @@ export class BookingService implements OnModuleInit {
          VALUES ($1, $2, $3)`,
         [applicationId, formattedFrom, formattedTo],
       );
+
+      // PHP: saveApplicationDates() ends with $this->syncApplicationFromDate($id)
+      await this.syncApplicationFromDate(client, applicationId);
 
       // 10. Auto-assign mandatory articles
       // PHP: $this->autoAssignMandatoryArticles($id, $resourceId, $from, $to)
@@ -1552,6 +1561,29 @@ export class BookingService implements OnModuleInit {
    * If the string contains 'T' (ISO format), parse as UTC, convert to Europe/Oslo, format as Y-m-d H:i:s.
    * Otherwise pass through as-is.
    */
+  /**
+   * Mirror of PHP ApplicationRepository::syncApplicationFromDate().
+   *
+   * bb_application.from_ is the earliest date the application covers. For a combined
+   * application that spans the parent AND its active children, so the child leg is not
+   * optional -- a child with an earlier date has to pull the parent's value down.
+   */
+  private async syncApplicationFromDate(client: any, applicationId: number): Promise<void> {
+    await client.query(
+      `UPDATE bb_application SET from_ = (
+         SELECT MIN(all_dates.from_) FROM (
+           SELECT d.from_ FROM bb_application_date d WHERE d.application_id = $1
+           UNION ALL
+           SELECT cd.from_
+             FROM bb_application c
+             JOIN bb_application_date cd ON cd.application_id = c.id
+            WHERE c.parent_id = $1 AND c.id != c.parent_id AND c.active = 1
+         ) all_dates
+       ) WHERE id = $1`,
+      [applicationId],
+    );
+  }
+
   private formatDateForDatabase(dateString: string): string {
     if (dateString.includes('T')) {
       const utcDate = new Date(dateString);

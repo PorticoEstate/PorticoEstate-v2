@@ -455,6 +455,34 @@ class ApplicationRepository
     }
 
     /**
+     * Resolve the building name from its id, exactly as stored.
+     *
+     * The value is returned verbatim: bb_application.building_name is joined back
+     * to bb_building.name by name elsewhere, so decoding entities here would break
+     * that join. The websocket writer (booking.service.ts) derives it the same way.
+     *
+     * Deliberately untyped: building_id arrives from client JSON and may be '', a
+     * non-numeric string or an array. A ?int hint would raise a TypeError on those
+     * -- a 500 on caller-controlled input -- so the value is validated here instead.
+     *
+     * @param mixed $buildingId
+     * @return string|null Null when the id is absent, not numeric, or matches no building
+     */
+    private function resolveBuildingName($buildingId): ?string
+    {
+        if (!is_numeric($buildingId) || (int)$buildingId <= 0)
+        {
+            return null;
+        }
+
+        $stmt = $this->db->prepare("SELECT name FROM bb_building WHERE id = :id");
+        $stmt->execute([':id' => (int)$buildingId]);
+        $name = $stmt->fetchColumn();
+
+        return $name === false ? null : $name;
+    }
+
+    /**
      * Insert a new application
      *
      * @param array $data Application data
@@ -481,7 +509,10 @@ class ApplicationRepository
         $params = [
             ':status' => $data['status'],
             ':session_id' => $data['session_id'],
-            ':building_name' => $data['building_name'] ?? '',
+            // Derived from building_id only. The client-supplied building_name is never
+            // stored: it reaches get_tilsyn_email(), which interpolates it into SQL by
+            // name. An unresolvable building yields '' rather than the caller's string.
+            ':building_name' => $this->resolveBuildingName($data['building_id'] ?? null) ?? '',
             ':building_id' => $data['building_id'] ?? null,
             ':activity_id' => $data['activity_id'] ?? null,
             ':contact_name' => $data['contact_name'],
@@ -513,8 +544,21 @@ class ApplicationRepository
      */
     private function updateApplication(array $data): void
     {
+        // Only touch building_name when it can be derived from a building_id. An update
+        // that carries no building_id must not blank a name that is already stored --
+        // for those rows the stored name is the only record of which building it is.
+        //
+        // INVARIANT -- resolve ONCE, reuse the variable. The SET clause below and the
+        // parameter bind further down test $derivedBuildingName with exact complements
+        // (=== null / !== null), which is the only reason they cannot disagree. Calling
+        // resolveBuildingName() again at either site would issue a second query, and a
+        // building deleted between the two would leave the clause present with no bind
+        // bound: a hard SQLSTATE, on the null path only, invisible in review.
+        $derivedBuildingName = $this->resolveBuildingName($data['building_id'] ?? null);
+        $buildingNameClause = $derivedBuildingName === null ? '' : 'building_name = :building_name,';
+
         $sql = "UPDATE bb_application SET
-        building_name = :building_name,
+        {$buildingNameClause}
         building_id = :building_id,
         activity_id = :activity_id,
         contact_name = :contact_name,
@@ -537,7 +581,6 @@ class ApplicationRepository
         $params = [
             ':id' => $data['id'],
             ':session_id' => $data['session_id'],
-            ':building_name' => $data['building_name'] ?? '',
             ':building_id' => $data['building_id'] ?? null,
             ':activity_id' => $data['activity_id'] ?? null,
             ':contact_name' => $data['contact_name'],
@@ -555,6 +598,11 @@ class ApplicationRepository
             ':description' => $data['description'] ?? null,
             ':equipment' => $data['equipment'] ?? null
         ];
+
+        if ($derivedBuildingName !== null)
+        {
+            $params[':building_name'] = $derivedBuildingName;
+        }
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
@@ -1038,15 +1086,57 @@ class ApplicationRepository
     }
 
     /**
-     * Update bb_application.from_ to the earliest date from bb_application_date
+     * Update bb_application.from_ to the earliest date the application covers.
+     *
+     * For a plain application that is its own dates. For a combined application the
+     * value spans the parent AND its active children, so a child's earlier date has
+     * to reach the parent -- taking MIN over the row's own dates alone would leave a
+     * combined parent reporting a start it does not actually have.
+     *
+     * Two statements, because either end of the relation can be the row that just
+     * changed: the first re-derives THIS row (as a parent, if it is one), the second
+     * re-derives its parent (if it is a child). The second is a no-op for every row
+     * whose parent_id is NULL or equal to its own id.
      */
     public function syncApplicationFromDate(int $applicationId): void
     {
         $sql = "UPDATE bb_application SET from_ = (
-            SELECT MIN(from_) FROM bb_application_date WHERE application_id = :app_id
+            SELECT MIN(all_dates.from_) FROM (
+                SELECT d.from_ FROM bb_application_date d WHERE d.application_id = :app_id
+                UNION ALL
+                SELECT cd.from_
+                  FROM bb_application c
+                  JOIN bb_application_date cd ON cd.application_id = c.id
+                 WHERE c.parent_id = :app_id_children
+                   AND c.id != c.parent_id
+                   AND c.active = 1
+            ) all_dates
         ) WHERE id = :id";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([':app_id' => $applicationId, ':id' => $applicationId]);
+        $stmt->execute([
+            ':app_id' => $applicationId,
+            ':app_id_children' => $applicationId,
+            ':id' => $applicationId
+        ]);
+
+        $sql = "UPDATE bb_application SET from_ = (
+            SELECT MIN(all_dates.from_) FROM (
+                SELECT d.from_ FROM bb_application_date d WHERE d.application_id = bb_application.id
+                UNION ALL
+                SELECT cd.from_
+                  FROM bb_application c
+                  JOIN bb_application_date cd ON cd.application_id = c.id
+                 WHERE c.parent_id = bb_application.id
+                   AND c.id != c.parent_id
+                   AND c.active = 1
+            ) all_dates
+        )
+        WHERE id = (
+            SELECT parent_id FROM bb_application
+             WHERE id = :app_id AND parent_id IS NOT NULL AND parent_id != id
+        )";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':app_id' => $applicationId]);
     }
 
     /**

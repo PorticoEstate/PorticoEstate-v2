@@ -137,7 +137,7 @@ this.preview = function (id)
 	Window1 = window.open(strURL, 'Search', "left=50,top=100,width=800,height=700,toolbar=no,scrollbars=yes,resizable=yes");
 };
 
-$(document).ready(function ()
+$(function ()
 {
 	var do_preview = $("#do_preview").val();
 
@@ -182,7 +182,7 @@ $(window).on('load', function()
 
 });
 
-$(document).ready(function ()
+$(function ()
 {
 
 	//$("#datatable-container_2 tr").on("click", function (e)
@@ -198,7 +198,7 @@ $(document).ready(function ()
 
 	});
 
-	$("#type_id").change(function ()
+	$("#type_id").on('change', function ()
 	{
 		var temp = document.getElementById("new_note").value;
 		if (temp)
@@ -208,7 +208,7 @@ $(document).ready(function ()
 		document.getElementById("new_note").value = temp + "Type: " + $( "#type_id option:selected" ).text();;
 	});
 
-	$("#vendor_contract_id").change(function ()
+	$("#vendor_contract_id").on('change', function ()
 	{
 		var vendor_contract_id = $("#vendor_contract_id").val();
 		if(!vendor_contract_id || vendor_contract_id == -1)

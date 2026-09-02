@@ -1,4 +1,4 @@
-$(document).ready(function ()
+$(function ()
 {
 	var collapseOne = getCookie('collapseOne');
 	if (collapseOne === 'true')

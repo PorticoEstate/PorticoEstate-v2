@@ -127,8 +127,66 @@ class Login
 		return $this->sessions->cd_reason;
 	}
 
+	/**
+	 * Resolve the current request path relative to webserver_url, for new-style routes.
+	 * Returns '' when there is nothing meaningful to preserve (e.g. the login entry point itself).
+	 */
+	private function get_deeplink_path(): string
+	{
+		$requestUri = \Sanitizer::get_var('REQUEST_URI', 'string', 'SERVER');
+		if (!$requestUri)
+		{
+			return '';
+		}
+
+		$path = parse_url($requestUri, PHP_URL_PATH) ?: '';
+		$prefix = parse_url($this->serverSettings['webserver_url'] ?? '', PHP_URL_PATH) ?: '';
+
+		if ($prefix !== '' && strpos($path, $prefix) === 0)
+		{
+			$path = substr($path, strlen($prefix));
+		}
+
+		$path = '/' . ltrim($path, '/');
+
+		if (in_array($path, ['/', '/index.php', '/login.php', '/login_ui'], true))
+		{
+			return '';
+		}
+
+		return $path;
+	}
+
+	/**
+	 * Preserve destination for redirect after login - either a classic menuaction
+	 * query, or a new-style route path (e.g. /messenger/view/inbox). Safe to call
+	 * more than once per request; only writes the cookie when there is something
+	 * meaningful to preserve, so a stale second-pass hit won't clobber a good one.
+	 */
+	public function rememberRedirectDestination(): void
+	{
+		$deeplink_path = $this->get_deeplink_path();
+		if (\Sanitizer::get_var('phpgw_return_as', 'string') != 'json' && ($deeplink_path || \Sanitizer::get_var('menuaction', 'string', 'GET')))
+		{
+			unset($_GET['click_history']);
+			unset($_GET['sessionid']);
+			unset($_GET[session_name()]);
+			unset($_GET['bookingfrontendsession']);
+			unset($_GET['kp3']);
+			$redirect_data = $_GET;
+			if ($deeplink_path)
+			{
+				$redirect_data['_deeplink_path'] = $deeplink_path;
+			}
+			$cookietime = time() + 60;
+			$this->sessions->phpgw_setcookie('redirect', json_encode($redirect_data), $cookietime);
+		}
+	}
+
 	public function login()
 	{
+		$this->rememberRedirectDestination();
+
 		// Handle passkey authentication when selected
 		$login_type = \Sanitizer::get_var('type', 'string', 'GET');
 		if ($login_type === 'passkey')

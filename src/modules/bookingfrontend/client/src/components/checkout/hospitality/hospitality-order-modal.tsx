@@ -16,6 +16,8 @@ import {
     useCreateHospitalityOrder,
     useUpdateHospitalityOrder,
 } from '../hooks/hospitality-hooks';
+import {useBuildingSeasons, useServerSettings} from '@/service/hooks/api-hooks';
+import {isWithinBusinessHours} from '@/service/utils/business-hours';
 import {formatCurrency} from '@/utils/cost-utils';
 import {
     computeHospitalityDeadline,
@@ -102,6 +104,13 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     const {t, i18n} = useClientTranslation();
     const hospitality = selectedHospitality;
     const {data: menu, isLoading: menuLoading} = useHospitalityMenu(open && hospitality ? hospitality.id : undefined);
+
+    // Opening hours come from the seasons of the building that owns the KITCHEN resource --
+    // not the application's building, which differs on live data.
+    const {data: kitchenSeasons} = useBuildingSeasons(hospitality?.building_id ?? undefined);
+    const {data: serverSettings} = useServerSettings();
+    // Mirrors application-crud: with no seasons a building is open unless an admin opted in.
+    const closeWhenNoSeasons = serverSettings?.bookingfrontend_config?.close_calendar_without_season ?? false;
     const showHospitalitySelector = hospitalities.length > 1 && !existingOrder;
 
     const [selectedDateKey, setSelectedDateKey] = useState('');
@@ -184,14 +193,82 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     const timeSlots = useMemo(() => {
         if (!selectedDateOption) return [];
         // The grandfathered option carries one exact instant — its own stored serving time.
+        // Deliberately not filtered: an order placed before the kitchen's hours changed stays
+        // editable, mirroring the serving-day rule at servingDayCheck.
         if (selectedDateOption.key === GRANDFATHERED_DATE_KEY) return [formatHm(selectedDateOption.from)];
-        return generateTimeSlots(
+
+        const bookingSlots = generateTimeSlots(
             selectedDateOption.from.getHours(),
             selectedDateOption.from.getMinutes(),
             selectedDateOption.to.getHours(),
             selectedDateOption.to.getMinutes()
         );
-    }, [selectedDateOption]);
+
+        // DELIVERY: the food is served away from the kitchen, so the kitchen's own opening
+        // hours do not bound when it may be eaten -- the booking's own times already do.
+        // Only the ON-SITE case takes the kitchen-hours bound below.
+        //
+        // Compared as strings, matching the isWithinBusinessHours call further down: both ids
+        // are declared `number` but arrive from JSON, and a stringified `resource_id` would
+        // make `===` false for every on-site order -- silently classifying all of them as
+        // delivery and removing the bound entirely. That failure is invisible, because an
+        // unbounded list looks like a working list.
+        //
+        // BOTH ids must be KNOWN before this can classify anything. Neither check is
+        // redundant and they fail for different reasons:
+        //
+        //   locationId               0 until a default lands, so "not chosen yet" would
+        //                            otherwise read as delivery on the CREATE path.
+        //   hospitality.resource_id  undefined while the kitchen is still loading. The EDIT
+        //                            path sets locationId from the stored order WITHOUT
+        //                            waiting for it, so this arm is genuinely reachable --
+        //                            and `String(undefined)` is the literal "undefined",
+        //                            which is !== every real id, i.e. it reads as DELIVERY
+        //                            and returns the UNBOUNDED slots. Fails open, which is
+        //                            the one direction this whole gate exists to prevent.
+        //
+        // An unknown pairing therefore falls through to the guard below and fails CLOSED,
+        // rather than taking the widening exit on a value that means "I do not know yet".
+        const isDelivery = !!hospitality?.resource_id
+            && !!locationId
+            && String(locationId) !== String(hospitality.resource_id);
+        if (isDelivery) return bookingSlots;
+
+        // Without the kitchen resource, or the building whose seasons define its hours, we
+        // cannot judge opening hours at all. Offer NOTHING rather than everything: passing []
+        // to isWithinBusinessHours means "no resource filter" and would match every season,
+        // widening the selection instead of narrowing it.
+        //
+        // ⚠️ BOTH null AND undefined are spelled out deliberately. The API sends `null` when
+        // the kitchen maps to no building; the property is `undefined` if the field is absent
+        // entirely. Either one must fail closed -- if this guard is skipped, kitchenSeasons is
+        // undefined and isWithinBusinessHours takes its "no seasons defined" exit, which
+        // returns !closeWhenNoSeasons, i.e. OPEN. That would invert the whole feature.
+        //
+        // Written long-hand rather than `== null` (which is equivalent) because loose equality
+        // is a two-file idiom in this client and reads as an oversight worth "tidying" -- and
+        // tightening it to `=== null` alone silently drops the undefined case. Not `typeof
+        // === 'number'` either: ids are not guaranteed to arrive un-stringified.
+        if (!hospitality?.resource_id
+            || hospitality.building_id === null
+            || hospitality.building_id === undefined) return [];
+
+        const day = selectedDateOption.from;
+        return bookingSlots.filter(hm => {
+            const [h, m] = hm.split(':').map(Number);
+            const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m);
+            return isWithinBusinessHours(
+                at,
+                [String(hospitality.resource_id)],
+                kitchenSeasons,
+                closeWhenNoSeasons
+            );
+        });
+        // locationId is load-bearing: without it the memo does not re-run when the citizen
+        // switches destination, so on-site -> delivery keeps the bound and delivery -> on-site
+        // keeps it off. Both open GREEN and only diverge on a CHANGE, which is the exact
+        // interaction this conditional exists to serve.
+    }, [selectedDateOption, hospitality, kitchenSeasons, closeWhenNoSeasons, locationId]);
 
     /**
      * The exact instant that will be sent as serving_time_iso. Derived once so the cutoff check,

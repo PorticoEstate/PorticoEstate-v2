@@ -1,7 +1,7 @@
 
-$(document).ready(function ()
+$(function ()
 {
-	$('#contracts_search_option').change(function ()
+	$('#contracts_search_option').on('change', function ()
 	{
 		filterDataContracts('search_option', $(this).val());
 	});
@@ -16,7 +16,7 @@ $(document).ready(function ()
 		}
 	});
 
-	$('#contract_status').change(function ()
+	$('#contract_status').on('change', function ()
 	{
 		filterDataContracts('contract_status', $(this).val());
 	});
@@ -31,7 +31,7 @@ $(document).ready(function ()
 		}
 	});
 
-	$('#contract_type').change(function ()
+	$('#contract_type').on('change', function ()
 	{
 		filterDataContracts('contract_type', $(this).val());
 	});
@@ -46,7 +46,7 @@ $(document).ready(function ()
 		}
 	});
 	
-	$('#application_status').change(function ()
+	$('#application_status').on('change', function ()
 	{
 		filterDataApplications('filter_status', $(this).val());
 	});

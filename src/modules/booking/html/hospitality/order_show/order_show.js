@@ -9,6 +9,9 @@
 	var hospitalityBaseUrl = root.dataset.hospitalityBaseUrl.split('?')[0];
 	var applicationsBaseUrl = root.dataset.applicationsBaseUrl ? root.dataset.applicationsBaseUrl.split('?')[0] : null;
 	var canWrite = root.dataset.canWrite === '1';
+	// The application the user navigated FROM, or 0. Set only when an application
+	// page linked here; see renderHeader() for what it changes.
+	var backApplicationId = parseInt(root.dataset.backApplicationId, 10) || 0;
 
 	// ═══════════════════════════════════════════════════════════════════
 	// Shared helpers
@@ -130,12 +133,20 @@
 		return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 	}
 
+	// Emits the local wall clock WITH its UTC offset, matching the API's
+	// @Timestamp(format="c") representation byte for byte. The offset is taken from
+	// the slot's own Date, not from today, so it follows DST at the serving date.
 	function fmtNaiveIso(d) {
+		var offsetMinutes = -d.getTimezoneOffset();
+		var absOffset = Math.abs(offsetMinutes);
 		return d.getFullYear() + '-' +
 			String(d.getMonth() + 1).padStart(2, '0') + '-' +
 			String(d.getDate()).padStart(2, '0') + 'T' +
 			String(d.getHours()).padStart(2, '0') + ':' +
-			String(d.getMinutes()).padStart(2, '0') + ':00';
+			String(d.getMinutes()).padStart(2, '0') + ':00' +
+			(offsetMinutes < 0 ? '-' : '+') +
+			String(Math.floor(absOffset / 60)).padStart(2, '0') + ':' +
+			String(absOffset % 60).padStart(2, '0');
 	}
 
 	function populateEditTimeSlots(timeEl, dateIdx, currentIso) {
@@ -379,9 +390,18 @@
 		var statusColor = STATUS_COLOR_MAP[o.status] || 'neutral';
 		var statusTag = '<span class="ds-tag" data-color="' + statusColor + '">' + esc(lang(statusKey)) + '</span>';
 
-		var backUrl = '/booking/view/hospitality/' + o.hospitality_id + '#orders';
+		// Reached from an application? Go back there, to the tab the order was
+		// listed in. Otherwise keep the hospitality record as the destination.
+		var backUrl, backLabel;
+		if (backApplicationId) {
+			backUrl = '/booking/view/applications/' + backApplicationId + '#hospitality-orders';
+			backLabel = lang('backToApplication');
+		} else {
+			backUrl = '/booking/view/hospitality/' + o.hospitality_id + '#orders';
+			backLabel = lang('backToHospitality');
+		}
 		var html = '<a href="' + backUrl + '" class="hosp-show__back-link">' +
-			backArrow + ' ' + esc(lang('backToHospitality')) + '</a>';
+			backArrow + ' ' + esc(backLabel) + '</a>';
 
 		html += '<div class="app-show__title-row">' +
 			'<div class="app-show__title-left">' +

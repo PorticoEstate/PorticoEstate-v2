@@ -11,9 +11,9 @@ open_monthly = function (part_of_town_id, year, month)
 	location = requestUrl;
 };
 
-$(document).ready(function ()
+$(function ()
 {
-	$("#control_area_id").change(function ()
+	$("#control_area_id").on("change", function ()
 	{
 		var control_area_id = $(this).val();
 		var oArgs = {menuaction: 'controller.uicontrol.get_controls_by_control_area'};
@@ -76,11 +76,11 @@ $(document).ready(function ()
 		onDropdownHidden: function (event)
 		{
 //			console.log(event);
-			$("#form").submit();
+			$("#form").trigger('submit');
 		}
 	});
 
-//	$("#part_of_town_id").change(function ()
+//	$("#part_of_town_id").on("change", function ()
 //	{
 //		$("#form").submit();
 //	});

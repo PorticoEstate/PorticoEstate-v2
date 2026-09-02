@@ -24,7 +24,7 @@ $flags = Settings::getInstance()->get('flags');
 if (
 	$flags['currentapp'] != 'messenger'
 	&& $flags['currentapp'] != 'welcome'
-	&& !in_array($userSettings['preferences']['common']['template_set'], array('bootstrap', 'bootstrap2'))
+	&& !in_array($userSettings['preferences']['common']['template_set'], array('bootstrap', 'digdir'))
 )
 {
 	$db->query("SELECT COUNT(*) AS msg_cnt FROM phpgw_messenger_messages WHERE message_owner='"
@@ -32,9 +32,7 @@ if (
 
 	if ($db->next_record() && $db->f('msg_cnt'))
 	{
-		echo '<div class="msg"><a href="' . phpgw::link('/index.php', array(
-			'menuaction' => 'messenger.uimessenger.inbox'
-		))
+		echo '<div class="msg"><a href="' . phpgw::link('/messenger/view/inbox')
 			. '">' . lang('You have %1 new message' . ($db->f('msg_cnt') > 1 ? 's' : ''), $db->f('msg_cnt')) . '</a>'
 			. '</div>';
 	}

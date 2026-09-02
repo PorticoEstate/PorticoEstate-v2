@@ -1,0 +1,39 @@
+{
+    "name": "datatables.net-searchbuilder-dt",
+    "description": "SearchBuilder for DataTables with styling for [DataTables](https://datatables.net/)",
+    "main": "js/searchBuilder.dataTables.js",
+    "module": "js/searchBuilder.dataTables.mjs",
+    "style": "css/searchBuilder.dataTables.css",
+    "types": "./types/searchBuilder.dataTables.d.ts",
+    "version": "2.0.0",
+    "files": [
+        "css/**/*.css",
+        "js/**/*.js",
+        "js/**/*.mjs",
+        "types/**/*.d.ts"
+    ],
+    "keywords": [
+        "SearchBuilder",
+        "Filtering",
+        "Search",
+        "Datatables",
+        "table",
+        "filter",
+        "sort"
+    ],
+    "dependencies": {
+        "datatables.net-searchbuilder": "2.0.0",
+        "datatables.net-dt": "^3"
+    },
+    "author": {
+        "name": "SpryMedia Ltd",
+        "url": "http://datatables.net"
+    },
+    "homepage": "https://datatables.net",
+    "bugs": "https://datatables.net/forums",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/DataTables/SearchBuilder.git"
+    }
+}

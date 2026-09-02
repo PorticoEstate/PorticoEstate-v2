@@ -564,13 +564,20 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 				</Button>
 			) : <span/>}
 			<div className={styles.footerActions}>
+				{/* This control NAVIGATES to the scope step; it does not perform the cancel/request
+				    action, so it must not carry `cancelLabel` (the mode label) — that label belongs
+				    on the control that acts (:590-604). A mode label here can go stale relative to
+				    the button's enabled state, which is reachable and clickable in every cancelMode
+				    including 'unresolved', since navigating to the scope step is always safe: the
+				    step itself (renderScopeStep) already renders the request-mode notice, and the
+				    downstream action buttons (:576-604) already gate themselves on cancelMode. */}
 				{step === 'overview' && (
 					<Button
 						variant="primary"
 						data-color="accent"
 						onClick={() => setStep('scope')}
 					>
-						{cancelLabel}
+						{t('bookingfrontend.continue')}
 					</Button>
 				)}
 				{step === 'scope' && (

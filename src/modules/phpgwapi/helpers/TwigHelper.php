@@ -102,6 +102,8 @@ class TwigHelper
 		$this->addPathIfExists($appDir . '/html/' . $templateSet, 'views');
 		$this->addPathIfExists($appDir . '/html/base', 'views');
 		$this->addPathIfExists($appDir . '/html', 'views');
+		$this->addPathIfExists($appDir . '/html/base', 'base_views');
+		$this->addPathIfExists($appDir . '/html/' . $templateSet, $templateSet . '_views');
 	}
 
 	private function addPathIfExists(string $path, ?string $namespace = null): void

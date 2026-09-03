@@ -1,6 +1,7 @@
 <?php
 
 use App\modules\bookingfrontend\controllers\AllocationController;
+use App\modules\bookingfrontend\controllers\BookingCancellationController;
 use App\modules\bookingfrontend\controllers\applications\ApplicationController;
 use App\modules\bookingfrontend\controllers\BuildingController;
 use App\modules\bookingfrontend\controllers\applications\CheckoutController;
@@ -158,6 +159,16 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	{
 		$group->post('/{id}/cancel-preview', AllocationController::class . ':cancelPreview');
 		$group->post('/{id}/cancel', AllocationController::class . ':cancel');
+	});
+
+	// Booking cancellation. Same #1210 guard shape as /allocations above, but resolved through
+	// bb_booking.group_id -> bb_group.organization_id (a booking carries no organization_id of
+	// its own) - see BookingAccessHelper. The preview discloses the delete_allocation cascade so a
+	// caller can see it before opting in; see BookingCancellationService.
+	$group->group('/bookings', function (RouteCollectorProxy $group)
+	{
+		$group->post('/{id}/cancel-preview', BookingCancellationController::class . ':cancelPreview');
+		$group->post('/{id}/cancel', BookingCancellationController::class . ':cancel');
 	});
 
 	// Hospitality menu (no application context needed)

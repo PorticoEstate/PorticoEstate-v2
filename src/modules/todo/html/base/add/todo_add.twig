@@ -1,16 +1,18 @@
 {% extends layout|default('@views/_bare.twig') %}
 
-{% block title %}{{ lang('Edit') }} {{ lang('todo') }}{% endblock %}
+{% block title %}{{ lang('Add') }} {{ lang('todo') }}{% endblock %}
 
 {% block styles %}
-<style>{{ source('@views/todo/add/todo_add.css') }}</style>
+<style>{{ source('@views/add/todo_add.css') }}</style>
 {% endblock %}
 
 {% block content %}
-<div id="todo-edit-app"
+<div id="todo-add-app"
 	class="todo-add"
-	data-api-url="{{ phpgw_link('/todo/todos/' ~ todo.id) }}"
+	data-api-url="{{ phpgw_link('/todo/todos') }}"
 	data-back-url="{{ phpgw_link('/todo/view/todos') }}"
+	data-default-cat-id="{{ selected_cat_id|default(0) }}"
+	data-default-parent-id="{{ selected_parent_id|default(0) }}"
 	data-date-format="{{ date_format|default('Y-m-d') }}"
 	data-lang-save="{{ lang('Save') }}"
 	data-lang-saving="{{ lang('common.loading') }}"
@@ -20,26 +22,26 @@
 	data-csrf-name="{{ csrf.name|default('') }}"
 	data-csrf-value="{{ csrf.value|default('') }}"
 >
-	<h2 class="todo-add__title">{{ lang('Edit') }} {{ lang('todo') }}</h2>
-	<div id="todo-edit-error" class="todo-add__error" hidden></div>
+	<h2 class="todo-add__title">{{ lang('Add') }} {{ lang('todo') }}</h2>
+	<div id="todo-add-error" class="todo-add__error" hidden></div>
 
-	<form id="todo-edit-form">
+	<form id="todo-add-form">
 		<div class="todo-add__grid">
 			<div class="todo-add__field todo-add__field--full">
 				<label for="todo-title">{{ lang('Title') }}</label>
-				<input id="todo-title" class="todo-add__input" name="title" type="text" value="{{ todo.title }}" required />
+				<input id="todo-title" class="todo-add__input" name="title" type="text" required />
 			</div>
 
 			<div class="todo-add__field todo-add__field--full">
 				<label for="todo-descr">{{ lang('Description') }}</label>
-				<textarea id="todo-descr" class="todo-add__textarea" name="descr">{{ todo.descr }}</textarea>
+				<textarea id="todo-descr" class="todo-add__textarea" name="descr"></textarea>
 			</div>
 
 			<div class="todo-add__field">
 				<label for="todo-cat">{{ lang('Category') }}</label>
 				<select id="todo-cat" class="todo-add__select" name="cat">
 					{% for category in categories %}
-						<option value="{{ category.id }}" {% if category.id == todo.cat %}selected{% endif %}>{{ category.name }}</option>
+						<option value="{{ category.id }}" {% if category.id == selected_cat_id %}selected{% endif %}>{{ category.name }}</option>
 					{% endfor %}
 				</select>
 			</div>
@@ -47,8 +49,8 @@
 			<div class="todo-add__field">
 				<label for="todo-parent">{{ lang('Parent project') }}</label>
 				<select id="todo-parent" class="todo-add__select" name="parent">
-					{% for parentTodo in parentTodos %}
-						<option value="{{ parentTodo.id }}" {% if parentTodo.id == todo.parent %}selected{% endif %}>{{ parentTodo.title }}</option>
+					{% for todo in parentTodos %}
+						<option value="{{ todo.id }}" {% if todo.id == selected_parent_id %}selected{% endif %}>{{ todo.title }}</option>
 					{% endfor %}
 				</select>
 			</div>
@@ -56,9 +58,9 @@
 			<div class="todo-add__field">
 				<label for="todo-pri">{{ lang('Urgency') }}</label>
 				<select id="todo-pri" class="todo-add__select" name="pri">
-					<option value="1" {% if todo.pri == 1 %}selected{% endif %}>{{ lang('Low') }}</option>
-					<option value="2" {% if todo.pri == 2 %}selected{% endif %}>{{ lang('normal') }}</option>
-					<option value="3" {% if todo.pri == 3 %}selected{% endif %}>{{ lang('high') }}</option>
+					<option value="1">{{ lang('Low') }}</option>
+					<option value="2" selected>{{ lang('normal') }}</option>
+					<option value="3">{{ lang('high') }}</option>
 				</select>
 			</div>
 
@@ -66,30 +68,30 @@
 				<label for="todo-status">{{ lang('Completed') }}</label>
 				<select id="todo-status" class="todo-add__select" name="status">
 					{% for i in 0..100 %}
-						<option value="{{ i }}" {% if i == todo.status %}selected{% endif %}>{{ i }}%</option>
+						<option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}%</option>
 					{% endfor %}
 				</select>
 			</div>
 
 			<div class="todo-add__field">
 				<label for="todo-sdate">{{ lang('Start Date') }}</label>
-				<input id="todo-sdate" class="todo-add__input" name="sdate" type="text" autocomplete="off" placeholder="{{ date_format|default('Y-m-d') }}" title="{{ date_format|default('Y-m-d') }}" value="{{ todo.sdate }}" />
+				<input id="todo-sdate" class="todo-add__input" name="sdate" type="text" autocomplete="off" placeholder="{{ date_format|default('Y-m-d') }}" title="{{ date_format|default('Y-m-d') }}" />
 			</div>
 
 			<div class="todo-add__field">
 				<label for="todo-edate">{{ lang('End Date') }}</label>
-				<input id="todo-edate" class="todo-add__input" name="edate" type="text" autocomplete="off" placeholder="{{ date_format|default('Y-m-d') }}" title="{{ date_format|default('Y-m-d') }}" value="{{ todo.edate }}" />
+				<input id="todo-edate" class="todo-add__input" name="edate" type="text" autocomplete="off" placeholder="{{ date_format|default('Y-m-d') }}" title="{{ date_format|default('Y-m-d') }}" />
 			</div>
 
 			<div class="todo-add__field todo-add__field--full">
-				<label class="todo-add__checkline"><input id="todo-private" type="checkbox" name="access" {% if todo.access_private %}checked{% endif %} /> {{ lang('Private') }}</label>
+				<label class="todo-add__checkline"><input id="todo-private" type="checkbox" name="access" /> {{ lang('Private') }}</label>
 			</div>
 
 			<div class="todo-add__field">
 				<label for="todo-assigned">{{ lang('Assigned to user') }}</label>
 				<select id="todo-assigned" class="todo-add__select todo-add__select--multi" name="assigned" multiple size="8" data-placeholder="{{ lang('Select') }} {{ lang('Assigned to user') }}">
 					{% for user in users %}
-						<option value="{{ user.id }}" {% if user.id in todo.assigned_ids %}selected{% endif %}>{{ user.name }}</option>
+						<option value="{{ user.id }}">{{ user.name }}</option>
 					{% endfor %}
 				</select>
 			</div>
@@ -98,7 +100,7 @@
 				<label for="todo-assigned-group">{{ lang('Assigned to group') }}</label>
 				<select id="todo-assigned-group" class="todo-add__select todo-add__select--multi" name="assigned_group" multiple size="8" data-placeholder="{{ lang('Select') }} {{ lang('Assigned to group') }}">
 					{% for group in groups %}
-						<option value="{{ group.id }}" {% if group.id in todo.assigned_group_ids %}selected{% endif %}>{{ group.name }}</option>
+						<option value="{{ group.id }}">{{ group.name }}</option>
 					{% endfor %}
 				</select>
 			</div>
@@ -113,5 +115,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script>{{ source('@views/todo/edit/todo_edit.js') }}</script>
+<script>{{ source('@views/add/todo_add.js') }}</script>
 {% endblock %}

@@ -1,7 +1,7 @@
 {% extends layout|default('@views/_bare.twig') %}
 {% block title %}{{ lang('Reply to a message') }}{% endblock %}
 {% block styles %}
-	<style>{{ source('@views/messenger/reply/messenger_reply.css') }}</style>
+	<style>{{ source('@views/reply/messenger_reply.css') }}</style>
 {% endblock %}
 
 {% block content %}
@@ -29,5 +29,5 @@
 {% endblock %}
 
 {% block scripts %}
-	<script>{{ source('@views/messenger/reply/messenger_reply.js') }}</script>
+	<script>{{ source('@views/reply/messenger_reply.js') }}</script>
 {% endblock %}

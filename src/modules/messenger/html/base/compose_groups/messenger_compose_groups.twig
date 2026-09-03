@@ -1,7 +1,7 @@
 {% extends layout|default('@views/_bare.twig') %}
 {% block title %}{{ lang('Compose global message') }}{% endblock %}
 {% block styles %}
-	<style>{{ source('@views/messenger/compose_groups/messenger_compose_groups.css') }}</style>
+	<style>{{ source('@views/compose_groups/messenger_compose_groups.css') }}</style>
 {% endblock %}
 {% block content %}
 <div id="messenger-compose-groups-app" class="messenger-message-page" data-api-url="{{ api_url|e }}" data-action-url="{{ action_url|e }}" data-back-url="{{ inbox_url|e }}" data-placeholder="{{ lang('Select')|e('html_attr') }}" data-csrf-name="{{ csrf.name|e('html_attr') }}" data-csrf-value="{{ csrf.value|e('html_attr') }}">
@@ -28,5 +28,5 @@
 {% endblock %}
 
 {% block scripts %}
-	<script>{{ source('@views/messenger/compose_groups/messenger_compose_groups.js') }}</script>
+	<script>{{ source('@views/compose_groups/messenger_compose_groups.js') }}</script>
 {% endblock %}

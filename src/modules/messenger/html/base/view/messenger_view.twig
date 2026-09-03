@@ -1,7 +1,7 @@
 {% extends layout|default('@views/_bare.twig') %}
 {% block title %}{{ lang('Read message') }}{% endblock %}
 {% block styles %}
-	<style>{{ source('@views/messenger/view/messenger_view.css') }}</style>
+	<style>{{ source('@views/view/messenger_view.css') }}</style>
 {% endblock %}
 
 {% block content %}
@@ -31,5 +31,5 @@
 {% endblock %}
 
 {% block scripts %}
-	<script>{{ source('@views/messenger/view/messenger_view.js') }}</script>
+	<script>{{ source('@views/view/messenger_view.js') }}</script>
 {% endblock %}

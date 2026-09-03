@@ -1,7 +1,7 @@
 {% extends layout|default('@views/_bare.twig') %}
 {% block title %}{{ lang('Forward a message') }}{% endblock %}
 {% block styles %}
-	<style>{{ source('@views/messenger/forward/messenger_forward.css') }}</style>
+	<style>{{ source('@views/forward/messenger_forward.css') }}</style>
 {% endblock %}
 
 {% block content %}
@@ -30,5 +30,5 @@
 {% endblock %}
 
 {% block scripts %}
-	<script>{{ source('@views/messenger/forward/messenger_forward.js') }}</script>
+	<script>{{ source('@views/forward/messenger_forward.js') }}</script>
 {% endblock %}

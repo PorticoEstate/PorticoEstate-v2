@@ -1,7 +1,7 @@
 {% extends layout|default('@views/_bare.twig') %}
 {% block title %}{{ lang('Compose global message') }}{% endblock %}
 {% block styles %}
-	<style>{{ source('@views/messenger/compose_global/messenger_compose_global.css') }}</style>
+	<style>{{ source('@views/compose_global/messenger_compose_global.css') }}</style>
 {% endblock %}
 {% block content %}
 	<div
@@ -30,5 +30,5 @@
 	</div>
 {% endblock %}
 {% block scripts %}
-	<script>{{ source('@views/messenger/compose_global/messenger_compose_global.js') }}</script>
+	<script>{{ source('@views/compose_global/messenger_compose_global.js') }}</script>
 {% endblock %}

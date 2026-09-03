@@ -213,7 +213,7 @@ class WorkorderFormHelper
 		}
 		else
 		{
-			$bAccountId = (int)$values['b_account_id'];
+			$bAccountId = (string)$values['b_account_id'];
 			$bAccount = $this->readGeneric('budget_account', $bAccountId);
 
 			if (!empty($bAccount['ecodimb']))
@@ -955,9 +955,9 @@ class WorkorderFormHelper
 		return is_array($workorder) ? $workorder : array();
 	}
 
-	protected function readGeneric(string $type, int $id): array
+	protected function readGeneric(string $type, string $id): array
 	{
-		if ($id <= 0)
+		if ($id === '')
 		{
 			return array();
 		}

@@ -198,6 +198,35 @@
     max-width: 100%;
 }
 
+/* "Allocation" type pill + the "#id · season · building" composite line. */
+.overviewMetaRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.overviewTypeTag {
+    flex-shrink: 0;
+}
+
+.overviewMeta {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--ds-color-neutral-text-subtle);
+}
+
+/* "You are: Admin for X" — only rendered when isOrgAdmin says so. */
+.overviewAdminNote {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--ds-color-neutral-text-subtle);
+}
+
+.overviewDuration {
+    color: var(--ds-color-neutral-text-subtle);
+}
+
 .overviewGrid {
     display: grid;
     grid-template-columns: 10rem 1fr;
@@ -219,9 +248,29 @@
 .resourceChip {
     display: inline-flex;
     align-items: center;
+    gap: 0.375rem;
     padding: 2px 12px;
     border-radius: 5rem;
     border: 1px solid var(--ds-color-neutral-border-default);
     font-size: 0.875rem;
     line-height: 1.25rem;
+}
+
+.resourceChipColour {
+    flex-shrink: 0;
+}
+
+.resourceChipLimit {
+    color: var(--ds-color-neutral-text-subtle);
+}
+
+/* "+ New booking" / "Register participants" / edit — the overview's own action row. */
+.overviewActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.overviewActionButton {
+    white-space: nowrap;
 }

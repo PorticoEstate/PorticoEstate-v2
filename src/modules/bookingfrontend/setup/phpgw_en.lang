@@ -1101,3 +1101,6 @@ allocation_series_changed_re_previewed	bookingfrontend	en	The series changed sin
 allocation_cancelled_summary	bookingfrontend	en	{{count}} occurrences were cancelled
 allocation_cancel_skipped_summary	bookingfrontend	en	{{count}} occurrences were not cancelled
 cancel_mode_unavailable	bookingfrontend	en	Unavailable
+loading...	bookingfrontend	en	Loading...
+create new booking	bookingfrontend	en	Create new booking
+you_are_admin_for	bookingfrontend	en	You are: Admin for {{organization}}

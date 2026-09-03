@@ -1,12 +1,17 @@
 'use client'
 import React, {FC, useCallback, useMemo, useRef, useState} from 'react';
 import {DateTime} from "luxon";
-import {Alert, Button, Fieldset, Heading, Label, Paragraph, Radio, Spinner, Textarea, Textfield, Tooltip} from "@digdir/designsystemet-react";
+import {Alert, Button, Fieldset, Heading, Label, Paragraph, Radio, Spinner, Tag, Textarea, Textfield, Tooltip} from "@digdir/designsystemet-react";
 import Dialog from "@/components/dialog/mobile-dialog";
-import {useTrans} from "@/app/i18n/ClientTranslationProvider";
-import {useBuildingSeasons, useServerSettings} from "@/service/hooks/api-hooks";
+import Link from "next/link";
+import {PlusIcon} from "@navikt/aksel-icons";
+import {useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
+import {useBookingUser, useBuildingSeasons, useServerSettings} from "@/service/hooks/api-hooks";
 import {useCurrentBuilding} from "@/components/building-calendar/calendar-context";
+import {isOrgAdmin} from "@/components/building-calendar/util/event-converter";
+import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import {IAPIAllocation} from "@/service/pecalendar.types";
+import {isFutureDate, phpGWLink} from "@/service/util";
 import styles from "./allocation-manage-modal.module.scss";
 import {
 	AllocationCancelScope,
@@ -30,27 +35,33 @@ type Step = 'overview' | 'scope' | 'confirm' | 'done';
  * Design 1c — the allocation management modal, now opening on the OVERVIEW screen 1c draws
  * before its two-step cancellation.
  *
- * WHAT THE OVERVIEW DOES NOT RENDER, and why. The design's overview also carries the
- * organisation's contact person, the owning application number and its approval date, "3 bookings
- * under it", the comment thread, "You are: Admin for …", the participant count and the computed
+ * WHAT THE OVERVIEW STILL DOES NOT RENDER, and why. The design's overview also carries the
+ * organisation's contact person, the owning application number and its approval date, the full
+ * "3 bookings under it" list, the comment thread, the participant count and the computed
  * cancellation deadline. The design→backend contract measured those one by one: the contact
  * person and phone are the legacy `contacts[0]` entity and are not on the served Organization;
  * `application_id` is deliberately not exposed on the allocation payload (present in the TS type,
- * `nullable` + no `@Expose`, so it is `undefined` at runtime and invisible to `tsc`); `check_for_
- * booking` returns a bare id with no name; there is no bb_allocation_comment table at all; and the
- * deadline's computed instant is not served for an allocation. None of it is reachable, so none
- * of it is drawn. What IS reachable — organisation, building, resources, the occurrence's period
- * and the season's name — comes straight off the `allocation` prop the modal already receives on
- * open (season name resolved via `useBuildingSeasons`); no `cancel-preview` call is made to build
- * this screen, since that mutation only fires once the user has chosen to cancel.
+ * `nullable` + no `@Expose`, so it is `undefined` at runtime and invisible to `tsc`); there is no
+ * bb_allocation_comment table at all; and the deadline's computed instant is not served for an
+ * allocation. Blocking-booking names ARE reachable — `blocking_bookings[].group_name` is already
+ * rendered by this same file, on the confirm step, once `cancel-preview` has run — so that list is
+ * deferred one screen later than the design draws it, not unbuildable. None of the rest is
+ * reachable, so none of it is drawn. What IS reachable — organisation, building, resources (with
+ * their per-resource participant limits and colours), the occurrence's period and duration, the
+ * season's name, the allocation's type and id, and whether the viewer administers the owning
+ * organisation — comes straight off the `allocation` prop and the booking user already available
+ * on open (season name resolved via `useBuildingSeasons`); no `cancel-preview` call is made to
+ * build this screen, since that mutation only fires once the user has chosen to cancel.
  *
  * The recipient recap the design draws in step 2 ("To: case worker · 6 user organisations …") is
  * likewise absent: nothing in the shipped endpoint computes or returns a recipient set.
  */
 const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open, onClose}) => {
-	const t = useTrans();
+	const {t, i18n} = useClientTranslation();
 	const serverSettings = useServerSettings();
 	const currentBuilding = useCurrentBuilding();
+	const {data: bookingUser} = useBookingUser();
+	const isAdminForAllocation = isOrgAdmin(bookingUser, allocation);
 
 	const buildingId = typeof currentBuilding === 'string'
 		? Number(currentBuilding)
@@ -61,6 +72,9 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 	// buildingId] whenever the calendar view is open behind this modal.
 	const buildingSeasons = useBuildingSeasons(Number.isFinite(buildingId as number) ? buildingId as number : undefined);
 	const seasonName = buildingSeasons.data?.find((season) => season.id === allocation.season_id)?.name;
+	// Shared by the overview's Season row and its "#id · season · building" composite line —
+	// one source for the same three-state fallback (#19645: resolved / loading / neutral).
+	const seasonDisplay = seasonName ? seasonName : buildingSeasons.isLoading ? t('bookingfrontend.loading...') : '—';
 
 	const [step, setStep] = useState<Step>('overview');
 	const [scope, setScope] = useState<AllocationCancelScope>('occurrence');
@@ -146,6 +160,33 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 			? `${occurrenceLabel}, ${from.toFormat('HH:mm')}–${to.toFormat('HH:mm')}`
 			: occurrenceLabel;
 	}, [allocation.from_, allocation.to_, occurrenceLabel]);
+
+	// The overview's "(2 h)" duration note. `from_`/`to_` are both served, so this is
+	// arithmetic on served data — never a field the server sends, and never a stand-in
+	// for the design's recurrence text (which has no source field at all, see 21181).
+	const overviewDurationLabel = useMemo(() => {
+		const from = DateTime.fromISO(allocation.from_ as unknown as string);
+		const to = DateTime.fromISO(allocation.to_ as unknown as string);
+		if (!from.isValid || !to.isValid) {
+			return null;
+		}
+		const totalHours = to.diff(from, 'hours').hours;
+		if (!Number.isFinite(totalHours) || totalHours <= 0) {
+			return null;
+		}
+		const rounded = Math.round(totalHours * 10) / 10;
+		// Same technique as the date-picker's month select (CustomHeader.tsx:19,46): pass
+		// i18n.language through as the Intl locale tag, which picks the decimal separator
+		// (comma for Norwegian, point for English) and drops the ".0" for whole hours the
+		// same way `Number.isInteger` used to. 'nn' is remapped to 'no': measured, this
+		// browser's ICU has no data for 'nn'/'nn-NO' and Intl silently resolves it to
+		// en-US — a wrong decimal POINT, not a missing translation — while 'no' resolves
+		// correctly and shares Nynorsk's comma convention.
+		const numberLocale = i18n.language === 'nn' ? 'no' : (i18n.language || 'no');
+		const display = new Intl.NumberFormat(numberLocale, {maximumFractionDigits: 1}).format(rounded);
+		const unit = rounded === 1 ? t('bookingfrontend.hour') : t('bookingfrontend.hours');
+		return `${display} ${unit.toLowerCase()}`;
+	}, [allocation.from_, allocation.to_, t, i18n.language]);
 
 	/**
 	 * The long-organisation-name reveal, same technique as the popper card's title (#19569): a
@@ -271,18 +312,61 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 			</h3>
 		);
 
+		// Same shape as allocation-popper-actions.tsx's own "+ New booking" link — this
+		// modal is a SECOND consumer of that route, not a replacement for the card's button.
+		const fromUnix = Date.parse(allocation.from_) / 1000;
+		const toUnix = Date.parse(allocation.to_) / 1000;
+		const newBookingHref = phpGWLink('bookingfrontend/', {
+			menuaction: 'bookingfrontend.uibooking.add',
+			allocation_id: allocation.id,
+			from_: fromUnix,
+			to_: toUnix,
+			resource_ids: allocation.resources.map((resource) => resource.id),
+		}, false);
+		// Same menuaction uiallocation.inc.php:860-863 already builds server-side.
+		const registerParticipantsHref = phpGWLink('bookingfrontend/', {
+			menuaction: 'bookingfrontend.uiparticipant.add',
+			reservation_type: 'allocation',
+			reservation_id: allocation.id,
+		}, false);
+		// ONE edit control, to the one edit form that exists — never a per-field deep-link,
+		// and never worded as a request: uiallocation.edit performs a direct edit.
+		const editHref = phpGWLink('bookingfrontend/', {
+			menuaction: 'bookingfrontend.uiallocation.edit',
+			allocation_id: allocation.id,
+		}, false);
+		const isInFuture = isFutureDate(DateTime.fromISO(allocation.from_));
+
 		return (
 			<div className={styles.step}>
 				<div className={styles.panel}>
 					<div className={styles.overviewHeader}>
+						<div className={styles.overviewMetaRow}>
+							<Tag data-color="accent" className={styles.overviewTypeTag}>
+								{t('bookingfrontend.allocation')}
+							</Tag>
+							<span className={styles.overviewMeta}>
+								{`#${allocation.id} · ${seasonDisplay} · ${allocation.building_name}`}
+							</span>
+						</div>
 						{isOrgNameTruncated
 							? <Tooltip content={allocation.organization_name}>{orgNameHeading}</Tooltip>
 							: orgNameHeading}
+						{isAdminForAllocation && (
+							<span className={styles.overviewAdminNote}>
+								{t('bookingfrontend.you_are_admin_for', {organization: allocation.organization_name})}
+							</span>
+						)}
 					</div>
 
 					<div className={styles.overviewGrid}>
 						<span className={styles.overviewLabel}>{t('booking.date and time')}</span>
-						<span>{overviewPeriodLabel}</span>
+						<span>
+							{overviewPeriodLabel}
+							{overviewDurationLabel && (
+								<span className={styles.overviewDuration}>{` (${overviewDurationLabel})`}</span>
+							)}
+						</span>
 
 						<span className={styles.overviewLabel}>{t('bookingfrontend.building')}</span>
 						<span>{allocation.building_name}</span>
@@ -290,7 +374,15 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 						<span className={styles.overviewLabel}>{t('booking.resources')}</span>
 						<span className={styles.resourceChips}>
 							{allocation.resources.map((resource) => (
-								<span key={resource.id} className={styles.resourceChip}>{resource.name}</span>
+								<span key={resource.id} className={styles.resourceChip}>
+									<ColourCircle resourceId={resource.id} size="small" className={styles.resourceChipColour}/>
+									<span>{resource.name}</span>
+									{typeof resource.participant_limit === 'number' && resource.participant_limit > 0 && (
+										<span className={styles.resourceChipLimit}>
+											{` · ${t('bookingfrontend.max_participants', {count: resource.participant_limit})}`}
+										</span>
+									)}
+								</span>
 							))}
 						</span>
 
@@ -300,7 +392,30 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 						    only the first is actually loading. `isLoading` (pending AND fetching)
 						    is true ONLY during a genuine fetch, so the other three fall through to
 						    the neutral em-dash instead of a false "Laster inn…" claim. */}
-						<span>{seasonName ? seasonName : buildingSeasons.isLoading ? t('bookingfrontend.loading...') : '—'}</span>
+						<span>{seasonDisplay}</span>
+					</div>
+				</div>
+
+				<div className={styles.panel}>
+					<div className={styles.overviewActions}>
+						{isInFuture && (
+							<Button asChild variant="secondary" data-color="accent" className={styles.overviewActionButton}>
+								<Link href={newBookingHref} target="_blank">
+									<PlusIcon/>
+									{t('bookingfrontend.create new booking')}
+								</Link>
+							</Button>
+						)}
+						<Button asChild variant="secondary" data-color="accent" className={styles.overviewActionButton}>
+							<Link href={registerParticipantsHref} target="_blank">
+								{t('booking.register participants')}
+							</Link>
+						</Button>
+						<Button asChild variant="secondary" data-color="accent" className={styles.overviewActionButton}>
+							<Link href={editHref} target="_blank">
+								{t('bookingfrontend.edit allocation')}
+							</Link>
+						</Button>
 					</div>
 				</div>
 			</div>

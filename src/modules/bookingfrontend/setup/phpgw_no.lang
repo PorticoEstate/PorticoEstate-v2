@@ -1102,3 +1102,6 @@ allocation_series_changed_re_previewed	bookingfrontend	no	Serien er endret siden
 allocation_cancelled_summary	bookingfrontend	no	{{count}} forekomster ble avbestilt
 allocation_cancel_skipped_summary	bookingfrontend	no	{{count}} forekomster ble ikke avbestilt
 cancel_mode_unavailable	bookingfrontend	no	Utilgjengelig
+loading...	bookingfrontend	no	Laster inn….
+create new booking	bookingfrontend	no	Lag ny interntildeling
+you_are_admin_for	bookingfrontend	no	Du er: Admin for {{organization}}

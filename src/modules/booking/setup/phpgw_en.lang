@@ -1273,3 +1273,4 @@ overwrite_manual_prices_question	booking	en	%1 of %2 occurrences have a price th
 overwrite_all_prices	booking	en	Overwrite all
 keep_manual_prices	booking	en	Keep the manual prices
 cancel_price_update	booking	en	Cancel
+date and time	booking	en	Date and time

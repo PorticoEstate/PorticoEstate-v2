@@ -392,10 +392,98 @@
 }
 
 /* Designsystemet dialog */
+.app-show__dialog {
+	width: min(42rem, calc(100vw - 2rem));
+	max-width: none;
+	margin: auto;
+	padding: 0;
+	border: 1px solid var(--booking-color-border-default, #cbd7e3);
+	border-radius: var(--booking-border-radius-md, 4px);
+	background: var(--booking-color-background-default, #fff);
+	color: var(--booking-color-text-default, #1e293b);
+	box-shadow: 0 1rem 3rem rgba(16, 44, 74, 0.22);
+}
+
+.app-show__dialog::backdrop {
+	background: rgba(16, 44, 74, 0.48);
+}
+
+.app-show__dialog .booking-dialog__block {
+	padding: 1rem 1.25rem;
+}
+
+.app-show__dialog .booking-dialog__block:first-of-type {
+	padding-right: 3.5rem;
+	border-bottom: 1px solid var(--booking-color-border-subtle, #e5e7eb);
+}
+
+.app-show__dialog .booking-dialog__block:nth-of-type(2) {
+	padding-top: 1.25rem;
+	padding-bottom: 1.25rem;
+}
+
+.app-show__dialog .booking-heading {
+	margin: 0;
+}
+
+.app-show__dialog-close {
+	position: absolute;
+	top: 0.75rem;
+	right: 0.75rem;
+	width: 2rem;
+	height: 2rem;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: var(--booking-border-radius-sm, 4px);
+	background: transparent;
+	color: var(--booking-color-text-subtle, #68707c);
+	cursor: pointer;
+}
+
+.app-show__dialog-close::before {
+	content: '\00d7';
+	font-size: 1.5rem;
+	line-height: 1;
+}
+
+.app-show__dialog-close:hover,
+.app-show__dialog-close:focus-visible {
+	border-color: var(--booking-color-border-default, #cbd7e3);
+	background: var(--booking-color-neutral-surface-hover, #f1f5f9);
+	color: var(--booking-color-text-default, #1e293b);
+}
+
+.app-show__dialog .booking-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+}
+
+.app-show__dialog .booking-field input[type="checkbox"] {
+	align-self: flex-start;
+	min-height: auto;
+	width: 1rem;
+	height: 1rem;
+	padding: 0;
+}
+
 .app-show__dialog-footer {
 	display: flex;
 	justify-content: flex-end;
 	gap: 0.5rem;
+	flex-wrap: wrap;
+	border-top: 1px solid var(--booking-color-border-subtle, #e5e7eb);
+}
+
+@media (max-width: 640px) {
+	.app-show__dialog {
+		width: calc(100vw - 1rem);
+	}
+
+	.app-show__dialog .booking-dialog__block {
+		padding-right: 1rem;
+		padding-left: 1rem;
+	}
 }
 
 /* Control text sizing.

@@ -14,8 +14,8 @@
 {% block scripts %}
 <script>{{ source('@views/components/search_select/search_select.js') }}</script>
 {% if enable_hospitality %}
-<script>{{ source('@views/components/hospitality_order_list/hospitality_order_list.js') }}</script>
-<script>{{ source('@views/components/hospitality_order_modal/hospitality_order_modal.js') }}</script>
+<script>{{ source('@base_views/components/hospitality_order_list/hospitality_order_list.js') }}</script>
+<script>{{ source('@base_views/components/hospitality_order_modal/hospitality_order_modal.js') }}</script>
 {% endif %}
 <script>{{ source('@base_views/application/show/application_show.js') }}</script>
 {% endblock %}

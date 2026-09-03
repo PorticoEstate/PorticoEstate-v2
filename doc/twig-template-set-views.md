@@ -125,20 +125,23 @@ The shared partial should contain the stable contract:
 - tab names and panel IDs
 - API-related markup and state containers
 
-It should not load CSS or JavaScript. Those assets belong in the wrapper so
-that each template set can load its own implementation.
+It should not load CSS or JavaScript. CSS belongs in the wrapper so each
+template set can load its own styling. Shared JavaScript can be loaded once
+from `base` when it uses only the stable contract and neutral hooks.
 
 ## Presentation parameters
 
-When the common partial needs different CSS class names, pass them as
-parameters instead of duplicating the entire partial:
+When the common partial needs different presentation classes, pass them as
+parameters instead of duplicating the entire partial. It is also valid to put
+both visual class names on the same element when the CSS files are kept
+unchanged:
 
 ```twig
 {% include '@views/_shared/application_show_body.twig' with {
-    spinner_class: 'ds-spinner',
-    alert_class: 'ds-alert',
-    paragraph_class: 'ds-paragraph',
-    tabs_class: 'ds-tabs'
+    spinner_class: 'booking-spinner ds-spinner',
+    alert_class: 'booking-alert ds-alert',
+    paragraph_class: 'booking-paragraph ds-paragraph',
+    tabs_class: 'booking-tabs ds-tabs'
 } %}
 ```
 
@@ -160,17 +163,20 @@ JavaScript files are not automatically selected by the Twig template lookup if
 they are loaded with `source()` from a shared wrapper. Load them explicitly:
 
 ```twig
-{# Generic wrapper #}
+{# Both wrappers load the shared implementation. #}
 <script>{{ source('@base_views/application/show/application_show.js') }}</script>
-
-{# Digdir wrapper #}
-<script>{{ source('@digdir_views/application/show/application_show.js') }}</script>
 ```
 
-A generic JavaScript implementation should use neutral DOM classes and preserve
-the shared IDs and `data-*` contract. A template-set-specific implementation
-may generate framework-specific markup, for example Designsystemet `ds-*`
-classes.
+Shared JavaScript must use neutral behavior hooks such as:
+
+```html
+<button class="booking-button ds-button"
+    data-booking-action="create-hospitality-order">
+```
+
+The script selects `data-booking-action` and `data-booking-role`, never
+`ds-*` or `booking-*` classes. Existing visual classes may remain on the same
+elements so the unchanged base and Digdir CSS files both continue to apply.
 
 ## What belongs in `base`
 
@@ -183,8 +189,9 @@ Put the following in `base` when they are shared across template sets:
 - reusable components with a stable, framework-neutral contract
 - domain behavior such as filtering, date calculations, and validation
 
-Use neutral class names such as `booking-button`, `booking-table`, and
-`booking-dialog` when the base JavaScript generates markup.
+Use neutral `data-booking-*` hooks when the shared JavaScript generates markup.
+Keep visual classes such as `booking-button`, `ds-button`, `booking-table`, or
+`ds-table` as styling concerns.
 
 ## What belongs in a template-set directory
 
@@ -194,13 +201,12 @@ framework or visual system:
 - framework component classes such as `ds-button` or `ds-table`
 - framework-specific CSS tokens such as `--ds-*`
 - framework-specific DOM attributes and component structure
-- JavaScript that generates or controls framework-specific markup
 - template-set-specific layout and interaction behavior
 
-The booking module currently keeps Digdir-specific implementations for
-`application/show`, `components/datatable`, `components/hospitality_order_list`,
-and `components/hospitality_order_modal` under `html/digdir`, with generic
-counterparts under `html/base`.
+The booking module keeps Digdir-specific CSS under `html/digdir`, while the
+shared JavaScript implementations for `application/show`,
+`components/datatable`, `components/hospitality_order_list`, and
+`components/hospitality_order_modal` live under `html/base`.
 
 ## Migration checklist
 
@@ -210,10 +216,12 @@ counterparts under `html/base`.
 4. Keep the controller's logical `@views/...` path unchanged.
 5. Move common data and DOM structure into a shared partial where duplication is
    substantial.
-6. Keep CSS and JavaScript loading in the per-template-set wrapper.
-7. Use `@base_views` and `@<template_set>_views` for same-named assets.
-8. Check that all JavaScript selectors still match the shared DOM contract.
-9. Test both the generic template set and every implemented override.
+6. Keep CSS loading in the per-template-set wrapper and load shared JavaScript from `base`.
+7. Add both visual class names when existing CSS files must remain unchanged.
+8. Use `data-booking-*` for JavaScript behavior hooks.
+9. Use `@base_views` and `@<template_set>_views` for same-named assets.
+10. Check that all JavaScript selectors still match the shared DOM contract.
+11. Test both the generic template set and every implemented override.
 
 ## Validation
 

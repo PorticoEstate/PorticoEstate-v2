@@ -7,5 +7,5 @@
 {{ add_script(modules_url ~ '/phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive/js/dataTables.responsive.min.js') }}
 {{ add_script(modules_url ~ '/phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons/js/dataTables.buttons.min.js') }}
 {{ add_script(modules_url ~ '/phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select/js/dataTables.select.min.js') }}
-{{ add_inline_script(source('@views/components/datatable/datatable.js')) }}
+{{ add_inline_script(source('@base_views/components/datatable/datatable.js')) }}
 <div id="{{ id | default('app-datatable') }}"></div>

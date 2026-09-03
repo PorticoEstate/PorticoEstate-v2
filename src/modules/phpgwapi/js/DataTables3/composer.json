@@ -1,8 +1,5 @@
 {
     "require": {
-        "moment/moment": "^2.30",
-        "stuk/jszip": "^3.0",
-        "bpampuch/pdfmake": "^0.2.23",
         "datatables.net/datatables.net-dt": "^3.0",
         "datatables.net/datatables.net-autofill-dt": "^3.0",
         "datatables.net/datatables.net-buttons-dt": "^4.0",

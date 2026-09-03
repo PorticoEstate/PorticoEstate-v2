@@ -1174,6 +1174,7 @@ JS;
 				'label'		 => lang('attachments'),
 				'hidden'	 => false,
 				'sortable'	 => true,
+				'formatter' => 'workorder_attachment_link'
 			)
 		);
 

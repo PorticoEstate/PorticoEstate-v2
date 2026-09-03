@@ -12,7 +12,7 @@
 	align-items: center;
 	padding: 4rem 1rem;
 	gap: 1rem;
-	color: var(--booking-color-text-subtle, #68707c);
+	color: var(--ds-color-text-subtle, #68707c);
 }
 
 /* Header */
@@ -60,13 +60,13 @@
 .app-show__meta dt {
 	font-size: 0.8125rem;
 	font-weight: 500;
-	color: var(--booking-color-neutral-text-subtle, #68707c);
+	color: var(--ds-color-neutral-text-subtle, #68707c);
 }
 
 .app-show__meta dd {
 	margin: 0;
 	font-size: 0.9375rem;
-	color: var(--booking-color-neutral-text-default, #1e293b);
+	color: var(--ds-color-neutral-text-default, #1e293b);
 	display: flex;
 	align-items: center;
 	gap: 0.4rem;
@@ -78,7 +78,7 @@
 	margin-bottom: 1.5rem;
 }
 
-.booking-tabs [role="tabpanel"] {
+.ds-tabs [role="tabpanel"] {
 	padding: 1.25rem 0 0;
 }
 
@@ -103,7 +103,7 @@
 
 .app-show__card-icon {
 	display: inline-flex;
-	color: var(--booking-color-neutral-text-subtle, #68707c);
+	color: var(--ds-color-neutral-text-subtle, #68707c);
 }
 
 .app-show__card-icon svg {
@@ -112,7 +112,7 @@
 }
 
 .app-show__card-aside {
-	color: var(--booking-color-neutral-text-subtle, #68707c);
+	color: var(--ds-color-neutral-text-subtle, #68707c);
 	font-size: 0.8125rem;
 }
 
@@ -142,13 +142,13 @@
 .app-show__def dt {
 	font-size: 0.8125rem;
 	font-weight: 500;
-	color: var(--booking-color-neutral-text-subtle, #68707c);
+	color: var(--ds-color-neutral-text-subtle, #68707c);
 }
 
 .app-show__def dd {
 	margin: 0;
 	font-size: 0.9375rem;
-	color: var(--booking-color-neutral-text-default, #1e293b);
+	color: var(--ds-color-neutral-text-default, #1e293b);
 	overflow-wrap: anywhere;
 }
 
@@ -160,13 +160,13 @@
 }
 
 /* Tables nested inside cards */
-.app-show__card .booking-table {
+.app-show__card .ds-table {
 	width: 100%;
 }
 
 /* Right-align numeric columns (Digdir tables have no built-in num helper) */
-.app-show__card .booking-table th.app-show__num,
-.app-show__card .booking-table td.app-show__num {
+.app-show__card .ds-table th.app-show__num,
+.app-show__card .ds-table td.app-show__num {
 	text-align: right;
 	font-variant-numeric: tabular-nums;
 }
@@ -174,7 +174,7 @@
 /* Comments / Notes list */
 .app-show__comment {
 	padding: 0.75rem;
-	border-bottom: 1px solid var(--booking-color-border-subtle, #f1f5f9);
+	border-bottom: 1px solid var(--ds-color-border-subtle, #f1f5f9);
 }
 
 .app-show__comment:last-child {
@@ -183,7 +183,7 @@
 
 .app-show__comment-meta {
 	font-size: 0.8125rem;
-	color: var(--booking-color-text-subtle, #68707c);
+	color: var(--ds-color-text-subtle, #68707c);
 	margin-bottom: 0.25rem;
 }
 
@@ -203,13 +203,13 @@
 	width: 388px;
 	display: flex;
 	flex-direction: column;
-	/* tighten booking-card's inter-row spacing for this compact card */
-	--dsc-card-content-margin-block: var(--booking-size-2) 0;
+	/* tighten ds-card's inter-row spacing for this compact card */
+	--dsc-card-content-margin-block: var(--ds-size-2) 0;
 }
 
 .app-show__app-card--current {
-	--dsc-card-border-color: var(--booking-color-accent-border-default);
-	--dsc-card-background: var(--booking-color-accent-surface-default);
+	--dsc-card-border-color: var(--ds-color-accent-border-default);
+	--dsc-card-background: var(--ds-color-accent-surface-default);
 }
 
 .app-show__app-card-header {
@@ -222,12 +222,12 @@
 
 .app-show__app-card-meta {
 	font-size: 0.8125rem;
-	color: var(--booking-color-text-subtle, #68707c);
+	color: var(--ds-color-text-subtle, #68707c);
 }
 
 .app-show__app-card-dates {
 	font-size: 0.8125rem;
-	color: var(--booking-color-text-subtle, #68707c);
+	color: var(--ds-color-text-subtle, #68707c);
 }
 
 .app-show__app-card-field {
@@ -243,7 +243,7 @@
 .app-show__empty {
 	padding: 1rem;
 	text-align: center;
-	color: var(--booking-color-text-subtle, #68707c);
+	color: var(--ds-color-text-subtle, #68707c);
 	font-size: 0.875rem;
 	font-style: italic;
 }
@@ -276,62 +276,62 @@
 	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
-	color: var(--booking-color-neutral-text-subtle, #68707c);
+	color: var(--ds-color-neutral-text-subtle, #68707c);
 }
 
 .app-show__menu-sep {
 	border: none;
-	border-top: 1px solid var(--booking-color-neutral-border-subtle, #e5e7eb);
+	border-top: 1px solid var(--ds-color-neutral-border-subtle, #e5e7eb);
 	margin: 0.25rem 0;
 }
 
-.app-show__menu .booking-dropdown__item {
+.app-show__menu .ds-dropdown__item {
 	display: flex;
 	align-items: center;
 	gap: 0.625rem;
 	text-align: left;
 	background: none;
 	border: none;
-	border-radius: var(--booking-border-radius-sm, 0.25rem);
-	color: var(--booking-color-neutral-text-default, #1e293b);
+	border-radius: var(--ds-border-radius-sm, 0.25rem);
+	color: var(--ds-color-neutral-text-default, #1e293b);
 	cursor: pointer;
 	text-decoration: none;
 }
 
-.app-show__menu .booking-dropdown__item:hover {
-	background: var(--booking-color-neutral-surface-hover, #f1f5f9);
+.app-show__menu .ds-dropdown__item:hover {
+	background: var(--ds-color-neutral-surface-hover, #f1f5f9);
 }
 
-.app-show__menu .booking-dropdown__item[aria-disabled="true"] {
+.app-show__menu .ds-dropdown__item[aria-disabled="true"] {
 	opacity: 0.45;
 	pointer-events: none;
 }
 
-.app-show__menu .booking-dropdown__item > svg {
+.app-show__menu .ds-dropdown__item > svg {
 	width: 1.125rem;
 	height: 1.125rem;
 	flex: none;
-	color: var(--booking-color-neutral-text-subtle, #68707c);
+	color: var(--ds-color-neutral-text-subtle, #68707c);
 }
 
-.app-show__menu .booking-dropdown__item[data-color="success"] > svg {
-	color: var(--booking-color-success-base-default, #068718);
+.app-show__menu .ds-dropdown__item[data-color="success"] > svg {
+	color: var(--ds-color-success-base-default, #068718);
 }
 
-.app-show__menu .booking-dropdown__item[data-color="danger"] > svg {
-	color: var(--booking-color-danger-base-default, #c01b1b);
+.app-show__menu .ds-dropdown__item[data-color="danger"] > svg {
+	color: var(--ds-color-danger-base-default, #c01b1b);
 }
 
-.app-show__menu .booking-dropdown__item > span {
+.app-show__menu .ds-dropdown__item > span {
 	display: flex;
 	flex-direction: column;
 	min-width: 0;
 }
 
-.app-show__menu .booking-dropdown__item-desc {
+.app-show__menu .ds-dropdown__item-desc {
 	font-size: 0.75rem;
 	font-weight: 400;
-	color: var(--booking-color-neutral-text-subtle, #68707c);
+	color: var(--ds-color-neutral-text-subtle, #68707c);
 }
 
 /* Split button (primary action + dropdown caret) */
@@ -339,7 +339,7 @@
 	display: inline-flex;
 }
 
-.app-show__split > .booking-button:first-child {
+.app-show__split > .ds-button:first-child {
 	border-top-right-radius: 0;
 	border-bottom-right-radius: 0;
 }
@@ -347,7 +347,7 @@
 .app-show__split-toggle {
 	border-top-left-radius: 0;
 	border-bottom-left-radius: 0;
-	padding-inline: var(--booking-size-2);
+	padding-inline: var(--ds-size-2);
 	min-width: 0;
 }
 
@@ -362,10 +362,10 @@
 
 /* In-place "created" state: the Edit link that replaces the whole split for a
    fulfilled slot. Size + colour its success check icon. */
-.app-show .booking-button[data-created] > svg {
+.app-show .ds-button[data-created] > svg {
 	width: 1.125rem;
 	height: 1.125rem;
-	color: var(--booking-color-success-base-default, #068718);
+	color: var(--ds-color-success-base-default, #068718);
 }
 
 /* Inline overlap message shown under a create button when the create fails on
@@ -377,7 +377,7 @@
 	align-items: baseline;
 	gap: 0.25rem 0;
 	font-size: 0.8125rem;
-	color: var(--booking-color-danger-base-default, #c01b1b);
+	color: var(--ds-color-danger-base-default, #c01b1b);
 }
 
 .app-show__conflict a {
@@ -403,15 +403,15 @@
    buttons/menu items the text is `inherit`. The legacy frame's base font is
    12px while Digdir spacing is rem-based (16px), so inherited control text
    ends up too small. Pin control text to a rem-based scale to match. */
-.app-show .booking-button,
-.app-show__dialog .booking-button,
-.app-show__menu .booking-dropdown__item {
+.app-show .ds-button,
+.app-show__dialog .ds-button,
+.app-show__menu .ds-dropdown__item {
 	font-size: 0.875rem;
 	line-height: 1.4;
 }
 
-.app-show .booking-button[data-size="sm"],
-.app-show__dialog .booking-button[data-size="sm"] {
+.app-show .ds-button[data-size="sm"],
+.app-show__dialog .ds-button[data-size="sm"] {
 	font-size: 0.8125rem;
 }
 
@@ -431,7 +431,7 @@
 	padding: 0.75rem 1rem;
 	font-size: 0.875rem;
 	font-style: italic;
-	color: var(--booking-color-text-subtle, #68707c);
+	color: var(--ds-color-text-subtle, #68707c);
 }
 
 /* Schedule link icon */
@@ -440,12 +440,12 @@
 	align-items: center;
 	cursor: pointer;
 	text-decoration: none;
-	color: var(--booking-color-accent-text-subtle, #2a5566);
+	color: var(--ds-color-accent-text-subtle, #2a5566);
 }
 
 /* Collision schedule icon (in dates table) stays a warning colour */
 .app-show__schedule-link[data-schedule-date] {
-	color: var(--booking-color-danger-text-default, #dc2626);
+	color: var(--ds-color-danger-text-default, #dc2626);
 	margin-left: 0.5rem;
 }
 
@@ -481,11 +481,11 @@
 
 .app-show__conflict-text {
 	font-size: 0.75rem;
-	color: var(--booking-color-text-subtle, #68707c);
+	color: var(--ds-color-text-subtle, #68707c);
 }
 
 /* Dialog form fields stack with consistent spacing */
-.app-show__dialog .booking-field + .booking-field {
+.app-show__dialog .ds-field + .ds-field {
 	margin-top: 1rem;
 }
 
@@ -497,7 +497,7 @@
 	transform: translateX(-50%);
 	z-index: 1100;
 	min-width: 300px;
-	/* Keep the default alert layout: the booking-alert icon is an absolutely-positioned
+	/* Keep the default alert layout: the ds-alert icon is an absolutely-positioned
 	   ::before with reserved inline-start padding. Centering the text pulls it back
 	   over the icon, so leave the message start-aligned beside the icon. */
 	text-align: start;

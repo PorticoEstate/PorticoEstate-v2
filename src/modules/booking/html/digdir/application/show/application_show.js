@@ -71,9 +71,9 @@
 
 	// Designsystemet Spinner (SVG markup; sized via data-size).
 	function spinner(size) {
-		return '<svg class="booking-spinner" data-size="' + (size || 'md') + '" viewBox="0 0 50 50" role="img" aria-label="' + esc(lang('loading')) + '">' +
-			'<circle class="booking-spinner__background" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>' +
-			'<circle class="booking-spinner__circle" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>' +
+		return '<svg class="ds-spinner" data-size="' + (size || 'md') + '" viewBox="0 0 50 50" role="img" aria-label="' + esc(lang('loading')) + '">' +
+			'<circle class="ds-spinner__background" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>' +
+			'<circle class="ds-spinner__circle" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>' +
 			'</svg>';
 	}
 
@@ -89,7 +89,7 @@
 		var color = colorMap[key] || 'neutral';
 		var label = key ? lang(key) : '';
 		if (!label || label === key) label = status || '';
-		return '<span class="booking-tag" data-color="' + color + '">' + esc(label) + '</span>';
+		return '<span class="ds-tag" data-color="' + color + '">' + esc(label) + '</span>';
 	}
 
 	// Stored enum values (article unit, association type, document category) are
@@ -114,9 +114,9 @@
 		if (opts.hideEmpty && !bodyHtml) return '';
 		var iconHtml = opts.icon ? '<span class="app-show__card-icon">' + opts.icon + '</span>' : '';
 		var aside = opts.aside ? '<span class="app-show__card-aside">' + opts.aside + '</span>' : '';
-		return '<section class="booking-card app-show__card">' +
+		return '<section class="ds-card app-show__card">' +
 			'<div class="app-show__card-head">' +
-			'<div class="app-show__card-title">' + iconHtml + '<h2 class="booking-heading" data-size="xs">' + esc(title) + '</h2></div>' +
+			'<div class="app-show__card-title">' + iconHtml + '<h2 class="ds-heading" data-size="xs">' + esc(title) + '</h2></div>' +
 			aside +
 			'</div>' +
 			(bodyHtml || '<p class="app-show__empty">&mdash;</p>') +
@@ -141,10 +141,10 @@
 
 	function showToast(message, type) {
 		var toast = document.createElement('div');
-		toast.className = 'booking-alert app-show__toast';
+		toast.className = 'ds-alert app-show__toast';
 		toast.setAttribute('data-color', type || 'success');
 		toast.setAttribute('role', 'status');
-		toast.innerHTML = '<p class="booking-paragraph">' + esc(message) + '</p>';
+		toast.innerHTML = '<p class="ds-paragraph">' + esc(message) + '</p>';
 		document.body.appendChild(toast);
 		setTimeout(function () { toast.remove(); }, 3000);
 	}
@@ -349,13 +349,13 @@
 		function menuItem(label, opts) {
 			opts = opts || {};
 			var disabled = opts.disabled;
-			var attrs = ' class="booking-dropdown__item"';
+			var attrs = ' class="ds-dropdown__item"';
 			if (opts.color) attrs += ' data-color="' + esc(opts.color) + '"';
 			if (disabled) attrs += ' aria-disabled="true" tabindex="-1"';
 			if (opts.title) attrs += ' title="' + esc(opts.title) + '"';
 			if (opts.action) attrs += ' data-action="' + esc(opts.action) + '"';
 			var inner = (opts.icon || '') + '<span>' + esc(label) +
-				(opts.desc ? '<span class="booking-dropdown__item-desc">' + esc(opts.desc) + '</span>' : '') +
+				(opts.desc ? '<span class="ds-dropdown__item-desc">' + esc(opts.desc) + '</span>' : '') +
 				'</span>';
 			if (opts.href && !disabled) {
 				return '<li><a' + attrs + ' href="' + esc(opts.href) + '">' + inner + '</a></li>';
@@ -364,11 +364,11 @@
 		}
 
 		// Build a Designsystemet Dropdown (native Popover API).
-		// triggerAttrs is the booking-button attribute string (variant/color);
+		// triggerAttrs is the ds-button attribute string (variant/color);
 		// groups is an array of { heading?, items: [<li>…] } separated by rules.
 		function dropdown(id, triggerAttrs, triggerHtml, groups) {
-			var html = '<button type="button" class="booking-button app-show__menu-trigger" ' + triggerAttrs + ' popovertarget="' + id + '">' + triggerHtml + '</button>';
-			html += '<div class="booking-dropdown app-show__menu" popover id="' + id + '">';
+			var html = '<button type="button" class="ds-button app-show__menu-trigger" ' + triggerAttrs + ' popovertarget="' + id + '">' + triggerHtml + '</button>';
+			html += '<div class="ds-dropdown app-show__menu" popover id="' + id + '">';
 			groups.forEach(function (g, i) {
 				if (i > 0) html += '<hr class="app-show__menu-sep">';
 				if (g.heading) html += '<h3>' + esc(g.heading) + '</h3>';
@@ -463,8 +463,8 @@
 		var warningHtml = '';
 		if (!isCO) {
 			var warnText = !hasCO ? lang('noCaseOfficerWarning') : lang('differentCaseOfficerWarning');
-			warningHtml = '<div class="booking-alert app-show__alert" data-color="warning" role="alert">' +
-				'<p class="booking-paragraph">' + esc(warnText) + '</p></div>';
+			warningHtml = '<div class="ds-alert app-show__alert" data-color="warning" role="alert">' +
+				'<p class="ds-paragraph">' + esc(warnText) + '</p></div>';
 		}
 		document.getElementById('application-toolbar').innerHTML = warningHtml;
 
@@ -478,9 +478,9 @@
 
 		// Close the dropdown once an enabled item is activated.
 		root.addEventListener('click', function (e) {
-			var item = e.target.closest('.booking-dropdown__item');
+			var item = e.target.closest('.ds-dropdown__item');
 			if (!item || item.getAttribute('aria-disabled') === 'true') return;
-			var pop = item.closest('.booking-dropdown');
+			var pop = item.closest('.ds-dropdown');
 			if (pop && pop.matches(':popover-open')) pop.hidePopover();
 		});
 
@@ -567,7 +567,7 @@
 			: lang('application') + ' #' + esc(app.id);
 		var html = '<div class="app-show__title-row">' +
 			'<div class="app-show__title-left">' +
-			'<h1 class="booking-heading app-show__title" data-size="lg">' + titleText + '</h1>' +
+			'<h1 class="ds-heading app-show__title" data-size="lg">' + titleText + '</h1>' +
 			statusTag(app.status) +
 			'</div>' +
 			toolbarHtml +
@@ -587,7 +587,7 @@
 		if (app.case_officer_name) {
 			officerVal = esc(app.case_officer_name);
 			if (app.case_officer_is_current_user) {
-				officerVal += ' <span class="booking-tag" data-color="success" data-size="sm">&#10003;</span>';
+				officerVal += ' <span class="ds-tag" data-color="success" data-size="sm">&#10003;</span>';
 			}
 		} else {
 			officerVal = '<em>' + lang('notAssigned') + '</em>';
@@ -602,7 +602,7 @@
 		if (app.toolbar && app.toolbar.external_archive_key) {
 			meta += '<dl><dt>' + lang('archiveKey') + '</dt><dd>' + esc(app.toolbar.external_archive_key) + '</dd></dl>';
 		}
-		html += '<section class="booking-card app-show__meta">' + meta + '</section>';
+		html += '<section class="ds-card app-show__meta">' + meta + '</section>';
 
 		document.getElementById('application-header').innerHTML = html;
 	}
@@ -622,7 +622,7 @@
 			var relHtml = '<div class="app-show__card-grid">';
 			related.forEach(function (rel) {
 				var isCurrent = rel.id === app.id;
-				relHtml += '<div class="booking-card app-show__app-card' + (isCurrent ? ' app-show__app-card--current' : '') + '">';
+				relHtml += '<div class="ds-card app-show__app-card' + (isCurrent ? ' app-show__app-card--current' : '') + '">';
 				relHtml += '<div class="app-show__app-card-header">';
 				relHtml += '<span>' + lang('application') + ' #' + rel.id + '</span>';
 				relHtml += ' ' + statusTag(rel.status);
@@ -646,9 +646,9 @@
 				var editUrl = '/?menuaction=booking.uiapplication.edit&id=' + rel.id + '&selected_app_id=' + rel.id + '&hide_invoicing=1';
 				relHtml += '<div class="app-show__app-card-actions">';
 				if (isCO) {
-					relHtml += '<a class="booking-button" data-variant="secondary" data-color="neutral" data-size="sm" href="' + esc(editUrl) + '">' + lang('edit') + '</a>';
+					relHtml += '<a class="ds-button" data-variant="secondary" data-color="neutral" data-size="sm" href="' + esc(editUrl) + '">' + lang('edit') + '</a>';
 				} else {
-					relHtml += '<span class="booking-button app-show__toolbar-disabled" data-variant="secondary" data-color="neutral" data-size="sm" aria-disabled="true">' + lang('edit') + '</span>';
+					relHtml += '<span class="ds-button app-show__toolbar-disabled" data-variant="secondary" data-color="neutral" data-size="sm" aria-disabled="true">' + lang('edit') + '</span>';
 				}
 				relHtml += '</div>';
 				relHtml += '</div>';
@@ -721,14 +721,14 @@
 				if (audienceNames.length > 0) {
 					html += section(lang('targetAudience'),
 						'<div class="app-show__tags-row">' + audienceNames.map(function (n) {
-							return '<span class="booking-tag">' + esc(n) + '</span>';
+							return '<span class="ds-tag">' + esc(n) + '</span>';
 						}).join('') + '</div>',
 						{ icon: ICONS.target });
 				}
 			}
 
 			function renderAgTable(groups) {
-				var tbl = '<table class="booking-table" data-size="sm" data-zebra>' +
+				var tbl = '<table class="ds-table" data-size="sm" data-zebra>' +
 					'<thead><tr><th>' + lang('name') + '</th><th class="app-show__num">' + lang('male') + '</th><th class="app-show__num">' + lang('female') + '</th></tr></thead><tbody>';
 				var hasData = false;
 				(groups || []).forEach(function (ag) {
@@ -806,18 +806,18 @@
 		var hasOrg = !!(app.customer_organization_id || app.customer_organization_number);
 
 		if (dates.length > 0 && !isRecurring) {
-			var datesHtml = '<table class="booking-table" data-size="sm" data-zebra id="dates-table"><thead><tr>';
+			var datesHtml = '<table class="ds-table" data-size="sm" data-zebra id="dates-table"><thead><tr>';
 			if (isCombined) datesHtml += '<th>' + lang('application') + '</th>';
 			datesHtml += '<th>' + lang('from') + '</th><th>' + lang('to') + '</th><th>' + lang('resources') + '</th><th>' + lang('status') + '</th><th>' + lang('handling') + '</th></tr></thead><tbody>';
 			dates.forEach(function (d) {
 				var hasAssoc = !!assocFromSet[normDate(d.from_)];
 				var collisionTag;
 				if (hasAssoc) {
-					collisionTag = '<span class="booking-tag" data-color="neutral">' + lang('dateCreated') + '</span>';
+					collisionTag = '<span class="ds-tag" data-color="neutral">' + lang('dateCreated') + '</span>';
 				} else if (d.collision) {
-					collisionTag = '<span class="booking-tag" data-color="danger">' + lang('collision') + '</span>';
+					collisionTag = '<span class="ds-tag" data-color="danger">' + lang('collision') + '</span>';
 				} else {
-					collisionTag = '<span class="booking-tag" data-color="success">' + lang('noCollision') + '</span>';
+					collisionTag = '<span class="ds-tag" data-color="success">' + lang('noCollision') + '</span>';
 				}
 
 				// Schedule link: show on collision + case officer + no association
@@ -837,22 +837,22 @@
 				// Action: split button — primary "Lag arrangement" + caret dropdown for the rest
 				var actionHtml;
 				if (hasAssoc) {
-					actionHtml = '<span class="booking-tag" data-color="neutral">' + lang('dateCreated') + '</span>';
+					actionHtml = '<span class="ds-tag" data-color="neutral">' + lang('dateCreated') + '</span>';
 				} else if (!isCO) {
 					actionHtml = '<div class="app-show__split">' +
-						'<button type="button" class="booking-button" data-variant="primary" data-color="accent" data-size="sm" disabled>' + esc(lang('createEvent')) + '</button>' +
-						'<button type="button" class="booking-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" disabled aria-label="' + esc(lang('dateActions')) + '">' + ICONS.chevron + '</button>' +
+						'<button type="button" class="ds-button" data-variant="primary" data-color="accent" data-size="sm" disabled>' + esc(lang('createEvent')) + '</button>' +
+						'<button type="button" class="ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" disabled aria-label="' + esc(lang('dateActions')) + '">' + ICONS.chevron + '</button>' +
 						'</div>';
 				} else {
 					var menuId = 'datemenu-' + d.id;
 					actionHtml = '<div class="app-show__split">' +
-						'<button type="button" class="booking-button" data-variant="primary" data-color="accent" data-size="sm" data-create="event" data-date-id="' + d.id + '">' + esc(lang('createEvent')) + '</button>' +
-						'<button type="button" class="booking-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '" aria-label="' + esc(lang('dateActions')) + '">' + ICONS.chevron + '</button>' +
-						'<div class="booking-dropdown app-show__menu app-show__split-menu" popover id="' + menuId + '"><ul>' +
-						(hasOrg ? '<li><button type="button" class="booking-dropdown__item" data-create="allocation" data-date-id="' + d.id + '"><span>' + esc(lang('createAllocation')) + '</span></button></li>' : '') +
-						'<li><button type="button" class="booking-dropdown__item" data-create="booking" data-date-id="' + d.id + '"><span>' + esc(lang('createBooking')) + '</span></button></li>' +
+						'<button type="button" class="ds-button" data-variant="primary" data-color="accent" data-size="sm" data-create="event" data-date-id="' + d.id + '">' + esc(lang('createEvent')) + '</button>' +
+						'<button type="button" class="ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '" aria-label="' + esc(lang('dateActions')) + '">' + ICONS.chevron + '</button>' +
+						'<div class="ds-dropdown app-show__menu app-show__split-menu" popover id="' + menuId + '"><ul>' +
+						(hasOrg ? '<li><button type="button" class="ds-dropdown__item" data-create="allocation" data-date-id="' + d.id + '"><span>' + esc(lang('createAllocation')) + '</span></button></li>' : '') +
+						'<li><button type="button" class="ds-dropdown__item" data-create="booking" data-date-id="' + d.id + '"><span>' + esc(lang('createBooking')) + '</span></button></li>' +
 						// Reject only this sub-application (combined carts) — siblings stay open.
-						(isCombined ? '<li><button type="button" class="booking-dropdown__item" data-color="danger" data-reject-app="' + esc(d.application_id) + '"><span>' + esc(lang('rejectApplication')) + '</span></button></li>' : '') +
+						(isCombined ? '<li><button type="button" class="ds-dropdown__item" data-color="danger" data-reject-app="' + esc(d.application_id) + '"><span>' + esc(lang('rejectApplication')) + '</span></button></li>' : '') +
 						'</ul></div></div>';
 				}
 
@@ -938,7 +938,7 @@
 		function collapseToEditLink(btn, cell, result) {
 			var link = document.createElement('a');
 			link.href = result.edit_url;
-			link.className = 'booking-button';
+			link.className = 'ds-button';
 			link.setAttribute('data-variant', 'tertiary');
 			link.setAttribute('data-color', 'success');
 			link.setAttribute('data-size', 'sm');
@@ -965,9 +965,9 @@
 
 			var box = document.createElement('div');
 			box.className = 'app-show__group-picker';
-			box.innerHTML = '<div class="booking-field" data-size="sm">' +
-				'<label class="booking-label">' + esc(lang('selectGroup')) + '</label>' +
-				'<select class="booking-input" data-size="sm"><option value="">' + esc(lang('loading')) + '…</option></select>' +
+			box.innerHTML = '<div class="ds-field" data-size="sm">' +
+				'<label class="ds-label">' + esc(lang('selectGroup')) + '</label>' +
+				'<select class="ds-input" data-size="sm"><option value="">' + esc(lang('loading')) + '…</option></select>' +
 				'</div>';
 			var select = box.querySelector('select');
 			cell.appendChild(box);
@@ -1059,7 +1059,7 @@
 		root.addEventListener('click', function (e) {
 			var btn = e.target.closest('[data-reject-app]');
 			if (!btn) return;
-			var pop = btn.closest('.booking-dropdown');
+			var pop = btn.closest('.ds-dropdown');
 			if (pop && pop.matches(':popover-open')) pop.hidePopover();
 			showRejectModal({ appId: parseInt(btn.dataset.rejectApp, 10), single: true });
 		});
@@ -1129,7 +1129,7 @@
 		// Documents
 		var docs = data.documents || [];
 		if (docs.length > 0) {
-			var docsHtml = '<table class="booking-table" data-size="sm" data-zebra>' +
+			var docsHtml = '<table class="ds-table" data-size="sm" data-zebra>' +
 				'<thead><tr><th>' + lang('name') + '</th><th>' + lang('category') + '</th></tr></thead><tbody>';
 			docs.forEach(function (doc) {
 				var nameCell = doc.download_url
@@ -1178,7 +1178,7 @@
 				if (isCombined) {
 					ordersHtml += '<p>' + orders.length + ' ' + lang('orders') + '</p>';
 				}
-				ordersHtml += '<table class="booking-table" data-size="sm" data-zebra>' +
+				ordersHtml += '<table class="ds-table" data-size="sm" data-zebra>' +
 					'<thead><tr><th>' + lang('article') + '</th><th>' + lang('unit') + '</th><th class="app-show__num">' + lang('unitPrice') + '</th><th class="app-show__num">' + lang('tax') + '</th><th class="app-show__num">' + lang('quantity') + '</th><th class="app-show__num">' + lang('sum') + '</th></tr></thead><tbody>';
 				articleKeys.forEach(function (key) {
 					var a = articleMap[key];
@@ -1194,7 +1194,7 @@
 		// Associations
 		var associations = data.associations || [];
 		if (associations.length > 0) {
-			var assocHtml = '<table class="booking-table" data-size="sm" data-zebra>' +
+			var assocHtml = '<table class="ds-table" data-size="sm" data-zebra>' +
 				'<thead><tr><th>ID</th><th>' + lang('type') + '</th><th>' + lang('from') + '</th><th>' + lang('to') + '</th><th class="app-show__num">' + lang('cost') + '</th><th>' + lang('active') + '</th>';
 			if (isCO) assocHtml += '<th></th>';
 			assocHtml += '</tr></thead><tbody>';
@@ -1204,9 +1204,9 @@
 				assocHtml += '<tr><td>' + esc(a.id) + '</td><td>' + esc(enumLabel(a.type)) + '</td><td>' + fmtDate(a.from_) + '</td><td>' + fmtDate(a.to_) + '</td><td class="app-show__num">' + costVal + '</td><td>' + activeLabel + '</td>';
 				if (isCO) {
 					if (a.active === 1 || a.active === '1') {
-						assocHtml += '<td><button type="button" class="booking-button app-show__assoc-delete" data-variant="primary" data-color="danger" data-size="sm" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' + lang('delete') + '</button></td>';
+						assocHtml += '<td><button type="button" class="ds-button app-show__assoc-delete" data-variant="primary" data-color="danger" data-size="sm" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' + lang('delete') + '</button></td>';
 					} else {
-						assocHtml += '<td><button type="button" class="booking-button app-show__assoc-activate" data-variant="secondary" data-color="success" data-size="sm" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' + lang('activate') + '</button></td>';
+						assocHtml += '<td><button type="button" class="ds-button app-show__assoc-activate" data-variant="secondary" data-color="success" data-size="sm" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' + lang('activate') + '</button></td>';
 					}
 				}
 				assocHtml += '</tr>';
@@ -1241,13 +1241,13 @@
 
 		// System-wide terms text (plain text from config textarea, must be escaped)
 		if (app.application_terms) {
-			html += '<section class="booking-card app-show__card">' + esc(app.application_terms) + '</section>';
+			html += '<section class="ds-card app-show__card">' + esc(app.application_terms) + '</section>';
 		}
 
 		// Regulation documents (building + resource docs)
 		var regDocs = app.regulation_documents || [];
 		if (regDocs.length > 0) {
-			var docsHtml = '<table class="booking-table" data-size="sm" data-zebra>' +
+			var docsHtml = '<table class="ds-table" data-size="sm" data-zebra>' +
 				'<thead><tr><th>' + lang('name') + '</th></tr></thead><tbody>';
 			regDocs.forEach(function (doc) {
 				docsHtml += '<tr><td><a href="' + esc(doc.download_url) + '">' + esc(doc.display_name) + '</a></td></tr>';
@@ -1310,7 +1310,7 @@
 		comments.forEach(function (comment) {
 			var typeTag = '';
 			if (comment.type && comment.type !== 'comment') {
-				typeTag = ' <span class="booking-tag" data-color="neutral">' + esc(comment.type) + '</span>';
+				typeTag = ' <span class="ds-tag" data-color="neutral">' + esc(comment.type) + '</span>';
 			}
 			html += '<div class="app-show__comment">' +
 				'<div class="app-show__comment-meta">' +
@@ -1352,28 +1352,28 @@
 
 		// Season info alert
 		if (season) {
-			html += '<div class="booking-alert app-show__alert" data-color="info">' +
-				'<p class="booking-paragraph">' + esc(lang('season')) + ': <strong>' + esc(season.name) + '</strong> (' +
+			html += '<div class="ds-alert app-show__alert" data-color="info">' +
+				'<p class="ds-paragraph">' + esc(lang('season')) + ': <strong>' + esc(season.name) + '</strong> (' +
 				esc(season.from_) + ' — ' + esc(season.to_) + ')</p>' +
 				'</div>';
 		}
 
 		// Recurring badges
 		html += '<div class="app-show__recurring-badges">';
-		html += '<span class="booking-tag" data-color="accent">' +
+		html += '<span class="ds-tag" data-color="accent">' +
 			esc(lang('interval')) + ': ' + esc(preview.interval_weeks) + ' ' + esc(lang('weeks')) + '</span>';
 		if (items.length > 0) {
-			html += '<span class="booking-tag" data-color="accent">' +
+			html += '<span class="ds-tag" data-color="accent">' +
 				esc(items[0].day_name) + '</span>';
 		}
-		html += '<span class="booking-tag" data-color="neutral">' +
+		html += '<span class="ds-tag" data-color="neutral">' +
 			esc(counts.total) + ' ' + esc(lang('dates')) + '</span>';
 		if (counts.existing > 0) {
-			html += '<span class="booking-tag" data-color="success">' +
+			html += '<span class="ds-tag" data-color="success">' +
 				esc(counts.existing) + ' ' + esc(lang('dateCreated')).replace(/^- | -$/g, '') + '</span>';
 		}
 		if (counts.conflict > 0) {
-			html += '<span class="booking-tag" data-color="danger">' +
+			html += '<span class="ds-tag" data-color="danger">' +
 				esc(counts.conflict) + ' ' + esc(lang('collision')) + '</span>';
 		}
 
@@ -1382,14 +1382,14 @@
 			var btnLabel = counts.conflict > 0
 				? lang('createNonConflictingAllocations')
 				: lang('createAllAllocations');
-			html += '<button class="booking-button app-show__recurring-create" data-variant="secondary" type="button" data-color="neutral" data-size="sm" id="recurring-create-btn">' +
-				esc(btnLabel) + ' <span class="booking-badge" data-color="neutral" data-count="' + esc(counts.creatable) + '"></span></button>';
+			html += '<button class="ds-button app-show__recurring-create" data-variant="secondary" type="button" data-color="neutral" data-size="sm" id="recurring-create-btn">' +
+				esc(btnLabel) + ' <span class="ds-badge" data-color="neutral" data-count="' + esc(counts.creatable) + '"></span></button>';
 		} else if (counts.creatable === 0 && counts.existing > 0) {
-			html += '<button type="button" class="booking-button app-show__recurring-create" data-variant="secondary" data-color="neutral" data-size="sm" disabled>' +
+			html += '<button type="button" class="ds-button app-show__recurring-create" data-variant="secondary" data-color="neutral" data-size="sm" disabled>' +
 				esc(lang('allAllocationsCreated')) + '</button>';
 		} else if (!isCO && counts.creatable > 0) {
-			html += '<button type="button" class="booking-button app-show__recurring-create" data-variant="secondary" data-color="neutral" data-size="sm" disabled title="' + esc(lang('notCaseOfficerWarning')) + '">' +
-				esc(lang('createAllAllocations')) + ' <span class="booking-badge" data-color="neutral" data-count="' + esc(counts.creatable) + '"></span></button>';
+			html += '<button type="button" class="ds-button app-show__recurring-create" data-variant="secondary" data-color="neutral" data-size="sm" disabled title="' + esc(lang('notCaseOfficerWarning')) + '">' +
+				esc(lang('createAllAllocations')) + ' <span class="ds-badge" data-color="neutral" data-count="' + esc(counts.creatable) + '"></span></button>';
 		}
 		html += '</div>';
 
@@ -1397,11 +1397,11 @@
 		html += '<div id="recurring-summary">';
 		if (lastResult) {
 			if (lastResult.created && lastResult.created.length > 0) {
-				html += '<div class="booking-alert app-show__alert" data-color="success"><p class="booking-paragraph">' +
+				html += '<div class="ds-alert app-show__alert" data-color="success"><p class="ds-paragraph">' +
 					esc(lastResult.created.length) + ' ' + esc(lang('successfullyCreated')) + '</p></div>';
 			}
 			if (lastResult.failed && lastResult.failed.length > 0) {
-				html += '<div class="booking-alert app-show__alert" data-color="danger"><p class="booking-paragraph">' +
+				html += '<div class="ds-alert app-show__alert" data-color="danger"><p class="ds-paragraph">' +
 					esc(lastResult.failed.length) + ' ' + esc(lang('collision')) + '</p></div>';
 			}
 		}
@@ -1409,7 +1409,7 @@
 
 		// Preview table
 		if (items.length > 0) {
-			html += '<table class="booking-table" data-size="sm" data-zebra id="recurring-table">' +
+			html += '<table class="ds-table" data-size="sm" data-zebra id="recurring-table">' +
 				'<thead><tr>' +
 				'<th>' + esc(lang('dates')) + '</th>' +
 				'<th>' + lang('from') + ' - ' + lang('to') + '</th>' +
@@ -1426,27 +1426,27 @@
 
 				// Status column
 				if (item.exists) {
-					html += '<td><span class="booking-tag" data-color="success">' + esc(lang('dateCreated')).replace(/^- | -$/g, '') + '</span></td>';
+					html += '<td><span class="ds-tag" data-color="success">' + esc(lang('dateCreated')).replace(/^- | -$/g, '') + '</span></td>';
 				} else if (item.has_conflict) {
 					var conflictText = '';
 					(item.conflict_details || []).forEach(function (c) {
 						if (conflictText) conflictText += ', ';
 						conflictText += c.type + (c.name ? ' (' + c.name + ')' : '');
 					});
-					html += '<td><span class="booking-tag" data-color="danger">' + esc(lang('collision')) + '</span>';
+					html += '<td><span class="ds-tag" data-color="danger">' + esc(lang('collision')) + '</span>';
 					if (conflictText) {
 						html += ' <span class="app-show__conflict-text">' + esc(conflictText) + '</span>';
 					}
 					html += '</td>';
 				} else {
-					html += '<td><span class="booking-tag" data-color="neutral">' + esc(lang('notYetCreated')) + '</span></td>';
+					html += '<td><span class="ds-tag" data-color="neutral">' + esc(lang('notYetCreated')) + '</span></td>';
 				}
 
 				// Action column
 				if (item.exists) {
-					html += '<td><a class="booking-button" data-variant="secondary" data-color="neutral" data-size="sm" href="/?menuaction=booking.uiallocation.edit&id=' + esc(item.allocation_id) + '">' + esc(lang('show')) + '</a></td>';
+					html += '<td><a class="ds-button" data-variant="secondary" data-color="neutral" data-size="sm" href="/?menuaction=booking.uiallocation.edit&id=' + esc(item.allocation_id) + '">' + esc(lang('show')) + '</a></td>';
 				} else if (item.has_conflict) {
-					html += '<td><a class="booking-button" data-variant="secondary" data-color="neutral" data-size="sm" href="' + esc(item.schedule_link) + '" target="_blank">' + esc(lang('schedule')) + '</a></td>';
+					html += '<td><a class="ds-button" data-variant="secondary" data-color="neutral" data-size="sm" href="' + esc(item.schedule_link) + '" target="_blank">' + esc(lang('schedule')) + '</a></td>';
 				} else {
 					html += '<td>&mdash;</td>';
 				}
@@ -1500,7 +1500,7 @@
 	var _hospOrdersHospitalities = []; // cached for create modal
 	var _hospOrdersAppIds = []; // the related applications the tab lists orders for
 
-	// Total order count on the tab button, using the same booking-badge idiom as the
+	// Total order count on the tab button, using the same ds-badge idiom as the
 	// recurring section. Like those call sites, no badge is rendered at zero.
 	// The digit comes from content:attr(data-count) in the design system CSS, so
 	// data-count is the value — the button's text content never carries it.
@@ -1508,14 +1508,14 @@
 		var tabBtn = document.getElementById('tab-btn-hospitality-orders');
 		if (!tabBtn) return;
 
-		var badge = tabBtn.querySelector('.booking-badge');
+		var badge = tabBtn.querySelector('.ds-badge');
 		if (!count) {
 			if (badge) badge.remove();
 			return;
 		}
 		if (!badge) {
 			badge = document.createElement('span');
-			badge.className = 'booking-badge';
+			badge.className = 'ds-badge';
 			badge.setAttribute('data-color', 'neutral');
 			tabBtn.appendChild(document.createTextNode(' '));
 			tabBtn.appendChild(badge);
@@ -1572,7 +1572,7 @@
 
 				// Create order button
 				html += '<div class="hosp-show__tab-actions" style="margin-bottom:0.75rem">' +
-					'<button type="button" class="booking-button" data-variant="primary" data-color="accent" data-size="sm" data-action="create-hospitality-order">' +
+					'<button type="button" class="ds-button" data-variant="primary" data-color="accent" data-size="sm" data-action="create-hospitality-order">' +
 					esc(lang('createHospitalityOrderForApplication')) + '</button></div>';
 
 				html += '<div id="application-hospitality-orders-list"></div>';
@@ -1643,7 +1643,7 @@
 					setHospitalityTabBadge((orders || []).length);
 					if (container) {
 						var html = '<div class="hosp-show__tab-actions" style="margin-bottom:0.75rem">' +
-							'<button type="button" class="booking-button" data-variant="primary" data-color="accent" data-size="sm" data-action="create-hospitality-order">' +
+							'<button type="button" class="ds-button" data-variant="primary" data-color="accent" data-size="sm" data-action="create-hospitality-order">' +
 							esc(lang('createHospitalityOrderForApplication')) + '</button></div>' +
 							'<div id="application-hospitality-orders-list"></div>';
 						container.innerHTML = html;
@@ -1684,12 +1684,12 @@
 
 		var dlg = document.createElement('dialog');
 		dlg.id = id;
-		dlg.className = 'booking-dialog app-show__dialog';
+		dlg.className = 'ds-dialog app-show__dialog';
 		dlg.innerHTML =
 			'<button type="button" class="app-show__dialog-close" data-command="close" data-modal-close aria-label="' + esc(lang('cancel')) + '"></button>' +
-			'<div class="booking-dialog__block"><h2 class="booking-heading" data-size="sm">' + esc(title) + '</h2></div>' +
-			'<div class="booking-dialog__block">' + bodyHtml + '</div>' +
-			'<div class="booking-dialog__block app-show__dialog-footer">' + footerHtml + '</div>';
+			'<div class="ds-dialog__block"><h2 class="ds-heading" data-size="sm">' + esc(title) + '</h2></div>' +
+			'<div class="ds-dialog__block">' + bodyHtml + '</div>' +
+			'<div class="ds-dialog__block app-show__dialog-footer">' + footerHtml + '</div>';
 
 		document.body.appendChild(dlg);
 
@@ -1718,11 +1718,11 @@
 	// ── Comment modal (reply to applicant) ─────────────────────────────
 
 	function showCommentModal() {
-		var body = '<div class="booking-field" data-size="sm">' +
-			'<label class="booking-label" for="modal-comment-text">' + esc(lang('writeReplyToApplicant')) + '</label>' +
-			'<textarea id="modal-comment-text" class="booking-input" rows="5"></textarea></div>';
-		var footer = '<button type="button" class="booking-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="booking-button" data-variant="primary" data-color="success" id="modal-comment-submit">' + esc(lang('send')) + '</button>';
+		var body = '<div class="ds-field" data-size="sm">' +
+			'<label class="ds-label" for="modal-comment-text">' + esc(lang('writeReplyToApplicant')) + '</label>' +
+			'<textarea id="modal-comment-text" class="ds-input" rows="5"></textarea></div>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="ds-button" data-variant="primary" data-color="success" id="modal-comment-submit">' + esc(lang('send')) + '</button>';
 
 		showModal('comment-dialog', lang('sendReplyToApplicant'), body, footer);
 
@@ -1748,11 +1748,11 @@
 	// ── Internal note modal ────────────────────────────────────────────
 
 	function showInternalNoteModal() {
-		var body = '<div class="booking-field" data-size="sm">' +
-			'<label class="booking-label" for="modal-note-text">' + esc(lang('noteContent')) + '</label>' +
-			'<textarea id="modal-note-text" class="booking-input" rows="5"></textarea></div>';
-		var footer = '<button type="button" class="booking-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="booking-button" data-variant="primary" data-color="success" id="modal-note-submit">' + esc(lang('send')) + '</button>';
+		var body = '<div class="ds-field" data-size="sm">' +
+			'<label class="ds-label" for="modal-note-text">' + esc(lang('noteContent')) + '</label>' +
+			'<textarea id="modal-note-text" class="ds-input" rows="5"></textarea></div>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="ds-button" data-variant="primary" data-color="success" id="modal-note-submit">' + esc(lang('send')) + '</button>';
 
 		showModal('note-dialog', lang('createInternalNote'), body, footer);
 
@@ -1778,13 +1778,13 @@
 	// ── Accept modal ───────────────────────────────────────────────────
 
 	function showAcceptModal() {
-		var body = '<div class="booking-field" data-size="sm">' +
-			'<label class="booking-label" for="modal-accept-text">' + esc(lang('acceptanceMessage')) + '</label>' +
-			'<textarea id="modal-accept-text" class="booking-input" rows="4" placeholder="' + esc(lang('optional')) + '"></textarea></div>' +
-			'<div class="booking-field" data-size="sm"><input type="checkbox" class="booking-input" id="modal-accept-email" checked>' +
-			'<label class="booking-label" for="modal-accept-email">' + esc(lang('sendEmailToApplicant')) + '</label></div>';
-		var footer = '<button type="button" class="booking-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="booking-button" data-variant="primary" data-color="success" id="modal-accept-submit">' + esc(lang('approve')) + '</button>';
+		var body = '<div class="ds-field" data-size="sm">' +
+			'<label class="ds-label" for="modal-accept-text">' + esc(lang('acceptanceMessage')) + '</label>' +
+			'<textarea id="modal-accept-text" class="ds-input" rows="4" placeholder="' + esc(lang('optional')) + '"></textarea></div>' +
+			'<div class="ds-field" data-size="sm"><input type="checkbox" class="ds-input" id="modal-accept-email" checked>' +
+			'<label class="ds-label" for="modal-accept-email">' + esc(lang('sendEmailToApplicant')) + '</label></div>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="ds-button" data-variant="primary" data-color="success" id="modal-accept-submit">' + esc(lang('approve')) + '</button>';
 
 		showModal('accept-dialog', lang('acceptApplication'), body, footer);
 
@@ -1823,13 +1823,13 @@
 			? lang('rejectApplication') + ' #' + targetId
 			: lang('rejectApplication');
 
-		var body = '<div class="booking-field" data-size="sm">' +
-			'<label class="booking-label" for="modal-reject-text">' + esc(lang('rejectionReason')) + ' *</label>' +
-			'<textarea id="modal-reject-text" class="booking-input" rows="4" required></textarea></div>' +
-			'<div class="booking-field" data-size="sm"><input type="checkbox" class="booking-input" id="modal-reject-email" checked>' +
-			'<label class="booking-label" for="modal-reject-email">' + esc(lang('sendEmailToApplicant')) + '</label></div>';
-		var footer = '<button type="button" class="booking-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="booking-button" data-variant="primary" data-color="danger" id="modal-reject-submit">' + esc(lang('rejectBtn')) + '</button>';
+		var body = '<div class="ds-field" data-size="sm">' +
+			'<label class="ds-label" for="modal-reject-text">' + esc(lang('rejectionReason')) + ' *</label>' +
+			'<textarea id="modal-reject-text" class="ds-input" rows="4" required></textarea></div>' +
+			'<div class="ds-field" data-size="sm"><input type="checkbox" class="ds-input" id="modal-reject-email" checked>' +
+			'<label class="ds-label" for="modal-reject-email">' + esc(lang('sendEmailToApplicant')) + '</label></div>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="ds-button" data-variant="primary" data-color="danger" id="modal-reject-submit">' + esc(lang('rejectBtn')) + '</button>';
 
 		showModal('reject-dialog', title, body, footer);
 
@@ -1860,14 +1860,14 @@
 	// ── Messenger modal ───────────────────────────────────────────────
 
 	function showMessengerModal() {
-		var body = '<div class="booking-field" data-size="sm">' +
-			'<label class="booking-label" for="modal-messenger-subject">' + esc(lang('subject')) + '</label>' +
-			'<input type="text" id="modal-messenger-subject" class="booking-input"></div>' +
-			'<div class="booking-field" data-size="sm">' +
-			'<label class="booking-label" for="modal-messenger-content">' + esc(lang('message')) + '</label>' +
-			'<textarea id="modal-messenger-content" class="booking-input" rows="5"></textarea></div>';
-		var footer = '<button type="button" class="booking-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="booking-button" data-variant="primary" data-color="success" id="modal-messenger-submit">' + esc(lang('send')) + '</button>';
+		var body = '<div class="ds-field" data-size="sm">' +
+			'<label class="ds-label" for="modal-messenger-subject">' + esc(lang('subject')) + '</label>' +
+			'<input type="text" id="modal-messenger-subject" class="ds-input"></div>' +
+			'<div class="ds-field" data-size="sm">' +
+			'<label class="ds-label" for="modal-messenger-content">' + esc(lang('message')) + '</label>' +
+			'<textarea id="modal-messenger-content" class="ds-input" rows="5"></textarea></div>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="ds-button" data-variant="primary" data-color="success" id="modal-messenger-submit">' + esc(lang('send')) + '</button>';
 
 		showModal('messenger-dialog', lang('sendMessageToCaseOfficer'), body, footer);
 
@@ -1896,12 +1896,12 @@
 	// ── Change case officer modal ──────────────────────────────────────
 
 	function showChangeUserModal() {
-		var body = '<div class="booking-field" data-size="sm">' +
-			'<label class="booking-label" for="modal-user-select">' + esc(lang('selectCaseOfficer')) + '</label>' +
-			'<select id="modal-user-select" class="booking-input">' +
+		var body = '<div class="ds-field" data-size="sm">' +
+			'<label class="ds-label" for="modal-user-select">' + esc(lang('selectCaseOfficer')) + '</label>' +
+			'<select id="modal-user-select" class="ds-input">' +
 			'<option value="">' + esc(lang('loading')) + '...</option></select></div>';
-		var footer = '<button type="button" class="booking-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="booking-button" data-variant="primary" data-color="accent" id="modal-user-submit" disabled>' + esc(lang('send')) + '</button>';
+		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="ds-button" data-variant="primary" data-color="accent" id="modal-user-submit" disabled>' + esc(lang('send')) + '</button>';
 
 		showModal('user-dialog', lang('changeCaseOfficer'), body, footer);
 

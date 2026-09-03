@@ -116,7 +116,7 @@ class HospitalityOrderList {
 			return;
 		}
 
-		var html = '<table class="booking-table" data-border>' +
+		var html = '<table class="ds-table" data-border>' +
 			'<thead><tr>' +
 			'<th>ID</th>';
 
@@ -132,7 +132,7 @@ class HospitalityOrderList {
 
 		orders.forEach(function (order) {
 			var statusColor = self._statusColor(order.status);
-			var statusTag = '<span class="booking-tag" data-color="' + statusColor + '">' + self._esc(self._statusLabel(order.status)) + '</span>';
+			var statusTag = '<span class="ds-tag" data-color="' + statusColor + '">' + self._esc(self._statusLabel(order.status)) + '</span>';
 			var amount = order.total_amount != null ? Number(order.total_amount).toFixed(2) : '&mdash;';
 
 			html += '<tr class="hospitality-order-list__row" data-order-link="' + self._esc(order.id) + '" style="cursor:pointer">';

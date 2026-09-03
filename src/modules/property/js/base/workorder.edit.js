@@ -90,6 +90,36 @@ formatWorkorderAttachFile = function (key, oData)
 	return formatWorkorderDataCell('checkbox', key, oData);
 };
 
+
+var workorder_attachment_link = function (key, oData)
+{
+	var fileName = (oData && oData[key]) ? String(oData[key]) : '';
+	var voucherId = (oData && oData.voucher_id) ? String(oData.voucher_id) : '';
+
+	if (!fileName)
+	{
+		return '';
+	}
+
+	if (!voucherId)
+	{
+		return PorticoClientUtils.escapeHtml(fileName);
+	}
+
+	var url = phpGWLink('index.php', {
+		menuaction: 'property.uitts.show_attachment',
+		file_name: fileName,
+		key: voucherId
+	});
+
+	return PorticoClientUtils.buildAnchorHtml(fileName, url, {
+		target: '_blank',
+		rel: 'noopener'
+	});
+};
+
+
+
 function set_workorder_submit_disabled(disabled)
 {
 	var isDisabled = !!disabled;

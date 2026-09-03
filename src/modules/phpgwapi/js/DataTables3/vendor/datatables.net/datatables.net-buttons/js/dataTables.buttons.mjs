@@ -1,4 +1,4 @@
-/*! Buttons 4.0.1 for DataTables
+/*! Buttons 4.0.2 for DataTables
  * Copyright (c) SpryMedia Ltd - datatables.net/license
  */
 
@@ -3654,7 +3654,7 @@ Buttons.defaults = {
 /**
  * Version information
  */
-Buttons.version = '4.0.1';
+Buttons.version = '4.0.2';
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * DataTables API
@@ -3862,7 +3862,6 @@ DataTable.Api.register('buttons.info()', function (title, message, time) {
         .classAdd('dt-button-info')
         .html(title)
         .append(Dom.c('div')[typeof message === 'string' ? 'html' : 'append'](message))
-        .css('display', 'none')
         .appendTo('body'));
     if (time !== undefined && time !== 0) {
         _infoTimer = setTimeout(function () {

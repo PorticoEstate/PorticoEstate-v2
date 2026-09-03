@@ -4,48 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "581fe09ac488f0eb167f5b399361b12f",
+    "content-hash": "cd868a6fc336cada9c8a0d5832d82dcd",
     "packages": [
-        {
-            "name": "bpampuch/pdfmake",
-            "version": "0.2.23",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/bpampuch/pdfmake.git",
-                "reference": "cefcb06f24b4555ccfa36799b7d329d9d4f329d5"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/bpampuch/pdfmake/zipball/cefcb06f24b4555ccfa36799b7d329d9d4f329d5",
-                "reference": "cefcb06f24b4555ccfa36799b7d329d9d4f329d5",
-                "shasum": ""
-            },
-            "type": "library",
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Bartek Pampuch",
-                    "email": "bartosz.pampuch@gmail.com",
-                    "homepage": "http://pdfmake.org",
-                    "role": "Developer"
-                }
-            ],
-            "description": "Client/server side PDF printing in pure JavaScript",
-            "homepage": "https://github.com/bpampuch/pdfmake",
-            "keywords": [
-                "javascript",
-                "pdf",
-                "pdfmake"
-            ],
-            "support": {
-                "issues": "https://github.com/bpampuch/pdfmake/issues",
-                "source": "https://github.com/bpampuch/pdfmake/tree/0.2.23"
-            },
-            "time": "2026-01-11T12:07:06+00:00"
-        },
         {
             "name": "components/jquery",
             "version": "4.0.0",
@@ -96,163 +56,17 @@
             "time": "2026-05-11T18:06:23+00:00"
         },
         {
-            "name": "composer/installers",
-            "version": "v2.3.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/composer/installers.git",
-                "reference": "12fb2dfe5e16183de69e784a7b84046c43d97e8e"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/composer/installers/zipball/12fb2dfe5e16183de69e784a7b84046c43d97e8e",
-                "reference": "12fb2dfe5e16183de69e784a7b84046c43d97e8e",
-                "shasum": ""
-            },
-            "require": {
-                "composer-plugin-api": "^1.0 || ^2.0",
-                "php": "^7.2 || ^8.0"
-            },
-            "require-dev": {
-                "composer/composer": "^1.10.27 || ^2.7",
-                "composer/semver": "^1.7.2 || ^3.4.0",
-                "phpstan/phpstan": "^1.11",
-                "phpstan/phpstan-phpunit": "^1",
-                "symfony/phpunit-bridge": "^7.1.1",
-                "symfony/process": "^5 || ^6 || ^7"
-            },
-            "type": "composer-plugin",
-            "extra": {
-                "class": "Composer\\Installers\\Plugin",
-                "branch-alias": {
-                    "dev-main": "2.x-dev"
-                },
-                "plugin-modifies-install-path": true
-            },
-            "autoload": {
-                "psr-4": {
-                    "Composer\\Installers\\": "src/Composer/Installers"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Kyle Robinson Young",
-                    "email": "kyle@dontkry.com",
-                    "homepage": "https://github.com/shama"
-                }
-            ],
-            "description": "A multi-framework Composer library installer",
-            "homepage": "https://composer.github.io/installers/",
-            "keywords": [
-                "Dolibarr",
-                "Eliasis",
-                "Hurad",
-                "ImageCMS",
-                "Kanboard",
-                "Lan Management System",
-                "MODX Evo",
-                "MantisBT",
-                "Mautic",
-                "Maya",
-                "OXID",
-                "Plentymarkets",
-                "Porto",
-                "RadPHP",
-                "SMF",
-                "Starbug",
-                "Thelia",
-                "Whmcs",
-                "WolfCMS",
-                "agl",
-                "annotatecms",
-                "attogram",
-                "bitrix",
-                "cakephp",
-                "chef",
-                "cockpit",
-                "codeigniter",
-                "concrete5",
-                "concreteCMS",
-                "croogo",
-                "dokuwiki",
-                "drupal",
-                "eZ Platform",
-                "elgg",
-                "expressionengine",
-                "fuelphp",
-                "grav",
-                "installer",
-                "itop",
-                "known",
-                "kohana",
-                "laravel",
-                "lavalite",
-                "lithium",
-                "magento",
-                "majima",
-                "mako",
-                "matomo",
-                "mediawiki",
-                "miaoxing",
-                "modulework",
-                "modx",
-                "moodle",
-                "osclass",
-                "pantheon",
-                "phpbb",
-                "piwik",
-                "ppi",
-                "processwire",
-                "puppet",
-                "pxcms",
-                "reindex",
-                "roundcube",
-                "shopware",
-                "silverstripe",
-                "sydes",
-                "sylius",
-                "tastyigniter",
-                "wordpress",
-                "yawik",
-                "zend",
-                "zikula"
-            ],
-            "support": {
-                "issues": "https://github.com/composer/installers/issues",
-                "source": "https://github.com/composer/installers/tree/v2.3.0"
-            },
-            "funding": [
-                {
-                    "url": "https://packagist.com",
-                    "type": "custom"
-                },
-                {
-                    "url": "https://github.com/composer",
-                    "type": "github"
-                },
-                {
-                    "url": "https://tidelift.com/funding/github/packagist/composer/composer",
-                    "type": "tidelift"
-                }
-            ],
-            "time": "2024-06-24T20:46:46+00:00"
-        },
-        {
             "name": "datatables.net/datatables.net",
-            "version": "3.0.1",
+            "version": "3.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables.git",
-                "reference": "8bb72fe3a1315763f4bea04ebbcb8d30d90e13fc"
+                "reference": "7cde4a6ab8f7f54a4d52196d252443b9d42be932"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables/zipball/8bb72fe3a1315763f4bea04ebbcb8d30d90e13fc",
-                "reference": "8bb72fe3a1315763f4bea04ebbcb8d30d90e13fc",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables/zipball/7cde4a6ab8f7f54a4d52196d252443b9d42be932",
+                "reference": "7cde4a6ab8f7f54a4d52196d252443b9d42be932",
                 "shasum": ""
             },
             "require": {
@@ -280,7 +94,7 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables"
             },
-            "time": "2026-07-31T10:10:43+00:00"
+            "time": "2026-08-18T10:40:44+00:00"
         },
         {
             "name": "datatables.net/datatables.net-autofill",
@@ -371,16 +185,16 @@
         },
         {
             "name": "datatables.net/datatables.net-buttons",
-            "version": "4.0.1",
+            "version": "4.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-Buttons.git",
-                "reference": "c2da89e0554a68f64be61c31bb25ebd4efeafe4e"
+                "reference": "7de176949f54d1f07921faf771060bbbc475acbd"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Buttons/zipball/c2da89e0554a68f64be61c31bb25ebd4efeafe4e",
-                "reference": "c2da89e0554a68f64be61c31bb25ebd4efeafe4e",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Buttons/zipball/7de176949f54d1f07921faf771060bbbc475acbd",
+                "reference": "7de176949f54d1f07921faf771060bbbc475acbd",
                 "shasum": ""
             },
             "require": {
@@ -414,20 +228,20 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-Buttons"
             },
-            "time": "2026-07-31T08:15:29+00:00"
+            "time": "2026-08-18T09:30:16+00:00"
         },
         {
             "name": "datatables.net/datatables.net-buttons-dt",
-            "version": "4.0.1",
+            "version": "4.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-Buttons-DataTables.git",
-                "reference": "887313d25700a5f62d5c9919f7cf3881b6eb447e"
+                "reference": "cb786d3363fa95e6aebad910a9cb294aea14b7c5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Buttons-DataTables/zipball/887313d25700a5f62d5c9919f7cf3881b6eb447e",
-                "reference": "887313d25700a5f62d5c9919f7cf3881b6eb447e",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Buttons-DataTables/zipball/cb786d3363fa95e6aebad910a9cb294aea14b7c5",
+                "reference": "cb786d3363fa95e6aebad910a9cb294aea14b7c5",
                 "shasum": ""
             },
             "require": {
@@ -462,20 +276,20 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-Buttons-DataTables"
             },
-            "time": "2026-07-31T08:15:57+00:00"
+            "time": "2026-08-18T09:30:41+00:00"
         },
         {
             "name": "datatables.net/datatables.net-colreorder",
-            "version": "3.0.0",
+            "version": "3.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-ColReorder.git",
-                "reference": "c814cce096642f07ded0eaedb8ae39dc4e1d47a6"
+                "reference": "b7e52ae668c3e2d4c91df3ce9ed42d4dca825787"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-ColReorder/zipball/c814cce096642f07ded0eaedb8ae39dc4e1d47a6",
-                "reference": "c814cce096642f07ded0eaedb8ae39dc4e1d47a6",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-ColReorder/zipball/b7e52ae668c3e2d4c91df3ce9ed42d4dca825787",
+                "reference": "b7e52ae668c3e2d4c91df3ce9ed42d4dca825787",
                 "shasum": ""
             },
             "require": {
@@ -505,20 +319,20 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-ColReorder"
             },
-            "time": "2026-07-24T08:55:12+00:00"
+            "time": "2026-08-18T10:20:24+00:00"
         },
         {
             "name": "datatables.net/datatables.net-colreorder-dt",
-            "version": "3.0.0",
+            "version": "3.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-ColReorder-DataTables.git",
-                "reference": "61acb9a04deedf00be7bde6c43ace61057f8e518"
+                "reference": "c0571d883f44f276440efcfd6be650acfb622ca0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-ColReorder-DataTables/zipball/61acb9a04deedf00be7bde6c43ace61057f8e518",
-                "reference": "61acb9a04deedf00be7bde6c43ace61057f8e518",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-ColReorder-DataTables/zipball/c0571d883f44f276440efcfd6be650acfb622ca0",
+                "reference": "c0571d883f44f276440efcfd6be650acfb622ca0",
                 "shasum": ""
             },
             "require": {
@@ -549,7 +363,7 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-ColReorder-DataTables"
             },
-            "time": "2026-07-24T08:55:53+00:00"
+            "time": "2026-08-18T10:20:48+00:00"
         },
         {
             "name": "datatables.net/datatables.net-datetime",
@@ -592,20 +406,20 @@
         },
         {
             "name": "datatables.net/datatables.net-dt",
-            "version": "3.0.1",
+            "version": "3.0.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-DataTables.git",
-                "reference": "77a86b715a2f08d514194a7ac25f0fa9e3c518ac"
+                "reference": "9c578cd144f93f9395993be24bd24417fa3979b8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-DataTables/zipball/77a86b715a2f08d514194a7ac25f0fa9e3c518ac",
-                "reference": "77a86b715a2f08d514194a7ac25f0fa9e3c518ac",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-DataTables/zipball/9c578cd144f93f9395993be24bd24417fa3979b8",
+                "reference": "9c578cd144f93f9395993be24bd24417fa3979b8",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net": ">=1.10.15"
+                "datatables.net/datatables.net": "3.0.2"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -618,7 +432,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "DataTables is a plug-in for the jQuery Javascript library. It is a highly flexible tool, based upon the foundations of progressive enhancement, which will add advanced interaction controls to any HTML table. This is DataTables with styling for [DataTables](https://datatables.net/)",
+            "description": "DataTables with styling for [DataTables](https://datatables.net/)",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "datatables",
@@ -629,7 +443,7 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-DataTables"
             },
-            "time": "2026-07-31T10:11:18+00:00"
+            "time": "2026-08-31T09:30:47+00:00"
         },
         {
             "name": "datatables.net/datatables.net-fixedcolumns",
@@ -898,16 +712,16 @@
         },
         {
             "name": "datatables.net/datatables.net-responsive",
-            "version": "4.0.1",
+            "version": "4.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-Responsive.git",
-                "reference": "75c69104e49e3c8bc6471e1c173443a6d6222a37"
+                "reference": "82e16aa90592752f57adf64b08947be9d6bfbdf2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Responsive/zipball/75c69104e49e3c8bc6471e1c173443a6d6222a37",
-                "reference": "75c69104e49e3c8bc6471e1c173443a6d6222a37",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Responsive/zipball/82e16aa90592752f57adf64b08947be9d6bfbdf2",
+                "reference": "82e16aa90592752f57adf64b08947be9d6bfbdf2",
                 "shasum": ""
             },
             "require": {
@@ -936,25 +750,25 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-Responsive"
             },
-            "time": "2026-07-31T08:30:27+00:00"
+            "time": "2026-08-18T10:30:26+00:00"
         },
         {
             "name": "datatables.net/datatables.net-responsive-dt",
-            "version": "4.0.1",
+            "version": "4.0.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-Responsive-DataTables.git",
-                "reference": "d8c777fa93f6fae6b8f82b65dae491d686989031"
+                "reference": "88fa9b579cb0bff0465cac20561751e363c5f328"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Responsive-DataTables/zipball/d8c777fa93f6fae6b8f82b65dae491d686989031",
-                "reference": "d8c777fa93f6fae6b8f82b65dae491d686989031",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Responsive-DataTables/zipball/88fa9b579cb0bff0465cac20561751e363c5f328",
+                "reference": "88fa9b579cb0bff0465cac20561751e363c5f328",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net-dt": ">=1.12.1",
-                "datatables.net/datatables.net-responsive": ">=2.3.0"
+                "datatables.net/datatables.net-dt": "^3",
+                "datatables.net/datatables.net-responsive": "4.0.2"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -967,7 +781,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "In the modern world of responsive web design tables can often cause a particular problem for designers due to their row based layout. Responsive is an extension for DataTables that resolves that problem by optimising the table's layout for different screen sizes through the dynamic insertion and removal of columns from the table. This is Responsive for DataTables with styling for [DataTables](https://datatables.net/)",
+            "description": "Responsive for DataTables with styling for [DataTables](https://datatables.net/)",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "datatables",
@@ -979,7 +793,7 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-Responsive-DataTables"
             },
-            "time": "2026-07-31T08:30:53+00:00"
+            "time": "2026-09-03T08:20:56+00:00"
         },
         {
             "name": "datatables.net/datatables.net-rowgroup",
@@ -1335,16 +1149,16 @@
         },
         {
             "name": "datatables.net/datatables.net-select",
-            "version": "4.0.0",
+            "version": "4.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-Select.git",
-                "reference": "2486b108ac03b3a9d76f856de8d161402aad521f"
+                "reference": "8efa89da5103e4754aff7a659878c8fea1559c01"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Select/zipball/2486b108ac03b3a9d76f856de8d161402aad521f",
-                "reference": "2486b108ac03b3a9d76f856de8d161402aad521f",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Select/zipball/8efa89da5103e4754aff7a659878c8fea1559c01",
+                "reference": "8efa89da5103e4754aff7a659878c8fea1559c01",
                 "shasum": ""
             },
             "require": {
@@ -1374,20 +1188,20 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-Select"
             },
-            "time": "2026-07-24T10:02:38+00:00"
+            "time": "2026-08-18T10:43:16+00:00"
         },
         {
             "name": "datatables.net/datatables.net-select-dt",
-            "version": "4.0.0",
+            "version": "4.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-Select-DataTables.git",
-                "reference": "8de571454d3e7fde12eb5cb24e1b64002b7ae641"
+                "reference": "fd014306d53c5c0d4790120ccbc2a9f0be3db6c1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Select-DataTables/zipball/8de571454d3e7fde12eb5cb24e1b64002b7ae641",
-                "reference": "8de571454d3e7fde12eb5cb24e1b64002b7ae641",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Select-DataTables/zipball/fd014306d53c5c0d4790120ccbc2a9f0be3db6c1",
+                "reference": "fd014306d53c5c0d4790120ccbc2a9f0be3db6c1",
                 "shasum": ""
             },
             "require": {
@@ -1418,170 +1232,7 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-Select-DataTables"
             },
-            "time": "2026-07-24T10:02:59+00:00"
-        },
-        {
-            "name": "moment/moment",
-            "version": "2.30.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/moment/moment.git",
-                "reference": "485d9a7d709bd5f3869a7ad24630cf0746d072dc"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/moment/moment/zipball/485d9a7d709bd5f3869a7ad24630cf0746d072dc",
-                "reference": "485d9a7d709bd5f3869a7ad24630cf0746d072dc",
-                "shasum": ""
-            },
-            "require": {
-                "oomphinc/composer-installers-extender": "*"
-            },
-            "type": "component",
-            "extra": {
-                "component": {
-                    "files": [
-                        "min/*.js",
-                        "locale/*.js"
-                    ],
-                    "scripts": [
-                        "moment.js"
-                    ]
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Tim Wood",
-                    "email": "washwithcare@gmail.com"
-                }
-            ],
-            "description": "Parse, validate, manipulate, and display dates in JavaScript.",
-            "homepage": "https://github.com/moment/moment",
-            "keywords": [
-                "date",
-                "ender",
-                "format",
-                "i18n",
-                "l10n",
-                "moment",
-                "parse",
-                "time",
-                "validate"
-            ],
-            "support": {
-                "issues": "https://github.com/moment/moment/issues",
-                "source": "https://github.com/moment/moment/tree/2.30.1"
-            },
-            "time": "2023-12-27T10:35:18+00:00"
-        },
-        {
-            "name": "oomphinc/composer-installers-extender",
-            "version": "2.0.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/oomphinc/composer-installers-extender.git",
-                "reference": "cbf4b6f9a24153b785d09eee755b995ba87bd5f9"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/oomphinc/composer-installers-extender/zipball/cbf4b6f9a24153b785d09eee755b995ba87bd5f9",
-                "reference": "cbf4b6f9a24153b785d09eee755b995ba87bd5f9",
-                "shasum": ""
-            },
-            "require": {
-                "composer-plugin-api": "^1.1 || ^2.0",
-                "composer/installers": "^1.0 || ^2.0",
-                "php": ">=7.1"
-            },
-            "require-dev": {
-                "composer/composer": "^2.0",
-                "phpunit/phpunit": "^7.2",
-                "squizlabs/php_codesniffer": "^3.3"
-            },
-            "type": "composer-plugin",
-            "extra": {
-                "class": "OomphInc\\ComposerInstallersExtender\\Plugin"
-            },
-            "autoload": {
-                "psr-4": {
-                    "OomphInc\\ComposerInstallersExtender\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Stephen Beemsterboer",
-                    "email": "stephen@oomphinc.com",
-                    "homepage": "https://github.com/balbuf"
-                },
-                {
-                    "name": "Nathan Dentzau",
-                    "email": "nate@oomphinc.com",
-                    "homepage": "http://oomph.is/ndentzau"
-                }
-            ],
-            "description": "Extend the composer/installers plugin to accept any arbitrary package type.",
-            "homepage": "http://www.oomphinc.com/",
-            "support": {
-                "issues": "https://github.com/oomphinc/composer-installers-extender/issues",
-                "source": "https://github.com/oomphinc/composer-installers-extender/tree/2.0.1"
-            },
-            "abandoned": true,
-            "time": "2021-12-15T12:32:42+00:00"
-        },
-        {
-            "name": "stuk/jszip",
-            "version": "v3.0.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/kamihouse/jszip.git",
-                "reference": "9a0f7c2fdb11ac3089e0a73dcf59f32fe1dae439"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/kamihouse/jszip/zipball/9a0f7c2fdb11ac3089e0a73dcf59f32fe1dae439",
-                "reference": "9a0f7c2fdb11ac3089e0a73dcf59f32fe1dae439",
-                "shasum": ""
-            },
-            "type": "library",
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Thiago Pereira Rosa",
-                    "email": "thiagor@engineer.com",
-                    "homepage": "http://coderi.com.br",
-                    "role": "Contributor"
-                },
-                {
-                    "name": "Stuart Knightley",
-                    "email": "stuart@Stuartk.com",
-                    "homepage": "http://stuartk.com/",
-                    "role": "Developer"
-                }
-            ],
-            "description": "Create, read and edit .zip files with Javascript",
-            "homepage": "https://github.com/Stuk/jszip",
-            "keywords": [
-                "create",
-                "edit",
-                "jszip",
-                "pdf"
-            ],
-            "support": {
-                "issues": "https://github.com/Stuk/jszip/issues",
-                "source": "https://github.com/kamihouse/jszip/tree/v3.0.1"
-            },
-            "time": "2016-05-04T13:00:35+00:00"
+            "time": "2026-08-18T10:43:41+00:00"
         }
     ],
     "packages-dev": [],

@@ -6,28 +6,6 @@ namespace Composer\Autoload;
 
 class ComposerStaticInitc7094c5c420585329d754b64377e3603
 {
-    public static $prefixLengthsPsr4 = array (
-        'O' => 
-        array (
-            'OomphInc\\ComposerInstallersExtender\\' => 36,
-        ),
-        'C' => 
-        array (
-            'Composer\\Installers\\' => 20,
-        ),
-    );
-
-    public static $prefixDirsPsr4 = array (
-        'OomphInc\\ComposerInstallersExtender\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/oomphinc/composer-installers-extender/src',
-        ),
-        'Composer\\Installers\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/composer/installers/src/Composer/Installers',
-        ),
-    );
-
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
     );
@@ -35,8 +13,6 @@ class ComposerStaticInitc7094c5c420585329d754b64377e3603
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitc7094c5c420585329d754b64377e3603::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitc7094c5c420585329d754b64377e3603::$prefixDirsPsr4;
             $loader->classMap = ComposerStaticInitc7094c5c420585329d754b64377e3603::$classMap;
 
         }, null, ClassLoader::class);

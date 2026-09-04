@@ -374,7 +374,7 @@ class NotesController
 		}
 
 		$catId = (int) ($payload['cat_id'] ?? $existing['cat_id'] ?? 0);
-		$access = isset($payload['access']) ? (!empty($payload['access']) ? 'private' : 'public') : ($existing['access'] ?? 'public');
+		$access = isset($payload['access']) ? (($payload['access'] === 'private' || !empty($payload['access'])) && $payload['access'] !== 'public' ? 'private' : 'public') : ($existing['access'] ?? 'public');
 
 		$bo->save([
 			'note_id' => $id,

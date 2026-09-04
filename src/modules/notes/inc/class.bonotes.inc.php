@@ -263,7 +263,7 @@ class notes_bonotes
 
 	function save($note)
 	{
-		if (isset($note['access']) && $note['access'])
+		if (isset($note['access']) && ($note['access'] === 'private' || $note['access'] === true || $note['access'] === 1 || $note['access'] === '1'))
 		{
 			$note['access'] = 'private';
 		}

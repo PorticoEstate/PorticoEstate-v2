@@ -1,0 +1,153 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('notes') }}{% endblock %}
+
+{% block styles %}
+	<style>{{ source('@views/list/notes_list.css') }}</style>
+{% endblock %}
+
+{% block content %}
+{% set view_url_template = view_url_template|default(phpgw_link('/notes/view/notes/__NOTE_ID__')) %}
+{% set edit_url_template = edit_url_template|default(phpgw_link('/notes/view/notes/__NOTE_ID__/edit')) %}
+{% set delete_url_template = delete_url_template|default(phpgw_link('/notes/view/notes/__NOTE_ID__/delete')) %}
+
+<script>
+	function notesEscapeHtml(value)
+	{
+		return String(value === undefined || value === null ? '' : value)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#039;');
+	}
+
+	function notesFormatCell(key, row)
+	{
+		return notesEscapeHtml(row[key]);
+	}
+</script>
+
+{% set actions = [
+	{
+		'my_name': 'view',
+		'text': lang('view'),
+		'type': 'custom',
+		'custom_code': "
+			var api = oTable.api();
+			var selected = api.rows({ selected: true }).data();
+			if (!selected.length) { return false; }
+			var href = '" ~ view_url_template|e('js') ~ "'.replace('__NOTE_ID__', encodeURIComponent(selected[0].id));
+			window.open(href, '_self');
+		"
+	},
+	{
+		'my_name': 'edit',
+		'text': lang('edit'),
+		'type': 'custom',
+		'custom_code': "
+			var api = oTable.api();
+			var selected = api.rows({ selected: true }).data();
+			if (!selected.length) { return false; }
+			var href = '" ~ edit_url_template|e('js') ~ "'.replace('__NOTE_ID__', encodeURIComponent(selected[0].id));
+			window.open(href, '_self');
+		"
+	},
+	{
+		'my_name': 'delete',
+		'text': lang('delete'),
+		'type': 'custom',
+		'confirm_msg': lang('do you really want to delete this entry'),
+		'custom_code': "
+			var api = oTable.api();
+			var selected = api.rows({ selected: true }).data();
+			if (!selected.length) { return false; }
+			var href = '" ~ delete_url_template|e('js') ~ "'.replace('__NOTE_ID__', encodeURIComponent(selected[0].id));
+			window.open(href, '_self');
+		"
+	}
+] %}
+
+{% set datatable = {
+	'source': api_url,
+	'new_item': add_url,
+	'select_all': '1',
+	'sorted_by': {'key': 1, 'dir': 'desc'},
+	'actions': actions,
+	'field': [
+		{
+			'key': 'id',
+			'label': lang('ID'),
+			'sortable': 1,
+			'searchable': 0,
+			'hidden': 0,
+			'formatter': 'notesFormatCell'
+		},
+		{
+			'key': 'date',
+			'label': lang('Date'),
+			'sortable': 1,
+			'searchable': 0,
+			'hidden': 0,
+			'formatter': 'notesFormatCell'
+		},
+		{
+			'key': 'first',
+			'label': lang('content'),
+			'sortable': 1,
+			'searchable': 1,
+			'hidden': 0,
+			'formatter': 'notesFormatCell'
+		},
+		{
+			'key': 'owner',
+			'label': lang('owner'),
+			'sortable': 0,
+			'searchable': 0,
+			'hidden': 0,
+			'formatter': 'notesFormatCell'
+		},
+		{
+			'key': 'cat_name',
+			'label': lang('category'),
+			'sortable': 0,
+			'searchable': 0,
+			'hidden': 0,
+			'formatter': 'notesFormatCell'
+		},
+		{
+			'key': 'access',
+			'label': lang('access'),
+			'sortable': 0,
+			'searchable': 0,
+			'hidden': 0,
+			'formatter': 'notesFormatCell'
+		}
+	]
+} %}
+
+{% set form = {
+	'toolbar': {
+		'item': [
+			{
+				'name': 'cat_id',
+				'text': lang('category'),
+				'type': 'filter',
+				'list': categories|default([])
+			},
+			{
+				'name': 'filter',
+				'text': lang('filter'),
+				'type': 'filter',
+				'list': filters|default([])
+			}
+		]
+	}
+} %}
+
+{% include 'datatable2.twig' with {
+	'data': {'filters': {}},
+	'datatable': datatable,
+	'form': form
+} %}
+{% endblock %}

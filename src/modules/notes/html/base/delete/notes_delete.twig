@@ -1,0 +1,31 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ lang('delete note') }}{% endblock %}
+{% block styles %}
+	<style>{{ source('@views/delete/notes_delete.css') }}</style>
+{% endblock %}
+
+{% block content %}
+	<div
+		id="notes-delete-app"
+		class="notes-page"
+		data-api-url="{{ api_url|e('html_attr') }}"
+		data-list-url="{{ list_url|e('html_attr') }}"
+		data-view-url="{{ view_url|e('html_attr') }}"
+		data-note-id="{{ note_id }}"
+		data-csrf-name="{{ csrf.name|e('html_attr') }}"
+		data-csrf-value="{{ csrf.value|e('html_attr') }}"
+	>
+		<h1>{{ lang('delete note') }}</h1>
+		<p>{{ lang('do you really want to delete this note ?') }}</p>
+		<div id="notes-delete-error" class="notes-message notes-message--error" hidden></div>
+
+		<div class="notes-actions">
+			<button id="notes-delete-confirm" class="notes-button notes-button--danger" type="button">{{ lang('delete') }}</button>
+			<a class="notes-button notes-button--secondary" href="{{ list_url|e }}">{{ lang('cancel') }}</a>
+		</div>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+	<script>{{ source('@views/delete/notes_delete.js') }}</script>
+{% endblock %}

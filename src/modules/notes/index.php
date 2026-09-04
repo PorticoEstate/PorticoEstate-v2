@@ -35,4 +35,4 @@
 	 */
 	include('../header.inc.php');
 
-	phpgw::redirect_link('/index.php', array('menuaction' => 'notes.uinotes.index') );
+	phpgw::redirect_link('/notes/view/notes');

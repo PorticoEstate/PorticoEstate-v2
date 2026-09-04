@@ -1,0 +1,46 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ lang('view note') }}{% endblock %}
+{% block styles %}
+	<style>{{ source('@views/view/notes_view.css') }}</style>
+{% endblock %}
+
+{% block content %}
+	<div
+		id="notes-view-app"
+		class="notes-page"
+		data-api-url="{{ api_url|e('html_attr') }}"
+		data-list-url="{{ list_url|e('html_attr') }}"
+		data-edit-url="{{ edit_url|e('html_attr') }}"
+		data-delete-url="{{ delete_url|e('html_attr') }}"
+	>
+		<h1>{{ lang('view note') }}</h1>
+		<div id="notes-view-error" class="notes-message notes-message--error" hidden></div>
+
+		<dl class="notes-details">
+			<dt>{{ lang('owner') }}</dt>
+			<dd id="notes-view-owner"></dd>
+
+			<dt>{{ lang('category') }}</dt>
+			<dd id="notes-view-category"></dd>
+
+			<dt>{{ lang('Date') }}</dt>
+			<dd id="notes-view-date"></dd>
+
+			<dt>{{ lang('access') }}</dt>
+			<dd id="notes-view-access"></dd>
+
+			<dt>{{ lang('content') }}</dt>
+			<dd><div id="notes-view-content" class="notes-content-box"></div></dd>
+		</dl>
+
+		<div class="notes-actions">
+			<a class="notes-button" href="{{ edit_url|e }}">{{ lang('edit') }}</a>
+			<a class="notes-button notes-button--danger" href="{{ delete_url|e }}">{{ lang('delete') }}</a>
+			<a class="notes-button notes-button--secondary" href="{{ list_url|e }}">{{ lang('done') }}</a>
+		</div>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+	<script>{{ source('@views/view/notes_view.js') }}</script>
+{% endblock %}

@@ -1,0 +1,38 @@
+.notes-page {
+	max-width: 600px;
+	margin: 0 auto;
+	padding: 1.5rem;
+}
+.notes-actions {
+	display: flex;
+	gap: 0.5rem;
+	margin-top: 1.5rem;
+}
+.notes-button {
+	padding: 0.5rem 1rem;
+	border-radius: 4px;
+	border: 1px solid #ccc;
+	background: #f8f9fa;
+	cursor: pointer;
+	text-decoration: none;
+	color: #333;
+	display: inline-block;
+}
+.notes-button--danger {
+	background: #dc3545;
+	color: #fff;
+	border-color: #dc3545;
+}
+.notes-button--secondary {
+	background: #6c757d;
+	color: #fff;
+	border-color: #6c757d;
+}
+.notes-message--error {
+	color: #721c24;
+	background-color: #f8d7da;
+	border-color: #f5c6cb;
+	padding: 0.75rem 1.25rem;
+	border-radius: 4px;
+	margin-bottom: 1rem;
+}

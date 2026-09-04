@@ -1,6 +1,7 @@
 <?php
 
 use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\services\Log;
 
 class sms_sms extends sms_sms_
 {
@@ -81,16 +82,23 @@ class sms_sms extends sms_sms_
 
 		if ($debug)
 		{
-			echo "data: </br>";
-			_debug_array($post_data);
-			echo "httpCode: $httpCode </br>";
-			echo "response: " . htmlentities($result_xml) . "</br>";
+			$log = new Log();
+
+			$logData = $post_data;
+			$logData['sPass'] = '[redacted]';
+			$log_message = 'SMS gateway debug information:' . PHP_EOL
+				. 'data: ' . json_encode($logData) . PHP_EOL
+				. 'httpCode: ' . $httpCode . PHP_EOL
+				. 'response: ' . $result_xml;
 			if (isset($error_message))
 			{
-				echo "error_message: {$error_message}</br>";
+				$log_message .= PHP_EOL . 'error_message: ' . $error_message;
 			}
-//			$url_outbox = phpgw::link('/index.php', array('menuaction' => 'sms.uisms.outbox'));
-//			echo "<a href='{$url_outbox}'>Outbox</a>";
+			$log->fatal(array(
+				'text'	=> $log_message,
+				'line'	=> __LINE__,
+				'file'	=> __FILE__
+			));
 		}
 
 		if ($result > 0)

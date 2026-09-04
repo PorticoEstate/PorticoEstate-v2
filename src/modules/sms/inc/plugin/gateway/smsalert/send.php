@@ -75,13 +75,24 @@ class sms_sms extends sms_sms_
 		}
 		catch (Exception $ex)
 		{
+			$error_message = $ex->getMessage();
 			$result = 0;
 		}
 
-		/*
-			> 0	Ok
-			  0	General error
-*/
+		if ($debug)
+		{
+			echo "data: </br>";
+			_debug_array($post_data);
+			echo "httpCode: $httpCode </br>";
+			echo "response: " . htmlentities($result_xml) . "</br>";
+			if (isset($error_message))
+			{
+				echo "error_message: {$error_message}</br>";
+			}
+//			$url_outbox = phpgw::link('/index.php', array('menuaction' => 'sms.uisms.outbox'));
+//			echo "<a href='{$url_outbox}'>Outbox</a>";
+		}
+
 		if ($result > 0)
 		{
 			$this->setsmsdeliverystatus($smslog_id, $uid, 1);
@@ -94,16 +105,7 @@ class sms_sms extends sms_sms_
 			throw new Exception('SMSgateway:General error');
 		}
 
-		if ($debug)
-		{
-			echo "data: </br>";
-			_debug_array($post_data);
-			echo "httpCode: $httpCode </br>";
-			echo "response: {$result_xml}</br>";
-			$url_outbox = phpgw::link('/index.php', array('menuaction' => 'sms.uisms.outbox'));
-			echo "<a href='{$url_outbox}'>Outbox</a>";
-//			die();
-		}
+
 
 		return $ret;
 	}

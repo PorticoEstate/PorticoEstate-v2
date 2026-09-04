@@ -52,6 +52,14 @@
 	color: var(--booking-color-accent-text-default, #20568f);
 }
 
+.booking-card {
+	box-sizing: border-box;
+	border: 1px solid var(--booking-color-border-default, #cbd7e3);
+	border-radius: var(--booking-border-radius-md, 0.5rem);
+	background: var(--booking-color-background-default, #fff);
+	padding: 1rem;
+}
+
 .app-show__tabs {
 	display: flex;
 	gap: 0.5rem;

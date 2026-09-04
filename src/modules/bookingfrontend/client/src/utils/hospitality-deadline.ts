@@ -164,9 +164,17 @@ export function formatWeekdayName(isoWeekdayNumber: number, lang: string, style:
     return fmt.format(new Date(2024, 0, 1 + (isoWeekdayNumber - 1)));
 }
 
-/** Map the app language (no/nn/en) to a BCP-47 locale for Intl weekday formatting. */
+/**
+ * Map the app language (no/nn/en) to a BCP-47 locale for Intl weekday formatting.
+ * 'nn' is remapped to 'no': measured, Chromium's ICU has no data for 'nn'/'nn-NO' and
+ * Intl silently resolves it to en-US (English weekday names in a Nynorsk UI), while
+ * 'no' resolves correctly (same fix as allocation-manage-modal.tsx:185). Note this only
+ * gets nn users correct BOKMÅL weekday names ("lørdag"), not genuine Nynorsk ("laurdag") —
+ * this Chromium has no 'nn' ICU data under any locale tag, so true Nynorsk weekday names
+ * are unreachable via Intl here; see task #21563 for the ruling this implies.
+ */
 function localeFor(lang: string): string {
-    if (lang === 'nn') return 'nn-NO';
+    if (lang === 'nn') return 'no';
     if (lang === 'en') return 'en-GB';
     return 'nb-NO';
 }

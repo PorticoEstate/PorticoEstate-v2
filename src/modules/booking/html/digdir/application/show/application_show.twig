@@ -3,13 +3,19 @@
 {% block title %}{{ lang('booking.application') }}{% endblock %}
 
 {% block styles %}
-<style>{{ source('@base_views/_shared/controls.css') }}</style>
-<style>{{ source('@base_views/application/show/application_show.css') }}</style>
+<style>{{ source('@digdir_views/application/show/application_show.css') }}</style>
 <style>{{ source('@views/components/search_select/search_select.css') }}</style>
 {% endblock %}
 
 {% block content %}
-{% include '@views/_shared/application_show_body.twig' %}
+{% include '@views/_shared/application_show_body.twig' with {
+	spinner_class: 'booking-spinner ds-spinner',
+	spinner_background_class: 'booking-spinner__background ds-spinner__background',
+	spinner_circle_class: 'booking-spinner__circle ds-spinner__circle',
+	alert_class: 'booking-alert ds-alert',
+	paragraph_class: 'booking-paragraph ds-paragraph',
+	tabs_class: 'booking-tabs ds-tabs'
+} %}
 {% endblock %}
 
 {% block scripts %}

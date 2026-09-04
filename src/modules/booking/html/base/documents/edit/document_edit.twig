@@ -3,6 +3,7 @@
 {% block title %}{{ lang('Edit document') }} — {{ document.name }}{% endblock %}
 
 {% block styles %}
+<style>{{ source('@views/_shared/controls.css') }}</style>
 <style>{{ source('@views/components/building_select/building_select.css') }}</style>
 <style>{{ source('@views/documents/edit/document_edit.css') }}</style>
 {% endblock %}

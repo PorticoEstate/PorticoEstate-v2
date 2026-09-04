@@ -170,7 +170,8 @@
 		if (collapsible) {
 			var toggleBtn = document.createElement('button');
 			toggleBtn.type = 'button';
-			toggleBtn.className = 'ds-button';
+			toggleBtn.className = 'booking-button ds-button';
+			toggleBtn.setAttribute('data-booking-action', 'toggle-filters');
 			toggleBtn.setAttribute('data-variant', 'secondary');
 			toggleBtn.setAttribute('data-size', 'sm');
 			toggleBtn.textContent = filterLang.filter || 'Filter';
@@ -179,7 +180,8 @@
 
 		var resetBtn = document.createElement('button');
 		resetBtn.type = 'button';
-		resetBtn.className = 'ds-button app-datatable__reset-btn is-hidden';
+		resetBtn.className = 'booking-button ds-button app-datatable__reset-btn is-hidden';
+		resetBtn.setAttribute('data-booking-action', 'reset-filters');
 		resetBtn.setAttribute('data-variant', 'tertiary');
 		resetBtn.setAttribute('data-size', 'sm');
 		resetBtn.textContent = filterLang.resetFilter || 'Reset filter';
@@ -216,7 +218,8 @@
 
 			if (f.type === 'select') {
 				input = document.createElement('select');
-				input.className = 'ds-input';
+				input.className = 'booking-input ds-input';
+				input.setAttribute('data-booking-role', 'filter-input');
 				input.id = 'filter-' + f.name;
 				if (f.multiple) input.multiple = true;
 				(f.options || []).forEach(function (opt) {
@@ -230,19 +233,22 @@
 				});
 			} else if (f.type === 'checkbox') {
 				input = document.createElement('input');
-				input.className = 'ds-input';
+				input.className = 'booking-input ds-input';
+				input.setAttribute('data-booking-role', 'filter-input');
 				input.type = 'checkbox';
 				input.id = 'filter-' + f.name;
 				input.checked = savedVal != null ? !!savedVal : !!f.checked;
 			} else if (f.type === 'date') {
 				input = document.createElement('input');
-				input.className = 'ds-input';
+				input.className = 'booking-input ds-input';
+				input.setAttribute('data-booking-role', 'filter-input');
 				input.type = 'date';
 				input.id = 'filter-' + f.name;
 				input.value = savedVal || f.value || '';
 			} else {
 				input = document.createElement('input');
-				input.className = 'ds-input';
+				input.className = 'booking-input ds-input';
+				input.setAttribute('data-booking-role', 'filter-input');
 				input.type = 'text';
 				input.id = 'filter-' + f.name;
 				input.placeholder = f.placeholder || '';
@@ -382,13 +388,13 @@
 					if (action.type === 'link') {
 						html += '<a href="' + escapeHtml(url) + '"'
 							+ (action.target ? ' target="' + escapeHtml(action.target) + '"' : '')
-							+ ' class="ds-button"'
+							+ ' class="booking-button ds-button" data-booking-action="datatable-link"'
 							+ ' data-variant="' + (action.variant || 'secondary') + '"'
 							+ ' data-size="sm">'
 							+ escapeHtml(action.label) + '</a>';
 					} else if (action.type === 'delete') {
 						html += '<button type="button"'
-							+ ' class="ds-button js-appdt-delete"'
+							+ ' class="booking-button ds-button js-appdt-delete" data-booking-action="delete-row"'
 							+ ' data-variant="' + (action.variant || 'tertiary') + '"'
 							+ ' data-size="sm" data-color="danger"'
 							+ ' data-action-idx="' + i + '"'
@@ -396,7 +402,7 @@
 							+ escapeHtml(action.label) + '</button>';
 					} else if (action.type === 'custom') {
 						html += '<button type="button"'
-							+ ' class="ds-button js-appdt-custom"'
+							+ ' class="booking-button ds-button js-appdt-custom" data-booking-action="custom-row"'
 							+ ' data-variant="' + (action.variant || 'secondary') + '"'
 							+ ' data-size="sm"'
 							+ ' data-action-idx="' + i + '">'
@@ -520,7 +526,8 @@
 					th.innerHTML = '';
 					var input = document.createElement('input');
 					input.type = 'text';
-					input.className = 'ds-input app-datatable__col-search';
+					input.className = 'booking-input ds-input app-datatable__col-search';
+					input.setAttribute('data-booking-role', 'column-search');
 					input.placeholder = searchLang + ' ' + title;
 					input.value = currentSearch;
 					input.title = title;
@@ -606,9 +613,9 @@
 	// ------------------------------------------------------------------
 	// DS spinner SVG for processing indicator
 	// ------------------------------------------------------------------
-	var DS_SPINNER_HTML = '<svg class="ds-spinner" role="img" viewBox="0 0 50 50" data-size="md" aria-label="Loading...">'
-		+ '<circle class="ds-spinner__background" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>'
-		+ '<circle class="ds-spinner__circle" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>'
+	var DS_SPINNER_HTML = '<svg class="booking-spinner ds-spinner" role="img" viewBox="0 0 50 50" data-size="md" aria-label="Loading...">'
+		+ '<circle class="booking-spinner__background ds-spinner__background" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>'
+		+ '<circle class="booking-spinner__circle ds-spinner__circle" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>'
 		+ '</svg>';
 
 	// ------------------------------------------------------------------
@@ -633,7 +640,7 @@
 
 		// Table element
 		var tableEl = document.createElement('table');
-		tableEl.className = 'ds-table';
+		tableEl.className = 'booking-table ds-table';
 		tableEl.setAttribute('data-zebra', '');
 		tableEl.setAttribute('data-hover', '');
 		tableEl.setAttribute('data-border', '');
@@ -746,14 +753,14 @@
 			classes: {
 				search: {
 					container: 'dt-search',
-					input: 'dt-input ds-input'
+					input: 'dt-input booking-input ds-input'
 				},
 				length: {
 					container: 'dt-length',
-					select: 'dt-input ds-input'
+					select: 'dt-input booking-input ds-input'
 				},
 				paging: {
-					button: 'ds-button',
+					button: 'booking-button ds-button',
 					active: 'current',
 					disabled: 'disabled',
 					container: 'dt-paging',
@@ -791,7 +798,7 @@
 			dtConfig.buttons = {
 				dom: {
 					button: {
-						className: 'ds-button'
+							className: 'booking-button ds-button'
 					}
 				},
 				buttons: buttonDefs

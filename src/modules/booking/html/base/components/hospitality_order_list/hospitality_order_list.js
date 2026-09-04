@@ -44,7 +44,7 @@ class HospitalityOrderList {
 		// Attach click handler once on the container
 		var self = this;
 		this.container.addEventListener('click', function (e) {
-			var row = e.target.closest('[data-order-link]');
+			var row = e.target.closest('[data-booking-action="open-order"]');
 			if (!row) return;
 			var url = '/booking/view/hospitality-orders/' + row.dataset.orderLink;
 			if (self.applicationId) {
@@ -112,11 +112,11 @@ class HospitalityOrderList {
 		var showHosp = !!this.columns.hospitality;
 
 		if (!orders || orders.length === 0) {
-			this.container.innerHTML = '<p class="app-show__empty">' + self._esc(this.emptyText) + '</p>';
+			this.container.innerHTML = '<p class="app-show__empty" data-booking-role="empty-orders">' + self._esc(this.emptyText) + '</p>';
 			return;
 		}
 
-		var html = '<table class="ds-table" data-border>' +
+		var html = '<table class="booking-table ds-table" data-booking-role="order-table" data-border>' +
 			'<thead><tr>' +
 			'<th>ID</th>';
 
@@ -132,10 +132,10 @@ class HospitalityOrderList {
 
 		orders.forEach(function (order) {
 			var statusColor = self._statusColor(order.status);
-			var statusTag = '<span class="ds-tag" data-color="' + statusColor + '">' + self._esc(self._statusLabel(order.status)) + '</span>';
+			var statusTag = '<span class="booking-tag ds-tag" data-booking-role="order-status" data-color="' + statusColor + '">' + self._esc(self._statusLabel(order.status)) + '</span>';
 			var amount = order.total_amount != null ? Number(order.total_amount).toFixed(2) : '&mdash;';
 
-			html += '<tr class="hospitality-order-list__row" data-order-link="' + self._esc(order.id) + '" style="cursor:pointer">';
+			html += '<tr class="hospitality-order-list__row" data-booking-action="open-order" data-order-link="' + self._esc(order.id) + '" style="cursor:pointer">';
 			html += '<td>' + self._esc(order.id) + '</td>';
 
 			if (showApp) html += '<td>#' + self._esc(order.application_id) + '</td>';

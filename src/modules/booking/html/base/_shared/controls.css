@@ -1,0 +1,105 @@
+/* Shared control styling for the booking base views. */
+.booking-input,
+.app-input,
+.app-select,
+.ds-input {
+	box-sizing: border-box;
+	min-height: 2.25rem;
+	padding: 0.5rem;
+	border: 1px solid var(--booking-color-border-default, #c6c6c6);
+	border-radius: var(--booking-border-radius-md, 4px);
+	background: var(--booking-color-background-default, #fff);
+	color: var(--booking-color-text-default, #1e293b);
+	font: inherit;
+}
+
+.booking-input:focus,
+.app-input:focus,
+.app-select:focus,
+.ds-input:focus {
+	outline: 2px solid var(--booking-color-accent-base-default, #2a72ba);
+	outline-offset: 1px;
+}
+
+.booking-button,
+.app-button,
+.ds-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 2.25rem;
+	padding: 0.5rem 0.9rem;
+	border: 1px solid var(--booking-color-accent-base-default, #20568f);
+	border-radius: var(--booking-border-radius-md, 4px);
+	background: var(--booking-color-accent-base-default, #2a72ba);
+	color: var(--booking-color-accent-base-contrast-default, #fff);
+	font: inherit;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.booking-button:hover,
+.app-button:hover,
+.ds-button:hover {
+	background: var(--booking-color-accent-base-hover, #225f9c);
+}
+
+.booking-button[data-variant="secondary"],
+.app-button-secondary,
+.app-button--secondary,
+.ds-button[data-variant="secondary"] {
+	background: var(--booking-color-background-default, #fff);
+	color: var(--booking-color-accent-text-default, #20568f);
+}
+
+.booking-card {
+	box-sizing: border-box;
+	border: 1px solid var(--booking-color-border-default, #cbd7e3);
+	border-radius: var(--booking-border-radius-md, 0.5rem);
+	background: var(--booking-color-background-default, #fff);
+	padding: 1rem;
+}
+
+.app-show__tabs {
+	display: flex;
+	gap: 0.5rem;
+	margin: 0 0 1rem;
+	border-bottom: 1px solid var(--booking-color-border-default, #cbd7e3);
+	padding-bottom: 0.5rem;
+	overflow-x: auto;
+}
+
+.app-show__tab {
+	appearance: none;
+	border: 1px solid var(--booking-color-border-default, #9fb7cf);
+	border-bottom: 0;
+	border-radius: 6px 6px 0 0;
+	background: var(--booking-color-accent-surface-default, #eef4fa);
+	color: var(--booking-color-accent-text-default, #184a7a);
+	padding: 0.55rem 0.9rem;
+	font: inherit;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.app-show__tab:hover {
+	background: var(--booking-color-accent-surface-hover, #e3edf8);
+}
+
+.app-show__tab--active {
+	position: relative;
+	bottom: -1px;
+	background: var(--booking-color-background-default, #fff);
+	color: var(--booking-color-text-default, #102c4a);
+	border-color: var(--booking-color-border-default, #cbd7e3);
+}
+
+@media (max-width: 640px) {
+	.app-show__tabs {
+		gap: 0.25rem;
+	}
+
+	.app-show__tab {
+		padding: 0.5rem 0.65rem;
+	}
+}

@@ -3,6 +3,7 @@
 {% block title %}{{ lang('highlighted_buildings') }}{% endblock %}
 
 {% block styles %}
+<style>{{ source('@views/_shared/controls.css') }}</style>
 <style>{{ source('@views/components/building_select/building_select.css') }}</style>
 <style>{{ source('@views/config/highlighted_buildings/highlighted_buildings.css') }}</style>
 <link rel="stylesheet" href="{{ modules_url }}/booking/js/built/highlighted-buildings.css">

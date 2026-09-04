@@ -63,9 +63,9 @@ var HospitalityOrderModal = (function () {
 
 		// ── Hospitality selector (only when not fixed) ──
 		if (!fixedHospitalityId) {
-			body += '<label class="app-show__modal-label">' + esc(lang('hospitality')) + ' *</label>' +
-				'<div id="modal-order-hosp-container" class="search-select">' +
-				'<input type="text" class="search-select__input app-show__modal-textarea" style="min-height:auto;height:2.25rem" placeholder="' + esc(lang('hospitality')) + '..." autocomplete="off" aria-expanded="false" aria-autocomplete="list" role="combobox">' +
+			body += '<label class="app-show__modal-label booking-modal__label ds-modal-label">' + esc(lang('hospitality')) + ' *</label>' +
+				'<div id="modal-order-hosp-container" class="search-select" data-booking-role="hospitality-selector">' +
+				'<input type="text" class="search-select__input app-show__modal-textarea booking-modal__input" data-booking-role="hospitality-input" style="min-height:auto;height:2.25rem" placeholder="' + esc(lang('hospitality')) + '..." autocomplete="off" aria-expanded="false" aria-autocomplete="list" role="combobox">' +
 				'<input type="hidden" id="modal-order-hosp-value">' +
 				'<ul class="search-select__dropdown" role="listbox"></ul>' +
 				'</div>';
@@ -73,41 +73,41 @@ var HospitalityOrderModal = (function () {
 
 		// ── Application selector (only when not fixed) ──
 		if (!fixedApplicationId) {
-			body += '<label class="app-show__modal-label"' + (!fixedHospitalityId ? ' style="margin-top:0.75rem"' : '') + '>' + esc(lang('application')) + ' *</label>' +
-				'<div id="modal-order-app-container" class="search-select">' +
-				'<input type="text" class="search-select__input app-show__modal-textarea" style="min-height:auto;height:2.25rem" placeholder="#ID..." autocomplete="off" aria-expanded="false" aria-autocomplete="list" role="combobox">' +
+			body += '<label class="app-show__modal-label booking-modal__label ds-modal-label"' + (!fixedHospitalityId ? ' style="margin-top:0.75rem"' : '') + '>' + esc(lang('application')) + ' *</label>' +
+				'<div id="modal-order-app-container" class="search-select" data-booking-role="application-selector">' +
+				'<input type="text" class="search-select__input app-show__modal-textarea booking-modal__input" data-booking-role="application-input" style="min-height:auto;height:2.25rem" placeholder="#ID..." autocomplete="off" aria-expanded="false" aria-autocomplete="list" role="combobox">' +
 				'<input type="hidden" id="modal-order-app-value">' +
 				'<ul class="search-select__dropdown" role="listbox"></ul>' +
 				'</div>';
 		}
 
 		// ── Location selector ──
-		body += '<label class="app-show__modal-label" style="margin-top:0.75rem">' + esc(lang('location')) + ' *</label>' +
-			'<div id="modal-order-loc-container" class="search-select">' +
-			'<input type="text" class="search-select__input app-show__modal-textarea" style="min-height:auto;height:2.25rem" placeholder="' + esc(lang('location')) + '..." autocomplete="off" aria-expanded="false" aria-autocomplete="list" role="combobox">' +
+		body += '<label class="app-show__modal-label booking-modal__label ds-modal-label" style="margin-top:0.75rem">' + esc(lang('location')) + ' *</label>' +
+			'<div id="modal-order-loc-container" class="search-select" data-booking-role="location-selector">' +
+			'<input type="text" class="search-select__input app-show__modal-textarea booking-modal__input" data-booking-role="location-input" style="min-height:auto;height:2.25rem" placeholder="' + esc(lang('location')) + '..." autocomplete="off" aria-expanded="false" aria-autocomplete="list" role="combobox">' +
 			'<input type="hidden" id="modal-order-loc-value">' +
 			'<ul class="search-select__dropdown" role="listbox"></ul>' +
 			'</div>';
 
 		// ── Serving time ──
-		body += '<label class="app-show__modal-label" style="margin-top:0.75rem">' + esc(lang('servingTime')) + ' *</label>' +
+		body += '<label class="app-show__modal-label booking-modal__label ds-modal-label" style="margin-top:0.75rem">' + esc(lang('servingTime')) + ' *</label>' +
 			'<div id="modal-order-serving-container" style="display:flex;gap:0.5rem">' +
-			'<select id="modal-order-serving-date" class="app-show__modal-textarea" style="min-height:auto;height:2.25rem;flex:1;max-width:10rem" disabled>' +
+			'<select id="modal-order-serving-date" class="app-show__modal-textarea booking-modal__input" data-booking-role="serving-date" style="min-height:auto;height:2.25rem;flex:1;max-width:10rem" disabled>' +
 			'<option value="">' + esc(lang('selectDate')) + '</option></select>' +
-			'<select id="modal-order-serving-time" class="app-show__modal-textarea" style="min-height:auto;height:2.25rem;flex:1;max-width:10rem" disabled>' +
+			'<select id="modal-order-serving-time" class="app-show__modal-textarea booking-modal__input" data-booking-role="serving-time" style="min-height:auto;height:2.25rem;flex:1;max-width:10rem" disabled>' +
 			'<option value="">' + esc(lang('selectTime')) + '</option></select>' +
 			'</div>';
 
 		// ── Comment ──
-		body += '<label class="app-show__modal-label" for="modal-order-comment" style="margin-top:0.75rem">' + esc(lang('comment')) + '</label>' +
-			'<textarea id="modal-order-comment" class="app-show__modal-textarea" rows="2"></textarea>';
+		body += '<label class="app-show__modal-label booking-modal__label ds-modal-label" for="modal-order-comment" style="margin-top:0.75rem">' + esc(lang('comment')) + '</label>' +
+			'<textarea id="modal-order-comment" class="app-show__modal-textarea booking-modal__input" data-booking-role="comment" rows="2"></textarea>';
 
 		// ── Special requirements ──
-		body += '<label class="app-show__modal-label" for="modal-order-special" style="margin-top:0.75rem">' + esc(lang('specialRequirements')) + '</label>' +
-			'<textarea id="modal-order-special" class="app-show__modal-textarea" rows="2"></textarea>';
+		body += '<label class="app-show__modal-label booking-modal__label ds-modal-label" for="modal-order-special" style="margin-top:0.75rem">' + esc(lang('specialRequirements')) + '</label>' +
+			'<textarea id="modal-order-special" class="app-show__modal-textarea booking-modal__input" data-booking-role="special-requirements" rows="2"></textarea>';
 
-		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="ds-button" id="modal-order-submit">' + esc(lang('save')) + '</button>';
+		var footer = '<button type="button" class="booking-button ds-button" data-variant="secondary" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="booking-button ds-button" id="modal-order-submit" data-booking-action="submit-order">' + esc(lang('save')) + '</button>';
 
 		opts.showModal('order-dialog', lang('createOrder'), body, footer);
 
@@ -118,8 +118,8 @@ var HospitalityOrderModal = (function () {
 		var _appResourceIds = null; // resource IDs from the selected application's dates
 		var _allLocations = null;   // full unfiltered location list from API
 		var _currentHospMainResourceId = hospMainResourceId;
-		var dateSelect = document.getElementById('modal-order-serving-date');
-		var timeSelect = document.getElementById('modal-order-serving-time');
+		var dateSelect = document.querySelector('[data-booking-role="serving-date"]');
+		var timeSelect = document.querySelector('[data-booking-role="serving-time"]');
 
 		function generate15MinIntervals(from, to) {
 			var slots = [];

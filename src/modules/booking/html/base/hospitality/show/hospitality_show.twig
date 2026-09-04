@@ -3,6 +3,7 @@
 {% block title %}{{ lang('booking.hospitality') }}{% endblock %}
 
 {% block styles %}
+<style>{{ source('@views/_shared/controls.css') }}</style>
 <style>{{ source('@views/application/show/application_show.css') }}</style>
 <style>{{ source('@views/components/search_select/search_select.css') }}</style>
 <style>{{ source('@views/components/article_select/article_select.css') }}</style>
@@ -216,8 +217,8 @@
 <script src="/wss/socket.io/socket.io.js"></script>
 <script>{{ source('@views/components/ws_collab/ws_collab.js') }}</script>
 <script src="{{ modules_url }}/booking/js/base/building-select.js"></script>
-<script>{{ source('@views/components/hospitality_order_list/hospitality_order_list.js') }}</script>
-<script>{{ source('@views/components/hospitality_order_modal/hospitality_order_modal.js') }}</script>
+<script>{{ source('@base_views/components/hospitality_order_list/hospitality_order_list.js') }}</script>
+<script>{{ source('@base_views/components/hospitality_order_modal/hospitality_order_modal.js') }}</script>
 <script>{{ source('@views/hospitality/show/hospitality_show.js') }}</script>
 <script>
 (function initHospCollab() {

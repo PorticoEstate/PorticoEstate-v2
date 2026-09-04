@@ -1104,3 +1104,5 @@ cancel_mode_unavailable	bookingfrontend	nn	Utilgjengeleg
 loading...	bookingfrontend	nn	Lastar inn…
 create new booking	bookingfrontend	nn	Lag ny interntildeling
 you_are_admin_for	bookingfrontend	nn	Du er: Admin for {{organization}}
+you_are	bookingfrontend	nn	Du er
+admin_for_organization	bookingfrontend	nn	Admin for {{organization}}

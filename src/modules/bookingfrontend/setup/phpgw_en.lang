@@ -1104,3 +1104,5 @@ cancel_mode_unavailable	bookingfrontend	en	Unavailable
 loading...	bookingfrontend	en	Loading...
 create new booking	bookingfrontend	en	Create new booking
 you_are_admin_for	bookingfrontend	en	You are: Admin for {{organization}}
+you_are	bookingfrontend	en	You are
+admin_for_organization	bookingfrontend	en	Admin for {{organization}}

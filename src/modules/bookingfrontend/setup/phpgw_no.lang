@@ -1105,3 +1105,5 @@ cancel_mode_unavailable	bookingfrontend	no	Utilgjengelig
 loading...	bookingfrontend	no	Laster inn….
 create new booking	bookingfrontend	no	Lag ny interntildeling
 you_are_admin_for	bookingfrontend	no	Du er: Admin for {{organization}}
+you_are	bookingfrontend	no	Du er
+admin_for_organization	bookingfrontend	no	Admin for {{organization}}

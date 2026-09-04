@@ -72,8 +72,9 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 	// buildingId] whenever the calendar view is open behind this modal.
 	const buildingSeasons = useBuildingSeasons(Number.isFinite(buildingId as number) ? buildingId as number : undefined);
 	const seasonName = buildingSeasons.data?.find((season) => season.id === allocation.season_id)?.name;
-	// Shared by the overview's Season row and its "#id · season · building" composite line —
-	// one source for the same three-state fallback (#19645: resolved / loading / neutral).
+	// Feeds the "#id · season · building" meta line in the modal's title chrome (design
+	// :335) — the design never draws season as its own grid row, so that meta line is
+	// its only consumer (#21603). Three-state fallback: #19645, resolved / loading / neutral.
 	const seasonDisplay = seasonName ? seasonName : buildingSeasons.isLoading ? t('bookingfrontend.loading...') : '—';
 
 	const [step, setStep] = useState<Step>('overview');
@@ -302,16 +303,6 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 	const cancellableCount = existing.filter((o) => o.cancellable).length;
 
 	const renderOverviewStep = () => {
-		const orgNameHeading = (
-			<h3
-				ref={orgNameRef}
-				className={styles.overviewOrgName}
-				tabIndex={isOrgNameTruncated ? 0 : undefined}
-			>
-				{allocation.organization_name}
-			</h3>
-		);
-
 		// Same shape as allocation-popper-actions.tsx's own "+ New booking" link — this
 		// modal is a SECOND consumer of that route, not a replacement for the card's button.
 		const fromUnix = Date.parse(allocation.from_) / 1000;
@@ -339,100 +330,101 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 
 		return (
 			<div className={styles.step}>
-				<div className={styles.panel}>
-					<div className={styles.overviewHeader}>
-						<div className={styles.overviewMetaRow}>
-							<Tag data-color="accent" className={styles.overviewTypeTag}>
-								{t('bookingfrontend.allocation')}
-							</Tag>
-							<span className={styles.overviewMeta}>
-								{`#${allocation.id} · ${seasonDisplay} · ${allocation.building_name}`}
-							</span>
-						</div>
-						{isOrgNameTruncated
-							? <Tooltip content={allocation.organization_name}>{orgNameHeading}</Tooltip>
-							: orgNameHeading}
-						{isAdminForAllocation && (
-							<span className={styles.overviewAdminNote}>
-								{t('bookingfrontend.you_are_admin_for', {organization: allocation.organization_name})}
-							</span>
-						)}
-					</div>
-
-					<div className={styles.overviewGrid}>
-						<span className={styles.overviewLabel}>{t('booking.date and time')}</span>
-						<span>
-							{overviewPeriodLabel}
-							{overviewDurationLabel && (
-								<span className={styles.overviewDuration}>{` (${overviewDurationLabel})`}</span>
-							)}
-						</span>
-
-						<span className={styles.overviewLabel}>{t('bookingfrontend.building')}</span>
-						<span>{allocation.building_name}</span>
-
-						<span className={styles.overviewLabel}>{t('booking.resources')}</span>
-						<span className={styles.resourceChips}>
-							{allocation.resources.map((resource) => (
-								<span key={resource.id} className={styles.resourceChip}>
-									<ColourCircle resourceId={resource.id} size="small" className={styles.resourceChipColour}/>
-									<span>{resource.name}</span>
-									{typeof resource.participant_limit === 'number' && resource.participant_limit > 0 && (
-										<span className={styles.resourceChipLimit}>
-											{` · ${t('bookingfrontend.max_participants', {count: resource.participant_limit})}`}
-										</span>
+				{/* Design 1c :343 — two columns: content flex:1 + a fixed 300px sidebar
+				    (:382). The content column here carries only what's reachable: the
+				    design also draws "Series" (:347-348, no source field — see #21181),
+				    "Organisation" contact (:359-360, legacy contacts[0]), "Application"
+				    (:361-362, no @Expose on the allocation payload), "Bookings under it"
+				    (:363-364, deferred to the confirm step where
+				    blocking_bookings[].group_name is actually served) and the comment
+				    thread (:367-378, no bb_allocation_comment table) — all omitted, none
+				    invented. Building and season are NOT repeated as grid rows here: the
+				    design only ever carries them in the title's meta line (:335). */}
+				<div className={styles.overviewLayout}>
+					<div className={styles.overviewContent}>
+						<div className={styles.panel}>
+							<div className={styles.overviewGrid}>
+								<span className={styles.overviewLabel}>{t('booking.date and time')}</span>
+								<span>
+									{overviewPeriodLabel}
+									{overviewDurationLabel && (
+										<span className={styles.overviewDuration}>{` (${overviewDurationLabel})`}</span>
 									)}
 								</span>
-							))}
-						</span>
 
-						<span className={styles.overviewLabel}>{t('bookingfrontend.season')}</span>
-						{/* #19645: `seasonName` is undefined in FOUR states (pending, errored,
-						    buildingId not finite/skipToken, or resolved-but-season_id absent) and
-						    only the first is actually loading. `isLoading` (pending AND fetching)
-						    is true ONLY during a genuine fetch, so the other three fall through to
-						    the neutral em-dash instead of a false "Laster inn…" claim. */}
-						<span>{seasonDisplay}</span>
+								<span className={styles.overviewLabel}>{t('booking.resources')}</span>
+								<span className={styles.resourceChips}>
+									{allocation.resources.map((resource) => (
+										<span key={resource.id} className={styles.resourceChip}>
+											<ColourCircle resourceId={resource.id} size="small" className={styles.resourceChipColour}/>
+											<span>{resource.name}</span>
+											{typeof resource.participant_limit === 'number' && resource.participant_limit > 0 && (
+												<span className={styles.resourceChipLimit}>
+													{` · ${t('bookingfrontend.max_participants', {count: resource.participant_limit})}`}
+												</span>
+											)}
+										</span>
+									))}
+								</span>
+							</div>
+						</div>
 					</div>
-				</div>
 
-				<div className={styles.panel}>
-					<div className={styles.overviewActions}>
-						{isInFuture && (
+					{/* Design :382 — a FIXED 300px sidebar: the "You are" card (:383-384)
+					    then the vertical action stack (:392-397). "Participants" (:386-387,
+					    no REST route) and the cancellation-deadline line (:389, its computed
+					    instant is unserved) are both unreachable, so the card carries "You
+					    are" alone — thinner than the mock, same shape; it is not redesigned
+					    to fill the space. */}
+					<div className={styles.overviewSidebar}>
+						{isAdminForAllocation && (
+							<div className={styles.panel}>
+								<span className={styles.eyebrow}>{t('bookingfrontend.you_are')}</span>
+								<span>{t('bookingfrontend.admin_for_organization', {organization: allocation.organization_name})}</span>
+							</div>
+						)}
+
+						{/* Design :392-397 — a plain flex column of full-width buttons, not a
+						    bordered card: THE action stack, not a fourth panel. The
+						    destructive action is a peer among these, not a primary "next" —
+						    see #21573. It still only NAVIGATES to the scope step; the real
+						    mutation stays behind the confirm step untouched. Reuses
+						    `cancelLabel`, the one `cancelMode` discriminator, so this control
+						    cannot drift out of sync with the confirm step's own label. In
+						    'unresolved' that label already reads "Utilgjengelig"/"Unavailable"
+						    — disabling here keeps that word honest instead of offering a
+						    clickable route into a wizard for an ability we do not know we have
+						    (the same failure fixed twice already on this branch, see
+						    #19746/#21573). */}
+						<div className={styles.overviewActions}>
+							{isInFuture && (
+								<Button asChild variant="secondary" data-color="accent" className={styles.overviewActionButton}>
+									<Link href={newBookingHref} target="_blank">
+										<PlusIcon/>
+										{t('bookingfrontend.create new booking')}
+									</Link>
+								</Button>
+							)}
 							<Button asChild variant="secondary" data-color="accent" className={styles.overviewActionButton}>
-								<Link href={newBookingHref} target="_blank">
-									<PlusIcon/>
-									{t('bookingfrontend.create new booking')}
+								<Link href={registerParticipantsHref} target="_blank">
+									{t('booking.register participants')}
 								</Link>
 							</Button>
-						)}
-						<Button asChild variant="secondary" data-color="accent" className={styles.overviewActionButton}>
-							<Link href={registerParticipantsHref} target="_blank">
-								{t('booking.register participants')}
-							</Link>
-						</Button>
-						<Button asChild variant="secondary" data-color="accent" className={styles.overviewActionButton}>
-							<Link href={editHref} target="_blank">
-								{t('bookingfrontend.edit allocation')}
-							</Link>
-						</Button>
-						{/* The destructive action, among its peers rather than behind a wizard's
-						    "Fortsett" — see #21563. It still only NAVIGATES to the scope step; the
-						    real mutation stays behind the confirm step untouched. Reuses `cancelLabel`,
-						    the one `cancelMode` discriminator, so this control cannot drift out of sync
-						    with the confirm step's own label. In 'unresolved' that label already reads
-						    "Utilgjengelig"/"Unavailable" — disabling here keeps that word honest instead
-						    of offering a clickable route into a wizard for an ability we do not know we
-						    have (the same failure fixed twice already on this branch, see #19746/#21563). */}
-						<Button
-							variant="secondary"
-							data-color="danger"
-							className={styles.overviewActionButton}
-							disabled={cancelMode === 'unresolved'}
-							onClick={() => setStep('scope')}
-						>
-							{cancelLabel}
-						</Button>
+							<Button asChild variant="secondary" data-color="accent" className={styles.overviewActionButton}>
+								<Link href={editHref} target="_blank">
+									{t('bookingfrontend.edit allocation')}
+								</Link>
+							</Button>
+							<Button
+								variant="secondary"
+								data-color="danger"
+								className={styles.overviewActionButton}
+								disabled={cancelMode === 'unresolved'}
+								onClick={() => setStep('scope')}
+							>
+								{cancelLabel}
+							</Button>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -652,29 +644,55 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 		);
 	};
 
-	const title = (
+	// Design :332-338 — the modal's chrome carries the tag + "#id · season · building"
+	// meta line and the prominent heading. For the overview step that heading is the
+	// ORG NAME (:337), an H1, replacing the boilerplate "Administrer tildeling" text the
+	// chrome used to read here. The other three steps' eyebrow + step heading are
+	// untouched below, including the #19526 cancelMode read.
+	const orgNameHeading = (
+		<h1
+			ref={orgNameRef}
+			className={styles.overviewOrgName}
+			tabIndex={isOrgNameTruncated ? 0 : undefined}
+		>
+			{allocation.organization_name}
+		</h1>
+	);
+
+	const title = step === 'overview' ? (
+		<div>
+			<div className={styles.titleMetaRow}>
+				<Tag data-color="accent" className={styles.overviewTypeTag}>
+					{t('bookingfrontend.allocation')}
+				</Tag>
+				<span className={styles.eyebrow}>
+					{`#${allocation.id} · ${seasonDisplay} · ${allocation.building_name}`}
+				</span>
+			</div>
+			{isOrgNameTruncated
+				? <Tooltip content={allocation.organization_name}>{orgNameHeading}</Tooltip>
+				: orgNameHeading}
+		</div>
+	) : (
 		<div>
 			<span className={styles.eyebrow}>
-				{step === 'overview' && `#${allocation.id}`}
 				{step === 'scope' && `${t('bookingfrontend.step_1_of_2')} · #${allocation.id}`}
 				{step === 'confirm' && `${t('bookingfrontend.step_2_of_2')} · #${allocation.id}`}
 				{step === 'done' && `#${allocation.id}`}
 			</span>
 			<Heading level={2} data-size="xs" className={styles.stepTitle}>
-				{step === 'overview'
-					? t('bookingfrontend.manage_allocation')
-					: step === 'confirm'
-						// #19526: this heading MUST NOT assert cancellability while the setting that
-						// decides it is unresolved — reusing the ONE `cancelMode` discriminator
-						// (bookingfrontend.cancel_mode_unavailable, the same "Utilgjengelig" text the
-						// confirm button already shows in this state) rather than adding a second one.
-						? (cancelMode === 'unresolved'
-							? cancelLabel
-							: t('bookingfrontend.occurrences_can_be_cancelled', {
-								cancellable: cancellableCount,
-								total: existing.length,
-							}))
-						: cancelLabel}
+				{step === 'confirm'
+					// #19526: this heading MUST NOT assert cancellability while the setting that
+					// decides it is unresolved — reusing the ONE `cancelMode` discriminator
+					// (bookingfrontend.cancel_mode_unavailable, the same "Utilgjengelig" text the
+					// confirm button already shows in this state) rather than adding a second one.
+					? (cancelMode === 'unresolved'
+						? cancelLabel
+						: t('bookingfrontend.occurrences_can_be_cancelled', {
+							cancellable: cancellableCount,
+							total: existing.length,
+						}))
+					: cancelLabel}
 			</Heading>
 		</div>
 	);
@@ -696,11 +714,11 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 				</Button>
 			) : <span/>}
 			<div className={styles.footerActions}>
-				{/* The overview no longer carries a primary forward button — see #21563. It is the
+				{/* The overview no longer carries a primary forward button — see #21573. It is the
 				    destination screen, not step 1 of a cancellation wizard; its only footer control
-				    is the tertiary "Lukk" above. Cancellation now lives in `overviewActions`, as a
-				    peer alongside new booking / register participants / edit, navigating to the
-				    scope step exactly as this control used to. */}
+				    is the tertiary "Lukk" above. Cancellation now lives in `overviewActions`, in the
+				    sidebar's vertical stack (#21603), as a peer alongside new booking / register
+				    participants / edit, navigating to the scope step exactly as this control used to. */}
 				{step === 'scope' && (
 					<Button
 						variant="primary"

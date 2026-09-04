@@ -179,18 +179,46 @@
     padding-left: 1.25rem;
 }
 
-/* Overview step (design 1c's landing screen). */
-.overviewHeader {
+/* Overview step (design 1c's landing screen). Design :343 — two columns: a
+   content column that grows, and a fixed 300px sidebar. */
+.overviewLayout {
     display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    min-width: 0;
+    gap: 1.5rem;
+    align-items: flex-start;
+
+    @include mobile {
+        flex-direction: column;
+    }
 }
 
+.overviewContent {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Design :382 — the sidebar is FIXED width, not a column that grows to fill
+   the modal; it stays 300px regardless of how much content the card carries. */
+.overviewSidebar {
+    width: 300px;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    @include mobile {
+        width: 100%;
+    }
+}
+
+/* The overview's H1 (design :337) — the org name, now the modal's own title
+   chrome heading rather than a line inside the content panel. */
 .overviewOrgName {
     margin: 0;
-    font-size: 1.25rem;
-    line-height: 1.625rem;
+    font-size: 1.5rem;
+    line-height: 1.875rem;
     font-weight: 700;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -198,29 +226,18 @@
     max-width: 100%;
 }
 
-/* "Allocation" type pill + the "#id · season · building" composite line. */
-.overviewMetaRow {
+/* "Allocation" type pill + the "#id · season · building" composite line,
+   above the H1 in the modal's title chrome (design :333-335). */
+.titleMetaRow {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 0.5rem;
+    margin-bottom: 0.25rem;
 }
 
 .overviewTypeTag {
     flex-shrink: 0;
-}
-
-.overviewMeta {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    color: var(--ds-color-neutral-text-subtle);
-}
-
-/* "You are: Admin for X" — only rendered when isOrgAdmin says so. */
-.overviewAdminNote {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    color: var(--ds-color-neutral-text-subtle);
 }
 
 .overviewDuration {
@@ -264,13 +281,17 @@
     color: var(--ds-color-neutral-text-subtle);
 }
 
-/* "+ New booking" / "Register participants" / edit — the overview's own action row. */
+/* "+ New booking" / "Register participants" / edit / cancel — the sidebar's
+   action stack (design :392-397): a plain vertical column of full-width
+   buttons, not a bordered card. */
 .overviewActions {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 0.5rem;
 }
 
 .overviewActionButton {
+    width: 100%;
+    justify-content: flex-start;
     white-space: nowrap;
 }

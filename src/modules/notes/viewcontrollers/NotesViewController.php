@@ -127,6 +127,8 @@ class NotesViewController
 		{
 			\phpgwapi_js::getInstance()->add_external_file($asset, false, ['combine' => false]);
 		}
+		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.min.js', false, ['combine' => true]);
+		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js', false, ['combine' => true]);
 
 		foreach ([
 			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-dt/css/dataTables.dataTables.min.css',

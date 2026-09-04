@@ -383,15 +383,9 @@ class notes_bonotes
 				$keyExtern_note_id = $this->getKeyExtern('id', $type);
 				$id = $dataExtern[$keyExtern_note_id];
 				// info needed to generate a view link
-				$dataExtern['link_view'] = array(
-					'menuaction'	=> 'notes.uinotes.view',
-					'note_id'	=> $id
-				);
+				$dataExtern['link_view'] = \phpgw::link('/notes/view/notes/' . $id);
 				// info needed to generate a edit link
-				$dataExtern['link_edit'] = array(
-					'menuaction'	=> 'notes.uinotes.edit',
-					'note_id'	=> $id
-				);
+				$dataExtern['link_edit'] = \phpgw::link('/notes/view/notes/' . $id . '/edit');
 				break;
 			case 'text/plain':
 				$keyIntern = $this->map[$type][0];
@@ -423,8 +417,7 @@ class notes_bonotes
 				}
 				break;
 			case 'text/plain':
-				$keyIntern = $this->map[$type][0];
-				$dataExtern = $dataIntern[$keyIntern];
+				$keyExtern = $this->map[$type][0];
 				break;
 			case 'text/xml':
 				return false;

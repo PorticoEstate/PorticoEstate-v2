@@ -21,6 +21,36 @@
 	outline-offset: 1px;
 }
 
+.booking-modal__label {
+	display: block;
+	margin-bottom: 0.5rem;
+	font-size: 0.875rem;
+	font-weight: 500;
+}
+
+.booking-modal__input {
+	display: block;
+	width: 100%;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var(--booking-color-border-default, #c6c6c6);
+	border-radius: var(--booking-border-radius-md, 4px);
+	background: var(--booking-color-background-default, #fff);
+	color: var(--booking-color-text-default, #1e293b);
+	font: inherit;
+	font-size: 0.875rem;
+	box-sizing: border-box;
+}
+
+textarea.booking-modal__input {
+	min-height: 6rem;
+	resize: vertical;
+}
+
+.booking-modal__input:focus {
+	outline: 2px solid var(--booking-color-accent-base-default, #2a72ba);
+	outline-offset: 1px;
+}
+
 .booking-button,
 .app-button,
 .ds-button {

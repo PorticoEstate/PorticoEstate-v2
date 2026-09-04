@@ -416,6 +416,23 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 								{t('bookingfrontend.edit allocation')}
 							</Link>
 						</Button>
+						{/* The destructive action, among its peers rather than behind a wizard's
+						    "Fortsett" — see #21563. It still only NAVIGATES to the scope step; the
+						    real mutation stays behind the confirm step untouched. Reuses `cancelLabel`,
+						    the one `cancelMode` discriminator, so this control cannot drift out of sync
+						    with the confirm step's own label. In 'unresolved' that label already reads
+						    "Utilgjengelig"/"Unavailable" — disabling here keeps that word honest instead
+						    of offering a clickable route into a wizard for an ability we do not know we
+						    have (the same failure fixed twice already on this branch, see #19746/#21563). */}
+						<Button
+							variant="secondary"
+							data-color="danger"
+							className={styles.overviewActionButton}
+							disabled={cancelMode === 'unresolved'}
+							onClick={() => setStep('scope')}
+						>
+							{cancelLabel}
+						</Button>
 					</div>
 				</div>
 			</div>
@@ -679,22 +696,11 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 				</Button>
 			) : <span/>}
 			<div className={styles.footerActions}>
-				{/* This control NAVIGATES to the scope step; it does not perform the cancel/request
-				    action, so it must not carry `cancelLabel` (the mode label) — that label belongs
-				    on the control that acts (:590-604). A mode label here can go stale relative to
-				    the button's enabled state, which is reachable and clickable in every cancelMode
-				    including 'unresolved', since navigating to the scope step is always safe: the
-				    step itself (renderScopeStep) already renders the request-mode notice, and the
-				    downstream action buttons (:576-604) already gate themselves on cancelMode. */}
-				{step === 'overview' && (
-					<Button
-						variant="primary"
-						data-color="accent"
-						onClick={() => setStep('scope')}
-					>
-						{t('bookingfrontend.continue')}
-					</Button>
-				)}
+				{/* The overview no longer carries a primary forward button — see #21563. It is the
+				    destination screen, not step 1 of a cancellation wizard; its only footer control
+				    is the tertiary "Lukk" above. Cancellation now lives in `overviewActions`, as a
+				    peer alongside new booking / register participants / edit, navigating to the
+				    scope step exactly as this control used to. */}
 				{step === 'scope' && (
 					<Button
 						variant="primary"

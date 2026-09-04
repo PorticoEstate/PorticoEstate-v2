@@ -107,12 +107,12 @@ class notes_sonotes
 				unset($user);
 				reset($public_group_list);
 				$filtermethod .= " OR note_access='public' AND phpgw_group_map.group_id IN(" . implode(',', $public_group_list) . "))";
-				$where = 'AND';
 			}
 			if ($public_user_list && !$public_group_list)
 			{
 				$filtermethod .= ')';
 			}
+			$where = 'AND';
 		}
 		elseif ($filter == 'yours')
 		{

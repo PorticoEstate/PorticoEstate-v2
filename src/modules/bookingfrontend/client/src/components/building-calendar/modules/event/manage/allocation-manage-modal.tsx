@@ -105,25 +105,31 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 	 * request-mode branch with 409 rather than porting legacy's case-worker notification, and
 	 * making that branch reachable from this client would be new behaviour, not a port.
 	 *
-	 * THREE STATES, NOT TWO — and this is the whole point of the shape below.
+	 * FOUR STATES, NOT TWO — and this is the whole point of the shape below.
 	 *
-	 * The flag can be known-TRUE, known-FALSE, or NOT KNOWN: the settings query is in flight,
-	 * or it failed, or it answered without a booking_config at all. `!canDelete` collapsed the
-	 * last two of those into request mode, so a client that had been told NOTHING rendered the
-	 * confident claim "this municipality does not let you delete" and offered a button reading
-	 * "send a request" whose onClick has always been the real, immediate delete. Label and
-	 * action were driven by two different expressions and only one of them was honest.
+	 * The flag can be known-TRUE, known-FALSE, IN FLIGHT, or otherwise NOT KNOWN: the settings
+	 * query is still fetching its first response, or it failed, or it answered without a
+	 * booking_config at all. `!canDelete` used to collapse all three of the non-TRUE cases into
+	 * request mode, so a client that had been told NOTHING rendered the confident claim "this
+	 * municipality does not let you delete". A later fix (#19526) separated the failed/absent
+	 * case from request mode, but still folded "still fetching" into that same unresolved
+	 * bucket — so on first open the entry screen's destructive action read "Utilgjengelig", a
+	 * settled refusal, for a question the client had not been answered yet (#21606). Merely
+	 * loading is not evidence of absence: it is its own, fourth outcome, and it renders its own
+	 * honest word — one that says "still working it out", never "this is unavailable" and never
+	 * "you may proceed".
 	 *
 	 * It is the same failure as reading this flag with `if (flag)` — a two-valued expression
 	 * standing in for a world with more than two values — and it is why `canDelete === false`
-	 * alone is NOT the fix: that only moves the collapse from one branch to the other. Both
-	 * user-facing modes must therefore be positively known, and the unresolved state is a
-	 * THIRD outcome that asserts nothing and offers nothing.
+	 * alone is NOT the fix: that only moves the collapse from one branch to the other. Every
+	 * user-facing mode must therefore be positively known, and "loading" / "unresolved" are
+	 * outcomes in their own right, not a shared default for everything that is not yet TRUE.
 	 */
 	const bookingConfig = serverSettings.data?.booking_config;
-	const settingsUnresolved = serverSettings.isPending || serverSettings.isError || bookingConfig == null;
+	const settingsLoading = serverSettings.isPending;
+	const settingsUnresolved = !settingsLoading && (serverSettings.isError || bookingConfig == null);
 	const canDelete = bookingConfig?.user_can_delete_allocations === true;
-	const isRequestMode = !settingsUnresolved && !canDelete;
+	const isRequestMode = !settingsLoading && !settingsUnresolved && !canDelete;
 
 	/**
 	 * ONE discriminator, read by every surface that names the mode.
@@ -134,16 +140,20 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 	 * label stayed two-valued, and in the unresolved state the heading went on announcing
 	 * "Avbestill tildeling" — the confident claim, from the branch that is merely NOT request
 	 * mode. Deriving the mode once and switching both on it is the fix; adding a second
-	 * three-way expression beside this one would only move the collapse one line over.
+	 * three-way (now four-way) expression beside this one would only move the collapse one line
+	 * over — which is exactly what happened to "loading" before this pass: `settingsLoading` is
+	 * read only here, feeding the ONE discriminator, never branched on separately downstream.
 	 */
-	const cancelMode: 'unresolved' | 'request' | 'delete' =
-		settingsUnresolved ? 'unresolved' : isRequestMode ? 'request' : 'delete';
+	const cancelMode: 'loading' | 'unresolved' | 'request' | 'delete' =
+		settingsLoading ? 'loading' : settingsUnresolved ? 'unresolved' : isRequestMode ? 'request' : 'delete';
 
-	const cancelLabel = cancelMode === 'unresolved'
-		? t('bookingfrontend.cancel_mode_unavailable')
-		: cancelMode === 'request'
-			? t('bookingfrontend.request_cancellation')
-			: t('bookingfrontend.cancel_allocation');
+	const cancelLabel = cancelMode === 'loading'
+		? t('bookingfrontend.loading...')
+		: cancelMode === 'unresolved'
+			? t('bookingfrontend.cancel_mode_unavailable')
+			: cancelMode === 'request'
+				? t('bookingfrontend.request_cancellation')
+				: t('bookingfrontend.cancel_allocation');
 
 	const occurrenceLabel = useMemo(() => {
 		const from = DateTime.fromISO(allocation.from_ as unknown as string);
@@ -330,8 +340,8 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 
 		return (
 			<div className={styles.step}>
-				{/* Design 1c :343 — two columns: content flex:1 + a fixed 300px sidebar
-				    (:382). The content column here carries only what's reachable: the
+				{/* Design 1c :342 — two columns: content flex:1 + a fixed 300px sidebar
+				    (:381). The content column here carries only what's reachable: the
 				    design also draws "Series" (:347-348, no source field — see #21181),
 				    "Organisation" contact (:359-360, legacy contacts[0]), "Application"
 				    (:361-362, no @Expose on the allocation payload), "Bookings under it"
@@ -370,7 +380,7 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 						</div>
 					</div>
 
-					{/* Design :382 — a FIXED 300px sidebar: the "You are" card (:383-384)
+					{/* Design :381 — a FIXED 300px sidebar: the "You are" card (:383-384)
 					    then the vertical action stack (:392-397). "Participants" (:386-387,
 					    no REST route) and the cancellation-deadline line (:389, its computed
 					    instant is unserved) are both unreachable, so the card carries "You
@@ -395,7 +405,12 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 						    — disabling here keeps that word honest instead of offering a
 						    clickable route into a wizard for an ability we do not know we have
 						    (the same failure fixed twice already on this branch, see
-						    #19746/#21573). */}
+						    #19746/#21573). 'loading' disables it too, for the mirrored reason
+						    (#21606): this is the entry screen, the FIRST thing painted for an
+						    allocation the settings query has not answered for yet, so it is the
+						    likeliest place to render mid-fetch — an enabled route into the
+						    wizard would assert an ability just as unearned as the disabled
+						    button's old false refusal. */}
 						<div className={styles.overviewActions}>
 							{isInFuture && (
 								<Button asChild variant="secondary" data-color="accent" className={styles.overviewActionButton}>
@@ -419,9 +434,10 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 								variant="secondary"
 								data-color="danger"
 								className={styles.overviewActionButton}
-								disabled={cancelMode === 'unresolved'}
+								disabled={cancelMode === 'unresolved' || cancelMode === 'loading'}
 								onClick={() => setStep('scope')}
 							>
+								{cancelMode === 'loading' && <Spinner aria-hidden={true} data-size="xs"/>}
 								{cancelLabel}
 							</Button>
 						</div>
@@ -529,10 +545,11 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 		// underneath", not "may you cancel" — the same distinction the confirm
 		// heading (:526) already draws on `cancelMode`. Reusing that ONE
 		// discriminator here — instead of a second expression — means an
-		// unresolved setting can no longer show a green dot and "Kan avbestilles"
-		// beside a button reading "Utilgjengelig". Blocked rows are untouched:
-		// they answer a question that has nothing to do with the setting.
-		const assertsCancellable = occurrence.cancellable && cancelMode !== 'unresolved';
+		// unresolved OR still-loading setting can no longer show a green dot and
+		// "Kan avbestilles" beside a button reading "Utilgjengelig"/"Laster inn…".
+		// Blocked rows are untouched: they answer a question that has nothing to
+		// do with the setting.
+		const assertsCancellable = occurrence.cancellable && (cancelMode === 'request' || cancelMode === 'delete');
 		const dotClass = !occurrence.cancellable
 			? (dead ? styles.blockedDead : styles.blockedLive)
 			: assertsCancellable
@@ -683,10 +700,14 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 			<Heading level={2} data-size="xs" className={styles.stepTitle}>
 				{step === 'confirm'
 					// #19526: this heading MUST NOT assert cancellability while the setting that
-					// decides it is unresolved — reusing the ONE `cancelMode` discriminator
-					// (bookingfrontend.cancel_mode_unavailable, the same "Utilgjengelig" text the
-					// confirm button already shows in this state) rather than adding a second one.
-					? (cancelMode === 'unresolved'
+					// decides it is unresolved OR still loading — reusing the ONE `cancelMode`
+					// discriminator (cancelLabel already carries the right word for both: the
+					// same "Utilgjengelig" the confirm button shows when unresolved, "Laster
+					// inn…" when merely loading) rather than adding a second expression. This
+					// step is normally unreachable before the setting resolves — the overview
+					// button that leads here is disabled until then — but reads the same
+					// discriminator anyway rather than assuming that guard always holds.
+					? (cancelMode === 'unresolved' || cancelMode === 'loading'
 						? cancelLabel
 						: t('bookingfrontend.occurrences_can_be_cancelled', {
 							cancellable: cancellableCount,
@@ -730,19 +751,20 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 						{t('bookingfrontend.review_and_confirm')}
 					</Button>
 				)}
-				{/* `settingsUnresolved` gates the affordance itself, not just its wording: this
-				    onClick is the real delete in every mode, so the button must not be clickable
-				    in a state whose consequences the client cannot describe. */}
+				{/* `cancelMode` gates the affordance itself, not just its wording: this onClick
+				    is the real delete in every mode, so the button must not be clickable in a
+				    state whose consequences the client cannot describe — 'unresolved' because
+				    it never learned them, 'loading' because it has not been told them yet. */}
 				{step === 'confirm' && (
 					<Button
 						variant="primary"
 						data-color="danger"
-						disabled={cancelMutation.isPending || cancellableCount === 0 || settingsUnresolved}
+						disabled={cancelMutation.isPending || cancellableCount === 0 || cancelMode === 'unresolved' || cancelMode === 'loading'}
 						onClick={confirmCancel}
 					>
-						{cancelMutation.isPending && <Spinner aria-hidden={true} data-size="xs"/>}
-						{cancelMode === 'unresolved'
-							? t('bookingfrontend.cancel_mode_unavailable')
+						{(cancelMutation.isPending || cancelMode === 'loading') && <Spinner aria-hidden={true} data-size="xs"/>}
+						{cancelMode === 'unresolved' || cancelMode === 'loading'
+							? cancelLabel
 							: cancelMode === 'request'
 								? t('bookingfrontend.send_request_for_n_occurrences', {count: cancellableCount})
 								: t('bookingfrontend.cancel_n_occurrences', {count: cancellableCount})}

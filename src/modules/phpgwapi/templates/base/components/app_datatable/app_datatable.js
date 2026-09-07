@@ -198,7 +198,7 @@
 		var state = {};
 		if (stateKey) {
 			try {
-				state = JSON.parse(localStorage.getItem(stateKey + '_filters') || '{}');
+				state = JSON.parse(sessionStorage.getItem(stateKey + '_filters') || '{}');
 			} catch (e) { /* ignore */ }
 		}
 
@@ -294,7 +294,7 @@
 		function saveState() {
 			if (!stateKey) return;
 			try {
-				localStorage.setItem(stateKey + '_filters', JSON.stringify(getValues()));
+				sessionStorage.setItem(stateKey + '_filters', JSON.stringify(getValues()));
 			} catch (e) { /* ignore */ }
 		}
 
@@ -631,6 +631,8 @@
 
 		container.classList.add('app-datatable');
 		container.innerHTML = '';
+		var resolvedStateKey = buildStateKey(config);
+		config.stateKey = resolvedStateKey;
 
 		// Alerts
 		var alerts = createAlertSystem(container);
@@ -806,10 +808,9 @@
 		}
 
 		// State save
-		var resolvedStateKey = buildStateKey(config);
 		if (config.stateSave !== false && resolvedStateKey) {
 			dtConfig.stateSave = true;
-			dtConfig.stateDuration = 0; // localStorage, no expiry
+			dtConfig.stateDuration = -1; // sessionStorage, cleared when the browser session ends
 
 			dtConfig.stateSaveParams = function (settings, data) {
 				if (filterSystem) {

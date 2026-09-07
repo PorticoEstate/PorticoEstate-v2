@@ -2,6 +2,40 @@
 	padding: var(--booking-size-4, 1rem) 0;
 }
 
+.app-datatable .booking-button,
+.app-datatable .ds-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 2.25rem;
+	padding: 0.5rem 0.9rem;
+	border: 1px solid #20568f;
+	border-radius: 4px;
+	background: #2a72ba;
+	color: #fff;
+	font: inherit;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.app-datatable .booking-button[data-variant="secondary"],
+.app-datatable .ds-button[data-variant="secondary"] {
+	background: #fff;
+	color: #20568f;
+}
+
+.app-datatable .booking-input,
+.app-datatable .ds-input {
+	box-sizing: border-box;
+	min-height: 2.25rem;
+	padding: 0.5rem;
+	border: 1px solid #c6c6c6;
+	border-radius: 4px;
+	background: #fff;
+	color: #1e293b;
+	font: inherit;
+}
+
 /* Alert containers */
 .app-datatable__alert {
 	margin-bottom: var(--booking-size-4, 1rem);

@@ -107,47 +107,12 @@ class NotesViewController
 		$this->menuSelection = 'notes';
 		Settings::getInstance()->update('flags', ['app_header' => lang('notes') . ': ' . lang('list notes')]);
 
-		\phpgw::import_class('phpgwapi.jquery');
-		\phpgw::import_class('phpgwapi.css');
-		\phpgw::import_class('phpgwapi.js');
-		\phpgwapi_jquery::load_widget('core');
-		self::add_javascript('phpgwapi', 'jquery', 'common.js', false, ['combine' => true]);
-
-		foreach ([
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net/js/dataTables.min.js',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-dt/js/dataTables.dataTables.min.js',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons/js/dataTables.buttons.min.js',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons-dt/js/buttons.dataTables.min.js',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive/js/dataTables.responsive.min.js',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive-dt/js/responsive.dataTables.min.js',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select/js/dataTables.select.min.js',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select-dt/js/select.dataTables.min.js',
-			'phpgwapi/js/DataTables3/plugins/dataTables.inputPaging.js',
-		] as $asset)
-		{
-			\phpgwapi_js::getInstance()->add_external_file($asset, false, ['combine' => false]);
-		}
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.min.js', false, ['combine' => true]);
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js', false, ['combine' => true]);
-
-		foreach ([
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-dt/css/dataTables.dataTables.min.css',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons-dt/css/buttons.dataTables.min.css',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive-dt/css/responsive.dataTables.min.css',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select-dt/css/select.dataTables.min.css',
-			'phpgwapi/js/DataTables3/plugins/dataTables.inputPaging.min.css',
-		] as $asset)
-		{
-			\phpgwapi_css::getInstance()->add_external_file($asset);
-		}
-
 		return $this->render($request, $response, '@views/list/notes_list.twig', [
 			'api_url' => \phpgw::link('/notes/notes'),
 			'add_url' => \phpgw::link('/notes/view/notes/add'),
 			'view_url_template' => \phpgw::link('/notes/view/notes/__NOTE_ID__'),
 			'edit_url_template' => \phpgw::link('/notes/view/notes/__NOTE_ID__/edit'),
 			'delete_url_template' => \phpgw::link('/notes/view/notes/__NOTE_ID__/delete'),
-			'jquery_phpgw_i18n' => $this->getDatatableI18n(),
 			'categories' => $this->getCategoriesList(true),
 			'filters' => [
 				['id' => '', 'name' => lang('All')],

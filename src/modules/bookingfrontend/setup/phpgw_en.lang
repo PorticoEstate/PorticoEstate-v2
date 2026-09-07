@@ -1106,3 +1106,14 @@ create new booking	bookingfrontend	en	Create new booking
 you_are_admin_for	bookingfrontend	en	You are: Admin for {{organization}}
 you_are	bookingfrontend	en	You are
 admin_for_organization	bookingfrontend	en	Admin for {{organization}}
+admin_for_group	bookingfrontend	en	Admin for {{group}}
+dates_without_booking	bookingfrontend	en	{{count}} dates in the period have no booking
+booking_request_mode_notice	bookingfrontend	en	This installation does not let users delete bookings directly. Contact a case worker.
+booking_cancelled_summary	bookingfrontend	en	{{count}} bookings were cancelled
+booking_cancel_skipped_summary	bookingfrontend	en	{{count}} bookings were not cancelled
+delete_allocation_option	bookingfrontend	en	Also delete the parent allocation where nothing else is booked under it
+cascade_would_delete_allocations	bookingfrontend	en	This will also delete {{count}} allocation(s): {{ids}}
+cascade_would_leave_allocations_empty	bookingfrontend	en	{{count}} allocation(s) would be left with no bookings. They will not be deleted unless you select the option above.
+split_pool_active_no_effect	bookingfrontend	en	This installation's booking pool-split setting is active, but has no effect on this cancellation - no notification is sent.
+booking_no_booking_this_date	bookingfrontend	en	No booking exists on this date
+cascade_deleted_allocations_summary	bookingfrontend	en	{{count}} parent allocation(s) were also deleted: {{ids}}

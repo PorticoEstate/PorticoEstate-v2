@@ -1106,3 +1106,14 @@ create new booking	bookingfrontend	nn	Lag ny interntildeling
 you_are_admin_for	bookingfrontend	nn	Du er: Admin for {{organization}}
 you_are	bookingfrontend	nn	Du er
 admin_for_organization	bookingfrontend	nn	Admin for {{organization}}
+admin_for_group	bookingfrontend	nn	Admin for {{group}}
+dates_without_booking	bookingfrontend	nn	{{count}} datoar i perioden har inga booking
+booking_request_mode_notice	bookingfrontend	nn	Denne kommunen lèt ikkje brukarar slette bookingar direkte. Ta kontakt med saksbehandlar.
+booking_cancelled_summary	bookingfrontend	nn	{{count}} bookingar vart avbestilte
+booking_cancel_skipped_summary	bookingfrontend	nn	{{count}} bookingar vart ikkje avbestilte
+delete_allocation_option	bookingfrontend	nn	Slett òg tildelinga når ingen andre bookingar står under henne
+cascade_would_delete_allocations	bookingfrontend	nn	Dette vil òg slette {{count}} tildeling(ar): {{ids}}
+cascade_would_leave_allocations_empty	bookingfrontend	nn	{{count}} tildeling(ar) vil bli ståande utan bookingar. Dei vert ikkje sletta med mindre du vel alternativet ovanfor.
+split_pool_active_no_effect	bookingfrontend	nn	Denne installasjonen si innstilling for deling av bookingpool er aktiv, men har ingen effekt på denne avbestillinga - det vert ikkje sendt noko varsel.
+booking_no_booking_this_date	bookingfrontend	nn	Inga booking finst på denne datoen
+cascade_deleted_allocations_summary	bookingfrontend	nn	{{count}} tildeling(ar) vart òg sletta: {{ids}}

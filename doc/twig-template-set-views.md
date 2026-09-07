@@ -178,6 +178,21 @@ The script selects `data-booking-action` and `data-booking-role`, never
 `ds-*` or `booking-*` classes. Existing visual classes may remain on the same
 elements so the unchanged base and Digdir CSS files both continue to apply.
 
+### Generic DataTables
+
+`AppDatatable` is shared infrastructure and does not use module-specific DOM
+contracts. Include it from:
+
+```twig
+{% include '@phpgwapi_components/app_datatable/app_datatable.twig' %}
+```
+
+Initialize it from the module's local page script with `AppDatatable.init()`.
+The component uses `app-button`, `app-input`, `app-table`, and `app-spinner`
+for presentation and `data-app-datatable-action` / `data-app-datatable-role`
+for behavior. Module-specific `booking-*` and Designsystemet `ds-*` classes
+must not be added to the generic component.
+
 ## What belongs in `base`
 
 Put the following in `base` when they are shared across template sets:

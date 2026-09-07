@@ -170,8 +170,8 @@
 		if (collapsible) {
 			var toggleBtn = document.createElement('button');
 			toggleBtn.type = 'button';
-			toggleBtn.className = 'booking-button ds-button';
-			toggleBtn.setAttribute('data-booking-action', 'toggle-filters');
+			toggleBtn.className = 'app-button';
+			toggleBtn.setAttribute('data-app-datatable-action', 'toggle-filters');
 			toggleBtn.setAttribute('data-variant', 'secondary');
 			toggleBtn.setAttribute('data-size', 'sm');
 			toggleBtn.textContent = filterLang.filter || 'Filter';
@@ -180,8 +180,8 @@
 
 		var resetBtn = document.createElement('button');
 		resetBtn.type = 'button';
-		resetBtn.className = 'booking-button ds-button app-datatable__reset-btn is-hidden';
-		resetBtn.setAttribute('data-booking-action', 'reset-filters');
+		resetBtn.className = 'app-button app-datatable__reset-btn is-hidden';
+		resetBtn.setAttribute('data-app-datatable-action', 'reset-filters');
 		resetBtn.setAttribute('data-variant', 'tertiary');
 		resetBtn.setAttribute('data-size', 'sm');
 		resetBtn.textContent = filterLang.resetFilter || 'Reset filter';
@@ -218,8 +218,8 @@
 
 			if (f.type === 'select') {
 				input = document.createElement('select');
-				input.className = 'booking-input ds-input';
-				input.setAttribute('data-booking-role', 'filter-input');
+				input.className = 'app-input';
+				input.setAttribute('data-app-datatable-role', 'filter-input');
 				input.id = 'filter-' + f.name;
 				if (f.multiple) input.multiple = true;
 				(f.options || []).forEach(function (opt) {
@@ -233,22 +233,22 @@
 				});
 			} else if (f.type === 'checkbox') {
 				input = document.createElement('input');
-				input.className = 'booking-input ds-input';
-				input.setAttribute('data-booking-role', 'filter-input');
+				input.className = 'app-input';
+				input.setAttribute('data-app-datatable-role', 'filter-input');
 				input.type = 'checkbox';
 				input.id = 'filter-' + f.name;
 				input.checked = savedVal != null ? !!savedVal : !!f.checked;
 			} else if (f.type === 'date') {
 				input = document.createElement('input');
-				input.className = 'booking-input ds-input';
-				input.setAttribute('data-booking-role', 'filter-input');
+				input.className = 'app-input';
+				input.setAttribute('data-app-datatable-role', 'filter-input');
 				input.type = 'date';
 				input.id = 'filter-' + f.name;
 				input.value = savedVal || f.value || '';
 			} else {
 				input = document.createElement('input');
-				input.className = 'booking-input ds-input';
-				input.setAttribute('data-booking-role', 'filter-input');
+				input.className = 'app-input';
+				input.setAttribute('data-app-datatable-role', 'filter-input');
 				input.type = 'text';
 				input.id = 'filter-' + f.name;
 				input.placeholder = f.placeholder || '';
@@ -337,7 +337,7 @@
 					var remove = document.createElement('button');
 					remove.type = 'button';
 					remove.className = 'app-datatable__filter-chip-remove';
-					remove.setAttribute('data-booking-action', 'remove-filter');
+					remove.setAttribute('data-app-datatable-action', 'remove-filter');
 					remove.setAttribute('data-filter-name', filter.name);
 					remove.setAttribute('aria-label', (filterLang.removeFilter || 'Remove filter') + ': ' + filter.label);
 					remove.title = filterLang.removeFilter || 'Remove filter';
@@ -380,7 +380,7 @@
 		});
 
 		activeFiltersEl.addEventListener('click', function (event) {
-			var remove = event.target.closest('[data-booking-action="remove-filter"]');
+			var remove = event.target.closest('[data-app-datatable-action="remove-filter"]');
 			if (!remove) return;
 			resetFilter(remove.dataset.filterName);
 			saveState();
@@ -429,13 +429,13 @@
 					if (action.type === 'link') {
 						html += '<a href="' + escapeHtml(url) + '"'
 							+ (action.target ? ' target="' + escapeHtml(action.target) + '"' : '')
-							+ ' class="booking-button ds-button" data-booking-action="datatable-link"'
+							+ ' class="app-button" data-app-datatable-action="datatable-link"'
 							+ ' data-variant="' + (action.variant || 'secondary') + '"'
 							+ ' data-size="sm">'
 							+ escapeHtml(action.label) + '</a>';
 					} else if (action.type === 'delete') {
 						html += '<button type="button"'
-							+ ' class="booking-button ds-button js-appdt-delete" data-booking-action="delete-row"'
+							+ ' class="app-button js-appdt-delete" data-app-datatable-action="delete-row"'
 							+ ' data-variant="' + (action.variant || 'tertiary') + '"'
 							+ ' data-size="sm" data-color="danger"'
 							+ ' data-action-idx="' + i + '"'
@@ -443,7 +443,7 @@
 							+ escapeHtml(action.label) + '</button>';
 					} else if (action.type === 'custom') {
 						html += '<button type="button"'
-							+ ' class="booking-button ds-button js-appdt-custom" data-booking-action="custom-row"'
+							+ ' class="app-button js-appdt-custom" data-app-datatable-action="custom-row"'
 							+ ' data-variant="' + (action.variant || 'secondary') + '"'
 							+ ' data-size="sm"'
 							+ ' data-action-idx="' + i + '">'
@@ -567,8 +567,8 @@
 					th.innerHTML = '';
 					var input = document.createElement('input');
 					input.type = 'text';
-					input.className = 'booking-input ds-input app-datatable__col-search';
-					input.setAttribute('data-booking-role', 'column-search');
+					input.className = 'app-input app-datatable__col-search';
+					input.setAttribute('data-app-datatable-role', 'column-search');
 					input.placeholder = searchLang + ' ' + title;
 					input.value = currentSearch;
 					input.title = title;
@@ -634,7 +634,7 @@
 	}
 
 	// ------------------------------------------------------------------
-	// Override the default pagingButton renderer to add DS data attributes
+	// Override the default pagingButton renderer to add common control attributes
 	// directly when buttons are created (avoids timing issues with post-processing).
 	var _origPagingButton = DataTable.ext.renderer.pagingButton._;
 	DataTable.ext.renderer.pagingButton._ = function (settings, buttonType, content, active, disabled) {
@@ -652,11 +652,11 @@
 	};
 
 	// ------------------------------------------------------------------
-	// DS spinner SVG for processing indicator
+	// Shared spinner SVG for processing indicator
 	// ------------------------------------------------------------------
-	var DS_SPINNER_HTML = '<svg class="booking-spinner ds-spinner" role="img" viewBox="0 0 50 50" data-size="md" aria-label="Loading...">'
-		+ '<circle class="booking-spinner__background ds-spinner__background" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>'
-		+ '<circle class="booking-spinner__circle ds-spinner__circle" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>'
+	var SPINNER_HTML = '<svg class="app-spinner" role="img" viewBox="0 0 50 50" data-size="md" aria-label="Loading...">'
+		+ '<circle class="app-spinner__background" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>'
+		+ '<circle class="app-spinner__circle" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>'
 		+ '</svg>';
 
 	// ------------------------------------------------------------------
@@ -683,7 +683,7 @@
 
 		// Table element
 		var tableEl = document.createElement('table');
-		tableEl.className = 'booking-table ds-table';
+		tableEl.className = 'app-table';
 		tableEl.setAttribute('data-zebra', '');
 		tableEl.setAttribute('data-hover', '');
 		tableEl.setAttribute('data-border', '');
@@ -744,8 +744,8 @@
 			infoFiltered: '(filtrert fra _MAX_ totalt)',
 			lengthMenu: 'Vis _MENU_ oppføringer',
 			zeroRecords: 'Ingen samsvarende oppføringer funnet',
-			loadingRecords: DS_SPINNER_HTML,
-			processing: DS_SPINNER_HTML,
+			loadingRecords: SPINNER_HTML,
+			processing: SPINNER_HTML,
 			paginate: {
 				first: 'Første',
 				last: 'Siste',
@@ -796,14 +796,14 @@
 			classes: {
 				search: {
 					container: 'dt-search',
-					input: 'dt-input booking-input ds-input'
+					input: 'dt-input app-input'
 				},
 				length: {
 					container: 'dt-length',
-					select: 'dt-input booking-input ds-input'
+					select: 'dt-input app-input'
 				},
 				paging: {
-					button: 'booking-button ds-button',
+					button: 'app-button',
 					active: 'current',
 					disabled: 'disabled',
 					container: 'dt-paging',
@@ -841,7 +841,7 @@
 			dtConfig.buttons = {
 				dom: {
 					button: {
-							className: 'booking-button ds-button'
+							className: 'app-button'
 					}
 				},
 				buttons: buttonDefs

@@ -804,7 +804,6 @@
 					executeRowAction(action, rowData, table, rowNode, handle, alerts);
 				}
 			);
-			container.appendChild(rowActionsToolbar.element);
 		}
 
 		// Table element
@@ -1085,6 +1084,9 @@
 
 		function initDT() {
 			table = new DataTable(tableEl, dtConfig);
+			if (rowActionsToolbar) {
+				placeRowActionsToolbar(tableEl, rowActionsToolbar.element, container);
+			}
 
 			// Column search support
 			if (config.columnSearch) {
@@ -1288,6 +1290,18 @@
 					};
 				}
 			});
+		}
+
+		function placeRowActionsToolbar(tableEl, toolbarEl, fallbackContainer) {
+			var tableWrapper = tableEl.closest('.dt-container') || fallbackContainer;
+			var buttonsContainer = tableWrapper.querySelector('.dt-buttons');
+
+			if (buttonsContainer) {
+				buttonsContainer.appendChild(toolbarEl);
+				return;
+			}
+
+			tableWrapper.insertBefore(toolbarEl, tableWrapper.firstChild);
 		}
 
 		// Wait for any lookup preloads, then init

@@ -243,6 +243,10 @@
 	margin-bottom: var(--app-datatable-space-sm, 0.5rem);
 }
 
+.app-datatable .dt-buttons .app-datatable__row-actions {
+	margin-bottom: 0;
+}
+
 .app-datatable .app-button:disabled {
 	opacity: 0.5;
 	cursor: default;

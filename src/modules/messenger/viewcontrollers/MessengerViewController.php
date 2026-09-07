@@ -26,61 +26,7 @@ class MessengerViewController
 	}
 
 	/**
-	 * Register/validate a legacy static JS asset for inclusion in the page.
-	 *
-	 * @param string $app Application name the asset belongs to
-	 * @param string $package Asset package/group name
-	 * @param string $name File name of the asset (with or without .js extension)
-	 * @param bool $endOfPage Whether to load the asset at the end of the page
-	 * @param array $config Extra loader options, e.g. ['combine' => true]
-	 * @return mixed Return value of phpgwapi_js::validate_file()
-	 */
-	public static function add_javascript($app, $package, $name, $endOfPage = false, array $config = [])
-	{
-		return \phpgwapi_js::getInstance()->validate_file($package, str_replace('.js', '', $name), $app, $endOfPage, $config);
-	}
-
-	/**
-	 * Build the DataTables i18n/localization strings used by the inbox grid.
-	 *
-	 * @return array Nested array of DataTables option => localized value(s)
-	 */
-	private function getDatatableI18n(): array
-	{
-		return [
-			'datatable' => [
-				'emptyTable' => json_encode(lang('No data available in table')),
-				'info' => json_encode(lang('Showing _START_ to _END_ of _TOTAL_ entries')),
-				'infoEmpty' => json_encode(lang('Showing 0 to 0 of 0 entries')),
-				'infoFiltered' => json_encode(lang('(filtered from _MAX_ total entries)')),
-				'loadingRecords' => json_encode(lang('Loading...')),
-				'processing' => json_encode(lang('Processing...')),
-				'search' => json_encode(lang('Search')),
-				'zeroRecords' => json_encode(lang('No matching records found')),
-				'paginate' => json_encode([
-					'first' => lang('first'),
-					'last' => lang('last'),
-					'next' => lang('next'),
-					'previous' => lang('prev'),
-				]),
-				'aria' => json_encode([
-					'sortAscending' => lang(': activate to sort column ascending'),
-					'sortDescending' => lang(': activate to sort column descending'),
-				]),
-				'select' => json_encode([
-					'rows' => ['0' => '', '_' => '%d ' . lang('rows selected')],
-				]),
-			],
-			'lengthmenu' => ['_' => json_encode([[10, 25, 50], [10, 25, 50]])],
-			'csv_download' => ['_' => json_encode([
-				'show_button' => false,
-				'title' => lang('download visible data'),
-			])],
-		];
-	}
-
-	/**
-	 * Render the inbox page, registering the DataTables assets it depends on.
+	 * Render the inbox page.
 	 *
 	 * @param Request $request
 	 * @param Response $response
@@ -90,44 +36,18 @@ class MessengerViewController
 	{
 		$this->menuSelection = 'inbox';
 		Settings::getInstance()->update('flags', ['app_header' => 'messenger::inbox']);
-		\phpgw::import_class('phpgwapi.jquery');
-		\phpgw::import_class('phpgwapi.css');
-		\phpgw::import_class('phpgwapi.js');
-		\phpgwapi_jquery::load_widget('core');
-		self::add_javascript('phpgwapi', 'jquery', 'common.js', false, ['combine' => true]);
-		foreach ([
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net/js/dataTables.min.js',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-dt/js/dataTables.dataTables.min.js',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons/js/dataTables.buttons.min.js',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons-dt/js/buttons.dataTables.min.js',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive/js/dataTables.responsive.min.js',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive-dt/js/responsive.dataTables.min.js',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select/js/dataTables.select.min.js',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select-dt/js/select.dataTables.min.js',
-			'phpgwapi/js/DataTables3/plugins/dataTables.inputPaging.js',
-		] as $asset)
-		{
-			\phpgwapi_js::getInstance()->add_external_file($asset, false, ['combine' => false]);
-		}
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.min.js', false, ['combine' => true]);
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js', false, ['combine' => true]);
-		foreach ([
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-dt/css/dataTables.dataTables.min.css',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons-dt/css/buttons.dataTables.min.css',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive-dt/css/responsive.dataTables.min.css',
-			'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select-dt/css/select.dataTables.min.css',
-			'phpgwapi/js/DataTables3/plugins/dataTables.inputPaging.min.css',
-		] as $asset)
-		{
-			\phpgwapi_css::getInstance()->add_external_file($asset);
-		}
+		$user = Settings::getInstance()->get('user');
+		$rowsPerPage = isset($user['preferences']['common']['maxmatchs']) && (int) $user['preferences']['common']['maxmatchs'] > 0
+			? (int) $user['preferences']['common']['maxmatchs']
+			: 10;
 
 		return $this->render($request, $response, '@views/inbox/messenger_inbox.twig', [
 			'api_url' => \phpgw::link('/messenger/messages'),
 			'compose_url' => \phpgw::link('/messenger/view/compose'),
 			'view_url' => \phpgw::link('/messenger/view/messages/__MESSAGE_ID__'),
 			'delete_url' => \phpgw::link('/messenger/view/messages/__MESSAGE_ID__/delete'),
-			'jquery_phpgw_i18n' => $this->getDatatableI18n(),
+			'rows_per_page' => $rowsPerPage,
+			'length_menu' => [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3],
 			'statuses' => [
 				['id' => '', 'name' => lang('All')],
 				['id' => 'N', 'name' => lang('New')],

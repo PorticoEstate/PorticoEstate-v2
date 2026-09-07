@@ -150,7 +150,7 @@ class NotesViewController
 			'jquery_phpgw_i18n' => $this->getDatatableI18n(),
 			'categories' => $this->getCategoriesList(true),
 			'filters' => [
-				['id' => 'none', 'name' => lang('All')],
+				['id' => '', 'name' => lang('All')],
 				['id' => 'yours', 'name' => lang('Yours')],
 				['id' => 'private', 'name' => lang('Private')],
 			],

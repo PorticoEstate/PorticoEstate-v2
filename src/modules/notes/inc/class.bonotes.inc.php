@@ -93,7 +93,6 @@ class notes_bonotes
 			$this->read_sessiondata();
 			$this->use_session = True;
 
-			//XXX Caeies : start could use the 'all' value, perhaps think on using -1 ?
 			$start		= Sanitizer::get_var('start');
 			$query		= Sanitizer::get_var('query', 'string');
 			$sort		= Sanitizer::get_var('sort', 'string');
@@ -103,7 +102,7 @@ class notes_bonotes
 
 			$this->start = $start;
 
-			if ($this->start == 'all')
+			if ($this->start == -1)
 			{
 				$this->limit = False;
 				$this->start = 0;

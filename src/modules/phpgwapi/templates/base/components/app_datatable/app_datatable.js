@@ -298,45 +298,77 @@
 			} catch (e) { /* ignore */ }
 		}
 
-		function getActiveFilterNames() {
+		function getActiveFilters() {
 			var vals = getValues();
-			var names = [];
+			var activeFilters = [];
 			inputs.forEach(function (inp) {
 				var v = vals[inp.config.name];
 				var label = inp.config.label || inp.config.name;
 				if (inp.config.type === 'checkbox') {
-					if (v) names.push(label);
+					if (v) activeFilters.push({name: inp.config.name, label: label});
 				} else if (inp.config.type === 'select') {
 					var firstOpt = inp.config.options && inp.config.options[0];
-					if (v && firstOpt && String(v) !== String(firstOpt.value)) names.push(label);
+					if (v && firstOpt && String(v) !== String(firstOpt.value)) {
+						activeFilters.push({name: inp.config.name, label: label});
+					}
 				} else {
-					if (v) names.push(label);
+					if (v) activeFilters.push({name: inp.config.name, label: label});
 				}
 			});
-			return names;
+			return activeFilters;
 		}
 
 		function updateIndicator() {
-			var names = getActiveFilterNames();
-			if (names.length > 0) {
-				activeFiltersEl.textContent = (filterLang.activeFilters || 'Active filters') + ': ' + names.join(', ');
+			var activeFilters = getActiveFilters();
+			activeFiltersEl.innerHTML = '';
+			if (activeFilters.length > 0) {
+				var label = document.createElement('span');
+				label.className = 'app-datatable__active-filters-label';
+				label.textContent = (filterLang.activeFilters || 'Active filters') + ':';
+				activeFiltersEl.appendChild(label);
+
+				activeFilters.forEach(function (filter) {
+					var chip = document.createElement('span');
+					chip.className = 'app-datatable__filter-chip';
+					var chipLabel = document.createElement('span');
+					chipLabel.textContent = filter.label;
+					chip.appendChild(chipLabel);
+
+					var remove = document.createElement('button');
+					remove.type = 'button';
+					remove.className = 'app-datatable__filter-chip-remove';
+					remove.setAttribute('data-booking-action', 'remove-filter');
+					remove.setAttribute('data-filter-name', filter.name);
+					remove.setAttribute('aria-label', (filterLang.removeFilter || 'Remove filter') + ': ' + filter.label);
+					remove.title = filterLang.removeFilter || 'Remove filter';
+					remove.textContent = '\u00d7';
+					chip.appendChild(remove);
+					activeFiltersEl.appendChild(chip);
+				});
 				resetBtn.classList.remove('is-hidden');
 			} else {
-				activeFiltersEl.textContent = '';
 				resetBtn.classList.add('is-hidden');
+			}
+		}
+
+		function resetFilter(name) {
+			var input = inputs.find(function (candidate) {
+				return candidate.config.name === name;
+			});
+			if (!input) return;
+
+			if (input.el.type === 'checkbox') {
+				input.el.checked = !!input.config.checked;
+			} else if (input.el.tagName === 'SELECT') {
+				input.el.selectedIndex = 0;
+			} else {
+				input.el.value = input.config.value || '';
 			}
 		}
 
 		function reset() {
 			inputs.forEach(function (inp) {
-				var el = inp.el;
-				if (el.type === 'checkbox') {
-					el.checked = !!inp.config.checked;
-				} else if (el.tagName === 'SELECT') {
-					el.selectedIndex = 0;
-				} else {
-					el.value = inp.config.value || '';
-				}
+				resetFilter(inp.config.name);
 			});
 			saveState();
 			updateIndicator();
@@ -344,6 +376,15 @@
 
 		resetBtn.addEventListener('click', function () {
 			reset();
+			wrapper.dispatchEvent(new Event('filter-change'));
+		});
+
+		activeFiltersEl.addEventListener('click', function (event) {
+			var remove = event.target.closest('[data-booking-action="remove-filter"]');
+			if (!remove) return;
+			resetFilter(remove.dataset.filterName);
+			saveState();
+			updateIndicator();
 			wrapper.dispatchEvent(new Event('filter-change'));
 		});
 
@@ -361,7 +402,7 @@
 		return {
 			element: wrapper,
 			getValues: getValues,
-			getActiveFilterNames: getActiveFilterNames,
+			getActiveFilters: getActiveFilters,
 			inputs: inputs,
 			reset: reset,
 			showResetBtn: function () { resetBtn.classList.remove('is-hidden'); },

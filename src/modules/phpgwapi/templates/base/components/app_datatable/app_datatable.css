@@ -78,10 +78,45 @@
 }
 
 .app-datatable__active-filters {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.35rem;
 	margin-bottom: var(--booking-size-2, 0.5rem);
 	font-size: var(--booking-size-mode-font-size--sm, 0.875rem);
 	color: var(--booking-color-accent-text-default, #0062ba);
 	font-weight: 500;
+}
+
+.app-datatable__filter-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 0.2rem 0.35rem 0.2rem 0.6rem;
+	border: 1px solid #bfc8d4;
+	border-radius: 999px;
+	background: #f5f7fa;
+	color: #1d2a39;
+	font-weight: 400;
+}
+
+.app-datatable__filter-chip-remove {
+	width: 1.35rem;
+	height: 1.35rem;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	font-size: 1.1rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.app-datatable__filter-chip-remove:hover,
+.app-datatable__filter-chip-remove:focus-visible {
+	background: #e9eef5;
 }
 
 /* Filter toolbar (toggle + reset buttons) */

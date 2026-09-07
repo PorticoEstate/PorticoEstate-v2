@@ -1941,11 +1941,27 @@ export function useBuildingAgeGroups(building_id?: number): UseQueryResult<IAgeG
 }
 
 
+/**
+ * The API omits `resources` entirely for a season that has no resources bound to
+ * it, so the key is absent rather than null and `?? []` would not reach it. Every
+ * consumer calls `season.resources.some(...)` unguarded, so normalise once here,
+ * at the origin, and hand each of them an array.
+ *
+ * Seasons that already carry an array are returned untouched, so the only new
+ * object identities are the ones we had to create.
+ */
+function withNormalisedResources(seasons: Season[]): Season[] {
+	return seasons.map(season =>
+		Array.isArray(season.resources) ? season : {...season, resources: []}
+	);
+}
+
 export function useBuildingSeasons(building_id?: number): UseQueryResult<Season[]> {
 	return useQuery(
 		{
 			queryKey: ['building_seasons', building_id],
 			queryFn: building_id === undefined ? skipToken : () => fetchBuildingSeasons(building_id), // Fetch function
+			select: withNormalisedResources, // Module scope, so react-query can memoise the result
 			retry: 2, // Number of retry attempts if the query fails
 			enabled: building_id !== undefined,
 			refetchOnWindowFocus: false, // Do not refetch on window focus by default

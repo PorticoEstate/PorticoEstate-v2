@@ -60,8 +60,8 @@
 			}
 		],
 		order: [[1, 'desc']],
-		pageLength: 25,
-		lengthMenu: [10, 25, 50],
+		pageLength: config.pageLength,
+		lengthMenu: config.lengthMenu,
 		lang: {
 			search: config.lang.search,
 			emptyTable: config.lang.emptyTable,

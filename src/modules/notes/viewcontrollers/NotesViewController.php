@@ -106,6 +106,11 @@ class NotesViewController
 	{
 		$this->menuSelection = 'notes';
 		Settings::getInstance()->update('flags', ['app_header' => lang('notes') . ': ' . lang('list notes')]);
+		$user = Settings::getInstance()->get('user');
+		$rowsPerPage = isset($user['preferences']['common']['maxmatchs']) && (int) $user['preferences']['common']['maxmatchs'] > 0
+			? (int) $user['preferences']['common']['maxmatchs']
+			: 10;
+		$lengthMenu = [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3];
 
 		return $this->render($request, $response, '@views/list/notes_list.twig', [
 			'api_url' => \phpgw::link('/notes/notes'),
@@ -119,6 +124,8 @@ class NotesViewController
 				['id' => 'yours', 'name' => lang('Yours')],
 				['id' => 'private', 'name' => lang('Private')],
 			],
+			'rows_per_page' => $rowsPerPage,
+			'length_menu' => $lengthMenu,
 		]);
 	}
 

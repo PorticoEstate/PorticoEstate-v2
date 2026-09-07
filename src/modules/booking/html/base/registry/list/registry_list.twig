@@ -16,6 +16,8 @@
 		downloadUrl: '/booking/registry/{{ registry_type|e('js') }}/download',
 		editBaseUrl: '/booking/view/registry/{{ registry_type|e('js') }}/',
 		addUrl: '/booking/view/registry/{{ registry_type|e('js') }}/add',
+		pageLength: {{ rows_per_page|default(10) }},
+		lengthMenu: {{ length_menu|default([10, 25, 50])|json_encode|raw }},
 		permissions: {
 			read: {{ permissions.read ? 'true' : 'false' }},
 			create: {{ permissions.create ? 'true' : 'false' }},

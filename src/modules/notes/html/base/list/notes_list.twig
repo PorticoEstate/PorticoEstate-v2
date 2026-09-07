@@ -23,6 +23,8 @@
 		deleteUrlTemplate: '{{ delete_url_template|replace({'__NOTE_ID__': '{id}'})|e('js') }}',
 		categories: {{ categories|json_encode|raw }},
 		filters: {{ filters|json_encode|raw }},
+		pageLength: {{ rows_per_page|default(10) }},
+		lengthMenu: {{ length_menu|default([10, 25, 50])|json_encode|raw }},
 		lang: {
 			id: '{{ lang('ID')|e('js') }}',
 			date: '{{ lang('Date')|e('js') }}',

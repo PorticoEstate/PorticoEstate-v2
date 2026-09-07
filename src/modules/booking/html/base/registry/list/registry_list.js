@@ -114,7 +114,8 @@
 				downloadUrl: CFG.downloadUrl,
 				downloadLang: {label: L.download},
 				order: [[0, 'asc']],
-				pageLength: 25,
+				pageLength: CFG.pageLength,
+				lengthMenu: CFG.lengthMenu,
 				lang: {
 					emptyTable: L.emptyTable
 				}

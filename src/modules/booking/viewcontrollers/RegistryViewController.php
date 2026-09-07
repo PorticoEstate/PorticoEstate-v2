@@ -33,6 +33,7 @@ class RegistryViewController
 		$type = $args['type'] ?? '';
 
 		try {
+			$pagination = $this->getDatatablePagination();
 			$config = $this->getValidatedConfig($type);
 			if (!$config) {
 				return ResponseHelper::sendErrorResponse(['error' => "Registry type '{$type}' not found"], 404);
@@ -52,6 +53,8 @@ class RegistryViewController
 				'registry_type' => $type,
 				'registry_name' => $displayName,
 				'permissions' => $permissions,
+				'rows_per_page' => $pagination['rows_per_page'],
+				'length_menu' => $pagination['length_menu'],
 			]);
 
 			$html = $this->legacyView->render($componentHtml, 'booking', $menuSelection);
@@ -64,6 +67,19 @@ class RegistryViewController
 				500
 			);
 		}
+	}
+
+	private function getDatatablePagination(): array
+	{
+		$user = Settings::getInstance()->get('user');
+		$rowsPerPage = isset($user['preferences']['common']['maxmatchs']) && (int) $user['preferences']['common']['maxmatchs'] > 0
+			? (int) $user['preferences']['common']['maxmatchs']
+			: 10;
+
+		return [
+			'rows_per_page' => $rowsPerPage,
+			'length_menu' => [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3],
+		];
 	}
 
 	public function edit(Request $request, Response $response, array $args): Response

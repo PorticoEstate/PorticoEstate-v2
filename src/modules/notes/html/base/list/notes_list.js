@@ -59,6 +59,8 @@
 				variant: 'tertiary'
 			}
 		],
+		rowActionsDisplay: 'contextMenu',
+		rowActionsToolbar: true,
 		order: [[1, 'desc']],
 		pageLength: config.pageLength,
 		lengthMenu: config.lengthMenu,

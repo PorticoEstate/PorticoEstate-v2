@@ -678,6 +678,16 @@ class booking_uiapplication extends booking_uicommon
 
 		$data['datatable']['actions'] = array();
 
+		$data['datatable']['actions'][] = array(
+			'my_name'		 => 'show',
+			'statustext'	 => lang('show application'),
+			'text'			 => lang('show'),
+			'action'		 => phpgw::link('/index.php', array(
+				'menuaction' => 'booking.uiapplication.show'
+			)),
+			'parameters'	 => json_encode($parameters)
+		);
+
 		if ($this->acl_delete)
 		{
 			$data['datatable']['actions'][] = array(

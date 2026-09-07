@@ -187,11 +187,50 @@ contracts. Include it from:
 {% include '@phpgwapi_components/app_datatable/app_datatable.twig' %}
 ```
 
+The component owns the DataTables 3 assets, inputPaging plugin, and contextMenu
+plugin assets. Module controllers should not register those assets manually for
+pages that use this component.
+
 Initialize it from the module's local page script with `AppDatatable.init()`.
 The component uses `app-button`, `app-input`, `app-table`, and `app-spinner`
 for presentation and `data-app-datatable-action` / `data-app-datatable-role`
-for behavior. Module-specific `booking-*` and Designsystemet `ds-*` classes
-must not be added to the generic component.
+for behavior. Module-specific `booking-*`, `todo-*`, `notes-*`, `messenger-*`,
+and Designsystemet `ds-*` classes must not be added to the generic component.
+
+Typical module usage:
+
+```js
+AppDatatable.init({
+    id: 'example-datatable',
+    ajax: {url: '/example/items'},
+    serverSide: true,
+    newItem: {label: L.add, url: CFG.addUrl},
+    columns: columns,
+    filters: filters,
+    rowActions: rowActions,
+    rowActionsDisplay: 'contextMenu',
+    rowActionsToolbar: true,
+    pageLength: CFG.pageLength,
+    lengthMenu: CFG.lengthMenu
+});
+```
+
+When `rowActionsDisplay` is `contextMenu`, the row actions are not appended as
+extra table columns. The same action definitions are available from the row
+context menu. When `rowActionsToolbar` is `true`, those actions are also shown
+in the DataTables button row next to the normal buttons. Toolbar action buttons
+are disabled until the user selects a row. Clicking a row toggles selection on
+and off; right-clicking a row also selects it before opening the context menu.
+
+Current migrated list pages using this shared behavior include:
+
+- `todo/html/base/index/todo_datatable.*`
+- `notes/html/base/list/notes_list.*`
+- `messenger/html/base/inbox/messenger_inbox.*`
+- booking documents, registry, and hospitality list pages under `booking/html/base/**/list/`
+
+The Todo legacy `class.uitodo.inc.php` shim and old `todo_index.*` list files
+were removed after the Todo list moved fully to `todo_datatable.*`.
 
 ## What belongs in `base`
 
@@ -203,6 +242,7 @@ Put the following in `base` when they are shared across template sets:
 - neutral DOM IDs and `data-*` attributes
 - reusable components with a stable, framework-neutral contract
 - domain behavior such as filtering, date calculations, and validation
+- generic datatable wiring when the table contract is shared across template sets
 
 Use neutral `data-booking-*` hooks when the shared JavaScript generates markup.
 Keep visual classes such as `booking-button`, `ds-button`, `booking-table`, or
@@ -236,7 +276,11 @@ shared JavaScript implementations for `application/show`,
 8. Use `data-booking-*` for JavaScript behavior hooks.
 9. Use `@base_views` and `@<template_set>_views` for same-named assets.
 10. Check that all JavaScript selectors still match the shared DOM contract.
-11. Test both the generic template set and every implemented override.
+11. Prefer `AppDatatable` over `datatable2.twig` for migrated list pages.
+12. Configure shared row actions with `rowActions`; use `rowActionsDisplay: 'contextMenu'`
+    and `rowActionsToolbar: true` when the list should keep context-menu actions without
+    visible action columns.
+13. Test both the generic template set and every implemented override.
 
 ## Validation
 

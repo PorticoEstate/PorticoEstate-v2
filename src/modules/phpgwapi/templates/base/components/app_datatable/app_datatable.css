@@ -170,6 +170,72 @@
 	margin-bottom: var(--app-datatable-space-sm, 0.5rem);
 }
 
+.dt-button-collection button.app-button.buttons-columnVisibility {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 0.5rem;
+	min-width: 12rem;
+	width: 100%;
+	padding: 0.55rem 0.75rem;
+	border: 1px solid #b7c3d0;
+	border-left: 4px solid #94a3b8;
+	border-radius: 3px;
+	background: #ffffff;
+	color: #1f2937;
+	font-weight: 600;
+	text-align: left;
+	opacity: 1;
+}
+
+.dt-button-collection button.app-button.buttons-columnVisibility::before {
+	content: "\00a0";
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.15rem;
+	height: 1.15rem;
+	border: 2px solid #334155;
+	border-radius: 3px;
+	background: #ffffff;
+	color: #ffffff;
+	font-size: 0.9rem;
+	font-weight: 700;
+	line-height: 1;
+	flex: 0 0 auto;
+}
+
+.dt-button-collection button.app-button.buttons-columnVisibility.active,
+.dt-button-collection button.app-button.buttons-columnVisibility.dt-button-active {
+	border-color: #0f4c81;
+	border-left-color: #0b395f;
+	background: #0f4c81;
+	color: #ffffff;
+}
+
+.dt-button-collection button.app-button.buttons-columnVisibility.active::before,
+.dt-button-collection button.app-button.buttons-columnVisibility.dt-button-active::before {
+	content: "\2713";
+	border-color: #ffffff;
+	background: #ffffff;
+	color: #0b395f;
+}
+
+.dt-button-collection button.app-button.buttons-columnVisibility:hover,
+.dt-button-collection button.app-button.buttons-columnVisibility:focus-visible {
+	border-color: #0f4c81;
+	background: #e8f2fb;
+	color: #0b395f;
+}
+
+.dt-button-collection button.app-button.buttons-columnVisibility.active:hover,
+.dt-button-collection button.app-button.buttons-columnVisibility.active:focus-visible,
+.dt-button-collection button.app-button.buttons-columnVisibility.dt-button-active:hover,
+.dt-button-collection button.app-button.buttons-columnVisibility.dt-button-active:focus-visible {
+	background: #0b395f;
+	color: #ffffff;
+}
+
 /* ---------------------------------------------------------------
 	Pagination — generic buttons inside the DT paging container.
    --------------------------------------------------------------- */

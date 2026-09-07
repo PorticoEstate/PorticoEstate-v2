@@ -76,6 +76,11 @@ export interface IAPIEvent extends IAPIScheduleEntity {
 	equipment?: string;     // conditional @Expose + nullable
 	access_requested?: number;  // no @Expose + default 0
 	participant_limit?: number;  // conditional @Expose + nullable
+	// @Expose (unconditional). Computed server-side (ScheduleEntityService::
+	// computeCancellationClosesApplication) on all 4 schedule endpoints (buildings/resources/
+	// organizations/applications), curl-verified present and varying (true/false) on
+	// buildings/{id}/schedule — the endpoint the calendar popper itself reads (#23473).
+	cancellation_closes_application: boolean;
 }
 
 

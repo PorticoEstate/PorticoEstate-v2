@@ -1117,3 +1117,4 @@ cascade_would_leave_allocations_empty	bookingfrontend	nn	{{count}} tildeling(ar)
 split_pool_active_no_effect	bookingfrontend	nn	Denne installasjonen si innstilling for deling av bookingpool er aktiv, men har ingen effekt på denne avbestillinga - det vert ikkje sendt noko varsel.
 booking_no_booking_this_date	bookingfrontend	nn	Inga booking finst på denne datoen
 cascade_deleted_allocations_summary	bookingfrontend	nn	{{count}} tildeling(ar) vart òg sletta: {{ids}}
+event_cancellation_closes_application	bookingfrontend	nn	Å avbestille dette arrangementet vil lukke søknaden det høyrer til.

@@ -16,10 +16,14 @@ import styles from "./manage-modal.module.scss";
 
 export type TFunction = (key: string, options?: any) => string;
 
-/** IAPIScheduleEntity itself carries no season_id — each concrete entity type declares it, and
- *  the core needs it generically to resolve the season name shown in the title's meta line. */
+/** IAPIScheduleEntity itself carries no season_id — allocation and booking each declare it, and
+ *  the core reads it generically to resolve the season name shown in the title's meta line.
+ *  Optional, not required: an event has NO season_id at all (Event.php carries no such column —
+ *  events are not scheduled against a season the way allocations/bookings are), so `seasonName`
+ *  simply never matches and `seasonDisplay` falls to its existing '—' case, honestly reporting
+ *  "no season" rather than a bug being papered over with an invented value. */
 interface ManageModalScheduleEntity extends IAPIScheduleEntity {
-	season_id: number;
+	season_id?: number;
 }
 
 type Step = 'overview' | 'scope' | 'confirm' | 'done';
@@ -59,6 +63,19 @@ export interface ManageModalOccurrenceView {
  * scope/confirm/done render structure and the `cancelMode` tri-state below are all shared and
  * live in this file, never in an adapter — an adapter supplies WORDING, ENDPOINTS and per-entity
  * INTERPRETATION of its own preview/result shape, never a branch the core itself takes.
+ *
+ * ONE exception, and it is the ONLY branch the core itself takes on adapter data:
+ * `cancelReach`. 'slim4' (allocation, booking) runs the scope→confirm→done wizard below exactly
+ * as before. 'legacy' (event) never leaves the overview step — events have no Slim4 cancel
+ * endpoint, no preview, no request-vs-delete arm (the config toggle is hard-delete vs
+ * soft-deactivate, decided entirely server-side), so there is nothing for a wizard to preview.
+ * Its destructive action is a plain deep link to the guarded legacy page, the same pattern as
+ * this modal's own edit/register-participants links, gated on `buildCancelHref`/`cancelExtras`
+ * rather than the mutation hooks below. A 'legacy' adapter still supplies every slim4-only field
+ * (useCancelPreviewMutation, buildRequestBody, mapOccurrences, ...) so every adapter keeps the
+ * SAME required shape and the hooks below are still called unconditionally, in the same order,
+ * on every render, regardless of adapter — only their return values go unused. See
+ * event-manage-modal.tsx's adapter for what it fills those with and why that's safe.
  */
 export interface ManageModalAdapter<
 	TEntity extends ManageModalScheduleEntity,
@@ -72,11 +89,11 @@ export interface ManageModalAdapter<
 	youAreParams: (entity: TEntity) => Record<string, string>;
 	overviewExtraRows?: (entity: TEntity, t: TFunction) => ReactNode;
 	newBookingAllocationId: (entity: TEntity) => number | undefined;
-	registerParticipantsType: 'allocation' | 'booking';
+	registerParticipantsType: 'allocation' | 'booking' | 'event';
 	editMenuaction: string;
 	editLabelLangKey: string;
 	buildEditParams: (entity: TEntity) => Record<string, string | number | (string | number)[]>;
-	deleteFlagKey: 'user_can_delete_allocations' | 'user_can_delete_bookings';
+	deleteFlagKey: 'user_can_delete_allocations' | 'user_can_delete_bookings' | 'user_can_delete_events';
 	cancelActionLangKey: string;
 	requestModeNoticeLangKey: string;
 	seriesChangedLangKey: string;
@@ -99,6 +116,19 @@ export interface ManageModalAdapter<
 	 *  allocation. Rendered from the preview's STRUCTURED fields only — never server-authored prose. */
 	confirmExtras: (preview: TPreview, extraState: unknown, t: TFunction) => ReactNode;
 	doneSummary: (result: TResult, t: TFunction) => ReactNode;
+	/**
+	 * `cancelReach === 'legacy'` only (optional here, not split into a second adapter shape, so
+	 * the required fields above stay identical for every existing caller — see this file's other
+	 * docblock on cancelReach for why). Builds the client-constructed deep link to the guarded
+	 * legacy cancel page — never a server-supplied `cancel_link` field (#21147 trap: that field
+	 * exists on the wire but is a stale/legacy artifact, not meant as this client's navigation
+	 * source).
+	 */
+	buildCancelHref?: (entity: TEntity) => string;
+	/** `cancelReach === 'legacy'` only. The overview-screen disclosure rendered from the entity's
+	 *  own STRUCTURED fields (never server-authored prose) — the equivalent of confirmExtras, but
+	 *  shown on the overview itself, since a 'legacy' adapter has no confirm step to show it on. */
+	cancelExtras?: (entity: TEntity, t: TFunction) => ReactNode;
 }
 
 /**
@@ -221,13 +251,22 @@ function ManageModal<
 	const cancelMode: CancelMode =
 		settingsLoading ? 'loading' : settingsUnresolved ? 'unresolved' : isRequestMode ? 'request' : 'delete';
 
-	const cancelLabel = cancelMode === 'loading'
-		? t('bookingfrontend.loading...')
-		: cancelMode === 'unresolved'
-			? t('bookingfrontend.cancel_mode_unavailable')
-			: cancelMode === 'request'
-				? t('bookingfrontend.request_cancellation')
-				: t(adapter.cancelActionLangKey);
+	// 'legacy' reads its own cancelActionLangKey ALWAYS, ignoring cancelMode entirely — the
+	// request/delete split above is computed from `adapter.deleteFlagKey`, which for a 'legacy'
+	// adapter names the server's hard-delete-vs-soft-deactivate toggle, NOT a request-mode arm
+	// (events have none, see the CancelReach docblock). Were this label to fall through to the
+	// generic branch below, an event whose delete flag happened to read false would render "Be om
+	// avbestilling" — booking's request-mode wording, for a capability this installation's event
+	// flow does not have.
+	const cancelLabel = adapter.cancelReach === 'legacy'
+		? t(adapter.cancelActionLangKey)
+		: cancelMode === 'loading'
+			? t('bookingfrontend.loading...')
+			: cancelMode === 'unresolved'
+				? t('bookingfrontend.cancel_mode_unavailable')
+				: cancelMode === 'request'
+					? t('bookingfrontend.request_cancellation')
+					: t(adapter.cancelActionLangKey);
 
 	const occurrenceLabel = useMemo(() => {
 		const from = DateTime.fromISO(entity.from_ as unknown as string);
@@ -495,8 +534,36 @@ function ManageModal<
 							    `requestModeNoticeLangKey` Alert the scope/confirm steps show is
 							    surfaced here too, in its place — so the honest word ("contact the
 							    building") is visible on the entry screen itself, not only reachable
-							    by clicking through a route this control no longer offers. */}
-							{cancelMode === 'request' ? (
+							    by clicking through a route this control no longer offers.
+
+							    `adapter.cancelReach === 'legacy'` is checked FIRST, ahead of
+							    `cancelMode`, and is the only place in this file that branches on
+							    it. An event's `cancelMode` is still computed above (from
+							    `deleteFlagKey`, which for events names the hard-delete-vs-
+							    soft-deactivate config toggle, never a request-mode arm — see the
+							    CancelReach docblock at the top of this file) but is deliberately
+							    NEVER consulted here: checking it first would let a false
+							    `user_can_delete_events` fall into the 'request' branch below and
+							    render booking's request-mode notice for a capability events do
+							    not have. 'legacy' never calls `setStep` — the wizard below
+							    (scope/confirm/done) is structurally unreachable for it — its
+							    destructive action is a plain deep link to the guarded legacy
+							    page instead, the same unconditional pattern as the edit/
+							    register-participants links above it: no `cancelMode` gating,
+							    since the server enforces ownership and the not-started guard
+							    when the link is followed, not this client. */}
+							{adapter.cancelReach === 'legacy' ? (
+								<>
+									{adapter.cancelExtras?.(entity, t)}
+									{isInFuture && (
+										<Button asChild variant="secondary" data-color="danger" className={styles.overviewActionButton}>
+											<Link href={adapter.buildCancelHref!(entity)} target="_blank">
+												{cancelLabel}
+											</Link>
+										</Button>
+									)}
+								</>
+							) : cancelMode === 'request' ? (
 								<Alert data-color="warning">
 									<Paragraph data-size="sm">{t(adapter.requestModeNoticeLangKey)}</Paragraph>
 								</Alert>
@@ -773,7 +840,13 @@ function ManageModal<
 					<Button
 						variant="primary"
 						data-color="accent"
-						disabled={previewMutation.isPending || (scope === 'until' && repeatUntil === '')}
+						// Carried in from #23430 (⑫): this button's two siblings (the overview
+						// button above and the confirm step's destructive button below) both
+						// disable on `cancelMode === 'unresolved' || cancelMode === 'loading'`;
+						// this one didn't. Unreachable today — the overview button that navigates
+						// here is itself disabled in both those modes — but a one-term addition
+						// for the same reason its siblings state theirs, not a second discriminator.
+						disabled={previewMutation.isPending || (scope === 'until' && repeatUntil === '') || cancelMode === 'unresolved' || cancelMode === 'loading'}
 						onClick={goToConfirm}
 					>
 						{previewMutation.isPending && <Spinner aria-hidden={true} data-size="xs"/>}

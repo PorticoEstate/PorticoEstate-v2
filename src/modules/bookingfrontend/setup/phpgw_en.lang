@@ -1117,3 +1117,4 @@ cascade_would_leave_allocations_empty	bookingfrontend	en	{{count}} allocation(s)
 split_pool_active_no_effect	bookingfrontend	en	This installation's booking pool-split setting is active, but has no effect on this cancellation - no notification is sent.
 booking_no_booking_this_date	bookingfrontend	en	No booking exists on this date
 cascade_deleted_allocations_summary	bookingfrontend	en	{{count}} parent allocation(s) were also deleted: {{ids}}
+event_cancellation_closes_application	bookingfrontend	en	Cancelling this event will close the application it belongs to.

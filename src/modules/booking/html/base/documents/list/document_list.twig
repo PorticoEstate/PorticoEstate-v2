@@ -3,7 +3,7 @@
 {% block title %}{{ lang('Documents') }}{% endblock %}
 
 {% block content %}
-{% include '@views/components/datatable/datatable.twig' %}
+{% include '@phpgwapi_components/app_datatable/app_datatable.twig' %}
 {% endblock %}
 
 {% block scripts %}
@@ -12,6 +12,8 @@
 		canCreate: {{ can_create ? 'true' : 'false' }},
 		canWrite: {{ can_write ? 'true' : 'false' }},
 		canDelete: {{ can_delete ? 'true' : 'false' }},
+		pageLength: {{ rows_per_page|default(10) }},
+		lengthMenu: {{ length_menu|default([10, 25, 50])|json_encode|raw }},
 		addDocumentUrl: '{{ phpgw_link('/index.php', {menuaction: 'booking.uidocument_building.add'})|e('js') }}',
 		lang: {
 			addDocument: '{{ lang("add document")|e('js') }}',

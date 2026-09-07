@@ -1,0 +1,282 @@
+.app-datatable {
+	padding: var(--app-datatable-space-lg, 1rem) 0;
+}
+
+.app-datatable .app-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 2.25rem;
+	padding: 0.5rem 0.9rem;
+	border: 1px solid #20568f;
+	border-radius: 4px;
+	background: #2a72ba;
+	color: #fff;
+	font: inherit;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.app-datatable .app-button[data-variant="secondary"] {
+	background: #fff;
+	color: #20568f;
+}
+
+.app-datatable .app-input {
+	box-sizing: border-box;
+	min-height: 2.25rem;
+	padding: 0.5rem;
+	border: 1px solid #c6c6c6;
+	border-radius: 4px;
+	background: #fff;
+	color: #1e293b;
+	font: inherit;
+}
+
+/* Alert containers */
+.app-datatable__alert {
+	margin-bottom: var(--app-datatable-space-lg, 1rem);
+	padding: var(--app-datatable-space-md, 0.75rem) var(--app-datatable-space-lg, 1rem);
+	border-radius: var(--app-datatable-radius, 4px);
+	font-size: var(--app-datatable-font-size, 1rem);
+	transition: opacity 0.3s ease;
+}
+
+.app-datatable__alert--success {
+	background: var(--app-datatable-success-surface, #e6f4ea);
+	color: var(--app-datatable-success-text, #1e7e34);
+	border: 1px solid var(--app-datatable-success-border, #b7dfbf);
+}
+
+.app-datatable__alert--danger {
+	background: var(--app-datatable-danger-surface, #fbe9e7);
+	color: var(--app-datatable-danger-text, #c62828);
+	border: 1px solid var(--app-datatable-danger-border, #f5c6cb);
+}
+
+.app-datatable__alert.is-fading {
+	opacity: 0;
+}
+
+/* Message area */
+.app-datatable__message:empty {
+	display: none;
+}
+
+.app-datatable__message {
+	margin-bottom: var(--app-datatable-space-md, 0.75rem);
+	font-size: var(--app-datatable-font-size-sm, 0.875rem);
+	color: var(--app-datatable-text-subtle, #555);
+}
+
+/* Active filters display */
+.app-datatable__active-filters:empty {
+	display: none;
+}
+
+.app-datatable__active-filters {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.35rem;
+	margin-bottom: var(--app-datatable-space-sm, 0.5rem);
+	font-size: var(--app-datatable-font-size-sm, 0.875rem);
+	color: var(--app-datatable-accent-text, #0062ba);
+	font-weight: 500;
+}
+
+.app-datatable__filter-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 0.2rem 0.35rem 0.2rem 0.6rem;
+	border: 1px solid #bfc8d4;
+	border-radius: 999px;
+	background: #f5f7fa;
+	color: #1d2a39;
+	font-weight: 400;
+}
+
+.app-datatable__filter-chip-remove {
+	width: 1.35rem;
+	height: 1.35rem;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	font-size: 1.1rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.app-datatable__filter-chip-remove:hover,
+.app-datatable__filter-chip-remove:focus-visible {
+	background: #e9eef5;
+}
+
+/* Filter toolbar (toggle + reset buttons) */
+.app-datatable__filter-toolbar {
+	display: flex;
+	align-items: center;
+	gap: var(--app-datatable-space-sm, 0.5rem);
+	margin-bottom: var(--app-datatable-space-sm, 0.5rem);
+}
+
+/* Filter panel */
+.app-datatable__filters {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: var(--app-datatable-space-md, 0.75rem);
+	margin-bottom: var(--app-datatable-space-lg, 1rem);
+	padding: var(--app-datatable-space-lg, 1rem);
+	background: var(--app-datatable-neutral-surface, #f5f6f7);
+	border-radius: var(--app-datatable-radius, 4px);
+	border: 1px solid var(--app-datatable-border-subtle, #e0e0e0);
+}
+
+.app-datatable__filters--collapsed {
+	display: none;
+}
+
+.app-datatable__filter-group {
+	display: flex;
+	flex-direction: column;
+	gap: var(--app-datatable-space-xs, 0.25rem);
+}
+
+.app-datatable__filter-group label {
+	font-size: var(--app-datatable-font-size-sm, 0.875rem);
+	font-weight: 500;
+	color: var(--app-datatable-text, #1e2b3c);
+}
+
+/* DataTables layout overrides */
+.app-datatable .dt-info,
+.app-datatable .dt-length label,
+.app-datatable .dt-search label {
+	font-size: var(--app-datatable-font-size-sm, 0.875rem);
+	color: var(--app-datatable-text-subtle, #555);
+}
+
+/* ---------------------------------------------------------------
+   Toolbar buttons layout
+   --------------------------------------------------------------- */
+.app-datatable .dt-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--app-datatable-space-sm, 0.5rem);
+	margin-bottom: var(--app-datatable-space-sm, 0.5rem);
+}
+
+/* ---------------------------------------------------------------
+	Pagination — generic buttons inside the DT paging container.
+   --------------------------------------------------------------- */
+.app-datatable .dt-paging nav {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--app-datatable-space-xs, 0.25rem);
+}
+
+.app-datatable .dt-paging .app-button.current {
+	background: var(--app-datatable-accent, #0062ba);
+	border-color: var(--app-datatable-accent, #0062ba);
+	color: var(--app-datatable-accent-contrast, #fff);
+}
+
+.app-datatable .dt-inputpaging {
+	display: flex;
+	align-items: center;
+	gap: var(--app-datatable-space-xs, 0.25rem);
+}
+
+.app-datatable .dt-inputpaging .dt-paging-button,
+.app-datatable .dt-inputpaging input {
+	min-height: 2.25rem;
+	border: 1px solid #c6c6c6;
+	border-radius: 4px;
+	background: #fff;
+	color: #1e293b;
+	font: inherit;
+}
+
+.app-datatable .dt-inputpaging .dt-paging-button {
+	padding: 0.5rem 0.75rem;
+	cursor: pointer;
+}
+
+.app-datatable .dt-inputpaging .dt-paging-button:hover:not(.disabled) {
+	background: #f5f7fa;
+}
+
+.app-datatable .dt-inputpaging .dt-paging-button.disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.app-datatable .dt-inputpaging input:focus {
+	outline: 2px solid var(--app-datatable-accent, #0062ba);
+	outline-offset: 1px;
+}
+
+/* Processing indicator overlay */
+.app-datatable .dt-processing {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(255, 255, 255, 0.8);
+}
+
+/* Row actions */
+.app-datatable__actions {
+	display: flex;
+	gap: var(--app-datatable-space-sm, 0.5rem);
+	flex-wrap: nowrap;
+}
+
+.app-datatable__row-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--app-datatable-space-sm, 0.5rem);
+	margin-bottom: var(--app-datatable-space-sm, 0.5rem);
+}
+
+.app-datatable .dt-buttons .app-datatable__row-actions {
+	margin-bottom: 0;
+}
+
+.app-datatable .app-button:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+/* Column search input width override */
+.app-datatable__col-search {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+/* Selected row */
+.app-datatable table tbody tr.selected {
+	background-color: var(--app-datatable-accent-surface, #e6f0fa);
+}
+
+/* Priority row classes (matches datatable2.twig) */
+.app-datatable table tbody tr.priority1 {
+	background-color: #fff3cd;
+}
+
+.app-datatable table tbody tr.priority2 {
+	background-color: #fce4ec;
+}
+
+.app-datatable table tbody tr.priority3 {
+	background-color: #ffccbc;
+}
+
+/* Utility */
+.app-datatable .is-hidden {
+	display: none;
+}

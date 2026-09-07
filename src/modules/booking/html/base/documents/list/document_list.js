@@ -48,8 +48,11 @@
 			}
 		],
 		rowActions: rowActions.length ? rowActions : undefined,
+		rowActionsDisplay: 'contextMenu',
+		rowActionsToolbar: true,
 		order: [[0, 'asc']],
-		pageLength: 25,
+		pageLength: CFG.pageLength,
+		lengthMenu: CFG.lengthMenu,
 		lang: {
 			emptyTable: L.emptyTable
 		}

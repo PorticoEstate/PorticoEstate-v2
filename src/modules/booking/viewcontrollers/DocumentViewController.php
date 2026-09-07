@@ -37,6 +37,7 @@ class DocumentViewController
 	public function list(Request $request, Response $response): Response
 	{
 		try {
+			$pagination = $this->getDatatablePagination();
 			if ($this->authService->authorize($this->authConfig, 'read') === false) {
 				return ResponseHelper::sendErrorResponse(['error' => 'Permission denied'], 403);
 			}
@@ -50,6 +51,8 @@ class DocumentViewController
 				'can_create' => $canCreate,
 				'can_write' => $canWrite,
 				'can_delete' => $canDelete,
+				'rows_per_page' => $pagination['rows_per_page'],
+				'length_menu' => $pagination['length_menu'],
 			]);
 
 			$html = $this->legacyView->render($componentHtml, ['booking', 'buildings', 'documents']);
@@ -62,6 +65,19 @@ class DocumentViewController
 				500
 			);
 		}
+	}
+
+	private function getDatatablePagination(): array
+	{
+		$user = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+		$rowsPerPage = isset($user['preferences']['common']['maxmatchs']) && (int) $user['preferences']['common']['maxmatchs'] > 0
+			? (int) $user['preferences']['common']['maxmatchs']
+			: 10;
+
+		return [
+			'rows_per_page' => $rowsPerPage,
+			'length_menu' => [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3],
+		];
 	}
 
 	public function edit(Request $request, Response $response, array $args): Response

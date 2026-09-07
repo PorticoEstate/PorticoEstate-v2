@@ -3,7 +3,7 @@
 {% block title %}{{ lang('booking.hospitality') }}{% endblock %}
 
 {% block content %}
-{% include '@views/components/datatable/datatable.twig' %}
+{% include '@phpgwapi_components/app_datatable/app_datatable.twig' %}
 {% endblock %}
 
 {% block scripts %}
@@ -11,6 +11,8 @@
 	window.__hospitalityList = {
 		dataUrl: '/booking/hospitality',
 		editBaseUrl: '/booking/view/hospitality/',
+		pageLength: {{ rows_per_page|default(10) }},
+		lengthMenu: {{ length_menu|default([10, 25, 50])|json_encode|raw }},
 		permissions: {
 			read: {{ permissions.read ? 'true' : 'false' }},
 			create: {{ permissions.create ? 'true' : 'false' }},

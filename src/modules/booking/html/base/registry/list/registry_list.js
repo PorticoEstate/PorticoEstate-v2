@@ -109,12 +109,15 @@
 				columns: columns,
 				filters: filters.length ? filters : undefined,
 				rowActions: rowActions.length ? rowActions : undefined,
+				rowActionsDisplay: 'contextMenu',
+				rowActionsToolbar: true,
 				columnVisibility: true,
 				columnVisibilityLabel: L.columns,
 				downloadUrl: CFG.downloadUrl,
 				downloadLang: {label: L.download},
 				order: [[0, 'asc']],
-				pageLength: 25,
+				pageLength: CFG.pageLength,
+				lengthMenu: CFG.lengthMenu,
 				lang: {
 					emptyTable: L.emptyTable
 				}

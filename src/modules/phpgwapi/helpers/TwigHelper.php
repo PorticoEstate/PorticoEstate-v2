@@ -82,6 +82,7 @@ class TwigHelper
 			$componentPath = PHPGW_SERVER_ROOT . '/phpgwapi/templates/digdir/components';
 			$this->addPathIfExists($componentPath, 'components');
 		}
+		$this->addPathIfExists(PHPGW_SERVER_ROOT . '/phpgwapi/templates/base/components', 'phpgwapi_components');
 
 		// App-specific paths (both namespaced and main namespace)
 		$appDir = PHPGW_SERVER_ROOT . '/' . $this->appName;

@@ -170,8 +170,8 @@
 		if (collapsible) {
 			var toggleBtn = document.createElement('button');
 			toggleBtn.type = 'button';
-			toggleBtn.className = 'booking-button ds-button';
-			toggleBtn.setAttribute('data-booking-action', 'toggle-filters');
+			toggleBtn.className = 'app-button';
+			toggleBtn.setAttribute('data-app-datatable-action', 'toggle-filters');
 			toggleBtn.setAttribute('data-variant', 'secondary');
 			toggleBtn.setAttribute('data-size', 'sm');
 			toggleBtn.textContent = filterLang.filter || 'Filter';
@@ -180,8 +180,8 @@
 
 		var resetBtn = document.createElement('button');
 		resetBtn.type = 'button';
-		resetBtn.className = 'booking-button ds-button app-datatable__reset-btn is-hidden';
-		resetBtn.setAttribute('data-booking-action', 'reset-filters');
+		resetBtn.className = 'app-button app-datatable__reset-btn is-hidden';
+		resetBtn.setAttribute('data-app-datatable-action', 'reset-filters');
 		resetBtn.setAttribute('data-variant', 'tertiary');
 		resetBtn.setAttribute('data-size', 'sm');
 		resetBtn.textContent = filterLang.resetFilter || 'Reset filter';
@@ -198,7 +198,7 @@
 		var state = {};
 		if (stateKey) {
 			try {
-				state = JSON.parse(localStorage.getItem(stateKey + '_filters') || '{}');
+				state = JSON.parse(sessionStorage.getItem(stateKey + '_filters') || '{}');
 			} catch (e) { /* ignore */ }
 		}
 
@@ -218,8 +218,8 @@
 
 			if (f.type === 'select') {
 				input = document.createElement('select');
-				input.className = 'booking-input ds-input';
-				input.setAttribute('data-booking-role', 'filter-input');
+				input.className = 'app-input';
+				input.setAttribute('data-app-datatable-role', 'filter-input');
 				input.id = 'filter-' + f.name;
 				if (f.multiple) input.multiple = true;
 				(f.options || []).forEach(function (opt) {
@@ -233,22 +233,22 @@
 				});
 			} else if (f.type === 'checkbox') {
 				input = document.createElement('input');
-				input.className = 'booking-input ds-input';
-				input.setAttribute('data-booking-role', 'filter-input');
+				input.className = 'app-input';
+				input.setAttribute('data-app-datatable-role', 'filter-input');
 				input.type = 'checkbox';
 				input.id = 'filter-' + f.name;
 				input.checked = savedVal != null ? !!savedVal : !!f.checked;
 			} else if (f.type === 'date') {
 				input = document.createElement('input');
-				input.className = 'booking-input ds-input';
-				input.setAttribute('data-booking-role', 'filter-input');
+				input.className = 'app-input';
+				input.setAttribute('data-app-datatable-role', 'filter-input');
 				input.type = 'date';
 				input.id = 'filter-' + f.name;
 				input.value = savedVal || f.value || '';
 			} else {
 				input = document.createElement('input');
-				input.className = 'booking-input ds-input';
-				input.setAttribute('data-booking-role', 'filter-input');
+				input.className = 'app-input';
+				input.setAttribute('data-app-datatable-role', 'filter-input');
 				input.type = 'text';
 				input.id = 'filter-' + f.name;
 				input.placeholder = f.placeholder || '';
@@ -294,49 +294,81 @@
 		function saveState() {
 			if (!stateKey) return;
 			try {
-				localStorage.setItem(stateKey + '_filters', JSON.stringify(getValues()));
+				sessionStorage.setItem(stateKey + '_filters', JSON.stringify(getValues()));
 			} catch (e) { /* ignore */ }
 		}
 
-		function getActiveFilterNames() {
+		function getActiveFilters() {
 			var vals = getValues();
-			var names = [];
+			var activeFilters = [];
 			inputs.forEach(function (inp) {
 				var v = vals[inp.config.name];
 				var label = inp.config.label || inp.config.name;
 				if (inp.config.type === 'checkbox') {
-					if (v) names.push(label);
+					if (v) activeFilters.push({name: inp.config.name, label: label});
 				} else if (inp.config.type === 'select') {
 					var firstOpt = inp.config.options && inp.config.options[0];
-					if (v && firstOpt && String(v) !== String(firstOpt.value)) names.push(label);
+					if (v && firstOpt && String(v) !== String(firstOpt.value)) {
+						activeFilters.push({name: inp.config.name, label: label});
+					}
 				} else {
-					if (v) names.push(label);
+					if (v) activeFilters.push({name: inp.config.name, label: label});
 				}
 			});
-			return names;
+			return activeFilters;
 		}
 
 		function updateIndicator() {
-			var names = getActiveFilterNames();
-			if (names.length > 0) {
-				activeFiltersEl.textContent = (filterLang.activeFilters || 'Active filters') + ': ' + names.join(', ');
+			var activeFilters = getActiveFilters();
+			activeFiltersEl.innerHTML = '';
+			if (activeFilters.length > 0) {
+				var label = document.createElement('span');
+				label.className = 'app-datatable__active-filters-label';
+				label.textContent = (filterLang.activeFilters || 'Active filters') + ':';
+				activeFiltersEl.appendChild(label);
+
+				activeFilters.forEach(function (filter) {
+					var chip = document.createElement('span');
+					chip.className = 'app-datatable__filter-chip';
+					var chipLabel = document.createElement('span');
+					chipLabel.textContent = filter.label;
+					chip.appendChild(chipLabel);
+
+					var remove = document.createElement('button');
+					remove.type = 'button';
+					remove.className = 'app-datatable__filter-chip-remove';
+					remove.setAttribute('data-app-datatable-action', 'remove-filter');
+					remove.setAttribute('data-filter-name', filter.name);
+					remove.setAttribute('aria-label', (filterLang.removeFilter || 'Remove filter') + ': ' + filter.label);
+					remove.title = filterLang.removeFilter || 'Remove filter';
+					remove.textContent = '\u00d7';
+					chip.appendChild(remove);
+					activeFiltersEl.appendChild(chip);
+				});
 				resetBtn.classList.remove('is-hidden');
 			} else {
-				activeFiltersEl.textContent = '';
 				resetBtn.classList.add('is-hidden');
+			}
+		}
+
+		function resetFilter(name) {
+			var input = inputs.find(function (candidate) {
+				return candidate.config.name === name;
+			});
+			if (!input) return;
+
+			if (input.el.type === 'checkbox') {
+				input.el.checked = !!input.config.checked;
+			} else if (input.el.tagName === 'SELECT') {
+				input.el.selectedIndex = 0;
+			} else {
+				input.el.value = input.config.value || '';
 			}
 		}
 
 		function reset() {
 			inputs.forEach(function (inp) {
-				var el = inp.el;
-				if (el.type === 'checkbox') {
-					el.checked = !!inp.config.checked;
-				} else if (el.tagName === 'SELECT') {
-					el.selectedIndex = 0;
-				} else {
-					el.value = inp.config.value || '';
-				}
+				resetFilter(inp.config.name);
 			});
 			saveState();
 			updateIndicator();
@@ -344,6 +376,15 @@
 
 		resetBtn.addEventListener('click', function () {
 			reset();
+			wrapper.dispatchEvent(new Event('filter-change'));
+		});
+
+		activeFiltersEl.addEventListener('click', function (event) {
+			var remove = event.target.closest('[data-app-datatable-action="remove-filter"]');
+			if (!remove) return;
+			resetFilter(remove.dataset.filterName);
+			saveState();
+			updateIndicator();
 			wrapper.dispatchEvent(new Event('filter-change'));
 		});
 
@@ -361,7 +402,7 @@
 		return {
 			element: wrapper,
 			getValues: getValues,
-			getActiveFilterNames: getActiveFilterNames,
+			getActiveFilters: getActiveFilters,
 			inputs: inputs,
 			reset: reset,
 			showResetBtn: function () { resetBtn.classList.remove('is-hidden'); },
@@ -388,13 +429,13 @@
 					if (action.type === 'link') {
 						html += '<a href="' + escapeHtml(url) + '"'
 							+ (action.target ? ' target="' + escapeHtml(action.target) + '"' : '')
-							+ ' class="booking-button ds-button" data-booking-action="datatable-link"'
+							+ ' class="app-button" data-app-datatable-action="datatable-link"'
 							+ ' data-variant="' + (action.variant || 'secondary') + '"'
 							+ ' data-size="sm">'
 							+ escapeHtml(action.label) + '</a>';
 					} else if (action.type === 'delete') {
 						html += '<button type="button"'
-							+ ' class="booking-button ds-button js-appdt-delete" data-booking-action="delete-row"'
+							+ ' class="app-button js-appdt-delete" data-app-datatable-action="delete-row"'
 							+ ' data-variant="' + (action.variant || 'tertiary') + '"'
 							+ ' data-size="sm" data-color="danger"'
 							+ ' data-action-idx="' + i + '"'
@@ -402,7 +443,7 @@
 							+ escapeHtml(action.label) + '</button>';
 					} else if (action.type === 'custom') {
 						html += '<button type="button"'
-							+ ' class="booking-button ds-button js-appdt-custom" data-booking-action="custom-row"'
+							+ ' class="app-button js-appdt-custom" data-app-datatable-action="custom-row"'
 							+ ' data-variant="' + (action.variant || 'secondary') + '"'
 							+ ' data-size="sm"'
 							+ ' data-action-idx="' + i + '">'
@@ -412,6 +453,85 @@
 				html += '</div>';
 				return html;
 			}
+		};
+	}
+
+	function executeRowAction(action, rowData, table, rowNode, handle, alerts) {
+		if (!action || !rowData) return;
+
+		if (action.type === 'link') {
+			var url = action.url ? resolveTemplate(action.url, rowData) : '#';
+			window.open(url, action.target || '_self');
+			return;
+		}
+
+		if (action.type === 'delete') {
+			if (action.confirm && !confirm(action.confirm)) return;
+			var deleteUrl = action.url ? resolveTemplate(action.url, rowData) : '';
+			if (!deleteUrl) return;
+
+			fetch(deleteUrl, {method: 'DELETE', credentials: 'same-origin'})
+				.then(function (response) {
+					if (!response.ok) {
+						return response.json().then(function (data) {
+							throw new Error(data.error || 'Delete failed');
+						});
+					}
+					var tableRow = table.row(rowNode);
+					tableRow.remove().draw(false);
+					if (handle.clearSelection) handle.clearSelection();
+					if (action.successMessage) alerts.show('success', action.successMessage);
+					if (handle.config.onDelete) handle.config.onDelete(rowData);
+				})
+				.catch(function (error) {
+					alerts.show('danger', error.message);
+				});
+			return;
+		}
+
+		if (action.type === 'custom' && action.handler) {
+			action.handler(rowData, handle);
+		}
+	}
+
+	function buildRowActionsToolbar(rowActions, getSelection, runAction) {
+		var toolbar = document.createElement('div');
+		toolbar.className = 'app-datatable__row-actions';
+		toolbar.setAttribute('data-app-datatable-role', 'selected-row-actions');
+
+		var buttons = rowActions.map(function (action) {
+			var button = document.createElement('button');
+			button.type = 'button';
+			button.className = 'app-button app-datatable__row-action';
+			button.setAttribute('data-app-datatable-action', 'selected-row-action');
+			button.setAttribute('data-variant', action.variant || (action.type === 'delete' ? 'tertiary' : 'secondary'));
+			button.setAttribute('data-size', 'sm');
+			if (action.type === 'delete') button.setAttribute('data-color', 'danger');
+			button.textContent = action.label || action.text || '';
+			button.disabled = true;
+
+			button.addEventListener('click', function () {
+				var selection = getSelection();
+				if (!selection || !selection.rowData) return;
+				runAction(action, selection.rowData, selection.rowNode);
+			});
+
+			toolbar.appendChild(button);
+			return {action: action, button: button};
+		});
+
+		function update(rowData) {
+			buttons.forEach(function (item) {
+				var visible = rowData && (!item.action.visible || item.action.visible(rowData));
+				item.button.disabled = !visible;
+				item.button.classList.toggle('is-hidden', !!rowData && !visible);
+				if (!rowData) item.button.classList.remove('is-hidden');
+			});
+		}
+
+		return {
+			element: toolbar,
+			update: update
 		};
 	}
 
@@ -526,8 +646,8 @@
 					th.innerHTML = '';
 					var input = document.createElement('input');
 					input.type = 'text';
-					input.className = 'booking-input ds-input app-datatable__col-search';
-					input.setAttribute('data-booking-role', 'column-search');
+					input.className = 'app-input app-datatable__col-search';
+					input.setAttribute('data-app-datatable-role', 'column-search');
 					input.placeholder = searchLang + ' ' + title;
 					input.value = currentSearch;
 					input.title = title;
@@ -593,7 +713,7 @@
 	}
 
 	// ------------------------------------------------------------------
-	// Override the default pagingButton renderer to add DS data attributes
+	// Override the default pagingButton renderer to add common control attributes
 	// directly when buttons are created (avoids timing issues with post-processing).
 	var _origPagingButton = DataTable.ext.renderer.pagingButton._;
 	DataTable.ext.renderer.pagingButton._ = function (settings, buttonType, content, active, disabled) {
@@ -611,11 +731,11 @@
 	};
 
 	// ------------------------------------------------------------------
-	// DS spinner SVG for processing indicator
+	// Shared spinner SVG for processing indicator
 	// ------------------------------------------------------------------
-	var DS_SPINNER_HTML = '<svg class="booking-spinner ds-spinner" role="img" viewBox="0 0 50 50" data-size="md" aria-label="Loading...">'
-		+ '<circle class="booking-spinner__background ds-spinner__background" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>'
-		+ '<circle class="booking-spinner__circle ds-spinner__circle" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>'
+	var SPINNER_HTML = '<svg class="app-spinner" role="img" viewBox="0 0 50 50" data-size="md" aria-label="Loading...">'
+		+ '<circle class="app-spinner__background" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>'
+		+ '<circle class="app-spinner__circle" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>'
 		+ '</svg>';
 
 	// ------------------------------------------------------------------
@@ -631,16 +751,65 @@
 
 		container.classList.add('app-datatable');
 		container.innerHTML = '';
+		var resolvedStateKey = buildStateKey(config);
+		config.stateKey = resolvedStateKey;
 
 		// Alerts
 		var alerts = createAlertSystem(container);
 
 		// Filters
 		var filterSystem = buildFilters(container, config.filters, config);
+		var actionDisplay = config.rowActionsDisplay || 'column';
+		var useActionsColumn = actionDisplay !== 'contextMenu';
+		var showRowActionsToolbar = config.rowActionsToolbar === true && config.rowActions && config.rowActions.length;
+		var selectedRowNode = null;
+		var rowActionsToolbar = null;
+
+		function setSelectedRow(rowNode) {
+			if (selectedRowNode && selectedRowNode !== rowNode) {
+				selectedRowNode.classList.remove('selected');
+			}
+
+			selectedRowNode = rowNode;
+			if (selectedRowNode) selectedRowNode.classList.add('selected');
+
+			if (rowActionsToolbar) {
+				rowActionsToolbar.update(selectedRowNode && table ? table.row(selectedRowNode).data() : null);
+			}
+		}
+
+		function clearSelectedRow() {
+			if (selectedRowNode) selectedRowNode.classList.remove('selected');
+			selectedRowNode = null;
+			if (rowActionsToolbar) rowActionsToolbar.update(null);
+		}
+
+		function toggleSelectedRow(rowNode) {
+			if (selectedRowNode === rowNode) {
+				clearSelectedRow();
+				return;
+			}
+			setSelectedRow(rowNode);
+		}
+
+		if (showRowActionsToolbar) {
+			rowActionsToolbar = buildRowActionsToolbar(
+				config.rowActions,
+				function () {
+					return selectedRowNode && table
+						? {rowNode: selectedRowNode, rowData: table.row(selectedRowNode).data()}
+						: null;
+				},
+				function (action, rowData, rowNode) {
+					executeRowAction(action, rowData, table, rowNode, handle, alerts);
+				}
+			);
+		}
 
 		// Table element
 		var tableEl = document.createElement('table');
-		tableEl.className = 'booking-table ds-table';
+		tableEl.id = containerId + '-table';
+		tableEl.className = 'app-table';
 		tableEl.setAttribute('data-zebra', '');
 		tableEl.setAttribute('data-hover', '');
 		tableEl.setAttribute('data-border', '');
@@ -655,7 +824,7 @@
 				th.textContent = col.footerText || '';
 				tfootRow.appendChild(th);
 			});
-			if (config.rowActions && config.rowActions.length) {
+			if (useActionsColumn && config.rowActions && config.rowActions.length) {
 				tfootRow.appendChild(document.createElement('th'));
 			}
 			tfoot.appendChild(tfootRow);
@@ -680,7 +849,7 @@
 		});
 
 		// Append actions column
-		if (config.rowActions && config.rowActions.length) {
+		if (useActionsColumn && config.rowActions && config.rowActions.length) {
 			columns.push(buildActionsColumn(config.rowActions));
 		}
 
@@ -701,8 +870,8 @@
 			infoFiltered: '(filtrert fra _MAX_ totalt)',
 			lengthMenu: 'Vis _MENU_ oppføringer',
 			zeroRecords: 'Ingen samsvarende oppføringer funnet',
-			loadingRecords: DS_SPINNER_HTML,
-			processing: DS_SPINNER_HTML,
+			loadingRecords: SPINNER_HTML,
+			processing: SPINNER_HTML,
 			paginate: {
 				first: 'Første',
 				last: 'Siste',
@@ -722,20 +891,20 @@
 				topStart: null,
 				topEnd: 'search',
 				bottomStart: ['pageLength', 'info'],
-				bottomEnd: 'paging'
+				bottomEnd: ['inputPaging']
 			};
 		} else if (buttonDefs) {
 			layout = {
 				topStart: 'buttons',
 				topEnd: 'search',
 				bottomStart: ['pageLength', 'info'],
-				bottomEnd: 'paging'
+				bottomEnd: ['inputPaging']
 			};
 		} else {
 			layout = {
 				topEnd: 'search',
 				bottomStart: ['pageLength', 'info'],
-				bottomEnd: 'paging'
+				bottomEnd: ['inputPaging']
 			};
 		}
 		if (config.layout) {
@@ -753,14 +922,14 @@
 			classes: {
 				search: {
 					container: 'dt-search',
-					input: 'dt-input booking-input ds-input'
+					input: 'dt-input app-input'
 				},
 				length: {
 					container: 'dt-length',
-					select: 'dt-input booking-input ds-input'
+					select: 'dt-input app-input'
 				},
 				paging: {
-					button: 'booking-button ds-button',
+					button: 'app-button',
 					active: 'current',
 					disabled: 'disabled',
 					container: 'dt-paging',
@@ -798,7 +967,7 @@
 			dtConfig.buttons = {
 				dom: {
 					button: {
-							className: 'booking-button ds-button'
+							className: 'app-button'
 					}
 				},
 				buttons: buttonDefs
@@ -806,10 +975,9 @@
 		}
 
 		// State save
-		var resolvedStateKey = buildStateKey(config);
 		if (config.stateSave !== false && resolvedStateKey) {
 			dtConfig.stateSave = true;
-			dtConfig.stateDuration = 0; // localStorage, no expiry
+			dtConfig.stateDuration = -1; // sessionStorage, cleared when the browser session ends
 
 			dtConfig.stateSaveParams = function (settings, data) {
 				if (filterSystem) {
@@ -916,6 +1084,9 @@
 
 		function initDT() {
 			table = new DataTable(tableEl, dtConfig);
+			if (rowActionsToolbar) {
+				placeRowActionsToolbar(tableEl, rowActionsToolbar.element, container);
+			}
 
 			// Column search support
 			if (config.columnSearch) {
@@ -976,6 +1147,22 @@
 				filterSystem.element.addEventListener('filter-change', function () {
 					table.ajax.reload();
 				});
+			}
+
+			if (config.rowActions && actionDisplay === 'contextMenu') {
+				setupContextMenu(table, tableEl, config.rowActions, handle, alerts, setSelectedRow);
+			}
+
+			if (showRowActionsToolbar) {
+				tableEl.querySelector('tbody').addEventListener('click', function (e) {
+					if (e.target.closest('.app-datatable__actions') || e.target.closest('a') || e.target.closest('button') || e.target.closest('input, select, textarea')) return;
+					var tr = e.target.closest('tr');
+					if (!tr || tr.parentElement.tagName === 'THEAD' || tr.classList.contains('child')) return;
+					var row = table.row(tr);
+					if (row.data()) toggleSelectedRow(tr);
+				});
+
+				table.on('draw', clearSelectedRow);
 			}
 
 			// Delete handler via delegation
@@ -1071,9 +1258,57 @@
 			handle.table = table;
 		}
 
+		function setupContextMenu(table, tableEl, rowActions, handle, alerts, selectRow) {
+			if (!window.jQuery || !window.jQuery.contextMenu || !rowActions.length) return;
+
+			var selector = '#' + tableEl.id + ' tbody tr';
+			window.jQuery.contextMenu('destroy', selector);
+			window.jQuery.contextMenu({
+				selector: selector,
+				build: function ($trigger) {
+					var rowNode = $trigger[0];
+					var rowData = table.row(rowNode).data();
+					if (!rowData) return false;
+					if (selectRow) selectRow(rowNode);
+
+					var visibleActions = rowActions.filter(function (action) {
+						return !action.visible || action.visible(rowData);
+					});
+
+					if (!visibleActions.length) return false;
+
+					return {
+						items: visibleActions.reduce(function (items, action, index) {
+							items[index] = {
+								name: action.label || action.text || '',
+								callback: function () {
+									executeRowAction(action, rowData, table, rowNode, handle, alerts);
+								}
+							};
+							return items;
+						}, {})
+					};
+				}
+			});
+		}
+
+		function placeRowActionsToolbar(tableEl, toolbarEl, fallbackContainer) {
+			var tableWrapper = tableEl.closest('.dt-container') || fallbackContainer;
+			var buttonsContainer = tableWrapper.querySelector('.dt-buttons');
+
+			if (buttonsContainer) {
+				buttonsContainer.appendChild(toolbarEl);
+				return;
+			}
+
+			tableWrapper.insertBefore(toolbarEl, tableWrapper.firstChild);
+		}
+
 		// Wait for any lookup preloads, then init
 		var handle = {
+			config: config,
 			table: null,
+			clearSelection: clearSelectedRow,
 			reload: function () {
 				if (table) table.ajax.reload(null, false);
 			},

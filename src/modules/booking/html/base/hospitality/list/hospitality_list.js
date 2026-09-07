@@ -76,8 +76,11 @@ AppDatatable.init({
 		columns: columns,
 		filters: filters,
 		rowActions: rowActions.length ? rowActions : undefined,
+		rowActionsDisplay: 'contextMenu',
+		rowActionsToolbar: true,
 		order: [[0, 'asc']],
-		pageLength: 25,
+		pageLength: CFG.pageLength,
+		lengthMenu: CFG.lengthMenu,
 		lang: {
 			search: L.dt_search,
 			emptyTable: L.emptyTable,

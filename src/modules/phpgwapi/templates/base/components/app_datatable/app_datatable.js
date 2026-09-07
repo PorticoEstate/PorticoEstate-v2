@@ -456,6 +456,43 @@
 		};
 	}
 
+	function executeRowAction(action, rowData, table, rowNode, handle, alerts) {
+		if (!action || !rowData) return;
+
+		if (action.type === 'link') {
+			var url = action.url ? resolveTemplate(action.url, rowData) : '#';
+			window.open(url, action.target || '_self');
+			return;
+		}
+
+		if (action.type === 'delete') {
+			if (action.confirm && !confirm(action.confirm)) return;
+			var deleteUrl = action.url ? resolveTemplate(action.url, rowData) : '';
+			if (!deleteUrl) return;
+
+			fetch(deleteUrl, {method: 'DELETE', credentials: 'same-origin'})
+				.then(function (response) {
+					if (!response.ok) {
+						return response.json().then(function (data) {
+							throw new Error(data.error || 'Delete failed');
+						});
+					}
+					var tableRow = table.row(rowNode);
+					tableRow.remove().draw(false);
+					if (action.successMessage) alerts.show('success', action.successMessage);
+					if (handle.config.onDelete) handle.config.onDelete(rowData);
+				})
+				.catch(function (error) {
+					alerts.show('danger', error.message);
+				});
+			return;
+		}
+
+		if (action.type === 'custom' && action.handler) {
+			action.handler(rowData, handle);
+		}
+	}
+
 	// ------------------------------------------------------------------
 	// Toolbar buttons builder
 	// ------------------------------------------------------------------
@@ -680,9 +717,12 @@
 
 		// Filters
 		var filterSystem = buildFilters(container, config.filters, config);
+		var actionDisplay = config.rowActionsDisplay || 'column';
+		var useActionsColumn = actionDisplay !== 'contextMenu';
 
 		// Table element
 		var tableEl = document.createElement('table');
+		tableEl.id = containerId + '-table';
 		tableEl.className = 'app-table';
 		tableEl.setAttribute('data-zebra', '');
 		tableEl.setAttribute('data-hover', '');
@@ -698,7 +738,7 @@
 				th.textContent = col.footerText || '';
 				tfootRow.appendChild(th);
 			});
-			if (config.rowActions && config.rowActions.length) {
+			if (useActionsColumn && config.rowActions && config.rowActions.length) {
 				tfootRow.appendChild(document.createElement('th'));
 			}
 			tfoot.appendChild(tfootRow);
@@ -723,7 +763,7 @@
 		});
 
 		// Append actions column
-		if (config.rowActions && config.rowActions.length) {
+		if (useActionsColumn && config.rowActions && config.rowActions.length) {
 			columns.push(buildActionsColumn(config.rowActions));
 		}
 
@@ -765,20 +805,20 @@
 				topStart: null,
 				topEnd: 'search',
 				bottomStart: ['pageLength', 'info'],
-				bottomEnd: 'paging'
+				bottomEnd: ['inputPaging']
 			};
 		} else if (buttonDefs) {
 			layout = {
 				topStart: 'buttons',
 				topEnd: 'search',
 				bottomStart: ['pageLength', 'info'],
-				bottomEnd: 'paging'
+				bottomEnd: ['inputPaging']
 			};
 		} else {
 			layout = {
 				topEnd: 'search',
 				bottomStart: ['pageLength', 'info'],
-				bottomEnd: 'paging'
+				bottomEnd: ['inputPaging']
 			};
 		}
 		if (config.layout) {
@@ -1020,6 +1060,10 @@
 				});
 			}
 
+			if (config.rowActions && actionDisplay === 'contextMenu') {
+				setupContextMenu(table, tableEl, config.rowActions, handle, alerts);
+			}
+
 			// Delete handler via delegation
 			if (config.rowActions) {
 				tableEl.addEventListener('click', function (e) {
@@ -1113,8 +1157,42 @@
 			handle.table = table;
 		}
 
+		function setupContextMenu(table, tableEl, rowActions, handle, alerts) {
+			if (!window.jQuery || !window.jQuery.contextMenu || !rowActions.length) return;
+
+			var selector = '#' + tableEl.id + ' tbody tr';
+			window.jQuery.contextMenu('destroy', selector);
+			window.jQuery.contextMenu({
+				selector: selector,
+				build: function ($trigger) {
+					var rowNode = $trigger[0];
+					var rowData = table.row(rowNode).data();
+					if (!rowData) return false;
+
+					var visibleActions = rowActions.filter(function (action) {
+						return !action.visible || action.visible(rowData);
+					});
+
+					if (!visibleActions.length) return false;
+
+					return {
+						items: visibleActions.reduce(function (items, action, index) {
+							items[index] = {
+								name: action.label || action.text || '',
+								callback: function () {
+									executeRowAction(action, rowData, table, rowNode, handle, alerts);
+								}
+							};
+							return items;
+						}, {})
+					};
+				}
+			});
+		}
+
 		// Wait for any lookup preloads, then init
 		var handle = {
+			config: config,
 			table: null,
 			reload: function () {
 				if (table) table.ajax.reload(null, false);

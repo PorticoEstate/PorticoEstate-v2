@@ -186,6 +186,41 @@
 	color: var(--app-datatable-accent-contrast, #fff);
 }
 
+.app-datatable .dt-inputpaging {
+	display: flex;
+	align-items: center;
+	gap: var(--app-datatable-space-xs, 0.25rem);
+}
+
+.app-datatable .dt-inputpaging .dt-paging-button,
+.app-datatable .dt-inputpaging input {
+	min-height: 2.25rem;
+	border: 1px solid #c6c6c6;
+	border-radius: 4px;
+	background: #fff;
+	color: #1e293b;
+	font: inherit;
+}
+
+.app-datatable .dt-inputpaging .dt-paging-button {
+	padding: 0.5rem 0.75rem;
+	cursor: pointer;
+}
+
+.app-datatable .dt-inputpaging .dt-paging-button:hover:not(.disabled) {
+	background: #f5f7fa;
+}
+
+.app-datatable .dt-inputpaging .dt-paging-button.disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.app-datatable .dt-inputpaging input:focus {
+	outline: 2px solid var(--app-datatable-accent, #0062ba);
+	outline-offset: 1px;
+}
+
 /* Processing indicator overlay */
 .app-datatable .dt-processing {
 	display: flex;

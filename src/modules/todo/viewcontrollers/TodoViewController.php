@@ -340,38 +340,11 @@ class TodoViewController
 		$this->menuSelection = 'todo::todos';
 
 		try {
-			\phpgw::import_class('phpgwapi.jquery');
-			\phpgw::import_class('phpgwapi.css');
-			\phpgw::import_class('phpgwapi.js');
-			\phpgwapi_jquery::load_widget('core');
-			\phpgwapi_jquery::load_widget('contextMenu');
-			self::add_javascript('phpgwapi', "jquery", 'common.js', false, array('combine' => true));
-			$datatable_assets = array(
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net/js/dataTables.min.js',
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-dt/js/dataTables.dataTables.min.js',
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons/js/dataTables.buttons.min.js',
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons-dt/js/buttons.dataTables.min.js',
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive/js/dataTables.responsive.min.js',
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive-dt/js/responsive.dataTables.min.js',
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select/js/dataTables.select.min.js',
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select-dt/js/select.dataTables.min.js',
-				'phpgwapi/js/DataTables3/plugins/dataTables.inputPaging.js'
-			);
-			foreach ($datatable_assets as $datatable_asset)
-			{
-				\phpgwapi_js::getInstance()->add_external_file($datatable_asset, false, array('combine' => false));
-			}
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.min.js', false, array('combine' => true));
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js', false, array('combine' => true));
-			\phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-dt/css/dataTables.dataTables.min.css');
-			\phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons-dt/css/buttons.dataTables.min.css');
-			\phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive-dt/css/responsive.dataTables.min.css');
-			\phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select-dt/css/select.dataTables.min.css');
-			\phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables3/plugins/dataTables.inputPaging.min.css');
-
-
-
 			$query = $request->getQueryParams();
+			$user = Settings::getInstance()->get('user');
+			$rowsPerPage = isset($user['preferences']['common']['maxmatchs']) && (int) $user['preferences']['common']['maxmatchs'] > 0
+				? (int) $user['preferences']['common']['maxmatchs']
+				: 10;
 			$selectedCat = isset($query['cat_id']) ? (int) $query['cat_id'] : 0;
 			$selectedFilter = isset($query['filter']) ? (string) $query['filter'] : 'none';
 			$search = isset($query['search']) ? (string) $query['search'] : '';
@@ -401,7 +374,8 @@ class TodoViewController
 				'filters' => $filters,
 				'acl_delete' => (bool) Acl::getInstance()->check('.todo', ACL_DELETE, 'todo'),
 				'search_query' => $search,
-				'jquery_phpgw_i18n' => $this->getDatatableI18n(),
+				'rows_per_page' => $rowsPerPage,
+				'length_menu' => [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3],
 				'matrix_url' => \phpgw::link('/todo/view/todos/matrix', [
 					'month' => date('m'),
 					'year' => date('Y'),

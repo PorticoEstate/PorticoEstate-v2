@@ -2,10 +2,15 @@
 {{ add_style(modules_url ~ '/phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons-dt/css/buttons.dataTables.min.css') }}
 {{ add_style(modules_url ~ '/phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive-dt/css/responsive.dataTables.min.css') }}
 {{ add_style(modules_url ~ '/phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select-dt/css/select.dataTables.min.css') }}
+{{ add_style(modules_url ~ '/phpgwapi/js/DataTables3/plugins/dataTables.inputPaging.min.css') }}
+{{ add_style(modules_url ~ '/phpgwapi/js/contextMenu/jquery.contextMenu.min.css') }}
 {{ add_inline_style(source('@phpgwapi_components/app_datatable/app_datatable.css')) }}
 {{ add_script(modules_url ~ '/phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net/js/dataTables.min.js') }}
 {{ add_script(modules_url ~ '/phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive/js/dataTables.responsive.min.js') }}
 {{ add_script(modules_url ~ '/phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons/js/dataTables.buttons.min.js') }}
 {{ add_script(modules_url ~ '/phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select/js/dataTables.select.min.js') }}
+{{ add_script(modules_url ~ '/phpgwapi/js/DataTables3/plugins/dataTables.inputPaging.js') }}
+{{ add_script(modules_url ~ '/phpgwapi/js/contextMenu/jquery.ui.position.min.js') }}
+{{ add_script(modules_url ~ '/phpgwapi/js/contextMenu/jquery.contextMenu.min.js') }}
 {{ add_inline_script(source('@phpgwapi_components/app_datatable/app_datatable.js')) }}
 <div id="{{ id | default('app-datatable') }}"></div>

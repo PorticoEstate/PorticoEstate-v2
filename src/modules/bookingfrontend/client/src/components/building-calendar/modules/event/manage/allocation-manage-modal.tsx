@@ -113,6 +113,8 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 				const dead = isDeadBlocked(occurrence);
 				const blocker = occurrence.blocking_bookings[0];
 				const assertsCancellable = occurrence.cancellable && (cancelMode === 'request' || cancelMode === 'delete');
+				// Blocked rows are untouched: they answer a question that has nothing to do with
+				// the setting.
 				const dotClass = !occurrence.cancellable
 					? (dead ? styles.blockedDead : styles.blockedLive)
 					: assertsCancellable

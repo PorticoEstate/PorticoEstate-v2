@@ -116,6 +116,16 @@ export interface ManageModalAdapter<
  * request-mode branch with 409 rather than porting legacy's case-worker notification, and
  * making that branch reachable from this client would be new behaviour, not a port.
  *
+ * NOT PRETENDING AND DISCLOSING ARE NOT ALTERNATIVES (#23430). This shared core used to offer an
+ * enabled "send request" control on the confirm step whose only possible outcome, given the 409
+ * above, was to re-render the very notice that already told the user this capability does not
+ * exist. Two earlier rulings on this modal are both still true and both apply here at once: a
+ * control must never claim an ability the system cannot perform, AND the capability gap must
+ * still be disclosed rather than silently dropped. The fix is not a choice between them — the
+ * confirm step's primary button is simply absent (not disabled — see the footer's own comment)
+ * whenever `cancelMode === 'request'`, and the same `requestModeNoticeLangKey` Alert that used to
+ * wait for the failed attempt is now shown proactively instead, on the same step.
+ *
  * FOUR STATES, NOT TWO — and this is the whole point of the shape below.
  *
  * The flag can be known-TRUE, known-FALSE, IN FLIGHT, or otherwise NOT KNOWN: the settings query
@@ -473,17 +483,35 @@ function ManageModal<
 							    query has answered, so it is the likeliest place to render
 							    mid-fetch — an enabled route into the wizard would assert an
 							    ability just as unearned as the disabled button's old false
-							    refusal. */}
-							<Button
-								variant="secondary"
-								data-color="danger"
-								className={styles.overviewActionButton}
-								disabled={cancelMode === 'unresolved' || cancelMode === 'loading'}
-								onClick={() => setStep('scope')}
-							>
-								{cancelMode === 'loading' && <Spinner aria-hidden={true} data-size="xs"/>}
-								{cancelLabel}
-							</Button>
+							    refusal.
+							    'request' is deliberately NOT a third disabled case here (#23441).
+							    Disabling this control while it still read `cancelLabel`'s "Be om
+							    avbestilling" would only move the false claim, not remove it — a
+							    disabled button still asserts a request path exists, merely gated
+							    shut, which is the same defect the confirm step's send-button was
+							    pulled for (#23430): this installation has no request-mode endpoint
+							    at all, so no control here can honestly name that action, enabled or
+							    disabled. The control is ABSENT in this mode instead, and the same
+							    `requestModeNoticeLangKey` Alert the scope/confirm steps show is
+							    surfaced here too, in its place — so the honest word ("contact the
+							    building") is visible on the entry screen itself, not only reachable
+							    by clicking through a route this control no longer offers. */}
+							{cancelMode === 'request' ? (
+								<Alert data-color="warning">
+									<Paragraph data-size="sm">{t(adapter.requestModeNoticeLangKey)}</Paragraph>
+								</Alert>
+							) : (
+								<Button
+									variant="secondary"
+									data-color="danger"
+									className={styles.overviewActionButton}
+									disabled={cancelMode === 'unresolved' || cancelMode === 'loading'}
+									onClick={() => setStep('scope')}
+								>
+									{cancelMode === 'loading' && <Spinner aria-hidden={true} data-size="xs"/>}
+									{cancelLabel}
+								</Button>
+							)}
 						</div>
 					</div>
 				</div>
@@ -609,7 +637,12 @@ function ManageModal<
 					</Alert>
 				)}
 
-				{requestModeRefusal && (
+				{/* Shown proactively in 'request' mode, not only after a failed attempt: the
+				    server-side gap (no request-mode endpoint) is already known before the user
+				    reaches this step, so there is nothing to wait for. `requestModeRefusal` still
+				    covers the TOCTOU case where `cancelMode` locally read 'delete' (the button
+				    below was shown) but the server disagreed at submit time. */}
+				{(cancelMode === 'request' || requestModeRefusal) && (
 					<Alert data-color="warning">
 						<Paragraph data-size="sm">{t(adapter.requestModeNoticeLangKey)}</Paragraph>
 					</Alert>
@@ -693,20 +726,22 @@ function ManageModal<
 			</span>
 			<Heading level={2} data-size="xs" className={styles.stepTitle}>
 				{step === 'confirm'
-					// #19526: this heading MUST NOT assert cancellability while the setting that
-					// decides it is unresolved OR still loading — reusing the ONE `cancelMode`
-					// discriminator (cancelLabel already carries the right word for both: the
-					// same "Utilgjengelig" the confirm button shows when unresolved, "Laster
-					// inn…" when merely loading) rather than adding a second expression. This
-					// step is normally unreachable before the setting resolves — the overview
-					// button that leads here is disabled until then — but reads the same
-					// discriminator anyway rather than assuming that guard always holds.
-					? (cancelMode === 'unresolved' || cancelMode === 'loading'
-						? cancelLabel
-						: t('bookingfrontend.occurrences_can_be_cancelled', {
+					// #19526/#23430: this heading MUST NOT assert cancellability except in the ONE
+					// mode where the confirm button below can actually back that claim up — 'delete'.
+					// 'unresolved' and 'loading' fall back to `cancelLabel` for the reason #19526
+					// gave (this step is normally unreachable before the setting resolves, but reads
+					// the same discriminator anyway rather than assuming that guard always holds);
+					// 'request' falls back to the same label for a new reason (#23430): the backend
+					// has no request-mode endpoint, so "N occurrences can be cancelled" would be a
+					// claim this screen cannot honour any more than the button that used to sit
+					// beside it could. Reusing cancelLabel keeps ONE discriminator driving every
+					// surface instead of adding a second expression per mode.
+					? (cancelMode === 'delete'
+						? t('bookingfrontend.occurrences_can_be_cancelled', {
 							cancellable: cancellableCount,
 							total: occurrenceViews.length,
-						}))
+						})
+						: cancelLabel)
 					: cancelLabel}
 			</Heading>
 		</div>
@@ -748,8 +783,14 @@ function ManageModal<
 				{/* `cancelMode` gates the affordance itself, not just its wording: this onClick
 				    is the real delete in every mode, so the button must not be clickable in a
 				    state whose consequences the client cannot describe — 'unresolved' because
-				    it never learned them, 'loading' because it has not been told them yet. */}
-				{step === 'confirm' && (
+				    it never learned them, 'loading' because it has not been told them yet.
+				    'request' is absent from this render entirely, not merely disabled (#23430):
+				    the server has no request-mode endpoint at all, so a control offering to
+				    "send" one would promise an action this installation cannot perform, no
+				    matter its enabled state. The Alert above already discloses the gap; the
+				    "Back"/"Close" control in the footer's other slot remains the only way
+				    forward from here in this mode. */}
+				{step === 'confirm' && cancelMode !== 'request' && (
 					<Button
 						variant="primary"
 						data-color="danger"
@@ -759,9 +800,7 @@ function ManageModal<
 						{(cancelMutation.isPending || cancelMode === 'loading') && <Spinner aria-hidden={true} data-size="xs"/>}
 						{cancelMode === 'unresolved' || cancelMode === 'loading'
 							? cancelLabel
-							: cancelMode === 'request'
-								? t('bookingfrontend.send_request_for_n_occurrences', {count: cancellableCount})
-								: t('bookingfrontend.cancel_n_occurrences', {count: cancellableCount})}
+							: t('bookingfrontend.cancel_n_occurrences', {count: cancellableCount})}
 					</Button>
 				)}
 				{step === 'done' && (

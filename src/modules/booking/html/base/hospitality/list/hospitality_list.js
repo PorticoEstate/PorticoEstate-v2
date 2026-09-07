@@ -76,6 +76,8 @@ AppDatatable.init({
 		columns: columns,
 		filters: filters,
 		rowActions: rowActions.length ? rowActions : undefined,
+		rowActionsDisplay: 'contextMenu',
+		rowActionsToolbar: true,
 		order: [[0, 'asc']],
 		pageLength: CFG.pageLength,
 		lengthMenu: CFG.lengthMenu,

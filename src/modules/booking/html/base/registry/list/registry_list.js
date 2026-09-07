@@ -109,6 +109,8 @@
 				columns: columns,
 				filters: filters.length ? filters : undefined,
 				rowActions: rowActions.length ? rowActions : undefined,
+				rowActionsDisplay: 'contextMenu',
+				rowActionsToolbar: true,
 				columnVisibility: true,
 				columnVisibilityLabel: L.columns,
 				downloadUrl: CFG.downloadUrl,

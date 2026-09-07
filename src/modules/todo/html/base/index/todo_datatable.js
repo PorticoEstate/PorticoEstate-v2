@@ -92,6 +92,7 @@
 		],
 		rowActions: rowActions,
 		rowActionsDisplay: 'contextMenu',
+		rowActionsToolbar: true,
 		initialSearch: config.initialSearch,
 		order: [[0, 'asc']],
 		pageLength: config.pageLength,

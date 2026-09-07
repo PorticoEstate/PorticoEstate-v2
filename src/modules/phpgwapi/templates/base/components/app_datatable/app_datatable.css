@@ -236,6 +236,18 @@
 	flex-wrap: nowrap;
 }
 
+.app-datatable__row-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--app-datatable-space-sm, 0.5rem);
+	margin-bottom: var(--app-datatable-space-sm, 0.5rem);
+}
+
+.app-datatable .app-button:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
 /* Column search input width override */
 .app-datatable__col-search {
 	width: 100%;

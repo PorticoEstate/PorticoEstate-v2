@@ -479,6 +479,7 @@
 					}
 					var tableRow = table.row(rowNode);
 					tableRow.remove().draw(false);
+					if (handle.clearSelection) handle.clearSelection();
 					if (action.successMessage) alerts.show('success', action.successMessage);
 					if (handle.config.onDelete) handle.config.onDelete(rowData);
 				})
@@ -491,6 +492,47 @@
 		if (action.type === 'custom' && action.handler) {
 			action.handler(rowData, handle);
 		}
+	}
+
+	function buildRowActionsToolbar(rowActions, getSelection, runAction) {
+		var toolbar = document.createElement('div');
+		toolbar.className = 'app-datatable__row-actions';
+		toolbar.setAttribute('data-app-datatable-role', 'selected-row-actions');
+
+		var buttons = rowActions.map(function (action) {
+			var button = document.createElement('button');
+			button.type = 'button';
+			button.className = 'app-button app-datatable__row-action';
+			button.setAttribute('data-app-datatable-action', 'selected-row-action');
+			button.setAttribute('data-variant', action.variant || (action.type === 'delete' ? 'tertiary' : 'secondary'));
+			button.setAttribute('data-size', 'sm');
+			if (action.type === 'delete') button.setAttribute('data-color', 'danger');
+			button.textContent = action.label || action.text || '';
+			button.disabled = true;
+
+			button.addEventListener('click', function () {
+				var selection = getSelection();
+				if (!selection || !selection.rowData) return;
+				runAction(action, selection.rowData, selection.rowNode);
+			});
+
+			toolbar.appendChild(button);
+			return {action: action, button: button};
+		});
+
+		function update(rowData) {
+			buttons.forEach(function (item) {
+				var visible = rowData && (!item.action.visible || item.action.visible(rowData));
+				item.button.disabled = !visible;
+				item.button.classList.toggle('is-hidden', !!rowData && !visible);
+				if (!rowData) item.button.classList.remove('is-hidden');
+			});
+		}
+
+		return {
+			element: toolbar,
+			update: update
+		};
 	}
 
 	// ------------------------------------------------------------------
@@ -719,6 +761,51 @@
 		var filterSystem = buildFilters(container, config.filters, config);
 		var actionDisplay = config.rowActionsDisplay || 'column';
 		var useActionsColumn = actionDisplay !== 'contextMenu';
+		var showRowActionsToolbar = config.rowActionsToolbar === true && config.rowActions && config.rowActions.length;
+		var selectedRowNode = null;
+		var rowActionsToolbar = null;
+
+		function setSelectedRow(rowNode) {
+			if (selectedRowNode && selectedRowNode !== rowNode) {
+				selectedRowNode.classList.remove('selected');
+			}
+
+			selectedRowNode = rowNode;
+			if (selectedRowNode) selectedRowNode.classList.add('selected');
+
+			if (rowActionsToolbar) {
+				rowActionsToolbar.update(selectedRowNode && table ? table.row(selectedRowNode).data() : null);
+			}
+		}
+
+		function clearSelectedRow() {
+			if (selectedRowNode) selectedRowNode.classList.remove('selected');
+			selectedRowNode = null;
+			if (rowActionsToolbar) rowActionsToolbar.update(null);
+		}
+
+		function toggleSelectedRow(rowNode) {
+			if (selectedRowNode === rowNode) {
+				clearSelectedRow();
+				return;
+			}
+			setSelectedRow(rowNode);
+		}
+
+		if (showRowActionsToolbar) {
+			rowActionsToolbar = buildRowActionsToolbar(
+				config.rowActions,
+				function () {
+					return selectedRowNode && table
+						? {rowNode: selectedRowNode, rowData: table.row(selectedRowNode).data()}
+						: null;
+				},
+				function (action, rowData, rowNode) {
+					executeRowAction(action, rowData, table, rowNode, handle, alerts);
+				}
+			);
+			container.appendChild(rowActionsToolbar.element);
+		}
 
 		// Table element
 		var tableEl = document.createElement('table');
@@ -1061,7 +1148,19 @@
 			}
 
 			if (config.rowActions && actionDisplay === 'contextMenu') {
-				setupContextMenu(table, tableEl, config.rowActions, handle, alerts);
+				setupContextMenu(table, tableEl, config.rowActions, handle, alerts, setSelectedRow);
+			}
+
+			if (showRowActionsToolbar) {
+				tableEl.querySelector('tbody').addEventListener('click', function (e) {
+					if (e.target.closest('.app-datatable__actions') || e.target.closest('a') || e.target.closest('button') || e.target.closest('input, select, textarea')) return;
+					var tr = e.target.closest('tr');
+					if (!tr || tr.parentElement.tagName === 'THEAD' || tr.classList.contains('child')) return;
+					var row = table.row(tr);
+					if (row.data()) toggleSelectedRow(tr);
+				});
+
+				table.on('draw', clearSelectedRow);
 			}
 
 			// Delete handler via delegation
@@ -1157,7 +1256,7 @@
 			handle.table = table;
 		}
 
-		function setupContextMenu(table, tableEl, rowActions, handle, alerts) {
+		function setupContextMenu(table, tableEl, rowActions, handle, alerts, selectRow) {
 			if (!window.jQuery || !window.jQuery.contextMenu || !rowActions.length) return;
 
 			var selector = '#' + tableEl.id + ' tbody tr';
@@ -1168,6 +1267,7 @@
 					var rowNode = $trigger[0];
 					var rowData = table.row(rowNode).data();
 					if (!rowData) return false;
+					if (selectRow) selectRow(rowNode);
 
 					var visibleActions = rowActions.filter(function (action) {
 						return !action.visible || action.visible(rowData);
@@ -1194,6 +1294,7 @@
 		var handle = {
 			config: config,
 			table: null,
+			clearSelection: clearSelectedRow,
 			reload: function () {
 				if (table) table.ajax.reload(null, false);
 			},

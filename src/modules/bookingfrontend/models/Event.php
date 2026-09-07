@@ -227,4 +227,13 @@ class Event extends BaseScheduleEntity
 	 * })
 	 */
 	public $participant_limit;
+
+	/**
+	 * @OA\Property(
+	 *     type="boolean",
+	 *     description="True if cancelling this event would leave its application with no other active association, causing the application to be rejected"
+	 * )
+	 * @Expose
+	 */
+	public $cancellation_closes_application;
 }

@@ -77,6 +77,7 @@ class ScheduleEntityService
             foreach ($this->groupByEntity($rows) as $eventGroup) {
                 $event = new Event($eventGroup[0]);
                 $event->resources = array_map([$this, 'formatResource'], $eventGroup);
+                $event->cancellation_closes_application = $this->computeCancellationClosesApplication($event->id, $event->application_id);
 
                 // Add edit/cancel links
                 $eventData = $event->serialize(['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]);
@@ -380,6 +381,7 @@ class ScheduleEntityService
         foreach ($this->groupByEntity($events) as $eventGroup) {
             $event = new Event($eventGroup[0]);
             $event->resources = array_map([$this, 'formatResource'], $eventGroup);
+            $event->cancellation_closes_application = $this->computeCancellationClosesApplication($event->id, $event->application_id);
             $results[] = $event;
         }
 
@@ -506,6 +508,7 @@ class ScheduleEntityService
         foreach ($this->groupByEntity($events) as $eventGroup) {
             $event = new Event($eventGroup[0]);
             $event->resources = array_map([$this, 'formatResource'], $eventGroup);
+            $event->cancellation_closes_application = $this->computeCancellationClosesApplication($event->id, $event->application_id);
 
             // Add participant limits to resources
             foreach ($event->resources as &$resourceItem) {
@@ -594,6 +597,7 @@ class ScheduleEntityService
         foreach ($this->groupByEntity($events) as $eventGroup) {
             $event = new Event($eventGroup[0]);
             $event->resources = array_map([$this, 'formatResource'], $eventGroup);
+            $event->cancellation_closes_application = $this->computeCancellationClosesApplication($event->id, $event->application_id);
 
             // Add participant limits to resources
             foreach ($event->resources as &$resource) {
@@ -606,6 +610,39 @@ class ScheduleEntityService
         }
 
         return $results;
+    }
+
+    /**
+     * Determine whether cancelling this event would close its application.
+     *
+     * Mirrors the cascade condition in bookingfrontend uievent.inc.php cancel():
+     * the application is set to REJECTED when the event has an application_id
+     * and no OTHER active row in bb_application_association (bookings, allocations,
+     * or events sharing that application_id) remains.
+     *
+     * @param int $eventId The event's own id (bb_application_association.id for its 'event' rows)
+     * @param int|null $applicationId The event's application_id
+     * @return bool
+     */
+    private function computeCancellationClosesApplication(int $eventId, ?int $applicationId): bool
+    {
+        if (empty($applicationId)) {
+            return false;
+        }
+
+        $sql = "SELECT 1 FROM bb_application_association
+                WHERE application_id = :application_id
+                  AND id != :event_id
+                  AND active = 1
+                LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':application_id' => $applicationId,
+            ':event_id' => $eventId
+        ]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC) === false;
     }
 
     /**

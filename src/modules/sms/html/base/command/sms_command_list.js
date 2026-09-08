@@ -1,1 +1,25 @@
-(function(){'use strict';var c=window.__smsCommands;if(!c||!window.AppDatatable)return;AppDatatable.init({id:c.id,ajax:{url:c.apiUrl},serverSide:true,newItem:{label:c.lang.add,url:c.addUrl},columns:[{data:'code',title:c.lang.code},{data:'uid',title:c.lang.user},{data:'exec',title:c.lang.exec}],rowActions:[{type:'link',label:c.lang.edit,url:c.addUrl+'/{id}'},{type:'link',label:c.lang.delete,url:c.deleteUrlTemplate+'/{id}',variant:'tertiary'}],rowActionsDisplay:'contextMenu',rowActionsToolbar:true,lang:{emptyTable:c.lang.empty}});})();
+(function () {
+	'use strict';
+
+	var config = window.__smsCommands;
+	if (!config || !window.AppDatatable) return;
+
+	AppDatatable.init({
+		id: config.id,
+		ajax: {url: config.apiUrl},
+		serverSide: true,
+		newItem: {label: config.lang.add, url: config.addUrl},
+		columns: [
+			{data: 'code', title: config.lang.code},
+			{data: 'uid', title: config.lang.user},
+			{data: 'exec', title: config.lang.exec}
+		],
+		rowActions: [
+			{type: 'link', label: config.lang.edit, url: config.addUrl + '/{id}'},
+			{type: 'link', label: config.lang.delete, url: config.deleteUrlTemplate + '/{id}', variant: 'tertiary'}
+		],
+		rowActionsDisplay: 'contextMenu',
+		rowActionsToolbar: true,
+		lang: {emptyTable: config.lang.empty}
+	});
+})();

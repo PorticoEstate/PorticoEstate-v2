@@ -70,6 +70,7 @@ $app->group('/sms', function (RouteCollectorProxy $group) use ($smsCsrfMiddlewar
 		$viewGroup->get('/command', SmsCommandViewController::class . ':index');
 		$viewGroup->get('/command/edit[/{id:[0-9]+}]', SmsCommandViewController::class . ':edit');
 		$viewGroup->get('/command/log', SmsCommandViewController::class . ':log');
+		$viewGroup->get('/command/redirect', SmsCommandViewController::class . ':redirect');
 		$viewGroup->get('/command/{id:[0-9]+}/delete', SmsCommandViewController::class . ':delete');
 		$viewGroup->get('/inbox/{id:[0-9]+}/delete', SmsViewController::class . ':deleteInbox');
 		$viewGroup->get('/outbox/{id:[0-9]+}/delete', SmsViewController::class . ':deleteOutbox');

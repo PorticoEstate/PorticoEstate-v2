@@ -1,1 +1,37 @@
-document.addEventListener('DOMContentLoaded',function(){var a=document.getElementById('sms-command-edit'),f=document.getElementById('sms-command-form'),e=document.getElementById('sms-command-error');f.addEventListener('submit',function(x){x.preventDefault();var p={code:document.getElementById('command-code').value,type:document.getElementById('command-type').value,exec:document.getElementById('command-exec').value,descr:document.getElementById('command-descr').value,csrf_name:a.dataset.csrfName,csrf_value:a.dataset.csrfValue};fetch(a.dataset.apiUrl,{method:a.dataset.id>0?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};});}).then(function(r){if(!r.ok){e.textContent=r.d.error||'Failed';e.hidden=false;return;}location.href=a.dataset.listUrl;});});});
+document.addEventListener('DOMContentLoaded', function () {
+	var app = document.getElementById('sms-command-edit');
+	var form = document.getElementById('sms-command-form');
+	var error = document.getElementById('sms-command-error');
+
+	form.addEventListener('submit', function (event) {
+		event.preventDefault();
+
+		var payload = {
+			code: document.getElementById('command-code').value,
+			type: document.getElementById('command-type').value,
+			exec: document.getElementById('command-exec').value,
+			descr: document.getElementById('command-descr').value,
+			csrf_name: app.dataset.csrfName,
+			csrf_value: app.dataset.csrfValue
+		};
+
+		fetch(app.dataset.apiUrl, {
+			method: app.dataset.id > 0 ? 'PUT' : 'POST',
+			headers: {'Content-Type': 'application/json'},
+			body: JSON.stringify(payload)
+		})
+			.then(function (response) {
+				return response.json().then(function (data) {
+					return {ok: response.ok, data: data};
+				});
+			})
+			.then(function (result) {
+				if (!result.ok) {
+					error.textContent = result.data.error || 'Failed';
+					error.hidden = false;
+					return;
+				}
+				window.location.href = app.dataset.listUrl;
+			});
+	});
+});

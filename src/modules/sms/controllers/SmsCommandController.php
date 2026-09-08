@@ -111,6 +111,15 @@ class SmsCommandController
 		], 'id', 'DESC');
 		$bo = $this->businessObject();
 		$rows = (array) $bo->read_log(['start' => (int) ($body['start'] ?? 0), 'query' => (string) ($body['search']['value'] ?? ''), 'order' => $order, 'sort' => $direction, 'allrows' => false]);
+		$rows = array_map(static function (array $row): array {
+			$row['redirect_url'] = ((int) ($row['success'] ?? 0) === 1)
+				? \phpgw::link('/sms/view/command/redirect', [
+					'code' => (string) ($row['code'] ?? ''),
+					'param' => (string) ($row['param'] ?? ''),
+				], true)
+				: '';
+			return $row;
+		}, $rows);
 		$total = (int) $bo->total_records;
 		return ResponseHelper::sendJSONResponse($draw > 0 ? ['draw' => $draw, 'recordsTotal' => $total, 'recordsFiltered' => $total, 'data' => $rows] : ['items' => $rows, 'total' => $total]);
 	}

@@ -1,4 +1,30 @@
 {% extends layout|default('@views/_bare.twig') %}
+
 {% block title %}{{ lang('commands') }}{% endblock %}
-{% block content %}{% include '@phpgwapi_components/app_datatable/app_datatable.twig' with {id:'sms-command-datatable'} %}{% endblock %}
-{% block scripts %}<script>window.__smsCommands={id:'sms-command-datatable',apiUrl:'{{ api_url|e('js') }}',addUrl:'{{ add_url|e('js') }}',deleteUrlTemplate:'{{ delete_url_template|e('js') }}',lang:{code:'{{ lang('code')|e('js') }}',exec:'{{ lang('exec')|e('js') }}',user:'{{ lang('user')|e('js') }}',add:'{{ lang('add')|e('js') }}',edit:'{{ lang('edit')|e('js') }}',delete:'{{ lang('delete')|e('js') }}',empty:'{{ lang('No data available in table')|e('js') }}'}};</script><script>{{ source('@views/command/sms_command_list.js') }}</script>{% endblock %}
+
+{% block content %}
+	{% include '@phpgwapi_components/app_datatable/app_datatable.twig' with {
+		id: 'sms-command-datatable'
+	} %}
+{% endblock %}
+
+{% block scripts %}
+	<script>
+		window.__smsCommands = {
+			id: 'sms-command-datatable',
+			apiUrl: '{{ api_url|e('js') }}',
+			addUrl: '{{ add_url|e('js') }}',
+			deleteUrlTemplate: '{{ delete_url_template|e('js') }}',
+			lang: {
+				code: '{{ lang('code')|e('js') }}',
+				exec: '{{ lang('exec')|e('js') }}',
+				user: '{{ lang('user')|e('js') }}',
+				add: '{{ lang('add')|e('js') }}',
+				edit: '{{ lang('edit')|e('js') }}',
+				delete: '{{ lang('delete')|e('js') }}',
+				empty: '{{ lang('No data available in table')|e('js') }}'
+			}
+		};
+	</script>
+	<script>{{ source('@views/command/sms_command_list.js') }}</script>
+{% endblock %}

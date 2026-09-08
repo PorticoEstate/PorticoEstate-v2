@@ -1,5 +1,54 @@
 {% extends layout|default('@views/_bare.twig') %}
+
 {% block title %}{{ lang('delete') }}{% endblock %}
-{% block styles %}<style>{{ source('@views/command/sms_command_delete.css') }}</style>{% endblock %}
-{% block content %}<div id="sms-command-delete" class="sms-message-page" data-api-url="{{ api_url|e }}" data-list-url="{{ list_url|e }}" data-csrf-name="{{ csrf.name|e('html_attr') }}" data-csrf-value="{{ csrf.value|e('html_attr') }}"><h1>{{ lang('delete') }}</h1><p>{{ lang('do you really want to delete this entry') }}</p><button id="sms-command-delete-confirm" class="sms-button" type="button">{{ lang('yes') }}</button> <a class="sms-button sms-button--secondary" href="{{ list_url|e }}">{{ lang('no') }}</a><p id="sms-command-delete-error" hidden></p></div>{% endblock %}
-{% block scripts %}<script>document.addEventListener('DOMContentLoaded',function(){var a=document.getElementById('sms-command-delete');document.getElementById('sms-command-delete-confirm').addEventListener('click',function(){fetch(a.dataset.apiUrl,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf_name:a.dataset.csrfName,csrf_value:a.dataset.csrfValue})}).then(function(r){if(r.ok)location.href=a.dataset.listUrl;else document.getElementById('sms-command-delete-error').hidden=false;});});});</script>{% endblock %}
+
+{% block styles %}
+	<style>{{ source('@views/command/sms_command_delete.css') }}</style>
+{% endblock %}
+
+{% block content %}
+	<div
+		id="sms-command-delete"
+		class="sms-message-page"
+		data-api-url="{{ api_url|e }}"
+		data-list-url="{{ list_url|e }}"
+		data-csrf-name="{{ csrf.name|e('html_attr') }}"
+		data-csrf-value="{{ csrf.value|e('html_attr') }}"
+	>
+		<h1>{{ lang('delete') }}</h1>
+		<p>{{ lang('do you really want to delete this entry') }}</p>
+		<button id="sms-command-delete-confirm" class="sms-button" type="button">
+			{{ lang('yes') }}
+		</button>
+		<a class="sms-button sms-button--secondary" href="{{ list_url|e }}">
+			{{ lang('no') }}
+		</a>
+		<p id="sms-command-delete-error" hidden></p>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			var app = document.getElementById('sms-command-delete');
+			var error = document.getElementById('sms-command-delete-error');
+
+			document.getElementById('sms-command-delete-confirm').addEventListener('click', function () {
+				fetch(app.dataset.apiUrl, {
+					method: 'DELETE',
+					headers: {'Content-Type': 'application/json'},
+					body: JSON.stringify({
+						csrf_name: app.dataset.csrfName,
+						csrf_value: app.dataset.csrfValue
+					})
+				}).then(function (response) {
+					if (response.ok) {
+						window.location.href = app.dataset.listUrl;
+						return;
+					}
+					error.hidden = false;
+				});
+			});
+		});
+	</script>
+{% endblock %}

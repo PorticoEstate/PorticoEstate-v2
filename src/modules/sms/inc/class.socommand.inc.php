@@ -39,26 +39,36 @@ class sms_socommand
 		$this->like = $this->db->like;
 	}
 
+	private function sortColumn(string $order, array $columns, string $default): string
+	{
+		return $columns[$order] ?? $default;
+	}
+
+	private function sortDirection($sort, string $default = 'DESC'): string
+	{
+		return strtoupper((string) $sort) === 'ASC' ? 'ASC' : (strtoupper($default) === 'ASC' ? 'ASC' : 'DESC');
+	}
+
 	function read($data)
 	{
 		$start = isset($data['start']) && $data['start'] ? $data['start'] : 0;
 		$query = isset($data['query']) ? $data['query'] : '';
-		$sort = isset($data['sort']) ? $data['sort'] : 'DESC';
-		$order = isset($data['order']) ? $data['order'] : '';
+		$sort = $this->sortDirection($data['sort'] ?? 'DESC');
+		$order = $this->sortColumn((string) ($data['order'] ?? ''), [
+			'code' => 'command_code',
+			'command_code' => 'command_code',
+			'uid' => 'uid',
+			'exec' => 'command_exec',
+			'command_exec' => 'command_exec',
+		], 'command_code');
 		$allrows = isset($data['allrows']) ? $data['allrows'] : '';
 
-		if ($order)
-		{
-			$ordermethod = " order by $order $sort";
-		}
-		else
-		{
-			$ordermethod = ' order by command_code asc';
-		}
+		$ordermethod = " order by $order $sort";
 
 		$table = 'phpgw_sms_featcommand';
 
 		$where = 'WHERE';
+		$filtermethod = '';
 
 		$querymethod = '';
 		if ($query)
@@ -100,23 +110,30 @@ class sms_socommand
 	{
 		$start = isset($data['start']) && $data['start'] ? $data['start'] : 0;
 		$query = isset($data['query']) ? $data['query'] : '';
-		$sort = isset($data['sort']) ? $data['sort'] : 'DESC';
-		$order = isset($data['order']) ? $data['order'] : '';
+		$sort = $this->sortDirection($data['sort'] ?? 'DESC');
+		$order = $this->sortColumn((string) ($data['order'] ?? ''), [
+			'id' => 'command_log_id',
+			'command_log_id' => 'command_log_id',
+			'code' => 'command_log_code',
+			'command_log_code' => 'command_log_code',
+			'sender' => 'sms_sender',
+			'sms_sender' => 'sms_sender',
+			'success' => 'command_log_success',
+			'command_log_success' => 'command_log_success',
+			'datetime' => 'command_log_datetime',
+			'command_log_datetime' => 'command_log_datetime',
+			'param' => 'command_log_param',
+			'command_log_param' => 'command_log_param',
+		], 'command_log_id');
 		$allrows = isset($data['allrows']) ? $data['allrows'] : '';
 		$cat_id = isset($data['cat_id']) && $data['cat_id'] ? $data['cat_id'] : '';
 
-		if ($order)
-		{
-			$ordermethod = " order by $order $sort";
-		}
-		else
-		{
-			$ordermethod = ' order by command_log_id desc';
-		}
+		$ordermethod = " order by $order $sort";
 
 		$table = 'phpgw_sms_featcommand_log';
 
 		$where = 'WHERE';
+		$filtermethod = '';
 
 		if ($cat_id)
 		{

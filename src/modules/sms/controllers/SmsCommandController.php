@@ -30,6 +30,16 @@ class SmsCommandController
 		return Acl::getInstance()->check('.command', Acl::READ, 'sms');
 	}
 
+	private function orderParams(array $body, array $columns, string $defaultColumn, string $defaultDirection = 'ASC'): array
+	{
+		$order = $body['order'][0] ?? [];
+		$columnIndex = (int) ($order['column'] ?? -1);
+		$columnKey = (string) ($columns[$columnIndex]['data'] ?? $defaultColumn);
+		$column = $columns[$columnKey] ?? $columns[$defaultColumn] ?? $defaultColumn;
+		$direction = strtoupper((string) ($order['dir'] ?? $defaultDirection)) === 'DESC' ? 'DESC' : 'ASC';
+		return [$column, $direction];
+	}
+
 	public function index(Request $request, Response $response): Response
 	{
 		if (!$this->allowed()) return ResponseHelper::sendErrorResponse(['error' => 'Access not permitted'], 403);
@@ -38,8 +48,13 @@ class SmsCommandController
 		$start = max(0, (int) ($body['start'] ?? $query['start'] ?? 0));
 		$search = (string) ($body['search']['value'] ?? $body['search'] ?? $query['search'] ?? '');
 		$draw = (int) ($body['draw'] ?? $query['draw'] ?? 0);
+		[$order, $direction] = $this->orderParams($body, [
+			'code' => 'command_code',
+			'uid' => 'uid',
+			'exec' => 'command_exec',
+		], 'code');
 		$bo = $this->businessObject();
-		$rows = (array) $bo->read(['start' => $start, 'query' => $search, 'allrows' => false]);
+		$rows = (array) $bo->read(['start' => $start, 'query' => $search, 'order' => $order, 'sort' => $direction, 'allrows' => false]);
 		$data = array_map(static function (array $row): array {
 			return ['id' => (int) ($row['id'] ?? 0), 'code' => (string) ($row['code'] ?? ''), 'exec' => (string) ($row['exec'] ?? ''), 'uid' => (int) ($row['uid'] ?? 0)];
 		}, $rows);
@@ -86,8 +101,16 @@ class SmsCommandController
 		$query = $request->getQueryParams();
 		$body = (array) ($request->getParsedBody() ?: []);
 		$draw = (int) ($body['draw'] ?? $query['draw'] ?? 0);
+		[$order, $direction] = $this->orderParams($body, [
+			'id' => 'command_log_id',
+			'code' => 'command_log_code',
+			'sender' => 'sms_sender',
+			'success' => 'command_log_success',
+			'datetime' => 'command_log_datetime',
+			'param' => 'command_log_param',
+		], 'id', 'DESC');
 		$bo = $this->businessObject();
-		$rows = (array) $bo->read_log(['start' => (int) ($body['start'] ?? 0), 'query' => (string) ($body['search']['value'] ?? ''), 'allrows' => false]);
+		$rows = (array) $bo->read_log(['start' => (int) ($body['start'] ?? 0), 'query' => (string) ($body['search']['value'] ?? ''), 'order' => $order, 'sort' => $direction, 'allrows' => false]);
 		$total = (int) $bo->total_records;
 		return ResponseHelper::sendJSONResponse($draw > 0 ? ['draw' => $draw, 'recordsTotal' => $total, 'recordsFiltered' => $total, 'data' => $rows] : ['items' => $rows, 'total' => $total]);
 	}

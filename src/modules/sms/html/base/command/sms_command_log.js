@@ -25,6 +25,7 @@
 		id: config.id,
 		ajax: { url: config.apiUrl },
 		serverSide: true,
+		autoWidth: false,
 		columns: [
 			{ data: 'id', title: config.lang.id },
 			{ data: 'code', title: config.lang.code },

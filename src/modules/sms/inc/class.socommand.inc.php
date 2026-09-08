@@ -238,7 +238,7 @@ class sms_socommand
 			. "VALUES ($insert_values)", __LINE__, __FILE__);
 
 		$receipt['message'][] = array('msg' => lang('SMS command code %1 has been added', $values['code']));
-		$receipt['command_id'] = $this->db->get_last_insert_id(phpgw_sms_featcommand, 'command_id');
+		$receipt['command_id'] = $this->db->get_last_insert_id('phpgw_sms_featcommand', 'command_id');
 
 		$this->db->transaction_commit();
 

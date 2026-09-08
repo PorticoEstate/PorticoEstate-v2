@@ -9,6 +9,7 @@
 		id: config.id,
 		ajax: { url: config.apiUrl },
 		serverSide: true,
+		autoWidth: false,
 		newItem: { label: config.lang.add, url: config.addUrl },
 		columns: [
 			{ data: 'code', title: config.lang.code },
@@ -16,7 +17,7 @@
 			{ data: 'exec', title: config.lang.exec }
 		],
 		rowActions: [
-			{ type: 'link', label: config.lang.edit, url: config.addUrl + '/{id}' },
+			{ type: 'link', label: config.lang.edit, url: config.editUrlTemplate },
 			{ type: 'link', label: config.lang.delete, url: config.deleteUrlTemplate + '/{id}', variant: 'tertiary' }
 		],
 		rowActionsDisplay: 'contextMenu',

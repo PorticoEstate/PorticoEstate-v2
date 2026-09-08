@@ -70,6 +70,14 @@ class SmsCommandController
 
 	public function store(Request $request, Response $response): Response
 	{
+		$query = $request->getQueryParams();
+		$parsedBody = $request->getParsedBody();
+		$parsedBody = is_array($parsedBody) ? $parsedBody : [];
+		if (isset($parsedBody['draw']) || isset($parsedBody['columns']) || isset($parsedBody['order']) || isset($query['draw']))
+		{
+			return $this->index($request, $response);
+		}
+
 		if (!Acl::getInstance()->check('.command', Acl::ADD, 'sms')) return ResponseHelper::sendErrorResponse(['error' => 'Access not permitted'], 403);
 		$data = $this->payload($request);
 		foreach (['code', 'type', 'exec'] as $field) if (trim((string) ($data[$field] ?? '')) === '') return ResponseHelper::sendErrorResponse(['error' => 'Missing command field: ' . $field], 400);

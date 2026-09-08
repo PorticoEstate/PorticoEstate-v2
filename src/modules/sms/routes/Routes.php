@@ -18,6 +18,18 @@ $app->post('/sms/inc/plugin/gateway/pswin/soap.php', pswinController::class . ':
 
 $smsCsrfMiddleware = function ($request, $handler) use ($app)
 {
+	$path = (string) $request->getUri()->getPath();
+	$method = strtoupper((string) $request->getMethod());
+	if ($method === 'POST' && $path === '/sms/commands')
+	{
+		$body = (array) ($request->getParsedBody() ?: []);
+		$query = $request->getQueryParams();
+		if (isset($body['draw']) || isset($body['columns']) || isset($body['order']) || isset($query['draw']))
+		{
+			return $handler->handle($request);
+		}
+	}
+
 	if (in_array(strtoupper((string) $request->getMethod()), ['POST', 'PUT', 'PATCH', 'DELETE'], true))
 	{
 		$query = $request->getQueryParams();

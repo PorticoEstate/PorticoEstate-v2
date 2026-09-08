@@ -4,26 +4,35 @@
 	{{ command.id|default(0) ? lang('edit command') : lang('add command') }}
 {% endblock %}
 
+{% block styles %}
+	<style>{{ source('@views/command/sms_command_edit.css') }}</style>
+{% endblock %}
+
 {% block content %}
 	<div
 		id="sms-command-edit"
-		class="sms-message-page"
+		class="sms-command-edit"
 		data-api-url="{{ api_url|e }}"
 		data-list-url="{{ list_url|e }}"
 		data-id="{{ command.id|default(0) }}"
 		data-csrf-name="{{ csrf.name|e('html_attr') }}"
 		data-csrf-value="{{ csrf.value|e('html_attr') }}"
 	>
-		<h1>{{ command.id|default(0) ? lang('edit command') : lang('add command') }}</h1>
-		<div id="sms-command-error" hidden></div>
+		<header class="sms-command-edit__header">
+			<h1>{{ command.id|default(0) ? lang('edit command') : lang('add command') }}</h1>
+			<p class="sms-command-edit__intro">{{ lang('Configure the SMS command code and the program it should execute.') }}</p>
+		</header>
 
-		<form id="sms-command-form" class="sms-form">
-			<label for="command-code">
+		<div id="sms-command-error" class="sms-command-edit__error" role="alert" hidden></div>
+
+		<form id="sms-command-form" class="sms-command-edit__form">
+			<label class="sms-command-edit__field" for="command-code">
 				{{ lang('code') }}
 				<input id="command-code" value="{{ command.code|default('')|e('html_attr') }}" required>
+				<small>{{ lang('The code received in an incoming SMS.') }}</small>
 			</label>
 
-			<label for="command-type">
+			<label class="sms-command-edit__field" for="command-type">
 				{{ lang('command type') }}
 				<select id="command-type" required>
 					{% for type in types %}
@@ -34,19 +43,20 @@
 				</select>
 			</label>
 
-			<label for="command-exec">
+			<label class="sms-command-edit__field" for="command-exec">
 				{{ lang('SMS command exec') }}
 				<input id="command-exec" value="{{ command.exec|default('')|e('html_attr') }}" required>
+				<small>{{ lang('The script or command executed when this code is received.') }}</small>
 			</label>
 
-			<label for="command-descr">
+			<label class="sms-command-edit__field" for="command-descr">
 				{{ lang('descr') }}
 				<textarea id="command-descr">{{ command.descr|default('')|e }}</textarea>
 			</label>
 
-			<div class="sms-form__actions">
-				<button class="sms-button" type="submit">{{ lang('save') }}</button>
-				<a class="sms-button sms-button--secondary" href="{{ list_url|e }}">
+			<div class="sms-command-edit__actions">
+				<button class="sms-command-edit__button" type="submit">{{ lang('save') }}</button>
+				<a class="sms-command-edit__button sms-command-edit__button--secondary" href="{{ list_url|e }}">
 					{{ lang('cancel') }}
 				</a>
 			</div>

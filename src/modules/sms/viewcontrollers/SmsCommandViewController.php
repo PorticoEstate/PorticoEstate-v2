@@ -45,7 +45,12 @@ class SmsCommandViewController
 	{
 		if (!Acl::getInstance()->check('.command', Acl::READ, 'sms')) return $this->deny($response);
 		Settings::getInstance()->update('flags', ['app_header' => lang('sms') . ' - ' . lang('commands')]);
-		return $this->render($request, $response, '@views/command/sms_command_list.twig', ['api_url' => \phpgw::link('/sms/commands'), 'add_url' => \phpgw::link('/sms/view/command/edit'), 'delete_url_template' => \phpgw::link('/sms/view/command/{id}/delete')]);
+		return $this->render($request, $response, '@views/command/sms_command_list.twig', [
+			'api_url' => \phpgw::link('/sms/commands'),
+			'add_url' => \phpgw::link('/sms/view/command/edit'),
+			'edit_url_template' => \phpgw::link('/sms/view/command/edit/__COMMAND_ID__'),
+			'delete_url_template' => \phpgw::link('/sms/view/command/{id}/delete'),
+		]);
 	}
 	public function edit(Request $request, Response $response, array $args): Response
 	{

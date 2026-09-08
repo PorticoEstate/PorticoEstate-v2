@@ -14,6 +14,7 @@
 			id: 'sms-command-datatable',
 			apiUrl: '{{ api_url|e('js') }}',
 			addUrl: '{{ add_url|e('js') }}',
+			editUrlTemplate: '{{ edit_url_template|replace({'__COMMAND_ID__': '{id}'})|e('js') }}',
 			deleteUrlTemplate: '{{ delete_url_template|e('js') }}',
 			lang: {
 				code: '{{ lang('code')|e('js') }}',

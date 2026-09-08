@@ -24,6 +24,7 @@
 		id: config.id,
 		ajax: {url: config.dataUrl},
 		serverSide: true,
+		autoWidth: false,
 		newItem: config.canSend ? {label: config.lang.send, url: config.sendUrl} : undefined,
 		columns: [
 			{data: 'id', title: config.lang.id, searchable: false},

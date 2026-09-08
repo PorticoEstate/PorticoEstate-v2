@@ -159,12 +159,12 @@ class sms_menu
 				'text' => lang('Outbox'),
 				'url' => phpgw::link('/sms/view/outbox')
 			),
-			'send_group' => array(
-				'text' => lang('Send broadcast SMS'),
-				'url' => phpgw::link('/sms/view/send-group')
-			)
+			// 'send_group' => array(
+			// 	'text' => lang('Send broadcast SMS'),
+			// 	'url' => phpgw::link('/sms/view/send-group')
+			// )
 		);
-
+/*
 		if ($acl->check('.autoreply', Acl::READ, 'sms'))
 		{
 			$menus['navigation']['autoreply'] = array(
@@ -179,6 +179,7 @@ class sms_menu
 				'url' => phpgw::link('/index.php', array('menuaction' => 'sms.uiboard.index'))
 			);
 		}
+*/
 		if ($acl->check('.command', Acl::READ, 'sms'))
 		{
 			$menus['navigation']['command'] = array(
@@ -187,6 +188,8 @@ class sms_menu
 				'children' => $command_children
 			);
 		}
+
+/*
 		if ($acl->check('.custom', Acl::READ, 'sms'))
 		{
 			$menus['navigation']['custom'] = array(
@@ -201,6 +204,7 @@ class sms_menu
 				'url' => phpgw::link('/index.php', array('menuaction' => 'sms.uipoll.index'))
 			);
 		}
+*/
 
 		Settings::getInstance()->update('flags', ['currentapp' => $incoming_app]);
 		return $menus;

@@ -60,10 +60,24 @@ class sms_menu
 			$start_page = $userSettings['preferences']['sms']['default_start_page'];
 		}
 
+		// Inbox and outbox now have modern Slim/Twig pages; everything else still uses menuaction.
+		if ($start_page === 'sms.index')
+		{
+			$navbar_url = phpgw::link('/sms/view/inbox');
+		}
+		elseif ($start_page === 'uisms.outbox')
+		{
+			$navbar_url = phpgw::link('/sms/view/outbox');
+		}
+		else
+		{
+			$navbar_url = phpgw::link('/index.php', array('menuaction' => "sms.ui{$start_page}"));
+		}
+
 		$menus['navbar'] = array(
 			'sms' => array(
 				'text' => lang('sms'),
-				'url' => phpgw::link('/index.php', array('menuaction' => "sms.ui{$start_page}")),
+				'url' => $navbar_url,
 				'image' => array('sms', 'navbar'),
 				'order' => 35,
 				'group' => 'facilities management'
@@ -139,11 +153,11 @@ class sms_menu
 		$menus['navigation'] = array(
 			'inbox' => array(
 				'text' => lang('Inbox'),
-				'url' => phpgw::link('/index.php', array('menuaction' => 'sms.uisms.index'))
+				'url' => phpgw::link('/sms/view/inbox')
 			),
 			'outbox' => array(
 				'text' => lang('Outbox'),
-				'url' => phpgw::link('/index.php', array('menuaction' => 'sms.uisms.outbox'))
+				'url' => phpgw::link('/sms/view/outbox')
 			)
 		);
 

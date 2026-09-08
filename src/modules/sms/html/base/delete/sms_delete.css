@@ -1,0 +1,6 @@
+.sms-message-page{padding:1rem}
+.sms-form__actions{display:flex;flex-wrap:wrap;gap:.7rem}
+.sms-button{display:inline-block;padding:.55rem .85rem;border:1px solid #20568f;border-radius:4px;background:#2a72ba;color:#fff;text-decoration:none;cursor:pointer}
+.sms-button--danger{background:#b42318;border-color:#8f1c14}
+.sms-button--secondary{background:#fff;color:#20568f}
+.sms-message--error{color:#b42318}

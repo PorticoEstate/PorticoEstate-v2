@@ -1,0 +1,55 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Inbox') }}{% endblock %}
+
+{% block styles %}
+	<style>{{ source('@views/inbox/sms_inbox.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<div class="sms-inbox">
+	{% include '@phpgwapi_components/app_datatable/app_datatable.twig' with {
+		id: 'sms-inbox-datatable'
+	} %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+	window.__smsInbox = {
+		id: 'sms-inbox-datatable',
+		dataUrl: '{{ api_url|e('js') }}',
+		sendUrl: '{{ send_url|e('js') }}',
+		replyUrlTemplate: '{{ reply_url_template|replace({'__SENDER__': '{sender}'})|e('js') }}',
+		deleteUrlTemplate: '{{ delete_url_template|replace({'__MESSAGE_ID__': '{id}'})|e('js') }}',
+		canDelete: {{ can_delete ? 'true' : 'false' }},
+		canSend: {{ can_send ? 'true' : 'false' }},
+		pageLength: {{ rows_per_page|default(10) }},
+		lengthMenu: {{ length_menu|default([10, 25, 50])|json_encode|raw }},
+		lang: {
+			id: '{{ lang('ID')|e('js') }}',
+			date: '{{ lang('time')|e('js') }}',
+			sender: '{{ lang('sender')|e('js') }}',
+			user: '{{ lang('user')|e('js') }}',
+			message: '{{ lang('message')|e('js') }}',
+			send: '{{ lang('Send SMS')|e('js') }}',
+			reply: '{{ lang('answer')|e('js') }}',
+			delete: '{{ lang('delete')|e('js') }}',
+			confirmDelete: '{{ lang('do you really want to delete this entry')|e('js') }}',
+			deleted: '{{ lang('deleted')|e('js') }}',
+			emptyTable: '{{ lang('No data available in table')|e('js') }}',
+			search: '{{ lang('search')|e('js') }}',
+			info: '{{ lang('Showing _START_ to _END_ of _TOTAL_ entries')|e('js') }}',
+			infoEmpty: '{{ lang('Showing 0 to 0 of 0 entries')|e('js') }}',
+			infoFiltered: '{{ lang('(filtered from _MAX_ total entries)')|e('js') }}',
+			lengthMenu: '{{ lang('Show _MENU_ entries')|e('js') }}',
+			zeroRecords: '{{ lang('No matching records found')|e('js') }}',
+			first: '{{ lang('first')|e('js') }}',
+			last: '{{ lang('last')|e('js') }}',
+			next: '{{ lang('next')|e('js') }}',
+			previous: '{{ lang('prev')|e('js') }}'
+		}
+	};
+</script>
+<script>{{ source('@views/inbox/sms_inbox.js') }}</script>
+{% endblock %}

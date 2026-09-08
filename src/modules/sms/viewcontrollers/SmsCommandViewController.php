@@ -65,8 +65,9 @@ class SmsCommandViewController
 
 		$query = $request->getQueryParams();
 		$code = strtoupper(basename((string) ($query['code'] ?? '')));
-		$domain = (string) (Settings::getInstance()->get('user')['domain'] ?? '');
+		$domain = 'default';//(string) (Settings::getInstance()->get('user')['domain'] ?? '');
 		$configFile = PHPGW_SERVER_ROOT . "/sms/bin/{$domain}/config_{$code}_log";
+		$param = $query['param'] ?? null;
 		$link_data = [];
 		if ($code !== '' && is_file($configFile))
 		{

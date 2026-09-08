@@ -54,18 +54,18 @@ class sms_menu
 		$acl = Acl::getInstance();
 		$menus = array();
 
-		$start_page = 'sms.index';
+		$start_page = 'sms.inbox';
 		if (isset($userSettings['preferences']['sms']['default_start_page']) && $userSettings['preferences']['sms']['default_start_page'])
 		{
 			$start_page = $userSettings['preferences']['sms']['default_start_page'];
 		}
 
 		// Inbox and outbox now have modern Slim/Twig pages; everything else still uses menuaction.
-		if ($start_page === 'sms.index')
+		if ($start_page === 'sms.index' || $start_page === 'sms.inbox')
 		{
 			$navbar_url = phpgw::link('/sms/view/inbox');
 		}
-		elseif ($start_page === 'uisms.outbox')
+		elseif ($start_page === 'uisms.outbox' || $start_page === 'sms.outbox')
 		{
 			$navbar_url = phpgw::link('/sms/view/outbox');
 		}
@@ -105,7 +105,7 @@ class sms_menu
 				),
 				'refresh' => array(
 					'text' => lang('Daemon manual refresh'),
-					'url' => phpgw::link('/index.php', array('menuaction' => 'sms.uisms.daemon_manual'))
+					'url' => phpgw::link('/sms/view/refresh')
 				),
 				'acl' => array(
 					'text' => $translation->translate('Configure Access Permissions', array(), true),
@@ -158,6 +158,10 @@ class sms_menu
 			'outbox' => array(
 				'text' => lang('Outbox'),
 				'url' => phpgw::link('/sms/view/outbox')
+			),
+			'send_group' => array(
+				'text' => lang('Send broadcast SMS'),
+				'url' => phpgw::link('/sms/view/send-group')
 			)
 		);
 
@@ -223,6 +227,7 @@ class sms_menu
 	{
 		$level++;
 		$i = 0;
+		$menu = array();
 		foreach ($children as $key => $vals)
 		{
 			$menu[] = $vals;

@@ -63,6 +63,8 @@ $app->group('/sms', function (RouteCollectorProxy $group) use ($smsCsrfMiddlewar
 		$viewGroup->get('/inbox', SmsViewController::class . ':inbox');
 		$viewGroup->get('/outbox', SmsViewController::class . ':outbox');
 		$viewGroup->get('/send', SmsViewController::class . ':send');
+		$viewGroup->get('/send-group', SmsViewController::class . ':sendGroup');
+		$viewGroup->get('/refresh', SmsViewController::class . ':refresh');
 		$viewGroup->get('/inbox/{id:[0-9]+}/delete', SmsViewController::class . ':deleteInbox');
 		$viewGroup->get('/outbox/{id:[0-9]+}/delete', SmsViewController::class . ':deleteOutbox');
 	})->add($smsCsrfMiddleware);
@@ -72,6 +74,8 @@ $app->group('/sms', function (RouteCollectorProxy $group) use ($smsCsrfMiddlewar
 	$group->map(['GET', 'POST'], '/outbox', SmsController::class . ':outbox');
 	$group->delete('/outbox/{id:[0-9]+}', SmsController::class . ':destroyOutbox')->add($smsCsrfMiddleware);
 	$group->post('/messages', SmsController::class . ':store')->add($smsCsrfMiddleware);
+	$group->post('/group-messages', SmsController::class . ':storeGroup')->add($smsCsrfMiddleware);
+	$group->post('/refresh', SmsController::class . ':refresh')->add($smsCsrfMiddleware);
 })
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));

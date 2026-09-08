@@ -21,7 +21,9 @@ document.addEventListener('DOMContentLoaded', function () {
 			to: document.getElementById('sms-to').value,
 			message: message.value,
 			flash: document.getElementById('sms-flash').checked,
-			unicode: document.getElementById('sms-unicode').checked
+			unicode: document.getElementById('sms-unicode').checked,
+			csrf_name: app.dataset.csrfName,
+			csrf_value: app.dataset.csrfValue
 		};
 
 		fetch(app.dataset.apiUrl, {

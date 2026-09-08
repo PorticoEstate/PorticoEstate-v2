@@ -2,6 +2,7 @@
 
 namespace App\modules\sms\viewcontrollers;
 
+use App\Database\Db2;
 use App\modules\phpgwapi\controllers\Locations;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
@@ -35,6 +36,23 @@ class SmsViewController
 	{
 		$response->getBody()->write(lang('Access not permitted'));
 		return $response->withStatus(403)->withHeader('Content-Type', 'text/plain');
+	}
+
+	private function groupOptions(): array
+	{
+		$user = Settings::getInstance()->get('user');
+		$db = new Db2();
+		$db->query('SELECT gp_code, gp_name FROM phpgw_sms_tblusergroupphonebook WHERE uid=' . (int) ($user['account_id'] ?? 0) . ' ORDER BY gp_name');
+		$options = [];
+		while ($db->next_record())
+		{
+			$options[] = [
+				'code' => (string) $db->f('gp_code'),
+				'name' => (string) $db->f('gp_name'),
+			];
+		}
+
+		return $options;
 	}
 
 	/**
@@ -119,6 +137,49 @@ class SmsViewController
 			'p_num' => $pNum,
 			'max_length' => 804,
 			'back_url' => \phpgw::link('/sms/view/' . $from),
+		]);
+	}
+
+	/**
+	 * GET /sms/view/send-group
+	 */
+	public function sendGroup(Request $request, Response $response): Response
+	{
+		$this->menuSelection = 'sms::outbox';
+		if (!Acl::getInstance()->check('.outbox', Acl::ADD, 'sms'))
+		{
+			return $this->denyAccess($response);
+		}
+
+		Settings::getInstance()->update('flags', ['app_header' => lang('sms') . ' - ' . lang('Send broadcast SMS')]);
+
+		return $this->render($request, $response, '@views/send_group/sms_send_group.twig', [
+			'api_url' => \phpgw::link('/sms/group-messages'),
+			'back_url' => \phpgw::link('/sms/view/outbox'),
+			'groups' => $this->groupOptions(),
+			'max_length' => 804,
+		]);
+	}
+
+	/**
+	 * GET /sms/view/refresh
+	 */
+	public function refresh(Request $request, Response $response): Response
+	{
+		$this->menuSelection = 'sms::inbox';
+		if (!Acl::getInstance()->check('run', Acl::READ, 'admin'))
+		{
+			return $this->denyAccess($response);
+		}
+
+		$sms = \CreateObject('sms.sms');
+		$sms->refresh();
+
+		Settings::getInstance()->update('flags', ['app_header' => lang('sms') . ' - ' . lang('inbox') . ': ' . lang('refresh')]);
+
+		return $this->render($request, $response, '@views/refresh/sms_refresh.twig', [
+			'inbox_url' => \phpgw::link('/sms/view/inbox'),
+			'outbox_url' => \phpgw::link('/sms/view/outbox'),
 		]);
 	}
 

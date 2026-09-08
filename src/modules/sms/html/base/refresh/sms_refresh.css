@@ -1,0 +1,8 @@
+.sms-refresh-page{max-width:42rem;padding:2rem 1rem}
+.sms-refresh-page__status{display:flex;align-items:flex-start;gap:1rem;padding:1.25rem;border:1px solid #b7dfbf;border-radius:6px;background:#e6f4ea;color:#1e5b2b}
+.sms-refresh-page__icon{display:flex;align-items:center;justify-content:center;width:2rem;height:2rem;border-radius:50%;background:#237a3b;color:#fff;font-size:1.25rem;font-weight:700;flex:0 0 auto}
+.sms-refresh-page h1{margin:0 0 .35rem;font-size:1.35rem}
+.sms-refresh-page p{margin:0}
+.sms-refresh-page__actions{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:1rem}
+.sms-button{display:inline-block;padding:.55rem .85rem;border:1px solid #20568f;border-radius:4px;background:#2a72ba;color:#fff;text-decoration:none;cursor:pointer}
+.sms-button--secondary{background:#fff;color:#20568f}

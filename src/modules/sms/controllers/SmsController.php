@@ -363,4 +363,58 @@ class SmsController
 
 		return ResponseHelper::sendJSONResponse(['messages' => $messages], 201);
 	}
+
+	/**
+	 * POST /sms/group-messages
+	 */
+	public function storeGroup(Request $request, Response $response): Response
+	{
+		if (!Acl::getInstance()->check('.outbox', Acl::ADD, 'sms'))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'Access not permitted'], 403);
+		}
+
+		$data = $request->getParsedBody();
+		if (!is_array($data))
+		{
+			$decoded = json_decode((string) $request->getBody(), true);
+			$data = is_array($decoded) ? $decoded : [];
+		}
+
+		$group = trim((string) ($data['group'] ?? ''));
+		$message = trim((string) ($data['message'] ?? ''));
+		if ($group === '' || $message === '')
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'A recipient group and message are required'], 400);
+		}
+
+		$user = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+		$username = (string) ($user['account_lid'] ?? '');
+		$sms = \CreateObject('sms.sms');
+		$smsType = !empty($data['flash']) ? 'flash' : 'text';
+		[$ok, $to] = $sms->websend2group($username, $group, $message, $smsType);
+
+		$queued = count(array_filter((array) $ok));
+		return ResponseHelper::sendJSONResponse([
+			'queued' => $queued,
+			'recipients' => (array) $to,
+		], 201);
+	}
+
+	/**
+	 * POST /sms/refresh
+	 */
+	public function refresh(Request $request, Response $response): Response
+	{
+		if (!Acl::getInstance()->check('run', Acl::READ, 'admin'))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'Access not permitted'], 403);
+		}
+
+		$sms = \CreateObject('sms.sms');
+		$sms->getsmsinbox(true);
+		$sms->getsmsstatus();
+
+		return ResponseHelper::sendJSONResponse(['refreshed' => true]);
+	}
 }

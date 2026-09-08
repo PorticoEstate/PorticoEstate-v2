@@ -5,7 +5,9 @@ use App\modules\phpgwapi\security\AccessVerifier;
 use App\modules\sms\helpers\RedirectHelper;
 use App\modules\sms\controllers\pswinController;
 use App\modules\sms\controllers\SmsController;
+use App\modules\sms\controllers\SmsCommandController;
 use App\modules\sms\viewcontrollers\SmsViewController;
+use App\modules\sms\viewcontrollers\SmsCommandViewController;
 use Slim\Csrf\Guard;
 use Slim\Routing\RouteCollectorProxy;
 /** @var \Slim\App $app */
@@ -65,6 +67,10 @@ $app->group('/sms', function (RouteCollectorProxy $group) use ($smsCsrfMiddlewar
 		$viewGroup->get('/send', SmsViewController::class . ':send');
 		$viewGroup->get('/send-group', SmsViewController::class . ':sendGroup');
 		$viewGroup->get('/refresh', SmsViewController::class . ':refresh');
+		$viewGroup->get('/command', SmsCommandViewController::class . ':index');
+		$viewGroup->get('/command/edit[/{id:[0-9]+}]', SmsCommandViewController::class . ':edit');
+		$viewGroup->get('/command/log', SmsCommandViewController::class . ':log');
+		$viewGroup->get('/command/{id:[0-9]+}/delete', SmsCommandViewController::class . ':delete');
 		$viewGroup->get('/inbox/{id:[0-9]+}/delete', SmsViewController::class . ':deleteInbox');
 		$viewGroup->get('/outbox/{id:[0-9]+}/delete', SmsViewController::class . ':deleteOutbox');
 	})->add($smsCsrfMiddleware);
@@ -76,6 +82,12 @@ $app->group('/sms', function (RouteCollectorProxy $group) use ($smsCsrfMiddlewar
 	$group->post('/messages', SmsController::class . ':store')->add($smsCsrfMiddleware);
 	$group->post('/group-messages', SmsController::class . ':storeGroup')->add($smsCsrfMiddleware);
 	$group->post('/refresh', SmsController::class . ':refresh')->add($smsCsrfMiddleware);
+	$group->get('/commands', SmsCommandController::class . ':index');
+	$group->get('/commands/{id:[0-9]+}', SmsCommandController::class . ':show');
+	$group->post('/commands', SmsCommandController::class . ':store')->add($smsCsrfMiddleware);
+	$group->put('/commands/{id:[0-9]+}', SmsCommandController::class . ':update')->add($smsCsrfMiddleware);
+	$group->delete('/commands/{id:[0-9]+}', SmsCommandController::class . ':destroy')->add($smsCsrfMiddleware);
+	$group->map(['GET', 'POST'], '/commands/log', SmsCommandController::class . ':log');
 })
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));

@@ -77,11 +77,9 @@ class TwigHelper
 			$this->addPathIfExists(PHPGW_SERVER_ROOT . '/phpgwapi/templates/digdir');
 		}
 
-		// Designsystemet component templates
-		if ($this->designSystem->isEnabled()) {
-			$componentPath = PHPGW_SERVER_ROOT . '/phpgwapi/templates/digdir/components';
-			$this->addPathIfExists($componentPath, 'components');
-		}
+		// Keep the namespace available for shared templates even when the design system is disabled.
+		$componentPath = PHPGW_SERVER_ROOT . '/phpgwapi/templates/digdir/components';
+		$this->addPathIfExists($componentPath, 'components');
 		$this->addPathIfExists(PHPGW_SERVER_ROOT . '/phpgwapi/templates/base/components', 'phpgwapi_components');
 
 		// App-specific paths (both namespaced and main namespace)

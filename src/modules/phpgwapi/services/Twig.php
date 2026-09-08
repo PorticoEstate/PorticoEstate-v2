@@ -190,12 +190,10 @@ class Twig
         $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/' . $this->serverSettings['template_set']);
         $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/base');
 
-        // Register Designsystemet component templates if using digdir template
-        if ($this->designSystem->isEnabled()) {
-            $componentPath = PHPGW_SERVER_ROOT . '/phpgwapi/templates/digdir/components';
-            if (is_dir($componentPath)) {
-                $this->loader->addPath($componentPath, 'components');
-            }
+        // Keep shared component templates available to the legacy frame renderer.
+        $componentPath = PHPGW_SERVER_ROOT . '/phpgwapi/templates/digdir/components';
+        if (is_dir($componentPath)) {
+            $this->loader->addPath($componentPath, 'components');
         }
 
         // Register current app paths

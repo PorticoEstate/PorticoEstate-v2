@@ -146,7 +146,7 @@ class sms_menu
 		$command_children = array(
 			'log' => array(
 				'text' => lang('log'),
-				'url' => phpgw::link('/index.php', array('menuaction' => 'sms.uicommand.log'))
+				'url' => phpgw::link('/sms/view/command/log')
 			)
 		);
 
@@ -183,7 +183,7 @@ class sms_menu
 		{
 			$menus['navigation']['command'] = array(
 				'text' => lang('commands'),
-				'url' => phpgw::link('/index.php', array('menuaction' => 'sms.uicommand.index')),
+				'url' => phpgw::link('/sms/view/command'),
 				'children' => $command_children
 			);
 		}

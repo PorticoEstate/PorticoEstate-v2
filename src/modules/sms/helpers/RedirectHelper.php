@@ -22,6 +22,14 @@ class RedirectHelper
 		{
 			\phpgw::redirect_link('/sms/view/outbox');
 		}
+		if ($start_page === 'sms.command')
+		{
+			\phpgw::redirect_link('/sms/view/command');
+		}
+		if ($start_page === 'sms.command.log')
+		{
+			\phpgw::redirect_link('/sms/view/command/log');
+		}
 
 		\phpgw::redirect_link('/index.php', array('menuaction' => "sms.ui{$start_page}"));
 	}

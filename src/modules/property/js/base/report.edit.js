@@ -1,9 +1,9 @@
-$(document).ready(function ()
+$(function ()
 {
 	$('.processing').hide();
 	$('.processing-preview').hide();
 	
-	$('#btn_get_columns').click( function()
+	$('#btn_get_columns').on('click', function()
 	{
 		var oArgs = {menuaction: 'property.uireport.get_column_preview'};
 		var requestUrl = phpGWLink('index.php', oArgs, true);
@@ -55,9 +55,9 @@ $(document).ready(function ()
 		});		
 	});
 	
-	$('#btn_get_columns').click();
+	$('#btn_get_columns').trigger('click');
 	
-	$('#btn_preview').click( function()
+	$('#btn_preview').on('click', function()
 	{
 		var oArgs = {menuaction: 'property.uireport.preview'};
 		var requestUrl = phpGWLink('index.php', oArgs, true);
@@ -168,7 +168,7 @@ $(document).ready(function ()
 		});		
 	});
 	
-	$('#btn_add_restricted_value').click( function()
+	$('#btn_add_restricted_value').on('click', function()
 	{
 		var combo_operator = $("<select></select>");
 		combo_operator.append("<option value=''></option>");
@@ -325,7 +325,7 @@ function set_values()
 	$.each(jsonB.columns, function(key, value) 
 	{
 		$("#c_" + value).prop('checked', true);
-		$("#c_" + value).change();
+		$("#c_" + value).trigger('change');
 	});
 	
 	$.each(jsonB.group, function(key, value) 
@@ -341,7 +341,7 @@ function set_values()
 	$.each(jsonB.aggregate, function(key, value) 
 	{
 		$("#a_" + key).prop('checked', true);
-		$("#a_" + key).change();
+		$("#a_" + key).trigger('change');
 	});
 	
 	$.each(jsonB.cbo_aggregate, function(key, value) 
@@ -351,7 +351,7 @@ function set_values()
 	
 	$.each(jsonB.criteria, function(key, value) 
 	{
-		$('#btn_add_restricted_value').click();
+		$('#btn_add_restricted_value').trigger('click');
 		
 		$("#cbo_restricted_value_" + key).val(value.field);
 		$("#cbo_operator_" + key).val(value.operator);

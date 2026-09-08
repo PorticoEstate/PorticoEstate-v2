@@ -1,19 +1,19 @@
-$(document).ready(function ()
+$(function ()
 {
 
-	$("#project_details input").focus(function (e)
+	$("#project_details input").on('focus', function (e)
 	{
 		var wrpElem = $(this).parents("dd");
 		$(wrpElem).find(".help_text").fadeIn(200);
 	});
 
-	$("#project_details textarea").focus(function (e)
+	$("#project_details textarea").on('focus', function (e)
 	{
 		var wrpElem = $(this).parents("dd");
 		$(wrpElem).find(".help_text").fadeIn(200);
 	});
 
-	$("#project_details select").focus(function (e)
+	$("#project_details select").on('focus', function (e)
 	{
 		var wrpElem = $(this).parents("dd");
 		$(wrpElem).find(".help_text").fadeIn(200);

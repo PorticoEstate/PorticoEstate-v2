@@ -33,7 +33,7 @@ var mod11OfNumberWithControlDigit = function (input)
 	return result === 11 ? 0 : result;
 };
 
-$(document).ready(function ()
+$(function ()
 {
 
 	$.formUtils.addValidator({

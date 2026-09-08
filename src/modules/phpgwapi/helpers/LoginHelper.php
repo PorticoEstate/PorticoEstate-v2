@@ -349,8 +349,16 @@ HTML;
 
 		if (is_array($redirect) && count($redirect) && empty($_SESSION['skip_redirect_on_login']))
 		{
+			$target = '/';
+			$redirect_data = array();
 			foreach ($redirect as $key => $value)
 			{
+				// new-style route path stored alongside the query data; not a real query param
+				if ($key === '_deeplink_path')
+				{
+					$target = $value;
+					continue;
+				}
 				$redirect_data[$key] = Sanitizer::clean_value($value);
 			}
 
@@ -361,7 +369,7 @@ HTML;
 			 */
 			$_SESSION['skip_redirect_on_login'] = true;
 
-			phpgw::redirect_link('/', $redirect_data);
+			phpgw::redirect_link($target, $redirect_data);
 		}
 	}
 

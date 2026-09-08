@@ -30,7 +30,7 @@ function get_activities()
 
 }
 
-$(document).ready(function ()
+$(function ()
 {
 	get_activities();
 });

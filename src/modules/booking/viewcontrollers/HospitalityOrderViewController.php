@@ -33,6 +33,16 @@ class HospitalityOrderViewController
 			return ResponseHelper::sendErrorResponse(['error' => 'Missing order ID'], 400);
 		}
 
+		// Optional: the application the user navigated FROM. Present only when an
+		// application page linked here, so the back link can return there instead
+		// of to the hospitality record. Absent, non-numeric or non-positive all
+		// collapse to 0, which the template reads as "no back path".
+		$backApplicationId = (int)filter_var(
+			$request->getQueryParams()['application_id'] ?? 0,
+			FILTER_VALIDATE_INT,
+			['options' => ['default' => 0, 'min_range' => 1]]
+		);
+
 		try {
 			$canWrite = $this->acl->check('.application', Acl::EDIT, 'booking');
 			$userSettings = Settings::getInstance()->get('user');
@@ -44,6 +54,7 @@ class HospitalityOrderViewController
 			$componentHtml = $this->twig->render('@views/hospitality/order_show/order_show.twig', [
 				'layout'     => '@views/_bare.twig',
 				'order_id'   => $id,
+				'back_application_id' => $backApplicationId,
 				'can_write'  => $canWrite,
 				'account_id' => (int)($userSettings['account_id'] ?? 0),
 				'account_name' => $userSettings['fullname'] ?? ($userSettings['account_lid'] ?? 'Unknown'),

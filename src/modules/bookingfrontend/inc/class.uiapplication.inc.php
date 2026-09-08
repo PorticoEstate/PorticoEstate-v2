@@ -227,7 +227,17 @@ use App\modules\bookingfrontend\helpers\UserHelper;
 					{
 						if ($association['from_'] > Date('Y-m-d H:i:s'))
 						{
-							$association['edit_link'] = self::link(array('menuaction' => "{$this->module}.uiallocation.edit", 'allocation_id' => $association['id']));
+							/**
+							 * This page is authenticated by the secret alone - the visitor is not
+							 * logged in and the page stores no session state - so the secret has
+							 * to travel with the link for uiallocation::edit() to be able to tell
+							 * this citizen apart from a stranger. Same idiom as the links built
+							 * further up this method. The edit form posts back to this URL
+							 * (action=""), so the secret reaches the guard on the POST too.
+							 */
+							$association['edit_link'] = self::link(array('menuaction' => "{$this->module}.uiallocation.edit",
+									'allocation_id'	 => $association['id'],
+									'secret'		 => $application['secret']));
 						}
 						else
 						{
@@ -239,7 +249,14 @@ use App\modules\bookingfrontend\helpers\UserHelper;
 						{
 							if ($association['from_'] > Date('Y-m-d H:i:s'))
 							{
-								$association['cancel_link']	 = self::link(array('menuaction' => "{$this->module}.uiallocation.cancel", 'allocation_id' => $association['id']));
+								/**
+								 * Carries the secret for the same reason the edit link above
+								 * does: uiallocation::cancel() cannot otherwise tell the citizen
+								 * this link was mailed to from a stranger.
+								 */
+								$association['cancel_link']	 = self::link(array('menuaction' => "{$this->module}.uiallocation.cancel",
+										'allocation_id'	 => $association['id'],
+										'secret'		 => $application['secret']));
 								$association['cancel_text']	 = $lang_cancel;
 							}
 							else
@@ -309,9 +326,18 @@ use App\modules\bookingfrontend\helpers\UserHelper;
 						{
 							if ($association['from_'] > Date('Y-m-d H:i:s'))
 							{
+								/**
+								 * This page is authenticated by the secret alone (:66) - the visitor
+								 * is not logged in and the page stores no session state - so the
+								 * secret has to travel with the link for uibooking::cancel() to be
+								 * able to tell this citizen apart from a stranger. Same idiom as the
+								 * links built at :82. The cancel form posts back to this URL
+								 * (action=""), so the secret reaches the guard on the POST too.
+								 */
 								$association['cancel_link']	 = self::link(array('menuaction'	 => "{$this->module}.uibooking.cancel",
 										'id'			 => $association['id'],
-										'resource_ids'	 => $application['resources']));
+										'resource_ids'	 => $application['resources'],
+										'secret'		 => $application['secret']));
 								$association['cancel_text']	 = $lang_cancel;
 							}
 							else

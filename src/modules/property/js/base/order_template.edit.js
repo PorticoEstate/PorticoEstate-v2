@@ -86,7 +86,7 @@ window.on_vendor_updated = function ()
 };
 
 
-$(document).ready(function ()
+$(function ()
 {
 	$.formUtils.addValidator({
 		name: 'category',
@@ -106,7 +106,7 @@ $(document).ready(function ()
 		errorMessageKey: ''
 	});
 
-	$("#global_category_id").change(function ()
+	$("#global_category_id").on('change', function ()
 	{
 		var requestUrl = phpGWLink('property/workorder/lookups/category', {cat_id: $(this).val()}, true);
 

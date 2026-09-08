@@ -12,9 +12,22 @@
  *           hospitality: false,  // show hospitality name column
  *       },
  *       emptyText: 'No orders',
+ *       applicationId: 83979,  // optional, see below
  *   });
  *
  *   list.update(newOrders);  // re-render with new data
+ *
+ * applicationId is OPTIONAL and must stay that way. A caller that is showing
+ * orders in the context of one application passes its id; clicking a row then
+ * carries ?application_id= to the order page, which uses it to send the back
+ * link there instead of to the hospitality record. A caller with no such
+ * context — the hospitality record's own orders tab — passes nothing and the
+ * link is emitted exactly as it would be without this option.
+ *
+ * It is a parameter and not something this component works out for itself on
+ * purpose: the id belongs to the page, and a shared component that reads it off
+ * whatever page it happens to be mounted in is wrong for the callers that have
+ * no application at all.
  */
 class HospitalityOrderList {
 	constructor(container, options) {
@@ -23,12 +36,21 @@ class HospitalityOrderList {
 		this.columns = options.columns || {};
 		this.emptyText = options.emptyText || 'No orders';
 		this.orders = options.orders || [];
+		// Optional — anything that is not a positive integer means "no context",
+		// which is the same as not passing it at all.
+		var appId = parseInt(options.applicationId, 10);
+		this.applicationId = appId > 0 ? appId : null;
 
 		// Attach click handler once on the container
+		var self = this;
 		this.container.addEventListener('click', function (e) {
 			var row = e.target.closest('[data-order-link]');
 			if (!row) return;
-			window.location.href = '/booking/view/hospitality-orders/' + row.dataset.orderLink;
+			var url = '/booking/view/hospitality-orders/' + row.dataset.orderLink;
+			if (self.applicationId) {
+				url += '?application_id=' + encodeURIComponent(self.applicationId);
+			}
+			window.location.href = url;
 		});
 
 		this._render();

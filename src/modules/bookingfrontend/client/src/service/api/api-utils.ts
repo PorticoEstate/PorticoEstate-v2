@@ -924,6 +924,15 @@ export interface VippsPaymentData {
 	city: string;
 	documentsRead: boolean;
 	building_parent_ids?: Record<number, number>;
+	/**
+	 * Applicant's UI language at submit, attached by useVippsPayment.
+	 * OPTIONAL and never defaulted -- the column is nullable and NULL means "not known";
+	 * a default here would manufacture a language claim for every Vipps applicant.
+	 * Declared so the COMPILER checks the field name: an undeclared property spread into a
+	 * `JSON.stringify()` argument is silently unchecked, which is how the sibling checkout
+	 * path carried this value with no type safety at all.
+	 */
+	language?: string;
 }
 
 export interface VippsPaymentResponse {

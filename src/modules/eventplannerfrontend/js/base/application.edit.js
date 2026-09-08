@@ -7,7 +7,7 @@ JqueryPortico.autocompleteHelper(strURL, 'vendor_name', 'vendor_id', 'vendor_con
 
 $(window).on('load', function ()
 {
-	$("#vendor_id").change(function ()
+	$("#vendor_id").on('change', function ()
 	{
 		populateVendorContact();
 	});
@@ -85,26 +85,26 @@ validate_submit = function ()
 	}
 };
 
-$(document).ready(function ()
+$(function ()
 {
 	check_button_names();
 
-	$("#number_of_units").change(function ()
+	$("#number_of_units").on('change', function ()
 	{
 		calculate_total_amount();
 	});
-	$("#charge_per_unit").change(function ()
+	$("#charge_per_unit").on('change', function ()
 	{
 		calculate_total_amount();
 	});
 
 	calculate_total_amount();
 
-	$("#stage_width").change(function ()
+	$("#stage_width").on('change', function ()
 	{
 		calculate_stage_size();
 	});
-	$("#stage_depth").change(function ()
+	$("#stage_depth").on('change', function ()
 	{
 		calculate_stage_size();
 	});
@@ -131,7 +131,7 @@ $(document).ready(function ()
 //	});
 
 
-	$("#from_").change(function ()
+	$("#from_").on('change', function ()
 	{
 		$("#to_").val($("#from_").val());
 	});
@@ -152,7 +152,7 @@ $(document).ready(function ()
 
 	if ($("#center_content").length === 1)
 	{
-		$("#center_content").scroll(function ()
+			$("#center_content").on('scroll', function ()
 		{
 			if ($("#center_content").scrollTop() > offset.top)
 			{
@@ -171,7 +171,7 @@ $(document).ready(function ()
 	}
 	else
 	{
-		$(window).scroll(function ()
+			$(window).on('scroll', function ()
 		{
 			if ($(window).scrollTop() > offset.top)
 			{

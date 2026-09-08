@@ -1,0 +1,113 @@
+.header {
+  display: flex;
+  align-items: center;
+  height: 64px;
+  padding: 0 16px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  gap: 16px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 240px;
+}
+
+.menuButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: #f1f3f4;
+  }
+}
+
+.logoText {
+  font-size: 22px;
+  color: #5f6368;
+  font-weight: 400;
+}
+
+.logoD {
+  color: #ea4335;
+  font-weight: 500;
+}
+
+.searchBar {
+  flex: 1;
+  max-width: 720px;
+  display: flex;
+  align-items: center;
+  background: #eaf1fb;
+  border-radius: 28px;
+  padding: 0 16px;
+  height: 48px;
+  transition: background 0.2s, box-shadow 0.2s;
+
+  &:focus-within {
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.searchIcon {
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  color: #202124;
+  outline: none;
+
+  &::placeholder {
+    color: #5f6368;
+  }
+}
+
+.clearButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.08);
+  }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: #f1f3f4;
+  }
+}

@@ -669,4 +669,140 @@ class booking_sopurchase_order
 		}
 		return $data;
 	}
+
+	/**
+	 * Carry one allocation's article lines onto another allocation in the same
+	 * recurrence group, and hand back what the receiving order now totals.
+	 *
+	 * WHY THIS EXISTS. With activate_application_articles on, bb_allocation.cost
+	 * is not authoritative for anything: booking_uiallocation's edit page renders
+	 * the price from the purchase order and leaves cost readOnly, and
+	 * async_task_update_reservation_state invoices the ORDER and then writes the
+	 * order's sum back over cost. So a price cascade that moves cost alone is
+	 * invisible on the page, unbilled, and silently reverted the moment the
+	 * occurrence expires. The price has to move as LINES or it has not moved.
+	 *
+	 * The lines are copied verbatim rather than rebuilt through
+	 * add_purchase_order(): that path re-derives every unit price from
+	 * soarticle_mapping::get_current_pricing(), so rebuilding would quietly
+	 * reprice the copy against today's article table instead of carrying the
+	 * price the officer actually set. copy_order_lines() moves amount, tax and
+	 * tax_code across untouched, which is what "the same price" means here.
+	 *
+	 * 🔴 AN ORDER THAT HAS BEEN BILLED IS NEVER REWRITTEN. A bb_payment row, or a
+	 * bb_completed_reservation already associated with an export file, means the
+	 * money has left the building; re-pricing it after the fact would change what
+	 * a citizen was invoiced. Such a member is SKIPPED and says so in its status,
+	 * and the caller must then leave its cost alone as well - moving cost while
+	 * leaving the order behind is the very defect this method exists to fix.
+	 * The guard deliberately matches socompleted_reservation::find_expired_orders,
+	 * which selects on bb_payment.id IS NULL for the same reason.
+	 *
+	 * A target with no order of its own gets one from
+	 * copy_purchase_order_from_application(), which already relocates the
+	 * application's unplaced order or mints a child of it. Reusing it is what
+	 * keeps the parent_id chain intact; re-implementing the insert here would be
+	 * a second place for that topology to drift.
+	 *
+	 * IDEMPOTENT. The target's order is identified by
+	 * (reservation_type, reservation_id), a pair that names at most one row, and
+	 * its lines are deleted before the copy. Running the same cascade twice
+	 * therefore finds the same order, mints nothing, and leaves the same lines.
+	 *
+	 * @param int $source_order_id the order whose lines are authoritative
+	 * @param int $application_id  the application both allocations belong to
+	 * @param int $allocation_id   the allocation receiving the price
+	 * @return array status: written|skipped_billed|skipped_exported|skipped_no_order|skipped_source
+	 *               order_id: the receiving order, where one was found or made
+	 *               sum: TAX-INCLUSIVE total of the receiving order, or null
+	 */
+	public function cascade_order_to_allocation($source_order_id, $application_id, $allocation_id)
+	{
+		$source_order_id = (int)$source_order_id;
+		$application_id	 = (int)$application_id;
+		$allocation_id	 = (int)$allocation_id;
+
+		$result = array('status' => 'skipped_no_order', 'order_id' => null, 'sum' => null);
+
+		if (!$source_order_id || !$application_id || !$allocation_id)
+		{
+			return $result;
+		}
+
+		$this->db->query("SELECT id FROM bb_purchase_order"
+			. " WHERE reservation_type = 'allocation'"
+			. " AND reservation_id = {$allocation_id}", __LINE__, __FILE__);
+
+		$target_order_id = $this->db->next_record() ? (int)$this->db->f('id') : 0;
+
+		// The source cannot cascade onto itself; its own order is already the truth.
+		if ($target_order_id && $target_order_id === $source_order_id)
+		{
+			$result['status']	 = 'skipped_source';
+			$result['order_id']	 = $target_order_id;
+			return $result;
+		}
+
+		if (!$target_order_id)
+		{
+			$target_order_id = (int)$this->copy_purchase_order_from_application(
+				array('application_id' => $application_id), $allocation_id, 'allocation');
+
+			if (!$target_order_id)
+			{
+				return $result;
+			}
+		}
+
+		$result['order_id'] = $target_order_id;
+
+		if ($this->get_order_payments($target_order_id))
+		{
+			$result['status'] = 'skipped_billed';
+			return $result;
+		}
+
+		$this->db->query("SELECT id FROM bb_completed_reservation"
+			. " WHERE reservation_type = 'allocation'"
+			. " AND reservation_id = {$allocation_id}"
+			. " AND export_file_id IS NOT NULL", __LINE__, __FILE__);
+
+		if ($this->db->next_record())
+		{
+			$result['status'] = 'skipped_exported';
+			return $result;
+		}
+
+		if ($this->db->get_transaction())
+		{
+			$this->global_lock = true;
+		}
+		else
+		{
+			$this->db->transaction_begin();
+		}
+
+		$this->db->query("DELETE FROM bb_purchase_order_line"
+			. " WHERE order_id = {$target_order_id}", __LINE__, __FILE__);
+
+		$this->copy_order_lines($source_order_id, $target_order_id);
+
+		if (!$this->global_lock)
+		{
+			$this->db->transaction_commit();
+		}
+
+		// TAX BASIS. get_single_purchase_order() sums amount + tax per line, so
+		// what comes back is TAX-INCLUSIVE and is the figure bb_allocation.cost
+		// wants. sum(amount) alone is ex-tax and would undercharge by the tax -
+		// 25% on nearly every live line, 0% on the handful carrying tax_code 0,
+		// which is exactly the shape that makes the mistake look correct in a
+		// spot check. The rate is per line, from fm_ecomva.percent_, never global.
+		$order = $this->get_single_purchase_order($target_order_id);
+
+		$result['status']	 = 'written';
+		$result['sum']		 = isset($order['sum']) ? (float)$order['sum'] : null;
+
+		return $result;
+	}
 }

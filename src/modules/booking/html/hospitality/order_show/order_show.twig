@@ -41,6 +41,7 @@
 	 data-lang-unit="{{ lang('booking.unit') }}"
 	 data-lang-saved="{{ lang('booking.saved') }}"
 	 data-lang-back-to-hospitality="{{ lang('booking.back_to_list') }}"
+	 data-lang-back-to-application="{{ lang('booking.back_to_application') }}"
 	 data-lang-hospitality="{{ lang('booking.hospitality') }}"
 	 data-lang-orders="{{ lang('booking.purchase_orders') }}"
 	 data-lang-special-requirements="{{ lang('booking.special_requirements') }}"
@@ -57,6 +58,9 @@
 	 data-lang-select-date="{{ lang('booking.select_date') }}"
 	 data-lang-select-time="{{ lang('booking.select_time') }}"
 	 data-applications-base-url="{{ phpgw_link('/booking/applications') }}"
+	 {# 0 when the page was not reached from an application — the back link then
+	    keeps its existing hospitality destination. #}
+	 data-back-application-id="{{ back_application_id|default(0) }}"
 	 data-lang-confirm-status-change="{{ lang('booking.confirm_delete') }}"
 	 data-lang-changelog="{{ lang('booking.changelog') }}"
 	 data-lang-changelog-comment="{{ lang('booking.changelog_comment') }}"

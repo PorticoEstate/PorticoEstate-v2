@@ -129,8 +129,11 @@ class CommentsController
                 ? $data['type'] 
                 : 'comment';
 
-            // Add the comment
-            $createdComment = $this->commentsService->addComment($applicationId, $comment, $type);
+            // Add the comment. A secret-link caller has no session, so the service
+            // cannot name them; the controller is the only layer that knows how this
+            // request was authorised.
+            $author = $this->applicationHelper->resolveCommentAuthor($application, $request);
+            $createdComment = $this->commentsService->addComment($applicationId, $comment, $type, $author);
 
             return ResponseHelper::sendJSONResponse([
                 'comment' => $createdComment,
@@ -248,11 +251,14 @@ class CommentsController
                 ], 400, $response);
             }
 
-            // Update status and add comments
+            // Update status and add comments. Same reasoning as addApplicationComment:
+            // a citizen cancelling from their emailed link has no session to be named by.
+            $author = $this->applicationHelper->resolveCommentAuthor($application, $request);
             $createdComments = $this->commentsService->addStatusChangeComment(
                 $applicationId,
                 $newStatus,
-                $additionalComment
+                $additionalComment,
+                $author
             );
 
             // When cancelling, deactivate any linked schedule entities (events/allocations/

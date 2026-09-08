@@ -20,7 +20,7 @@ interface CartCProps {
     onEditApplication: (id: number) => void;
     onRemoveApplication: (id: number) => void;
     onClose: () => void;
-    onSubmit: () => void;
+    onGoToSubmission: () => void;
     submitting?: boolean;
     density?: Density;
     priceDetail?: PriceDetail;
@@ -31,7 +31,7 @@ const CartC: React.FC<CartCProps> = ({
     onEditApplication,
     onRemoveApplication,
     onClose,
-    onSubmit,
+    onGoToSubmission,
     submitting,
     density = 'comfortable',
     priceDetail = 'expandable',
@@ -90,7 +90,7 @@ const CartC: React.FC<CartCProps> = ({
                 ))}
             </div>
 
-            <CartCFooter total={total} onSubmit={onSubmit} submitting={submitting} />
+            <CartCFooter total={total} onGoToSubmission={onGoToSubmission} submitting={submitting} />
         </div>
     );
 };

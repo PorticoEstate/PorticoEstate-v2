@@ -27,8 +27,8 @@ send a message to a single recipient.	messenger	fr	Envoyer un message à un uniq
 send message to	messenger	fr	Envoyer un message à
 sorry, %1's account is not currently active	messenger	fr	Désolé, le compte de %1 n'est actuellement pas actif
 you didn't enter anything for the message	messenger	fr	Vous n'avez rien entré pour le message
-you have %1 new message	messenger	fr	Vous avez %1 nouveau message
-you have %1 new messages	messenger	fr	Vous avez %1 nouveau messages
+you have %1 new message	common	fr	Vous avez %1 nouveau message
+you have %1 new messages	common	fr	Vous avez %1 nouveau messages
 you have no messages	messenger	fr	Vous n'avez aucun message
 you must enter a subject	messenger	fr	Vous devez entrer un sujet
 you must enter the username this message is for	messenger	fr	Vous devez entrer l'utilisateur destinataire de ce message

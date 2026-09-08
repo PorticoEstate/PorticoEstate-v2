@@ -1,0 +1,37 @@
+{
+    "name": "datatables.net-keytable",
+    "description": "KeyTable for DataTables",
+    "main": "js/dataTables.keyTable.js",
+    "module": "js/dataTables.keyTable.mjs",
+    "types": "./types/types.d.ts",
+    "version": "3.0.0",
+    "files": [
+        "js/**/*.js",
+        "js/**/*.mjs",
+        "types/**/*.d.ts"
+    ],
+    "keywords": [
+        "KeyTable",
+        "Excel",
+        "keyboard",
+        "Spreadsheet",
+        "Datatables",
+        "table",
+        "filter",
+        "sort"
+    ],
+    "dependencies": {
+        "datatables.net": "^3"
+    },
+    "author": {
+        "name": "SpryMedia Ltd",
+        "url": "http://datatables.net"
+    },
+    "homepage": "https://datatables.net",
+    "bugs": "https://datatables.net/forums",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/DataTables/KeyTable.git"
+    }
+}

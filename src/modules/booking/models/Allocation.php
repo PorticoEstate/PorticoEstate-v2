@@ -52,7 +52,7 @@ class Allocation extends BaseModel
 	/**
 	 * @Expose
 	 */
-	public float $cost = 0.00;
+	public ?float $cost = 0.00;
 
 	/**
 	 * @Expose
@@ -67,7 +67,7 @@ class Allocation extends BaseModel
 	/**
 	 * @Expose
 	 */
-	public int $skip_bas = 0;
+	public ?int $skip_bas = 0;
 
 	/**
 	 * @Expose
@@ -232,7 +232,9 @@ class Allocation extends BaseModel
 		
 		$db = Db::getInstance();
 		$sql = "SELECT from_, to_ FROM bb_season WHERE id = :id";
-		$season = $db->query($sql, [':id' => $this->season_id])->fetch();
+		$stmt = $db->prepare($sql);
+		$stmt->execute([':id' => $this->season_id]);
+		$season = $stmt->fetch();
 
 		if (!$season) {
 			return false;
@@ -285,7 +287,8 @@ class Allocation extends BaseModel
 			':start3' => $start, ':end3' => $end
 		];
 
-		$stmt = $db->query($sql, $params);
+		$stmt = $db->prepare($sql);
+		$stmt->execute($params);
 		if ($row = $stmt->fetch()) {
 			$errors['conflict_event'] = "Overlaps with existing event #{$row['id']}";
 		}
@@ -300,7 +303,8 @@ class Allocation extends BaseModel
 		
 		$params[':excludeId'] = $excludeId;
 
-		$stmt = $db->query($sql, $params);
+		$stmt = $db->prepare($sql);
+		$stmt->execute($params);
 		if ($row = $stmt->fetch()) {
 			$errors['conflict_allocation'] = "Overlaps with existing allocation #{$row['id']}";
 		}
@@ -313,7 +317,8 @@ class Allocation extends BaseModel
 					 (b.to_ > :start2 AND b.to_ <= :end2) OR
 					 (b.from_ < :start3 AND b.to_ > :end3))";
 
-		$stmt = $db->query($sql, $params);
+		$stmt = $db->prepare($sql);
+		$stmt->execute($params);
 		if ($row = $stmt->fetch()) {
 			$errors['conflict_booking'] = "Overlaps with existing booking #{$row['id']}";
 		}
@@ -374,7 +379,8 @@ class Allocation extends BaseModel
 				AND reservation_id = :id
 				AND export_file_id IS NULL";
 		
-		$db->query($sql, [
+		$stmt = $db->prepare($sql);
+		$stmt->execute([
 			':cost' => $this->cost,
 			':from' => $this->from_,
 			':to' => $this->to_,
@@ -395,21 +401,27 @@ class Allocation extends BaseModel
 			$id = $this->id;
 
 			// Delete costs
-			$db->query("DELETE FROM bb_allocation_cost WHERE allocation_id = :id", [':id' => $id]);
+			$stmt = $db->prepare("DELETE FROM bb_allocation_cost WHERE allocation_id = :id");
+			$stmt->execute([':id' => $id]);
 
 			// Delete resources
-			$db->query("DELETE FROM bb_allocation_resource WHERE allocation_id = :id", [':id' => $id]);
+			$stmt = $db->prepare("DELETE FROM bb_allocation_resource WHERE allocation_id = :id");
+			$stmt->execute([':id' => $id]);
 
 			// Handle completed reservations
-			$stmt = $db->query("SELECT id FROM bb_completed_reservation WHERE reservation_id = :id AND reservation_type = 'allocation' AND export_file_id IS NULL", [':id' => $id]);
+			$stmt = $db->prepare("SELECT id FROM bb_completed_reservation WHERE reservation_id = :id AND reservation_type = 'allocation' AND export_file_id IS NULL");
+			$stmt->execute([':id' => $id]);
 			if ($row = $stmt->fetch()) {
 				$completedId = $row['id'];
-				$db->query("DELETE FROM bb_completed_reservation_resource WHERE completed_reservation_id = :id", [':id' => $completedId]);
-				$db->query("DELETE FROM bb_completed_reservation WHERE id = :id", [':id' => $completedId]);
+				$stmt = $db->prepare("DELETE FROM bb_completed_reservation_resource WHERE completed_reservation_id = :id");
+				$stmt->execute([':id' => $completedId]);
+				$stmt = $db->prepare("DELETE FROM bb_completed_reservation WHERE id = :id");
+				$stmt->execute([':id' => $completedId]);
 			}
 
 			// Delete the allocation itself
-			$db->query("DELETE FROM bb_allocation WHERE id = :id", [':id' => $id]);
+			$stmt = $db->prepare("DELETE FROM bb_allocation WHERE id = :id");
+			$stmt->execute([':id' => $id]);
 
 			$db->commit();
 			return true;

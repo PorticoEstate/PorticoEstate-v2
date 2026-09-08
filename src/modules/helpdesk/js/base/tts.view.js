@@ -218,7 +218,7 @@ upload_canvas = function ()
 
 };
 
-$(document).ready(function ()
+$(function ()
 {
 	if (acl_edit !== 1)
 	{
@@ -245,7 +245,7 @@ $(document).ready(function ()
 	}
 
 
-	$("#publish_text").change(function ()
+	$("#publish_text").on('change', function ()
 	{
 		if ($(this).prop("checked") == true)
 		{

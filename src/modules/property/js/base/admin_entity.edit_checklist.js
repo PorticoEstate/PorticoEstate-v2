@@ -2,7 +2,7 @@ var checklist_template = 0;
 var values_tophp = [];
 /********************************************************************************/
 
-$(document).ready(function ()
+$(function ()
 {
 	try
 	{

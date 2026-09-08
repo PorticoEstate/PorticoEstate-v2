@@ -26,6 +26,12 @@ class booking_soapplication extends booking_socommon
 				'building_name'					 => array('type' => 'string', 'required' => true, 'query' => true),
 				'building_id'					 => array('type' => 'int', 'required' => true),
 				'frontend_modified'				 => array('type' => 'timestamp'), //,'read_callback' => 'modify_by_timezone'),
+				// Earliest date the application covers -- for a combined application that
+				// spans the parent AND its active children. Maintained by
+				// update_from_field(); no caller passes it in an entity, and
+				// socommon::get_table_values() intersects the entity with this map, so a
+				// key that is absent is simply not written.
+				'from_'							 => array('type' => 'timestamp'),
 				'owner_id'						 => array('type' => 'int', 'required' => true),
 				'parent_id'						 => array('type' => 'int', 'required' => false),
 				'case_officer_id'				 => array('type' => 'int', 'required' => false),
@@ -326,6 +332,7 @@ class booking_soapplication extends booking_socommon
 
 	function get_tilsyn_email($id)
 	{
+		$id = $this->db->db_addslashes($id);
 		$sql = "SELECT tilsyn_email, tilsyn_email2, email FROM bb_building where id=(select id from bb_building where name = '$id' AND active = 1)";
 		$this->db->limit_query($sql, 0, __LINE__, __FILE__, 1);
 		if (!$this->db->next_record())
@@ -543,10 +550,22 @@ class booking_soapplication extends booking_socommon
             $parent_filter";
 		$db->query($sql, __LINE__, __FILE__);
 
-		// Update self-referencing parent applications (parent_id = id pattern)
+		// Update self-referencing applications that are NOT the parent of any other row
+		// (parent_id = id, no children). Behaviourally standalone, so the value is the
+		// minimum of its OWN dates.
+		//
+		// The NOT IN is what keeps the three statements a partition. A self-referencing
+		// application that DOES have children is already handled by the statement above,
+		// which takes the minimum across the parent and its active children; without this
+		// exclusion that combined value would be overwritten here with the parent's own
+		// minimum, silently discarding an earlier child date.
 		$sql = "UPDATE bb_application parent_app
             SET from_ = (SELECT min(from_) FROM bb_application_date WHERE application_id = parent_app.id)
             WHERE parent_app.parent_id = parent_app.id
+            AND parent_app.id NOT IN (
+                SELECT DISTINCT parent_id FROM bb_application
+                WHERE parent_id IS NOT NULL AND parent_id != id
+            )
             $parent_filter";
 		$db->query($sql, __LINE__, __FILE__);
 	}

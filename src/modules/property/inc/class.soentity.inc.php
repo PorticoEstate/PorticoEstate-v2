@@ -2704,9 +2704,9 @@ class property_soentity
 		if ($location_id)
 		{
 			$config_entity = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
-			if(isset($config_entity['owner']['user_id']))
+			if(isset($config_entity['owner']['owner_id']))
 			{
-				$values_insert['user_id'] = $config_entity['owner']['user_id'];
+				$values_insert['user_id'] = $config_entity['owner']['owner_id'];
 			}
 		}
 

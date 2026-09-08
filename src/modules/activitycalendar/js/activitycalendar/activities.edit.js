@@ -58,7 +58,7 @@ function check_external()
 	}
 }
 
-$(document).ready(function ()
+$(function ()
 {
 	get_available_groups();
 

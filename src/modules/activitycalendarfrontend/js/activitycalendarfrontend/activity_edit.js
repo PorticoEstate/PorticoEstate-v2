@@ -41,7 +41,7 @@ function get_available_groups()
 	}
 }
 
-$(document).ready(function ()
+$(function ()
 {
 	if ($('#organization_id').length)
 	{

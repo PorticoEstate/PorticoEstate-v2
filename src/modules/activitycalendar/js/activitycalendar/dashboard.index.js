@@ -40,7 +40,7 @@ function filterDataActivities(param, value)
 	oTable1.api().draw();
 }
 
-$(document).ready(function ()
+$(function ()
 {
 	var previous_date_change;
 	$("#date_change").on('keyup change', function ()
@@ -52,17 +52,17 @@ $(document).ready(function ()
 		}
 	});
 
-	$('#activity_state').change(function ()
+	$('#activity_state').on('change', function ()
 	{
 		filterDataActivities('activity_state', $(this).val());
 	});
 
-	$('#activity_district').change(function ()
+	$('#activity_district').on('change', function ()
 	{
 		filterDataActivities('activity_district', $(this).val());
 	});
 
-	$('#activity_category').change(function ()
+	$('#activity_category').on('change', function ()
 	{
 		filterDataActivities('activity_category', $(this).val());
 	});

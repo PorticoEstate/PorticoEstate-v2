@@ -226,6 +226,35 @@ body {
     background-color: var(--ds-color-background-subtle, #f8f9fa);
 }
 
+.app-messenger__message {
+    display: block;
+    width: 100%;
+    text-align: left;
+}
+
+.app-messenger__message--unread {
+    font-weight: var(--ds-font-weight-bold, 700);
+}
+
+.app-messenger__icon--unread {
+    color: #fff !important;
+}
+
+.app-messenger__subject {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.app-messenger__meta {
+    color: var(--ds-color-text-subtle, #6b7280);
+    font-size: var(--ds-font-size-sm, 0.875rem);
+}
+
+.app-messenger__popover[popover]:popover-open {
+    position: fixed;
+}
+
 .app-dropdown__header {
     padding: var(--ds-spacing-2, 0.5rem) var(--ds-spacing-3, 0.75rem);
     font-size: var(--ds-font-size-sm, 0.875rem);

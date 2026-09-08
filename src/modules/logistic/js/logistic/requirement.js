@@ -1,7 +1,7 @@
-$(document).ready(function ()
+$(function ()
 {
 
-	$("#location_id").change(function ()
+	$("#location_id").on('change', function ()
 	{
 
 		var loc_id = $(this).val();
@@ -59,7 +59,7 @@ $(document).ready(function ()
 		});
 	});
 
-	$(".attribute select.operator").change(function ()
+	$(".attribute select.operator").on('change', function ()
 	{
 		var operator = $(this).val();
 
@@ -93,7 +93,7 @@ $(document).ready(function ()
 		}
 	});
 
-	$("#frm-requirement-values").submit(function (event)
+	$("#frm-requirement-values").on('submit', function (event)
 	{
 
 		$('#attributes .attribute').find('.input_error_msg').hide();

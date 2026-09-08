@@ -1,7 +1,7 @@
-$(document).ready(function ()
+$(function ()
 {
 
-	$("#category_id").change(function ()
+	  $("#category_id").on('change', function ()
 	{
 		var category_id = $(this).val() || -1;
 		var oArgs = {menuaction: 'property.uigeneric.get_list', type: 'location_exception_category_text'};

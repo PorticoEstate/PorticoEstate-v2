@@ -50,6 +50,11 @@
 
 
 <xsl:template match="toolbar" xmlns:php="http://php.net/xsl">
+	<style>
+		#datatable-container_wrapper div.dt-buttons {
+			justify-content: flex-start;
+		}
+	</style>
 	<div class="row ms-1">
 		<div id="active_filters">
 		</div>
@@ -163,7 +168,7 @@
 																										'filter_'+name+'_name', 'filter_'+name+'_id', 'filter_'+name+'_container', label_attr, show_id, requestGenerator);
 														]]>
 													}
-													oTable.dataTableSettings[0]['ajax']['data']['filter_'+name+'_id'] = "";
+														clearFilterParam('filter_'+name+'_id');
 													$('#filter_'+name+'_name').val('');
 													$('#filter_'+name+'_id').val('');
 													filter_selected = filter_select;
@@ -179,7 +184,7 @@
 																]]>
 													}
 													filter_selected = "";
-													oTable.dataTableSettings[0]['ajax']['data']['filter_'+name+'_id'] = "";
+														clearFilterParam('filter_'+name+'_id');
 													$('#filter_'+name+'_name').val('');
 													$('#filter_'+name+'_id').val('');
 													}
@@ -602,7 +607,7 @@
 		<xsl:if test="responsive_show_details = 1">
 			responsive =	{
 								details: {
-										display: $.fn.dataTable.Responsive.display.childRowImmediate,
+										display: DataTable.Responsive.display.childRowImmediate,
 										type: ''
 									}
 							};
@@ -707,7 +712,7 @@
 						oParams.columns = null;
 						oParams.start = null;
 						oParams.draw = null;
-						var addtional_filterdata = oTable.dataTableSettings[0]['oAjaxData'];
+								var addtional_filterdata = oTable.ajax.params();
 
 						for (var attrname in addtional_filterdata)
 						{
@@ -1119,7 +1124,7 @@
 
 			init_table = function()
 			{
-				oTable = $('#datatable-container').dataTable({
+				 oTable = new DataTable('#datatable-container', {
 				paginate:		disablePagination ? false : true,
 				searchDelay: 	1200,
 				processing:		true,
@@ -1223,7 +1228,7 @@
 					  },
 					type: 'POST'
 				},
-				fnStateSaveParams: 	function ( oSettings, sValue ) {
+				stateSaveParams: 	function ( oSettings, sValue ) {
 					//Save custom filters
 					var temp = {};
 					temp[menuaction] = {}
@@ -1244,12 +1249,12 @@
 					{
 						temp[attrname] = sValue[attrname];
 					}
-					localStorage.setItem('state_' + menuaction, JSON.stringify(temp));
+					sessionStorage.setItem('state_' + menuaction, JSON.stringify(temp));
 					return sValue;
 				},
-				fnStateLoadParams: function ( oSettings, oData ) {
+				stateLoadParams: function ( oSettings, oData ) {
 					//Load custom filters
-					var retrievedObject = localStorage.getItem('state_' + menuaction);
+					var retrievedObject = sessionStorage.getItem('state_' + menuaction);
 					if(typeof(retrievedObject) != 'undefined')
 					{
 						var	params = {};
@@ -1318,9 +1323,9 @@
 					}
 					return true;
 				},
-				fnCreatedRow  : function( nRow, aData, iDataIndex ){
+				createdRow  : function( nRow, aData, iDataIndex ){
  				},
-				fnRowCallback: function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+				rowCallback: function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
 							if(typeof(aData['priority'])!= undefined && aData['priority'] > 0)
 							{
 								$(nRow).addClass('priority' + aData['priority']);
@@ -1328,8 +1333,8 @@
 							//In case the row is folded as result of responsive behaviour
 							$('td', nRow).parents('tr').addClass('context-menu');
                 },
-				fnDrawCallback: function () {
-					oTable.makeEditable({
+				drawCallback: function () {
+						$('#datatable-container').makeEditable({
 							sUpdateURL: editor_action,
 							fnOnEditing: function(input){
 								cell = input.parents("td");
@@ -1403,13 +1408,13 @@
 						addFooterDatatable(oTable);
 					}
 				},
-				fnFooterCallback: function ( nRow, aaData, iStart, iEnd, aiDisplay ) {
+				footerCallback: function ( nRow, aaData, iStart, iEnd, aiDisplay ) {
 					if(typeof(addFooterDatatable2) == 'function')
 					{
 						addFooterDatatable2(nRow, aaData, iStart, iEnd, aiDisplay,oTable);
 					}
 				},//alternative
-				fnInitComplete: function (oSettings, json)
+				initComplete: function (oSettings, json)
 				{
 					$(".btn-group").addClass('w-100');
 					$(".dropdown-menu").addClass('w-100');
@@ -1437,6 +1442,10 @@
 			};
 
 			init_table();
+			if (oTable && typeof oTable.api !== 'function')
+			{
+				oTable.api = function() { return oTable; };
+			}
 
 			restore_temporary_hidden_columns = function()
 			{
@@ -1492,7 +1501,7 @@
 				//remove search input from header
 				$('#datatable-container thead th').each(function(colIdx)
 				{
-					if(oTable.api().settings()[0].aoColumns[colIdx].bSearchable)
+					if(JqueryPortico.columns[colIdx] && JqueryPortico.columns[colIdx].searchable !== false)
 					{
 						if($(this).find('input.column_search').length > 0)
 						{
@@ -1535,7 +1544,7 @@
 				// Setup - add a text input to each header cell
 				$('#datatable-container thead th').each(function(colIdx)
 				{
-					if(oTable.api().settings()[0].aoColumns[colIdx].bSearchable)
+					if(JqueryPortico.columns[colIdx] && JqueryPortico.columns[colIdx].searchable !== false)
 					{
 						var title = $(this).text();
 						var search_value = oTable.api().column(colIdx).search();
@@ -1718,7 +1727,7 @@
 
 			function fnSetSelected( row , dt)
 			{
-				var table = oTable.DataTable();
+				var table = oTable;
 				if(typeof(dt.trigger) != 'undefined' && dt.trigger == 'right')
 				{
 					var aTrs = oTable.api().rows().nodes();
@@ -1791,21 +1800,37 @@
 			var api = oTable.api();
 			for (var i in filter_selects)
 			{
-				select = $("#" + filter_selects[i]);
-				select.prop('selectedIndex',0);
-				try
+				var select = $("#" + filter_selects[i]);
+				if (!select.length)
 				{
-					if($("#" + filter_selects[i]).attr('multiple'))
-					{
-						$("#" + filter_selects[i]).multiselect('deselectAll', false);
-			//			$("#" + filter_selects[i]).multiselect({ buttonContainer: '' });
-						$("#" + filter_selects[i]).multiselect('refresh');
-					}
-
-					column_search_is_initated = false;
+					continue;
 				}
-				catch(e)
-				{}
+
+				if (select.is('select[multiple]'))
+				{
+					select.find('option').prop('selected', false);
+					if ($.fn && $.fn.multiselect)
+					{
+						try
+						{
+							select.multiselect('deselectAll', false);
+							select.multiselect('refresh');
+						}
+						catch(e)
+						{}
+					}
+					select.trigger('change');
+				}
+				else
+				{
+					select.prop('selectedIndex', 0);
+					if (select.is('select'))
+					{
+						select.trigger('change');
+					}
+				}
+
+				column_search_is_initated = false;
 			}
 
 			var oControls = $('.dtable_custom_controls:first').find(':input[name]');
@@ -1823,6 +1848,10 @@
 			api.destroy();
 			clear_state = true;
 			init_table();
+			if (oTable && typeof oTable.api !== 'function')
+			{
+				oTable.api = function() { return oTable; };
+			}
 			restore_temporary_hidden_columns();
 			remove_column_search();
 			$('#reset_filter').hide();
@@ -1847,13 +1876,11 @@
 
 		function filterData(param, value)
 		{
-			oTable.dataTableSettings[0]['ajax']['data'][param] = value;
 			oTable.api().draw();
 		}
 
 		function clearFilterParam(param)
 		{
-			oTable.dataTableSettings[0]['ajax']['data'][param] = '';
 		}
 
 		function reloadData()

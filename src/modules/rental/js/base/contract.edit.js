@@ -179,10 +179,10 @@ function formatterIs_one_time(key, oData)
 	return '<input id="' + name + '" class="one_time" name="' + name + '" size="10" value="' + oData[key] + '" type="checkbox" ' + checked + '></input>';
 }
 
-$(document).ready(function ()
+$(function ()
 {
 
-	$("#location_id").change(function ()
+	$("#location_id").on('change', function ()
 	{
 		var oArgs = {menuaction: 'rental.uicontract.get_contract_type_options', location_id: $(this).val()};
 		var requestUrl = phpGWLink('index.php', oArgs, true);
@@ -247,7 +247,7 @@ $(document).ready(function ()
 		});
 	});
 
-	$("#date_start").change(function ()
+	$("#date_start").on('change', function ()
 	{
 
 		var date_start = $("#date_start").val();
@@ -258,7 +258,7 @@ $(document).ready(function ()
 		}
 	});
 
-	$("#date_end").change(function ()
+	$("#date_end").on('change', function ()
 	{
 
 		var date_end = $("#date_end").val();
@@ -271,7 +271,7 @@ $(document).ready(function ()
 
 	/******************************************************************************/
 
-	$('#composite_search_options').change(function ()
+	$('#composite_search_options').on('change', function ()
 	{
 		filterDataComposite('search_option', $(this).val());
 	});
@@ -286,24 +286,24 @@ $(document).ready(function ()
 		}
 	});
 
-	$('#furnished_status').change(function ()
+	$('#furnished_status').on('change', function ()
 	{
 		filterDataComposite('furnished_status', $(this).val());
 	});
 
-	$('#is_active').change(function ()
+	$('#is_active').on('change', function ()
 	{
 		filterDataComposite('is_active', $(this).val());
 	});
 
-	$('#has_contract').change(function ()
+	$('#has_contract').on('change', function ()
 	{
 		filterDataComposite('has_contract', $(this).val());
 	});
 
 	/******************************************************************************/
 
-	$('#party_search_options').change(function ()
+	$('#party_search_options').on('change', function ()
 	{
 		filterDataParty('search_option', $(this).val());
 	});
@@ -318,19 +318,19 @@ $(document).ready(function ()
 		}
 	});
 
-	$('#party_type').change(function ()
+	$('#party_type').on('change', function ()
 	{
 		filterDataParty('party_type', $(this).val());
 	});
 
-	$('#filter_active').change(function ()
+	$('#filter_active').on('change', function ()
 	{
 		filterDataParty('active', $(this).val());
 	});
 
 	/******************************************************************************/
 
-	$('#invoice_id').change(function ()
+	$('#invoice_id').on('change', function ()
 	{
 		oTable7.dataTableSettings[7]['ajax']['data']['invoice_id'] = $('#invoice_id').val();
 		JqueryPortico.updateinlineTableHelper(oTable7);
@@ -338,7 +338,7 @@ $(document).ready(function ()
 
 	/******************************************************************************/
 
-	$('#document_search_option').change(function ()
+	$('#document_search_option').on('change', function ()
 	{
 		filterDataDocument('search_option', $(this).val());
 	});
@@ -353,7 +353,7 @@ $(document).ready(function ()
 		}
 	});
 
-	$('#document_type_search').change(function ()
+	$('#document_type_search').on('change', function ()
 	{
 		filterDataDocument('document_type', $(this).val());
 	});

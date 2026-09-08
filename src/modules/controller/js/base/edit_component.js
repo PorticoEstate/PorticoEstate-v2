@@ -68,7 +68,7 @@ downloadComponents = function (parent_location_id, parent_id, location_id)
 };
 
 
-$(document).ready(function ()
+$(function ()
 {
 	update_geolocation = function (location_id, component_id)
 	{
@@ -403,7 +403,7 @@ $(document).ready(function ()
 				{
 					$(input).addClass('error');
 					$(input).attr("style", 'border-color: rgb(185, 74, 72);');
-					$(input).focus();
+					$(input).trigger('focus');
 					flag = false;
 				}
 				else
@@ -467,7 +467,7 @@ $(document).ready(function ()
 		return false;
 	};
 
-	$("#choose-child-on-component").change(function ()
+	$("#choose-child-on-component").on("change", function ()
 	{
 		$("#submit_update_component").hide();
 		$("#component_picture_file").val('');

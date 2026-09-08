@@ -30,7 +30,7 @@ function save_schedule()
 
 	});
 }
-$(document).ready(function ()
+$(function ()
 {
 	$(".event").on("dragstart", function (event)
 	{

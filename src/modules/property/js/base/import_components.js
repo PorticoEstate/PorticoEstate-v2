@@ -1,5 +1,5 @@
 
-$(document).ready(function ()
+$(function ()
 {
 	$('.processing-import').hide();
 	$('.processing-sheet').hide();
@@ -10,7 +10,7 @@ $(document).ready(function ()
 	$('.processing-save').hide();
 	$('.get-profile').hide();
 	
-	$('select#type_id').change( function()
+	$('select#type_id').on('change', function()
 	{
 		var oArgs1 = {menuaction: 'property.uigeneric_document.get_categories_for_type'};
 		var requestUrl = phpGWLink('index.php', oArgs1, true);		
@@ -27,12 +27,12 @@ $(document).ready(function ()
 		);			
 	});
 	
-	$('select#cat_location_id').change( function()
+	$('select#cat_location_id').on('change', function()
 	{	
 		getLocations();
 	});
 
-	$('select#district_id').change( function()
+	$('select#district_id').on('change', function()
 	{
 		var oArgs1 = {menuaction: 'property.uigeneric_document.get_part_of_town'};
 		var requestUrl = phpGWLink('index.php', oArgs1, true);		
@@ -49,7 +49,7 @@ $(document).ready(function ()
 		);				
 	});
 
-	$('select#part_of_town_id').change( function()
+	$('select#part_of_town_id').on('change', function()
 	{
 		getLocations();
 	});
@@ -72,7 +72,7 @@ $(document).ready(function ()
         }
     });
 	
-	$('#template_list').change( function()
+	$('#template_list').on('change', function()
 	{
 		fill_template_attributes('');
 	});
@@ -228,7 +228,7 @@ $(document).ready(function ()
 		});
 	});
 	
-	$('#import_components').click(function ()
+	$('#import_components').on('click', function ()
 	{
 		var oArgs = {menuaction: 'property.uiimport_components.import_components'};
 		var requestUrl = phpGWLink('index.php', oArgs, true);
@@ -607,7 +607,7 @@ $(document).ready(function ()
 		window.open(requestUrl, '_self');
 	});
 
-	$('#template_list').change();
+	$('#template_list').trigger('change');
 	
 	$('#cancel_steps').on('click', function ()
 	{
@@ -710,21 +710,21 @@ function valid_new_attribute (code)
 	if ($('#name_' + code).val() == '')
 	{
 		alert('Enter a name for the new attribute');
-		$('#name_' + code).select();
+			$('#name_' + code).trigger('select');
 		return false;
 	}
 	
 	if ($('#data_type_' + code).val() == '')
 	{
 		alert('Select a data type for the new attribute');
-		$('#data_type_' + code).select();
+			$('#data_type_' + code).trigger('select');
 		return false;
 	}
 	
 	if ($('#precision_' + code).val() == '')
 	{
 		alert('Enter a length for the new attribute');
-		$('#precision_' + code).select();
+			$('#precision_' + code).trigger('select');
 		return false;
 	}
 	

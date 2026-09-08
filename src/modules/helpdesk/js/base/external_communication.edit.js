@@ -41,7 +41,7 @@ $(window).on('load', function ()
 
 });
 
-$(document).ready(function ()
+$(function ()
 {
 	var do_preview = $("#do_preview").val();
 

@@ -5,7 +5,7 @@ JqueryPortico.autocompleteHelper(strURL, 'ecodimb_name', 'ecodimb_id', 'ecodimb_
 
 var composites = new Array();
 
-$(document).ready(function ()
+$(function ()
 {
 	$.formUtils.addValidator({
 		name: 'naming',

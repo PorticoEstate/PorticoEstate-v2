@@ -5,7 +5,7 @@
  */
 var sUrl_agreement = phpGWLink('index.php', {'menuaction': 'property.uis_agreement.edit_alarm'});
 
-$(document).ready(function ()
+$(function ()
 {
 	$.formUtils.addValidator({
 		name: 'budget',

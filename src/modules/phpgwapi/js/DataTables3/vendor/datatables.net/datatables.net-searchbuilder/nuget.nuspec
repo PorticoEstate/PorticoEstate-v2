@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <version>2.0.0</version>
+        <id>datatables.net-searchbuilder</id>
+        <description>This is SearchBuilder for DataTables</description>
+        <repository type="git" url="https://github.com/DataTables/SearchBuilder"/>
+        <authors>SpryMedia Ltd</authors>
+        <projectUrl>http://datatables.net</projectUrl>
+        <license type="expression">MIT</license>
+        <tags>SearchBuilder  Filtering  Search  Datatables table</tags>
+        <dependencies>
+            <dependency id="datatables.net" version="[3.0.0, 4.0.0)"/>
+        </dependencies>
+        <contentFiles>
+            <files include="**/*" buildAction="Content"/>
+        </contentFiles>
+        <readme>Readme.md</readme>
+    </metadata>
+    <files>
+        <file src="Readme.md" target=""/>
+        <file src="js/dataTables.searchBuilder.js" target="content\Scripts"/>
+        <file src="js/dataTables.searchBuilder.js" target="contentFiles\any\any\wwwroot\js"/>
+        <file src="js/dataTables.searchBuilder.min.js" target="content\Scripts"/>
+        <file src="js/dataTables.searchBuilder.min.js" target="contentFiles\any\any\wwwroot\js"/>
+        <file src="js/dataTables.searchBuilder.min.mjs" target="content\Scripts"/>
+        <file src="js/dataTables.searchBuilder.min.mjs" target="contentFiles\any\any\wwwroot\js"/>
+        <file src="js/dataTables.searchBuilder.mjs" target="content\Scripts"/>
+        <file src="js/dataTables.searchBuilder.mjs" target="contentFiles\any\any\wwwroot\js"/>
+    </files>
+</package>

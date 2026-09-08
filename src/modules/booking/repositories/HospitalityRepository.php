@@ -252,7 +252,21 @@ class HospitalityRepository
                        h.include_in_checkout_payment,
                        h.order_by_time_value, h.order_by_time_unit, h.open_days,
                        r.cancellation_deadline_value AS resource_cancellation_deadline_value,
-                       r.cancellation_deadline_unit AS resource_cancellation_deadline_unit
+                       r.cancellation_deadline_unit AS resource_cancellation_deadline_unit,
+                       -- The building that owns the KITCHEN resource -- NOT the application's
+                       -- building. The two differ in practice, and the kitchen's own building is
+                       -- where its seasons (opening hours) live; using the application's building
+                       -- loads seasons that do not contain this resource, which reads as
+                       -- \"closed at every hour\" rather than as an error.
+                       -- Scalar subquery, not a JOIN: bb_building_resource is many-to-many, so a
+                       -- join emits one row per building, and the SELECT DISTINCT above would not
+                       -- collapse them (building_id differs) -- the hospitality would appear twice.
+                       -- ORDER BY ... LIMIT 1 keeps the multi-building case deterministic.
+                       (SELECT br.building_id
+                          FROM bb_building_resource br
+                         WHERE br.resource_id = h.resource_id
+                         ORDER BY br.building_id
+                         LIMIT 1) AS building_id
                 FROM bb_hospitality h
                 LEFT JOIN bb_resource r ON h.resource_id = r.id
                 WHERE h.active = 1

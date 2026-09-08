@@ -65,7 +65,7 @@ class LegacyViewHelper
 		if (is_array($appNameOrPath)) {
 			$appName = $appNameOrPath[0];
 			$menuSelection = !empty($menuSelection) ? $menuSelection : implode('::', $appNameOrPath);
-			$appHeader = implode('::', array_map(fn($s) => lang($s), $appNameOrPath));
+			$appHeader = implode('::', array_map(fn($s) => lang(str_replace('_', ' ', $s)), $appNameOrPath));
 			$this->setFlags($appName, $menuSelection, $appHeader);
 		} else {
 			// setFlags AFTER loadLegacyClasses because LegacyObjectHandler.php sets noheader=true

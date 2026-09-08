@@ -21,7 +21,6 @@
 	);
 	include('../header.inc.php');
 
-	$obj = createobject('messenger.uimessenger');
-	$obj->inbox();
+	phpgw::redirect_link('/messenger/view/inbox');
 
 	$GLOBALS['phpgw']->common->phpgw_footer();

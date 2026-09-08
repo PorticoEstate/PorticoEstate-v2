@@ -248,7 +248,7 @@ class booking_soorganization extends booking_socommon
 				'AND s.from_ <= \'now\'::timestamp ' .
 				'AND s.to_ >= \'now\'::timestamp ' .
 				'AND a.from_ >= s.from_ ' .
-				'AND a.to_ <= s.to_ ' . $test . ' ORDER BY o.id ASC' .
+				'AND a.to_ <= s.to_ ' . $test .
 				')';
 		}
 		else
@@ -258,7 +258,7 @@ class booking_soorganization extends booking_socommon
 				'JOIN bb_allocation_resource ar ON ar.resource_id = r.id ' .
 				'JOIN bb_building_resource br ON r.id = br.resource_id AND br.building_id = ' . $this->_marshal($building_id, 'int') . ' ' .
 				'JOIN bb_allocation a ON a.id = ar.allocation_id AND (a.from_ - \'now\'::timestamp < \'300 days\') ' .
-				'JOIN bb_organization o ON o.id = a.organization_id ' . $test . ' ORDER BY o.id ASC' .
+				'JOIN bb_organization o ON o.id = a.organization_id ' . $test .
 				')';
 		}
 		return $this->read($params);

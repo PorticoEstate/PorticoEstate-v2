@@ -1,10 +1,10 @@
 var myColumnDefs = new Array();
 var oTable = null;
 
-$(document).ready(function ()
+$(function ()
 {
 
-	$("#control_area_id").change(function ()
+	$("#control_area_id").on("change", function ()
 	{
 		var control_area_id = $(this).val();
 		var oArgs = {menuaction: 'controller.uicontrol.get_controls_by_control_area'};
@@ -45,7 +45,7 @@ $(document).ready(function ()
 	});
 
 
-	$("#location_type").change(function ()
+	$("#location_type").on("change", function ()
 	{
 
 		get_table_def();
@@ -85,7 +85,7 @@ $(document).ready(function ()
 		});
 	});
 
-	$("#location_type_category").change(function ()
+	$("#location_type_category").on("change", function ()
 	{
 		var level = $("#location_type").val();
 		update_location_table();
@@ -97,7 +97,7 @@ $(document).ready(function ()
 	var location_type = 1;
 
 	//update part of town category based on district
-	$("#district_id").change(function ()
+	$("#district_id").on("change", function ()
 	{
 		var district_id = $(this).val();
 		var oArgs = {menuaction: 'controller.uicontrol_register_to_location.get_district_part_of_town'};
@@ -139,7 +139,7 @@ $(document).ready(function ()
 	});
 
 
-	$("#part_of_town_id").change(function ()
+	$("#part_of_town_id").on("change", function ()
 	{
 		var oArgs = {menuaction: 'controller.uicontrol_register_to_location.get_locations', child_level: 1, part_of_town_id: $(this).val()};
 		var requestUrl = phpGWLink('index.php', oArgs, true);
@@ -177,7 +177,7 @@ $(document).ready(function ()
 		update_location_table();
 	});
 
-	$("#loc1").change(function ()
+	$("#loc1").on("change", function ()
 	{
 		var oArgs = {menuaction: 'controller.uicontrol_register_to_location.get_locations', child_level: 2, location_code: $(this).val()};
 		var requestUrl = phpGWLink('index.php', oArgs, true);
@@ -215,19 +215,19 @@ $(document).ready(function ()
 	});
 
 
-	$("#control_registered").change(function ()
+	$("#control_registered").on("change", function ()
 	{
 		init_component_table();
 	});
 
-	$("#control_id").change(function ()
+	$("#control_id").on("change", function ()
 	{
 		$("#control_id_hidden").val($(this).val());
 
 		update_location_table();
 	});
 
-	$("#loc2").change(function ()
+	$("#loc2").on("change", function ()
 	{
 		$("#search-location_code").val('');
 		update_location_table();
@@ -235,7 +235,7 @@ $(document).ready(function ()
 
 
 
-	$("#search").click(function (e)
+	$("#search").on("click", function (e)
 	{
 		update_location_table();
 	});

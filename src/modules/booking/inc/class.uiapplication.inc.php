@@ -47,7 +47,9 @@ class booking_uiapplication extends booking_uicommon
 		'delete'					 => true,
 		'get_activity_data'			 => true,
 		'get_applications'			 => true,
-		'check_collision_for_deny_resources' => true
+		'check_collision_for_deny_resources' => true,
+		'archive_as_rejected'			 => true,
+		'archive_as_accepted'			 => true,
 	);
 	protected $customer_id,
 		$default_module = 'bookingfrontend',
@@ -56,6 +58,7 @@ class booking_uiapplication extends booking_uicommon
 	protected $building_so;
 	protected $errors = array();
 	private $acl_delete;
+	private $acl_edit;
 	protected $combine_applications = false;
 	var $event_bo, $activity_bo, $audience_bo, $assoc_bo, $agegroup_bo, $resource_bo, $building_bo, $organization_bo,
 		$document_building, $document_resource, $fields, $display_name, $accounts_obj, $sessions;
@@ -83,6 +86,8 @@ class booking_uiapplication extends booking_uicommon
 		$this->building_so		 = new booking_sobuilding();
 		$this->application_bo	 = new booking_boapplication();
 		$this->acl_delete		 = $this->acl->check('.application', ACL_DELETE, 'booking');
+		$this->acl_edit			 = $this->acl->check('.application', ACL_EDIT, 'booking');
+
 		$this->accounts_obj		 = new Accounts();
 		$this->sessions			 = Sessions::getInstance();
 
@@ -508,7 +513,7 @@ class booking_uiapplication extends booking_uicommon
 			'text'	 => lang('Status') . ':',
 			'list'	 => array(
 				array(
-					'id'	 => 'none',
+					'id'	 => '',
 					'name'	 => lang('Not selected')
 				),
 				array(
@@ -527,6 +532,10 @@ class booking_uiapplication extends booking_uicommon
 				array(
 					'id'	 => 'ACCEPTED',
 					'name'	 => lang('ACCEPTED')
+				),
+				array(
+					'id'	 => 'CANCELLED',
+					'name'	 => lang('CANCELLED')
 				)
 			)
 		);
@@ -565,12 +574,22 @@ class booking_uiapplication extends booking_uicommon
 		}
 		phpgwapi_jquery::load_widget('autocomplete');
 		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		$jqcal2 = createObject('phpgwapi.jqcal2');
+		$jqcal2->add_listener('filter_from_');
 
 		$data = array(
 			'datatable_name' => $this->display_name,
 			'form' => array(
 				'toolbar' => array(
-					'item' => array(),
+					'item' => array(
+						array(
+							'type' => 'date-picker',
+							'id' => 'from_',
+							'name' => 'from_',
+							'value' => '',
+							'text' => lang('from') . ':',
+						),
+					),
 				),
 			),
 			'datatable' => array(
@@ -657,6 +676,8 @@ class booking_uiapplication extends booking_uicommon
 			)
 		);
 
+		$data['datatable']['actions'] = array();
+
 		if ($this->acl_delete)
 		{
 			$data['datatable']['actions'][] = array(
@@ -670,10 +691,33 @@ class booking_uiapplication extends booking_uicommon
 				'parameters'	 => json_encode($parameters)
 			);
 		}
-		else
+
+		if ($this->acl_edit)
 		{
-			$data['datatable']['actions'][] = array();
+			$data['datatable']['actions'][] = array(
+				'my_name'		 => 'archive_as rejected',
+				'statustext'	 => lang('archive as rejected'),
+				'text'			 => lang('archive as rejected'),
+				'action'		 => phpgw::link('/index.php', array(
+					'menuaction' => 'booking.uiapplication.archive_as_rejected',
+					'delete'		 => 'dummy' // FIXME to trigger the json
+				)),
+				'parameters'	 => json_encode($parameters)
+			);
+
+			// archive as accepted
+			$data['datatable']['actions'][] = array(
+				'my_name'		 => 'archive_as accepted',
+				'statustext'	 => lang('archive as accepted'),
+				'text'			 => lang('archive as accepted'),
+				'action'		 => phpgw::link('/index.php', array(
+					'menuaction' => 'booking.uiapplication.archive_as_accepted',
+					'delete'		 => 'dummy' // FIXME to trigger the json
+				)),
+				'parameters'	 => json_encode($parameters)
+			);
 		}
+
 
 		$data['datatable']['new_item'] = self::link(array('menuaction' => 'booking.uiapplication.add'));
 
@@ -690,11 +734,11 @@ class booking_uiapplication extends booking_uicommon
 
 		if ($this->combine_applications)
 		{
-			$filters['where'] = "(bb_application.id IN ({$filter_id_sql})) AND (bb_application.parent_id IS NULL OR bb_application.parent_id = bb_application.id)";
+			$filters['where'][] = "(bb_application.id IN ({$filter_id_sql})) AND (bb_application.parent_id IS NULL OR bb_application.parent_id = bb_application.id)";
 		}
 		else
 		{
-			$filters['where'] = "(bb_application.id IN ({$filter_id_sql}))";
+			$filters['where'][] = "(bb_application.id IN ({$filter_id_sql}))";
 		}
 
 		$activity_id = Sanitizer::get_var('activities', 'int', 'REQUEST', null);
@@ -709,9 +753,9 @@ class booking_uiapplication extends booking_uicommon
 		$filters['status'] = 'NEW';
 
 		$test = Sanitizer::get_var('status', 'string', 'REQUEST', null);
-		if (Sanitizer::get_var('status') == 'none')
+		if (!Sanitizer::get_var('status'))
 		{
-			$filters['status'] = array('NEW', 'PENDING', 'REJECTED', 'ACCEPTED');
+			$filters['status'] = array('NEW', 'PENDING', 'REJECTED', 'ACCEPTED', 'CANCELLED');
 		}
 		elseif (isset($test))
 		{
@@ -722,6 +766,13 @@ class booking_uiapplication extends booking_uicommon
 			$filters['status'] = 'NEW';
 		}
 
+		$filter_from = Sanitizer::get_var('from_', 'string', 'REQUEST', null);
+
+		if ($filter_from)
+		{
+			$filter_from2 = date('Y-m-d', phpgwapi_datetime::date_to_timestamp($filter_from));
+			$filters['where'][] = "%%table%%" . sprintf(".from_ >= '%s 00:00:00'", Db::getInstance()->db_addslashes($filter_from2));
+		}
 
 		$search = Sanitizer::get_var('search');
 		$order = Sanitizer::get_var('order');
@@ -762,14 +813,18 @@ class booking_uiapplication extends booking_uicommon
 				$application['case_officer_name'] = $this->accounts_obj->get($application['case_officer_id'])->__toString();
 			}
 
-			$dates = array();
-			foreach ($application['dates'] as $data)
-			{
-				$dates[] = $data['from_'];
-				break;
-			}
-			$fromdate = implode(',', $dates);
-			$application['from_'] = pretty_timestamp($fromdate);
+			// The Fra column shows bb_application.from_, which the writers keep at the
+			// earliest date the application covers -- for a combined application that
+			// spans the parent AND its active children.
+			//
+			// This used to take $application['dates'][0] instead. Two things were wrong
+			// with that: the dates manytomany carries no 'order' (socommon only emits an
+			// ORDER BY when one is declared), so element 0 was whichever row Postgres
+			// happened to return first and not necessarily the earliest; and a parent's
+			// own dates say nothing about a child that starts earlier.
+			$application['from_'] = !empty($application['from_'])
+				? pretty_timestamp($application['from_'])
+				: '';
 
 			// Add child application count only if combining applications
 			if ($this->combine_applications)
@@ -4825,6 +4880,12 @@ JS;
 		// Parse recurring settings - match allocation wizard logic
 		$interval = isset($recurring_data['field_interval']) ? (int)$recurring_data['field_interval'] : 1;
 		$repeat_until = null;
+		// Whether the resolved bound is an INCLUSIVE end DATE that has to be advanced
+		// by one whole day - see the comment above the bump further down. Every one of
+		// the five branches that assigns $repeat_until sets this explicitly, including
+		// the one that must NOT be bumped, so the decision is visible at the branch
+		// rather than implied by this initialiser.
+		$bound_is_inclusive = false;
 
 		// Get season info like allocation wizard does
 		$season_bo = createObject('booking.boseason');
@@ -4849,23 +4910,38 @@ JS;
 			// If outseason is enabled, use season end date, otherwise use custom repeat_until
 			if (!empty($recurring_data['outseason'])) {
 				// Use season end date when outseason is enabled
+				// Season end - inclusive (allocation wizard: class.uiallocation.inc.php:789)
 				$repeat_until = new DateTime($season['to_']);
+				$bound_is_inclusive = true;
 				$recurring_data['calculated_repeat_until'] = $repeat_until->format('d/m/Y');
 			} else if (!empty($recurring_data['repeat_until'])) {
 				// Use custom repeat_until date when outseason is not enabled
+				// The date the citizen picked - inclusive (allocation wizard: class.uiallocation.inc.php:783)
 				$repeat_until = new DateTime($recurring_data['repeat_until']);
+				$bound_is_inclusive = true;
 			} else {
 				// Fallback to season end if neither outseason nor repeat_until is set
+				// Season end - inclusive. NOTE: the allocation wizard has no branch of
+				// this shape at all; its recurrence block is gated on
+				// (outseason || repeat_until) at class.uiallocation.inc.php:775, and this
+				// branch is neither. It is bumped BY ANALOGY (season end <-> season end)
+				// on a ruling, not because a measured wizard branch matches it.
 				$repeat_until = new DateTime($season['to_']);
+				$bound_is_inclusive = true;
 				$recurring_data['calculated_repeat_until'] = $repeat_until->format('d/m/Y');
 			}
 		} else {
 			// Fallback - use custom date or 3 months from first date
 			if (!empty($recurring_data['repeat_until'])) {
+				// Same citizen-picked date as above, on the no-season path - inclusive
+				// (allocation wizard: class.uiallocation.inc.php:783)
 				$repeat_until = new DateTime($recurring_data['repeat_until']);
+				$bound_is_inclusive = true;
 			} else {
 				$repeat_until = clone $from_time;
 				$repeat_until->add(new DateInterval('P3M'));
+				// NOT inclusive and NOT bumped - see the comment above the bump below.
+				$bound_is_inclusive = false;
 				$recurring_data['calculated_repeat_until'] = $repeat_until->format('d/m/Y');
 			}
 		}
@@ -4945,6 +5021,47 @@ JS;
 		$max_dato = $to_time->getTimestamp(); // highest date from input (like allocation wizard)
 		$interval_seconds = $interval * 60 * 60 * 24 * 7; // weeks in seconds (like allocation wizard)
 		$repeat_until_timestamp = $repeat_until->getTimestamp();
+
+		// An INCLUSIVE end DATE has to be advanced by one whole day. A citizen who picks
+		// 29.04 means "and including 29.04", but a bare date parses to midnight at the
+		// START of that day, and the loop below compares each occurrence's END datetime
+		// against this bound - so an occurrence on the boundary date (13:00-14:00, say)
+		// is strictly greater than its own day's midnight and gets dropped. The legacy
+		// allocation wizard advances the bound for exactly this reason, and this bump
+		// covers precisely the branches the wizard bumps:
+		//   - the date the citizen picked, season found     (class.uiallocation.inc.php:783)
+		//   - the same date on the no-season path           (class.uiallocation.inc.php:783)
+		//   - the season end via outseason                  (class.uiallocation.inc.php:789)
+		//   - the season end fallback                       (class.uiallocation.inc.php:789
+		//     BY ANALOGY ONLY - the wizard's block is gated on (outseason || repeat_until)
+		//     at :775 and cannot express this branch, so there is no measured wizard
+		//     behaviour behind this one cell; see the note at the branch itself)
+		// all `+ 60 * 60 * 24` there, which is why the wizard lists 5 occurrences where
+		// this page listed 4 on identical input.
+		//
+		// The `+3 months` fallback is DELIBERATELY EXCLUDED. It is not a date anyone
+		// picked and the wizard has no such branch at all. The premise above does not
+		// hold there either: that bound is `clone $from_time` plus P3M, so it carries the
+		// start TIME (13:00), not midnight, and there is nothing to advance past. Bumping
+		// it grows the series by an occurrence no other copy produces - 14 where both the
+		// wizard and services/ApplicationService.php give 13, measured on a weekly series
+		// from 2027-04-01 13:00.
+		//
+		// Raw seconds rather than DateInterval('P1D') on purpose: the wizard
+		// (class.uiallocation.inc.php:783/:789) and services/ApplicationService.php:646
+		// both add `60 * 60 * 24`, and a calendar-aware +1 day would diverge from both
+		// across a DST transition - the one place these three copies must not differ.
+		// Applied to the timestamp rather than to $repeat_until itself so the bump
+		// cannot leak into anything else derived from that object. Today nothing is:
+		// $recurring_data arrives BY VALUE and the 'calculated_repeat_until' the
+		// template renders is the caller's own copy (see :4844), so the assignments in
+		// the branches above are dead. Keep it that way - making the parameter a
+		// reference, or returning it, would put a display date one day past the one the
+		// citizen picked if the bump were applied to the object instead.
+		if ($bound_is_inclusive) {
+			$repeat_until_timestamp += 60 * 60 * 24;
+		}
+
 		$i = 0;
 		$max_iterations = 50; // Safety limit
 
@@ -5171,6 +5288,99 @@ JS;
 		return $status;
 	}
 
+	function archive_as_rejected()
+	{
+		if (!$this->acl_edit)
+		{
+			return lang('sorry - insufficient rights');
+		}
+
+		$application_id = Sanitizer::get_var('id', 'int', 'GET');
+
+		if ($application_id)
+		{
+			Db::getInstance()->transaction_begin();
+
+			$application = $this->bo->read_single($application_id);
+			if ($application['status'] !== 'REJECTED')
+			{
+				$comment = lang('Application archived as rejected');
+				createObject('booking.sopurchase_order')->delete_purchase_order($application_id);
+
+				//find related items and set them to inactive
+				$soassociation = new booking_soapplication_association();
+				$associations = $soassociation->read(array('results' => -1, 'filters' => array('application_id' => $application_id)));
+				foreach ($associations['results'] as $association)
+				{
+					if ($association['active'] === 1 )
+					{
+						$association_object = createObject('booking.so' . $association['type']);
+						$association_item = $association_object->read_single($association['id']);
+						if ($association['type'] === 'event')
+						{
+							$this->add_comment($association_item, $comment);
+						}
+						$association_item['active'] = 0;
+						$association_object->update($association_item);
+					}
+				}
+			
+				$application['status'] = 'REJECTED';
+				// add a comment to the application history log
+			
+				$this->add_comment($application, $comment);
+				$this->bo->so->update($application);
+				$status = lang('%1 archived as rejected', $application_id);
+			}
+			else
+			{
+				$status = lang('%1 already rejected', $application_id);
+			}
+
+			Db::getInstance()->transaction_commit();
+		}
+		else
+		{
+			$status = lang('error');
+		}
+		return $status;
+	}
+
+	function archive_as_accepted()
+	{
+		if (!$this->acl_edit)
+		{
+			return lang('sorry - insufficient rights');
+		}
+
+		$application_id = Sanitizer::get_var('id', 'int', 'GET');
+
+		if ($application_id)
+		{
+
+			$application = $this->bo->read_single($application_id);
+			if ($application['status'] !== 'ACCEPTED')
+			{
+				$comment = lang('Application archived as accepted');
+				$application['status'] = 'ACCEPTED';
+				// add a comment to the application history log
+				$this->add_comment($application, $comment);
+				$this->bo->so->update($application);
+				$status = lang('%1 archived as accepted', $application_id);
+			}
+			else
+			{
+				$status = lang('%1 already accepted', $application_id);
+			}
+
+		}
+		else
+		{
+			$status = lang('error');
+		}
+		return $status;
+	}
+
 	function get_event_cost(&$event)
 	{
 		$filters		 = array('id' => $event['application_id']);
@@ -5384,6 +5594,12 @@ JS;
 		// Create allocation BO to handle the creation
 		$allocation_bo = createObject('booking.boallocation');
 
+		// One recurrence group for the whole application, resolved before the loop.
+		// The loop below skips occurrences that already exist, so a second approval
+		// run creates only the gaps - it has to join the group the first run made
+		// rather than mint a second one and split the series.
+		$allocation_group_id = $allocation_bo->so->find_or_mint_application_group_id($application['id']);
+
 		// Get resource names for display
 		$resource_names = array();
 		if (!empty($application['resources'])) {
@@ -5461,7 +5677,8 @@ JS;
 				'completed' => '0',
 				'cost' => '0',
 				'organization_id' => $org_id,
-				'skip_bas' => 0
+				'skip_bas' => 0,
+				'allocation_group_id' => $allocation_group_id
 			);
 
 			// Add season info - required for allocation creation

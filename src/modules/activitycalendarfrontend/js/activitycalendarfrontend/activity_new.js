@@ -1,4 +1,4 @@
-$(document).ready(function ()
+$(function ()
 {
 	var text = document.getElementById("displayText");
 	//ele.hide();

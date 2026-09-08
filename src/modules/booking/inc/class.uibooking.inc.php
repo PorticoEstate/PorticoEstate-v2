@@ -640,6 +640,15 @@ class booking_uibooking extends booking_uicommon
 				// calculating valid and invalid dates from the first booking's to-date to the repeat_until date is reached
 				// the form from step 1 should validate and if we encounter any errors they are caused by double bookings.
 
+				// One recurrence group per run of this form, minted before the loop.
+				// The recurrence here is the form's own - repeat_until plus field_interval -
+				// so the group is the expansion, not the application. The loop body only ever
+				// adds keys to $allocation, so the id survives every iteration.
+				if ($step == 3 && $noallocation)
+				{
+					$allocation['allocation_group_id'] = $this->allocation_bo->so->next_allocation_group_id();
+				}
+
 				while (($max_dato + ($interval * $i)) <= $repeat_until)
 				{
 					$fromdate = date('Y-m-d H:i', phpgwapi_datetime::date_to_timestamp($_POST['from_']) + ($interval * $i));

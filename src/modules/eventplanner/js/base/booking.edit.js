@@ -123,7 +123,7 @@ validate_submit = function ()
 };
 
 
-$(document).ready(function ()
+$(function ()
 {
 
 	$("#submitbox").css({
@@ -152,7 +152,7 @@ $(document).ready(function ()
 
 	if ($("#center_content").length === 1)
 	{
-		$("#center_content").scroll(function ()
+			$("#center_content").on('scroll', function ()
 		{
 			if ($("#center_content").scrollTop() > offset.top)
 			{
@@ -170,7 +170,7 @@ $(document).ready(function ()
 	}
 	else
 	{
-		$(window).scroll(function ()
+			$(window).on('scroll', function ()
 		{
 			if ($(window).scrollTop() > offset.top)
 			{

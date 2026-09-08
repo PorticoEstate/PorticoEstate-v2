@@ -94,7 +94,10 @@ class booking_async_task_update_reservation_state extends booking_async_task
 						$order = $this->sopurchase_order->get_single_purchase_order($order_id);
 						$_reservation = $bo->read_single($reservation['id']);
 
-						if ($this->activate_application_articles && (float)$_reservation['cost'] != (float)$order['sum'])
+						// An order with no lines returns no rows at all, so 'sum' is unset rather than
+						// zero: assigning it writes NULL to cost. Test the lines, not the sum - an
+						// order that genuinely totals zero is a real price and must still be written.
+						if ($this->activate_application_articles && !empty($order['lines']) && (float)$_reservation['cost'] != (float)$order['sum'])
 						{
 							$_reservation['cost'] = $order['sum'];
 							$this->add_cost_history($_reservation, 'update from order', $order['sum']);

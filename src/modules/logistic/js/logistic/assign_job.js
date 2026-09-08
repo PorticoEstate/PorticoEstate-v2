@@ -1,10 +1,10 @@
-$(document).ready(function ()
+$(function ()
 {
 
 	//=============================  MESSAGE  ===========================
 
 	// REGISTER MESSAGE
-	$("#frmRegCaseMessage").submit(function (e)
+	$("#frmRegCaseMessage").on('submit', function (e)
 	{
 
 		e.preventDefault();

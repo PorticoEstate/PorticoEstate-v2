@@ -2,7 +2,7 @@
 
 var select_id = 0;
 
-$(document).ready(function ()
+$(function ()
 {
 
 	'use strict';
@@ -210,15 +210,15 @@ $(document).ready(function ()
 
 	setActiveUploadAlternative(2);
 
-	$("#select_upload_alternative_1").click(function ()
+	$("#select_upload_alternative_1").on('click', function ()
 	{
 		setActiveUploadAlternative(1);
 	});
-	$("#select_upload_alternative_2").click(function ()
+	$("#select_upload_alternative_2").on('click', function ()
 	{
 		setActiveUploadAlternative(2);
 	});
-	$("#select_upload_alternative_3").click(function ()
+	$("#select_upload_alternative_3").on('click', function ()
 	{
 		setActiveUploadAlternative(3);
 	});

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<dt-example table-type="html" table-class="display nowrap" order="5">
+
+<css lib="datetime"/>
+
+<js lib="datatables datetime">
+<![CDATA[
+
+new DateTime(document.getElementById('test'), {
+    alwaysVisible: true
+});
+
+]]>
+</js>
+
+<title lib="DateTime">Always visible picker</title>
+
+<info><![CDATA[
+
+The DateTime picker can be made to always be visible by using [a `hidden` input type](./hidden.html), but it also has the option to be always visible, and the input also visible through the `de-init alwaysVisible` option, which is demonstrated on the page.
+
+]]></info>
+
+<custom-table>
+    <input id="test" type="text" value="2026-01-30" />
+</custom-table>
+
+</dt-example>

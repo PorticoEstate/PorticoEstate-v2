@@ -1067,3 +1067,4 @@ serving_day_closed	bookingfrontend	nn	Kjøkenet er stengt den valde dagen. Vel e
 closed_on_weekday	bookingfrontend	nn	Stengt %1
 date_belongs_to_other_application	bookingfrontend	nn	Høyrer til ei anna booking
 hospitality_cannot_change_application	bookingfrontend	nn	Bevertninga kan ikkje flyttast til ei anna booking. Slett bestillinga og opprett ei ny på rett booking.
+go_to_submission	bookingfrontend	nn	Gå til innsending

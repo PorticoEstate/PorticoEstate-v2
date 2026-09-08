@@ -80,7 +80,7 @@ function populateContractParty(contract_id)
 }
 
 /*
-$(document).ready(function ()
+$(function ()
 {
 
 	var wrapper = document.getElementById("signature-pad"),

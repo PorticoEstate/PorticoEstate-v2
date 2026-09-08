@@ -45,7 +45,7 @@ this.refresh_files = function ()
 };
 
 // wait for the DOM to be loaded
-$(document).ready(function ()
+$(function ()
 {
 	//trigger autoNumeric
 	var	anElement = new AutoNumeric('.amount',{

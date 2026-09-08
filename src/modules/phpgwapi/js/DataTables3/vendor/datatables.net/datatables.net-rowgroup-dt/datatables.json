@@ -1,0 +1,18 @@
+{
+    "js": [
+        "js/rowGroup.dataTables.js",
+        "js/rowGroup.dataTables.min.js",
+        "js/rowGroup.dataTables.min.mjs",
+        "js/rowGroup.dataTables.mjs"
+    ],
+    "css": [
+        "css/rowGroup.dataTables.css",
+        "css/rowGroup.dataTables.min.css"
+    ],
+    "types": [
+        "types/rowGroup.dataTables.d.ts"
+    ],
+    "src-repo": "http://github.com/DataTables/RowGroup",
+    "last-tag": "2.0.0",
+    "last-sync": "f8eae909be69bd3f000913ac3f9672a8d765f734"
+}

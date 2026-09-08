@@ -17,7 +17,7 @@ function formatterArea(key, oData)
 	return amount;
 }
 
-$(document).ready(function ()
+$(function ()
 {
 	getData_executive_officer = function ()
 	{

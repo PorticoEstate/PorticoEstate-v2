@@ -140,6 +140,8 @@
 				$receipt = $this->bo->set_permission($values, $r_processed, true);
 			}
 
+			$processed = array();
+
 			if ($this->location)
 			{
 				if (!$this->cat_id || $this->cat_id == 'accounts')
@@ -223,7 +225,7 @@
 					}
 				}
 
-				$processed = @implode("_", $processed);
+				$processed = implode("_", $processed);
 			}
 
 			$table_header[] = array

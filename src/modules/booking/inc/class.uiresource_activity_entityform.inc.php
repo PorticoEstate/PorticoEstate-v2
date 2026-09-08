@@ -6,6 +6,7 @@ use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\CustomFields;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
+use App\Database\Db;
 
 
 phpgw::import_class('booking.uicommon');
@@ -249,10 +250,86 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 			if (!$errors)
 			{
 				$this->bo->add($entityform);
+				// add config for owner_id to be able to force owner for new entity forms
+
+				//later on, in soentity we will check on this one:
+				//$config_entity = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
+				//if (isset($config_entity['owner']['owner_id']))
+				//{
+				//	$values_insert['user_id'] = $config_entity['owner']['owner_id'];
+				//}
+				$this->_set_owner_id_for_location($entityform['location_id'], $entityform);
+
+
 				self::redirect(array('menuaction' => 'booking.uiresource_activity_entityform.index'));
 			}
 		}
 		$this->_render_form($entityform, $errors);
+	}
+
+	private function _set_owner_id_for_location($location_id, $entityform)
+	{
+		$ConfigLocation = new \App\modules\phpgwapi\services\ConfigLocation($location_id);
+		$config_entity = $ConfigLocation->read();
+		// start transaction...?
+
+		Db::getInstance()->transaction_begin();
+		if (empty($config_entity['owner']['owner_id']))
+		{
+			// common
+			$receipt_section_common = $ConfigLocation->add_section(
+				array(
+					'name' => 'owner',
+					'descr' => 'common entity config'
+				)
+			);
+
+			$receipt = $ConfigLocation->add_attrib(
+				array(
+					'section_id' => $receipt_section_common['section_id'],
+					'input_type' => 'text',
+					'name' => 'owner_id',
+					'value' => $entityform['owner_id'],
+					'descr' => 'owner_id of the owner of this entity records',
+				)
+			);
+		}
+		else
+		{
+			// read()'s config_data only holds section/attrib names => value, so look up the ids explicitly
+			$section_id = 0;
+			foreach ($ConfigLocation->select_conf_list() as $section)
+			{
+				if ($section['name'] === 'owner')
+				{
+					$section_id = (int)$section['id'];
+					break;
+				}
+			}
+
+			$attrib_id = 0;
+			if ($section_id)
+			{
+				foreach ($ConfigLocation->read_attrib(['section_id' => $section_id, 'allrows' => true]) as $attrib)
+				{
+					if ($attrib['name'] === 'owner_id')
+					{
+						$attrib_id = (int)$attrib['id'];
+						break;
+					}
+				}
+			}
+
+			$ConfigLocation->edit_value(
+				array(
+					'section_id' => $section_id,
+					'attrib_id' => $attrib_id,
+					'id' => 1, // the config table only has one row per section/attrib, so id=1 is always correct
+					'value' => $entityform['owner_id']
+				)
+			);
+		}
+		Db::getInstance()->transaction_commit();
 	}
 
 
@@ -284,6 +361,7 @@ class booking_uiresource_activity_entityform extends booking_uicommon
 			if (!$errors)
 			{
 				$this->bo->update($entityform);
+				$this->_set_owner_id_for_location($entityform['location_id'], $entityform);
 				self::redirect(array('menuaction' => 'booking.uiresource_activity_entityform.index'));
 			}
 		}

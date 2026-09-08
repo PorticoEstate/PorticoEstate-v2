@@ -2,6 +2,14 @@ export interface IHospitality {
     id: number;
     name: string;
     resource_id: number;
+    /**
+     * Building that owns `resource_id`, resolved server-side via bb_building_resource.
+     * NOT the application's building: 2 of 15 live orders have a kitchen in a different
+     * building from the booking it serves, so the two are not interchangeable.
+     * Null when the kitchen maps to no building -- callers must fail closed, never
+     * fall back to the application's building.
+     */
+    building_id: number | null;
     resource_name: string;
     remote_serving_enabled: number;
     allow_on_site_hospitality: number;

@@ -1,7 +1,7 @@
-$(document).ready(function ()
+$(function ()
 {
 
-	$("#entity_id").change(function ()
+	$("#entity_id").on('change', function ()
 	{
 		var oArgs = {menuaction: 'logistic.uiresource_type_requirement.get_bim_level1', entity_id: $(this).val()};
 		var requestUrl = phpGWLink('index.php', oArgs, true);
@@ -35,7 +35,7 @@ $(document).ready(function ()
 		});
 	});
 
-	$("#category_id").change(function ()
+	$("#category_id").on('change', function ()
 	{
 		var oArgs = {menuaction: 'logistic.uiresource_type_requirement.get_bim_level2', entity_id: $("#entity_id").val(), cat_id: $(this).val()};
 		var requestUrl = phpGWLink('index.php', oArgs, true);

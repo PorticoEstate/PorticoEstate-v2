@@ -1,4 +1,4 @@
-$(document).ready(function ()
+$(function ()
 {
 	var ele = document.getElementById("toggleText3");
 	var text = document.getElementById("displayText3");
@@ -9,7 +9,7 @@ $(document).ready(function ()
 
 $(function ()
 {
-	$("#displayText3").click(function ()
+	$("#displayText3").on('click', function ()
 	{
 		var ele = document.getElementById("toggleText3");
 		var org_id = document.getElementById("organization_id_hidden");

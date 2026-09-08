@@ -1,30 +1,30 @@
-$(document).ready(function ()
+$(function ()
 {
-	$("#select_parent_activity").change(function ()
+	$("#select_parent_activity").on('change', function ()
 	{
 		var parent_id = $(this).val();
 		var thisForm = $(this).closest("form");
 		$(thisForm).find("input[name=parent_activity_id]").val(parent_id);
 	});
 
-	$("#select_project").change(function ()
+	$("#select_project").on('change', function ()
 	{
 		var project_id = $(this).val();
 		var thisForm = $(this).closest("form");
 		$(thisForm).find("input[name=project_id]").val(project_id);
 	});
 	/*
-	 $("#activity_details input").focus(function(e){
+	$("#activity_details input").on('focus', function(e){
 	 var wrpElem = $(this).parents("dd");
 	 $(wrpElem).find(".help_text").fadeIn(200);
 	 });
 
-	 $("#activity_details textarea").focus(function(e){
+	$("#activity_details textarea").on('focus', function(e){
 	 var wrpElem = $(this).parents("dd");
 	 $(wrpElem).find(".help_text").fadeIn(200);
 	 });
 
-	 $("#activity_details select").focus(function(e){
+	$("#activity_details select").on('focus', function(e){
 	 var wrpElem = $(this).parents("dd");
 	 $(wrpElem).find(".help_text").fadeIn(200);
 	 });

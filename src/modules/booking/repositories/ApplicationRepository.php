@@ -86,6 +86,64 @@ class ApplicationRepository
 		return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'resource_id');
 	}
 
+	// ── Allocation recurrence groups ────────────────────────────────────
+
+	/**
+	 * Every distinct recurrence group the application's allocations already carry,
+	 * oldest first. Deactivated members are included on purpose: a member that was
+	 * switched off still belongs to the series, and leaving it out would let a
+	 * re-run mint a second id for a series that already has one.
+	 *
+	 * @return int[]
+	 */
+	public function findAllocationGroupIdsForApplication(int $applicationId): array
+	{
+		$stmt = $this->db->prepare(
+			"SELECT DISTINCT allocation_group_id FROM bb_allocation"
+			. " WHERE application_id = :id AND allocation_group_id IS NOT NULL"
+			. " ORDER BY allocation_group_id"
+		);
+		$stmt->execute([':id' => $applicationId]);
+		return array_map('intval', array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'allocation_group_id'));
+	}
+
+	/**
+	 * Mint a recurrence group id. The sequence is the same one the legacy
+	 * minters use, so ids stay unique across every path that groups.
+	 */
+	public function nextAllocationGroupId(): int
+	{
+		$stmt = $this->db->prepare("SELECT nextval('seq_bb_allocation_group') AS allocation_group_id");
+		$stmt->execute();
+		return (int) $stmt->fetchColumn();
+	}
+
+	/**
+	 * Stamp a whole run's allocations with their group in ONE statement.
+	 *
+	 * The model this service writes through declares no allocation_group_id, so
+	 * the group has to be written after the rows exist. Doing it as a single
+	 * statement rather than one per row means a failure leaves the entire run
+	 * ungrouped - visible and re-runnable - instead of grouping half a series,
+	 * which is the failure the group id exists to prevent.
+	 *
+	 * @param int[] $allocationIds
+	 * @return int rows stamped
+	 */
+	public function setAllocationGroupForIds(array $allocationIds, int $groupId): int
+	{
+		$ids = array_values(array_filter(array_map('intval', $allocationIds)));
+		if (!$ids || $groupId <= 0) {
+			return 0;
+		}
+		$placeholders = implode(',', $ids);
+		$stmt = $this->db->prepare(
+			"UPDATE bb_allocation SET allocation_group_id = :g WHERE id IN ({$placeholders})"
+		);
+		$stmt->execute([':g' => $groupId]);
+		return $stmt->rowCount();
+	}
+
 	/**
 	 * Resource (and building) names are stored HTML-entity-encoded in the DB, and
 	 * some are double-encoded (e.g. "&amp;#40;" for "("). Decode repeatedly until
@@ -249,6 +307,44 @@ class ApplicationRepository
 		} catch (\Throwable $e) {
 			return 0;
 		}
+	}
+
+	// ── Hospitality orders ──────────────────────────────────────────────
+
+	/**
+	 * Count hospitality orders still awaiting a decision across the given
+	 * applications. Only 'pending' is unprocessed — 'confirmed' and
+	 * 'cancelled' are both settled decisions and do not count.
+	 *
+	 * Throws on a database failure rather than reporting zero. This count
+	 * gates Accept, and zero is the value that UNLOCKS it: swallowing the
+	 * error here would turn any database fault into a silent permit. Callers
+	 * decide what an uncomputable count means for them — see
+	 * ApplicationService::acceptApplication (blocks) and
+	 * ApplicationController::show (blocks, but keeps the page renderable).
+	 *
+	 * @throws \PDOException on a database failure.
+	 */
+	public function countPendingHospitalityOrders(array $applicationIds): int
+	{
+		if (empty($applicationIds)) {
+			return 0;
+		}
+
+		$params = [];
+		$placeholders = [];
+		foreach (array_values($applicationIds) as $i => $appId) {
+			$placeholders[] = ':app' . $i;
+			$params[':app' . $i] = (int) $appId;
+		}
+
+		$stmt = $this->db->prepare(
+			"SELECT COUNT(*) FROM bb_hospitality_order
+			 WHERE status = 'pending'
+			   AND application_id IN (" . implode(',', $placeholders) . ")"
+		);
+		$stmt->execute($params);
+		return (int) $stmt->fetchColumn();
 	}
 
 	/**
@@ -558,6 +654,29 @@ class ApplicationRepository
 			$orders[$oid]['sum'] += $amount + $tax;
 		}
 		return array_values($orders);
+	}
+
+	/**
+	 * The purchase order already placed on an allocation, if there is one.
+	 *
+	 * Both columns are part of the predicate on purpose. `reservation_id` is
+	 * namespaced by type, so matching it alone would also hit EVENT orders that
+	 * happen to share the number. And `application_id` is the wrong column
+	 * entirely: placing an order does not clear it (sopurchase_order::
+	 * identify_purchase_order only sets reservation_type/reservation_id), so an
+	 * application-keyed lookup still returns the order after it has been moved
+	 * onto some other allocation.
+	 */
+	public function findPurchaseOrderIdForAllocation(int $allocationId): ?int
+	{
+		$stmt = $this->db->prepare(
+			"SELECT id FROM bb_purchase_order
+			 WHERE reservation_type = 'allocation' AND reservation_id = :id
+			 ORDER BY id LIMIT 1"
+		);
+		$stmt->execute([':id' => $allocationId]);
+		$row = $stmt->fetch(PDO::FETCH_ASSOC);
+		return $row ? (int) $row['id'] : null;
 	}
 
 	// ── Season ─────────────────────────────────────────────────────────

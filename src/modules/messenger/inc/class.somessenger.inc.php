@@ -48,6 +48,8 @@ class messenger_somessenger_
 	protected $serverSettings, $userSettings, $apps, $accounts_obj;
 
 	/**
+	 * Cache the current user's settings and account id, and set up the accounts helper.
+	 *
 	 * @constructor
 	 */
 	function __construct()

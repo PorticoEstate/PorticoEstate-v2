@@ -16,6 +16,34 @@ $app->post('/sms/inc/plugin/gateway/pswin/soap.php', pswinController::class . ':
 
 $smsCsrfMiddleware = function ($request, $handler) use ($app)
 {
+	if (in_array(strtoupper((string) $request->getMethod()), ['POST', 'PUT', 'PATCH', 'DELETE'], true))
+	{
+		$query = $request->getQueryParams();
+		$name = $request->getHeaderLine('csrf_name') ?: $request->getHeaderLine('X-CSRF-NAME') ?: (string) ($query['csrf_name'] ?? '');
+		$value = $request->getHeaderLine('csrf_value') ?: $request->getHeaderLine('X-CSRF-VALUE') ?: (string) ($query['csrf_value'] ?? '');
+		if ($name !== '')
+		{
+			$request = $request->withHeader('csrf_name', $name);
+		}
+		if ($value !== '')
+		{
+			$request = $request->withHeader('csrf_value', $value);
+		}
+
+		// slim/csrf reads the token from the parsed body first; decode JSON requests here
+		// so csrf_name/csrf_value in a JSON payload can be validated (headers with
+		// underscores are unreliable across some server/proxy configurations).
+		$parsed = $request->getParsedBody();
+		if (!is_array($parsed) && str_contains(strtolower($request->getHeaderLine('Content-Type')), 'application/json'))
+		{
+			$decoded = json_decode((string) $request->getBody(), true);
+			if (is_array($decoded))
+			{
+				$request = $request->withParsedBody($decoded);
+			}
+		}
+	}
+
 	$failureHandler = function ($request, $handler) use ($app)
 	{
 		$response = $app->getResponseFactory()->createResponse(400);

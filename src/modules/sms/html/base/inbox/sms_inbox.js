@@ -13,12 +13,10 @@
 	];
 	if (config.canDelete) {
 		rowActions.push({
-			type: 'delete',
+			type: 'link',
 			label: config.lang.delete,
 			url: config.deleteUrlTemplate,
-			variant: 'tertiary',
-			confirm: config.lang.confirmDelete,
-			successMessage: config.lang.deleted
+			variant: 'tertiary'
 		});
 	}
 

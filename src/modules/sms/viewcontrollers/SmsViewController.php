@@ -58,7 +58,7 @@ class SmsViewController
 			// redirect=true avoids the HTML-entity encoded '&amp;' between query params, since
 			// this URL is consumed by JavaScript (window.open), not embedded as raw HTML markup.
 			'reply_url_template' => \phpgw::link('/sms/view/send', ['from' => 'inbox', 'p_num' => '__SENDER__'], true),
-			'delete_url_template' => \phpgw::link('/sms/inbox/__MESSAGE_ID__'),
+			'delete_url_template' => \phpgw::link('/sms/view/inbox/__MESSAGE_ID__/delete'),
 			'can_delete' => (bool) Acl::getInstance()->check('.inbox', Acl::DELETE, 'sms'),
 			'can_send' => (bool) Acl::getInstance()->check('.inbox', Acl::ADD, 'sms'),
 			'rows_per_page' => $rowsPerPage,
@@ -84,7 +84,7 @@ class SmsViewController
 		return $this->render($request, $response, '@views/outbox/sms_outbox.twig', [
 			'api_url' => \phpgw::link('/sms/outbox'),
 			'send_url' => \phpgw::link('/sms/view/send', ['from' => 'outbox']),
-			'delete_url_template' => \phpgw::link('/sms/outbox/__MESSAGE_ID__'),
+			'delete_url_template' => \phpgw::link('/sms/view/outbox/__MESSAGE_ID__/delete'),
 			'can_delete' => (bool) Acl::getInstance()->check('.outbox', Acl::DELETE, 'sms'),
 			'can_send' => (bool) Acl::getInstance()->check('.outbox', Acl::ADD, 'sms'),
 			'rows_per_page' => $rowsPerPage,

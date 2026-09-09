@@ -14,9 +14,17 @@ class ViewSettingsHelper
 			: 10;
 	}
 
-	public static function lengthMenu(?int $rowsPerPage = null): array
+	public static function lengthMenu(?int $rowsPerPage = null, bool $includeAll = false): array
 	{
 		$rowsPerPage ??= self::rowsPerPage();
+		if ($includeAll)
+		{
+			return [
+				[$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3, -1],
+				[$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3, 'all'],
+			];
+		}
+
 		return [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3];
 	}
 }

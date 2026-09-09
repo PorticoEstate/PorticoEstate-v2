@@ -24,7 +24,7 @@
 			{ data: 'name', title: config.lang.name },
 			{ data: 'descr', title: config.lang.descr },
 			{ data: 'remark', title: config.lang.remark },
-			{ data: 'value_sort', title: config.lang.sorting, orderable: false, searchable: false }
+			{ data: 'value_sort', title: config.lang.sorting, sortable: false, searchable: false }
 		],
 		rowActions: rowActions,
 		rowActionsDisplay: 'contextMenu',

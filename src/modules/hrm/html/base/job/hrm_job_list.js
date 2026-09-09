@@ -23,6 +23,45 @@
 	if (config.canEdit) rowActions.push({ type: 'link', label: config.lang.edit, url: config.editUrlTemplate });
 	if (config.canDelete) rowActions.push({ type: 'link', label: config.lang.delete, url: config.deleteUrlTemplate, variant: 'tertiary' });
 
+	function setupSelectAll(api)
+	{
+		var tableNode = api.table().node();
+		var header = api.column(4).header();
+		var selectAll = document.createElement('input');
+		selectAll.type = 'checkbox';
+		selectAll.className = 'hrm-job-select-all';
+		selectAll.setAttribute('aria-label', config.lang.selectAll);
+		selectAll.title = config.lang.selectAll;
+		header.appendChild(selectAll);
+
+		function rowCheckboxes()
+		{
+			return tableNode.tBodies[0].querySelectorAll('input[name="values[select][]"]');
+		}
+
+		function syncSelectAll()
+		{
+			var checkboxes = rowCheckboxes();
+			var checked = Array.prototype.filter.call(checkboxes, function (checkbox) { return checkbox.checked; });
+			selectAll.checked = checkboxes.length > 0 && checked.length === checkboxes.length;
+			selectAll.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
+		}
+
+		selectAll.addEventListener('change', function ()
+		{
+			Array.prototype.forEach.call(rowCheckboxes(), function (checkbox)
+			{
+				checkbox.checked = selectAll.checked;
+			});
+		});
+		tableNode.addEventListener('change', function (event)
+		{
+			if (event.target.name === 'values[select][]') syncSelectAll();
+		});
+		api.on('draw', syncSelectAll);
+		syncSelectAll();
+	}
+
 	AppDatatable.init({
 		id: config.id,
 		ajax: { url: config.apiUrl, method: 'GET' },
@@ -36,9 +75,9 @@
 		columns: [
 			{ data: 'name', title: config.lang.name },
 			{ data: 'descr', title: config.lang.descr },
-			{ data: 'id', title: config.lang.qualification, orderable: false, searchable: false, render: countLink(config.qualificationUrlTemplate, function (row) { return row.quali_count || 0; }) },
-			{ data: 'id', title: config.lang.task, orderable: false, searchable: false, render: countLink(config.taskUrlTemplate, function (row) { return row.task_count || 0; }) },
-			{ data: 'id', title: config.lang.print, orderable: false, searchable: false, render: function (id, type) { return type === 'display' ? '<input type="checkbox" name="values[select][]" value="' + id + '">' : id; } }
+			{ data: 'id', title: config.lang.qualification, sortable: false, searchable: false, render: countLink(config.qualificationUrlTemplate, function (row) { return row.quali_count || 0; }) },
+			{ data: 'id', title: config.lang.task, sortable: false, searchable: false, render: countLink(config.taskUrlTemplate, function (row) { return row.task_count || 0; }) },
+			{ data: 'id', title: config.lang.print, sortable: false, searchable: false, render: function (id, type) { return type === 'display' ? '<input type="checkbox" name="values[select][]" value="' + id + '">' : id; } }
 		],
 		rowActions: rowActions,
 		rowActionsDisplay: 'contextMenu',
@@ -46,6 +85,7 @@
 		order: [[0, 'asc']],
 		pageLength: config.pageLength,
 		lengthMenu: config.lengthMenu,
+		onInitComplete: function () { setupSelectAll(this.api()); },
 		lang: {
 			search: config.lang.search,
 			emptyTable: config.lang.emptyTable,

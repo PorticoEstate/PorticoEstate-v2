@@ -144,7 +144,7 @@ class HrmJobViewController
 			'can_edit' => $this->hasJobAccess(ACL_EDIT),
 			'can_delete' => $this->hasJobAccess(ACL_DELETE),
 			'rows_per_page' => $rowsPerPage,
-			'length_menu' => ViewSettingsHelper::lengthMenu($rowsPerPage),
+			'length_menu' => ViewSettingsHelper::lengthMenu($rowsPerPage, true),
 		]);
 
 		$response->getBody()->write($this->legacyView->render($html, ['hrm', 'job', 'job_type'], 'hrm::job::job_type'));

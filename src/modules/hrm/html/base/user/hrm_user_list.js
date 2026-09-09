@@ -16,7 +16,7 @@
 			{
 				data: 'can_training',
 				title: config.lang.training,
-				orderable: false,
+				sortable: false,
 				searchable: false,
 				render: function (available, type)
 				{

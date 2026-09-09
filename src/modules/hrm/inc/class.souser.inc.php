@@ -119,7 +119,6 @@ class hrm_souser
 		{
 			$ordermethod = ' ORDER BY start_date asc';
 		}
-
 		$sql = "SELECT phpgw_hrm_training.id as training_id,phpgw_hrm_training.title as title, phpgw_hrm_training.start_date,"
 			. " phpgw_hrm_training.end_date,phpgw_hrm_training_place.name as place, phpgw_hrm_training_category.descr as category, credits"
 			. " FROM phpgw_hrm_training $this->left_join phpgw_hrm_training_place on phpgw_hrm_training.place_id=phpgw_hrm_training_place.id"
@@ -129,7 +128,14 @@ class hrm_souser
 			. " UNION ALL "
 			. "({$sql} WHERE phpgw_hrm_training_category.id = 6 AND phpgw_hrm_training.user_id=" . intval($user_id) . "{$ordermethod})";
 
-		$this->db->query($sql, __LINE__, __FILE__);
+		if (!$allrows)
+		{
+			$this->db->limit_query($sql, $start, __LINE__, __FILE__, $length);
+		}
+		else
+		{
+			$this->db->query($sql, __LINE__, __FILE__);
+		}
 
 		$training = array();
 		while ($this->db->next_record())

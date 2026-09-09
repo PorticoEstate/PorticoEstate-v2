@@ -91,11 +91,12 @@ class HrmUserController
 		];
 
 		$users->start = max(0, (int) ($query['start'] ?? 0));
-		$users->length = max(1, (int) ($query['length'] ?? 10));
+		$length = (int) ($query['length'] ?? 10);
+		$users->length = $length === -1 ? -1 : max(1, $length);
 		$users->query = (string) ($query['search']['value'] ?? $query['search'] ?? '');
 		$users->order = $trainingColumns[$columnKey] ?? 'phpgw_hrm_training.start_date';
 		$users->sort = strtoupper((string) ($order['dir'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
-		$users->allrows = false;
+		$users->allrows = $users->length === -1;
 		$rows = (array) $users->read_training($userId);
 
 		$data = array_map(static function (array $row): array {

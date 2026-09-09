@@ -19,13 +19,18 @@ class HrmUserViewController
 		$this->twig = new TwigHelper('hrm');
 	}
 
+	private function rowsPerPage(): int
+	{
+		$user = Settings::getInstance()->get('user');
+		return isset($user['preferences']['common']['maxmatchs']) && (int) $user['preferences']['common']['maxmatchs'] > 0
+			? (int) $user['preferences']['common']['maxmatchs']
+			: 10;
+	}
+
 	public function index(Request $request, Response $response): Response
 	{
 		Settings::getInstance()->update('flags', ['app_header' => lang('hrm') . ' - ' . lang('user') . ': ' . lang('list user')]);
-		$user = Settings::getInstance()->get('user');
-		$rowsPerPage = isset($user['preferences']['common']['maxmatchs']) && (int) $user['preferences']['common']['maxmatchs'] > 0
-			? (int) $user['preferences']['common']['maxmatchs']
-			: 10;
+		$rowsPerPage = $this->rowsPerPage();
 
 		$html = $this->twig->render('@views/user/hrm_user_list.twig', [
 			'layout' => '@views/_bare.twig',
@@ -45,11 +50,19 @@ class HrmUserViewController
 		$users = \CreateObject('hrm.bouser', false);
 		$common = \CreateObject('hrm.bocommon');
 		$grants = (array) $users->grants;
+		if (!$userId || !$common->check_perms2($userId, $grants, ACL_READ))
+		{
+			$response->getBody()->write(lang('Access not permitted'));
+			return $response->withStatus(403)->withHeader('Content-Type', 'text/plain');
+		}
+
 		Settings::getInstance()->update('flags', ['app_header' => lang('hrm') . ' - ' . lang('Training')]);
+		$rowsPerPage = $this->rowsPerPage();
 		$html = $this->twig->render('@views/user/hrm_user_training.twig', [
 			'layout' => '@views/_bare.twig',
 			'api_url' => \phpgw::link('/hrm/users/' . $userId . '/training'),
 			'list_url' => \phpgw::link('/hrm/view/users'),
+			'user_values' => $users->get_user_data($userId),
 			'cv_url' => \phpgw::link('/index.php', ['menuaction' => 'hrm.uiuser.view_cv', 'user_id' => $userId], true),
 			'new_url' => \phpgw::link('/index.php', ['menuaction' => 'hrm.uiuser.edit', 'user_id' => $userId], true),
 			'view_url_template' => \phpgw::link('/index.php', ['menuaction' => 'hrm.uiuser.view', 'user_id' => $userId, 'training_id' => '__TRAINING_ID__'], true),
@@ -58,6 +71,8 @@ class HrmUserViewController
 			'can_add' => $common->check_perms2($userId, $grants, ACL_ADD),
 			'can_edit' => $common->check_perms2($userId, $grants, ACL_EDIT),
 			'can_delete' => $common->check_perms2($userId, $grants, ACL_DELETE),
+			'rows_per_page' => $rowsPerPage,
+			'length_menu' => [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3],
 		]);
 
 		$response->getBody()->write($this->legacyView->render($html, ['hrm', 'user', 'training'], 'hrm::user'));

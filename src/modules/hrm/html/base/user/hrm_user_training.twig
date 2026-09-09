@@ -3,10 +3,46 @@
 {% block title %}{{ lang('Training') }}{% endblock %}
 
 {% block content %}
-	<a href="{{ list_url|e }}">{{ lang('Back to the list') }}</a>
+	<div class="hrm-training-profile">
+		<div class="hrm-training-profile__heading">
+			<a href="{{ list_url|e }}">{{ lang('Back to the list') }}</a>
+			<h1>{{ lang('Training') }}</h1>
+		</div>
+
+		<dl class="hrm-training-profile__details">
+			{% for field in user_values %}
+				{% if field.value is not empty %}
+					<div class="hrm-training-profile__detail">
+						<dt>{{ field.name }}</dt>
+						<dd>
+							{% if field.type == 'link' and field.link_value %}
+								<a href="{{ field.link_value|e }}">{{ field.value }}</a>
+							{% elseif field.type == 'mail' and field.link_value %}
+								<a href="mailto:{{ field.link_value|e('url') }}">{{ field.value }}</a>
+							{% else %}
+								{{ field.value }}
+							{% endif %}
+						</dd>
+					</div>
+				{% endif %}
+			{% endfor %}
+		</dl>
+	</div>
+
 	{% include '@phpgwapi_components/app_datatable/app_datatable.twig' with {
 		id: 'hrm-training-datatable'
 	} %}
+{% endblock %}
+
+{% block styles %}
+	<style>
+		.hrm-training-profile { margin-bottom: 1rem; }
+		.hrm-training-profile__heading h1 { margin: .5rem 0 1rem; }
+		.hrm-training-profile__details { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .75rem 1.5rem; margin: 0; padding: 1rem; border: 1px solid #d5dde6; border-radius: 6px; background: #fff; }
+		.hrm-training-profile__detail { min-width: 0; }
+		.hrm-training-profile__detail dt { color: #526579; font-size: .875rem; }
+		.hrm-training-profile__detail dd { margin: .2rem 0 0; color: #17324d; font-weight: 600; overflow-wrap: anywhere; }
+	</style>
 {% endblock %}
 
 {% block scripts %}
@@ -14,6 +50,8 @@
 		window.__hrmTraining = {
 			id: 'hrm-training-datatable',
 			apiUrl: '{{ api_url|e('js') }}',
+			pageLength: {{ rows_per_page|default(10) }},
+			lengthMenu: {{ length_menu|default([10, 25, 50])|json_encode|raw }},
 			cvUrl: '{{ cv_url|e('js') }}',
 			newUrl: '{{ new_url|e('js') }}',
 			viewUrlTemplate: '{{ view_url_template|replace({'__TRAINING_ID__': '{id}'})|e('js') }}',

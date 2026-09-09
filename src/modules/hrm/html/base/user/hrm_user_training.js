@@ -53,6 +53,8 @@
 		rowActionsDisplay: 'contextMenu',
 		rowActionsToolbar: true,
 		order: [[4, 'desc']],
+		pageLength: config.pageLength,
+		lengthMenu: config.lengthMenu,
 		lang: { emptyTable: config.lang.emptyTable }
 	});
 })();

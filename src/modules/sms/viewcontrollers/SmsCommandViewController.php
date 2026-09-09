@@ -20,7 +20,7 @@ class SmsCommandViewController
 		$this->twig = new TwigHelper('sms');
 		$this->legacyView = new LegacyViewHelper();
 	}
-	private function render(Request $request, Response $response, string $template, array $data): Response
+	private function render(Request $request, Response $response, string $template, array $data, string $menuSelection): Response
 	{
 		$csrfName = (string) ($request->getAttribute('csrf_name') ?? '');
 		$csrfValue = (string) ($request->getAttribute('csrf_value') ?? '');
@@ -32,7 +32,14 @@ class SmsCommandViewController
 			$csrfName = (string) $request->getAttribute('csrf_name');
 			$csrfValue = (string) $request->getAttribute('csrf_value');
 		}
-		$html = $this->legacyView->render($this->twig->render($template, array_merge($data, ['layout' => '@views/_bare.twig', 'csrf' => ['name' => $csrfName, 'value' => $csrfValue]])), ['sms', 'command']);
+		$html = $this->legacyView->render(
+			$this->twig->render(
+				$template,
+				array_merge($data, ['layout' => '@views/_bare.twig', 'csrf' => ['name' => $csrfName, 'value' => $csrfValue]])
+			),
+			['sms', 'command'],
+			$menuSelection
+		);
 		$response->getBody()->write($html);
 		return $response->withHeader('Content-Type', 'text/html');
 	}
@@ -43,6 +50,7 @@ class SmsCommandViewController
 	}
 	public function index(Request $request, Response $response): Response
 	{
+		$menuSelection = 'sms::command';
 		if (!Acl::getInstance()->check('.command', Acl::READ, 'sms')) return $this->deny($response);
 		Settings::getInstance()->update('flags', ['app_header' => lang('sms') . ' - ' . lang('commands')]);
 		return $this->render($request, $response, '@views/command/sms_command_list.twig', [
@@ -50,19 +58,33 @@ class SmsCommandViewController
 			'add_url' => \phpgw::link('/sms/view/command/edit'),
 			'edit_url_template' => \phpgw::link('/sms/view/command/edit/__COMMAND_ID__'),
 			'delete_url_template' => \phpgw::link('/sms/view/command/{id}/delete'),
-		]);
+		], $menuSelection);
 	}
 	public function edit(Request $request, Response $response, array $args): Response
 	{
+		$menuSelection = 'sms::command';
 		$id = (int) ($args['id'] ?? 0);
 		if (!Acl::getInstance()->check($id ? '.command' : '.command', $id ? Acl::EDIT : Acl::ADD, 'sms')) return $this->deny($response);
 		$item = $id ? (array) \CreateObject('sms.bocommand', true)->read_single_command($id) : [];
-		return $this->render($request, $response, '@views/command/sms_command_edit.twig', ['api_url' => $id ? \phpgw::link('/sms/commands/' . $id) : \phpgw::link('/sms/commands'), 'list_url' => \phpgw::link('/sms/view/command'), 'command' => $item, 'types' => [['id' => 'php', 'name' => 'php code'], ['id' => 'shell', 'name' => 'Command or shell script']]]);
+		return $this->render(
+			$request,
+			$response,
+			'@views/command/sms_command_edit.twig',
+			['api_url' => $id ? \phpgw::link('/sms/commands/' . $id) : \phpgw::link('/sms/commands'), 'list_url' => \phpgw::link('/sms/view/command'), 'command' => $item, 'types' => [['id' => 'php', 'name' => 'php code'], ['id' => 'shell', 'name' => 'Command or shell script']]],
+			$menuSelection
+		);
 	}
 	public function log(Request $request, Response $response): Response
 	{
+		$menuSelection = 'sms::command::log';
 		if (!Acl::getInstance()->check('.command', Acl::READ, 'sms')) return $this->deny($response);
-		return $this->render($request, $response, '@views/command/sms_command_log.twig', ['api_url' => \phpgw::link('/sms/commands/log')]);
+		return $this->render(
+			$request,
+			$response,
+			'@views/command/sms_command_log.twig',
+			['api_url' => \phpgw::link('/sms/commands/log')],
+			$menuSelection
+		);
 	}
 	public function redirect(Request $request, Response $response): Response
 	{
@@ -70,7 +92,7 @@ class SmsCommandViewController
 
 		$query = $request->getQueryParams();
 		$code = strtoupper(basename((string) ($query['code'] ?? '')));
-		$domain = 'default';//(string) (Settings::getInstance()->get('user')['domain'] ?? '');
+		$domain = 'default'; //(string) (Settings::getInstance()->get('user')['domain'] ?? '');
 		$configFile = PHPGW_SERVER_ROOT . "/sms/bin/{$domain}/config_{$code}_log";
 		$param = $query['param'] ?? null;
 		$link_data = [];
@@ -89,7 +111,14 @@ class SmsCommandViewController
 	}
 	public function delete(Request $request, Response $response, array $args): Response
 	{
+		$menuSelection = 'sms::command';
 		if (!Acl::getInstance()->check('.command', Acl::DELETE, 'sms')) return $this->deny($response);
-		return $this->render($request, $response, '@views/command/sms_command_delete.twig', ['api_url' => \phpgw::link('/sms/commands/' . (int) ($args['id'] ?? 0)), 'list_url' => \phpgw::link('/sms/view/command'), 'command_id' => (int) ($args['id'] ?? 0)]);
+		return $this->render(
+			$request,
+			$response,
+			'@views/command/sms_command_delete.twig',
+			['api_url' => \phpgw::link('/sms/commands/' . (int) ($args['id'] ?? 0)), 'list_url' => \phpgw::link('/sms/view/command'), 'command_id' => (int) ($args['id'] ?? 0)],
+			$menuSelection
+		);
 	}
 }

@@ -12,7 +12,6 @@
  * @version $Id$
  */
 
-use App\modules\phpgwapi\services\Cache;
 
 /**
  * Description
@@ -21,12 +20,7 @@ use App\modules\phpgwapi\services\Cache;
 class sms_bocommand
 {
 
-	var $start;
-	var $query;
-	var $filter;
-	var $sort;
-	var $order;
-	var $cat_id, $so, $bocommon, $use_session, $allrows, $total_records;
+	var $so, $bocommon, $total_records;
 
 	var $public_functions = array(
 		'read' => true,
@@ -36,91 +30,23 @@ class sms_bocommand
 		'check_perms' => true
 	);
 
-	function __construct($session = false)
+	function __construct()
 	{
 		$this->so = CreateObject('sms.socommand');
 		$this->bocommon = CreateObject('sms.bocommon');
-
-		if ($session)
-		{
-			$this->read_sessiondata();
-			$this->use_session = true;
-		}
-
-		$start = Sanitizer::get_var('start', 'int', 'REQUEST', 0);
-		$query = Sanitizer::get_var('query');
-		$sort = Sanitizer::get_var('sort');
-		$order = Sanitizer::get_var('order');
-		$filter = Sanitizer::get_var('filter', 'int');
-		$cat_id = Sanitizer::get_var('cat_id', 'string');
-		$allrows = Sanitizer::get_var('allrows', 'bool');
-
-		$this->start = $start ? $start : 0;
-
-		if (array_key_exists('query', $_POST) || array_key_exists('query', $_GET))
-		{
-			$this->query = $query;
-		}
-		if (array_key_exists('filter', $_POST) || array_key_exists('filter', $_GET))
-		{
-			$this->filter = $filter;
-		}
-		if (array_key_exists('sort', $_POST) || array_key_exists('sort', $_GET))
-		{
-			$this->sort = $sort;
-		}
-		if (array_key_exists('order', $_POST) || array_key_exists('order', $_GET))
-		{
-			$this->order = $order;
-		}
-		if (array_key_exists('cat_id', $_POST) || array_key_exists('cat_id', $_GET))
-		{
-			$this->cat_id = $cat_id;
-		}
-		if ($allrows)
-		{
-			$this->allrows = $allrows;
-		}
 	}
 
-	function save_sessiondata($data)
-	{
-		if ($this->use_session)
-		{
-			Cache::session_set('sms_command', 'session_data', $data);
-		}
-	}
 
-	function read_sessiondata()
+	function read($data)
 	{
-		$data = Cache::session_get('sms_command', 'session_data');
-
-		$this->start = $data['start'];
-		$this->query = $data['query'];
-		$this->filter = $data['filter'];
-		$this->sort = $data['sort'];
-		$this->order = $data['order'];
-		$this->cat_id = $data['cat_id'];
-	}
-
-	function read()
-	{
-		$command_info = $this->so->read(array(
-			'start' => $this->start, 'query' => $this->query,
-			'sort' => $this->sort, 'order' => $this->order,
-			'allrows' => $this->allrows
-		));
+		$command_info = $this->so->read($data);
 		$this->total_records = $this->so->total_records;
 		return $command_info;
 	}
 
-	function read_log()
+	function read_log($data)
 	{
-		$command_info = $this->so->read_log(array(
-			'start' => $this->start, 'query' => $this->query,
-			'sort' => $this->sort, 'order' => $this->order,
-			'allrows' => $this->allrows, 'cat_id' => $this->cat_id
-		));
+		$command_info = $this->so->read_log($data);
 		$phpgwapi_common = new \phpgwapi_common();
 
 		foreach ($command_info as &$entry)

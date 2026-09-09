@@ -530,7 +530,7 @@
 			button_def.push({
 				text: "{{ lang('select all')|e('js') }}",
 				action: function () {
-					var api = oTable.api();
+					var api = oTable;
 					api.rows().select();
 					$(".mychecks").each(function()
 					{
@@ -545,7 +545,7 @@
 			button_def.push({
 				text: "{{ lang('select none')|e('js') }}",
 				action: function () {
-					var api = oTable.api();
+					var api = oTable;
 					api.rows().deselect();
 					$(".mychecks").each(function()
 					{
@@ -711,7 +711,7 @@
 
 							var n = 0;
 							for (; n < numSelected; ) {
-								var aData = oTable.api().rows(selected[n]).data()[0]; //complete dataset from json returned from server
+								var aData = oTable.rows(selected[n]).data()[0]; //complete dataset from json returned from server
 
 								var action = "{{ action.action|default('')|replace({'&amp;':'&'})|e('js') }}";
 								var my_name = "{{ action.my_name|default('')|replace({'&amp;':'&'})|e('js') }}";
@@ -733,7 +733,7 @@
 									execute_ajax(action, function(result){
 										document.getElementById("message").innerHTML += '<br/>' + result;
 
-										oTable.api().draw('page');
+										oTable.draw('page');
 
 									});
 								}
@@ -742,7 +742,7 @@
 									action += "&phpgw_return_as=json";
 									execute_ajax(action, function(result){
 										document.getElementById("message").innerHTML += '<br/>' + result;
-										oTable.api().draw('page');
+										oTable.draw('page');
 									});
 								}
 								else
@@ -1014,7 +1014,7 @@
 				}
 
 				oTable = new DataTable('#datatable-container', {
-					paginate: disablePagination ? false : true,
+					paging: disablePagination ? false : true,
 					searchDelay: 1200,
 					processing: true,
 					serverSide: true,
@@ -1272,7 +1272,7 @@
 
 								//	console.log(rowIndex);
 								//	console.log(oTable);
-								var aData = oTable.api().rows( rowIndex ).data()[0];
+								var aData = oTable.rows( rowIndex ).data()[0];
 								//	console.log(aData);
 								id = aData.id;
 								//	console.log(id);
@@ -1380,7 +1380,7 @@
 			{
 				$('#datatable-container thead th').each(function(colIdx)
 				{
-					oTable.api().column(colIdx).visible(true);
+					oTable.column(colIdx).visible(true);
 				});
 			};
 
@@ -1393,7 +1393,7 @@
 					return;
 				}
 				$(this).toggleClass('selected');
-				var api = oTable.api();
+				var api = oTable;
 				//	alert( api.rows('.selected').data().length +' row(s) selected' );
 				//	var selectedRows = api.rows( { selected: true } ).count();
 				var selectedRows = api.rows('.selected').data().length;
@@ -1423,7 +1423,7 @@
 				//show hidden columns
 				for (var i = 0; i < hidden_columns.length; i++)
 				{
-					oTable.api().column(hidden_columns[i]).visible(true);
+					oTable.column(hidden_columns[i]).visible(true);
 				}
 				hidden_columns = [];
 
@@ -1444,7 +1444,7 @@
 				});
 
 				colunm_search = false;
-				oTable.api().responsive.recalc();
+				oTable.responsive.recalc();
 			};
 
 			//---- START column search ----
@@ -1464,7 +1464,7 @@
 					reset_filter_is_visible = true;
 				}
 
-				oTable.api().responsive.recalc();
+				oTable.responsive.recalc();
 				if(reset_filter_is_visible == true)
 				{
 					$('#reset_filter').show();
@@ -1476,23 +1476,23 @@
 					if(JqueryPortico.columns[colIdx] && JqueryPortico.columns[colIdx].searchable !== false)
 					{
 						var title = $(this).text();
-						var search_value = oTable.api().column(colIdx).search();
+						var search_value = oTable.column(colIdx).search();
 						$(this).html('<input class="column_search" type="text" placeholder="' + lang['Search'] + ' ' + title + '" value="' + search_value + '" title="' + title + '"/>');
 					}
 					else //hide the column from table
 					{
-						oTable.api().column(colIdx).visible(false);
+						oTable.column(colIdx).visible(false);
 						hidden_columns.push(colIdx);
 					}
 
 				});
 
 				// Apply the search
-				oTable.api().columns().eq(0).each(function(colIdx)
+				oTable.columns().every(function(colIdx)
 				{
 					var lastSearcCallback = 0;
 					var delay = 200;
-					$('input', oTable.api().column(colIdx).header()).on('keyup change', function()
+					$('input', oTable.column(colIdx).header()).on('keyup change', function()
 					{
 						column_search_is_initated = true;
 
@@ -1502,7 +1502,7 @@
 						}
 						lastSearcCallback = Date.now();
 
-						oTable.api()
+						oTable
 							.column(colIdx)
 							.search(this.value)
 							.draw();
@@ -1511,7 +1511,7 @@
 
 					});
 
-					$('input', oTable.api().column(colIdx).header()).on('click', function(e) {
+					$('input', oTable.column(colIdx).header()).on('click', function(e) {
 						e.stopPropagation();
 					});
 				});
@@ -1540,9 +1540,9 @@
 		{% if left_click_action %}
 			$("#datatable-container").on("click", "tbody tr", function() {
 				//	var iPos = oTable.fnGetPosition( this );
-				var iPos = oTable.api().row(this).index();
+				var iPos = oTable.row(this).index();
 				//	var aData = oTable.fnGetData( iPos ); //complete dataset from json returned from server
-				var aData = oTable.api().rows( iPos ).data()[0];
+				var aData = oTable.rows( iPos ).data()[0];
 				try {
 					{{ left_click_action|raw }}
 				}
@@ -1558,9 +1558,9 @@
 		{% if dbl_click_action %}
 			$("#datatable-container").on("dblclick", "tr", function() {
 				//	var iPos = oTable.fnGetPosition( this );
-				var iPos = oTable.api().row(this).index();
+				var iPos = oTable.row(this).index();
 				//	var aData = oTable.fnGetData( iPos ); //complete dataset from json returned from server
-				var aData = oTable.api().rows( iPos ).data()[0];
+				var aData = oTable.rows( iPos ).data()[0];
 				try {
 					{{ dbl_click_action|raw }}(aData);
 				}
@@ -1633,7 +1633,7 @@
 		function fnGetSelected()
 		{
 			var aReturn = new Array();
-			var aTrs = oTable.api().rows().nodes();
+			var aTrs = oTable.rows().nodes();
 			for ( var i=0 ; i < aTrs.length ; i++ )
 			{
 				if ( $(aTrs[i]).hasClass('context-menu-active'))
@@ -1654,7 +1654,7 @@
 			var table = oTable;
 			if(typeof(dt.trigger) != 'undefined' && dt.trigger == 'right')
 			{
-				var aTrs = oTable.api().rows().nodes();
+				var aTrs = oTable.rows().nodes();
 
 				for ( var i=0 ; i < aTrs.length ; i++ )
 				{
@@ -1746,8 +1746,26 @@
 	reset_single_filter = function(param)
 	{
 		var controls = $('.dtable_custom_controls:first').find(':input[name]');
+		var relatedParam = null;
 		controls.each(function() {
 			if ($(this).attr('name') !== param)
+			{
+				return;
+			}
+
+			var controlId = $(this).attr('id') || '';
+			var relatedId = /_name$/.test(controlId)
+				? controlId.replace(/_name$/, '_id')
+				: controlId.replace(/_id$/, '_name');
+			var relatedControl = relatedId ? document.getElementById(relatedId) : null;
+			if (relatedControl)
+			{
+				relatedParam = $(relatedControl).attr('name');
+			}
+		});
+
+		controls.each(function() {
+			if ($(this).attr('name') !== param && $(this).attr('name') !== relatedParam)
 			{
 				return;
 			}
@@ -1774,13 +1792,17 @@
 			}
 		});
 
-		if (/_id$/.test(param))
+		if (relatedParam && /_id$/.test(relatedParam))
 		{
-			$('#' + param.replace(/_id$/, '_name')).val('');
+			$('#' + relatedParam.replace(/_id$/, '_name')).val('');
 		}
 
 		clearFilterParam(param);
-		oTable.api().ajax.reload();
+		if (relatedParam)
+		{
+			clearFilterParam(relatedParam);
+		}
+		oTable.ajax.reload();
 	};
 
 	reset_filter = function()
@@ -1788,7 +1810,7 @@
 		// Clear custom filters for modern DataTables compatibility
 		customFilters = {};
 
-		var api = oTable.api();
+		var api = oTable;
 		for (var i in filter_selects)
 		{
 			select = $("#" + filter_selects[i]);
@@ -1848,7 +1870,7 @@
 
 	function searchData(query)
 	{
-		var api = oTable.api();
+		var api = oTable;
 		api.search( query ).draw();
 	}
 
@@ -1864,7 +1886,7 @@
 		}
 
 		// Reload the table data
-		oTable.api().ajax.reload();
+		oTable.ajax.reload();
 	}
 
 	function clearFilterParam(param)
@@ -1883,7 +1905,7 @@
 
 	function reloadData()
 	{
-		var api = oTable.api();
+		var api = oTable;
 		api.ajax.reload();
 	}
 </script>

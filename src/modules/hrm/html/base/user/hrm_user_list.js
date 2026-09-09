@@ -12,7 +12,19 @@
 		autoWidth: false,
 		columns: [
 			{ data: 'first_name', title: config.lang.firstName },
-			{ data: 'last_name', title: config.lang.lastName }
+			{ data: 'last_name', title: config.lang.lastName },
+			{
+				data: 'can_training',
+				title: config.lang.training,
+				orderable: false,
+				searchable: false,
+				render: function (available, type) {
+					if (type !== 'display') return available ? 1 : 0;
+					return available
+						? '<span class="hrm-user-list__availability">' + config.lang.available + '</span>'
+						: '';
+				}
+			}
 		],
 		rowActions: [
 			{

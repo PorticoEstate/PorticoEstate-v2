@@ -52,6 +52,7 @@ class hrm_socategory
 			$type		= (isset($data['type']) ? $data['type'] : '');
 			$type_id		= (isset($data['type_id']) ? $data['type_id'] : '');
 			$allrows	= (isset($data['allrows']) ? $data['allrows'] : '');
+			$length		= isset($data['length']) && $data['length'] ? $data['length'] : 10;
 		}
 
 		if (!$type)
@@ -73,9 +74,10 @@ class hrm_socategory
 		{
 			$query = $this->db->db_addslashes($query);
 
-			$querymethod = " where id $this->like '%$query%' or descr $this->like '%$query%'";
+			$querymethod = " where CAST(id AS TEXT) $this->like '%$query%' or descr $this->like '%$query%'";
 		}
 
+		$querymethod = $querymethod ?? '';
 		$sql = "SELECT * FROM $table $querymethod";
 
 		$this->db->query("SELECT COUNT(id) AS cnt FROM $table $querymethod", __LINE__, __FILE__);
@@ -87,13 +89,14 @@ class hrm_socategory
 
 		if (!$allrows)
 		{
-			$this->db->limit_query($sql . $ordermethod, $start, __LINE__, __FILE__);
+			$this->db->limit_query($sql . $ordermethod, $start, __LINE__, __FILE__, $length);
 		}
 		else
 		{
 			$this->db->query($sql . $ordermethod, __LINE__, __FILE__);
 		}
 
+		$category = array();
 		while ($this->db->next_record())
 		{
 			$category[] = array(
@@ -107,6 +110,7 @@ class hrm_socategory
 
 	function select_table($type)
 	{
+		$table = '';
 		switch ($type)
 		{
 			case 'training':
@@ -129,8 +133,13 @@ class hrm_socategory
 
 	function read_single($id, $type, $type_id)
 	{
+		$category = array();
 
 		$table = $this->select_table($type, $type_id);
+		if (!$table)
+		{
+			return $category;
+		}
 
 		$sql = "SELECT * FROM $table  where id='$id'";
 
@@ -141,8 +150,9 @@ class hrm_socategory
 			$category['id']		= $this->db->f('id');
 			$category['descr']	= stripslashes($this->db->f('descr'));
 
-			return $category;
 		}
+
+		return $category;
 	}
 
 	function add($category, $type, $type_id)

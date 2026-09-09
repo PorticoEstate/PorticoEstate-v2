@@ -1,0 +1,51 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang(type) }} {{ lang('category') }}{% endblock %}
+
+{% block content %}
+	<div class="hrm-category-list__toolbar">
+		<a href="{{ admin_url|e }}">{{ lang('back to admin') }}</a>
+	</div>
+	{% include '@phpgwapi_components/app_datatable/app_datatable.twig' with {
+		id: 'hrm-category-datatable'
+	} %}
+{% endblock %}
+
+{% block styles %}
+	<style>
+		.hrm-category-list__toolbar { margin-bottom: 1rem; }
+	</style>
+{% endblock %}
+
+{% block scripts %}
+	<script>
+		window.__hrmCategories = {
+			id: 'hrm-category-datatable',
+			apiUrl: '{{ api_url|e('js') }}',
+			newUrl: '{{ new_url|e('js') }}',
+			editUrlTemplate: '{{ edit_url_template|replace({'__CATEGORY_ID__': '{id}'})|e('js') }}',
+			deleteUrlTemplate: '{{ delete_url_template|replace({'__CATEGORY_ID__': '{id}'})|e('js') }}',
+			pageLength: {{ rows_per_page|default(10) }},
+			lengthMenu: {{ length_menu|default([10, 25, 50])|json_encode|raw }},
+			lang: {
+				id: '{{ lang('category id')|e('js') }}',
+				descr: '{{ lang('Descr')|e('js') }}',
+				add: '{{ lang('add')|e('js') }}',
+				edit: '{{ lang('edit')|e('js') }}',
+				delete: '{{ lang('delete')|e('js') }}',
+				emptyTable: '{{ lang('No data available in table')|e('js') }}',
+				search: '{{ lang('search')|e('js') }}',
+				info: '{{ lang('Showing _START_ to _END_ of _TOTAL_ entries')|e('js') }}',
+				infoEmpty: '{{ lang('Showing 0 to 0 of 0 entries')|e('js') }}',
+				infoFiltered: '{{ lang('(filtered from _MAX_ total entries)')|e('js') }}',
+				lengthMenu: '{{ lang('Show _MENU_ entries')|e('js') }}',
+				zeroRecords: '{{ lang('No matching records found')|e('js') }}',
+				first: '{{ lang('first')|e('js') }}',
+				last: '{{ lang('last')|e('js') }}',
+				next: '{{ lang('next')|e('js') }}',
+				previous: '{{ lang('prev')|e('js') }}'
+			}
+		};
+	</script>
+	<script>{{ source('@views/category/hrm_category_list.js') }}</script>
+{% endblock %}

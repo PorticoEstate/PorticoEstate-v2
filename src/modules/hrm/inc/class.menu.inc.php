@@ -91,19 +91,19 @@ class hrm_menu
 				),
 				'training'	=> array(
 					'text'	=> lang('training category'),
-					'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uicategory.index', 'type' => 'training'))
+					'url'	=> phpgw::link('/hrm/view/categories/training')
 				),
 				'skill_level'	=> array(
 					'text'	=> lang('skill level'),
-					'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uicategory.index', 'type' => 'skill_level'))
+					'url'	=> phpgw::link('/hrm/view/categories/skill_level')
 				),
 				'experience'	=> array(
 					'text'	=> lang('experience category'),
-					'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uicategory.index', 'type' => 'experience'))
+					'url'	=> phpgw::link('/hrm/view/categories/experience')
 				),
 				'qualification'	=> array(
 					'text'	=> lang('qualification category'),
-					'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uicategory.index', 'type' => 'qualification'))
+					'url'	=> phpgw::link('/hrm/view/categories/qualification')
 				),
 				'acl'	=> array(
 					'text'	=> lang('Configure Access Permissions'),

@@ -27,6 +27,7 @@ class hrm_bocategory
 	var $sort;
 	var $order;
 	var $cat_id;
+	var $length;
 
 	var $public_functions = array(
 		'read'				=> true,
@@ -74,6 +75,7 @@ class hrm_bocategory
 		$filter	= Sanitizer::get_var('filter', 'int');
 		$cat_id	= Sanitizer::get_var('cat_id', 'int');
 		$allrows = Sanitizer::get_var('allrows', 'bool');
+		$length = Sanitizer::get_var('length', 'int', 'REQUEST', 10);
 
 		if ($start)
 		{
@@ -108,6 +110,7 @@ class hrm_bocategory
 		{
 			$this->allrows = $allrows;
 		}
+		$this->length = $length === -1 ? -1 : max(1, $length);
 	}
 
 
@@ -144,6 +147,7 @@ class hrm_bocategory
 			'order' => $this->order,
 			'type' => $type,
 			'type_id' => $type_id,
+			'length' => $this->length,
 			'allrows' => $this->allrows
 		));
 

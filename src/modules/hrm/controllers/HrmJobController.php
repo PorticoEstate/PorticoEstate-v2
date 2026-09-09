@@ -88,10 +88,18 @@ class HrmJobController
 		}
 
 		$query = $request->getQueryParams();
+		$order = $query['order'][0] ?? [];
+		$columns = (array) ($query['columns'] ?? []);
+		$columnIndex = (int) ($order['column'] ?? 0);
+		$columnKey = (string) ($columns[$columnIndex]['data'] ?? 'value_sort');
+		$columnsByKey = [
+			'name' => 'name',
+			'descr' => 'descr',
+		];
 		$jobs->start = 0;
 		$jobs->query = (string) ($query['search']['value'] ?? $query['search'] ?? '');
-		$jobs->order = '';
-		$jobs->sort = 'ASC';
+		$jobs->order = $columnsByKey[$columnKey] ?? '';
+		$jobs->sort = strtoupper((string) ($order['dir'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
 		$jobs->allrows = true;
 
 		$rows = [];
@@ -131,10 +139,20 @@ class HrmJobController
 		}
 
 		$query = $request->getQueryParams();
+		$order = $query['order'][0] ?? [];
+		$columns = (array) ($query['columns'] ?? []);
+		$columnIndex = (int) ($order['column'] ?? 0);
+		$columnKey = (string) ($columns[$columnIndex]['data'] ?? 'value_sort');
+		$columnsByKey = [
+			'category' => 'phpgw_hrm_quali_category.descr',
+			'name' => 'phpgw_hrm_quali_type.name',
+			'descr' => 'phpgw_hrm_quali_type.descr',
+			'remark' => 'phpgw_hrm_quali.remark',
+		];
 		$jobs->start = 0;
 		$jobs->query = (string) ($query['search']['value'] ?? $query['search'] ?? '');
-		$jobs->order = '';
-		$jobs->sort = 'ASC';
+		$jobs->order = $columnsByKey[$columnKey] ?? '';
+		$jobs->sort = strtoupper((string) ($order['dir'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
 		$jobs->allrows = true;
 
 		$rows = [];

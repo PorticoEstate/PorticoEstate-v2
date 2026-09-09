@@ -176,6 +176,7 @@ class boaddressbook
 		$entry = $this->so->get_principal_persons_data($person_id, $get_org);
 
 		$entry[0]['my_cats'] = explode(",", $entry[0]['cat_id']);
+		$entry[0]['per_birthday'] = $entry[0]['per_birthday'] ? strtotime($entry[0]['per_birthday']) : null;
 
 		return $entry[0];
 	}

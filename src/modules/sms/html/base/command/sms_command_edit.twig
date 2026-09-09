@@ -1,0 +1,69 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}
+	{{ command.id|default(0) ? lang('edit command') : lang('add command') }}
+{% endblock %}
+
+{% block styles %}
+	<style>{{ source('@views/command/sms_command_edit.css') }}</style>
+{% endblock %}
+
+{% block content %}
+	<div
+		id="sms-command-edit"
+		class="sms-command-edit"
+		data-api-url="{{ api_url|e }}"
+		data-list-url="{{ list_url|e }}"
+		data-id="{{ command.id|default(0) }}"
+		data-csrf-name="{{ csrf.name|e('html_attr') }}"
+		data-csrf-value="{{ csrf.value|e('html_attr') }}"
+	>
+		<header class="sms-command-edit__header">
+			<h1>{{ command.id|default(0) ? lang('edit command') : lang('add command') }}</h1>
+			<p class="sms-command-edit__intro">{{ lang('Configure the SMS command code and the program it should execute.') }}</p>
+		</header>
+
+		<div id="sms-command-error" class="sms-command-edit__error" role="alert" hidden></div>
+
+		<form id="sms-command-form" class="sms-command-edit__form">
+			<label class="sms-command-edit__field" for="command-code">
+				{{ lang('code') }}
+				<input id="command-code" value="{{ command.code|default('')|e('html_attr') }}" required>
+				<small>{{ lang('The code received in an incoming SMS.') }}</small>
+			</label>
+
+			<label class="sms-command-edit__field" for="command-type">
+				{{ lang('command type') }}
+				<select id="command-type" required>
+					{% for type in types %}
+						<option value="{{ type.id }}" {% if type.id == command.type|default('') %}selected{% endif %}>
+							{{ type.name }}
+						</option>
+					{% endfor %}
+				</select>
+			</label>
+
+			<label class="sms-command-edit__field" for="command-exec">
+				{{ lang('SMS command exec') }}
+				<input id="command-exec" value="{{ command.exec|default('')|e('html_attr') }}" required>
+				<small>{{ lang('The script or command executed when this code is received.') }}</small>
+			</label>
+
+			<label class="sms-command-edit__field" for="command-descr">
+				{{ lang('descr') }}
+				<textarea id="command-descr">{{ command.descr|default('')|e }}</textarea>
+			</label>
+
+			<div class="sms-command-edit__actions">
+				<button class="sms-command-edit__button" type="submit">{{ lang('save') }}</button>
+				<a class="sms-command-edit__button sms-command-edit__button--secondary" href="{{ list_url|e }}">
+					{{ lang('cancel') }}
+				</a>
+			</div>
+		</form>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+	<script>{{ source('@views/command/sms_command_edit.js') }}</script>
+{% endblock %}

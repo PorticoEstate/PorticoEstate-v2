@@ -1,0 +1,27 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('command.log') }}{% endblock %}
+
+{% block content %}
+	{% include '@phpgwapi_components/app_datatable/app_datatable.twig' with {
+		id: 'sms-command-log-datatable'
+	} %}
+{% endblock %}
+
+{% block scripts %}
+	<script>
+		window.__smsCommandLog = {
+			id: 'sms-command-log-datatable',
+			apiUrl: '{{ api_url|e('js') }}',
+			lang: {
+				id: '{{ lang('ID')|e('js') }}',
+				code: '{{ lang('code')|e('js') }}',
+				sender: '{{ lang('sender')|e('js') }}',
+				success: '{{ lang('success')|e('js') }}',
+				datetime: '{{ lang('datetime')|e('js') }}',
+				param: '{{ lang('param')|e('js') }}'
+			}
+		};
+	</script>
+	<script>{{ source('@views/command/sms_command_log.js') }}</script>
+{% endblock %}

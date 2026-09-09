@@ -54,16 +54,30 @@ class sms_menu
 		$acl = Acl::getInstance();
 		$menus = array();
 
-		$start_page = 'sms.index';
+		$start_page = 'sms.inbox';
 		if (isset($userSettings['preferences']['sms']['default_start_page']) && $userSettings['preferences']['sms']['default_start_page'])
 		{
 			$start_page = $userSettings['preferences']['sms']['default_start_page'];
 		}
 
+		// Inbox and outbox now have modern Slim/Twig pages; everything else still uses menuaction.
+		if ($start_page === 'sms.index' || $start_page === 'sms.inbox')
+		{
+			$navbar_url = phpgw::link('/sms/view/inbox');
+		}
+		elseif ($start_page === 'uisms.outbox' || $start_page === 'sms.outbox')
+		{
+			$navbar_url = phpgw::link('/sms/view/outbox');
+		}
+		else
+		{
+			$navbar_url = phpgw::link('/index.php', array('menuaction' => "sms.ui{$start_page}"));
+		}
+
 		$menus['navbar'] = array(
 			'sms' => array(
 				'text' => lang('sms'),
-				'url' => phpgw::link('/index.php', array('menuaction' => "sms.ui{$start_page}")),
+				'url' => $navbar_url,
 				'image' => array('sms', 'navbar'),
 				'order' => 35,
 				'group' => 'facilities management'
@@ -91,7 +105,7 @@ class sms_menu
 				),
 				'refresh' => array(
 					'text' => lang('Daemon manual refresh'),
-					'url' => phpgw::link('/index.php', array('menuaction' => 'sms.uisms.daemon_manual'))
+					'url' => phpgw::link('/sms/view/refresh')
 				),
 				'acl' => array(
 					'text' => $translation->translate('Configure Access Permissions', array(), true),
@@ -132,21 +146,25 @@ class sms_menu
 		$command_children = array(
 			'log' => array(
 				'text' => lang('log'),
-				'url' => phpgw::link('/index.php', array('menuaction' => 'sms.uicommand.log'))
+				'url' => phpgw::link('/sms/view/command/log')
 			)
 		);
 
 		$menus['navigation'] = array(
 			'inbox' => array(
 				'text' => lang('Inbox'),
-				'url' => phpgw::link('/index.php', array('menuaction' => 'sms.uisms.index'))
+				'url' => phpgw::link('/sms/view/inbox')
 			),
 			'outbox' => array(
 				'text' => lang('Outbox'),
-				'url' => phpgw::link('/index.php', array('menuaction' => 'sms.uisms.outbox'))
-			)
+				'url' => phpgw::link('/sms/view/outbox')
+			),
+			// 'send_group' => array(
+			// 	'text' => lang('Send broadcast SMS'),
+			// 	'url' => phpgw::link('/sms/view/send-group')
+			// )
 		);
-
+/*
 		if ($acl->check('.autoreply', Acl::READ, 'sms'))
 		{
 			$menus['navigation']['autoreply'] = array(
@@ -161,14 +179,17 @@ class sms_menu
 				'url' => phpgw::link('/index.php', array('menuaction' => 'sms.uiboard.index'))
 			);
 		}
+*/
 		if ($acl->check('.command', Acl::READ, 'sms'))
 		{
 			$menus['navigation']['command'] = array(
 				'text' => lang('commands'),
-				'url' => phpgw::link('/index.php', array('menuaction' => 'sms.uicommand.index')),
+				'url' => phpgw::link('/sms/view/command'),
 				'children' => $command_children
 			);
 		}
+
+/*
 		if ($acl->check('.custom', Acl::READ, 'sms'))
 		{
 			$menus['navigation']['custom'] = array(
@@ -183,6 +204,7 @@ class sms_menu
 				'url' => phpgw::link('/index.php', array('menuaction' => 'sms.uipoll.index'))
 			);
 		}
+*/
 
 		Settings::getInstance()->update('flags', ['currentapp' => $incoming_app]);
 		return $menus;
@@ -209,6 +231,7 @@ class sms_menu
 	{
 		$level++;
 		$i = 0;
+		$menu = array();
 		foreach ($children as $key => $vals)
 		{
 			$menu[] = $vals;

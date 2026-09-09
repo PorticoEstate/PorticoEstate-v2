@@ -69,30 +69,30 @@ class TwigHelper
 	{
 		$templateSet = $this->serverSettings['template_set'] ?? 'digdir';
 
-		// phpgwapi base + template set
-		$this->addPathIfExists(PHPGW_SERVER_ROOT . '/phpgwapi/templates/base');
+		// phpgwapi template set first, then generic base fallback
 		$this->addPathIfExists(PHPGW_SERVER_ROOT . '/phpgwapi/templates/' . $templateSet);
+		$this->addPathIfExists(PHPGW_SERVER_ROOT . '/phpgwapi/templates/base');
 		// Shared Twig partials can live in digdir even when another template set is active.
 		if ($templateSet !== 'digdir') {
 			$this->addPathIfExists(PHPGW_SERVER_ROOT . '/phpgwapi/templates/digdir');
 		}
 
-		// Designsystemet component templates
-		if ($this->designSystem->isEnabled()) {
-			$componentPath = PHPGW_SERVER_ROOT . '/phpgwapi/templates/digdir/components';
-			$this->addPathIfExists($componentPath, 'components');
-		}
-		$this->addPathIfExists(PHPGW_SERVER_ROOT . '/phpgwapi/templates/base/components', 'phpgwapi_components');
+		// Template-set components may override shared components from base.
+		$componentPath = PHPGW_SERVER_ROOT . '/phpgwapi/templates/' . $templateSet . '/components';
+		$baseComponentPath = PHPGW_SERVER_ROOT . '/phpgwapi/templates/base/components';
+		$this->addPathIfExists($componentPath, 'components');
+		$this->addPathIfExists($baseComponentPath, 'components');
+		$this->addPathIfExists($baseComponentPath, 'phpgwapi_components');
 
 		// App-specific paths (both namespaced and main namespace)
 		$appDir = PHPGW_SERVER_ROOT . '/' . $this->appName;
 		$baseAppTpl = $appDir . '/templates/base';
 		$appTpl = $appDir . '/templates/' . $templateSet;
 
-		$this->addPathIfExists($baseAppTpl, $this->appName);
-		$this->addPathIfExists($baseAppTpl);
 		$this->addPathIfExists($appTpl, $this->appName);
 		$this->addPathIfExists($appTpl);
+		$this->addPathIfExists($baseAppTpl, $this->appName);
+		$this->addPathIfExists($baseAppTpl);
 
 		// App component views (co-located twig/css/js), e.g. html/<view>/foo.twig
 		//

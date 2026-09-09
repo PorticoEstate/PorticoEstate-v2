@@ -110,7 +110,7 @@ class sms_sms extends sms_sms_
 
 		if ($debug)
 		{
-			$url_outbox = phpgw::link('/index.php', array('menuaction' => 'sms.uisms.outbox'));
+			$url_outbox = phpgw::link('/sms/view/outbox');
 
 			echo "<a href='{$url_outbox}'>Outbox</a>";
 			die();

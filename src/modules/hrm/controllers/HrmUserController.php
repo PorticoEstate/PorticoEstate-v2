@@ -98,23 +98,28 @@ class HrmUserController
 		$users->sort = strtoupper((string) ($order['dir'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
 		$users->allrows = $users->length === -1;
 		$rows = (array) $users->read_training($userId);
+		$userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+		$dateFormat = (string) ($userSettings['preferences']['common']['dateformat'] ?? 'Y-m-d');
+		$phpgwapiCommon = new \phpgwapi_common();
 
-		$data = array_map(static function (array $row): array {
+		$data = array_map(static function (array $row) use ($dateFormat, $phpgwapiCommon): array {
 			return [
 				'id' => (int) ($row['training_id'] ?? 0),
 				'category' => (string) ($row['category'] ?? ''),
 				'title' => (string) ($row['title'] ?? ''),
 				'place' => (string) ($row['place'] ?? ''),
 				'credits' => (int) ($row['credits'] ?? 0),
-				'start_date' => (string) ($row['start_date'] ?? ''),
-				'end_date' => (string) ($row['end_date'] ?? ''),
+				'start_date' => !empty($row['start_date']) ? (string) $phpgwapiCommon->show_date($row['start_date'], $dateFormat) : '',
+				'end_date' => !empty($row['end_date']) ? (string) $phpgwapiCommon->show_date($row['end_date'], $dateFormat) : '',
 			];
 		}, $rows);
 
+		$total = (int) $users->total_records;
+
 		return ResponseHelper::sendJSONResponse([
 			'draw' => (int) ($query['draw'] ?? 0),
-			'recordsTotal' => count($data),
-			'recordsFiltered' => count($data),
+			'recordsTotal' => $total,
+			'recordsFiltered' => $total,
 			'data' => $data,
 		]);
 	}

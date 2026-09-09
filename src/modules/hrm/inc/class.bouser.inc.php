@@ -155,6 +155,7 @@ class hrm_bouser
 			'order' => $this->order,
 			'allrows' => $this->allrows
 		));
+		$this->total_records = $this->so->total_records;
 		return $values;
 	}
 

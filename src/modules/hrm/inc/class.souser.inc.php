@@ -128,6 +128,11 @@ class hrm_souser
 			. " UNION ALL "
 			. "({$sql} WHERE phpgw_hrm_training_category.id = 6 AND phpgw_hrm_training.user_id=" . intval($user_id) . "{$ordermethod})";
 
+
+		$countSql = 'SELECT COUNT(*) AS total_records FROM phpgw_hrm_training WHERE user_id=' . (int) $user_id;
+		$this->db->query($countSql, __LINE__, __FILE__);
+		$this->total_records = $this->db->next_record() ? (int) $this->db->f('total_records') : 0;
+
 		if (!$allrows)
 		{
 			$this->db->limit_query($sql, $start, __LINE__, __FILE__, $length);

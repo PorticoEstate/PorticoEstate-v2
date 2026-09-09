@@ -35,7 +35,7 @@ task	hrm	no	oppgave
 tasks	hrm	no	Oppgaver
 qualification	hrm	no	Kvalifikasjon
 title	hrm	no	Tittel
-town	hrm	no	Toststed
+town	hrm	no	Poststed
 training	hrm	no	Utdanning / erfaring
 training ID	hrm	no	ID
 Training item has been edited	hrm	no	Utdanning / erfaring er rettet

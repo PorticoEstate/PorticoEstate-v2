@@ -28,6 +28,7 @@ class hrm_boplace
 	var $sort;
 	var $order;
 	var $cat_id;
+	var $length;
 
 	var $public_functions = array(
 		'read'			=> true,
@@ -75,6 +76,7 @@ class hrm_boplace
 		$filter	= Sanitizer::get_var('filter', 'int');
 		$cat_id	= Sanitizer::get_var('cat_id', 'int');
 		$allrows = Sanitizer::get_var('allrows', 'bool');
+		$length = Sanitizer::get_var('length', 'int', 'REQUEST', 10);
 		$this->userSettings = Settings::getInstance()->get('user');
 		$this->phpgwapi_common = new \phpgwapi_common();
 
@@ -112,6 +114,7 @@ class hrm_boplace
 		{
 			$this->allrows = $allrows;
 		}
+		$this->length = $length === -1 ? -1 : max(1, $length);
 	}
 
 
@@ -143,6 +146,7 @@ class hrm_boplace
 			'query' => $this->query,
 			'sort' => $this->sort,
 			'order' => $this->order,
+			'length' => $this->length,
 			'allrows' => $this->allrows
 		));
 		$this->total_records = $this->so->total_records;
@@ -204,6 +208,7 @@ class hrm_boplace
 		}
 
 		$categories = $this->so->select_category_list();
+		$category_list = array();
 
 		//while (is_array($categories) && list(,$category) = each($categories))
 		if (is_array($categories))

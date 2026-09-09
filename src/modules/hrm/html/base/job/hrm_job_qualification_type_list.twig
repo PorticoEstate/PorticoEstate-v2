@@ -1,0 +1,21 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('qualification') }}{% endblock %}
+
+{% block content %}
+	<div class="hrm-job-sublist"><a href="{{ list_url|e }}">{{ lang('Back to the list') }}</a><h1>{{ lang('qualification') }}</h1></div>
+	{% include '@phpgwapi_components/app_datatable/app_datatable.twig' with { id: 'hrm-qualification-type-datatable' } %}
+{% endblock %}
+
+{% block styles %}<style>.hrm-job-sublist { margin-bottom: 1rem; }.hrm-job-sublist h1 { margin: .5rem 0 0; font-size: 1.5rem; }</style>{% endblock %}
+
+{% block scripts %}
+	<script>
+		window.__hrmQualificationTypes = {
+			id: 'hrm-qualification-type-datatable', apiUrl: '{{ api_url|e('js') }}', newUrl: '{{ new_url|e('js') }}', editUrlTemplate: '{{ edit_url_template|replace({'__QUALIFICATION_TYPE_ID__': '{id}'})|e('js') }}',
+			canAdd: {{ can_add ? 'true' : 'false' }}, canEdit: {{ can_edit ? 'true' : 'false' }}, pageLength: {{ rows_per_page|default(10) }},
+			lang: { name: '{{ lang('name')|e('js') }}', descr: '{{ lang('descr')|e('js') }}', add: '{{ lang('add')|e('js') }}', edit: '{{ lang('edit')|e('js') }}', emptyTable: '{{ lang('No data available in table')|e('js') }}', search: '{{ lang('search')|e('js') }}' }
+		};
+	</script>
+	<script>{{ source('@views/job/hrm_job_qualification_type_list.js') }}</script>
+{% endblock %}

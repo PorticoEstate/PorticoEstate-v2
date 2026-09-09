@@ -16,6 +16,7 @@
 		.hrm-training-view__text { white-space: pre-wrap; }
 		.hrm-training-view__button { display: inline-block; border: 1px solid #24527a; border-radius: 4px; padding: .45rem .85rem; background: #24527a; color: #fff; text-decoration: none; }
 		.hrm-training-view__button--secondary { background: #fff; color: #24527a; }
+		.hrm-training-view__button--danger { border-color: #9f1239; background: #9f1239; }
 	</style>
 {% endblock %}
 
@@ -40,6 +41,9 @@
 				<a class="hrm-training-view__button hrm-training-view__button--secondary" href="{{ list_url|e }}">{{ lang('Back to the list') }}</a>
 				{% if can_edit %}
 					<a class="hrm-training-view__button" href="{{ edit_url|e }}">{{ lang('edit') }}</a>
+				{% endif %}
+				{% if can_delete %}
+					<a class="hrm-training-view__button hrm-training-view__button--danger" href="{{ delete_url|e }}">{{ lang('delete') }}</a>
 				{% endif %}
 			</div>
 		</div>

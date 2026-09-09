@@ -155,7 +155,7 @@ class HrmUserViewController
 			'new_url' => \phpgw::link('/hrm/view/users/' . $userId . '/training/new'),
 			'view_url_template' => \phpgw::link('/hrm/view/users/' . $userId . '/training/__TRAINING_ID__'),
 			'edit_url_template' => \phpgw::link('/hrm/view/users/' . $userId . '/training/__TRAINING_ID__/edit'),
-			'delete_url_template' => \phpgw::link('/index.php', ['menuaction' => 'hrm.uiuser.delete', 'user_id' => $userId, 'training_id' => '__TRAINING_ID__'], true),
+			'delete_url_template' => \phpgw::link('/hrm/view/users/' . $userId . '/training/__TRAINING_ID__/delete'),
 			'can_add' => $common->check_perms2($userId, $grants, ACL_ADD),
 			'can_edit' => $common->check_perms2($userId, $grants, ACL_EDIT),
 			'can_delete' => $common->check_perms2($userId, $grants, ACL_DELETE),
@@ -198,10 +198,59 @@ class HrmUserViewController
 			'values' => $values,
 			'list_url' => \phpgw::link('/hrm/view/users/' . $userId . '/training'),
 			'edit_url' => \phpgw::link('/hrm/view/users/' . $userId . '/training/' . $trainingId . '/edit'),
+			'delete_url' => \phpgw::link('/hrm/view/users/' . $userId . '/training/' . $trainingId . '/delete'),
 			'can_edit' => $common->check_perms2($userId, $grants, ACL_EDIT),
+			'can_delete' => $common->check_perms2($userId, $grants, ACL_DELETE),
 			'cat_list' => $this->normalizeSelectList((array) $bocategory->select_category_list('training', $values['cat_id'] ?? '')),
 			'skill_list' => $this->normalizeSelectList((array) $bocategory->select_category_list('skill_level', $values['skill'] ?? '')),
 			'place_list' => $this->normalizeSelectList((array) $users->select_place_list($values['place_id'] ?? '')),
+		]);
+
+		$response->getBody()->write($this->legacyView->render($html, ['hrm', 'user', 'training'], 'hrm::user'));
+		return $response->withHeader('Content-Type', 'text/html');
+	}
+
+	public function delete(Request $request, Response $response, array $args): Response
+	{
+		$userId = (int) ($args['id'] ?? 0);
+		$trainingId = (int) ($args['trainingId'] ?? 0);
+		$users = \CreateObject('hrm.bouser', false);
+		$common = \CreateObject('hrm.bocommon');
+		$grants = (array) $users->grants;
+		$listUrl = \phpgw::link('/hrm/view/users/' . $userId . '/training');
+
+		if (!$userId || !$trainingId || !$common->check_perms2($userId, $grants, ACL_DELETE))
+		{
+			$response->getBody()->write(lang('Access not permitted'));
+			return $response->withStatus(403)->withHeader('Content-Type', 'text/plain');
+		}
+
+		$values = (array) $users->read_single_training($trainingId);
+		if (!$values || (int) ($values['user_id'] ?? 0) !== $userId)
+		{
+			$response->getBody()->write(lang('Not found'));
+			return $response->withStatus(404)->withHeader('Content-Type', 'text/plain');
+		}
+
+		$body = (array) ($request->getParsedBody() ?: []);
+		if (strtoupper($request->getMethod()) === 'POST')
+		{
+			if (!empty($body['confirm']))
+			{
+				$users->delete_training($userId, $trainingId);
+			}
+
+			return $this->redirect($response, $listUrl);
+		}
+
+		Settings::getInstance()->update('flags', ['app_header' => lang('hrm') . ' - ' . lang('Training') . ': ' . lang('delete')]);
+		$html = $this->twig->render('@views/user/hrm_user_delete.twig', [
+			'layout' => '@views/_bare.twig',
+			'training_id' => $trainingId,
+			'user_id' => $userId,
+			'values' => $values,
+			'form_action' => \phpgw::link('/hrm/view/users/' . $userId . '/training/' . $trainingId . '/delete'),
+			'list_url' => $listUrl,
 		]);
 
 		$response->getBody()->write($this->legacyView->render($html, ['hrm', 'user', 'training'], 'hrm::user'));

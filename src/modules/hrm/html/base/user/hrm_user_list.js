@@ -18,7 +18,8 @@
 				title: config.lang.training,
 				orderable: false,
 				searchable: false,
-				render: function (available, type) {
+				render: function (available, type)
+				{
 					if (type !== 'display') return available ? 1 : 0;
 					return available
 						? '<span class="hrm-user-list__availability">' + config.lang.available + '</span>'

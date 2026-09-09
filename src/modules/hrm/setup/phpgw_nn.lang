@@ -35,7 +35,7 @@ task	hrm	nn	oppgave
 tasks	hrm	nn	oppgaver
 qualification	hrm	nn	kvalifikasjon
 title	hrm	nn	tittel
-town	hrm	nn	poststed
+town	hrm	nn	Poststad
 training	hrm	nn	utdanning / erfaring
 training ID	hrm	nn	ID
 Training item has been edited	hrm	nn	utdanning / erfaring er rettet

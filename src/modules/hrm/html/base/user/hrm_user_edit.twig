@@ -1,0 +1,159 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ training_id ? lang('edit training') : lang('add training') }}{% endblock %}
+
+{% block styles %}
+	<style>
+		.hrm-training-form { max-width: 58rem; margin: 0 auto; }
+		.hrm-training-form__header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+		.hrm-training-form__header h1 { margin: 0; font-size: 1.5rem; }
+		.hrm-training-form__notice { margin: 0 0 1rem; padding: .75rem 1rem; border-radius: 4px; }
+		.hrm-training-form__notice--error { border: 1px solid #b00020; background: #fff5f6; color: #7a0015; }
+		.hrm-training-form__notice--message { border: 1px solid #2e7d32; background: #f4fbf4; color: #1b5e20; }
+		.hrm-training-form__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem 1.25rem; padding: 1rem; border: 1px solid #d5dde6; border-radius: 6px; background: #fff; }
+		.hrm-training-form__field { display: flex; flex-direction: column; gap: .3rem; }
+		.hrm-training-form__field--full { grid-column: 1 / -1; }
+		.hrm-training-form__field label { color: #526579; font-weight: 600; }
+		.hrm-training-form__input, .hrm-training-form__select, .hrm-training-form__textarea { width: 100%; box-sizing: border-box; border: 1px solid #b8c4d1; border-radius: 4px; padding: .45rem .55rem; color: #17324d; background: #fff; }
+		.hrm-training-form__textarea { min-height: 8rem; resize: vertical; }
+		.hrm-training-form__new-place { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem 1.25rem; margin: .25rem 0 0; padding: 1rem; border: 2px solid #6b8f3e; border-left-width: .45rem; border-radius: 6px; background: #f7faf1; }
+		.hrm-training-form__new-place[hidden] { display: none; }
+		.hrm-training-form__new-place legend { grid-column: 1 / -1; padding: 0 .4rem; color: #365314; font-weight: 700; }
+		.hrm-training-form__actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+		.hrm-training-form__button { border: 1px solid #24527a; border-radius: 4px; padding: .45rem .85rem; background: #24527a; color: #fff; text-decoration: none; cursor: pointer; }
+		.hrm-training-form__button--secondary { background: #fff; color: #24527a; }
+	</style>
+{% endblock %}
+
+{% block content %}
+	<div id="hrm-training-form" class="hrm-training-form" data-date-format="{{ date_format|default('Y-m-d')|e }}">
+		<div class="hrm-training-form__header">
+			<h1>{{ training_id ? lang('edit training') : lang('add training') }}</h1>
+			<a href="{{ list_url|e }}">{{ lang('Back to the list') }}</a>
+		</div>
+
+		{% if errors %}
+			<div class="hrm-training-form__notice hrm-training-form__notice--error">
+				{% for error in errors %}<div>{{ error }}</div>{% endfor %}
+			</div>
+		{% endif %}
+
+		{% if messages %}
+			<div class="hrm-training-form__notice hrm-training-form__notice--message">
+				{% for message in messages %}<div>{{ message }}</div>{% endfor %}
+			</div>
+		{% endif %}
+
+		<form method="post" action="{{ form_action|e }}">
+			<div class="hrm-training-form__grid">
+				{% if training_id %}
+					<div class="hrm-training-form__field">
+						<label>{{ lang('training ID') }}</label>
+						<div>{{ training_id }}</div>
+					</div>
+					{% if values.entry_date %}
+						<div class="hrm-training-form__field">
+							<label>{{ lang('Entry date') }}</label>
+							<div>{{ values.entry_date }}</div>
+						</div>
+					{% endif %}
+				{% endif %}
+
+				<div class="hrm-training-form__field">
+					<label for="hrm-training-category">{{ lang('category') }}</label>
+					<select id="hrm-training-category" class="hrm-training-form__select" name="values[cat_id]" required>
+						<option value="">{{ lang('no category') }}</option>
+						{% for category in cat_list %}
+							<option value="{{ category.id }}" {% if category.selected %}selected{% endif %}>{{ category.name }}</option>
+						{% endfor %}
+					</select>
+				</div>
+
+				<div class="hrm-training-form__field hrm-training-form__field--full">
+					<label for="hrm-training-title">{{ lang('training') }}</label>
+					<input id="hrm-training-title" class="hrm-training-form__input" type="text" name="values[title]" value="{{ values.title|default('') }}">
+				</div>
+
+				<div class="hrm-training-form__field">
+					<label for="hrm-training-start-date">{{ lang('start date') }}</label>
+					<input id="hrm-training-start-date" class="hrm-training-form__input" type="text" name="values[start_date]" value="{{ values.start_date|default('') }}" placeholder="{{ date_format }}" title="{{ date_format }}" autocomplete="off" required>
+				</div>
+
+				<div class="hrm-training-form__field">
+					<label for="hrm-training-end-date">{{ lang('end date') }}</label>
+					<input id="hrm-training-end-date" class="hrm-training-form__input" type="text" name="values[end_date]" value="{{ values.end_date|default('') }}" placeholder="{{ date_format }}" title="{{ date_format }}" autocomplete="off">
+				</div>
+
+				<div class="hrm-training-form__field">
+					<label for="hrm-training-credits">{{ lang('credits') }}</label>
+					<input id="hrm-training-credits" class="hrm-training-form__input" type="number" name="values[credits]" value="{{ values.credits|default(0) }}" min="0" step="1">
+				</div>
+
+				<div class="hrm-training-form__field">
+					<label for="hrm-training-reference">{{ lang('reference') }}</label>
+					<input id="hrm-training-reference" class="hrm-training-form__input" type="text" name="values[reference]" value="{{ values.reference|default('') }}">
+				</div>
+
+				<div class="hrm-training-form__field">
+					<label for="hrm-training-skill">{{ lang('Skill') }}</label>
+					<select id="hrm-training-skill" class="hrm-training-form__select" name="values[skill]">
+						<option value="">{{ lang('select a skill') }}</option>
+						{% for skill in skill_list %}
+							<option value="{{ skill.id }}" {% if skill.selected %}selected{% endif %}>{{ skill.name }}</option>
+						{% endfor %}
+					</select>
+				</div>
+
+				<div class="hrm-training-form__field">
+					<label for="hrm-training-place">{{ lang('place') }}</label>
+					<select id="hrm-training-place" class="hrm-training-form__select" name="place_id" required>
+						<option value="">{{ lang('select a place') }}</option>
+						<option value="new_place" {% if values.place_id == 'new_place' %}selected{% endif %}>{{ lang('new place') }}</option>
+						{% for place in place_list %}
+							<option value="{{ place.id }}" {% if place.selected %}selected{% endif %}>{{ place.name }}</option>
+						{% endfor %}
+					</select>
+				</div>
+
+				<fieldset id="hrm-training-new-place" class="hrm-training-form__new-place" hidden>
+					<legend>{{ lang('new place') }}</legend>
+					<div class="hrm-training-form__field">
+						<label for="hrm-training-new-place-name">{{ lang('name') }}</label>
+						<input id="hrm-training-new-place-name" class="hrm-training-form__input" type="text" name="values[new_place_name]" value="{{ values.new_place_name|default('') }}">
+					</div>
+					<div class="hrm-training-form__field">
+						<label for="hrm-training-new-place-address">{{ lang('address') }}</label>
+						<input id="hrm-training-new-place-address" class="hrm-training-form__input" type="text" name="values[new_place_address]" value="{{ values.new_place_address|default('') }}">
+					</div>
+					<div class="hrm-training-form__field">
+						<label for="hrm-training-new-place-zip">{{ lang('zip') }}</label>
+						<input id="hrm-training-new-place-zip" class="hrm-training-form__input" type="text" name="values[new_place_zip]" value="{{ values.new_place_zip|default('') }}">
+					</div>
+					<div class="hrm-training-form__field">
+						<label for="hrm-training-new-place-town">{{ lang('town') }}</label>
+						<input id="hrm-training-new-place-town" class="hrm-training-form__input" type="text" name="values[new_place_town]" value="{{ values.new_place_town|default('') }}">
+					</div>
+					<div class="hrm-training-form__field hrm-training-form__field--full">
+						<label for="hrm-training-new-place-remark">{{ lang('remark') }}</label>
+						<textarea id="hrm-training-new-place-remark" class="hrm-training-form__textarea" name="values[new_place_remark]">{{ values.new_place_remark|default('') }}</textarea>
+					</div>
+				</fieldset>
+
+				<div class="hrm-training-form__field hrm-training-form__field--full">
+					<label for="hrm-training-descr">{{ lang('Descr') }}</label>
+					<textarea id="hrm-training-descr" class="hrm-training-form__textarea" name="values[descr]">{{ values.descr|default('') }}</textarea>
+				</div>
+			</div>
+
+			<div class="hrm-training-form__actions">
+				<button class="hrm-training-form__button" type="submit" name="values[save]" value="1">{{ lang('save') }}</button>
+				<button class="hrm-training-form__button hrm-training-form__button--secondary" type="submit" name="values[apply]" value="1">{{ lang('apply') }}</button>
+				<button class="hrm-training-form__button hrm-training-form__button--secondary" type="submit" name="values[cancel]" value="1">{{ lang('cancel') }}</button>
+			</div>
+		</form>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+	<script>{{ source('@views/user/hrm_user_edit.js') }}</script>
+{% endblock %}

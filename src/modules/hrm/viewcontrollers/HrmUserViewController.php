@@ -153,7 +153,7 @@ class HrmUserViewController
 			'user_values' => $users->get_user_data($userId),
 			'cv_url' => \phpgw::link('/index.php', ['menuaction' => 'hrm.uiuser.view_cv', 'user_id' => $userId], true),
 			'new_url' => \phpgw::link('/hrm/view/users/' . $userId . '/training/new'),
-			'view_url_template' => \phpgw::link('/index.php', ['menuaction' => 'hrm.uiuser.view', 'user_id' => $userId, 'training_id' => '__TRAINING_ID__'], true),
+			'view_url_template' => \phpgw::link('/hrm/view/users/' . $userId . '/training/__TRAINING_ID__'),
 			'edit_url_template' => \phpgw::link('/hrm/view/users/' . $userId . '/training/__TRAINING_ID__/edit'),
 			'delete_url_template' => \phpgw::link('/index.php', ['menuaction' => 'hrm.uiuser.delete', 'user_id' => $userId, 'training_id' => '__TRAINING_ID__'], true),
 			'can_add' => $common->check_perms2($userId, $grants, ACL_ADD),
@@ -161,6 +161,47 @@ class HrmUserViewController
 			'can_delete' => $common->check_perms2($userId, $grants, ACL_DELETE),
 			'rows_per_page' => $rowsPerPage,
 			'length_menu' => [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3],
+		]);
+
+		$response->getBody()->write($this->legacyView->render($html, ['hrm', 'user', 'training'], 'hrm::user'));
+		return $response->withHeader('Content-Type', 'text/html');
+	}
+
+	public function view(Request $request, Response $response, array $args): Response
+	{
+		$userId = (int) ($args['id'] ?? 0);
+		$trainingId = (int) ($args['trainingId'] ?? 0);
+		$users = \CreateObject('hrm.bouser', false);
+		$common = \CreateObject('hrm.bocommon');
+		$grants = (array) $users->grants;
+
+		if (!$userId || !$trainingId || !$common->check_perms2($userId, $grants, ACL_READ))
+		{
+			$response->getBody()->write(lang('Access not permitted'));
+			return $response->withStatus(403)->withHeader('Content-Type', 'text/plain');
+		}
+
+		$values = (array) $users->read_single_training($trainingId);
+		if (!$values || (int) ($values['user_id'] ?? 0) !== $userId)
+		{
+			$response->getBody()->write(lang('Not found'));
+			return $response->withStatus(404)->withHeader('Content-Type', 'text/plain');
+		}
+
+		$bocategory = \CreateObject('hrm.bocategory');
+		Settings::getInstance()->update('flags', ['app_header' => lang('hrm') . ' - ' . lang('Training') . ': ' . lang('view training')]);
+
+		$html = $this->twig->render('@views/user/hrm_user_view.twig', [
+			'layout' => '@views/_bare.twig',
+			'training_id' => $trainingId,
+			'user_id' => $userId,
+			'values' => $values,
+			'list_url' => \phpgw::link('/hrm/view/users/' . $userId . '/training'),
+			'edit_url' => \phpgw::link('/hrm/view/users/' . $userId . '/training/' . $trainingId . '/edit'),
+			'can_edit' => $common->check_perms2($userId, $grants, ACL_EDIT),
+			'cat_list' => $this->normalizeSelectList((array) $bocategory->select_category_list('training', $values['cat_id'] ?? '')),
+			'skill_list' => $this->normalizeSelectList((array) $bocategory->select_category_list('skill_level', $values['skill'] ?? '')),
+			'place_list' => $this->normalizeSelectList((array) $users->select_place_list($values['place_id'] ?? '')),
 		]);
 
 		$response->getBody()->write($this->legacyView->render($html, ['hrm', 'user', 'training'], 'hrm::user'));
@@ -244,6 +285,7 @@ class HrmUserViewController
 		$functionMsg = $trainingId ? lang('edit training') : lang('add training');
 		Settings::getInstance()->update('flags', ['app_header' => lang('hrm') . ' - ' . lang('Training') . ': ' . $functionMsg]);
 		\phpgw::import_class('phpgwapi.jquery');
+		\phpgwapi_jquery::load_widget('select2');
 		\phpgwapi_jquery::load_widget('datepicker');
 
 		$html = $this->twig->render('@views/user/hrm_user_edit.twig', [

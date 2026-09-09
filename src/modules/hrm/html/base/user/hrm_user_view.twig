@@ -1,0 +1,96 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('view training') }}{% endblock %}
+
+{% block styles %}
+	<style>
+		.hrm-training-view { max-width: 58rem; margin: 0 auto; }
+		.hrm-training-view__header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .75rem 1rem; margin-bottom: 1rem; }
+		.hrm-training-view__header h1 { margin: 0; font-size: 1.5rem; }
+		.hrm-training-view__links { display: flex; flex-wrap: wrap; gap: .75rem; }
+		.hrm-training-view__panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem 1.25rem; padding: 1rem; border: 1px solid #d5dde6; border-radius: 6px; background: #fff; }
+		.hrm-training-view__field { min-width: 0; }
+		.hrm-training-view__field--full { grid-column: 1 / -1; }
+		.hrm-training-view__label { color: #526579; font-weight: 600; }
+		.hrm-training-view__value { margin-top: .25rem; color: #17324d; overflow-wrap: anywhere; }
+		.hrm-training-view__text { white-space: pre-wrap; }
+		.hrm-training-view__button { display: inline-block; border: 1px solid #24527a; border-radius: 4px; padding: .45rem .85rem; background: #24527a; color: #fff; text-decoration: none; }
+		.hrm-training-view__button--secondary { background: #fff; color: #24527a; }
+	</style>
+{% endblock %}
+
+{% block content %}
+	{% set category_name = '' %}
+	{% for category in cat_list %}
+		{% if category.selected %}{% set category_name = category.name %}{% endif %}
+	{% endfor %}
+	{% set skill_name = '' %}
+	{% for skill in skill_list %}
+		{% if skill.selected %}{% set skill_name = skill.name %}{% endif %}
+	{% endfor %}
+	{% set place_name = '' %}
+	{% for place in place_list %}
+		{% if place.selected %}{% set place_name = place.name %}{% endif %}
+	{% endfor %}
+
+	<div class="hrm-training-view">
+		<div class="hrm-training-view__header">
+			<h1>{{ lang('view training') }}</h1>
+			<div class="hrm-training-view__links">
+				<a class="hrm-training-view__button hrm-training-view__button--secondary" href="{{ list_url|e }}">{{ lang('Back to the list') }}</a>
+				{% if can_edit %}
+					<a class="hrm-training-view__button" href="{{ edit_url|e }}">{{ lang('edit') }}</a>
+				{% endif %}
+			</div>
+		</div>
+
+		<div class="hrm-training-view__panel">
+			<div class="hrm-training-view__field">
+				<div class="hrm-training-view__label">{{ lang('training ID') }}</div>
+				<div class="hrm-training-view__value">{{ training_id }}</div>
+			</div>
+			{% if values.entry_date %}
+				<div class="hrm-training-view__field">
+					<div class="hrm-training-view__label">{{ lang('Entry date') }}</div>
+					<div class="hrm-training-view__value">{{ values.entry_date }}</div>
+				</div>
+			{% endif %}
+			<div class="hrm-training-view__field">
+				<div class="hrm-training-view__label">{{ lang('category') }}</div>
+				<div class="hrm-training-view__value">{{ category_name }}</div>
+			</div>
+			<div class="hrm-training-view__field hrm-training-view__field--full">
+				<div class="hrm-training-view__label">{{ lang('training') }}</div>
+				<div class="hrm-training-view__value">{{ values.title|default('') }}</div>
+			</div>
+			<div class="hrm-training-view__field">
+				<div class="hrm-training-view__label">{{ lang('start date') }}</div>
+				<div class="hrm-training-view__value">{{ values.start_date|default('') }}</div>
+			</div>
+			<div class="hrm-training-view__field">
+				<div class="hrm-training-view__label">{{ lang('end date') }}</div>
+				<div class="hrm-training-view__value">{{ values.end_date|default('') }}</div>
+			</div>
+			<div class="hrm-training-view__field">
+				<div class="hrm-training-view__label">{{ lang('credits') }}</div>
+				<div class="hrm-training-view__value">{{ values.credits|default(0) }}</div>
+			</div>
+			<div class="hrm-training-view__field">
+				<div class="hrm-training-view__label">{{ lang('reference') }}</div>
+				<div class="hrm-training-view__value">{{ values.reference|default('') }}</div>
+			</div>
+			<div class="hrm-training-view__field">
+				<div class="hrm-training-view__label">{{ lang('Skill') }}</div>
+				<div class="hrm-training-view__value">{{ skill_name }}</div>
+			</div>
+			<div class="hrm-training-view__field">
+				<div class="hrm-training-view__label">{{ lang('place') }}</div>
+				<div class="hrm-training-view__value">{{ place_name }}</div>
+			</div>
+			<div class="hrm-training-view__field hrm-training-view__field--full">
+				<div class="hrm-training-view__label">{{ lang('Descr') }}</div>
+				<div class="hrm-training-view__value hrm-training-view__text">{{ values.descr|default('') }}</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}

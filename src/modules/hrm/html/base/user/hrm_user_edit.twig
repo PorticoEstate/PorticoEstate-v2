@@ -106,7 +106,7 @@
 
 				<div class="hrm-training-form__field">
 					<label for="hrm-training-place">{{ lang('place') }}</label>
-					<select id="hrm-training-place" class="hrm-training-form__select" name="place_id" required>
+					<select id="hrm-training-place" class="hrm-training-form__select" name="place_id" data-placeholder="{{ lang('select a place')|e }}" required>
 						<option value="">{{ lang('select a place') }}</option>
 						<option value="new_place" {% if values.place_id == 'new_place' %}selected{% endif %}>{{ lang('new place') }}</option>
 						{% for place in place_list %}

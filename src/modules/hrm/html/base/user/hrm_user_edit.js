@@ -32,6 +32,15 @@
 		});
 	}
 
+	if (typeof window.jQuery !== 'undefined' && window.jQuery.fn.select2)
+	{
+		window.jQuery(placeSelect).select2({
+			width: '100%',
+			placeholder: placeSelect.dataset.placeholder || '',
+			allowClear: true
+		}).on('change', syncNewPlace);
+	}
+
 	placeSelect.addEventListener('change', syncNewPlace);
 	syncNewPlace();
 })();

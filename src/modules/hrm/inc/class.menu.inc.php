@@ -60,9 +60,11 @@ class hrm_menu
 			$start_page = $userSettings['preferences']['hrm']['default_start_page'];
 		}
 
-		$navbarUrl = $start_page === 'user'
-			? phpgw::link('/hrm/view/users')
-			: phpgw::link('/index.php', array('menuaction' => "hrm.ui{$start_page}.index"));
+		$modernStartPages = array(
+			'user' => phpgw::link('/hrm/view/users'),
+			'place' => phpgw::link('/hrm/view/places'),
+		);
+		$navbarUrl = $modernStartPages[$start_page] ?? phpgw::link('/index.php', array('menuaction' => "hrm.ui{$start_page}.index"));
 
 		$menus['navbar'] = array(
 			'hrm' => array(
@@ -152,7 +154,7 @@ class hrm_menu
 			),
 			'place'	=> array(
 				'text'	=> lang('PLace'),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uiplace.index'))
+				'url'	=> phpgw::link('/hrm/view/places')
 			)
 		);
 		Settings::getInstance()->update('flags', ['currentapp' => $incoming_app]);

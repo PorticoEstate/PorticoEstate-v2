@@ -1,0 +1,88 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ place_id ? lang('edit place') : lang('add place') }}{% endblock %}
+
+{% block styles %}
+	<style>
+		.hrm-place-form { max-width: 52rem; margin: 0 auto; }
+		.hrm-place-form__header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+		.hrm-place-form__header h1 { margin: 0; font-size: 1.5rem; }
+		.hrm-place-form__notice { margin: 0 0 1rem; padding: .75rem 1rem; border-radius: 4px; }
+		.hrm-place-form__notice--error { border: 1px solid #b00020; background: #fff5f6; color: #7a0015; }
+		.hrm-place-form__notice--message { border: 1px solid #2e7d32; background: #f4fbf4; color: #1b5e20; }
+		.hrm-place-form__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem 1.25rem; padding: 1rem; border: 1px solid #d5dde6; border-radius: 6px; background: #fff; }
+		.hrm-place-form__field { display: flex; flex-direction: column; gap: .3rem; }
+		.hrm-place-form__field--full { grid-column: 1 / -1; }
+		.hrm-place-form__field label { color: #526579; font-weight: 600; }
+		.hrm-place-form__input, .hrm-place-form__textarea { width: 100%; box-sizing: border-box; border: 1px solid #b8c4d1; border-radius: 4px; padding: .45rem .55rem; color: #17324d; background: #fff; }
+		.hrm-place-form__textarea { min-height: 7rem; resize: vertical; }
+		.hrm-place-form__actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+		.hrm-place-form__button { border: 1px solid #24527a; border-radius: 4px; padding: .45rem .85rem; background: #24527a; color: #fff; text-decoration: none; cursor: pointer; }
+		.hrm-place-form__button--secondary { background: #fff; color: #24527a; }
+	</style>
+{% endblock %}
+
+{% block content %}
+	<div class="hrm-place-form">
+		<div class="hrm-place-form__header">
+			<h1>{{ place_id ? lang('edit place') : lang('add place') }}</h1>
+			<a href="{{ list_url|e }}">{{ lang('Back to the list') }}</a>
+		</div>
+
+		{% if errors %}
+			<div class="hrm-place-form__notice hrm-place-form__notice--error">
+				{% for error in errors %}<div>{{ error }}</div>{% endfor %}
+			</div>
+		{% endif %}
+
+		{% if messages %}
+			<div class="hrm-place-form__notice hrm-place-form__notice--message">
+				{% for message in messages %}<div>{{ message }}</div>{% endfor %}
+			</div>
+		{% endif %}
+
+		<form method="post" action="{{ form_action|e }}">
+			<div class="hrm-place-form__grid">
+				{% if place_id %}
+					<div class="hrm-place-form__field">
+						<label>{{ lang('Place ID') }}</label>
+						<div>{{ place_id }}</div>
+					</div>
+					{% if values.entry_date %}
+						<div class="hrm-place-form__field">
+							<label>{{ lang('Entry date') }}</label>
+							<div>{{ values.entry_date }}</div>
+						</div>
+					{% endif %}
+				{% endif %}
+
+				<div class="hrm-place-form__field hrm-place-form__field--full">
+					<label for="hrm-place-name">{{ lang('name') }}</label>
+					<input id="hrm-place-name" class="hrm-place-form__input" type="text" name="values[name]" value="{{ values.name|default('') }}" required>
+				</div>
+				<div class="hrm-place-form__field hrm-place-form__field--full">
+					<label for="hrm-place-address">{{ lang('address') }}</label>
+					<input id="hrm-place-address" class="hrm-place-form__input" type="text" name="values[address]" value="{{ values.address|default('') }}" required>
+				</div>
+				<div class="hrm-place-form__field">
+					<label for="hrm-place-zip">{{ lang('zip') }}</label>
+					<input id="hrm-place-zip" class="hrm-place-form__input" type="text" name="values[zip]" value="{{ values.zip|default('') }}" required>
+				</div>
+				<div class="hrm-place-form__field">
+					<label for="hrm-place-town">{{ lang('town') }}</label>
+					<input id="hrm-place-town" class="hrm-place-form__input" type="text" name="values[town]" value="{{ values.town|default('') }}" required>
+				</div>
+				<div class="hrm-place-form__field hrm-place-form__field--full">
+					<label for="hrm-place-remark">{{ lang('remark') }}</label>
+					<textarea id="hrm-place-remark" class="hrm-place-form__textarea" name="values[remark]">{{ values.remark|default('') }}</textarea>
+				</div>
+			</div>
+
+			<div class="hrm-place-form__actions">
+				<button class="hrm-place-form__button" type="submit" name="values[save]" value="1">{{ lang('save') }}</button>
+				<button class="hrm-place-form__button hrm-place-form__button--secondary" type="submit" name="values[apply]" value="1">{{ lang('apply') }}</button>
+				<button class="hrm-place-form__button hrm-place-form__button--secondary" type="submit" name="values[cancel]" value="1">{{ lang('cancel') }}</button>
+			</div>
+		</form>
+	</div>
+{% endblock %}

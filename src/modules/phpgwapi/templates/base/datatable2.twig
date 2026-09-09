@@ -15,7 +15,7 @@
 {% set dbl_click_action = attribute(datatable_config, 'dbl_click_action')|default(attribute(data_root, 'dbl_click_action')|default('')) %}
 
 <style>
-	/* Fallback styling for datatable2 toolbar when digdir utility CSS is unavailable. */
+	/* Fallback styling for datatable2 toolbar when base utility CSS is unavailable. */
 	#queryForm .app-button {
 		display: inline-block;
 		padding: 0.4rem 0.75rem;
@@ -202,21 +202,21 @@
 																JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction:app + '.ui' + ui + '.' + FunctionName}) + '&filter_' + depends + '_id=' + filter_depends + '&',
 																	'filter_' + name + '_name', 'filter_' + name + '_id', 'filter_' + name + '_container', label_attr, show_id, requestGenerator);
 															}
-															clearFilterParam('filter_' + name + '_id');
+																	clearFilterParam('filter_' + name + '_id');
 															$('#filter_' + name + '_name').val('');
 															$('#filter_' + name + '_id').val('');
 															filter_selected = filter_select;
 														}
 													});
-																	if(JqueryPortico.columns[colIdx] && JqueryPortico.columns[colIdx].searchable !== false)
+													$("#filter_" + depends + "_name").on("keyup", function(){
 														if ($(this).val() == ''){
 															filter_depends = false;
-																	if(JqueryPortico.columns[colIdx] && JqueryPortico.columns[colIdx].searchable !== false)
+															if (!filter_depends) {
 																JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction:app + '.ui' + ui + '.' + FunctionName}) + '&',
 																	'filter_' + name + '_name', 'filter_' + name + '_id', 'filter_' + name + '_container', label_attr, show_id, requestGenerator);
 															}
 															filter_selected = "";
-															clearFilterParam('filter_' + name + '_id');
+																	clearFilterParam('filter_' + name + '_id');
 															$('#filter_' + name + '_name').val('');
 															$('#filter_' + name + '_id').val('');
 														}
@@ -456,7 +456,7 @@
 		{% if datatable_config.responsive_show_details is defined and datatable_config.responsive_show_details == 1 %}
 			responsive = {
 				details: {
-									display: DataTable.Responsive.display.childRowImmediate,
+					display: DataTable.Responsive.display.childRowImmediate,
 					type: ''
 				}
 			};
@@ -1013,7 +1013,7 @@
 					sessionStorage.removeItem('state_' + menuaction);
 				}
 
-				oTable = new DataTable('#datatable-container', {
+					oTable = new DataTable('#datatable-container', {
 					paging: disablePagination ? false : true,
 					searchDelay: 1200,
 					processing: true,
@@ -1133,7 +1133,7 @@
 							{
 								window.alert('sessionExpired - please log in');
 								JqueryPortico.lightboxlogin();//defined in common.js
-								//	oTable.api().ajax.reload( null, false ); // user paging is not reset on reload
+								// DataTables v3 reloads through oTable.ajax.reload().
 							}
 							else
 							{
@@ -1262,6 +1262,10 @@
 						$('td', nRow).parents('tr').addClass('context-menu');
 					},
 					drawCallback: function () {
+						if (typeof oTable.api !== 'function')
+						{
+							oTable.api = function() { return oTable; };
+						}
 						$('#datatable-container').makeEditable({
 							sUpdateURL: editor_action,
 							fnOnEditing: function(input){
@@ -1417,6 +1421,20 @@
 
 			var colunm_search = false;
 			var hidden_columns = [];
+			var inline_editing_enabled = true;
+
+			setInlineEditingEnabled = function(enabled)
+			{
+				inline_editing_enabled = enabled;
+			};
+
+			document.getElementById('datatable-container').addEventListener('dblclick', function(event) {
+				if (!inline_editing_enabled && event.target.closest('tbody td'))
+				{
+					event.preventDefault();
+					event.stopImmediatePropagation();
+				}
+			}, true);
 
 			remove_column_search = function()
 			{
@@ -1444,6 +1462,7 @@
 				});
 
 				colunm_search = false;
+				setInlineEditingEnabled(true);
 				oTable.responsive.recalc();
 			};
 
@@ -1457,6 +1476,7 @@
 				}
 
 				colunm_search = true;
+				setInlineEditingEnabled(false);
 				let reset_filter_is_visible = false;
 				if ($('#reset_filter').is(':visible'))
 				{
@@ -1488,8 +1508,9 @@
 				});
 
 				// Apply the search
-				oTable.columns().every(function(colIdx)
+					oTable.columns().every(function()
 				{
+						var colIdx = this.index();
 					var lastSearcCallback = 0;
 					var delay = 200;
 					$('input', oTable.column(colIdx).header()).on('keyup change', function()
@@ -1776,12 +1797,19 @@
 			}
 			else if ($(this).is('select'))
 			{
-				if ($(this).is('[multiple]'))
+				try
 				{
-					$(this).multiselect('deselectAll', false);
-					$(this).multiselect('refresh');
+					if ($(this).is('[multiple]'))
+					{
+						$(this).multiselect('deselectAll', false);
+						$(this).multiselect('refresh');
+					}
+					else
+					{
+						$(this).prop('selectedIndex', 0);
+					}
 				}
-				else
+				catch (e)
 				{
 					$(this).prop('selectedIndex', 0);
 				}
@@ -1795,6 +1823,10 @@
 		if (relatedParam && /_id$/.test(relatedParam))
 		{
 			$('#' + relatedParam.replace(/_id$/, '_name')).val('');
+		}
+		if (relatedParam && /_name$/.test(relatedParam))
+		{
+			$('#' + relatedParam.replace(/_name$/, '_id')).val('');
 		}
 
 		clearFilterParam(param);
@@ -1879,12 +1911,6 @@
 		// Store the filter value in the custom filters object for modern DataTables compatibility
 		customFilters[param] = value;
 
-		// Also update the legacy way for backward compatibility
-		try {
-		} catch(e) {
-			// Legacy method failed, modern approach will handle it
-		}
-
 		// Reload the table data
 		oTable.ajax.reload();
 	}
@@ -1896,11 +1922,6 @@
 			delete customFilters[param];
 		}
 
-		// Also clear from legacy way for backward compatibility
-		try {
-		} catch(e) {
-			// Legacy method failed, modern approach will handle it
-		}
 	}
 
 	function reloadData()

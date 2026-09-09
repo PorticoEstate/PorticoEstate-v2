@@ -1975,8 +1975,26 @@
 		reset_single_filter = function(param)
 		{
 			var controls = $('.dtable_custom_controls:first').find(':input[name]');
+			var relatedParam = null;
 			controls.each(function() {
 				if ($(this).attr('name') !== param)
+				{
+					return;
+				}
+
+				var controlId = $(this).attr('id') || '';
+				var relatedId = /_name$/.test(controlId)
+					? controlId.replace(/_name$/, '_id')
+					: controlId.replace(/_id$/, '_name');
+				var relatedControl = relatedId ? document.getElementById(relatedId) : null;
+				if (relatedControl)
+				{
+					relatedParam = $(relatedControl).attr('name');
+				}
+			});
+
+			controls.each(function() {
+				if ($(this).attr('name') !== param && $(this).attr('name') !== relatedParam)
 				{
 					return;
 				}
@@ -2012,12 +2030,20 @@
 				}
 			});
 
-			if (/_id$/.test(param))
+			if (relatedParam && /_id$/.test(relatedParam))
 			{
-				$('#' + param.replace(/_id$/, '_name')).val('');
+				$('#' + relatedParam.replace(/_id$/, '_name')).val('');
+			}
+			if (relatedParam && /_name$/.test(relatedParam))
+			{
+				$('#' + relatedParam.replace(/_name$/, '_id')).val('');
 			}
 
 			clearFilterParam(param);
+			if (relatedParam)
+			{
+				clearFilterParam(relatedParam);
+			}
 			oTable.api().ajax.reload();
 		};
 

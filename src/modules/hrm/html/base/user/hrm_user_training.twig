@@ -14,6 +14,14 @@
 		window.__hrmTraining = {
 			id: 'hrm-training-datatable',
 			apiUrl: '{{ api_url|e('js') }}',
+			cvUrl: '{{ cv_url|e('js') }}',
+			newUrl: '{{ new_url|e('js') }}',
+			viewUrlTemplate: '{{ view_url_template|replace({'__TRAINING_ID__': '{id}'})|e('js') }}',
+			editUrlTemplate: '{{ edit_url_template|replace({'__TRAINING_ID__': '{id}'})|e('js') }}',
+			deleteUrlTemplate: '{{ delete_url_template|replace({'__TRAINING_ID__': '{id}'})|e('js') }}',
+			canAdd: {{ can_add ? 'true' : 'false' }},
+			canEdit: {{ can_edit ? 'true' : 'false' }},
+			canDelete: {{ can_delete ? 'true' : 'false' }},
 			lang: {
 				category: '{{ lang('category')|e('js') }}',
 				title: '{{ lang('training')|e('js') }}',
@@ -21,6 +29,11 @@
 				credits: '{{ lang('credits')|e('js') }}',
 				startDate: '{{ lang('start date')|e('js') }}',
 				endDate: '{{ lang('end date')|e('js') }}',
+				cv: 'CV',
+				add: '{{ lang('add')|e('js') }}',
+				view: '{{ lang('view')|e('js') }}',
+				edit: '{{ lang('edit')|e('js') }}',
+				delete: '{{ lang('delete')|e('js') }}',
 				emptyTable: '{{ lang('No data available in table')|e('js') }}'
 			}
 		};

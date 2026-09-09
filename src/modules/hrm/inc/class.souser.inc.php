@@ -106,6 +106,7 @@ class hrm_souser
 			$sort		= isset($data['sort']) && $data['sort'] ? $data['sort'] : 'ASC';
 			$order		= isset($data['order']) && $data['order'] ? $data['order'] : 'start_date, category';
 			$allrows	= isset($data['allrows']) ? $data['allrows'] : '';
+			$length		= isset($data['length']) && $data['length'] ? $data['length'] : 10;
 		}
 
 		$user_id = $data['user_id'];
@@ -122,32 +123,15 @@ class hrm_souser
 		$sql = "SELECT phpgw_hrm_training.id as training_id,phpgw_hrm_training.title as title, phpgw_hrm_training.start_date,"
 			. " phpgw_hrm_training.end_date,phpgw_hrm_training_place.name as place, phpgw_hrm_training_category.descr as category, credits"
 			. " FROM phpgw_hrm_training $this->left_join phpgw_hrm_training_place on phpgw_hrm_training.place_id=phpgw_hrm_training_place.id"
-			. " $this->join phpgw_hrm_training_category ON phpgw_hrm_training.category = phpgw_hrm_training_category.id"
-			. " WHERE phpgw_hrm_training_category.id != 6 AND phpgw_hrm_training.user_id=" . intval($user_id);
+			. " $this->join phpgw_hrm_training_category ON phpgw_hrm_training.category = phpgw_hrm_training_category.id";
 
-		$this->db->query($sql . $ordermethod, __LINE__, __FILE__);
+		$sql = "({$sql} WHERE phpgw_hrm_training_category.id != 6 AND phpgw_hrm_training.user_id=" . intval($user_id) . "{$ordermethod})"
+			. " UNION ALL "
+			. "({$sql} WHERE phpgw_hrm_training_category.id = 6 AND phpgw_hrm_training.user_id=" . intval($user_id) . "{$ordermethod})";
+
+		$this->db->query($sql, __LINE__, __FILE__);
 
 		$training = array();
-		while ($this->db->next_record())
-		{
-			$training[] = array(
-				'training_id'	=> $this->db->f('training_id'),
-				'start_date'	=> $this->db->f('start_date'),
-				'end_date'		=> $this->db->f('end_date'),
-				'title'			=> $this->db->f('title', true),
-				'place'			=> $this->db->f('place', true),
-				'credits'		=> (int)$this->db->f('credits'),
-				'category'		=> $this->db->f('category', true)
-			);
-		}
-		$sql = "SELECT phpgw_hrm_training.id as training_id,phpgw_hrm_training.title as title, phpgw_hrm_training.start_date,"
-			. " phpgw_hrm_training.end_date,phpgw_hrm_training_place.name as place, phpgw_hrm_training_category.descr as category, credits"
-			. " FROM phpgw_hrm_training $this->left_join phpgw_hrm_training_place on phpgw_hrm_training.place_id=phpgw_hrm_training_place.id"
-			. " $this->join phpgw_hrm_training_category ON phpgw_hrm_training.category = phpgw_hrm_training_category.id"
-			. " WHERE phpgw_hrm_training_category.id = 6 AND phpgw_hrm_training.user_id=" . intval($user_id);
-
-		$this->db->query($sql . $ordermethod, __LINE__, __FILE__);
-
 		while ($this->db->next_record())
 		{
 			$training[] = array(

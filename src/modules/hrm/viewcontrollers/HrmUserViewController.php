@@ -42,11 +42,22 @@ class HrmUserViewController
 	public function training(Request $request, Response $response, array $args): Response
 	{
 		$userId = (int) ($args['id'] ?? 0);
+		$users = \CreateObject('hrm.bouser', false);
+		$common = \CreateObject('hrm.bocommon');
+		$grants = (array) $users->grants;
 		Settings::getInstance()->update('flags', ['app_header' => lang('hrm') . ' - ' . lang('Training')]);
 		$html = $this->twig->render('@views/user/hrm_user_training.twig', [
 			'layout' => '@views/_bare.twig',
 			'api_url' => \phpgw::link('/hrm/users/' . $userId . '/training'),
 			'list_url' => \phpgw::link('/hrm/view/users'),
+			'cv_url' => \phpgw::link('/index.php', ['menuaction' => 'hrm.uiuser.view_cv', 'user_id' => $userId], true),
+			'new_url' => \phpgw::link('/index.php', ['menuaction' => 'hrm.uiuser.edit', 'user_id' => $userId], true),
+			'view_url_template' => \phpgw::link('/index.php', ['menuaction' => 'hrm.uiuser.view', 'user_id' => $userId, 'training_id' => '__TRAINING_ID__'], true),
+			'edit_url_template' => \phpgw::link('/index.php', ['menuaction' => 'hrm.uiuser.edit', 'user_id' => $userId, 'training_id' => '__TRAINING_ID__'], true),
+			'delete_url_template' => \phpgw::link('/index.php', ['menuaction' => 'hrm.uiuser.delete', 'user_id' => $userId, 'training_id' => '__TRAINING_ID__'], true),
+			'can_add' => $common->check_perms2($userId, $grants, ACL_ADD),
+			'can_edit' => $common->check_perms2($userId, $grants, ACL_EDIT),
+			'can_delete' => $common->check_perms2($userId, $grants, ACL_DELETE),
 		]);
 
 		$response->getBody()->write($this->legacyView->render($html, ['hrm', 'user', 'training'], 'hrm::user'));

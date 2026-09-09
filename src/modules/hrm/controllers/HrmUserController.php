@@ -91,6 +91,7 @@ class HrmUserController
 		];
 
 		$users->start = max(0, (int) ($query['start'] ?? 0));
+		$users->length = max(1, (int) ($query['length'] ?? 10));
 		$users->query = (string) ($query['search']['value'] ?? $query['search'] ?? '');
 		$users->order = $trainingColumns[$columnKey] ?? 'phpgw_hrm_training.start_date';
 		$users->sort = strtoupper((string) ($order['dir'] ?? 'DESC')) === 'ASC' ? 'ASC' : 'DESC';

@@ -26,6 +26,7 @@ phpgw::import_class('phpgwapi.datetime');
 class hrm_bouser
 {
 	var $start;
+	var $length;
 	var $query;
 	var $filter;
 	var $sort;
@@ -81,6 +82,7 @@ class hrm_bouser
 		$this->filter	= Sanitizer::get_var('filter', 'int');
 		$this->cat_id	= Sanitizer::get_var('cat_id', 'int');
 		$this->allrows	= Sanitizer::get_var('allrows', 'bool');
+		$this->length	= Sanitizer::get_var('length', 'int', 'REQUEST', 10);
 		$this->userSettings = Settings::getInstance()->get('user');
 		$this->phpgwapi_common = new \phpgwapi_common();
 	}
@@ -147,6 +149,7 @@ class hrm_bouser
 		$values = $this->so->read_training(array(
 			'user_id' => $user_id,
 			'start' => $this->start,
+			'length' => $this->length,
 			'query' => $this->query,
 			'sort' => $this->sort,
 			'order' => $this->order,

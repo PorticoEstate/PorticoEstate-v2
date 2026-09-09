@@ -1,4 +1,5 @@
-(function () {
+(function ()
+{
 	'use strict';
 
 	var config = window.__hrmUsers;
@@ -6,12 +7,12 @@
 
 	AppDatatable.init({
 		id: config.id,
-		ajax: {url: config.apiUrl, method: 'GET'},
+		ajax: { url: config.apiUrl, method: 'GET' },
 		serverSide: true,
 		autoWidth: false,
 		columns: [
-			{data: 'first_name', title: config.lang.firstName},
-			{data: 'last_name', title: config.lang.lastName}
+			{ data: 'first_name', title: config.lang.firstName },
+			{ data: 'last_name', title: config.lang.lastName }
 		],
 		rowActions: [
 			{

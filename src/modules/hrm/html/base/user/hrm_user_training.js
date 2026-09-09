@@ -12,14 +12,16 @@
 			url: config.viewUrlTemplate
 		}
 	];
-	if (config.canEdit) {
+	if (config.canEdit)
+	{
 		rowActions.push({
 			type: 'link',
 			label: config.lang.edit,
 			url: config.editUrlTemplate
 		});
 	}
-	if (config.canDelete) {
+	if (config.canDelete)
+	{
 		rowActions.push({
 			type: 'link',
 			label: config.lang.delete,
@@ -33,7 +35,7 @@
 		ajax: { url: config.apiUrl, method: 'GET' },
 		serverSide: true,
 		autoWidth: false,
-		newItem: config.canAdd ? {label: config.lang.add, url: config.newUrl} : undefined,
+		newItem: config.canAdd ? { label: config.lang.add, url: config.newUrl } : undefined,
 		buttons: [{
 			label: config.lang.cv,
 			url: config.cvUrl,

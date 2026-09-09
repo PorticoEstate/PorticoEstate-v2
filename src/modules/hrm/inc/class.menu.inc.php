@@ -60,10 +60,14 @@ class hrm_menu
 			$start_page = $userSettings['preferences']['hrm']['default_start_page'];
 		}
 
+		$navbarUrl = $start_page === 'user'
+			? phpgw::link('/hrm/view/users')
+			: phpgw::link('/index.php', array('menuaction' => "hrm.ui{$start_page}.index"));
+
 		$menus['navbar'] = array(
 			'hrm' => array(
 				'text'	=> lang('hrm'),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => "hrm.ui{$start_page}.index")),
+				'url'	=> $navbarUrl,
 				'image'	=> array('hrm', 'navbar'),
 				'order'	=> 35,
 				'group'	=> 'facilities management'
@@ -139,7 +143,7 @@ class hrm_menu
 		$menus['navigation'] = array(
 			'user'	=> array(
 				'text'	=> lang('User'),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uiuser.index'))
+				'url'	=> phpgw::link('/hrm/view/users')
 			),
 			'job'	=> array(
 				'text'	=> lang('Job type'),
@@ -176,6 +180,7 @@ class hrm_menu
 	{
 		$level++;
 		$i = 0;
+		$menu = array();
 		foreach ($children as $key => $vals)
 		{
 			$menu[] = $vals;

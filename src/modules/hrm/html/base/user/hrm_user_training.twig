@@ -1,0 +1,29 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Training') }}{% endblock %}
+
+{% block content %}
+	<a href="{{ list_url|e }}">{{ lang('Back to the list') }}</a>
+	{% include '@phpgwapi_components/app_datatable/app_datatable.twig' with {
+		id: 'hrm-training-datatable'
+	} %}
+{% endblock %}
+
+{% block scripts %}
+	<script>
+		window.__hrmTraining = {
+			id: 'hrm-training-datatable',
+			apiUrl: '{{ api_url|e('js') }}',
+			lang: {
+				category: '{{ lang('category')|e('js') }}',
+				title: '{{ lang('training')|e('js') }}',
+				place: '{{ lang('place')|e('js') }}',
+				credits: '{{ lang('credits')|e('js') }}',
+				startDate: '{{ lang('start date')|e('js') }}',
+				endDate: '{{ lang('end date')|e('js') }}',
+				emptyTable: '{{ lang('No data available in table')|e('js') }}'
+			}
+		};
+	</script>
+	<script>{{ source('@views/user/hrm_user_training.js') }}</script>
+{% endblock %}

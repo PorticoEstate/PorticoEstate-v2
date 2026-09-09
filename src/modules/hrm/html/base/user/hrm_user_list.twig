@@ -1,0 +1,38 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('user') }}{% endblock %}
+
+{% block content %}
+	{% include '@phpgwapi_components/app_datatable/app_datatable.twig' with {
+		id: 'hrm-user-datatable'
+	} %}
+{% endblock %}
+
+{% block scripts %}
+	<script>
+		window.__hrmUsers = {
+			id: 'hrm-user-datatable',
+			apiUrl: '{{ api_url|e('js') }}',
+			trainingUrlTemplate: '{{ training_url_template|replace({'__USER_ID__': '{id}'})|e('js') }}',
+			pageLength: {{ rows_per_page|default(10) }},
+			lengthMenu: {{ length_menu|default([10, 25, 50])|json_encode|raw }},
+			lang: {
+				firstName: '{{ lang('First name')|e('js') }}',
+				lastName: '{{ lang('Last name')|e('js') }}',
+				training: '{{ lang('training')|e('js') }}',
+				emptyTable: '{{ lang('No data available in table')|e('js') }}',
+				search: '{{ lang('search')|e('js') }}',
+				info: '{{ lang('Showing _START_ to _END_ of _TOTAL_ entries')|e('js') }}',
+				infoEmpty: '{{ lang('Showing 0 to 0 of 0 entries')|e('js') }}',
+				infoFiltered: '{{ lang('(filtered from _MAX_ total entries)')|e('js') }}',
+				lengthMenu: '{{ lang('Show _MENU_ entries')|e('js') }}',
+				zeroRecords: '{{ lang('No matching records found')|e('js') }}',
+				first: '{{ lang('first')|e('js') }}',
+				last: '{{ lang('last')|e('js') }}',
+				next: '{{ lang('next')|e('js') }}',
+				previous: '{{ lang('prev')|e('js') }}'
+			}
+		};
+	</script>
+	<script>{{ source('@views/user/hrm_user_list.js') }}</script>
+{% endblock %}

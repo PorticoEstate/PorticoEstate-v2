@@ -2,9 +2,11 @@
 
 use App\modules\hrm\helpers\RedirectHelper;
 use App\modules\hrm\controllers\HrmCategoryController;
+use App\modules\hrm\controllers\HrmJobController;
 use App\modules\hrm\controllers\HrmPlaceController;
 use App\modules\hrm\controllers\HrmUserController;
 use App\modules\hrm\viewcontrollers\HrmCategoryViewController;
+use App\modules\hrm\viewcontrollers\HrmJobViewController;
 use App\modules\hrm\viewcontrollers\HrmPlaceViewController;
 use App\modules\hrm\viewcontrollers\HrmUserViewController;
 use App\modules\phpgwapi\security\AccessVerifier;
@@ -32,10 +34,19 @@ $app->group('/hrm', function (RouteCollectorProxy $group)
 	$group->map(['GET', 'POST'], '/view/categories/{type}/new', HrmCategoryViewController::class . ':edit');
 	$group->map(['GET', 'POST'], '/view/categories/{type}/{id:[0-9]+}/edit', HrmCategoryViewController::class . ':edit');
 	$group->map(['GET', 'POST'], '/view/categories/{type}/{id:[0-9]+}/delete', HrmCategoryViewController::class . ':delete');
+	$group->get('/view/jobs', HrmJobViewController::class . ':index');
+	$group->get('/view/jobs/hierarchy', HrmJobViewController::class . ':hierarchy');
+	$group->map(['GET', 'POST'], '/view/jobs/reset-hierarchy', HrmJobViewController::class . ':resetHierarchy');
+	$group->map(['GET', 'POST'], '/view/jobs/pdf', HrmJobViewController::class . ':printPdf');
+	$group->map(['GET', 'POST'], '/view/jobs/new', HrmJobViewController::class . ':edit');
+	$group->get('/view/jobs/{id:[0-9]+}', HrmJobViewController::class . ':view');
+	$group->map(['GET', 'POST'], '/view/jobs/{id:[0-9]+}/edit', HrmJobViewController::class . ':edit');
+	$group->map(['GET', 'POST'], '/view/jobs/{id:[0-9]+}/delete', HrmJobViewController::class . ':delete');
 	$group->get('/users', HrmUserController::class . ':index');
 	$group->get('/users/{id:[0-9]+}/training', HrmUserController::class . ':training');
 	$group->get('/places', HrmPlaceController::class . ':index');
 	$group->get('/categories/{type}', HrmCategoryController::class . ':index');
+	$group->get('/jobs', HrmJobController::class . ':index');
 })
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));

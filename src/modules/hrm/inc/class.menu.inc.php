@@ -63,6 +63,7 @@ class hrm_menu
 		$modernStartPages = array(
 			'user' => phpgw::link('/hrm/view/users'),
 			'place' => phpgw::link('/hrm/view/places'),
+			'job' => phpgw::link('/hrm/view/jobs'),
 		);
 		$navbarUrl = $modernStartPages[$start_page] ?? phpgw::link('/index.php', array('menuaction' => "hrm.ui{$start_page}.index"));
 
@@ -134,11 +135,11 @@ class hrm_menu
 		$job_children = array(
 			'job_type'	=> array(
 				'text'	=> lang('Job type'),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uijob.index'))
+				'url'	=> phpgw::link('/hrm/view/jobs')
 			),
 			'organisation'	=> array(
 				'text'	=> lang('Organisation'),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uijob.hierarchy'))
+				'url'	=> phpgw::link('/hrm/view/jobs/hierarchy')
 			)
 		);
 
@@ -149,7 +150,7 @@ class hrm_menu
 			),
 			'job'	=> array(
 				'text'	=> lang('Job type'),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uijob.index')),
+				'url'	=> phpgw::link('/hrm/view/jobs'),
 				'children' => $job_children
 			),
 			'place'	=> array(

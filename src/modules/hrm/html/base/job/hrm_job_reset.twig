@@ -1,0 +1,30 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('reset hierarchy') }}{% endblock %}
+
+{% block styles %}
+	<style>
+		.hrm-job-reset { max-width: 42rem; margin: 0 auto; }
+		.hrm-job-reset__panel { padding: 1.25rem; border: 1px solid #d5dde6; border-left: .45rem solid #9f1239; border-radius: 6px; background: #fff; }
+		.hrm-job-reset__panel h1 { margin: 0 0 .75rem; font-size: 1.5rem; }
+		.hrm-job-reset__actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+		.hrm-job-reset__button { border: 1px solid #24527a; border-radius: 4px; padding: .45rem .85rem; background: #24527a; color: #fff; text-decoration: none; cursor: pointer; }
+		.hrm-job-reset__button--danger { border-color: #9f1239; background: #9f1239; }
+		.hrm-job-reset__button--secondary { background: #fff; color: #24527a; }
+	</style>
+{% endblock %}
+
+{% block content %}
+	<div class="hrm-job-reset">
+		<div class="hrm-job-reset__panel">
+			<h1>{{ lang('reset hierarchy') }}</h1>
+			<p>{{ lang('do you really want to reset the hierarchy') }}</p>
+			<form method="post" action="{{ form_action|e }}">
+				<div class="hrm-job-reset__actions">
+					<button class="hrm-job-reset__button hrm-job-reset__button--danger" type="submit" name="confirm" value="1">{{ lang('yes') }}</button>
+					<a class="hrm-job-reset__button hrm-job-reset__button--secondary" href="{{ list_url|e }}">{{ lang('no') }}</a>
+				</div>
+			</form>
+		</div>
+	</div>
+{% endblock %}

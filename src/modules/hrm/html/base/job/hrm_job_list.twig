@@ -1,0 +1,59 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('job') }}{% endblock %}
+
+{% block content %}
+	<form id="hrm-job-print-form" method="post" action="{{ print_url|e }}">
+		{% include '@phpgwapi_components/app_datatable/app_datatable.twig' with {
+			id: 'hrm-job-datatable'
+		} %}
+	</form>
+{% endblock %}
+
+{% block scripts %}
+	<script>
+		window.__hrmJobs = {
+			id: 'hrm-job-datatable',
+			apiUrl: '{{ api_url|e('js') }}',
+			newUrl: '{{ new_url|e('js') }}',
+			viewUrlTemplate: '{{ view_url_template|replace({'__JOB_ID__': '{id}'})|e('js') }}',
+			editUrlTemplate: '{{ edit_url_template|replace({'__JOB_ID__': '{id}'})|e('js') }}',
+			deleteUrlTemplate: '{{ delete_url_template|replace({'__JOB_ID__': '{id}'})|e('js') }}',
+			taskUrlTemplate: '{{ task_url_template|replace({'__JOB_ID__': '{id}'})|e('js') }}',
+			qualificationUrlTemplate: '{{ qualification_url_template|replace({'__JOB_ID__': '{id}'})|e('js') }}',
+			addSubUrlTemplate: '{{ add_sub_url_template|replace({'__JOB_ID__': '{id}'})|e('js') }}',
+			resetUrl: '{{ reset_url|e('js') }}',
+			printUrl: '{{ print_url|e('js') }}',
+			canAdd: {{ can_add ? 'true' : 'false' }},
+			canEdit: {{ can_edit ? 'true' : 'false' }},
+			canDelete: {{ can_delete ? 'true' : 'false' }},
+			pageLength: {{ rows_per_page|default(10) }},
+			lengthMenu: {{ length_menu|default([10, 25, 50])|json_encode|raw }},
+			lang: {
+				name: '{{ lang('name')|e('js') }}',
+				descr: '{{ lang('descr')|e('js') }}',
+				qualification: '{{ lang('qualification')|e('js') }}',
+				task: '{{ lang('task')|e('js') }}',
+				add: '{{ lang('add')|e('js') }}',
+				addSub: '{{ lang('Add sub')|e('js') }}',
+				view: '{{ lang('view')|e('js') }}',
+				edit: '{{ lang('edit')|e('js') }}',
+				delete: '{{ lang('delete')|e('js') }}',
+				reset: '{{ lang('reset hierarchy')|e('js') }}',
+				print: '{{ lang('print')|e('js') }}',
+				emptyTable: '{{ lang('No data available in table')|e('js') }}',
+				search: '{{ lang('search')|e('js') }}',
+				info: '{{ lang('Showing _START_ to _END_ of _TOTAL_ entries')|e('js') }}',
+				infoEmpty: '{{ lang('Showing 0 to 0 of 0 entries')|e('js') }}',
+				infoFiltered: '{{ lang('(filtered from _MAX_ total entries)')|e('js') }}',
+				lengthMenu: '{{ lang('Show _MENU_ entries')|e('js') }}',
+				zeroRecords: '{{ lang('No matching records found')|e('js') }}',
+				first: '{{ lang('first')|e('js') }}',
+				last: '{{ lang('last')|e('js') }}',
+				next: '{{ lang('next')|e('js') }}',
+				previous: '{{ lang('prev')|e('js') }}'
+			}
+		};
+	</script>
+	<script>{{ source('@views/job/hrm_job_list.js') }}</script>
+{% endblock %}

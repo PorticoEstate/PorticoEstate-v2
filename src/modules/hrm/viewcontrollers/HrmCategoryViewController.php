@@ -2,6 +2,7 @@
 
 namespace App\modules\hrm\viewcontrollers;
 
+use App\modules\hrm\helpers\ViewSettingsHelper;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
 use App\modules\phpgwapi\services\Settings;
@@ -18,14 +19,6 @@ class HrmCategoryViewController
 	{
 		$this->legacyView = new LegacyViewHelper();
 		$this->twig = new TwigHelper('hrm');
-	}
-
-	private function rowsPerPage(): int
-	{
-		$user = Settings::getInstance()->get('user');
-		return isset($user['preferences']['common']['maxmatchs']) && (int) $user['preferences']['common']['maxmatchs'] > 0
-			? (int) $user['preferences']['common']['maxmatchs']
-			: 10;
 	}
 
 	private function redirect(Response $response, string $url): Response
@@ -88,7 +81,7 @@ class HrmCategoryViewController
 
 		$query = $request->getQueryParams();
 		$typeId = (int) ($query['type_id'] ?? 0);
-		$rowsPerPage = $this->rowsPerPage();
+		$rowsPerPage = ViewSettingsHelper::rowsPerPage();
 		Settings::getInstance()->update('flags', ['app_header' => lang('hrm') . ' - ' . lang($type) . ' ' . $typeId . ': ' . lang('list %1 category', $type)]);
 
 		$html = $this->twig->render('@views/category/hrm_category_list.twig', [
@@ -101,7 +94,7 @@ class HrmCategoryViewController
 			'delete_url_template' => \phpgw::link('/hrm/view/categories/' . $type . '/__CATEGORY_ID__/delete', ['type_id' => $typeId]),
 			'admin_url' => \phpgw::link('/admin/index.php'),
 			'rows_per_page' => $rowsPerPage,
-			'length_menu' => [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3],
+			'length_menu' => ViewSettingsHelper::lengthMenu($rowsPerPage),
 		]);
 
 		$response->getBody()->write($this->legacyView->render($html, ['hrm', 'admin', $type], "admin::hrm::$type"));

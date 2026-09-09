@@ -2,6 +2,7 @@
 
 namespace App\modules\hrm\viewcontrollers;
 
+use App\modules\hrm\helpers\ViewSettingsHelper;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
@@ -18,14 +19,6 @@ class HrmUserViewController
 	{
 		$this->legacyView = new LegacyViewHelper();
 		$this->twig = new TwigHelper('hrm');
-	}
-
-	private function rowsPerPage(): int
-	{
-		$user = Settings::getInstance()->get('user');
-		return isset($user['preferences']['common']['maxmatchs']) && (int) $user['preferences']['common']['maxmatchs'] > 0
-			? (int) $user['preferences']['common']['maxmatchs']
-			: 10;
 	}
 
 	private function redirect(Response $response, string $url): Response
@@ -133,14 +126,14 @@ class HrmUserViewController
 	public function index(Request $request, Response $response): Response
 	{
 		Settings::getInstance()->update('flags', ['app_header' => lang('hrm') . ' - ' . lang('user') . ': ' . lang('list user')]);
-		$rowsPerPage = $this->rowsPerPage();
+		$rowsPerPage = ViewSettingsHelper::rowsPerPage();
 
 		$html = $this->twig->render('@views/user/hrm_user_list.twig', [
 			'layout' => '@views/_bare.twig',
 			'api_url' => \phpgw::link('/hrm/users'),
 			'training_url_template' => \phpgw::link('/hrm/view/users/__USER_ID__/training'),
 			'rows_per_page' => $rowsPerPage,
-			'length_menu' => [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3],
+			'length_menu' => ViewSettingsHelper::lengthMenu($rowsPerPage),
 		]);
 
 		$response->getBody()->write($this->legacyView->render($html, ['hrm', 'user'], 'hrm::user'));
@@ -160,7 +153,7 @@ class HrmUserViewController
 		}
 
 		Settings::getInstance()->update('flags', ['app_header' => lang('hrm') . ' - ' . lang('Training')]);
-		$rowsPerPage = $this->rowsPerPage();
+		$rowsPerPage = ViewSettingsHelper::rowsPerPage();
 		$html = $this->twig->render('@views/user/hrm_user_training.twig', [
 			'layout' => '@views/_bare.twig',
 			'api_url' => \phpgw::link('/hrm/users/' . $userId . '/training'),
@@ -175,7 +168,7 @@ class HrmUserViewController
 			'can_edit' => $common->check_perms2($userId, $grants, ACL_EDIT),
 			'can_delete' => $common->check_perms2($userId, $grants, ACL_DELETE),
 			'rows_per_page' => $rowsPerPage,
-			'length_menu' => [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3],
+			'length_menu' => ViewSettingsHelper::lengthMenu($rowsPerPage),
 		]);
 
 		$response->getBody()->write($this->legacyView->render($html, ['hrm', 'user', 'training'], 'hrm::user'));

@@ -2,6 +2,7 @@
 
 namespace App\modules\hrm\viewcontrollers;
 
+use App\modules\hrm\helpers\ViewSettingsHelper;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
 use App\modules\phpgwapi\services\Settings;
@@ -17,14 +18,6 @@ class HrmPlaceViewController
 	{
 		$this->legacyView = new LegacyViewHelper();
 		$this->twig = new TwigHelper('hrm');
-	}
-
-	private function rowsPerPage(): int
-	{
-		$user = Settings::getInstance()->get('user');
-		return isset($user['preferences']['common']['maxmatchs']) && (int) $user['preferences']['common']['maxmatchs'] > 0
-			? (int) $user['preferences']['common']['maxmatchs']
-			: 10;
 	}
 
 	private function redirect(Response $response, string $url): Response
@@ -79,7 +72,7 @@ class HrmPlaceViewController
 	public function index(Request $request, Response $response): Response
 	{
 		Settings::getInstance()->update('flags', ['app_header' => lang('hrm') . ' - ' . lang('place') . ': ' . lang('list place')]);
-		$rowsPerPage = $this->rowsPerPage();
+		$rowsPerPage = ViewSettingsHelper::rowsPerPage();
 		$html = $this->twig->render('@views/place/hrm_place_list.twig', [
 			'layout' => '@views/_bare.twig',
 			'api_url' => \phpgw::link('/hrm/places'),
@@ -88,7 +81,7 @@ class HrmPlaceViewController
 			'edit_url_template' => \phpgw::link('/hrm/view/places/__PLACE_ID__/edit'),
 			'delete_url_template' => \phpgw::link('/hrm/view/places/__PLACE_ID__/delete'),
 			'rows_per_page' => $rowsPerPage,
-			'length_menu' => [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3],
+			'length_menu' => ViewSettingsHelper::lengthMenu($rowsPerPage),
 		]);
 
 		$response->getBody()->write($this->legacyView->render($html, ['hrm', 'place'], 'hrm::place'));

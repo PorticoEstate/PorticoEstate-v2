@@ -72,4 +72,131 @@ class HrmJobController
 			'data' => $rows,
 		]);
 	}
+
+	public function tasks(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasJobAccess(ACL_READ))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'Access not permitted'], 403);
+		}
+
+		$jobId = (int) ($args['jobId'] ?? 0);
+		$jobs = \CreateObject('hrm.bojob', false);
+		if (!$jobId || !(array) $jobs->read_single_job($jobId))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'Not found'], 404);
+		}
+
+		$query = $request->getQueryParams();
+		$jobs->start = 0;
+		$jobs->query = (string) ($query['search']['value'] ?? $query['search'] ?? '');
+		$jobs->order = '';
+		$jobs->sort = 'ASC';
+		$jobs->allrows = true;
+
+		$rows = [];
+		foreach ((array) $jobs->read_task($jobId) as $task)
+		{
+			$level = (int) ($task['level'] ?? 0);
+			$rows[] = [
+				'id' => (int) ($task['id'] ?? 0),
+				'name' => str_repeat('--', max(0, $level)) . (string) ($task['name'] ?? ''),
+				'descr' => (string) ($task['descr'] ?? ''),
+				'value_sort' => (int) ($task['value_sort'] ?? 0),
+				'level' => $level,
+			];
+		}
+
+		$total = count($rows);
+		return ResponseHelper::sendJSONResponse([
+			'draw' => (int) ($query['draw'] ?? 0),
+			'recordsTotal' => $total,
+			'recordsFiltered' => $total,
+			'data' => $rows,
+		]);
+	}
+
+	public function qualifications(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->hasJobAccess(ACL_READ))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'Access not permitted'], 403);
+		}
+
+		$jobId = (int) ($args['jobId'] ?? 0);
+		$jobs = \CreateObject('hrm.bojob', false);
+		if (!$jobId || !(array) $jobs->read_single_job($jobId))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'Not found'], 404);
+		}
+
+		$query = $request->getQueryParams();
+		$jobs->start = 0;
+		$jobs->query = (string) ($query['search']['value'] ?? $query['search'] ?? '');
+		$jobs->order = '';
+		$jobs->sort = 'ASC';
+		$jobs->allrows = true;
+
+		$rows = [];
+		foreach ((array) $jobs->read_qualification($jobId) as $qualification)
+		{
+			$level = (int) ($qualification['level'] ?? 0);
+			$rows[] = [
+				'id' => (int) ($qualification['quali_id'] ?? 0),
+				'category' => (string) ($qualification['category'] ?? ''),
+				'name' => str_repeat('--> ', max(0, $level)) . (string) ($qualification['name'] ?? ''),
+				'descr' => (string) ($qualification['descr'] ?? ''),
+				'remark' => (string) ($qualification['remark'] ?? ''),
+				'value_sort' => (int) ($qualification['value_sort'] ?? 0),
+				'level' => $level,
+			];
+		}
+
+		$total = count($rows);
+		return ResponseHelper::sendJSONResponse([
+			'draw' => (int) ($query['draw'] ?? 0),
+			'recordsTotal' => $total,
+			'recordsFiltered' => $total,
+			'data' => $rows,
+		]);
+	}
+
+	public function qualificationTypes(Request $request, Response $response): Response
+	{
+		if (!$this->hasJobAccess(ACL_READ))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'Access not permitted'], 403);
+		}
+
+		$query = $request->getQueryParams();
+		$order = $query['order'][0] ?? [];
+		$columns = (array) ($query['columns'] ?? []);
+		$columnIndex = (int) ($order['column'] ?? 0);
+		$columnKey = (string) ($columns[$columnIndex]['data'] ?? 'name');
+		$columnsByKey = ['name' => 'name'];
+		$jobs = \CreateObject('hrm.bojob', false);
+		$jobs->start = max(0, (int) ($query['start'] ?? 0));
+		$jobs->query = (string) ($query['search']['value'] ?? $query['search'] ?? '');
+		$jobs->order = $columnsByKey[$columnKey] ?? 'name';
+		$jobs->sort = strtoupper((string) ($order['dir'] ?? 'asc')) === 'DESC' ? 'DESC' : 'ASC';
+		$jobs->allrows = ((int) ($query['length'] ?? 10)) === -1;
+
+		$rows = [];
+		foreach ((array) $jobs->read_qualification_type() as $type)
+		{
+			$rows[] = [
+				'id' => (int) ($type['id'] ?? 0),
+				'name' => (string) ($type['name'] ?? ''),
+				'descr' => (string) ($type['descr'] ?? ''),
+			];
+		}
+
+		$total = (int) $jobs->total_records;
+		return ResponseHelper::sendJSONResponse([
+			'draw' => (int) ($query['draw'] ?? 0),
+			'recordsTotal' => $total,
+			'recordsFiltered' => $total,
+			'data' => $rows,
+		]);
+	}
 }

@@ -2,6 +2,7 @@
 
 namespace App\modules\hrm\viewcontrollers;
 
+use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
 use App\modules\phpgwapi\services\Settings;
@@ -115,6 +116,20 @@ class HrmUserViewController
 		}, $items);
 	}
 
+	private function sendPdf(Response $response, string $document, string $documentName): Response
+	{
+		$fileName = preg_replace('/[^A-Za-z0-9_.-]+/', '_', $documentName) . '.pdf';
+		$response->getBody()->write($document);
+
+		return $response
+			->withHeader('Content-Disposition', 'attachment; filename="' . $fileName . '"')
+			->withHeader('Content-Type', 'application/x-pdf')
+			->withHeader('Content-Length', (string) strlen($document))
+			->withHeader('Pragma', 'public')
+			->withHeader('Expires', '0')
+			->withHeader('Cache-Control', 'must-revalidate, post-check=0, pre-check=0');
+	}
+
 	public function index(Request $request, Response $response): Response
 	{
 		Settings::getInstance()->update('flags', ['app_header' => lang('hrm') . ' - ' . lang('user') . ': ' . lang('list user')]);
@@ -151,7 +166,7 @@ class HrmUserViewController
 			'api_url' => \phpgw::link('/hrm/users/' . $userId . '/training'),
 			'list_url' => \phpgw::link('/hrm/view/users'),
 			'user_values' => $users->get_user_data($userId),
-			'cv_url' => \phpgw::link('/index.php', ['menuaction' => 'hrm.uiuser.view_cv', 'user_id' => $userId], true),
+			'cv_url' => \phpgw::link('/hrm/view/users/' . $userId . '/training/cv'),
 			'new_url' => \phpgw::link('/hrm/view/users/' . $userId . '/training/new'),
 			'view_url_template' => \phpgw::link('/hrm/view/users/' . $userId . '/training/__TRAINING_ID__'),
 			'edit_url_template' => \phpgw::link('/hrm/view/users/' . $userId . '/training/__TRAINING_ID__/edit'),
@@ -165,6 +180,159 @@ class HrmUserViewController
 
 		$response->getBody()->write($this->legacyView->render($html, ['hrm', 'user', 'training'], 'hrm::user'));
 		return $response->withHeader('Content-Type', 'text/html');
+	}
+
+	public function viewCv(Request $request, Response $response, array $args): Response
+	{
+		$userId = (int) ($args['id'] ?? 0);
+		$users = \CreateObject('hrm.bouser', false);
+		$common = \CreateObject('hrm.bocommon');
+		$grants = (array) $users->grants;
+
+		if (!$userId || !$common->check_perms2($userId, $grants, ACL_READ))
+		{
+			$response->getBody()->write(lang('Access not permitted'));
+			return $response->withStatus(403)->withHeader('Content-Type', 'text/plain');
+		}
+
+		$userValues = (array) $users->get_user_data($userId);
+		$users->allrows = true;
+		$users->order = 'start_date, category';
+		$users->sort = 'ASC';
+		$training = (array) $users->read_training($userId);
+		$userSettings = Settings::getInstance()->get('user');
+		$dateFormat = (string) ($userSettings['preferences']['common']['dateformat'] ?? 'Y-m-d');
+		$phpgwapiCommon = new \phpgwapi_common();
+		$pdf = \CreateObject('phpgwapi.pdf');
+		$contentHeading = [];
+
+		foreach ($userValues as $entry)
+		{
+			if (empty($entry['value']))
+			{
+				continue;
+			}
+
+			$contentHeading[] = [
+				'name' => $entry['name'],
+				'value' => $entry['value'],
+			];
+		}
+
+		$date = $phpgwapiCommon->show_date('', $dateFormat);
+		set_time_limit(1800);
+		$pdf->ezSetMargins(90, 70, 50, 50);
+		$pdf->selectFont('Helvetica');
+
+		$all = $pdf->openObject();
+		$pdf->saveState();
+		$pdf->setStrokeColor(0, 0, 0, 1);
+		$pdf->line(20, 760, 578, 760);
+		$pdf->line(200, 40, 200, 822);
+		$pdf->addText(220, 770, 16, 'CV');
+		$pdf->addText(300, 34, 6, $date);
+		$pdf->restoreState();
+		$pdf->closeObject();
+		$pdf->addObject($all, 'all');
+		$pdf->ezStartPageNumbers(500, 28, 10, 'right', '{PAGENUM} ' . lang('of') . ' {TOTALPAGENUM}', 1);
+
+		$pdf->ezTable(
+			$contentHeading,
+			'',
+			'',
+			[
+				'xPos' => 220,
+				'xOrientation' => 'right',
+				'width' => 300,
+				0,
+				'shaded' => 0,
+				'fontSize' => 10,
+				'gridlines' => 0,
+				'titleFontSize' => 12,
+				'outerLineThickness' => 0,
+				'showHeadings' => 0,
+				'cols' => [
+					'text' => ['justification' => 'left', 'width' => 100],
+					'value' => ['justification' => 'left', 'width' => 200],
+				],
+			]
+		);
+
+		$tableHeader = [
+			'start_date' => ['justification' => 'left', 'width' => 70],
+			'sep' => ['justification' => 'center', 'width' => 15],
+			'end_date' => ['justification' => 'left', 'width' => 70],
+			'spacer' => ['width' => 15],
+			'what' => ['justification' => 'left', 'width' => 300],
+		];
+
+		$categoryOld = '';
+		foreach ($training as $entry)
+		{
+			if (($entry['category'] ?? '') !== $categoryOld)
+			{
+				$content = [[
+					'start_date' => '',
+					'sep' => '',
+					'end_date' => '',
+					'spacer' => '',
+					'what' => $entry['category'] ?? '',
+				]];
+				$pdf->ezSetDy(-20);
+				$pdf->ezTable(
+					$content,
+					'',
+					'',
+					[
+						'xPos' => 50,
+						'xOrientation' => 'right',
+						'width' => 500,
+						'shaded' => 0,
+						'fontSize' => 12,
+						'gridlines' => 0,
+						'titleFontSize' => 12,
+						'outerLineThickness' => 2,
+						'showHeadings' => 0,
+						'cols' => $tableHeader,
+					]
+				);
+			}
+
+			$categoryOld = (string) ($entry['category'] ?? '');
+			$startDate = !empty($entry['start_date']) ? $phpgwapiCommon->show_date($entry['start_date'], $dateFormat) : '';
+			$endDate = !empty($entry['end_date']) ? $phpgwapiCommon->show_date($entry['end_date'], $dateFormat) : '';
+			$content = [[
+				'start_date' => $startDate,
+				'sep' => '-',
+				'end_date' => $endDate,
+				'spacer' => '',
+				'what' => (string) ($entry['title'] ?? '') . ', ' . (string) ($entry['place'] ?? ''),
+			]];
+
+			$pdf->ezTable(
+				$content,
+				'',
+				'',
+				[
+					'xPos' => 50,
+					'xOrientation' => 'right',
+					'width' => 500,
+					0,
+					'shaded' => 0,
+					'fontSize' => 10,
+					'gridlines' => 0,
+					'titleFontSize' => 12,
+					'outerLineThickness' => 2,
+					'showHeadings' => 0,
+					'cols' => $tableHeader,
+				]
+			);
+		}
+
+		$accounts = new Accounts();
+		$documentName = 'CV_' . $accounts->id2name($userId);
+
+		return $this->sendPdf($response, $pdf->ezOutput(), $documentName);
 	}
 
 	public function view(Request $request, Response $response, array $args): Response

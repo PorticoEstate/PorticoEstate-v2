@@ -14,6 +14,7 @@ $app->group('/hrm', function (RouteCollectorProxy $group)
 {
 	$group->get('/view/users', HrmUserViewController::class . ':index');
 	$group->get('/view/users/{id:[0-9]+}/training', HrmUserViewController::class . ':training');
+	$group->get('/view/users/{id:[0-9]+}/training/cv', HrmUserViewController::class . ':viewCv');
 	$group->get('/view/users/{id:[0-9]+}/training/{trainingId:[0-9]+}', HrmUserViewController::class . ':view');
 	$group->map(['GET', 'POST'], '/view/users/{id:[0-9]+}/training/new', HrmUserViewController::class . ':edit');
 	$group->map(['GET', 'POST'], '/view/users/{id:[0-9]+}/training/{trainingId:[0-9]+}/edit', HrmUserViewController::class . ':edit');

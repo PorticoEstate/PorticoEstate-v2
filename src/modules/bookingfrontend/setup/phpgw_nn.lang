@@ -1118,3 +1118,5 @@ split_pool_active_no_effect	bookingfrontend	nn	Denne installasjonen si innstilli
 booking_no_booking_this_date	bookingfrontend	nn	Inga booking finst på denne datoen
 cascade_deleted_allocations_summary	bookingfrontend	nn	{{count}} tildeling(ar) vart òg sletta: {{ids}}
 event_cancellation_closes_application	bookingfrontend	nn	Å avbestille dette arrangementet vil lukke søknaden det høyrer til.
+applications_offline_banner	bookingfrontend	nn	Mista tilkopling til tenaren. Viser sist henta søknadar.
+refresh_unavailable_offline	bookingfrontend	nn	Kan ikkje oppdatere utan tilkopling

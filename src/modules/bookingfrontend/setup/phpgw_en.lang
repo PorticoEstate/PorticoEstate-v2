@@ -1118,3 +1118,5 @@ split_pool_active_no_effect	bookingfrontend	en	This installation's booking pool-
 booking_no_booking_this_date	bookingfrontend	en	No booking exists on this date
 cascade_deleted_allocations_summary	bookingfrontend	en	{{count}} parent allocation(s) were also deleted: {{ids}}
 event_cancellation_closes_application	bookingfrontend	en	Cancelling this event will close the application it belongs to.
+applications_offline_banner	bookingfrontend	en	Lost connection to the server. Showing the last applications that were loaded.
+refresh_unavailable_offline	bookingfrontend	en	Can't refresh without a connection

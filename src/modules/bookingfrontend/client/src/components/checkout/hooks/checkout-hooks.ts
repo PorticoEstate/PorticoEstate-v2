@@ -138,8 +138,11 @@ export function useCheckoutApplications() {
                 total_sum: 0
             });
 
-            // Could also update other related queries if needed
-            // queryClient.invalidateQueries(['applications']);
+            // This is what just turned the checked-out applications into
+            // delivered ones — "My applications" has no other signal that
+            // tells it a new submission exists, so without this it stays on
+            // whatever it last loaded until someone happens to hit Refresh.
+            queryClient.invalidateQueries({queryKey: ['deliveredApplications']});
         },
         onSettled: () => {
             // Always refetch to ensure data is correct
@@ -206,7 +209,11 @@ export function useVippsPaymentStatus() {
             // If payment was completed successfully, invalidate relevant queries
             if (data.status === 'completed' && data.applications_approved) {
                 queryClient.invalidateQueries({queryKey: ['partialApplications']});
-                queryClient.invalidateQueries({queryKey: ['applications']});
+                // 'applications' matches no query this client has (the list is
+                // keyed 'deliveredApplications') -- this never invalidated
+                // anything, so a Vipps-approved application was as invisible on
+                // return as an uncleared checkout submission.
+                queryClient.invalidateQueries({queryKey: ['deliveredApplications']});
             }
         },
         onError: (error: Error) => {

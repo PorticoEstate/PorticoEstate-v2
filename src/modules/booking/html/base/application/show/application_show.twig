@@ -6,6 +6,9 @@
 <style>{{ source('@base_views/_shared/controls.css') }}</style>
 <style>{{ source('@base_views/application/show/application_show.css') }}</style>
 <style>{{ source('@views/components/search_select/search_select.css') }}</style>
+{% if enable_hospitality %}
+<style>{{ source('@base_views/components/hospitality_order_list/hospitality_order_list.css') }}</style>
+{% endif %}
 {% endblock %}
 
 {% block content %}

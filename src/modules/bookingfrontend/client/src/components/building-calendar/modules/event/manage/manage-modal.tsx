@@ -6,9 +6,8 @@ import Dialog from "@/components/dialog/mobile-dialog";
 import Link from "next/link";
 import {PlusIcon} from "@navikt/aksel-icons";
 import {useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
-import {useBookingUser, useBuildingSeasons, useServerSettings} from "@/service/hooks/api-hooks";
+import {useBuildingSeasons, useServerSettings} from "@/service/hooks/api-hooks";
 import {useCurrentBuilding} from "@/components/building-calendar/calendar-context";
-import {isOrgAdmin} from "@/components/building-calendar/util/event-converter";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import {IAPIScheduleEntity} from "@/service/pecalendar.types";
 import {isFutureDate, phpGWLink} from "@/service/util";
@@ -85,8 +84,6 @@ export interface ManageModalAdapter<
 	dialogIdPrefix: string;
 	typeTagLangKey: string;
 	titleName: (entity: TEntity) => string;
-	youAreLangKey: string;
-	youAreParams: (entity: TEntity) => Record<string, string>;
 	overviewExtraRows?: (entity: TEntity, t: TFunction) => ReactNode;
 	newBookingAllocationId: (entity: TEntity) => number | undefined;
 	registerParticipantsType: 'allocation' | 'booking' | 'event';
@@ -208,8 +205,6 @@ function ManageModal<
 	const {t, i18n} = useClientTranslation();
 	const serverSettings = useServerSettings();
 	const currentBuilding = useCurrentBuilding();
-	const {data: bookingUser} = useBookingUser();
-	const isAdminForEntity = isOrgAdmin(bookingUser, entity as any);
 
 	const buildingId = typeof currentBuilding === 'string'
 		? Number(currentBuilding)
@@ -473,19 +468,14 @@ function ManageModal<
 					</div>
 
 					{/* Design :381 — a FIXED 300px sidebar: the "You are" card (:383-384)
-					    then the vertical action stack (:392-397). "Participants" (:386-387,
-					    no REST route) and the cancellation-deadline line (:389, its computed
-					    instant is unserved) are both unreachable for either entity, so the
-					    card carries "You are" alone — thinner than the mock, same shape; it
-					    is not redesigned to fill the space. */}
+					    then the vertical action stack (:392-397). The "You are" card was REMOVED
+					    on operator instruction (task #23606) — "Admin" was never a server role,
+					    only an org delegate check, and the operator asked for it gone. "Participants"
+					    (:386-387, no REST route) and the cancellation-deadline line (:389, its
+					    computed instant is unserved) were already unreachable for either entity
+					    before that removal. The sidebar now carries the action stack ALONE —
+					    thinner than the mock, same shape; it is not redesigned to fill the space. */}
 					<div className={styles.overviewSidebar}>
-						{isAdminForEntity && (
-							<div className={styles.panel}>
-								<span className={styles.eyebrow}>{t('bookingfrontend.you_are')}</span>
-								<span>{t(adapter.youAreLangKey, adapter.youAreParams(entity))}</span>
-							</div>
-						)}
-
 						<div className={styles.overviewActions}>
 							{isInFuture && newBookingAllocationId !== undefined && (
 								<Button asChild variant="secondary" data-color="accent" className={styles.overviewActionButton}>

@@ -41,10 +41,13 @@ interface AllocationManageModalProps {
  * run — so that list is deferred one screen later than the design draws it, not unbuildable. None
  * of the rest is reachable, so none of it is drawn. What IS reachable — organisation, building,
  * resources (with their per-resource participant limits and colours), the occurrence's period and
- * duration, the season's name, the allocation's type and id, and whether the viewer administers the
- * owning organisation — comes straight off the `allocation` prop and the booking user already
- * available on open; no `cancel-preview` call is made to build this screen, since that mutation
- * only fires once the user has chosen to cancel.
+ * duration, the season's name, and the allocation's type and id — comes straight off the
+ * `allocation` prop; no `cancel-preview` call is made to build this screen, since that mutation
+ * only fires once the user has chosen to cancel. Whether the viewer administers the owning
+ * organisation is NOT part of that list any more: the core's `isOrgAdmin`/`useBookingUser` read
+ * that fed the "you are" card was removed along with the card itself (#23606; see
+ * manage-modal.tsx's overview-sidebar docblock) — this adapter's own `youAreLangKey`/
+ * `youAreParams` fields went with it, and nothing here computes org-admin status any more.
  *
  * The recipient recap the design draws in step 2 ("To: case worker · 6 user organisations …") is
  * likewise absent: nothing in the shipped endpoint computes or returns a recipient set.
@@ -54,8 +57,6 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 		dialogIdPrefix: 'allocation-manage',
 		typeTagLangKey: 'bookingfrontend.allocation',
 		titleName: (entity) => entity.organization_name,
-		youAreLangKey: 'bookingfrontend.admin_for_organization',
-		youAreParams: (entity) => ({organization: entity.organization_name}),
 		// Same shape as allocation-popper-actions.tsx's own "+ New booking" link — this modal is
 		// a SECOND consumer of that route, not a replacement for the card's button.
 		newBookingAllocationId: (entity) => entity.id,

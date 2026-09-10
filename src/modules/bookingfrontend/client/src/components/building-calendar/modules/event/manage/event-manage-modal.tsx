@@ -38,14 +38,16 @@ interface EventManageModalProps {
  * optional for exactly this reason, and the title's meta line falls to its existing '—' rather
  * than a fabricated season. There is no `organization_id`/`organization_name` on the wire either
  * (an event's customer may be an org OR a private individual, `customer_identifier_type` decides
- * which); the "you are" sidebar card reuses `isOrgAdmin`'s own event branch (event-converter.ts),
- * which already returns true only for an org-identified event matching the viewer's own org, and
- * `customer_organization_name` is `@Expose`d under that exact same condition (Event.php:145-154),
- * so it is never blank when the card is shown. `entity.name` (`@Default("PRIVATE EVENT")`,
- * `@Expose` conditional on the same visibility rules as the rest of the customer-facing fields)
- * is the title, matching the "actual name, not description" instruction — no per-event
- * description/organizer/equipment row is added; none of that is asked for and none of it is
- * invented here.
+ * which); this adapter reads neither of them, nor `isOrgAdmin`'s own event branch
+ * (event-converter.ts) or `customer_organization_name` — all three fed the "you are" sidebar
+ * card, which was REMOVED on operator instruction (#23606; see manage-modal.tsx's
+ * overview-sidebar docblock). `customer_organization_name` is still `@Expose`d only when the
+ * event is org-identified and matches the viewer's own org (Event.php:145-154) — that server
+ * guarantee is unchanged, it simply has no reader left in this adapter now. `entity.name`
+ * (`@Default("PRIVATE EVENT")`, `@Expose` conditional on the same visibility rules as the rest of
+ * the customer-facing fields) is the title, matching the "actual name, not description"
+ * instruction — no per-event description/organizer/equipment row is added; none of that is asked
+ * for and none of it is invented here.
  *
  * THE CASCADE DISCLOSURE. `cancellation_closes_application` (Event.php:238, `@Expose`
  * unconditionally, computed server-side by ScheduleEntityService::computeCancellationClosesApplication
@@ -84,8 +86,6 @@ const EventManageModal: FC<EventManageModalProps> = ({event, open, onClose}) => 
 		dialogIdPrefix: 'event-manage',
 		typeTagLangKey: 'bookingfrontend.event',
 		titleName: (entity) => entity.name,
-		youAreLangKey: 'bookingfrontend.admin_for_organization',
-		youAreParams: (entity) => ({organization: entity.customer_organization_name ?? ''}),
 		newBookingAllocationId: () => undefined,
 		registerParticipantsType: 'event',
 		editMenuaction: 'bookingfrontend.uievent.edit',

@@ -196,19 +196,6 @@ const EventPopperContent: FC<EventPopperContentProps> = (props) => {
 					<BookingPopperActions booking={eventData}/>
 				)}
 
-				{/*
-				  * The design's `sc-if {{ isPublic }}` on the allocation card. An
-				  * allocation has no is_public field — it is declared on Event only —
-				  * so per henning's ruling this keys off what the client ALREADY
-				  * computes, the viewer-permission signal, and not off any new
-				  * entity-visibility field. Logged out, isOrgAdmin returns false at
-				  * its !user guard, which is exactly the state the design draws.
-				  */}
-				{IEventIsAPIAllocation(eventData) && !userHasAccess && (
-					<span className={styles.popperNotice}>
-						{t('bookingfrontend.log_in_as_org_admin_to_manage_allocation')}
-					</span>
-				)}
 				{IEventIsAPIBooking(eventData) && !!eventData.allocation_id && (
 					<span className={styles.popperNotice}>
 						{t('bookingfrontend.cancelling_booking_frees_hour_back_to_allocation')}

@@ -30,9 +30,11 @@ interface BookingExtraState {
  *
  * WHAT THE OVERVIEW RENDERS, and why it stops there. `IAPIBooking` carries no organisation on the
  * wire at all (no `organization_id`/`organization_name` field on the type — a booking belongs to a
- * GROUP, not directly to an org), so the title and the "you are" panel key off `group_name`, not an
- * organisation, and no organisation contact/admin info is drawn for the same reason it is unreached
- * for allocation. `activity_name` IS reachable (@Expose, computed) and has no allocation analogue,
+ * GROUP, not directly to an org), so the title keys off `group_name`, not an organisation. The
+ * sidebar's "you are" panel that used to key off the same field was REMOVED on operator
+ * instruction (#23606; see manage-modal.tsx's overview-sidebar docblock) — `group_name` now
+ * drives the title alone, and no organisation contact/admin info is drawn for the same reason it
+ * is unreached for allocation. `activity_name` IS reachable (@Expose, computed) and has no allocation analogue,
  * so it is the one extra overview row this adapter adds. `application_id` stays unreached here for
  * the same reason as on the allocation side — nullable, no `@Expose`, `undefined` at runtime.
  *
@@ -46,8 +48,6 @@ const BookingManageModal: FC<BookingManageModalProps> = ({booking, open, onClose
 		dialogIdPrefix: 'booking-manage',
 		typeTagLangKey: 'bookingfrontend.booking',
 		titleName: (entity) => entity.group_name,
-		youAreLangKey: 'bookingfrontend.admin_for_group',
-		youAreParams: (entity) => ({group: entity.group_name}),
 		overviewExtraRows: (entity, t) => (
 			<>
 				<span className={styles.overviewLabel}>{t('bookingfrontend.activity')}</span>

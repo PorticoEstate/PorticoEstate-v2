@@ -1,8 +1,7 @@
 /* Shared control styling for the booking base views. */
 .booking-input,
 .app-input,
-.app-select,
-.ds-input {
+.app-select{
 	box-sizing: border-box;
 	min-height: 2.25rem;
 	padding: 0.5rem;
@@ -15,8 +14,7 @@
 
 .booking-input:focus,
 .app-input:focus,
-.app-select:focus,
-.ds-input:focus {
+.app-select:focus{
 	outline: 2px solid var(--booking-color-accent-base-default, #2a72ba);
 	outline-offset: 1px;
 }
@@ -52,8 +50,7 @@ textarea.booking-modal__input {
 }
 
 .booking-button,
-.app-button,
-.ds-button {
+.app-button{
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -69,15 +66,13 @@ textarea.booking-modal__input {
 }
 
 .booking-button:hover,
-.app-button:hover,
-.ds-button:hover {
+.app-button:hover{
 	background: var(--booking-color-accent-base-hover, #225f9c);
 }
 
 .booking-button[data-variant="secondary"],
 .app-button-secondary,
-.app-button--secondary,
-.ds-button[data-variant="secondary"] {
+.app-button--secondary {
 	background: var(--booking-color-background-default, #fff);
 	color: var(--booking-color-accent-text-default, #20568f);
 }

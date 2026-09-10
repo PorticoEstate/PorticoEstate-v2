@@ -1,4 +1,5 @@
-(function () {
+(function ()
+{
 	'use strict';
 
 	var root = document.getElementById('hospitality-show');
@@ -20,17 +21,21 @@
 	// Shared helpers
 	// ═══════════════════════════════════════════════════════════════════
 
-	function lang(key) {
+	function lang(key)
+	{
 		var el = root.dataset;
 		var result = el['lang' + key];
-		if (!result) {
-			var camelKey = 'lang' + key.split(/[-_]/).map(function (w) {
+		if (!result)
+		{
+			var camelKey = 'lang' + key.split(/[-_]/).map(function (w)
+			{
 				return w.charAt(0).toUpperCase() + w.slice(1);
 			}).join('');
 			result = el[camelKey] || key;
 		}
 		var args = Array.prototype.slice.call(arguments, 1);
-		args.forEach(function (val, i) {
+		args.forEach(function (val, i)
+		{
 			var n = i + 1;
 			result = result.replace('{{%' + n + '}}', val);
 			result = result.replace('%' + n, val);
@@ -38,14 +43,16 @@
 		return result;
 	}
 
-	function esc(str) {
+	function esc(str)
+	{
 		if (str == null) return '';
 		var div = document.createElement('div');
 		div.textContent = String(str);
 		return div.innerHTML;
 	}
 
-	function fmtDate(str) {
+	function fmtDate(str)
+	{
 		if (!str) return '';
 		var d = new Date(str);
 		if (isNaN(d)) return esc(str);
@@ -55,7 +62,8 @@
 		});
 	}
 
-	function section(title, bodyHtml, opts) {
+	function section(title, bodyHtml, opts)
+	{
 		opts = opts || {};
 		var headerExtra = opts.headerHtml || '';
 		return '<div class="app-show__section">' +
@@ -64,7 +72,8 @@
 			'</div>';
 	}
 
-	function field(label, value) {
+	function field(label, value)
+	{
 		if (value == null || value === '') return '';
 		return '<div class="app-show__field">' +
 			'<span class="app-show__label">' + esc(label) + '</span>' +
@@ -72,7 +81,8 @@
 			'</div>';
 	}
 
-	function fieldHtml(label, valueHtml) {
+	function fieldHtml(label, valueHtml)
+	{
 		if (!valueHtml) return '';
 		return '<div class="app-show__field">' +
 			'<span class="app-show__label">' + esc(label) + '</span>' +
@@ -80,7 +90,8 @@
 			'</div>';
 	}
 
-	function showToast(message, type) {
+	function showToast(message, type)
+	{
 		var toast = document.createElement('div');
 		toast.className = 'ds-alert app-show__toast';
 		toast.dataset.color = type || 'success';
@@ -89,16 +100,20 @@
 		setTimeout(function () { toast.remove(); }, 3000);
 	}
 
-	function fetchJson(url) {
-		return fetch(url, { credentials: 'same-origin' }).then(function (res) {
+	function fetchJson(url)
+	{
+		return fetch(url, { credentials: 'same-origin' }).then(function (res)
+		{
 			if (!res.ok) throw new Error('HTTP ' + res.status);
 			return res.json();
 		});
 	}
 
-	function sendJson(method, url, data, extraHeaders) {
+	function sendJson(method, url, data, extraHeaders)
+	{
 		var headers = { 'Content-Type': 'application/json' };
-		if (extraHeaders) {
+		if (extraHeaders)
+		{
 			Object.keys(extraHeaders).forEach(function (k) { headers[k] = extraHeaders[k]; });
 		}
 		return fetch(url, {
@@ -106,9 +121,12 @@
 			credentials: 'same-origin',
 			headers: headers,
 			body: JSON.stringify(data || {})
-		}).then(function (res) {
-			return res.json().then(function (json) {
-				if (res.status === 409 && json.error === 'CONFLICT') {
+		}).then(function (res)
+		{
+			return res.json().then(function (json)
+			{
+				if (res.status === 409 && json.error === 'CONFLICT')
+				{
 					var err = new Error('CONFLICT');
 					err.conflict = true;
 					err.current = json.current;
@@ -123,8 +141,10 @@
 	function putJson(url, data, extraHeaders) { return sendJson('PUT', url, data, extraHeaders); }
 	function postJson(url, data) { return sendJson('POST', url, data); }
 	function patchJson(url, data) { return sendJson('PATCH', url, data); }
-	function deleteJson(url) {
-		return fetch(url, { method: 'DELETE', credentials: 'same-origin' }).then(function (res) {
+	function deleteJson(url)
+	{
+		return fetch(url, { method: 'DELETE', credentials: 'same-origin' }).then(function (res)
+		{
 			if (!res.ok) throw new Error('HTTP ' + res.status);
 			return res.json();
 		});
@@ -147,18 +167,21 @@
 	// Data fetching & initialization
 	// ═══════════════════════════════════════════════════════════════════
 
-	function loadData() {
+	function loadData()
+	{
 		return Promise.all([
 			fetchJson(apiUrl),
 			fetchJson(ordersUrl)
 		]);
 	}
 
-	loadData().then(function (results) {
+	loadData().then(function (results)
+	{
 		hospitalityData = results[0];
 		ordersData = results[1];
 		render();
-	}).catch(function (err) {
+	}).catch(function (err)
+	{
 		document.getElementById('hospitality-loading').hidden = true;
 		var errEl = document.getElementById('hospitality-error');
 		errEl.hidden = false;
@@ -166,8 +189,10 @@
 			lang('error') + ': ' + err.message;
 	});
 
-	function refreshData() {
-		loadData().then(function (results) {
+	function refreshData()
+	{
+		loadData().then(function (results)
+		{
 			hospitalityData = results[0];
 			ordersData = results[1];
 			renderHeader(hospitalityData);
@@ -175,25 +200,31 @@
 			renderResources(hospitalityData);
 			renderArticles(hospitalityData);
 			renderOrders(ordersData);
-		}).catch(function (err) {
+		}).catch(function (err)
+		{
 			showToast(lang('error') + ': ' + err.message, 'danger');
 		});
 	}
 
-	function refreshSection(section) {
-		fetchJson(apiUrl).then(function (data) {
+	function refreshSection(section)
+	{
+		fetchJson(apiUrl).then(function (data)
+		{
 			hospitalityData = data;
 			renderHeader(hospitalityData);
-			switch (section) {
+			switch (section)
+			{
 				case 'details':
 					renderDetails(hospitalityData);
 					break;
 				case 'resources':
 					// If DOM already has building groups, just patch toggle states
 					if (document.getElementById('resource-building-groups') &&
-						document.getElementById('resource-building-groups').children.length > 0) {
+						document.getElementById('resource-building-groups').children.length > 0)
+					{
 						patchResourceToggles();
-					} else {
+					} else
+					{
 						renderResources(hospitalityData);
 					}
 					break;
@@ -201,7 +232,8 @@
 					renderArticles(hospitalityData);
 					break;
 				case 'orders':
-					fetchJson(ordersUrl).then(function (orders) {
+					fetchJson(ordersUrl).then(function (orders)
+					{
 						ordersData = orders;
 						renderOrders(ordersData);
 					});
@@ -209,14 +241,17 @@
 				default:
 					renderDetails(hospitalityData);
 					if (document.getElementById('resource-building-groups') &&
-						document.getElementById('resource-building-groups').children.length > 0) {
+						document.getElementById('resource-building-groups').children.length > 0)
+					{
 						patchResourceToggles();
-					} else {
+					} else
+					{
 						renderResources(hospitalityData);
 					}
 					renderArticles(hospitalityData);
 			}
-		}).catch(function (err) {
+		}).catch(function (err)
+		{
 			showToast(lang('error') + ': ' + err.message, 'danger');
 		});
 	}
@@ -225,24 +260,28 @@
 	// Tab switching
 	// ═══════════════════════════════════════════════════════════════════
 
-	root.addEventListener('click', function (e) {
+	root.addEventListener('click', function (e)
+	{
 		var tab = e.target.closest('.app-show__tab');
 		if (!tab) return;
 
 		var tabName = tab.dataset.tab;
-		root.querySelectorAll('.app-show__tab').forEach(function (t) {
+		root.querySelectorAll('.app-show__tab').forEach(function (t)
+		{
 			var isActive = t === tab;
 			t.classList.toggle('app-show__tab--active', isActive);
 			t.setAttribute('aria-selected', isActive ? 'true' : 'false');
 		});
-		root.querySelectorAll('.app-show__tab-content').forEach(function (tc) {
+		root.querySelectorAll('.app-show__tab-content').forEach(function (tc)
+		{
 			var id = tc.id.replace('tab-', '');
 			tc.hidden = id !== tabName;
 		});
 		history.replaceState(null, '', '#' + tabName);
 	});
 
-	window.addEventListener('hashchange', function () {
+	window.addEventListener('hashchange', function ()
+	{
 		var hash = window.location.hash.replace('#', '');
 		var tab = root.querySelector('[data-tab="' + hash + '"]');
 		if (tab && !tab.classList.contains('app-show__tab--active')) tab.click();
@@ -252,7 +291,8 @@
 	// Main render
 	// ═══════════════════════════════════════════════════════════════════
 
-	function render() {
+	function render()
+	{
 		document.getElementById('hospitality-loading').hidden = true;
 		document.getElementById('hospitality-content').hidden = false;
 
@@ -264,7 +304,8 @@
 
 		// Activate tab from URL hash
 		var hash = window.location.hash.replace('#', '');
-		if (hash && document.getElementById('tab-' + hash)) {
+		if (hash && document.getElementById('tab-' + hash))
+		{
 			var tab = root.querySelector('[data-tab="' + hash + '"]');
 			if (tab) tab.click();
 		}
@@ -274,7 +315,8 @@
 	// Header
 	// ═══════════════════════════════════════════════════════════════════
 
-	function renderHeader(h) {
+	function renderHeader(h)
+	{
 		var activeTag = h.active
 			? '<span class="ds-tag" data-color="success">' + esc(lang('active')) + '</span>'
 			: '<span class="ds-tag" data-color="danger">' + esc(lang('inactive')) + '</span>';
@@ -290,7 +332,8 @@
 		html += '<div class="app-show__meta">';
 		html += '<span class="app-show__meta-item">' + lang('main_resource') + ': <a href="/?menuaction=booking.uiresource.show&id=' + esc(h.resource_id) + '">' + esc(h.resource_name) + '</a></span>';
 		html += '<span class="app-show__meta-item">' + lang('created') + ': ' + fmtDate(h.created) + '</span>';
-		if (h.modified) {
+		if (h.modified)
+		{
 			html += '<span class="app-show__meta-item">' + lang('modified') + ': ' + fmtDate(h.modified) + '</span>';
 		}
 		html += '</div>';
@@ -302,20 +345,24 @@
 	// Inline editing system
 	// ═══════════════════════════════════════════════════════════════════
 
-	function editableField(label, displayValue, fieldName, fieldType, opts) {
+	function editableField(label, displayValue, fieldName, fieldType, opts)
+	{
 		opts = opts || {};
 		var displayHtml = '';
 		var descHtml = opts.description
 			? '<div class="hosp-show__field-desc">' + esc(opts.description) + '</div>'
 			: '';
 
-		if (fieldType === 'checkbox') {
+		if (fieldType === 'checkbox')
+		{
 			displayHtml = displayValue ? lang('yes') : lang('no');
-		} else {
+		} else
+		{
 			displayHtml = esc(displayValue != null ? displayValue : '');
 		}
 
-		if (!canWrite) {
+		if (!canWrite)
+		{
 			return fieldHtml(label, (displayHtml || '&mdash;') + descHtml);
 		}
 
@@ -328,12 +375,15 @@
 			'</span></div>';
 	}
 
-	function deadlineField(label, value, unit, opts) {
+	function deadlineField(label, value, unit, opts)
+	{
 		opts = opts || {};
 		var displayHtml = '';
-		if (value && unit) {
+		if (value && unit)
+		{
 			displayHtml = esc(value) + ' ' + esc(lang(unit));
-		} else {
+		} else
+		{
 			displayHtml = '&mdash;';
 		}
 
@@ -341,7 +391,8 @@
 			? '<div class="hosp-show__field-desc">' + esc(opts.description) + '</div>'
 			: '';
 
-		if (!canWrite) {
+		if (!canWrite)
+		{
 			return fieldHtml(label, displayHtml + descHtml);
 		}
 
@@ -368,31 +419,36 @@
 	];
 
 	// Short chip label: first 3 chars of the translated full weekday name.
-	function weekdayShort(key) {
+	function weekdayShort(key)
+	{
 		var full = lang(key);
 		return full ? full.substring(0, 3) : key;
 	}
 
 	// Decode a hospitality record's open_days into ISO day numbers (1=Mon..7=Sun).
 	// Prefers the API-decoded open_days_list; falls back to the raw bitmask.
-	function openDaysToIso(h) {
+	function openDaysToIso(h)
+	{
 		if (Array.isArray(h.open_days_list)) return h.open_days_list.slice();
 		var mask = (h.open_days == null) ? 127 : Number(h.open_days);
 		var days = [];
-		for (var i = 0; i < 7; i++) {
+		for (var i = 0; i < 7; i++)
+		{
 			if (mask & (1 << i)) days.push(i + 1);
 		}
 		return days;
 	}
 
 	// Encode ISO day numbers into the bitmask (bit0=Mon..bit6=Sun).
-	function isoToOpenDaysMask(isoDays) {
+	function isoToOpenDaysMask(isoDays)
+	{
 		var mask = 0;
 		isoDays.forEach(function (d) { mask |= (1 << (d - 1)); });
 		return mask;
 	}
 
-	function openDaysDisplay(h) {
+	function openDaysDisplay(h)
+	{
 		var iso = openDaysToIso(h);
 		if (!iso.length) return '&mdash;';
 		if (iso.length === 7) return esc(lang('open_days_all'));
@@ -401,14 +457,16 @@
 			.join(', ');
 	}
 
-	function openDaysField(label, h, opts) {
+	function openDaysField(label, h, opts)
+	{
 		opts = opts || {};
 		var displayHtml = openDaysDisplay(h);
 		var descHtml = opts.description
 			? '<div class="hosp-show__field-desc">' + esc(opts.description) + '</div>'
 			: '';
 
-		if (!canWrite) {
+		if (!canWrite)
+		{
 			return fieldHtml(label, displayHtml + descHtml);
 		}
 
@@ -422,19 +480,24 @@
 	}
 
 	// Helper: notify collab about edit start/stop
-	function collabStartEditing(scope) {
-		if (window.__hospWs && window.__hospWs.collab) {
+	function collabStartEditing(scope)
+	{
+		if (window.__hospWs && window.__hospWs.collab)
+		{
 			window.__hospWs.collab.startEditing(scope);
 		}
 	}
-	function collabStopEditing(scope) {
-		if (window.__hospWs && window.__hospWs.collab) {
+	function collabStopEditing(scope)
+	{
+		if (window.__hospWs && window.__hospWs.collab)
+		{
 			window.__hospWs.collab.stopEditing(scope);
 		}
 	}
 
 	// Delegated click handler for pen icons
-	root.addEventListener('click', function (e) {
+	root.addEventListener('click', function (e)
+	{
 		var trigger = e.target.closest('.hosp-show__edit-trigger');
 		if (!trigger) return;
 
@@ -447,40 +510,49 @@
 		var currentDisplay = fieldEl.querySelector('.hosp-show__display');
 
 		var currentValue;
-		if (fieldType === 'checkbox') {
+		if (fieldType === 'checkbox')
+		{
 			currentValue = hospitalityData[fieldName] ? true : false;
-		} else if (fieldType === 'compound') {
+		} else if (fieldType === 'compound')
+		{
 			// deadline compound
 			currentValue = {
 				value: hospitalityData.order_by_time_value || '',
 				unit: hospitalityData.order_by_time_unit || 'hours'
 			};
-		} else if (fieldType === 'weekdays') {
+		} else if (fieldType === 'weekdays')
+		{
 			currentValue = openDaysToIso(hospitalityData);
-		} else {
+		} else
+		{
 			currentValue = hospitalityData[fieldName] != null ? String(hospitalityData[fieldName]) : '';
 		}
 
 		var formHtml = '<div class="hosp-show__edit-form">';
 
-		if (fieldType === 'textarea') {
+		if (fieldType === 'textarea')
+		{
 			formHtml += '<textarea class="hosp-show__edit-input">' + esc(currentValue) + '</textarea>';
-		} else if (fieldType === 'checkbox') {
+		} else if (fieldType === 'checkbox')
+		{
 			formHtml += '<label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer">' +
 				'<input type="checkbox" class="hosp-show__edit-input"' + (currentValue ? ' checked' : '') + '> ' +
 				esc(lang('active')) + '</label>';
-		} else if (fieldType === 'compound') {
+		} else if (fieldType === 'compound')
+		{
 			formHtml += '<div class="hosp-show__compound-field">' +
 				'<input type="number" class="hosp-show__edit-input" data-sub="value" value="' + esc(currentValue.value) + '" min="0">' +
 				'<select class="hosp-show__edit-input" data-sub="unit">' +
 				'<option value="hours"' + (currentValue.unit === 'hours' ? ' selected' : '') + '>' + esc(lang('hours')) + '</option>' +
 				'<option value="days"' + (currentValue.unit === 'days' ? ' selected' : '') + '>' + esc(lang('days')) + '</option>' +
 				'</select></div>';
-		} else if (fieldType === 'weekdays') {
+		} else if (fieldType === 'weekdays')
+		{
 			var selected = {};
 			currentValue.forEach(function (d) { selected[d] = true; });
 			formHtml += '<div class="hosp-show__weekday-chips" role="group" aria-label="' + esc(lang('open_days')) + '">';
-			WEEKDAYS.forEach(function (wd) {
+			WEEKDAYS.forEach(function (wd)
+			{
 				formHtml += '<label class="ds-chip hosp-show__weekday-chip" title="' + esc(lang(wd.key)) + '">' +
 					'<input type="checkbox" class="hosp-show__weekday-input" value="' + wd.iso + '"' + (selected[wd.iso] ? ' checked' : '') + '> ' +
 					esc(weekdayShort(wd.key)) +
@@ -488,7 +560,8 @@
 			});
 			formHtml += '</div>';
 			formHtml += '<div class="hosp-show__edit-error" role="alert" hidden></div>';
-		} else {
+		} else
+		{
 			formHtml += '<input type="text" class="hosp-show__edit-input" value="' + esc(currentValue) + '">';
 		}
 
@@ -506,33 +579,41 @@
 		if (input && input.tagName !== 'DIV') input.focus();
 
 		// Save handler
-		valueSpan.querySelector('.hosp-show__edit-save').addEventListener('click', function () {
+		valueSpan.querySelector('.hosp-show__edit-save').addEventListener('click', function ()
+		{
 			var payload = {};
 
-			if (fieldType === 'checkbox') {
+			if (fieldType === 'checkbox')
+			{
 				payload[fieldName] = input.checked ? 1 : 0;
-			} else if (fieldType === 'compound') {
+			} else if (fieldType === 'compound')
+			{
 				var valInput = valueSpan.querySelector('[data-sub="value"]');
 				var unitInput = valueSpan.querySelector('[data-sub="unit"]');
 				payload.order_by_time_value = valInput.value ? parseInt(valInput.value, 10) : null;
 				payload.order_by_time_unit = unitInput.value;
-			} else if (fieldType === 'weekdays') {
+			} else if (fieldType === 'weekdays')
+			{
 				var checkedInputs = valueSpan.querySelectorAll('.hosp-show__weekday-input:checked');
-				var isoDays = Array.prototype.map.call(checkedInputs, function (cb) {
+				var isoDays = Array.prototype.map.call(checkedInputs, function (cb)
+				{
 					return parseInt(cb.value, 10);
 				});
 				// Guard: mask 0 (no days) is treated as "all open" by the deadline
 				// calc, which is confusing — require at least one day selected.
-				if (!isoDays.length) {
+				if (!isoDays.length)
+				{
 					var errEl = valueSpan.querySelector('.hosp-show__edit-error');
-					if (errEl) {
+					if (errEl)
+					{
 						errEl.textContent = lang('open_days_min_one');
 						errEl.hidden = false;
 					}
 					return;
 				}
 				payload.open_days = isoToOpenDaysMask(isoDays);
-			} else {
+			} else
+			{
 				payload[fieldName] = input.value;
 			}
 
@@ -541,32 +622,40 @@
 
 			// Include modified timestamp for conflict detection
 			var headers = {};
-			if (hospitalityData && hospitalityData.modified) {
+			if (hospitalityData && hospitalityData.modified)
+			{
 				headers['X-If-Modified-Since'] = hospitalityData.modified;
 			}
 
-			putJson(apiUrl, payload, headers).then(function (updated) {
+			putJson(apiUrl, payload, headers).then(function (updated)
+			{
 				collabStopEditing(editScope);
 				hospitalityData = Object.assign(hospitalityData, updated);
 				showToast(lang('saved'));
 				renderDetails(hospitalityData);
 				renderHeader(hospitalityData);
-			}).catch(function (err) {
+			}).catch(function (err)
+			{
 				collabStopEditing(editScope);
-				if (err.conflict) {
-					showConflictDialog(err.current, function () {
+				if (err.conflict)
+				{
+					showConflictDialog(err.current, function ()
+					{
 						// Retry without conflict check
-						putJson(apiUrl, payload).then(function (updated) {
+						putJson(apiUrl, payload).then(function (updated)
+						{
 							hospitalityData = Object.assign(hospitalityData, updated);
 							showToast(lang('saved'));
 							renderDetails(hospitalityData);
 							renderHeader(hospitalityData);
-						}).catch(function (retryErr) {
+						}).catch(function (retryErr)
+						{
 							showToast(lang('error') + ': ' + retryErr.message, 'danger');
 							renderDetails(hospitalityData);
 						});
 					});
-				} else {
+				} else
+				{
 					showToast(lang('error') + ': ' + err.message, 'danger');
 					renderDetails(hospitalityData);
 				}
@@ -574,14 +663,17 @@
 		});
 
 		// Cancel handler
-		valueSpan.querySelector('.hosp-show__edit-cancel').addEventListener('click', function () {
+		valueSpan.querySelector('.hosp-show__edit-cancel').addEventListener('click', function ()
+		{
 			collabStopEditing(editScope);
 			renderDetails(hospitalityData);
 		});
 
 		// Enter key to save (for single-line inputs)
-		if (fieldType === 'text' || fieldType === 'number') {
-			input.addEventListener('keydown', function (e) {
+		if (fieldType === 'text' || fieldType === 'number')
+		{
+			input.addEventListener('keydown', function (e)
+			{
 				if (e.key === 'Enter') valueSpan.querySelector('.hosp-show__edit-save').click();
 				if (e.key === 'Escape') valueSpan.querySelector('.hosp-show__edit-cancel').click();
 			});
@@ -592,7 +684,8 @@
 	// Details tab
 	// ═══════════════════════════════════════════════════════════════════
 
-	function renderDetails(h) {
+	function renderDetails(h)
+	{
 		var html = '';
 
 		// Core info
@@ -645,18 +738,21 @@
 
 	var _inlineBuildingSelect = null;
 
-	function renderResourceToggleRow(r) {
+	function renderResourceToggleRow(r)
+	{
 		var html = '<div class="hosp-show__article-row' + (!r.isAdded ? ' hosp-show__article-row--dimmed' : '') + '">';
 		html += '<span class="hosp-show__article-name">' + esc(r.resource_name) + '</span>';
 
-		if (canWrite) {
+		if (canWrite)
+		{
 			html += '<span class="hosp-show__article-active">' +
 				'<label class="hosp-show__toggle">' +
 				'<input type="checkbox" data-toggle-resource="' + r.resource_id + '"' +
 				(r.isAdded ? ' checked' : '') +
 				' data-resource-added="' + (r.isAdded ? '1' : '0') + '">' +
 				'<span class="hosp-show__toggle-slider"></span></label></span>';
-		} else {
+		} else
+		{
 			var tag = r.isAdded
 				? '<span class="ds-tag" data-color="success">' + esc(lang('yes')) + '</span>'
 				: '';
@@ -667,10 +763,12 @@
 		return html;
 	}
 
-	function renderBuildingGroup(group, allBuildingResources) {
+	function renderBuildingGroup(group, allBuildingResources)
+	{
 		var groupId = 'rl-building-' + (group.id || 'other');
 		var addedMap = {};
-		group.resources.forEach(function (loc) {
+		group.resources.forEach(function (loc)
+		{
 			addedMap[loc.resource_id] = loc;
 		});
 
@@ -678,22 +776,26 @@
 
 		// Determine rows
 		var rows;
-		if (allBuildingResources && canWrite) {
+		if (allBuildingResources && canWrite)
+		{
 			// Writers see all resources in the building for quick toggle
 			rows = allBuildingResources
 				.filter(function (r) { return r.id !== mainResourceId; })
-				.map(function (r) {
+				.map(function (r)
+				{
 					return {
 						resource_id: r.id,
 						resource_name: r.name,
 						isAdded: !!addedMap[r.id]
 					};
 				});
-		} else {
+		} else
+		{
 			// Read-only or "Other" group — just show added resources
 			rows = group.resources
 				.filter(function (loc) { return loc.resource_id !== mainResourceId; })
-				.map(function (loc) {
+				.map(function (loc)
+				{
 					return {
 						resource_id: loc.resource_id,
 						resource_name: loc.resource_name,
@@ -712,11 +814,14 @@
 		html += '</div>';
 		html += '<div class="hosp-show__group-body" data-group-body="' + groupId + '">';
 
-		if (rows.length > 0) {
-			rows.forEach(function (r) {
+		if (rows.length > 0)
+		{
+			rows.forEach(function (r)
+			{
 				html += renderResourceToggleRow(r);
 			});
-		} else {
+		} else
+		{
 			html += '<div class="hosp-show__article-empty">' + esc(lang('noRemoteLocations')) + '</div>';
 		}
 
@@ -724,15 +829,18 @@
 		return html;
 	}
 
-	function populateBuildingGroups(locations) {
+	function populateBuildingGroups(locations)
+	{
 		var container = document.getElementById('resource-building-groups');
 
 		// Group by building
 		var buildingMap = {};
 		var buildingOrder = [];
-		locations.forEach(function (loc) {
+		locations.forEach(function (loc)
+		{
 			var key = loc.building_id ? String(loc.building_id) : '_other';
-			if (!buildingMap[key]) {
+			if (!buildingMap[key])
+			{
 				buildingMap[key] = {
 					id: loc.building_id,
 					name: loc.building_name || lang('other'),
@@ -743,15 +851,18 @@
 			buildingMap[key].resources.push(loc);
 		});
 
-		if (buildingOrder.length === 0) {
+		if (buildingOrder.length === 0)
+		{
 			container.innerHTML = '<p class="app-show__empty">' + esc(lang('noRemoteLocations')) + '</p>';
 			return;
 		}
 
 		// Fetch all resources for each building (parallel) — only for writers
-		var promises = buildingOrder.map(function (key) {
+		var promises = buildingOrder.map(function (key)
+		{
 			var group = buildingMap[key];
-			if (key === '_other' || !canWrite) {
+			if (key === '_other' || !canWrite)
+			{
 				return Promise.resolve({ key: key, allResources: null });
 			}
 			return fetchJson(buildingsUrl + '/' + group.id + '/resources')
@@ -759,9 +870,11 @@
 				.catch(function () { return { key: key, allResources: null }; });
 		});
 
-		Promise.all(promises).then(function (results) {
+		Promise.all(promises).then(function (results)
+		{
 			var html = '';
-			results.forEach(function (result) {
+			results.forEach(function (result)
+			{
 				var group = buildingMap[result.key];
 				html += renderBuildingGroup(group, result.allResources);
 			});
@@ -769,16 +882,19 @@
 		});
 	}
 
-	function initInlineBuildingSearch(existingLocations) {
+	function initInlineBuildingSearch(existingLocations)
+	{
 		var container = document.getElementById('inline-building-select');
 		if (!container) return null;
 
 		return new BuildingSelect(container, {
 			apiUrl: buildingsUrl,
-			onChange: function (buildingId, buildingName) {
+			onChange: function (buildingId, buildingName)
+			{
 				// If building already has a group, scroll to it
 				var existingGroup = document.querySelector('[data-building-group="' + buildingId + '"]');
-				if (existingGroup) {
+				if (existingGroup)
+				{
 					existingGroup.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 					existingGroup.classList.add('hosp-show__highlight');
 					setTimeout(function () { existingGroup.classList.remove('hosp-show__highlight'); }, 1500);
@@ -788,7 +904,8 @@
 				}
 
 				// Fetch resources for this building and add a new group
-				fetchJson(buildingsUrl + '/' + buildingId + '/resources').then(function (resources) {
+				fetchJson(buildingsUrl + '/' + buildingId + '/resources').then(function (resources)
+				{
 					var group = {
 						id: buildingId,
 						name: buildingName,
@@ -804,7 +921,8 @@
 
 					// Scroll to the new group
 					var newGroup = groupsContainer.querySelector('[data-building-group="' + buildingId + '"]');
-					if (newGroup) {
+					if (newGroup)
+					{
 						newGroup.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 					}
 
@@ -815,9 +933,11 @@
 		});
 	}
 
-	function renderResources(h) {
+	function renderResources(h)
+	{
 		// Dispose previous building select
-		if (_inlineBuildingSelect) {
+		if (_inlineBuildingSelect)
+		{
 			_inlineBuildingSelect.dispose();
 			_inlineBuildingSelect = null;
 		}
@@ -825,7 +945,8 @@
 		var html = '';
 
 		// Info banner if remote serving disabled
-		if (!h.remote_serving_enabled) {
+		if (!h.remote_serving_enabled)
+		{
 			html += '<div class="hosp-show__info-banner hosp-show__info-banner--warning">' +
 				'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg> ' +
 				esc(lang('remoteServingDisabled')) +
@@ -836,7 +957,8 @@
 		html += section(lang('mainResource'), fieldHtml(lang('main_resource'), '<a href="/?menuaction=booking.uiresource.show&id=' + esc(h.resource_id) + '">' + esc(h.resource_name) + '</a>'));
 
 		// Inline building search (top, where add button used to be)
-		if (canWrite) {
+		if (canWrite)
+		{
 			html += '<div class="hosp-show__tab-actions">' +
 				'<div id="inline-building-select" class="building-select" style="flex:1;max-width:20rem">' +
 				'<input type="text" class="building-select__input ds-input" autocomplete="off" ' +
@@ -857,7 +979,8 @@
 		populateBuildingGroups(locations);
 
 		// Initialize inline building search
-		if (canWrite) {
+		if (canWrite)
+		{
 			_inlineBuildingSelect = initInlineBuildingSearch(locations);
 		}
 	}
@@ -866,42 +989,51 @@
 	 * Lightweight DOM patch: sync toggle states from fresh hospitalityData
 	 * without tearing down and rebuilding the whole resources tab.
 	 */
-	function patchResourceToggles() {
+	function patchResourceToggles()
+	{
 		var locations = hospitalityData.remote_locations || [];
 		var addedIds = {};
-		locations.forEach(function (loc) {
+		locations.forEach(function (loc)
+		{
 			addedIds[String(loc.resource_id)] = true;
 		});
 
 		// Patch every toggle already in the DOM
 		var toggles = root.querySelectorAll('[data-toggle-resource]');
-		toggles.forEach(function (toggle) {
+		toggles.forEach(function (toggle)
+		{
 			var rid = toggle.dataset.toggleResource;
 			var shouldBeAdded = !!addedIds[rid];
 			var currentlyAdded = toggle.dataset.resourceAdded === '1';
 
-			if (shouldBeAdded !== currentlyAdded) {
+			if (shouldBeAdded !== currentlyAdded)
+			{
 				toggle.checked = shouldBeAdded;
 				updateRowAndCount(toggle, shouldBeAdded);
 			}
 		});
 	}
 
-	function updateRowAndCount(toggle, added) {
+	function updateRowAndCount(toggle, added)
+	{
 		var row = toggle.closest('.hosp-show__article-row');
-		if (row) {
+		if (row)
+		{
 			row.classList.toggle('hosp-show__article-row--dimmed', !added);
 		}
 		toggle.dataset.resourceAdded = added ? '1' : '0';
 
 		// Update the count tag in the parent building group header
 		var group = toggle.closest('[data-building-group]');
-		if (group) {
+		if (group)
+		{
 			var countTag = group.querySelector('.hosp-show__group-header .ds-tag');
-			if (countTag) {
+			if (countTag)
+			{
 				var allToggles = group.querySelectorAll('[data-toggle-resource]');
 				var addedCount = 0;
-				allToggles.forEach(function (t) {
+				allToggles.forEach(function (t)
+				{
 					if (t.dataset.resourceAdded === '1') addedCount++;
 				});
 				countTag.textContent = addedCount + ' / ' + allToggles.length;
@@ -910,36 +1042,43 @@
 	}
 
 	// Toggle resource on/off (add/remove remote location)
-	root.addEventListener('change', function (e) {
+	root.addEventListener('change', function (e)
+	{
 		var toggle = e.target.closest('[data-toggle-resource]');
 		if (!toggle) return;
 		var resourceId = toggle.dataset.toggleResource;
 		var wasAdded = toggle.dataset.resourceAdded === '1';
 
-		if (toggle.checked && !wasAdded) {
+		if (toggle.checked && !wasAdded)
+		{
 			// Add as remote location — update DOM immediately
 			updateRowAndCount(toggle, true);
 			postJson(apiUrl + '/remote-locations', { resource_id: parseInt(resourceId, 10) })
-				.then(function () {
+				.then(function ()
+				{
 					showToast(lang('saved'));
 					// Silently refresh data in background
 					fetchJson(apiUrl).then(function (data) { hospitalityData = data; });
 				})
-				.catch(function (err) {
+				.catch(function (err)
+				{
 					toggle.checked = false;
 					updateRowAndCount(toggle, false);
 					showToast(lang('error') + ': ' + err.message, 'danger');
 				});
-		} else if (!toggle.checked && wasAdded) {
+		} else if (!toggle.checked && wasAdded)
+		{
 			// Remove remote location — update DOM immediately
 			updateRowAndCount(toggle, false);
 			deleteJson(apiUrl + '/remote-locations/' + resourceId)
-				.then(function () {
+				.then(function ()
+				{
 					showToast(lang('saved'));
 					// Silently refresh data in background
 					fetchJson(apiUrl).then(function (data) { hospitalityData = data; });
 				})
-				.catch(function (err) {
+				.catch(function (err)
+				{
 					toggle.checked = true;
 					updateRowAndCount(toggle, true);
 					showToast(lang('error') + ': ' + err.message, 'danger');
@@ -951,16 +1090,18 @@
 	// Articles tab
 	// ═══════════════════════════════════════════════════════════════════
 
-	function renderArticles(h) {
+	function renderArticles(h)
+	{
 		var html = '';
 		var groups = h.article_groups || [];
 		var allArticles = h.articles || [];
 
 		// Add group button
-		if (canWrite) {
+		if (canWrite)
+		{
 			html += '<div class="hosp-show__tab-actions">' +
-				'<button type="button" class="ds-button" data-size="sm" data-action="add-group">' + esc(lang('add')) + ' ' + esc(lang('group')) + '</button>' +
-				'<button type="button" class="ds-button" data-size="sm" data-action="add-article">' + esc(lang('add')) + ' ' + esc(lang('article')) + '</button>' +
+				'<button type="button" class="booking-button ds-button" data-size="sm" data-action="add-group">' + esc(lang('add')) + ' ' + esc(lang('group')) + '</button>' +
+				'<button type="button" class="booking-button ds-button" data-size="sm" data-action="add-article">' + esc(lang('add')) + ' ' + esc(lang('article')) + '</button>' +
 				'</div>';
 		}
 
@@ -968,7 +1109,8 @@
 		html += '<div class="hosp-show__groups-container" data-dnd-groups>';
 
 		// Groups as collapsible cards
-		groups.forEach(function (group, gi) {
+		groups.forEach(function (group, gi)
+		{
 			var groupArticles = (group.articles || []);
 			var activeTag = group.active
 				? '<span class="ds-tag" data-color="success">' + esc(lang('active')) + '</span>'
@@ -977,20 +1119,23 @@
 			html += '<div class="hosp-show__article-group" data-group-id="' + group.id + '" data-group-index="' + gi + '">';
 			html += '<div class="hosp-show__group-header" aria-expanded="true" data-group-toggle="' + group.id + '">';
 
-			if (canWrite) {
+			if (canWrite)
+			{
 				html += '<span class="hosp-show__drag-handle" data-drag-handle-group="' + group.id + '" title="' + esc(lang('dragToReorder')) + '">' + gripIcon + '</span>';
 			}
 
 			html += '<div class="hosp-show__group-title">' + chevronIcon + ' ' + esc(group.name) + ' ' + activeTag +
 				' <span class="ds-tag" data-color="neutral">' + groupArticles.length + '</span></div>';
 
-			if (canWrite) {
+			if (canWrite)
+			{
 				html += '<div class="hosp-show__group-actions">';
-				if (!group.active) {
-					html += '<button type="button" class="ds-button" data-size="sm" data-reactivate-group="' + group.id + '" title="' + esc(lang('active')) + '">&#x21bb;</button>';
+				if (!group.active)
+				{
+					html += '<button type="button" class="booking-button ds-button" data-size="sm" data-reactivate-group="' + group.id + '" title="' + esc(lang('active')) + '">&#x21bb;</button>';
 				}
-				html += '<button type="button" class="ds-button" data-size="sm" data-edit-group="' + group.id + '" title="' + esc(lang('edit')) + '">' + penIcon + '</button>' +
-					'<button type="button" class="ds-button" data-size="sm" data-color="danger" data-delete-group="' + group.id + '" title="' + esc(lang('delete')) + '">' + trashIcon + '</button>' +
+				html += '<button type="button" class="booking-button ds-button" data-size="sm" data-edit-group="' + group.id + '" title="' + esc(lang('edit')) + '">' + penIcon + '</button>' +
+					'<button type="button" class="booking-button ds-button" data-size="sm" data-color="danger" data-delete-group="' + group.id + '" title="' + esc(lang('delete')) + '">' + trashIcon + '</button>' +
 					'</div>';
 			}
 			html += '</div>';
@@ -1011,7 +1156,8 @@
 				'<div class="hosp-show__article-empty">' + esc(lang('noArticles')) + '</div>') +
 			'</div></div>';
 
-		if (groups.length === 0 && ungrouped.length === 0) {
+		if (groups.length === 0 && ungrouped.length === 0)
+		{
 			html += '<p class="app-show__empty">' + esc(lang('noArticles')) + '</p>';
 		}
 
@@ -1021,9 +1167,11 @@
 		root.dispatchEvent(new CustomEvent('hospitality:articles-rendered', { bubbles: true }));
 	}
 
-	function renderArticleHeader(groupId) {
+	function renderArticleHeader(groupId)
+	{
 		var html = '<div class="hosp-show__article-row hosp-show__article-row--header">';
-		if (canWrite && groupId) {
+		if (canWrite && groupId)
+		{
 			html += '<span class="hosp-show__drag-handle hosp-show__drag-handle--placeholder"></span>';
 		}
 		html += '<span class="hosp-show__article-name">' + esc(lang('name')) + '</span>';
@@ -1032,20 +1180,24 @@
 		html += '<span class="hosp-show__article-price">' + esc(lang('overridePrice')) + '</span>';
 		html += '<span class="hosp-show__article-price hosp-show__article-price--effective">' + esc(lang('effectivePrice')) + '</span>';
 		html += '<span class="hosp-show__article-active">' + esc(lang('active')) + '</span>';
-		if (canWrite) {
+		if (canWrite)
+		{
 			html += '<span class="hosp-show__article-actions"></span>';
 		}
 		html += '</div>';
 		return html;
 	}
 
-	function renderArticleRows(articles, groupId) {
-		if (!articles || articles.length === 0) {
+	function renderArticleRows(articles, groupId)
+	{
+		if (!articles || articles.length === 0)
+		{
 			return '<div class="hosp-show__article-empty">' + esc(lang('noArticles')) + '</div>';
 		}
 
 		var html = renderArticleHeader(groupId);
-		articles.forEach(function (a, i) {
+		articles.forEach(function (a, i)
+		{
 			var activeTag = a.active
 				? '<span class="ds-tag" data-color="success">' + esc(lang('yes')) + '</span>'
 				: '<span class="ds-tag" data-color="danger">' + esc(lang('no')) + '</span>';
@@ -1056,7 +1208,8 @@
 			html += '<div class="hosp-show__article-row" data-article-id="' + a.id + '"' +
 				(groupId ? ' data-group-id="' + groupId + '" data-article-index="' + i + '"' : '') + '>';
 
-			if (canWrite && groupId) {
+			if (canWrite && groupId)
+			{
 				html += '<span class="hosp-show__drag-handle" data-drag-handle-article="' + a.id + '" title="' + esc(lang('dragToReorder')) + '">' + gripIcon + '</span>';
 			}
 
@@ -1067,10 +1220,11 @@
 			html += '<span class="hosp-show__article-price hosp-show__article-price--effective">' + effectivePrice + '</span>';
 			html += '<span class="hosp-show__article-active">' + activeTag + '</span>';
 
-			if (canWrite) {
+			if (canWrite)
+			{
 				html += '<span class="hosp-show__article-actions">' +
-					'<button type="button" class="ds-button" data-size="sm" data-edit-article="' + a.id + '" title="' + esc(lang('edit')) + '">' + penIcon + '</button> ' +
-					'<button type="button" class="ds-button" data-size="sm" data-color="danger" data-delete-article="' + a.id + '" title="' + esc(lang('delete')) + '">' + trashIcon + '</button>' +
+					'<button type="button" class="booking-button ds-button" data-size="sm" data-edit-article="' + a.id + '" title="' + esc(lang('edit')) + '">' + penIcon + '</button> ' +
+					'<button type="button" class="booking-button ds-button" data-size="sm" data-color="danger" data-delete-article="' + a.id + '" title="' + esc(lang('delete')) + '">' + trashIcon + '</button>' +
 					'</span>';
 			}
 
@@ -1081,7 +1235,8 @@
 	}
 
 	// Group collapse/expand
-	root.addEventListener('click', function (e) {
+	root.addEventListener('click', function (e)
+	{
 		var header = e.target.closest('[data-group-toggle]');
 		if (!header) return;
 		// Don't toggle when clicking action buttons
@@ -1095,13 +1250,15 @@
 	});
 
 	// Add group
-	root.addEventListener('click', function (e) {
+	root.addEventListener('click', function (e)
+	{
 		if (!e.target.closest('[data-action="add-group"]')) return;
 		showGroupModal(null);
 	});
 
 	// Edit group
-	root.addEventListener('click', function (e) {
+	root.addEventListener('click', function (e)
+	{
 		var btn = e.target.closest('[data-edit-group]');
 		if (!btn) return;
 		e.stopPropagation();
@@ -1111,39 +1268,46 @@
 	});
 
 	// Delete group
-	root.addEventListener('click', function (e) {
+	root.addEventListener('click', function (e)
+	{
 		var btn = e.target.closest('[data-delete-group]');
 		if (!btn) return;
 		e.stopPropagation();
 		if (!confirm(lang('confirmDelete'))) return;
 		var groupId = btn.dataset.deleteGroup;
 		btn.disabled = true;
-		deleteJson(apiUrl + '/article-groups/' + groupId).then(function () {
+		deleteJson(apiUrl + '/article-groups/' + groupId).then(function ()
+		{
 			showToast(lang('saved'));
 			refreshData();
-		}).catch(function (err) {
+		}).catch(function (err)
+		{
 			btn.disabled = false;
 			showToast(lang('error') + ': ' + err.message, 'danger');
 		});
 	});
 
 	// Reactivate group
-	root.addEventListener('click', function (e) {
+	root.addEventListener('click', function (e)
+	{
 		var btn = e.target.closest('[data-reactivate-group]');
 		if (!btn) return;
 		e.stopPropagation();
 		var groupId = btn.dataset.reactivateGroup;
 		btn.disabled = true;
-		patchJson(apiUrl + '/article-groups/' + groupId + '/reactivate', {}).then(function () {
+		patchJson(apiUrl + '/article-groups/' + groupId + '/reactivate', {}).then(function ()
+		{
 			showToast(lang('saved'));
 			refreshData();
-		}).catch(function (err) {
+		}).catch(function (err)
+		{
 			btn.disabled = false;
 			showToast(lang('error') + ': ' + err.message, 'danger');
 		});
 	});
 
-	function showGroupModal(group) {
+	function showGroupModal(group)
+	{
 		var isEdit = !!group;
 		var title = isEdit ? lang('edit') + ' ' + lang('group') : lang('add') + ' ' + lang('group');
 
@@ -1153,12 +1317,13 @@
 			'<input type="number" id="modal-group-sort" class="app-show__modal-textarea" style="min-height:auto;height:2.25rem" value="' + (isEdit ? (group.sort_order || 0) : 0) + '">' +
 			'<label class="app-show__modal-checkbox"><input type="checkbox" id="modal-group-active"' + (isEdit ? (group.active ? ' checked' : '') : ' checked') + '> ' + esc(lang('active')) + '</label>';
 
-		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="ds-button" id="modal-group-submit">' + esc(lang('save')) + '</button>';
+		var footer = '<button type="button" class="booking-button ds-button" data-variant="secondary" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="booking-button ds-button" id="modal-group-submit">' + esc(lang('save')) + '</button>';
 
 		showModal('group-dialog', title, body, footer);
 
-		document.getElementById('modal-group-submit').addEventListener('click', function () {
+		document.getElementById('modal-group-submit').addEventListener('click', function ()
+		{
 			var name = document.getElementById('modal-group-name').value.trim();
 			if (!name) { document.getElementById('modal-group-name').focus(); return; }
 
@@ -1176,11 +1341,13 @@
 				? putJson(apiUrl + '/article-groups/' + group.id, data)
 				: postJson(apiUrl + '/article-groups', data);
 
-			promise.then(function () {
+			promise.then(function ()
+			{
 				closeModal('group-dialog');
 				showToast(lang('saved'));
 				refreshData();
-			}).catch(function (err) {
+			}).catch(function (err)
+			{
 				btn.disabled = false;
 				btn.textContent = lang('save');
 				showToast(lang('error') + ': ' + err.message, 'danger');
@@ -1189,13 +1356,15 @@
 	}
 
 	// Add article
-	root.addEventListener('click', function (e) {
+	root.addEventListener('click', function (e)
+	{
 		if (!e.target.closest('[data-action="add-article"]')) return;
 		showArticleModal(null);
 	});
 
 	// Edit article
-	root.addEventListener('click', function (e) {
+	root.addEventListener('click', function (e)
+	{
 		var btn = e.target.closest('[data-edit-article]');
 		if (!btn) return;
 		var articleId = parseInt(btn.dataset.editArticle, 10);
@@ -1204,36 +1373,42 @@
 	});
 
 	// Delete article
-	root.addEventListener('click', function (e) {
+	root.addEventListener('click', function (e)
+	{
 		var btn = e.target.closest('[data-delete-article]');
 		if (!btn) return;
 		if (!confirm(lang('confirmDelete'))) return;
 		var articleId = btn.dataset.deleteArticle;
 		btn.disabled = true;
-		deleteJson(apiUrl + '/articles/' + articleId).then(function () {
+		deleteJson(apiUrl + '/articles/' + articleId).then(function ()
+		{
 			showToast(lang('saved'));
 			refreshData();
-		}).catch(function (err) {
+		}).catch(function (err)
+		{
 			btn.disabled = false;
 			showToast(lang('error') + ': ' + err.message, 'danger');
 		});
 	});
 
-	function showArticleModal(article) {
+	function showArticleModal(article)
+	{
 		var isEdit = !!article;
 		var title = isEdit ? lang('edit') + ' ' + lang('article') : lang('add') + ' ' + lang('article');
 		var groups = hospitalityData.article_groups || [];
 
 		var body = '';
 
-		if (!isEdit) {
+		if (!isEdit)
+		{
 			body += '<label class="app-show__modal-label">' + esc(lang('selectArticle')) + ' *</label>' +
 				'<div id="modal-article-select-container" class="article-select">' +
 				'<input type="text" class="article-select__input app-show__modal-textarea" style="min-height:auto;height:2.25rem" placeholder="' + esc(lang('selectArticle')) + '..." autocomplete="off" aria-expanded="false" aria-autocomplete="list" role="combobox">' +
 				'<input type="hidden" id="modal-article-mapping-value">' +
 				'<ul class="article-select__dropdown" role="listbox"></ul>' +
 				'</div>';
-		} else {
+		} else
+		{
 			body += '<p><strong>' + esc(article.article_name || article.name) + '</strong> (' + esc(article.unit) + ')</p>';
 		}
 
@@ -1261,7 +1436,8 @@
 		body += '<label class="app-show__modal-checkbox"><input type="checkbox" id="modal-article-hidden-frontend"' + (isEdit && article.deactivate_in_frontend ? ' checked' : '') + '> ' + esc(lang('hiddenFromFrontend')) + '</label>';
 
 		// Expandable "Article Details" section (edit mode only)
-		if (isEdit) {
+		if (isEdit)
+		{
 			var chevronSvg = '<svg class="hosp-show__details-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>';
 			body += '<div class="hosp-show__article-details-section">' +
 				'<button type="button" class="hosp-show__details-toggle" id="article-details-toggle" aria-expanded="false">' +
@@ -1277,7 +1453,8 @@
 				'<input type="text" id="modal-detail-code" class="app-show__modal-textarea" style="min-height:auto;height:2.25rem" value="' + esc(article.article_code || '') + '">' +
 				'<label class="app-show__modal-label" for="modal-detail-unit" style="margin-top:0.75rem">' + esc(lang('unit')) + '</label>' +
 				'<select id="modal-detail-unit" class="app-show__modal-textarea" style="min-height:auto;height:2.25rem">' +
-				['each', 'kg', 'm', 'm2', 'minute', 'hour', 'day'].map(function (u) {
+				['each', 'kg', 'm', 'm2', 'minute', 'hour', 'day'].map(function (u)
+				{
 					return '<option value="' + u + '"' + (article.unit === u ? ' selected' : '') + '>' + esc(lang('unit_' + u)) + '</option>';
 				}).join('') +
 				'</select>' +
@@ -1292,8 +1469,8 @@
 				'</div></div>';
 		}
 
-		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-modal-close>' + esc(lang('cancel')) + '</button>' +
-			'<button type="button" class="ds-button" id="modal-article-submit">' + esc(lang('save')) + '</button>';
+		var footer = '<button type="button" class="booking-button ds-button" data-variant="secondary" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="booking-button ds-button" id="modal-article-submit">' + esc(lang('save')) + '</button>';
 
 		showModal('article-dialog', title, body, footer);
 
@@ -1301,7 +1478,8 @@
 		var descMlt = null;
 		var detailNameMlt = null;
 		var detailTaxSelector = null;
-		MultiLanguageText.fetchLanguages().then(function (langs) {
+		MultiLanguageText.fetchLanguages().then(function (langs)
+		{
 			descMlt = new MultiLanguageText(
 				document.getElementById('modal-article-desc-mlt'),
 				{
@@ -1315,7 +1493,8 @@
 			);
 
 			// Initialize article detail name MLT (edit mode only)
-			if (isEdit && document.getElementById('modal-detail-name-mlt')) {
+			if (isEdit && document.getElementById('modal-detail-name-mlt'))
+			{
 				detailNameMlt = new MultiLanguageText(
 					document.getElementById('modal-detail-name-mlt'),
 					{
@@ -1331,11 +1510,14 @@
 		});
 
 		// Initialize article details collapsible toggle (edit mode only)
-		if (isEdit) {
+		if (isEdit)
+		{
 			var detailsToggle = document.getElementById('article-details-toggle');
 			var detailsBody = document.getElementById('article-details-body');
-			if (detailsToggle && detailsBody) {
-				detailsToggle.addEventListener('click', function () {
+			if (detailsToggle && detailsBody)
+			{
+				detailsToggle.addEventListener('click', function ()
+				{
 					var expanded = this.getAttribute('aria-expanded') === 'true';
 					this.setAttribute('aria-expanded', expanded ? 'false' : 'true');
 					detailsBody.hidden = expanded;
@@ -1344,10 +1526,12 @@
 
 			// Initialize tax code SearchSelect for article details
 			var taxContainer = document.getElementById('modal-detail-tax-container');
-			if (taxContainer && taxListUrl) {
+			if (taxContainer && taxListUrl)
+			{
 				detailTaxSelector = new SearchSelect(taxContainer, {
 					apiUrl: taxListUrl,
-					mapResponse: function (resp) {
+					mapResponse: function (resp)
+					{
 						return Array.isArray(resp) ? resp : (resp.data || []);
 					},
 					placeholder: lang('taxCode') + '...',
@@ -1364,18 +1548,22 @@
 			emptyLabel: '-- ' + lang('ungroupedArticles') + ' --',
 			allowCreate: true,
 			createLabel: lang('add') + ' "{query}"',
-			onCreate: function (name) {
+			onCreate: function (name)
+			{
 				return postJson(apiUrl + '/article-groups', { name: name })
-					.then(function (created) {
+					.then(function (created)
+					{
 						return created;
 					})
-					.catch(function (err) {
+					.catch(function (err)
+					{
 						showToast(lang('error') + ': ' + err.message, 'danger');
 						return null;
 					});
 			}
 		};
-		if (isEdit) {
+		if (isEdit)
+		{
 			groupOpts.value = article.article_group_id || null;
 		}
 		var groupSelector = new SearchSelect(
@@ -1385,7 +1573,8 @@
 
 		// Initialize article search select for new articles
 		var articleSelector = null;
-		if (!isEdit) {
+		if (!isEdit)
+		{
 			var existingMappingIds = (hospitalityData.articles || []).map(function (a) { return a.article_mapping_id; });
 			articleSelector = new ArticleSelect(
 				document.getElementById('modal-article-select-container'),
@@ -1412,45 +1601,56 @@
 			);
 		}
 
-		document.getElementById('modal-article-submit').addEventListener('click', function () {
+		document.getElementById('modal-article-submit').addEventListener('click', function ()
+		{
 			var btn = this;
 			btn.disabled = true;
 			btn.textContent = '...';
 
-			function resetBtn() {
+			function resetBtn()
+			{
 				btn.disabled = false;
 				btn.textContent = lang('save');
 			}
 
 			// If in create mode, create the article first, then save
 			var getMappingId;
-			if (!isEdit && articleSelector && articleSelector.inCreateMode) {
+			if (!isEdit && articleSelector && articleSelector.inCreateMode)
+			{
 				getMappingId = articleSelector.submitCreate();
-			} else if (!isEdit) {
+			} else if (!isEdit)
+			{
 				var mappingId = articleSelector.getValue();
 				if (!mappingId) { articleSelector.input.focus(); resetBtn(); return; }
 				getMappingId = Promise.resolve(mappingId);
-			} else {
+			} else
+			{
 				getMappingId = Promise.resolve(null);
 			}
 
-			getMappingId.then(function (mappingId) {
+			getMappingId.then(function (mappingId)
+			{
 				// If article details section has changes, save those first
 				var detailPromise = Promise.resolve();
-				if (isEdit && document.getElementById('article-details-body') && !document.getElementById('article-details-body').hidden) {
+				if (isEdit && document.getElementById('article-details-body') && !document.getElementById('article-details-body').hidden)
+				{
 					var detailData = {};
 					var hasDetailChanges = false;
 
 					// Name (MLT)
-					if (detailNameMlt) {
+					if (detailNameMlt)
+					{
 						var nameValues = detailNameMlt.getValue();
 						var origValues = article.service_name_json || {};
-						if (JSON.stringify(nameValues) !== JSON.stringify(origValues)) {
+						if (JSON.stringify(nameValues) !== JSON.stringify(origValues))
+						{
 							detailData.name_json = nameValues;
 							// Use first non-empty value as plain name
 							var langOrder = ['no', 'en', 'nn'];
-							for (var li = 0; li < langOrder.length; li++) {
-								if (nameValues[langOrder[li]] && nameValues[langOrder[li]].trim()) {
+							for (var li = 0; li < langOrder.length; li++)
+							{
+								if (nameValues[langOrder[li]] && nameValues[langOrder[li]].trim())
+								{
 									detailData.name = nameValues[langOrder[li]].trim();
 									break;
 								}
@@ -1461,22 +1661,26 @@
 
 					// Article code
 					var codeVal = document.getElementById('modal-detail-code').value.trim();
-					if (codeVal !== (article.article_code || '')) {
+					if (codeVal !== (article.article_code || ''))
+					{
 						detailData.article_code = codeVal;
 						hasDetailChanges = true;
 					}
 
 					// Unit
 					var unitVal = document.getElementById('modal-detail-unit').value;
-					if (unitVal !== article.unit) {
+					if (unitVal !== article.unit)
+					{
 						detailData.unit = unitVal;
 						hasDetailChanges = true;
 					}
 
 					// Tax code
-					if (detailTaxSelector) {
+					if (detailTaxSelector)
+					{
 						var taxVal = detailTaxSelector.getValue();
-						if (taxVal && parseInt(taxVal, 10) !== article.base_tax_code) {
+						if (taxVal && parseInt(taxVal, 10) !== article.base_tax_code)
+						{
 							detailData.tax_code = parseInt(taxVal, 10);
 							hasDetailChanges = true;
 						}
@@ -1485,19 +1689,23 @@
 					// Base price
 					var basePriceVal = document.getElementById('modal-detail-base-price').value;
 					var origBasePrice = article.base_price != null ? String(article.base_price) : '';
-					if (basePriceVal !== origBasePrice) {
+					if (basePriceVal !== origBasePrice)
+					{
 						detailData.price = basePriceVal !== '' ? parseFloat(basePriceVal) : null;
 						hasDetailChanges = true;
 					}
 
-					if (hasDetailChanges && articleMappingUrl) {
+					if (hasDetailChanges && articleMappingUrl)
+					{
 						detailPromise = putJson(articleMappingUrl + '/' + article.article_mapping_id, detailData);
 					}
 				}
 
-				return detailPromise.then(function () {
+				return detailPromise.then(function ()
+				{
 					var data = {};
-					if (!isEdit) {
+					if (!isEdit)
+					{
 						data.article_mapping_id = mappingId;
 					}
 
@@ -1520,11 +1728,13 @@
 
 					return promise;
 				});
-			}).then(function () {
+			}).then(function ()
+			{
 				closeModal('article-dialog');
 				showToast(lang('saved'));
 				refreshData();
-			}).catch(function (err) {
+			}).catch(function (err)
+			{
 				resetBtn();
 				showToast(lang('error') + ': ' + err.message, 'danger');
 			});
@@ -1535,14 +1745,16 @@
 	// Orders tab
 	// ═══════════════════════════════════════════════════════════════════
 
-	function renderOrders(orders) {
+	function renderOrders(orders)
+	{
 		var container = document.getElementById('hospitality-orders');
 
 		// Render "create order" button above the list (hospitality-specific)
 		var actionsHtml = '';
-		if (canWrite) {
+		if (canWrite)
+		{
 			actionsHtml = '<div class="hosp-show__tab-actions">' +
-				'<button type="button" class="ds-button" data-size="sm" data-action="create-order">' + esc(lang('createOrder')) + '</button>' +
+				'<button type="button" class="booking-button ds-button" data-size="sm" data-action="create-order">' + esc(lang('createOrder')) + '</button>' +
 				'</div>';
 		}
 
@@ -1557,7 +1769,8 @@
 	}
 
 	// Create order
-	root.addEventListener('click', function (e) {
+	root.addEventListener('click', function (e)
+	{
 		if (!e.target.closest('[data-action="create-order"]')) return;
 		HospitalityOrderModal.open({
 			hospitalityId: parseInt(root.dataset.hospitalityId, 10),
@@ -1581,7 +1794,8 @@
 	// Modal system (reused from application_show pattern)
 	// ═══════════════════════════════════════════════════════════════════
 
-	function showModal(id, title, bodyHtml, footerHtml) {
+	function showModal(id, title, bodyHtml, footerHtml)
+	{
 		var existing = document.getElementById(id);
 		if (existing) existing.remove();
 
@@ -1591,7 +1805,7 @@
 		dialog.innerHTML =
 			'<div class="ds-dialog__block" style="display:flex;align-items:center;justify-content:space-between">' +
 			'<h3 style="margin:0">' + esc(title) + '</h3>' +
-			'<button type="button" class="ds-button" data-variant="tertiary" data-icon data-modal-close aria-label="Lukk">&times;</button>' +
+			'<button type="button" class="booking-button ds-button" data-variant="tertiary" data-icon data-modal-close aria-label="Lukk">&times;</button>' +
 			'</div>' +
 			'<div class="ds-dialog__block">' + bodyHtml + '</div>' +
 			'<div class="ds-dialog__block" style="display:flex;justify-content:flex-end;gap:0.5rem">' + footerHtml + '</div>';
@@ -1599,15 +1813,19 @@
 		document.body.appendChild(dialog);
 		dialog.showModal();
 
-		dialog.addEventListener('click', function (e) {
-			if (e.target.closest('[data-modal-close]')) {
+		dialog.addEventListener('click', function (e)
+		{
+			if (e.target.closest('[data-modal-close]'))
+			{
 				closeModal(id);
-			} else if (e.target === dialog) {
+			} else if (e.target === dialog)
+			{
 				closeModal(id);
 			}
 		});
 
-		dialog.addEventListener('close', function () {
+		dialog.addEventListener('close', function ()
+		{
 			dialog.remove();
 		});
 
@@ -1617,9 +1835,11 @@
 		return dialog;
 	}
 
-	function closeModal(id) {
+	function closeModal(id)
+	{
 		var dialog = document.getElementById(id);
-		if (dialog) {
+		if (dialog)
+		{
 			dialog.close();
 			dialog.remove();
 		}
@@ -1632,19 +1852,23 @@
 	var COLLAB_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 	var peerColorMap = {};
 
-	function getPeerColor(peerId) {
-		if (!peerColorMap[peerId]) {
+	function getPeerColor(peerId)
+	{
+		if (!peerColorMap[peerId])
+		{
 			var idx = Object.keys(peerColorMap).length % COLLAB_COLORS.length;
 			peerColorMap[peerId] = COLLAB_COLORS[idx];
 		}
 		return peerColorMap[peerId];
 	}
 
-	function renderPresence(peers) {
+	function renderPresence(peers)
+	{
 		var bar = document.getElementById('collab-presence-bar');
 		if (!bar) return;
 
-		if (!peers || peers.length === 0) {
+		if (!peers || peers.length === 0)
+		{
 			bar.innerHTML = '';
 			return;
 		}
@@ -1653,7 +1877,8 @@
 			'<span class="collab-presence__label">' + esc(lang('viewers')) + ':</span>' +
 			'<span class="collab-presence__peers">';
 
-		peers.forEach(function (p) {
+		peers.forEach(function (p)
+		{
 			var color = getPeerColor(p.peerId);
 			html += '<span class="collab-presence__peer">' +
 				'<span class="collab-presence__dot" style="background:' + color + '"></span>' +
@@ -1665,7 +1890,8 @@
 		bar.innerHTML = html;
 	}
 
-	function showEditIndicator(peerId, userName, scope) {
+	function showEditIndicator(peerId, userName, scope)
+	{
 		// scope format: "field:name", "article:42", "drag:articles"
 		var parts = scope.split(':');
 		var type = parts[0];
@@ -1674,12 +1900,15 @@
 		var badgeId = 'collab-badge-' + peerId + '-' + scope.replace(/[^a-zA-Z0-9]/g, '_');
 
 		var targetEl = null;
-		if (type === 'field') {
+		if (type === 'field')
+		{
 			targetEl = root.querySelector('[data-editable="' + key + '"]');
-		} else if (type === 'article') {
+		} else if (type === 'article')
+		{
 			targetEl = root.querySelector('[data-edit-article="' + key + '"]');
 			if (targetEl) targetEl = targetEl.closest('.hosp-show__article-row');
-		} else if (type === 'drag') {
+		} else if (type === 'drag')
+		{
 			targetEl = root.querySelector('[data-dnd-' + key + ']') || root.querySelector('#hospitality-articles');
 		}
 
@@ -1689,7 +1918,8 @@
 		targetEl.style.setProperty('--collab-color', color);
 
 		// Add name badge if not already present
-		if (!document.getElementById(badgeId)) {
+		if (!document.getElementById(badgeId))
+		{
 			var badge = document.createElement('span');
 			badge.id = badgeId;
 			badge.className = 'collab-editing__badge';
@@ -1700,29 +1930,36 @@
 		}
 	}
 
-	function removeEditIndicator(peerId, scope) {
+	function removeEditIndicator(peerId, scope)
+	{
 		var badgeId = 'collab-badge-' + peerId + '-' + scope.replace(/[^a-zA-Z0-9]/g, '_');
 		var badge = document.getElementById(badgeId);
-		if (badge) {
+		if (badge)
+		{
 			var parent = badge.parentElement;
 			badge.remove();
 			// Only remove collab-editing class if no more badges remain
-			if (parent && !parent.querySelector('.collab-editing__badge')) {
+			if (parent && !parent.querySelector('.collab-editing__badge'))
+			{
 				parent.classList.remove('collab-editing');
 				parent.style.removeProperty('--collab-color');
 			}
 		}
 	}
 
-	function showConnectionStatus(connected) {
+	function showConnectionStatus(connected)
+	{
 		var bar = document.getElementById('collab-presence-bar');
 		if (!bar) return;
 
 		var existing = bar.querySelector('.collab-status');
-		if (connected) {
+		if (connected)
+		{
 			if (existing) existing.remove();
-		} else {
-			if (!existing) {
+		} else
+		{
+			if (!existing)
+			{
 				var el = document.createElement('div');
 				el.className = 'collab-status collab-status--reconnecting';
 				el.textContent = lang('reconnecting') + '...';
@@ -1731,38 +1968,44 @@
 		}
 	}
 
-	function showDeletedBanner() {
+	function showDeletedBanner()
+	{
 		var bar = document.getElementById('collab-presence-bar');
 		if (!bar) return;
 		bar.innerHTML = '<div class="collab-deleted-banner">' + esc(lang('entityDeleted')) + '</div>';
 
 		// Disable all interactive elements
-		root.querySelectorAll('button, input, select, textarea').forEach(function (el) {
+		root.querySelectorAll('button, input, select, textarea').forEach(function (el)
+		{
 			el.disabled = true;
 		});
 	}
 
-	function showConflictDialog(currentData, retryFn) {
+	function showConflictDialog(currentData, retryFn)
+	{
 		var body = '<p>' + esc(lang('conflictMessage')) + '</p>';
-		if (currentData) {
+		if (currentData)
+		{
 			body += '<div class="collab-conflict__current">' +
 				'<strong>' + esc(lang('serverVersion')) + ':</strong><br>' +
 				esc(JSON.stringify(currentData, null, 2).substring(0, 500)) +
 				'</div>';
 		}
 
-		var footer = '<button type="button" class="ds-button" data-variant="secondary" data-modal-close id="conflict-keep-theirs">' + esc(lang('keepTheirs')) + '</button>' +
-			'<button type="button" class="ds-button" id="conflict-overwrite">' + esc(lang('overwriteWithMine')) + '</button>';
+		var footer = '<button type="button" class="booking-button ds-button" data-variant="secondary" data-modal-close id="conflict-keep-theirs">' + esc(lang('keepTheirs')) + '</button>' +
+			'<button type="button" class="booking-button ds-button" id="conflict-overwrite">' + esc(lang('overwriteWithMine')) + '</button>';
 
 		showModal('collab-conflict-dialog', lang('editConflict'), body, footer);
 
-		document.getElementById('conflict-keep-theirs').addEventListener('click', function () {
+		document.getElementById('conflict-keep-theirs').addEventListener('click', function ()
+		{
 			// Accept server version — refresh
 			closeModal('collab-conflict-dialog');
 			refreshData();
 		});
 
-		document.getElementById('conflict-overwrite').addEventListener('click', function () {
+		document.getElementById('conflict-overwrite').addEventListener('click', function ()
+		{
 			closeModal('collab-conflict-dialog');
 			if (retryFn) retryFn();
 		});

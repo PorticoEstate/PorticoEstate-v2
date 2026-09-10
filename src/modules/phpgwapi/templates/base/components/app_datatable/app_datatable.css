@@ -166,8 +166,46 @@
 .app-datatable .dt-buttons {
 	display: flex;
 	flex-wrap: wrap;
+	justify-content: flex-start;
 	gap: var(--app-datatable-space-sm, 0.5rem);
 	margin-bottom: var(--app-datatable-space-sm, 0.5rem);
+}
+
+@media screen and (max-width: 767px) {
+	.app-datatable div.dt-container div.dt-layout-row:not(.dt-layout-table) {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+	}
+
+	.app-datatable div.dt-container div.dt-layout-row:not(.dt-layout-table) div.dt-layout-cell {
+		display: flex;
+		align-items: center;
+		margin: 0.5em 0;
+		text-align: left;
+	}
+
+	.app-datatable div.dt-container div.dt-layout-row:not(.dt-layout-table) div.dt-layout-cell.dt-layout-start {
+		justify-content: flex-start;
+		margin-right: auto;
+	}
+
+	.app-datatable div.dt-container div.dt-layout-row:not(.dt-layout-table) div.dt-layout-cell.dt-layout-end {
+		justify-content: flex-end;
+		margin-left: auto;
+		text-align: right;
+	}
+
+	.app-datatable .dt-search {
+		display: flex;
+		justify-content: flex-end;
+		align-items: center;
+		width: 100%;
+	}
+
+	.app-datatable .dt-buttons {
+		justify-content: flex-start;
+	}
 }
 
 .dt-button-collection button.app-button.buttons-columnVisibility {

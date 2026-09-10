@@ -1,17 +1,21 @@
-(function () {
+(function ()
+{
 	'use strict';
 
 	var lookupCache = {};
 
-	function escapeHtml(str) {
+	function escapeHtml(str)
+	{
 		if (!str && str !== 0) return '';
 		var div = document.createElement('div');
 		div.appendChild(document.createTextNode(String(str)));
 		return div.innerHTML;
 	}
 
-	function resolveTemplate(template, data) {
-		return template.replace(/\{(\w+)\}/g, function (_, key) {
+	function resolveTemplate(template, data)
+	{
+		return template.replace(/\{(\w+)\}/g, function (_, key)
+		{
 			var val = data[key];
 			return val != null ? encodeURIComponent(val) : '';
 		});
@@ -21,10 +25,12 @@
 	// Built-in render factories
 	// ------------------------------------------------------------------
 	var render = {
-		link: function (opts) {
+		link: function (opts)
+		{
 			var urlTpl = opts.url;
 			var target = opts.target || '';
-			return function (data, type, row) {
+			return function (data, type, row)
+			{
 				if (type !== 'display') return data != null ? data : '';
 				var url = resolveTemplate(urlTpl, row);
 				var targetAttr = target ? ' target="' + escapeHtml(target) + '"' : '';
@@ -32,35 +38,42 @@
 			};
 		},
 
-		lookup: function (opts) {
+		lookup: function (opts)
+		{
 			var source = opts.source;
 			var valueKey = opts.valueKey || 'value';
 			var labelKey = opts.labelKey || 'label';
 			var map = null;
 			var pending = null;
 
-			function load() {
+			function load()
+			{
 				if (map) return Promise.resolve(map);
 				if (pending) return pending;
-				if (lookupCache[source]) {
+				if (lookupCache[source])
+				{
 					map = lookupCache[source];
 					return Promise.resolve(map);
 				}
-				pending = fetch(source, {credentials: 'same-origin'})
-					.then(function (r) {
+				pending = fetch(source, { credentials: 'same-origin' })
+					.then(function (r)
+					{
 						if (!r.ok) throw new Error('HTTP ' + r.status);
 						return r.json();
 					})
-					.then(function (items) {
+					.then(function (items)
+					{
 						map = {};
-						items.forEach(function (item) {
+						items.forEach(function (item)
+						{
 							map[item[valueKey]] = item[labelKey];
 						});
 						lookupCache[source] = map;
 						pending = null;
 						return map;
 					})
-					.catch(function () {
+					.catch(function ()
+					{
 						pending = null;
 						map = {};
 						return map;
@@ -68,7 +81,8 @@
 				return pending;
 			}
 
-			var renderer = function (data, type) {
+			var renderer = function (data, type)
+			{
 				if (type !== 'display') return data != null ? data : '';
 				if (!map) return escapeHtml(data);
 				return escapeHtml(map[data] || data || '');
@@ -78,20 +92,26 @@
 			return renderer;
 		},
 
-		date: function (opts) {
+		date: function (opts)
+		{
 			var locale = (opts && opts.locale) || 'nb-NO';
-			return function (data, type) {
+			return function (data, type)
+			{
 				if (type !== 'display' || !data) return data || '';
-				try {
+				try
+				{
 					return new Date(data).toLocaleDateString(locale);
-				} catch (e) {
+				} catch (e)
+				{
 					return escapeHtml(data);
 				}
 			};
 		},
 
-		html: function () {
-			return function (data) {
+		html: function ()
+		{
+			return function (data)
+			{
 				return data != null ? data : '';
 			};
 		}
@@ -100,7 +120,8 @@
 	// ------------------------------------------------------------------
 	// Alert system
 	// ------------------------------------------------------------------
-	function createAlertSystem(container) {
+	function createAlertSystem(container)
+	{
 		var successEl = document.createElement('div');
 		successEl.className = 'app-datatable__alert app-datatable__alert--success is-hidden';
 		var dangerEl = document.createElement('div');
@@ -113,41 +134,48 @@
 
 		var timer = null;
 
-		function hideAll() {
+		function hideAll()
+		{
 			successEl.classList.add('is-hidden');
 			successEl.classList.remove('is-fading');
 			dangerEl.classList.add('is-hidden');
 			dangerEl.classList.remove('is-fading');
 		}
 
-		function show(type, msg) {
+		function show(type, msg)
+		{
 			if (timer) clearTimeout(timer);
 			hideAll();
 			var el = type === 'success' ? successEl : dangerEl;
 			el.textContent = msg;
 			el.classList.remove('is-hidden', 'is-fading');
-			timer = setTimeout(function () {
+			timer = setTimeout(function ()
+			{
 				el.classList.add('is-fading');
-				setTimeout(function () {
+				setTimeout(function ()
+				{
 					el.classList.add('is-hidden');
 				}, 300);
 			}, 4000);
 		}
 
-		function message(msg) {
+		function message(msg)
+		{
 			messageEl.innerHTML = msg;
-			if (msg) {
+			if (msg)
+			{
 				setTimeout(function () { messageEl.innerHTML = ''; }, 3000);
 			}
 		}
 
-		return {show: show, hideAll: hideAll, message: message};
+		return { show: show, hideAll: hideAll, message: message };
 	}
 
 	// ------------------------------------------------------------------
 	// Filter system
 	// ------------------------------------------------------------------
-	function buildFilters(container, filters, config) {
+	function buildFilters(container, filters, config)
+	{
 		if (!filters || !filters.length) return null;
 
 		var stateKey = config.stateKey;
@@ -167,7 +195,8 @@
 		var toolbar = document.createElement('div');
 		toolbar.className = 'app-datatable__filter-toolbar';
 
-		if (collapsible) {
+		if (collapsible)
+		{
 			var toggleBtn = document.createElement('button');
 			toggleBtn.type = 'button';
 			toggleBtn.className = 'app-button';
@@ -191,20 +220,24 @@
 		// Filter panel
 		var filtersDiv = document.createElement('div');
 		filtersDiv.className = 'app-datatable__filters';
-		if (collapsible) {
+		if (collapsible)
+		{
 			filtersDiv.classList.add('app-datatable__filters--collapsed');
 		}
 
 		var state = {};
-		if (stateKey) {
-			try {
+		if (stateKey)
+		{
+			try
+			{
 				state = JSON.parse(sessionStorage.getItem(stateKey + '_filters') || '{}');
 			} catch (e) { /* ignore */ }
 		}
 
 		var inputs = [];
 
-		filters.forEach(function (f) {
+		filters.forEach(function (f)
+		{
 			var group = document.createElement('div');
 			group.className = 'app-datatable__filter-group';
 
@@ -216,36 +249,42 @@
 			var input;
 			var savedVal = state[f.name];
 
-			if (f.type === 'select') {
+			if (f.type === 'select')
+			{
 				input = document.createElement('select');
 				input.className = 'app-input';
 				input.setAttribute('data-app-datatable-role', 'filter-input');
 				input.id = 'filter-' + f.name;
 				if (f.multiple) input.multiple = true;
-				(f.options || []).forEach(function (opt) {
+				(f.options || []).forEach(function (opt)
+				{
 					var option = document.createElement('option');
 					option.value = opt.value;
 					option.textContent = opt.label;
-					if (savedVal != null ? String(opt.value) === String(savedVal) : opt.selected) {
+					if (savedVal != null ? String(opt.value) === String(savedVal) : opt.selected)
+					{
 						option.selected = true;
 					}
 					input.appendChild(option);
 				});
-			} else if (f.type === 'checkbox') {
+			} else if (f.type === 'checkbox')
+			{
 				input = document.createElement('input');
 				input.className = 'app-input';
 				input.setAttribute('data-app-datatable-role', 'filter-input');
 				input.type = 'checkbox';
 				input.id = 'filter-' + f.name;
 				input.checked = savedVal != null ? !!savedVal : !!f.checked;
-			} else if (f.type === 'date') {
+			} else if (f.type === 'date')
+			{
 				input = document.createElement('input');
 				input.className = 'app-input';
 				input.setAttribute('data-app-datatable-role', 'filter-input');
 				input.type = 'date';
 				input.id = 'filter-' + f.name;
 				input.value = savedVal || f.value || '';
-			} else {
+			} else
+			{
 				input = document.createElement('input');
 				input.className = 'app-input';
 				input.setAttribute('data-app-datatable-role', 'filter-input');
@@ -260,74 +299,92 @@
 			input.title = f.label || '';
 			group.appendChild(input);
 			filtersDiv.appendChild(group);
-			inputs.push({el: input, config: f});
+			inputs.push({ el: input, config: f });
 		});
 
 		wrapper.appendChild(filtersDiv);
 		container.appendChild(wrapper);
 
 		// Auto-expand if few filters
-		if (collapsible && filters.length < 5) {
+		if (collapsible && filters.length < 5)
+		{
 			filtersDiv.classList.remove('app-datatable__filters--collapsed');
 		}
 
-		if (collapsible && toggleBtn) {
-			toggleBtn.addEventListener('click', function () {
+		if (collapsible && toggleBtn)
+		{
+			toggleBtn.addEventListener('click', function ()
+			{
 				filtersDiv.classList.toggle('app-datatable__filters--collapsed');
 			});
 		}
 
-		function getValues() {
+		function getValues()
+		{
 			var vals = {};
-			inputs.forEach(function (inp) {
+			inputs.forEach(function (inp)
+			{
 				var el = inp.el;
 				var name = inp.config.name;
-				if (el.type === 'checkbox') {
+				if (el.type === 'checkbox')
+				{
 					vals[name] = el.checked;
-				} else {
+				} else
+				{
 					vals[name] = el.value;
 				}
 			});
 			return vals;
 		}
 
-		function saveState() {
+		function saveState()
+		{
 			if (!stateKey) return;
-			try {
+			try
+			{
 				sessionStorage.setItem(stateKey + '_filters', JSON.stringify(getValues()));
 			} catch (e) { /* ignore */ }
 		}
 
-		function getActiveFilters() {
+		function getActiveFilters()
+		{
 			var vals = getValues();
 			var activeFilters = [];
-			inputs.forEach(function (inp) {
+			inputs.forEach(function (inp)
+			{
 				var v = vals[inp.config.name];
 				var label = inp.config.label || inp.config.name;
-				if (inp.config.type === 'checkbox') {
-					if (v) activeFilters.push({name: inp.config.name, label: label});
-				} else if (inp.config.type === 'select') {
+				if (inp.config.type === 'checkbox')
+				{
+					if (v) activeFilters.push({ name: inp.config.name, label: label });
+				} else if (inp.config.type === 'select')
+				{
 					var firstOpt = inp.config.options && inp.config.options[0];
-					if (v && firstOpt && String(v) !== String(firstOpt.value)) {
-						activeFilters.push({name: inp.config.name, label: label});
+					if (v && firstOpt && String(v) !== String(firstOpt.value))
+					{
+						activeFilters.push({ name: inp.config.name, label: label });
 					}
-				} else {
-					if (v) activeFilters.push({name: inp.config.name, label: label});
+				} else
+				{
+					if (v) activeFilters.push({ name: inp.config.name, label: label });
 				}
 			});
 			return activeFilters;
 		}
 
-		function updateIndicator() {
+		function updateIndicator()
+		{
 			var activeFilters = getActiveFilters();
 			activeFiltersEl.innerHTML = '';
-			if (activeFilters.length > 0) {
+			if (activeFilters.length > 0)
+			{
 				var label = document.createElement('span');
 				label.className = 'app-datatable__active-filters-label';
 				label.textContent = (filterLang.activeFilters || 'Active filters') + ':';
 				activeFiltersEl.appendChild(label);
 
-				activeFilters.forEach(function (filter) {
+				activeFilters.forEach(function (filter)
+				{
 					var chip = document.createElement('span');
 					chip.className = 'app-datatable__filter-chip';
 					var chipLabel = document.createElement('span');
@@ -346,40 +403,50 @@
 					activeFiltersEl.appendChild(chip);
 				});
 				resetBtn.classList.remove('is-hidden');
-			} else {
+			} else
+			{
 				resetBtn.classList.add('is-hidden');
 			}
 		}
 
-		function resetFilter(name) {
-			var input = inputs.find(function (candidate) {
+		function resetFilter(name)
+		{
+			var input = inputs.find(function (candidate)
+			{
 				return candidate.config.name === name;
 			});
 			if (!input) return;
 
-			if (input.el.type === 'checkbox') {
+			if (input.el.type === 'checkbox')
+			{
 				input.el.checked = !!input.config.checked;
-			} else if (input.el.tagName === 'SELECT') {
+			} else if (input.el.tagName === 'SELECT')
+			{
 				input.el.selectedIndex = 0;
-			} else {
+			} else
+			{
 				input.el.value = input.config.value || '';
 			}
 		}
 
-		function reset() {
-			inputs.forEach(function (inp) {
+		function reset()
+		{
+			inputs.forEach(function (inp)
+			{
 				resetFilter(inp.config.name);
 			});
 			saveState();
 			updateIndicator();
 		}
 
-		resetBtn.addEventListener('click', function () {
+		resetBtn.addEventListener('click', function ()
+		{
 			reset();
 			wrapper.dispatchEvent(new Event('filter-change'));
 		});
 
-		activeFiltersEl.addEventListener('click', function (event) {
+		activeFiltersEl.addEventListener('click', function (event)
+		{
 			var remove = event.target.closest('[data-app-datatable-action="remove-filter"]');
 			if (!remove) return;
 			resetFilter(remove.dataset.filterName);
@@ -388,9 +455,11 @@
 			wrapper.dispatchEvent(new Event('filter-change'));
 		});
 
-		inputs.forEach(function (inp) {
+		inputs.forEach(function (inp)
+		{
 			var evtType = inp.el.type === 'checkbox' || inp.el.tagName === 'SELECT' ? 'change' : 'input';
-			inp.el.addEventListener(evtType, function () {
+			inp.el.addEventListener(evtType, function ()
+			{
 				saveState();
 				updateIndicator();
 				wrapper.dispatchEvent(new Event('filter-change'));
@@ -413,27 +482,32 @@
 	// ------------------------------------------------------------------
 	// Row actions builder
 	// ------------------------------------------------------------------
-	function buildActionsColumn(rowActions) {
+	function buildActionsColumn(rowActions)
+	{
 		return {
 			data: null,
 			title: '',
 			orderable: false,
 			searchable: false,
 			className: 'app-datatable__actions-cell',
-			render: function (data, type, row) {
+			render: function (data, type, row)
+			{
 				if (type !== 'display') return '';
 				var html = '<div class="app-datatable__actions">';
-				rowActions.forEach(function (action, i) {
+				rowActions.forEach(function (action, i)
+				{
 					if (action.visible && !action.visible(row)) return;
 					var url = action.url ? resolveTemplate(action.url, row) : '#';
-					if (action.type === 'link') {
+					if (action.type === 'link')
+					{
 						html += '<a href="' + escapeHtml(url) + '"'
 							+ (action.target ? ' target="' + escapeHtml(action.target) + '"' : '')
 							+ ' class="app-button" data-app-datatable-action="datatable-link"'
 							+ ' data-variant="' + (action.variant || 'secondary') + '"'
 							+ ' data-size="sm">'
 							+ escapeHtml(action.label) + '</a>';
-					} else if (action.type === 'delete') {
+					} else if (action.type === 'delete')
+					{
 						html += '<button type="button"'
 							+ ' class="app-button js-appdt-delete" data-app-datatable-action="delete-row"'
 							+ ' data-variant="' + (action.variant || 'tertiary') + '"'
@@ -441,7 +515,8 @@
 							+ ' data-action-idx="' + i + '"'
 							+ ' data-delete-url="' + escapeHtml(url) + '">'
 							+ escapeHtml(action.label) + '</button>';
-					} else if (action.type === 'custom') {
+					} else if (action.type === 'custom')
+					{
 						html += '<button type="button"'
 							+ ' class="app-button js-appdt-custom" data-app-datatable-action="custom-row"'
 							+ ' data-variant="' + (action.variant || 'secondary') + '"'
@@ -456,24 +531,30 @@
 		};
 	}
 
-	function executeRowAction(action, rowData, table, rowNode, handle, alerts) {
+	function executeRowAction(action, rowData, table, rowNode, handle, alerts)
+	{
 		if (!action || !rowData) return;
 
-		if (action.type === 'link') {
+		if (action.type === 'link')
+		{
 			var url = action.url ? resolveTemplate(action.url, rowData) : '#';
 			window.open(url, action.target || '_self');
 			return;
 		}
 
-		if (action.type === 'delete') {
+		if (action.type === 'delete')
+		{
 			if (action.confirm && !confirm(action.confirm)) return;
 			var deleteUrl = action.url ? resolveTemplate(action.url, rowData) : '';
 			if (!deleteUrl) return;
 
-			fetch(deleteUrl, {method: 'DELETE', credentials: 'same-origin'})
-				.then(function (response) {
-					if (!response.ok) {
-						return response.json().then(function (data) {
+			fetch(deleteUrl, { method: 'DELETE', credentials: 'same-origin' })
+				.then(function (response)
+				{
+					if (!response.ok)
+					{
+						return response.json().then(function (data)
+						{
 							throw new Error(data.error || 'Delete failed');
 						});
 					}
@@ -483,23 +564,27 @@
 					if (action.successMessage) alerts.show('success', action.successMessage);
 					if (handle.config.onDelete) handle.config.onDelete(rowData);
 				})
-				.catch(function (error) {
+				.catch(function (error)
+				{
 					alerts.show('danger', error.message);
 				});
 			return;
 		}
 
-		if (action.type === 'custom' && action.handler) {
+		if (action.type === 'custom' && action.handler)
+		{
 			action.handler(rowData, handle);
 		}
 	}
 
-	function buildRowActionsToolbar(rowActions, getSelection, runAction) {
+	function buildRowActionsToolbar(rowActions, getSelection, runAction)
+	{
 		var toolbar = document.createElement('div');
 		toolbar.className = 'app-datatable__row-actions';
 		toolbar.setAttribute('data-app-datatable-role', 'selected-row-actions');
 
-		var buttons = rowActions.map(function (action) {
+		var buttons = rowActions.map(function (action)
+		{
 			var button = document.createElement('button');
 			button.type = 'button';
 			button.className = 'app-button app-datatable__row-action';
@@ -510,18 +595,21 @@
 			button.textContent = action.label || action.text || '';
 			button.disabled = true;
 
-			button.addEventListener('click', function () {
+			button.addEventListener('click', function ()
+			{
 				var selection = getSelection();
 				if (!selection || !selection.rowData) return;
 				runAction(action, selection.rowData, selection.rowNode);
 			});
 
 			toolbar.appendChild(button);
-			return {action: action, button: button};
+			return { action: action, button: button };
 		});
 
-		function update(rowData) {
-			buttons.forEach(function (item) {
+		function update(rowData)
+		{
+			buttons.forEach(function (item)
+			{
 				var visible = rowData && (!item.action.visible || item.action.visible(rowData));
 				item.button.disabled = !visible;
 				item.button.classList.toggle('is-hidden', !!rowData && !visible);
@@ -538,26 +626,30 @@
 	// ------------------------------------------------------------------
 	// Toolbar buttons builder
 	// ------------------------------------------------------------------
-	var DS_BUTTON_ATTR = {'data-variant': 'secondary', 'data-size': 'sm'};
+	var DS_BUTTON_ATTR = { 'data-variant': 'secondary', 'data-size': 'sm' };
 
-	function buildButtonDefs(config) {
+	function buildButtonDefs(config)
+	{
 		var buttons = [];
 
 		// New item button (like datatable2.twig new_item)
-		if (config.newItem) {
+		if (config.newItem)
+		{
 			var ni = config.newItem;
 			buttons.push({
 				text: ni.label || ni.text || 'New',
 				className: ni.className || '',
 				attr: ni.attr || DS_BUTTON_ATTR,
-				action: ni.action || function () {
+				action: ni.action || function ()
+				{
 					if (ni.url) window.open(ni.url, ni.target || '_self');
 				}
 			});
 		}
 
 		// CSV export
-		if (config.csvExport !== false) {
+		if (config.csvExport !== false)
+		{
 			var csvOpts = typeof config.csvExport === 'object' ? config.csvExport : {};
 			buttons.push({
 				extend: 'csvHtml5',
@@ -569,13 +661,15 @@
 		}
 
 		// Download (server-side export)
-		if (config.downloadUrl) {
+		if (config.downloadUrl)
+		{
 			var dlLang = config.downloadLang || {};
 			buttons.push({
 				text: dlLang.label || 'Download',
 				titleAttr: dlLang.title || 'Download data',
 				attr: DS_BUTTON_ATTR,
-				action: function (e, dt) {
+				action: function (e, dt)
+				{
 					var params = {};
 					params.length = -1;
 					var search = dt.search();
@@ -590,7 +684,8 @@
 		}
 
 		// Column visibility toggle
-		if (config.columnVisibility) {
+		if (config.columnVisibility)
+		{
 			buttons.push({
 				extend: 'colvis',
 				text: config.columnVisibilityLabel || 'Columns',
@@ -599,18 +694,23 @@
 		}
 
 		// Custom toolbar buttons
-		if (config.buttons && config.buttons.length) {
-			config.buttons.forEach(function (btn) {
-				if (btn.extend) {
+		if (config.buttons && config.buttons.length)
+		{
+			config.buttons.forEach(function (btn)
+			{
+				if (btn.extend)
+				{
 					if (!btn.attr) btn.attr = DS_BUTTON_ATTR;
 					buttons.push(btn);
-				} else {
+				} else
+				{
 					buttons.push({
 						text: btn.label || btn.text || '',
 						className: btn.className || '',
 						attr: btn.attr || DS_BUTTON_ATTR,
 						enabled: btn.enabled !== false,
-						action: btn.action || function () {
+						action: btn.action || function ()
+						{
 							if (btn.url) window.open(btn.url, btn.target || '_self');
 						}
 					});
@@ -624,23 +724,28 @@
 	// ------------------------------------------------------------------
 	// Column search
 	// ------------------------------------------------------------------
-	function setupColumnSearch(table, tableEl, config) {
+	function setupColumnSearch(table, tableEl, config)
+	{
 		var active = false;
 		var hiddenCols = [];
 		var searchLang = (config.lang && config.lang.search) || 'Search';
 
-		function enable() {
-			if (active) {
+		function enable()
+		{
+			if (active)
+			{
 				disable();
 				return;
 			}
 			active = true;
 
 			var headerCells = tableEl.querySelectorAll('thead th');
-			headerCells.forEach(function (th, colIdx) {
+			headerCells.forEach(function (th, colIdx)
+			{
 				var col = table.column(colIdx);
 				var settings = table.settings()[0];
-				if (settings.aoColumns[colIdx] && settings.aoColumns[colIdx].bSearchable) {
+				if (settings.aoColumns[colIdx] && settings.aoColumns[colIdx].bSearchable)
+				{
 					var title = th.textContent;
 					var currentSearch = col.search() || '';
 					th.innerHTML = '';
@@ -654,54 +759,65 @@
 					th.appendChild(input);
 
 					var lastCallback = 0;
-					input.addEventListener('keyup', function () {
+					input.addEventListener('keyup', function ()
+					{
 						if (lastCallback >= (Date.now() - 200)) return;
 						lastCallback = Date.now();
 						col.search(this.value).draw();
 					});
-					input.addEventListener('click', function (e) {
+					input.addEventListener('click', function (e)
+					{
 						e.stopPropagation();
 					});
-				} else {
+				} else
+				{
 					col.visible(false);
 					hiddenCols.push(colIdx);
 				}
 			});
 
-			if (table.responsive) {
+			if (table.responsive)
+			{
 				table.responsive.recalc();
 			}
 		}
 
-		function disable() {
-			hiddenCols.forEach(function (idx) {
+		function disable()
+		{
+			hiddenCols.forEach(function (idx)
+			{
 				table.column(idx).visible(true);
 			});
 			hiddenCols = [];
 
 			var headerCells = tableEl.querySelectorAll('thead th');
-			headerCells.forEach(function (th, colIdx) {
+			headerCells.forEach(function (th, colIdx)
+			{
 				var input = th.querySelector('.app-datatable__col-search');
-				if (input) {
+				if (input)
+				{
 					th.textContent = input.placeholder.replace(searchLang + ' ', '');
 				}
 			});
 
 			active = false;
-			if (table.responsive) {
+			if (table.responsive)
+			{
 				table.responsive.recalc();
 			}
 		}
 
-		return {enable: enable, disable: disable, isActive: function () { return active; }};
+		return { enable: enable, disable: disable, isActive: function () { return active; } };
 	}
 
 	// ------------------------------------------------------------------
 	// State management
 	// ------------------------------------------------------------------
-	function buildStateKey(config) {
+	function buildStateKey(config)
+	{
 		if (config.stateKey) return config.stateKey;
-		try {
+		try
+		{
 			var url = new URL(window.location.href);
 			var menuaction = url.searchParams.get('menuaction');
 			if (menuaction) return 'appdt_' + menuaction.replace(/\./g, '_');
@@ -716,13 +832,16 @@
 	// Override the default pagingButton renderer to add common control attributes
 	// directly when buttons are created (avoids timing issues with post-processing).
 	var _origPagingButton = DataTable.ext.renderer.pagingButton._;
-	DataTable.ext.renderer.pagingButton._ = function (settings, buttonType, content, active, disabled) {
+	DataTable.ext.renderer.pagingButton._ = function (settings, buttonType, content, active, disabled)
+	{
 		var result = _origPagingButton.call(this, settings, buttonType, content, active, disabled);
-		if (buttonType !== 'ellipsis') {
+		if (buttonType !== 'ellipsis')
+		{
 			var el = result.clicker;
 			// jQuery or DOM element
 			if (el.jquery) el = el[0];
-			if (el) {
+			if (el)
+			{
 				el.setAttribute('data-variant', 'tertiary');
 				el.setAttribute('data-size', 'sm');
 			}
@@ -741,10 +860,12 @@
 	// ------------------------------------------------------------------
 	// Main init
 	// ------------------------------------------------------------------
-	function init(config) {
+	function init(config)
+	{
 		var containerId = config.id || 'app-datatable';
 		var container = document.getElementById(containerId);
-		if (!container) {
+		if (!container)
+		{
 			console.error('AppDatatable: container #' + containerId + ' not found');
 			return null;
 		}
@@ -765,42 +886,51 @@
 		var selectedRowNode = null;
 		var rowActionsToolbar = null;
 
-		function setSelectedRow(rowNode) {
-			if (selectedRowNode && selectedRowNode !== rowNode) {
+		function setSelectedRow(rowNode)
+		{
+			if (selectedRowNode && selectedRowNode !== rowNode)
+			{
 				selectedRowNode.classList.remove('selected');
 			}
 
 			selectedRowNode = rowNode;
 			if (selectedRowNode) selectedRowNode.classList.add('selected');
 
-			if (rowActionsToolbar) {
+			if (rowActionsToolbar)
+			{
 				rowActionsToolbar.update(selectedRowNode && table ? table.row(selectedRowNode).data() : null);
 			}
 		}
 
-		function clearSelectedRow() {
+		function clearSelectedRow()
+		{
 			if (selectedRowNode) selectedRowNode.classList.remove('selected');
 			selectedRowNode = null;
 			if (rowActionsToolbar) rowActionsToolbar.update(null);
 		}
 
-		function toggleSelectedRow(rowNode) {
-			if (selectedRowNode === rowNode) {
+		function toggleSelectedRow(rowNode)
+		{
+			if (selectedRowNode === rowNode)
+			{
 				clearSelectedRow();
 				return;
 			}
 			setSelectedRow(rowNode);
 		}
 
-		if (showRowActionsToolbar) {
+		if (showRowActionsToolbar)
+		{
 			rowActionsToolbar = buildRowActionsToolbar(
 				config.rowActions,
-				function () {
+				function ()
+				{
 					return selectedRowNode && table
-						? {rowNode: selectedRowNode, rowData: table.row(selectedRowNode).data()}
+						? { rowNode: selectedRowNode, rowData: table.row(selectedRowNode).data() }
 						: null;
 				},
-				function (action, rowData, rowNode) {
+				function (action, rowData, rowNode)
+				{
 					executeRowAction(action, rowData, table, rowNode, handle, alerts);
 				}
 			);
@@ -809,22 +939,25 @@
 		// Table element
 		var tableEl = document.createElement('table');
 		tableEl.id = containerId + '-table';
-		tableEl.className = 'app-table';
+		tableEl.className = 'app-table cell-border compact stripe';
 		tableEl.setAttribute('data-zebra', '');
 		tableEl.setAttribute('data-hover', '');
 		tableEl.setAttribute('data-border', '');
 		tableEl.style.width = '100%';
 
 		// Footer
-		if (config.footer) {
+		if (config.footer)
+		{
 			var tfoot = document.createElement('tfoot');
 			var tfootRow = document.createElement('tr');
-			(config.columns || []).forEach(function (col) {
+			(config.columns || []).forEach(function (col)
+			{
 				var th = document.createElement('th');
 				th.textContent = col.footerText || '';
 				tfootRow.appendChild(th);
 			});
-			if (useActionsColumn && config.rowActions && config.rowActions.length) {
+			if (useActionsColumn && config.rowActions && config.rowActions.length)
+			{
 				tfootRow.appendChild(document.createElement('th'));
 			}
 			tfoot.appendChild(tfootRow);
@@ -834,7 +967,8 @@
 		container.appendChild(tableEl);
 
 		// Columns
-		var columns = (config.columns || []).map(function (col) {
+		var columns = (config.columns || []).map(function (col)
+		{
 			var colDef = {
 				data: col.data,
 				title: col.title || '',
@@ -849,14 +983,17 @@
 		});
 
 		// Append actions column
-		if (useActionsColumn && config.rowActions && config.rowActions.length) {
+		if (useActionsColumn && config.rowActions && config.rowActions.length)
+		{
 			columns.push(buildActionsColumn(config.rowActions));
 		}
 
 		// Collect lookup renderers that need preloading
 		var lookupLoads = [];
-		columns.forEach(function (col) {
-			if (col.render && col.render._load) {
+		columns.forEach(function (col)
+		{
+			if (col.render && col.render._load)
+			{
 				lookupLoads.push(col.render._load());
 			}
 		});
@@ -885,7 +1022,8 @@
 
 		// Layout (mirrors datatable2.twig)
 		var layout;
-		if (buttonDefs && buttonDefs.length > 8) {
+		if (buttonDefs && buttonDefs.length > 8)
+		{
 			layout = {
 				top2Start: 'buttons',
 				topStart: null,
@@ -893,21 +1031,24 @@
 				bottomStart: ['pageLength', 'info'],
 				bottomEnd: ['inputPaging']
 			};
-		} else if (buttonDefs) {
+		} else if (buttonDefs)
+		{
 			layout = {
 				topStart: 'buttons',
 				topEnd: 'search',
 				bottomStart: ['pageLength', 'info'],
 				bottomEnd: ['inputPaging']
 			};
-		} else {
+		} else
+		{
 			layout = {
 				topEnd: 'search',
 				bottomStart: ['pageLength', 'info'],
 				bottomEnd: ['inputPaging']
 			};
 		}
-		if (config.layout) {
+		if (config.layout)
+		{
 			layout = config.layout;
 		}
 
@@ -939,17 +1080,20 @@
 		};
 
 		// Length menu
-		if (config.lengthMenu) {
+		if (config.lengthMenu)
+		{
 			dtConfig.lengthMenu = config.lengthMenu;
 		}
 
 		// Initial search
-		if (config.initialSearch) {
-			dtConfig.search = {search: config.initialSearch};
+		if (config.initialSearch)
+		{
+			dtConfig.search = { search: config.initialSearch };
 		}
 
 		// Responsive
-		if (config.responsive === 'details') {
+		if (config.responsive === 'details')
+		{
 			dtConfig.responsive = {
 				details: {
 					display: DataTable.Responsive
@@ -958,16 +1102,18 @@
 					type: ''
 				}
 			};
-		} else if (config.responsive !== false) {
+		} else if (config.responsive !== false)
+		{
 			dtConfig.responsive = true;
 		}
 
 		// Buttons
-		if (buttonDefs) {
+		if (buttonDefs)
+		{
 			dtConfig.buttons = {
 				dom: {
 					button: {
-							className: 'app-button'
+						className: 'app-button'
 					}
 				},
 				buttons: buttonDefs
@@ -975,27 +1121,36 @@
 		}
 
 		// State save
-		if (config.stateSave !== false && resolvedStateKey) {
+		if (config.stateSave !== false && resolvedStateKey)
+		{
 			dtConfig.stateSave = true;
 			dtConfig.stateDuration = -1; // sessionStorage, cleared when the browser session ends
 
-			dtConfig.stateSaveParams = function (settings, data) {
-				if (filterSystem) {
+			dtConfig.stateSaveParams = function (settings, data)
+			{
+				if (filterSystem)
+				{
 					data._appdt_filters = filterSystem.getValues();
 				}
 			};
 
-			dtConfig.stateLoadParams = function (settings, data) {
-				if (filterSystem && data._appdt_filters) {
+			dtConfig.stateLoadParams = function (settings, data)
+			{
+				if (filterSystem && data._appdt_filters)
+				{
 					var saved = data._appdt_filters;
-					filterSystem.inputs.forEach(function (inp) {
+					filterSystem.inputs.forEach(function (inp)
+					{
 						var val = saved[inp.config.name];
 						if (val == null) return;
-						if (inp.el.type === 'checkbox') {
+						if (inp.el.type === 'checkbox')
+						{
 							inp.el.checked = !!val;
-						} else if (inp.el.tagName === 'SELECT') {
+						} else if (inp.el.tagName === 'SELECT')
+						{
 							inp.el.value = String(val);
-						} else {
+						} else
+						{
 							inp.el.value = val;
 						}
 					});
@@ -1004,40 +1159,51 @@
 		}
 
 		// Row selection
-		if (config.selectable) {
-			dtConfig.select = config.selectable === 'multi' ? {style: 'multi'} : true;
+		if (config.selectable)
+		{
+			dtConfig.select = config.selectable === 'multi' ? { style: 'multi' } : true;
 		}
 
 		// Search delay (important for server-side)
-		if (config.searchDelay != null) {
+		if (config.searchDelay != null)
+		{
 			dtConfig.searchDelay = config.searchDelay;
-		} else if (config.serverSide) {
+		} else if (config.serverSide)
+		{
 			dtConfig.searchDelay = 1200;
 		}
 
 		// Ajax
-		if (config.ajax) {
+		if (config.ajax)
+		{
 			var ajaxConfig = {
 				url: config.ajax.url,
 				type: config.ajax.method || (config.serverSide ? 'POST' : 'GET')
 			};
 
-			if (!config.serverSide) {
+			if (!config.serverSide)
+			{
 				ajaxConfig.dataSrc = config.ajax.dataSrc != null ? config.ajax.dataSrc : '';
-			} else {
-				ajaxConfig.dataSrc = function (json) {
-					if (json && json.sessionExpired) {
+			} else
+			{
+				ajaxConfig.dataSrc = function (json)
+				{
+					if (json && json.sessionExpired)
+					{
 						alert('Session expired — please log in');
 						return [];
 					}
 					return json.data || [];
 				};
 
-				ajaxConfig.data = function (d) {
+				ajaxConfig.data = function (d)
+				{
 					// Append filter values for server-side
-					if (filterSystem) {
+					if (filterSystem)
+					{
 						var vals = filterSystem.getValues();
-						Object.keys(vals).forEach(function (k) {
+						Object.keys(vals).forEach(function (k)
+						{
 							d[k] = vals[k];
 						});
 					}
@@ -1048,80 +1214,100 @@
 		}
 
 		// Server-side
-		if (config.serverSide) {
+		if (config.serverSide)
+		{
 			dtConfig.serverSide = true;
 			dtConfig.processing = true;
 			dtConfig.deferRender = true;
 		}
 
 		// Pagination
-		if (config.paginate === false) {
+		if (config.paginate === false)
+		{
 			dtConfig.paging = false;
 		}
 
 		// Column defs
-		if (config.columnDefs) {
+		if (config.columnDefs)
+		{
 			dtConfig.columnDefs = config.columnDefs;
 		}
 
 		// Row callback (e.g. priority classes)
-		if (config.rowCallback) {
+		if (config.rowCallback)
+		{
 			dtConfig.rowCallback = config.rowCallback;
 		}
 
 		// Footer callback
-		if (config.footerCallback) {
+		if (config.footerCallback)
+		{
 			dtConfig.footerCallback = config.footerCallback;
 		}
 
 		// Init complete callback
-		if (config.onInitComplete) {
+		if (config.onInitComplete)
+		{
 			dtConfig.initComplete = config.onInitComplete;
 		}
 
 		var table;
 		var columnSearch = null;
 
-		function initDT() {
+		function initDT()
+		{
 			table = new DataTable(tableEl, dtConfig);
-			if (rowActionsToolbar) {
+			if (rowActionsToolbar)
+			{
 				placeRowActionsToolbar(tableEl, rowActionsToolbar.element, container);
 			}
 
 			// Column search support
-			if (config.columnSearch) {
+			if (config.columnSearch)
+			{
 				columnSearch = setupColumnSearch(table, tableEl, config);
 				// If columnSearch is a button config, it's toggled via a toolbar button
 				// Otherwise auto-enable
-				if (config.columnSearch === true) {
+				if (config.columnSearch === true)
+				{
 					columnSearch.enable();
 				}
 			}
 
 			// Client-side filter integration
-			if (filterSystem && !config.serverSide) {
-				DataTable.ext.search.push(function (settings, searchData, index, rowData) {
+			if (filterSystem && !config.serverSide)
+			{
+				DataTable.ext.search.push(function (settings, searchData, index, rowData)
+				{
 					if (settings.nTable !== tableEl) return true;
 					var vals = filterSystem.getValues();
 					var pass = true;
-					filterSystem.inputs.forEach(function (inp) {
+					filterSystem.inputs.forEach(function (inp)
+					{
 						if (!pass) return;
 						var name = inp.config.name;
 						var colIdx = inp.config.column;
 						var val = vals[name];
-						if (inp.config.type === 'checkbox') {
-							if (val && inp.config.match) {
+						if (inp.config.type === 'checkbox')
+						{
+							if (val && inp.config.match)
+							{
 								pass = inp.config.match(rowData);
 							}
-						} else if (inp.config.type === 'select') {
+						} else if (inp.config.type === 'select')
+						{
 							var firstOpt = inp.config.options && inp.config.options[0];
-							if (val && firstOpt && String(val) !== String(firstOpt.value)) {
-								if (colIdx != null && colIdx !== '') {
+							if (val && firstOpt && String(val) !== String(firstOpt.value))
+							{
+								if (colIdx != null && colIdx !== '')
+								{
 									pass = String(searchData[colIdx]) === String(val);
 								}
 							}
-						} else {
-							if (val && colIdx != null && colIdx !== '') {
+						} else
+						{
+							if (val && colIdx != null && colIdx !== '')
+							{
 								var cellVal = String(searchData[colIdx] || '').toLowerCase();
 								pass = cellVal.indexOf(val.toLowerCase()) !== -1;
 							}
@@ -1130,31 +1316,38 @@
 					return pass;
 				});
 
-				filterSystem.element.addEventListener('filter-change', function () {
+				filterSystem.element.addEventListener('filter-change', function ()
+				{
 					table.draw();
 				});
 
 				// Trigger initial draw if we restored filters from session
 				var restored = filterSystem.getValues();
 				var hasActive = Object.keys(restored).some(function (k) { return !!restored[k]; });
-				if (hasActive) {
+				if (hasActive)
+				{
 					setTimeout(function () { table.draw(); }, 0);
 				}
 			}
 
 			// Server-side filter integration
-			if (filterSystem && config.serverSide) {
-				filterSystem.element.addEventListener('filter-change', function () {
+			if (filterSystem && config.serverSide)
+			{
+				filterSystem.element.addEventListener('filter-change', function ()
+				{
 					table.ajax.reload();
 				});
 			}
 
-			if (config.rowActions && actionDisplay === 'contextMenu') {
+			if (config.rowActions && actionDisplay === 'contextMenu')
+			{
 				setupContextMenu(table, tableEl, config.rowActions, handle, alerts, setSelectedRow);
 			}
 
-			if (showRowActionsToolbar) {
-				tableEl.querySelector('tbody').addEventListener('click', function (e) {
+			if (showRowActionsToolbar)
+			{
+				tableEl.querySelector('tbody').addEventListener('click', function (e)
+				{
 					if (e.target.closest('.app-datatable__actions') || e.target.closest('a') || e.target.closest('button') || e.target.closest('input, select, textarea')) return;
 					var tr = e.target.closest('tr');
 					if (!tr || tr.parentElement.tagName === 'THEAD' || tr.classList.contains('child')) return;
@@ -1166,10 +1359,13 @@
 			}
 
 			// Delete handler via delegation
-			if (config.rowActions) {
-				tableEl.addEventListener('click', function (e) {
+			if (config.rowActions)
+			{
+				tableEl.addEventListener('click', function (e)
+				{
 					var deleteBtn = e.target.closest('.js-appdt-delete');
-					if (deleteBtn) {
+					if (deleteBtn)
+					{
 						var idx = parseInt(deleteBtn.dataset.actionIdx, 10);
 						var action = config.rowActions[idx];
 						if (!action) return;
@@ -1179,24 +1375,30 @@
 						deleteBtn.disabled = true;
 						var url = deleteBtn.dataset.deleteUrl;
 
-						fetch(url, {method: 'DELETE', credentials: 'same-origin'})
-							.then(function (r) {
-								if (!r.ok) {
-									return r.json().then(function (d) {
+						fetch(url, { method: 'DELETE', credentials: 'same-origin' })
+							.then(function (r)
+							{
+								if (!r.ok)
+								{
+									return r.json().then(function (d)
+									{
 										throw new Error(d.error || 'Delete failed');
 									});
 								}
 								var row = table.row(deleteBtn.closest('tr'));
 								var rowData = row.data();
 								row.remove().draw(false);
-								if (action.successMessage) {
+								if (action.successMessage)
+								{
 									alerts.show('success', action.successMessage);
 								}
-								if (config.onDelete) {
+								if (config.onDelete)
+								{
 									config.onDelete(rowData);
 								}
 							})
-							.catch(function (err) {
+							.catch(function (err)
+							{
 								alerts.show('danger', err.message);
 								deleteBtn.disabled = false;
 							});
@@ -1204,7 +1406,8 @@
 					}
 
 					var customBtn = e.target.closest('.js-appdt-custom');
-					if (customBtn) {
+					if (customBtn)
+					{
 						var cIdx = parseInt(customBtn.dataset.actionIdx, 10);
 						var cAction = config.rowActions[cIdx];
 						if (!cAction || !cAction.handler) return;
@@ -1215,40 +1418,49 @@
 			}
 
 			// Row click handler
-			if (config.onRowClick) {
-				tableEl.addEventListener('click', function (e) {
+			if (config.onRowClick)
+			{
+				tableEl.addEventListener('click', function (e)
+				{
 					if (e.target.closest('.app-datatable__actions') || e.target.closest('a') || e.target.closest('button')) return;
 					var tr = e.target.closest('tr');
 					if (!tr || tr.parentElement.tagName === 'THEAD' || tr.classList.contains('child')) return;
 					var row = table.row(tr);
-					if (row.data()) {
+					if (row.data())
+					{
 						config.onRowClick(row.data(), e);
 					}
 				});
 			}
 
 			// Double-click handler
-			if (config.onDblClick) {
-				tableEl.addEventListener('dblclick', function (e) {
+			if (config.onDblClick)
+			{
+				tableEl.addEventListener('dblclick', function (e)
+				{
 					var tr = e.target.closest('tr');
 					if (!tr || tr.parentElement.tagName === 'THEAD') return;
 					var row = table.row(tr);
-					if (row.data()) {
+					if (row.data())
+					{
 						config.onDblClick(row.data(), e);
 					}
 				});
 			}
 
 			// Row selection toggle (like datatable2.twig)
-			if (config.selectable) {
-				tableEl.querySelector('tbody').addEventListener('click', function (e) {
+			if (config.selectable)
+			{
+				tableEl.querySelector('tbody').addEventListener('click', function (e)
+				{
 					var tr = e.target.closest('tr');
 					if (!tr || tr.classList.contains('child')) return;
 					tr.classList.toggle('selected');
 
 					// Sync checkboxes
 					var cb = tr.querySelector('input[type="checkbox"]');
-					if (cb) {
+					if (cb)
+					{
 						cb.checked = tr.classList.contains('selected');
 					}
 				});
@@ -1258,30 +1470,35 @@
 			handle.table = table;
 		}
 
-		function setupContextMenu(table, tableEl, rowActions, handle, alerts, selectRow) {
+		function setupContextMenu(table, tableEl, rowActions, handle, alerts, selectRow)
+		{
 			if (!window.jQuery || !window.jQuery.contextMenu || !rowActions.length) return;
 
 			var selector = '#' + tableEl.id + ' tbody tr';
 			window.jQuery.contextMenu('destroy', selector);
 			window.jQuery.contextMenu({
 				selector: selector,
-				build: function ($trigger) {
+				build: function ($trigger)
+				{
 					var rowNode = $trigger[0];
 					var rowData = table.row(rowNode).data();
 					if (!rowData) return false;
 					if (selectRow) selectRow(rowNode);
 
-					var visibleActions = rowActions.filter(function (action) {
+					var visibleActions = rowActions.filter(function (action)
+					{
 						return !action.visible || action.visible(rowData);
 					});
 
 					if (!visibleActions.length) return false;
 
 					return {
-						items: visibleActions.reduce(function (items, action, index) {
+						items: visibleActions.reduce(function (items, action, index)
+						{
 							items[index] = {
 								name: action.label || action.text || '',
-								callback: function () {
+								callback: function ()
+								{
 									executeRowAction(action, rowData, table, rowNode, handle, alerts);
 								}
 							};
@@ -1292,11 +1509,13 @@
 			});
 		}
 
-		function placeRowActionsToolbar(tableEl, toolbarEl, fallbackContainer) {
+		function placeRowActionsToolbar(tableEl, toolbarEl, fallbackContainer)
+		{
 			var tableWrapper = tableEl.closest('.dt-container') || fallbackContainer;
 			var buttonsContainer = tableWrapper.querySelector('.dt-buttons');
 
-			if (buttonsContainer) {
+			if (buttonsContainer)
+			{
 				buttonsContainer.appendChild(toolbarEl);
 				return;
 			}
@@ -1309,49 +1528,62 @@
 			config: config,
 			table: null,
 			clearSelection: clearSelectedRow,
-			reload: function () {
+			reload: function ()
+			{
 				if (table) table.ajax.reload(null, false);
 			},
-			showAlert: function (type, msg) {
+			showAlert: function (type, msg)
+			{
 				alerts.show(type, msg);
 			},
-			message: function (msg) {
+			message: function (msg)
+			{
 				alerts.message(msg);
 			},
-			destroy: function () {
+			destroy: function ()
+			{
 				if (table) table.destroy();
 				container.innerHTML = '';
 			},
-			search: function (query) {
+			search: function (query)
+			{
 				if (table) table.search(query).draw();
 			},
-			getSelected: function () {
+			getSelected: function ()
+			{
 				if (!table) return [];
 				var rows = table.rows('.selected');
 				return rows.data().toArray();
 			},
-			toggleColumnSearch: function () {
+			toggleColumnSearch: function ()
+			{
 				if (columnSearch) columnSearch.isActive() ? columnSearch.disable() : columnSearch.enable();
 			},
-			resetFilters: function () {
-				if (filterSystem) {
+			resetFilters: function ()
+			{
+				if (filterSystem)
+				{
 					filterSystem.reset();
 					filterSystem.element.dispatchEvent(new Event('filter-change'));
 				}
-				if (table) {
+				if (table)
+				{
 					table.search('').draw();
 				}
-				if (columnSearch && columnSearch.isActive()) {
+				if (columnSearch && columnSearch.isActive())
+				{
 					columnSearch.disable();
 				}
 			}
 		};
 
-		if (lookupLoads.length) {
+		if (lookupLoads.length)
+		{
 			Promise.all(lookupLoads)
 				.then(initDT)
 				.catch(function () { initDT(); });
-		} else {
+		} else
+		{
 			initDT();
 		}
 

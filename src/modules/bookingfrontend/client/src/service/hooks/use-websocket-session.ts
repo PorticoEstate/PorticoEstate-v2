@@ -94,23 +94,32 @@ export const useWebSocketSession = () => {
     // accountId/ssn come from the cached response body and describe the session
     // that body was fetched for. If the cookie has moved on since, that auth
     // info is not ours to send — drop it and realign the cache instead.
-    const authInfoMatchesCookie = sessionData?.sessionId === sessionId;
-    if (!authInfoMatchesCookie) {
-      void refetch();
+    let authData = sessionData;
+    if (authData?.sessionId !== sessionId) {
+      // On a cold load this can fire before useSessionId() has resolved even
+      // once (e.g. right on socket connect). Sending update_session without
+      // waiting would omit ssn/accountId, and nothing re-sends them later —
+      // the server-side session is then permanently unauthenticated until
+      // the next update_session call (the 5-minute interval, or a
+      // reconnect), so every request needing ssn fails until then. Wait for
+      // the fetch instead of firing the update without it.
+      const result = await refetch();
+      authData = result.data;
     }
+    const authInfoMatchesCookie = authData?.sessionId === sessionId;
 
     wsLog('Updating WebSocket session ID');
 
     // Send the update_session message with the held session ID + auth info
     wsService.sendMessage('update_session', 'Updating session ID', {
       sessionId,
-      ...(authInfoMatchesCookie && sessionData?.accountId && { accountId: sessionData.accountId }),
-      ...(authInfoMatchesCookie && sessionData?.ssn && { ssn: sessionData.ssn }),
+      ...(authInfoMatchesCookie && authData?.accountId && { accountId: authData.accountId }),
+      ...(authInfoMatchesCookie && authData?.ssn && { ssn: authData.ssn }),
     });
 
     // Update the last update timestamp
     lastUpdateRef.current = Date.now();
-  }, [sessionData?.sessionId, sessionData?.accountId, sessionData?.ssn, refetch, wsService]);
+  }, [sessionData, refetch, wsService]);
 
   // Handler for session_id_required messages
   const handleSessionRequired = useCallback((message: IWSSessionIdRequiredMessage) => {

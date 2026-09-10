@@ -1273,3 +1273,4 @@ overwrite_manual_prices_question	booking	no	%1 av %2 tidspunkt har en pris som e
 overwrite_all_prices	booking	no	Overskriv alle
 keep_manual_prices	booking	no	Behold de manuelle
 cancel_price_update	booking	no	Avbryt
+date and time	booking	no	Tidspunkt

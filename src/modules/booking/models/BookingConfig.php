@@ -457,11 +457,15 @@ class BookingConfig
 
     /**
      * @OA\Property(type="string")
+	 * @Expose
+	 * @ParseBool
      */
     public $user_can_delete_bookings;
 
     /**
      * @OA\Property(type="string")
+	 * @Expose
+	 * @ParseBool
      */
     public $user_can_delete_events;
 

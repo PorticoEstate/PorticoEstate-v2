@@ -750,6 +750,7 @@ please select a season	booking	en	Please select a season
 please select an activity	booking	en	Please select an activity
 portrait_preview	booking	en	200x411 (portrait)
 postal city	booking	en	Postal city
+participant_limit_quantity_help	booking	en	-1 blocks participant registration from the selected date, 0 removes the previous participant limit for the selected date, and positive numbers set the participant limit to the specified number.
 Pre-registration	bookingfrontend	en	Pre-registration
 prev	booking	en	Prev
 preview	booking	en	Preview

@@ -787,6 +787,7 @@ parent activity	booking	nn	Overordna kategori
 parent group	booking	nn	Overordna gruppe
 parent id	booking	nn	Overordna id
 partially refunded	booking	nn	Delvis refundert
+participant_limit_quantity_help	booking	nn	-1 blokkerer deltakarregistrering frå vald dato, 0 slettar tidlegare deltakargrense for vald dato, og positive tal set deltakargrensa til det oppgitte talet.
 participant limit	booking	nn	Max antal deltakarar
 participant limit sms	booking	nn	Send kvittering for registrering på SMS
 Participants	booking	nn	Deltakarar

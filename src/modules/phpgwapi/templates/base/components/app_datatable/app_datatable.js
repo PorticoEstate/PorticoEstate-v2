@@ -1254,8 +1254,78 @@
 		var table;
 		var columnSearch = null;
 
+		function escapeRegexValue(value)
+		{
+			return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		}
+
+		function hasClientPredicateFilters()
+		{
+			return filterSystem && filterSystem.inputs.some(function (inp)
+			{
+				return inp.config.type !== 'select';
+			});
+		}
+
+		function applyColumnFilterSearches()
+		{
+			if (!table || !filterSystem) return;
+
+			var vals = filterSystem.getValues();
+			filterSystem.inputs.forEach(function (inp)
+			{
+				if (inp.config.type !== 'select') return;
+
+				var colIdx = inp.config.column;
+				if (colIdx == null || colIdx === '') return;
+
+				var firstOpt = inp.config.options && inp.config.options[0];
+				var val = vals[inp.config.name];
+				var search = val && firstOpt && String(val) !== String(firstOpt.value)
+					? '^' + escapeRegexValue(val) + '$'
+					: '';
+
+				table.column(colIdx).search(search, true, false);
+			});
+		}
+
+		function applyClientFilters(settings, searchData, index, rowData)
+		{
+			if (settings.nTable !== tableEl) return true;
+			var vals = filterSystem.getValues();
+			var pass = true;
+			filterSystem.inputs.forEach(function (inp)
+			{
+				if (!pass) return;
+				if (inp.config.type === 'select') return;
+				var name = inp.config.name;
+				var colIdx = inp.config.column;
+				var val = vals[name];
+				if (inp.config.type === 'checkbox')
+				{
+					if (val && inp.config.match)
+					{
+						pass = inp.config.match(rowData);
+					}
+				} else
+				{
+					if (val && colIdx != null && colIdx !== '')
+					{
+						var cellVal = String(searchData[colIdx] || '').toLowerCase();
+						pass = cellVal.indexOf(val.toLowerCase()) !== -1;
+					}
+				}
+			});
+			return pass;
+		}
+
 		function initDT()
 		{
+			if (!config.serverSide && hasClientPredicateFilters())
+			{
+				DataTable.ext.search.push(applyClientFilters);
+			}
+
 			table = new DataTable(tableEl, dtConfig);
 			if (rowActionsToolbar)
 			{
@@ -1277,47 +1347,11 @@
 			// Client-side filter integration
 			if (filterSystem && !config.serverSide)
 			{
-				DataTable.ext.search.push(function (settings, searchData, index, rowData)
-				{
-					if (settings.nTable !== tableEl) return true;
-					var vals = filterSystem.getValues();
-					var pass = true;
-					filterSystem.inputs.forEach(function (inp)
-					{
-						if (!pass) return;
-						var name = inp.config.name;
-						var colIdx = inp.config.column;
-						var val = vals[name];
-						if (inp.config.type === 'checkbox')
-						{
-							if (val && inp.config.match)
-							{
-								pass = inp.config.match(rowData);
-							}
-						} else if (inp.config.type === 'select')
-						{
-							var firstOpt = inp.config.options && inp.config.options[0];
-							if (val && firstOpt && String(val) !== String(firstOpt.value))
-							{
-								if (colIdx != null && colIdx !== '')
-								{
-									pass = String(searchData[colIdx]) === String(val);
-								}
-							}
-						} else
-						{
-							if (val && colIdx != null && colIdx !== '')
-							{
-								var cellVal = String(searchData[colIdx] || '').toLowerCase();
-								pass = cellVal.indexOf(val.toLowerCase()) !== -1;
-							}
-						}
-					});
-					return pass;
-				});
+				applyColumnFilterSearches();
 
 				filterSystem.element.addEventListener('filter-change', function ()
 				{
+					applyColumnFilterSearches();
 					table.draw();
 				});
 

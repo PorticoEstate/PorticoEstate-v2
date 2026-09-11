@@ -1,6 +1,6 @@
 <?php
 
-namespace App\modules\hrm\helpers;
+namespace App\helpers;
 
 use App\modules\phpgwapi\services\Settings;
 

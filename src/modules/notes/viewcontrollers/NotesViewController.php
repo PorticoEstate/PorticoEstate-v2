@@ -2,6 +2,7 @@
 
 namespace App\modules\notes\viewcontrollers;
 
+use App\helpers\ViewSettingsHelper;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
 use App\modules\phpgwapi\security\Acl;
@@ -106,11 +107,7 @@ class NotesViewController
 	{
 		$this->menuSelection = 'notes';
 		Settings::getInstance()->update('flags', ['app_header' => lang('notes') . ': ' . lang('list notes')]);
-		$user = Settings::getInstance()->get('user');
-		$rowsPerPage = isset($user['preferences']['common']['maxmatchs']) && (int) $user['preferences']['common']['maxmatchs'] > 0
-			? (int) $user['preferences']['common']['maxmatchs']
-			: 10;
-		$lengthMenu = [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3];
+		$rowsPerPage = ViewSettingsHelper::rowsPerPage();
 
 		return $this->render($request, $response, '@views/list/notes_list.twig', [
 			'api_url' => \phpgw::link('/notes/notes'),
@@ -125,7 +122,7 @@ class NotesViewController
 				['id' => 'private', 'name' => lang('Private')],
 			],
 			'rows_per_page' => $rowsPerPage,
-			'length_menu' => $lengthMenu,
+			'length_menu' => ViewSettingsHelper::lengthMenu($rowsPerPage),
 		]);
 	}
 

@@ -7,6 +7,7 @@ use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
 use App\helpers\ResponseHelper;
+use App\helpers\ViewSettingsHelper;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Exception;
@@ -341,10 +342,7 @@ class TodoViewController
 
 		try {
 			$query = $request->getQueryParams();
-			$user = Settings::getInstance()->get('user');
-			$rowsPerPage = isset($user['preferences']['common']['maxmatchs']) && (int) $user['preferences']['common']['maxmatchs'] > 0
-				? (int) $user['preferences']['common']['maxmatchs']
-				: 10;
+			$rowsPerPage = ViewSettingsHelper::rowsPerPage();
 			$selectedCat = isset($query['cat_id']) ? (int) $query['cat_id'] : 0;
 			$selectedFilter = isset($query['filter']) ? (string) $query['filter'] : 'none';
 			$search = isset($query['search']) ? (string) $query['search'] : '';
@@ -375,7 +373,7 @@ class TodoViewController
 				'acl_delete' => (bool) Acl::getInstance()->check('.todo', ACL_DELETE, 'todo'),
 				'search_query' => $search,
 				'rows_per_page' => $rowsPerPage,
-				'length_menu' => [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3],
+				'length_menu' => ViewSettingsHelper::lengthMenu($rowsPerPage),
 				'matrix_url' => \phpgw::link('/todo/view/todos/matrix', [
 					'month' => date('m'),
 					'year' => date('Y'),

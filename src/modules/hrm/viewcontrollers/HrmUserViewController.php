@@ -2,7 +2,7 @@
 
 namespace App\modules\hrm\viewcontrollers;
 
-use App\modules\hrm\helpers\ViewSettingsHelper;
+use App\helpers\ViewSettingsHelper;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;

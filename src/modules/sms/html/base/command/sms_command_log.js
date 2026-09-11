@@ -26,6 +26,8 @@
 		ajax: { url: config.apiUrl },
 		serverSide: true,
 		autoWidth: false,
+		pageLength: config.pageLength,
+		lengthMenu: config.lengthMenu,
 		columns: [
 			{ data: 'id', title: config.lang.id },
 			{ data: 'code', title: config.lang.code },

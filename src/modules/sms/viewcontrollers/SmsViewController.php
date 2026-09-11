@@ -3,6 +3,7 @@
 namespace App\modules\sms\viewcontrollers;
 
 use App\Database\Db2;
+use App\helpers\ViewSettingsHelper;
 use App\modules\phpgwapi\controllers\Locations;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
@@ -22,14 +23,6 @@ class SmsViewController
 	{
 		$this->legacyView = new LegacyViewHelper();
 		$this->twig = new TwigHelper('sms');
-	}
-
-	private function rowsPerPage(): int
-	{
-		$user = Settings::getInstance()->get('user');
-		return isset($user['preferences']['common']['maxmatchs']) && (int) $user['preferences']['common']['maxmatchs'] > 0
-			? (int) $user['preferences']['common']['maxmatchs']
-			: 10;
 	}
 
 	private function denyAccess(Response $response): Response
@@ -68,7 +61,7 @@ class SmsViewController
 
 		Settings::getInstance()->update('flags', ['app_header' => lang('sms') . ' - ' . lang('inbox') . ': ' . lang('list inbox')]);
 
-		$rowsPerPage = $this->rowsPerPage();
+		$rowsPerPage = ViewSettingsHelper::rowsPerPage();
 
 		return $this->render($request, $response, '@views/inbox/sms_inbox.twig', [
 			'api_url' => \phpgw::link('/sms/inbox'),
@@ -80,7 +73,7 @@ class SmsViewController
 			'can_delete' => (bool) Acl::getInstance()->check('.inbox', Acl::DELETE, 'sms'),
 			'can_send' => (bool) Acl::getInstance()->check('.inbox', Acl::ADD, 'sms'),
 			'rows_per_page' => $rowsPerPage,
-			'length_menu' => [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3],
+			'length_menu' => ViewSettingsHelper::lengthMenu($rowsPerPage),
 		]);
 	}
 
@@ -97,7 +90,7 @@ class SmsViewController
 
 		Settings::getInstance()->update('flags', ['app_header' => lang('sms') . ' - ' . lang('outbox') . ': ' . lang('list outbox')]);
 
-		$rowsPerPage = $this->rowsPerPage();
+		$rowsPerPage = ViewSettingsHelper::rowsPerPage();
 
 		return $this->render($request, $response, '@views/outbox/sms_outbox.twig', [
 			'api_url' => \phpgw::link('/sms/outbox'),
@@ -106,7 +99,7 @@ class SmsViewController
 			'can_delete' => (bool) Acl::getInstance()->check('.outbox', Acl::DELETE, 'sms'),
 			'can_send' => (bool) Acl::getInstance()->check('.outbox', Acl::ADD, 'sms'),
 			'rows_per_page' => $rowsPerPage,
-			'length_menu' => [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3],
+			'length_menu' => ViewSettingsHelper::lengthMenu($rowsPerPage),
 		]);
 	}
 

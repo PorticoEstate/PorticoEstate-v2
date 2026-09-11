@@ -16,6 +16,8 @@
 			addUrl: '{{ add_url|e('js') }}',
 			editUrlTemplate: '{{ edit_url_template|replace({'__COMMAND_ID__': '{id}'})|e('js') }}',
 			deleteUrlTemplate: '{{ delete_url_template|e('js') }}',
+			pageLength: {{ rows_per_page|default(10) }},
+			lengthMenu: {{ length_menu|default([10, 25, 50])|json_encode|raw }},
 			lang: {
 				code: '{{ lang('code')|e('js') }}',
 				exec: '{{ lang('exec')|e('js') }}',

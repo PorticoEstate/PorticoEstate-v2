@@ -10,6 +10,8 @@
 		ajax: { url: config.apiUrl },
 		serverSide: true,
 		autoWidth: false,
+		pageLength: config.pageLength,
+		lengthMenu: config.lengthMenu,
 		newItem: { label: config.lang.add, url: config.addUrl },
 		columns: [
 			{ data: 'code', title: config.lang.code },

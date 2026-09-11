@@ -13,6 +13,8 @@
 		window.__smsCommandLog = {
 			id: 'sms-command-log-datatable',
 			apiUrl: '{{ api_url|e('js') }}',
+			pageLength: {{ rows_per_page|default(10) }},
+			lengthMenu: {{ length_menu|default([10, 25, 50])|json_encode|raw }},
 			lang: {
 				id: '{{ lang('ID')|e('js') }}',
 				code: '{{ lang('code')|e('js') }}',

@@ -3,6 +3,7 @@
 namespace App\modules\sms\viewcontrollers;
 
 use App\helpers\ResponseHelper;
+use App\helpers\ViewSettingsHelper;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
 use App\modules\phpgwapi\security\Acl;
@@ -53,11 +54,14 @@ class SmsCommandViewController
 		$menuSelection = 'sms::command';
 		if (!Acl::getInstance()->check('.command', Acl::READ, 'sms')) return $this->deny($response);
 		Settings::getInstance()->update('flags', ['app_header' => lang('sms') . ' - ' . lang('commands')]);
+		$rowsPerPage = ViewSettingsHelper::rowsPerPage();
 		return $this->render($request, $response, '@views/command/sms_command_list.twig', [
 			'api_url' => \phpgw::link('/sms/commands'),
 			'add_url' => \phpgw::link('/sms/view/command/edit'),
 			'edit_url_template' => \phpgw::link('/sms/view/command/edit/__COMMAND_ID__'),
 			'delete_url_template' => \phpgw::link('/sms/view/command/{id}/delete'),
+			'rows_per_page' => $rowsPerPage,
+			'length_menu' => ViewSettingsHelper::lengthMenu($rowsPerPage),
 		], $menuSelection);
 	}
 	public function edit(Request $request, Response $response, array $args): Response
@@ -78,11 +82,16 @@ class SmsCommandViewController
 	{
 		$menuSelection = 'sms::command::log';
 		if (!Acl::getInstance()->check('.command', Acl::READ, 'sms')) return $this->deny($response);
+		$rowsPerPage = ViewSettingsHelper::rowsPerPage();
 		return $this->render(
 			$request,
 			$response,
 			'@views/command/sms_command_log.twig',
-			['api_url' => \phpgw::link('/sms/commands/log')],
+			[
+				'api_url' => \phpgw::link('/sms/commands/log'),
+				'rows_per_page' => $rowsPerPage,
+				'length_menu' => ViewSettingsHelper::lengthMenu($rowsPerPage),
+			],
 			$menuSelection
 		);
 	}

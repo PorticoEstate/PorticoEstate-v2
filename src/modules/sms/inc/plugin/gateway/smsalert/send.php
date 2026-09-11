@@ -1,6 +1,7 @@
 <?php
 
 use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\services\Log;
 
 class sms_sms extends sms_sms_
 {
@@ -75,13 +76,31 @@ class sms_sms extends sms_sms_
 		}
 		catch (Exception $ex)
 		{
+			$error_message = $ex->getMessage();
 			$result = 0;
 		}
 
-		/*
-			> 0	Ok
-			  0	General error
-*/
+		if ($debug)
+		{
+			$log = new Log();
+
+			$logData = $post_data;
+			$logData['sPass'] = '[redacted]';
+			$log_message = 'SMS gateway debug information:' . PHP_EOL
+				. 'data: ' . json_encode($logData) . PHP_EOL
+				. 'httpCode: ' . $httpCode . PHP_EOL
+				. 'response: ' . $result_xml;
+			if (isset($error_message))
+			{
+				$log_message .= PHP_EOL . 'error_message: ' . $error_message;
+			}
+			$log->fatal(array(
+				'text'	=> $log_message,
+				'line'	=> __LINE__,
+				'file'	=> __FILE__
+			));
+		}
+
 		if ($result > 0)
 		{
 			$this->setsmsdeliverystatus($smslog_id, $uid, 1);
@@ -94,16 +113,7 @@ class sms_sms extends sms_sms_
 			throw new Exception('SMSgateway:General error');
 		}
 
-		if ($debug)
-		{
-			echo "data: </br>";
-			_debug_array($post_data);
-			echo "httpCode: $httpCode </br>";
-			echo "response: {$result_xml}</br>";
-			$url_outbox = phpgw::link('/index.php', array('menuaction' => 'sms.uisms.outbox'));
-			echo "<a href='{$url_outbox}'>Outbox</a>";
-//			die();
-		}
+
 
 		return $ret;
 	}

@@ -11,6 +11,7 @@ import {useCurrentBuilding} from "@/components/building-calendar/calendar-contex
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import {IAPIScheduleEntity} from "@/service/pecalendar.types";
 import {isFutureDate, phpGWLink} from "@/service/util";
+import {resolveParticipantLimit} from "@/components/building-calendar/util/participant-limit";
 import styles from "./manage-modal.module.scss";
 
 export type TFunction = (key: string, options?: any) => string;
@@ -235,6 +236,12 @@ function ManageModal<
 	const cancelMutation = adapter.useCancelMutation(Number.isFinite(buildingId as number) ? buildingId as number : undefined);
 
 	const bookingConfig = serverSettings.data?.booking_config;
+	// Same 3-step fallback the calendar popper gates its own "Register participants" link
+	// on (event-popper-content.tsx's showLink) — see participant-limit.ts.
+	const participantLimit = useMemo(
+		() => resolveParticipantLimit(entity, bookingConfig?.participant_limit),
+		[entity, bookingConfig]
+	);
 	const settingsLoading = serverSettings.isPending;
 	const settingsUnresolved = !settingsLoading && (serverSettings.isError || bookingConfig == null);
 	const canDelete = bookingConfig?.[adapter.deleteFlagKey] === true;
@@ -485,11 +492,13 @@ function ManageModal<
 									</Link>
 								</Button>
 							)}
-							<Button asChild variant="secondary" data-color="accent" className={styles.overviewActionButton}>
-								<Link href={registerParticipantsHref} target="_blank">
-									{t('booking.register participants')}
-								</Link>
-							</Button>
+							{participantLimit > 0 && (
+								<Button asChild variant="secondary" data-color="accent" className={styles.overviewActionButton}>
+									<Link href={registerParticipantsHref} target="_blank">
+										{t('booking.register participants')}
+									</Link>
+								</Button>
+							)}
 							<Button asChild variant="secondary" data-color="accent" className={styles.overviewActionButton}>
 								<Link href={editHref} target="_blank">
 									{t(adapter.editLabelLangKey)}

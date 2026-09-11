@@ -18,6 +18,7 @@ import EventPopperActions
 import BookingPopperActions
 	from "@/components/building-calendar/modules/event/popper/content/booking-popper-actions";
 import {isOrgAdmin} from "@/components/building-calendar/util/event-converter";
+import {resolveParticipantLimit} from "@/components/building-calendar/util/participant-limit";
 
 interface EventPopperContentProps {
 	event: FCallEvent
@@ -82,18 +83,7 @@ const EventPopperContent: FC<EventPopperContentProps> = (props) => {
 	}, [measureTitleTruncation]);
 
 	const showLink = useMemo(() => {
-		let participant_limit = 0;
-		if (IEventIsAPIEvent(eventData)) {
-			participant_limit = eventData.participant_limit || 0;
-		}
-
-		const resWithParticipants = eventData.resources.find(a => (a.participant_limit || 0) > 0)
-		if (!participant_limit && resWithParticipants) {
-			participant_limit = (resWithParticipants?.participant_limit || 0);
-		}
-		if (!participant_limit) {
-			participant_limit = (serverSettings.data?.booking_config?.participant_limit || 0);
-		}
+		const participant_limit = resolveParticipantLimit(eventData, serverSettings.data?.booking_config?.participant_limit);
 		if (participant_limit > 0) {
 			return `bookingfrontend.ui${eventData.type}.show`
 		}

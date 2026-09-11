@@ -12,6 +12,9 @@
 
 	/* $Id$ */
 
+use App\Database\Db;
+use App\modules\phpgwapi\services\Settings;
+
 class calendar_holiday
 {
 	var $db;
@@ -23,20 +26,22 @@ class calendar_holiday
 
 	public function __construct($owner='')
 	{
-		global $phpgw, $phpgw_info;
-
-		$this->db = $phpgw->db;
-		if ( isset($phpgw_info['user']['preferences']['common']['country'])
-			&& $phpgw_info['user']['preferences']['common']['country'] )
+		$this->db = Db::getInstance();
+		$user_settings = Settings::getInstance()->get('user');
+		$server_settings = Settings::getInstance()->get('server');
+		$user_settings = is_array($user_settings) ? $user_settings : array();
+		$server_settings = is_array($server_settings) ? $server_settings : array();
+		if ( isset($user_settings['preferences']['common']['country'])
+			&& $user_settings['preferences']['common']['country'] )
 		{
-			$this->users['user'] = $phpgw_info['user']['preferences']['common']['country'];
+			$this->users['user'] = $user_settings['preferences']['common']['country'];
 		}
 		else
 		{
 			$this->users['user'] = 'US';
 		}		
 		$owner_id = get_account_id($owner);
-		if($owner_id != $phpgw_info['user']['account_id'])
+		if($owner_id != ($user_settings['account_id'] ?? 0))
 		{
 			$owner_pref = CreateObject('phpgwapi.preferences',$owner_id);
 			$owner_prefs = $owner_pref->read();
@@ -50,7 +55,7 @@ class calendar_holiday
 			}
 				
 		}
-		if($phpgw_info['server']['auto_load_holidays'] == True)
+		if(($server_settings['auto_load_holidays'] ?? false) == True)
 		{
 			//while(list($key,$value) = each($this->users))
                         if (is_array($this->users))
@@ -105,20 +110,22 @@ class calendar_holiday
 
 	function load_from_network($locale)
 	{
-		global $phpgw_info, $HTTP_HOST, $SERVER_PORT;
+		$server_settings = Settings::getInstance()->get('server');
+		$server_settings = is_array($server_settings) ? $server_settings : array();
+		global $HTTP_HOST, $SERVER_PORT;
 		
 		@set_time_limit(0);
 
 		// get the file that contains the calendar events for your locale
 		// "http://www.phpgroupware.org/headlines.rdf";
 		$network = CreateObject('phpgwapi.network');
-		if(isset($phpgw_info['server']['holidays_url_path']) && $phpgw_info['server']['holidays_url_path'] != 'localhost')
+		if(isset($server_settings['holidays_url_path']) && $server_settings['holidays_url_path'] != 'localhost')
 		{
-			$load_from = $phpgw_info['server']['holidays_url_path'];
+			$load_from = $server_settings['holidays_url_path'];
 		}
 		else
 		{
-			$pos = strpos(' '.$phpgw_info['server']['webserver_url'],$HTTP_HOST);
+			$pos = strpos(' '.($server_settings['webserver_url'] ?? ''),$HTTP_HOST);
 			if($pos == 0)
 			{
 				switch($SERVER_PORT)
@@ -130,11 +137,11 @@ class calendar_holiday
 						$http_protocol = 'https://';
 						break;
 				}
-				$server_host = $http_protocol.$HTTP_HOST.$phpgw_info['server']['webserver_url'];
+				$server_host = $http_protocol.$HTTP_HOST.($server_settings['webserver_url'] ?? '');
 			}
 			else
 			{
-				$server_host = $phpgw_info['server']['webserver_url'];
+				$server_host = $server_settings['webserver_url'] ?? '';
 			}
 			$load_from = $server_host.'/calendar/setup';
 		}
@@ -163,9 +170,10 @@ class calendar_holiday
 
 	function read_holiday()
 	{
-		global $phpgw, $phpgw_info;
+		$user_settings = Settings::getInstance()->get('user');
+		$user_settings = is_array($user_settings) ? $user_settings : array();
 
-		$this->year = intval($phpgw->calendar->tempyear);
+		$this->year = intval($this->year);
 		
 		$sql = $this->build_holiday_query();
 		if($sql == False)
@@ -175,12 +183,12 @@ class calendar_holiday
 		$this->db->query($sql,__LINE__,__FILE__);
 
 		$i = 0;
-		$temp_locale = $phpgw_info['user']['preferences']['common']['country'];
+		$temp_locale = $user_settings['preferences']['common']['country'] ?? 'US';
 		while($this->db->next_record())
 		{
 			$this->index[$this->db->f('hol_id')] = $i;
 			$this->holidays[$i]['locale'] = $this->db->f('locale');
-			$this->holidays[$i]['name'] = $phpgw->strip_html($this->db->f('name'));
+			$this->holidays[$i]['name'] = phpgw::strip_html($this->db->f('name'));
 			$this->holidays[$i]['day'] = intval($this->db->f('mday'));
 			$this->holidays[$i]['month'] = intval($this->db->f('month_num'));
 			$this->holidays[$i]['occurence'] = intval($this->db->f('occurence'));
@@ -202,7 +210,7 @@ class calendar_holiday
 				$this->holidays[$i]['owner'] = 'user';		
 			}
 			$c = $i;
-			$phpgw_info['user']['preferences']['common']['country'] = $this->holidays[$i]['locale'];
+			Settings::getInstance()->update('user', array('preferences' => array('common' => array('country' => $this->holidays[$i]['locale']))));
 			$holidaycalc = CreateObject('calendar.holidaycalc');
 			$this->holidays[$i]['date'] = $holidaycalc->calculate_date($this->holidays[$i], $this->holidays, $this->year, $c);
 			unset($holidaycalc);
@@ -213,21 +221,19 @@ class calendar_holiday
 			$i++;
 		}
 		$this->holidays = $this->sort_by_date($this->holidays);
-		$phpgw_info['user']['preferences']['common']['country'] = $temp_locale;
+		Settings::getInstance()->update('user', array('preferences' => array('common' => array('country' => $temp_locale))));
 		return $this->holidays;
 	}
 
 	function build_list_for_submission($locale)
 	{
-		global $phpgw;
-		
 		$i = -1;
 		$this->db->query("SELECT * FROM phpgw_cal_holidays WHERE locale='".$locale."'");
 		while($this->db->next_record())
 		{
 			$i++;
 			$holidays[$i]['locale'] = $this->db->f('locale');
-			$holidays[$i]['name'] = $phpgw->strip_html($this->db->f('name'));
+			$holidays[$i]['name'] = phpgw::strip_html($this->db->f('name'));
 			$holidays[$i]['day'] = intval($this->db->f('mday'));
 			$holidays[$i]['month'] = intval($this->db->f('month_num'));
 			$holidays[$i]['occurence'] = intval($this->db->f('occurence'));
@@ -285,8 +291,6 @@ class calendar_holiday
 	
 	function find_date($date)
 	{
-		global $phpgw;
-
 		if($this->holidays == Null)
 		{
 			return False;

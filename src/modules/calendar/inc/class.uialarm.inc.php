@@ -16,6 +16,9 @@
 
 	phpgw::import_class('phpgwapi.datetime');
 
+	use App\helpers\Template;
+	use App\modules\phpgwapi\services\Settings;
+
 	class calendar_uialarm
 	{
 		var $template;
@@ -35,10 +38,12 @@
 		);
 
 		var $html;
+		var $nextmatchs, $browser, $phpgwapi_common;
 		function __construct()
 		{
-			$GLOBALS['phpgw']->nextmatchs = CreateObject('phpgwapi.nextmatchs');
-			$GLOBALS['phpgw']->browser    = CreateObject('phpgwapi.browser');
+			$this->nextmatchs = CreateObject('phpgwapi.nextmatchs');
+			$this->browser    = CreateObject('phpgwapi.browser');
+			$this->phpgwapi_common = new \phpgwapi_common();
 			
 	//		$this->theme = $GLOBALS['phpgw_info']['theme'];
 
@@ -49,7 +54,7 @@
 			{
 				echo "BO Owner : ".$this->bo->owner."<br />\n";
 			}
-			$this->template_dir = $GLOBALS['phpgw']->common->get_tpl_dir('calendar');
+			$this->template_dir = $this->phpgwapi_common->get_tpl_dir('calendar');
 
 			$this->html = CreateObject('calendar.html');
 		}
@@ -67,12 +72,11 @@
 									));
 			}
 
-			unset($GLOBALS['phpgw_info']['flags']['noheader']);
-			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
-			$GLOBALS['phpgw_info']['flags']['app_header'] = $GLOBALS['phpgw_info']['apps']['calendar']['title'].' - '.lang('Alarm Management');
-			$GLOBALS['phpgw']->common->phpgw_header(True);
+			Settings::getInstance()->update('flags', ['noheader' => false, 'nonavbar' => false, 'app_header' => Settings::getInstance()->get('apps')['calendar']['title'] . ' - ' . lang('Alarm Management')]);
+			$this->phpgwapi_common->phpgw_header(true);
 
-			$this->template = CreateObject('phpgwapi.template',$this->template_dir);
+			$this->template = Template::getInstance();
+			$this->template->set_root($this->template_dir);
 
 			$this->template->set_unknowns('remove');
 			$this->template->set_file(
@@ -91,7 +95,7 @@
 		{
 			if (!isset($var['class']))
 			{
-				$var['class'] = $GLOBALS['phpgw']->nextmatchs->alternate_row_class();
+				$var['class'] = $this->nextmatchs->alternate_row_class();
 			}
 			$this->template->set_var($var);
 			$this->template->parse($row,$list,True);
@@ -109,7 +113,7 @@
 				if ($this->bo->delete($alarm) < 0)
 				{
 					echo '<div class="err">' . lang('You do not have permission to delete this alarm !!!') . '</div>';
-					$GLOBALS['phpgw']->common->phpgw_exit(True);
+					$this->phpgwapi_common->phpgw_exit(True);
 				}
 			}
 
@@ -120,7 +124,7 @@
 				if ($this->bo->enable($alarm, $enable) < 0)
 				{
 					echo '<div class="err">'.lang('You do not have permission to enable/disable this alarm !!!').'</div>';
-					$GLOBALS['phpgw']->common->phpgw_exit(True);
+					$this->phpgwapi_common->phpgw_exit(True);
 				}
 			}
 			$this->prep_page();
@@ -135,19 +139,19 @@
 				if ($time > 0 && !$this->bo->add($this->event, $time, Sanitizer::get_var('owner', 'int', 'POST') ) )
 				{
 					echo '<div class="err">'.lang('You do not have permission to add alarms to this event !!!').'</div';
-					$GLOBALS['phpgw']->common->phpgw_exit(True);
+					$this->phpgwapi_common->phpgw_exit(True);
 				}
 			}
 			if (!ExecMethod('calendar.uicalendar.view_event',$this->event))
 			{
 				echo '<center>'.lang('You do not have permission to read this record!').'</center>';
-				$GLOBALS['phpgw']->common->phpgw_exit(True);
+				$this->phpgwapi_common->phpgw_exit(True);
 			}
 
-			$GLOBALS['phpgw']->template->set_var('th_bg',$this->theme['th_bg']);
-			$GLOBALS['phpgw']->template->set_var('hr_text',lang('Alarms').':');
-			$GLOBALS['phpgw']->template->fp('row','hr',True);
-			$GLOBALS['phpgw']->template->pfp('phpgw_body','view_event');
+			$this->template->set_var('th_bg',$this->theme['th_bg']);
+			$this->template->set_var('hr_text',lang('Alarms').':');
+			$this->template->fp('row','hr',True);
+			$this->template->pfp('phpgw_body','view_event');
 
 			$var = Array(
 				'action_url'	=> phpgw::link('/index.php',Array('menuaction'=>'calendar.uialarm.manager')),
@@ -173,12 +177,12 @@
 						continue;
 					}
 					$var = Array(
-						'field'    => $GLOBALS['phpgw']->common->show_date($alarm['time']),
+						'field'    => $this->phpgwapi_common->show_date($alarm['time']),
 						//'data'   => $alarm['text'],
 						'data'     => 'Email Notification',
-						'owner'    => $GLOBALS['phpgw']->common->grab_owner_name($alarm['owner']),
-						'enabled'  => ($alarm['enabled']?'<img src="'.$GLOBALS['phpgw']->common->image('calendar','enabled.png').'" width="13" height="13" title="'.lang('enabled').'">':
-							'<img src="'.$GLOBALS['phpgw']->common->image('calendar','disabled.png').'" width="13" height="13" title="'.lang('disabled').'">'),
+						'owner'    => $this->phpgwapi_common->grab_owner_name($alarm['owner']),
+						'enabled'  => ($alarm['enabled']?'<img src="'.phpgwapi_common::image('calendar','enabled.png').'" width="13" height="13" title="'.lang('enabled').'">':
+							'<img src="'.phpgwapi_common::image('calendar','disabled.png').'" width="13" height="13" title="'.lang('disabled').'">'),
 						'select'   => '<input type="checkbox" name="alarm['.$alarm['id'].']">'
 					);
 					if ($this->bo->check_perms(ACL_DELETEALARM,$alarm['owner']))
@@ -195,7 +199,9 @@
 				}
 				$this->template->parse('rows','buttons',True);
 			}
-			if (isset($this->event['participants'][intval($GLOBALS['phpgw_info']['user']['person_id'])]))
+			$user_settings = Settings::getInstance()->get('user');
+			$person_id = is_array($user_settings) ? ($user_settings['person_id'] ?? 0) : 0;
+			if (isset($this->event['participants'][intval($person_id)]))
 			{
 				$time = Sanitizer::get_var('time', 'int', 'POST');
 				$this->template->set_var(Array(
@@ -204,7 +210,7 @@
 					'input_days'    => $this->html->select('time[days]', isset($time['days']) ? $time['days'] : 0, range(0,31), True).' '.lang('days'),
 					'input_hours'   => $this->html->select('time[hours]', isset($time['hours']) ? $time['hours'] : 0,range(0,24),True).' '.lang('hours'),
 					'input_minutes' => $this->html->select('time[mins]', isset($time['mins']) ? $time['mins'] : 0, range(0,60),True).' '.lang('minutes').' '.lang('before the event'),
-					'input_owner'   => $this->html->select('owner',$GLOBALS['phpgw_info']['user']['account_id'],$this->bo->participants($this->event,True),True),
+					'input_owner'   => $this->html->select('owner',is_array($user_settings) ? ($user_settings['account_id'] ?? 0) : 0,$this->bo->participants($this->event,True),True),
 					'input_add'     => $this->html->submit_button('add','Add Alarm')
 				));
 			}

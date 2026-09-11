@@ -164,8 +164,8 @@ class calendar_html
 			{
 				$image = substr($image,0,strpos($image,'.'));
 			}
-			if (!($path = $GLOBALS['phpgw']->common->image($app,$image)) &&
-				!($path = $GLOBALS['phpgw']->common->image('phpgwapi',$image)))
+			if (!($path = phpgwapi_common::image($app,$image)) &&
+				!($path = phpgwapi_common::image('phpgwapi',$image)))
 			{
 				$path = $image;		// name may already contain absolut path 
 			}
@@ -308,7 +308,7 @@ class calendar_html
 		{
 			$name .= '.png';
 		}
-		if (!($path = $GLOBALS['phpgw']->common->image($app,$name)))
+		if (!($path = phpgwapi_common::image($app,$name)))
 		{
 			$path = $name;		// name may already contain absolut path
 		}
@@ -413,10 +413,12 @@ class calendar_html
 	 */
 	function theme2css()
 	{
-		return 
-			".th { background-color: {$GLOBALS['phpgw_info']['theme']['th_bg']}; font-weight: bold; }\n".
-			".row_on,.th_bright { background-color: {$GLOBALS['phpgw_info']['theme']['row_on']}; }\n".
-			".row_off { background-color: {$GLOBALS['phpgw_info']['theme']['row_off']}; }\n";
+		$theme = \App\modules\phpgwapi\services\Settings::getInstance()->get('theme');
+		$theme = is_array($theme) ? $theme : array();
+		return
+			".th { background-color: " . ($theme['th_bg'] ?? '') . "; font-weight: bold; }\n".
+			".row_on,.th_bright { background-color: " . ($theme['row_on'] ?? '') . "; }\n".
+			".row_off { background-color: " . ($theme['row_off'] ?? '') . "; }\n";
 	}
 
 	/**

@@ -14,10 +14,14 @@
 
 	/* $Id$ */
 
+	use App\helpers\Template;
+	use App\modules\phpgwapi\services\Settings;
+
 	class calendar_uiicalendar
 	{
 		var $bo;
 		var $template;
+		var $phpgwapi_common;
 
 		var $public_functions = array
 		(
@@ -30,8 +34,9 @@
 		function __construct()
 		{
 			$this->bo = CreateObject('calendar.boicalendar');
-			$this->template = $GLOBALS['phpgw']->template;
-			$GLOBALS['phpgw_info']['flags']['app_header'] = lang('Calendar - [iv]Cal Importer');
+			$this->template = Template::getInstance();
+			$this->phpgwapi_common = new \phpgwapi_common();
+			Settings::getInstance()->update('flags', ['app_header' => lang('Calendar - [iv]Cal Importer')]);
 		}
 
 		function print_test($val,$title,$x_pre='')
@@ -82,11 +87,10 @@
 		{
 			$print_events = True;
 			
-			unset($GLOBALS['phpgw_info']['flags']['noheader']);
-			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
-			$GLOBALS['phpgw']->common->phpgw_header();
+			Settings::getInstance()->update('flags', ['noheader' => false, 'nonavbar' => false]);
+			$this->phpgwapi_common->phpgw_header();
 
-			echo "Start Time : ".$GLOBALS['phpgw']->common->show_date()."<br />\n";
+			echo "Start Time : ".$this->phpgwapi_common->show_date()."<br />\n";
 			@set_time_limit(0);
 
 			$icsfile=PHPGW_APP_INC.'/events.ics';
@@ -158,29 +162,31 @@
 */
 			include(PHPGW_APP_INC.'/../setup/setup.inc.php');
 
-			$this->bo->set_var($vcalendar['prodid'],'value','-//phpGroupWare//phpGroupWare '.$setup_info['calendar']['version'].' MIMEDIR//'.strtoupper($GLOBALS['phpgw_info']['user']['preferences']['common']['lang']));
+			$user_settings = Settings::getInstance()->get('user');
+			$lang = is_array($user_settings) ? ($user_settings['preferences']['common']['lang'] ?? '') : '';
+			$this->bo->set_var($vcalendar['prodid'],'value','-//phpGroupWare//phpGroupWare '.$setup_info['calendar']['version'].' MIMEDIR//'.strtoupper($lang));
 			$this->bo->set_var($vcalendar['version'],'value','2.0');
 			$this->bo->set_var($vcalendar['method'],'value',strtoupper('publish'));
 			echo "<br /><br /><br />\n";
 			echo nl2br($this->bo->build_ical($vcalendar));
-			echo "End Time : ".$GLOBALS['phpgw']->common->show_date()."<br />\n";
+			echo "End Time : ".$this->phpgwapi_common->show_date()."<br />\n";
 		}
 
 		function import()
 		{
-			unset($GLOBALS['phpgw_info']['flags']['noheader']);
-			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
-			$GLOBALS['phpgw_info']['flags']['nonappheader'] = True;
-			$GLOBALS['phpgw_info']['flags']['nonappfooter'] = True;
-			$GLOBALS['phpgw']->common->phpgw_header(True);
+			Settings::getInstance()->update('flags', ['noheader' => false, 'nonavbar' => false, 'nonappheader' => true, 'nonappfooter' => true]);
+			$this->phpgwapi_common->phpgw_header(true);
 			$this->template->set_root(PHPGW_APP_TPL);
 
-			if(!@is_dir($GLOBALS['phpgw_info']['server']['temp_dir']))
+			$server_settings = Settings::getInstance()->get('server');
+			$temp_dir = is_array($server_settings) ? ($server_settings['temp_dir'] ?? '') : '';
+			if(!@is_dir($temp_dir))
 			{
-				mkdir($GLOBALS['phpgw_info']['server']['temp_dir'],0700);
+				mkdir($temp_dir,0700);
 			}
 
-			echo '<body bgcolor="' . (isset($GLOBALS['phpgw_info']['theme']['bg_color'])?$GLOBALS['phpgw_info']['theme']['bg_color']:'') . '">';
+			$theme_settings = Settings::getInstance()->get('theme');
+			echo '<body bgcolor="' . (is_array($theme_settings) ? ($theme_settings['bg_color'] ?? '') : '') . '">';
 
 			if ( strtoupper( Sanitizer::get_var('action', 'string', 'GET') ) == 'GETFILE')
 			{

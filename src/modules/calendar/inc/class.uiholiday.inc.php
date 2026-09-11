@@ -14,6 +14,9 @@
 
 	/* $Id$ */
 
+	use App\helpers\Template;
+	use App\modules\phpgwapi\services\Settings;
+
 	class calendar_uiholiday
 	{
 		var $debug = False;
@@ -35,17 +38,19 @@
 		);
 
 		var $sb;
+		var $nextmatchs, $phpgwapi_common, $template;
 		public function __construct()
 		{
-			$GLOBALS['phpgw']->nextmatchs = CreateObject('phpgwapi.nextmatchs');
+			$this->nextmatchs = CreateObject('phpgwapi.nextmatchs');
+			$this->phpgwapi_common = new \phpgwapi_common();
 
 			$this->bo = CreateObject('calendar.boholiday');
 			$this->bo->check_admin();
 			$this->base_url = $this->bo->base_url;
-			$this->template_dir = $GLOBALS['phpgw']->common->get_tpl_dir('calendar');
+			$this->template_dir = $this->phpgwapi_common->get_tpl_dir('calendar');
 			$this->sb = CreateObject('phpgwapi.sbox');
 
-			$GLOBALS['phpgw_info']['flags']['app_header'] = $GLOBALS['phpgw_info']['apps']['calendar']['title'].' - '.lang('Holiday Management');
+			Settings::getInstance()->update('flags', ['app_header' => Settings::getInstance()->get('apps')['calendar']['title'] . ' - ' . lang('Holiday Management')]);
 		}
 
 		function admin()

@@ -14,20 +14,30 @@
 
 phpgw::import_class('calendar.calendar__');
 
+use App\modules\phpgwapi\controllers\Accounts\Accounts;
+use App\modules\phpgwapi\services\Settings;
+
 class calendar_calendar_ extends calendar_calendar__
 {
 	var $user, $stream,$event;
+	var $accounts_obj;
+
+	function __construct()
+	{
+		$this->accounts_obj = new Accounts();
+	}
 	function open($calendar='',$user='',$passwd='',$options='')
 	{
-		global $phpgw, $phpgw_info;
+		$user_settings = Settings::getInstance()->get('user');
+		$server_settings = Settings::getInstance()->get('server');
 
 		if($user=='')
 		{
-			$user = $phpgw_info['user']['account_lid'];
+			$this->user = $user_settings['account_lid'];
 		}
 		elseif(is_int($user)) 
 		{
-			$this->user = $phpgw->accounts->id2name($user);
+			$this->user = $this->accounts_obj->id2name($user);
 		}
 		elseif(is_string($user))
 		{
@@ -35,25 +45,26 @@ class calendar_calendar_ extends calendar_calendar__
 		}
 		if($options != '')
 		{
-			$this->stream = mcal_open('{'.$phpgw_info['server']['icap_server'].'/'.$phpgw_info['server']['icap_type'].'}'.$calendar,$this->user,$passwd,$options);
+			$this->stream = mcal_open('{'.$server_settings['icap_server'].'/'.$server_settings['icap_type'].'}'.$calendar,$this->user,$passwd,$options);
 		}
 		else
 		{
-			$this->stream = mcal_open('{'.$phpgw_info['server']['icap_server'].'/'.$phpgw_info['server']['icap_type'].'}'.$calendar,$this->user,$passwd);
+			$this->stream = mcal_open('{'.$server_settings['icap_server'].'/'.$server_settings['icap_type'].'}'.$calendar,$this->user,$passwd);
 		}
 	}
 
 	function popen($calendar='',$user='',$passwd='',$options='')
 	{
-		global $phpgw, $phpgw_info;
+		$user_settings = Settings::getInstance()->get('user');
+		$server_settings = Settings::getInstance()->get('server');
 
 		if($user=='')
 		{
-			$this->user = $phpgw_info['user']['account_lid'];
+			$this->user = $user_settings['account_lid'];
 		}
 		elseif(is_int($user)) 
 		{
-			$this->user = $phpgw->accounts->id2name($user);
+			$this->user = $this->accounts_obj->id2name($user);
 		}
 		elseif(is_string($user))
 		{
@@ -61,11 +72,11 @@ class calendar_calendar_ extends calendar_calendar__
 		}
 		if($options != '')
 		{
-			$this->stream = mcal_popen('{'.$phpgw_info['server']['icap_server'].'/'.$phpgw_info['server']['icap_type'].'}'.$calendar,$this->user,$passwd,$options);
+			$this->stream = mcal_popen('{'.$server_settings['icap_server'].'/'.$server_settings['icap_type'].'}'.$calendar,$this->user,$passwd,$options);
 		}
 		else
 		{
-			$this->stream = mcal_popen('{'.$phpgw_info['server']['icap_server'].'/'.$phpgw_info['server']['icap_type'].'}'.$calendar,$this->user,$passwd);
+			$this->stream = mcal_popen('{'.$server_settings['icap_server'].'/'.$server_settings['icap_type'].'}'.$calendar,$this->user,$passwd);
 		}
 	}
 

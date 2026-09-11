@@ -14,6 +14,9 @@
 
 	phpgw::import_class('calendar.bocustom_fields');
 
+	use App\helpers\Template;
+	use App\modules\phpgwapi\services\Settings;
+
 	class calendar_uicustom_fields extends calendar_bocustom_fields
 	{
 		var $public_functions = array
@@ -23,27 +26,24 @@
 		);
 		
 		var $classname,$tpl,$html;
+		var $nextmatchs, $phpgwapi_common;
 		
 		public function __construct()
 		{
 			parent::__construct();
 
-			$this->tpl = $GLOBALS['phpgw']->template;
-			if (!is_object($GLOBALS['phpgw']->nextmatchs))
-			{
-				$GLOBALS['phpgw']->nextmatchs = CreateObject('phpgwapi.nextmatchs');
-			}
+			$this->tpl = Template::getInstance();
+			$this->nextmatchs = CreateObject('phpgwapi.nextmatchs');
+			$this->phpgwapi_common = new \phpgwapi_common();
 			$this->html = CreateObject('calendar.html');
 		}
 
 		function index($error='')
 		{
-			unset($GLOBALS['phpgw_info']['flags']['noheader']);
-			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
-			$GLOBALS['phpgw_info']['flags']['app_header'] = $GLOBALS['phpgw_info']['apps']['calendar']['title'].' - '.lang('Custom fields and sorting');
-			$GLOBALS['phpgw']->common->phpgw_header(true);
+			Settings::getInstance()->update('flags', ['noheader' => false, 'nonavbar' => false, 'app_header' => Settings::getInstance()->get('apps')['calendar']['title'] . ' - ' . lang('Custom fields and sorting')]);
+			$this->phpgwapi_common->phpgw_header(true);
 
-			$this->tpl = $GLOBALS['phpgw']->template;
+			$this->tpl = Template::getInstance();
 			$this->tpl->set_root(PHPGW_APP_TPL);
 			$this->tpl->set_unknowns('remove');
 			$this->tpl->set_file(array(
@@ -100,7 +100,7 @@
 				'button'  => $name ? $this->html->submit_button($name.$id,$label) : '&nbsp'
 			));
 			
-			$this->classname = $GLOBALS['phpgw']->nextmatchs->alternate_row_class($this->classname);
+			$this->classname = $this->nextmatchs->alternate_row_class($this->classname);
 			if ($name !== 'add')
 			{
 				$this->tpl->set_var('tr_color', $this->classname);

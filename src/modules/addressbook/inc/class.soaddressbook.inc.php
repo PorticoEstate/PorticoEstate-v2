@@ -683,9 +683,9 @@ class addressbook_soaddressbook
 	 * See the documentation in contact objet
 	 *
 	 */
-	function add_location($fields, $contact_id)
+	function add_location($fields, $contact_id, $action = PHPGW_SQL_RUN_SQL)
 	{
-		return $this->contacts->add_location($fields, $contact_id);
+		return $this->contacts->add_location($fields, $contact_id, $action);
 	}
 
 	function add_contact_with_email($name, $email)

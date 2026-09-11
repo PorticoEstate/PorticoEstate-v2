@@ -52,21 +52,11 @@ class NotificationService
             ],
         ]);
 
-        // Publish real-time events via Redis/WebSocket
-        try {
-            // 1. Live thread update for anyone viewing the application
-            WebSocketHelper::sendEntityEvent('application', $applicationId, 'new_comment', [
-                'comment' => [
-                    'id'      => $commentId,
-                    'author'  => $authorName,
-                    'comment' => $commentText,
-                    'time'    => date('c'),
-                    'type'    => 'comment',
-                ],
-                'notification_id' => $notificationId,
-            ]);
+        // 1. Live thread update for anyone viewing the application
+        $this->broadcastCommentEvent($applicationId, $commentId, $authorName, $commentText, $notificationId);
 
-            // 2. Bell update for the recipient on every tab/page (identity room)
+        // 2. Bell update for the recipient on every tab/page (identity room)
+        try {
             WebSocketHelper::sendToUserRoom($recipientUserType, $recipientIdentifier, [
                 'type'      => 'notification_event',
                 'eventType' => 'new',
@@ -87,9 +77,38 @@ class NotificationService
                 'timestamp' => date('c'),
             ]);
         } catch (\Throwable $e) {
-            error_log("Failed to send WebSocket event for comment notification: " . $e->getMessage());
+            error_log("Failed to send WebSocket bell event for comment notification: " . $e->getMessage());
         }
 
         return $notificationId;
+    }
+
+    /**
+     * Broadcast the live thread-update event for a new comment to everyone
+     * viewing the application, independent of whether a recipient/notification
+     * exists. Callers that have no one to notify (e.g. no case officer) call
+     * this directly instead of createCommentNotification().
+     */
+    public function broadcastCommentEvent(
+        int $applicationId,
+        int $commentId,
+        string $authorName,
+        string $commentText,
+        ?int $notificationId = null
+    ): void {
+        try {
+            WebSocketHelper::sendEntityEvent('application', $applicationId, 'new_comment', [
+                'comment' => [
+                    'id'      => $commentId,
+                    'author'  => $authorName,
+                    'comment' => $commentText,
+                    'time'    => date('c'),
+                    'type'    => 'comment',
+                ],
+                'notification_id' => $notificationId,
+            ]);
+        } catch (\Throwable $e) {
+            error_log("Failed to send WebSocket entity event for comment: " . $e->getMessage());
+        }
     }
 }

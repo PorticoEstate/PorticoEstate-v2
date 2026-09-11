@@ -820,7 +820,12 @@ class calendar_bocalendar
 			}
 			elseif (isset($l_recur_enddate['str']))
 			{
-				$l_recur_enddate = $this->_jscal->input2date($l_recur_enddate['str'], False, 'mday');
+				$date_parts = phpgwapi_datetime::date_array($l_recur_enddate['str']);
+				$l_recur_enddate = array(
+					'year' => $date_parts['year'],
+					'month' => $date_parts['month'],
+					'mday' => $date_parts['day']
+				);
 			}
 
 			switch (intval($l_cal['recur_type']))
@@ -1127,11 +1132,12 @@ class calendar_bocalendar
 	{
 		if (isset($time_param['str']))
 		{
-			if (!is_object($this->_jscal))
-			{
-				$this->_jscal = CreateObject('phpgwapi.jscalendar');
-			}
-			$time_param += $this->_jscal->input2date($time_param['str'], False, 'mday');
+			$date_parts = phpgwapi_datetime::date_array($time_param['str']);
+			$time_param += array(
+				'year' => $date_parts['year'],
+				'month' => $date_parts['month'],
+				'mday' => $date_parts['day']
+			);
 			unset($time_param['str']);
 		}
 		if ($this->prefs['common']['timeformat'] == '12')

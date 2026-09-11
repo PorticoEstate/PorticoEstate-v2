@@ -377,7 +377,6 @@ class calendar_uicalendar
 				'link'	=> 'day'
 			)
 		);
-
 		$param = array('year' => $this->bo->year, 'month' => $this->bo->month, 'friendly' => 1);
 
 		$this->bo->read_holidays();
@@ -1884,7 +1883,7 @@ class calendar_uicalendar
 		$var[] = array(
 			'tr_color' => 'row_on',
 			'field'	=> lang('Date'),
-			'data'	=> $jscal->input('date_select', $datetime)
+			'data'	=> $jscal->add_listener('date_select', 'date', $datetime)
 		);
 
 		// View type
@@ -2035,7 +2034,7 @@ class calendar_uicalendar
 		if ($date_select)
 		{
 			$jscal = CreateObject('phpgwapi.jscalendar', false);
-			$date_selected = $jscal->input2date($date_select);
+			$date_selected = phpgwapi_datetime::date_array($date_select);
 			$this->bo->year = $date_selected['year'];
 			$this->bo->month = $date_selected['month'];
 			$this->bo->day = $date_selected['day'];
@@ -3973,7 +3972,7 @@ HTML;
 				   $sb->getDays('start[mday]',intval($this->phpgwapi_common->show_date($start,'d')))
 				)
 */
-			'data' => $jscal->input('start[str]', $start)
+			'data' => $jscal->add_listener('start[str]', 'datetime', $start)
 		);
 
 		// Time
@@ -3998,7 +3997,7 @@ HTML;
 				   $sb->getDays('end[mday]',intval($this->phpgwapi_common->show_date($end,'d')))
 				)
 */
-			'data' => $jscal->input('end[str]', $end)
+			'data' => $jscal->add_listener('end[str]', 'datetime', $end)
 		);
 
 		// End Time
@@ -4156,7 +4155,7 @@ HTML;
 						$sb->getDays('recur_enddate[mday]',intval($this->phpgwapi_common->show_date($recur_end,'d')))
 					)
 */
-				$jscal->input('recur_enddate[str]', $recur_end)
+				$jscal->add_listener('recur_enddate[str]', 'date', $recur_end)
 		);
 
 		$i = 0;

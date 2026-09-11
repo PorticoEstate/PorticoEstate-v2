@@ -12,6 +12,7 @@ import ColourCircle from "@/components/building-calendar/modules/colour-circle/c
 import {IAPIScheduleEntity} from "@/service/pecalendar.types";
 import {isFutureDate, phpGWLink} from "@/service/util";
 import {resolveParticipantLimit} from "@/components/building-calendar/util/participant-limit";
+import ApplicationDetails from "@/components/user/application/application-details";
 import styles from "./manage-modal.module.scss";
 
 export type TFunction = (key: string, options?: any) => string;
@@ -231,6 +232,12 @@ function ManageModal<
 	const [result, setResult] = useState<TResult | null>(null);
 	const [staleRepreviewed, setStaleRepreviewed] = useState<boolean>(false);
 	const [requestModeRefusal, setRequestModeRefusal] = useState<boolean>(false);
+	// WITH-app branch only (below): ApplicationDetails' own <h1> of the application's name
+	// is suppressed when embedded, so this modal has no other source for it. Reported back
+	// via ApplicationDetails' onTitleReady once the application resolves, and passed to the
+	// Dialog as `title` — the same prop the WITHOUT-app branch already uses for its own
+	// (entity-derived) title — so this dialog gets an accessible name too, instead of none.
+	const [appTitleName, setAppTitleName] = useState<string | undefined>(undefined);
 
 	const previewMutation = adapter.useCancelPreviewMutation();
 	const cancelMutation = adapter.useCancelMutation(Number.isFinite(buildingId as number) ? buildingId as number : undefined);
@@ -883,6 +890,29 @@ function ManageModal<
 			</div>
 		</div>
 	);
+
+	// ADDITIVE second rendering mode (task #23788, operator: "reuse the component as the
+	// content for the modal"): an entity carrying an application_id gets the existing
+	// ApplicationDetails page component as the Dialog's body, unmodified and mounted the same
+	// bare way page.tsx does (applicationId only — no secret; the WS route it fetches through
+	// does not require one for this viewer, see ledger-23789). Every hook above still runs
+	// unconditionally on every render (Rules of Hooks) even though the step machine's own
+	// state/mutations go unused here. The entity's OWN cancel control (inside ApplicationDetails)
+	// is therefore reachable from within a single-occurrence modal — flagged, not decided, see
+	// task #23788's acceptance (c).
+	if (entity.application_id) {
+		return (
+			<Dialog
+				open={open}
+				onClose={handleClose}
+				dialogId={`${adapter.dialogIdPrefix}-${entity.id}`}
+				title={appTitleName}
+				closeOnBackdropClick={false}
+			>
+				<ApplicationDetails applicationId={entity.application_id} embedded={true} onTitleReady={setAppTitleName}/>
+			</Dialog>
+		);
+	}
 
 	return (
 		<Dialog

@@ -21,7 +21,7 @@ export interface IAPIScheduleEntity {
 	to_: TDateISO;    // @Expose + NOT NULL
 	cost?: number;     // nullable + no @Expose
 	completed: number; // @Expose + default 0
-	application_id?: number;  // nullable + no @Expose
+	application_id?: number;  // @Expose + nullable
 	building_name: string;    // @Expose + NOT NULL + default
 	skip_bas: number;        // @Expose + default 0
 	resources: IShortResource[];  // @Expose

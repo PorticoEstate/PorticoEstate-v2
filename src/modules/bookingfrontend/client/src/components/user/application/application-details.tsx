@@ -65,6 +65,17 @@ interface ApplicationDetailsProps {
     initialApplication?: IApplication;
     applicationId: number;
     secret?: string;
+    /** True when mounted inside another surface's own document (e.g. a modal) that
+     *  already supplies its own <main> landmark and page title — suppresses this
+     *  component's page-chrome (its <main> wrapper, back-link, <h1> and document.title
+     *  side effect) so the host page isn't left with duplicate landmarks/headings.
+     *  Default false: the standalone page's own render is unchanged. */
+    embedded?: boolean;
+    /** Fired with the application's name once it resolves. The embedded host (the manage
+     *  modal) has no other access to that name — this component's own <h1> render of it
+     *  is suppressed when embedded — so it uses this to supply the modal Dialog's title,
+     *  giving the dialog an accessible name carrying the application's identity. */
+    onTitleReady?: (name: string) => void;
 }
 
 const ACCEPTED_FILE_TYPES = '.jpg,.jpeg,.png,.gif,.xls,.xlsx,.doc,.docx,.txt,.pdf,.odt,.ods';
@@ -277,7 +288,11 @@ function editLabelLangKey(type: ReservedEntity['type']): string {
 const ReservedTimesList: FC<{
     entities: { events: IAPIEvent[]; allocations: IAPIAllocation[]; bookings: IAPIBooking[] };
     applicationSecret?: string;
-}> = ({entities, applicationSecret}) => {
+    /** True when hosted inside the manage modal — suppresses only the
+     *  "show_in_calendar" link (a navigation into a page the modal already
+     *  replaces); the row's other actions are unaffected. */
+    embedded?: boolean;
+}> = ({entities, applicationSecret, embedded}) => {
     const t = useTrans();
     const serverSettings = useServerSettings();
     const participantLimitDefault = serverSettings.data?.booking_config?.participant_limit;
@@ -302,6 +317,7 @@ const ReservedTimesList: FC<{
                 const sameDay = f.full === to.full;
                 const hours = durationHours(entity.from_, entity.to_);
                 const calendarLink = buildCalendarLink(row);
+                const showCalendarLink = !!calendarLink && !embedded;
 
                 // Register participants — bookingfrontend.uiparticipant.add is a genuinely
                 // PUBLIC endpoint (public_functions, and add() itself carries no ownership
@@ -377,7 +393,7 @@ const ReservedTimesList: FC<{
                     }, false));
                 }
 
-                const hasActions = !!calendarLink || showRegisterParticipants || showEdit || !!newBookingHref;
+                const hasActions = showCalendarLink || showRegisterParticipants || showEdit || !!newBookingHref;
 
                 return (
                     <div key={`${row.type}-${entity.id}`} className={styles.reservedRow}>
@@ -418,7 +434,7 @@ const ReservedTimesList: FC<{
                                         </Link>
                                     </Button>
                                 )}
-                                {calendarLink && (
+                                {calendarLink && !embedded && (
                                     <Button asChild variant="tertiary" data-color="accent" data-size="sm">
                                         <Link href={calendarLink}>
                                             <CalendarIcon fontSize="1.1rem"/>
@@ -571,6 +587,7 @@ const CommentsSection: FC<{
 // --- Main Component ---
 
 const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
+    const embedded = !!props.embedded;
     const {data: application, isLoading, error} = useApplication(props.applicationId, {
         initialData: props.initialApplication,
         secret: props.secret,
@@ -594,10 +611,17 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
     const isParentApplication = ENABLE_COMBINED_APPLICATIONS && application && (!application.parent_id || application.parent_id === application.id);
 
     useEffect(() => {
-        if (application && props.secret) {
+        if (application && props.secret && !embedded) {
             document.title = application.name || `Application ${props.applicationId}`;
         }
-    }, [application, props.secret, props.applicationId]);
+    }, [application, props.secret, props.applicationId, embedded]);
+
+    useEffect(() => {
+        if (application?.name) {
+            props.onTitleReady?.(application.name);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [application?.name]);
 
     // Live comment updates via WebSocket
     useEffect(() => {
@@ -723,11 +747,12 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
     }
 
     if (error || !application) {
+        const ErrorWrapper: React.ElementType = embedded ? React.Fragment : 'main';
         return (
-            <main>
+            <ErrorWrapper>
                 <Heading level={2} data-size="sm">{t('common.error')}</Heading>
                 <Paragraph>{t('common.application not found')}</Paragraph>
-            </main>
+            </ErrorWrapper>
         );
     }
 
@@ -771,13 +796,17 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
         ? t('bookingfrontend.cancel_booking')
         : t('bookingfrontend.withdraw_application');
 
+    const MainWrapper: React.ElementType = embedded ? React.Fragment : 'main';
+
     return (
-        <main>
+        <MainWrapper>
             {/* Back link */}
-            <Link href="/user/applications" className={styles.backLink}>
-                <ArrowLeftIcon fontSize="1rem"/>
-                {t('bookingfrontend.back_to_applications')}
-            </Link>
+            {!embedded && (
+                <Link href="/user/applications" className={styles.backLink}>
+                    <ArrowLeftIcon fontSize="1rem"/>
+                    {t('bookingfrontend.back_to_applications')}
+                </Link>
+            )}
 
             {/* App header */}
             <div className={styles.appHeader}>
@@ -787,7 +816,9 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                         <span>&middot;</span>
                         <span>{isOrg ? application.customer_organization_name : t('bookingfrontend.personal')}</span>
                     </div>
-                    <Heading level={1} data-size="lg">{application.name}</Heading>
+                    {!embedded && (
+                        <Heading level={1} data-size="lg">{application.name}</Heading>
+                    )}
                     {isParentApplication && (
                         <Tag data-size="sm" data-color="info">{t('bookingfrontend.combined_application')}</Tag>
                     )}
@@ -915,6 +946,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                                 <ReservedTimesList
                                     entities={scheduleEntities}
                                     applicationSecret={props.secret || application.secret || undefined}
+                                    embedded={embedded}
                                 />
                             </>
                         )}
@@ -1264,7 +1296,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                     onClose={() => setShowCopyDialog(false)}
                 />
             )}
-        </main>
+        </MainWrapper>
     );
 };
 

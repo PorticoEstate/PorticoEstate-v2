@@ -1825,7 +1825,7 @@ class calendar_uicalendar
 		//
 		for ($v = $this->planner_firstday; $v <= $this->planner_lastday; $v++)
 		{
-			$daily = (isset($this->bo->cached_events[$v]) ? $this->bo->cached_events[$v] : '');
+			$daily = (isset($this->bo->cached_events[$v]) && is_array($this->bo->cached_events[$v]) ? $this->bo->cached_events[$v] : array());
 
 			print_debug('For Date', $v);
 			print_debug('Count of items', count($daily));
@@ -3336,7 +3336,11 @@ HTML;
 
 		if ($set_day_start) $day_start = $set_day_start;
 		if ($set_day_end)   $day_end   = $set_day_end;
-		if (!$interval)     $interval  = 60 * $this->bo->prefs['calendar']['interval'];
+		if (!$interval)
+		{
+			$calendar_interval = intval($this->bo->prefs['calendar']['interval'] ?? 0);
+			$interval = 60 * ($calendar_interval > 0 ? $calendar_interval : 15);
+		}
 
 		if ($time > $day_end)
 		{

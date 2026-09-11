@@ -43,6 +43,7 @@
 		{
 			$this->nextmatchs = CreateObject('phpgwapi.nextmatchs');
 			$this->phpgwapi_common = new \phpgwapi_common();
+			$this->template = Template::getInstance();
 
 			$this->bo = CreateObject('calendar.boholiday');
 			$this->bo->check_admin();
@@ -58,9 +59,9 @@
 			unset($GLOBALS['phpgw_info']['flags']['noheader']);
 			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
 			$GLOBALS['phpgw_info']['flags']['noappfooter'] = True;
-			$GLOBALS['phpgw']->common->phpgw_header(true);
+			$this->phpgwapi_common->phpgw_header(true);
 
-			$p = &$GLOBALS['phpgw']->template;
+			$p = &$this->template;
 			$p->set_root(PHPGW_APP_TPL);
 			$p->set_file(Array('locales'=>'locales.tpl'));
 			$p->set_block('locales','list','list');
@@ -70,11 +71,11 @@
 
 			$var = Array(
 			//	'th_bg'		=> $GLOBALS['phpgw_info']['theme']['th_bg'],
-				'left_next_matchs'	=> $GLOBALS['phpgw']->nextmatchs->left('/index.php',$this->bo->start,$this->bo->total,array('menuaction'=>'calendar.uiholiday.admin')),
-				'right_next_matchs'	=> $GLOBALS['phpgw']->nextmatchs->right('/index.php',$this->bo->start,$this->bo->total,array('menuaction'=>'calendar.uiholiday.admin')),
+				'left_next_matchs'	=> $this->nextmatchs->left('/index.php',$this->bo->start,$this->bo->total,array('menuaction'=>'calendar.uiholiday.admin')),
+				'right_next_matchs'	=> $this->nextmatchs->right('/index.php',$this->bo->start,$this->bo->total,array('menuaction'=>'calendar.uiholiday.admin')),
 				'center'			=> '<td align="center">'.lang('Countries').'</td>',
-			//	'sort_name'		=> $GLOBALS['phpgw']->nextmatchs->show_sort_order($this->bo->sort,'locale',$this->bo->order,'/calendar/'.basename($SCRIPT_FILENAME),lang('Country')),
-				'sort_name'		=> $GLOBALS['phpgw']->nextmatchs->show_sort_order($this->bo->sort,'locale',$this->bo->order,false,lang('Country')),
+			//	'sort_name'		=> $this->nextmatchs->show_sort_order($this->bo->sort,'locale',$this->bo->order,'/calendar/'.basename($SCRIPT_FILENAME),lang('Country')),
+				'sort_name'		=> $this->nextmatchs->show_sort_order($this->bo->sort,'locale',$this->bo->order,false,lang('Country')),
 				'header_edit'	=> lang('Edit'),
 				'header_delete'	=> lang('Delete'),
 				'header_extra'	=> lang('Submit to Repository'),
@@ -87,7 +88,6 @@
 			$p->set_var($var);
 
 			$locales = $this->bo->get_locale_list($this->bo->sort, $this->bo->order, $this->bo->query, $this->bo->total);
-			@reset($locales);
 			if (!$locales)
 			{
 				$p->set_var('message',lang('no matches found'));
@@ -102,7 +102,7 @@
                                 {
                                     foreach($locales as $key => $value)
 				{
-//					$tr_color = $GLOBALS['phpgw']->nextmatchs->alternate_row_class($tr_color);
+//					$tr_color = $this->nextmatchs->alternate_row_class($tr_color);
 					$tr_color = $cnt % 2 ? 'row_on' : 'row_off';
 					if (! $value)  $value  = '&nbsp;';
 
@@ -153,7 +153,7 @@
 			unset($GLOBALS['phpgw_info']['flags']['noheader']);
 			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
 			$GLOBALS['phpgw_info']['flags']['noappfooter'] = True;
-			$GLOBALS['phpgw']->common->phpgw_header(True);
+			$this->phpgwapi_common->phpgw_header(True);
 			$p = CreateObject('phpgwapi.template',$this->template_dir);
 			$p->set_file(Array('locale'=>'locales.tpl'));
 			$p->set_block('locale','list','list');
@@ -169,13 +169,13 @@
 			$holidays = $this->bo->get_holiday_list();
 
 			$var = Array(
-				'left_next_matchs'	=> $GLOBALS['phpgw']->nextmatchs->left('/index.php',$this->bo->start,$this->bo->total,array('menuaction'=>'calendar.uiholiday.edit_locale','locale'=>$this->bo->locales[0],'year'=>$this->bo->year)),
-				'right_next_matchs'	=> $GLOBALS['phpgw']->nextmatchs->right('/index.php',$this->bo->start,$this->bo->total,array('menuaction'=>'calendar.uiholiday.edit_locale','locale'=>$this->bo->locales[0],'year'=>$this->bo->year)),
+				'left_next_matchs'	=> $this->nextmatchs->left('/index.php',$this->bo->start,$this->bo->total,array('menuaction'=>'calendar.uiholiday.edit_locale','locale'=>$this->bo->locales[0],'year'=>$this->bo->year)),
+				'right_next_matchs'	=> $this->nextmatchs->right('/index.php',$this->bo->start,$this->bo->total,array('menuaction'=>'calendar.uiholiday.edit_locale','locale'=>$this->bo->locales[0],'year'=>$this->bo->year)),
 				'center'					=> '<td align="right">'.lang('Holidays').' ('.$this->bo->locales[0].')</td><td align="left">'.$year_form.'</td>',
-				'sort_name'				=> $GLOBALS['phpgw']->nextmatchs->show_sort_order($this->bo->sort,'name',$this->bo->order,'/index.php',lang('Holiday'),array('menuaction'=>'calendar.uiholiday.edit_locale','locale'=>$this->bo->locales[0],'year'=>$this->bo->year)),
+				'sort_name'				=> $this->nextmatchs->show_sort_order($this->bo->sort,'name',$this->bo->order,'/index.php',lang('Holiday'),array('menuaction'=>'calendar.uiholiday.edit_locale','locale'=>$this->bo->locales[0],'year'=>$this->bo->year)),
 				'header_edit'			=> lang('Edit'),
 				'header_delete'		=> lang('Delete'),
-				'header_rule'        => '<td>'.$GLOBALS['phpgw']->nextmatchs->show_sort_order($this->bo->sort,'month_num,mday',$this->bo->order,'/index.php',lang('Rule'),array('menuaction'=>'calendar.uiholiday.edit_locale','locale'=>$this->bo->locales[0],'year'=>$this->bo->year)).'</td>',
+				'header_rule'        => '<td>'.$this->nextmatchs->show_sort_order($this->bo->sort,'month_num,mday',$this->bo->order,'/index.php',lang('Rule'),array('menuaction'=>'calendar.uiholiday.edit_locale','locale'=>$this->bo->locales[0],'year'=>$this->bo->year)).'</td>',
 				'header_extra'       => lang('Copy'),
 				'extra_width'        => 'width="5%"'
 			);
@@ -192,7 +192,7 @@
 				$maxmatchs = $GLOBALS['phpgw_info']['user']['preferences']['common']['maxmatchs'];
 				for($i=$this->bo->start; $i < count($holidays) && $i < $this->bo->start+$maxmatchs; $i++)
 				{
-				//	$tr_color = $GLOBALS['phpgw']->nextmatchs->alternate_row_class($tr_color);
+				//	$tr_color = $this->nextmatchs->alternate_row_class($tr_color);
 					$tr_color = $i % 2 ? 'row_on' : 'row_off';
 					if (!$holidays[$i]['name'])
 					{
@@ -256,17 +256,17 @@
 			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
 			$GLOBALS['phpgw_info']['flags']['noappfooter'] = True;
 			$GLOBALS['phpgw_info']['flags']['app_header'] = $GLOBALS['phpgw_info']['apps']['calendar']['title'].' - '.($this->bo->id ? lang('Edit') : lang('Add')).' '.lang('Holiday');
-			$GLOBALS['phpgw']->common->phpgw_header(true);
+			$this->phpgwapi_common->phpgw_header(true);
 
-			$t = &$GLOBALS['phpgw']->template;
+			$t = &$this->template;
 			$t->set_root(PHPGW_APP_TPL);
 			$t->set_file(Array('holiday'=>'holiday.tpl','form_button'=>'form_button_script.tpl'));
 			$t->set_block('holiday','form','form');
 			$t->set_block('holiday','list','list');
 
-			if (@count($error))
+			if (is_array($error) && count($error))
 			{
-				$message = $GLOBALS['phpgw']->common->error_list($error);
+				$message = $this->phpgwapi_common->error_list($error);
 			}
 			else
 			{
@@ -289,7 +289,7 @@
 			$this->display_item($t,lang('title'),'<input name="holiday[name]" size="60" maxlength="50" value="'.(isset($holiday['name'])?$holiday['name']:'').'">');
 
 // Date
-			$this->display_item($t,lang('Date'),$GLOBALS['phpgw']->common->dateformatorder($this->sb->getYears('holiday[year]',isset($holiday['occurence']) && $holiday['occurence']>1900?$holiday['occurence']:0),$this->sb->getMonthText('holiday[month_num]',(isset($holiday['month'])?$holiday['month']:'')),$this->sb->getDays('holiday[mday]',(isset($holiday['day'])?$holiday['day']:''))).
+			$this->display_item($t,lang('Date'),$this->phpgwapi_common->dateformatorder($this->sb->getYears('holiday[year]',isset($holiday['occurence']) && $holiday['occurence']>1900?$holiday['occurence']:0),$this->sb->getMonthText('holiday[month_num]',(isset($holiday['month'])?$holiday['month']:'')),$this->sb->getDays('holiday[mday]',(isset($holiday['day'])?$holiday['day']:''))).
 				'&nbsp;'.lang('Set a Year only for one-time / non-regular holidays.'));
 
 // Occurence
@@ -390,7 +390,7 @@
 			unset($GLOBALS['phpgw_info']['flags']['noheader']);
 			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
 			$GLOBALS['phpgw_info']['flags']['noappfooter'] = True;
-			$GLOBALS['phpgw']->common->phpgw_header();
+			$this->phpgwapi_common->phpgw_header();
 
 			$p = CreateObject('phpgwapi.template',$this->template_dir);
 			$p->set_file(Array('form'=>'delete_common.tpl','form_button'=>'form_button_script.tpl'));
@@ -430,7 +430,7 @@
 			unset($GLOBALS['phpgw_info']['flags']['noheader']);
 			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
 			$GLOBALS['phpgw_info']['flags']['noappfooter'] = True;
-			$GLOBALS['phpgw']->common->phpgw_header();
+			$this->phpgwapi_common->phpgw_header();
 
 			$p = CreateObject('phpgwapi.template',$this->template_dir);
 			$p->set_file(Array('form'=>'delete_common.tpl','form_button'=>'form_button_script.tpl'));
@@ -482,7 +482,7 @@
 					echo "$locale\t$holiday[name]\t$holiday[day]\t$holiday[month]\t$holiday[occurence]\t$holiday[dow]\t$holiday[observance_rule]\n";
 				}
                                 }
-				$GLOBALS['phpgw']->common->phpgw_exit();
+				$this->phpgwapi_common->phpgw_exit();
 			}
 			elseif($this->debug)
 			{
@@ -495,7 +495,7 @@
 			$GLOBALS['phpgw_info']['flags']['noappheader']	= True;
 			$GLOBALS['phpgw_info']['flags']['noappfooter'] = True;
 			$GLOBALS['phpgw_info']['flags']['nofooter'] = True;
-			$GLOBALS['phpgw']->common->phpgw_header();
+			$this->phpgwapi_common->phpgw_header();
 
 			echo '<body onLoad="document.submitform.submit()">'."\n";
 			echo '<form action="'.$action.'" method="post" name="submitform">'."\n";
@@ -522,7 +522,7 @@
 		function display_item(&$p,$field,$data)
 		{
 			$var = Array(
-				'tr_color' => $GLOBALS['phpgw']->nextmatchs->alternate_row_class(),
+				'tr_color' => $this->nextmatchs->alternate_row_class(),
 				'field'	=> $field,
 				'data'	=> $data
 			);

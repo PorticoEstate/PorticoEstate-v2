@@ -18,12 +18,12 @@
 				title: config.lang.training,
 				sortable: false,
 				searchable: false,
-				render: function (available, type)
+				render: function (available, type, row)
 				{
 					if (type !== 'display') return available ? 1 : 0;
-					return available
-						? '<span class="hrm-user-list__availability">' + config.lang.available + '</span>'
-						: '';
+					if (!available) return '';
+					var url = config.trainingUrlTemplate.replace('{id}', encodeURIComponent(row.id));
+					return '<a class="hrm-user-list__availability" href="' + url + '">' + config.lang.training + '</a>';
 				}
 			}
 		],

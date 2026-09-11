@@ -259,8 +259,12 @@ export class PorticoGateway
     client.to(roomId).emit('message', data);
   }
 
-  private handleUpdateSession(client: Socket, data: any) {
-    const { sessionId, accountId, ssn } = data;
+  private async handleUpdateSession(client: Socket, data: any) {
+    // sessionId is the only thing the client's message is allowed to bind —
+    // any accountId/ssn in the payload is a claim, not a credential, and is
+    // deliberately never read here. Identity is resolved server-side, below,
+    // from whatever cookie this socket's own handshake presented.
+    const { sessionId } = data;
     if (!sessionId || typeof sessionId !== 'string') {
       client.emit('message', {
         type: 'error',
@@ -280,21 +284,20 @@ export class PorticoGateway
       this.roomService,
     );
 
-    // Store auth info if provided (accountId + SSN from authenticated sessions)
-    if (result.success && (accountId || ssn)) {
-      this.sessionService.updateAuthInfo(
-        client.id,
-        accountId ? Number(accountId) : undefined,
-        ssn ? String(ssn) : undefined,
-      );
+    if (result.success) {
+      const identity = await this.sessionService.resolveIdentity(client.id);
 
-      // Join identity-scoped rooms so notifications addressed by SSN/account
-      // reach this user on every tab/page, not just the current entity room.
-      if (ssn) {
-        client.join(this.roomService.userRoomId('bb_user', String(ssn)));
-      }
-      if (accountId) {
-        client.join(this.roomService.userRoomId('phpgw_accounts', String(accountId)));
+      if (identity && (identity.accountId !== undefined || identity.ssn !== undefined)) {
+        this.sessionService.updateAuthInfo(client.id, identity.accountId, identity.ssn);
+
+        // Join identity-scoped rooms so notifications addressed by SSN/account
+        // reach this user on every tab/page, not just the current entity room.
+        if (identity.ssn) {
+          client.join(this.roomService.userRoomId('bb_user', identity.ssn));
+        }
+        if (identity.accountId) {
+          client.join(this.roomService.userRoomId('phpgw_accounts', String(identity.accountId)));
+        }
       }
     }
 

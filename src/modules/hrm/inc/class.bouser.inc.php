@@ -298,12 +298,15 @@ class hrm_bouser
 		if (!$account_info->person_id)
 		{
 			$sfields = rawurlencode(serialize($fields[0]));
+			// redirect=true avoids the HTML-entity encoded '&amp;' between query params, since
+			// the twig template escapes link_value again when placing it in an href attribute.
 			$contact_link   = phpgw::link(
 				'/index.php',
 				array(
 					'menuaction'	=> 'addressbook.uiaddressbook_persons.add',
 					'entry'			=> $sfields,
-				)
+				),
+				true
 			);
 		}
 		else
@@ -313,7 +316,8 @@ class hrm_bouser
 				array(
 					'menuaction'	=> 'addressbook.uiaddressbook_persons.view',
 					'ab_id'		=> $fields[0]['contact_id']
-				)
+				),
+				true
 			);
 		}
 

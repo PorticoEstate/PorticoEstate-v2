@@ -3372,7 +3372,9 @@ HTML;
 		);
 
 		$p = CreateObject('phpgwapi.template', $this->template_dir);
+		$p->set_root($this->template_dir);
 		$p->set_unknowns('keep');
+		unset($p->varvals['day_cal']);
 
 		$templates = array(
 			'day_cal'	=> 'day_cal.tpl'

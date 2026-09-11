@@ -19,7 +19,7 @@
 
 	function add_image_ahref($link,$image,$alt)
 	{
-		return '<a href="'.$link.'"><img src="'.$GLOBALS['phpgw']->common->image('calendar',$image).'" alt="'.$alt.'" title="'.$alt.'" border="0"></a>';
+		return '<a href="'.$link.'"><img src="'.phpgwapi_common::image('calendar',$image).'" alt="'.$alt.'" title="'.$alt.'" border="0"></a>';
 	}
 
 	$refer = explode('.',$GLOBALS['HTTP_GET_VARS']['menuaction']);
@@ -36,7 +36,7 @@
 	$tpl->set_block('head_tpl','head_col','head_col');
 	$tpl->set_block('form_button_script','form_button');
 
-	if(floor(phpversion()) >= 4)
+	if(PHP_VERSION_ID >= 40000)
 	{
 		$tpl->set_var('cols',8);
 	}
@@ -59,7 +59,7 @@
 
 	add_col($tpl,'  <td width="2%" align="left">'.add_image_ahref($this->page('year',array('date'=>$today)),'year',lang('This Year')).'</td>');
 
-	if(floor(phpversion()) >= 4)
+	if(PHP_VERSION_ID >= 40000)
 	{
 		add_col($tpl,'  <td width="2%" align="left">'.add_image_ahref($this->page('planner',array('date'=>$today)),'planner',lang('Planner')).'</td>');
 		$col_width += 2;
@@ -67,7 +67,7 @@
 
 	add_col($tpl,'  <td width="2%" align="left">'.add_image_ahref($this->page('matrixselect'),'view',lang('Daily Matrix View')).'</td>');
 
-	add_col($tpl,'  <td width="'.(100 - $col_width).'%" align="left"'.(floor(phpversion()) < 4?' colspan="2"':'').'>&nbsp;</td>');
+	add_col($tpl,'  <td width="'.(100 - $col_width).'%" align="left"'.(PHP_VERSION_ID < 40000?' colspan="2"':'').'>&nbsp;</td>');
 
 	$tpl->parse('row','head_table',True);
 

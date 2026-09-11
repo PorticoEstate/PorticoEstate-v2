@@ -39,12 +39,14 @@ use App\modules\phpgwapi\services\Cache;
 phpgwapi_cache
 Cache
 
-$GLOBALS['phpgw']->link
-phpgw::link
+$GLOBALS['phpgw']->link()
+phpgw::link()
 
-$GLOBALS['phpgw']->redirect_link
-phpgw::redirect_link
+$GLOBALS['phpgw']->redirect_link()
+phpgw::redirect_link()
 
+$GLOBALS['phpgw']->redirect()
+phpgw::redirect()
 
 phpgw::get_var
 Sanitizer::get_var

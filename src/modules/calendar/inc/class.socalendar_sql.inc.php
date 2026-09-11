@@ -16,6 +16,9 @@
 
 phpgw::import_class('phpgwapi.datetime');
 
+use App\Database\Db;
+use App\modules\phpgwapi\controllers\Accounts\Accounts;
+
 class calendar_socalendar_ extends calendar_socalendar__
 {
 	var $deleted_events = array();
@@ -25,17 +28,19 @@ class calendar_socalendar_ extends calendar_socalendar__
 	protected $global_lock = false;
 
 	var $async;
+	var $accounts_obj, $phpgwapi_common;
 
 	function __construct()
 	{
 		parent::__construct();
-		
-		if ( !isset($GLOBALS['phpgw']->asyncservice)
-			|| !is_object($GLOBALS['phpgw']->asyncservice))
+
+		$this->accounts_obj = new Accounts();
+		$this->phpgwapi_common = new \phpgwapi_common();
+
+		if (!isset($this->async) || !is_object($this->async))
 		{
-			$GLOBALS['phpgw']->asyncservice = CreateObject('phpgwapi.asyncservice');
+			$this->async = CreateObject('phpgwapi.asyncservice');
 		}
-		$this->async = &$GLOBALS['phpgw']->asyncservice;
 	}
 
 	function open($calendar='',$user='',$passwd='',$options='')
@@ -51,10 +56,10 @@ class calendar_socalendar_ extends calendar_socalendar__
 		}
 		elseif(is_string($user))
 		{
-			$this->user = $GLOBALS['phpgw']->accounts->name2id($user);
+			$this->user = $this->accounts_obj->name2id($user);
 		}
 
-		$this->stream = $GLOBALS['phpgw']->db;
+		$this->stream = Db::getInstance();
 		return $this->stream;
 	}
 
@@ -417,7 +422,9 @@ class calendar_socalendar_ extends calendar_socalendar__
 		{
 			$user_where .= $this->user;
 		}
-		$member_groups = $GLOBALS['phpgw']->accounts->membership($this->user);
+		$member_groups = $this->accounts_obj->membership($this->user);
+		$member_groups = is_array($member_groups) ? $member_groups : array();
+		$member = array();
 		@reset($member_groups);
 		foreach ($member_groups as $key => $group_info)
 		{
@@ -859,7 +866,7 @@ class calendar_socalendar_ extends calendar_socalendar__
 	function group_search($owner=0)
 	{
 		$owner = ($owner==$GLOBALS['phpgw_info']['user']['account_id']?0:$owner);
-		$groups = substr($GLOBALS['phpgw']->common->sql_search('phpgw_cal.groups',intval($owner)),4);
+		$groups = substr($this->phpgwapi_common->sql_search('phpgw_cal.groups',intval($owner)),4);
 		if (!$groups)
 		{
 			return '';
@@ -900,7 +907,9 @@ class calendar_socalendar_ extends calendar_socalendar__
 
 		$user_where = ' AND phpgw_cal_user.cal_login = ' . intval($this->user);
 
-		$member_groups = $GLOBALS['phpgw']->accounts->membership($this->user);
+		$member_groups = $this->accounts_obj->membership($this->user);
+		$member_groups = is_array($member_groups) ? $member_groups : array();
+		$member = array();
 		@reset($member_groups);
 		foreach ($member_groups as $key => $group_info)
 		{

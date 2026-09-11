@@ -17,6 +17,7 @@
 
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\services\Preferences;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\services\Cache;
 
@@ -149,6 +150,7 @@ class calendar_bocalendar
 	protected $_jscal;
 
 	protected $phpgwapi_common, $userSettings, $accounts_obj;
+	protected $preferences, $send;
 
 	var $grants, $cat, $bo, $rpt_day, $rpt_type, $user, $fields, $custom_fields, $stock_fields;
 
@@ -160,6 +162,7 @@ class calendar_bocalendar
 		$this->phpgwapi_common = new \phpgwapi_common();
 		$this->userSettings = Settings::getInstance()->get('user');
 		$this->accounts_obj = new Accounts();
+		$this->preferences = Preferences::getInstance();
 
 		if (DEBUG_APP)
 		{
@@ -175,9 +178,9 @@ class calendar_bocalendar
 				print_debug('Rights', $rights);
 			}
 		}
-
+		
 		print_debug('Read use_session', $session);
-
+		
 		if ($session)
 		{
 			$this->read_sessiondata();
@@ -527,7 +530,6 @@ class calendar_bocalendar
 	function read_sessiondata()
 	{
 		$data = Cache::session_get('calendar', 'session_data');
-		print_debug('Read', _debug_array($data, False));
 		// no data is returned as an empty string
 		if (!$data)
 		{
@@ -658,7 +660,7 @@ class calendar_bocalendar
 
 	function change_owner($params = '')
 	{
-		if ($GLOBALS['phpgw_info']['server']['calendar_type'] == 'sql')
+		if (Settings::getInstance()->get('server')['calendar_type'] == 'sql')
 		{
 			if (is_array($params))
 			{
@@ -979,8 +981,7 @@ class calendar_bocalendar
 		{
 			if ($send_to_ui)
 			{
-				unset($GLOBALS['phpgw_info']['flags']['noheader']);
-				unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
+				Settings::getInstance()->update('flags', ['noheader' => false, 'nonavbar' => false]);
 				ExecMethod(
 					'calendar.uicalendar.overlap',
 					array(
@@ -2483,7 +2484,7 @@ class calendar_bocalendar
 		}
 		$version = $GLOBALS['phpgw_info']['apps']['calendar']['version'];
 
-		$this->userSettings['preferences'] = $GLOBALS['phpgw']->preferences->create_email_preferences();
+		$this->userSettings['preferences'] = $this->preferences->create_email_preferences();
 		$sender = $this->userSettings['preferences']['email']['address'];
 
 		$temp_tz_offset = $this->prefs['common']['tz_offset'];
@@ -2507,7 +2508,7 @@ class calendar_bocalendar
 		{
 			$user =  $this->accounts_obj->search_person($this->owner);
 		}
-		$this->userSettings['preferences'] = $GLOBALS['phpgw']->preferences->create_email_preferences($user);
+		$this->userSettings['preferences'] = $this->preferences->create_email_preferences($user);
 
 		$user_timezone = phpgwapi_datetime::user_timezone();
 
@@ -2582,11 +2583,11 @@ class calendar_bocalendar
 		}
 		$details['participants'] = implode("\n", $details['participants']);
 
-		if (!is_object($GLOBALS['phpgw']->send))
+		if (!is_object($this->send))
 		{
-			$GLOBALS['phpgw']->send = CreateObject('phpgwapi.send');
+			$this->send = CreateObject('phpgwapi.send');
 		}
-		$send = &$GLOBALS['phpgw']->send;
+		$send = &$this->send;
 
 		foreach ($to_notify as $userid => $statusid)
 		{
@@ -2632,7 +2633,7 @@ class calendar_bocalendar
 				$details['startdate'] = $this->phpgwapi_common->show_date($starttime);
 				$details['enddate']   = $this->phpgwapi_common->show_date($endtime);
 
-				list($subject, $body) = explode("\n", $GLOBALS['phpgw']->preferences->parse_notify($notify_msg, $details), 2);
+				list($subject, $body) = explode("\n", $this->preferences->parse_notify($notify_msg, $details), 2);
 				$subject = trim($send->encode_subject($subject));
 				switch ($part_prefs['calendar']['update_format'])
 				{
@@ -2978,9 +2979,9 @@ class calendar_bocalendar
 	{
 		$user_timezone = phpgwapi_datetime::user_timezone();
 
-		if (!is_object($GLOBALS['phpgw']->contacts))
+		if (!is_object($this->contacts))
 		{
-			$GLOBALS['phpgw']->contacts = createObject('phpgwapi.contacts');
+			$this->contacts = createObject('phpgwapi.contacts');
 		}
 
 		$var['title'] = array(
@@ -3055,7 +3056,7 @@ class calendar_bocalendar
 
 		$var['owner'] = array(
 			'field'	=> lang('Created By'),
-			'data'	=> $GLOBALS['phpgw']->contacts->get_name_of_person_id($event['owner'])
+			'data'	=> $this->contacts->get_name_of_person_id($event['owner'])
 		);
 
 		$var['updated'] = array(
@@ -3076,7 +3077,7 @@ class calendar_bocalendar
 				if ($this->accounts_obj->exists($event['groups'][$i]))
 				{
 					$cal_grps .= ($i > 0 ? '<br />' : '')
-						. $GLOBALS['phpgw']->contacts->get_name_of_person_id($GLOBALS['phpgw']->contacts->is_contact($event['groups'][$i]));
+						. $this->contacts->get_name_of_person_id($this->contacts->is_contact($event['groups'][$i]));
 				}
 			}
 
@@ -3091,7 +3092,7 @@ class calendar_bocalendar
 		{
 			foreach ($event['participants'] as $user => $short_status)
 			{
-				$participants[$user] = $GLOBALS['phpgw']->contacts->get_contact_name($user) . ' (' . $this->get_long_status($short_status) . ')';
+				$participants[$user] = $this->contacts->get_contact_name($user) . ' (' . $this->get_long_status($short_status) . ')';
 			}
 		}
 		$var['participants'] = array(
@@ -3191,7 +3192,7 @@ class calendar_bocalendar
 		
 		Cache::session_set('calendar', 'default_prefs_set', 'set');
 
-		$default_prefs = $GLOBALS['phpgw']->preferences->default['calendar'];
+		$default_prefs = $this->preferences->default['calendar'];
 
 		$subject = lang('Calendar Event') . ' - $$action$$: $$startdate$$ $$title$$' . "\n";
 		$defaults = array(
@@ -3226,13 +3227,13 @@ class calendar_bocalendar
 		{
 			if (!isset($default_prefs[$var]) || $default_prefs[$var] == '')
 			{
-				$GLOBALS['phpgw']->preferences->add('calendar', $var, $default, 'default');
+				$this->preferences->add('calendar', $var, $default, 'default');
 				$need_save = True;
 			}
 		}
 		if ($need_save)
 		{
-			$prefs = $GLOBALS['phpgw']->preferences->save_repository(False, 'default');
+			$prefs = $this->preferences->save_repository(False, 'default');
 			$this->prefs['calendar'] = $prefs['calendar'];
 		}
 		if (
@@ -3241,9 +3242,9 @@ class calendar_bocalendar
 		)
 		{
 			$this->prefs['calendar']['receive_updates'] = $this->prefs['calendar']['send_updates'];
-			$GLOBALS['phpgw']->preferences->add('calendar', 'receive_updates', $this->prefs['calendar']['send_updates']);
-			$GLOBALS['phpgw']->preferences->delete('calendar', 'send_updates');
-			$prefs = $GLOBALS['phpgw']->preferences->save_repository();
+			$this->preferences->add('calendar', 'receive_updates', $this->prefs['calendar']['send_updates']);
+			$this->preferences->delete('calendar', 'send_updates');
+			$prefs = $this->preferences->save_repository();
 		}
 	}
 

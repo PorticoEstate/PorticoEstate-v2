@@ -12,6 +12,7 @@ import {
     useUploadApplicationDocument,
     useDeleteApplicationDocument,
     useApplicationScheduleEntities,
+    useServerSettings,
     markNotificationsAsRead,
 } from "@/service/hooks/api-hooks";
 import {IAPIEvent, IAPIAllocation, IAPIBooking} from "@/service/pecalendar.types";
@@ -38,6 +39,8 @@ import {FCallTempEvent} from "@/components/building-calendar/building-calendar.t
 import ArticleTable from "@/components/article-table/article-table";
 import {ENABLE_COMBINED_APPLICATIONS} from '@/service/feature-flags';
 import {getStatusColor} from './status-utils';
+import {resolveParticipantLimit} from "@/components/building-calendar/util/participant-limit";
+import {isFutureDate, phpGWLink} from "@/service/util";
 import styles from "./application-details.module.scss";
 import {
     ArrowLeftIcon,
@@ -88,6 +91,30 @@ function fmtSqlDate(sql: string): string {
 function fmtSqlDateTime(sql: string): string {
     if (!sql) return '';
     return DateTime.fromSQL(sql).toFormat('dd.MM.yyyy') + ' kl. ' + DateTime.fromSQL(sql).toFormat('HH:mm');
+}
+
+// The bookingfrontendsession cookie is deliberately not HttpOnly (Sessions.php:
+// 'httponly' => false — see use-websocket-session.ts's own reader for the same
+// idiom), because the legacy bookingfrontend.ui* pages this file links to read the
+// citizen's session from a GET var, not from the cookie alone; a link opened in a
+// fresh tab with only the cookie has been observed to render byte-identical to an
+// anonymous request.
+function readBookingSessionCookie(): string | null {
+    if (typeof document === 'undefined') return null;
+    const prefix = 'bookingfrontendsession=';
+    for (const part of document.cookie.split(';')) {
+        const trimmed = part.trim();
+        if (trimmed.startsWith(prefix)) {
+            return decodeURIComponent(trimmed.slice(prefix.length)) || null;
+        }
+    }
+    return null;
+}
+
+function withBookingSession(url: string): string {
+    const sessionId = readBookingSessionCookie();
+    if (!sessionId) return url;
+    return `${url}${url.includes('?') ? '&' : '?'}bookingfrontendsession=${encodeURIComponent(sessionId)}`;
 }
 
 function getInitials(name: string): string {
@@ -240,10 +267,20 @@ function buildCalendarLink(row: ReservedEntity): string | null {
 // Renders the actual reserved schedule entities (events/allocations/bookings) created
 // for an accepted application. Each row links into the calendar at the entity's date so
 // the user can see (and act on) the reservation in context.
+// Per-type edit label — mirrors the manage modal's adapter.editLabelLangKey per type
+// (allocation-manage-modal.tsx / event-manage-modal.tsx / booking-manage-modal.tsx),
+// all three of which already exist in both phpgw_no.lang and phpgw_en.lang.
+function editLabelLangKey(type: ReservedEntity['type']): string {
+    return `bookingfrontend.edit ${type}`;
+}
+
 const ReservedTimesList: FC<{
     entities: { events: IAPIEvent[]; allocations: IAPIAllocation[]; bookings: IAPIBooking[] };
-}> = ({entities}) => {
+    applicationSecret?: string;
+}> = ({entities, applicationSecret}) => {
     const t = useTrans();
+    const serverSettings = useServerSettings();
+    const participantLimitDefault = serverSettings.data?.booking_config?.participant_limit;
 
     const rows = useMemo<ReservedEntity[]>(() => {
         const all: ReservedEntity[] = [
@@ -266,6 +303,82 @@ const ReservedTimesList: FC<{
                 const hours = durationHours(entity.from_, entity.to_);
                 const calendarLink = buildCalendarLink(row);
 
+                // Register participants — bookingfrontend.uiparticipant.add is a genuinely
+                // PUBLIC endpoint (public_functions, and add() itself carries no ownership
+                // check at all — class.uiparticipant.inc.php), so gating is UX-only: the
+                // same three-step fallback the calendar popper and manage modal already use.
+                const participantLimit = resolveParticipantLimit(entity, participantLimitDefault);
+                const showRegisterParticipants = participantLimit > 0;
+                const registerParticipantsHref = withBookingSession(phpGWLink('bookingfrontend/', {
+                    menuaction: 'bookingfrontend.uiparticipant.add',
+                    reservation_type: row.type,
+                    reservation_id: entity.id,
+                }, false));
+
+                // Edit — bookingfrontend.ui{type}.edit's ACTUAL server-side guard differs per
+                // type, so each is gated on what that guard alone requires (never on the
+                // modal's isOrgAdmin, which is a different caller's access model):
+                //  - event: class.uievent.inc.php's edit() accepts only an ssn/org match, and
+                //    never a secret. That exact match is what event.secret is
+                //    @Expose(when="customer_ssn=$user_ssn" / "customer_organization_number=
+                //    $organization_number")'d on server-side (bookingfrontend/models/Event.php)
+                //    — ownership-only, unlike customer_organization_name/_id, which ALSO expose
+                //    whenever is_public=1 and would false-positive for any stranger viewing a
+                //    public event (curl-verified: a secret-only anonymous request against a
+                //    public event already gets back a non-null customer_organization_name).
+                //    event.secret's presence is therefore the one field this page can trust as
+                //    the ownership signal, on the same reasoning event-converter.ts's isOrgAdmin
+                //    already applies to booking.secret.
+                //  - allocation: class.uiallocation.inc.php's edit() accepts org-admin OR the
+                //    OWNING APPLICATION's own secret (read from the allocation, never the
+                //    request) — precisely the credential this page always holds once it can
+                //    render the application at all, so passing it always satisfies the guard.
+                //  - booking: class.uibooking.inc.php's edit() (public_functions) carries NO
+                //    ownership check whatsoever — showing Edit here grants nothing the endpoint
+                //    doesn't already grant a stranger who merely guesses the id.
+                let showEdit = false;
+                let editHref = '';
+                if (row.type === 'event') {
+                    const ev = entity as IAPIEvent;
+                    showEdit = !!ev.secret;
+                    editHref = withBookingSession(phpGWLink('bookingfrontend/', {
+                        menuaction: `bookingfrontend.ui${row.type}.edit`,
+                        id: entity.id,
+                        resource_ids: entity.resources.map(r => r.id),
+                    }, false));
+                } else if (row.type === 'allocation') {
+                    showEdit = !!applicationSecret;
+                    editHref = withBookingSession(phpGWLink('bookingfrontend/', {
+                        menuaction: `bookingfrontend.ui${row.type}.edit`,
+                        allocation_id: entity.id,
+                        secret: applicationSecret || '',
+                    }, false));
+                } else {
+                    showEdit = true;
+                    editHref = withBookingSession(phpGWLink('bookingfrontend/', {
+                        menuaction: `bookingfrontend.ui${row.type}.edit`,
+                        id: entity.id,
+                        resource_ids: entity.resources.map(r => r.id),
+                    }, false));
+                }
+
+                // Create new booking — allocations only, future only (mirrors
+                // allocation-manage-modal.tsx's newBookingAllocationId + manage-modal.tsx's
+                // isInFuture gate). bookingfrontend.uibooking.add carries no ownership check
+                // either (class.uibooking.inc.php add()), so no further gating is needed.
+                let newBookingHref: string | null = null;
+                if (row.type === 'allocation' && isFutureDate(DateTime.fromISO(entity.from_))) {
+                    newBookingHref = withBookingSession(phpGWLink('bookingfrontend/', {
+                        menuaction: 'bookingfrontend.uibooking.add',
+                        allocation_id: entity.id,
+                        from_: Date.parse(entity.from_) / 1000,
+                        to_: Date.parse(entity.to_) / 1000,
+                        resource_ids: entity.resources.map(r => r.id),
+                    }, false));
+                }
+
+                const hasActions = !!calendarLink || showRegisterParticipants || showEdit || !!newBookingHref;
+
                 return (
                     <div key={`${row.type}-${entity.id}`} className={styles.reservedRow}>
                         <div className={styles.reservedMain}>
@@ -281,14 +394,38 @@ const ReservedTimesList: FC<{
                             </div>
                             <div className={styles.dateDuration}>{hours} t</div>
                         </div>
-                        {calendarLink && (
+                        {hasActions && (
                             <div className={styles.reservedActions}>
-                                <Button asChild variant="tertiary" data-color="accent" data-size="sm">
-                                    <Link href={calendarLink}>
-                                        <CalendarIcon fontSize="1.1rem"/>
-                                        {t('bookingfrontend.show_in_calendar')}
-                                    </Link>
-                                </Button>
+                                {newBookingHref && (
+                                    <Button asChild variant="tertiary" data-color="accent" data-size="sm">
+                                        <Link href={newBookingHref} target="_blank">
+                                            <PlusIcon fontSize="1.1rem"/>
+                                            {t('bookingfrontend.create new booking')}
+                                        </Link>
+                                    </Button>
+                                )}
+                                {showRegisterParticipants && (
+                                    <Button asChild variant="tertiary" data-color="accent" data-size="sm">
+                                        <Link href={registerParticipantsHref} target="_blank">
+                                            {t('booking.register participants')}
+                                        </Link>
+                                    </Button>
+                                )}
+                                {showEdit && (
+                                    <Button asChild variant="tertiary" data-color="accent" data-size="sm">
+                                        <Link href={editHref} target="_blank">
+                                            {t(editLabelLangKey(row.type))}
+                                        </Link>
+                                    </Button>
+                                )}
+                                {calendarLink && (
+                                    <Button asChild variant="tertiary" data-color="accent" data-size="sm">
+                                        <Link href={calendarLink}>
+                                            <CalendarIcon fontSize="1.1rem"/>
+                                            {t('bookingfrontend.show_in_calendar')}
+                                        </Link>
+                                    </Button>
+                                )}
                             </div>
                         )}
                     </div>
@@ -775,7 +912,10 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                                 <h3 className={styles.sectionCaption}>
                                     {t('bookingfrontend.reserved_times')}
                                 </h3>
-                                <ReservedTimesList entities={scheduleEntities}/>
+                                <ReservedTimesList
+                                    entities={scheduleEntities}
+                                    applicationSecret={props.secret || application.secret || undefined}
+                                />
                             </>
                         )}
                         <h3 className={styles.sectionCaption}>

@@ -299,7 +299,13 @@ class ApplicationCommentsService implements CommentsServiceInterface
     }
 
     /**
-     * Create an in-app notification for the case officer when a frontend user posts a comment.
+     * Broadcast a citizen's comment to the application room, and notify the case
+     * officer (in-app notification + bell) when one is assigned.
+     *
+     * The live thread-update broadcast fires regardless of whether a case officer
+     * is assigned, matching the old WebSocket path's behaviour. Only the bell /
+     * notification record stays gated on a case officer existing — there is no
+     * one to notify otherwise.
      *
      * @param int    $applicationId Application ID
      * @param int    $commentId     Created comment ID
@@ -314,11 +320,13 @@ class ApplicationCommentsService implements CommentsServiceInterface
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
         $caseOfficerId = (int) ($row['case_officer_id'] ?? 0);
+        $notificationService = new NotificationService();
+
         if ($caseOfficerId === 0) {
+            $notificationService->broadcastCommentEvent($applicationId, $commentId, $authorName, $commentText);
             return;
         }
 
-        $notificationService = new NotificationService();
         $notificationService->createCommentNotification(
             $applicationId,
             $commentId,

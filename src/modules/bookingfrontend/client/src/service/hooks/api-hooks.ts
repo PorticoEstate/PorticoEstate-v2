@@ -970,6 +970,15 @@ function fetchFirstPageViaWs(
 			'delivered_applications_response',
 			(message) => {
 				if (message.type !== 'delivered_applications_response') return;
+
+				// The server echoes back the offset it served (portico.gateway.ts
+				// handleGetDeliveredApplications). This call always asks for offset
+				// 0, so a response carrying any other offset belongs to a
+				// different in-flight request — e.g. a background pagination loop
+				// left over from an earlier Refresh — sharing this same broadcast
+				// message type, and must not be mistaken for our first page.
+				if (!message.data.error && (message.data.offset ?? 0) !== 0) return;
+
 				clearTimeout(timeout);
 
 				if (message.data.error) {
@@ -991,10 +1000,20 @@ function fetchFirstPageViaWs(
 			}
 		);
 
-		sendMessage('get_delivered_applications', 'Requesting delivered applications', {
+		const sent = sendMessage('get_delivered_applications', 'Requesting delivered applications', {
 			offset: 0,
 			limit: WS_PAGE_SIZE,
 		});
+
+		// sendMessage returns false when the socket was already down — nothing
+		// was transmitted, so waiting out the full timeout would just reproduce
+		// the same "timeout" error a slow server gives, for a request that
+		// never left. Fail immediately instead.
+		if (!sent) {
+			clearTimeout(timeout);
+			cleanup();
+			reject(new Error('WebSocket delivered_applications not sent: socket disconnected'));
+		}
 	});
 }
 
@@ -1008,21 +1027,36 @@ export function useApplications(
 	const queryClient = useQueryClient();
 	const { sessionConnected, isReady: wsReady, sendMessage } = useWebSocketContext();
 	const queryKey = ['deliveredApplications', includeOrganizations];
-	// Track background pagination so we don't start multiple
-	const paginating = useRef(false);
+	// Holds the abort fn for any background pagination loop still running from
+	// a previous queryFn call. A Refresh pressed mid-pagination (or a page
+	// response that never arrives) used to leave that loop's subscription
+	// alive forever — it kept appending its own stale offsets onto whatever
+	// the newest fetch had just written, and nothing ever reset it. Every
+	// queryFn call below aborts whatever this holds before doing anything
+	// else, so at most one loop is ever live and a stuck one can't survive
+	// a Refresh.
+	const activePagination = useRef<null | (() => void)>(null);
 
 	return useQuery(
 		{
 			queryKey,
 			queryFn: async () => {
+				activePagination.current?.();
+				activePagination.current = null;
+
 				const firstPage = await fetchFirstPageViaWs(sendMessage);
 
 				// If there are more pages, fetch them in the background and
 				// progressively update the query cache
-				if (firstPage.hasMore && !paginating.current) {
-					paginating.current = true;
+				if (firstPage.hasMore) {
 					const subscriptionManager = SubscriptionManager.getInstance();
 					let currentOffset = firstPage.list.length;
+					// The offset this loop is currently waiting a response for —
+					// checked against the server-echoed offset (see fetchFirstPageViaWs)
+					// so a stray response from another in-flight request (an aborted
+					// loop's already-sent page, or another tab) can't be mistaken for
+					// this loop's next page.
+					let expectedOffset = currentOffset;
 
 					// Subscribe for subsequent page responses
 					const cleanupSub = subscriptionManager.subscribeToMessageType(
@@ -1030,6 +1064,7 @@ export function useApplications(
 						(message) => {
 							if (message.type !== 'delivered_applications_response') return;
 							if (message.data.error) return;
+							if (message.data.offset !== expectedOffset) return;
 
 							const newApps = message.data.applications || [];
 							const hasMore = message.data.hasMore || false;
@@ -1052,6 +1087,7 @@ export function useApplications(
 
 							if (hasMore) {
 								currentOffset += newApps.length;
+								expectedOffset = currentOffset;
 								sendMessage('get_delivered_applications', 'Fetching next page', {
 									offset: currentOffset,
 									limit: WS_PAGE_SIZE,
@@ -1059,10 +1095,17 @@ export function useApplications(
 							} else {
 								// All pages received
 								cleanupSub();
-								paginating.current = false;
+								if (activePagination.current === abort) {
+									activePagination.current = null;
+								}
 							}
 						}
 					);
+
+					const abort = () => {
+						cleanupSub();
+					};
+					activePagination.current = abort;
 
 					// Request second page
 					sendMessage('get_delivered_applications', 'Fetching next page', {
@@ -1311,7 +1354,7 @@ export function useUpdateApplicationStatus(
 
             // Invalidate applications list cache
             queryClient.invalidateQueries({
-                queryKey: ['applications']
+                queryKey: ['deliveredApplications']
             });
         },
         ...options,

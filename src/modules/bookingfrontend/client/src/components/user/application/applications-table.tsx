@@ -2,13 +2,14 @@
 import React, {FC, useMemo, useCallback} from 'react';
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {useApplications} from "@/service/hooks/api-hooks";
+import {useWebSocketContext} from "@/service/websocket/websocket-context";
 import {IApplication, IApplicationDate} from "@/service/types/api/application.types";
 import {ColumnDef} from "@/components/gs-table/table.types";
 import {GSTable} from "@/components/gs-table";
 import {DateTime} from "luxon";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
 import {default as NXLink} from "next/link";
-import {Button, Heading, Link, Tag, Spinner} from "@digdir/designsystemet-react";
+import {Alert, Button, Heading, Link, Tag, Spinner} from "@digdir/designsystemet-react";
 import {
     ArrowCirclepathIcon,
     ArrowsCirclepathIcon,
@@ -55,10 +56,18 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
         router.replace(`${pathname}?${params.toString()}`, {scroll: false});
     }, [searchParams, router, pathname]);
 
-    const {data: applicationsRaw, isFetching, refetch} = useApplications({
+    const {data: applicationsRaw, isFetching, isError, refetch} = useApplications({
         initialData: initialApplications,
         includeOrganizations: true,
     });
+    const {isReady, sessionConnected} = useWebSocketContext();
+
+    // useApplications() only fetches while this is true (api-hooks.ts) -- when
+    // it's false, Refresh's refetch() call can't reach the server at all, so a
+    // click on it is otherwise indistinguishable from a working one that just
+    // found nothing new. Mirror that same condition here so the table can say
+    // so instead of quietly serving whatever it last loaded as if it were current.
+    const wsUnavailable = !isReady || !sessionConnected;
 
     const applications = applicationsRaw?.list || [];
 
@@ -246,67 +255,98 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
                 </div>
             </div>
 
-            {/* Quick stats */}
-            <div className={styles.quickStats}>
-                <div className={styles.quickStat}>
-                    <span className={`${styles.num} ${styles.accent}`}>{counts.all}</span>
-                    <span className={styles.lab}>{t('bookingfrontend.total')}</span>
+            {isError ? (
+                <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 12}}>
+                    <Alert data-color="danger" role="alert">
+                        {t('bookingfrontend.something_went_wrong')}
+                    </Alert>
+                    <Button variant="secondary" data-size="sm" onClick={() => refetch()}>
+                        {t('bookingfrontend.try_again')}
+                    </Button>
                 </div>
-                <div className={styles.quickStat}>
-                    <span className={`${styles.num} ${styles.warning}`}>{counts.new + counts.pending}</span>
-                    <span className={styles.lab}>{t('bookingfrontend.waiting_for_response')}</span>
+            ) : !applicationsRaw ? (
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '64px 0'
+                }}>
+                    <Spinner data-size="lg" aria-label={t('bookingfrontend.loading...')}/>
+                    <p>{t('bookingfrontend.loading...')}</p>
                 </div>
-                <div className={styles.quickStat}>
-                    <span className={`${styles.num} ${styles.success}`}>{counts.accepted}</span>
-                    <span className={styles.lab}>{t('bookingfrontend.accepted')}</span>
-                </div>
-                <div className={styles.quickStat}>
-                    <span className={styles.num}>{counts.rejected + counts.cancelled}</span>
-                    <span className={styles.lab}>{t('bookingfrontend.finished')}</span>
-                </div>
-            </div>
+            ) : (
+                <>
+                    {wsUnavailable && (
+                        <Alert data-color="warning" role="status" style={{marginBottom: 16}}>
+                            {t('bookingfrontend.applications_offline_banner')}
+                        </Alert>
+                    )}
 
-            {/* Chip filters */}
-            <div className={styles.chipRow}>
-                {FILTER_KEYS.map(key => (
-                    <button
-                        key={key}
-                        className={styles.chip}
-                        aria-pressed={currentFilter === key}
-                        onClick={() => setFilter(key)}
-                    >
-                        {t(`bookingfrontend.${key}`)}
-                        <span className={styles.count}>{counts[key]}</span>
-                    </button>
-                ))}
-            </div>
+                    {/* Quick stats */}
+                    <div className={styles.quickStats}>
+                        <div className={styles.quickStat}>
+                            <span className={`${styles.num} ${styles.accent}`}>{counts.all}</span>
+                            <span className={styles.lab}>{t('bookingfrontend.total')}</span>
+                        </div>
+                        <div className={styles.quickStat}>
+                            <span className={`${styles.num} ${styles.warning}`}>{counts.new + counts.pending}</span>
+                            <span className={styles.lab}>{t('bookingfrontend.waiting_for_response')}</span>
+                        </div>
+                        <div className={styles.quickStat}>
+                            <span className={`${styles.num} ${styles.success}`}>{counts.accepted}</span>
+                            <span className={styles.lab}>{t('bookingfrontend.accepted')}</span>
+                        </div>
+                        <div className={styles.quickStat}>
+                            <span className={styles.num}>{counts.rejected + counts.cancelled}</span>
+                            <span className={styles.lab}>{t('bookingfrontend.finished')}</span>
+                        </div>
+                    </div>
 
-            {/* GSTable with built-in search, sorting, pagination */}
-            <GSTable<IApplication>
-                data={filtered}
-                columns={columns}
-                enableSorting={true}
-                enableSearch
-                searchPlaceholder={t('bookingfrontend.search_applications_placeholder')}
-                enableColumnFilters={true}
-                isLoading={isFetching}
-                storageId="applications-table"
-                defaultColumnVisibility={{}}
-                utilityHeader={{
-                    right: (
-                        <Button
-                            variant="tertiary"
-                            data-size="sm"
-                            onClick={() => refetch()}
-                            disabled={isFetching}
-                            aria-label={t('bookingfrontend.refresh')}
-                        >
-                            <ArrowsCirclepathIcon aria-hidden/>
-                        </Button>
-                    )
-                }}
-                exportFileName="applications"
-            />
+                    {/* Chip filters */}
+                    <div className={styles.chipRow}>
+                        {FILTER_KEYS.map(key => (
+                            <button
+                                key={key}
+                                className={styles.chip}
+                                aria-pressed={currentFilter === key}
+                                onClick={() => setFilter(key)}
+                            >
+                                {t(`bookingfrontend.${key}`)}
+                                <span className={styles.count}>{counts[key]}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* GSTable with built-in search, sorting, pagination */}
+                    <GSTable<IApplication>
+                        data={filtered}
+                        columns={columns}
+                        enableSorting={true}
+                        enableSearch
+                        searchPlaceholder={t('bookingfrontend.search_applications_placeholder')}
+                        enableColumnFilters={true}
+                        isLoading={isFetching}
+                        storageId="applications-table"
+                        defaultColumnVisibility={{}}
+                        utilityHeader={{
+                            right: (
+                                <Button
+                                    variant="tertiary"
+                                    data-size="sm"
+                                    onClick={() => refetch()}
+                                    disabled={isFetching || wsUnavailable}
+                                    aria-label={wsUnavailable ? t('bookingfrontend.refresh_unavailable_offline') : t('bookingfrontend.refresh')}
+                                    title={wsUnavailable ? t('bookingfrontend.refresh_unavailable_offline') : undefined}
+                                >
+                                    <ArrowsCirclepathIcon aria-hidden/>
+                                </Button>
+                            )
+                        }}
+                        exportFileName="applications"
+                    />
+                </>
+            )}
         </div>
     );
 };

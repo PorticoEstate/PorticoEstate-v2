@@ -198,7 +198,7 @@ export class DeliveredApplicationService {
       const app = rows[0];
 
       // Access check (mirrors PHP ApplicationHelper::canViewApplication)
-      const hasAccess = this.checkAccess(app, ssn, secret);
+      const hasAccess = await this.checkAccess(app, ssn, secret);
       if (!hasAccess) {
         return { application: null, error: 'Unauthorized' };
       }

@@ -85,6 +85,10 @@ const EventManageModal: FC<EventManageModalProps> = ({event, open, onClose}) => 
 	const adapter: ManageModalAdapter<IAPIEvent, ManageModalPreviewBase, never> = {
 		dialogIdPrefix: 'event-manage',
 		typeTagLangKey: 'bookingfrontend.event',
+		// #24955: the application view (ApplicationDetails as this modal's body, see
+		// manage-modal.tsx's own gate near its bottom) was only ever meant for events — the
+		// only adapter that opts in.
+		usesApplicationView: true,
 		titleName: (entity) => entity.name,
 		newBookingAllocationId: () => undefined,
 		registerParticipantsType: 'event',

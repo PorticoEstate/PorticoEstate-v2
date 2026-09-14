@@ -85,6 +85,12 @@ export interface ManageModalAdapter<
 > {
 	dialogIdPrefix: string;
 	typeTagLangKey: string;
+	/** Opt-in ONLY — see the ApplicationDetails branch near the bottom of this file for why this
+	 *  must be an explicit adapter field rather than a read of `entity.application_id`/
+	 *  `entity.type` alone. Defaults to falsy (absent) when an adapter does not set it, so a new
+	 *  adapter is correct-by-construction: it renders the step machine unless it deliberately
+	 *  opts into the application view. Only `event-manage-modal.tsx` sets this true. */
+	usesApplicationView?: boolean;
 	titleName: (entity: TEntity) => string;
 	overviewExtraRows?: (entity: TEntity, t: TFunction) => ReactNode;
 	newBookingAllocationId: (entity: TEntity) => number | undefined;
@@ -892,7 +898,7 @@ function ManageModal<
 	);
 
 	// ADDITIVE second rendering mode (task #23788, operator: "reuse the component as the
-	// content for the modal"): an entity carrying an application_id gets the existing
+	// content for the modal"): EVENT entities carrying an application_id get the existing
 	// ApplicationDetails page component as the Dialog's body, unmodified and mounted the same
 	// bare way page.tsx does (applicationId only — no secret; the WS route it fetches through
 	// does not require one for this viewer, see ledger-23789). Every hook above still runs
@@ -900,7 +906,17 @@ function ManageModal<
 	// state/mutations go unused here. The entity's OWN cancel control (inside ApplicationDetails)
 	// is therefore reachable from within a single-occurrence modal — flagged, not decided, see
 	// task #23788's acceptance (c).
-	if (entity.application_id) {
+	//
+	// GATED ON THE ADAPTER, NOT `entity.application_id` ALONE (task #24955): an allocation can
+	// carry a non-null application_id too (~23% of allocations do), and without `adapter.
+	// usesApplicationView` those took this branch as well — "administrer tildeling" wrongly
+	// opened the application view instead of the allocation's own step machine. The application
+	// view was only ever meant for events. `adapter.usesApplicationView` is the explicit opt-in
+	// (see the interface's own docblock above). `entity.type` would also work — it is `@Expose`d
+	// with an `@Default` on each concrete model and does arrive on the wire — but the adapter is
+	// already the type discriminator, and an optional flag set in one place leaves the other two
+	// adapters correct without either of them having to opt out.
+	if (adapter.usesApplicationView && entity.application_id) {
 		return (
 			<Dialog
 				open={open}

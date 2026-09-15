@@ -99,7 +99,6 @@ class calendar_socalendar_ extends calendar_socalendar__
 		{
 			$this->delete_event( (int) $this->stream->f('cal_id'));
 		}
-//		$this->stream->lock(array('phpgw_cal_user'));
 		if ( $this->stream->get_transaction() )
 		{
 			$this->global_lock = true;
@@ -114,8 +113,6 @@ class calendar_socalendar_ extends calendar_socalendar__
 		{
 			$this->stream->transaction_commit();
 		}
-
-//		$this->stream->unlock();
 		// end transaction
 		return $calendar;
 	}
@@ -237,7 +234,12 @@ class calendar_socalendar_ extends calendar_socalendar__
 
 		$event_id = intval($event_id);
 
-		$this->stream->lock(array('phpgw_cal','phpgw_cal_user','phpgw_cal_repeats','phpgw_cal_extra'/* OLD-ALARM,'phpgw_cal_alarm'*/));
+		$transaction_started = false;
+		if (!$this->stream->get_transaction())
+		{
+			$this->stream->transaction_begin();
+			$transaction_started = true;
+		}
 
 		$this->stream->query('SELECT * FROM phpgw_cal WHERE cal_id='.$event_id,__LINE__,__FILE__);
 		
@@ -391,7 +393,10 @@ class calendar_socalendar_ extends calendar_socalendar__
 			$this->event = False;
 		}
       
-		$this->stream->unlock();
+		if ($transaction_started && $this->stream->get_transaction())
+		{
+			$this->stream->transaction_commit();
+		}
 
 		if ($this->event)
 		{
@@ -511,22 +516,17 @@ class calendar_socalendar_ extends calendar_socalendar__
 			return 1;
 		}
 		$this_event = $this->event;
-/*		$locks = array(
+		$locks = array(
 			'phpgw_cal',
 			'phpgw_cal_user',
 			'phpgw_cal_repeats',
 			'phpgw_cal_extra'
-// OLD-ALARM			'phpgw_cal_alarm'
 		);
-		$this->stream->lock($locks);
-*/
-		if ( $this->stream->get_transaction() )
-		{
-			$this->global_lock = true;
-		}
-		else
+		$transaction_started = false;
+		if (!$this->stream->get_transaction())
 		{
 			$this->stream->transaction_begin();
+			$transaction_started = true;
 		}
 
 		foreach($this->deleted_events as $cal_id)
@@ -536,8 +536,7 @@ class calendar_socalendar_ extends calendar_socalendar__
 				$this->stream->query('DELETE FROM '.$table.' WHERE cal_id='.$cal_id,__LINE__,__FILE__);
 			}
 		}
-//		$this->stream->unlock();
-		if ( !$this->global_lock )
+		if ($transaction_started && $this->stream->get_transaction())
 		{
 			$this->stream->transaction_commit();
 		}
@@ -664,14 +663,12 @@ class calendar_socalendar_ extends calendar_socalendar__
 
 	function save_event($event)
 	{
-		$locks = array(
-			'phpgw_cal',
-			'phpgw_cal_user',
-			'phpgw_cal_repeats',
-			'phpgw_cal_extra'
-// OLD-ALARM			'phpgw_cal_alarm'
-		);
-		$this->stream->lock($locks);
+		$transaction_started = false;
+		if (!$this->stream->get_transaction())
+		{
+			$this->stream->transaction_begin();
+			$transaction_started = true;
+		}
 		if ( !isset($event['id'])
 			|| !$event['id'] )
 		{
@@ -696,6 +693,7 @@ class calendar_socalendar_ extends calendar_socalendar__
 		{
 			$type = 'E';
 		}
+		$reference = isset($event['reference']) ? (int)$event['reference'] : 0;
 
 		$sql = 'UPDATE phpgw_cal SET '
 				. 'owner='.$event['owner'].', '
@@ -710,7 +708,7 @@ class calendar_socalendar_ extends calendar_socalendar__
 				. "description='".$this->stream->db_addslashes($event['description'])."', "
 				. "location='".$this->stream->db_addslashes($event['location'])."', "
 				. (isset($event['groups']) ? "groups='".(count($event['groups']) > 1 ? implode(',',$event['groups']) : ','.$event['groups'][0].',')."', ":'')
-				. 'reference='.$event['reference'].' '
+				. 'reference='.$reference.' '
 				. 'WHERE cal_id='.$event['id'];
 		
 		$this->stream->query($sql,__LINE__,__FILE__);
@@ -786,7 +784,6 @@ class calendar_socalendar_ extends calendar_socalendar__
 			// the user must use "Alarm Management" to create/establish multiple
 			// alarms or to edit/change an alarm
 			echo '<!-- how did this happen, too many alarms -->'."\n";
-			$this->stream->unlock();
 			return True;
 		}
 
@@ -803,7 +800,10 @@ class calendar_socalendar_ extends calendar_socalendar__
 */
 		print_debug('Event Saved: ID #',$event['id']);
 
-		$this->stream->unlock();
+		if ($transaction_started && $this->stream->get_transaction())
+		{
+			$this->stream->transaction_commit();
+		}
 
 		if ( isset($event['alarm'])
 			&& is_array($event['alarm']) )

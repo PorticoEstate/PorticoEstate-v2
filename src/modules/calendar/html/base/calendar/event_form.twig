@@ -4,7 +4,7 @@
 {{ add_style(modules_url ~ '/calendar/html/base/calendar/calendar.css') }}
 {% endblock %}
 {% block content %}
-<form id="calendar-event-form" class="calendar-event-form" data-api-url="{{ api_url|e('html_attr') }}" data-list-url="{{ list_url|e('html_attr') }}">
+<form id="calendar-event-form" class="calendar-event-form" data-api-url="{{ api_url|e('html_attr') }}" data-participants-url="{{ participants_url|e('html_attr') }}" data-list-url="{{ list_url|e('html_attr') }}">
 	<p><a href="{{ list_url|e }}">{{ lang('Back') }}</a></p>
 	<h1>{{ lang('Add') }}</h1>
 	<div id="calendar-event-form-error" class="app-alert app-alert--error" role="alert" hidden></div>
@@ -53,6 +53,48 @@
 		<input name="owner_participates" type="checkbox" value="1" checked>
 		<span>{{ lang('%1 participates', values.owner_name|default('')) }}</span>
 	</label>
+
+	<fieldset>
+		<legend>{{ lang('Participants') }}</legend>
+		<div class="calendar-event-form__participant-search">
+			<label>
+				<span>{{ lang('search') }}</span>
+				<input id="participant-lookup" type="search" placeholder="{{ lang('show contacts')|e('html_attr') }}">
+			</label>
+			<label>
+				<span>{{ lang('type') }}</span>
+				<select id="participant-type">
+					<option value="person">{{ lang('person') }}</option>
+					<option value="organization">{{ lang('organization') }}</option>
+					<option value="group">{{ lang('phpgroupware groups') }}</option>
+				</select>
+			</label>
+			<label>
+				<span>{{ lang('category') }}</span>
+				<select id="participant-category">
+					<option value="0">{{ lang('all') }}</option>
+					{% for category in participant_categories %}
+						<option value="{{ category.id|e('html_attr') }}">{{ category.name|e }}</option>
+					{% endfor %}
+				</select>
+			</label>
+			<button type="button" data-action="search-participants">{{ lang('search') }}</button>
+		</div>
+		<div class="calendar-event-form__participant-lists">
+			<label>
+				<span>{{ lang('contacts') }}</span>
+				<select id="participant-results" multiple size="8"></select>
+			</label>
+			<div class="calendar-event-form__participant-actions">
+				<button type="button" data-action="add-participants">{{ lang('add') }}</button>
+				<button type="button" data-action="remove-participants">{{ lang('remove') }}</button>
+			</div>
+			<label>
+				<span>{{ lang('Selected contacts') }}</span>
+				<select id="event-participants" multiple size="8"></select>
+			</label>
+		</div>
+	</fieldset>
 
 	<fieldset>
 		<legend>{{ lang('Alarm') }}</legend>

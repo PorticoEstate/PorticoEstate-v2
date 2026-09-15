@@ -23,6 +23,7 @@ $app->group('/calendar', function (RouteCollectorProxy $group)
     $group->post('/events', CalendarController::class . ':store');
     $group->get('/events/{id:[0-9]+}', CalendarController::class . ':show');
     $group->map(['DELETE', 'POST'], '/events/{id:[0-9]+}', CalendarController::class . ':destroy');
+    $group->get('/participants', CalendarController::class . ':participants');
 
     $group->group('/view/holidays', function (RouteCollectorProxy $view)
     {

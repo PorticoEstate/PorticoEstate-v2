@@ -92,13 +92,19 @@ class CalendarViewController
 		$calendar = \CreateObject('calendar.bocalendar', 1);
 		$categoryOptions = $calendar->cat->return_array('all', 0, false);
 		$categoryOptions = is_array($categoryOptions) ? $categoryOptions : [];
+		$participantCategories = \CreateObject('phpgwapi.categories');
+		$participantCategories->app_name = 'addressbook';
+		$participantCategoryOptions = $participantCategories->return_array('all', 0, false);
+		$participantCategoryOptions = is_array($participantCategoryOptions) ? $participantCategoryOptions : [];
 		Settings::getInstance()->update('flags', ['app_header' => lang('Calendar') . ' - ' . lang('Add')]);
 
 		$html = $this->twig->render('@views/calendar/event_form.twig', [
 			'layout' => '@views/_bare.twig',
 			'api_url' => \phpgw::link('/calendar/events'),
+			'participants_url' => \phpgw::link('/calendar/participants'),
 			'list_url' => \phpgw::link('/calendar/view/day', ['date' => $date]),
 			'categories' => $categoryOptions,
+			'participant_categories' => $participantCategoryOptions,
 			'recur_types' => $calendar->rpt_type,
 			'recur_days' => $calendar->rpt_day,
 			'values' => [

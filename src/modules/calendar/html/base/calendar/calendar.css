@@ -211,6 +211,25 @@
 	gap: .75rem;
 }
 
+.calendar-event-form__participant-search {
+	display: grid;
+	grid-template-columns: minmax(180px, 2fr) minmax(130px, 1fr) minmax(160px, 1fr) auto;
+	gap: .75rem;
+	align-items: end;
+}
+
+.calendar-event-form__participant-lists {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+	gap: .75rem;
+	align-items: center;
+}
+
+.calendar-event-form__participant-actions {
+	display: grid;
+	gap: .5rem;
+}
+
 .calendar-event-form__check {
 	display: flex !important;
 	align-items: center;
@@ -258,6 +277,11 @@
 	}
 
 	.calendar-event-form__row {
+		grid-template-columns: 1fr;
+	}
+
+	.calendar-event-form__participant-search,
+	.calendar-event-form__participant-lists {
 		grid-template-columns: 1fr;
 	}
 }

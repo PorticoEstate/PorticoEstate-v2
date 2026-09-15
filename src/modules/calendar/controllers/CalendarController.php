@@ -64,6 +64,7 @@ class CalendarController
 			'priority' => max(1, min(3, (int)($body['priority'] ?? 2))),
 			'private' => !empty($body['private']),
 			'owner_participates' => !empty($body['owner_participates']),
+			'participants' => (array)($body['participants'] ?? []),
 			'alarm_days' => max(0, (int)($body['alarm_days'] ?? 0)),
 			'alarm_hours' => max(0, (int)($body['alarm_hours'] ?? 0)),
 			'alarm_minutes' => max(0, (int)($body['alarm_minutes'] ?? 0)),
@@ -71,6 +72,35 @@ class CalendarController
 			'recur_interval' => max(1, (int)($body['recur_interval'] ?? 1)),
 			'recur_end' => (string)($body['recur_end'] ?? ''),
 			'recur_days' => array_map('intval', (array)($body['recur_days'] ?? [])),
+		];
+	}
+
+	private function mapParticipant(array $participant, string $type): array
+	{
+		if ($type === 'group')
+		{
+			$name = trim((string)($participant['per_first_name'] ?? '') . ' ' . (string)($participant['per_last_name'] ?? ''));
+			return [
+				'id' => (string)($participant['contact_id'] ?? ''),
+				'name' => $name,
+				'type' => 'group',
+			];
+		}
+
+		if ($type === 'organization')
+		{
+			return [
+				'id' => (string)($participant['contact_id'] ?? ''),
+				'name' => (string)($participant['org_name'] ?? ''),
+				'type' => 'organization',
+			];
+		}
+
+		$name = trim((string)($participant['per_first_name'] ?? '') . ' ' . (string)($participant['per_last_name'] ?? ''));
+		return [
+			'id' => (string)($participant['contact_id'] ?? ''),
+			'name' => $name,
+			'type' => 'person',
 		];
 	}
 
@@ -241,11 +271,6 @@ class CalendarController
 		{
 			return ResponseHelper::sendErrorResponse(['error' => lang('Title is required')], 422);
 		}
-		if (!$values['owner_participates'])
-		{
-			return ResponseHelper::sendErrorResponse(['error' => lang('You need to choose participants')], 422);
-		}
-
 		$calendar = $this->calendar();
 		if (!$calendar->check_perms(\ACL_ADD))
 		{
@@ -257,6 +282,7 @@ class CalendarController
 		$calendar->event_init();
 		$calendar->add_attribute('id', 0);
 		$calendar->add_attribute('owner', $calendar->owner);
+		$calendar->add_attribute('reference', 0);
 		$calendar->set_start($start['year'], $start['month'], $start['day'], $start['hour'], $start['min'], 0);
 		$calendar->set_end($end['year'], $end['month'], $end['day'], $end['hour'], $end['min'], 0);
 		$calendar->set_title($values['title']);
@@ -268,6 +294,33 @@ class CalendarController
 		if ($values['owner_participates'])
 		{
 			$calendar->add_attribute('participants', 'A', $calendar->owner);
+		}
+		foreach ($values['participants'] as $participant)
+		{
+			$participant = is_array($participant) ? $participant : ['id' => $participant, 'status' => 'A'];
+			$id = (string)($participant['id'] ?? '');
+			$status = (string)($participant['status'] ?? 'A');
+			$status = in_array($status, ['A', 'R', 'T', 'U'], true) ? $status : 'A';
+			if ($id === '')
+			{
+				continue;
+			}
+
+			if (substr($id, 0, 2) === 'g_')
+			{
+				$members = (new \App\modules\phpgwapi\controllers\Accounts\Accounts())->member((int)substr($id, 2));
+				foreach ((array)$members as $member)
+				{
+					$contactId = (int)$calendar->contacts->is_contact($member['account_id'] ?? 0);
+					if ($contactId)
+					{
+						$calendar->add_attribute('participants', $status, $contactId);
+					}
+				}
+				continue;
+			}
+
+			$calendar->add_attribute('participants', $status, (int)$id);
 		}
 
 		$alarmSeconds = ($values['alarm_days'] * \phpgwapi_datetime::SECONDS_IN_DAY) + ($values['alarm_hours'] * \phpgwapi_datetime::SECONDS_IN_HOUR) + ($values['alarm_minutes'] * 60);
@@ -318,6 +371,44 @@ class CalendarController
 			'id' => $id,
 			'view_url' => \phpgw::link('/calendar/view/event/' . $id),
 		], 201);
+	}
+
+	public function participants(Request $request, Response $response): Response
+	{
+		$query = $request->getQueryParams();
+		$lookup = trim((string)($query['lookup'] ?? ''));
+		if (strlen($lookup) < 3 && $lookup !== '*')
+		{
+			return ResponseHelper::sendJSONResponse(['data' => []]);
+		}
+
+		$search = $lookup === '*' ? '%' : $lookup;
+		$type = (string)($query['type'] ?? 'person');
+		$categoryId = (int)($query['cat_id'] ?? $query['category_id'] ?? 0);
+		$calendar = $this->calendar();
+
+		switch ($type)
+		{
+			case 'group':
+				$items = (array)$calendar->get_groups($search);
+				$type = 'group';
+				break;
+			case 'organization':
+				$items = (array)$calendar->get_org_contacts($search, $categoryId);
+				$type = 'organization';
+				break;
+			case 'person':
+			default:
+				$items = (array)$calendar->get_per_contacts($search, $categoryId);
+				$type = 'person';
+		}
+
+		$data = array_values(array_filter(array_map(function ($participant) use ($type) {
+			$mapped = $this->mapParticipant((array)$participant, $type);
+			return $mapped['id'] && $mapped['name'] ? $mapped : null;
+		}, $items)));
+
+		return ResponseHelper::sendJSONResponse(['data' => $data]);
 	}
 
 	public function destroy(Request $request, Response $response, array $args): Response

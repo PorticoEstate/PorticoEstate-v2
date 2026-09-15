@@ -15,6 +15,11 @@ class CalendarController
 		return \CreateObject('calendar.bocalendar', 1);
 	}
 
+	private function customFields(): object
+	{
+		return \CreateObject('calendar.bocustom_fields');
+	}
+
 	private function normalizeView(string $view): string
 	{
 		return in_array($view, $this->views, true) ? $view : 'month';
@@ -72,6 +77,7 @@ class CalendarController
 			'recur_interval' => max(1, (int)($body['recur_interval'] ?? 1)),
 			'recur_end' => (string)($body['recur_end'] ?? ''),
 			'recur_days' => array_map('intval', (array)($body['recur_days'] ?? [])),
+			'custom_fields' => (array)($body['custom_fields'] ?? []),
 		];
 	}
 
@@ -321,6 +327,16 @@ class CalendarController
 			}
 
 			$calendar->add_attribute('participants', $status, (int)$id);
+		}
+
+		$customFields = $this->customFields();
+		foreach ($values['custom_fields'] as $field => $value)
+		{
+			$field = '#' . ltrim((string)$field, '#');
+			if (isset($customFields->fields[$field]) && empty($customFields->fields[$field]['disabled']))
+			{
+				$calendar->add_attribute($field, trim((string)$value));
+			}
 		}
 
 		$alarmSeconds = ($values['alarm_days'] * \phpgwapi_datetime::SECONDS_IN_DAY) + ($values['alarm_hours'] * \phpgwapi_datetime::SECONDS_IN_HOUR) + ($values['alarm_minutes'] * 60);

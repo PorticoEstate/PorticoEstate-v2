@@ -100,6 +100,12 @@
 				payload[key] = payload[key] || [];
 				payload[key].push(value);
 			}
+			else if (key.indexOf('custom_fields[') === 0)
+			{
+				var field = key.slice(14, -1);
+				payload.custom_fields = payload.custom_fields || {};
+				payload.custom_fields[field] = value;
+			}
 			else
 			{
 				payload[key] = value;

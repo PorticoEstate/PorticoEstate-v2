@@ -54,6 +54,18 @@
 		<span>{{ lang('%1 participates', values.owner_name|default('')) }}</span>
 	</label>
 
+	{% if custom_fields|default([])|length %}
+		<fieldset>
+			<legend>{{ lang('Custom fields') }}</legend>
+			{% for field in custom_fields %}
+				<label{% if field.title %} class="calendar-event-form__section-title"{% endif %}>
+					<span>{{ field.label }}</span>
+					<input name="custom_fields[{{ field.id|e('html_attr') }}]" maxlength="{{ field.length ?: 255 }}" size="{{ field.shown ?: 30 }}">
+				</label>
+			{% endfor %}
+		</fieldset>
+	{% endif %}
+
 	<fieldset>
 		<legend>{{ lang('Participants') }}</legend>
 		<div class="calendar-event-form__participant-search">

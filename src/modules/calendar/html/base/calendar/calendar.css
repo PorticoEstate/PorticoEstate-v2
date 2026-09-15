@@ -246,6 +246,10 @@
 	flex-wrap: wrap;
 }
 
+.calendar-event-form__section-title span {
+	font-weight: 600;
+}
+
 .calendar-event-form__actions {
 	display: flex;
 	gap: .5rem;

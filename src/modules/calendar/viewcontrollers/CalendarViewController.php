@@ -96,6 +96,25 @@ class CalendarViewController
 		$participantCategories->app_name = 'addressbook';
 		$participantCategoryOptions = $participantCategories->return_array('all', 0, false);
 		$participantCategoryOptions = is_array($participantCategoryOptions) ? $participantCategoryOptions : [];
+		$customFields = \CreateObject('calendar.bocustom_fields');
+		$eventCustomFields = [];
+		foreach ((array)$customFields->fields as $field => $data)
+		{
+			if (isset($customFields->stock_fields[$field]) || !empty($data['disabled']))
+			{
+				continue;
+			}
+
+			$name = ltrim((string)$field, '#');
+			$eventCustomFields[] = [
+				'id' => $field,
+				'name' => $name,
+				'label' => lang((string)($data['name'] ?? $name)),
+				'length' => (int)($data['length'] ?? 255),
+				'shown' => (int)($data['shown'] ?? 30),
+				'title' => !empty($data['title']),
+			];
+		}
 		Settings::getInstance()->update('flags', ['app_header' => lang('Calendar') . ' - ' . lang('Add')]);
 
 		$html = $this->twig->render('@views/calendar/event_form.twig', [
@@ -105,6 +124,7 @@ class CalendarViewController
 			'list_url' => \phpgw::link('/calendar/view/day', ['date' => $date]),
 			'categories' => $categoryOptions,
 			'participant_categories' => $participantCategoryOptions,
+			'custom_fields' => $eventCustomFields,
 			'recur_types' => $calendar->rpt_type,
 			'recur_days' => $calendar->rpt_day,
 			'values' => [

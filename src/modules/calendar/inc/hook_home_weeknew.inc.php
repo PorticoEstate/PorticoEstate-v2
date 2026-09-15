@@ -18,7 +18,7 @@
 	if($d1 == 'htt' || $d1 == 'ftp' )
 	{
 		echo 'Failed attempt to break in via an old Security Hole!<br />'."\n";
-		$GLOBALS['phpgw']->common->phpgw_exit();
+    (new \phpgwapi_common())->phpgw_exit();
 	}
 	unset($d1);
 

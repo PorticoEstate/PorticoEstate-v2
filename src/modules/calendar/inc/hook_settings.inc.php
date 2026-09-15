@@ -126,13 +126,15 @@
 	create_input_box('default appointment length (in minutes)','defaultlength',
 		'Default length of newly created events. The length is in minutes, eg. 60 for 1 hour.','',3);
 
-	$groups = $GLOBALS['phpgw']->accounts->membership(\App\modules\phpgwapi\services\Settings::getInstance()->get('user')['account_id']);
+	$accounts = new \App\modules\phpgwapi\controllers\Accounts\Accounts();
+	$phpgwapi_common = new \phpgwapi_common();
+	$groups = $accounts->membership(\App\modules\phpgwapi\services\Settings::getInstance()->get('user')['account_id']);
 	$options = array(-1 => lang('none'));
 	if (is_array($groups))
 	{
 		foreach($groups as $group)
 		{
-			$options[$group->id] = $GLOBALS['phpgw']->common->grab_owner_name($group->id);
+			$options[$group->id] = $phpgwapi_common->grab_owner_name($group->id);
 		}
 	}
 	create_select_box('Preselected group for entering the planner','planner_start_with_group',$options,

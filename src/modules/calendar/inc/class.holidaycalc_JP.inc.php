@@ -26,7 +26,7 @@ class calendar_holidaycalc
 
 		if ($holiday['day'] == 0 && $holiday['dow'] != 0 && $holiday['occurence'] != 0)
 		{
-			$dow = phpgw_datetime::day_of_week($year, $holiday['month'], 1);
+			$dow = phpgwapi_datetime::day_of_week($year, $holiday['month'], 1);
 			$dayshift = (($holiday['dow'] + 7) - $dow) % 7;
 			$day = ($holiday['occurence'] - 1) * 7 + $dayshift + 1;
 
@@ -100,7 +100,7 @@ class calendar_holidaycalc
 
 		if ($year >= 1985 && $holiday['month'] == $cached_month && $day == $cached_day + 2 && $cached_observance_rule == True && $holiday['observance_rule'] == True)
 		{
-			$pdow = phpgw_datetime::day_of_week($year,$holiday['month'],$day-1);
+			$pdow = phpgwapi_datetime::day_of_week($year,$holiday['month'],$day-1);
 			if ($pdow != 0)
 			{
 				$addcnt = count($holidays) + 1;
@@ -132,7 +132,7 @@ class calendar_holidaycalc
 		}
 		elseif ($holiday['observance_rule'] == True)
 		{
-			$dow = phpgw_datetime::day_of_week($year,$holiday['month'],$day);
+			$dow = phpgwapi_datetime::day_of_week($year,$holiday['month'],$day);
 			// This now calulates Observed holidays and creates a new entry for them.
 			if($dow == 0)
 			{

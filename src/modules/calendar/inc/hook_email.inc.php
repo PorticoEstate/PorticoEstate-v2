@@ -26,7 +26,7 @@
 
 	if ($calendar_id)
 	{
-		$GLOBALS['phpgw']->translation->add_app('calendar');
+		\App\modules\phpgwapi\services\Translation::getInstance()->add_app('calendar');
 
 		$cal = CreateObject('calendar.uicalendar');
 		//echo "Event ID: $calendar_id<br />\n";

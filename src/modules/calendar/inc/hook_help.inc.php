@@ -33,33 +33,34 @@
 	 */
 
 	include(PHPGW_SERVER_ROOT.'/'.'calendar'.'/setup/setup.inc.php');
+	$help = CreateObject('manual.help_helper');
 
-	$GLOBALS['phpgw']->help->set_params(array('app_name'		=> 'calendar',
+	$help->set_params(array('app_name'		=> 'calendar',
 												'title'			=> lang('calendar'),
 												'app_version'	=> $setup_info['calendar']['version']));
-	$GLOBALS['phpgw']->help->data[] = array
+	$help->data[] = array
 	(
 		'text'					=> lang('overview'),
-		'url'					=> $GLOBALS['phpgw']->help->check_help_file('overview.odt'),
+		'url'					=> $help->check_help_file('overview.odt'),
 		'lang_link_statustext'	=> lang('overview')
 	);
-	$GLOBALS['phpgw']->help->data[] = array
+	$help->data[] = array
 	(
 		'text'					=> lang('view'),
-		'url'					=> $GLOBALS['phpgw']->help->check_help_file('view.odt'),
+		'url'					=> $help->check_help_file('view.odt'),
 		'lang_link_statustext'	=> lang('overview')
 	);
-	$GLOBALS['phpgw']->help->data[] = array
+	$help->data[] = array
 	(
 		'text'					=> lang('Add'),
-		'url'					=> $GLOBALS['phpgw']->help->check_help_file('add.odt'),
+		'url'					=> $help->check_help_file('add.odt'),
 		'lang_link_statustext'	=> lang('overview')
 	);
-	$GLOBALS['phpgw']->help->data[] = array
+	$help->data[] = array
 	(
 		'text'					=> lang('Edit') .'/' .lang('Delete'),
-		'url'					=> $GLOBALS['phpgw']->help->check_help_file('edit_delete.odt'),
+		'url'					=> $help->check_help_file('edit_delete.odt'),
 		'lang_link_statustext'	=> lang('overview')
 	);
 
-	$GLOBALS['phpgw']->help->draw();
+	$help->draw();

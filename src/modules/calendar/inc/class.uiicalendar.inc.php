@@ -155,7 +155,7 @@
 					echo "Location = ".$vcalendar['todo'][$i]['location']['value']."<br />\n";
 				}
 				echo "Sequence = ".$vcalendar['todo'][$i]['sequence']."<br />\n";	
-				echo "Date Start : ".$GLOBALS['phpgw']->common->show_date(mktime($vcalendar['todo'][$i]['dtstart']['hour'],$vcalendar['todo'][$i]['dtstart']['min'],$vcalendar['todo'][$i]['dtstart']['sec'],$vcalendar['todo'][$i]['dtstart']['month'],$vcalendar['todo'][$i]['dtstart']['mday'],$vcalendar['todo'][$i]['dtstart']['year']) - $this->datatime->tz_offset)."<br />\n";
+				echo "Date Start : ".$this->phpgwapi_common->show_date(mktime($vcalendar['todo'][$i]['dtstart']['hour'],$vcalendar['todo'][$i]['dtstart']['min'],$vcalendar['todo'][$i]['dtstart']['sec'],$vcalendar['todo'][$i]['dtstart']['month'],$vcalendar['todo'][$i]['dtstart']['mday'],$vcalendar['todo'][$i]['dtstart']['year']) - $this->datatime->tz_offset)."<br />\n";
 				echo "Class = ".$vcalendar['todo'][$i]['class']['value']."<br />\n";
 			}
 

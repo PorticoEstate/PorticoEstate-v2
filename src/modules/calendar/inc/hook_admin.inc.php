@@ -22,5 +22,5 @@
 		'Global Categories'				=> phpgw::link('/index.php', array('menuaction' => 'admin.uicategories.index', 'appname' => 'calendar') )
 	);
 //Do not modify below this line
-	$GLOBALS['phpgw']->common->display_mainscreen($appname,$file);
+	(new \phpgwapi_common())->display_mainscreen($appname,$file);
 }

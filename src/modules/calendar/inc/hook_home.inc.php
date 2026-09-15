@@ -22,7 +22,10 @@
 	{
 		return;
 	}
-	$GLOBALS['phpgw']->translation->add_app('calendar');
+	\App\modules\phpgwapi\services\Translation::getInstance()->add_app('calendar');
+	$preferences = \App\modules\phpgwapi\services\Preferences::getInstance();
+	$phpgwapi_common = new \phpgwapi_common();
+	$applications = new \App\modules\phpgwapi\controllers\Applications();
 
 	phpgw::import_class('phpgwapi.datetime');
 
@@ -38,17 +41,17 @@
 	if ( $_page=='index' || ($_page != 'day' && $_page != 'week' && $_page != 'month' && $_page != 'year' && $_page != 'planner'))
 	{
 		$_page = 'month';
-		$GLOBALS['phpgw']->preferences->read();
-		$GLOBALS['phpgw']->preferences->add('calendar','defaultcalendar','month');
-		$GLOBALS['phpgw']->preferences->save_repository();
+		$preferences->read();
+		$preferences->add('calendar','defaultcalendar','month');
+		$preferences->save_repository();
 	}
 
 	if(!@file_exists(PHPGW_INCLUDE_ROOT.'/calendar/inc/hook_home_'.$_page.'.inc.php'))
 	{
 		$_page = 'month';
-		$GLOBALS['phpgw']->preferences->read();
-		$GLOBALS['phpgw']->preferences->add('calendar','defaultcalendar','month');
-		$GLOBALS['phpgw']->preferences->save_repository();
+		$preferences->read();
+		$preferences->add('calendar','defaultcalendar','month');
+		$preferences->save_repository();
 	}
 
 	include_once(PHPGW_INCLUDE_ROOT.'/calendar/inc/hook_home_'.$_page.'.inc.php');
@@ -64,10 +67,10 @@
 		'tertiary'	=> $themeSettings['navbar_bg'],
 		'width'	=> '100%',
 		'outerborderwidth'	=> '0',
-		'header_background_image'	=> $GLOBALS['phpgw']->common->image('phpgwapi','bg_filler', '.png', False)
+		'header_background_image'	=> $phpgwapi_common->image('phpgwapi','bg_filler', '.png', False)
 	));
 
-	$app_id = $GLOBALS['phpgw']->applications->name2id('calendar');
+	$app_id = $applications->name2id('calendar');
 	$GLOBALS['portal_order'][] = $app_id;
 	$var = array
 	(

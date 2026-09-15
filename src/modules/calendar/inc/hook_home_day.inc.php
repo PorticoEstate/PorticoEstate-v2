@@ -23,7 +23,7 @@
 				'link'	=> 'day'
 			)
 		).'</td><td align="center"><table border="0" width="100%" cellspacing="0" cellpadding="0">'
-		. '<tr><td align="center">'.lang($GLOBALS['phpgw']->common->show_date($time,'F')).' '.$GLOBALS['g_day'].', '
+		. '<tr><td align="center">'.lang((new \phpgwapi_common())->show_date($time,'F')).' '.$GLOBALS['g_day'].', '
 			.$GLOBALS['g_year'].'</td></tr><tr><td bgcolor="'.\App\modules\phpgwapi\services\Settings::getInstance()->get('theme')['bg_text']
 		.'" valign="top">'.ExecMethod('calendar.uicalendar.print_day',
 			Array(

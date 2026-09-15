@@ -124,7 +124,7 @@ class calendar_socalendar
 
 		$sql .= (is_array($ids) && count($ids) ? implode(',', $ids) : 0);
 
-		//			$member_groups = $GLOBALS['phpgw']->accounts->membership($this->user);
+		//			$member_groups = $this->accounts_obj->membership($this->user);
 		//			@reset($member_groups);
 		//			while(list($key,$group_info) = each($member_groups))
 		//			{

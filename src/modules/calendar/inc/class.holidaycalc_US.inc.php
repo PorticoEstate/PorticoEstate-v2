@@ -25,7 +25,7 @@ class calendar_holidaycalc
 		{
 			if($holiday['occurence'] != 99)
 			{
-				$dow = phpgw_datetime::day_of_week($year,$holiday['month'],1);
+				$dow = phpgwapi_datetime::day_of_week($year,$holiday['month'],1);
 				$day = (((7 * $holiday['occurence']) - 6) + ((($holiday['dow'] + 7) - $dow) % 7));
 				$day += ($day < 1 ? 7 : 0);
 				// What is the point of this?  
@@ -34,7 +34,7 @@ class calendar_holidaycalc
 
 				// Sometimes the 5th occurance of a weekday (ie the 5th monday)
 				// can spill over to the next month.  This prevents that.  
-				$ld = phpgw_datetime::days_in_month($holiday['month'],$year);
+				$ld = phpgwapi_datetime::days_in_month($holiday['month'],$year);
 				if ($day > $ld)
 				{
 					return;
@@ -42,8 +42,8 @@ class calendar_holidaycalc
 			}
 			else
 			{
-				$ld = phpgw_datetime::days_in_month($holiday['month'],$year);
-				$dow = phpgw_datetime::day_of_week($year,$holiday['month'],$ld);
+				$ld = phpgwapi_datetime::days_in_month($holiday['month'],$year);
+				$dow = phpgwapi_datetime::day_of_week($year,$holiday['month'],$ld);
 				$day = $ld - (($dow + 7) - $holiday['dow']) % 7 ;
 			}
 		}
@@ -52,7 +52,7 @@ class calendar_holidaycalc
 			$day = $holiday['day'];
 			if($holiday['observance_rule'] == True)
 			{
-				$dow = phpgw_datetime::day_of_week($year,$holiday['month'],$day);
+				$dow = phpgwapi_datetime::day_of_week($year,$holiday['month'],$day);
 				// This now calulates Observed holidays and creates a new entry for them.
 				if ( $dow == 0 )
 				{

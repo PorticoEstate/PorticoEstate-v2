@@ -14,6 +14,8 @@
 
 	/* $Id$ */
 
+	use App\modules\phpgwapi\controllers\Accounts\Accounts;
+	use App\modules\phpgwapi\security\Sessions;
 	use App\modules\phpgwapi\services\Settings;
 
 	/**
@@ -87,9 +89,9 @@
 		$login .= "#{$logindomain}";
 	}
 
-	$sessionid = $GLOBALS['phpgw']->session->create($login, $passwd);
+	$sessionid = Sessions::getInstance()->create($login, $passwd);
 
-	$uid = $GLOBALS['phpgw']->accounts->name2id($login);
+	$uid = (new Accounts())->name2id($login);
 
 	$params = array('owner' => (int)Settings::getInstance()->get('user')['person_id']);
 	$owner = $params['owner'];
@@ -148,7 +150,7 @@
 		$browser = createObject('phpgwapi.browser');
 		$browser->content_header($login . '.ics','text/calendar');
  	}
-	@$GLOBALS['phpgw']->session->destroy($sessionid, $GLOBALS['phpgw']->session->kp3);
+	@Sessions::getInstance()->destroy($sessionid);
 
 	function list_alarms()
 	{

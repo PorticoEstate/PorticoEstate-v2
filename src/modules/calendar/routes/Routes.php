@@ -18,10 +18,12 @@ $app->group('/calendar', function (RouteCollectorProxy $group)
     $group->get('', CalendarViewController::class . ':index');
     $group->get('/view/event/new', CalendarViewController::class . ':add');
     $group->get('/view/{view:day|week|week-new|month|year}', CalendarViewController::class . ':index');
+    $group->get('/view/event/{id:[0-9]+}/edit', CalendarViewController::class . ':edit');
     $group->get('/view/event/{id:[0-9]+}', CalendarViewController::class . ':event');
     $group->get('/events', CalendarController::class . ':events');
     $group->post('/events', CalendarController::class . ':store');
     $group->get('/events/{id:[0-9]+}', CalendarController::class . ':show');
+    $group->put('/events/{id:[0-9]+}', CalendarController::class . ':update');
     $group->map(['DELETE', 'POST'], '/events/{id:[0-9]+}', CalendarController::class . ':destroy');
     $group->get('/participants', CalendarController::class . ':participants');
 

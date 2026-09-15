@@ -786,6 +786,10 @@ class calendar_uicalendar
 
 	function edit($params = '')
 	{
+		$cal_id = Sanitizer::get_var('cal_id', 'int', 'GET');
+		$date = Sanitizer::get_var('date', 'int', 'GET');
+		phpgw::redirect_link('/calendar/view/event/' . (int)$cal_id . '/edit', ($date ? array('date' => $date) : array()));
+
 		if ($this->debug)
 		{
 			echo '<!-- params[readsess] = ' . $params['readsess'] . ' -->' . "\n";

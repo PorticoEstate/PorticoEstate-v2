@@ -4,14 +4,14 @@
 {{ add_style(modules_url ~ '/calendar/html/base/calendar/calendar.css') }}
 {% endblock %}
 {% block content %}
-<form id="calendar-event-form" class="calendar-event-form" data-api-url="{{ api_url|e('html_attr') }}" data-participants-url="{{ participants_url|e('html_attr') }}" data-list-url="{{ list_url|e('html_attr') }}">
+<form id="calendar-event-form" class="calendar-event-form" data-api-url="{{ api_url|e('html_attr') }}" data-method="{{ is_edit ? 'PUT' : 'POST' }}" data-participants-url="{{ participants_url|e('html_attr') }}" data-list-url="{{ list_url|e('html_attr') }}">
 	<p><a href="{{ list_url|e }}">{{ lang('Back') }}</a></p>
-	<h1>{{ lang('Add') }}</h1>
+	<h1>{{ is_edit ? lang('Edit') : lang('Add') }}</h1>
 	<div id="calendar-event-form-error" class="app-alert app-alert--error" role="alert" hidden></div>
 
 	<label>
 		<span>{{ lang('Title') }}</span>
-		<input name="title" maxlength="80" required>
+		<input name="title" maxlength="80" value="{{ values.title|default('')|e('html_attr') }}" required>
 	</label>
 	<label>
 		<span>{{ lang('Start Date/Time') }}</span>
@@ -23,34 +23,34 @@
 	</label>
 	<label>
 		<span>{{ lang('Location') }}</span>
-		<input name="location" maxlength="255">
+		<input name="location" maxlength="255" value="{{ values.location|default('')|e('html_attr') }}">
 	</label>
 	<label>
 		<span>{{ lang('Description') }}</span>
-		<textarea name="description" rows="5" maxlength="2048"></textarea>
+		<textarea name="description" rows="5" maxlength="2048">{{ values.description|default('')|e }}</textarea>
 	</label>
 	<label>
 		<span>{{ lang('Category') }}</span>
 		<select name="category" multiple size="5">
 			{% for category in categories %}
-				<option value="{{ category.id|e('html_attr') }}">{{ category.name|e }}</option>
+				<option value="{{ category.id|e('html_attr') }}"{% if category.id in values.category|default([]) %} selected{% endif %}>{{ category.name|e }}</option>
 			{% endfor %}
 		</select>
 	</label>
 	<label>
 		<span>{{ lang('Priority') }}</span>
 		<select name="priority">
-			<option value="1">{{ lang('Low') }}</option>
-			<option value="2" selected>{{ lang('Normal') }}</option>
-			<option value="3">{{ lang('High') }}</option>
+			<option value="1"{% if values.priority|default(2) == 1 %} selected{% endif %}>{{ lang('Low') }}</option>
+			<option value="2"{% if values.priority|default(2) == 2 %} selected{% endif %}>{{ lang('Normal') }}</option>
+			<option value="3"{% if values.priority|default(2) == 3 %} selected{% endif %}>{{ lang('High') }}</option>
 		</select>
 	</label>
 	<label class="calendar-event-form__check">
-		<input name="private" type="checkbox" value="1">
+		<input name="private" type="checkbox" value="1"{% if values.private|default(false) %} checked{% endif %}>
 		<span>{{ lang('Private') }}</span>
 	</label>
 	<label class="calendar-event-form__check">
-		<input name="owner_participates" type="checkbox" value="1" checked>
+		<input name="owner_participates" type="checkbox" value="1"{% if values.owner_participates|default(true) %} checked{% endif %}>
 		<span>{{ lang('%1 participates', values.owner_name|default('')) }}</span>
 	</label>
 
@@ -60,7 +60,7 @@
 			{% for field in custom_fields %}
 				<label{% if field.title %} class="calendar-event-form__section-title"{% endif %}>
 					<span>{{ field.label }}</span>
-					<input name="custom_fields[{{ field.id|e('html_attr') }}]" maxlength="{{ field.length ?: 255 }}" size="{{ field.shown ?: 30 }}">
+					<input name="custom_fields[{{ field.id|e('html_attr') }}]" maxlength="{{ field.length ?: 255 }}" size="{{ field.shown ?: 30 }}" value="{{ field.value|default('')|e('html_attr') }}">
 				</label>
 			{% endfor %}
 		</fieldset>
@@ -103,7 +103,11 @@
 			</div>
 			<label>
 				<span>{{ lang('Selected contacts') }}</span>
-				<select id="event-participants" multiple size="8"></select>
+				<select id="event-participants" multiple size="8">
+					{% for participant in participants|default([]) %}
+						<option value="{{ participant.id|e('html_attr') }}" data-status="{{ participant.status|e('html_attr') }}">{{ participant.name|e }}</option>
+					{% endfor %}
+				</select>
 			</label>
 		</div>
 	</fieldset>
@@ -132,22 +136,22 @@
 			<span>{{ lang('Repeat Type') }}</span>
 			<select name="recur_type">
 				{% for value, label in recur_types %}
-					<option value="{{ value|e('html_attr') }}">{{ lang(label)|e }}</option>
+					<option value="{{ value|e('html_attr') }}"{% if values.recur_type|default(0) == value %} selected{% endif %}>{{ lang(label)|e }}</option>
 				{% endfor %}
 			</select>
 		</label>
 		<label>
 			<span>{{ lang('Repeat End Date') }}</span>
-			<input name="recur_end" type="date">
+			<input name="recur_end" type="date" value="{{ values.recur_end|default('')|e('html_attr') }}">
 		</label>
 		<label>
 			<span>{{ lang('Interval') }}</span>
-			<input name="recur_interval" type="number" min="1" value="1">
+			<input name="recur_interval" type="number" min="1" value="{{ values.recur_interval|default(1) }}">
 		</label>
 		<div class="calendar-event-form__checks">
 			<span>{{ lang('Repeat Day') }}</span>
-			{% for value, label in recur_days %}
-				<label class="calendar-event-form__check"><input name="recur_days" type="checkbox" value="{{ value|e('html_attr') }}"> <span>{{ lang(label)|e }}</span></label>
+			{% for day in recur_days %}
+				<label class="calendar-event-form__check"><input name="recur_days" type="checkbox" value="{{ day.value|e('html_attr') }}"{% if day.checked %} checked{% endif %}> <span>{{ lang(day.label)|e }}</span></label>
 			{% endfor %}
 		</div>
 	</fieldset>

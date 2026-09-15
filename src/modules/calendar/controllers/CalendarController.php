@@ -20,6 +20,11 @@ class CalendarController
 		return \CreateObject('calendar.bocustom_fields');
 	}
 
+	private function formatDateTimeLocal(object $calendar, array $time): string
+	{
+		return date('Y-m-d\TH:i', $calendar->maketime($time) - \phpgwapi_datetime::user_timezone());
+	}
+
 	private function normalizeView(string $view): string
 	{
 		return in_array($view, $this->views, true) ? $view : 'month';
@@ -211,7 +216,7 @@ class CalendarController
 			'recurring' => !empty($event['recur_type']) ? 1 : 0,
 			'private' => $isPrivate ? 1 : 0,
 			'fields' => $fields,
-			'edit_url' => \phpgw::link('/index.php', ['menuaction' => 'calendar.uicalendar.edit', 'cal_id' => (int)($event['id'] ?? 0)]),
+			'edit_url' => \phpgw::link('/calendar/view/event/' . (int)($event['id'] ?? 0) . '/edit'),
 			'delete_url' => \phpgw::link('/calendar/events/' . (int)($event['id'] ?? 0)),
 			'export_url' => \phpgw::link('/index.php', ['menuaction' => 'calendar.uicalendar.export', 'cal_id' => (int)($event['id'] ?? 0)]),
 		];
@@ -269,7 +274,7 @@ class CalendarController
 		return ResponseHelper::sendJSONResponse(['data' => $this->mapEventDetails($calendar, $event)]);
 	}
 
-	public function store(Request $request, Response $response): Response
+	private function saveEvent(Request $request, Response $response, int $id = 0): Response
 	{
 		$body = json_decode($request->getBody()->getContents(), true) ?: [];
 		$values = $this->input((array)$body);
@@ -282,13 +287,29 @@ class CalendarController
 		{
 			return ResponseHelper::sendErrorResponse(['error' => lang('You do not have permission to add entries!')], 403);
 		}
+		if ($id && !$calendar->check_perms(\ACL_EDIT, $id))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => lang('You do not have permission to edit this entry!')], 403);
+		}
 
 		$start = $this->dateTimeToParts($values['start']);
 		$end = $this->dateTimeToParts($values['end']);
-		$calendar->event_init();
-		$calendar->add_attribute('id', 0);
-		$calendar->add_attribute('owner', $calendar->owner);
-		$calendar->add_attribute('reference', 0);
+		if ($id)
+		{
+			$event = $calendar->read_entry($id);
+			if (!is_array($event) || empty($event['id']))
+			{
+				return ResponseHelper::sendErrorResponse(['error' => lang('Sorry, this event does not exist')], 404);
+			}
+			$calendar->so->cal->event = $event;
+		}
+		else
+		{
+			$calendar->event_init();
+			$calendar->add_attribute('id', 0);
+			$calendar->add_attribute('owner', $calendar->owner);
+			$calendar->add_attribute('reference', 0);
+		}
 		$calendar->set_start($start['year'], $start['month'], $start['day'], $start['hour'], $start['min'], 0);
 		$calendar->set_end($end['year'], $end['month'], $end['day'], $end['hour'], $end['min'], 0);
 		$calendar->set_title($values['title']);
@@ -386,7 +407,17 @@ class CalendarController
 			'message' => lang('Entry saved'),
 			'id' => $id,
 			'view_url' => \phpgw::link('/calendar/view/event/' . $id),
-		], 201);
+		], $id ? 200 : 201);
+	}
+
+	public function store(Request $request, Response $response): Response
+	{
+		return $this->saveEvent($request, $response);
+	}
+
+	public function update(Request $request, Response $response, array $args): Response
+	{
+		return $this->saveEvent($request, $response, (int)($args['id'] ?? 0));
 	}
 
 	public function participants(Request $request, Response $response): Response

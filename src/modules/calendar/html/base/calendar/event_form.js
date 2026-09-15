@@ -116,7 +116,7 @@
 		payload.participants = selectedParticipants();
 
 		fetch(form.dataset.apiUrl, {
-			method: 'POST',
+			method: form.dataset.method || 'POST',
 			credentials: 'same-origin',
 			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
 			body: JSON.stringify(payload)

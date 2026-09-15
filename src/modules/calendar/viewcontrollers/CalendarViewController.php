@@ -31,6 +31,114 @@ class CalendarViewController
 		return in_array($view, $this->views, true) ? $view : 'month';
 	}
 
+	private function formContext(Request $request, int $id = 0): array
+	{
+		$query = $request->getQueryParams();
+		$date = preg_replace('/[^0-9]/', '', (string)($query['date'] ?? date('Ymd')));
+		if (strlen($date) !== 8)
+		{
+			$date = date('Ymd');
+		}
+
+		$calendar = \CreateObject('calendar.bocalendar', 1);
+		$event = $id ? (array)$calendar->read_entry($id) : [];
+		$hour = (int)($query['hour'] ?? date('H'));
+		$minute = (int)($query['minute'] ?? 0);
+		$start = sprintf('%s-%s-%sT%02d:%02d', substr($date, 0, 4), substr($date, 4, 2), substr($date, 6, 2), $hour, $minute);
+		$end = date('Y-m-d\TH:i', strtotime($start) + 3600);
+		if (!empty($event['start']))
+		{
+			$start = date('Y-m-d\TH:i', $calendar->maketime($event['start']) - \phpgwapi_datetime::user_timezone());
+		}
+		if (!empty($event['end']))
+		{
+			$end = date('Y-m-d\TH:i', $calendar->maketime($event['end']) - \phpgwapi_datetime::user_timezone());
+		}
+
+		$categoryOptions = $calendar->cat->return_array('all', 0, false);
+		$categoryOptions = is_array($categoryOptions) ? $categoryOptions : [];
+		$participantCategories = \CreateObject('phpgwapi.categories');
+		$participantCategories->app_name = 'addressbook';
+		$participantCategoryOptions = $participantCategories->return_array('all', 0, false);
+		$participantCategoryOptions = is_array($participantCategoryOptions) ? $participantCategoryOptions : [];
+		$recurData = (int)($event['recur_data'] ?? 0);
+		$recurDayOptions = [];
+		foreach ((array)$calendar->rpt_day as $value => $label)
+		{
+			$recurDayOptions[] = [
+				'value' => (int)$value,
+				'label' => $label,
+				'checked' => (bool)($recurData & (int)$value),
+			];
+		}
+		$customFields = \CreateObject('calendar.bocustom_fields');
+		$eventCustomFields = [];
+		foreach ((array)$customFields->fields as $field => $data)
+		{
+			if (isset($customFields->stock_fields[$field]) || !empty($data['disabled']))
+			{
+				continue;
+			}
+
+			$name = ltrim((string)$field, '#');
+			$eventCustomFields[] = [
+				'id' => $field,
+				'name' => $name,
+				'label' => lang((string)($data['name'] ?? $name)),
+				'length' => (int)($data['length'] ?? 255),
+				'shown' => (int)($data['shown'] ?? 30),
+				'title' => !empty($data['title']),
+				'value' => (string)($event[$field] ?? ''),
+			];
+		}
+
+		$participants = [];
+		foreach ((array)($event['participants'] ?? []) as $participantId => $status)
+		{
+			if ((int)$participantId === (int)($event['owner'] ?? $calendar->owner))
+			{
+				continue;
+			}
+			$participants[] = [
+				'id' => (string)$participantId,
+				'name' => $calendar->contacts->get_name_of_person_id($participantId),
+				'status' => (string)$status,
+			];
+		}
+
+		return [
+			'date' => $date,
+			'calendar' => $calendar,
+			'event' => $event,
+			'categories' => $categoryOptions,
+			'participant_categories' => $participantCategoryOptions,
+			'custom_fields' => $eventCustomFields,
+			'participants' => $participants,
+			'recur_types' => $calendar->rpt_type,
+			'recur_days' => $recurDayOptions,
+			'values' => [
+				'id' => $id,
+				'title' => (string)($event['title'] ?? ''),
+				'description' => (string)($event['description'] ?? ''),
+				'location' => (string)($event['location'] ?? ''),
+				'start' => $start,
+				'end' => $end,
+				'category' => array_filter(array_map('intval', explode(',', (string)($event['category'] ?? '')))),
+				'priority' => (int)($event['priority'] ?? 2),
+				'private' => isset($event['public']) ? !(bool)$event['public'] : false,
+				'owner_participates' => !$id || isset($event['participants'][$event['owner'] ?? $calendar->owner]),
+				'owner_name' => $calendar->contacts->get_name_of_person_id($event['owner'] ?? $calendar->owner),
+				'recur_type' => (int)($event['recur_type'] ?? 0),
+				'recur_interval' => (int)($event['recur_interval'] ?? 1),
+				'recur_days' => $recurData,
+				'recur_end' => !empty($event['recur_enddate']['year']) ? sprintf('%04d-%02d-%02d', $event['recur_enddate']['year'], $event['recur_enddate']['month'], $event['recur_enddate']['mday']) : '',
+				'alarm_days' => $calendar->prefs['calendar']['default_email_days'] ?? 0,
+				'alarm_hours' => $calendar->prefs['calendar']['default_email_hours'] ?? 0,
+				'alarm_minutes' => $calendar->prefs['calendar']['default_email_min'] ?? 0,
+			],
+		];
+	}
+
 	public function index(Request $request, Response $response, array $args = []): Response
 	{
 		$view = $this->resolveView($request, $args);
@@ -77,65 +185,34 @@ class CalendarViewController
 
 	public function add(Request $request, Response $response): Response
 	{
-		$query = $request->getQueryParams();
-		$date = preg_replace('/[^0-9]/', '', (string)($query['date'] ?? date('Ymd')));
-		if (strlen($date) !== 8)
-		{
-			$date = date('Ymd');
-		}
-
-		$hour = (int)($query['hour'] ?? date('H'));
-		$minute = (int)($query['minute'] ?? 0);
-		$start = sprintf('%s-%s-%sT%02d:%02d', substr($date, 0, 4), substr($date, 4, 2), substr($date, 6, 2), $hour, $minute);
-		$endTimestamp = strtotime($start) + 3600;
-		$end = date('Y-m-d\TH:i', $endTimestamp);
-		$calendar = \CreateObject('calendar.bocalendar', 1);
-		$categoryOptions = $calendar->cat->return_array('all', 0, false);
-		$categoryOptions = is_array($categoryOptions) ? $categoryOptions : [];
-		$participantCategories = \CreateObject('phpgwapi.categories');
-		$participantCategories->app_name = 'addressbook';
-		$participantCategoryOptions = $participantCategories->return_array('all', 0, false);
-		$participantCategoryOptions = is_array($participantCategoryOptions) ? $participantCategoryOptions : [];
-		$customFields = \CreateObject('calendar.bocustom_fields');
-		$eventCustomFields = [];
-		foreach ((array)$customFields->fields as $field => $data)
-		{
-			if (isset($customFields->stock_fields[$field]) || !empty($data['disabled']))
-			{
-				continue;
-			}
-
-			$name = ltrim((string)$field, '#');
-			$eventCustomFields[] = [
-				'id' => $field,
-				'name' => $name,
-				'label' => lang((string)($data['name'] ?? $name)),
-				'length' => (int)($data['length'] ?? 255),
-				'shown' => (int)($data['shown'] ?? 30),
-				'title' => !empty($data['title']),
-			];
-		}
+		$context = $this->formContext($request);
 		Settings::getInstance()->update('flags', ['app_header' => lang('Calendar') . ' - ' . lang('Add')]);
 
 		$html = $this->twig->render('@views/calendar/event_form.twig', [
 			'layout' => '@views/_bare.twig',
 			'api_url' => \phpgw::link('/calendar/events'),
 			'participants_url' => \phpgw::link('/calendar/participants'),
-			'list_url' => \phpgw::link('/calendar/view/day', ['date' => $date]),
-			'categories' => $categoryOptions,
-			'participant_categories' => $participantCategoryOptions,
-			'custom_fields' => $eventCustomFields,
-			'recur_types' => $calendar->rpt_type,
-			'recur_days' => $calendar->rpt_day,
-			'values' => [
-				'start' => $start,
-				'end' => $end,
-				'owner_name' => $calendar->contacts->get_name_of_person_id($calendar->owner),
-				'alarm_days' => $calendar->prefs['calendar']['default_email_days'] ?? 0,
-				'alarm_hours' => $calendar->prefs['calendar']['default_email_hours'] ?? 0,
-				'alarm_minutes' => $calendar->prefs['calendar']['default_email_min'] ?? 0,
-			],
-		]);
+			'list_url' => \phpgw::link('/calendar/view/day', ['date' => $context['date']]),
+			'is_edit' => false,
+		] + $context);
+
+		$response->getBody()->write($this->legacyView->render($html, ['calendar'], 'calendar'));
+		return $response->withHeader('Content-Type', 'text/html');
+	}
+
+	public function edit(Request $request, Response $response, array $args): Response
+	{
+		$id = (int)($args['id'] ?? 0);
+		$context = $this->formContext($request, $id);
+		Settings::getInstance()->update('flags', ['app_header' => lang('Calendar') . ' - ' . lang('Edit')]);
+
+		$html = $this->twig->render('@views/calendar/event_form.twig', [
+			'layout' => '@views/_bare.twig',
+			'api_url' => \phpgw::link('/calendar/events/' . $id),
+			'participants_url' => \phpgw::link('/calendar/participants'),
+			'list_url' => \phpgw::link('/calendar/view/event/' . $id),
+			'is_edit' => true,
+		] + $context);
 
 		$response->getBody()->write($this->legacyView->render($html, ['calendar'], 'calendar'));
 		return $response->withHeader('Content-Type', 'text/html');

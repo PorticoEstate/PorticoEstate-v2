@@ -122,7 +122,7 @@ class calendar_menu
 				),
 				'holiday'	=> array(
 					'text'	=> $translation->translate('Calendar Holiday Management', array(), true),
-					'url'	=> phpgw::link('/index.php', array('menuaction'	=> 'calendar.uiholiday.admin'))
+					'url'	=> phpgw::link('/calendar/view/holidays')
 				),
 				'categories'	=> array(
 					'text'	=> $translation->translate('Global Categories', array(), true),

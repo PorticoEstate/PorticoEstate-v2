@@ -18,7 +18,7 @@
 	(
 		'Site Configuration'			=> phpgw::link('/index.php', array('menuaction' => 'admin.uiconfig.index', 'appname' => 'calendar') ),
 		'Custom fields and sorting'		=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicustom_fields.index') ),
-		'Calendar Holiday Management'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uiholiday.admin') ),
+		'Calendar Holiday Management'	=> phpgw::link('/calendar/view/holidays'),
 		'Global Categories'				=> phpgw::link('/index.php', array('menuaction' => 'admin.uicategories.index', 'appname' => 'calendar') )
 	);
 //Do not modify below this line

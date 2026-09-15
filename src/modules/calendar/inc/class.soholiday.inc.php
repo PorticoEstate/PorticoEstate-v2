@@ -29,7 +29,7 @@ class calendar_soholiday
 	/* Begin Holiday functions */
 	function save_holiday($holiday)
 	{
-		if (!isset($holiday['hol_id']) || !$holiday['hol_id'])
+		if (!empty($holiday['hol_id']))
 		{
 			if ($this->debug)
 			{

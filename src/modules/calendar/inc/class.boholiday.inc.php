@@ -299,19 +299,19 @@
 		{
 			if ( Sanitizer::get_var('submit', 'bool') )
 			{
-				$holiday = get_var('holiday');
+				$holiday = Sanitizer::get_var('holiday');
 
 				if(empty($holiday['mday']))
 				{
 					$holiday['mday'] = 0;
 				}
-				if(!isset($this->bo->locales[0]) || $this->bo->locales[0]=='')
+				if(!isset($this->locales[0]) || $this->locales[0]=='')
 				{
-					$this->bo->locales[0] = $holiday['locale'];
+					$this->locales[0] = $holiday['locale'];
 				}
 				elseif(!isset($holiday['locale']) || $holiday['locale']=='')
 				{
-					$holiday['locale'] = $this->bo->locales[0];
+					$holiday['locale'] = $this->locales[0];
 				}
 				if(!isset($holiday['hol_id']))
 				{

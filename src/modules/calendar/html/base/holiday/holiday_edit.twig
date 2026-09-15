@@ -1,0 +1,21 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ holiday_id ? lang('Edit') : lang('Add') }} {{ lang('Holiday') }}{% endblock %}
+{% block content %}
+<p><a href="{{ list_url|e }}">{{ lang('Back') }}</a></p>
+<h1>{{ holiday_id ? lang('Edit') : lang('Add') }} {{ lang('Holiday') }}</h1>
+<form id="calendar-holiday-form" data-api-url="{{ form_url|e('html_attr') }}" data-list-url="{{ list_url|e('html_attr') }}">
+ <input name="hol_id" type="hidden" value="{{ holiday_id }}">
+ <label>{{ lang('Country') }} <input name="locale" value="{{ values.locale|default(locale)|e }}" maxlength="2" required></label>
+ <label>{{ lang('title') }} <input name="name" value="{{ values.name|default('')|e }}" maxlength="50" required></label>
+ <label>{{ lang('Date') }} <input name="mday" type="number" min="0" max="31" value="{{ values.day|default(values.mday|default(0)) }}"></label>
+ <label>{{ lang('Month') }} <input name="month_num" type="number" min="1" max="12" value="{{ values.month|default(values.month_num|default(1)) }}" required></label>
+ <label>{{ lang('Occurence') }} <input name="occurence" type="number" min="0" max="99" value="{% if values.occurence|default(0) <= 99 %}{{ values.occurence|default(0) }}{% endif %}"></label>
+ <label>{{ lang('Year') }} <input name="year" type="number" min="1900" max="2100" value="{% if values.occurence|default(0) > 99 %}{{ values.occurence }}{% endif %}"></label>
+ <label>{{ lang('Day') }} <input name="dow" type="number" min="0" max="6" value="{{ values.dow|default(0) }}"></label>
+ <label><input name="observance_rule" type="checkbox" value="1"{% if values.observance_rule|default(0) %} checked{% endif %}> {{ lang('Observance Rule') }}</label>
+ <p id="calendar-holiday-error" role="alert"></p>
+ <button type="submit">{{ lang('Save') }}</button>
+ <a href="{{ list_url|e }}">{{ lang('Cancel') }}</a>
+</form>
+{% endblock %}
+{% block scripts %}<script>{{ source('@views/holiday/holiday_edit.js') }}</script>{% endblock %}

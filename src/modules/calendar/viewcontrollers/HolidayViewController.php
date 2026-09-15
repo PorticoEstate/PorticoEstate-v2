@@ -29,11 +29,20 @@ class HolidayViewController
 
     public function index(Request $request, Response $response): Response
     {
+        $holidays = \CreateObject('calendar.boholiday');
+        $holidays->check_admin();
+        $locales = [];
+        foreach ((array) $holidays->get_locale_list('', 'locale', '') as $locale)
+        {
+            $locales[] = (string) $locale;
+        }
+
         return $this->render($request, $response, '@views/holiday/holiday_locales.twig', [
             'api_url' => \phpgw::link('/calendar/holidays/locales'),
             'holiday_url_template' => \phpgw::link('/calendar/view/holidays/{locale}'),
             'delete_url_template' => \phpgw::link('/calendar/holidays/locale/{locale}'),
             'new_url' => \phpgw::link('/calendar/view/holidays/new'),
+            'locales' => $locales,
         ]);
     }
 

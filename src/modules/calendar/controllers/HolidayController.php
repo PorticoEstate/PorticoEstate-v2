@@ -63,10 +63,29 @@ class HolidayController
     public function locales(Request $request, Response $response): Response
     {
         $holidays = $this->holidays();
-        $query = (string) ($request->getQueryParams()['search'] ?? '');
+        $queryParams = $request->getQueryParams();
+        $selectedLocale = strtoupper(trim((string) ($queryParams['locale'] ?? '')));
+        $searchValue = $queryParams['search'] ?? '';
+        $query = is_array($searchValue) ? (string) ($searchValue['value'] ?? '') : (string) $searchValue;
         $items = [];
-        foreach ((array) $holidays->get_locale_list('', 'locale', $query) as $locale) $items[] = ['locale' => (string) $locale];
-        return ResponseHelper::sendJSONResponse(['data' => $items, 'recordsTotal' => count($items), 'recordsFiltered' => count($items)]);
+        foreach ((array) $holidays->get_locale_list('', 'locale', $query) as $locale)
+        {
+            $locale = (string) $locale;
+            if ($selectedLocale !== '' && $locale !== $selectedLocale)
+            {
+                continue;
+            }
+            $items[] = [
+                'locale' => $locale,
+                'holiday_count' => (int) $holidays->so->holiday_total($locale),
+            ];
+        }
+        return ResponseHelper::sendJSONResponse([
+            'draw' => (int) ($queryParams['draw'] ?? 0),
+            'data' => $items,
+            'recordsTotal' => count($items),
+            'recordsFiltered' => count($items),
+        ]);
     }
 
     public function index(Request $request, Response $response, array $args): Response
@@ -75,9 +94,39 @@ class HolidayController
         $locale = strtoupper((string) ($args['locale'] ?? $query['locale'] ?? ''));
         $year = (int) ($query['year'] ?? 0);
         if (!preg_match('/^[A-Z]{2}$/', $locale)) return ResponseHelper::sendErrorResponse(['error' => 'Invalid locale'], 400);
+        
         $holidays = $this->holidays();
         $rows = array_map([$this, 'mapHoliday'], (array) $holidays->get_holiday_list($locale, '', 'month_num,mday', '', '', $year));
-        return ResponseHelper::sendJSONResponse(['data' => $rows, 'recordsTotal' => count($rows), 'recordsFiltered' => count($rows)]);
+        
+        // Handle search
+        $searchValue = $query['search'] ?? '';
+        $searchQuery = is_array($searchValue) ? (string) ($searchValue['value'] ?? '') : (string) $searchValue;
+        if ($searchQuery !== '')
+        {
+            $rows = array_filter($rows, function ($row) use ($searchQuery) {
+                return stripos((string) $row['name'], $searchQuery) !== false;
+            });
+        }
+        
+        // Handle sorting
+        $sortColumn = isset($query['order'][0]['column']) ? (int) $query['order'][0]['column'] : 0;
+        $sortDir = isset($query['order'][0]['dir']) && $query['order'][0]['dir'] === 'desc' ? -1 : 1;
+        
+        usort($rows, function ($a, $b) use ($sortColumn, $sortDir) {
+            $aVal = $sortColumn === 0 ? $a['name'] : ($a['mday'] ?: $a['occurence']);
+            $bVal = $sortColumn === 0 ? $b['name'] : ($b['mday'] ?: $b['occurence']);
+            $cmp = strcmp((string) $aVal, (string) $bVal);
+            return $cmp * $sortDir;
+        });
+        
+        $totalRecords = count((array) $holidays->get_holiday_list($locale, '', 'month_num,mday', '', '', $year));
+        
+        return ResponseHelper::sendJSONResponse([
+            'draw' => (int) ($query['draw'] ?? 0),
+            'data' => array_values($rows),
+            'recordsTotal' => $totalRecords,
+            'recordsFiltered' => count($rows),
+        ]);
     }
 
     public function show(Request $request, Response $response, array $args): Response
@@ -88,8 +137,9 @@ class HolidayController
 
     public function store(Request $request, Response $response): Response
     {
-        $values = $this->input((array) ($request->getParsedBody() ?: []));
-        $errors = $this->validate($values);
+		$body = json_decode($request->getBody()->getContents(), true) ?: [];
+		$values = $this->input((array) $body);
+		$errors = $this->validate($values);
         if ($errors) return ResponseHelper::sendErrorResponse(['error' => implode(' ', $errors)], 422);
         if ($values['year'] > 0) $values['occurence'] = $values['year'];
         $this->holidays()->save_holiday($values);
@@ -98,7 +148,8 @@ class HolidayController
 
     public function update(Request $request, Response $response, array $args): Response
     {
-        $values = $this->input((array) ($request->getParsedBody() ?: []));
+        $body = json_decode($request->getBody()->getContents(), true) ?: [];
+        $values = $this->input((array) $body);
         $values['hol_id'] = (int) ($args['id'] ?? $values['hol_id']);
         $errors = $this->validate($values);
         if ($errors) return ResponseHelper::sendErrorResponse(['error' => implode(' ', $errors)], 422);

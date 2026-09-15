@@ -6,7 +6,9 @@
 
 	AppDatatable.init({
 		id: config.id,
-		ajax: { url: config.apiUrl },
+		ajax: { url: config.apiUrl, method: 'GET' },
+		serverSide: true,
+		newItem: { label: config.lang.add, url: config.newUrl },
 		columns: [
 			{ data: 'name', title: config.lang.name },
 			{

@@ -8,6 +8,7 @@
 	{
 		event.preventDefault();
 		error.textContent = '';
+		error.style.display = 'none';
 		var payload = {};
 		new FormData(form).forEach(function (value, key) { payload[key] = value; });
 		if (payload.year) payload.occurence = 0;
@@ -27,6 +28,10 @@
 		}).then(function ()
 		{
 			window.location.href = form.dataset.listUrl;
-		}).catch(function (err) { error.textContent = err.message; });
+		}).catch(function (err)
+		{
+			error.textContent = err.message;
+			error.style.display = 'block';
+		});
 	});
 })();

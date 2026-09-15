@@ -7,8 +7,8 @@
 {% block scripts %}
 <script>
 window.__calendarHolidayLocales = {
- id: 'calendar-holiday-locales', apiUrl: '{{ api_url|e('js') }}', viewUrl: '{{ holiday_url_template|e('js') }}', deleteUrl: '{{ delete_url_template|e('js') }}', newUrl: '{{ new_url|e('js') }}',
- lang: {locale: '{{ lang('Country')|e('js') }}', add: '{{ lang('add')|e('js') }}', view: '{{ lang('view')|e('js') }}', delete: '{{ lang('delete')|e('js') }}', confirm: '{{ lang('Are you sure you want to delete this Country ?')|e('js') }}', empty: '{{ lang('No data available in table')|e('js') }}', search: '{{ lang('search')|e('js') }}'}
+ id: 'calendar-holiday-locales', apiUrl: '{{ api_url|e('js') }}', viewUrl: '{{ holiday_url_template|e('js') }}', deleteUrl: '{{ delete_url_template|e('js') }}', newUrl: '{{ new_url|e('js') }}', locales: {{ locales|default([])|json_encode|raw }},
+ lang: {locale: '{{ lang('Country')|e('js') }}', holidays: '{{ lang('Holidays')|e('js') }}', add: '{{ lang('add')|e('js') }}', view: '{{ lang('view')|e('js') }}', delete: '{{ lang('delete')|e('js') }}', confirm: '{{ lang('Are you sure you want to delete this Country ?')|e('js') }}', all: '{{ lang('All')|e('js') }}', empty: '{{ lang('No data available in table')|e('js') }}', search: '{{ lang('search')|e('js') }}'}
 };
 </script>
 <script>{{ source('@views/holiday/holiday_locales.js') }}</script>

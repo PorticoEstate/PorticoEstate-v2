@@ -25,8 +25,8 @@ $app->group('/calendar', function (RouteCollectorProxy $group)
     $group->get('/holidays/{id:[0-9]+}', HolidayController::class . ':show');
     $group->post('/holidays', HolidayController::class . ':store');
     $group->put('/holidays/{id:[0-9]+}', HolidayController::class . ':update');
-    $group->delete('/holidays/{id:[0-9]+}', HolidayController::class . ':destroy');
-    $group->delete('/holidays/locale/{locale:[A-Za-z]{2}}', HolidayController::class . ':destroyLocale');
+    $group->map(['DELETE', 'POST'], '/holidays/{id:[0-9]+}', HolidayController::class . ':destroy');
+    $group->map(['DELETE', 'POST'], '/holidays/locale/{locale:[A-Za-z]{2}}', HolidayController::class . ':destroyLocale');
 })
     ->addMiddleware(new AccessVerifier($container))
     ->addMiddleware(new SessionsMiddleware($container));

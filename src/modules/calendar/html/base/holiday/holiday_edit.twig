@@ -1,21 +1,93 @@
 {% extends layout|default('@views/_bare.twig') %}
 {% block title %}{{ holiday_id ? lang('Edit') : lang('Add') }} {{ lang('Holiday') }}{% endblock %}
+{% block styles %}
+{{ add_style(modules_url ~ '/calendar/html/base/holiday/holiday_edit.css') }}
+{% endblock %}
 {% block content %}
 <p><a href="{{ list_url|e }}">{{ lang('Back') }}</a></p>
 <h1>{{ holiday_id ? lang('Edit') : lang('Add') }} {{ lang('Holiday') }}</h1>
-<form id="calendar-holiday-form" data-api-url="{{ form_url|e('html_attr') }}" data-list-url="{{ list_url|e('html_attr') }}">
- <input name="hol_id" type="hidden" value="{{ holiday_id }}">
- <label>{{ lang('Country') }} <input name="locale" value="{{ values.locale|default(locale)|e }}" maxlength="2" required></label>
- <label>{{ lang('title') }} <input name="name" value="{{ values.name|default('')|e }}" maxlength="50" required></label>
- <label>{{ lang('Date') }} <input name="mday" type="number" min="0" max="31" value="{{ values.day|default(values.mday|default(0)) }}"></label>
- <label>{{ lang('Month') }} <input name="month_num" type="number" min="1" max="12" value="{{ values.month|default(values.month_num|default(1)) }}" required></label>
- <label>{{ lang('Occurence') }} <input name="occurence" type="number" min="0" max="99" value="{% if values.occurence|default(0) <= 99 %}{{ values.occurence|default(0) }}{% endif %}"></label>
- <label>{{ lang('Year') }} <input name="year" type="number" min="1900" max="2100" value="{% if values.occurence|default(0) > 99 %}{{ values.occurence }}{% endif %}"></label>
- <label>{{ lang('Day') }} <input name="dow" type="number" min="0" max="6" value="{{ values.dow|default(0) }}"></label>
- <label><input name="observance_rule" type="checkbox" value="1"{% if values.observance_rule|default(0) %} checked{% endif %}> {{ lang('Observance Rule') }}</label>
- <p id="calendar-holiday-error" role="alert"></p>
- <button type="submit">{{ lang('Save') }}</button>
- <a href="{{ list_url|e }}">{{ lang('Cancel') }}</a>
+<form id="calendar-holiday-form" data-api-url="{{ form_url|e('html_attr') }}" data-list-url="{{ list_url|e('html_attr') }}" class="app-form">
+	<input name="hol_id" type="hidden" value="{{ holiday_id }}">
+	
+	<fieldset class="app-form__section">
+		<legend>{{ lang('Basic Information') }}</legend>
+		
+		<div class="app-form__group">
+			<label for="locale" class="app-form__label">{{ lang('Country') }}<span class="app-form__required">*</span></label>
+			<input id="locale" name="locale" class="app-form__input" value="{{ values.locale|default(locale)|e }}" maxlength="2" required placeholder="e.g., NO, US">
+			<div class="app-form__help">{{ lang('Two-letter country code (ISO 3166-1 alpha-2)') }}</div>
+		</div>
+		
+		<div class="app-form__group">
+			<label for="name" class="app-form__label">{{ lang('Holiday Name') }}<span class="app-form__required">*</span></label>
+			<input id="name" name="name" class="app-form__input" value="{{ values.name|default('')|e }}" maxlength="50" required placeholder="e.g., Christmas, New Year">
+			<div class="app-form__help">{{ lang('Name of the holiday') }}</div>
+		</div>
+	</fieldset>
+	
+	<fieldset class="app-form__section">
+		<legend>{{ lang('Date Rule') }}</legend>
+		<div class="app-form__help">{{ lang('Choose either a fixed date (day/month) or a recurring pattern (occurrence/weekday)') }}</div>
+		
+		<div class="app-form__row">
+			<div class="app-form__group">
+				<label for="mday" class="app-form__label">{{ lang('Day') }}</label>
+				<input id="mday" name="mday" type="number" class="app-form__input" min="0" max="31" value="{{ values.day|default(values.mday|default(0)) }}" placeholder="1-31">
+				<div class="app-form__help">{{ lang('Day of month (for fixed dates)') }}</div>
+			</div>
+			
+			<div class="app-form__group">
+				<label for="month_num" class="app-form__label">{{ lang('Month') }}<span class="app-form__required">*</span></label>
+				<input id="month_num" name="month_num" type="number" class="app-form__input" min="1" max="12" value="{{ values.month|default(values.month_num|default(1)) }}" required placeholder="1-12">
+				<div class="app-form__help">{{ lang('Month number') }}</div>
+			</div>
+		</div>
+		
+		<div class="app-form__row">
+			<div class="app-form__group">
+				<label for="occurence" class="app-form__label">{{ lang('Occurrence') }}</label>
+				<input id="occurence" name="occurence" type="number" class="app-form__input" min="0" max="99" value="{% if values.occurence|default(0) <= 99 %}{{ values.occurence|default(0) }}{% endif %}" placeholder="1-5">
+				<div class="app-form__help">{{ lang('Which occurrence (e.g., 1st, 2nd Monday)') }}</div>
+			</div>
+			
+			<div class="app-form__group">
+				<label for="dow" class="app-form__label">{{ lang('Weekday') }}</label>
+				<select id="dow" name="dow" class="app-form__input">
+					<option value="0" {% if values.dow|default(0) == 0 %}selected{% endif %}>{{ lang('Sunday') }}</option>
+					<option value="1" {% if values.dow|default(0) == 1 %}selected{% endif %}>{{ lang('Monday') }}</option>
+					<option value="2" {% if values.dow|default(0) == 2 %}selected{% endif %}>{{ lang('Tuesday') }}</option>
+					<option value="3" {% if values.dow|default(0) == 3 %}selected{% endif %}>{{ lang('Wednesday') }}</option>
+					<option value="4" {% if values.dow|default(0) == 4 %}selected{% endif %}>{{ lang('Thursday') }}</option>
+					<option value="5" {% if values.dow|default(0) == 5 %}selected{% endif %}>{{ lang('Friday') }}</option>
+					<option value="6" {% if values.dow|default(0) == 6 %}selected{% endif %}>{{ lang('Saturday') }}</option>
+				</select>
+				<div class="app-form__help">{{ lang('Day of week for recurring dates') }}</div>
+			</div>
+		</div>
+		
+		<div class="app-form__group">
+			<label for="year" class="app-form__label">{{ lang('Specific Year') }}</label>
+			<input id="year" name="year" type="number" class="app-form__input" min="1900" max="2100" value="{% if values.occurence|default(0) > 99 %}{{ values.occurence }}{% endif %}" placeholder="e.g., 2025">
+			<div class="app-form__help">{{ lang('If set, this holiday only applies to this specific year (not recurring)') }}</div>
+		</div>
+	</fieldset>
+	
+	<fieldset class="app-form__section">
+		<legend>{{ lang('Options') }}</legend>
+		
+		<div class="app-form__group app-form__group--checkbox">
+			<input id="observance_rule" name="observance_rule" type="checkbox" class="app-form__checkbox" value="1"{% if values.observance_rule|default(0) %} checked{% endif %}>
+			<label for="observance_rule" class="app-form__label-checkbox">{{ lang('Observance Rule') }}</label>
+			<div class="app-form__help">{{ lang('Apply observance rules for when the holiday falls on a weekend') }}</div>
+		</div>
+	</fieldset>
+	
+	<div id="calendar-holiday-error" role="alert" class="app-alert app-alert--error" style="display:none;"></div>
+	
+	<div class="app-form__actions">
+		<button type="submit" class="app-button app-button--primary">{{ lang('Save') }}</button>
+		<a href="{{ list_url|e }}" class="app-button app-button--secondary">{{ lang('Cancel') }}</a>
+	</div>
 </form>
 {% endblock %}
 {% block scripts %}<script>{{ source('@views/holiday/holiday_edit.js') }}</script>{% endblock %}

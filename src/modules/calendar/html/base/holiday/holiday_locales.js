@@ -6,9 +6,22 @@
 
 	AppDatatable.init({
 		id: config.id,
-		ajax: { url: config.apiUrl },
+		ajax: { url: config.apiUrl, method: 'GET' },
+		serverSide: true,
 		newItem: { label: config.lang.add, url: config.newUrl },
-		columns: [{ data: 'locale', title: config.lang.locale }],
+		filters: [{
+			name: 'locale',
+			label: config.lang.locale,
+			type: 'select',
+			options: [{ value: '', label: config.lang.all }].concat((config.locales || []).map(function (locale)
+			{
+				return { value: locale, label: locale };
+			}))
+		}],
+		columns: [
+			{ data: 'locale', title: config.lang.locale },
+			{ data: 'holiday_count', title: config.lang.holidays, searchable: false }
+		],
 		rowActions: [
 			{ type: 'link', label: config.lang.view, url: config.viewUrl },
 			{ type: 'delete', label: config.lang.delete, url: config.deleteUrl, confirm: config.lang.confirm }

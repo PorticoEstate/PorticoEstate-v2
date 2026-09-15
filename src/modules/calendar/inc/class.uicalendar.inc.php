@@ -1017,6 +1017,18 @@ class calendar_uicalendar
 
 	function add($cd = 0, $readsess = 0)
 	{
+		$date = Sanitizer::get_var('date', 'int', 'GET', sprintf('%04d%02d%02d', $this->bo->year, $this->bo->month, $this->bo->day));
+		$params = ['date' => $date];
+		if ($hour = Sanitizer::get_var('hour', 'int', 'GET'))
+		{
+			$params['hour'] = $hour;
+		}
+		if ($minute = Sanitizer::get_var('minute', 'int', 'GET'))
+		{
+			$params['minute'] = $minute;
+		}
+		phpgw::redirect_link('/calendar/view/event/new', $params);
+
 		if (!$this->bo->check_perms(ACL_ADD))
 		{
 			$this->index();
@@ -1413,13 +1425,7 @@ class calendar_uicalendar
 
 				$hdr[2]['.' . $index] .= " class=\"$cssclass\"";
 
-				$hdr[2][$index] = '<a href="' . $this->planner_html->link(
-					'/index.php',
-					array(
-						'menuaction'	=> 'calendar.uicalendar.add',
-						'date'		=> $date
-					) + $add_owner
-				) . '">' . $dayname . '<br />' . $d . '</a>';
+				$hdr[2][$index] = '<a href="' . phpgw::link('/calendar/view/event/new', array('date' => $date) + $add_owner) . '">' . $dayname . '<br />' . $d . '</a>';
 			}
 			$this->planner_days += $days;
 		}

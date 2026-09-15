@@ -35,6 +35,45 @@ class CalendarController
 		];
 	}
 
+	private function dateTimeToParts(string $value): array
+	{
+		$timestamp = strtotime($value);
+		if (!$timestamp)
+		{
+			$timestamp = time();
+		}
+
+		return [
+			'year' => (int)date('Y', $timestamp),
+			'month' => (int)date('m', $timestamp),
+			'day' => (int)date('d', $timestamp),
+			'hour' => (int)date('H', $timestamp),
+			'min' => (int)date('i', $timestamp),
+		];
+	}
+
+	private function input(array $body): array
+	{
+		return [
+			'title' => trim((string)($body['title'] ?? '')),
+			'description' => trim((string)($body['description'] ?? '')),
+			'location' => trim((string)($body['location'] ?? '')),
+			'start' => (string)($body['start'] ?? ''),
+			'end' => (string)($body['end'] ?? ''),
+			'category' => array_map('intval', (array)($body['category'] ?? [])),
+			'priority' => max(1, min(3, (int)($body['priority'] ?? 2))),
+			'private' => !empty($body['private']),
+			'owner_participates' => !empty($body['owner_participates']),
+			'alarm_days' => max(0, (int)($body['alarm_days'] ?? 0)),
+			'alarm_hours' => max(0, (int)($body['alarm_hours'] ?? 0)),
+			'alarm_minutes' => max(0, (int)($body['alarm_minutes'] ?? 0)),
+			'recur_type' => (int)($body['recur_type'] ?? 0),
+			'recur_interval' => max(1, (int)($body['recur_interval'] ?? 1)),
+			'recur_end' => (string)($body['recur_end'] ?? ''),
+			'recur_days' => array_map('intval', (array)($body['recur_days'] ?? [])),
+		];
+	}
+
 	private function rangeFor(string $view, string $date): array
 	{
 		$parts = $this->ymdToParts($date);
@@ -192,6 +231,93 @@ class CalendarController
 		}
 
 		return ResponseHelper::sendJSONResponse(['data' => $this->mapEventDetails($calendar, $event)]);
+	}
+
+	public function store(Request $request, Response $response): Response
+	{
+		$body = json_decode($request->getBody()->getContents(), true) ?: [];
+		$values = $this->input((array)$body);
+		if ($values['title'] === '')
+		{
+			return ResponseHelper::sendErrorResponse(['error' => lang('Title is required')], 422);
+		}
+		if (!$values['owner_participates'])
+		{
+			return ResponseHelper::sendErrorResponse(['error' => lang('You need to choose participants')], 422);
+		}
+
+		$calendar = $this->calendar();
+		if (!$calendar->check_perms(\ACL_ADD))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => lang('You do not have permission to add entries!')], 403);
+		}
+
+		$start = $this->dateTimeToParts($values['start']);
+		$end = $this->dateTimeToParts($values['end']);
+		$calendar->event_init();
+		$calendar->add_attribute('id', 0);
+		$calendar->add_attribute('owner', $calendar->owner);
+		$calendar->set_start($start['year'], $start['month'], $start['day'], $start['hour'], $start['min'], 0);
+		$calendar->set_end($end['year'], $end['month'], $end['day'], $end['hour'], $end['min'], 0);
+		$calendar->set_title($values['title']);
+		$calendar->set_description($values['description']);
+		$calendar->add_attribute('location', $values['location']);
+		$calendar->set_category(implode(',', array_filter($values['category'])));
+		$calendar->add_attribute('priority', $values['priority']);
+		$calendar->set_class(!$values['private']);
+		if ($values['owner_participates'])
+		{
+			$calendar->add_attribute('participants', 'A', $calendar->owner);
+		}
+
+		$alarmSeconds = ($values['alarm_days'] * \phpgwapi_datetime::SECONDS_IN_DAY) + ($values['alarm_hours'] * \phpgwapi_datetime::SECONDS_IN_HOUR) + ($values['alarm_minutes'] * 60);
+		if ($alarmSeconds > 0)
+		{
+			$calendar->set_alarm([
+				'time' => $calendar->maketime($calendar->get_cached_event()['start']) - $alarmSeconds,
+				'owner' => $calendar->owner,
+				'enabled' => 1,
+			]);
+		}
+
+		$recurEnd = $values['recur_end'] ? $this->dateTimeToParts($values['recur_end']) : $end;
+		switch ($values['recur_type'])
+		{
+			case \MCAL_RECUR_DAILY:
+				$calendar->set_recur_daily($recurEnd['year'], $recurEnd['month'], $recurEnd['day'], $values['recur_interval']);
+				break;
+			case \MCAL_RECUR_WEEKLY:
+				$calendar->set_recur_weekly($recurEnd['year'], $recurEnd['month'], $recurEnd['day'], $values['recur_interval'], array_sum($values['recur_days']));
+				break;
+			case \MCAL_RECUR_MONTHLY_MDAY:
+				$calendar->set_recur_monthly_mday($recurEnd['year'], $recurEnd['month'], $recurEnd['day'], $values['recur_interval']);
+				break;
+			case \MCAL_RECUR_MONTHLY_WDAY:
+				$calendar->set_recur_monthly_wday($recurEnd['year'], $recurEnd['month'], $recurEnd['day'], $values['recur_interval']);
+				break;
+			case \MCAL_RECUR_YEARLY:
+				$calendar->set_recur_yearly($recurEnd['year'], $recurEnd['month'], $recurEnd['day'], $values['recur_interval']);
+				break;
+			default:
+				$calendar->set_recur_none();
+		}
+
+		$event = $calendar->get_cached_event();
+		$errorCode = $calendar->validate_update($event);
+		if ($errorCode)
+		{
+			return ResponseHelper::sendErrorResponse(['error' => (new \phpgwapi_common())->check_code($errorCode)], 422);
+		}
+
+		$calendar->so->add_entry($event);
+		$saved = $calendar->get_cached_event();
+		$id = (int)($saved['id'] ?? $event['id'] ?? 0);
+
+		return ResponseHelper::sendJSONResponse([
+			'message' => lang('Entry saved'),
+			'id' => $id,
+			'view_url' => \phpgw::link('/calendar/view/event/' . $id),
+		], 201);
 	}
 
 	public function destroy(Request $request, Response $response, array $args): Response

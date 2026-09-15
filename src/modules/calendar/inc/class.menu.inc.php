@@ -63,7 +63,7 @@ class calendar_menu
 		$menus['toolbar'] = array(
 			array(
 				'text'	=> $translation->translate('New', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.add')),
+				'url'	=> phpgw::link('/calendar/view/event/new'),
 				'image'	=> array('calendar', 'new')
 
 			),
@@ -157,7 +157,7 @@ class calendar_menu
 		$menus['navigation'] = array(
 			array(
 				'text'	=> $translation->translate('New', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.add'))
+				'url'	=> phpgw::link('/calendar/view/event/new')
 			),
 			array(
 				'text'		=> $translation->translate('view', array(), true),

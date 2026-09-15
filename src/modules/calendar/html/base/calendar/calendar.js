@@ -29,6 +29,26 @@
 		return String(date.getFullYear()) + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
 	}
 
+	function buildUrl(href, params)
+	{
+		var url = new URL(href, window.location.origin);
+		Object.keys(params).forEach(function (key)
+		{
+			url.searchParams.set(key, params[key]);
+		});
+		return url.toString();
+	}
+
+	function updateViewLinks(date)
+	{
+		var ymd = dateToYmd(date);
+		document.querySelectorAll('[data-view-link]').forEach(function (link)
+		{
+			link.href = buildUrl(link.href, { date: ymd });
+			if (link.dataset.viewLink === config.view) link.setAttribute('aria-current', 'page');
+		});
+	}
+
 	function shiftDate(date, direction)
 	{
 		var next = new Date(date.getTime());
@@ -98,12 +118,11 @@
 	function load(date)
 	{
 		var ymd = dateToYmd(date);
-		var url = new URL(config.apiUrl, window.location.origin);
-		url.searchParams.set('view', config.view);
-		url.searchParams.set('date', ymd);
+		var url = buildUrl(config.apiUrl, { view: config.view, date: ymd });
 		dateInput.value = dateToInput(date);
+		updateViewLinks(date);
 		error.hidden = true;
-		fetch(url.toString(), {
+		fetch(url, {
 			credentials: 'same-origin',
 			headers: { Accept: 'application/json' }
 		}).then(function (response)
@@ -119,11 +138,6 @@
 			error.hidden = false;
 		});
 	}
-
-	document.querySelectorAll('[data-view-link]').forEach(function (link)
-	{
-		if (link.dataset.viewLink === config.view) link.setAttribute('aria-current', 'page');
-	});
 
 	root.querySelector('[data-calendar-prev]').addEventListener('click', function ()
 	{

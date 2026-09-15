@@ -1,0 +1,116 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ lang('Add') }}{% endblock %}
+{% block styles %}
+{{ add_style(modules_url ~ '/calendar/html/base/calendar/calendar.css') }}
+{% endblock %}
+{% block content %}
+<form id="calendar-event-form" class="calendar-event-form" data-api-url="{{ api_url|e('html_attr') }}" data-list-url="{{ list_url|e('html_attr') }}">
+	<p><a href="{{ list_url|e }}">{{ lang('Back') }}</a></p>
+	<h1>{{ lang('Add') }}</h1>
+	<div id="calendar-event-form-error" class="app-alert app-alert--error" role="alert" hidden></div>
+
+	<label>
+		<span>{{ lang('Title') }}</span>
+		<input name="title" maxlength="80" required>
+	</label>
+	<label>
+		<span>{{ lang('Start Date/Time') }}</span>
+		<input name="start" type="datetime-local" value="{{ values.start|e('html_attr') }}" required>
+	</label>
+	<label>
+		<span>{{ lang('End Date/Time') }}</span>
+		<input name="end" type="datetime-local" value="{{ values.end|e('html_attr') }}" required>
+	</label>
+	<label>
+		<span>{{ lang('Location') }}</span>
+		<input name="location" maxlength="255">
+	</label>
+	<label>
+		<span>{{ lang('Description') }}</span>
+		<textarea name="description" rows="5" maxlength="2048"></textarea>
+	</label>
+	<label>
+		<span>{{ lang('Category') }}</span>
+		<select name="category" multiple size="5">
+			{% for category in categories %}
+				<option value="{{ category.id|e('html_attr') }}">{{ category.name|e }}</option>
+			{% endfor %}
+		</select>
+	</label>
+	<label>
+		<span>{{ lang('Priority') }}</span>
+		<select name="priority">
+			<option value="1">{{ lang('Low') }}</option>
+			<option value="2" selected>{{ lang('Normal') }}</option>
+			<option value="3">{{ lang('High') }}</option>
+		</select>
+	</label>
+	<label class="calendar-event-form__check">
+		<input name="private" type="checkbox" value="1">
+		<span>{{ lang('Private') }}</span>
+	</label>
+	<label class="calendar-event-form__check">
+		<input name="owner_participates" type="checkbox" value="1" checked>
+		<span>{{ lang('%1 participates', values.owner_name|default('')) }}</span>
+	</label>
+
+	<fieldset>
+		<legend>{{ lang('Alarm') }}</legend>
+		<div class="calendar-event-form__row">
+			<label>
+				<span>{{ lang('days') }}</span>
+				<input name="alarm_days" type="number" min="0" max="31" value="{{ values.alarm_days|default(0) }}">
+			</label>
+			<label>
+				<span>{{ lang('hours') }}</span>
+				<input name="alarm_hours" type="number" min="0" max="24" value="{{ values.alarm_hours|default(0) }}">
+			</label>
+			<label>
+				<span>{{ lang('minutes') }}</span>
+				<input name="alarm_minutes" type="number" min="0" max="60" value="{{ values.alarm_minutes|default(0) }}">
+			</label>
+		</div>
+	</fieldset>
+
+	<fieldset>
+		<legend>{{ lang('Repeating Event Information') }}</legend>
+		<label>
+			<span>{{ lang('Repeat Type') }}</span>
+			<select name="recur_type">
+				{% for value, label in recur_types %}
+					<option value="{{ value|e('html_attr') }}">{{ lang(label)|e }}</option>
+				{% endfor %}
+			</select>
+		</label>
+		<label>
+			<span>{{ lang('Repeat End Date') }}</span>
+			<input name="recur_end" type="date">
+		</label>
+		<label>
+			<span>{{ lang('Interval') }}</span>
+			<input name="recur_interval" type="number" min="1" value="1">
+		</label>
+		<div class="calendar-event-form__checks">
+			<span>{{ lang('Repeat Day') }}</span>
+			{% for value, label in recur_days %}
+				<label class="calendar-event-form__check"><input name="recur_days" type="checkbox" value="{{ value|e('html_attr') }}"> <span>{{ lang(label)|e }}</span></label>
+			{% endfor %}
+		</div>
+	</fieldset>
+
+	<div class="calendar-event-form__actions">
+		<button type="submit">{{ lang('Save') }}</button>
+		<a href="{{ list_url|e }}">{{ lang('Cancel') }}</a>
+	</div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+window.__calendarEventForm = {
+	lang: {
+		saveFailed: '{{ lang('Save failed')|e('js') }}'
+	}
+};
+</script>
+<script>{{ source('@views/calendar/event_form.js') }}</script>
+{% endblock %}

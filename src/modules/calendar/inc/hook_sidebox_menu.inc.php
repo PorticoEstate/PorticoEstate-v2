@@ -26,7 +26,7 @@
 	$menu_title = lang($appname) . ' '. lang('Menu');
 	$file = Array(
 			array('text'  => 'New Entry',
-				'url' => phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.add'))),
+				'url' => phpgw::link('/calendar/view/event/new')),
 			array('text'  => '_NewLine_'),
 			array('text'  => 'Today',
 				'url' => phpgw::link('/calendar/view/day')),

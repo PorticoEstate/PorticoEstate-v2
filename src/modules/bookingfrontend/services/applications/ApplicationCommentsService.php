@@ -12,6 +12,7 @@ use App\modules\bookingfrontend\models\User;
 use App\modules\phpgwapi\services\Settings;
 use PDO;
 use Exception;
+use Sanitizer;
 
 class ApplicationCommentsService implements CommentsServiceInterface
 {
@@ -88,6 +89,12 @@ class ApplicationCommentsService implements CommentsServiceInterface
      */
     public function addComment(int $applicationId, string $comment, string $type = 'comment', ?string $author = null): array
     {
+        // Sanitise on write, same as the officer path (booking/services/ApplicationService.php)
+        // — the stored value is now trusted HTML for every consumer (mail template, Next
+        // client dangerouslySetInnerHTML), so this is the only place a citizen-authored
+        // comment may pass through unsanitised.
+        $comment = Sanitizer::clean_html($comment);
+
         // Only manage the transaction if no outer transaction is active (e.g. from addStatusChangeComment)
         $ownTransaction = !$this->db->inTransaction();
         try {

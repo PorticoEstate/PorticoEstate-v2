@@ -17,7 +17,7 @@
 	$file = array
 	(
 		'Site Configuration'			=> phpgw::link('/index.php', array('menuaction' => 'admin.uiconfig.index', 'appname' => 'calendar') ),
-		'Custom fields and sorting'		=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicustom_fields.index') ),
+		'Custom fields and sorting'		=> phpgw::link('/calendar/view/custom-fields'),
 		'Calendar Holiday Management'	=> phpgw::link('/calendar/view/holidays'),
 		'Global Categories'				=> phpgw::link('/index.php', array('menuaction' => 'admin.uicategories.index', 'appname' => 'calendar') )
 	);

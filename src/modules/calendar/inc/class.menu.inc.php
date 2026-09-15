@@ -118,7 +118,7 @@ class calendar_menu
 				),
 				'custom'	=> array(
 					'text'	=> $translation->translate('Custom fields and sorting', array(), true),
-					'url'	=> phpgw::link('/index.php', array('menuaction'	=> 'calendar.uicustom_fields.index'))
+					'url'	=> phpgw::link('/calendar/view/custom-fields')
 				),
 				'holiday'	=> array(
 					'text'	=> $translation->translate('Calendar Holiday Management', array(), true),

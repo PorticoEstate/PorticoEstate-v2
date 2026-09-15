@@ -82,7 +82,7 @@
 				array('text'  => 'Configuration',
 					'url' => phpgw::link('/index.php', array('menuaction' => 'admin.uiconfig.index','appname'=>'calendar'))),
 				array('text'  => 'Custom Fields',
-					'url' =>phpgw::link('/index.php', array('menuaction' => 'calendar.uicustom_fields.index'))),
+					'url' =>phpgw::link('/calendar/view/custom-fields')),
 				array('text'  => 'Holiday Management',
 						'url' => phpgw::link('/calendar/view/holidays')),
 				array('text'  => 'Global Categories',

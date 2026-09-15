@@ -32,7 +32,6 @@
 		var $debug = False;
 		var $base_url = '/index.php';
 
-		var $ui;
 		var $so;
 		var $owner;
 		var $year;
@@ -90,6 +89,21 @@
 			return $this->so->read_holiday($id);
 		}
 
+		function redirect_to_holiday_view($locale='', $id=0)
+		{
+			$locale = strtoupper((string)$locale);
+			if ($locale && $id)
+			{
+				phpgw::redirect_link('/calendar/view/holidays/' . $locale . '/' . (int)$id . '/edit');
+			}
+			elseif ($locale)
+			{
+				phpgw::redirect_link('/calendar/view/holidays/' . $locale);
+			}
+
+			phpgw::redirect_link('/calendar/view/holidays');
+		}
+
 		function delete_holiday($id=0)
 		{
 			if(!$id)
@@ -99,17 +113,14 @@
 					$id = $this->id;
 				}
 			}
-
-			$this->ui = CreateObject('calendar.uiholiday');
 			if($id)
 			{
+				$holiday = $this->so->read_holiday($id);
 				$this->so->delete_holiday($id);
-				$this->ui->edit_locale();
+				$this->redirect_to_holiday_view($holiday['locale'] ?? ($this->locales[0] ?? ''));
 			}
-			else
-			{
-				$this->ui->admin();
-			}
+
+			$this->redirect_to_holiday_view();
 		}
 		
 		function delete_locale($locale='')
@@ -126,8 +137,7 @@
 			{
 				$this->so->delete_locale($locale);
 			}
-			$this->ui = CreateObject('calendar.uiholiday');
-			$this->ui->admin();
+			$this->redirect_to_holiday_view();
 		}
 
 		function accept_holiday()
@@ -337,18 +347,14 @@
 		
 	// Still need to put some validation in here.....
 
-				$this->ui = CreateObject('calendar.uiholiday');
-
 				if (isset($errors) && is_array($errors))
 				{
-					$holiday['month'] = $holiday['month_num'];
-					$holiday['day']   = $holiday['mday'];
-					$this->ui->edit_holiday($errors,$holiday);
+					$this->redirect_to_holiday_view($holiday['locale'], $holiday['hol_id']);
 				}
 				else
 				{
 					$this->so->save_holiday($holiday);
-					$this->ui->edit_locale($holiday['locale']);
+					$this->redirect_to_holiday_view($holiday['locale']);
 				}
 			}
 		}

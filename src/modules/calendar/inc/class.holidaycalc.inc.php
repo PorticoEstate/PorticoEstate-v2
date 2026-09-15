@@ -13,14 +13,18 @@
 
   /* $Id$ */
 
-	if ( !isset($GLOBALS['phpgw_info']['user']['preferences']['common']['country'])
-		|| strlen($GLOBALS['phpgw_info']['user']['preferences']['common']['country']) <> 2 )
+	use App\modules\phpgwapi\services\Settings;
+
+	$userSettings = Settings::getInstance()->get('user');
+	$country = $userSettings['preferences']['common']['country'] ?? '';
+
+	if ( !isset($country) || strlen($country) <> 2 )
 	{
 		$rule = 'US';
 	}
 	else
 	{
-		$rule = $GLOBALS['phpgw_info']['user']['preferences']['common']['country'];
+		$rule = $country;
 	}
 
 	$calc_include = PHPGW_INCLUDE_ROOT . "/calendar/inc/class.holidaycalc_{$rule}.inc.php";

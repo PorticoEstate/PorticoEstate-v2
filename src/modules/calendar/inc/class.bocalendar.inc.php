@@ -201,8 +201,9 @@ class calendar_bocalendar
 		$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
 		preg_match('/menuaction=([a-zA-Z.]+)/', $referer, $regs);
 		$from = $regs[1];
+		$menuaction = Settings::getInstance()->get('menuaction');
 		if ((substr($_SERVER['REDIRECT_URL'], -5) == 'home/' && substr($this->prefs['calendar']['defaultcalendar'], 0, 7) == 'planner'
-				|| (isset($GLOBALS['phpgw_info']['menuaction']) && $GLOBALS['phpgw_info']['menuaction'] == 'calendar.uicalendar.planner')
+				|| ($menuaction == 'calendar.uicalendar.planner')
 				&& $from  != 'calendar.uicalendar.planner' && !$this->save_owner)
 			&& intval($this->prefs['calendar']['planner_start_with_group']) > 0
 		)
@@ -217,8 +218,8 @@ class calendar_bocalendar
 			$this->save_owner = $this->owner;
 		}
 		else if (
-			isset($GLOBALS['phpgw_info']['menuaction'])
-			&& $GLOBALS['phpgw_info']['menuaction'] != 'calendar.uicalendar.planner'
+			isset($menuaction)
+			&& $menuaction != 'calendar.uicalendar.planner'
 			&& $this->save_owner
 		)
 		{
@@ -2488,7 +2489,7 @@ class calendar_bocalendar
 		{
 			$to_notify[$owner] = 'owner';	// always include the event-owner
 		}
-		$version = $GLOBALS['phpgw_info']['apps']['calendar']['version'];
+		$version = Settings::getInstance()->get('apps')['calendar']['version'];
 
 		$this->userSettings['preferences'] = $this->preferences->create_email_preferences();
 		$sender = $this->userSettings['preferences']['email']['address'];
@@ -3387,7 +3388,7 @@ class calendar_bocalendar
 		{
 			if ($entry['cat_color_id'])
 			{
-				$cat_colors[$cat_id] = $GLOBALS['phpgw_info']['theme']['cat_color'][$entry['cat_color_id']];
+				$cat_colors[$cat_id] = Settings::getInstance()->get('theme')['cat_color'][$entry['cat_color_id']];
 			}
 			else # if empty, find next parent with color set
 			{
@@ -3402,7 +3403,7 @@ class calendar_bocalendar
 					}
 					$cat_parent_id = $cat_color_ids[$cat_parent_id]['cat_parent'];
 				}
-				$cat_colors[$cat_id] = $GLOBALS['phpgw_info']['theme']['cat_color'][$color_to_set];
+				$cat_colors[$cat_id] = Settings::getInstance()->get('theme')['cat_color'][$color_to_set];
 			}
 		}
 

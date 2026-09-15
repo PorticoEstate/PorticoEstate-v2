@@ -166,7 +166,7 @@
 			$tpl->parse('header_column','head_col',True);
 		}
 
-		if((!isset($GLOBALS['phpgw_info']['server']['deny_user_grants_access']) || !$GLOBALS['phpgw_info']['server']['deny_user_grants_access']) && count($this->bo->grants) > 0)
+		if((!isset(\App\modules\phpgwapi\services\Settings::getInstance()->get('server')['deny_user_grants_access']) || !\App\modules\phpgwapi\services\Settings::getInstance()->get('server')['deny_user_grants_access']) && count($this->bo->grants) > 0)
 		{
 			$grantor = (isset($this->bo->is_group) && $this->bo->is_group ? 'g_'.$this->bo->owner : $this->bo->owner);
 			$form_options = '';

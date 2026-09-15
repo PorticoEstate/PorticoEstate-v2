@@ -56,9 +56,7 @@
 
 		function admin()
 		{
-			unset($GLOBALS['phpgw_info']['flags']['noheader']);
-			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
-			$GLOBALS['phpgw_info']['flags']['noappfooter'] = True;
+			Settings::getInstance()->update('flags', ['noheader' => false, 'nonavbar' => false, 'noappfooter' => true]);
 			$this->phpgwapi_common->phpgw_header(true);
 
 			$p = &$this->template;
@@ -70,7 +68,7 @@
 		//	$p->set_block('locales','submit_column','submit_column');
 
 			$var = Array(
-			//	'th_bg'		=> $GLOBALS['phpgw_info']['theme']['th_bg'],
+			//	'th_bg'		=> Settings::getInstance()->get('theme')['th_bg'],
 				'left_next_matchs'	=> $this->nextmatchs->left('/index.php',$this->bo->start,$this->bo->total,array('menuaction'=>'calendar.uiholiday.admin')),
 				'right_next_matchs'	=> $this->nextmatchs->right('/index.php',$this->bo->start,$this->bo->total,array('menuaction'=>'calendar.uiholiday.admin')),
 				'center'			=> '<td align="center">'.lang('Countries').'</td>',
@@ -150,9 +148,7 @@
 				);
 				phpgw::redirect_link($this->base_url,$link_params);
 			}
-			unset($GLOBALS['phpgw_info']['flags']['noheader']);
-			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
-			$GLOBALS['phpgw_info']['flags']['noappfooter'] = True;
+			Settings::getInstance()->update('flags', ['noheader' => false, 'nonavbar' => false, 'noappfooter' => true]);
 			$this->phpgwapi_common->phpgw_header(True);
 			$p = CreateObject('phpgwapi.template',$this->template_dir);
 			$p->set_file(Array('locale'=>'locales.tpl'));
@@ -189,7 +185,7 @@
 			}
 			else
 			{
-				$maxmatchs = $GLOBALS['phpgw_info']['user']['preferences']['common']['maxmatchs'];
+				$maxmatchs = Settings::getInstance()->get('user')['preferences']['common']['maxmatchs'];
 				for($i=$this->bo->start; $i < count($holidays) && $i < $this->bo->start+$maxmatchs; $i++)
 				{
 				//	$tr_color = $this->nextmatchs->alternate_row_class($tr_color);
@@ -252,10 +248,12 @@
 			{
 				$holiday['locale'] = $this->locale;
 			}
-			unset($GLOBALS['phpgw_info']['flags']['noheader']);
-			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
-			$GLOBALS['phpgw_info']['flags']['noappfooter'] = True;
-			$GLOBALS['phpgw_info']['flags']['app_header'] = $GLOBALS['phpgw_info']['apps']['calendar']['title'].' - '.($this->bo->id ? lang('Edit') : lang('Add')).' '.lang('Holiday');
+			Settings::getInstance()->update('flags', [
+				'noheader' => false,
+				'nonavbar' => false,
+				'noappfooter' => true,
+				'app_header' => Settings::getInstance()->get('apps')['calendar']['title'].' - '.($this->bo->id ? lang('Edit') : lang('Add')).' '.lang('Holiday')
+			]);
 			$this->phpgwapi_common->phpgw_header(true);
 
 			$t = &$this->template;
@@ -387,9 +385,7 @@
 				$this->admin();
 			}
 
-			unset($GLOBALS['phpgw_info']['flags']['noheader']);
-			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
-			$GLOBALS['phpgw_info']['flags']['noappfooter'] = True;
+			Settings::getInstance()->update('flags', ['noheader' => false, 'nonavbar' => false, 'noappfooter' => true]);
 			$this->phpgwapi_common->phpgw_header();
 
 			$p = CreateObject('phpgwapi.template',$this->template_dir);
@@ -427,9 +423,7 @@
 				$this->edit_locale();
 			}
 			
-			unset($GLOBALS['phpgw_info']['flags']['noheader']);
-			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
-			$GLOBALS['phpgw_info']['flags']['noappfooter'] = True;
+			Settings::getInstance()->update('flags', ['noheader' => false, 'nonavbar' => false, 'noappfooter' => true]);
 			$this->phpgwapi_common->phpgw_header();
 
 			$p = CreateObject('phpgwapi.template',$this->template_dir);
@@ -492,9 +486,7 @@
 			{
 				$action = 'http://www.phpgroupware.org/cal/accept_holiday.php';
 			}
-			$GLOBALS['phpgw_info']['flags']['noappheader']	= True;
-			$GLOBALS['phpgw_info']['flags']['noappfooter'] = True;
-			$GLOBALS['phpgw_info']['flags']['nofooter'] = True;
+			Settings::getInstance()->update('flags', ['noappheader' => true, 'noappfooter' => true, 'nofooter' => true]);
 			$this->phpgwapi_common->phpgw_header();
 
 			echo '<body onLoad="document.submitform.submit()">'."\n";

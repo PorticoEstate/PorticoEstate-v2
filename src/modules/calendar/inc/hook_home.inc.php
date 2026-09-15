@@ -14,9 +14,11 @@
 
   /* $Id$ */
 
+	$userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+	$themeSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('theme');
 
-	if ( !isset($GLOBALS['phpgw_info']['user']['preferences']['calendar']['mainscreen_showevents'])
-		|| !$GLOBALS['phpgw_info']['user']['preferences']['calendar']['mainscreen_showevents'] )
+	if ( !isset($userSettings['preferences']['calendar']['mainscreen_showevents'])
+		|| !$userSettings['preferences']['calendar']['mainscreen_showevents'] )
 	{
 		return;
 	}
@@ -31,7 +33,7 @@
 	$GLOBALS['css'] = "\n<style type=\"text/css\">\n<!--\n"
 		. "@import url('calendar/templates/base/css/base.css')\n-->\n</style>\n";
 
-	$page_ = explode('.',$GLOBALS['phpgw_info']['user']['preferences']['calendar']['defaultcalendar']);
+	$page_ = explode('.',$userSettings['preferences']['calendar']['defaultcalendar']);
 	$_page = substr($page_[0],0,7);	// makes planner from planner_{user|category}
 	if ( $_page=='index' || ($_page != 'day' && $_page != 'week' && $_page != 'month' && $_page != 'year' && $_page != 'planner'))
 	{
@@ -57,9 +59,9 @@
 	$portalbox = CreateObject('phpgwapi.listbox', array
 	(
 		'title'	=> $title,
-		'primary'	=> $GLOBALS['phpgw_info']['theme']['navbar_bg'],
-		'secondary'	=> $GLOBALS['phpgw_info']['theme']['navbar_bg'],
-		'tertiary'	=> $GLOBALS['phpgw_info']['theme']['navbar_bg'],
+		'primary'	=> $themeSettings['navbar_bg'],
+		'secondary'	=> $themeSettings['navbar_bg'],
+		'tertiary'	=> $themeSettings['navbar_bg'],
 		'width'	=> '100%',
 		'outerborderwidth'	=> '0',
 		'header_background_image'	=> $GLOBALS['phpgw']->common->image('phpgwapi','bg_filler', '.png', False)

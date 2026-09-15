@@ -45,7 +45,7 @@
 			$this->browser    = CreateObject('phpgwapi.browser');
 			$this->phpgwapi_common = new \phpgwapi_common();
 			
-	//		$this->theme = $GLOBALS['phpgw_info']['theme'];
+	//		$this->theme = Settings::getInstance()->get('theme');
 
 			$this->bo = CreateObject('calendar.boalarm');
 			$this->tz_offset = $this->bo->tz_offset;

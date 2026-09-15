@@ -48,7 +48,9 @@
 	);
 	display_sidebox($appname,$menu_title,$file);
 
-	if ($GLOBALS['phpgw_info']['user']['apps']['preferences'])
+	$userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+
+	if ($userSettings['apps']['preferences'])
 	{
 		$menu_title = lang('Preferences');
 		$file = Array(
@@ -73,7 +75,7 @@
 		display_sidebox($appname,$menu_title,$file);
 	}
 
-	if (isset($GLOBALS['phpgw_info']['user']['apps']['admin']) && $GLOBALS['phpgw_info']['user']['apps']['admin'])
+	if (isset($userSettings['apps']['admin']) && $userSettings['apps']['admin'])
 	{
 		$menu_title = lang('Administration');
 		$file = Array(

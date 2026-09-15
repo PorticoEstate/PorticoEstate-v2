@@ -14,20 +14,21 @@
 
   /* $Id$ */
 
+  use App\modules\phpgwapi\services\Settings;
+
 	/* I think this can go - skwashd Nov 2007
-	if( isset($GLOBALS['phpgw_info']['server']['calendar_type'])
-		&& $GLOBALS['phpgw_info']['server']['calendar_type'] == 'mcal'
+	if server calendar_type is mcal
 		&& !extension_loaded('mcal') )
 	{
-		$GLOBALS['phpgw_info']['server']['calendar_type'] = 'sql';
+		set server calendar_type to sql
 	}
 	else
 	{
-		$GLOBALS['phpgw_info']['server']['calendar_type'] = 'sql';
+		set server calendar_type to sql
 	}
 	*/
 
-	$GLOBALS['phpgw_info']['server']['calendar_type'] = 'sql';
+	Settings::getInstance()->update('server', ['calendar_type' => 'sql']);
 
 	phpgw::import_class('calendar.socalendar__');
 	phpgw::import_class('calendar.socalendar_sql');

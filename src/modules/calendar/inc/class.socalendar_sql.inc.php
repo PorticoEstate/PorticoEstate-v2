@@ -18,6 +18,7 @@ phpgw::import_class('phpgwapi.datetime');
 
 use App\Database\Db;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
+use App\modules\phpgwapi\services\Settings;
 
 class calendar_socalendar_ extends calendar_socalendar__
 {
@@ -48,7 +49,7 @@ class calendar_socalendar_ extends calendar_socalendar__
 		if($user=='')
 		{
 //			settype($user,'integer');
-			$this->user = $GLOBALS['phpgw_info']['user']['account_id'];
+			$this->user = Settings::getInstance()->get('user')['account_id'];
 		}
 		elseif(is_int($user)) 
 		{
@@ -812,7 +813,7 @@ class calendar_socalendar_ extends calendar_socalendar__
 				$this->save_alarm($event['id'],$alarm);
 			}
 		}
-		$GLOBALS['phpgw_info']['cal_new_event_id'] = $event['id']; 
+		Settings::getInstance()->set('cal_new_event_id', $event['id']); 
 		$this->event = $event;
 		return True;
 	}
@@ -865,7 +866,7 @@ class calendar_socalendar_ extends calendar_socalendar__
 
 	function group_search($owner=0)
 	{
-		$owner = ($owner==$GLOBALS['phpgw_info']['user']['account_id']?0:$owner);
+		$owner = ($owner==Settings::getInstance()->get('user')['account_id']?0:$owner);
 		$groups = substr($this->phpgwapi_common->sql_search('phpgw_cal.groups',intval($owner)),4);
 		if (!$groups)
 		{

@@ -16,7 +16,7 @@
 
 	global $calendar_id;
 
-	$d1 = strtolower(substr($GLOBALS['phpgw_info']['server']['app_inc'],0,3));
+	$d1 = strtolower(substr(\App\modules\phpgwapi\services\Settings::getInstance()->get('server')['app_inc'],0,3));
 	if($d1 == 'htt' || $d1 == 'ftp')
 	{
 		echo 'Failed attempt to break in via an old Security Hole!<br />'."\n";

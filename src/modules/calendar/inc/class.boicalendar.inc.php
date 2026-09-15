@@ -13,6 +13,7 @@
 /* $Id$ */
 
 phpgw::import_class('phpgwapi.datetime');
+use App\modules\phpgwapi\services\Settings;
 
 define('FOLD_LENGTH',75);
 
@@ -2424,7 +2425,7 @@ class calendar_boicalendar
 					{
 						if($this->api)
 						{
-							$dtime['hour'] -= $GLOBALS['phpgw_info']['user']['preferences']['common']['tz_offset'];
+							$dtime['hour'] -= Settings::getInstance()->get('user')['preferences']['common']['tz_offset'];
 							if($dtime['hour'] < 0)
 							{
 								$dtime['mday'] -= 1;
@@ -2447,7 +2448,7 @@ class calendar_boicalendar
 					 */
 					//					if($this->api)
 					//					{
-					//						$dtime['hour'] -= $GLOBALS['phpgw_info']['user']['preferences']['common']['tz_offset'];
+					//						$dtime['hour'] -= Settings::getInstance()->get('user')['preferences']['common']['tz_offset'];
 					//						if($dtime['hour'] < 0)
 					//						{
 					//							$dtime['mday'] -= 1;
@@ -2468,7 +2469,7 @@ class calendar_boicalendar
 				$this->set_var($dtime,'sec',0);
 				if($this->api)
 				{
-					$dtime['hour'] -= $GLOBALS['phpgw_info']['user']['preferences']['common']['tz_offset'];
+					$dtime['hour'] -= Settings::getInstance()->get('user')['preferences']['common']['tz_offset'];
 					if($dtime['hour'] < 0)
 					{
 						$dtime['mday'] -= 1;
@@ -3262,7 +3263,7 @@ class calendar_boicalendar
 
 	function is_owner($part_record)
 	{
-		if( strtolower("{$part_record['user']}@{$part_record['host']}") == strtolower(ExecMethod('phpgwapi.contacts.get_email', $GLOBALS['phpgw_info']['user']['person_id'])) )
+		if( strtolower("{$part_record['user']}@{$part_record['host']}") == strtolower(ExecMethod('phpgwapi.contacts.get_email', Settings::getInstance()->get('user')['person_id'])) )
 		{
 			return true;
 		}
@@ -3274,14 +3275,14 @@ class calendar_boicalendar
 
 	function check_owner(&$event,$ical,$so_event)
 	{
-		if(!isset($event['participant'][$GLOBALS['phpgw_info']['user']['person_id']]))
+		if(!isset($event['participant'][Settings::getInstance()->get('user')['person_id']]))
 		{
 			if(isset($ical['organizer']))
 			{
 				if($this->is_owner($ical['organizer']))
 				{
-					$so_event->add_attribute('owner', $GLOBALS['phpgw_info']['user']['person_id']);
-					$so_event->add_attribute('participants', $this->switch_to_phpgw_status($ical['organizer']['partstat']), $GLOBALS['phpgw_info']['user']['person_id']);
+					$so_event->add_attribute('owner', Settings::getInstance()->get('user')['person_id']);
+					$so_event->add_attribute('participants', $this->switch_to_phpgw_status($ical['organizer']['partstat']), Settings::getInstance()->get('user')['person_id']);
 				}
 			}
 			elseif(isset($ical['attendee']))
@@ -3292,14 +3293,14 @@ class calendar_boicalendar
 				{
 					if($this->is_owner($ical['attendee'][$j]))
 					{
-						$so_event->add_attribute('participants',$this->switch_to_phpgw_status($ical['attendee'][$j]['partstat']), intval($GLOBALS['phpgw_info']['user']['person_id']));
+						$so_event->add_attribute('participants',$this->switch_to_phpgw_status($ical['attendee'][$j]['partstat']), intval(Settings::getInstance()->get('user')['person_id']));
 					}
 				}
 			}
 			else
 			{
-				$so_event->add_attribute('owner', $GLOBALS['phpgw_info']['user']['person_id']);
-				$so_event->add_attribute('participants', 'A', $GLOBALS['phpgw_info']['user']['person_id']);
+				$so_event->add_attribute('owner', Settings::getInstance()->get('user')['person_id']);
+				$so_event->add_attribute('participants', 'A', Settings::getInstance()->get('user')['person_id']);
 			}
 		}
 	}
@@ -3315,7 +3316,7 @@ class calendar_boicalendar
 						     )
 			      		);
 		}
-		$uploaddir = "{$GLOBALS['phpgw_info']['server']['temp_dir']}/";
+		$uploaddir = "{Settings::getInstance()->get('server')['temp_dir']}/";
 
 		srand((float) microtime() * 1000000);
 		$random_number = rand(100000000,999999999);
@@ -3406,7 +3407,7 @@ class calendar_boicalendar
 		$gmt_offset = date('O', phpgwapi_datetime::user_localtime() );  // offset to GMT
 		$offset_mins = intval(substr($gmt_offset, 1, 2)) * 60 + intval(substr($gmt_offset, 3, 2));
 
-		$users_email = ExecMethod('phpgwapi.contacts.get_email', $GLOBALS['phpgw_info']['user']['person_id']);
+		$users_email = ExecMethod('phpgwapi.contacts.get_email', Settings::getInstance()->get('user')['person_id']);
 		$cats = CreateObject('phpgwapi.categories');
 		$ical = $this->parse($mime_msg);
 		switch($ical['version']['value'])
@@ -3497,7 +3498,7 @@ class calendar_boicalendar
 					}			
 
 					$imported_alarm[$a] = array(	'time' => mktime($ical['event'][$i]['dtstart']['hour'] - $alarm_prior_hours,$ical['event'][$i]['dtstart']['min'] - $alarm_prior_min + $offset_mins,$ical['event'][$i]['dtstart']['sec'],$ical['event'][$i]['dtstart']['month'],$ical['event'][$i]['dtstart']['mday'] - $alarm_prior_days,$ical['event'][$i]['dtstart']['year']),
-							'owner' => $GLOBALS['phpgw_info']['user']['account_id'],
+							'owner' => Settings::getInstance()->get('user')['account_id'],
 							'enabled' => 1
 							);
 				}
@@ -3906,12 +3907,12 @@ class calendar_boicalendar
 			// Owner				
 			if(!isset($ical['event'][$i]['organizer']) || (isset($ical['event'][$i]['organizer']) && $this->is_owner($ical['event'][$i]['organizer'])))
 			{
-				$so_event->add_attribute('owner',$GLOBALS['phpgw_info']['user']['account_id']);
-				$so_event->add_attribute('participants','A',intval($GLOBALS['phpgw_info']['user']['account_id']));
+				$so_event->add_attribute('owner',Settings::getInstance()->get('user')['account_id']);
+				$so_event->add_attribute('participants','A',intval(Settings::getInstance()->get('user')['account_id']));
 			}
 			else
 			{ // workaround for ical without organizer -> set current user as organizer (without this workaround, the entry wouldnt be shown in the calendar!)
-				$so_event->add_attribute('participants','A',intval($GLOBALS['phpgw_info']['user']['account_id']));
+				$so_event->add_attribute('participants','A',intval(Settings::getInstance()->get('user')['account_id']));
 			}
 
 			// Attendee
@@ -4016,7 +4017,7 @@ class calendar_boicalendar
 		unset($versiona[count($versiona) - 1]); //drop the minor from the version (hide patch level from clients)
 		$version = implode('.', $versiona);
 
-		$this->set_var($ical['prodid'],'value',"-//phpGroupWare//phpGroupWare $version MIMEDIR//" . strtoupper($GLOBALS['phpgw_info']['user']['preferences']['common']['lang']));
+		$this->set_var($ical['prodid'],'value',"-//phpGroupWare//phpGroupWare $version MIMEDIR//" . strtoupper(Settings::getInstance()->get('user')['preferences']['common']['lang']));
 		$this->set_var($ical['version'],'value','2.0');
 		$this->set_var($ical['method'],'value',strtoupper($method));
 		unset($version, $versiona);
@@ -4087,7 +4088,7 @@ class calendar_boicalendar
 
 			if( is_array($event['participants']) && count($event['participants']) > 1)
 			{
-				if ($method != 'reply' || $part == $GLOBALS['phpgw_info']['user']['account_id'])
+				if ($method != 'reply' || $part == Settings::getInstance()->get('user')['account_id'])
 				{
 					$this->parse_value($ical_event,'attendee',$str,'vevent');
 				}
@@ -4125,7 +4126,7 @@ class calendar_boicalendar
 					else
 					{
 						$str = "ROLE=REQ-PARTICIPANT;{$str}";
-						if ( $method != 'reply' || $part == $GLOBALS['phpgw_info']['user']['person_id'])
+						if ( $method != 'reply' || $part == Settings::getInstance()->get('user')['person_id'])
 						{
 							$this->parse_value($ical_event, 'attendee', $str, 'vevent');
 						}

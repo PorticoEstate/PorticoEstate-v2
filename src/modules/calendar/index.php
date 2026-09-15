@@ -14,7 +14,9 @@
 
 	/* $Id$ */
 
-	$GLOBALS['phpgw_info']['flags'] = array
+	use App\modules\phpgwapi\services\Settings;
+
+	Settings::getInstance()->set('flags', array
 	(
 		'currentapp'	=> 'calendar',
 		'noheader'		=> true,
@@ -22,7 +24,7 @@
 		'noappheader'	=> true,
 		'noappfooter'	=> true,
 		'nofooter'		=> true
-	);
+	));
 	include('../header.inc.php');
 
 	phpgw::import_class('phpgwapi.datetime');

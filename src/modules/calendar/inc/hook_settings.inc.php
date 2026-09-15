@@ -126,7 +126,7 @@
 	create_input_box('default appointment length (in minutes)','defaultlength',
 		'Default length of newly created events. The length is in minutes, eg. 60 for 1 hour.','',3);
 
-	$groups = $GLOBALS['phpgw']->accounts->membership($GLOBALS['phpgw_info']['user']['account_id']);
+	$groups = $GLOBALS['phpgw']->accounts->membership(\App\modules\phpgwapi\services\Settings::getInstance()->get('user')['account_id']);
 	$options = array(-1 => lang('none'));
 	if (is_array($groups))
 	{

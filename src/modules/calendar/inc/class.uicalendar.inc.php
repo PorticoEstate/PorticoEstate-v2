@@ -143,17 +143,18 @@ class calendar_uicalendar
 
 		if ($this->bo->use_session)
 		{
+			$menuaction = Settings::getInstance()->get('menuaction');
 			// save return-fkt for add, view, ...
 			if (
-				isset($GLOBALS['phpgw_info']['menuaction'])
-				&& $GLOBALS['phpgw_info']['menuaction']
+				isset($menuaction)
+				&& $menuaction
 			)
 			{
-				list(,, $fkt) = explode('.', $GLOBALS['phpgw_info']['menuaction']);
+				list(,, $fkt) = explode('.', $menuaction);
 				if ($fkt == 'day' || $fkt == 'week' || $fkt == 'week_new' || $fkt == 'month' || $fkt == 'year' || $fkt == 'planner')
 				{
 					$this->bo->return_to = array(
-						'menuaction'	=> $GLOBALS['phpgw_info']['menuaction'],
+						'menuaction'	=> $menuaction,
 						'date'			=> sprintf('%04d%02d%02d', $this->bo->year, $this->bo->month, $this->bo->day)
 					);
 				}
@@ -2381,7 +2382,7 @@ HTML;
 
 	function footer()
 	{
-		$menuaction = $GLOBALS['phpgw_info']['menuaction'];
+		$menuaction = Settings::getInstance()->get('menuaction');
 		list(,, $method) = explode('.', $menuaction);
 
 		$p = $this->template;
@@ -4427,7 +4428,7 @@ HTML;
 		$p->set_var('charset', $charset);
 		$p->set_var('page_title', $GLOBALS['phpgw_flags']['currentapp']
 			. ' - ' . lang('External Participants'));
-		$p->set_var('font_family', $GLOBALS['phpgw_info']['theme']['font']);
+		$p->set_var('font_family', Settings::getInstance()->get('theme')['font']);
 		$p->set_var('body_tags', $body_tags);
 		$p->set_var('form_method', 'POST');
 		$p->set_var('form_action', $form_action);

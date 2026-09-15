@@ -14,6 +14,8 @@
 
 	/* $Id$ */
 
+	use App\modules\phpgwapi\services\Settings;
+
 	/**
 	* NOTES:
 	*
@@ -65,13 +67,13 @@
 	//multiple domain support hack
 	$_GET['domain'] = $domain;
 	
-	$GLOBALS['phpgw_info']['flags'] = array
+	Settings::getInstance()->set('flags', array
 					(
 						'disable_Template_class'	=> True,
 						'login'				=> True,
 						'currentapp'			=> 'login',
 						'noheader'			=> True
-					);
+					));
 
 	include('../header.inc.php');
 
@@ -89,7 +91,7 @@
 
 	$uid = $GLOBALS['phpgw']->accounts->name2id($login);
 
-	$params = array('owner' => (int)$GLOBALS['phpgw_info']['user']['person_id']);
+	$params = array('owner' => (int)Settings::getInstance()->get('user')['person_id']);
 	$owner = $params['owner'];
 
 	$so = createObject('calendar.socalendar', array('owner' => $uid) );

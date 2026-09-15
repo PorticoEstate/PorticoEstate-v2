@@ -6,6 +6,7 @@ use App\modules\booking\models\Allocation;
 use App\modules\booking\repositories\ApplicationRepository;
 use App\modules\booking\services\EmailService;
 use RuntimeException;
+use Sanitizer;
 
 /**
  * Business logic for application case-officer workflows.
@@ -184,6 +185,13 @@ class ApplicationService
 		if (!$row) {
 			throw new RuntimeException('Application not found', 404);
 		}
+
+		// Sanitise the rich-editor HTML ONCE here, on write. The stored value is then
+		// trusted HTML for every consumer: the two legacy decoders (admin history,
+		// bookingfrontend/inc/class.uiapplication.inc.php) keep working unchanged since
+		// they still get valid HTML, while the mail template and the Next client can
+		// render it unescaped instead of dumping literal tags.
+		$comment = Sanitizer::clean_html($comment);
 
 		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';
 		$commentId = $this->repo->addComment($appId, $authorName, $comment, 'comment');

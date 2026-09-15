@@ -925,7 +925,7 @@ class EmailService
         // than a status-update body.
         if ($isCommentReply) {
             return $twig->render('@views/emails/application_comment.twig', array_merge($baseData, [
-                'comment_added_mail' => $config['application_comment_added_mail'],
+                'comment_added_mail' => $config['application_comment_added_mail'] ?? '',
             ]));
         }
 
@@ -994,7 +994,7 @@ class EmailService
 
         // Comment added or other status update
         return $twig->render('@views/emails/application_comment.twig', array_merge($baseData, [
-            'comment_added_mail' => $config['application_comment_added_mail'],
+            'comment_added_mail' => $config['application_comment_added_mail'] ?? '',
         ]));
     }
 

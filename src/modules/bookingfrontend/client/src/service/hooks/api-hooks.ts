@@ -39,7 +39,7 @@ import {
 	fetchMultiDomains,
 	patchBookingUser
 } from "@/service/api/api-utils";
-import {IApplication, IUpdatePartialApplication, NewPartialApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse, ApplicationComment} from "@/service/types/api/application.types";
+import {IApplication, IUpdatePartialApplication, NewPartialApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
 import {INotification, INotificationListResponse, IUnreadCountResponse, IMarkReadResponse} from "@/service/types/api/notification.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
@@ -1190,76 +1190,6 @@ export function useApplication(
             initialData: options?.initialData,
         }
     );
-}
-
-/**
- * Add an application comment via WebSocket.
- * Resolves with the created comment, rejects on error/timeout.
- * The server also broadcasts a `new_comment` entity_event to the application
- * room, which the detail page subscription uses to refetch the thread.
- */
-function addApplicationCommentViaWs(
-    sendMessage: (type: string, message: string, additionalData?: Record<string, any>) => boolean,
-    applicationId: number,
-    comment: string,
-    secret?: string,
-): Promise<ApplicationComment> {
-    const subscriptionManager = SubscriptionManager.getInstance();
-    const requestId = `comment_${applicationId}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-
-    return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-            cleanup();
-            reject(new Error('WebSocket add_comment timeout'));
-        }, 8000);
-
-        const cleanup = subscriptionManager.subscribeToMessageType(
-            'add_comment_response',
-            (message: any) => {
-                if (message.type !== 'add_comment_response') return;
-                if (message.requestId !== requestId) return;
-
-                clearTimeout(timeout);
-                cleanup();
-
-                if (message.data?.error || !message.data?.comment) {
-                    reject(new Error(message.data?.message || 'Failed to add comment'));
-                    return;
-                }
-                resolve(message.data.comment);
-            }
-        );
-
-        const sent = sendMessage('add_application_comment', 'Adding application comment', {
-            applicationId,
-            comment,
-            ...(secret && { secret }),
-            requestId,
-        });
-
-        if (!sent) {
-            clearTimeout(timeout);
-            cleanup();
-            reject(new Error('WebSocket not connected'));
-        }
-    });
-}
-
-/**
- * Hook to add an application comment over WebSocket.
- * Mirrors the shape of useAddApplicationComment so it is a drop-in replacement.
- */
-export function useAddApplicationCommentWs() {
-    const { sendMessage } = useWebSocketContext();
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: ({ applicationId, comment, secret }: { applicationId: number; comment: string; secret?: string }) =>
-            addApplicationCommentViaWs(sendMessage, applicationId, comment, secret),
-        onSuccess: (_data, vars) => {
-            queryClient.invalidateQueries({ queryKey: ['applicationComments', vars.applicationId] });
-        },
-    });
 }
 
 /**

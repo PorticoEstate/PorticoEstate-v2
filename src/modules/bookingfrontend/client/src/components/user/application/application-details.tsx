@@ -533,7 +533,7 @@ const CommentsSection: FC<{
                                             {DateTime.fromISO(c.time).toFormat('dd.MM.yyyy HH:mm')}
                                         </span>
                                     </div>
-                                    <div className={styles.commentText}>{c.comment}</div>
+                                    <div className={styles.commentText} dangerouslySetInnerHTML={{__html: c.comment}}/>
                                 </div>
                             </div>
                         );

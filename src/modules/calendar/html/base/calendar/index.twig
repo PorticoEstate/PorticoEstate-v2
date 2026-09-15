@@ -1,0 +1,47 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ lang('Calendar') }}{% endblock %}
+{% block styles %}
+{{ add_style(modules_url ~ '/calendar/html/base/calendar/calendar.css') }}
+{% endblock %}
+{% block content %}
+<section class="calendar-shell" data-view="{{ view|e('html_attr') }}" data-date="{{ date|e('html_attr') }}" data-api-url="{{ api_url|e('html_attr') }}">
+	<header class="calendar-shell__header">
+		<div>
+			<h1>{{ lang('Calendar') }}: {{ view_label }}</h1>
+			<p id="calendar-range-label" class="calendar-shell__range"></p>
+		</div>
+		<nav class="calendar-shell__nav" aria-label="{{ lang('Calendar')|e('html_attr') }}">
+			<a href="{{ links.day|e }}" data-view-link="day">{{ lang('Day') }}</a>
+			<a href="{{ links.week|e }}" data-view-link="week">{{ lang('Week') }}</a>
+			<a href="{{ links.week_new|e }}" data-view-link="week-new">{{ lang('Week Detailed') }}</a>
+			<a href="{{ links.month|e }}" data-view-link="month">{{ lang('Month') }}</a>
+			<a href="{{ links.year|e }}" data-view-link="year">{{ lang('Year') }}</a>
+			<a class="calendar-shell__new" href="{{ links.add|e }}">{{ lang('New') }}</a>
+		</nav>
+	</header>
+
+	<div class="calendar-shell__tools">
+		<button type="button" data-calendar-prev>&lt;&lt;</button>
+		<input id="calendar-date" type="date" aria-label="{{ lang('Date')|e('html_attr') }}">
+		<button type="button" data-calendar-next>&gt;&gt;</button>
+	</div>
+
+	<div id="calendar-error" class="app-alert app-alert--error" role="alert" hidden></div>
+	<div id="calendar-grid" class="calendar-grid" aria-live="polite"></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+window.__calendarView = {
+	view: '{{ view|e('js') }}',
+	date: '{{ date|e('js') }}',
+	apiUrl: '{{ api_url|e('js') }}',
+	lang: {
+		loadFailed: '{{ lang('Unable to load calendar')|e('js') }}',
+		noEvents: '{{ lang('No entries')|e('js') }}',
+		private: '{{ lang('private')|e('js') }}'
+	}
+};
+</script>
+<script>{{ source('@views/calendar/calendar.js') }}</script>
+{% endblock %}

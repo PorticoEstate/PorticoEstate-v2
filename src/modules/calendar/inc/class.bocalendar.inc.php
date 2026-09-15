@@ -769,7 +769,7 @@ class calendar_bocalendar
 		{
 			if ((!$l_cal['id'] && !$this->check_perms(ACL_ADD)) || ($l_cal['id'] && !$this->check_perms(ACL_EDIT, $l_cal['id'])))
 			{
-				ExecMethod('calendar.uicalendar.index');
+				phpgw::redirect_link('/calendar/view/month');
 				$this->phpgwapi_common->phpgw_exit();
 			}
 
@@ -1028,7 +1028,7 @@ class calendar_bocalendar
 					phpgw::redirect_link('/index.php', $this->return_to);
 					$this->phpgwapi_common->phpgw_exit();
 				}
-				Execmethod('calendar.uicalendar.index');
+				phpgw::redirect_link('/calendar/view/month', array('date' => $date));
 				//					$this->phpgwapi_common->phpgw_exit();
 			}
 		}

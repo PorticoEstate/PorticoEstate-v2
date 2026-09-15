@@ -1,0 +1,27 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ lang('View') }}{% endblock %}
+{% block styles %}
+{{ add_style(modules_url ~ '/calendar/html/base/calendar/calendar.css') }}
+{% endblock %}
+{% block content %}
+<section class="calendar-event-detail" data-event-id="{{ event_id }}" data-api-url="{{ api_url|e('html_attr') }}">
+	<p><a href="{{ list_url|e }}">{{ lang('Back') }}</a></p>
+	<div id="calendar-event-error" class="app-alert app-alert--error" role="alert" hidden></div>
+	<article id="calendar-event-detail" class="calendar-event-detail__body" hidden></article>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+window.__calendarEvent = {
+	apiUrl: '{{ api_url|e('js') }}',
+	lang: {
+		loadFailed: '{{ lang('Unable to load calendar')|e('js') }}',
+		edit: '{{ lang('Edit')|e('js') }}',
+		delete: '{{ lang('Delete')|e('js') }}',
+		confirmDelete: '{{ lang('Are you sure you want to delete this entry ?')|e('js') }}',
+		exportEvent: '{{ lang('Export')|e('js') }}'
+	}
+};
+</script>
+<script>{{ source('@views/calendar/event.js') }}</script>
+{% endblock %}

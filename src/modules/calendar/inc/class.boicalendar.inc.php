@@ -3932,12 +3932,7 @@ class calendar_boicalendar
 				return false;
 		}
 
-		phpgw::redirect_link('/index.php',
-					array(
-						'menuaction'	=> 'calendar.uicalendar.view',
-						'cal_id'	=> $event['id']
-					     )
-					);
+		phpgw::redirect_link('/calendar/view/event/' . (int)$event['id']);
 	}
 
 	

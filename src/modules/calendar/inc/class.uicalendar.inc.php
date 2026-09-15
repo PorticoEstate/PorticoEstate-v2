@@ -332,7 +332,8 @@ class calendar_uicalendar
 
 	function index($params = '')
 	{
-		phpgw::redirect($this->page('', $params, true));
+		$date = is_array($params) && !empty($params['date']) ? (int)$params['date'] : date('Ymd', phpgwapi_datetime::user_localtime());
+		phpgw::redirect_link('/calendar/view/month', array('date' => $date));
 	}
 
 	//TODO Replace this with better CSS driven print mode
@@ -354,6 +355,7 @@ class calendar_uicalendar
 
 	function month()
 	{
+		phpgw::redirect_link('/calendar/view/month', array('date' => sprintf('%04d%02d%02d', $this->bo->year, $this->bo->month, $this->bo->day)));
 		echo $this->printer_friendly($this->get_month(), lang('Monthview'));
 	}
 
@@ -408,6 +410,7 @@ class calendar_uicalendar
 
 	function week()
 	{
+		phpgw::redirect_link('/calendar/view/week', array('date' => sprintf('%04d%02d%02d', $this->bo->year, $this->bo->month, $this->bo->day)));
 		$this->week_type = 'old';
 		echo $this->printer_friendly($this->get_week(), lang('Weekview'));
 	}
@@ -483,6 +486,7 @@ class calendar_uicalendar
 
 	function week_new()
 	{
+		phpgw::redirect_link('/calendar/view/week-new', array('date' => sprintf('%04d%02d%02d', $this->bo->year, $this->bo->month, $this->bo->day)));
 		$this->week_type = 'new';
 		echo $this->printer_friendly($this->get_week(), lang('Weekview'));
 	}
@@ -495,6 +499,7 @@ class calendar_uicalendar
 
 	function year()
 	{
+		phpgw::redirect_link('/calendar/view/year', array('date' => sprintf('%04d%02d%02d', $this->bo->year, $this->bo->month, $this->bo->day)));
 		echo $this->printer_friendly($this->get_year(), lang('Yearview'));
 	}
 
@@ -550,6 +555,10 @@ class calendar_uicalendar
 
 	function view($vcal_id = 0, $cal_date = 0)
 	{
+		$cal_id = Sanitizer::get_var('cal_id', 'int', 'REQUEST', $vcal_id);
+		$date = $cal_date ?: Sanitizer::get_var('date', 'int', 'GET');
+		phpgw::redirect_link('/calendar/view/event/' . (int)$cal_id, ($date ? array('date' => $date) : array()));
+
 		Settings::getInstance()->update('flags', ['noheader' => false]);
 		Settings::getInstance()->update('flags', ['nonavbar' => false]);
 		Settings::getInstance()->update('flags', ['app_header' => Settings::getInstance()->get('apps')['calendar']['title'] . ' - ' . lang('View')]);
@@ -1111,6 +1120,7 @@ class calendar_uicalendar
 
 	function day()
 	{
+		phpgw::redirect_link('/calendar/view/day', array('date' => sprintf('%04d%02d%02d', $this->bo->year, $this->bo->month, $this->bo->day)));
 		$this->bo->read_holidays();
 
 		$minical = $this->mini_calendar(array(
@@ -1483,14 +1493,7 @@ class calendar_uicalendar
 		$intervals_per_day = $this->bo->prefs['calendar']['planner_intervals_per_day'];
 		$is_private        = !$this->bo->check_perms(ACL_READ, $event);
 
-		$view = $this->planner_html->link(
-			'/index.php',
-			array(
-				'menuaction' => 'calendar.uicalendar.view',
-				'cal_id' => $event['id'],
-				'date' => date('Ymd', $this->bo->maketime($event['start']))
-			)
-		);
+		$view = phpgw::link('/calendar/view/event/' . (int)$event['id'], array('date' => date('Ymd', $this->bo->maketime($event['start']))));
 
 		// check how many lines are needed for this "row" (currently: user or category)
 
@@ -2428,7 +2431,7 @@ HTML;
 		);
 		$this->output_template_array($p, 'table_row', 'footer_row', $var);
 
-		if ($menuaction == 'calendar.uicalendar.week')
+		if (substr((string)$menuaction, -5) == '.week')
 		{
 			$user_timezone = phpgwapi_datetime::user_timezone();
 			unset($thisdate);

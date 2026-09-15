@@ -1,7 +1,9 @@
 <?php
 
+use App\modules\calendar\controllers\CalendarController;
 use App\modules\calendar\controllers\HolidayController;
 use App\modules\calendar\controllers\CustomFieldsController;
+use App\modules\calendar\viewcontrollers\CalendarViewController;
 use App\modules\calendar\viewcontrollers\HolidayViewController;
 use App\modules\calendar\viewcontrollers\CustomFieldsViewController;
 use App\modules\phpgwapi\security\AccessVerifier;
@@ -13,6 +15,13 @@ use Slim\Routing\RouteCollectorProxy;
 
 $app->group('/calendar', function (RouteCollectorProxy $group)
 {
+    $group->get('', CalendarViewController::class . ':index');
+    $group->get('/view/{view:day|week|week-new|month|year}', CalendarViewController::class . ':index');
+    $group->get('/view/event/{id:[0-9]+}', CalendarViewController::class . ':event');
+    $group->get('/events', CalendarController::class . ':events');
+    $group->get('/events/{id:[0-9]+}', CalendarController::class . ':show');
+    $group->map(['DELETE', 'POST'], '/events/{id:[0-9]+}', CalendarController::class . ':destroy');
+
     $group->group('/view/holidays', function (RouteCollectorProxy $view)
     {
         $view->get('', HolidayViewController::class . ':index');

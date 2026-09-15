@@ -29,9 +29,4 @@
 
 	phpgw::import_class('phpgwapi.datetime');
 	
-	$cal = createObject('calendar.uicalendar');
-	$cal->index(array
-	(
-			'menuaction'	=> 'calendar.uicalendar.index',
-			'date'		=> date('Ymd', phpgwapi_datetime::user_localtime() )
-	));
+	phpgw::redirect_link('/calendar/view/month', array('date' => date('Ymd', phpgwapi_datetime::user_localtime())));

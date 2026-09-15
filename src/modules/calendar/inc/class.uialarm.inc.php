@@ -65,11 +65,7 @@
 			
 			if ( !$this->bo->cal_id || !is_array($this->event) )
 			{
-				phpgw::redirect_link('/index.php', array
-									(
-										'menuaction'	=> 'calendar.uicalendar.view',
-										'cal_id'	=> $this->bo->cal_id
-									));
+				phpgw::redirect_link('/calendar/view/event/' . (int)$this->bo->cal_id);
 			}
 
 			Settings::getInstance()->update('flags', ['noheader' => false, 'nonavbar' => false, 'app_header' => Settings::getInstance()->get('apps')['calendar']['title'] . ' - ' . lang('Alarm Management')]);
@@ -99,6 +95,39 @@
 			}
 			$this->template->set_var($var);
 			$this->template->parse($row,$list,True);
+		}
+
+		function render_event_summary($event)
+		{
+			if (!$this->bo->bo->check_perms(ACL_READ, $event))
+			{
+				return false;
+			}
+
+			$fields = $this->bo->bo->event2array($event);
+			echo '<table border="0" width="90%" align="center">';
+			foreach ((array)$fields as $field)
+			{
+				$data = $field['data'] ?? '';
+				if (is_array($data))
+				{
+					$data = implode('<br />', array_map('htmlspecialchars', $data));
+				}
+				else
+				{
+					$data = htmlspecialchars((string)$data);
+				}
+
+				if ($data === '')
+				{
+					continue;
+				}
+
+				echo '<tr><td width="25%"><b>' . htmlspecialchars((string)($field['field'] ?? '')) . '</b></td><td>' . $data . '</td></tr>';
+			}
+			echo '</table><br />';
+
+			return true;
 		}
 
 		/* Public functions */
@@ -142,7 +171,7 @@
 					$this->phpgwapi_common->phpgw_exit(True);
 				}
 			}
-			if (!ExecMethod('calendar.uicalendar.view_event',$this->event))
+			if (!$this->render_event_summary($this->event))
 			{
 				echo '<center>'.lang('You do not have permission to read this record!').'</center>';
 				$this->phpgwapi_common->phpgw_exit(True);

@@ -853,7 +853,12 @@ class calendar_uicalendar
 
 	function export($vcal_id = 0)
 	{
-		$cal_id = Sanitizer::get_var('cal_id', 'int', 'POST');
+		$cal_id = Sanitizer::get_var('cal_id', 'int', 'REQUEST', $vcal_id);
+		if ($cal_id)
+		{
+			phpgw::redirect_link('/calendar/events/' . (int)$cal_id . '/export');
+		}
+
 		if (!$cal_id)
 		{
 			//FIXME
@@ -1193,46 +1198,8 @@ class calendar_uicalendar
 
 	function edit_status()
 	{
-		Settings::getInstance()->update('flags', ['noheader' => false]);
-		Settings::getInstance()->update('flags', ['nonavbar' => false]);
-		Settings::getInstance()->update('flags', ['noappheader' => true]);
-		Settings::getInstance()->update('flags', ['noappfooter' => true]);
-		Settings::getInstance()->update('flags', ['app_header' => Settings::getInstance()->get('apps')['calendar']['title'] . ' - ' . lang('Change Status')]);
-		//$this->phpgwapi_common->phpgw_header();
-		$this->header(false);
-
 		$cal_id = Sanitizer::get_var('cal_id', 'int', 'GET');
-		$event = $this->bo->read_entry($cal_id);
-
-		reset($event['participants']);
-
-		if (!$event['participants'][$this->bo->owner])
-		{
-			echo '<center>' . lang('The user %1 is not participating in this event!', $this->phpgwapi_common->grab_owner_name($this->bo->owner)) . '</center>';
-			return;
-		}
-
-		if (!$this->bo->check_perms(ACL_EDIT))
-		{
-			$this->no_edit();
-			return;
-		}
-
-		$freetime = phpgwapi_datetime::localdates(mktime(0, 0, 0, $event['start']['month'], $event['start']['mday'], $event['start']['year']) - phpgwapi_datetime::user_timezone());
-		echo $this->timematrix(
-			array(
-				'date'		=> $freetime,
-				'starttime'	=> $this->bo->splittime('000000', False),
-				'endtime'	=> 0,
-				'participants'	=> $event['participants']
-			)
-		) . '<br />';
-
-		$event = $this->bo->read_entry($cal_id);
-		$this->view_event($event);
-		$this->template->pfp('phpgw_body', 'view_event');
-
-		echo $this->get_response($event['id']);
+		phpgw::redirect_link('/calendar/view/event/' . (int)$cal_id);
 	}
 
 	function set_action()

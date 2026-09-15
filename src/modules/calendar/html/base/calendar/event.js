@@ -55,6 +55,41 @@
 		return button;
 	}
 
+	function responseButton(event, responseAction)
+	{
+		var button = document.createElement('button');
+		button.type = 'button';
+		button.className = 'calendar-event-detail__action';
+		button.textContent = responseAction.label;
+		button.addEventListener('click', function ()
+		{
+			fetch(event.response_url, {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				body: JSON.stringify({ status: responseAction.status })
+			})
+				.then(function (response)
+				{
+					return response.json().then(function (payload)
+					{
+						if (!response.ok) throw new Error(payload.error || config.lang.loadFailed);
+						return payload;
+					});
+				})
+				.then(function (payload)
+				{
+					render(payload.data || event);
+				})
+				.catch(function (err)
+				{
+					error.textContent = err.message || config.lang.loadFailed;
+					error.hidden = false;
+				});
+		});
+		return button;
+	}
+
 	function render(event)
 	{
 		target.textContent = '';
@@ -81,6 +116,10 @@
 		actions.appendChild(action(config.lang.edit, event.edit_url));
 		actions.appendChild(deleteButton(event));
 		actions.appendChild(action(config.lang.exportEvent, event.export_url));
+		(event.response_actions || []).forEach(function (item)
+		{
+			actions.appendChild(responseButton(event, item));
+		});
 		target.appendChild(actions);
 
 		target.hidden = false;

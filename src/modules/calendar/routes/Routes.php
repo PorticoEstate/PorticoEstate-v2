@@ -22,7 +22,9 @@ $app->group('/calendar', function (RouteCollectorProxy $group)
     $group->get('/view/event/{id:[0-9]+}', CalendarViewController::class . ':event');
     $group->get('/events', CalendarController::class . ':events');
     $group->post('/events', CalendarController::class . ':store');
+    $group->get('/events/{id:[0-9]+}/export', CalendarController::class . ':export');
     $group->get('/events/{id:[0-9]+}', CalendarController::class . ':show');
+    $group->post('/events/{id:[0-9]+}/response', CalendarController::class . ':response');
     $group->put('/events/{id:[0-9]+}', CalendarController::class . ':update');
     $group->map(['DELETE', 'POST'], '/events/{id:[0-9]+}', CalendarController::class . ':destroy');
     $group->get('/participants', CalendarController::class . ':participants');

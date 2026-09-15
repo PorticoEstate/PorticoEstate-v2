@@ -616,7 +616,7 @@ class calendar_bocalendar
 		return $cd;
 	}
 
-	function reinstate($params = '')
+	function reinstate($params = array())
 	{
 		if ($this->check_perms(ACL_EDIT, $params['cal_id']) && isset($params['reinstate_index']))
 		{
@@ -721,7 +721,7 @@ class calendar_bocalendar
 		return $this->so->list_events_keyword($keywords, $members);
 	}
 
-	function update($params = '')
+	function update($params = array())
 	{
 		$l_cal = isset($params['cal']) && $params['cal'] ? $params['cal'] : Sanitizer::get_var('cal', 'string', 'POST');
 		$l_participants = isset($params['participants']) ? $params['participants'] : Sanitizer::get_var('participants', 'string', 'POST');

@@ -14,6 +14,8 @@
 
 phpgw::import_class('phpgwapi.datetime');
 use App\modules\phpgwapi\services\Settings;
+use App\Database\Db;
+
 
 define('FOLD_LENGTH',75);
 

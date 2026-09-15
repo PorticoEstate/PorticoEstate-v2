@@ -184,6 +184,7 @@ class CalendarController
 		$end = $calendar->maketime($event['end']) - $userTimezone;
 		$isPrivate = !$event['public'] || !$calendar->check_perms(\ACL_READ, $event);
 		$fields = [];
+		$responseActions = [];
 
 		if (!$isPrivate)
 		{
@@ -199,6 +200,16 @@ class CalendarController
 					'id' => (string)$key,
 					'label' => (string)($field['field'] ?? $key),
 					'value' => (string)$data,
+				];
+			}
+
+			$currentParticipant = (int)$calendar->owner;
+			if (array_key_exists($currentParticipant, (array)$event['participants']) && $calendar->check_perms(\ACL_EDIT, $event))
+			{
+				$responseActions = [
+					['status' => \ACCEPTED, 'label' => lang('Accept')],
+					['status' => \REJECTED, 'label' => lang('Reject')],
+					['status' => \TENTATIVE, 'label' => lang('Tentative')],
 				];
 			}
 		}
@@ -218,7 +229,9 @@ class CalendarController
 			'fields' => $fields,
 			'edit_url' => \phpgw::link('/calendar/view/event/' . (int)($event['id'] ?? 0) . '/edit'),
 			'delete_url' => \phpgw::link('/calendar/events/' . (int)($event['id'] ?? 0)),
-			'export_url' => \phpgw::link('/index.php', ['menuaction' => 'calendar.uicalendar.export', 'cal_id' => (int)($event['id'] ?? 0)]),
+			'export_url' => \phpgw::link('/calendar/events/' . (int)($event['id'] ?? 0) . '/export'),
+			'response_url' => \phpgw::link('/calendar/events/' . (int)($event['id'] ?? 0) . '/response'),
+			'response_actions' => $responseActions,
 		];
 	}
 
@@ -272,6 +285,31 @@ class CalendarController
 		}
 
 		return ResponseHelper::sendJSONResponse(['data' => $this->mapEventDetails($calendar, $event)]);
+	}
+
+	public function export(Request $request, Response $response, array $args): Response
+	{
+		$id = (int)($args['id'] ?? 0);
+		if ($id <= 0)
+		{
+			return ResponseHelper::sendErrorResponse(['error' => lang('Invalid entry id.')], 400);
+		}
+
+		$calendar = $this->calendar();
+		if (!$calendar->check_perms(\ACL_READ, $id))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => lang('You do not have permission to read this record!')], 403);
+		}
+
+		$content = \ExecMethod('calendar.boicalendar.export', [
+			'l_event_id' => $id,
+			'chunk_split' => false,
+		]);
+
+		$response->getBody()->write((string)$content);
+		return $response
+			->withHeader('Content-Type', 'text/calendar')
+			->withHeader('Content-Disposition', 'attachment; filename="phpgw-cal-' . $id . '.ics"');
 	}
 
 	private function saveEvent(Request $request, Response $response, int $id = 0): Response
@@ -418,6 +456,52 @@ class CalendarController
 	public function update(Request $request, Response $response, array $args): Response
 	{
 		return $this->saveEvent($request, $response, (int)($args['id'] ?? 0));
+	}
+
+	public function response(Request $request, Response $response, array $args): Response
+	{
+		$id = (int)($args['id'] ?? 0);
+		$body = json_decode($request->getBody()->getContents(), true) ?: [];
+		$hasStatus = array_key_exists('status', (array)$body);
+		$status = (int)($body['status'] ?? -1);
+		$allowed = [\ACCEPTED, \REJECTED, \TENTATIVE];
+
+		if ($id <= 0)
+		{
+			return ResponseHelper::sendErrorResponse(['error' => lang('Invalid entry id.')], 400);
+		}
+		if (!$hasStatus || !in_array($status, $allowed, true))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => lang('Invalid status')], 400);
+		}
+
+		$calendar = $this->calendar();
+		$event = $calendar->read_entry($id);
+		if (!is_array($event) || empty($event['id']))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => lang('Sorry, this event does not exist')], 404);
+		}
+
+		if (!array_key_exists((int)$calendar->owner, (array)$event['participants']))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => lang('The user %1 is not participating in this event!', $calendar->contacts->get_name_of_person_id($calendar->owner))], 403);
+		}
+
+		if (!$calendar->check_perms(\ACL_EDIT, $event))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => lang('You do not have permission to edit this entry!')], 403);
+		}
+
+		if (!$calendar->set_status($id, $status))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => lang('Unable to update status')], 422);
+		}
+
+		$event = $calendar->read_entry($id);
+		return ResponseHelper::sendJSONResponse([
+			'message' => lang('Status updated'),
+			'data' => $this->mapEventDetails($calendar, (array)$event),
+		]);
 	}
 
 	public function participants(Request $request, Response $response): Response

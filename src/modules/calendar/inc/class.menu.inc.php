@@ -104,7 +104,7 @@ class calendar_menu
 			),
 			array(
 				'text'	=> $translation->translate('Import', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uiicalendar.import')),
+				'url'	=> phpgw::link('/calendar/view/import'),
 				'image'	=> array('calendar', 'import')
 			)
 		);
@@ -195,7 +195,7 @@ class calendar_menu
 			),
 			array(
 				'text'	=> $translation->translate('Import', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uiicalendar.import'))
+				'url'	=> phpgw::link('/calendar/view/import')
 			)
 
 		);

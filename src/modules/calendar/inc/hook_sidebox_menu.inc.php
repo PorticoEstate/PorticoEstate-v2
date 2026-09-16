@@ -44,7 +44,7 @@
 			array('text'  => 'Daily Matrix View',
 				'url' => phpgw::link('/calendar/view/matrix')),
 			array('text'  => 'Import',
-				'url' =>phpgw::link('/index.php', array('menuaction' => 'calendar.uiicalendar.import'))),
+				'url' => phpgw::link('/calendar/view/import')),
 	);
 	display_sidebox($appname,$menu_title,$file);
 

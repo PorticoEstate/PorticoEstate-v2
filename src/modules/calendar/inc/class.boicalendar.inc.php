@@ -3061,9 +3061,9 @@ class calendar_boicalendar
 		if (! is_array($_FILES['uploadedfile']) || $_FILES['uploadedfile']['tmp_name'] == '' /*|| $_FILES['uploadedfile']['tmp_name'] = 'none'*/)
 		{
 			phpgw::redirect_link(
-				'/index.php',
+				'/calendar/view/import',
 				array(
-					'menuaction'	=> 'calendar.uiicalendar.import',
+					'route' => '/calendar/view/import',
 					'action'	=> 'GetFile'
 				)
 			);
@@ -3079,9 +3079,9 @@ class calendar_boicalendar
 		if (!move_uploaded_file($_FILES['uploadedfile']['tmp_name'], $filename))
 		{
 			phpgw::redirect_link(
-				'/index.php',
+				'/calendar/view/import',
 				array(
-					'menuaction'    => 'calendar.uiicalendar.import',
+					'route' => '/calendar/view/import',
 					'action'    => 'GetFile'
 				)
 			);
@@ -3109,9 +3109,9 @@ class calendar_boicalendar
 				return false;
 
 			phpgw::redirect_link(
-				'/index.php',
+				'/calendar/view/import',
 				array(
-					'menuaction'	=> 'calendar.uiicalendar.import',
+					'route' => '/calendar/view/import',
 					'action'	=> 'GetFile'
 				)
 			);

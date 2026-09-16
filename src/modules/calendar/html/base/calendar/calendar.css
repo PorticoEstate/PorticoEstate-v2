@@ -456,6 +456,127 @@
 	text-decoration: underline;
 }
 
+.calendar-matrix {
+	max-width: 100%;
+	padding: 1rem;
+}
+
+.calendar-matrix h1 {
+	margin: 0 0 1rem;
+	font-size: 1.55rem;
+}
+
+.calendar-matrix__filters {
+	display: flex;
+	align-items: end;
+	gap: .75rem;
+	margin-bottom: 1rem;
+}
+
+.calendar-matrix__filters label {
+	display: grid;
+	gap: .35rem;
+	font-weight: 600;
+}
+
+.calendar-matrix__filters input,
+.calendar-matrix__filters select {
+	box-sizing: border-box;
+	padding: .45rem .55rem;
+	border: 1px solid #d0d7de;
+	border-radius: 4px;
+	background: #fff;
+}
+
+.calendar-matrix__filters select {
+	min-width: 240px;
+}
+
+.calendar-matrix__filters button {
+	padding: .45rem .7rem;
+	border: 1px solid #0969da;
+	border-radius: 4px;
+	background: #0969da;
+	color: #fff;
+	cursor: pointer;
+}
+
+.calendar-matrix__navigation {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1rem;
+}
+
+.calendar-matrix__navigation a {
+	color: #0969da;
+	text-decoration: none;
+}
+
+.calendar-matrix__table {
+	overflow: auto;
+	max-width: 100%;
+	border: 1px solid #d0d7de;
+	border-radius: 6px;
+	background: #d0d7de;
+}
+
+.calendar-matrix__table table {
+	width: max-content;
+	min-width: 100%;
+	border-collapse: separate;
+	border-spacing: 1px;
+	background: #d0d7de;
+	font-size: .75rem;
+}
+
+.calendar-matrix__table th,
+.calendar-matrix__table td {
+	box-sizing: border-box;
+	min-width: 2.9rem;
+	height: 2.25rem;
+	padding: .25rem;
+	background: #fff;
+	text-align: center;
+}
+
+.calendar-matrix__table thead th {
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	background: #f6f8fa;
+	color: #57606a;
+}
+
+.calendar-matrix__table th:first-child,
+.calendar-matrix__table tbody th {
+	position: sticky;
+	left: 0;
+	z-index: 3;
+	min-width: 150px;
+	background: #fff;
+	box-shadow: 3px 0 8px rgba(36, 41, 47, .12);
+	text-align: left;
+}
+
+.calendar-matrix__table thead th:first-child {
+	z-index: 4;
+	background: #f6f8fa;
+}
+
+.calendar-matrix__table tbody tr:nth-child(even) td,
+.calendar-matrix__table tbody tr:nth-child(even) th {
+	background: #f6f8fa;
+}
+
+.calendar-matrix__busy {
+	background: #cf222e !important;
+}
+
+.calendar-matrix__free {
+	background: #dafbe1 !important;
+}
+
 @media (max-width: 820px) {
 	.calendar-shell__header {
 		align-items: flex-start;
@@ -501,6 +622,21 @@
 
 	.calendar-planner__filters select {
 		min-width: 0;
+		width: 100%;
+	}
+
+	.calendar-matrix {
+		padding: .75rem;
+	}
+
+	.calendar-matrix__filters {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.calendar-matrix__filters select,
+	.calendar-matrix__filters input,
+	.calendar-matrix__filters button {
 		width: 100%;
 	}
 

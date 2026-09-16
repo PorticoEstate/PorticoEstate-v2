@@ -65,7 +65,7 @@
 		$col_width += 2;
 	}
 
-	add_col($tpl,'  <td width="2%" align="left">'.add_image_ahref($this->page('matrixselect'),'view',lang('Daily Matrix View')).'</td>');
+	add_col($tpl,'  <td width="2%" align="left">'.add_image_ahref(phpgw::link('/calendar/view/matrix'),'view',lang('Daily Matrix View')).'</td>');
 
 	add_col($tpl,'  <td width="'.(100 - $col_width).'%" align="left"'.(PHP_VERSION_ID < 40000?' colspan="2"':'').'>&nbsp;</td>');
 

@@ -279,6 +279,104 @@ class CalendarViewController
 		];
 	}
 
+	private function matrixContext(Request $request): array
+	{
+		$query = $request->getQueryParams();
+		$body = (array)$request->getParsedBody();
+		$date = preg_replace('/[^0-9]/', '', (string)($body['date'] ?? $query['date'] ?? date('Ymd')));
+		if (strlen($date) !== 8)
+		{
+			$date = date('Ymd');
+		}
+
+		$calendar = \CreateObject('calendar.bocalendar', 1);
+		$accounts = new Accounts();
+		$groups = [];
+		$users = [];
+		foreach ((array)Acl::getInstance()->get_ids_for_location('run', 1, 'calendar') as $accountId)
+		{
+			if ($accounts->get_type($accountId) === 'g')
+			{
+				$groups[] = ['id' => 'g_' . (int)$accountId, 'name' => (new \phpgwapi_common())->grab_owner_name($accountId)];
+			}
+			else
+			{
+				$personId = (int)$calendar->contacts->is_contact($accountId);
+				if ($personId && $calendar->check_perms(\ACL_READ, 0, $personId))
+				{
+					$users[] = ['id' => (string)$personId, 'name' => $calendar->contacts->get_name_of_person_id($personId)];
+				}
+			}
+		}
+
+		$selected = array_values(array_filter((array)($body['participants'] ?? $query['participants'] ?? []), 'is_string'));
+		if (!$selected)
+		{
+			$selected = $groups ? [$groups[0]['id']] : ($users ? [$users[0]['id']] : []);
+		}
+		$participantIds = [];
+		foreach ($selected as $participant)
+		{
+			if (str_starts_with($participant, 'g_'))
+			{
+				foreach ((array)$accounts->member((int)substr($participant, 2)) as $member)
+				{
+					$personId = (int)$calendar->contacts->is_contact($member['account_id'] ?? 0);
+					if ($personId && $calendar->check_perms(\ACL_READ, 0, $personId))
+					{
+						$participantIds[$personId] = true;
+					}
+				}
+			}
+			elseif ($calendar->check_perms(\ACL_READ, 0, (int)$participant))
+			{
+				$participantIds[(int)$participant] = true;
+			}
+		}
+
+		$timestamp = mktime(0, 0, 0, (int)substr($date, 4, 2), (int)substr($date, 6, 2), (int)substr($date, 0, 4));
+		$calendar->store_to_cache([
+			'syear' => date('Y', $timestamp), 'smonth' => date('n', $timestamp), 'sday' => date('j', $timestamp),
+			'eyear' => date('Y', $timestamp), 'emonth' => date('n', $timestamp), 'eday' => date('j', $timestamp),
+			'owner' => array_keys($participantIds),
+		]);
+		$increment = max(5, min(60, (int)($calendar->prefs['calendar']['interval'] ?? 15)));
+		$slots = (int)(24 * 60 / $increment);
+		$rows = [];
+		foreach (array_keys($participantIds) as $participantId)
+		{
+			$busy = array_fill(0, $slots, false);
+			foreach ((array)($calendar->cached_events[$date] ?? []) as $event)
+			{
+				if (!$calendar->check_perms(\ACL_READ, $event) || ($event['participants'][$participantId] ?? 'R') === 'R')
+				{
+					continue;
+				}
+				$eventStart = max($timestamp, $calendar->maketime($event['start']));
+				$eventEnd = min($timestamp + 86400, $calendar->maketime($event['end']));
+				$first = max(0, (int)floor(($eventStart - $timestamp) / ($increment * 60)));
+				$last = min($slots, (int)ceil(($eventEnd - $timestamp) / ($increment * 60)));
+				for ($slot = $first; $slot < $last; $slot++)
+				{
+					$busy[$slot] = true;
+				}
+			}
+			$rows[] = ['name' => $calendar->contacts->get_name_of_person_id($participantId), 'busy' => $busy];
+		}
+
+		$labels = [];
+		for ($slot = 0; $slot < $slots; $slot++)
+		{
+			$labels[] = date('H:i', $timestamp + $slot * $increment * 60);
+		}
+		return [
+			'date' => $date, 'groups' => $groups, 'users' => $users, 'selected' => $selected,
+			'rows' => $rows, 'labels' => $labels, 'increment' => $increment,
+			'previous_url' => \phpgw::link('/calendar/view/matrix', ['date' => date('Ymd', strtotime('-1 day', $timestamp))]),
+			'next_url' => \phpgw::link('/calendar/view/matrix', ['date' => date('Ymd', strtotime('+1 day', $timestamp))]),
+		];
+	}
+
 	public function index(Request $request, Response $response, array $args = []): Response
 	{
 		$view = $this->resolveView($request, $args);
@@ -316,6 +414,18 @@ class CalendarViewController
 			'calendar_url' => \phpgw::link('/calendar'),
 		]);
 
+		$response->getBody()->write($this->legacyView->render($html, ['calendar'], 'calendar'));
+		return $response->withHeader('Content-Type', 'text/html');
+	}
+
+	public function matrix(Request $request, Response $response): Response
+	{
+		Settings::getInstance()->update('flags', ['app_header' => lang('Calendar') . ' - ' . lang('Daily Matrix View')]);
+		$matrix = $this->matrixContext($request);
+		$html = $this->twig->render('@views/calendar/matrix.twig', [
+			'layout' => '@views/_bare.twig', 'matrix' => $matrix,
+			'calendar_url' => \phpgw::link('/calendar'),
+		]);
 		$response->getBody()->write($this->legacyView->render($html, ['calendar'], 'calendar'));
 		return $response->withHeader('Content-Type', 'text/html');
 	}

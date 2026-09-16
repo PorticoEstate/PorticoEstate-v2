@@ -99,7 +99,7 @@ class calendar_menu
 			),
 			array(
 				'text'	=> $translation->translate('Busy/Free', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.matrixselect')),
+				'url'	=> phpgw::link('/calendar/view/matrix'),
 				'image'	=> array('calendar', 'busy_free')
 			),
 			array(
@@ -189,7 +189,7 @@ class calendar_menu
 					),
 					array(
 						'text'	=> $translation->translate('Daily Matrix View', array(), true),
-						'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.matrixselect'))
+						'url'	=> phpgw::link('/calendar/view/matrix')
 					)
 				)
 			),

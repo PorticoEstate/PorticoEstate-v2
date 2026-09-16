@@ -42,7 +42,7 @@
 			array('text'  => 'Group Planner',
 				'url' => phpgw::link('/calendar/view/planner')),
 			array('text'  => 'Daily Matrix View',
-				'url' => phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.matrixselect'))),
+				'url' => phpgw::link('/calendar/view/matrix')),
 			array('text'  => 'Import',
 				'url' =>phpgw::link('/index.php', array('menuaction' => 'calendar.uiicalendar.import'))),
 	);

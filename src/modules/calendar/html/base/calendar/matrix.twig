@@ -1,0 +1,28 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ lang('Daily Matrix View') }}{% endblock %}
+{% block styles %}
+{{ add_style(modules_url ~ '/calendar/html/base/calendar/calendar.css') }}
+{% endblock %}
+{% block content %}
+<section class="calendar-matrix">
+	<p><a href="{{ calendar_url|raw }}">{{ lang('Back') }}</a></p>
+	<h1>{{ lang('Daily Matrix View') }}</h1>
+	<form class="calendar-matrix__filters" method="post">
+		<label>{{ lang('Date') }} <input type="date" name="date" value="{{ matrix.date|slice(0, 4) }}-{{ matrix.date|slice(4, 2) }}-{{ matrix.date|slice(6, 2) }}"></label>
+		<label>{{ lang('Participants') }}
+			<select name="participants[]" multiple size="5">
+				{% for group in matrix.groups %}<option value="{{ group.id }}"{% if group.id in matrix.selected %} selected{% endif %}>{{ group.name|e }}</option>{% endfor %}
+				{% for user in matrix.users %}<option value="{{ user.id }}"{% if user.id in matrix.selected %} selected{% endif %}>{{ user.name|e }}</option>{% endfor %}
+			</select>
+		</label>
+		<button type="submit">{{ lang('View') }}</button>
+	</form>
+	<nav class="calendar-matrix__navigation"><a href="{{ matrix.previous_url|raw }}">{{ lang('Previous') }}</a><strong>{{ matrix.date }}</strong><a href="{{ matrix.next_url|raw }}">{{ lang('Next') }}</a></nav>
+	<div class="calendar-matrix__table">
+		<table>
+			<thead><tr><th>{{ lang('Participant') }}</th>{% for label in matrix.labels %}<th>{{ label }}</th>{% endfor %}</tr></thead>
+			<tbody>{% for row in matrix.rows %}<tr><th>{{ row.name|e }}</th>{% for busy in row.busy %}<td class="{{ busy ? 'calendar-matrix__busy' : 'calendar-matrix__free' }}" aria-label="{{ busy ? lang('Busy') : lang('Free') }}"></td>{% endfor %}</tr>{% endfor %}</tbody>
+		</table>
+	</div>
+</section>
+{% endblock %}

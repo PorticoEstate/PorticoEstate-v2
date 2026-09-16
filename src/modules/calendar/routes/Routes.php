@@ -17,6 +17,7 @@ $app->group('/calendar', function (RouteCollectorProxy $group)
 {
     $group->get('', CalendarViewController::class . ':index');
     $group->get('/view/planner', CalendarViewController::class . ':planner');
+    $group->map(['GET', 'POST'], '/view/matrix', CalendarViewController::class . ':matrix');
     $group->get('/view/event/new', CalendarViewController::class . ':add');
     $group->get('/view/{view:day|week|week-new|month|year}', CalendarViewController::class . ':index');
     $group->get('/view/event/{id:[0-9]+}/edit', CalendarViewController::class . ':edit');

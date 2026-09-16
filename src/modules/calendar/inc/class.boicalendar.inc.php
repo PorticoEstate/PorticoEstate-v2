@@ -3056,65 +3056,15 @@ class calendar_boicalendar
 		}
 	}
 
-	function import_file()
-	{
-		if (! is_array($_FILES['uploadedfile']) || $_FILES['uploadedfile']['tmp_name'] == '' /*|| $_FILES['uploadedfile']['tmp_name'] = 'none'*/)
-		{
-			phpgw::redirect_link(
-				'/calendar/view/import',
-				array(
-					'route' => '/calendar/view/import',
-					'action'	=> 'GetFile'
-				)
-			);
-		}
-		$uploaddir = "{Settings::getInstance()->get('server')['temp_dir']}/";
-
-		srand((float) microtime() * 1000000);
-		$random_number = rand(100000000, 999999999);
-		$newfilename = md5($_FILES['uploadedfile']['name'] . ", " . $uploadedfile_name . ", "
-			. time() . getenv("REMOTE_ADDR") . $random_number);
-
-		$filename = $uploaddir . $newfilename;
-		if (!move_uploaded_file($_FILES['uploadedfile']['tmp_name'], $filename))
-		{
-			phpgw::redirect_link(
-				'/calendar/view/import',
-				array(
-					'route' => '/calendar/view/import',
-					'action'    => 'GetFile'
-				)
-			);
-		}
-		//			$ftp = fopen($uploaddir . $newfilename . '.info','wb');
-		//			fputs($ftp,$uploadedfile_type."\n".$uploadedfile_name."\n");
-		//			fclose($ftp);
-		return $filename;
-	}
-
 	function import($mime_msg = '', $isReturn = false, $timestamp = 0, $id = 0)
 	{
 		$this->line = 0;
-		if (is_array($_FILES['uploadedfile']) && $_FILES['uploadedfile']['name'] != '')
-		{
-			$filename = $this->import_file();
-			$fp = fopen($filename, 'rt');
-			$mime_msg = explode("\n", fread($fp, filesize($filename)));
-			fclose($fp);
-			unlink($filename);
-		}
-		elseif (!$mime_msg)
+		if (!$mime_msg)
 		{
 			if ($isReturn)
 				return false;
 
-			phpgw::redirect_link(
-				'/calendar/view/import',
-				array(
-					'route' => '/calendar/view/import',
-					'action'	=> 'GetFile'
-				)
-			);
+			return false;
 		}
 
 		$so_event = createobject('calendar.socalendar', array(

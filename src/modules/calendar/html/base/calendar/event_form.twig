@@ -7,7 +7,7 @@
 <form id="calendar-event-form" class="calendar-event-form" data-api-url="{{ api_url|e('html_attr') }}" data-method="{{ is_edit ? 'PUT' : 'POST' }}" data-participants-url="{{ participants_url|e('html_attr') }}" data-list-url="{{ list_url|e('html_attr') }}">
 	<p><a href="{{ list_url|e }}">{{ lang('Back') }}</a></p>
 	<h1>{{ is_edit ? lang('Edit') : lang('Add') }}</h1>
-	<div id="calendar-event-form-error" class="app-alert app-alert--error" role="alert" hidden></div>
+	<div id="calendar-event-form-error" class="app-alert app-alert--error" role="alert"{% if not error_message|default('') %} hidden{% endif %}>{{ error_message|default('')|e }}</div>
 
 	<label>
 		<span>{{ lang('Title') }}</span>

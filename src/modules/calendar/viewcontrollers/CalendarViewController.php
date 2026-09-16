@@ -46,6 +46,15 @@ class CalendarViewController
 
 		$calendar = \CreateObject('calendar.bocalendar', 1);
 		$event = $id ? (array)$calendar->read_entry($id) : [];
+		if (!empty($query['readsess']))
+		{
+			$event = (array)$calendar->restore_from_appsession();
+		}
+		$errorMessage = !empty($query['cd']) ? (new \phpgwapi_common())->check_code((int)$query['cd']) : '';
+		if (!empty($query['overlap']))
+		{
+			$errorMessage = lang('The event overlaps with another calendar entry.');
+		}
 		$hour = (int)($query['hour'] ?? date('H'));
 		$minute = (int)($query['minute'] ?? 0);
 		$start = sprintf('%s-%s-%sT%02d:%02d', substr($date, 0, 4), substr($date, 4, 2), substr($date, 6, 2), $hour, $minute);
@@ -113,6 +122,7 @@ class CalendarViewController
 		return [
 			'date' => $date,
 			'calendar' => $calendar,
+			'error_message' => $errorMessage,
 			'event' => $event,
 			'categories' => $categoryOptions,
 			'participant_categories' => $participantCategoryOptions,
@@ -453,14 +463,16 @@ class CalendarViewController
 	public function add(Request $request, Response $response): Response
 	{
 		$context = $this->formContext($request);
+		$isEdit = !empty($context['values']['id']);
+		$id = (int)($context['values']['id'] ?? 0);
 		Settings::getInstance()->update('flags', ['app_header' => lang('Calendar') . ' - ' . lang('Add')]);
 
 		$html = $this->twig->render('@views/calendar/event_form.twig', [
 			'layout' => '@views/_bare.twig',
-			'api_url' => \phpgw::link('/calendar/events'),
+			'api_url' => \phpgw::link($isEdit ? '/calendar/events/' . $id : '/calendar/events'),
 			'participants_url' => \phpgw::link('/calendar/participants'),
 			'list_url' => \phpgw::link('/calendar/view/day', ['date' => $context['date']]),
-			'is_edit' => false,
+			'is_edit' => $isEdit,
 		] + $context);
 
 		$response->getBody()->write($this->legacyView->render($html, ['calendar'], 'calendar'));

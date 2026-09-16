@@ -754,13 +754,8 @@ class calendar_bocalendar
 			$datetime_check = $this->validate_update($event);
 			if ($datetime_check)
 			{
-				ExecMethod(
-					'calendar.uicalendar.edit',
-					array(
-						'cd'		=> $datetime_check,
-						'readsess'	=> 1
-					)
-				);
+				$url = isset($event['id']) && $event['id'] ? '/calendar/view/event/' . (int)$event['id'] . '/edit' : '/calendar/view/event/new';
+				phpgw::redirect_link($url, array('cd' => $datetime_check, 'readsess' => 1));
 				$this->phpgwapi_common->phpgw_exit(True);
 			}
 			$overlapping_events = False;
@@ -955,13 +950,8 @@ class calendar_bocalendar
 			print_debug('bo->validated_update() returnval', $datetime_check);
 			if ($datetime_check)
 			{
-				ExecMethod(
-					'calendar.uicalendar.edit',
-					array(
-						'cd'		=> $datetime_check,
-						'readsess'	=> 1
-					)
-				);
+				$url = isset($event['id']) && $event['id'] ? '/calendar/view/event/' . (int)$event['id'] . '/edit' : '/calendar/view/event/new';
+				phpgw::redirect_link($url, array('cd' => $datetime_check, 'readsess' => 1));
 				$this->phpgwapi_common->phpgw_exit(True);
 			}
 
@@ -987,14 +977,8 @@ class calendar_bocalendar
 		{
 			if ($send_to_ui)
 			{
-				Settings::getInstance()->update('flags', ['noheader' => false, 'nonavbar' => false]);
-				ExecMethod(
-					'calendar.uicalendar.overlap',
-					array(
-						'o_events'	=> $overlapping_events,
-						'this_event'	=> $event
-					)
-				);
+				$url = isset($event['id']) && $event['id'] ? '/calendar/view/event/' . (int)$event['id'] . '/edit' : '/calendar/view/event/new';
+				phpgw::redirect_link($url, array('readsess' => 1, 'overlap' => 1));
 				$this->phpgwapi_common->phpgw_exit(True);
 			}
 			else

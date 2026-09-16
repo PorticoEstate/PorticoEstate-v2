@@ -124,7 +124,15 @@
 		{
 			return response.json().then(function (data)
 			{
-				if (!response.ok) throw new Error(data.error || config.lang.saveFailed || 'Save failed');
+				if (!response.ok)
+				{
+					var message = data.error || config.lang.saveFailed || 'Save failed';
+					if (response.status === 409 && data.conflicts && data.conflicts.length)
+					{
+						message += ' (' + data.conflicts.join(', ') + ')';
+					}
+					throw new Error(message);
+				}
 				return data;
 			});
 		}).then(function (data)

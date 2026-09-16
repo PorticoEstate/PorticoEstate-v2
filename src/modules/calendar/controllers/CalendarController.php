@@ -437,6 +437,21 @@ class CalendarController
 			return ResponseHelper::sendErrorResponse(['error' => (new \phpgwapi_common())->check_code($errorCode)], 422);
 		}
 
+		$overlappingEvents = $calendar->overlap(
+			$calendar->maketime($event['start']),
+			$calendar->maketime($event['end']),
+			(array)($event['participants'] ?? []),
+			(int)($event['owner'] ?? $calendar->owner),
+			$id ? [$id] : []
+		);
+		if ($overlappingEvents)
+		{
+			return ResponseHelper::sendErrorResponse([
+				'error' => lang('The event overlaps with another calendar entry.'),
+				'conflicts' => array_values(array_map('intval', (array)$overlappingEvents)),
+			], 409);
+		}
+
 		$calendar->so->add_entry($event);
 		$saved = $calendar->get_cached_event();
 		$id = (int)($saved['id'] ?? $event['id'] ?? 0);

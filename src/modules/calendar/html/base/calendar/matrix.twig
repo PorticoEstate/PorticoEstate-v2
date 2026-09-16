@@ -17,7 +17,13 @@
 		</label>
 		<button type="submit">{{ lang('View') }}</button>
 	</form>
-	<nav class="calendar-matrix__navigation"><a href="{{ matrix.previous_url|raw }}">{{ lang('Previous') }}</a><strong>{{ matrix.date }}</strong><a href="{{ matrix.next_url|raw }}">{{ lang('Next') }}</a></nav>
+	<div class="calendar-matrix__date" aria-live="polite">
+		{{ matrix.date|slice(0, 4) }}-{{ matrix.date|slice(4, 2) }}-{{ matrix.date|slice(6, 2) }}
+	</div>
+	<nav class="calendar-matrix__navigation">
+		<a href="{{ matrix.previous_url|raw }}">{{ lang('Previous') }}</a>
+		<a href="{{ matrix.next_url|raw }}">{{ lang('Next') }}</a>
+	</nav>
 	<div class="calendar-matrix__table">
 		<table>
 			<thead><tr><th>{{ lang('Participant') }}</th>{% for label in matrix.labels %}<th>{{ label }}</th>{% endfor %}</tr></thead>

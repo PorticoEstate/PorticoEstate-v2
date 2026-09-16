@@ -508,6 +508,14 @@
 	margin-bottom: 1rem;
 }
 
+.calendar-matrix__date {
+	margin: .25rem 0 .65rem;
+	color: #57606a;
+	font-size: 1.15rem;
+	font-weight: 600;
+	text-align: center;
+}
+
 .calendar-matrix__navigation a {
 	color: #0969da;
 	text-decoration: none;

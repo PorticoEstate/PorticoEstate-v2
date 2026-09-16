@@ -10,6 +10,10 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class CalendarController
 {
+	private const STATUS_REJECTED = 0;
+	private const STATUS_TENTATIVE = 2;
+	private const STATUS_ACCEPTED = 3;
+
 	private TwigHelper $twig;
 	private LegacyViewHelper $legacyView;
 	private array $views = ['day', 'week', 'week-new', 'month', 'year'];
@@ -217,9 +221,9 @@ class CalendarController
 			if (array_key_exists($currentParticipant, (array)$event['participants']) && $calendar->check_perms(\ACL_EDIT, $event))
 			{
 				$responseActions = [
-					['status' => \ACCEPTED, 'label' => lang('Accept')],
-					['status' => \REJECTED, 'label' => lang('Reject')],
-					['status' => \TENTATIVE, 'label' => lang('Tentative')],
+					['status' => self::STATUS_ACCEPTED, 'label' => lang('Accept')],
+					['status' => self::STATUS_REJECTED, 'label' => lang('Reject')],
+					['status' => self::STATUS_TENTATIVE, 'label' => lang('Tentative')],
 				];
 			}
 		}
@@ -550,7 +554,7 @@ class CalendarController
 		$query = $request->getQueryParams();
 		$hasStatus = array_key_exists('status', (array)$body) || array_key_exists('status', $query);
 		$status = (int)($body['status'] ?? $query['status'] ?? -1);
-		$allowed = [\ACCEPTED, \REJECTED, \TENTATIVE];
+		$allowed = [self::STATUS_ACCEPTED, self::STATUS_REJECTED, self::STATUS_TENTATIVE];
 
 		if ($id <= 0)
 		{

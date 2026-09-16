@@ -1362,7 +1362,7 @@ class calendar_boicalendar
 		}
 		else
 		{
-			$this->debug("Setting $type = " . _debug_array($value, false), __LINE__, __FILE__);
+			$this->debug("Setting $type = " . print_r($value, true), __LINE__, __FILE__);
 		}
 		//$this->debug('event: ' . _debug_array($event, false), __LINE__, __FILE__);
 	}
@@ -1520,7 +1520,7 @@ class calendar_boicalendar
 		//		elseif(ereg('(.*(\:\\\\)?.*):(.*)',$value,$temp))
 		elseif (preg_match('/(.*(\:\\\\)?.*):(.*)/', $value, $temp))
 		{
-			$this->debug('Value : ' . _debug_array($temp, false));
+				$this->debug('Value : ' . print_r($temp, true));
 			$this->debug('Param ' . $majortype . ' Value : ' . $temp[3]);
 			if ($temp[3])
 			{
@@ -1533,7 +1533,7 @@ class calendar_boicalendar
 			//			while(ereg('(([A-Z\-]*)[=]([[:alnum:] \_\)\(\/\$\.\,\:\\\|\*\&\^\%\#\!\~\"\?\&\@\<\>\-]*))([\;]?)(.*)',$value,$temp))
 			while (preg_match('/(([A-Z\-]*)[=]([[:alnum:] \_\)\(\\/\$\.\,\:\\\|\*\&\^\%\#\!\~\"\?\&\@\<\>\-]*))([\;]?)(.*)/', $value, $temp))
 			{
-				$this->debug('Value : ' . _debug_array($temp, false));
+				$this->debug('Value : ' . print_r($temp, true));
 				$this->debug('Param ' . $temp[2] . ' Value : ' . $temp[3]);
 				$return_value[] = array(
 					'param'	=> $temp[2],
@@ -1548,7 +1548,7 @@ class calendar_boicalendar
 			//			while(ereg('(([A-Z\-]*)[=]([[:alnum:] \_\)\(\/\$\.\,\:\\\|\*\&\^\%\#\!\~\"\?\&\@\<\>\-]*))([\;]?)(.*)',$value,$temp))
 			while (preg_match('/(([A-Z\-]*)[=]([[:alnum:] \_\)\(\\/\$\.\,\:\\\|\*\&\^\%\#\!\~\"\?\&\@\<\>\-]*))([\;]?)(.*)/', $value, $temp))
 			{
-				$this->debug('Value : ' . _debug_array($temp, false));
+				$this->debug('Value : ' . print_r($temp, true));
 				$this->debug('Param ' . $temp[2] . ' Value : ' . $temp[3]);
 				$return_value[] = array(
 					'param'	=> $temp[2],
@@ -1637,7 +1637,7 @@ class calendar_boicalendar
 						{
 							$this->set_var($event[$majortype], $param, $value);
 						}
-						$this->debug('Event : ' . _debug_array($event, false));
+						$this->debug('Event : ' . print_r($event, true));
 						break;
 				}
 			}
@@ -1651,7 +1651,7 @@ class calendar_boicalendar
 		$this->parse_parameters($var, $majortype, $value);
 		if (isset($this->property[$majortype][$mode]['multiples']) && isset($this->property[$majortype][$mode]['multipass']) && $this->property[$majortype][$mode]['multipass'])
 		{
-			$this->debug(_debug_array($var, false));
+			$this->debug(print_r($var, true));
 			$event[$majortype][] = $var;
 		}
 		else
@@ -1667,7 +1667,7 @@ class calendar_boicalendar
 				{
 					$var[$key] = $val;
 				}
-				$this->debug("$majortype : " . _debug_array($var, false));
+				$this->debug("$majortype : " . print_r($var, true));
 			}
 			$this->set_var($event, $majortype, $var);
 		}
@@ -2233,7 +2233,7 @@ class calendar_boicalendar
 					}
 				}
 			}
-			$this->debug('DATETIME : ' . _debug_array($dtime, false));
+			$this->debug('DATETIME : ' . print_r($dtime, true));
 			return $dtime;
 		}
 		elseif (is_array($var))

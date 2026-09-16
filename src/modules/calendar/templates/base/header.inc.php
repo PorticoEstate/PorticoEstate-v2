@@ -124,28 +124,6 @@
 		$tpl->set_var('str',$tpl->fp('out','form_button_dropdown'));
 		$tpl->parse('header_column','head_col',True);
 
-		if($GLOBALS['HTTP_GET_VARS']['menuaction'] == 'calendar.uicalendar.planner')
-		{
-			$remainder -= 28;
-			print_debug('Sort By',$this->bo->sortby);
-
-			$form_options = '<option value="user"'.($this->bo->sortby=='user'?' selected':'').'>'.lang('User').'</option>'."\n";
-			$form_options .= '     <option value="category"'.((!isset($this->bo->sortby) || !$this->bo->sortby) || $this->bo->sortby=='category'?' selected':'').'>'.lang('Category').'</option>'."\n";
-		
-			$var = Array(
-				'form_width' => '28',
-				'form_link'	=> $this->page($referrer),
-				'form_name'	=> 'sortby',
-				'title'	=> lang('Sort By'),
-				'hidden_vars'	=> $base_hidden_vars,
-				'form_options'	=> $form_options,
-				'button_value'	=> lang('Go!')
-			);
-			$tpl->set_var($var);
-			$tpl->set_var('str',$tpl->fp('out','form_button_dropdown'));
-			$tpl->parse('header_column','head_col',True);
-		}
-
 		if($this->bo->check_perms(ACL_PRIVATE))
 		{
 			$remainder -= 28;

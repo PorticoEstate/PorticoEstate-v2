@@ -144,7 +144,6 @@ class calendar_bocalendar
 	var $sortby;
 	var $num_months;
 
-	var $save_owner;
 	var $return_to;
 
 	protected $_jscal;
@@ -197,44 +196,6 @@ class calendar_bocalendar
 		{
 			$owner = $this->contacts->is_contact($this->userSettings['account_id']);
 		}
-		//_debug_array($owner);
-		$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
-		preg_match('/menuaction=([a-zA-Z.]+)/', $referer, $regs);
-		$from = $regs[1];
-		$menuaction = Settings::getInstance()->get('menuaction');
-		if ((substr($_SERVER['REDIRECT_URL'], -5) == 'home/' && substr($this->prefs['calendar']['defaultcalendar'], 0, 7) == 'planner'
-				|| ($menuaction == 'calendar.uicalendar.planner')
-				&& $from  != 'calendar.uicalendar.planner' && !$this->save_owner)
-			&& intval($this->prefs['calendar']['planner_start_with_group']) > 0
-		)
-		{
-			// entering planner for the first time ==> saving owner in save_owner, setting owner to default
-			//
-			//			$this->save_owner = $this->owner;
-			//			$owner = 'g_'.$this->prefs['calendar']['planner_start_with_group'];
-
-			$owner = 'g_' . $this->prefs['calendar']['planner_start_with_group'];
-			$this->owner = $owner;
-			$this->save_owner = $this->owner;
-		}
-		else if (
-			isset($menuaction)
-			&& $menuaction != 'calendar.uicalendar.planner'
-			&& $this->save_owner
-		)
-		{
-			// leaving planner with an unchanged user/owner ==> setting owner back to save_owner
-			//
-			$owner = Sanitizer::get_var('owner', 'int', 'GET', $this->save_owner);
-			unset($this->save_owner);
-		}
-		elseif (!empty($owner) && $owner != $this->owner && $from == 'calendar.uicalendar.planner')
-		{
-			// user/owner changed within planner ==> forgetting save_owner
-			//
-			unset($this->save_owner);
-		}
-
 		if (isset($owner) && $owner != '' && substr($owner, 0, 2) == 'g_')
 		{
 			$this->set_owner_to_group(substr($owner, 2));
@@ -501,7 +462,6 @@ class calendar_bocalendar
 					'filter'     => $this->filter,
 					'cat_id'     => $this->cat_id,
 					'owner'      => $this->owner,
-					'save_owner' => isset($this->save_owner) ? $this->save_owner : '',
 					'year'       => $this->year,
 					'month'      => $this->month,
 					'day'        => $this->day,
@@ -541,7 +501,6 @@ class calendar_bocalendar
 		$this->cat_id = $data['cat_id'];
 		$this->sortby = isset($data['sortby']) && $data['sortby'] ? $data['sortby'] : '';
 		$this->owner  = (int) $data['owner'];
-		$this->save_owner = isset($data['save_owner']) ? (int) $data['save_owner'] : 0;
 		$this->year   = (int) $data['year'];
 		$this->month  = (int) $data['month'];
 		$this->day    = (int) $data['day'];
@@ -2460,7 +2419,7 @@ class calendar_bocalendar
 	 * @param $old_event Event before the change
 	 * @param $new_event Event after the change
 	 */
-	function send_update($msg_type, $to_notify, $old_event, $new_event = False, $user = False)
+	function send_update($msg_type, $to_notify, $old_event, $new_event = array(), $user = False)
 	{
 		$returncode = true;
 		//echo "<p>bocalendar::send_update(type=$msg_type,to_notify="; print_r($to_notify); echo ", old_event="; print_r($old_event); echo ", new_event="; print_r($new_event); echo ", user=$user)</p>\n";
@@ -2846,7 +2805,7 @@ class calendar_bocalendar
 
 	function get_dirty_entries($lastmod = -1)
 	{
-		$events = false;
+		$events = [];
 		$event_ids = $this->so->cal->list_dirty_events($lastmod);
 		if (is_array($event_ids))
 		{
@@ -2857,7 +2816,7 @@ class calendar_bocalendar
 		}
 		unset($event_ids);
 
-		$rep_event_ids = $this->so->cal->list_dirty_events($lastmod, $true);
+		$rep_event_ids = $this->so->cal->list_dirty_events($lastmod, true);
 		if (is_array($rep_event_ids))
 		{
 			foreach ($rep_event_ids as $key => $id)

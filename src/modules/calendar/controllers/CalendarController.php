@@ -462,8 +462,9 @@ class CalendarController
 	{
 		$id = (int)($args['id'] ?? 0);
 		$body = json_decode($request->getBody()->getContents(), true) ?: [];
-		$hasStatus = array_key_exists('status', (array)$body);
-		$status = (int)($body['status'] ?? -1);
+		$query = $request->getQueryParams();
+		$hasStatus = array_key_exists('status', (array)$body) || array_key_exists('status', $query);
+		$status = (int)($body['status'] ?? $query['status'] ?? -1);
 		$allowed = [\ACCEPTED, \REJECTED, \TENTATIVE];
 
 		if ($id <= 0)
@@ -495,6 +496,12 @@ class CalendarController
 		if (!$calendar->set_status($id, $status))
 		{
 			return ResponseHelper::sendErrorResponse(['error' => lang('Unable to update status')], 422);
+		}
+		if ($request->getMethod() === 'GET')
+		{
+			return $response
+				->withHeader('Location', \phpgw::link('/calendar/view/event/' . $id))
+				->withStatus(302);
 		}
 
 		$event = $calendar->read_entry($id);

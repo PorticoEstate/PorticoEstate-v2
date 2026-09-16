@@ -22,6 +22,7 @@
 	}
 	unset($d1);
 
-	$GLOBALS['extra_data'] = $GLOBALS['css']."\n".'<td>'."\n".'<table border="0" cols="3"><tr><td align="center" width="100%" valign="top">'
-		. ExecMethod('calendar.uicalendar.get_week_new')
-		.'</td>'."\n".'</tr>'."\n".'</table>'."\n".'</td>'."\n";
+  $date = sprintf('%04d%02d%02d', $GLOBALS['g_year'], $GLOBALS['g_month'], $GLOBALS['g_day']);
+  $url = phpgw::link('/calendar/view/week', ['date' => $date]);
+  $GLOBALS['extra_data'] = $GLOBALS['css'] . "\n" . '<td align="center"><a href="' . $url . '">'
+    . lang('Open week view') . '</a></td>\n';

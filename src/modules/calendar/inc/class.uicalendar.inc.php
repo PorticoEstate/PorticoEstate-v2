@@ -22,6 +22,7 @@ phpgw::import_class('phpgwapi.datetime');
 
 use App\helpers\Template;
 use App\modules\phpgwapi\security\Acl;
+
 use App\modules\phpgwapi\services\Preferences;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
@@ -30,140 +31,88 @@ class calendar_uicalendar
 {
 	var $template;
 	var $template_dir;
-
 	var $bo;
 	var $cat;
-
 	var $holidays;
 	var $holiday_class;
-
 	var $debug = False;
-	//		var $debug = True;
-
 	var $cat_id;
 	var $link_tpl;
-
 	var $inserted_tooltip_js = false;
-
-	// planner related variables
 	var $planner_html;
-
 	var $planner_header;
 	var $planner_rows;
-
 	var $planner_group_members;
-
 	var $planner_firstday;
 	var $planner_lastday;
 	var $planner_days;
-
 	var $planner_end_month;
 	var $planner_end_year;
 	var $planner_days_in_end_month;
-
-	var $planner_intervals = array(	// conversation hour and interval depending on intervals_per_day
-		//                                  1 1 1 1 1 1 1 1 1 1 2 2 2 2
-		//              0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3
-		'1' => array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), // 0=0-23h
-		'2' => array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0), // 0=0-12h, 1=12-23h
-		'3' => array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2), // 0=0-12h, 2=12-18h, 3=18-23h
-		'4' => array(0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)  // 0=0-7, 7-12h, 3=12-18h, 4=18-23h
+	var $planner_intervals = array(
+		'1' => array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+		'2' => array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0),
+		'3' => array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2),
+		'4' => array(0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3)
 	);
 	var $theme;
 	var $header_included;
 	var $week_type;
-
 	var $public_functions = array(
-		'mini_calendar'	=> true,
-		'index'			=> true,
-		'month'			=> true,
-		'get_month'		=> true,
-		'week'			=> true,
-		'get_week'		=> true,
-		'week_new'		=> true,
-		'get_week_new'	=> true,
-		'year'			=> true,
-		'view'			=> true,
-		'edit'			=> true,
-		'reinstate_list' => true,
-		'reinstate'		=> true,
-		'add'			=> true,
-		'delete'		=> true,
-		'preferences'	=> true,
-		'day'			=> true,
-		'planner'		=> true,
-		'modify_ext_partlist' => true,
-		'matrixselect'	=> true,
-		'viewmatrix'	=> true,
-		'search' 		=> true,
-		'header'		=> true,
-		'footer'		=> true,
-		'participants_popup'	=> true
+		'mini_calendar' => true, 'index' => true, 'month' => true, 'get_month' => true,
+		'week' => true, 'get_week' => true, 'week_new' => true, 'get_week_new' => true,
+		'year' => true, 'view' => true, 'edit' => true, 'reinstate_list' => true,
+		'reinstate' => true, 'add' => true, 'delete' => true, 'preferences' => true,
+		'day' => true, 'planner' => true, 'modify_ext_partlist' => true,
+		'matrixselect' => true, 'viewmatrix' => true, 'search' => true, 'header' => true,
+		'footer' => true
 	);
-
 	var $always_app_header, $cat_colors, $fields, $custom_fields, $stock_fields,
 		$time_line_saved, $weekstarttime;
 	var $acl, $phpgwapi_common, $nextmatchs, $browser, $preferences, $accounts_obj;
+
 	function __construct()
 	{
 		$this->nextmatchs = CreateObject('phpgwapi.nextmatchs');
-		$this->browser    = CreateObject('phpgwapi.browser');
-
+		$this->browser = CreateObject('phpgwapi.browser');
 		$this->acl = Acl::getInstance();
 		$this->phpgwapi_common = new \phpgwapi_common();
 		$this->preferences = Preferences::getInstance();
 		$this->accounts_obj = new Accounts();
-		
 		$this->bo = CreateObject('calendar.bocalendar', 1);
 		$this->cat = &$this->bo->cat;
-
 		print_debug('BO Owner', $this->bo->owner);
-
 		$this->template = Template::getInstance();
 		$this->template_dir = $this->phpgwapi_common->get_tpl_dir('calendar');
 		$this->template->set_root(PHPGW_APP_TPL);
-
 		$this->holiday_class = 'holiday';
-
-		$this->cat_id   = $this->bo->cat_id;
-
+		$this->cat_id = $this->bo->cat_id;
 		$this->link_tpl = CreateObject('phpgwapi.template', $this->template_dir);
 		$this->link_tpl->set_unknowns('remove');
-
 		$this->link_tpl->set_file('link_picture', 'link_pict.tpl');
-
 		$this->link_tpl->set_block('link_picture', 'link_pict', 'link_pict');
 		$this->link_tpl->set_block('link_picture', 'pict', 'pict');
 		$this->link_tpl->set_block('link_picture', 'link_open', 'link_open');
 		$this->link_tpl->set_block('link_picture', 'link_close', 'link_close');
 		$this->link_tpl->set_block('link_picture', 'link_text', 'link_text');
-
 		if ($this->bo->use_session)
 		{
 			$menuaction = Settings::getInstance()->get('menuaction');
-			// save return-fkt for add, view, ...
-			if (
-				isset($menuaction)
-				&& $menuaction
-			)
+			if (isset($menuaction) && $menuaction)
 			{
 				list(,, $fkt) = explode('.', $menuaction);
 				if ($fkt == 'day' || $fkt == 'week' || $fkt == 'week_new' || $fkt == 'month' || $fkt == 'year' || $fkt == 'planner')
 				{
 					$this->bo->return_to = array(
-						'menuaction'	=> $menuaction,
-						'date'			=> sprintf('%04d%02d%02d', $this->bo->year, $this->bo->month, $this->bo->day)
+						'menuaction' => $menuaction,
+						'date' => sprintf('%04d%02d%02d', $this->bo->year, $this->bo->month, $this->bo->day)
 					);
 				}
 			}
 			$this->bo->save_sessiondata();
 		}
 		$this->always_app_header = $this->bo->prefs['common']['template_set'] == 'idots';
-
-	//	print_debug('UI', $this->_debug_sqsof());
-
 		$this->cat_colors = $this->bo->get_cat_colors();
-
 		if ($this->bo->debug)
 		{
 			echo "<!-- Cat Colors\n" . print_r($this->cat_colors, true) . "\n-->\n";
@@ -3701,7 +3650,7 @@ HTML;
 		return '<table width="100%"><tr align="center">' . "\n" . $str . '</tr></table>' . "\n";
 	}
 
-	function participants_popup()
+	function legacy_participant_search()
 	{
 		Settings::getInstance()->update('flags', ['nofooter' => true]);
 		$t = &$this->template;
@@ -3766,7 +3715,7 @@ HTML;
 		}
 
 		$t->set_root(PHPGW_APP_TPL);
-		$t->set_file(array('popup' => 'contacts_popup.tpl'));
+		$t->set_file(array('popup' => 'edit.tpl'));
 		$t->set_block('popup', 'cat_option', 'cat_options');
 
 		$cats = createObject('phpgwapi.categories');
@@ -3896,7 +3845,6 @@ HTML;
 
 		$vars = array(
 			'action_url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.bocalendar.update')),
-			'popup_url'		=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.participants_popup'), true),
 			'common_hidden'	=> $common_hidden,
 			'errormsg'		=> $param['cd'] ? $this->phpgwapi_common->check_code($param['cd']) : ''
 		);

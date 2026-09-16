@@ -22,5 +22,6 @@
 	}
 	unset($d1);
 
-	$GLOBALS['extra_data'] = '<table width="100%" cellpadding="0"><tr><td bgcolor="white">'.
-		ExecMethod('calendar.uicalendar.planner').'</td></tr></table>';
+  $url = phpgw::link('/calendar/view/planner', ['date' => sprintf('%04d%02d%02d', $GLOBALS['g_year'], $GLOBALS['g_month'], $GLOBALS['g_day'])]);
+  $GLOBALS['extra_data'] = '<table width="100%" cellpadding="0"><tr><td bgcolor="white" align="center"><a href="'
+    . $url . '">' . lang('Open group planner') . '</a></td></tr></table>';

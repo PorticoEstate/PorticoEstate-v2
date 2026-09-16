@@ -3,12 +3,22 @@
 namespace App\modules\calendar\controllers;
 
 use App\helpers\ResponseHelper;
+use App\modules\phpgwapi\helpers\LegacyViewHelper;
+use App\modules\phpgwapi\helpers\TwigHelper;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 class CalendarController
 {
+	private TwigHelper $twig;
+	private LegacyViewHelper $legacyView;
 	private array $views = ['day', 'week', 'week-new', 'month', 'year'];
+
+	public function __construct()
+	{
+		$this->twig = new TwigHelper('calendar');
+		$this->legacyView = new LegacyViewHelper();
+	}
 
 	private function calendar(): object
 	{
@@ -230,6 +240,8 @@ class CalendarController
 			'edit_url' => \phpgw::link('/calendar/view/event/' . (int)($event['id'] ?? 0) . '/edit'),
 			'delete_url' => \phpgw::link('/calendar/events/' . (int)($event['id'] ?? 0)),
 			'export_url' => \phpgw::link('/calendar/events/' . (int)($event['id'] ?? 0) . '/export'),
+			'alarms_url' => $calendar->check_perms(\ACL_EDIT, $event)
+				? \phpgw::link('/calendar/events/' . (int)($event['id'] ?? 0) . '/alarms') : '',
 			'response_url' => \phpgw::link('/calendar/events/' . (int)($event['id'] ?? 0) . '/response'),
 			'response_actions' => $responseActions,
 		];
@@ -310,6 +322,64 @@ class CalendarController
 		return $response
 			->withHeader('Content-Type', 'text/calendar')
 			->withHeader('Content-Disposition', 'attachment; filename="phpgw-cal-' . $id . '.ics"');
+	}
+
+	public function alarms(Request $request, Response $response, array $args): Response
+	{
+		$id = (int)($args['id'] ?? 0);
+		$calendar = $this->calendar();
+		$event = $id > 0 ? $calendar->read_entry($id) : [];
+		if (!is_array($event) || empty($event['id']))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => lang('Sorry, this event does not exist')], 404);
+		}
+		if (!$calendar->check_perms(\ACL_EDIT, $event))
+		{
+			return ResponseHelper::sendErrorResponse(['error' => lang('You do not have permission to edit this record!')], 403);
+		}
+
+		$alarmBo = \CreateObject('calendar.boalarm', 1);
+		$alarmBo->cal_id = $id;
+		$body = (array)$request->getParsedBody();
+		$selected = (array)($body['alarm'] ?? []);
+		if ($request->getMethod() === 'POST')
+		{
+			if (!empty($body['delete']) && $selected)
+			{
+				$alarmBo->delete($selected);
+			}
+			elseif (!empty($body['enable']) && $selected)
+			{
+				$alarmBo->enable($selected, true);
+			}
+			elseif (!empty($body['disable']) && $selected)
+			{
+				$alarmBo->enable($selected, false);
+			}
+			elseif (!empty($body['add']))
+			{
+				$time = max(0, (int)($body['days'] ?? 0)) * \phpgwapi_datetime::SECONDS_IN_DAY
+					+ max(0, (int)($body['hours'] ?? 0)) * \phpgwapi_datetime::SECONDS_IN_HOUR
+					+ max(0, (int)($body['minutes'] ?? 0)) * 60;
+				$owner = (int)($body['owner'] ?? 0);
+				if ($time > 0 && $owner > 0)
+				{
+					$alarmBo->add($event, $time, $owner);
+				}
+			}
+			$event = $calendar->read_entry($id);
+		}
+
+		$html = $this->twig->render('@views/calendar/alarms.twig', [
+			'layout' => '@views/_bare.twig',
+			'event' => $event,
+			'alarms' => (array)($event['alarm'] ?? []),
+			'participants' => (array)$alarmBo->participants($event),
+			'back_url' => \phpgw::link('/calendar/view/event/' . $id),
+			'alarms_url' => \phpgw::link('/calendar/events/' . $id . '/alarms'),
+		]);
+		$response->getBody()->write($this->legacyView->render($html, ['calendar'], 'calendar'));
+		return $response->withHeader('Content-Type', 'text/html');
 	}
 
 	private function saveEvent(Request $request, Response $response, int $id = 0): Response

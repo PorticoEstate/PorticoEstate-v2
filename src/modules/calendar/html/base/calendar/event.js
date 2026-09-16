@@ -116,6 +116,7 @@
 		actions.appendChild(action(config.lang.edit, event.edit_url));
 		actions.appendChild(deleteButton(event));
 		actions.appendChild(action(config.lang.exportEvent, event.export_url));
+		if (event.alarms_url) actions.appendChild(action(config.lang.alarmManagement, event.alarms_url));
 		(event.response_actions || []).forEach(function (item)
 		{
 			actions.appendChild(responseButton(event, item));

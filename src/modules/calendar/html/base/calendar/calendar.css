@@ -175,6 +175,102 @@
 	cursor: pointer;
 }
 
+.calendar-alarm-page {
+	max-width: 900px;
+	margin: 0 auto;
+	padding: 1rem;
+}
+
+.calendar-alarm-page__header {
+	margin: 1.5rem 0 1rem;
+}
+
+.calendar-alarm-page__header h1,
+.calendar-alarm-add h2 {
+	margin: .2rem 0;
+	color: #24292f;
+}
+
+.calendar-alarm-page__header p {
+	margin: .35rem 0 0;
+	color: #57606a;
+}
+
+.calendar-alarm-list,
+.calendar-alarm-add {
+	margin-top: 1rem;
+	padding: 1rem;
+	border: 1px solid #d0d7de;
+	border-radius: 6px;
+	background: #fff;
+}
+
+.calendar-alarm-list__table {
+	display: grid;
+	border: 1px solid #d0d7de;
+}
+
+.calendar-alarm-list__row {
+	display: grid;
+	grid-template-columns: 1.5fr 1fr 1fr .5fr;
+	gap: .75rem;
+	align-items: center;
+	padding: .65rem .75rem;
+	border-top: 1px solid #d8dee4;
+}
+
+.calendar-alarm-list__row:first-child {
+	border-top: 0;
+}
+
+.calendar-alarm-list__row--header {
+	font-weight: 600;
+	background: #f6f8fa;
+}
+
+.calendar-alarm-list__actions,
+.calendar-alarm-add__fields {
+	display: flex;
+	gap: .6rem;
+	flex-wrap: wrap;
+	margin-top: 1rem;
+}
+
+.calendar-alarm-list button,
+.calendar-alarm-add button {
+	padding: .5rem .75rem;
+	border: 1px solid #0969da;
+	border-radius: 4px;
+	background: #0969da;
+	color: #fff;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.calendar-alarm-list button:hover,
+.calendar-alarm-add button:hover,
+.calendar-alarm-list button:focus-visible,
+.calendar-alarm-add button:focus-visible {
+	border-color: #0550ae;
+	background: #0550ae;
+}
+
+.calendar-alarm-add__fields label {
+	display: grid;
+	gap: .3rem;
+	min-width: 130px;
+	font-weight: 600;
+}
+
+.calendar-alarm-add__fields input,
+.calendar-alarm-add__fields select {
+	box-sizing: border-box;
+	width: 100%;
+	padding: .45rem .55rem;
+	border: 1px solid #d0d7de;
+	border-radius: 4px;
+}
+
 .calendar-event-form {
 	max-width: 860px;
 	margin: 0 auto;

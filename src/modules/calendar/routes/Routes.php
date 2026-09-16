@@ -27,6 +27,7 @@ $app->group('/calendar', function (RouteCollectorProxy $group)
     $group->get('/events', CalendarController::class . ':events');
     $group->post('/events', CalendarController::class . ':store');
     $group->get('/events/{id:[0-9]+}/export', CalendarController::class . ':export');
+    $group->map(['GET', 'POST'], '/events/{id:[0-9]+}/alarms', CalendarController::class . ':alarms');
     $group->get('/events/{id:[0-9]+}', CalendarController::class . ':show');
     $group->map(['GET', 'POST'], '/events/{id:[0-9]+}/response', CalendarController::class . ':response');
     $group->put('/events/{id:[0-9]+}', CalendarController::class . ':update');

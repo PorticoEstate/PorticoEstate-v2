@@ -1,4 +1,4 @@
-RJ	S„o Sebasti„o	20	1	0	0	0
-RJ	Dia do ComÈrcio (Categoria)	0	10	3	1	0
-RJ	S„o Jorge	23	4	0	0	0
+RJ	S√£o Sebasti√£o	20	1	0	0	0
+RJ	Dia do Com√©rcio (Categoria)	0	10	3	1	0
+RJ	S√£o Jorge	23	4	0	0	0
 RJ	Zumbi	20	11	0	0	0

@@ -10,7 +10,7 @@
 	<form class="calendar-matrix__filters" method="post">
 		<label>{{ lang('Date') }} <input type="date" name="date" value="{{ matrix.date|slice(0, 4) }}-{{ matrix.date|slice(4, 2) }}-{{ matrix.date|slice(6, 2) }}"></label>
 		<label>{{ lang('Participants') }}
-			<select name="participants[]" multiple size="5">
+			<select id="calendar-matrix-participants" name="participants[]" multiple size="5" data-placeholder="{{ lang('Select participants')|e('html_attr') }}">
 				{% for group in matrix.groups %}<option value="{{ group.id }}"{% if group.id in matrix.selected %} selected{% endif %}>{{ group.name|e }}</option>{% endfor %}
 				{% for user in matrix.users %}<option value="{{ user.id }}"{% if user.id in matrix.selected %} selected{% endif %}>{{ user.name|e }}</option>{% endfor %}
 			</select>
@@ -31,4 +31,21 @@
 		</table>
 	</div>
 </section>
+{% endblock %}
+{% block scripts %}
+<script>
+(function ()
+{
+	'use strict';
+	if (typeof window.jQuery === 'undefined' || typeof window.jQuery.fn.select2 === 'undefined') return;
+	var participants = window.jQuery('#calendar-matrix-participants');
+	if (!participants.length) return;
+	participants.select2({
+		width: '100%',
+		closeOnSelect: false,
+		minimumResultsForSearch: 0,
+		placeholder: participants.data('placeholder') || ''
+	});
+})();
+</script>
 {% endblock %}

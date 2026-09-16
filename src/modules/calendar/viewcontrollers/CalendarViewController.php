@@ -420,6 +420,8 @@ class CalendarViewController
 
 	public function matrix(Request $request, Response $response): Response
 	{
+		\phpgw::import_class('phpgwapi.jquery');
+		\phpgwapi_jquery::load_widget('select2');
 		Settings::getInstance()->update('flags', ['app_header' => lang('Calendar') . ' - ' . lang('Daily Matrix View')]);
 		$matrix = $this->matrixContext($request);
 		$html = $this->twig->render('@views/calendar/matrix.twig', [

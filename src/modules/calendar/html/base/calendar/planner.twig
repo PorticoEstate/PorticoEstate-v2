@@ -7,6 +7,16 @@
 <section class="calendar-planner">
 	<p><a href="{{ calendar_url|raw }}">{{ lang('Back') }}</a></p>
 	<h1>{{ lang('Group Planner') }}</h1>
+	<form class="calendar-planner__filters" method="get">
+		<label for="calendar-planner-group">{{ lang('Group') }}</label>
+		<select id="calendar-planner-group" name="group" onchange="this.form.submit()">
+			{% for group in planner.groups %}
+				<option value="{{ group.id }}"{% if group.id == planner.selected_group %} selected{% endif %}>{{ group.name|e }}</option>
+			{% endfor %}
+		</select>
+		<input type="hidden" name="date" value="{{ planner.date }}">
+		<input type="hidden" name="num_months" value="{{ planner.month_count }}">
+	</form>
 	<nav class="calendar-planner__navigation">
 		<a href="{{ planner.previous_url|raw }}">{{ lang('Previous') }}</a>
 		<span>{{ planner.days[0].month }} - {{ planner.days|last.month }}</span>

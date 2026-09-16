@@ -4,6 +4,10 @@ namespace App\modules\calendar\viewcontrollers;
 
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
+
+use App\modules\phpgwapi\security\Acl;
+
+use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -178,6 +182,18 @@ class CalendarViewController
 		]);
 
 		$owners = $calendar->is_group && $calendar->g_owner ? $calendar->g_owner : [$calendar->owner];
+		$groups = [];
+		$accounts = new Accounts();
+		foreach ((array)Acl::getInstance()->get_ids_for_location('run', 1, 'calendar') as $accountId)
+		{
+			if ($accounts->get_type($accountId) === 'g')
+			{
+				$groups[] = [
+					'id' => (int)$accountId,
+					'name' => (new \phpgwapi_common())->grab_owner_name($accountId),
+				];
+			}
+		}
 		$ownerRows = [];
 		foreach ($owners as $owner)
 		{
@@ -252,6 +268,10 @@ class CalendarViewController
 		return [
 			'days' => $days,
 			'owners' => array_values($ownerRows),
+			'groups' => $groups,
+			'selected_group' => $groupId,
+			'date' => $date,
+			'month_count' => $monthCount,
 			'intervals' => $intervals,
 			'boundaries' => $boundaries,
 			'previous_url' => \phpgw::link('/calendar/view/planner', ['date' => date('Ym01', strtotime('-1 month', $start)), 'num_months' => $monthCount]),

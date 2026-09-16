@@ -3,6 +3,7 @@
 namespace App\modules\calendar\controllers;
 
 use App\helpers\ResponseHelper;
+use App\modules\calendar\services\HolidayLoader;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -68,10 +69,16 @@ class HolidayController
         $searchValue = $queryParams['search'] ?? '';
         $query = is_array($searchValue) ? (string) ($searchValue['value'] ?? '') : (string) $searchValue;
         $items = [];
-        foreach ((array) $holidays->get_locale_list('', 'locale', $query) as $locale)
+        $locales = array_merge(
+            (array)(new HolidayLoader())->availableLocales(),
+            array_map('strtoupper', (array)$holidays->get_locale_list('', 'locale', ''))
+        );
+        $locales = array_values(array_unique($locales));
+        sort($locales);
+        foreach ($locales as $locale)
         {
             $locale = (string) $locale;
-            if ($selectedLocale !== '' && $locale !== $selectedLocale)
+            if (($selectedLocale !== '' && $locale !== $selectedLocale) || ($query !== '' && stripos($locale, $query) === false))
             {
                 continue;
             }

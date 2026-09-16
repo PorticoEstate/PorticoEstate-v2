@@ -14,6 +14,7 @@
 
 	use App\Database\Db;
 	use App\modules\phpgwapi\services\Settings;
+	use App\modules\calendar\services\HolidayLoader;
 
 	class calendar_boholiday
 	{
@@ -242,60 +243,11 @@
 		{
 			if($this->so->holiday_total($locale) == 0)
 			{
-				@set_time_limit(0);
-
-				/* get the file that contains the calendar events for your locale */
-				/* "http://www.phpgroupware.org/cal/holidays.US";                 */
-				$network = CreateObject('phpgwapi.network');
-				if(isset($server_settings['holidays_url_path']) && $server_settings['holidays_url_path'] != 'localhost')
+				$loader = new HolidayLoader();
+				foreach ($loader->load($locale) as $holiday)
 				{
-					$load_from = $server_settings['holidays_url_path'];
-				}
-				else
-				{
-					$pos = strpos(' ' . ($server_settings['webserver_url'] ?? ''), $GLOBALS['HTTP_HOST']);
-					if($pos == 0)
-					{
-						switch($GLOBALS['SERVER_PORT'])
-						{
-							case 80:
-								$http_protocol = 'http://';
-								break;
-							case 443:
-								$http_protocol = 'https://';
-								break;
-						}
-						$server_host = $http_protocol.$GLOBALS['HTTP_HOST'].($server_settings['webserver_url'] ?? '');
-					}
-					else
-					{
-						$server_host = $server_settings['webserver_url'] ?? '';
-					}
-					$load_from = $server_host.'/calendar/phpgroupware.org';
-				}
-//				echo 'Loading from: '.$load_from.'/holidays.'.strtoupper($locale).".txt<br />\n";
-				$lines = $network->gethttpsocketfile($load_from.'/holidays.'.strtoupper($locale).'.txt');
-				if (!$lines)
-				{
-					return false;
-				}
-				$c_lines = count($lines);
-				for($i=0;$i<$c_lines;$i++)
-				{
-//					echo 'Line #'.$i.' : '.$lines[$i]."<br />\n";
-					$holiday = explode("\t",$lines[$i]);
-					if(count($holiday) == 7)
-					{
-						$holiday['locale'] = $holiday[0];
-						$holiday['name'] = Db::getInstance()->db_addslashes($holiday[1]);
-						$holiday['mday'] = intval($holiday[2]);
-						$holiday['month_num'] = intval($holiday[3]);
-						$holiday['occurence'] = intval($holiday[4]);
-						$holiday['dow'] = intval($holiday[5]);
-						$holiday['observance_rule'] = intval($holiday[6]);
-						$holiday['hol_id'] = 0;
-						$this->so->save_holiday($holiday);
-					}
+					$holiday['name'] = Db::getInstance()->db_addslashes($holiday['name']);
+					$this->so->save_holiday($holiday);
 				}
 			}
 		}

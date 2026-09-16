@@ -38,6 +38,7 @@ $app->group('/calendar', function (RouteCollectorProxy $group)
     {
         $view->get('', HolidayViewController::class . ':index');
         $view->get('/new', HolidayViewController::class . ':edit');
+        $view->get('/{locale:[A-Za-z]{2}}/import', HolidayViewController::class . ':import');
         $view->get('/{locale:[A-Za-z]{2}}', HolidayViewController::class . ':holidays');
         $view->get('/{locale:[A-Za-z]{2}}/new', HolidayViewController::class . ':edit');
         $view->get('/{locale:[A-Za-z]{2}}/{id:[0-9]+}/edit', HolidayViewController::class . ':edit');

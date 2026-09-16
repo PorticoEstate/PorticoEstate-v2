@@ -4,6 +4,7 @@ namespace App\modules\calendar\viewcontrollers;
 
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
+use App\modules\calendar\services\HolidayLoader;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -31,19 +32,45 @@ class HolidayViewController
     {
         $holidays = \CreateObject('calendar.boholiday');
         $holidays->check_admin();
-        $locales = [];
+        $locales = (new HolidayLoader())->availableLocales();
         foreach ((array) $holidays->get_locale_list('', 'locale', '') as $locale)
         {
-            $locales[] = (string) $locale;
+            $locales[] = strtoupper((string) $locale);
         }
+        $locales = array_values(array_unique($locales));
+        sort($locales);
 
         return $this->render($request, $response, '@views/holiday/holiday_locales.twig', [
             'api_url' => \phpgw::link('/calendar/holidays/locales'),
             'holiday_url_template' => \phpgw::link('/calendar/view/holidays/{locale}'),
             'delete_url_template' => \phpgw::link('/calendar/holidays/locale/{locale}'),
+            'import_url_template' => \phpgw::link('/calendar/view/holidays/{locale}/import'),
             'new_url' => \phpgw::link('/calendar/view/holidays/new'),
             'locales' => $locales,
         ]);
+    }
+
+    public function import(Request $request, Response $response, array $args): Response
+    {
+        $locale = strtoupper((string)($args['locale'] ?? ''));
+        if (!preg_match('/^[A-Z]{2}$/', $locale))
+        {
+            return $response->withStatus(404);
+        }
+
+        $holidays = \CreateObject('calendar.boholiday');
+        $holidays->check_admin();
+        if ($holidays->so->holiday_total($locale) === 0)
+        {
+            foreach ((new HolidayLoader())->load($locale) as $holiday)
+            {
+                $holidays->save_holiday($holiday);
+            }
+        }
+
+        return $response
+            ->withHeader('Location', \phpgw::link('/calendar/view/holidays/' . $locale))
+            ->withStatus(303);
     }
 
     public function holidays(Request $request, Response $response, array $args): Response

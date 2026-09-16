@@ -24,6 +24,7 @@
 		],
 		rowActions: [
 			{ type: 'link', label: config.lang.view, url: config.viewUrl },
+			{ type: 'link', label: config.lang.import, url: config.importUrl },
 			{ type: 'delete', label: config.lang.delete, url: config.deleteUrl, confirm: config.lang.confirm }
 		],
 		rowActionsDisplay: 'contextMenu',

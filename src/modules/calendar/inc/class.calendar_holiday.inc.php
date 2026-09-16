@@ -1,18 +1,20 @@
 <?php
-  /**************************************************************************\
-  * phpGroupWare - Calendar Holidays                                         *
-  * http://www.phpgroupware.org                                              *
-  * Written by Mark Peters <skeeter@phpgroupware.org>                        *
-  * --------------------------------------------                             *
-  *  This program is free software; you can redistribute it and/or modify it *
-  *  under the terms of the GNU General Public License as published by the   *
-  *  Free Software Foundation; either version 2 of the License, or (at your  *
-  *  option) any later version.                                              *
+
+/**************************************************************************\
+ * phpGroupWare - Calendar Holidays                                         *
+ * http://www.phpgroupware.org                                              *
+ * Written by Mark Peters <skeeter@phpgroupware.org>                        *
+ * --------------------------------------------                             *
+ *  This program is free software; you can redistribute it and/or modify it *
+ *  under the terms of the GNU General Public License as published by the   *
+ *  Free Software Foundation; either version 2 of the License, or (at your  *
+ *  option) any later version.                                              *
   \**************************************************************************/
 
-	/* $Id$ */
+/* $Id$ */
 
 use App\Database\Db;
+use App\modules\calendar\services\HolidayLoader;
 use App\modules\phpgwapi\services\Settings;
 
 class calendar_holiday
@@ -20,32 +22,34 @@ class calendar_holiday
 	var $db;
 	var $year;
 	var $tz_offset;
-	var $holidays = Array();
-	var $index = Array();
-	var $users = Array();
+	var $holidays = array();
+	var $index = array();
+	var $users = array();
 
-	public function __construct($owner='')
+	public function __construct($owner = '')
 	{
 		$this->db = Db::getInstance();
 		$user_settings = Settings::getInstance()->get('user');
 		$server_settings = Settings::getInstance()->get('server');
 		$user_settings = is_array($user_settings) ? $user_settings : array();
 		$server_settings = is_array($server_settings) ? $server_settings : array();
-		if ( isset($user_settings['preferences']['common']['country'])
-			&& $user_settings['preferences']['common']['country'] )
+		if (
+			isset($user_settings['preferences']['common']['country'])
+			&& $user_settings['preferences']['common']['country']
+		)
 		{
 			$this->users['user'] = $user_settings['preferences']['common']['country'];
 		}
 		else
 		{
 			$this->users['user'] = 'US';
-		}		
+		}
 		$owner_id = get_account_id($owner);
-		if($owner_id != ($user_settings['account_id'] ?? 0))
+		if ($owner_id != ($user_settings['account_id'] ?? 0))
 		{
-			$owner_pref = CreateObject('phpgwapi.preferences',$owner_id);
+			$owner_pref = CreateObject('phpgwapi.preferences', $owner_id);
 			$owner_prefs = $owner_pref->read();
-			if(isset($owner_prefs['calendar']['locale']) && $owner_prefs['common']['country'])
+			if (isset($owner_prefs['calendar']['locale']) && $owner_prefs['common']['country'])
 			{
 				$this->users['owner'] = $owner_prefs['common']['country'];
 			}
@@ -53,28 +57,27 @@ class calendar_holiday
 			{
 				$this->users['owner'] = 'US';
 			}
-				
 		}
-		if(($server_settings['auto_load_holidays'] ?? false) == True)
+		if (($server_settings['auto_load_holidays'] ?? false) == True)
 		{
 			//while(list($key,$value) = each($this->users))
-                        if (is_array($this->users))
-                        {
-                            foreach($this->users as $key => $value)
+			if (is_array($this->users))
 			{
-				$this->is_network_load_needed($value);
+				foreach ($this->users as $key => $value)
+				{
+					$this->is_network_load_needed($value);
+				}
 			}
 		}
-	}
 	}
 
 	function is_network_load_needed($locale)
 	{
-		$sql = "SELECT count(*) as cnt FROM phpgw_cal_holidays WHERE locale='".$locale."'";
-		$this->db->query($sql,__LINE__,__FILE__);
+		$sql = "SELECT count(*) as cnt FROM phpgw_cal_holidays WHERE locale='" . $locale . "'";
+		$this->db->query($sql, __LINE__, __FILE__);
 		$this->db->next_record();
 		$rows = $this->db->f('cnt');
-		if($rows==0)
+		if ($rows == 0)
 		{
 			$this->load_from_network($locale);
 		}
@@ -82,89 +85,38 @@ class calendar_holiday
 
 	function save_holiday($holiday)
 	{
-		if(isset($holiday['hol_id']) && $holiday['hol_id'])
+		if (isset($holiday['hol_id']) && $holiday['hol_id'])
 		{
-//			echo "Updating LOCALE='".$holiday['locale']."' NAME='".$holiday['name']."' extra=(".$holiday['mday'].'/'.$holiday['month_num'].'/'.$holiday['occurence'].'/'.$holiday['dow'].'/'.$holiday['observance_rule'].")<br />\n";
-			$sql = "UPDATE phpgw_cal_holidays SET name='".$holiday['name']."', mday=".$holiday['mday'].', month_num='.$holiday['month_num'].', occurence='.$holiday['occurence'].', dow='.$holiday['dow'].', observance_rule='.intval($holiday['observance_rule']).' WHERE hol_id='.$holiday['hol_id'];
+			//			echo "Updating LOCALE='".$holiday['locale']."' NAME='".$holiday['name']."' extra=(".$holiday['mday'].'/'.$holiday['month_num'].'/'.$holiday['occurence'].'/'.$holiday['dow'].'/'.$holiday['observance_rule'].")<br />\n";
+			$sql = "UPDATE phpgw_cal_holidays SET name='" . $holiday['name'] . "', mday=" . $holiday['mday'] . ', month_num=' . $holiday['month_num'] . ', occurence=' . $holiday['occurence'] . ', dow=' . $holiday['dow'] . ', observance_rule=' . intval($holiday['observance_rule']) . ' WHERE hol_id=' . $holiday['hol_id'];
 		}
 		else
 		{
-//			echo "Inserting LOCALE='".$holiday['locale']."' NAME='".$holiday['name']."' extra=(".$holiday['mday'].'/'.$holiday['month_num'].'/'.$holiday['occurence'].'/'.$holiday['dow'].'/'.$holiday['observance_rule'].")<br />\n";
+			//			echo "Inserting LOCALE='".$holiday['locale']."' NAME='".$holiday['name']."' extra=(".$holiday['mday'].'/'.$holiday['month_num'].'/'.$holiday['occurence'].'/'.$holiday['dow'].'/'.$holiday['observance_rule'].")<br />\n";
 			$sql = 'INSERT INTO phpgw_cal_holidays(locale,name,mday,month_num,occurence,dow,observance_rule) '
-					. "VALUES('".strtoupper($holiday['locale'])."','".$holiday['name']."',".$holiday['mday'].','.$holiday['month_num'].','.$holiday['occurence'].','.$holiday['dow'].','.intval($holiday['observance_rule']).")";
+				. "VALUES('" . strtoupper($holiday['locale']) . "','" . $holiday['name'] . "'," . $holiday['mday'] . ',' . $holiday['month_num'] . ',' . $holiday['occurence'] . ',' . $holiday['dow'] . ',' . intval($holiday['observance_rule']) . ")";
 		}
-		$this->db->query($sql,__LINE__,__FILE__);
+		$this->db->query($sql, __LINE__, __FILE__);
 	}
 
 	function delete_holiday($id)
 	{
-		$sql = 'DELETE FROM phpgw_cal_holidays WHERE hol_id='.$id;
-		$this->db->query($sql,__LINE__,__FILE__);
+		$sql = 'DELETE FROM phpgw_cal_holidays WHERE hol_id=' . $id;
+		$this->db->query($sql, __LINE__, __FILE__);
 	}
 
 	function delete_locale($locale)
 	{
-		$sql = "DELETE FROM phpgw_cal_holidays WHERE locale='".$locale."'";
-		$this->db->query($sql,__LINE__,__FILE__);
+		$sql = "DELETE FROM phpgw_cal_holidays WHERE locale='" . $locale . "'";
+		$this->db->query($sql, __LINE__, __FILE__);
 	}
 
 	function load_from_network($locale)
 	{
-		$server_settings = Settings::getInstance()->get('server');
-		$server_settings = is_array($server_settings) ? $server_settings : array();
-		global $HTTP_HOST, $SERVER_PORT;
-		
-		@set_time_limit(0);
-
-		// get the file that contains the calendar events for your locale
-		// "http://www.phpgroupware.org/headlines.rdf";
-		$network = CreateObject('phpgwapi.network');
-		if(isset($server_settings['holidays_url_path']) && $server_settings['holidays_url_path'] != 'localhost')
+		foreach ((new HolidayLoader())->load($locale) as $holiday)
 		{
-			$load_from = $server_settings['holidays_url_path'];
-		}
-		else
-		{
-			$pos = strpos(' '.($server_settings['webserver_url'] ?? ''),$HTTP_HOST);
-			if($pos == 0)
-			{
-				switch($SERVER_PORT)
-				{
-					case 80:
-						$http_protocol = 'http://';
-						break;
-					case 443:
-						$http_protocol = 'https://';
-						break;
-				}
-				$server_host = $http_protocol.$HTTP_HOST.($server_settings['webserver_url'] ?? '');
-			}
-			else
-			{
-				$server_host = $server_settings['webserver_url'] ?? '';
-			}
-			$load_from = $server_host.'/calendar/setup';
-		}
-//		echo 'Loading from: '.$load_from.'/holidays.'.strtoupper($locale)."<br />\n";
-		$lines = $network->gethttpsocketfile($load_from.'/holidays.'.strtoupper($locale));
-		if (!$lines) return false;
-		$c_lines = count($lines);
-		for($i=0;$i<$c_lines;$i++)
-		{
-//			echo 'Line #'.$i.' : '.$lines[$i]."<br />\n";
-			$holiday = explode("\t",$lines[$i]);
-			if(count($holiday) == 7)
-			{
-				$holiday['locale'] = $holiday[0];
-				$holiday['name'] = addslashes($holiday[1]);
-				$holiday['mday'] = intval($holiday[2]);
-				$holiday['month_num'] = intval($holiday[3]);
-				$holiday['occurence'] = intval($holiday[4]);
-				$holiday['dow'] = intval($holiday[5]);
-				$holiday['observance_rule'] = intval($holiday[6]);
-				$holiday['hol_id'] = 0;
-				$this->save_holiday($holiday);
-			}
+			$holiday['name'] = addslashes($holiday['name']);
+			$this->save_holiday($holiday);
 		}
 	}
 
@@ -174,17 +126,18 @@ class calendar_holiday
 		$user_settings = is_array($user_settings) ? $user_settings : array();
 
 		$this->year = intval($this->year);
-		
+
 		$sql = $this->build_holiday_query();
-		if($sql == False)
-		{	return False;
+		if ($sql == False)
+		{
+			return False;
 		}
 		$this->holidays = Null;
-		$this->db->query($sql,__LINE__,__FILE__);
+		$this->db->query($sql, __LINE__, __FILE__);
 
 		$i = 0;
 		$temp_locale = $user_settings['preferences']['common']['country'] ?? 'US';
-		while($this->db->next_record())
+		while ($this->db->next_record())
 		{
 			$this->index[$this->db->f('hol_id')] = $i;
 			$this->holidays[$i]['locale'] = $this->db->f('locale');
@@ -194,9 +147,9 @@ class calendar_holiday
 			$this->holidays[$i]['occurence'] = intval($this->db->f('occurence'));
 			$this->holidays[$i]['dow'] = intval($this->db->f('dow'));
 			$this->holidays[$i]['observance_rule'] = $this->db->f('observance_rule');
-			if(count($this->users) == 2 && $this->users[0] != $this->users[1])
+			if (count($this->users) == 2 && $this->users[0] != $this->users[1])
 			{
-				if($this->holidays[$i]['locale'] == $this->users[1])
+				if ($this->holidays[$i]['locale'] == $this->users[1])
 				{
 					$this->holidays[$i]['owner'] = 'user';
 				}
@@ -207,14 +160,14 @@ class calendar_holiday
 			}
 			else
 			{
-				$this->holidays[$i]['owner'] = 'user';		
+				$this->holidays[$i]['owner'] = 'user';
 			}
 			$c = $i;
 			Settings::getInstance()->update('user', array('preferences' => array('common' => array('country' => $this->holidays[$i]['locale']))));
 			$holidaycalc = CreateObject('calendar.holidaycalc');
 			$this->holidays[$i]['date'] = $holidaycalc->calculate_date($this->holidays[$i], $this->holidays, $this->year, $c);
 			unset($holidaycalc);
-			if($c != $i)
+			if ($c != $i)
 			{
 				$i = $c;
 			}
@@ -228,8 +181,8 @@ class calendar_holiday
 	function build_list_for_submission($locale)
 	{
 		$i = -1;
-		$this->db->query("SELECT * FROM phpgw_cal_holidays WHERE locale='".$locale."'");
-		while($this->db->next_record())
+		$this->db->query("SELECT * FROM phpgw_cal_holidays WHERE locale='" . $locale . "'");
+		while ($this->db->next_record())
 		{
 			$i++;
 			$holidays[$i]['locale'] = $this->db->f('locale');
@@ -245,7 +198,7 @@ class calendar_holiday
 
 	function build_holiday_query()
 	{
-		if(!isset($this->users) || count($this->users) == 0)
+		if (!isset($this->users) || count($this->users) == 0)
 		{
 			return False;
 		}
@@ -253,18 +206,18 @@ class calendar_holiday
 		$find_it = '';
 		reset($this->users);
 		//while(list($key,$value) = each($this->users))
-                if (is_array($this->users))
-                {
-                    foreach($this->users as $key => $value)
+		if (is_array($this->users))
 		{
-			if($find_it)
+			foreach ($this->users as $key => $value)
 			{
-				$find_it .= ',';
+				if ($find_it)
+				{
+					$find_it .= ',';
+				}
+				$find_it .= "'" . $value . "'";
 			}
-			$find_it .= "'".$value."'";
 		}
-                }
-		$sql .= $find_it.')';
+		$sql .= $find_it . ')';
 
 		return $sql;
 	}
@@ -272,13 +225,13 @@ class calendar_holiday
 	function sort_by_date($holidays)
 	{
 		$c_holidays = count($holidays);
-		for($outer_loop=0;$outer_loop<($c_holidays - 1);$outer_loop++)
+		for ($outer_loop = 0; $outer_loop < ($c_holidays - 1); $outer_loop++)
 		{
 			$outer_date = $holidays[$outer_loop]['date'];
-			for($inner_loop=$outer_loop;$inner_loop<$c_holidays;$inner_loop++)
+			for ($inner_loop = $outer_loop; $inner_loop < $c_holidays; $inner_loop++)
 			{
 				$inner_date = $holidays[$inner_loop]['date'];
-				if($outer_date > $inner_date)
+				if ($outer_date > $inner_date)
 				{
 					$temp = $holidays[$inner_loop];
 					$holidays[$inner_loop] = $holidays[$outer_loop];
@@ -288,28 +241,28 @@ class calendar_holiday
 		}
 		return $holidays;
 	}
-	
+
 	function find_date($date)
 	{
-		if($this->holidays == Null)
+		if ($this->holidays == Null)
 		{
 			return False;
 		}
-		
+
 		$c_holidays = count($this->holidays);
-		for($i=0;$i<$c_holidays;$i++)
+		for ($i = 0; $i < $c_holidays; $i++)
 		{
-			if($this->holidays[$i]['date'] > $date)
+			if ($this->holidays[$i]['date'] > $date)
 			{
 				$i = $c_holidays + 1;
 			}
-			elseif($this->holidays[$i]['date'] == $date)
+			elseif ($this->holidays[$i]['date'] == $date)
 			{
 				$return_value[] = $i;
 			}
 		}
-//		echo 'Searching for '.$phpgw->common->show_date($date).'  Found = '.count($return_value)."<br />\n";
-		if(isset($return_value))
+		//		echo 'Searching for '.$phpgw->common->show_date($date).'  Found = '.count($return_value)."<br />\n";
+		if (isset($return_value))
 		{
 			return $return_value;
 		}

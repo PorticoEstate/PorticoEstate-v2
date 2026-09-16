@@ -309,11 +309,56 @@
 }
 
 .calendar-planner__table {
+	position: relative;
 	overflow: auto;
 	max-width: 100%;
 	border: 1px solid #d0d7de;
 	border-radius: 6px;
 	background: #d0d7de;
+	overscroll-behavior-x: contain;
+	scroll-behavior: smooth;
+	touch-action: pan-x pan-y;
+	cursor: grab;
+}
+
+.calendar-planner__table:active {
+	cursor: grabbing;
+}
+
+.calendar-planner__table--dragging {
+	cursor: grabbing;
+	user-select: none;
+}
+
+.calendar-planner__table::after {
+	position: absolute;
+	display: block;
+	right: 0;
+	top: 0;
+	width: 1.25rem;
+	height: 100%;
+	background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(36, 41, 47, .12));
+	content: '';
+	pointer-events: none;
+}
+
+.calendar-planner__table::-webkit-scrollbar {
+	height: .75rem;
+}
+
+.calendar-planner__table::-webkit-scrollbar-track {
+	background: #f6f8fa;
+}
+
+.calendar-planner__table::-webkit-scrollbar-thumb {
+	border: 2px solid #f6f8fa;
+	border-radius: 999px;
+	background: #8c959f;
+}
+
+.calendar-planner__table {
+	scrollbar-color: #8c959f #f6f8fa;
+	scrollbar-width: auto;
 }
 
 .calendar-planner__table table {
@@ -359,6 +404,7 @@
 .calendar-planner__table thead th:first-child {
 	z-index: 4;
 	background: #f6f8fa;
+	box-shadow: 3px 0 8px rgba(36, 41, 47, .12);
 }
 
 .calendar-planner__table tbody tr:nth-child(even) td,
@@ -426,5 +472,9 @@
 		order: -1;
 		width: 100%;
 		text-align: center;
+	}
+
+	.calendar-planner__table {
+		-webkit-overflow-scrolling: touch;
 	}
 }

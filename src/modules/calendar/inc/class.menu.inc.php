@@ -94,7 +94,7 @@ class calendar_menu
 			),
 			array(
 				'text'	=> $translation->translate('Group Planner', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.planner')),
+				'url'	=> phpgw::link('/calendar/view/planner'),
 				'image'	=> array('calendar', 'planner')
 			),
 			array(
@@ -185,7 +185,7 @@ class calendar_menu
 					),
 					array(
 						'text'	=> $translation->translate('Group Planner', array(), true),
-						'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.planner'))
+						'url'	=> phpgw::link('/calendar/view/planner')
 					),
 					array(
 						'text'	=> $translation->translate('Daily Matrix View', array(), true),

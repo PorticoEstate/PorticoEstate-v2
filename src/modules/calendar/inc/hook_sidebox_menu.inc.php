@@ -40,7 +40,7 @@
 				'url' => phpgw::link('/calendar/view/year')),
 			array('text'  => '_NewLine_'), // give a newline
 			array('text'  => 'Group Planner',
-				'url' => phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.planner'))),
+				'url' => phpgw::link('/calendar/view/planner')),
 			array('text'  => 'Daily Matrix View',
 				'url' => phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.matrixselect'))),
 			array('text'  => 'Import',

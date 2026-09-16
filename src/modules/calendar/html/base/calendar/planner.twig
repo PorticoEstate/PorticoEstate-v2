@@ -1,0 +1,38 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ lang('Group Planner') }}{% endblock %}
+{% block styles %}
+{{ add_style(modules_url ~ '/calendar/html/base/calendar/calendar.css') }}
+{% endblock %}
+{% block content %}
+<section class="calendar-planner">
+	<p><a href="{{ calendar_url|raw }}">{{ lang('Back') }}</a></p>
+	<h1>{{ lang('Group Planner') }}</h1>
+	<nav class="calendar-planner__navigation">
+		<a href="{{ planner.previous_url|raw }}">{{ lang('Previous') }}</a>
+		<span>{{ planner.days[0].month }} - {{ planner.days|last.month }}</span>
+		<a href="{{ planner.next_url|raw }}">{{ lang('Next') }}</a>
+	</nav>
+	<div class="calendar-planner__table">
+		<table>
+			<thead>
+				<tr>
+					<th>{{ lang('User') }}</th>
+					{% for day in planner.days %}<th colspan="{{ planner.intervals }}">{{ day.label }}<br>{{ day.month }}</th>{% endfor %}
+				</tr>
+			</thead>
+			<tbody>
+				{% for owner in planner.owners %}
+					<tr>
+						<th>{{ owner.name|e }}</th>
+						{% for day in planner.days %}
+							{% for slot in 0..(planner.intervals - 1) %}
+								<td>{% for event in owner.cells[day.key][slot] %}<a href="{{ event.url|raw }}">{{ event.title|e }}</a>{% endfor %}</td>
+							{% endfor %}
+						{% endfor %}
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+</section>
+{% endblock %}

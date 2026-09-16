@@ -139,6 +139,126 @@ class CalendarViewController
 		];
 	}
 
+	private function plannerContext(Request $request): array
+	{
+		$query = $request->getQueryParams();
+		$date = preg_replace('/[^0-9]/', '', (string)($query['date'] ?? date('Ymd')));
+		if (strlen($date) !== 8)
+		{
+			$date = date('Ymd');
+		}
+
+		$calendar = \CreateObject('calendar.bocalendar', 1);
+		$groupId = (int)($query['group'] ?? $calendar->prefs['calendar']['planner_start_with_group'] ?? 0);
+		if ($groupId > 0 && empty($query['owner']))
+		{
+			$calendar->set_owner_to_group($groupId);
+		}
+
+		$monthCount = max(1, min(6, (int)($query['num_months'] ?? $calendar->num_months ?? 1)));
+		$start = mktime(0, 0, 0, (int)substr($date, 4, 2), 1, (int)substr($date, 0, 4));
+		$end = mktime(0, 0, 0, (int)date('n', $start) + $monthCount, 0, (int)date('Y', $start));
+		$days = [];
+		for ($day = $start; $day <= $end; $day = strtotime('+1 day', $day))
+		{
+			$days[] = [
+				'key' => date('Ymd', $day),
+				'label' => date('D j', $day),
+				'month' => date('M Y', $day),
+			];
+		}
+
+		$calendar->store_to_cache([
+			'syear' => date('Y', $start),
+			'smonth' => date('n', $start),
+			'sday' => 1,
+			'eyear' => date('Y', $end),
+			'emonth' => date('n', $end),
+			'eday' => date('j', $end),
+		]);
+
+		$owners = $calendar->is_group && $calendar->g_owner ? $calendar->g_owner : [$calendar->owner];
+		$ownerRows = [];
+		foreach ($owners as $owner)
+		{
+			if ($calendar->check_perms(\ACL_READ, 0, $owner))
+			{
+				$ownerRows[(int)$owner] = [
+					'id' => (int)$owner,
+					'name' => $calendar->contacts->get_name_of_person_id($owner),
+					'cells' => [],
+				];
+			}
+		}
+
+		$intervals = max(1, min(4, (int)($calendar->prefs['calendar']['planner_intervals_per_day'] ?? 4)));
+		$boundaries = [0, 12, 18, 24];
+		if ($intervals === 1)
+		{
+			$boundaries = [0, 24];
+		}
+		elseif ($intervals === 2)
+		{
+			$boundaries = [0, 12, 24];
+		}
+		elseif ($intervals === 4)
+		{
+			$boundaries = [0, 7, 12, 18, 24];
+		}
+
+		foreach ($days as $day)
+		{
+			$dayStart = strtotime(substr($day['key'], 0, 4) . '-' . substr($day['key'], 4, 2) . '-' . substr($day['key'], 6, 2));
+			foreach ($ownerRows as &$row)
+			{
+				for ($slot = 0; $slot < $intervals; $slot++)
+				{
+					$row['cells'][$day['key']][$slot] = [];
+				}
+			}
+			unset($row);
+
+			foreach ((array)($calendar->cached_events[$day['key']] ?? []) as $event)
+			{
+				if (!$calendar->check_perms(\ACL_READ, $event) || $calendar->rejected_no_show($event))
+				{
+					continue;
+				}
+				$eventStart = $calendar->maketime($event['start']);
+				$eventEnd = $calendar->maketime($event['end']);
+				foreach ((array)($event['participants'] ?? []) as $owner => $status)
+				{
+					$owner = (int)$owner;
+					if (!isset($ownerRows[$owner]) || $status === 'R')
+					{
+						continue;
+					}
+					for ($slot = 0; $slot < $intervals; $slot++)
+					{
+						$slotStart = $dayStart + ($boundaries[$slot] * 3600);
+						$slotEnd = $dayStart + ($boundaries[$slot + 1] * 3600);
+						if ($eventStart < $slotEnd && $eventEnd > $slotStart)
+						{
+							$ownerRows[$owner]['cells'][$day['key']][$slot][] = [
+								'title' => (string)($event['title'] ?? lang('private')),
+								'url' => \phpgw::link('/calendar/view/event/' . (int)$event['id'], ['date' => $day['key']]),
+							];
+						}
+					}
+				}
+			}
+		}
+
+		return [
+			'days' => $days,
+			'owners' => array_values($ownerRows),
+			'intervals' => $intervals,
+			'boundaries' => $boundaries,
+			'previous_url' => \phpgw::link('/calendar/view/planner', ['date' => date('Ym01', strtotime('-1 month', $start)), 'num_months' => $monthCount]),
+			'next_url' => \phpgw::link('/calendar/view/planner', ['date' => date('Ym01', strtotime('+' . $monthCount . ' months', $start)), 'num_months' => $monthCount]),
+		];
+	}
+
 	public function index(Request $request, Response $response, array $args = []): Response
 	{
 		$view = $this->resolveView($request, $args);
@@ -159,6 +279,21 @@ class CalendarViewController
 				'year' => \phpgw::link('/calendar/view/year'),
 				'add' => \phpgw::link('/calendar/view/event/new'),
 			],
+		]);
+
+		$response->getBody()->write($this->legacyView->render($html, ['calendar'], 'calendar'));
+		return $response->withHeader('Content-Type', 'text/html');
+	}
+
+	public function planner(Request $request, Response $response): Response
+	{
+		Settings::getInstance()->update('flags', ['app_header' => lang('Calendar') . ' - ' . lang('Group Planner')]);
+		$planner = $this->plannerContext($request);
+
+		$html = $this->twig->render('@views/calendar/planner.twig', [
+			'layout' => '@views/_bare.twig',
+			'planner' => $planner,
+			'calendar_url' => \phpgw::link('/calendar'),
 		]);
 
 		$response->getBody()->write($this->legacyView->render($html, ['calendar'], 'calendar'));

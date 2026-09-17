@@ -956,23 +956,17 @@
 		));
 		
 		//$GLOBALS['phpgw'] = createObject('phpgwapi.phpgw');
-		$GLOBALS['phpgw']->db =& $GLOBALS['phpgw_setup']->db;
-		$GLOBALS['phpgw']->common = createObject('phpgwapi.common');
-		
-		if ( !is_object($GLOBALS['phpgw']->accounts) )
-		{
-			$GLOBALS['phpgw']->accounts = createObject('phpgwapi.accounts');
-		}
+		$accounts = new \App\modules\phpgwapi\controllers\Accounts\Accounts();
 		
 		// Check that the mapping exists - if not create it or else it will fsck up
-		$GLOBALS['phpgw']->accounts->sync_accounts_contacts();
+		$accounts->sync_accounts_contacts();
 
 		// Each account should have a contact record
-		$acct_contacts = $GLOBALS['phpgw']->accounts->get_account_with_contact();
+		$acct_contacts = $accounts->get_account_with_contact();
 
 		$owner_map = array();
 		$GLOBALS['phpgw_setup']->db->query('SELECT cal_id, owner FROM phpgw_cal', __LINE__, __FILE__);
-		while ( $GLOBALS['phpgw']->db->next_record() )
+		while ( $GLOBALS['phpgw_setup']->db->next_record() )
 		{
 			$owner_map[$GLOBALS['phpgw_setup']->db->f('cal_id')] = $GLOBALS['phpgw_setup']->db->f('owner');
 		}

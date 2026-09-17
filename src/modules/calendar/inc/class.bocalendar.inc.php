@@ -17,6 +17,7 @@
 
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\services\Preferences;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\services\Cache;
 
@@ -143,12 +144,12 @@ class calendar_bocalendar
 	var $sortby;
 	var $num_months;
 
-	var $save_owner;
 	var $return_to;
 
 	protected $_jscal;
 
 	protected $phpgwapi_common, $userSettings, $accounts_obj;
+	protected $preferences, $send;
 
 	var $grants, $cat, $bo, $rpt_day, $rpt_type, $user, $fields, $custom_fields, $stock_fields;
 
@@ -160,6 +161,7 @@ class calendar_bocalendar
 		$this->phpgwapi_common = new \phpgwapi_common();
 		$this->userSettings = Settings::getInstance()->get('user');
 		$this->accounts_obj = new Accounts();
+		$this->preferences = Preferences::getInstance();
 
 		if (DEBUG_APP)
 		{
@@ -194,43 +196,6 @@ class calendar_bocalendar
 		{
 			$owner = $this->contacts->is_contact($this->userSettings['account_id']);
 		}
-		//_debug_array($owner);
-		$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
-		preg_match('/menuaction=([a-zA-Z.]+)/', $referer, $regs);
-		$from = $regs[1];
-		if ((substr($_SERVER['REDIRECT_URL'], -5) == 'home/' && substr($this->prefs['calendar']['defaultcalendar'], 0, 7) == 'planner'
-				|| (isset($GLOBALS['phpgw_info']['menuaction']) && $GLOBALS['phpgw_info']['menuaction'] == 'calendar.uicalendar.planner')
-				&& $from  != 'calendar.uicalendar.planner' && !$this->save_owner)
-			&& intval($this->prefs['calendar']['planner_start_with_group']) > 0
-		)
-		{
-			// entering planner for the first time ==> saving owner in save_owner, setting owner to default
-			//
-			//			$this->save_owner = $this->owner;
-			//			$owner = 'g_'.$this->prefs['calendar']['planner_start_with_group'];
-
-			$owner = 'g_' . $this->prefs['calendar']['planner_start_with_group'];
-			$this->owner = $owner;
-			$this->save_owner = $this->owner;
-		}
-		else if (
-			isset($GLOBALS['phpgw_info']['menuaction'])
-			&& $GLOBALS['phpgw_info']['menuaction'] != 'calendar.uicalendar.planner'
-			&& $this->save_owner
-		)
-		{
-			// leaving planner with an unchanged user/owner ==> setting owner back to save_owner
-			//
-			$owner = Sanitizer::get_var('owner', 'int', 'GET', $this->save_owner);
-			unset($this->save_owner);
-		}
-		elseif (!empty($owner) && $owner != $this->owner && $from == 'calendar.uicalendar.planner')
-		{
-			// user/owner changed within planner ==> forgetting save_owner
-			//
-			unset($this->save_owner);
-		}
-
 		if (isset($owner) && $owner != '' && substr($owner, 0, 2) == 'g_')
 		{
 			$this->set_owner_to_group(substr($owner, 2));
@@ -497,7 +462,6 @@ class calendar_bocalendar
 					'filter'     => $this->filter,
 					'cat_id'     => $this->cat_id,
 					'owner'      => $this->owner,
-					'save_owner' => isset($this->save_owner) ? $this->save_owner : '',
 					'year'       => $this->year,
 					'month'      => $this->month,
 					'day'        => $this->day,
@@ -527,7 +491,6 @@ class calendar_bocalendar
 	function read_sessiondata()
 	{
 		$data = Cache::session_get('calendar', 'session_data');
-		print_debug('Read', _debug_array($data, False));
 		// no data is returned as an empty string
 		if (!$data)
 		{
@@ -538,7 +501,6 @@ class calendar_bocalendar
 		$this->cat_id = $data['cat_id'];
 		$this->sortby = isset($data['sortby']) && $data['sortby'] ? $data['sortby'] : '';
 		$this->owner  = (int) $data['owner'];
-		$this->save_owner = isset($data['save_owner']) ? (int) $data['save_owner'] : 0;
 		$this->year   = (int) $data['year'];
 		$this->month  = (int) $data['month'];
 		$this->day    = (int) $data['day'];
@@ -613,7 +575,7 @@ class calendar_bocalendar
 		return $cd;
 	}
 
-	function reinstate($params = '')
+	function reinstate($params = array())
 	{
 		if ($this->check_perms(ACL_EDIT, $params['cal_id']) && isset($params['reinstate_index']))
 		{
@@ -658,7 +620,7 @@ class calendar_bocalendar
 
 	function change_owner($params = '')
 	{
-		if ($GLOBALS['phpgw_info']['server']['calendar_type'] == 'sql')
+		if (Settings::getInstance()->get('server')['calendar_type'] == 'sql')
 		{
 			if (is_array($params))
 			{
@@ -718,7 +680,7 @@ class calendar_bocalendar
 		return $this->so->list_events_keyword($keywords, $members);
 	}
 
-	function update($params = '')
+	function update($params = array())
 	{
 		$l_cal = isset($params['cal']) && $params['cal'] ? $params['cal'] : Sanitizer::get_var('cal', 'string', 'POST');
 		$l_participants = isset($params['participants']) ? $params['participants'] : Sanitizer::get_var('participants', 'string', 'POST');
@@ -751,13 +713,8 @@ class calendar_bocalendar
 			$datetime_check = $this->validate_update($event);
 			if ($datetime_check)
 			{
-				ExecMethod(
-					'calendar.uicalendar.edit',
-					array(
-						'cd'		=> $datetime_check,
-						'readsess'	=> 1
-					)
-				);
+				$url = isset($event['id']) && $event['id'] ? '/calendar/view/event/' . (int)$event['id'] . '/edit' : '/calendar/view/event/new';
+				phpgw::redirect_link($url, array('cd' => $datetime_check, 'readsess' => 1));
 				$this->phpgwapi_common->phpgw_exit(True);
 			}
 			$overlapping_events = False;
@@ -766,7 +723,7 @@ class calendar_bocalendar
 		{
 			if ((!$l_cal['id'] && !$this->check_perms(ACL_ADD)) || ($l_cal['id'] && !$this->check_perms(ACL_EDIT, $l_cal['id'])))
 			{
-				ExecMethod('calendar.uicalendar.index');
+				phpgw::redirect_link('/calendar/view/month');
 				$this->phpgwapi_common->phpgw_exit();
 			}
 
@@ -818,7 +775,12 @@ class calendar_bocalendar
 			}
 			elseif (isset($l_recur_enddate['str']))
 			{
-				$l_recur_enddate = $this->_jscal->input2date($l_recur_enddate['str'], False, 'mday');
+				$date_parts = phpgwapi_datetime::date_array($l_recur_enddate['str']);
+				$l_recur_enddate = array(
+					'year' => $date_parts['year'],
+					'month' => $date_parts['month'],
+					'mday' => $date_parts['day']
+				);
 			}
 
 			switch (intval($l_cal['recur_type']))
@@ -947,13 +909,8 @@ class calendar_bocalendar
 			print_debug('bo->validated_update() returnval', $datetime_check);
 			if ($datetime_check)
 			{
-				ExecMethod(
-					'calendar.uicalendar.edit',
-					array(
-						'cd'		=> $datetime_check,
-						'readsess'	=> 1
-					)
-				);
+				$url = isset($event['id']) && $event['id'] ? '/calendar/view/event/' . (int)$event['id'] . '/edit' : '/calendar/view/event/new';
+				phpgw::redirect_link($url, array('cd' => $datetime_check, 'readsess' => 1));
 				$this->phpgwapi_common->phpgw_exit(True);
 			}
 
@@ -979,15 +936,8 @@ class calendar_bocalendar
 		{
 			if ($send_to_ui)
 			{
-				unset($GLOBALS['phpgw_info']['flags']['noheader']);
-				unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
-				ExecMethod(
-					'calendar.uicalendar.overlap',
-					array(
-						'o_events'	=> $overlapping_events,
-						'this_event'	=> $event
-					)
-				);
+				$url = isset($event['id']) && $event['id'] ? '/calendar/view/event/' . (int)$event['id'] . '/edit' : '/calendar/view/event/new';
+				phpgw::redirect_link($url, array('readsess' => 1, 'overlap' => 1));
 				$this->phpgwapi_common->phpgw_exit(True);
 			}
 			else
@@ -1021,7 +971,7 @@ class calendar_bocalendar
 					phpgw::redirect_link('/index.php', $this->return_to);
 					$this->phpgwapi_common->phpgw_exit();
 				}
-				Execmethod('calendar.uicalendar.index');
+				phpgw::redirect_link('/calendar/view/month', array('date' => $date));
 				//					$this->phpgwapi_common->phpgw_exit();
 			}
 		}
@@ -1126,11 +1076,12 @@ class calendar_bocalendar
 	{
 		if (isset($time_param['str']))
 		{
-			if (!is_object($this->_jscal))
-			{
-				$this->_jscal = CreateObject('phpgwapi.jscalendar');
-			}
-			$time_param += $this->_jscal->input2date($time_param['str'], False, 'mday');
+			$date_parts = phpgwapi_datetime::date_array($time_param['str']);
+			$time_param += array(
+				'year' => $date_parts['year'],
+				'month' => $date_parts['month'],
+				'mday' => $date_parts['day']
+			);
 			unset($time_param['str']);
 		}
 		if ($this->prefs['common']['timeformat'] == '12')
@@ -2209,13 +2160,12 @@ class calendar_bocalendar
 	function store_to_appsession($event)
 	{
 		Cache::session_set('calendar', 'entry', $event);
-
 	}
 
 	function restore_from_appsession()
 	{
 		$this->event_init();
-		$event = Cache::session_get('calendar','entry');
+		$event = Cache::session_get('calendar', 'entry');
 		$this->so->cal->event = $event;
 		return $event;
 	}
@@ -2468,7 +2418,7 @@ class calendar_bocalendar
 	 * @param $old_event Event before the change
 	 * @param $new_event Event after the change
 	 */
-	function send_update($msg_type, $to_notify, $old_event, $new_event = False, $user = False)
+	function send_update($msg_type, $to_notify, $old_event, $new_event = array(), $user = False)
 	{
 		$returncode = true;
 		//echo "<p>bocalendar::send_update(type=$msg_type,to_notify="; print_r($to_notify); echo ", old_event="; print_r($old_event); echo ", new_event="; print_r($new_event); echo ", user=$user)</p>\n";
@@ -2481,9 +2431,9 @@ class calendar_bocalendar
 		{
 			$to_notify[$owner] = 'owner';	// always include the event-owner
 		}
-		$version = $GLOBALS['phpgw_info']['apps']['calendar']['version'];
+		$version = Settings::getInstance()->get('apps')['calendar']['version'];
 
-		$this->userSettings['preferences'] = $GLOBALS['phpgw']->preferences->create_email_preferences();
+		$this->userSettings['preferences'] = $this->preferences->create_email_preferences();
 		$sender = $this->userSettings['preferences']['email']['address'];
 
 		$temp_tz_offset = $this->prefs['common']['tz_offset'];
@@ -2507,7 +2457,7 @@ class calendar_bocalendar
 		{
 			$user =  $this->accounts_obj->search_person($this->owner);
 		}
-		$this->userSettings['preferences'] = $GLOBALS['phpgw']->preferences->create_email_preferences($user);
+		$this->userSettings['preferences'] = $this->preferences->create_email_preferences($user);
 
 		$user_timezone = phpgwapi_datetime::user_timezone();
 
@@ -2582,11 +2532,11 @@ class calendar_bocalendar
 		}
 		$details['participants'] = implode("\n", $details['participants']);
 
-		if (!is_object($GLOBALS['phpgw']->send))
+		if (!is_object($this->send))
 		{
-			$GLOBALS['phpgw']->send = CreateObject('phpgwapi.send');
+			$this->send = CreateObject('phpgwapi.send');
 		}
-		$send = &$GLOBALS['phpgw']->send;
+		$send = &$this->send;
 
 		foreach ($to_notify as $userid => $statusid)
 		{
@@ -2632,7 +2582,7 @@ class calendar_bocalendar
 				$details['startdate'] = $this->phpgwapi_common->show_date($starttime);
 				$details['enddate']   = $this->phpgwapi_common->show_date($endtime);
 
-				list($subject, $body) = explode("\n", $GLOBALS['phpgw']->preferences->parse_notify($notify_msg, $details), 2);
+				list($subject, $body) = explode("\n", $this->preferences->parse_notify($notify_msg, $details), 2);
 				$subject = trim($send->encode_subject($subject));
 				switch ($part_prefs['calendar']['update_format'])
 				{
@@ -2854,7 +2804,7 @@ class calendar_bocalendar
 
 	function get_dirty_entries($lastmod = -1)
 	{
-		$events = false;
+		$events = [];
 		$event_ids = $this->so->cal->list_dirty_events($lastmod);
 		if (is_array($event_ids))
 		{
@@ -2865,7 +2815,7 @@ class calendar_bocalendar
 		}
 		unset($event_ids);
 
-		$rep_event_ids = $this->so->cal->list_dirty_events($lastmod, $true);
+		$rep_event_ids = $this->so->cal->list_dirty_events($lastmod, true);
 		if (is_array($rep_event_ids))
 		{
 			foreach ($rep_event_ids as $key => $id)
@@ -2978,9 +2928,9 @@ class calendar_bocalendar
 	{
 		$user_timezone = phpgwapi_datetime::user_timezone();
 
-		if (!is_object($GLOBALS['phpgw']->contacts))
+		if (!is_object($this->contacts))
 		{
-			$GLOBALS['phpgw']->contacts = createObject('phpgwapi.contacts');
+			$this->contacts = createObject('phpgwapi.contacts');
 		}
 
 		$var['title'] = array(
@@ -3055,7 +3005,7 @@ class calendar_bocalendar
 
 		$var['owner'] = array(
 			'field'	=> lang('Created By'),
-			'data'	=> $GLOBALS['phpgw']->contacts->get_name_of_person_id($event['owner'])
+			'data'	=> $this->contacts->get_name_of_person_id($event['owner'])
 		);
 
 		$var['updated'] = array(
@@ -3076,7 +3026,7 @@ class calendar_bocalendar
 				if ($this->accounts_obj->exists($event['groups'][$i]))
 				{
 					$cal_grps .= ($i > 0 ? '<br />' : '')
-						. $GLOBALS['phpgw']->contacts->get_name_of_person_id($GLOBALS['phpgw']->contacts->is_contact($event['groups'][$i]));
+						. $this->contacts->get_name_of_person_id($this->contacts->is_contact($event['groups'][$i]));
 				}
 			}
 
@@ -3091,7 +3041,7 @@ class calendar_bocalendar
 		{
 			foreach ($event['participants'] as $user => $short_status)
 			{
-				$participants[$user] = $GLOBALS['phpgw']->contacts->get_contact_name($user) . ' (' . $this->get_long_status($short_status) . ')';
+				$participants[$user] = $this->contacts->get_contact_name($user) . ' (' . $this->get_long_status($short_status) . ')';
 			}
 		}
 		$var['participants'] = array(
@@ -3188,10 +3138,10 @@ class calendar_bocalendar
 		{
 			return;
 		}
-		
+
 		Cache::session_set('calendar', 'default_prefs_set', 'set');
 
-		$default_prefs = $GLOBALS['phpgw']->preferences->default['calendar'];
+		$default_prefs = $this->preferences->default['calendar'];
 
 		$subject = lang('Calendar Event') . ' - $$action$$: $$startdate$$ $$title$$' . "\n";
 		$defaults = array(
@@ -3226,13 +3176,13 @@ class calendar_bocalendar
 		{
 			if (!isset($default_prefs[$var]) || $default_prefs[$var] == '')
 			{
-				$GLOBALS['phpgw']->preferences->add('calendar', $var, $default, 'default');
+				$this->preferences->add('calendar', $var, $default, 'default');
 				$need_save = True;
 			}
 		}
 		if ($need_save)
 		{
-			$prefs = $GLOBALS['phpgw']->preferences->save_repository(False, 'default');
+			$prefs = $this->preferences->save_repository(False, 'default');
 			$this->prefs['calendar'] = $prefs['calendar'];
 		}
 		if (
@@ -3241,9 +3191,9 @@ class calendar_bocalendar
 		)
 		{
 			$this->prefs['calendar']['receive_updates'] = $this->prefs['calendar']['send_updates'];
-			$GLOBALS['phpgw']->preferences->add('calendar', 'receive_updates', $this->prefs['calendar']['send_updates']);
-			$GLOBALS['phpgw']->preferences->delete('calendar', 'send_updates');
-			$prefs = $GLOBALS['phpgw']->preferences->save_repository();
+			$this->preferences->add('calendar', 'receive_updates', $this->prefs['calendar']['send_updates']);
+			$this->preferences->delete('calendar', 'send_updates');
+			$prefs = $this->preferences->save_repository();
 		}
 	}
 
@@ -3380,7 +3330,7 @@ class calendar_bocalendar
 		{
 			if ($entry['cat_color_id'])
 			{
-				$cat_colors[$cat_id] = $GLOBALS['phpgw_info']['theme']['cat_color'][$entry['cat_color_id']];
+				$cat_colors[$cat_id] = Settings::getInstance()->get('theme')['cat_color'][$entry['cat_color_id']];
 			}
 			else # if empty, find next parent with color set
 			{
@@ -3395,7 +3345,7 @@ class calendar_bocalendar
 					}
 					$cat_parent_id = $cat_color_ids[$cat_parent_id]['cat_parent'];
 				}
-				$cat_colors[$cat_id] = $GLOBALS['phpgw_info']['theme']['cat_color'][$color_to_set];
+				$cat_colors[$cat_id] = Settings::getInstance()->get('theme')['cat_color'][$color_to_set];
 			}
 		}
 

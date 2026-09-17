@@ -824,7 +824,7 @@ CSS;
 		$t = $this->template;
 
 
-		$vars = $this->preferences->vars;
+		$vars = $this->preferences->get_vars();
 		if (is_array($vars2))
 		{
 			$vars = array_merge($vars, $vars2);

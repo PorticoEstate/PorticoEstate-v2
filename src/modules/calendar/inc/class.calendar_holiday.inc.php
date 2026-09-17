@@ -14,11 +14,13 @@
 /* $Id$ */
 
 use App\Database\Db;
+use App\traits\DbRowTrait;
 use App\modules\calendar\services\HolidayLoader;
 use App\modules\phpgwapi\services\Settings;
 
 class calendar_holiday
 {
+	use DbRowTrait;
 	var $db;
 	var $year;
 	var $tz_offset;
@@ -141,7 +143,7 @@ class calendar_holiday
 		{
 			$this->index[$this->db->f('hol_id')] = $i;
 			$this->holidays[$i]['locale'] = $this->db->f('locale');
-			$this->holidays[$i]['name'] = phpgw::strip_html($this->db->f('name'));
+			$this->holidays[$i]['name'] = phpgw::strip_html($this->dbStrip($this->db->f('name')));
 			$this->holidays[$i]['day'] = intval($this->db->f('mday'));
 			$this->holidays[$i]['month'] = intval($this->db->f('month_num'));
 			$this->holidays[$i]['occurence'] = intval($this->db->f('occurence'));

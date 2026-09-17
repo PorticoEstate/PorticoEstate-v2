@@ -18,11 +18,13 @@
 phpgw::import_class('phpgwapi.datetime');
 
 use App\Database\Db;
+use App\traits\DbRowTrait;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\services\Settings;
 
 class calendar_socalendar_ extends calendar_socalendar__
 {
+	use DbRowTrait;
 	var $deleted_events = array();
 
 	var $cal_event;
@@ -95,7 +97,7 @@ class calendar_socalendar_ extends calendar_socalendar__
 		$calendar = (int) $calendar;
 		//TODO transaction needed here 
 
-		$this->stream->query("SELECT cal_id FROM phpgw_cal WHERE owner = {$calendar}", __LINE__, __FILE__);
+		$this->stream->limit_query_with_params('SELECT cal_id FROM phpgw_cal WHERE owner = :owner', [':owner' => $calendar], 0, __LINE__, __FILE__, null);
 		while ($this->stream->next_record())
 		{
 			$this->delete_event((int) $this->stream->f('cal_id'));
@@ -109,7 +111,8 @@ class calendar_socalendar_ extends calendar_socalendar__
 			$this->stream->transaction_begin();
 		}
 		$this->expunge();
-		$this->stream->query("DELETE FROM phpgw_cal_user WHERE cal_login = {$calendar}", __LINE__, __FILE__);
+		$stmt = $this->stream->prepare('DELETE FROM phpgw_cal_user WHERE cal_login = :owner');
+		$stmt->execute([':owner' => $calendar]);
 		if (!$this->global_lock)
 		{
 			$this->stream->transaction_commit();
@@ -241,7 +244,7 @@ class calendar_socalendar_ extends calendar_socalendar__
 			$transaction_started = true;
 		}
 
-		$this->stream->query('SELECT * FROM phpgw_cal WHERE cal_id=' . $event_id, __LINE__, __FILE__);
+		$this->stream->limit_query_with_params('SELECT * FROM phpgw_cal WHERE cal_id = :event_id', [':event_id' => $event_id], 0, __LINE__, __FILE__, null);
 
 		if ($this->stream->num_rows() > 0)
 		{
@@ -255,9 +258,9 @@ class calendar_socalendar_ extends calendar_socalendar__
 			$this->add_attribute('uid', "phpgw://{$_SERVER['SERVER_NAME']}/calendar/" . (int) $this->stream->f('cal_id'));
 			$this->set_class(!!$this->stream->f('is_public'));
 			$this->set_category($this->stream->f('category'));
-			$this->set_title(phpgw::strip_html($this->stream->f('title', true)));
-			$this->set_description(phpgw::strip_html($this->stream->f('description', true)));
-			$this->add_attribute('location', phpgw::strip_html($this->stream->f('location', true)));
+			$this->set_title(phpgw::strip_html($this->dbStrip($this->stream->f('title'))));
+			$this->set_description(phpgw::strip_html($this->dbStrip($this->stream->f('description'))));
+			$this->add_attribute('location', phpgw::strip_html($this->dbStrip($this->stream->f('location'))));
 			$this->add_attribute('reference', intval($this->stream->f('reference')));
 
 			// This is the preferred method once everything is normalized...
@@ -285,7 +288,7 @@ class calendar_socalendar_ extends calendar_socalendar__
 				}
 			}
 
-			$this->stream->query('SELECT * FROM phpgw_cal_repeats WHERE cal_id=' . $event_id, __LINE__, __FILE__);
+			$this->stream->limit_query_with_params('SELECT * FROM phpgw_cal_repeats WHERE cal_id = :event_id', [':event_id' => $event_id], 0, __LINE__, __FILE__, null);
 			if ($this->stream->num_rows())
 			{
 				$this->stream->next_record();
@@ -337,7 +340,7 @@ class calendar_socalendar_ extends calendar_socalendar__
 			}
 
 			//Legacy Support
-			$this->stream->query('SELECT * FROM phpgw_cal_user WHERE cal_id=' . $event_id, __LINE__, __FILE__);
+			$this->stream->limit_query_with_params('SELECT * FROM phpgw_cal_user WHERE cal_id = :event_id', [':event_id' => $event_id], 0, __LINE__, __FILE__, null);
 			if ($this->stream->num_rows())
 			{
 				while ($this->stream->next_record())
@@ -351,12 +354,12 @@ class calendar_socalendar_ extends calendar_socalendar__
 			}
 
 			// Custom fields
-			$this->stream->query('SELECT * FROM phpgw_cal_extra WHERE cal_id=' . $event_id, __LINE__, __FILE__);
+			$this->stream->limit_query_with_params('SELECT * FROM phpgw_cal_extra WHERE cal_id = :event_id', [':event_id' => $event_id], 0, __LINE__, __FILE__, null);
 			if ($this->stream->num_rows())
 			{
 				while ($this->stream->next_record())
 				{
-					$this->add_attribute('#' . $this->stream->f('cal_extra_name'), $this->stream->f('cal_extra_value'));
+					$this->add_attribute('#' . $this->dbStrip($this->stream->f('cal_extra_name')), $this->dbStrip($this->stream->f('cal_extra_value')));
 				}
 			}
 
@@ -767,14 +770,15 @@ class calendar_socalendar_ extends calendar_socalendar__
 			$this->stream->query('DELETE FROM phpgw_cal_repeats WHERE cal_id=' . $event['id'], __LINE__, __FILE__);
 		}
 		// Custom fields
-		$this->stream->query('DELETE FROM phpgw_cal_extra WHERE cal_id=' . $event['id'], __LINE__, __FILE__);
+		$stmt = $this->stream->prepare('DELETE FROM phpgw_cal_extra WHERE cal_id = :cal_id');
+		$stmt->execute([':cal_id' => (int)$event['id']]);
 
 		foreach ($event as $name => $value)
 		{
 			if ($name[0] == '#' && strlen($value))
 			{
-				$this->stream->query('INSERT INTO phpgw_cal_extra (cal_id,cal_extra_name,cal_extra_value) '
-					. 'VALUES(' . $event['id'] . ",'" . addslashes(substr($name, 1)) . "','" . addslashes($value) . "')", __LINE__, __FILE__);
+				$stmt = $this->stream->prepare('INSERT INTO phpgw_cal_extra (cal_id,cal_extra_name,cal_extra_value) VALUES(:cal_id,:name,:value)');
+				$stmt->execute([':cal_id' => (int)$event['id'], ':name' => substr($name, 1), ':value' => $value]);
 			}
 		}
 		/*
@@ -862,7 +866,8 @@ class calendar_socalendar_ extends calendar_socalendar__
 			ACCEPTED	=> 'A'
 		);
 
-		$this->stream->query("UPDATE phpgw_cal_user SET cal_status='" . $status_code_short[$status] . "' WHERE cal_id=" . $id . " AND cal_login=" . $owner, __LINE__, __FILE__);
+		$stmt = $this->stream->prepare('UPDATE phpgw_cal_user SET cal_status=:status WHERE cal_id=:cal_id AND cal_login=:owner');
+		$stmt->execute([':status' => $status_code_short[$status], ':cal_id' => (int)$id, ':owner' => (int)$owner]);
 		return True;
 	}
 

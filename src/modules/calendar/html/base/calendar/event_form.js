@@ -102,7 +102,9 @@
 			}
 			else if (key.indexOf('custom_fields[') === 0)
 			{
-				var field = key.slice(14, -1);
+				var fieldMatch = key.match(/^custom_fields\[(.*)\]$/);
+				if (!fieldMatch) return;
+				var field = fieldMatch[1];
 				payload.custom_fields = payload.custom_fields || {};
 				payload.custom_fields[field] = value;
 			}

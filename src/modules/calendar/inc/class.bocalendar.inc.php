@@ -177,9 +177,9 @@ class calendar_bocalendar
 				print_debug('Rights', $rights);
 			}
 		}
-		
+
 		print_debug('Read use_session', $session);
-		
+
 		if ($session)
 		{
 			$this->read_sessiondata();
@@ -2160,13 +2160,12 @@ class calendar_bocalendar
 	function store_to_appsession($event)
 	{
 		Cache::session_set('calendar', 'entry', $event);
-
 	}
 
 	function restore_from_appsession()
 	{
 		$this->event_init();
-		$event = Cache::session_get('calendar','entry');
+		$event = Cache::session_get('calendar', 'entry');
 		$this->so->cal->event = $event;
 		return $event;
 	}
@@ -3139,7 +3138,7 @@ class calendar_bocalendar
 		{
 			return;
 		}
-		
+
 		Cache::session_set('calendar', 'default_prefs_set', 'set');
 
 		$default_prefs = $this->preferences->default['calendar'];

@@ -463,10 +463,15 @@ class CalendarController
 		}
 
 		$customFields = $this->customFields();
+		$configuredFields = [];
+		foreach ((array)$customFields->fields as $configuredField => $fieldConfig)
+		{
+			$configuredFields['#' . ltrim((string)$configuredField, '#')] = $fieldConfig;
+		}
 		foreach ($values['custom_fields'] as $field => $value)
 		{
-			$field = '#' . ltrim((string)$field, '#');
-			if (isset($customFields->fields[$field]) && empty($customFields->fields[$field]['disabled']))
+			$field = '#' . ltrim(trim((string)$field), '#');
+			if (isset($configuredFields[$field]) && empty($configuredFields[$field]['disabled']))
 			{
 				$calendar->add_attribute($field, trim((string)$value));
 			}

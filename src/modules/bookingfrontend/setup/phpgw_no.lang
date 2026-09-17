@@ -1121,3 +1121,4 @@ cascade_deleted_allocations_summary	bookingfrontend	no	{{count}} tildeling(er) b
 event_cancellation_closes_application	bookingfrontend	no	Å avbestille dette arrangementet vil lukke søknaden det tilhører.
 applications_offline_banner	bookingfrontend	no	Mistet tilkobling til serveren. Viser sist hentede søknader.
 refresh_unavailable_offline	bookingfrontend	no	Kan ikke oppdatere uten tilkobling
+repeating_direct_booking_warning	bookingfrontend	no	Denne ressursen har direkte booking. Når du velger gjentakende blir søknaden sendt til saksbehandling i stedet for å bli godkjent automatisk.

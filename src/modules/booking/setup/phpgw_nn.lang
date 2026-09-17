@@ -746,6 +746,7 @@ One e-mail pr. line.	booking	nn	Berre ei e-postadresse pr. linje.
 One filter box per line	booking	nn	Bare én filtreringsboks per linje
 One or more bookings, allocations or events needs to be created before an application can be Accepted	booking	nn	Ein eller fleire interntildelinger, tildelinger eller arrangementer må opprettast før ein søknad kan aksepterast
 only_case_officer_can_create	booking	nn	Berre sakshandsamar kan opprette tildelingar
+open view in new window	booking	nn	Åpne visning i ny fane
 Opening hours	booking	nn	Åpningstider
 optional	booking	nn	Valfritt
 Optional e-mail adress	booking	nn	Valfri e-post adresse

@@ -735,6 +735,7 @@ One e-mail pr. line.	booking	no	Bare en e-post adresse pr. linje.
 One filter box per line	booking	no	Bare én filtreringsboks per linje
 One or more bookings, allocations or events needs to be created before an application can be Accepted	booking	no	En eller flere interntildelinger, tildelinger eller arrangementer må lages før en søknad kan aksepteres
 only_case_officer_can_create	booking	no	Kun saksbehandler kan opprette tildelinger
+open view in new window	booking	no	Åpne visning i ny fane
 Opening hours	booking	no	Åpningstider
 optional	booking	no	Valgfritt
 Optional e-mail adress	booking	no	Valgfri e-post adresse

@@ -673,6 +673,7 @@ One e-mail pr. line.	booking	en	One e-mail pr. line.
 One filter box per line	booking	en	One filter box per line
 One or more bookings, allocations or events needs to be created before an application can be Accepted	booking	en	One or more bookings, allocations or events needs to be created before an application can be accepted
 only_case_officer_can_create	booking	en	Only case officer can create allocations
+open view in new window	booking	en	Open View in new Window
 Opening hours	booking	en	Opening hours
 optional	booking	en	Optional
 Optional e-mail adress	booking	en	Optional e-mail adress

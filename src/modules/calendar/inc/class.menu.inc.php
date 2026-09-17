@@ -136,11 +136,14 @@ class calendar_menu
 			$menus['preferences'] = array(
 				'preferences'	=> array(
 					'text'	=> $translation->translate('Preferences', array(), true),
-					'url'	=> phpgw::link('/preferences/preferences.php', array('appname'	=> 'calendar'))
+					'url'	 => phpgw::link('/preferences/section', array(
+						'appname' => 'calendar',
+						'type' => 'user'
+					))
 				),
 				'acls'	=> array(
 					'text'	=> $translation->translate('Grant Access', array(), true),
-					'url'	=> phpgw::link('/index.php', array('menuaction'	=> 'preferences.uiaclprefs.index', 'acl_app'	=> 'calendar'))
+					'url'	=> phpgw::link('/index.php', array('menuaction'	=> 'preferences.uiadmin_acl.aclprefs', 'acl_app'	=> 'calendar'))
 				),
 				'categories'	=> array(
 					'text'	=> $translation->translate('Edit Categories', array(), true),
@@ -149,7 +152,7 @@ class calendar_menu
 			);
 			$menus['toolbar'][] = array(
 				'text'	=> $translation->translate('Preferences', array(), true),
-				'url'	=> phpgw::link('/preferences/preferences.php', array('appname'	=> 'calendar')),
+				'url'	=> phpgw::link('/preferences/section', array('appname'	=> 'calendar', 'type' => 'user')),
 				'image'	=> array('calendar', 'preferences')
 			);
 		}

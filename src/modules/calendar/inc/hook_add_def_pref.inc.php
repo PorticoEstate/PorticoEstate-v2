@@ -10,12 +10,12 @@
   *  option) any later version.                                              *
   \**************************************************************************/
 
-  /* $Id$ */
-  
-  global $pref;
-  $pref->change("calendar","weekstarts","Monday");
-  $pref->change("calendar","workdaystarts","9");
-  $pref->change("calendar","workdayends","17");
-  $pref->change("calendar","defaultcalendar","month.php");
-  $pref->change("calendar","defaultfilter","all");
-  $pref->change("calendar","mainscreen_showevents","Y");
+/* $Id$ */
+
+$preferences = \App\modules\phpgwapi\services\Preferences::getInstance();
+$preferences->add("calendar","weekstarts","Monday");
+$preferences->add("calendar","workdaystarts","9");
+$preferences->add("calendar","workdayends","17");
+$preferences->add("calendar","defaultcalendar","month.php");
+$preferences->add("calendar","defaultfilter","all");
+$preferences->add("calendar","mainscreen_showevents","Y");

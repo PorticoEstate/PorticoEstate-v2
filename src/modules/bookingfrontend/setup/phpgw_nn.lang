@@ -1120,3 +1120,4 @@ cascade_deleted_allocations_summary	bookingfrontend	nn	{{count}} tildeling(ar) v
 event_cancellation_closes_application	bookingfrontend	nn	Å avbestille dette arrangementet vil lukke søknaden det høyrer til.
 applications_offline_banner	bookingfrontend	nn	Mista tilkopling til tenaren. Viser sist henta søknadar.
 refresh_unavailable_offline	bookingfrontend	nn	Kan ikkje oppdatere utan tilkopling
+repeating_direct_booking_warning	bookingfrontend	nn	Denne ressursen har direkte booking. Når du vel gjentakande vil søknaden bli sendt til saksbehandling i stedet for å bli godkjent automatisk.

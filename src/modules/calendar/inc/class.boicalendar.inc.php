@@ -1520,7 +1520,7 @@ class calendar_boicalendar
 		//		elseif(ereg('(.*(\:\\\\)?.*):(.*)',$value,$temp))
 		elseif (preg_match('/(.*(\:\\\\)?.*):(.*)/', $value, $temp))
 		{
-				$this->debug('Value : ' . print_r($temp, true));
+			$this->debug('Value : ' . print_r($temp, true));
 			$this->debug('Param ' . $majortype . ' Value : ' . $temp[3]);
 			if ($temp[3])
 			{

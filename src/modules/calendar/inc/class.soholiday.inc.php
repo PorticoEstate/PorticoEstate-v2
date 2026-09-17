@@ -88,7 +88,10 @@ class calendar_soholiday
 		}
 
 		$locales = is_array($locales) ? $locales : array($locales);
-		$placeholders = array_map(static function ($index) { return ':locale' . $index; }, array_keys($locales));
+		$placeholders = array_map(static function ($index)
+		{
+			return ':locale' . $index;
+		}, array_keys($locales));
 		$params = array_combine($placeholders, array_values($locales));
 		$sql = 'SELECT * FROM phpgw_cal_holidays WHERE locale IN (' . implode(',', $placeholders) . ')';
 		if ($query !== '')

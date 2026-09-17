@@ -29,7 +29,6 @@ services:
     slim:
         container_name: ${SLIM_HOST:-portico_api}
         hostname: ${SLIM_HOST:-portico_api}
-     #   image: sigurdne/portico_estate_webserver:latest
         build:
             context: .
             dockerfile: Dockerfile
@@ -39,6 +38,7 @@ services:
                 INSTALL_ORACLE: ${INSTALL_ORACLE:-false}
                 http_proxy: ${http_proxy}
                 https_proxy: ${https_proxy}
+    #       network: host  # corporate proxy allow-lists by source IP; bridge NAT gets dropped
         working_dir: /var/www/html
         environment:
             <<: *common-variables
@@ -69,6 +69,7 @@ services:
         build:
             context: .
             dockerfile: Dockerfile.websocket
+#       network: host  # corporate proxy allow-lists by source IP; bridge NAT gets dropped
             args:
                 http_proxy: ${http_proxy}
                 https_proxy: ${https_proxy}
@@ -110,6 +111,7 @@ services:
         container_name: ${NEXTJS_HOST:-portico_nextjs}
         build:
             dockerfile: ./src/modules/bookingfrontend/client/Dockerfile.nextjs
+#       network: host  # corporate proxy allow-lists by source IP; bridge NAT gets dropped
             args:
                 - NEXT_ENV=${NEXT_ENV:-production}
                 - http_proxy=${http_proxy}

@@ -74,12 +74,23 @@ class MailerSmtp extends PHPMailer
 		 * @type int
 		 */
 
-		// SMTP Debug mode - environment variable override
-		$smtpDebug = getenv('SMTP_DEBUG') ?: ($this->serverSettings['SMTPDebug'] ?? '0');
+		// SMTP Debug mode - environment variable override.
+		// getenv() returns false when SMTP_DEBUG is unset; an unset or empty
+		// value falls through to the DB setting, while an explicit value
+		// (including "0") wins outright so SMTP_DEBUG=0 can force debug OFF.
+		$envSmtpDebug = getenv('SMTP_DEBUG');
+		if ($envSmtpDebug !== false && $envSmtpDebug !== '') {
+			$smtpDebug = $envSmtpDebug;
+		} else {
+			$smtpDebug = $this->serverSettings['SMTPDebug'] ?? '0';
+		}
 		$this->SMTPDebug = (int)$smtpDebug;
 
-		// Debug logging for SMTP configuration
-		error_log("SMTP CONFIG: Host={$this->Host}, Port={$this->Port}, Secure={$this->SMTPSecure}, Auth=" . ($this->SMTPAuth ? 'YES' : 'NO') . ", User={$this->Username}, Debug={$this->SMTPDebug}");
+		// Debug logging for SMTP configuration - only when SMTP debug is
+		// enabled, since this line includes the SMTP username.
+		if ($this->SMTPDebug > 0) {
+			error_log("SMTP CONFIG: Host={$this->Host}, Port={$this->Port}, Secure={$this->SMTPSecure}, Auth=" . ($this->SMTPAuth ? 'YES' : 'NO') . ", User={$this->Username}, Debug={$this->SMTPDebug}");
+		}
 
 		/**
 		 * The function/method to use for debugging output.
@@ -94,6 +105,7 @@ class MailerSmtp extends PHPMailer
 					$this->Debugoutput =  'html';
 					break;
 				case 'errorlog':
+				case 'error_log':
 					$this->Debugoutput =  'error_log';
 					break;
 				default:

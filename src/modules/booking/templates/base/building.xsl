@@ -103,9 +103,19 @@
 							<xsl:text> / </xsl:text>
 							<xsl:value-of select="building/cadastral_reference/bnr" />
 							<xsl:text> / </xsl:text>
-							<xsl:value-of select="building/cadastral_reference/fnr" />
+							<xsl:choose>
+								<xsl:when test="building/cadastral_reference/fnr != ''">
+									<xsl:value-of select="building/cadastral_reference/fnr" />
+								</xsl:when>
+								<xsl:otherwise>0</xsl:otherwise>
+							</xsl:choose>
 							<xsl:text> / </xsl:text>
-							<xsl:value-of select="building/cadastral_reference/snr" />
+							<xsl:choose>
+								<xsl:when test="building/cadastral_reference/snr != ''">
+									<xsl:value-of select="building/cadastral_reference/snr" />
+								</xsl:when>
+								<xsl:otherwise>0</xsl:otherwise>
+							</xsl:choose>
 						</div>
 					</xsl:if>
 				</xsl:if>

@@ -179,6 +179,7 @@ building	booking	en	Building
 Building (2018)	booking	en	Building (2018)
 building edit	booking	en	Building edit
 building name	booking	en	Building name
+building number	booking	en	Building number
 building schedule	booking	en	Building schedule
 building show	booking	en	Building show
 building_id	booking	en	Building_id
@@ -187,6 +188,8 @@ building_preview	booking	en	Preview
 building_title	booking	en	Building
 buildings	booking	en	Buildings
 bygning	booking	en	Bygning
+cadastral type	booking	en	Cadastral type
+cadastral property	booking	en	Cadastral property
 Calendar	booking	en	Calendar
 Calendar text	booking	en	Calendar text
 Can not create a booking in the past	booking	en	Can not create a booking in the past
@@ -599,6 +602,7 @@ more info	booking	en	More info
 move_down	booking	en	Move down
 move_up	booking	en	Move up
 Multiple Events was created	booking	en	Multiple events was created
+Municipality ID	booking	en	Municipality ID
 name	booking	en	Name
 NB! No data will be saved, if you navigate away you will loose all.	booking	en	Nb! No data will be saved, if you navigate away you will loose all.
 new	booking	en	New

@@ -203,10 +203,14 @@ building show	booking	no	Vis bygning
 Building type	booking	no	Bygningstype
 building_id	booking	no	Bygg/anlegg
 building_name	booking	no	Bygningsnavn
+building number	booking	no	Bygningsnummer
 building_preview	booking	no	Forhåndsvisning
 building_title	booking	no	Bygning
 buildings	booking	no	Bygg/anlegg
 bygning	booking	no	Bygg/anlegg
+cadastral type	booking	no	Matrikkeltype
+Cadastral Building ID	booking	no	Matrikkelbygnings-ID
+cadastral property	booking	no	Matrikkelnummer
 Calendar	booking	no	Kalender
 Calendar text	booking	no	Tekst bak kalender knapp.
 Can not create a booking in the past	booking	no	Du kan ikke opprette en interntildeling i fortiden
@@ -659,6 +663,7 @@ move_down	booking	no	Flytt ned
 move_up	booking	no	Flytt opp
 multi domain	booking	no	Støtte for kryss-instans
 Multiple Events was created	booking	no	Flere arrangementer har blitt opprettet
+Municipality ID	booking	no	Kommunenummer
 my assigned applications	booking	no	*Mine søknader
 my assigned buildings	booking	no	*Mine bygninger
 name	booking	no	Navn

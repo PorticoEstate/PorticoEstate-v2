@@ -199,6 +199,7 @@ building	booking	nn	Bygg/anlegg
 Building (2018)	booking	nn	Anlegg
 building edit	booking	nn	Endre bygning
 building name	booking	nn	Bygg/anlegg
+building number	booking	nn	Bygningsnummer
 Building or facility name	booking	nn	Bygning/anleggsnavn
 building schedule	booking	nn	Kalendar
 building show	booking	nn	Vis bygning
@@ -209,6 +210,8 @@ building_preview	booking	nn	Førehandsvisning
 building_title	booking	nn	Bygning
 buildings	booking	nn	Bygg/anlegg
 bygning	booking	nn	Bygg/anlegg
+cadastral type	booking	nn	Matrikkeltype
+cadastral property	booking	nn	Matrikkelnummer
 Calendar	booking	nn	Kalender
 Calendar text	booking	nn	Tekst bak kalenderknapp.
 Can not create a booking in the past	booking	nn	Du kan ikkje opprette ein interntildeling i fortida
@@ -668,6 +671,7 @@ move_down	booking	nn	Flytt ned
 move_up	booking	nn	Flytt opp
 multi domain	booking	nn	Støtte for kryss-instans
 Multiple Events was created	booking	nn	Fleire arrangementer er oppretta
+Municipality ID	booking	nn	Kommunenummer
 my assigned applications	booking	nn	*Mine søknader
 my assigned buildings	booking	nn	*Mine bygningar
 name	booking	nn	Namn

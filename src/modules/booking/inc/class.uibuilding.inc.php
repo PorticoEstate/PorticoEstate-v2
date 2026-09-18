@@ -64,10 +64,70 @@ class booking_uibuilding extends booking_uicommon
 			'extra_kalendar'		 => 'string',
 			'calendar_text'			 => 'string',
 			'activity_id'			 => 'int',
+			'cadastral_type' 			 => 'string',
+			'municipality_id' 			 => 'int',
+			'building_number' 			 => 'int',
+			'gnr' 			 => 'int',
+			'bnr' 			 => 'int',
+			'fnr' 			 => 'int',
+			'snr' 			 => 'int',
 		);
 		$this->module									 = "booking";
 		$this->display_name								 = lang('building');
 		Settings::getInstance()->update('flags', ['app_header' => lang('booking') . "::{$this->display_name}"]);
+	}
+
+	private function get_cadastral_reference($building_id)
+	{
+		$db = \App\Database\Db::getInstance();
+		$db->query(
+			'SELECT cadastral_type, municipality_id, building_number, gnr, bnr, fnr, snr '
+			. 'FROM bb_building_cadastral_reference WHERE building_id = ' . (int)$building_id . ' ORDER BY id LIMIT 1',
+			__LINE__,
+			__FILE__
+		);
+
+		return $db->next_record() ? $db->Record : array();
+	}
+
+	private function save_cadastral_reference($building_id, $reference)
+	{
+		$db = \App\Database\Db::getInstance();
+		$has_value = false;
+		foreach (array('cadastral_type', 'municipality_id', 'building_number', 'gnr', 'bnr', 'fnr', 'snr') as $field)
+		{
+			if ($reference[$field] !== null && $reference[$field] !== '')
+			{
+				$has_value = true;
+				break;
+			}
+		}
+
+		$db->query('DELETE FROM bb_building_cadastral_reference WHERE building_id = ' . (int)$building_id, __LINE__, __FILE__);
+
+		if (!$has_value)
+		{
+			return;
+		}
+
+		$type = strtoupper($db->db_addslashes($reference['cadastral_type']));
+		$values = array(
+			(int)$building_id,
+			(int)$reference['municipality_id'],
+			"'{$type}'",
+			$reference['building_number'] === '' ? 'NULL' : (string)(int)$reference['building_number'],
+			$reference['gnr'] === '' ? 'NULL' : (string)(int)$reference['gnr'],
+			$reference['bnr'] === '' ? 'NULL' : (string)(int)$reference['bnr'],
+			$reference['fnr'] === '' ? 'NULL' : (string)(int)$reference['fnr'],
+			$reference['snr'] === '' ? 'NULL' : (string)(int)$reference['snr'],
+		);
+		$db->query(
+			'INSERT INTO bb_building_cadastral_reference '
+			. '(building_id, municipality_id, cadastral_type, building_number, gnr, bnr, fnr, snr) VALUES ('
+			. implode(', ', $values) . ')',
+			__LINE__,
+			__FILE__
+		);
 	}
 
 	public function properties()
@@ -368,6 +428,7 @@ class booking_uibuilding extends booking_uicommon
 		}
 
 		$building['id']						 = $id;
+		$building['cadastral_reference'] = $this->get_cadastral_reference($id);
 		$building['buildings_link']			 = self::link(array('menuaction' => 'booking.uibuilding.index'));
 		$building['cancel_link']			 = self::link(array(
 			'menuaction' => 'booking.uibuilding.show',
@@ -391,10 +452,35 @@ class booking_uibuilding extends booking_uicommon
 		{
 			$building = array_merge($building, extract_values($_POST, $this->fields));
 
+			$building['cadastral_reference'] = array(
+				'cadastral_type' => $building['cadastral_type'] ?? '',
+				'municipality_id' => $building['municipality_id'] ?? '',
+				'building_number' => $building['building_number'] ?? '',
+				'gnr' => $building['gnr'] ?? '',
+				'bnr' => $building['bnr'] ?? '',
+				'fnr' => $building['fnr'] ?? '',
+				'snr' => $building['snr'] ?? '',
+			);
+			$has_cadastral_reference = false;
+			foreach ($building['cadastral_reference'] as $value)
+			{
+				if ($value !== null && $value !== '')
+				{
+					$has_cadastral_reference = true;
+					break;
+				}
+			}
+
 			$errors = $this->bo->validate($building);
+			if ($has_cadastral_reference
+				&& (!$building['municipality_id'] || !in_array(strtoupper($building['cadastral_type']), array('BUILDING', 'PROPERTY'), true)))
+			{
+				$errors['cadastral_reference'] = lang('Cadastral type and municipality are required');
+			}
 			if (!$errors)
 			{
 				$receipt = $this->bo->update($building);
+				$this->save_cadastral_reference($id, $building['cadastral_reference']);
 
 				// Invalidate Next.js caches (server-side + client-side via WebSocket)
 				if (class_exists('\App\modules\bookingfrontend\services\CacheService'))
@@ -464,6 +550,7 @@ class booking_uibuilding extends booking_uicommon
 		{
 			phpgw::no_access('booking', lang('missing entry. Id %1 is invalid', $id));
 		}
+		$building['cadastral_reference'] = $this->get_cadastral_reference($id);
 		$userlang = $this->userSettings['preferences']['common']['lang'];
 		$building['description']		 = isset($building['description_json'][$userlang]) ? $building['description_json'][$userlang] : '';
 		$building['short_description_text'] = isset($building['short_description'][$userlang]) ? $building['short_description'][$userlang] : '';

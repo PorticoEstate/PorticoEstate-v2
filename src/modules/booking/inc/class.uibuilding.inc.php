@@ -93,6 +93,13 @@ class booking_uibuilding extends booking_uicommon
 	private function save_cadastral_reference($building_id, $reference)
 	{
 		$db = \App\Database\Db::getInstance();
+		foreach (array('municipality_id', 'building_number', 'gnr', 'bnr', 'fnr', 'snr') as $field)
+		{
+			if ($reference[$field] === null || $reference[$field] === '' || (int)$reference[$field] === 0)
+			{
+				$reference[$field] = null;
+			}
+		}
 		$has_value = false;
 		foreach (array('cadastral_type', 'municipality_id', 'building_number', 'gnr', 'bnr', 'fnr', 'snr') as $field)
 		{
@@ -115,11 +122,11 @@ class booking_uibuilding extends booking_uicommon
 			(int)$building_id,
 			(int)$reference['municipality_id'],
 			"'{$type}'",
-			$reference['building_number'] === '' ? 'NULL' : (string)(int)$reference['building_number'],
-			$reference['gnr'] === '' ? 'NULL' : (string)(int)$reference['gnr'],
-			$reference['bnr'] === '' ? 'NULL' : (string)(int)$reference['bnr'],
-			$reference['fnr'] === '' ? 'NULL' : (string)(int)$reference['fnr'],
-			$reference['snr'] === '' ? 'NULL' : (string)(int)$reference['snr'],
+			$reference['building_number'] === null ? 'NULL' : (string)(int)$reference['building_number'],
+			$reference['gnr'] === null ? 'NULL' : (string)(int)$reference['gnr'],
+			$reference['bnr'] === null ? 'NULL' : (string)(int)$reference['bnr'],
+			$reference['fnr'] === null ? 'NULL' : (string)(int)$reference['fnr'],
+			$reference['snr'] === null ? 'NULL' : (string)(int)$reference['snr'],
 		);
 		$db->query(
 			'INSERT INTO bb_building_cadastral_reference '
@@ -461,6 +468,13 @@ class booking_uibuilding extends booking_uicommon
 				'fnr' => $building['fnr'] ?? '',
 				'snr' => $building['snr'] ?? '',
 			);
+			foreach (array('municipality_id', 'building_number', 'gnr', 'bnr', 'fnr', 'snr') as $field)
+			{
+				if ((int)$building['cadastral_reference'][$field] === 0)
+				{
+					$building['cadastral_reference'][$field] = '';
+				}
+			}
 			$has_cadastral_reference = false;
 			foreach ($building['cadastral_reference'] as $value)
 			{

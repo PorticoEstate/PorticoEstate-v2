@@ -278,20 +278,36 @@ class ApplicationRepository
 
 	public function fetchInternalNotes(int $applicationId): array
 	{
+		// Legacy store: phpgw_history_log status 'C', same call shape as the
+		// legacy page (class.uiapplication.inc.php:4671). return_array()'s
+		// 'datetime' comes back through from_timestamp() as a unix-seconds
+		// int, not a timestamp string — reformat it, or the frontend's
+		// `new Date(note.created)` reads it as milliseconds and renders 1970.
 		try {
-			$stmt = $this->db->prepare(
-				"SELECT n.id, n.content, n.created, a.account_lid AS author_name
-				 FROM bb_application_internal_note n
-				 LEFT JOIN phpgw_accounts a ON n.author_id = a.account_id
-				 WHERE n.application_id = :id
-				 ORDER BY n.created DESC"
-			);
-			$stmt->execute([':id' => $applicationId]);
-			return $stmt->fetchAll(PDO::FETCH_ASSOC);
+			$rows = \CreateObject('phpgwapi.historylog', 'booking', '.application')
+				->return_array([], ['C'], 'history_timestamp', 'ASC', $applicationId);
 		} catch (\Throwable $e) {
-			// Table may not exist yet
+			// Swallowed to preserve pre-existing behavior of this method — see
+			// task 25229 handoff: a read path that silently returns [] on
+			// failure is its own defect and hides the next one the same way.
 			return [];
 		}
+
+		$notes = [];
+		foreach ($rows as $row) {
+			$notes[] = [
+				'id'          => (int) $row['id'],
+				// Same raw store, same two legacy raw-HTML sinks as the read at
+				// class.uiapplication.inc.php:4671 (bootstrap/application.xsl:1433
+				// disable-output-escaping="yes", digdir/application.twig:937 |raw);
+				// purify here too so this REST-served value is safe regardless of
+				// which surface ends up rendering it.
+				'content'     => \Sanitizer::decode_then_purify($row['new_value']),
+				'created'     => date(Db::datetime_format(), (int) $row['datetime']),
+				'author_name' => $row['owner'],
+			];
+		}
+		return $notes;
 	}
 
 	// ── Associations ────────────────────────────────────────────────────
@@ -744,15 +760,12 @@ class ApplicationRepository
 
 	public function addInternalNote(int $applicationId, int $authorId, string $content): void
 	{
-		$stmt = $this->db->prepare(
-			"INSERT INTO bb_application_internal_note (application_id, author_id, content, created)
-			 VALUES (:id, :author, :content, NOW())"
-		);
-		$stmt->execute([
-			':id'      => $applicationId,
-			':author'  => $authorId,
-			':content' => $content,
-		]);
+		// $authorId is unused: historylog->add() attributes history_owner to
+		// the current session account (Settings 'user'.account_id) — the same
+		// source ApplicationController::$currentAccountId reads from, so this
+		// always matches in practice. Same call shape as the legacy write
+		// (class.uiapplication.inc.php:5448-5451).
+		\CreateObject('phpgwapi.historylog', 'booking', '.application')->add('C', $applicationId, $content);
 	}
 
 	// ── Associations (write) ────────────────────────────────────────────

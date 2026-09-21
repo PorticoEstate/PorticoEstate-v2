@@ -4627,7 +4627,14 @@ class booking_uiapplication extends booking_uicommon
 		{
 			foreach ($application['comments'] as  &$comments)
 			{
-				$comments['comment'] = html_entity_decode(nl2br($comments['comment']));
+				// Decode then purify: this feeds both the legacy XSL views
+				// (disable-output-escaping="yes") and digdir/application.twig (|raw),
+				// which render whatever is here as live HTML. Existing rows predate
+				// write-side sanitisation (booking_uiapplication::add_comment) and may
+				// still carry raw script/event-handler markup, and some rows are
+				// double-encoded (decode resolves them; purify, run last, keeps them
+				// from being revived after sanitisation).
+				$comments['comment'] = Sanitizer::decode_then_purify(nl2br($comments['comment']));
 			}
 		}
 
@@ -4664,6 +4671,16 @@ JS;
 		$this->is_assigned_to($application);
 
 		$internal_notes = CreateObject('phpgwapi.historylog', 'booking', '.application')->return_array(array(), array('C'), 'history_timestamp', 'ASC', $application['id']);
+		foreach ($internal_notes as &$internal_note)
+		{
+			// Same raw-HTML sinks as $application['comments'] above
+			// (bootstrap/application.xsl:1433 disable-output-escaping="yes",
+			// digdir/application.twig:937 |raw) but this store's writer
+			// (ApplicationRepository::addInternalNote) applies no sanitisation
+			// at all on write, unlike add_comment().
+			$internal_note['new_value'] = Sanitizer::decode_then_purify($internal_note['new_value']);
+		}
+		unset($internal_note);
 
 		$application['resources_json'] = json_encode(array_map('intval', $application['resources']));
 

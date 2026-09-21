@@ -4,6 +4,7 @@ import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {useInvoices} from "@/service/hooks/api-hooks";
 import {ColumnDef} from "@/components/gs-table/table.types";
 import {DateTime} from "luxon";
+import {VENUE_TIMEZONE} from "@/utils/venue-timezone";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {GSTable} from "@/components/gs-table";
 
@@ -45,7 +46,7 @@ const InvoicesTable: FC<InvoicesTableProps> = ({ initialInvoices }) => {
 				// size: 0.5
 				defaultHidden: true,
 			},
-			cell: info => DateTime.fromISO(info.getValue<string>()).toFormat('dd.MM.yyyy HH:mm'),
+			cell: info => DateTime.fromISO(info.getValue<string>()).setZone(VENUE_TIMEZONE).toFormat('dd.MM.yyyy HH:mm'),
 		},
 		{
 			id: 'to_',
@@ -55,7 +56,7 @@ const InvoicesTable: FC<InvoicesTableProps> = ({ initialInvoices }) => {
 				// size: 0.5
 				defaultHidden: true,
 			},
-			cell: info => DateTime.fromISO(info.getValue<string>()).toFormat('dd.MM.yyyy  HH:mm'),
+			cell: info => DateTime.fromISO(info.getValue<string>()).setZone(VENUE_TIMEZONE).toFormat('dd.MM.yyyy  HH:mm'),
 		},
 		{
 			id: 'customer_organization_number',

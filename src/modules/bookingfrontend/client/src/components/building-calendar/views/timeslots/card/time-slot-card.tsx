@@ -1,5 +1,6 @@
 import React, { FC } from 'react';
 import { DateTime } from 'luxon';
+import { VENUE_TIMEZONE } from '@/utils/venue-timezone';
 import styles from './time-slot-card.module.scss';
 import {IFreeTimeSlot} from "@/service/pecalendar.types";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
@@ -16,8 +17,8 @@ interface TimeSlotCardProps {
 }
 
 const TimeSlotCard: FC<TimeSlotCardProps> = ({ slot, resourceId, onSelect, isProcessing = false }) => {
-	const startDateTime = DateTime.fromISO(slot.start_iso);
-	const endDateTime = DateTime.fromISO(slot.end_iso);
+	const startDateTime = DateTime.fromISO(slot.start_iso).setZone(VENUE_TIMEZONE);
+	const endDateTime = DateTime.fromISO(slot.end_iso).setZone(VENUE_TIMEZONE);
 	const t = useTrans();
 	const { data: partialApplications } = usePartialApplications();
 	const sameDay = startDateTime.hasSame(endDateTime, 'day');

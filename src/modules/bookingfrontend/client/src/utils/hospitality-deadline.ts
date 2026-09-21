@@ -17,6 +17,8 @@
  * core works standalone, and a holiday source plugs in later on both sides.
  */
 
+import {VENUE_TIMEZONE} from './venue-timezone';
+
 export const ALL_OPEN_DAYS: number[] = [1, 2, 3, 4, 5, 6, 7];
 
 export type DeadlineUnit = 'hours' | 'days' | 'weeks';
@@ -121,13 +123,10 @@ export function computeHospitalityDeadline(
         : subtractWorkingHours(eventTime, value, open, holidaySet);
 }
 
-/**
- * Venue-local timezone. serving_time_iso is stored naive-UTC and serialised back local, so
- * "which weekday is the kitchen being asked to serve on" must be answered in venue wall-clock,
- * NOT UTC and NOT the browser's zone — otherwise a 22:30Z Saturday instant (00:30 Sunday in
- * Oslo) would be judged differently here than by the backend. Mirrors HospitalityOrderController.
- */
-export const VENUE_TIMEZONE = 'Europe/Oslo';
+// VENUE_TIMEZONE (imported above, from ./venue-timezone) answers "which weekday is the
+// kitchen being asked to serve on" in venue wall-clock, NOT UTC and NOT the browser's
+// zone — otherwise a 22:30Z Saturday instant (00:30 Sunday in Oslo) would be judged
+// differently here than by the backend. Mirrors HospitalityOrderController.
 
 const VENUE_WEEKDAY_INDEX: Record<string, number> = {
     Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7,

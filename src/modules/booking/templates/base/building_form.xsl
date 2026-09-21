@@ -91,9 +91,9 @@
 								<xsl:if test="building/cadastral_reference/cadastral_type='BUILDING'"><xsl:attribute name="selected">selected</xsl:attribute></xsl:if>
 								<xsl:value-of select="php:function('lang', 'Building')" />
 							</option>
-							<option value="PROPERTY">
-								<xsl:if test="building/cadastral_reference/cadastral_type='PROPERTY'"><xsl:attribute name="selected">selected</xsl:attribute></xsl:if>
-								<xsl:value-of select="php:function('lang', 'Property')" />
+							<option value="FACILITY">
+								<xsl:if test="building/cadastral_reference/cadastral_type='FACILITY'"><xsl:attribute name="selected">selected</xsl:attribute></xsl:if>
+								<xsl:value-of select="php:function('lang', 'Feature')" />
 							</option>
 						</select>
 					</div>

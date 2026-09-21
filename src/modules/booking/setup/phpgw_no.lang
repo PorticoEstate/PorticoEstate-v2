@@ -194,7 +194,7 @@ Bookings to be deleted	booking	no	Booking for sletting
 boundaries	booking	no	Rammetid
 buffer deadline	booking	no	Buffer/frist
 building	booking	no	Bygg/anlegg
-Building (2018)	booking	no	Anlegg
+Facility	booking	no	Anlegg
 building edit	booking	no	Endre bygning
 building name	booking	no	Bygg/anlegg
 Building or facility name	booking	no	Bygning/anleggsnavn
@@ -484,8 +484,8 @@ extra info	booking	no	Tileggsinformasjon
 Extra information	booking	no	Ekstra informasjon om arrangement
 Extra information for the event	booking	no	Ekstra informasjon på arrangement
 Extra kalendar for public opening times	booking	no	Aktiver ekstra kalender for publikumsbading
-Facilities	booking	no	Fasiliteter
-Facility	booking	no	Fasilitet
+Facilities	booking	no	Egenskaper
+Feature	booking	no	Egenskap
 female	booking	no	Kvinne
 Field %1 is required	booking	no	Feltet '%1' må fylles ut
 Field %1: Invalid format	booking	no	Felt %1: Ugyldig format

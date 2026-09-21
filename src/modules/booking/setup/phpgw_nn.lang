@@ -196,7 +196,7 @@ Bookings to be deleted	booking	nn	Booking for sletting
 boundaries	booking	nn	Rammetid
 buffer deadline	booking	nn	Buffer/frist
 building	booking	nn	Bygg/anlegg
-Building (2018)	booking	nn	Anlegg
+Facility	booking	nn	Anlegg
 building edit	booking	nn	Endre bygning
 building name	booking	nn	Bygg/anlegg
 building number	booking	nn	Bygningsnummer
@@ -486,8 +486,8 @@ extra info	booking	nn	Tileggsinformasjon
 Extra information	booking	nn	Ekstra informasjon om arrangement
 Extra information for the event	booking	nn	Ekstrainformasjon på arrangement
 Extra kalendar for public opening times	booking	nn	Aktiver ekstra kalender for publikumsbading
-Facilities	booking	nn	Fasiliteter
-Facility	booking	nn	Fasilitet
+Facilities	booking	nn	Eigenskapar
+Feature	booking	nn	Eigenskap
 feb	booking	nn	februar
 female	booking	nn	Kvinne
 Field %1 is required	booking	nn	Feltet '%1' må fyllast ut

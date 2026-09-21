@@ -437,7 +437,7 @@ class booking_uibuilding extends booking_uicommon
 
 			$errors = $this->bo->validate($building);
 			if ($has_cadastral_reference
-				&& (!$building['municipality_id'] || !in_array(strtoupper($building['cadastral_type']), array('BUILDING', 'PROPERTY'), true)))
+				&& (!$building['municipality_id'] || !in_array(strtoupper($building['cadastral_type']), array('BUILDING', 'FACILITY'), true)))
 			{
 				$errors['cadastral_reference'] = lang('Cadastral type and municipality are required');
 			}

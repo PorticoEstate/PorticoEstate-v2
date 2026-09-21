@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 import { IApplication, RecurringInfoUtils as OriginalRecurringInfoUtils } from '@/service/types/api/application.types';
 import { Season } from '@/service/types/Building';
+import { VENUE_TIMEZONE } from '@/utils/venue-timezone';
 
 // Re-export RecurringInfoUtils for convenience
 export const RecurringInfoUtils = OriginalRecurringInfoUtils;
@@ -26,8 +27,12 @@ export function calculateRecurringInstances(
 
     const instances: RecurringInstance[] = [];
     const baseDate = application.dates[0]; // Use first date as template
-    const startDateTime = DateTime.fromISO(baseDate.from_);
-    const endDateTime = DateTime.fromISO(baseDate.to_);
+    // Zoned so every day-boundary comparison below (season containment, repeat-until)
+    // resolves against the venue's calendar day, not the viewer's — otherwise a
+    // viewer in a different zone can get a different occurrence count for the
+    // same application near a season/midnight boundary.
+    const startDateTime = DateTime.fromISO(baseDate.from_).setZone(VENUE_TIMEZONE);
+    const endDateTime = DateTime.fromISO(baseDate.to_).setZone(VENUE_TIMEZONE);
     const duration = endDateTime.diff(startDateTime);
 
     // Add the original instance
@@ -44,7 +49,7 @@ export function calculateRecurringInstances(
     let repeatUntilDate: DateTime;
 
     if (recurringInfo.repeat_until) {
-        repeatUntilDate = DateTime.fromISO(recurringInfo.repeat_until).endOf('day');
+        repeatUntilDate = DateTime.fromISO(recurringInfo.repeat_until).setZone(VENUE_TIMEZONE).endOf('day');
     } else {
         // Find current season end - look for season that contains or comes after the start date
         if (seasons && seasons.length > 0) {
@@ -55,15 +60,15 @@ export function calculateRecurringInstances(
 
             // First try to find season that contains the start date
             let currentSeason = sortedSeasons.find(season => {
-                const seasonStart = DateTime.fromISO(season.from_);
-                const seasonEnd = DateTime.fromISO(season.to_);
+                const seasonStart = DateTime.fromISO(season.from_).setZone(VENUE_TIMEZONE);
+                const seasonEnd = DateTime.fromISO(season.to_).setZone(VENUE_TIMEZONE);
                 return startDateTime >= seasonStart.startOf('day') && startDateTime <= seasonEnd.endOf('day');
             });
 
             // If no season contains the start date, use the next upcoming season
             if (!currentSeason) {
                 currentSeason = sortedSeasons.find(season => {
-                    const seasonStart = DateTime.fromISO(season.from_);
+                    const seasonStart = DateTime.fromISO(season.from_).setZone(VENUE_TIMEZONE);
                     return startDateTime <= seasonStart;
                 });
             }
@@ -74,7 +79,7 @@ export function calculateRecurringInstances(
             }
 
             if (currentSeason) {
-                repeatUntilDate = DateTime.fromISO(currentSeason.to_).endOf('day');
+                repeatUntilDate = DateTime.fromISO(currentSeason.to_).setZone(VENUE_TIMEZONE).endOf('day');
             } else {
                 // Default to 6 months if no season found
                 repeatUntilDate = startDateTime.plus({ months: 6 });
@@ -155,7 +160,7 @@ export function getRecurringDescription(
     if (recurringInfo.outseason) {
         endText = translate('bookingfrontend.indefinitely');
     } else if (recurringInfo.repeat_until) {
-        const endDate = DateTime.fromISO(recurringInfo.repeat_until);
+        const endDate = DateTime.fromISO(recurringInfo.repeat_until).setZone(VENUE_TIMEZONE);
         endText = translate('bookingfrontend.until_date', {
             date: endDate.toFormat('dd.MM.yyyy')
         });

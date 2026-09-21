@@ -7,6 +7,7 @@ import {IApplication, IApplicationDate} from "@/service/types/api/application.ty
 import {ColumnDef} from "@/components/gs-table/table.types";
 import {GSTable} from "@/components/gs-table";
 import {DateTime} from "luxon";
+import {VENUE_TIMEZONE} from "@/utils/venue-timezone";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
 import {default as NXLink} from "next/link";
 import {Alert, Button, Heading, Link, Tag, Spinner} from "@digdir/designsystemet-react";
@@ -179,7 +180,7 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
                 const dates = info.getValue<IApplicationDate[]>();
                 if (dates.length === 0) return <span style={{color: 'var(--ds-color-neutral-text-subtle)'}}>—</span>;
                 const earliest = [...dates].sort((a, b) => DateTime.fromISO(a.from_).toMillis() - DateTime.fromISO(b.from_).toMillis())[0];
-                const dt = DateTime.fromISO(earliest.from_);
+                const dt = DateTime.fromISO(earliest.from_).setZone(VENUE_TIMEZONE);
                 return (
                     <div style={{flexDirection: 'column', alignItems: 'flex-start'}}>
                         <span>{dt.toFormat('dd.MM.yyyy')}</span>

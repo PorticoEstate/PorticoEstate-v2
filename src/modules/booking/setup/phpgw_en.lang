@@ -370,7 +370,7 @@ Edit completed reservation	booking	en	Edit completed reservation
 edit delegate	booking	en	Edit delegate
 Edit document	booking	en	Edit document
 edit event	booking	en	Edit event
-Edit facilities	booking	en	Edit facilities
+Edit features	booking	en	Edit features
 edit facility	booking	en	Edit facility
 Edit Group	booking	en	Edit group
 edit organization	booking	en	Edit organization
@@ -441,7 +441,8 @@ extra info	booking	en	Extra info
 Extra information	booking	en	Extra information
 Extra information for the event	booking	en	Extra information for the event
 Extra kalendar for public opening times	booking	en	Extra kalendar for public opening times
-Facilities	booking	en	Facilities
+Features	booking	en	Features
+Feature	booking	en	Feature
 Facility	booking	en	Facility
 female	booking	en	Female
 Field %1 is required	booking	en	Field %1 is required

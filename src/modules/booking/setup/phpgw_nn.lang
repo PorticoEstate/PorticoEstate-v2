@@ -412,7 +412,7 @@ Edit completed reservation	booking	nn	Rediger fullført reservasjon
 edit delegate	booking	nn	Endre delegert til
 Edit document	booking	nn	Rediger dokument
 edit event	booking	nn	Rediger arrangement
-Edit facilities	booking	nn	Rediger fasiliteter
+Edit features	booking	nn	Rediger eigenskapar
 edit facility	booking	nn	Rediger fasilitet
 Edit Group	booking	nn	Rediger gruppe
 edit organization	booking	nn	Rediger organisasjon
@@ -486,7 +486,8 @@ extra info	booking	nn	Tileggsinformasjon
 Extra information	booking	nn	Ekstra informasjon om arrangement
 Extra information for the event	booking	nn	Ekstrainformasjon på arrangement
 Extra kalendar for public opening times	booking	nn	Aktiver ekstra kalender for publikumsbading
-Facilities	booking	nn	Eigenskapar
+Facility	booking	nn	Anlegg
+Features	booking	nn	Eigenskapar
 Feature	booking	nn	Eigenskap
 feb	booking	nn	februar
 female	booking	nn	Kvinne

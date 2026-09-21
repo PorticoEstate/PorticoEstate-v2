@@ -410,7 +410,7 @@ Edit completed reservation	booking	no	Rediger fullført reservasjon
 edit delegate	booking	no	Endre delegert til
 Edit document	booking	no	Rediger dokument
 edit event	booking	no	Rediger arrangement
-Edit facilities	booking	no	Rediger fasiliteter
+Edit features	booking	no	Rediger egenskaper
 edit facility	booking	no	Rediger fasilitet
 Edit Group	booking	no	Rediger gruppe
 edit organization	booking	no	Rediger organisasjon
@@ -484,8 +484,9 @@ extra info	booking	no	Tileggsinformasjon
 Extra information	booking	no	Ekstra informasjon om arrangement
 Extra information for the event	booking	no	Ekstra informasjon på arrangement
 Extra kalendar for public opening times	booking	no	Aktiver ekstra kalender for publikumsbading
-Facilities	booking	no	Egenskaper
+Facilities	booking	no	Anlegg
 Feature	booking	no	Egenskap
+Features	booking	no	Egenskaper
 female	booking	no	Kvinne
 Field %1 is required	booking	no	Feltet '%1' må fylles ut
 Field %1: Invalid format	booking	no	Felt %1: Ugyldig format

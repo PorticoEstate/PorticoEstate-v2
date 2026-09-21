@@ -93,7 +93,7 @@
 							</option>
 							<option value="FACILITY">
 								<xsl:if test="building/cadastral_reference/cadastral_type='FACILITY'"><xsl:attribute name="selected">selected</xsl:attribute></xsl:if>
-								<xsl:value-of select="php:function('lang', 'Feature')" />
+								<xsl:value-of select="php:function('lang', 'Facility')" />
 							</option>
 						</select>
 					</div>

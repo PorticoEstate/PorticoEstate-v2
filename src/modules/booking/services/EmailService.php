@@ -491,10 +491,15 @@ class EmailService
      *  - the per-recipient operator feedback, which stays gated to the booking
      *    backend so it is never shown to a citizen
      *
-     * @param array       $application Application row
-     * @param string|null $message     Status-change comment shown to the case officer
+     * @param array       $application       Application row
+     * @param string|null $message           Status-change comment shown to the case officer
+     * @param array|null  $occurrenceContext GH #1393 criterion 7 - a single withdrawn occurrence's
+     *                                       resource/date/time ('resource_name', 'date', 'time'
+     *                                       string keys). Null for every OTHER caller of this
+     *                                       method (whole-app status changes, plain comment
+     *                                       replies), which carry no single occurrence to name.
      */
-    public function sendStatusChangeNotificationToStaff(array $application, ?string $message = null): void
+    public function sendStatusChangeNotificationToStaff(array $application, ?string $message = null, ?array $occurrenceContext = null): void
     {
         // The legacy method opened with an smtp_server check whose return was commented
         // out, so it never suppressed anything. It is not reproduced as a live gate here:
@@ -563,6 +568,13 @@ class EmailService
             'contact_email' => $application['contact_email'],
             'contact_phone' => $application['contact_phone'],
             'link' => $link,
+            // Cheap: already on $application, no new plumbing - shown on every notification.
+            'application_id_string' => $application['id_string'] ?? '',
+            // Only set for a single-occurrence withdrawal (criterion 7); null on every other
+            // caller, and the template renders this whole block conditionally on resource_name.
+            'resource_name' => $occurrenceContext['resource_name'] ?? null,
+            'occurrence_date' => $occurrenceContext['date'] ?? null,
+            'occurrence_time' => $occurrenceContext['time'] ?? null,
         ]);
 
         $flags = $this->settings->get('flags');

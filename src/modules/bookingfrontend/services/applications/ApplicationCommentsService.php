@@ -84,10 +84,14 @@ class ApplicationCommentsService implements CommentsServiceInterface
      * @param string $comment Comment text
      * @param string $type Comment type (default: 'comment')
      * @param string|null $author Optional author name (defaults to current user)
+     * @param array|null $occurrenceContext Optional single-occurrence context (resource_name, date,
+     *                                       time) for a Min-side timeslot withdrawal (GH #1393
+     *                                       criterion 7) - threaded through to the staff mail only,
+     *                                       never stored on the comment row itself.
      * @return array The created comment
      * @throws Exception If comment creation fails
      */
-    public function addComment(int $applicationId, string $comment, string $type = 'comment', ?string $author = null): array
+    public function addComment(int $applicationId, string $comment, string $type = 'comment', ?string $author = null, ?array $occurrenceContext = null): array
     {
         // Sanitise on write, same as the officer path (booking/services/ApplicationService.php)
         // — the stored value is now trusted HTML for every consumer (mail template, Next
@@ -137,6 +141,7 @@ class ApplicationCommentsService implements CommentsServiceInterface
                 'commentId' => (int) $commentId,
                 'author' => $author,
                 'comment' => $comment,
+                'occurrenceContext' => $occurrenceContext,
             ];
 
             if ($ownTransaction) {
@@ -255,8 +260,9 @@ class ApplicationCommentsService implements CommentsServiceInterface
      *
      * @param int $applicationId Application ID
      * @param string $comment Comment text
+     * @param array|null $occurrenceContext Optional single-occurrence context, see addComment().
      */
-    private function sendAdminNotification(int $applicationId, string $comment): void
+    private function sendAdminNotification(int $applicationId, string $comment, ?array $occurrenceContext = null): void
     {
         try {
             // Get application data for notification
@@ -268,7 +274,7 @@ class ApplicationCommentsService implements CommentsServiceInterface
             if ($application) {
                 // Use legacy notification system
                 $bo = CreateObject('booking.boapplication');
-                $bo->send_admin_notification($application, $comment);
+                $bo->send_admin_notification($application, $comment, $occurrenceContext);
             }
         } catch (Exception $e) {
             // Log error but don't fail the comment creation
@@ -349,8 +355,13 @@ class ApplicationCommentsService implements CommentsServiceInterface
      * admin email send (synchronous SMTP) never blocks the HTTP response. Must only be
      * called after the surrounding transaction has committed, so the forked child does
      * not share an open transaction on the database connection.
+     *
+     * Public so a caller that wraps addComment() in its OWN outer transaction (addComment
+     * then nests and queues but does not flush - see the $ownTransaction check above) can
+     * flush once its own commit has happened, the same way addStatusChangeComment does
+     * internally. See AllocationWithdrawalService::withdraw for such a caller.
      */
-    private function flushPendingNotifications(): void
+    public function flushPendingNotifications(): void
     {
         if (empty($this->pendingNotifications)) {
             return;
@@ -362,7 +373,11 @@ class ApplicationCommentsService implements CommentsServiceInterface
         WebSocketHelper::forkNotification(function () use ($pending) {
             foreach ($pending as $notification) {
                 try {
-                    $this->sendAdminNotification($notification['applicationId'], $notification['comment']);
+                    $this->sendAdminNotification(
+                        $notification['applicationId'],
+                        $notification['comment'],
+                        $notification['occurrenceContext'] ?? null
+                    );
                 } catch (Exception $e) {
                     error_log("Failed to send admin notification for application {$notification['applicationId']}: " . $e->getMessage());
                 }

@@ -143,8 +143,8 @@ export class AllocationCancellationError extends Error {
 
 async function postAllocationCancellation<T>(
 	allocationId: number,
-	action: 'cancel-preview' | 'cancel',
-	body: IAllocationCancelRequest,
+	action: 'cancel-preview' | 'cancel' | 'withdraw',
+	body: IAllocationCancelRequest | {comment?: string},
 	secret?: string
 ): Promise<T> {
 	const url = phpGWLink(
@@ -219,5 +219,30 @@ export function isDeadBlocked(occurrence: IAllocationCancelOccurrence): boolean 
 	return (
 		occurrence.status === 'blocked_by_booking' &&
 		occurrence.has_active_blocking_booking !== true
+	);
+}
+
+/**
+ * Min side single-timeslot withdrawal (GH #1393 criteria 5-8) - deliberately a THIRD action, not
+ * a third `action` value smuggled through the cancel-preview/cancel confirm-token flow above:
+ * this always withdraws exactly one occurrence, soft-deactivates rather than deletes, and always
+ * notifies the case officer. See AllocationWithdrawalService.php's docblock server-side.
+ */
+export interface IAllocationWithdrawResult {
+	allocation_id: number;
+	application_id: number;
+	deactivated: boolean;
+}
+
+export function withdrawAllocationTimeslot(
+	allocationId: number,
+	comment: string,
+	secret?: string
+): Promise<IAllocationWithdrawResult> {
+	return postAllocationCancellation<IAllocationWithdrawResult>(
+		allocationId,
+		'withdraw',
+		{comment},
+		secret
 	);
 }

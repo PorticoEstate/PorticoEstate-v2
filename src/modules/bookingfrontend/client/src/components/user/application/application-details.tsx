@@ -56,6 +56,7 @@ import {
     PlusIcon,
 } from '@navikt/aksel-icons';
 import {useQueryClient} from '@tanstack/react-query';
+import {useAllocationWithdraw} from "@/service/hooks/allocation-cancellation-hooks";
 import TimeAgo from 'timeago-react';
 import * as timeago from 'timeago.js';
 import nb from 'timeago.js/lib/lang/nb_NO';
@@ -288,15 +289,40 @@ function editLabelLangKey(type: ReservedEntity['type']): string {
 
 const ReservedTimesList: FC<{
     entities: { events: IAPIEvent[]; allocations: IAPIAllocation[]; bookings: IAPIBooking[] };
+    applicationId: number;
     applicationSecret?: string;
     /** True when hosted inside the manage modal — suppresses only the
      *  "show_in_calendar" link (a navigation into a page the modal already
      *  replaces); the row's other actions are unaffected. */
     embedded?: boolean;
-}> = ({entities, applicationSecret, embedded}) => {
+}> = ({entities, applicationId, applicationSecret, embedded}) => {
     const t = useTrans();
     const serverSettings = useServerSettings();
     const participantLimitDefault = serverSettings.data?.booking_config?.participant_limit;
+    const withdrawMutation = useAllocationWithdraw();
+    const [withdrawTarget, setWithdrawTarget] = useState<IAPIAllocation | null>(null);
+    const [withdrawComment, setWithdrawComment] = useState('');
+
+    const closeWithdrawDialog = () => {
+        setWithdrawTarget(null);
+        setWithdrawComment('');
+        withdrawMutation.reset();
+    };
+
+    const handleWithdraw = async () => {
+        if (!withdrawTarget) return;
+        try {
+            await withdrawMutation.mutateAsync({
+                allocationId: withdrawTarget.id,
+                applicationId,
+                comment: withdrawComment.trim(),
+                secret: applicationSecret,
+            });
+            closeWithdrawDialog();
+        } catch (err) {
+            console.error('Failed to withdraw timeslot:', err);
+        }
+    };
 
     const rows = useMemo<ReservedEntity[]>(() => {
         const all: ReservedEntity[] = [
@@ -310,6 +336,7 @@ const ReservedTimesList: FC<{
     }, [entities]);
 
     return (
+        <>
         <div className={styles.datesList}>
             {rows.map(row => {
                 const entity = row.entity;
@@ -379,6 +406,15 @@ const ReservedTimesList: FC<{
                     }, false));
                 }
 
+                // Withdraw this single timeslot (GH #1393 criteria 5-8) — allocations only,
+                // gated the same way showEdit's allocation branch is: the OWNING APPLICATION's
+                // secret is the credential (AllocationAccessHelper::hasOwningApplicationSecret),
+                // never org-admin-only. Future only: the server rejects an already-started
+                // occurrence too (AllocationController::withdraw), this only avoids a round trip.
+                const showWithdraw = row.type === 'allocation'
+                    && !!applicationSecret
+                    && isFutureDate(DateTime.fromISO(entity.from_));
+
                 // Create new booking — allocations only, future only (mirrors
                 // allocation-manage-modal.tsx's newBookingAllocationId + manage-modal.tsx's
                 // isInFuture gate). bookingfrontend.uibooking.add carries no ownership check
@@ -394,7 +430,7 @@ const ReservedTimesList: FC<{
                     }, false));
                 }
 
-                const hasActions = showCalendarLink || showRegisterParticipants || showEdit || !!newBookingHref;
+                const hasActions = showCalendarLink || showRegisterParticipants || showEdit || !!newBookingHref || showWithdraw;
 
                 return (
                     <div key={`${row.type}-${entity.id}`} className={styles.reservedRow}>
@@ -443,12 +479,72 @@ const ReservedTimesList: FC<{
                                         </Link>
                                     </Button>
                                 )}
+                                {showWithdraw && (
+                                    <Button
+                                        variant="tertiary"
+                                        data-color="danger"
+                                        data-size="sm"
+                                        onClick={() => setWithdrawTarget(entity as IAPIAllocation)}
+                                    >
+                                        <XMarkOctagonIcon fontSize="1.1rem"/>
+                                        {t('bookingfrontend.withdraw_timeslot')}
+                                    </Button>
+                                )}
                             </div>
                         )}
                     </div>
                 );
             })}
         </div>
+
+        <Dialog
+            open={!!withdrawTarget}
+            onClose={closeWithdrawDialog}
+            closedby="any"
+        >
+            <Dialog.Block>
+                <Heading level={2} data-size="sm">
+                    {t('bookingfrontend.withdraw_timeslot')}
+                </Heading>
+                <Paragraph style={{margin: '12px 0'}}>
+                    {t('bookingfrontend.confirm_withdraw_timeslot_description')}
+                </Paragraph>
+                <label htmlFor="withdrawTimeslotComment" style={{fontWeight: 500, fontSize: 14, display: 'block', marginBottom: 6}}>
+                    {t('bookingfrontend.withdraw_timeslot_comment_label')}
+                </label>
+                <Textarea
+                    id="withdrawTimeslotComment"
+                    value={withdrawComment}
+                    onChange={(e) => setWithdrawComment(e.target.value)}
+                    rows={3}
+                    maxLength={10000}
+                    disabled={withdrawMutation.isPending}
+                />
+                {withdrawMutation.isError && (
+                    <Paragraph data-size="sm" style={{color: 'var(--ds-color-danger-text-default)', marginTop: 8}}>
+                        {withdrawMutation.error?.message || t('bookingfrontend.failed_to_add_comment')}
+                    </Paragraph>
+                )}
+            </Dialog.Block>
+            <Dialog.Block>
+                <div style={{display: 'flex', justifyContent: 'flex-end', gap: 8}}>
+                    <Button variant="tertiary" onClick={closeWithdrawDialog}>
+                        {t('common.cancel')}
+                    </Button>
+                    <Button
+                        data-color="danger"
+                        onClick={handleWithdraw}
+                        disabled={withdrawMutation.isPending}
+                    >
+                        {withdrawMutation.isPending
+                            ? <Spinner data-size="xs" aria-hidden="true"/>
+                            : null}
+                        {t('bookingfrontend.withdraw_timeslot')}
+                    </Button>
+                </div>
+            </Dialog.Block>
+        </Dialog>
+        </>
     );
 };
 
@@ -946,6 +1042,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                                 </h3>
                                 <ReservedTimesList
                                     entities={scheduleEntities}
+                                    applicationId={props.applicationId}
                                     applicationSecret={props.secret || application.secret || undefined}
                                     embedded={embedded}
                                 />

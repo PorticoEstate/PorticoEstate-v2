@@ -99,7 +99,21 @@ class AllocationWithdrawalService
 			throw $e;
 		}
 
-		$this->commentsService->flushPendingNotifications();
+		// The withdrawal already committed above - a notification failure must never turn a
+		// released slot into a 500 (GH #1393, flush-path residual, #26520). This must catch
+		// Throwable, not just Exception: WebSocketHelper::forkNotification's own per-notification
+		// handling is catch(Exception)-only in places (and, on a SAPI with neither pcntl nor
+		// fastcgi_finish_request - e.g. this stack's CLI SAPI - runs the callback synchronously
+		// with NO catch around it at all), so a PHP 8 Error/TypeError anywhere in the notification
+		// path would otherwise propagate all the way up through here uncaught.
+		try
+		{
+			$this->commentsService->flushPendingNotifications();
+		}
+		catch (\Throwable $e)
+		{
+			error_log('AllocationWithdrawalService: post-commit notification flush failed for allocation ' . (int)$allocation['id'] . ': ' . $e->getMessage());
+		}
 
 		return [
 			'allocation_id' => (int)$allocation['id'],

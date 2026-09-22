@@ -651,7 +651,18 @@ class EmailService
     {
         try {
             $so = CreateObject('booking.soapplication');
-            return $so->get_building_info($application_id);
+            // class.soapplication.inc.php::get_building_info() returns the bool `false` (not
+            // null) when its JOIN through bb_application_resource finds no row - true for a
+            // small but real slice of applications (measured: 53/61060 on this database). This
+            // method's own declared ?array return type then throws a PHP TypeError on that
+            // false, which every caller up the chain catches only as `Exception` - a TypeError
+            // is an Error, not an Exception - so the throw was escaping all the way out of
+            // EmailService::sendStatusChangeNotificationToStaff() uncaught, silently killing the
+            // ENTIRE deferred notification (including the in-app case-officer notification
+            // queued alongside it) before any mail could be built, let alone sent. Coercing here
+            // is the fix: false becomes null, which every caller already handles correctly.
+            $result = $so->get_building_info($application_id);
+            return is_array($result) ? $result : null;
         } catch (Exception $e) {
             error_log("Failed to get building info: " . $e->getMessage());
             return null;

@@ -34,9 +34,12 @@ interface AllocationManageModalProps {
  * the individual reachability calls). The design's overview also carries the organisation's contact
  * person, the owning application number and its approval date, the full "3 bookings under it" list,
  * the comment thread, the participant count and the computed cancellation deadline — the contact
- * person is the legacy `contacts[0]` entity and is not on the served Organization; `application_id`
- * is deliberately not exposed on the allocation payload; there is no bb_allocation_comment table;
- * and the deadline's computed instant is not served for an allocation. Blocking-booking names ARE
+ * person is the legacy `contacts[0]` entity and is not on the served Organization; the owning
+ * application's approval date and the "3 bookings under it" list are not served (only
+ * `application_id` itself is). A has-application allocation the viewer can open now renders
+ * ApplicationDetails embedded instead of this overview (GH #1393) — see `usesApplicationView`
+ * below. There is no bb_allocation_comment table, and the deadline's computed instant is not
+ * served for an allocation. Blocking-booking names ARE
  * reachable — `blocking_bookings[].group_name`, rendered on the confirm step once cancel-preview has
  * run — so that list is deferred one screen later than the design draws it, not unbuildable. None
  * of the rest is reachable, so none of it is drawn. What IS reachable — organisation, building,
@@ -56,6 +59,12 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 	const adapter: ManageModalAdapter<IAPIAllocation, IAllocationCancelPreview, IAllocationCancelResult> = {
 		dialogIdPrefix: 'allocation-manage',
 		typeTagLangKey: 'bookingfrontend.allocation',
+		// Re-enabled for allocations (GH #1393), GATED on `can_view_application` — the
+		// server-side answer to "may this viewer open that application at all". 810a218ed
+		// scoped this flag to events only because no such gate existed then; the gate is
+		// what makes it safe here, not a reversal of that decision. When true, ManageModal
+		// renders ApplicationDetails embedded instead of the step machine below.
+		usesApplicationView: !!allocation.can_view_application,
 		titleName: (entity) => entity.organization_name,
 		// Same shape as allocation-popper-actions.tsx's own "+ New booking" link — this modal is
 		// a SECOND consumer of that route, not a replacement for the card's button.
@@ -67,6 +76,11 @@ const AllocationManageModal: FC<AllocationManageModalProps> = ({allocation, open
 		editMenuaction: 'bookingfrontend.uiallocation.edit',
 		editLabelLangKey: 'bookingfrontend.edit allocation',
 		buildEditParams: (entity) => ({allocation_id: entity.id}),
+		// Belt-and-suspenders (GH #1393): the has-application population that can open the
+		// application never reaches this step machine at all, so this only fires for the
+		// has-application-but-NOT-viewable case, where it correctly hides the link. It stays
+		// so a future second entry point can't silently re-arm the legacy edit page.
+		showEditLink: (entity) => !entity.application_id,
 		deleteFlagKey: 'user_can_delete_allocations',
 		cancelActionLangKey: 'bookingfrontend.cancel_allocation',
 		requestModeNoticeLangKey: 'bookingfrontend.allocation_request_mode_notice',

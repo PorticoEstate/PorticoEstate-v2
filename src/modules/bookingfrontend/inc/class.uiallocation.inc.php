@@ -950,25 +950,23 @@ class bookingfrontend_uiallocation extends booking_uiallocation
 		 * here - before the record read above is used for anything, and before the POST branch -
 		 * that the caller may act on THIS allocation.
 		 *
-		 * The two accepted callers are the same ones cancel() accepts, for the same reasons, and
-		 * the shape below is deliberately identical to the guard in cancel(): an organization
-		 * admin of bb_allocation.organization_id, or the holder of the secret of the allocation's
-		 * OWN application, scoped by bb_allocation.application_id read from the allocation and
-		 * never from the request. uiapplication::show() builds this edit link on the same
-		 * secret-only page that carries the cancel link, so both entry points must accept both
-		 * callers or the citizen loses one of the two buttons that page offers.
+		 * GH #1393 - once the allocation has an application, this page's per-timeslot
+		 * edit/comment (the POST branch below composes a "request to alter time" comment via
+		 * add_comment_to_application) must be unreachable, not merely lose its buttons in the
+		 * client. That population uses Min side's withdraw action instead.
+		 *
+		 * Gated on application_id ALONE, not on which caller would otherwise authenticate: the
+		 * secret-holder path only ever existed for an allocation that already has an application
+		 * (the secret authenticates against bb_application.secret), and the calendar's
+		 * organisation-admin caller is the same actor the client now sends to the embedded
+		 * application view - so both must be refused once application_id is set, or one stays armed.
+		 *
+		 * An application-less allocation is UNCHANGED: organisation admin of
+		 * bb_allocation.organization_id only, exactly as before.
 		 */
 		$bouser = new UserHelper();
 
-		$secret = Sanitizer::get_var('secret', 'string');
-		$secret_ok = false;
-		if (!empty($allocation['application_id']) && !empty($secret))
-		{
-			$owning_application = $this->application_bo->read_single($allocation['application_id']);
-			$secret_ok = !empty($owning_application['secret']) && $owning_application['secret'] == $secret;
-		}
-
-		if (empty($allocation) || (!$bouser->is_organization_admin($allocation['organization_id']) && !$secret_ok))
+		if (empty($allocation) || !empty($allocation['application_id']) || !$bouser->is_organization_admin($allocation['organization_id']))
 		{
 			phpgw::no_access('bookingfrontend', lang('access_denied'));
 			return;

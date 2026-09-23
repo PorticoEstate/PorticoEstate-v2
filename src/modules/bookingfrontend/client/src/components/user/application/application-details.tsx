@@ -373,10 +373,11 @@ const ReservedTimesList: FC<{
                 //    event.secret's presence is therefore the one field this page can trust as
                 //    the ownership signal, on the same reasoning event-converter.ts's isOrgAdmin
                 //    already applies to booking.secret.
-                //  - allocation: class.uiallocation.inc.php's edit() accepts org-admin OR the
-                //    OWNING APPLICATION's own secret (read from the allocation, never the
-                //    request) — precisely the credential this page always holds once it can
-                //    render the application at all, so passing it always satisfies the guard.
+                //  - allocation: no edit link at all (GH #1393). Every allocation row on THIS page
+                //    belongs to this application by construction (the list comes from
+                //    applications/{id}/schedule), so there is no population here to gate for. The
+                //    legacy edit page now refuses any allocation carrying an application_id, so the
+                //    link would 403 anyway. Per-timeslot withdraw (`showWithdraw` below) replaces it.
                 //  - booking: class.uibooking.inc.php's edit() (public_functions) carries NO
                 //    ownership check whatsoever — showing Edit here grants nothing the endpoint
                 //    doesn't already grant a stranger who merely guesses the id.
@@ -391,12 +392,9 @@ const ReservedTimesList: FC<{
                         resource_ids: entity.resources.map(r => r.id),
                     }, false));
                 } else if (row.type === 'allocation') {
-                    showEdit = !!applicationSecret;
-                    editHref = withBookingSession(phpGWLink('bookingfrontend/', {
-                        menuaction: `bookingfrontend.ui${row.type}.edit`,
-                        allocation_id: entity.id,
-                        secret: applicationSecret || '',
-                    }, false));
+                    // No edit link (GH #1393) — see the docblock above. This branch must STAY,
+                    // and stay empty: delete it and allocations fall into the `else` below,
+                    // which sets showEdit = true and re-arms the link this ticket removed.
                 } else {
                     showEdit = true;
                     editHref = withBookingSession(phpGWLink('bookingfrontend/', {

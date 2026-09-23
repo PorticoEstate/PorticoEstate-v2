@@ -1,14 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Socket } from 'socket.io';
 import { RoomService } from './room.service';
+import { PhpConfigService } from '../../config/php-config.service';
 
 export interface SessionData {
   sessionId: string | null;
   bookingSessionId: string | null;
   cookies: Record<string, string>;
+  rawCookieHeader: string;
   userAgent: string;
   userInfo: UserInfo | null;
   sessionIdRequired: boolean;
+}
+
+export interface ResolvedIdentity {
+  accountId?: number;
+  ssn?: string;
 }
 
 /**
@@ -36,10 +43,11 @@ export class SessionService {
   /** Map from socket.id to session data */
   private sessions = new Map<string, SessionData>();
 
+  constructor(private readonly configService: PhpConfigService) {}
+
   extractSessionData(client: Socket): SessionData {
-    const cookies = this.parseCookies(
-      client.handshake.headers.cookie || '',
-    );
+    const rawCookieHeader = client.handshake.headers.cookie || '';
+    const cookies = this.parseCookies(rawCookieHeader);
 
     const bookingSessionId = cookies[BOOKING_SESSION_COOKIE] || null;
     const sessionId = bookingSessionId || cookies[STANDARD_SESSION_COOKIE] || null;
@@ -58,6 +66,7 @@ export class SessionService {
       sessionId,
       bookingSessionId,
       cookies,
+      rawCookieHeader,
       userAgent,
       userInfo,
       sessionIdRequired: !sessionId,
@@ -182,6 +191,54 @@ export class SessionService {
     if (accountId !== undefined) session.userInfo.accountId = accountId;
     if (ssn !== undefined) session.userInfo.ssn = ssn;
     return true;
+  }
+
+  /**
+   * Resolve this socket's real identity server-side. The client's own claim of
+   * who it is (ssn/accountId in the update_session payload) is never trusted —
+   * it is not proof of anything, only an assertion. The only thing a caller can
+   * prove is the cookie its handshake presented, so that cookie is forwarded to
+   * PHP (which owns phpgw_sessions, the login flow, and session decryption) and
+   * PHP's answer is authoritative. GET /bookingfrontend/user/session is the
+   * same production endpoint the legitimate client itself calls to learn its
+   * own accountId/ssn (see use-websocket-session.ts's useSessionId()) — this
+   * mirrors that call server-to-server instead of relaying what the client says
+   * it got back.
+   *
+   * A cookie that does not belong to a logged-in citizen (missing, expired, or
+   * simply never authenticated) makes PHP mint a fresh anonymous session and
+   * return no ssn — which is exactly the safe, unauthenticated result we want.
+   * Returns null if there is nothing to resolve or the lookup fails; callers
+   * must treat null as "no identity", never fall back to the payload.
+   */
+  async resolveIdentity(clientId: string): Promise<ResolvedIdentity | null> {
+    const session = this.sessions.get(clientId);
+    if (!session?.rawCookieHeader) return null;
+
+    try {
+      const slimHost = this.configService.getConfig().hosts.slim;
+      const res = await fetch(`http://${slimHost}/bookingfrontend/user/session`, {
+        headers: { Cookie: session.rawCookieHeader },
+      });
+
+      if (!res.ok) {
+        this.logger.warn(`Identity resolution HTTP ${res.status} for ${clientId}`);
+        return null;
+      }
+
+      const body: any = await res.json();
+      const identity: ResolvedIdentity = {};
+      if (typeof body.accountId === 'number' && body.accountId > 0) {
+        identity.accountId = body.accountId;
+      }
+      if (typeof body.ssn === 'string' && body.ssn) {
+        identity.ssn = body.ssn;
+      }
+      return identity;
+    } catch (err: any) {
+      this.logger.error(`Identity resolution failed for ${clientId}: ${err.message}`);
+      return null;
+    }
   }
 
   removeSession(clientId: string) {

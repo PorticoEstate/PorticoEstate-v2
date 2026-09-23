@@ -48,12 +48,14 @@ class ScheduleEntityService
             $sql = "SELECT e.*,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name
                     FROM bb_event e
                     JOIN bb_event_resource er ON e.id = er.event_id
                     JOIN bb_resource r ON er.resource_id = r.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON e.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE e.application_id = ? AND e.active = 1
                     ORDER BY e.from_ ASC";
 
@@ -75,6 +77,7 @@ class ScheduleEntityService
             foreach ($this->groupByEntity($rows) as $eventGroup) {
                 $event = new Event($eventGroup[0]);
                 $event->resources = array_map([$this, 'formatResource'], $eventGroup);
+                $event->cancellation_closes_application = $this->computeCancellationClosesApplication($event->id, $event->application_id);
 
                 // Add edit/cancel links
                 $eventData = $event->serialize(['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]);
@@ -158,7 +161,8 @@ class ScheduleEntityService
                         g.shortname as group_shortname,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name,
                         s.name as season_name
                     FROM bb_booking b
@@ -166,7 +170,8 @@ class ScheduleEntityService
                     JOIN bb_resource r ON br.resource_id = r.id
                     JOIN bb_group g ON b.group_id = g.id
                     JOIN bb_season s ON b.season_id = s.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON b.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE b.application_id = ? AND b.active = 1
                     ORDER BY b.from_ ASC";
 
@@ -376,6 +381,7 @@ class ScheduleEntityService
         foreach ($this->groupByEntity($events) as $eventGroup) {
             $event = new Event($eventGroup[0]);
             $event->resources = array_map([$this, 'formatResource'], $eventGroup);
+            $event->cancellation_closes_application = $this->computeCancellationClosesApplication($event->id, $event->application_id);
             $results[] = $event;
         }
 
@@ -502,6 +508,7 @@ class ScheduleEntityService
         foreach ($this->groupByEntity($events) as $eventGroup) {
             $event = new Event($eventGroup[0]);
             $event->resources = array_map([$this, 'formatResource'], $eventGroup);
+            $event->cancellation_closes_application = $this->computeCancellationClosesApplication($event->id, $event->application_id);
 
             // Add participant limits to resources
             foreach ($event->resources as &$resourceItem) {
@@ -590,6 +597,7 @@ class ScheduleEntityService
         foreach ($this->groupByEntity($events) as $eventGroup) {
             $event = new Event($eventGroup[0]);
             $event->resources = array_map([$this, 'formatResource'], $eventGroup);
+            $event->cancellation_closes_application = $this->computeCancellationClosesApplication($event->id, $event->application_id);
 
             // Add participant limits to resources
             foreach ($event->resources as &$resource) {
@@ -602,6 +610,39 @@ class ScheduleEntityService
         }
 
         return $results;
+    }
+
+    /**
+     * Determine whether cancelling this event would close its application.
+     *
+     * Mirrors the cascade condition in bookingfrontend uievent.inc.php cancel():
+     * the application is set to REJECTED when the event has an application_id
+     * and no OTHER active row in bb_application_association (bookings, allocations,
+     * or events sharing that application_id) remains.
+     *
+     * @param int $eventId The event's own id (bb_application_association.id for its 'event' rows)
+     * @param int|null $applicationId The event's application_id
+     * @return bool
+     */
+    private function computeCancellationClosesApplication(int $eventId, ?int $applicationId): bool
+    {
+        if (empty($applicationId)) {
+            return false;
+        }
+
+        $sql = "SELECT 1 FROM bb_application_association
+                WHERE application_id = :application_id
+                  AND id != :event_id
+                  AND active = 1
+                LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':application_id' => $applicationId,
+            ':event_id' => $eventId
+        ]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC) === false;
     }
 
     /**
@@ -628,8 +669,10 @@ class ScheduleEntityService
         return [
             'id' => $data['resource_id'],
             'name' => $data['resource_name'],
-            'activity_id' => $data['activity_id'] ?? null,
-            'activity_name' => $data['activity_name'] ?? null,
+            'activity_id' => array_key_exists('resource_activity_id', $data)
+                ? $data['resource_activity_id'] : ($data['activity_id'] ?? null),
+            'activity_name' => array_key_exists('resource_activity_name', $data)
+                ? $data['resource_activity_name'] : ($data['activity_name'] ?? null),
             'building_id' => $data['building_id'] ?? null,
         ];
     }
@@ -730,7 +773,8 @@ class ScheduleEntityService
                         g.shortname as group_shortname,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name,
                         s.name as season_name
                     FROM bb_booking b
@@ -738,7 +782,8 @@ class ScheduleEntityService
                     JOIN bb_resource r ON br.resource_id = r.id
                     JOIN bb_group g ON b.group_id = g.id
                     JOIN bb_season s ON b.season_id = s.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON b.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE r.id IN (" . implode(',', array_map('intval', $resource_ids)) . ")
                     AND b.active = 1
                     AND s.active = 1
@@ -779,12 +824,14 @@ class ScheduleEntityService
             $sql = "SELECT e.*,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name
                     FROM bb_event e
                     JOIN bb_event_resource er ON e.id = er.event_id
                     JOIN bb_resource r ON er.resource_id = r.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON e.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE r.id IN (" . implode(',', array_map('intval', $resource_ids)) . ")
                     AND e.active = 1
                     AND ((e.from_ >= ? AND e.from_ < ?)
@@ -902,7 +949,8 @@ class ScheduleEntityService
                         g.shortname as group_shortname,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name,
                         s.name as season_name
                     FROM bb_booking b
@@ -910,7 +958,8 @@ class ScheduleEntityService
                     JOIN bb_resource r ON br.resource_id = r.id
                     JOIN bb_group g ON b.group_id = g.id
                     JOIN bb_season s ON b.season_id = s.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON b.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE r.id = ?
                     AND b.active = 1
                     AND s.active = 1
@@ -951,12 +1000,14 @@ class ScheduleEntityService
             $sql = "SELECT e.*,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name
                     FROM bb_event e
                     JOIN bb_event_resource er ON e.id = er.event_id
                     JOIN bb_resource r ON er.resource_id = r.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON e.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE r.id = ?
                     AND e.active = 1
                     AND ((e.from_ >= ? AND e.from_ < ?)
@@ -1202,7 +1253,8 @@ class ScheduleEntityService
                         g.shortname as group_shortname,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name,
                         s.name as season_name,
                         building.name as building_name
@@ -1213,7 +1265,8 @@ class ScheduleEntityService
                     JOIN bb_season s ON b.season_id = s.id
                     JOIN bb_building_resource br2 ON r.id = br2.resource_id
                     JOIN bb_building building ON br2.building_id = building.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON b.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE b.group_id IN (" . implode(',', array_map('intval', $group_ids)) . ")
                     AND b.active = 1
                     AND s.active = 1
@@ -1249,7 +1302,8 @@ class ScheduleEntityService
             $sql = "SELECT e.*,
                         r.id as resource_id,
                         r.name as resource_name,
-                        r.activity_id,
+                        r.activity_id AS resource_activity_id,
+                        ract.name AS resource_activity_name,
                         act.name as activity_name,
                         building.name as building_name
                     FROM bb_event e
@@ -1257,7 +1311,8 @@ class ScheduleEntityService
                     JOIN bb_resource r ON er.resource_id = r.id
                     JOIN bb_building_resource br ON r.id = br.resource_id
                     JOIN bb_building building ON br.building_id = building.id
-                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    LEFT JOIN bb_activity act ON e.activity_id = act.id
+                    LEFT JOIN bb_activity ract ON r.activity_id = ract.id
                     WHERE e.customer_organization_id = :organization_id
                     AND e.active = 1
                     AND ((e.from_ >= :from AND e.from_ < :to)

@@ -1,0 +1,16 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ lang('Holidays') }}{% endblock %}
+{% block content %}
+<p><a href="{{ list_url|e }}">{{ lang('Back') }}</a></p>
+<h1>{{ lang('Holidays') }} ({{ locale|e }})</h1>
+{% include '@phpgwapi_components/app_datatable/app_datatable.twig' with {id: 'calendar-holiday-list'} %}
+{% endblock %}
+{% block scripts %}
+<script>
+window.__calendarHolidayList = {
+ id: 'calendar-holiday-list', apiUrl: '{{ api_url|e('js') }}', editUrl: '{{ edit_url_template|e('js') }}', deleteUrl: '{{ delete_url_template|e('js') }}', newUrl: '{{ new_url|e('js') }}',
+ lang: {name: '{{ lang('Holiday')|e('js') }}', rule: '{{ lang('Rule')|e('js') }}', view: '{{ lang('view')|e('js') }}', edit: '{{ lang('edit')|e('js') }}', delete: '{{ lang('delete')|e('js') }}', add: '{{ lang('add')|e('js') }}', confirm: '{{ lang('Are you sure you want to delete this holiday ?')|e('js') }}', empty: '{{ lang('No data available in table')|e('js') }}', search: '{{ lang('search')|e('js') }}'}
+};
+</script>
+<script>{{ source('@views/holiday/holiday_list.js') }}</script>
+{% endblock %}

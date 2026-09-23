@@ -1,0 +1,10 @@
+.sms-message-page{padding:1rem}
+.sms-form{display:flex;flex-direction:column;gap:.6rem;max-width:32rem}
+.sms-form label{font-weight:600}
+.sms-form input,.sms-form textarea{padding:.5rem;border:1px solid #c6c6c6;border-radius:4px;font:inherit}
+.sms-form__counter{font-size:.85rem;color:#555}
+.sms-form__checkbox{display:flex;align-items:center;gap:.4rem;font-weight:400}
+.sms-form__actions{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:.5rem}
+.sms-button{display:inline-block;padding:.55rem .85rem;border:1px solid #20568f;border-radius:4px;background:#2a72ba;color:#fff;text-decoration:none;cursor:pointer}
+.sms-button--secondary{background:#fff;color:#20568f}
+.sms-message--error{color:#b42318}

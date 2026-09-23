@@ -521,6 +521,18 @@ class sms_sms__
 		return $ok;
 	}
 
+	public function refresh()
+	{
+		$ok = false;
+		$ok_inbox = $this->getsmsinbox();
+		$ok_status = $this->getsmsstatus();
+		if ($ok_inbox !== false && $ok_status !== false)
+		{
+			$ok = true;
+		}
+		return $ok;
+	}
+	
 	function getsmsinbox($debug = false)
 	{
 		$ReturnValue = $this->gw_set_incoming_action();

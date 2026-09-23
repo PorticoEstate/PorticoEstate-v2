@@ -1,0 +1,40 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('view job') }}{% endblock %}
+
+{% block styles %}
+	<style>
+		.hrm-job-view { max-width: 52rem; margin: 0 auto; }
+		.hrm-job-view__header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .75rem 1rem; margin-bottom: 1rem; }
+		.hrm-job-view__header h1 { margin: 0; font-size: 1.5rem; }
+		.hrm-job-view__links { display: flex; flex-wrap: wrap; gap: .75rem; }
+		.hrm-job-view__panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem 1.25rem; padding: 1rem; border: 1px solid #d5dde6; border-radius: 6px; background: #fff; }
+		.hrm-job-view__field--full { grid-column: 1 / -1; }
+		.hrm-job-view__label { color: #526579; font-weight: 600; }
+		.hrm-job-view__value { margin-top: .25rem; color: #17324d; overflow-wrap: anywhere; white-space: pre-wrap; }
+		.hrm-job-view__button { display: inline-block; border: 1px solid #24527a; border-radius: 4px; padding: .45rem .85rem; background: #24527a; color: #fff; text-decoration: none; }
+		.hrm-job-view__button--secondary { background: #fff; color: #24527a; }
+		.hrm-job-view__button--danger { border-color: #9f1239; background: #9f1239; }
+	</style>
+{% endblock %}
+
+{% block content %}
+	{% set parent_name = '' %}{% for parent in parent_list %}{% if parent.selected %}{% set parent_name = parent.name %}{% endif %}{% endfor %}
+	<div class="hrm-job-view">
+		<div class="hrm-job-view__header">
+			<h1>{{ lang('view job') }}</h1>
+			<div class="hrm-job-view__links">
+				<a class="hrm-job-view__button hrm-job-view__button--secondary" href="{{ list_url|e }}">{{ lang('Back to the list') }}</a>
+				{% if can_edit %}<a class="hrm-job-view__button" href="{{ edit_url|e }}">{{ lang('edit') }}</a>{% endif %}
+				{% if can_delete %}<a class="hrm-job-view__button hrm-job-view__button--danger" href="{{ delete_url|e }}">{{ lang('delete') }}</a>{% endif %}
+			</div>
+		</div>
+		<div class="hrm-job-view__panel">
+			<div class="hrm-job-view__field"><div class="hrm-job-view__label">{{ lang('category ID') }}</div><div class="hrm-job-view__value">{{ job_id }}</div></div>
+			{% if values.entry_date %}<div class="hrm-job-view__field"><div class="hrm-job-view__label">{{ lang('Entry date') }}</div><div class="hrm-job-view__value">{{ values.entry_date }}</div></div>{% endif %}
+			<div class="hrm-job-view__field"><div class="hrm-job-view__label">{{ lang('parent') }}</div><div class="hrm-job-view__value">{{ parent_name }}</div></div>
+			<div class="hrm-job-view__field hrm-job-view__field--full"><div class="hrm-job-view__label">{{ lang('name') }}</div><div class="hrm-job-view__value">{{ values.name|default('') }}</div></div>
+			<div class="hrm-job-view__field hrm-job-view__field--full"><div class="hrm-job-view__label">{{ lang('Descr') }}</div><div class="hrm-job-view__value">{{ values.descr|default('') }}</div></div>
+		</div>
+	</div>
+{% endblock %}

@@ -22,7 +22,7 @@ class booking_uifacility extends booking_uicommon
 		$this->bo = CreateObject('booking.bofacility');
 		self::set_active_menu('booking::settings::facility');
 		$this->fields = array('name', 'active');
-		$this->display_name = lang('facilities');
+		$this->display_name = lang('features');
 		Settings::getInstance()->update('flags', ['app_header' => lang('booking') . "::{$this->display_name}"]);
 	}
 

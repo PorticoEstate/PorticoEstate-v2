@@ -1,0 +1,64 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('view place') }}{% endblock %}
+
+{% block styles %}
+	<style>
+		.hrm-place-view { max-width: 52rem; margin: 0 auto; }
+		.hrm-place-view__header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .75rem 1rem; margin-bottom: 1rem; }
+		.hrm-place-view__header h1 { margin: 0; font-size: 1.5rem; }
+		.hrm-place-view__links { display: flex; flex-wrap: wrap; gap: .75rem; }
+		.hrm-place-view__panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem 1.25rem; padding: 1rem; border: 1px solid #d5dde6; border-radius: 6px; background: #fff; }
+		.hrm-place-view__field--full { grid-column: 1 / -1; }
+		.hrm-place-view__label { color: #526579; font-weight: 600; }
+		.hrm-place-view__value { margin-top: .25rem; color: #17324d; overflow-wrap: anywhere; white-space: pre-wrap; }
+		.hrm-place-view__button { display: inline-block; border: 1px solid #24527a; border-radius: 4px; padding: .45rem .85rem; background: #24527a; color: #fff; text-decoration: none; }
+		.hrm-place-view__button--secondary { background: #fff; color: #24527a; }
+		.hrm-place-view__button--danger { border-color: #9f1239; background: #9f1239; }
+	</style>
+{% endblock %}
+
+{% block content %}
+	<div class="hrm-place-view">
+		<div class="hrm-place-view__header">
+			<h1>{{ lang('view place') }}</h1>
+			<div class="hrm-place-view__links">
+				<a class="hrm-place-view__button hrm-place-view__button--secondary" href="{{ list_url|e }}">{{ lang('Back to the list') }}</a>
+				<a class="hrm-place-view__button" href="{{ edit_url|e }}">{{ lang('edit') }}</a>
+				<a class="hrm-place-view__button hrm-place-view__button--danger" href="{{ delete_url|e }}">{{ lang('delete') }}</a>
+			</div>
+		</div>
+		<div class="hrm-place-view__panel">
+			<div class="hrm-place-view__field">
+				<div class="hrm-place-view__label">{{ lang('Place ID') }}</div>
+				<div class="hrm-place-view__value">{{ place_id }}</div>
+			</div>
+			{% if values.entry_date %}
+				<div class="hrm-place-view__field">
+					<div class="hrm-place-view__label">{{ lang('Entry date') }}</div>
+					<div class="hrm-place-view__value">{{ values.entry_date }}</div>
+				</div>
+			{% endif %}
+			<div class="hrm-place-view__field hrm-place-view__field--full">
+				<div class="hrm-place-view__label">{{ lang('name') }}</div>
+				<div class="hrm-place-view__value">{{ values.name|default('') }}</div>
+			</div>
+			<div class="hrm-place-view__field hrm-place-view__field--full">
+				<div class="hrm-place-view__label">{{ lang('address') }}</div>
+				<div class="hrm-place-view__value">{{ values.address|default('') }}</div>
+			</div>
+			<div class="hrm-place-view__field">
+				<div class="hrm-place-view__label">{{ lang('zip') }}</div>
+				<div class="hrm-place-view__value">{{ values.zip|default('') }}</div>
+			</div>
+			<div class="hrm-place-view__field">
+				<div class="hrm-place-view__label">{{ lang('town') }}</div>
+				<div class="hrm-place-view__value">{{ values.town|default('') }}</div>
+			</div>
+			<div class="hrm-place-view__field hrm-place-view__field--full">
+				<div class="hrm-place-view__label">{{ lang('remark') }}</div>
+				<div class="hrm-place-view__value">{{ values.remark|default('') }}</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}

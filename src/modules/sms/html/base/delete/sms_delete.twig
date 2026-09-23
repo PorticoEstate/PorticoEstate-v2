@@ -1,0 +1,22 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ lang('delete') }}{% endblock %}
+{% block styles %}
+	<style>{{ source('@views/delete/sms_delete.css') }}</style>
+{% endblock %}
+
+{% block content %}
+	<div id="sms-delete-app" class="sms-message-page" data-api-url="{{ api_url|e }}" data-list-url="{{ list_url|e }}" data-message-id="{{ message_id }}" data-csrf-name="{{ csrf.name|e('html_attr') }}" data-csrf-value="{{ csrf.value|e('html_attr') }}">
+		<h1>{{ lang('delete') }}</h1>
+		<p>{{ lang('do you really want to delete this entry') }}</p>
+		<div id="sms-delete-error" class="sms-message sms-message--error" hidden></div>
+
+		<div class="sms-form__actions">
+			<button id="sms-delete-confirm" class="sms-button sms-button--danger" type="button">{{ lang('yes') }}</button>
+			<a class="sms-button sms-button--secondary" href="{{ list_url|e }}">{{ lang('no') }}</a>
+		</div>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+	<script>{{ source('@views/delete/sms_delete.js') }}</script>
+{% endblock %}

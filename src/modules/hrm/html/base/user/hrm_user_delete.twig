@@ -1,0 +1,39 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('delete') }} {{ lang('Training') }}{% endblock %}
+
+{% block styles %}
+	<style>
+		.hrm-training-delete { max-width: 42rem; margin: 0 auto; }
+		.hrm-training-delete__panel { padding: 1.25rem; border: 1px solid #d5dde6; border-left: .45rem solid #9f1239; border-radius: 6px; background: #fff; }
+		.hrm-training-delete__panel h1 { margin: 0 0 .75rem; font-size: 1.5rem; }
+		.hrm-training-delete__summary { display: grid; gap: .4rem; margin: 1rem 0; color: #17324d; }
+		.hrm-training-delete__label { color: #526579; font-weight: 600; }
+		.hrm-training-delete__actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+		.hrm-training-delete__button { border: 1px solid #24527a; border-radius: 4px; padding: .45rem .85rem; background: #24527a; color: #fff; text-decoration: none; cursor: pointer; }
+		.hrm-training-delete__button--danger { border-color: #9f1239; background: #9f1239; }
+		.hrm-training-delete__button--secondary { background: #fff; color: #24527a; }
+	</style>
+{% endblock %}
+
+{% block content %}
+	<div class="hrm-training-delete">
+		<div class="hrm-training-delete__panel">
+			<h1>{{ lang('delete') }} {{ lang('Training') }}</h1>
+			<p>{{ lang('do you really want to delete this entry') }}</p>
+
+			<div class="hrm-training-delete__summary">
+				<div><span class="hrm-training-delete__label">{{ lang('training ID') }}:</span> {{ training_id }}</div>
+				<div><span class="hrm-training-delete__label">{{ lang('training') }}:</span> {{ values.title|default('') }}</div>
+				<div><span class="hrm-training-delete__label">{{ lang('start date') }}:</span> {{ values.start_date|default('') }}</div>
+			</div>
+
+			<form method="post" action="{{ form_action|e }}">
+				<div class="hrm-training-delete__actions">
+					<button class="hrm-training-delete__button hrm-training-delete__button--danger" type="submit" name="confirm" value="1">{{ lang('yes') }}</button>
+					<a class="hrm-training-delete__button hrm-training-delete__button--secondary" href="{{ list_url|e }}">{{ lang('no') }}</a>
+				</div>
+			</form>
+		</div>
+	</div>
+{% endblock %}

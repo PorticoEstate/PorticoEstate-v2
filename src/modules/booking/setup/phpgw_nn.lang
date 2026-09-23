@@ -196,9 +196,10 @@ Bookings to be deleted	booking	nn	Booking for sletting
 boundaries	booking	nn	Rammetid
 buffer deadline	booking	nn	Buffer/frist
 building	booking	nn	Bygg/anlegg
-Building (2018)	booking	nn	Anlegg
+Facility	booking	nn	Anlegg
 building edit	booking	nn	Endre bygning
 building name	booking	nn	Bygg/anlegg
+building number	booking	nn	Bygningsnummer
 Building or facility name	booking	nn	Bygning/anleggsnavn
 building schedule	booking	nn	Kalendar
 building show	booking	nn	Vis bygning
@@ -209,6 +210,8 @@ building_preview	booking	nn	Førehandsvisning
 building_title	booking	nn	Bygning
 buildings	booking	nn	Bygg/anlegg
 bygning	booking	nn	Bygg/anlegg
+cadastral type	booking	nn	Matrikkeltype
+cadastral property	booking	nn	Matrikkelnummer
 Calendar	booking	nn	Kalender
 Calendar text	booking	nn	Tekst bak kalenderknapp.
 Can not create a booking in the past	booking	nn	Du kan ikkje opprette ein interntildeling i fortida
@@ -409,7 +412,7 @@ Edit completed reservation	booking	nn	Rediger fullført reservasjon
 edit delegate	booking	nn	Endre delegert til
 Edit document	booking	nn	Rediger dokument
 edit event	booking	nn	Rediger arrangement
-Edit facilities	booking	nn	Rediger fasiliteter
+Edit features	booking	nn	Rediger eigenskapar
 edit facility	booking	nn	Rediger fasilitet
 Edit Group	booking	nn	Rediger gruppe
 edit organization	booking	nn	Rediger organisasjon
@@ -483,8 +486,9 @@ extra info	booking	nn	Tileggsinformasjon
 Extra information	booking	nn	Ekstra informasjon om arrangement
 Extra information for the event	booking	nn	Ekstrainformasjon på arrangement
 Extra kalendar for public opening times	booking	nn	Aktiver ekstra kalender for publikumsbading
-Facilities	booking	nn	Fasiliteter
-Facility	booking	nn	Fasilitet
+Facility	booking	nn	Anlegg
+Features	booking	nn	Eigenskapar
+Feature	booking	nn	Eigenskap
 feb	booking	nn	februar
 female	booking	nn	Kvinne
 Field %1 is required	booking	nn	Feltet '%1' må fyllast ut
@@ -668,6 +672,7 @@ move_down	booking	nn	Flytt ned
 move_up	booking	nn	Flytt opp
 multi domain	booking	nn	Støtte for kryss-instans
 Multiple Events was created	booking	nn	Fleire arrangementer er oppretta
+Municipality ID	booking	nn	Kommunenummer
 my assigned applications	booking	nn	*Mine søknader
 my assigned buildings	booking	nn	*Mine bygningar
 name	booking	nn	Namn
@@ -746,6 +751,7 @@ One e-mail pr. line.	booking	nn	Berre ei e-postadresse pr. linje.
 One filter box per line	booking	nn	Bare én filtreringsboks per linje
 One or more bookings, allocations or events needs to be created before an application can be Accepted	booking	nn	Ein eller fleire interntildelinger, tildelinger eller arrangementer må opprettast før ein søknad kan aksepterast
 only_case_officer_can_create	booking	nn	Berre sakshandsamar kan opprette tildelingar
+open view in new window	booking	nn	Åpne visning i ny fane
 Opening hours	booking	nn	Åpningstider
 optional	booking	nn	Valfritt
 Optional e-mail adress	booking	nn	Valfri e-post adresse
@@ -787,6 +793,7 @@ parent activity	booking	nn	Overordna kategori
 parent group	booking	nn	Overordna gruppe
 parent id	booking	nn	Overordna id
 partially refunded	booking	nn	Delvis refundert
+participant_limit_quantity_help	booking	nn	-1 blokkerer deltakarregistrering frå vald dato, 0 slettar tidlegare deltakargrense for vald dato, og positive tal set deltakargrensa til det oppgitte talet.
 participant limit	booking	nn	Max antal deltakarar
 participant limit sms	booking	nn	Send kvittering for registrering på SMS
 Participants	booking	nn	Deltakarar
@@ -1248,3 +1255,4 @@ overwrite_manual_prices_question	booking	nn	%1 av %2 tidspunkt har ein pris som 
 overwrite_all_prices	booking	nn	Overskriv alle
 keep_manual_prices	booking	nn	Behald dei manuelle
 cancel_price_update	booking	nn	Avbryt
+date and time	booking	nn	Tidspunkt

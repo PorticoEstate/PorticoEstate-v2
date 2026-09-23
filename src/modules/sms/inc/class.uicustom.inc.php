@@ -119,11 +119,7 @@ class sms_uicustom
 			    <p>
 			";
 
-		$done_data = array(
-			'menuaction' => 'sms.uisms.index'
-		);
-
-		$done_url = phpgw::link('/index.php', $done_data);
+		$done_url = phpgw::link('/sms/view/inbox');
 
 		$content .= "
 				    <p><li>

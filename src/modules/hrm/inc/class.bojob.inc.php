@@ -28,6 +28,7 @@ class hrm_bojob
 	var $sort;
 	var $order;
 	var $cat_id;
+	var $length;
 
 	/**
 	 * @var bool return all rows for a search - not a limited subset
@@ -81,6 +82,8 @@ class hrm_bojob
 		$this->filter	= Sanitizer::get_var('filter', 'int');
 		$this->cat_id	= Sanitizer::get_var('cat_id', 'int');
 		$this->allrows	= Sanitizer::get_var('allrows', 'bool');
+		$length = Sanitizer::get_var('length', 'int', 'REQUEST', 10);
+		$this->length = $length === -1 ? -1 : max(1, $length);
 		$this->serverSettings = Settings::getInstance()->get('server');
 		$this->userSettings = Settings::getInstance()->get('user');
 		$this->phpgwapi_common = new \phpgwapi_common();
@@ -116,6 +119,7 @@ class hrm_bojob
 			'query' 	=> $this->query,
 			'sort'		=> $this->sort,
 			'order' 	=> $this->order,
+			'length' 	=> $this->length,
 			'allrows'	=> $this->allrows
 		);
 		$account_info = $this->so->read($params);
@@ -374,6 +378,7 @@ class hrm_bojob
 	function select_task_list($selected = '', $id = '', $job_id = '')
 	{
 		$tasks = $this->so->select_task_list($id, $job_id);
+		$task_list = array();
 		//while (is_array($tasks) && list(,$task) = each($tasks))
 		if (is_array($tasks))
 		{

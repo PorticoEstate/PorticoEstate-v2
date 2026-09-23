@@ -60,10 +60,17 @@ class hrm_menu
 			$start_page = $userSettings['preferences']['hrm']['default_start_page'];
 		}
 
+		$modernStartPages = array(
+			'user' => phpgw::link('/hrm/view/users'),
+			'place' => phpgw::link('/hrm/view/places'),
+			'job' => phpgw::link('/hrm/view/jobs'),
+		);
+		$navbarUrl = $modernStartPages[$start_page] ?? phpgw::link('/index.php', array('menuaction' => "hrm.ui{$start_page}.index"));
+
 		$menus['navbar'] = array(
 			'hrm' => array(
 				'text'	=> lang('hrm'),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => "hrm.ui{$start_page}.index")),
+				'url'	=> $navbarUrl,
 				'image'	=> array('hrm', 'navbar'),
 				'order'	=> 35,
 				'group'	=> 'facilities management'
@@ -85,19 +92,19 @@ class hrm_menu
 				),
 				'training'	=> array(
 					'text'	=> lang('training category'),
-					'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uicategory.index', 'type' => 'training'))
+					'url'	=> phpgw::link('/hrm/view/categories/training')
 				),
 				'skill_level'	=> array(
 					'text'	=> lang('skill level'),
-					'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uicategory.index', 'type' => 'skill_level'))
+					'url'	=> phpgw::link('/hrm/view/categories/skill_level')
 				),
 				'experience'	=> array(
 					'text'	=> lang('experience category'),
-					'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uicategory.index', 'type' => 'experience'))
+					'url'	=> phpgw::link('/hrm/view/categories/experience')
 				),
 				'qualification'	=> array(
 					'text'	=> lang('qualification category'),
-					'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uicategory.index', 'type' => 'qualification'))
+					'url'	=> phpgw::link('/hrm/view/categories/qualification')
 				),
 				'acl'	=> array(
 					'text'	=> lang('Configure Access Permissions'),
@@ -128,27 +135,27 @@ class hrm_menu
 		$job_children = array(
 			'job_type'	=> array(
 				'text'	=> lang('Job type'),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uijob.index'))
+				'url'	=> phpgw::link('/hrm/view/jobs')
 			),
 			'organisation'	=> array(
 				'text'	=> lang('Organisation'),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uijob.hierarchy'))
+				'url'	=> phpgw::link('/hrm/view/jobs/hierarchy')
 			)
 		);
 
 		$menus['navigation'] = array(
 			'user'	=> array(
 				'text'	=> lang('User'),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uiuser.index'))
+				'url'	=> phpgw::link('/hrm/view/users')
 			),
 			'job'	=> array(
 				'text'	=> lang('Job type'),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uijob.index')),
+				'url'	=> phpgw::link('/hrm/view/jobs'),
 				'children' => $job_children
 			),
 			'place'	=> array(
 				'text'	=> lang('PLace'),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'hrm.uiplace.index'))
+				'url'	=> phpgw::link('/hrm/view/places')
 			)
 		);
 		Settings::getInstance()->update('flags', ['currentapp' => $incoming_app]);
@@ -176,6 +183,7 @@ class hrm_menu
 	{
 		$level++;
 		$i = 0;
+		$menu = array();
 		foreach ($children as $key => $vals)
 		{
 			$menu[] = $vals;

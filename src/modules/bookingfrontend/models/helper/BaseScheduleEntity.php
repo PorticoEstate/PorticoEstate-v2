@@ -53,6 +53,7 @@ abstract class BaseScheduleEntity
 
     /**
      * @OA\Property(type="integer")
+     * @Expose
      */
     public $application_id;
 

@@ -26,6 +26,7 @@ phpgw::import_class('phpgwapi.datetime');
 class hrm_bouser
 {
 	var $start;
+	var $length;
 	var $query;
 	var $filter;
 	var $sort;
@@ -81,6 +82,7 @@ class hrm_bouser
 		$this->filter	= Sanitizer::get_var('filter', 'int');
 		$this->cat_id	= Sanitizer::get_var('cat_id', 'int');
 		$this->allrows	= Sanitizer::get_var('allrows', 'bool');
+		$this->length	= Sanitizer::get_var('length', 'int', 'REQUEST', 10);
 		$this->userSettings = Settings::getInstance()->get('user');
 		$this->phpgwapi_common = new \phpgwapi_common();
 	}
@@ -147,11 +149,13 @@ class hrm_bouser
 		$values = $this->so->read_training(array(
 			'user_id' => $user_id,
 			'start' => $this->start,
+			'length' => $this->length,
 			'query' => $this->query,
 			'sort' => $this->sort,
 			'order' => $this->order,
 			'allrows' => $this->allrows
 		));
+		$this->total_records = $this->so->total_records;
 		return $values;
 	}
 
@@ -294,12 +298,15 @@ class hrm_bouser
 		if (!$account_info->person_id)
 		{
 			$sfields = rawurlencode(serialize($fields[0]));
+			// redirect=true avoids the HTML-entity encoded '&amp;' between query params, since
+			// the twig template escapes link_value again when placing it in an href attribute.
 			$contact_link   = phpgw::link(
 				'/index.php',
 				array(
 					'menuaction'	=> 'addressbook.uiaddressbook_persons.add',
 					'entry'			=> $sfields,
-				)
+				),
+				true
 			);
 		}
 		else
@@ -309,7 +316,8 @@ class hrm_bouser
 				array(
 					'menuaction'	=> 'addressbook.uiaddressbook_persons.view',
 					'ab_id'		=> $fields[0]['contact_id']
-				)
+				),
+				true
 			);
 		}
 

@@ -1,5 +1,7 @@
 <?php
 
+use App\modules\bookingfrontend\controllers\AllocationController;
+use App\modules\bookingfrontend\controllers\BookingCancellationController;
 use App\modules\bookingfrontend\controllers\applications\ApplicationController;
 use App\modules\bookingfrontend\controllers\BuildingController;
 use App\modules\bookingfrontend\controllers\applications\CheckoutController;
@@ -147,6 +149,26 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->put('/{id}/hospitality-orders/{orderId}', HospitalityOrderController::class . ':updateOrder');
 		$group->delete('/{id}/hospitality-orders/{orderId}', HospitalityOrderController::class . ':deleteOrder');
 
+	});
+
+	// Allocation cancellation. Both routes carry the #1210 two-caller guard: the caller must be
+	// an organization admin of the allocation's own organization, or hold the secret of the
+	// application the allocation belongs to. The preview is guarded as tightly as the delete,
+	// because it emits the whole series and the bookings under it.
+	$group->group('/allocations', function (RouteCollectorProxy $group)
+	{
+		$group->post('/{id}/cancel-preview', AllocationController::class . ':cancelPreview');
+		$group->post('/{id}/cancel', AllocationController::class . ':cancel');
+	});
+
+	// Booking cancellation. Same #1210 guard shape as /allocations above, but resolved through
+	// bb_booking.group_id -> bb_group.organization_id (a booking carries no organization_id of
+	// its own) - see BookingAccessHelper. The preview discloses the delete_allocation cascade so a
+	// caller can see it before opting in; see BookingCancellationService.
+	$group->group('/bookings', function (RouteCollectorProxy $group)
+	{
+		$group->post('/{id}/cancel-preview', BookingCancellationController::class . ':cancelPreview');
+		$group->post('/{id}/cancel', BookingCancellationController::class . ':cancel');
 	});
 
 	// Hospitality menu (no application context needed)

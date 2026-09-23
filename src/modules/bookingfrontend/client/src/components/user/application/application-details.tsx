@@ -7,11 +7,12 @@ import {
     useBuildingAudience,
     useApplicationDocuments,
     useApplicationComments,
-    useAddApplicationCommentWs,
+    useAddApplicationComment,
     useUpdateApplicationStatus,
     useUploadApplicationDocument,
     useDeleteApplicationDocument,
     useApplicationScheduleEntities,
+    useServerSettings,
     markNotificationsAsRead,
 } from "@/service/hooks/api-hooks";
 import {IAPIEvent, IAPIAllocation, IAPIBooking} from "@/service/pecalendar.types";
@@ -38,6 +39,8 @@ import {FCallTempEvent} from "@/components/building-calendar/building-calendar.t
 import ArticleTable from "@/components/article-table/article-table";
 import {ENABLE_COMBINED_APPLICATIONS} from '@/service/feature-flags';
 import {getStatusColor} from './status-utils';
+import {resolveParticipantLimit} from "@/components/building-calendar/util/participant-limit";
+import {isFutureDate, phpGWLink} from "@/service/util";
 import styles from "./application-details.module.scss";
 import {
     ArrowLeftIcon,
@@ -62,6 +65,17 @@ interface ApplicationDetailsProps {
     initialApplication?: IApplication;
     applicationId: number;
     secret?: string;
+    /** True when mounted inside another surface's own document (e.g. a modal) that
+     *  already supplies its own <main> landmark and page title — suppresses this
+     *  component's page-chrome (its <main> wrapper, back-link, <h1> and document.title
+     *  side effect) so the host page isn't left with duplicate landmarks/headings.
+     *  Default false: the standalone page's own render is unchanged. */
+    embedded?: boolean;
+    /** Fired with the application's name once it resolves. The embedded host (the manage
+     *  modal) has no other access to that name — this component's own <h1> render of it
+     *  is suppressed when embedded — so it uses this to supply the modal Dialog's title,
+     *  giving the dialog an accessible name carrying the application's identity. */
+    onTitleReady?: (name: string) => void;
 }
 
 const ACCEPTED_FILE_TYPES = '.jpg,.jpeg,.png,.gif,.xls,.xlsx,.doc,.docx,.txt,.pdf,.odt,.ods';
@@ -88,6 +102,30 @@ function fmtSqlDate(sql: string): string {
 function fmtSqlDateTime(sql: string): string {
     if (!sql) return '';
     return DateTime.fromSQL(sql).toFormat('dd.MM.yyyy') + ' kl. ' + DateTime.fromSQL(sql).toFormat('HH:mm');
+}
+
+// The bookingfrontendsession cookie is deliberately not HttpOnly (Sessions.php:
+// 'httponly' => false — see use-websocket-session.ts's own reader for the same
+// idiom), because the legacy bookingfrontend.ui* pages this file links to read the
+// citizen's session from a GET var, not from the cookie alone; a link opened in a
+// fresh tab with only the cookie has been observed to render byte-identical to an
+// anonymous request.
+function readBookingSessionCookie(): string | null {
+    if (typeof document === 'undefined') return null;
+    const prefix = 'bookingfrontendsession=';
+    for (const part of document.cookie.split(';')) {
+        const trimmed = part.trim();
+        if (trimmed.startsWith(prefix)) {
+            return decodeURIComponent(trimmed.slice(prefix.length)) || null;
+        }
+    }
+    return null;
+}
+
+function withBookingSession(url: string): string {
+    const sessionId = readBookingSessionCookie();
+    if (!sessionId) return url;
+    return `${url}${url.includes('?') ? '&' : '?'}bookingfrontendsession=${encodeURIComponent(sessionId)}`;
 }
 
 function getInitials(name: string): string {
@@ -240,10 +278,24 @@ function buildCalendarLink(row: ReservedEntity): string | null {
 // Renders the actual reserved schedule entities (events/allocations/bookings) created
 // for an accepted application. Each row links into the calendar at the entity's date so
 // the user can see (and act on) the reservation in context.
+// Per-type edit label — mirrors the manage modal's adapter.editLabelLangKey per type
+// (allocation-manage-modal.tsx / event-manage-modal.tsx / booking-manage-modal.tsx),
+// all three of which already exist in both phpgw_no.lang and phpgw_en.lang.
+function editLabelLangKey(type: ReservedEntity['type']): string {
+    return `bookingfrontend.edit ${type}`;
+}
+
 const ReservedTimesList: FC<{
     entities: { events: IAPIEvent[]; allocations: IAPIAllocation[]; bookings: IAPIBooking[] };
-}> = ({entities}) => {
+    applicationSecret?: string;
+    /** True when hosted inside the manage modal — suppresses only the
+     *  "show_in_calendar" link (a navigation into a page the modal already
+     *  replaces); the row's other actions are unaffected. */
+    embedded?: boolean;
+}> = ({entities, applicationSecret, embedded}) => {
     const t = useTrans();
+    const serverSettings = useServerSettings();
+    const participantLimitDefault = serverSettings.data?.booking_config?.participant_limit;
 
     const rows = useMemo<ReservedEntity[]>(() => {
         const all: ReservedEntity[] = [
@@ -265,6 +317,83 @@ const ReservedTimesList: FC<{
                 const sameDay = f.full === to.full;
                 const hours = durationHours(entity.from_, entity.to_);
                 const calendarLink = buildCalendarLink(row);
+                const showCalendarLink = !!calendarLink && !embedded;
+
+                // Register participants — bookingfrontend.uiparticipant.add is a genuinely
+                // PUBLIC endpoint (public_functions, and add() itself carries no ownership
+                // check at all — class.uiparticipant.inc.php), so gating is UX-only: the
+                // same three-step fallback the calendar popper and manage modal already use.
+                const participantLimit = resolveParticipantLimit(entity, participantLimitDefault);
+                const showRegisterParticipants = participantLimit > 0;
+                const registerParticipantsHref = withBookingSession(phpGWLink('bookingfrontend/', {
+                    menuaction: 'bookingfrontend.uiparticipant.add',
+                    reservation_type: row.type,
+                    reservation_id: entity.id,
+                }, false));
+
+                // Edit — bookingfrontend.ui{type}.edit's ACTUAL server-side guard differs per
+                // type, so each is gated on what that guard alone requires (never on the
+                // modal's isOrgAdmin, which is a different caller's access model):
+                //  - event: class.uievent.inc.php's edit() accepts only an ssn/org match, and
+                //    never a secret. That exact match is what event.secret is
+                //    @Expose(when="customer_ssn=$user_ssn" / "customer_organization_number=
+                //    $organization_number")'d on server-side (bookingfrontend/models/Event.php)
+                //    — ownership-only, unlike customer_organization_name/_id, which ALSO expose
+                //    whenever is_public=1 and would false-positive for any stranger viewing a
+                //    public event (curl-verified: a secret-only anonymous request against a
+                //    public event already gets back a non-null customer_organization_name).
+                //    event.secret's presence is therefore the one field this page can trust as
+                //    the ownership signal, on the same reasoning event-converter.ts's isOrgAdmin
+                //    already applies to booking.secret.
+                //  - allocation: class.uiallocation.inc.php's edit() accepts org-admin OR the
+                //    OWNING APPLICATION's own secret (read from the allocation, never the
+                //    request) — precisely the credential this page always holds once it can
+                //    render the application at all, so passing it always satisfies the guard.
+                //  - booking: class.uibooking.inc.php's edit() (public_functions) carries NO
+                //    ownership check whatsoever — showing Edit here grants nothing the endpoint
+                //    doesn't already grant a stranger who merely guesses the id.
+                let showEdit = false;
+                let editHref = '';
+                if (row.type === 'event') {
+                    const ev = entity as IAPIEvent;
+                    showEdit = !!ev.secret;
+                    editHref = withBookingSession(phpGWLink('bookingfrontend/', {
+                        menuaction: `bookingfrontend.ui${row.type}.edit`,
+                        id: entity.id,
+                        resource_ids: entity.resources.map(r => r.id),
+                    }, false));
+                } else if (row.type === 'allocation') {
+                    showEdit = !!applicationSecret;
+                    editHref = withBookingSession(phpGWLink('bookingfrontend/', {
+                        menuaction: `bookingfrontend.ui${row.type}.edit`,
+                        allocation_id: entity.id,
+                        secret: applicationSecret || '',
+                    }, false));
+                } else {
+                    showEdit = true;
+                    editHref = withBookingSession(phpGWLink('bookingfrontend/', {
+                        menuaction: `bookingfrontend.ui${row.type}.edit`,
+                        id: entity.id,
+                        resource_ids: entity.resources.map(r => r.id),
+                    }, false));
+                }
+
+                // Create new booking — allocations only, future only (mirrors
+                // allocation-manage-modal.tsx's newBookingAllocationId + manage-modal.tsx's
+                // isInFuture gate). bookingfrontend.uibooking.add carries no ownership check
+                // either (class.uibooking.inc.php add()), so no further gating is needed.
+                let newBookingHref: string | null = null;
+                if (row.type === 'allocation' && isFutureDate(DateTime.fromISO(entity.from_))) {
+                    newBookingHref = withBookingSession(phpGWLink('bookingfrontend/', {
+                        menuaction: 'bookingfrontend.uibooking.add',
+                        allocation_id: entity.id,
+                        from_: Date.parse(entity.from_) / 1000,
+                        to_: Date.parse(entity.to_) / 1000,
+                        resource_ids: entity.resources.map(r => r.id),
+                    }, false));
+                }
+
+                const hasActions = showCalendarLink || showRegisterParticipants || showEdit || !!newBookingHref;
 
                 return (
                     <div key={`${row.type}-${entity.id}`} className={styles.reservedRow}>
@@ -281,14 +410,38 @@ const ReservedTimesList: FC<{
                             </div>
                             <div className={styles.dateDuration}>{hours} t</div>
                         </div>
-                        {calendarLink && (
+                        {hasActions && (
                             <div className={styles.reservedActions}>
-                                <Button asChild variant="tertiary" data-color="accent" data-size="sm">
-                                    <Link href={calendarLink}>
-                                        <CalendarIcon fontSize="1.1rem"/>
-                                        {t('bookingfrontend.show_in_calendar')}
-                                    </Link>
-                                </Button>
+                                {newBookingHref && (
+                                    <Button asChild variant="tertiary" data-color="accent" data-size="sm">
+                                        <Link href={newBookingHref} target="_blank">
+                                            <PlusIcon fontSize="1.1rem"/>
+                                            {t('bookingfrontend.create new booking')}
+                                        </Link>
+                                    </Button>
+                                )}
+                                {showRegisterParticipants && (
+                                    <Button asChild variant="tertiary" data-color="accent" data-size="sm">
+                                        <Link href={registerParticipantsHref} target="_blank">
+                                            {t('booking.register participants')}
+                                        </Link>
+                                    </Button>
+                                )}
+                                {showEdit && (
+                                    <Button asChild variant="tertiary" data-color="accent" data-size="sm">
+                                        <Link href={editHref} target="_blank">
+                                            {t(editLabelLangKey(row.type))}
+                                        </Link>
+                                    </Button>
+                                )}
+                                {calendarLink && !embedded && (
+                                    <Button asChild variant="tertiary" data-color="accent" data-size="sm">
+                                        <Link href={calendarLink}>
+                                            <CalendarIcon fontSize="1.1rem"/>
+                                            {t('bookingfrontend.show_in_calendar')}
+                                        </Link>
+                                    </Button>
+                                )}
                             </div>
                         )}
                     </div>
@@ -314,7 +467,7 @@ const CommentsSection: FC<{
     t: (k: string) => string;
 }> = ({applicationId, secret, isCancelled, t}) => {
     const {data: commentsData, isLoading} = useApplicationComments(applicationId, "comment,ownership,status", secret);
-    const addComment = useAddApplicationCommentWs();
+    const addComment = useAddApplicationComment();
     const [replyDraft, setReplyDraft] = useState('');
     const {i18n} = useClientTranslation();
 
@@ -324,7 +477,7 @@ const CommentsSection: FC<{
         try {
             await addComment.mutateAsync({
                 applicationId,
-                comment: replyDraft.trim(),
+                commentData: {comment: replyDraft.trim(), type: 'comment'},
                 secret,
             });
             setReplyDraft('');
@@ -380,7 +533,7 @@ const CommentsSection: FC<{
                                             {DateTime.fromISO(c.time).toFormat('dd.MM.yyyy HH:mm')}
                                         </span>
                                     </div>
-                                    <div className={styles.commentText}>{c.comment}</div>
+                                    <div className={styles.commentText} dangerouslySetInnerHTML={{__html: c.comment}}/>
                                 </div>
                             </div>
                         );
@@ -434,6 +587,7 @@ const CommentsSection: FC<{
 // --- Main Component ---
 
 const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
+    const embedded = !!props.embedded;
     const {data: application, isLoading, error} = useApplication(props.applicationId, {
         initialData: props.initialApplication,
         secret: props.secret,
@@ -457,10 +611,17 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
     const isParentApplication = ENABLE_COMBINED_APPLICATIONS && application && (!application.parent_id || application.parent_id === application.id);
 
     useEffect(() => {
-        if (application && props.secret) {
+        if (application && props.secret && !embedded) {
             document.title = application.name || `Application ${props.applicationId}`;
         }
-    }, [application, props.secret, props.applicationId]);
+    }, [application, props.secret, props.applicationId, embedded]);
+
+    useEffect(() => {
+        if (application?.name) {
+            props.onTitleReady?.(application.name);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [application?.name]);
 
     // Live comment updates via WebSocket
     useEffect(() => {
@@ -586,11 +747,12 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
     }
 
     if (error || !application) {
+        const ErrorWrapper: React.ElementType = embedded ? React.Fragment : 'main';
         return (
-            <main>
+            <ErrorWrapper>
                 <Heading level={2} data-size="sm">{t('common.error')}</Heading>
                 <Paragraph>{t('common.application not found')}</Paragraph>
-            </main>
+            </ErrorWrapper>
         );
     }
 
@@ -634,13 +796,17 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
         ? t('bookingfrontend.cancel_booking')
         : t('bookingfrontend.withdraw_application');
 
+    const MainWrapper: React.ElementType = embedded ? React.Fragment : 'main';
+
     return (
-        <main>
+        <MainWrapper>
             {/* Back link */}
-            <Link href="/user/applications" className={styles.backLink}>
-                <ArrowLeftIcon fontSize="1rem"/>
-                {t('bookingfrontend.back_to_applications')}
-            </Link>
+            {!embedded && (
+                <Link href="/user/applications" className={styles.backLink}>
+                    <ArrowLeftIcon fontSize="1rem"/>
+                    {t('bookingfrontend.back_to_applications')}
+                </Link>
+            )}
 
             {/* App header */}
             <div className={styles.appHeader}>
@@ -650,7 +816,9 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                         <span>&middot;</span>
                         <span>{isOrg ? application.customer_organization_name : t('bookingfrontend.personal')}</span>
                     </div>
-                    <Heading level={1} data-size="lg">{application.name}</Heading>
+                    {!embedded && (
+                        <Heading level={1} data-size="lg">{application.name}</Heading>
+                    )}
                     {isParentApplication && (
                         <Tag data-size="sm" data-color="info">{t('bookingfrontend.combined_application')}</Tag>
                     )}
@@ -775,7 +943,11 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                                 <h3 className={styles.sectionCaption}>
                                     {t('bookingfrontend.reserved_times')}
                                 </h3>
-                                <ReservedTimesList entities={scheduleEntities}/>
+                                <ReservedTimesList
+                                    entities={scheduleEntities}
+                                    applicationSecret={props.secret || application.secret || undefined}
+                                    embedded={embedded}
+                                />
                             </>
                         )}
                         <h3 className={styles.sectionCaption}>
@@ -1124,7 +1296,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                     onClose={() => setShowCopyDialog(false)}
                 />
             )}
-        </main>
+        </MainWrapper>
     );
 };
 

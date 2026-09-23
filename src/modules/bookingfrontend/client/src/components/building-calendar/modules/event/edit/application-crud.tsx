@@ -1,6 +1,7 @@
 import React, {Fragment, useMemo, useState, FC, useCallback, useEffect, useRef} from 'react';
 import {IResource} from '@/service/types/resource.types';
 import {
+	Alert,
 	Button,
 	Checkbox,
 	Chip, Details,
@@ -41,7 +42,7 @@ import {ArticleOrder} from "@/service/types/api/order-articles.types";
 import {isDevMode, phpGWLink} from "@/service/util";
 import {IEvent} from "@/service/pecalendar.types";
 import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
-import {ResourceUsesTimeSlots} from "@/components/building-calendar/util/calender-helpers";
+import {ResourceUsesTimeSlots, ResourceIsDirectBooking} from "@/components/building-calendar/util/calender-helpers";
 import {Trans} from "react-i18next";
 import ApplicationLoginLink from "@/components/building-calendar/modules/event/edit/application-login-link";
 import {useToast} from "@/components/toast/toast-context";
@@ -672,6 +673,17 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	}, [props.bookingUser, props.building_id, props.applicationId, props.date_id, setValue, existingApplication]);
 
 	const selectedResources = watch('resources');
+
+	// A repeating direct-booking application is always sent to case handling instead of
+	// being auto-accepted (see ApplicationService::checkoutPartials() "Repeating direct
+	// bookings should be sent for review, not auto-accepted"), so warn the applicant here.
+	const hasSelectedDirectBookingResource = useMemo(() => {
+		if (!buildingResources || !selectedResources?.length) return false;
+		return selectedResources.some(resId => {
+			const resource = buildingResources.find(r => r.id === +resId);
+			return !!resource && !ResourceUsesTimeSlots(resource) && ResourceIsDirectBooking(resource);
+		});
+	}, [buildingResources, selectedResources]);
 
 	// Calculate time boundaries for start time
 	const [startMinTime, startMaxTime] = useMemo(() => {
@@ -1359,6 +1371,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 												}
 											}}
 										/>
+										{field.value && hasSelectedDirectBookingResource && (
+											<Alert data-color="info" data-size="sm" style={{marginTop: '0.5rem'}}>
+												{t('bookingfrontend.repeating_direct_booking_warning')}
+											</Alert>
+										)}
 									</div>
 								)}
 							/>

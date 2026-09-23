@@ -1,0 +1,78 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('todo') }}{% endblock %}
+
+{% block styles %}
+<style>
+	.todo-title {
+		display: inline-block;
+		white-space: nowrap;
+	}
+
+	.todo-title__marker {
+		display: inline-block;
+		margin-right: 0.35rem;
+		color: #7a8a9a;
+		font-weight: 700;
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+{% include '@phpgwapi_components/app_datatable/app_datatable.twig' with {
+	id: 'todo-datatable'
+} %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+	window.__todoList = {
+		id: 'todo-datatable',
+		dataUrl: '{{ phpgw_link('/todo/todos')|e('js') }}',
+		csvUrl: '{{ phpgw_link('/todo/todos/export/csv')|e('js') }}',
+		addUrl: '{{ phpgw_link('/todo/view/todos/add')|e('js') }}',
+		matrixUrl: '{{ matrix_url|default(phpgw_link('/todo/view/todos/matrix'))|e('js') }}',
+		viewUrlTemplate: '{{ phpgw_link('/todo/view/todos/__TODO_ID__')|replace({'__TODO_ID__': '{id}'})|e('js') }}',
+		editUrlTemplate: '{{ phpgw_link('/todo/view/todos/__TODO_ID__/edit')|replace({'__TODO_ID__': '{id}'})|e('js') }}',
+		deleteUrlTemplate: '{{ phpgw_link('/todo/view/todos/__TODO_ID__/delete')|replace({'__TODO_ID__': '{id}'})|e('js') }}',
+		canDelete: {{ acl_delete ? 'true' : 'false' }},
+		categories: {{ categories|map(category => {'id': category.id, 'name': category.name})|json_encode|raw }},
+		filters: {{ filters|map(filter => {'id': filter.id, 'name': filter.name})|json_encode|raw }},
+		initialSearch: '{{ search_query|default('')|e('js') }}',
+		pageLength: {{ rows_per_page|default(10) }},
+		lengthMenu: {{ length_menu|default([10, 25, 50])|json_encode|raw }},
+		lang: {
+			id: '{{ lang('ID')|e('js') }}',
+			title: '{{ lang('Title')|e('js') }}',
+			status: '{{ lang('Status')|e('js') }}',
+			urgency: '{{ lang('Urgency')|e('js') }}',
+			startDate: '{{ lang('start date')|e('js') }}',
+			endDate: '{{ lang('end date')|e('js') }}',
+			owner: '{{ lang('created by')|e('js') }}',
+			assigned: '{{ lang('assigned to')|e('js') }}',
+			add: '{{ lang('new')|e('js') }}',
+			matrix: '{{ lang('view matrix of actual month')|e('js') }}',
+			addSubProject: '{{ lang('add sub project')|e('js') }}',
+			view: '{{ lang('view')|e('js') }}',
+			edit: '{{ lang('edit')|e('js') }}',
+			delete: '{{ lang('delete')|e('js') }}',
+			category: '{{ lang('Category')|e('js') }}',
+			filter: '{{ lang('Filter')|e('js') }}',
+			resetFilter: '{{ lang('reset filter')|e('js') }}',
+			activeFilters: '{{ lang('active filters')|e('js') }}',
+			emptyTable: '{{ lang('No data available in table')|e('js') }}',
+			search: '{{ lang('search')|e('js') }}',
+			info: '{{ lang('Showing _START_ to _END_ of _TOTAL_ entries')|e('js') }}',
+			infoEmpty: '{{ lang('Showing 0 to 0 of 0 entries')|e('js') }}',
+			infoFiltered: '{{ lang('(filtered from _MAX_ total entries)')|e('js') }}',
+			lengthMenu: '{{ lang('Show _MENU_ entries')|e('js') }}',
+			zeroRecords: '{{ lang('No matching records found')|e('js') }}',
+			first: '{{ lang('first')|e('js') }}',
+			last: '{{ lang('last')|e('js') }}',
+			next: '{{ lang('next')|e('js') }}',
+			previous: '{{ lang('prev')|e('js') }}'
+		}
+	};
+</script>
+<script>{{ source('@views/index/todo_datatable.js') }}</script>
+{% endblock %}

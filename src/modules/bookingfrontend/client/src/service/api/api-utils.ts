@@ -165,6 +165,15 @@ export async function fetchSessionId(): Promise<{ sessionId: string; accountId?:
 export async function fetchServerSettings(): Promise<IServerSettings> {
     const url = phpGWLink(['api', 'server-settings'], {include_configs: true});
     const response = await fetch(url);
+
+    // An error status is an error, not data. Without this the body of a 5xx parses
+    // cleanly and resolves as a react-query SUCCESS, so every consumer reads an error
+    // envelope as if it were settings and `isError` is only ever reachable by a network
+    // abort. Mirrors fetchSessionId above.
+    if (!response.ok) {
+        throw new Error(`Failed to fetch server settings (${response.status})`);
+    }
+
     const result = await response.json();
     return result;
 }

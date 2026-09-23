@@ -1,5 +1,5 @@
 <!-- begin compose.tpl -->
-<script type="text/javascript" src="{webserver_url}/phpgwapi/js/core/base.js"></script>
+<script type="text/javascript" src="{webserver_url}/src/modules/phpgwapi/js/core/base.js"></script>
 <script type="text/javascript">
 <!--
 	self.name="first_Window";

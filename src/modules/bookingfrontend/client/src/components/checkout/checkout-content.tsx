@@ -138,6 +138,24 @@ const CheckoutContent: FC = () => {
     // Fetch regulation documents for all resources
     const { data: regulationDocuments, isLoading: docsLoading } = useResourceRegulationDocuments(resources);
 
+    // A successful submit clears partialApplications (checkout-hooks.ts
+    // onMutate/onSuccess), so this component re-renders with list.length===0
+    // right as handleFormSubmit's .then() is navigating to /user/applications.
+    // isPending/isSuccess cover that whole transient, so the redirect below
+    // doesn't fire while a submit is in flight or has just succeeded.
+    const shouldRedirectHome = !userLoading && !partialsLoading && !docsLoading && !eligibilityLoading
+        && !checkoutMutation.isPending && !checkoutMutation.isSuccess
+        && (!user || !applications || applications.list.length === 0);
+
+    // Navigation belongs in an effect, not render -- a render-time router.push
+    // raced the .then() navigation above and triggered React's
+    // setState-during-render warning.
+    useEffect(() => {
+        if (shouldRedirectHome) {
+            router.push('/');
+        }
+    }, [shouldRedirectHome, router]);
+
     // State to track individual document checkboxes
     const [checkedDocuments, setCheckedDocuments] = useState<Record<number, boolean>>({});
 
@@ -374,12 +392,11 @@ const CheckoutContent: FC = () => {
         }
     };
 
-    if(userLoading || partialsLoading || checkoutMutation.isPending || docsLoading || eligibilityLoading) {
+    if(userLoading || partialsLoading || checkoutMutation.isPending || checkoutMutation.isSuccess || docsLoading || eligibilityLoading) {
         return <Spinner aria-label={t('bookingfrontend.loading_user_info')} />
     }
 
     if(!user || !applications || applications.list.length === 0) {
-        router.push('/');
         return ''
     }
 

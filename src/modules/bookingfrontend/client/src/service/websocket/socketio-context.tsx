@@ -51,8 +51,19 @@ export const SocketIOProvider: React.FC<SocketIOProviderProps> = ({
   const isInitializedRef = useRef(false);
   const subscriptionManager = useRef(SubscriptionManager.getInstance());
 
-  useWebSocketSession();
+  const { updateSessionId } = useWebSocketSession();
   useCacheInvalidation();
+
+  // useWebSocketSession()'s own connect/message-driven triggers listen on
+  // WebSocketService's event bus, which this provider never dispatches on
+  // (it writes isInitialized/status directly below instead) — so they never
+  // fire here. Call the latest updateSessionId directly from the real
+  // Socket.IO lifecycle events instead. A ref means an identity change (e.g.
+  // once useSessionId() resolves) doesn't re-run the connect effect below.
+  const updateSessionIdRef = useRef(updateSessionId);
+  useEffect(() => {
+    updateSessionIdRef.current = updateSessionId;
+  }, [updateSessionId]);
 
   const handleMessage = useCallback((data: WebSocketMessage) => {
     setLastMessage(data);
@@ -88,6 +99,7 @@ export const SocketIOProvider: React.FC<SocketIOProviderProps> = ({
 
       case 'session_id_required':
         wsLog('Session ID required');
+        updateSessionIdRef.current();
         break;
 
       case 'server_ping': {
@@ -147,6 +159,15 @@ export const SocketIOProvider: React.FC<SocketIOProviderProps> = ({
     // @ts-ignore
     wsService['status'] = 'OPEN';
 
+    // This bridge mutates WebSocketService's isInitialized/status fields
+    // directly and does NOT emit on the WebSocketService singleton's event
+    // bus — so anything listening on WebSocketService.getInstance() (e.g.
+    // wsService.addEventListener('status', ...)) will stay silent under this
+    // Socket.IO transport. useWebSocketSession() is NOT driven from those
+    // WebSocketService events here; it's driven directly from this
+    // provider's own 'connect' and 'session_id_required' handlers below
+    // (see the updateSessionIdRef.current() calls).
+
     const directMessageHandler = (event: any) => {
       if (socket.connected && event.data) {
         trafficLog('TX', event.data.type || 'direct', event.data);
@@ -159,6 +180,11 @@ export const SocketIOProvider: React.FC<SocketIOProviderProps> = ({
       wsLog('Connected');
       setStatus('OPEN');
       setIsReady(true);
+
+      // Bind the session as soon as the transport actually connects — don't
+      // wait for the server to ask (it only does when no cookie was present
+      // at handshake) or for the 5-minute fallback interval to come around.
+      updateSessionIdRef.current();
 
       // Resubscribe to entity rooms after reconnect
       const subs = subscriptionManager.current.getActiveEntitySubscriptions();

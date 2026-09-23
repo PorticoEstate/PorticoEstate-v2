@@ -93,7 +93,6 @@ class notes_bonotes
 			$this->read_sessiondata();
 			$this->use_session = True;
 
-			//XXX Caeies : start could use the 'all' value, perhaps think on using -1 ?
 			$start		= Sanitizer::get_var('start');
 			$query		= Sanitizer::get_var('query', 'string');
 			$sort		= Sanitizer::get_var('sort', 'string');
@@ -103,7 +102,7 @@ class notes_bonotes
 
 			$this->start = $start;
 
-			if ($this->start == 'all')
+			if ($this->start == -1)
 			{
 				$this->limit = False;
 				$this->start = 0;
@@ -263,7 +262,7 @@ class notes_bonotes
 
 	function save($note)
 	{
-		if (isset($note['access']) && $note['access'])
+		if (isset($note['access']) && ($note['access'] === 'private' || $note['access'] === true || $note['access'] === 1 || $note['access'] === '1'))
 		{
 			$note['access'] = 'private';
 		}
@@ -383,15 +382,9 @@ class notes_bonotes
 				$keyExtern_note_id = $this->getKeyExtern('id', $type);
 				$id = $dataExtern[$keyExtern_note_id];
 				// info needed to generate a view link
-				$dataExtern['link_view'] = array(
-					'menuaction'	=> 'notes.uinotes.view',
-					'note_id'	=> $id
-				);
+				$dataExtern['link_view'] = \phpgw::link('/notes/view/notes/' . $id);
 				// info needed to generate a edit link
-				$dataExtern['link_edit'] = array(
-					'menuaction'	=> 'notes.uinotes.edit',
-					'note_id'	=> $id
-				);
+				$dataExtern['link_edit'] = \phpgw::link('/notes/view/notes/' . $id . '/edit');
 				break;
 			case 'text/plain':
 				$keyIntern = $this->map[$type][0];
@@ -423,8 +416,7 @@ class notes_bonotes
 				}
 				break;
 			case 'text/plain':
-				$keyIntern = $this->map[$type][0];
-				$dataExtern = $dataIntern[$keyIntern];
+				$keyExtern = $this->map[$type][0];
 				break;
 			case 'text/xml':
 				return false;

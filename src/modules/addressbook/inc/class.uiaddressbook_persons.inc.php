@@ -928,7 +928,7 @@ class addressbook_uiaddressbook_persons extends phpgwapi_uicommon
 
 		if ($values['person_data']['per_birthday'])
 		{
-			$values['person_data']['per_birthday'] = phpgwapi_datetime::date_to_timestamp($values['person_data']['per_birthday']);
+			$values['person_data']['per_birthday'] = date('Y-m-d', phpgwapi_datetime::date_to_timestamp($values['person_data']['per_birthday']));
 		}
 
 		$values['person_data']['access'] = ($values['person_data']['access']) ? 'private' : 'public';

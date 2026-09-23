@@ -25,7 +25,7 @@ Top-level `todo` module layout:
 - `viewcontrollers/TodoViewController.php`: page shell endpoints (Twig + legacy wrapper).
 - `inc/class.botodo.inc.php`: business layer wrapper over storage layer.
 - `inc/class.sotodo.inc.php`: storage/database layer.
-- `html/todo/**`: Twig templates and client-side JS/CSS.
+- `html/base/**`: generic Twig templates and client-side JS/CSS selected through `@views`.
 - `setup/phpgw_*.lang`: localization keys.
 
 Important split:
@@ -39,6 +39,8 @@ Important split:
 ## 3. Route Model (Legacy Navigation + REST Data)
 
 The module intentionally keeps classic view navigation while separating data operations into REST endpoints.
+Legacy `menuaction=todo.uitodo.*` redirect compatibility was removed after the
+list page moved fully to `/todo/view/todos` and `todo_datatable.*`.
 
 ### 3.1 View routes
 
@@ -194,9 +196,19 @@ Datetime behavior:
 
 Patterns:
 
-- formatter function per column (`renderIdLink`, `todoFormatTitle`, `renderAssigned`).
+- shared `@phpgwapi_components/app_datatable/app_datatable.twig` component.
+- local initializer in `html/base/index/todo_datatable.js` using `AppDatatable.init()`.
+- formatter function per column (`renderTitle`, `renderAssigned`).
 - ID rendered as direct view link.
 - `assigned_entries` rendered as escaped multiline text.
+- filter values are stored in session-backed DataTables state and shown as removable active filter chips.
+- page length and length menu are derived from the user's `common.maxmatchs` preference.
+- inputPaging is enabled through the shared component.
+- row actions use `rowActionsDisplay: 'contextMenu'`, so `view`, `edit`, `add sub project`, and `delete`
+  are not rendered as extra columns.
+- `rowActionsToolbar: true` mirrors those row actions into the DataTables button row. The buttons are
+  disabled until a row is selected. Clicking a row toggles selection on and off; right-clicking a row
+  selects it and opens the context menu.
 
 ## 6.2 View page (`todo_view.js`)
 
@@ -346,6 +358,7 @@ Use this staged approach.
 ### Stage C: Move rendering to client incrementally
 
 - Start with list page read-only render.
+- Prefer the shared `AppDatatable` component for list pages that need DataTables features.
 - Convert detail page second.
 - Convert add/edit/delete operations to JSON.
 - Keep old route wrappers until parity is validated.
@@ -367,6 +380,7 @@ Use this staged approach.
 
 - Remove server-rendered fallback fields once client uses structured data.
 - Remove dead helper methods after reference scan.
+- Remove legacy redirect shims after all in-repo links point to `/todo/view/*` routes.
 - Keep CSV/export adapters where plain-text flattening is needed.
 
 ---
@@ -378,7 +392,7 @@ Per module, mirror this structure:
 - `routes/Routes.php`
 - `controllers/<Module>Controller.php` (REST)
 - `viewcontrollers/<Module>ViewController.php` (page shell)
-- `html/<module>/{index,view,add,edit,delete}/...`
+- `html/base/{index,view,add,edit,delete}/...`
 - `inc/class.bo<module>.inc.php`
 - `inc/class.so<module>.inc.php`
 - `doc/<MODULE>_CLIENT_REST_CONVERSION_GUIDE.md`
@@ -389,27 +403,14 @@ Per module, mirror this structure:
 
 Before merge:
 
-1. Routing
-- All existing view URLs still load.
-- API endpoints reachable and ACL-protected.
-
-2. Behavior parity
-- List/filter/sort/category behavior matches legacy expectations.
-- Parent/child tree integrity preserved.
-- Delete semantics (with and without sub-items) unchanged.
-
-3. Security
-- CSRF failures return 400 for mutating calls without token.
-- Valid token path works for POST/PUT/PATCH/DELETE.
-- Input normalization is applied consistently.
-
-4. Contract
-- Frontend only consumes documented fields.
-- Removed fields are not referenced by client code.
-
-5. Validation
-- `php -l` passes for modified PHP files.
-- No diagnostics errors in modified JS/Twig files.
+- Routing: all existing view URLs still load, and API endpoints are reachable and ACL-protected.
+- Behavior parity: list/filter/sort/category behavior matches legacy expectations, parent/child tree
+  integrity is preserved, and delete semantics are unchanged.
+- Security: CSRF failures return 400 for mutating calls without token, valid token paths work for
+  POST/PUT/PATCH/DELETE, and input normalization is applied consistently.
+- Contract: frontend code consumes only documented fields, and removed fields are not referenced by
+  client code.
+- Validation: `php -l` passes for modified PHP files, and modified JS/Twig files have no diagnostics.
 
 ---
 
@@ -429,6 +430,10 @@ Before merge:
 - Structured arrays preferred over pre-rendered HTML in API payloads.
 - CSRF implemented route-locally for Todo first.
 - Assigned string in API replaced by `assigned_entries` (CSV export still flattens to string for file output).
+- `datatable2.twig` was replaced by the shared `AppDatatable` component for the Todo list.
+- The old `inc/class.uitodo.inc.php` compatibility shim was deleted.
+- The unused old `html/base/index/todo_index.twig`, `todo_index.js`, and `todo_index.css` files were deleted.
+- Row actions are presented through a context menu and selected-row toolbar instead of table action columns.
 
 ---
 
@@ -439,6 +444,7 @@ Before merge:
 3. Add integration tests for mutating endpoints with and without CSRF token.
 4. Add contract tests for JSON payload shape (`TodoItem`, `TodoDetail`, `history`).
 5. Standardize a shared payload normalizer trait for all converted modules.
+6. Reuse the `AppDatatable` pattern from Todo, Notes, Messenger, and Booking for future list migrations.
 
 ---
 
@@ -449,11 +455,12 @@ Before merge:
 - View controller: `src/modules/todo/viewcontrollers/TodoViewController.php`
 - Business layer: `src/modules/todo/inc/class.botodo.inc.php`
 - Storage layer: `src/modules/todo/inc/class.sotodo.inc.php`
-- Main list page: `src/modules/todo/html/todo/index/todo_datatable.twig`
-- Detail page client: `src/modules/todo/html/todo/view/todo_view.js`
-- Add/edit clients: `src/modules/todo/html/todo/add/todo_add.js`, `src/modules/todo/html/todo/edit/todo_edit.js`
-- Delete client: `src/modules/todo/html/todo/delete/todo_delete.js`
-- Matrix client: `src/modules/todo/html/todo/matrix/todo_matrix.js`
+- Main list page: `src/modules/todo/html/base/index/todo_datatable.twig`
+- Main list client: `src/modules/todo/html/base/index/todo_datatable.js`
+- Detail page client: `src/modules/todo/html/base/view/todo_view.js`
+- Add/edit clients: `src/modules/todo/html/base/add/todo_add.js`, `src/modules/todo/html/base/edit/todo_edit.js`
+- Delete client: `src/modules/todo/html/base/delete/todo_delete.js`
+- Matrix client: `src/modules/todo/html/base/matrix/todo_matrix.js`
 
 ---
 

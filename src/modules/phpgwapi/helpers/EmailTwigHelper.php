@@ -25,10 +25,14 @@ class EmailTwigHelper
 	{
 		$this->loader = new FilesystemLoader();
 
-		// Register app email templates path
-		$appHtmlDir = PHPGW_SERVER_ROOT . '/' . $appName . '/html';
-		if (is_dir($appHtmlDir)) {
-			$this->loader->addPath($appHtmlDir, 'views');
+		// Register app email templates path. Mirrors TwigHelper::registerPaths()'s
+		// 'views' lookup order for the app-html tier: html/base/... (current
+		// convention) first, then flat html/... (legacy layout) as fallback.
+		$appDir = PHPGW_SERVER_ROOT . '/' . $appName;
+		foreach ([$appDir . '/html/base', $appDir . '/html'] as $appHtmlDir) {
+			if (is_dir($appHtmlDir)) {
+				$this->loader->addPath($appHtmlDir, 'views');
+			}
 		}
 
 		$this->twig = new Environment($this->loader, [

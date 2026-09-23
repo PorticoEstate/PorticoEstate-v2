@@ -7,6 +7,7 @@ use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
 use App\helpers\ResponseHelper;
+use App\helpers\ViewSettingsHelper;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Exception;
@@ -295,7 +296,7 @@ class TodoViewController
 			$matrix->out(\phpgw::link('/todo/view/todos/matrix'));
 			$matrixHtml = (string) ob_get_clean();
 
-			$componentHtml = $this->twig->render('@views/todo/matrix/todo_matrix.twig', [
+			$componentHtml = $this->twig->render('@views/matrix/todo_matrix.twig', [
 				'layout' => '@views/_bare.twig',
 				'matrix_html' => $matrixHtml,
 				'csrf' => $this->getCsrfData($request),
@@ -340,38 +341,8 @@ class TodoViewController
 		$this->menuSelection = 'todo::todos';
 
 		try {
-			\phpgw::import_class('phpgwapi.jquery');
-			\phpgw::import_class('phpgwapi.css');
-			\phpgw::import_class('phpgwapi.js');
-			\phpgwapi_jquery::load_widget('core');
-			\phpgwapi_jquery::load_widget('contextMenu');
-			self::add_javascript('phpgwapi', "jquery", 'common.js', false, array('combine' => true));
-			$datatable_assets = array(
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net/js/dataTables.min.js',
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-dt/js/dataTables.dataTables.min.js',
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons/js/dataTables.buttons.min.js',
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons-dt/js/buttons.dataTables.min.js',
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive/js/dataTables.responsive.min.js',
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive-dt/js/responsive.dataTables.min.js',
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select/js/dataTables.select.min.js',
-				'phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select-dt/js/select.dataTables.min.js',
-				'phpgwapi/js/DataTables3/plugins/dataTables.inputPaging.js'
-			);
-			foreach ($datatable_assets as $datatable_asset)
-			{
-				\phpgwapi_js::getInstance()->add_external_file($datatable_asset, false, array('combine' => false));
-			}
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.min.js', false, array('combine' => true));
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js', false, array('combine' => true));
-			\phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-dt/css/dataTables.dataTables.min.css');
-			\phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-buttons-dt/css/buttons.dataTables.min.css');
-			\phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-responsive-dt/css/responsive.dataTables.min.css');
-			\phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-select-dt/css/select.dataTables.min.css');
-			\phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables3/plugins/dataTables.inputPaging.min.css');
-
-
-
 			$query = $request->getQueryParams();
+			$rowsPerPage = ViewSettingsHelper::rowsPerPage();
 			$selectedCat = isset($query['cat_id']) ? (int) $query['cat_id'] : 0;
 			$selectedFilter = isset($query['filter']) ? (string) $query['filter'] : 'none';
 			$search = isset($query['search']) ? (string) $query['search'] : '';
@@ -395,13 +366,14 @@ class TodoViewController
 				],
 			];
 
-			$componentHtml = $this->twig->render('@views/todo/index/todo_datatable.twig', [
+			$componentHtml = $this->twig->render('@views/index/todo_datatable.twig', [
 				'layout' => '@views/_bare.twig',
 				'categories' => $categories,
 				'filters' => $filters,
 				'acl_delete' => (bool) Acl::getInstance()->check('.todo', ACL_DELETE, 'todo'),
 				'search_query' => $search,
-				'jquery_phpgw_i18n' => $this->getDatatableI18n(),
+				'rows_per_page' => $rowsPerPage,
+				'length_menu' => ViewSettingsHelper::lengthMenu($rowsPerPage),
 				'matrix_url' => \phpgw::link('/todo/view/todos/matrix', [
 					'month' => date('m'),
 					'year' => date('Y'),
@@ -437,7 +409,7 @@ class TodoViewController
 				return ResponseHelper::sendErrorResponse(['error' => 'Missing todo ID'], 400);
 			}
 
-			$componentHtml = $this->twig->render('@views/todo/view/todo_view.twig', [
+			$componentHtml = $this->twig->render('@views/view/todo_view.twig', [
 				'layout' => '@views/_bare.twig',
 				'todo_id' => $id,
 				'csrf' => $this->getCsrfData($request),
@@ -467,7 +439,7 @@ class TodoViewController
 				return ResponseHelper::sendErrorResponse(['error' => 'Missing todo ID'], 400);
 			}
 
-			$componentHtml = $this->twig->render('@views/todo/delete/todo_delete.twig', [
+			$componentHtml = $this->twig->render('@views/delete/todo_delete.twig', [
 				'layout' => '@views/_bare.twig',
 				'todo_id' => $id,
 				'csrf' => $this->getCsrfData($request),
@@ -498,7 +470,7 @@ class TodoViewController
 			$query = $request->getQueryParams();
 			$userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
 			$dateFormat = (string) ($userSettings['preferences']['common']['dateformat'] ?? 'Y-m-d');
-			$componentHtml = $this->twig->render('@views/todo/add/todo_add.twig', [
+			$componentHtml = $this->twig->render('@views/add/todo_add.twig', [
 				'layout' => '@views/_bare.twig',
 				'categories' => $this->getCategories(),
 				'parentTodos' => $this->getParentTodos(),
@@ -566,7 +538,7 @@ class TodoViewController
 				'assigned_group_ids' => is_array($assignedGroupIds) ? $assignedGroupIds : [],
 			];
 
-			$componentHtml = $this->twig->render('@views/todo/edit/todo_edit.twig', [
+			$componentHtml = $this->twig->render('@views/edit/todo_edit.twig', [
 				'layout' => '@views/_bare.twig',
 				'todo' => $todo,
 				'categories' => $this->getCategories(),

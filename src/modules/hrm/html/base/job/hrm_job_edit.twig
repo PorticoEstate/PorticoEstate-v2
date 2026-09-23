@@ -1,0 +1,54 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ job_id ? lang('edit job') : lang('add job') }}{% endblock %}
+
+{% block styles %}
+	<style>
+		.hrm-job-form { max-width: 52rem; margin: 0 auto; }
+		.hrm-job-form__header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+		.hrm-job-form__header h1 { margin: 0; font-size: 1.5rem; }
+		.hrm-job-form__notice { margin: 0 0 1rem; padding: .75rem 1rem; border-radius: 4px; }
+		.hrm-job-form__notice--error { border: 1px solid #b00020; background: #fff5f6; color: #7a0015; }
+		.hrm-job-form__notice--message { border: 1px solid #2e7d32; background: #f4fbf4; color: #1b5e20; }
+		.hrm-job-form__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem 1.25rem; padding: 1rem; border: 1px solid #d5dde6; border-radius: 6px; background: #fff; }
+		.hrm-job-form__field { display: flex; flex-direction: column; gap: .3rem; }
+		.hrm-job-form__field--full { grid-column: 1 / -1; }
+		.hrm-job-form__field label { color: #526579; font-weight: 600; }
+		.hrm-job-form__input, .hrm-job-form__textarea { width: 100%; box-sizing: border-box; border: 1px solid #b8c4d1; border-radius: 4px; padding: .45rem .55rem; color: #17324d; background: #fff; }
+		.hrm-job-form__textarea { min-height: 7rem; resize: vertical; }
+		.hrm-job-form__actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+		.hrm-job-form__button { border: 1px solid #24527a; border-radius: 4px; padding: .45rem .85rem; background: #24527a; color: #fff; text-decoration: none; cursor: pointer; }
+		.hrm-job-form__button--secondary { background: #fff; color: #24527a; }
+	</style>
+{% endblock %}
+
+{% block content %}
+	<div class="hrm-job-form">
+		<div class="hrm-job-form__header">
+			<h1>{{ job_id ? lang('edit job') : lang('add job') }}</h1>
+			<a href="{{ list_url|e }}">{{ lang('Back to the list') }}</a>
+		</div>
+		{% if errors %}<div class="hrm-job-form__notice hrm-job-form__notice--error">{% for error in errors %}<div>{{ error }}</div>{% endfor %}</div>{% endif %}
+		{% if messages %}<div class="hrm-job-form__notice hrm-job-form__notice--message">{% for message in messages %}<div>{{ message }}</div>{% endfor %}</div>{% endif %}
+		<form method="post" action="{{ form_action|e }}">
+			<div class="hrm-job-form__grid">
+				{% if job_id %}<div class="hrm-job-form__field"><label>{{ lang('category ID') }}</label><div>{{ job_id }}</div></div>{% endif %}
+				{% if values.entry_date %}<div class="hrm-job-form__field"><label>{{ lang('Entry date') }}</label><div>{{ values.entry_date }}</div></div>{% endif %}
+				<div class="hrm-job-form__field">
+					<label for="hrm-job-parent">{{ lang('parent') }}</label>
+					<select id="hrm-job-parent" class="hrm-job-form__input" name="values[parent_id]">
+						<option value="0">{{ lang('select a parent') }}</option>
+						{% for parent in parent_list %}<option value="{{ parent.id }}" {% if parent.selected %}selected{% endif %}>{{ parent.name }}</option>{% endfor %}
+					</select>
+				</div>
+				<div class="hrm-job-form__field hrm-job-form__field--full"><label for="hrm-job-name">{{ lang('name') }}</label><input id="hrm-job-name" class="hrm-job-form__input" type="text" name="values[name]" value="{{ values.name|default('') }}" required></div>
+				<div class="hrm-job-form__field hrm-job-form__field--full"><label for="hrm-job-descr">{{ lang('Descr') }}</label><textarea id="hrm-job-descr" class="hrm-job-form__textarea" name="values[descr]">{{ values.descr|default('') }}</textarea></div>
+			</div>
+			<div class="hrm-job-form__actions">
+				<button class="hrm-job-form__button" type="submit" name="values[save]" value="1">{{ lang('save') }}</button>
+				<button class="hrm-job-form__button hrm-job-form__button--secondary" type="submit" name="values[apply]" value="1">{{ lang('apply') }}</button>
+				<button class="hrm-job-form__button hrm-job-form__button--secondary" type="submit" name="values[cancel]" value="1">{{ lang('cancel') }}</button>
+			</div>
+		</form>
+	</div>
+{% endblock %}

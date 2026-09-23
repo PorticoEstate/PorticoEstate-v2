@@ -271,7 +271,13 @@ class HospitalityRepository
                 LEFT JOIN bb_resource r ON h.resource_id = r.id
                 WHERE h.active = 1
                   AND (
-                    (h.allow_on_site_hospitality = 1 AND h.resource_id IN ({$placeholders}))
+                    (h.allow_on_site_hospitality = 1 AND (
+                      h.resource_id IN ({$placeholders})
+                      OR h.id IN (
+                        SELECT rl.hospitality_id FROM bb_hospitality_remote_location rl
+                        WHERE rl.resource_id IN ({$placeholders}) AND rl.active = 1
+                      )
+                    ))
                     OR
                     (h.remote_serving_enabled = 1 AND h.id IN (
                       SELECT rl.hospitality_id FROM bb_hospitality_remote_location rl

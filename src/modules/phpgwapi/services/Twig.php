@@ -186,30 +186,31 @@ class Twig
      */
     private function registerPaths()
     {
-        // Register base phpgwapi paths
-        $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/' . $this->serverSettings['template_set']);
+        $templateSet = $this->serverSettings['template_set'] ?? 'digdir';
+
+        // Register template-set paths before generic base fallbacks.
+        $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/' . $templateSet);
         $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/base');
 
-        // Register Designsystemet component templates if using digdir template
-        if ($this->designSystem->isEnabled()) {
-            $componentPath = PHPGW_SERVER_ROOT . '/phpgwapi/templates/digdir/components';
-            if (is_dir($componentPath)) {
-                $this->loader->addPath($componentPath, 'components');
-            }
+        // Template-set components may override shared components from base.
+        $componentPath = PHPGW_SERVER_ROOT . '/phpgwapi/templates/' . $templateSet . '/components';
+        if (is_dir($componentPath)) {
+            $this->loader->addPath($componentPath, 'components');
         }
+        $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/base/components', 'components');
 
         // Register current app paths
         $appDir = PHPGW_SERVER_ROOT . '/' . $this->flags['currentapp'];
         $baseAppTpl = $appDir . '/templates/base';
-        $appTpl = $appDir . '/templates/' . $this->serverSettings['template_set'];
+        $appTpl = $appDir . '/templates/' . $templateSet;
 
-        if (is_dir($baseAppTpl)) {
-            $this->loader->addPath($baseAppTpl, $this->flags['currentapp']);
-            $this->loader->addPath($baseAppTpl);
-        }
         if (is_dir($appTpl)) {
             $this->loader->addPath($appTpl, $this->flags['currentapp']);
             $this->loader->addPath($appTpl);
+        }
+        if (is_dir($baseAppTpl)) {
+            $this->loader->addPath($baseAppTpl, $this->flags['currentapp']);
+            $this->loader->addPath($baseAppTpl);
         }
     }
 

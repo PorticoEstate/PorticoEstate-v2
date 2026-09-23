@@ -455,10 +455,16 @@ class booking_uiapplication extends booking_uicommon
 
 	protected function add_comment(&$application, $comment, $type = 'comment', $customer_name = null)
 	{
+		// Sanitise on write, same as the REST-layer producers (booking/services/ApplicationService.php,
+		// bookingfrontend/services/applications/ApplicationCommentsService.php). Most callers here pass
+		// system-generated text, but some (e.g. class.uiapplication.inc.php:4439) already pre-clean via
+		// Sanitizer::get_var(..., 'html', ...) — idempotent on already-clean HTML — and at least one
+		// (bookingfrontend/inc/class.uiallocation.inc.php equipment-change flow) concatenates raw
+		// unsanitised $_POST content, which made this the one legacy write path still open.
 		$application['comments'][] = array(
 			'time' => 'now',
 			'author' => $customer_name ? $customer_name : $this->current_account_fullname(),
-			'comment' => $comment,
+			'comment' => Sanitizer::clean_html($comment),
 			'type' => $type
 		);
 	}
@@ -677,6 +683,26 @@ class booking_uiapplication extends booking_uicommon
 		);
 
 		$data['datatable']['actions'] = array();
+
+		$data['datatable']['actions'][] = array(
+			'my_name'		 => 'show',
+			'statustext'	 => lang('show application'),
+			'text'			 => lang('show'),
+			'action'		 => phpgw::link('/index.php', array(
+				'menuaction' => 'booking.uiapplication.show'
+			)),
+			'parameters'	 => json_encode($parameters)
+		);
+
+		$data['datatable']['actions'][] = array(
+			'my_name'	 => 'view',
+			'text'		 => lang('open view in new window'),
+			'action'	 => phpgw::link('/index.php', array(
+				'menuaction'	 => 'booking.uiapplication.show'
+			)),
+			'target'	 => '_blank',
+			'parameters' => json_encode($parameters)
+		);
 
 		if ($this->acl_delete)
 		{

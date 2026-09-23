@@ -82,6 +82,46 @@
 						</xsl:for-each>
 					</select>
 				</div>
+				<xsl:if test="not(new_form)">
+					<div class="pure-control-group">
+						<label for="field_cadastral_type"><xsl:value-of select="php:function('lang', 'Cadastral type')" /></label>
+						<select id="field_cadastral_type" name="cadastral_type" class="pure-input-3-4">
+							<option value=""></option>
+							<option value="BUILDING">
+								<xsl:if test="building/cadastral_reference/cadastral_type='BUILDING'"><xsl:attribute name="selected">selected</xsl:attribute></xsl:if>
+								<xsl:value-of select="php:function('lang', 'Building')" />
+							</option>
+							<option value="FACILITY">
+								<xsl:if test="building/cadastral_reference/cadastral_type='FACILITY'"><xsl:attribute name="selected">selected</xsl:attribute></xsl:if>
+								<xsl:value-of select="php:function('lang', 'Facility')" />
+							</option>
+						</select>
+					</div>
+					<div class="pure-control-group">
+						<label for="field_municipality_id"><xsl:value-of select="php:function('lang', 'Municipality ID')" /></label>
+						<input id="field_municipality_id" name="municipality_id" type="number" value="{building/cadastral_reference/municipality_id}" class="pure-input-3-4" />
+					</div>
+					<div class="pure-control-group">
+						<label for="field_building_number"><xsl:value-of select="php:function('lang', 'Building number')" /></label>
+						<input id="field_building_number" name="building_number" type="number" value="{building/cadastral_reference/building_number}" class="pure-input-3-4" />
+					</div>
+					<div class="pure-control-group">
+						<label for="field_gnr"><xsl:value-of select="php:function('lang', 'Gnr')" /></label>
+						<input id="field_gnr" name="gnr" type="number" value="{building/cadastral_reference/gnr}" class="pure-input-3-4" />
+					</div>
+					<div class="pure-control-group">
+						<label for="field_bnr"><xsl:value-of select="php:function('lang', 'Bnr')" /></label>
+						<input id="field_bnr" name="bnr" type="number" value="{building/cadastral_reference/bnr}" class="pure-input-3-4" />
+					</div>
+					<div class="pure-control-group">
+						<label for="field_fnr"><xsl:value-of select="php:function('lang', 'Fnr')" /></label>
+						<input id="field_fnr" name="fnr" type="number" value="{building/cadastral_reference/fnr}" class="pure-input-3-4" />
+					</div>
+					<div class="pure-control-group">
+						<label for="field_snr"><xsl:value-of select="php:function('lang', 'Snr')" /></label>
+						<input id="field_snr" name="snr" type="number" value="{building/cadastral_reference/snr}" class="pure-input-3-4" />
+					</div>
+				</xsl:if>
 				<div class="pure-control-group">
 					<label for="field_phone">
 						<xsl:value-of select="php:function('lang', 'Telephone')" />

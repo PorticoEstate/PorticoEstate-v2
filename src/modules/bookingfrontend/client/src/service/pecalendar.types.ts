@@ -21,7 +21,7 @@ export interface IAPIScheduleEntity {
 	to_: TDateISO;    // @Expose + NOT NULL
 	cost?: number;     // nullable + no @Expose
 	completed: number; // @Expose + default 0
-	application_id?: number;  // nullable + no @Expose
+	application_id?: number;  // @Expose + nullable
 	building_name: string;    // @Expose + NOT NULL + default
 	skip_bas: number;        // @Expose + default 0
 	resources: IShortResource[];  // @Expose
@@ -46,7 +46,7 @@ export interface IAPIBooking extends IAPIScheduleEntity {
 	season_id: number;       // @Expose + NOT NULL
 	activity_id: number;     // @Expose + NOT NULL
 	reminder: number;        // @Expose + default 0
-	secret: string;         // @Expose + NOT NULL
+	secret?: string;        // conditional @Expose(when={group_id=$user_group_id}) - ABSENT unless the viewer is in the booking's group
 	sms_total?: number;     // @Expose + nullable
 	group_name: string;     // @Expose (computed)
 	activity_name: string;  // @Expose (computed)
@@ -76,6 +76,11 @@ export interface IAPIEvent extends IAPIScheduleEntity {
 	equipment?: string;     // conditional @Expose + nullable
 	access_requested?: number;  // no @Expose + default 0
 	participant_limit?: number;  // conditional @Expose + nullable
+	// @Expose (unconditional). Computed server-side (ScheduleEntityService::
+	// computeCancellationClosesApplication) on all 4 schedule endpoints (buildings/resources/
+	// organizations/applications), curl-verified present and varying (true/false) on
+	// buildings/{id}/schedule — the endpoint the calendar popper itself reads (#23473).
+	cancellation_closes_application: boolean;
 }
 
 

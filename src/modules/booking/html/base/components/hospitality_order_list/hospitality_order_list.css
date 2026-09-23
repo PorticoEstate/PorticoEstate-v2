@@ -1,0 +1,100 @@
+.hospitality-order-list,
+#hospitality-orders,
+#hospitality-orders-list {
+	overflow-x: auto;
+}
+
+.booking-table[data-booking-role="order-table"] {
+	width: 100%;
+	border-collapse: collapse;
+	border-spacing: 0;
+	background: #fff;
+	color: #1e2b3c;
+	font-size: 0.95rem;
+}
+
+.booking-table[data-booking-role="order-table"][data-border] {
+	border: 1px solid #d8e2ee;
+}
+
+.booking-table[data-booking-role="order-table"] th,
+.booking-table[data-booking-role="order-table"] td {
+	padding: 0.6rem 0.75rem;
+	border-bottom: 1px solid #dde6ef;
+	text-align: left;
+	vertical-align: middle;
+}
+
+.booking-table[data-booking-role="order-table"] th {
+	background: #eef5fc;
+	color: #153d66;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.booking-table[data-booking-role="order-table"] tbody tr:nth-child(odd) {
+	background: #f8fbff;
+}
+
+.booking-table[data-booking-role="order-table"] tbody tr:hover,
+.booking-table[data-booking-role="order-table"] tbody tr:focus-within {
+	background: #e8f2fb;
+}
+
+.booking-table[data-booking-role="order-table"] td:first-child,
+.booking-table[data-booking-role="order-table"] td:nth-last-child(2),
+.booking-table[data-booking-role="order-table"] td:last-child {
+	white-space: nowrap;
+}
+
+.booking-tag[data-booking-role="order-status"] {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 1.5rem;
+	padding: 0.15rem 0.55rem;
+	border: 1px solid #c8d5e4;
+	border-radius: 999px;
+	background: #f5f7fa;
+	color: #1f2937;
+	font-size: 0.85rem;
+	font-weight: 600;
+	line-height: 1.2;
+	white-space: nowrap;
+}
+
+.booking-tag[data-booking-role="order-status"][data-color="warning"] {
+	border-color: #f1c76a;
+	background: #fff6dd;
+	color: #6f4b00;
+}
+
+.booking-tag[data-booking-role="order-status"][data-color="info"] {
+	border-color: #9cc8eb;
+	background: #e8f2fb;
+	color: #0b4778;
+}
+
+.booking-tag[data-booking-role="order-status"][data-color="success"] {
+	border-color: #9fd5aa;
+	background: #e6f4ea;
+	color: #1e7e34;
+}
+
+.booking-tag[data-booking-role="order-status"][data-color="danger"] {
+	border-color: #e2a6a6;
+	background: #fdeaea;
+	color: #8f2e2e;
+}
+
+.booking-tag[data-booking-role="order-status"][data-color="neutral"] {
+	border-color: #cbd5e1;
+	background: #f1f5f9;
+	color: #334155;
+}
+
+@media screen and (max-width: 767px) {
+	.booking-table[data-booking-role="order-table"] {
+		min-width: 760px;
+	}
+}

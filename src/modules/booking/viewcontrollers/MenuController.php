@@ -4,6 +4,7 @@ namespace App\modules\booking\viewcontrollers;
 
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\services\Translation;
 
 /**
  * Overrides menu URLs when the digdir template is active, pointing
@@ -22,6 +23,11 @@ class MenuController
 		$serverSettings = Settings::getInstance()->get('server');
 		$templateSet = $serverSettings['template_set'] ?? 'digdir';
 
+		foreach (self::getAppends() as $path => $items)
+		{
+			self::appendAtPath($menus, $path, $items);
+		}
+
 		if ($templateSet !== 'digdir') {
 			return $menus;
 		}
@@ -30,9 +36,6 @@ class MenuController
 			self::replaceAtPath($menus, $path, $overrides);
 		}
 
-		foreach (self::getAppends() as $path => $items) {
-			self::appendAtPath($menus, $path, $items);
-		}
 
 		foreach (self::getRemovals() as $path) {
 			self::removeAtPath($menus, $path);
@@ -84,7 +87,7 @@ class MenuController
 		if (!empty($bookingConfig->enable_hospitality)) {
 			$appends['navigation'] = [
 				'hospitality' => [
-					'text' => lang('Hospitality'),
+					'text' => Translation::getInstance()->translate('Hospitality',[] ,false, 'booking'),
 					'url' => \phpgw::link('/booking/view/hospitality'),
 				],
 			];

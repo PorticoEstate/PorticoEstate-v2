@@ -1,0 +1,22 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ lang('Send broadcast SMS') }}{% endblock %}
+{% block styles %}<style>{{ source('@views/send_group/sms_send_group.css') }}</style>{% endblock %}
+{% block content %}
+<div id="sms-send-group-app" class="sms-message-page" data-api-url="{{ api_url|e }}" data-back-url="{{ back_url|e }}" data-csrf-name="{{ csrf.name|e('html_attr') }}" data-csrf-value="{{ csrf.value|e('html_attr') }}" data-max-length="{{ max_length }}">
+	<h1>{{ lang('Send broadcast SMS') }}</h1>
+	<div id="sms-send-group-error" class="sms-message sms-message--error" hidden></div>
+	<form id="sms-send-group-form" class="sms-form">
+		<label for="sms-group">{{ lang('Send to group') }}</label>
+		<select id="sms-group" required>
+			<option value="">{{ lang('Select') }}</option>
+			{% for group in groups %}<option value="{{ group.code|e('html_attr') }}">{{ group.name|e }}</option>{% endfor %}
+		</select>
+		<label for="sms-group-message">{{ lang('message') }}</label>
+		<textarea id="sms-group-message" rows="6" maxlength="{{ max_length }}" required></textarea>
+		<div class="sms-form__counter">{{ lang('character left') }}: <span id="sms-group-char-count">{{ max_length }}</span></div>
+		<label class="sms-form__checkbox"><input type="checkbox" id="sms-group-flash"> {{ lang('send as flash message') }}</label>
+		<div class="sms-form__actions"><button class="sms-button sms-button--primary" type="submit">{{ lang('save') }}</button><a class="sms-button sms-button--secondary" href="{{ back_url|e }}">{{ lang('cancel') }}</a></div>
+	</form>
+</div>
+{% endblock %}
+{% block scripts %}<script>{{ source('@views/send_group/sms_send_group.js') }}</script>{% endblock %}

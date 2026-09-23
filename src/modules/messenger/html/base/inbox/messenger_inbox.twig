@@ -1,0 +1,55 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Inbox') }}{% endblock %}
+
+{% block styles %}
+	<style>{{ source('@views/inbox/messenger_inbox.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<div class="messenger-inbox">
+	{% include '@phpgwapi_components/app_datatable/app_datatable.twig' with {
+		id: 'messenger-inbox-datatable'
+	} %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+	window.__messengerInbox = {
+		id: 'messenger-inbox-datatable',
+		dataUrl: '{{ api_url|e('js') }}',
+		composeUrl: '{{ compose_url|e('js') }}',
+		viewUrlTemplate: '{{ view_url|replace({'__MESSAGE_ID__': '{id}'})|e('js') }}',
+		deleteUrlTemplate: '{{ delete_url|replace({'__MESSAGE_ID__': '{id}'})|e('js') }}',
+		statuses: {{ statuses|json_encode|raw }},
+		pageLength: {{ rows_per_page|default(10) }},
+		lengthMenu: {{ length_menu|default([10, 25, 50])|json_encode|raw }},
+		lang: {
+			id: '{{ lang('ID')|e('js') }}',
+			date: '{{ lang('Date')|e('js') }}',
+			from: '{{ lang('From')|e('js') }}',
+			subject: '{{ lang('Subject')|e('js') }}',
+			status: '{{ lang('Status')|e('js') }}',
+			compose: '{{ lang('Compose')|e('js') }}',
+			view: '{{ lang('View')|e('js') }}',
+			delete: '{{ lang('Delete')|e('js') }}',
+			filter: '{{ lang('Filter')|e('js') }}',
+			resetFilter: '{{ lang('reset filter')|e('js') }}',
+			activeFilters: '{{ lang('active filters')|e('js') }}',
+			emptyTable: '{{ lang('No data available in table')|e('js') }}',
+			search: '{{ lang('Search')|e('js') }}',
+			info: '{{ lang('Showing _START_ to _END_ of _TOTAL_ entries')|e('js') }}',
+			infoEmpty: '{{ lang('Showing 0 to 0 of 0 entries')|e('js') }}',
+			infoFiltered: '{{ lang('(filtered from _MAX_ total entries)')|e('js') }}',
+			lengthMenu: '{{ lang('Show _MENU_ entries')|e('js') }}',
+			zeroRecords: '{{ lang('No matching records found')|e('js') }}',
+			first: '{{ lang('first')|e('js') }}',
+			last: '{{ lang('last')|e('js') }}',
+			next: '{{ lang('next')|e('js') }}',
+			previous: '{{ lang('prev')|e('js') }}'
+		}
+	};
+</script>
+<script>{{ source('@views/inbox/messenger_inbox.js') }}</script>
+{% endblock %}

@@ -1,5 +1,5 @@
 <?php
-$preferences = CreateObject('phpgwapi.preferences');
+$preferences = \App\modules\phpgwapi\services\Preferences::getInstance();
 
 $preferences->add('addressbook', 'company', 'addressbook_True');
 $preferences->add('addressbook', 'lastname', 'addressbook_True');

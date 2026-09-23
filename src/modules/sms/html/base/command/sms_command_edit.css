@@ -1,0 +1,117 @@
+.sms-command-edit {
+	max-width: 52rem;
+	padding: 1.5rem 1rem 2rem;
+}
+
+.sms-command-edit__header {
+	margin-bottom: 1.5rem;
+}
+
+.sms-command-edit__header h1 {
+	margin: 0 0 .35rem;
+	color: #17324d;
+	font-size: 1.65rem;
+	line-height: 1.2;
+}
+
+.sms-command-edit__intro {
+	margin: 0;
+	color: #526579;
+}
+
+.sms-command-edit__form {
+	max-width: 46rem;
+	padding: 1.5rem;
+	border: 1px solid #d5dde6;
+	border-radius: 6px;
+	background: #fff;
+	box-shadow: 0 2px 8px rgba(23, 50, 77, .08);
+}
+
+.sms-command-edit__field {
+	display: flex;
+	flex-direction: column;
+	gap: .4rem;
+	margin-bottom: 1.15rem;
+	color: #233b53;
+	font-weight: 600;
+}
+
+.sms-command-edit__field input,
+.sms-command-edit__field select,
+.sms-command-edit__field textarea {
+	box-sizing: border-box;
+	width: 100%;
+	padding: .65rem .75rem;
+	border: 1px solid #aebdcb;
+	border-radius: 4px;
+	background: #fff;
+	color: #172b3f;
+	font: inherit;
+	font-weight: 400;
+}
+
+.sms-command-edit__field textarea {
+	min-height: 7rem;
+	resize: vertical;
+}
+
+.sms-command-edit__field input:focus,
+.sms-command-edit__field select:focus,
+.sms-command-edit__field textarea:focus {
+	border-color: #20568f;
+	outline: 2px solid rgba(32, 86, 143, .2);
+	outline-offset: 1px;
+}
+
+.sms-command-edit__field small {
+	color: #607286;
+	font-size: .875rem;
+	font-weight: 400;
+}
+
+.sms-command-edit__error {
+	margin-bottom: 1rem;
+	padding: .7rem .8rem;
+	border: 1px solid #e2a6a0;
+	border-radius: 4px;
+	background: #fff1f0;
+	color: #8f1c14;
+}
+
+.sms-command-edit__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: .7rem;
+	margin-top: 1.5rem;
+	padding-top: 1.25rem;
+	border-top: 1px solid #e1e7ed;
+}
+
+.sms-command-edit__button {
+	padding: .65rem 1rem;
+	border: 1px solid #20568f;
+	border-radius: 4px;
+	background: #2a72ba;
+	color: #fff;
+	font: inherit;
+	font-weight: 600;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.sms-command-edit__button--secondary {
+	background: #fff;
+	color: #20568f;
+}
+
+@media (max-width: 36rem) {
+	.sms-command-edit__form {
+		padding: 1rem;
+	}
+
+	.sms-command-edit__button {
+		flex: 1 1 100%;
+		text-align: center;
+	}
+}

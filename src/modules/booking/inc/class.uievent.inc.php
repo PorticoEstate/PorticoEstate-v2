@@ -1159,9 +1159,17 @@ class booking_uievent extends booking_uicommon
 						$event['customer_internal'] = $organization['customer_internal'];
 					}
 					
-					if (strlen($organization['customer_organization_number']) == 9)
+					if (strlen($organization['customer_organization_number']) == 9  && !strlen($event['customer_organization_number'])==9)
 					{
 						$event['customer_organization_number'] = $organization['customer_organization_number'];
+					}
+					else if(strlen($event['customer_organization_number'])==9)
+					{
+						//update the organization number with the existing one in the event
+						$organization['customer_organization_number'] = $event['customer_organization_number'];
+						$organization['customer_identifier_type'] = 'organization_number';
+						$organization['customer_internal'] = 0;
+						$this->organization_bo->update($organization);
 					}
 					else
 					{

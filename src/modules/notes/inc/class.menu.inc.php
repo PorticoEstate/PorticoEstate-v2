@@ -53,7 +53,7 @@ class notes_menu
 		$menus['navbar'] = array(
 			'notes' => array(
 				'text'	=> $translation->translate('notes', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'notes.uinotes.index')),
+				'url'	=> phpgw::link('/notes/view/notes'),
 				'image'	=> array('notes', 'navbar'),
 				'order'	=> 8,
 				'group'	=> 'office'
@@ -62,7 +62,7 @@ class notes_menu
 
 		$menus['toolbar'] = array(
 			array(
-				'url'   => phpgw::link('/index.php', array('menuaction' => 'notes.uinotes.edit')),
+				'url'   => phpgw::link('/notes/view/notes/add'),
 				'text'  => $translation->translate('New', array(), true),
 				'image' => array('notes', 'new')
 			)
@@ -94,8 +94,13 @@ class notes_menu
 		}
 
 		$menus['navigation'] = array(
-			array(
-				'url'   => phpgw::link('/index.php', array('menuaction' => 'notes.uinotes.edit')),
+			'notes' => array(
+				'url'   => phpgw::link('/notes/view/notes'),
+				'text'  => $translation->translate('list notes', array(), true),
+				'image' => array('notes', 'navbar')
+			),
+			'new' => array(
+				'url'   => phpgw::link('/notes/view/notes/add'),
 				'text'  => $translation->translate('New', array(), true),
 				'image' => array('notes', 'new')
 			)

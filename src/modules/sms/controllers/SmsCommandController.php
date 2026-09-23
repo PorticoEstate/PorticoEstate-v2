@@ -1,0 +1,134 @@
+<?php
+
+namespace App\modules\sms\controllers;
+
+use App\helpers\ResponseHelper;
+use App\modules\phpgwapi\security\Acl;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
+
+class SmsCommandController
+{
+	private function businessObject()
+	{
+		return \CreateObject('sms.bocommand', true);
+	}
+
+	private function payload(Request $request): array
+	{
+		$data = $request->getParsedBody();
+		if (!is_array($data))
+		{
+			$decoded = json_decode((string) $request->getBody(), true);
+			$data = is_array($decoded) ? $decoded : [];
+		}
+		return $data;
+	}
+
+	private function allowed(): bool
+	{
+		return Acl::getInstance()->check('.command', Acl::READ, 'sms');
+	}
+
+	private function orderParams(array $body, array $columns, string $defaultColumn, string $defaultDirection = 'ASC'): array
+	{
+		$order = $body['order'][0] ?? [];
+		$columnIndex = (int) ($order['column'] ?? -1);
+		$columnKey = (string) ($columns[$columnIndex]['data'] ?? $defaultColumn);
+		$column = $columns[$columnKey] ?? $columns[$defaultColumn] ?? $defaultColumn;
+		$direction = strtoupper((string) ($order['dir'] ?? $defaultDirection)) === 'DESC' ? 'DESC' : 'ASC';
+		return [$column, $direction];
+	}
+
+	public function index(Request $request, Response $response): Response
+	{
+		if (!$this->allowed()) return ResponseHelper::sendErrorResponse(['error' => 'Access not permitted'], 403);
+		$query = $request->getQueryParams();
+		$body = (array) ($request->getParsedBody() ?: []);
+		$start = max(0, (int) ($body['start'] ?? $query['start'] ?? 0));
+		$search = (string) ($body['search']['value'] ?? $body['search'] ?? $query['search'] ?? '');
+		$draw = (int) ($body['draw'] ?? $query['draw'] ?? 0);
+		[$order, $direction] = $this->orderParams($body, [
+			'code' => 'command_code',
+			'uid' => 'uid',
+			'exec' => 'command_exec',
+		], 'code');
+		$bo = $this->businessObject();
+		$rows = (array) $bo->read(['start' => $start, 'query' => $search, 'order' => $order, 'sort' => $direction, 'allrows' => false]);
+		$data = array_map(static function (array $row): array {
+			return ['id' => (int) ($row['id'] ?? 0), 'code' => (string) ($row['code'] ?? ''), 'exec' => (string) ($row['exec'] ?? ''), 'uid' => (int) ($row['uid'] ?? 0)];
+		}, $rows);
+		$total = (int) $bo->total_records;
+		return ResponseHelper::sendJSONResponse($draw > 0 ? ['draw' => $draw, 'recordsTotal' => $total, 'recordsFiltered' => $total, 'data' => $data] : ['items' => $data, 'total' => $total]);
+	}
+
+	public function show(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->allowed()) return ResponseHelper::sendErrorResponse(['error' => 'Access not permitted'], 403);
+		return ResponseHelper::sendJSONResponse(['item' => $this->businessObject()->read_single_command((int) ($args['id'] ?? 0))]);
+	}
+
+	public function store(Request $request, Response $response): Response
+	{
+		$query = $request->getQueryParams();
+		$parsedBody = $request->getParsedBody();
+		$parsedBody = is_array($parsedBody) ? $parsedBody : [];
+		if (isset($parsedBody['draw']) || isset($parsedBody['columns']) || isset($parsedBody['order']) || isset($query['draw']))
+		{
+			return $this->index($request, $response);
+		}
+
+		if (!Acl::getInstance()->check('.command', Acl::ADD, 'sms')) return ResponseHelper::sendErrorResponse(['error' => 'Access not permitted'], 403);
+		$data = $this->payload($request);
+		foreach (['code', 'type', 'exec'] as $field) if (trim((string) ($data[$field] ?? '')) === '') return ResponseHelper::sendErrorResponse(['error' => 'Missing command field: ' . $field], 400);
+		$result = $this->businessObject()->save_command($data);
+		return ResponseHelper::sendJSONResponse($result, 201);
+	}
+
+	public function update(Request $request, Response $response, array $args): Response
+	{
+		if (!Acl::getInstance()->check('.command', Acl::EDIT, 'sms')) return ResponseHelper::sendErrorResponse(['error' => 'Access not permitted'], 403);
+		$data = $this->payload($request);
+		$data['command_id'] = (int) ($args['id'] ?? 0);
+		$result = $this->businessObject()->save_command($data, 'edit');
+		return ResponseHelper::sendJSONResponse($result);
+	}
+
+	public function destroy(Request $request, Response $response, array $args): Response
+	{
+		if (!Acl::getInstance()->check('.command', Acl::DELETE, 'sms')) return ResponseHelper::sendErrorResponse(['error' => 'Access not permitted'], 403);
+		$id = (int) ($args['id'] ?? 0);
+		$db = new \App\Database\Db2();
+		$db->query('DELETE FROM phpgw_sms_featcommand WHERE command_id=' . $id, __LINE__, __FILE__);
+		return ResponseHelper::sendJSONResponse(['deleted' => true]);
+	}
+
+	public function log(Request $request, Response $response): Response
+	{
+		if (!$this->allowed()) return ResponseHelper::sendErrorResponse(['error' => 'Access not permitted'], 403);
+		$query = $request->getQueryParams();
+		$body = (array) ($request->getParsedBody() ?: []);
+		$draw = (int) ($body['draw'] ?? $query['draw'] ?? 0);
+		[$order, $direction] = $this->orderParams($body, [
+			'id' => 'command_log_id',
+			'code' => 'command_log_code',
+			'sender' => 'sms_sender',
+			'success' => 'command_log_success',
+			'datetime' => 'command_log_datetime',
+			'param' => 'command_log_param',
+		], 'id', 'DESC');
+		$bo = $this->businessObject();
+		$rows = (array) $bo->read_log(['start' => (int) ($body['start'] ?? 0), 'query' => (string) ($body['search']['value'] ?? ''), 'order' => $order, 'sort' => $direction, 'allrows' => false]);
+		$rows = array_map(static function (array $row): array {
+			$row['redirect_url'] = ((int) ($row['success'] ?? 0) === 1)
+				? \phpgw::link('/sms/view/command/redirect', [
+					'code' => (string) ($row['code'] ?? ''),
+					'param' => (string) ($row['param'] ?? ''),
+				], true)
+				: '';
+			return $row;
+		}, $rows);
+		$total = (int) $bo->total_records;
+		return ResponseHelper::sendJSONResponse($draw > 0 ? ['draw' => $draw, 'recordsTotal' => $total, 'recordsFiltered' => $total, 'data' => $rows] : ['items' => $rows, 'total' => $total]);
+	}
+}

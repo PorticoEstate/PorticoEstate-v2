@@ -1,0 +1,25 @@
+{% extends layout|default('@views/_layout.twig') %}
+
+{% block title %}{{ lang('booking.application') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@base_views/_shared/controls.css') }}</style>
+<style>{{ source('@base_views/application/show/application_show.css') }}</style>
+<style>{{ source('@views/components/search_select/search_select.css') }}</style>
+{% if enable_hospitality %}
+<style>{{ source('@base_views/components/hospitality_order_list/hospitality_order_list.css') }}</style>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% include '@views/_shared/application_show_body.twig' %}
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/components/search_select/search_select.js') }}</script>
+{% if enable_hospitality %}
+<script>{{ source('@base_views/components/hospitality_order_list/hospitality_order_list.js') }}</script>
+<script>{{ source('@base_views/components/hospitality_order_modal/hospitality_order_modal.js') }}</script>
+{% endif %}
+<script>{{ source('@base_views/application/show/application_show.js') }}</script>
+{% endblock %}

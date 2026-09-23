@@ -1,0 +1,18 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ lang('refresh') }}{% endblock %}
+{% block styles %}<style>{{ source('@views/refresh/sms_refresh.css') }}</style>{% endblock %}
+{% block content %}
+<div class="sms-refresh-page">
+	<div class="sms-refresh-page__status" role="status" aria-live="polite">
+		<div class="sms-refresh-page__icon" aria-hidden="true">&#10003;</div>
+		<div>
+			<h1>{{ lang('SMS inbox refreshed') }}</h1>
+			<p>{{ lang('The SMS inbox and delivery statuses have been refreshed.') }}</p>
+		</div>
+	</div>
+	<div class="sms-refresh-page__actions">
+		<a class="sms-button" href="{{ inbox_url|e }}">{{ lang('Inbox') }}</a>
+		<a class="sms-button sms-button--secondary" href="{{ outbox_url|e }}">{{ lang('Outbox') }}</a>
+	</div>
+</div>
+{% endblock %}

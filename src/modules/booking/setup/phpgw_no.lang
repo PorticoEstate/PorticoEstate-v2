@@ -194,7 +194,7 @@ Bookings to be deleted	booking	no	Booking for sletting
 boundaries	booking	no	Rammetid
 buffer deadline	booking	no	Buffer/frist
 building	booking	no	Bygg/anlegg
-Building (2018)	booking	no	Anlegg
+Facility	booking	no	Anlegg
 building edit	booking	no	Endre bygning
 building name	booking	no	Bygg/anlegg
 Building or facility name	booking	no	Bygning/anleggsnavn
@@ -203,10 +203,14 @@ building show	booking	no	Vis bygning
 Building type	booking	no	Bygningstype
 building_id	booking	no	Bygg/anlegg
 building_name	booking	no	Bygningsnavn
+building number	booking	no	Bygningsnummer
 building_preview	booking	no	Forhåndsvisning
 building_title	booking	no	Bygning
 buildings	booking	no	Bygg/anlegg
 bygning	booking	no	Bygg/anlegg
+cadastral type	booking	no	Matrikkeltype
+Cadastral Building ID	booking	no	Matrikkelbygnings-ID
+cadastral property	booking	no	Matrikkelnummer
 Calendar	booking	no	Kalender
 Calendar text	booking	no	Tekst bak kalender knapp.
 Can not create a booking in the past	booking	no	Du kan ikke opprette en interntildeling i fortiden
@@ -406,7 +410,7 @@ Edit completed reservation	booking	no	Rediger fullført reservasjon
 edit delegate	booking	no	Endre delegert til
 Edit document	booking	no	Rediger dokument
 edit event	booking	no	Rediger arrangement
-Edit facilities	booking	no	Rediger fasiliteter
+Edit features	booking	no	Rediger egenskaper
 edit facility	booking	no	Rediger fasilitet
 Edit Group	booking	no	Rediger gruppe
 edit organization	booking	no	Rediger organisasjon
@@ -480,8 +484,9 @@ extra info	booking	no	Tileggsinformasjon
 Extra information	booking	no	Ekstra informasjon om arrangement
 Extra information for the event	booking	no	Ekstra informasjon på arrangement
 Extra kalendar for public opening times	booking	no	Aktiver ekstra kalender for publikumsbading
-Facilities	booking	no	Fasiliteter
-Facility	booking	no	Fasilitet
+Facilities	booking	no	Anlegg
+Feature	booking	no	Egenskap
+Features	booking	no	Egenskaper
 female	booking	no	Kvinne
 Field %1 is required	booking	no	Feltet '%1' må fylles ut
 Field %1: Invalid format	booking	no	Felt %1: Ugyldig format
@@ -659,6 +664,7 @@ move_down	booking	no	Flytt ned
 move_up	booking	no	Flytt opp
 multi domain	booking	no	Støtte for kryss-instans
 Multiple Events was created	booking	no	Flere arrangementer har blitt opprettet
+Municipality ID	booking	no	Kommunenummer
 my assigned applications	booking	no	*Mine søknader
 my assigned buildings	booking	no	*Mine bygninger
 name	booking	no	Navn
@@ -735,6 +741,7 @@ One e-mail pr. line.	booking	no	Bare en e-post adresse pr. linje.
 One filter box per line	booking	no	Bare én filtreringsboks per linje
 One or more bookings, allocations or events needs to be created before an application can be Accepted	booking	no	En eller flere interntildelinger, tildelinger eller arrangementer må lages før en søknad kan aksepteres
 only_case_officer_can_create	booking	no	Kun saksbehandler kan opprette tildelinger
+open view in new window	booking	no	Åpne visning i ny fane
 Opening hours	booking	no	Åpningstider
 optional	booking	no	Valgfritt
 Optional e-mail adress	booking	no	Valgfri e-post adresse
@@ -776,6 +783,7 @@ parent activity	booking	no	Overordnet kategori
 parent group	booking	no	Overordnet gruppe
 parent id	booking	no	Overordnet id
 partially refunded	booking	no	Delvis refundert
+participant_limit_quantity_help	booking	no	-1 blokkerer deltakerregistrering fra valgt dato, 0 sletter tidligere deltakergrense for valgt dato, og positive tall setter deltakergrensen til det angitte antallet.
 participant limit	booking	no	Max antall deltakere
 participant limit sms	booking	no	Send kvittering for registrering på SMS
 Participants	booking	no	Deltagere
@@ -1273,3 +1281,4 @@ overwrite_manual_prices_question	booking	no	%1 av %2 tidspunkt har en pris som e
 overwrite_all_prices	booking	no	Overskriv alle
 keep_manual_prices	booking	no	Behold de manuelle
 cancel_price_update	booking	no	Avbryt
+date and time	booking	no	Tidspunkt

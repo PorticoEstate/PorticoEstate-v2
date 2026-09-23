@@ -61,7 +61,7 @@ class notes_sonotes
 		if (is_array($data))
 		{
 			$start		= isset($data['start'])		? $data['start'] : 0;
-			$filter		= isset($data['filter'])	? $data['filter'] : 'none';
+			$filter		= isset($data['filter'])	? $data['filter'] : '';
 			$query		= isset($data['query'])		? $data['query'] : '';
 			$sort		= isset($data['sort'])		? $data['sort'] : 'DESC';
 			$order		= isset($data['order'])		? $data['order'] : '';
@@ -83,7 +83,7 @@ class notes_sonotes
 
 		$table = 'phpgw_notes';
 		$where = 'WHERE';
-		if ($filter == 'none')
+		if (!$filter)
 		{
 			$filtermethod = $where . ' ( note_owner = ' . $this->account;
 			$public_user_list = array();
@@ -107,12 +107,12 @@ class notes_sonotes
 				unset($user);
 				reset($public_group_list);
 				$filtermethod .= " OR note_access='public' AND phpgw_group_map.group_id IN(" . implode(',', $public_group_list) . "))";
-				$where = 'AND';
 			}
 			if ($public_user_list && !$public_group_list)
 			{
 				$filtermethod .= ')';
 			}
+			$where = 'AND';
 		}
 		elseif ($filter == 'yours')
 		{

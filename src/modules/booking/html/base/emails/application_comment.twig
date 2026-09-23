@@ -1,0 +1,9 @@
+{% extends '@views/emails/_email_layout.twig' %}
+
+{% block content %}
+{% if comment_added_mail %}<p>{{ comment_added_mail|safe_html }}</p>{% endif %}
+<p>Kommentar fra saksbehandler:</p>
+{{ comment|safe_html }}
+
+{% include '@views/emails/_partials/application_link.twig' %}
+{% endblock %}

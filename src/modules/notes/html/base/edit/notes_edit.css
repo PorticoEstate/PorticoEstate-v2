@@ -1,0 +1,126 @@
+.notes-page {
+	padding: 1rem;
+	max-width: 980px;
+}
+
+.notes-page h1 {
+	margin: 0 0 1rem;
+	font-size: 1.5rem;
+	font-weight: 600;
+	color: #1e2b3c;
+}
+
+.notes-form {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 1rem;
+}
+
+.notes-form__group {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+}
+
+.notes-form__group:first-child {
+	grid-column: 1 / -1;
+}
+
+.notes-form__group label {
+	font-weight: 600;
+	color: #1e2b3c;
+}
+
+.notes-form__group.form-check {
+	grid-column: 1 / -1;
+	flex-direction: row;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.notes-form__group .form-control,
+.notes-form__group .form-select {
+	box-sizing: border-box;
+	width: 100%;
+	padding: 0.5rem;
+	border: 1px solid #c6c6c6;
+	border-radius: 4px;
+	background: #fff;
+	color: #1e293b;
+	font: inherit;
+}
+
+.notes-form__group .form-control {
+	min-height: 130px;
+	resize: vertical;
+}
+
+.notes-form__group .form-control:focus,
+.notes-form__group .form-select:focus {
+	outline: 2px solid #2a72ba;
+	outline-offset: 1px;
+}
+
+.notes-form__group .form-check-input {
+	margin: 0;
+}
+
+.notes-form__actions {
+	grid-column: 1 / -1;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	margin-top: 1rem;
+}
+
+.notes-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.5rem 0.9rem;
+	border: 1px solid #20568f;
+	border-radius: 4px;
+	background: #2a72ba;
+	color: #fff;
+	font: inherit;
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.notes-button--primary {
+	background: #2a72ba;
+	color: #fff;
+	border-color: #20568f;
+}
+
+.notes-button--secondary {
+	background: #fff;
+	color: #20568f;
+	border-color: #20568f;
+}
+
+.notes-button:hover,
+.notes-button:focus-visible {
+	background: #225f9c;
+	color: #fff;
+}
+
+.notes-button--secondary:hover,
+.notes-button--secondary:focus-visible {
+	background: #eef5fc;
+	color: #20568f;
+}
+
+.notes-button:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.notes-message--error {
+	margin-bottom: 1rem;
+	padding: 0.75rem;
+	border: 1px solid #d38e8e;
+	border-radius: 4px;
+	background: #fdeaea;
+	color: #7b1f1f;
+}

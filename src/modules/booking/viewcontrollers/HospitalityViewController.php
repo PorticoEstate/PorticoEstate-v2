@@ -29,6 +29,7 @@ class HospitalityViewController
 	public function index(Request $request, Response $response): Response
 	{
 		try {
+			$pagination = $this->getDatatablePagination();
 			$permissions = [
 				'read'   => $this->acl->check('.application', Acl::READ, 'booking'),
 				'create' => $this->acl->check('.application', Acl::ADD, 'booking'),
@@ -43,6 +44,8 @@ class HospitalityViewController
 			$componentHtml = $this->twig->render('@views/hospitality/list/hospitality_list.twig', [
 				'layout'      => '@views/_bare.twig',
 				'permissions' => $permissions,
+				'rows_per_page' => $pagination['rows_per_page'],
+				'length_menu' => $pagination['length_menu'],
 			]);
 
 			$html = $this->legacyView->render($componentHtml, 'booking', 'booking::hospitality');
@@ -55,6 +58,19 @@ class HospitalityViewController
 				500
 			);
 		}
+	}
+
+	private function getDatatablePagination(): array
+	{
+		$user = Settings::getInstance()->get('user');
+		$rowsPerPage = isset($user['preferences']['common']['maxmatchs']) && (int) $user['preferences']['common']['maxmatchs'] > 0
+			? (int) $user['preferences']['common']['maxmatchs']
+			: 10;
+
+		return [
+			'rows_per_page' => $rowsPerPage,
+			'length_menu' => [$rowsPerPage, $rowsPerPage * 2, $rowsPerPage * 3],
+		];
 	}
 
 	public function create(Request $request, Response $response): Response

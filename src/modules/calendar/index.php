@@ -14,7 +14,9 @@
 
 	/* $Id$ */
 
-	$GLOBALS['phpgw_info']['flags'] = array
+	use App\modules\phpgwapi\services\Settings;
+
+	Settings::getInstance()->set('flags', array
 	(
 		'currentapp'	=> 'calendar',
 		'noheader'		=> true,
@@ -22,14 +24,9 @@
 		'noappheader'	=> true,
 		'noappfooter'	=> true,
 		'nofooter'		=> true
-	);
+	));
 	include('../header.inc.php');
 
 	phpgw::import_class('phpgwapi.datetime');
 	
-	$cal = createObject('calendar.uicalendar');
-	$cal->index(array
-	(
-			'menuaction'	=> 'calendar.uicalendar.index',
-			'date'		=> date('Ymd', phpgwapi_datetime::user_localtime() )
-	));
+	phpgw::redirect_link('/calendar/view/month', array('date' => date('Ymd', phpgwapi_datetime::user_localtime())));

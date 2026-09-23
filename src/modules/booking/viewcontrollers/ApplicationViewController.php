@@ -60,7 +60,8 @@ class ApplicationViewController
 
 			$html = $this->legacyView->render(
 				$componentHtml,
-				['booking', 'applications']
+				['booking', 'applications'],
+				'booking::applications::applications'
 			);
 
 			$response->getBody()->write($html);

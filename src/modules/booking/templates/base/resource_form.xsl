@@ -807,6 +807,9 @@
 					<xsl:variable name="lang_quantity">
 						<xsl:value-of select="php:function('lang', 'quantity')"/>
 					</xsl:variable>
+					<xsl:variable name="lang_participant_limit_quantity_help">
+						<xsl:value-of select="php:function('lang', 'participant_limit_quantity_help')"/>
+					</xsl:variable>
 
 					<input type="text" id="participant_limit_from" name="participant_limit_from">
 						<xsl:attribute name="title">
@@ -818,7 +821,7 @@
 					</input>
 					<input type="number" id="participant_limit_quantity" min="-1" name="participant_limit_quantity">
 						<xsl:attribute name="title">
-							<xsl:value-of select="$lang_quantity"/>
+							<xsl:value-of select="$lang_participant_limit_quantity_help" />
 						</xsl:attribute>
 						<xsl:attribute name="placeholder">
 							<xsl:value-of select="$lang_quantity"/>

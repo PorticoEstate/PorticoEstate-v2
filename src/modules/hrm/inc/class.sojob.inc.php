@@ -51,6 +51,7 @@ class hrm_sojob
 			$sort		= isset($data['sort']) && $data['sort'] == 'ASC' ? $data['sort'] : 'DESC';
 			$order		= isset($data['order']) ? $data['order'] : '';
 			$allrows	= isset($data['allrows']) ? $data['allrows'] : '';
+			$length		= isset($data['length']) && $data['length'] ? $data['length'] : 0;
 		}
 
 		$ordermethod = ' order by name asc';
@@ -145,10 +146,10 @@ class hrm_sojob
 
 		if (!$allrows)
 		{
-			$num_rows = isset($this->userSettings['preferences']['common']['maxmatchs']) ? intval($this->userSettings['preferences']['common']['maxmatchs']) : 15;
-			$page = ceil(($start / $this->total_records) * ($this->total_records / $num_rows));
+			$num_rows = $length > 0 ? (int) $length : (isset($this->userSettings['preferences']['common']['maxmatchs']) ? intval($this->userSettings['preferences']['common']['maxmatchs']) : 15);
+			$page = $this->total_records ? ceil(($start / $this->total_records) * ($this->total_records / $num_rows)) : 0;
 			$out = array_chunk($jobs, $num_rows);
-			$jobs = $out[$page];
+			$jobs = $out[$page] ?? array();
 		}
 
 		$sql = "SELECT count(*) as quali_count,job_id FROM phpgw_hrm_quali GROUP BY job_id";
@@ -260,6 +261,7 @@ class hrm_sojob
 			. " WHERE job_id=" . intval($job_id);
 
 		$parent_select = ' AND (is_parent =1 OR (is_parent = 0 AND quali_parent IS NULL))';
+		$querymethod = '';
 
 		if ($query)
 		{
@@ -342,6 +344,7 @@ class hrm_sojob
 
 	function read_single_qualification($id)
 	{
+		$values = array();
 
 		$sql = "SELECT * , phpgw_hrm_quali_type.id as quali_type_id FROM phpgw_hrm_quali $this->join phpgw_hrm_quali_type ON phpgw_hrm_quali.quali_type_id = phpgw_hrm_quali_type.id WHERE phpgw_hrm_quali.id=" . intval($id);
 
@@ -366,6 +369,7 @@ class hrm_sojob
 
 	function read_single_qualification_type($id)
 	{
+		$values = array();
 		$sql = "SELECT *  FROM phpgw_hrm_quali_type WHERE id=" . intval($id);
 
 		$this->db->query($sql, __LINE__, __FILE__);
@@ -411,6 +415,7 @@ class hrm_sojob
 		$table = 'phpgw_hrm_quali_type';
 
 		$filtermethod = '';
+		$querymethod = '';
 		if ($query)
 		{
 			$query = preg_replace("/'/", '', $query);
@@ -433,6 +438,7 @@ class hrm_sojob
 			$this->db->query($sql . $ordermethod, __LINE__, __FILE__);
 		}
 
+		$qualification_type = array();
 		while ($this->db->next_record())
 		{
 			$qualification_type[] = array(
@@ -484,6 +490,7 @@ class hrm_sojob
 		$this->db->query($sql . $parent_select . $querymethod . $ordermethod, __LINE__, __FILE__);
 		$this->total_records = $this->db->num_rows();
 
+		$tasks = array();
 		$value_sort = 1;
 		while ($this->db->next_record())
 		{
@@ -1167,6 +1174,7 @@ class hrm_sojob
 		$this->db->query($sql, __LINE__, __FILE__);
 
 		$i = 0;
+		$qualification_list = array();
 		while ($this->db->next_record())
 		{
 			$qualification_list[$i]['id']	= $this->db->f('quali_id');
@@ -1191,6 +1199,7 @@ class hrm_sojob
 
 	function resort_value($data)
 	{
+		$table = '';
 		if (is_array($data))
 		{
 			$resort = (isset($data['resort']) ? $data['resort'] : 'up');

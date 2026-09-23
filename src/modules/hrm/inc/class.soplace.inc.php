@@ -50,6 +50,7 @@ class hrm_soplace
 			$sort		= (isset($data['sort']) ? $data['sort'] : 'DESC');
 			$order		= (isset($data['order']) ? $data['order'] : '');
 			$allrows	= (isset($data['allrows']) ? $data['allrows'] : '');
+			$length		= isset($data['length']) && $data['length'] ? $data['length'] : 10;
 		}
 
 		if ($order)
@@ -71,6 +72,7 @@ class hrm_soplace
 			$querymethod = " WHERE name $this->like '%$query%'";
 		}
 
+		$querymethod = $querymethod ?? '';
 		$sql = "SELECT * FROM $table $querymethod";
 
 		$this->db->query($sql, __LINE__, __FILE__);
@@ -78,13 +80,14 @@ class hrm_soplace
 
 		if (!$allrows)
 		{
-			$this->db->limit_query($sql . $ordermethod, $start, __LINE__, __FILE__);
+			$this->db->limit_query($sql . $ordermethod, $start, __LINE__, __FILE__, $length);
 		}
 		else
 		{
 			$this->db->query($sql . $ordermethod, __LINE__, __FILE__);
 		}
 
+		$place_info = array();
 		while ($this->db->next_record())
 		{
 			$place_info[] = array(
@@ -100,6 +103,7 @@ class hrm_soplace
 
 	function read_single($id)
 	{
+		$values = array();
 		$sql = 'SELECT * FROM phpgw_hrm_training_place where id=' . intval($id);
 
 		$this->db->query($sql, __LINE__, __FILE__);
@@ -120,6 +124,7 @@ class hrm_soplace
 
 	function read_training($id)
 	{
+		$training = array();
 		$sql = "SELECT phpgw_hrm_training.id as training_id,phpgw_hrm_training.title as title, phpgw_hrm_training.start_date,phpgw_hrm_training.end_date,phpgw_hrm_training_place.name as place FROM phpgw_hrm_training $this->left_join phpgw_hrm_training_place on phpgw_hrm_training.place_id=phpgw_hrm_training_place.id WHERE phpgw_hrm_training.user_id=" . intval($id);
 
 		$this->db->query($sql, __LINE__, __FILE__);
@@ -202,6 +207,7 @@ class hrm_soplace
 		$this->db->query("SELECT * FROM phpgw_hrm_training_place  ORDER BY name ");
 
 		$i = 0;
+		$place = array();
 		while ($this->db->next_record())
 		{
 			$place[$i]['id']				= $this->db->f('id');

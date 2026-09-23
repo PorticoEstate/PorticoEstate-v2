@@ -176,9 +176,10 @@ Bookings that can be created	booking	en	Bookings that can be created
 Bookings to be deleted	booking	en	Bookings to be deleted
 boundaries	booking	en	Boundaries
 building	booking	en	Building
-Building (2018)	booking	en	Building (2018)
+Facility	booking	en	Facility
 building edit	booking	en	Building edit
 building name	booking	en	Building name
+building number	booking	en	Building number
 building schedule	booking	en	Building schedule
 building show	booking	en	Building show
 building_id	booking	en	Building_id
@@ -187,6 +188,8 @@ building_preview	booking	en	Preview
 building_title	booking	en	Building
 buildings	booking	en	Buildings
 bygning	booking	en	Bygning
+cadastral type	booking	en	Cadastral type
+cadastral property	booking	en	Cadastral property
 Calendar	booking	en	Calendar
 Calendar text	booking	en	Calendar text
 Can not create a booking in the past	booking	en	Can not create a booking in the past
@@ -367,7 +370,7 @@ Edit completed reservation	booking	en	Edit completed reservation
 edit delegate	booking	en	Edit delegate
 Edit document	booking	en	Edit document
 edit event	booking	en	Edit event
-Edit facilities	booking	en	Edit facilities
+Edit features	booking	en	Edit features
 edit facility	booking	en	Edit facility
 Edit Group	booking	en	Edit group
 edit organization	booking	en	Edit organization
@@ -438,7 +441,8 @@ extra info	booking	en	Extra info
 Extra information	booking	en	Extra information
 Extra information for the event	booking	en	Extra information for the event
 Extra kalendar for public opening times	booking	en	Extra kalendar for public opening times
-Facilities	booking	en	Facilities
+Features	booking	en	Features
+Feature	booking	en	Feature
 Facility	booking	en	Facility
 female	booking	en	Female
 Field %1 is required	booking	en	Field %1 is required
@@ -599,6 +603,7 @@ more info	booking	en	More info
 move_down	booking	en	Move down
 move_up	booking	en	Move up
 Multiple Events was created	booking	en	Multiple events was created
+Municipality ID	booking	en	Municipality ID
 name	booking	en	Name
 NB! No data will be saved, if you navigate away you will loose all.	booking	en	Nb! No data will be saved, if you navigate away you will loose all.
 new	booking	en	New
@@ -673,6 +678,7 @@ One e-mail pr. line.	booking	en	One e-mail pr. line.
 One filter box per line	booking	en	One filter box per line
 One or more bookings, allocations or events needs to be created before an application can be Accepted	booking	en	One or more bookings, allocations or events needs to be created before an application can be accepted
 only_case_officer_can_create	booking	en	Only case officer can create allocations
+open view in new window	booking	en	Open View in new Window
 Opening hours	booking	en	Opening hours
 optional	booking	en	Optional
 Optional e-mail adress	booking	en	Optional e-mail adress
@@ -750,6 +756,7 @@ please select a season	booking	en	Please select a season
 please select an activity	booking	en	Please select an activity
 portrait_preview	booking	en	200x411 (portrait)
 postal city	booking	en	Postal city
+participant_limit_quantity_help	booking	en	-1 blocks participant registration from the selected date, 0 removes the previous participant limit for the selected date, and positive numbers set the participant limit to the specified number.
 Pre-registration	bookingfrontend	en	Pre-registration
 prev	booking	en	Prev
 preview	booking	en	Preview
@@ -1273,3 +1280,4 @@ overwrite_manual_prices_question	booking	en	%1 of %2 occurrences have a price th
 overwrite_all_prices	booking	en	Overwrite all
 keep_manual_prices	booking	en	Keep the manual prices
 cancel_price_update	booking	en	Cancel
+date and time	booking	en	Date and time

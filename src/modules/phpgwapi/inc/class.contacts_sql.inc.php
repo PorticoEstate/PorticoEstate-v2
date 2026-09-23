@@ -71,7 +71,7 @@
 	class contacts_ extends sql_builder
 	{
 
-		var $db = '';
+		var Db$db;
 		var $account_id = 0;
 		var $total_records = 0;
 		var $grants;
@@ -4037,7 +4037,10 @@
 		{
 			if ((!isset($this->locked[$table]) || !$this->locked[$table] ) && $action == PHPGW_SQL_RUN_SQL)
 			{
-				$this->db->lock($table);
+				if (!$this->db->get_transaction())
+				{
+					$this->db->transaction_begin();
+				}
 				$this->locked[$table] = TRUE;
 				if ($local_lock)
 				{
@@ -4066,7 +4069,7 @@
 			  $this->ldebug('unlock_table', array('count' => count($this->locked)));
 			  if ( !$this->global_lock )
 			  {
-			  $this->db->unlock();
+			  $this->db->transaction_commit();
 			  }
 			  $this->locked = NULL;
 			  }

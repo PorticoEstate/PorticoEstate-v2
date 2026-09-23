@@ -80,6 +80,10 @@ class Preferences
 		];
 	}
 
+	public function get_vars()
+	{
+		return $this->vars;
+	}
 
 	/**
 	 * unquote (stripslashes) recursivly the whole array

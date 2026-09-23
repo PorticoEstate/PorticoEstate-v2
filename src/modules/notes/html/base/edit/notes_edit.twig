@@ -1,0 +1,51 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{% if mode == 'edit' %}{{ lang('edit note') }}{% else %}{{ lang('add note') }}{% endif %}{% endblock %}
+{% block styles %}
+	<style>{{ source('@views/edit/notes_edit.css') }}</style>
+{% endblock %}
+
+{% block content %}
+	<div
+		id="notes-edit-app"
+		class="notes-page"
+		data-mode="{{ mode|e('html_attr') }}"
+		data-note-id="{{ note_id|default(0) }}"
+		data-api-url="{{ api_url|e('html_attr') }}"
+		data-list-url="{{ list_url|e('html_attr') }}"
+		data-csrf-name="{{ csrf.name|e('html_attr') }}"
+		data-csrf-value="{{ csrf.value|e('html_attr') }}"
+	>
+		<h1>{% if mode == 'edit' %}{{ lang('edit note') }}{% else %}{{ lang('add note') }}{% endif %}</h1>
+		<div id="notes-edit-error" class="notes-message notes-message--error" hidden></div>
+
+		<form id="notes-edit-form" class="notes-form">
+			<div class="notes-form__group">
+				<label for="notes-content">{{ lang('content') }}</label>
+				<textarea id="notes-content" name="content" rows="12" class="form-control" required></textarea>
+			</div>
+
+			<div class="notes-form__group">
+				<label for="notes-cat-id">{{ lang('category') }}</label>
+				<select id="notes-cat-id" name="cat_id" class="form-select">
+					{% for cat in categories %}
+						<option value="{{ cat.id }}">{{ cat.name }}</option>
+					{% endfor %}
+				</select>
+			</div>
+
+			<div class="notes-form__group form-check">
+				<input type="checkbox" id="notes-access" name="access" value="private" class="form-check-input">
+				<label for="notes-access" class="form-check-label">{{ lang('private') }}</label>
+			</div>
+
+			<div class="notes-form__actions">
+				<button class="notes-button notes-button--primary" type="submit">{{ lang('save') }}</button>
+				<a class="notes-button notes-button--secondary" href="{{ list_url|e }}">{{ lang('cancel') }}</a>
+			</div>
+		</form>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+	<script>{{ source('@views/edit/notes_edit.js') }}</script>
+{% endblock %}

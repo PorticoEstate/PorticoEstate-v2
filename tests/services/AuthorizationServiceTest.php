@@ -5,6 +5,7 @@ namespace Tests\Services;
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\MockObject\MockObject;
 use App\modules\booking\authorization\DocumentBuildingAuthConfig;
 use App\modules\booking\authorization\DocumentOrganizationAuthConfig;
 use App\modules\booking\authorization\DocumentResourceAuthConfig;
@@ -14,8 +15,8 @@ use App\modules\phpgwapi\security\Acl;
 
 class AuthorizationServiceTest extends TestCase
 {
-    private PermissionRepository $permissionRepo;
-    private Acl $acl;
+    private PermissionRepository&MockObject $permissionRepo;
+    private Acl&MockObject $acl;
 
     private const SUBJECT_ID = 100;
     private const DOCUMENT_ID = 10;

@@ -49,13 +49,13 @@ src/modules/phpgwapi/services/ScimFilterParser.php
 src/modules/phpgwapi/services/ScimProvisioningRepository.php
 ```
 
-Suppler eventuelt databasen med:
+Gjenbruk eksisterende mapping-tabell:
 
 ```text
-phpgw_scim_mapping
+phpgw_mapping
 ```
 
-En egen mapping-tabell anbefales fremfor å basere identitet på `account_lid` eller et løst JSON-felt. Den skal koble Entra sin stabile objekt-ID til lokal konto og SCIM-resource-ID.
+Tabellen brukes allerede til å koble eksterne SSO-identiteter til lokale kontoer. For SCIM brukes `ext_user` som Entra `externalId`, mens den stabile lokale `account_id` eksponeres som SCIM `id`. SCIM-repositoryet må slå opp `account_lid` mot `phpgw_accounts` for å hente denne ID-en og resource type.
 
 ## 4. SCIM-kontrakt
 
@@ -100,7 +100,7 @@ urn:ietf:params:scim:api:messages:2.0:Error
 
 | SCIM-attributt | Lokal verdi |
 |---|---|
-| `id` | Stabil SCIM-ID, aldri et tilfeldig ID ved hvert oppslag |
+| `id` | Stabil lokal `account_id`, serialisert som streng |
 | `externalId` | Entra brukerens stabile objekt-ID |
 | `userName` | `account_lid` |
 | `name.givenName` | `account_firstname` |
@@ -117,7 +117,7 @@ Passord skal ikke provisioneres gjennom SCIM. Entra ID er identitetskilden.
 
 | SCIM-attributt | Lokal verdi |
 |---|---|
-| `id` | Stabil SCIM-gruppe-ID |
+| `id` | Stabil lokal gruppe-`account_id`, serialisert som streng |
 | `externalId` | Entra gruppe-ID |
 | `displayName` | Gruppenavn |
 | `members[].value` | SCIM-bruker-ID |
@@ -127,34 +127,78 @@ Gruppenavn må håndteres deterministisk. Hvis `displayName` endres, skal lokal 
 
 ## 5. Identitet og lagring
 
-### 5.1 Mapping-tabell
+### 5.1 Gjenbruk av `phpgw_mapping`
 
-Anbefalt tabell:
+Eksisterende tabell:
 
 ```sql
-CREATE TABLE phpgw_scim_mapping (
-    scim_id varchar( UUID ) PRIMARY KEY,
-    external_id varchar(255) NOT NULL UNIQUE,
-    account_id integer NOT NULL UNIQUE,
-    resource_type varchar(32) NOT NULL,
-    created_at timestamp NOT NULL,
-    updated_at timestamp NOT NULL
+CREATE TABLE public.phpgw_mapping (
+        ext_user varchar(100) NOT NULL,
+        auth_type varchar(25) NOT NULL,
+        status char(1) NOT NULL DEFAULT 'A',
+        location varchar(200) NOT NULL,
+        account_lid varchar(100) NOT NULL,
+        PRIMARY KEY (ext_user, location, auth_type)
 );
 ```
 
-Den faktiske SQL-syntaksen må tilpasses databaseversjon og prosjektets eksisterende setup-mønster.
+SCIM-semantikk:
+
+| `phpgw_mapping` | SCIM-bruk |
+|---|---|
+| `ext_user` | Entra objekt-ID / SCIM `externalId` |
+| `auth_type` | Konstant verdi `scim` |
+| `location` | Entra tenant-ID, eventuelt stabil applikasjons-ID dersom flere Enterprise Applications brukes i samme tenant |
+| `account_lid` | Kobling til `phpgw_accounts.account_lid` |
+| `status` | Om identitetsmappingen er tillatt; ikke det samme som SCIM `active` |
+
+SCIM `id` lagres ikke separat. Den settes til lokal `phpgw_accounts.account_id`, serialisert som en streng. `account_id` er stabil ved endring av brukernavn, fungerer for både bruker- og gruppekontoer og oppfyller SCIM-kravet om en stabil resource-ID. Resource type utledes fra `phpgw_accounts.account_type` (`u` eller `g`).
+
+Denne modellen krever ingen ny tabell eller migrering for første versjon. Repositoryet bør bruke en eksplisitt join:
+
+```sql
+SELECT a.account_id, a.account_type, a.account_lid, m.ext_user, m.status
+FROM phpgw_mapping m
+JOIN phpgw_accounts a ON a.account_lid = m.account_lid
+WHERE m.ext_user = :external_id
+    AND m.location = :tenant_id
+    AND m.auth_type = 'scim'
+```
 
 Krav:
 
-- `external_id` skal være unik
-- `account_id` skal være unik per resource type
+- `ext_user` skal inneholde Entra objekt-ID, ikke UPN eller e-post
+- `location` skal alltid avgrense Entra-tenant eller provisioning-kilde
+- eksisterende primærnøkkel sikrer unik `externalId` per tenant og auth type
+- repositoryet skal avvise tvetydige koblinger der flere SCIM-identiteter peker til samme lokale konto innen samme tenant
+- `account_lid` og mappingen skal oppdateres i samme transaksjon dersom SCIM endrer `userName`
+- SCIM `active` skal styre `phpgw_accounts.account_status`; `phpgw_mapping.status` skal ikke brukes som kontostatus
 - oppslag på `externalId` skal bruke indeks
-- sletting av lokal konto skal ikke føre til at en ny SCIM-ID tildeles ved neste synkronisering uten en eksplisitt migrering
+- sletting av lokal konto må også rydde SCIM-mappingen, eller helst erstattes med deaktivering
 - alle writes skal være transaksjonelle når konto og mapping oppdateres sammen
+
+Anbefalt PostgreSQL-indeks:
+
+```sql
+CREATE UNIQUE INDEX phpgw_mapping_scim_account_uidx
+ON public.phpgw_mapping (account_lid, location)
+WHERE auth_type = 'scim';
+```
+
+Indeksen hindrer at flere Entra-identiteter i samme tenant kobles til samme lokale konto. Den er partiell for ikke å endre semantikken til eksisterende `remoteuser`-, `shibboleth`- eller andre SSO-mappinger. Før indeksen opprettes, må migreringen kontrollere om det allerede finnes duplikate SCIM-rader for kombinasjonen `account_lid` og `location`. Eventuelle duplikater skal rapporteres og ryddes eksplisitt; migreringen skal ikke velge eller slette en mapping automatisk.
+
+Begrensninger:
+
+- Tabellen har ingen fremmednøkkel fordi koblingen går via `account_lid`. Rename må derfor alltid oppdatere begge tabellene atomisk.
+- `ext_user` er begrenset til 100 tegn. Entra object ID passer, men vilkårlige lange SCIM external IDs gjør ikke nødvendigvis det.
+- Tabellen har ikke timestamps. Revisjon av provisioning må derfor håndteres i applikasjonslogger eller en senere audit-tabell.
+- Eksisterende `Mapping`-klasse er laget for SSO-brukere. SCIM bør få et eget repository mot samme tabell, slik at gruppeoppslag, tenant-avgrensning og transaksjoner blir eksplisitte.
+
+En egen `phpgw_scim_mapping`-tabell bør først vurderes senere dersom SCIM trenger opaque UUID-er som `id`, historikk/timestamps, soft delete av mappinger eller flere provisioning-kilder med mer metadata enn dagens sammensatte nøkkel støtter.
 
 ### 5.2 Idempotens
 
-`POST /Users` må først søke etter eksisterende `externalId`. Dersom brukeren allerede finnes, skal tjenesten ikke opprette en duplikatkonto.
+`POST /Users` må først søke etter `ext_user = externalId`, avgrenset med `location` og `auth_type = 'scim'`. Dersom brukeren allerede finnes, skal tjenesten ikke opprette en duplikatkonto.
 
 Det samme gjelder grupper og gruppe-medlemskap.
 
@@ -206,7 +250,7 @@ Oppgaver:
 - bestem om sletting betyr fysisk sletting eller deaktivering
 - bestem hvilke grupper som skal provisioneres
 - bestem hvilke kontoer som er manuelt administrerte og derfor ikke skal overskrives
-- velg mapping-tabell og ID-strategi
+- bekreft gjenbruk av `phpgw_mapping`, tenant-verdi i `location` og lokal `account_id` som SCIM-ID
 - dokumenter miljøvariabel for bearer-token
 - dokumenter forventet tenant URL
 
@@ -252,18 +296,23 @@ Exit-kriterium:
 
 Implementasjon:
 
-- opprett mapping-tabell i setup/migrering
+- implementer SCIM-oppslag mot eksisterende `phpgw_mapping`
 - implementer `ScimProvisioningRepository`
-- implementer oppslag på `scim_id`
-- implementer oppslag på `external_id`
+- implementer oppslag på lokal `account_id` som SCIM-ID
+- implementer oppslag på `ext_user`, `location` og `auth_type = 'scim'`
 - implementer mapping mellom kontoobjekt og SCIM User
 - implementer mapping mellom gruppeobjekt og SCIM Group
-- legg inn databaseconstraints og nødvendige indekser
+- opprett den partielle unike PostgreSQL-indeksen for `(account_lid, location)` der `auth_type = 'scim'`
+- verifiser at eksisterende primærnøkkel støtter oppslag på `externalId`
 
 Tester:
 
-- mapping kan opprettes og leses
-- samme external ID kan ikke registreres to ganger
+- SCIM-mapping kan opprettes og leses uten å påvirke eksisterende SSO-mappinger
+- samme external ID kan ikke registreres to ganger i samme tenant
+- samme external ID kan eksistere i to tenants uten kollisjon
+- samme lokale konto kan ikke kobles til flere SCIM-identiteter i samme tenant
+- eksisterende mappinger med andre `auth_type` påvirkes ikke av den partielle indeksen
+- endring av `account_lid` oppdaterer konto og mapping atomisk
 - ikke-eksisterende mapping gir 404 fra resource-endepunkt
 - status mappes riktig begge veier
 - sensitiv konto-/autentiseringsinformasjon kommer ikke med i SCIM-respons
@@ -418,7 +467,8 @@ Oppgaver:
 
 - legg inn rate limiting eller reverse-proxy-beskyttelse
 - etabler token-rotasjonsprosedyre
-- etabler backup/migrering av mapping-tabell
+- etabler backup av `phpgw_mapping` og rollback for SCIM-rader
+- kontroller eksisterende SCIM-duplikater før den partielle unike indeksen opprettes
 - legg til structured logging og alarmer på 4xx/5xx
 - dokumenter rollback
 - dokumenter hvordan en feilprovisionert konto stoppes
@@ -466,8 +516,10 @@ Test HTTP-kontrakten for hvert endepunkt:
 
 Med testdatabase skal følgende verifiseres:
 
-- konto og mapping opprettes atomisk
-- duplicate external ID stoppes av både applikasjon og constraint
+- konto og SCIM-rad i `phpgw_mapping` opprettes atomisk
+- duplicate external ID i samme tenant stoppes av både applikasjon og eksisterende primærnøkkel
+- eksisterende `remoteuser`- og `shibboleth`-mappinger påvirkes ikke
+- rename av `account_lid` oppdaterer konto og mapping i samme transaksjon
 - medlemskap kan legges til og fjernes
 - deaktivering endrer status uten å miste mapping
 - transaksjon rollbacker ved feil i andre write-trinn

@@ -6,6 +6,8 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use App\modules\phpgwapi\controllers\StartPoint;
 use App\modules\phpgwapi\middleware\SessionsMiddleware;
+use App\modules\phpgwapi\middleware\ScimAuthMiddleware;
+use App\modules\phpgwapi\controllers\ScimController;
 use App\modules\preferences\helpers\PreferenceHelper;
 use App\modules\phpgwapi\helpers\HomeHelper;
 use App\modules\phpgwapi\helpers\LoginHelper;
@@ -227,6 +229,24 @@ $app->group('/api', function (RouteCollectorProxy $group)
 {
 	$group->get('/server-settings', ServerSettingsController::class . ':index');
 });
+
+$app->group('/api/scim/v2', function (RouteCollectorProxy $group)
+{
+	$group->get('/ServiceProviderConfig', ScimController::class . ':serviceProviderConfig');
+	$group->get('/ResourceTypes', ScimController::class . ':resourceTypes');
+	$group->get('/Schemas', ScimController::class . ':schemas');
+	$group->get('/Users', ScimController::class . ':users');
+	$group->post('/Users', ScimController::class . ':createUser');
+	$group->get('/Users/{id}', ScimController::class . ':user');
+	$group->put('/Users/{id}', ScimController::class . ':replaceUser');
+	$group->patch('/Users/{id}', ScimController::class . ':patchUser');
+	$group->delete('/Users/{id}', ScimController::class . ':deleteUser');
+	$group->get('/Groups', ScimController::class . ':groups');
+	$group->post('/Groups', ScimController::class . ':createGroup');
+	$group->get('/Groups/{id}', ScimController::class . ':group');
+	$group->patch('/Groups/{id}', ScimController::class . ':patchGroup');
+	$group->delete('/Groups/{id}', ScimController::class . ':deleteGroup');
+})->add(new ScimAuthMiddleware());
 
 $app->get('/api/languages', LanguageController::class . ':getLanguages')
 	->add(new SessionsMiddleware($app->getContainer()));

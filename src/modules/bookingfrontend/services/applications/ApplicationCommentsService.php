@@ -110,10 +110,10 @@ class ApplicationCommentsService implements CommentsServiceInterface
 
             // Insert comment
             $sql = "INSERT INTO bb_application_comment (application_id, time, author, comment, type)
-                    VALUES (?, NOW(), ?, ?, ?)";
+                    VALUES (?, ?, ?, ?, ?)";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$applicationId, $author, $comment, $type]);
+            $stmt->execute([$applicationId, gmdate('Y-m-d H:i:s'), $author, $comment, $type]);
 
             $commentId = $this->db->lastInsertId();
 

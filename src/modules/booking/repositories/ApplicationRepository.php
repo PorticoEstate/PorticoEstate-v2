@@ -744,10 +744,11 @@ class ApplicationRepository
 	{
 		$stmt = $this->db->prepare(
 			"INSERT INTO bb_application_comment (application_id, time, author, comment, type)
-			 VALUES (:id, NOW(), :author, :comment, :type)"
+			 VALUES (:id, :time, :author, :comment, :type)"
 		);
 		$stmt->execute([
 			':id'      => $applicationId,
+			':time'    => gmdate('Y-m-d H:i:s'),
 			':author'  => $author,
 			':comment' => $comment,
 			':type'    => $type,

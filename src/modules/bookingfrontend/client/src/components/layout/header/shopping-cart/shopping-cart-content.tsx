@@ -3,7 +3,6 @@ import {usePartialApplications} from "@/service/hooks/api-hooks";
 import {Spinner} from "@digdir/designsystemet-react";
 import {IApplication} from "@/service/types/api/application.types";
 import {DateTime} from "luxon";
-import {VENUE_TIMEZONE} from "@/utils/venue-timezone";
 import {deletePartialApplication} from "@/service/api/api-utils";
 import CartC from "./cart-c/CartC";
 import {useRouter} from "next/navigation";
@@ -13,12 +12,8 @@ interface ShoppingCartContentProps {
     setCurrentApplication: Dispatch<{ application_id: number, date_id: number, building_id: number } | undefined>;
 }
 
-// setZone only changes which zone's wall-clock the DateTime reports (its .hour/.day/
-// .toFormat() etc.) — it does not change the underlying instant, so callers that end
-// with .toJSDate() (calendar-context.tsx, application-crud.tsx — feeding FullCalendar's
-// start/end) get the exact same Date/epoch either way. Safe to fix here for every caller.
 export const applicationTimeToLux = (timeStamp: string) => {
-    return DateTime.fromISO(timeStamp).setZone(VENUE_TIMEZONE);
+    return DateTime.fromISO(timeStamp);
 }
 
 const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {

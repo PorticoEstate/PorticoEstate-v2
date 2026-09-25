@@ -2,7 +2,6 @@
 import React, {FC} from 'react';
 import {Heading, Paragraph} from "@digdir/designsystemet-react";
 import {DateTime} from "luxon";
-import {VENUE_TIMEZONE} from "@/utils/venue-timezone";
 import {useTrans, useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
 import {ApplicationComment} from "@/service/types/api/application.types";
 import TimeAgo from 'timeago-react';
@@ -46,7 +45,7 @@ const ApplicationCommentComponent: FC<ApplicationCommentProps> = ({comment}) => 
 						locale={i18n.language}
 					/>
 					{' · '}
-					{DateTime.fromISO(comment.time).setZone(VENUE_TIMEZONE).toFormat('dd.MM.yyyy HH:mm')}
+					{DateTime.fromISO(comment.time).toFormat('dd.MM.yyyy HH:mm')}
 				</Paragraph>
 				{comment.type !== 'comment' && (
 					<span style={{

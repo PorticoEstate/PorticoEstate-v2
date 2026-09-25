@@ -1,11 +1,9 @@
 'use client';
 import {FC, useEffect, useMemo, useState} from 'react';
-import {DateTime} from 'luxon';
 import {Alert, Button, Details, Field, Label, Paragraph, Select} from '@digdir/designsystemet-react';
 import {MinusCircleIcon, PlusCircleIcon, ChatElipsisIcon} from '@navikt/aksel-icons';
 import {useClientTranslation} from '@/app/i18n/ClientTranslationProvider';
 import {fallbackLng} from '@/app/i18n/settings';
-import {VENUE_TIMEZONE} from '@/utils/venue-timezone';
 import Dialog from '@/components/dialog/mobile-dialog';
 import {
     IHospitality,
@@ -44,19 +42,8 @@ interface HospitalityOrderModalProps {
 /** Key of the synthetic option carrying a legacy order's stored serving time. */
 const GRANDFATHERED_DATE_KEY = 'grandfathered';
 
-/** HH:mm of an instant, read in VENUE-local time -- not the viewer's device zone. */
 function formatHm(date: Date): string {
-    return DateTime.fromJSDate(date).setZone(VENUE_TIMEZONE).toFormat('HH:mm');
-}
-
-/**
- * Venue-local calendar day ('YYYY-MM-DD') of an instant. NOT `toISOString().split('T')[0]`
- * (UTC -- rolls back a day for anything before 01:00/02:00 CET/CEST, wrong even when the
- * viewer IS in Oslo) and NOT the viewer's device zone. "Which day is this booking on" must
- * always be answered the way the backend answers it: in Europe/Oslo.
- */
-function venueYmd(date: Date): string {
-    return DateTime.fromJSDate(date).setZone(VENUE_TIMEZONE).toISODate() ?? '';
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
 function generateTimeSlots(fromHour: number, fromMinute: number, toHour: number, toMinute: number): string[] {
@@ -91,7 +78,7 @@ function buildDateOptions(applications: IApplication[]) {
             const from = new Date(d.from_);
             const to = new Date(d.to_);
             const key = `${app.id}_${d.id}`;
-            const dateStr = from.toLocaleDateString('nb-NO', {weekday: 'short', day: 'numeric', month: 'short', timeZone: VENUE_TIMEZONE});
+            const dateStr = from.toLocaleDateString('nb-NO', {weekday: 'short', day: 'numeric', month: 'short'});
             const timeStr = `${formatHm(from)} - ${formatHm(to)}`;
             options.push({
                 key,
@@ -163,13 +150,13 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     const grandfatheredOption = useMemo(() => {
         if (!existingOrder?.serving_time_iso) return null;
         const stored = new Date(existingOrder.serving_time_iso);
-        const storedYmd = venueYmd(stored);
+        const storedYmd = stored.toISOString().split('T')[0];
         const ownedByApplication = dateOptions.some(d =>
             d.applicationId === existingOrder.application_id
-            && venueYmd(d.from) === storedYmd
+            && d.from.toISOString().split('T')[0] === storedYmd
         );
         if (ownedByApplication) return null;
-        const dateStr = stored.toLocaleDateString('nb-NO', {weekday: 'short', day: 'numeric', month: 'short', timeZone: VENUE_TIMEZONE});
+        const dateStr = stored.toLocaleDateString('nb-NO', {weekday: 'short', day: 'numeric', month: 'short'});
         return {
             key: GRANDFATHERED_DATE_KEY,
             from: stored,
@@ -210,13 +197,12 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         // editable, mirroring the serving-day rule at servingDayCheck.
         if (selectedDateOption.key === GRANDFATHERED_DATE_KEY) return [formatHm(selectedDateOption.from)];
 
-        // The booking's own window and the kitchen's opening hours are both defined in
-        // VENUE-local terms -- not the viewer's device zone. Reading .getHours()/.getMinutes()
-        // directly off the instant would return the *device*-local hour, offering a citizen
-        // abroad a slot list shifted by their own UTC offset instead of the venue's.
-        const fromVenue = DateTime.fromJSDate(selectedDateOption.from).setZone(VENUE_TIMEZONE);
-        const toVenue = DateTime.fromJSDate(selectedDateOption.to).setZone(VENUE_TIMEZONE);
-        const bookingSlots = generateTimeSlots(fromVenue.hour, fromVenue.minute, toVenue.hour, toVenue.minute);
+        const bookingSlots = generateTimeSlots(
+            selectedDateOption.from.getHours(),
+            selectedDateOption.from.getMinutes(),
+            selectedDateOption.to.getHours(),
+            selectedDateOption.to.getMinutes()
+        );
 
         // DELIVERY: the food is served away from the kitchen, so the kitchen's own opening
         // hours do not bound when it may be eaten -- the booking's own times already do.
@@ -267,14 +253,10 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             || hospitality.building_id === null
             || hospitality.building_id === undefined) return [];
 
-        // isWithinBusinessHours reads its `date` argument via the DEVICE's own local time
-        // (DateTime.fromJSDate with no zone override), so the Date passed in must carry the
-        // VENUE-local year/month/day/hour/minute AS IF they were the device's own -- both
-        // halves (fromVenue's y/m/d and bookingSlots' now-venue-local h/m) must agree, or a
-        // booking spanning midnight would be checked against a mismatched day.
+        const day = selectedDateOption.from;
         return bookingSlots.filter(hm => {
             const [h, m] = hm.split(':').map(Number);
-            const at = new Date(fromVenue.year, fromVenue.month - 1, fromVenue.day, h, m);
+            const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m);
             return isWithinBusinessHours(
                 at,
                 [String(hospitality.resource_id)],
@@ -297,13 +279,8 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         // A grandfathered order resends its stored instant exactly: the API skips serving-day
         // re-validation only while the instant is unchanged.
         if (selectedDateOption.key === GRANDFATHERED_DATE_KEY) return selectedDateOption.from;
-        // VENUE-local day (not toISOString/UTC, which rolls back a day for anything before
-        // 01:00/02:00 CET/CEST -- wrong even when the viewer IS in Oslo), and the selected
-        // "HH:mm" is itself a venue-local wall-clock value (see timeSlots above), so the two
-        // must be combined in VENUE_TIMEZONE too. Otherwise `new Date(dateStr+'T'+time)` would
-        // resolve the same selection to a different instant per viewer's device zone.
-        const dateStr = venueYmd(selectedDateOption.from);
-        return DateTime.fromISO(`${dateStr}T${selectedTime}:00`, {zone: VENUE_TIMEZONE}).toJSDate();
+        const dateStr = selectedDateOption.from.toISOString().split('T')[0];
+        return new Date(`${dateStr}T${selectedTime}:00`);
     }, [selectedDateOption, selectedTime]);
 
     /**
@@ -323,10 +300,10 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
      */
     const grandfatheredDateKey = useMemo(() => {
         if (!existingOrder?.serving_time_iso) return null;
-        const storedYmd = venueYmd(new Date(existingOrder.serving_time_iso));
+        const storedYmd = new Date(existingOrder.serving_time_iso).toISOString().split('T')[0];
         return visibleDateOptions.find(d =>
             d.applicationId === existingOrder.application_id
-            && venueYmd(d.from) === storedYmd
+            && d.from.toISOString().split('T')[0] === storedYmd
         )?.key ?? null;
     }, [existingOrder, visibleDateOptions]);
 
@@ -425,17 +402,16 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                 // preselect another booking's row on a mis-attributed order — and with two
                 // applications holding dates on the same day it can pick the wrong row even
                 // for a correctly attributed one.
-                const eDate = venueYmd(existingDate);
+                const eDate = existingDate.toISOString().split('T')[0];
                 const match = visibleDateOptions.find(d =>
                     d.applicationId === existingOrder.application_id
-                    && venueYmd(d.from) === eDate
+                    && d.from.toISOString().split('T')[0] === eDate
                 );
                 if (match) {
                     setSelectedDateKey(match.key);
-                    // VENUE-local HH:mm: this prefilled value re-enters servingInstant
-                    // verbatim on save, so a device-local read here would silently shift an
-                    // unchanged order's serving time for any viewer outside Europe/Oslo.
-                    setSelectedTime(formatHm(existingDate));
+                    setSelectedTime(
+                        `${String(existingDate.getHours()).padStart(2, '0')}:${String(existingDate.getMinutes()).padStart(2, '0')}`
+                    );
                 }
             }
         } else {

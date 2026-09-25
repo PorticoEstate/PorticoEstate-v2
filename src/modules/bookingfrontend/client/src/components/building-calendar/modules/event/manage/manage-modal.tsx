@@ -1,7 +1,6 @@
 'use client'
 import React, {ReactNode, useCallback, useMemo, useRef, useState} from 'react';
 import {DateTime} from "luxon";
-import {VENUE_TIMEZONE} from "@/utils/venue-timezone";
 import {Alert, Button, Fieldset, Heading, Label, Paragraph, Radio, Spinner, Tag, Textarea, Textfield, Tooltip} from "@digdir/designsystemet-react";
 import Dialog from "@/components/dialog/mobile-dialog";
 import Link from "next/link";
@@ -285,14 +284,14 @@ function ManageModal<
 					: t(adapter.cancelActionLangKey);
 
 	const occurrenceLabel = useMemo(() => {
-		const from = DateTime.fromISO(entity.from_ as unknown as string).setZone(VENUE_TIMEZONE);
+		const from = DateTime.fromISO(entity.from_ as unknown as string);
 		return from.isValid ? from.toFormat('cccc d. LLLL yyyy') : String(entity.from_);
 	}, [entity.from_]);
 
 	// The overview's period cell: the same date as occurrenceLabel, plus the start-end times.
 	const overviewPeriodLabel = useMemo(() => {
-		const from = DateTime.fromISO(entity.from_ as unknown as string).setZone(VENUE_TIMEZONE);
-		const to = DateTime.fromISO(entity.to_ as unknown as string).setZone(VENUE_TIMEZONE);
+		const from = DateTime.fromISO(entity.from_ as unknown as string);
+		const to = DateTime.fromISO(entity.to_ as unknown as string);
 		if (!from.isValid) {
 			return String(entity.from_);
 		}

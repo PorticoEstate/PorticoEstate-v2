@@ -2,7 +2,6 @@ import React, { FC } from 'react';
 import { DateTime } from 'luxon';
 import { IApplication } from "@/service/types/api/application.types";
 import { RecurringInfoUtils } from '@/utils/recurring-utils';
-import { VENUE_TIMEZONE } from '@/utils/venue-timezone';
 import { useBuildingSeasons } from "@/service/hooks/api-hooks";
 import { useClientTranslation } from "@/app/i18n/ClientTranslationProvider";
 import styles from "./shopping-cart-card-list.module.scss";
@@ -34,19 +33,19 @@ const RecurringDescription: FC<RecurringDescriptionProps> = ({ application }) =>
     let seasonName = '';
     
     if (recurringInfo.repeat_until) {
-        const endDate = DateTime.fromISO(recurringInfo.repeat_until).setZone(VENUE_TIMEZONE);
+        const endDate = DateTime.fromISO(recurringInfo.repeat_until);
         endText = t('bookingfrontend.until_date', {
             date: endDate.toFormat('dd.MM.yyyy')
         });
     } else if (recurringInfo.outseason) {
         endText = t('bookingfrontend.until_end_of_season');
-
+        
         // Find the current season to show season name
         if (seasons && seasons.length > 0) {
-            const startDateTime = DateTime.fromISO(application.dates[0]?.from_ || '').setZone(VENUE_TIMEZONE);
+            const startDateTime = DateTime.fromISO(application.dates[0]?.from_ || '');
             const currentSeason = seasons.find(season => {
-                const seasonStart = DateTime.fromISO(season.from_).setZone(VENUE_TIMEZONE);
-                const seasonEnd = DateTime.fromISO(season.to_).setZone(VENUE_TIMEZONE);
+                const seasonStart = DateTime.fromISO(season.from_);
+                const seasonEnd = DateTime.fromISO(season.to_);
                 return startDateTime >= seasonStart.startOf('day') && startDateTime <= seasonEnd.endOf('day');
             });
             

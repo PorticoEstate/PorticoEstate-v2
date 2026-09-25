@@ -31,7 +31,6 @@ import {
 } from "@digdir/designsystemet-react";
 import Link from "next/link";
 import {DateTime} from "luxon";
-import {VENUE_TIMEZONE} from "@/utils/venue-timezone";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
 import {useTrans, useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
 import {getDocumentLink} from "@/service/api/building";
@@ -86,7 +85,7 @@ const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 // --- Helpers ---
 
 function fmtDate(iso: string) {
-    const dt = DateTime.fromISO(iso).setZone(VENUE_TIMEZONE).setLocale('no');
+    const dt = DateTime.fromISO(iso).setLocale('no');
     return {
         day: dt.toFormat('dd'),
         mon: dt.toFormat('MMM').replace('.', '').toLowerCase(),
@@ -262,7 +261,7 @@ type ReservedEntity =
 // Shape: /{building|resource}/{id}/{YYYY-MM-DD}/{event|allocation|booking}/{entity_id}
 function buildCalendarLink(row: ReservedEntity): string | null {
     const entity = row.entity;
-    const date = DateTime.fromISO(entity.from_).setZone(VENUE_TIMEZONE).toISODate();
+    const date = DateTime.fromISO(entity.from_).toISODate();
     if (!date) return null;
     const resources = entity.resources || [];
 
@@ -625,7 +624,7 @@ const CommentsSection: FC<{
                                         <span>&middot;</span>
                                         <span>
                                             <TimeAgo datetime={c.time} locale={i18n.language}/>{' · '}
-                                            {DateTime.fromISO(c.time).setZone(VENUE_TIMEZONE).toFormat('dd.MM.yyyy HH:mm')}
+                                            {DateTime.fromISO(c.time).toFormat('dd.MM.yyyy HH:mm')}
                                         </span>
                                     </div>
                                     <div className={styles.commentText} dangerouslySetInnerHTML={{__html: c.comment}}/>

@@ -6,7 +6,6 @@ import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {IHospitalityOrder} from '@/service/types/api/hospitality.types';
 import {useDeleteHospitalityOrder} from '../hooks/hospitality-hooks';
 import {formatCurrency} from '@/utils/cost-utils';
-import {VENUE_TIMEZONE} from '@/utils/venue-timezone';
 import styles from './hospitality.module.scss';
 
 interface HospitalityOrderCardProps {
@@ -33,7 +32,6 @@ const HospitalityOrderCard: FC<HospitalityOrderCardProps> = ({order, application
             month: 'short',
             hour: '2-digit',
             minute: '2-digit',
-            timeZone: VENUE_TIMEZONE,
         })
         : null;
 

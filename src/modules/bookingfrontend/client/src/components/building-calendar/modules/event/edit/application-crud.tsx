@@ -13,7 +13,6 @@ import {
 	ValidationMessage
 } from '@digdir/designsystemet-react';
 import {DateTime} from 'luxon';
-import {VENUE_TIMEZONE} from '@/utils/venue-timezone';
 import MobileDialog from '@/components/dialog/mobile-dialog';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {useBuilding, useBuildingResources} from '@/service/api/building';
@@ -1579,7 +1578,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 													}
 												}}
 												label={t('bookingfrontend.repeat_until_end_of_season')}
-												description={getCurrentSeason() ? `${t('bookingfrontend.current_season_ends')}: ${DateTime.fromISO(getCurrentSeason()!.to_).setZone(VENUE_TIMEZONE).toFormat('dd.MM.yyyy')}` : undefined}
+												description={getCurrentSeason() ? `${t('bookingfrontend.current_season_ends')}: ${DateTime.fromISO(getCurrentSeason()!.to_).toFormat('dd.MM.yyyy')}` : undefined}
 
 											/>
 										)}

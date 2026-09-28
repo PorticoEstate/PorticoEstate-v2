@@ -17,8 +17,8 @@ use Slim\Routing\RouteCollectorProxy;
 /** @var \Slim\App $app */
 /** @var \DI\Container $container */
 
-// Handle requests for favicon.ico
-$app->get('/favicon.ico', function (Request $request, Response $response)
+// Handle automatic browser icon requests
+$app->get('/{icon:favicon\.ico|apple-touch-icon(?:-\d+x\d+)?(?:-precomposed)?\.png}', function (Request $request, Response $response)
 {
 	return $response->withStatus(204);
 });

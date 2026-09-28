@@ -371,13 +371,16 @@ class booking_boapplication extends booking_bocommon
 	 * EmailService renders the same template and sends it as 'html'. Recipients,
 	 * per-recipient delivery and operator feedback are unchanged.
 	 *
-	 * @param array       $application Application row
-	 * @param string|null $message     Status-change comment shown to the case officer
+	 * @param array       $application       Application row
+	 * @param string|null $message           Status-change comment shown to the case officer
+	 * @param array|null  $occurrenceContext Optional single-occurrence context (resource_name,
+	 *                                       date, time) for a Min-side timeslot withdrawal
+	 *                                       (GH #1393 criterion 7)
 	 */
-	function send_admin_notification($application, $message = null)
+	function send_admin_notification($application, $message = null, $occurrenceContext = null)
 	{
 		$emailService = new EmailService();
-		$emailService->sendStatusChangeNotificationToStaff($application, $message);
+		$emailService->sendStatusChangeNotificationToStaff($application, $message, $occurrenceContext);
 	}
 
 	/**

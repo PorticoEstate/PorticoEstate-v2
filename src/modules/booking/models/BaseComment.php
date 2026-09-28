@@ -41,7 +41,7 @@ abstract class BaseComment
      * @OA\Property(type="string", description="Comment text content")
      * @Expose
      * @Short
-     * @EscapeString(mode="default")
+     * @EscapeString(mode="purify")
      */
     public string $comment;
 

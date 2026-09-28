@@ -4,8 +4,15 @@
 <b>Kommentar fra {{ contact_name }}</b><br />{{ message|safe_html }}<br /><br/>
 {% endif %}
 
+<b>Søknad: </b>{{ application_id_string }}<br />
 <b>Bygg: </b>{{ building_name }}<br />
-<b>Aktivitet: </b>{{ activity_name }}<br /><br />
+<b>Aktivitet: </b>{{ activity_name }}<br />
+{% if resource_name %}
+<b>Ressurs: </b>{{ resource_name }}<br />
+<b>Dato: </b>{{ occurrence_date }}<br />
+<b>Tid: </b>{{ occurrence_time }}<br />
+{% endif %}
+<br />
 <b>Kontaktperson:</b> {{ contact_name }}<br />
 <b>Epost:</b> {{ contact_email }}<br />
 <b>Telefon:</b> {{ contact_phone }}<br /><br />

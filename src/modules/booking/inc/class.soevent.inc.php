@@ -280,7 +280,11 @@
 				),
 				2	=> array
 				(
-					'value'	=> date('Y-m-d H:i'),
+					// gmdate, not date: bb_event_comment.time is stored UTC (column is
+					// timestamp WITHOUT time zone, read back via modify_by_timezone
+					// assuming UTC); date() would take whatever PHP's global default
+					// timezone happens to be at this point in the request.
+					'value'	=> gmdate('Y-m-d H:i'),
 					'type'	=> PDO::PARAM_STR
 				),
 				3	=> array

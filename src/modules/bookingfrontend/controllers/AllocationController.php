@@ -4,8 +4,12 @@ namespace App\modules\bookingfrontend\controllers;
 
 use App\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\AllocationAccessHelper;
+use App\modules\bookingfrontend\helpers\ApplicationHelper;
 use App\modules\bookingfrontend\services\AllocationCancellationService;
+use App\modules\bookingfrontend\services\AllocationWithdrawalService;
+use App\modules\bookingfrontend\services\applications\ApplicationService;
 use App\modules\phpgwapi\models\ServerSettings;
+use DateTimeImmutable;
 use Exception;
 use InvalidArgumentException;
 use OpenApi\Annotations as OA;
@@ -24,11 +28,17 @@ class AllocationController
 {
 	private AllocationCancellationService $cancellationService;
 	private AllocationAccessHelper $accessHelper;
+	private AllocationWithdrawalService $withdrawalService;
+	private ApplicationService $applicationService;
+	private ApplicationHelper $applicationHelper;
 
 	public function __construct(ContainerInterface $container)
 	{
 		$this->cancellationService = new AllocationCancellationService();
 		$this->accessHelper = new AllocationAccessHelper();
+		$this->withdrawalService = new AllocationWithdrawalService();
+		$this->applicationService = new ApplicationService();
+		$this->applicationHelper = new ApplicationHelper();
 	}
 
 	/**
@@ -157,6 +167,92 @@ class AllocationController
 		{
 			return ResponseHelper::sendErrorResponse(
 				['error' => 'Error cancelling allocation: ' . $e->getMessage()],
+				500
+			);
+		}
+	}
+
+	/**
+	 * @OA\Post(
+	 *     path="/bookingfrontend/allocations/{id}/withdraw",
+	 *     summary="Withdraw a single allocation occurrence from Min side, with an optional comment",
+	 *     tags={"Allocations"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="secret", in="query", required=false, @OA\Schema(type="string"),
+	 *         description="The owning application's secret, for a caller authorised by the emailed link"),
+	 *     @OA\RequestBody(
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="comment", type="string",
+	 *                 description="Optional message to the case officer, travels into the staff mail")
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=200, description="Withdrawn: the allocation is deactivated and the case officer notified"),
+	 *     @OA\Response(response=400, description="Comment too long"),
+	 *     @OA\Response(response=403, description="Caller may not manage this allocation"),
+	 *     @OA\Response(response=404, description="No such allocation"),
+	 *     @OA\Response(response=409, description="Already withdrawn, already started, or has no owning application")
+	 * )
+	 *
+	 * GH #1393 criteria 5+6+7+8. Always exactly ONE occurrence - unlike cancel()/cancelPreview()
+	 * this carries no scope selector and no confirm_token: those exist for the admin/calendar
+	 * multi-occurrence HARD DELETE flow (AllocationCancellationService), which this deliberately
+	 * does not reuse. See AllocationWithdrawalService's docblock for the reuse-hard-delete-vs-trace
+	 * tradeoff. Also NOT gated on userCanDeleteAllocations(): that flag governs the destructive
+	 * delete flow specifically, and a soft withdrawal that leaves the row in place and notifies
+	 * the case officer is not the behaviour it was written to guard.
+	 */
+	public function withdraw(Request $request, Response $response, array $args): Response
+	{
+		try
+		{
+			$bodyParams = $this->readBody($request);
+
+			$allocation = $this->requireManageableAllocation($request, (int)$args['id'], $bodyParams, $error);
+			if ($allocation === null)
+			{
+				return $error;
+			}
+
+			if ((int)$allocation['active'] !== 1)
+			{
+				return ResponseHelper::sendErrorResponse(['error' => 'This timeslot has already been withdrawn'], 409);
+			}
+
+			if (new DateTimeImmutable($allocation['from_']) <= new DateTimeImmutable())
+			{
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'This timeslot has already started and can no longer be withdrawn'],
+					409
+				);
+			}
+
+			$applicationId = (int)($allocation['application_id'] ?? 0);
+			if ($applicationId <= 0)
+			{
+				// Guarded already by AllocationAccessHelper: only an allocation WITH an
+				// application can ever grant the application_secret arm, so this is reachable
+				// only via the organization_admin arm on an application-less allocation - there
+				// is nothing to notify.
+				return ResponseHelper::sendErrorResponse(['error' => 'This allocation has no application to notify'], 409);
+			}
+
+			$comment = isset($bodyParams['comment']) && is_string($bodyParams['comment']) ? trim($bodyParams['comment']) : '';
+			if (strlen($comment) > 10000)
+			{
+				return ResponseHelper::sendErrorResponse(['error' => 'Comment is too long (maximum 10000 characters)'], 400);
+			}
+
+			$application = $this->applicationService->getApplicationById($applicationId);
+			$author = $application ? $this->applicationHelper->resolveCommentAuthor($application, $request) : null;
+
+			$result = $this->withdrawalService->withdraw($allocation, $comment, $author);
+
+			return ResponseHelper::sendJSONResponse($result);
+		}
+		catch (Exception $e)
+		{
+			return ResponseHelper::sendErrorResponse(
+				['error' => 'Error withdrawing timeslot: ' . $e->getMessage()],
 				500
 			);
 		}

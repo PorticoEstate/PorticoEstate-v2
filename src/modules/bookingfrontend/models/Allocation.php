@@ -62,4 +62,16 @@ class Allocation extends BaseScheduleEntity
      * @Expose
      */
     public $organization_shortname;
+
+    /**
+     * Whether the CURRENT viewer may open the linked application, evaluated in
+     * ScheduleEntityService with the same predicate the application page itself
+     * gates on. Meaningless when application_id is null. Defaults false so any
+     * path that never runs the check cannot claim a viewability it did not
+     * evaluate.
+     *
+     * @OA\Property(type="boolean")
+     * @Expose
+     */
+    public $can_view_application = false;
 }

@@ -200,7 +200,15 @@ use App\modules\bookingfrontend\helpers\UserHelper;
 			{
 				foreach ($application['comments'] as  &$comments)
 				{
-					$comments['comment'] = html_entity_decode(nl2br($comments['comment']));
+					// Decode then purify: this feeds the citizen-facing raw-HTML sinks
+					// base/application.xsl:129,135 and bkbooking/application.xsl:137,143
+					// (disable-output-escaping="yes"), which render whatever is here as
+					// live HTML. Byte-level mirror of the booking-module fix at
+					// class.uiapplication.inc.php:4637 — same bb_application_comment
+					// store, same unsanitised-on-write legacy rows, see
+					// Sanitizer::decode_then_purify() docblock for why decode must run
+					// before purify.
+					$comments['comment'] = Sanitizer::decode_then_purify(nl2br($comments['comment']));
 				}
 			}
 

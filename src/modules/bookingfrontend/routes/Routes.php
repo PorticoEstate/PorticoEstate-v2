@@ -159,6 +159,9 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	{
 		$group->post('/{id}/cancel-preview', AllocationController::class . ':cancelPreview');
 		$group->post('/{id}/cancel', AllocationController::class . ':cancel');
+		// Min side single-timeslot withdrawal (GH #1393 criteria 5-8) - soft-deactivate, not the
+		// hard delete above. See AllocationWithdrawalService's docblock.
+		$group->post('/{id}/withdraw', AllocationController::class . ':withdraw');
 	});
 
 	// Booking cancellation. Same #1210 guard shape as /allocations above, but resolved through

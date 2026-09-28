@@ -1121,3 +1121,6 @@ event_cancellation_closes_application	bookingfrontend	en	Cancelling this event w
 applications_offline_banner	bookingfrontend	en	Lost connection to the server. Showing the last applications that were loaded.
 refresh_unavailable_offline	bookingfrontend	en	Can't refresh without a connection
 repeating_direct_booking_warning	bookingfrontend	en	This resource uses direct booking. Choosing a repeating booking sends the application for case handling instead of being automatically approved.
+withdraw_timeslot	bookingfrontend	en	Withdraw
+confirm_withdraw_timeslot_description	bookingfrontend	en	Are you sure you want to withdraw this single timeslot? The case officer will be notified of the withdrawal.
+withdraw_timeslot_comment_label	bookingfrontend	en	Comment to the case officer (optional)

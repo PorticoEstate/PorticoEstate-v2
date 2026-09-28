@@ -37,6 +37,10 @@ export interface IAPIAllocation extends IAPIScheduleEntity {
 	additional_invoice_information?: string;  // @Expose + nullable
 	organization_name: string;    // @Expose (computed)
 	organization_shortname: string;  // @Expose (computed)
+	// Server-computed with the same predicate the application page itself gates on
+	// (ApplicationHelper::canViewApplication), so the client never needs the
+	// application's customer ssn/orgnr to decide. Meaningless without application_id.
+	can_view_application?: boolean;  // @Expose, default false
 }
 
 export interface IAPIBooking extends IAPIScheduleEntity {

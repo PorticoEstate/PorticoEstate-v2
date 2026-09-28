@@ -26,6 +26,8 @@ class ScheduleEntityService
     private $applicationHelper;
     private $applicationRepository;
     private $resourceRepository;
+    /** @var array<int, array|null> Per-request cache for computeCanViewApplication(), keyed by application_id */
+    private $applicationCache = [];
 
     public function __construct()
     {
@@ -361,6 +363,7 @@ class ScheduleEntityService
 
             $allocation = new Allocation($allocationGroup[0]);
             $allocation->resources = array_map([$this, 'formatResource'], $allocationGroup);
+            $allocation->can_view_application = $this->computeCanViewApplication($allocation->application_id);
             $results[] = $allocation;
         }
 
@@ -476,6 +479,7 @@ class ScheduleEntityService
         foreach ($this->groupByEntity($allocations) as $allocationGroup) {
             $allocation = new Allocation($allocationGroup[0]);
             $allocation->resources = array_map([$this, 'formatResource'], $allocationGroup);
+            $allocation->can_view_application = $this->computeCanViewApplication($allocation->application_id);
 
             // Add participant limits to resources
             foreach ($allocation->resources as &$resourceItem) {
@@ -565,6 +569,7 @@ class ScheduleEntityService
         foreach ($this->groupByEntity($allocations) as $allocationGroup) {
             $allocation = new Allocation($allocationGroup[0]);
             $allocation->resources = array_map([$this, 'formatResource'], $allocationGroup);
+            $allocation->can_view_application = $this->computeCanViewApplication($allocation->application_id);
 
             // Add participant limits to resources
             foreach ($allocation->resources as &$resource) {
@@ -643,6 +648,53 @@ class ScheduleEntityService
         ]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC) === false;
+    }
+
+    /**
+     * Whether the CURRENT viewer may open the application this allocation is linked
+     * to, evaluated with the exact predicate the application page itself gates on
+     * (ApplicationHelper::canViewApplication) so the two cannot diverge. They are NOT
+     * interchangeable: the client's own org-admin check and canViewApplication read
+     * different columns (org-delegate vs application-customer identity) and agree only
+     * by coincidence on aligned data — which is why this is computed server-side rather
+     * than reimplemented in the client. The mock empty ServerRequest mirrors
+     * addEditCancelLinks() above: this call site has no secret query param to offer.
+     * @param int|null $applicationId The allocation's application_id, if any
+     * @return bool
+     */
+    private function computeCanViewApplication(?int $applicationId): bool
+    {
+        if (empty($applicationId)) {
+            return false;
+        }
+
+        $application = $this->getApplicationByIdCached($applicationId);
+        if (!$application) {
+            return false;
+        }
+
+        return $this->applicationHelper->canViewApplication($application, new ServerRequest('GET', ''));
+    }
+
+    /**
+     * Fetch an application by id at most once per request. computeCanViewApplication()
+     * is called once per allocation from three calendar loops (getScheduleForWeek,
+     * getOrganizationScheduleForWeek, getResourceSchedule); a recurring application's
+     * many occurrences would otherwise re-fetch the same bb_application row on every
+     * one. Safe as a plain instance property: ScheduleEntityService is constructed
+     * fresh per request (new ScheduleEntityService() in ScheduleEntityController's
+     * constructor) under PHP-FPM, which tears down the object graph after each
+     * response, so nothing here can leak across requests.
+     * @param int $applicationId
+     * @return array|null
+     */
+    private function getApplicationByIdCached(int $applicationId): ?array
+    {
+        if (!array_key_exists($applicationId, $this->applicationCache)) {
+            $this->applicationCache[$applicationId] = $this->applicationRepository->getApplicationById($applicationId);
+        }
+
+        return $this->applicationCache[$applicationId];
     }
 
     /**

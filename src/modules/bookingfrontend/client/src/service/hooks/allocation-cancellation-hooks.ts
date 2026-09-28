@@ -5,7 +5,9 @@ import {
 	IAllocationCancelPreview,
 	IAllocationCancelRequest,
 	IAllocationCancelResult,
+	IAllocationWithdrawResult,
 	previewAllocationCancellation,
+	withdrawAllocationTimeslot,
 } from "@/service/api/allocation-cancellation";
 
 interface AllocationCancellationVariables {
@@ -54,6 +56,34 @@ export function useAllocationCancel(buildingId?: number) {
 			}
 			queryClient.invalidateQueries({queryKey: ['buildingSchedule', buildingId]});
 			queryClient.invalidateQueries({queryKey: ['buildingFreeTime', buildingId]});
+		},
+	});
+}
+
+interface AllocationWithdrawVariables {
+	allocationId: number;
+	applicationId: number;
+	comment: string;
+	secret?: string;
+}
+
+/**
+ * Min side single-timeslot withdrawal. On success, the withdrawn occurrence's row is still there
+ * (soft-deactivated) but no longer active=1, so it drops out of the application's reserved-times
+ * list; the comment it left is visible in the same application's comment thread. Both caches are
+ * invalidated by application id, not building id - this is Min side, not the calendar.
+ */
+export function useAllocationWithdraw() {
+	const queryClient = useQueryClient();
+
+	return useMutation<IAllocationWithdrawResult, AllocationCancellationError, AllocationWithdrawVariables>({
+		mutationFn: ({allocationId, comment, secret}) =>
+			withdrawAllocationTimeslot(allocationId, comment, secret),
+		retry: false,
+		onSuccess: (_data, variables) => {
+			queryClient.invalidateQueries({queryKey: ['applicationEventsAllocationsBookings', variables.applicationId]});
+			queryClient.invalidateQueries({queryKey: ['applicationComments', variables.applicationId]});
+			queryClient.invalidateQueries({queryKey: ['application', variables.applicationId]});
 		},
 	});
 }

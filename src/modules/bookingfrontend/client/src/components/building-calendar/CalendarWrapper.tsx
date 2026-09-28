@@ -275,16 +275,17 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
             return scheduleEvents;
         }
 
-        // If no resources are enabled, show all events (no filtering)
-        if (enabledResources.size === 0) {
-            return scheduleEvents;
-        }
+        // If no resources are enabled, show all events, but still let events hide the
+        // bookings/allocations they overlap by prioritizing across every schedule resource
+        const prioritizedResources = enabledResources.size === 0
+            ? new Set<string>(scheduleResources.map(resource => resource.id.toString()))
+            : enabledResources;
 
         // Apply priority filtering to schedule events
-        const prioritizedScheduleEvents = prioritizeEvents(scheduleEvents, enabledResources);
+        const prioritizedScheduleEvents = prioritizeEvents(scheduleEvents, prioritizedResources);
 
         return prioritizedScheduleEvents;
-    }, [QCRES.data, enabledResources, prioritizeEvents, organizationId, buildingId]);
+    }, [QCRES.data, enabledResources, scheduleResources, prioritizeEvents, organizationId, buildingId]);
 
 
 

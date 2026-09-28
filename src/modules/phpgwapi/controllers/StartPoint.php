@@ -375,13 +375,13 @@ class StartPoint
 
 		/*
 		 * The cookie is domain-wide, so it can hold a destination saved for another
-		 * module (e.g. an admin menuaction). Replay it only onto the entry its
-		 * menuaction belongs to, and leave it in place for that entry otherwise.
+		 * module (e.g. an admin menuaction). Replay a saved menuaction only onto the
+		 * entry it belongs to, and leave the cookie in place for that entry otherwise.
 		 */
-		if ($app && is_array($redirect))
+		if ($app && is_array($redirect) && isset($redirect['menuaction']))
 		{
-			$menuaction = isset($redirect['menuaction']) && is_string($redirect['menuaction']) ? $redirect['menuaction'] : '';
-			if (explode('.', $menuaction)[0] !== $app)
+			$redirect_app = is_string($redirect['menuaction']) ? explode('.', $redirect['menuaction'])[0] : '';
+			if ($redirect_app !== $app)
 			{
 				return;
 			}

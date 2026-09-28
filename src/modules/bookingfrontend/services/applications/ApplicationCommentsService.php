@@ -184,9 +184,9 @@ class ApplicationCommentsService implements CommentsServiceInterface
             $createdComments[] = $this->addComment($applicationId, $statusComment, 'status', $author);
 
             // Update application status
-            $sql = "UPDATE bb_application SET status = ?, frontend_modified = NOW() WHERE id = ?";
+            $sql = "UPDATE bb_application SET status = ?, frontend_modified = ? WHERE id = ?";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$newStatus, $applicationId]);
+            $stmt->execute([$newStatus, gmdate('Y-m-d H:i:s'), $applicationId]);
 
             $this->db->commit();
 
@@ -245,9 +245,9 @@ class ApplicationCommentsService implements CommentsServiceInterface
      */
     private function updateApplicationModified(int $applicationId): void
     {
-        $sql = "UPDATE bb_application SET frontend_modified = NOW() WHERE id = ?";
+        $sql = "UPDATE bb_application SET frontend_modified = ? WHERE id = ?";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([$applicationId]);
+        $stmt->execute([gmdate('Y-m-d H:i:s'), $applicationId]);
     }
 
     /**

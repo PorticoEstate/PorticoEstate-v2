@@ -373,6 +373,20 @@ class StartPoint
 		$redirect_input = Sanitizer::get_var('redirect', 'raw', 'COOKIE');
 		$redirect = $redirect_input ? json_decode(Sanitizer::get_var('redirect', 'raw', 'COOKIE'), true) : null;
 
+		/*
+		 * The cookie is domain-wide, so it can hold a destination saved for another
+		 * module (e.g. an admin menuaction). Replay a saved menuaction only onto the
+		 * entry it belongs to, and leave the cookie in place for that entry otherwise.
+		 */
+		if ($app && is_array($redirect) && isset($redirect['menuaction']))
+		{
+			$redirect_app = is_string($redirect['menuaction']) ? explode('.', $redirect['menuaction'])[0] : '';
+			if ($redirect_app !== $app)
+			{
+				return;
+			}
+		}
+
 		if (is_array($redirect) && count($redirect))
 		{
 			$redirect_data = array();
@@ -575,6 +589,12 @@ class StartPoint
 		if ($this->app != $app)
 		{
 			$this->invalid_data = true;
+			/*
+			 * The header (get_css/get_javascript) and the footer resolve the class
+			 * named by the request menuaction. Drop it so a foreign module's class
+			 * is neither autoloaded nor instantiated while rendering the denial.
+			 */
+			Settings::getInstance()->set('menuaction', null);
 			$phpgwapi_common->phpgw_header(true);
 			$this->log->write(array(
 				'text'	 => 'W-Permissions, Attempted to access %1 from %2',

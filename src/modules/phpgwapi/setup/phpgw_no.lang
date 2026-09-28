@@ -409,3 +409,4 @@ phone_number_required	common	no	Telefonnummer er påkrevd
 email_required	common	no	E-post er påkrevd
 
 previous	common	no	Forrige
+access not permitted	common	no	Tilgang nektet

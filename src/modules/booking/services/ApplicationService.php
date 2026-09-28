@@ -261,7 +261,7 @@ class ApplicationService
 
 		$numAssoc = $this->repo->countAssociations($appId);
 		if ($numAssoc === 0) {
-			throw new RuntimeException('Cannot accept: no associations (allocations/bookings/events) exist', 400);
+			throw new RuntimeException(lang('booking.One or more bookings, allocations or events needs to be created before an application can be Accepted'), 400);
 		}
 
 		// Second reason the same gate can refuse: every hospitality order must

@@ -1122,3 +1122,6 @@ event_cancellation_closes_application	bookingfrontend	no	Å avbestille dette arr
 applications_offline_banner	bookingfrontend	no	Mistet tilkobling til serveren. Viser sist hentede søknader.
 refresh_unavailable_offline	bookingfrontend	no	Kan ikke oppdatere uten tilkobling
 repeating_direct_booking_warning	bookingfrontend	no	Denne ressursen har direkte booking. Når du velger gjentakende blir søknaden sendt til saksbehandling i stedet for å bli godkjent automatisk.
+withdraw_timeslot	bookingfrontend	no	Trekk tilbake
+confirm_withdraw_timeslot_description	bookingfrontend	no	Er du sikker på at du vil trekke tilbake denne enkelttimen? Saksbehandler vil bli varslet om trekkingen.
+withdraw_timeslot_comment_label	bookingfrontend	no	Kommentar til saksbehandler (valgfritt)

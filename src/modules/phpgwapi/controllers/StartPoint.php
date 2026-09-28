@@ -575,6 +575,12 @@ class StartPoint
 		if ($this->app != $app)
 		{
 			$this->invalid_data = true;
+			/*
+			 * The header (get_css/get_javascript) and the footer resolve the class
+			 * named by the request menuaction. Drop it so a foreign module's class
+			 * is neither autoloaded nor instantiated while rendering the denial.
+			 */
+			Settings::getInstance()->set('menuaction', null);
 			$phpgwapi_common->phpgw_header(true);
 			$this->log->write(array(
 				'text'	 => 'W-Permissions, Attempted to access %1 from %2',

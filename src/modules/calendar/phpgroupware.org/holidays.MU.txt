@@ -9,4 +9,4 @@ MU	Semana Santa	3	4	0	0	0
 MU	Semana Santa	4	4	0	0	0
 MU	Semana Santa	5	4	0	0	0
 MU	Semana Santa	8	4	0	0	0
-MU	Día del trabajador	1	5	0	0	0
+MU	DÃ­a del trabajador	1	5	0	0	0

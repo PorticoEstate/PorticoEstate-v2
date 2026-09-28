@@ -31,7 +31,7 @@
 					</div>
 					<div class="form-group">
 						<label class="text-uppercase">
-							<xsl:value-of select="php:function('lang', 'Building (2018)')" />
+							<xsl:value-of select="php:function('lang', 'Facility')" />
 						</label>
 						<xsl:value-of select="booking/building_name"/>
 					</div>

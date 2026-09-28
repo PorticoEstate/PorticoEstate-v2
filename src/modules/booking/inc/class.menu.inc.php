@@ -343,7 +343,7 @@ class booking_menu
 						))
 					),
 					'facility' => array(
-						'text' => lang('Facilities'),
+						'text' => lang('Features'),
 						'url' => phpgw::link('/index.php', array(
 							'menuaction' => 'booking.uifacility.index',
 							'appname' => 'booking'
@@ -526,7 +526,7 @@ class booking_menu
 					))
 				),
 				'facility' => array(
-					'text' => lang('Facilities'),
+					'text' => lang('Features'),
 					'url' => phpgw::link('/index.php', array(
 						'menuaction' => 'booking.uifacility.index',
 						'appname' => 'booking'

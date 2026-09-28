@@ -160,12 +160,14 @@
 			$status[] = array('id' => 'closed', 'name' => lang('Closed'));
 			if ($format == "filter")
 			{
-				$status[] = array('id' => 'all', 'name' => lang('All'));
+				array_unshift($status, array('id' => 'all', 'name' => lang('All')));
 			}
 			else
 			{
-				$status[] = array('id' => 'open', 'name' => lang('Open'));
+				array_unshift($status, array('id' => 'open', 'name' => lang('Open')));
 			}
+
+			$status[] = array('id' => 'pending', 'name' => 'Varsel er sendt-avventer fakturering');
 
 			$status[] = array('id' => 'closed2', 'name' => 'Avsluttet, ikke fakturert');
 			$status[] = array('id' => 'error', 'name' => 'Feil / mangler');

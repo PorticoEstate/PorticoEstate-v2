@@ -1,5 +1,5 @@
 AT	Neujahrstag	1	1	0	0	0
-AT	Hl.3 Kˆnige	6	1	0	0	0
+AT	Hl.3 K√∂nige	6	1	0	0	0
 AT	Ostermontag	24	3	2008	0	0
 AT	Ostermontag	28	3	2005	0	0
 AT	Ostermontag	9	4	2007	0	0
@@ -27,10 +27,10 @@ AT	Fronleichnahm	10	6	2004	0	0
 AT	Fronleichnahm	11	6	2009	0	0
 AT	Fronleichnahm	15	6	2006	0	0
 AT	Fronleichnahm	19	6	2003	0	0
-AT	Mari‰ Himmelfahrt	15	8	0	0	0
+AT	Mari√§ Himmelfahrt	15	8	0	0	0
 AT	Nationalfeiertag	26	10	0	0	0
 AT	Allerheiligen	1	11	0	0	0
-AT	Mari‰ Empf‰ngnis	8	12	0	0	0
+AT	Mari√§ Empf√§ngnis	8	12	0	0	0
 AT	Christtag	25	12	0	0	0
 AT	Stefani	26	12	0	0	0
 AT	Pfingstmontag	1	65	2009	0	0

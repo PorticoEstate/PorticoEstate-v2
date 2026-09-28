@@ -536,27 +536,19 @@ class LocationFormHelper
             $locationType = isset($configEntry['location_type']) ? (int) $configEntry['location_type'] : 0;
             $lookupForm = !empty($configEntry['lookup_form']);
 
-            if ($column === '' || $locationType <= 0 || $locationType > $typeId || !$lookupForm)
+            if ($column === '' || $locationType <= 0 || $locationType > $typeId )
             {
                 continue;
             }
 
             $fields[$column] = $this->inferSanitizerType($column);
 
+            /** Additional handling for street_id **/
             if ($column === 'street_id')
             {
-                //             $fields['street_name'] = 'string';
                 $fields['street_number'] = 'string';
             }
-            /*
-            if ($column === 'tenant_id')
-            {
-                $fields['first_name'] = 'string';
-                $fields['last_name'] = 'string';
-                $fields['contact_phone'] = 'string';
-            }
-*/
-        }
+         }
 
         return $fields;
     }

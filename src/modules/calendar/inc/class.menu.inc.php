@@ -53,7 +53,7 @@ class calendar_menu
 		$menus['navbar'] = array(
 			'calendar'	=> array(
 				'text'	=> $translation->translate('Calendar', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.index')),
+				'url'	=> phpgw::link('/calendar/view/month'),
 				'image'	=> array('calendar', 'navbar'),
 				'order'	=> 4,
 				'group'	=> 'office'
@@ -63,48 +63,48 @@ class calendar_menu
 		$menus['toolbar'] = array(
 			array(
 				'text'	=> $translation->translate('New', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.add')),
+				'url'	=> phpgw::link('/calendar/view/event/new'),
 				'image'	=> array('calendar', 'new')
 
 			),
 			array(
 				'text'	=> $translation->translate('Today', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.day')),
+				'url'	=> phpgw::link('/calendar/view/day'),
 				'image'	=> array('calendar', 'today')
 			),
 			array(
 				'text'	=> $translation->translate('Week', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.week')),
+				'url'	=> phpgw::link('/calendar/view/week'),
 				'image'	=> array('calendar', 'week')
 			),
 			array(
 				'text'	=> $translation->translate('Week Detailed', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.week_new')),
+				'url'	=> phpgw::link('/calendar/view/week-new'),
 				'image'	=> array('calendar', 'week_detailed')
 			),
 			array(
 				'text'	=> $translation->translate('Month', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.month')),
+				'url'	=> phpgw::link('/calendar/view/month'),
 				'image'	=> array('calendar', 'month')
 			),
 			array(
 				'text'	=> $translation->translate('Year', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.year')),
+				'url'	=> phpgw::link('/calendar/view/year'),
 				'image'	=> array('calendar', 'year')
 			),
 			array(
 				'text'	=> $translation->translate('Group Planner', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.planner')),
+				'url'	=> phpgw::link('/calendar/view/planner'),
 				'image'	=> array('calendar', 'planner')
 			),
 			array(
 				'text'	=> $translation->translate('Busy/Free', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.matrixselect')),
+				'url'	=> phpgw::link('/calendar/view/matrix'),
 				'image'	=> array('calendar', 'busy_free')
 			),
 			array(
 				'text'	=> $translation->translate('Import', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uiicalendar.import')),
+				'url'	=> phpgw::link('/calendar/view/import'),
 				'image'	=> array('calendar', 'import')
 			)
 		);
@@ -118,11 +118,11 @@ class calendar_menu
 				),
 				'custom'	=> array(
 					'text'	=> $translation->translate('Custom fields and sorting', array(), true),
-					'url'	=> phpgw::link('/index.php', array('menuaction'	=> 'calendar.uicustom_fields.index'))
+					'url'	=> phpgw::link('/calendar/view/custom-fields')
 				),
 				'holiday'	=> array(
 					'text'	=> $translation->translate('Calendar Holiday Management', array(), true),
-					'url'	=> phpgw::link('/index.php', array('menuaction'	=> 'calendar.uiholiday.admin'))
+					'url'	=> phpgw::link('/calendar/view/holidays')
 				),
 				'categories'	=> array(
 					'text'	=> $translation->translate('Global Categories', array(), true),
@@ -136,11 +136,14 @@ class calendar_menu
 			$menus['preferences'] = array(
 				'preferences'	=> array(
 					'text'	=> $translation->translate('Preferences', array(), true),
-					'url'	=> phpgw::link('/preferences/preferences.php', array('appname'	=> 'calendar'))
+					'url'	 => phpgw::link('/preferences/section', array(
+						'appname' => 'calendar',
+						'type' => 'user'
+					))
 				),
 				'acls'	=> array(
 					'text'	=> $translation->translate('Grant Access', array(), true),
-					'url'	=> phpgw::link('/index.php', array('menuaction'	=> 'preferences.uiaclprefs.index', 'acl_app'	=> 'calendar'))
+					'url'	=> phpgw::link('/index.php', array('menuaction'	=> 'preferences.uiadmin_acl.aclprefs', 'acl_app'	=> 'calendar'))
 				),
 				'categories'	=> array(
 					'text'	=> $translation->translate('Edit Categories', array(), true),
@@ -149,7 +152,7 @@ class calendar_menu
 			);
 			$menus['toolbar'][] = array(
 				'text'	=> $translation->translate('Preferences', array(), true),
-				'url'	=> phpgw::link('/preferences/preferences.php', array('appname'	=> 'calendar')),
+				'url'	=> phpgw::link('/preferences/section', array('appname'	=> 'calendar', 'type' => 'user')),
 				'image'	=> array('calendar', 'preferences')
 			);
 		}
@@ -157,7 +160,7 @@ class calendar_menu
 		$menus['navigation'] = array(
 			array(
 				'text'	=> $translation->translate('New', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.add'))
+				'url'	=> phpgw::link('/calendar/view/event/new')
 			),
 			array(
 				'text'		=> $translation->translate('view', array(), true),
@@ -165,37 +168,37 @@ class calendar_menu
 				'children'	=> array(
 					array(
 						'text'	=> $translation->translate('Today', array(), true),
-						'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.day'))
+						'url'	=> phpgw::link('/calendar/view/day')
 					),
 					array(
 						'text'	=> $translation->translate('Week', array(), true),
-						'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.week'))
+						'url'	=> phpgw::link('/calendar/view/week')
 					),
 					array(
 						'text'	=> $translation->translate('Week Detailed', array(), true),
-						'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.week_new'))
+						'url'	=> phpgw::link('/calendar/view/week-new')
 					),
 					array(
 						'text'	=> $translation->translate('Month', array(), true),
-						'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.month'))
+						'url'	=> phpgw::link('/calendar/view/month')
 					),
 					array(
 						'text'	=> $translation->translate('Year', array(), true),
-						'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.year'))
+						'url'	=> phpgw::link('/calendar/view/year')
 					),
 					array(
 						'text'	=> $translation->translate('Group Planner', array(), true),
-						'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.planner'))
+						'url'	=> phpgw::link('/calendar/view/planner')
 					),
 					array(
 						'text'	=> $translation->translate('Daily Matrix View', array(), true),
-						'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uicalendar.matrixselect'))
+						'url'	=> phpgw::link('/calendar/view/matrix')
 					)
 				)
 			),
 			array(
 				'text'	=> $translation->translate('Import', array(), true),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'calendar.uiicalendar.import'))
+				'url'	=> phpgw::link('/calendar/view/import')
 			)
 
 		);

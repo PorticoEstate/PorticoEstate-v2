@@ -106,12 +106,26 @@ class DataStore
 				$resources[] = $row;
 			}
 
-			$data = [
-				'activities' => $this->getRowsAsArray("SELECT * from bb_activity where active=1"),
-				'buildings' => $this->getRowsAsArray("SELECT id, activity_id, deactivate_calendar, deactivate_application,"
+			$cadastralReferences = $this->getRowsAsArray(
+				"SELECT building_id, municipality_id, cadastral_type, building_number, gnr, bnr, fnr, snr "
+				. "FROM bb_building_cadastral_reference"
+			);
+			$cadastralReferencesByBuilding = [];
+			foreach ($cadastralReferences as $reference) {
+				$cadastralReferencesByBuilding[$reference['building_id']][] = $reference;
+			}
+			$buildings = $this->getRowsAsArray("SELECT id, activity_id, deactivate_calendar, deactivate_application,"
 				. " deactivate_sendmessage, extra_kalendar, name, homepage, location_code, phone, email, tilsyn_name, tilsyn_phone,"
 				. " tilsyn_email, tilsyn_name2, tilsyn_phone2, tilsyn_email2, street, zip_code, district, city, calendar_text, opening_hours"
-				. " FROM bb_building WHERE active=1"),
+				. " FROM bb_building WHERE active=1");
+			foreach ($buildings as &$building) {
+				$building['cadastral_references'] = $cadastralReferencesByBuilding[$building['id']] ?? [];
+			}
+			unset($building);
+
+			$data = [
+				'activities' => $this->getRowsAsArray("SELECT * from bb_activity where active=1"),
+				'buildings' => $buildings,
 				'building_resources' => $this->getRowsAsArray("SELECT * from bb_building_resource"),
 				'facilities' => $this->getRowsAsArray("SELECT * from bb_facility where active=1"),
 				'resources' => $resources,
@@ -168,6 +182,18 @@ class DataStore
 				$building = new Building($row);
 				$buildings[] = $building->serialize([], true);
 			}
+			$cadastralReferences = $this->getRowsAsArray(
+				"SELECT building_id, municipality_id, cadastral_type, building_number, gnr, bnr, fnr, snr "
+				. "FROM bb_building_cadastral_reference"
+			);
+			$cadastralReferencesByBuilding = [];
+			foreach ($cadastralReferences as $reference) {
+				$cadastralReferencesByBuilding[$reference['building_id']][] = $reference;
+			}
+			foreach ($buildings as &$building) {
+				$building['cadastral_references'] = $cadastralReferencesByBuilding[$building['id']] ?? [];
+			}
+			unset($building);
 			$data['buildings'] = $buildings;
 
 			// Building resources (no model yet, use array)

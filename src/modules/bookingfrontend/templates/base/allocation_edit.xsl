@@ -30,7 +30,7 @@
 					<input id="field_to" name="to_" type="hidden" value="{allocation/to_}" />
 					<div class="form-group">
 						<label class="text-uppercase">
-							<xsl:value-of select="php:function('lang', 'Building (2018)')" />
+							<xsl:value-of select="php:function('lang', 'Facility')" />
 						</label>
 						<xsl:value-of select="allocation/building_name"/>
 					</div>

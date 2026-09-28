@@ -292,4 +292,64 @@
 			}
 			return $this->db->f('building_id');
 		}
+
+		public function get_cadastral_reference($building_id)
+		{
+			$db = \App\Database\Db::getInstance();
+			$db->query(
+				'SELECT cadastral_type, municipality_id, building_number, gnr, bnr, fnr, snr '
+					. 'FROM bb_building_cadastral_reference WHERE building_id = ' . (int)$building_id . ' ORDER BY id LIMIT 1',
+				__LINE__,
+				__FILE__
+			);
+
+			return $db->next_record() ? $db->Record : array();
+		}
+
+		public function save_cadastral_reference($building_id, $reference)
+		{
+			$db = \App\Database\Db::getInstance();
+			foreach (array('municipality_id', 'building_number', 'gnr', 'bnr', 'fnr', 'snr') as $field)
+			{
+				if ($reference[$field] === null || $reference[$field] === '' || (int)$reference[$field] === 0)
+				{
+					$reference[$field] = null;
+				}
+			}
+			$has_value = false;
+			foreach (array('cadastral_type', 'municipality_id', 'building_number', 'gnr', 'bnr', 'fnr', 'snr') as $field)
+			{
+				if ($reference[$field] !== null && $reference[$field] !== '')
+				{
+					$has_value = true;
+					break;
+				}
+			}
+
+			$db->query('DELETE FROM bb_building_cadastral_reference WHERE building_id = ' . (int)$building_id, __LINE__, __FILE__);
+
+			if (!$has_value)
+			{
+				return;
+			}
+
+			$type = strtoupper($db->db_addslashes($reference['cadastral_type']));
+			$values = array(
+				(int)$building_id,
+				(int)$reference['municipality_id'],
+				"'{$type}'",
+				$reference['building_number'] === null ? 'NULL' : (string)(int)$reference['building_number'],
+				$reference['gnr'] === null ? 'NULL' : (string)(int)$reference['gnr'],
+				$reference['bnr'] === null ? 'NULL' : (string)(int)$reference['bnr'],
+				$reference['fnr'] === null ? 'NULL' : (string)(int)$reference['fnr'],
+				$reference['snr'] === null ? 'NULL' : (string)(int)$reference['snr'],
+			);
+			$db->query(
+				'INSERT INTO bb_building_cadastral_reference '
+					. '(building_id, municipality_id, cadastral_type, building_number, gnr, bnr, fnr, snr) VALUES ('
+					. implode(', ', $values) . ')',
+				__LINE__,
+				__FILE__
+			);
+		}
 	}

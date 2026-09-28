@@ -27,7 +27,7 @@
     <td>{lang_Location_to_autoload_from}:</td>
     <td>
      <select name="newsettings[holidays_url_path]">
-      <option value="localhost"{selected_holidays_url_path_localhost}>localhost</option>
+      <option value="localhost"{selected_holidays_url_path_localhost}>{lang_Bundled_local_repository}</option>
       <option value="http://www.phpgroupware.org/cal"{selected_holidays_url_path_http://www.phpgroupware.org/cal}>www.phpgroupware.org</option>
      </select>
     </td>

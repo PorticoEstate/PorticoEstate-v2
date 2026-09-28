@@ -8,7 +8,7 @@
 				<fieldset>
 					<div class="pure-control-group">
 						<label>
-							<xsl:value-of select="php:function('lang', 'Facility')"/>
+							<xsl:value-of select="php:function('lang', 'Feature')"/>
 						</label>
 					</div>
 					<div class="pure-control-group">

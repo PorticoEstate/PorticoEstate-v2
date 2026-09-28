@@ -1,0 +1,49 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ lang('Alarm Management') }}{% endblock %}
+{% block styles %}
+{{ add_style(modules_url ~ '/calendar/html/base/calendar/calendar.css') }}
+{% endblock %}
+{% block content %}
+<section class="calendar-alarm-page">
+	<p><a href="{{ back_url|e }}">{{ lang('Back to event') }}</a></p>
+	<div class="calendar-alarm-page__header">
+		<span class="calendar-import__eyebrow">{{ lang('Calendar') }}</span>
+		<h1>{{ lang('Alarm Management') }}</h1>
+		<p>{{ event.title|default('')|e }}</p>
+	</div>
+	<form class="calendar-alarm-list" method="post" action="{{ alarms_url|e('html_attr') }}">
+		{% if alarms|length %}
+			<div class="calendar-alarm-list__table">
+				<div class="calendar-alarm-list__row calendar-alarm-list__row--header">
+					<span>{{ lang('Time') }}</span><span>{{ lang('Owner') }}</span><span>{{ lang('Status') }}</span><span>{{ lang('Select') }}</span>
+				</div>
+				{% for id, alarm in alarms %}
+					<div class="calendar-alarm-list__row">
+						<span>{{ alarm.time|default(0)|date('Y-m-d H:i') }}</span>
+						<span>{{ alarm.owner|default(0) }}</span>
+						<span>{{ alarm.enabled ? lang('enabled') : lang('disabled') }}</span>
+						<span><input type="checkbox" name="alarm[{{ id|e('html_attr') }}]" value="1"></span>
+					</div>
+				{% endfor %}
+			</div>
+			<div class="calendar-alarm-list__actions">
+				<button type="submit" name="enable" value="1">{{ lang('Enable') }}</button>
+				<button type="submit" name="disable" value="1">{{ lang('Disable') }}</button>
+				<button type="submit" name="delete" value="1">{{ lang('Delete') }}</button>
+			</div>
+		{% else %}
+			<p>{{ lang('No alarms') }}</p>
+		{% endif %}
+	</form>
+	<form class="calendar-alarm-add" method="post" action="{{ alarms_url|e('html_attr') }}">
+		<h2>{{ lang('Add Alarm') }}</h2>
+		<div class="calendar-alarm-add__fields">
+			<label>{{ lang('Days') }}<input type="number" name="days" min="0" max="31" value="0"></label>
+			<label>{{ lang('Hours') }}<input type="number" name="hours" min="0" max="24" value="0"></label>
+			<label>{{ lang('Minutes') }}<input type="number" name="minutes" min="0" max="60" value="15"></label>
+			<label>{{ lang('Owner') }}<select name="owner" required>{% for id, name in participants %}<option value="{{ id|e('html_attr') }}">{{ name|e }}</option>{% endfor %}</select></label>
+		</div>
+		<button type="submit" name="add" value="1">{{ lang('Add Alarm') }}</button>
+	</form>
+</section>
+{% endblock %}

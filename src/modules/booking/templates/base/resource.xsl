@@ -192,7 +192,7 @@
 				</xsl:if>
 				<div class="pure-control-group">
 					<label>
-						<xsl:value-of select="php:function('lang', 'Facilities')"/>
+						<xsl:value-of select="php:function('lang', 'Features')"/>
 					</label>
 					<span>
 						<xsl:value-of select="resource/facilities_names"/>
@@ -206,7 +206,7 @@
 								<xsl:attribute name="href">
 									<xsl:value-of select="resource/edit_facilities_link"/>
 								</xsl:attribute>
-								<xsl:value-of select="php:function('lang', 'Edit facilities')" />
+								<xsl:value-of select="php:function('lang', 'Edit features')" />
 							</a>
 						</span>
 					</div>

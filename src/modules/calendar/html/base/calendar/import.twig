@@ -1,0 +1,23 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ lang('Import') }}{% endblock %}
+{% block styles %}
+{{ add_style(modules_url ~ '/calendar/html/base/calendar/calendar.css') }}
+{% endblock %}
+{% block content %}
+
+<form class="calendar-event-form calendar-import" method="post" action="{{ action_url|e('html_attr') }}" enctype="multipart/form-data">
+	<div class="calendar-import__heading">
+		<span class="calendar-import__eyebrow">{{ lang('(i/v)Cal') }}</span>
+		<h1>{{ lang('Import') }}</h1>
+	</div>
+	{% if show_file_error or error_message %}
+		<div class="app-alert app-alert--error" role="alert">{{ (error_message ?: lang('You must select a [iv]Cal. (*.[iv]cs)'))|e }}</div>
+	{% endif %}
+	<label class="calendar-import__upload">
+		<span class="calendar-import__upload-title">{{ lang('Choose a calendar file') }}</span>
+		<span class="calendar-import__upload-meta">.ics, .ical</span>
+		<input type="file" name="uploadedfile" accept=".ics,.ical,text/calendar" required>
+	</label>
+	<button class="calendar-import__submit" type="submit">{{ lang('Load [iv]Cal') }}</button>
+</form>
+{% endblock %}

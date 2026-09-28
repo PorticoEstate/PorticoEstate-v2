@@ -23,11 +23,11 @@
 						<xsl:call-template name="msgbox"/>
 					</div>
 					<h5 class="font-weight-bold mb-4">
-						<xsl:value-of select="php:function('lang', 'Building (2018)')" />
+						<xsl:value-of select="php:function('lang', 'Facility')" />
 					</h5>
 					<div class="form-group">
 						<label class="text-uppercase">
-							<xsl:value-of select="php:function('lang', 'Building (2018)')" />
+							<xsl:value-of select="php:function('lang', 'Facility')" />
 						</label>
 						<div class="autocomplete">
 							<input id="field_building_id" class="form-control" name="building_id" type="hidden">

@@ -1,5 +1,5 @@
 BW	Neujahr	1	1	2004	0	0
-BW	Heilige 3 Könige	6	1	2004	0	0
+BW	Heilige 3 KÃ¶nige	6	1	2004	0	0
 BW	Fronleichnahm	19	6	2003	0	0
 BW	Tag der deutschen Einheit	3	10	2003	0	0
 BW	Allerheiligen	1	11	2003	0	0

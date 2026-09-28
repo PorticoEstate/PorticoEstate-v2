@@ -1,0 +1,54 @@
+{% extends layout|default('@views/_bare.twig') %}
+{% block title %}{{ lang('Custom fields and sorting') }}{% endblock %}
+{% block styles %}
+{{ add_style(modules_url ~ '/calendar/html/base/custom_fields/custom_fields.css') }}
+{% endblock %}
+{% block content %}
+<div class="custom-fields" data-api-url="{{ api_url|e('html_attr') }}" data-admin-url="{{ admin_url|e('html_attr') }}">
+	<header class="custom-fields__header">
+		<div>
+			<h1>{{ lang('Custom fields and sorting') }}</h1>
+		</div>
+		<div class="custom-fields__actions">
+			<button type="button" class="app-button app-button--secondary" data-action="add-field">{{ lang('Add') }}</button>
+			<button type="button" class="app-button app-button--primary" data-action="save-fields">{{ lang('Save') }}</button>
+			<a href="{{ admin_url|e }}" class="app-button app-button--secondary">{{ lang('Cancel') }}</a>
+		</div>
+	</header>
+
+	<div id="calendar-custom-fields-error" class="app-alert app-alert--error" role="alert" hidden></div>
+	<div id="calendar-custom-fields-status" class="app-alert app-alert--success" role="status" hidden></div>
+
+	<div class="custom-fields__table-wrap">
+		<table class="custom-fields__table" aria-label="{{ lang('Custom fields and sorting')|e('html_attr') }}">
+			<thead>
+				<tr>
+					<th>{{ lang('Name') }}</th>
+					<th>{{ lang('Length') }}</th>
+					<th>{{ lang('Shown') }}</th>
+					<th>{{ lang('Order') }}</th>
+					<th>{{ lang('Title-row') }}</th>
+					<th>{{ lang('Disabled') }}</th>
+					<th>{{ lang('Delete') }}</th>
+				</tr>
+			</thead>
+			<tbody id="calendar-custom-fields-rows"></tbody>
+		</table>
+	</div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+window.__calendarCustomFields = {
+	apiUrl: '{{ api_url|e('js') }}',
+	adminUrl: '{{ admin_url|e('js') }}',
+	lang: {
+		loading: '{{ lang('Loading')|e('js') }}',
+		saved: '{{ lang('Custom fields saved')|e('js') }}',
+		saveFailed: '{{ lang('Save failed')|e('js') }}',
+		loadFailed: '{{ lang('Unable to load custom fields')|e('js') }}'
+	}
+};
+</script>
+<script>{{ source('@views/custom_fields/custom_fields.js') }}</script>
+{% endblock %}

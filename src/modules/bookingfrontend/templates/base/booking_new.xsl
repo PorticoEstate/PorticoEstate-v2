@@ -51,7 +51,7 @@
 					</div>
 					<div class="form-group">
 						<label>
-							<xsl:value-of select="php:function('lang', 'Building (2018)')"/>
+							<xsl:value-of select="php:function('lang', 'Facility')"/>
 						</label>
 						<input id="field_building_id" class="form-control" name="building_id" type="hidden" value="{booking/building_id}">
 							<xsl:attribute name="data-validation">

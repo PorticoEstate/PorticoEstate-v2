@@ -177,11 +177,11 @@
 				</div>
 				<div class="col-12 mt-4">
 					<h5 class="font-weight-bold mb-4">
-						<xsl:value-of select="php:function('lang', 'Building (2018)')" />
+						<xsl:value-of select="php:function('lang', 'Facility')" />
 					</h5>
 					<dl>
 						<dt>
-							<xsl:value-of select="php:function('lang', 'Building (2018)')" />
+							<xsl:value-of select="php:function('lang', 'Facility')" />
 						</dt>
 						<dd>
 							<xsl:value-of select="application/building_name"/>

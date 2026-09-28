@@ -46,6 +46,7 @@
 						<xsl:value-of select="building/activity_name"/>
 					</span>
 				</div>
+
 				<div class="pure-control-group">
 					<label>
 						<xsl:value-of select="php:function('lang', 'Street')" />
@@ -80,6 +81,44 @@
 						</a>
 					</xsl:if>
 				</div>
+				<xsl:if test="building/cadastral_reference/cadastral_type != ''">
+					<div class="pure-control-group">
+						<label><xsl:value-of select="php:function('lang', 'Cadastral type')" /></label>
+						<xsl:value-of select="building/cadastral_reference/cadastral_type" />
+					</div>
+					<div class="pure-control-group">
+						<label><xsl:value-of select="php:function('lang', 'Municipality ID')" /></label>
+						<xsl:value-of select="building/cadastral_reference/municipality_id" />
+					</div>
+					<xsl:if test="building/cadastral_reference/building_number != ''">
+						<div class="pure-control-group">
+							<label><xsl:value-of select="php:function('lang', 'Building number')" /></label>
+							<xsl:value-of select="building/cadastral_reference/building_number" />
+						</div>
+					</xsl:if>
+					<xsl:if test="building/cadastral_reference/gnr != '' or building/cadastral_reference/bnr != '' or building/cadastral_reference/fnr != '' or building/cadastral_reference/snr != ''">
+						<div class="pure-control-group">
+							<label><xsl:value-of select="php:function('lang', 'Cadastral property')" /></label>
+							<xsl:value-of select="building/cadastral_reference/gnr" />
+							<xsl:text> / </xsl:text>
+							<xsl:value-of select="building/cadastral_reference/bnr" />
+							<xsl:text> / </xsl:text>
+							<xsl:choose>
+								<xsl:when test="building/cadastral_reference/fnr != ''">
+									<xsl:value-of select="building/cadastral_reference/fnr" />
+								</xsl:when>
+								<xsl:otherwise>0</xsl:otherwise>
+							</xsl:choose>
+							<xsl:text> / </xsl:text>
+							<xsl:choose>
+								<xsl:when test="building/cadastral_reference/snr != ''">
+									<xsl:value-of select="building/cadastral_reference/snr" />
+								</xsl:when>
+								<xsl:otherwise>0</xsl:otherwise>
+							</xsl:choose>
+						</div>
+					</xsl:if>
+				</xsl:if>
 				<div class="pure-control-group">
 					<label>
 						<xsl:value-of select="php:function('lang', 'Homepage')" />

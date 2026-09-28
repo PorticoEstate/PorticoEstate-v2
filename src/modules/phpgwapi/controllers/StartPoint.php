@@ -373,6 +373,20 @@ class StartPoint
 		$redirect_input = Sanitizer::get_var('redirect', 'raw', 'COOKIE');
 		$redirect = $redirect_input ? json_decode(Sanitizer::get_var('redirect', 'raw', 'COOKIE'), true) : null;
 
+		/*
+		 * The cookie is domain-wide, so it can hold a destination saved for another
+		 * module (e.g. an admin menuaction). Replay it only onto the entry its
+		 * menuaction belongs to, and leave it in place for that entry otherwise.
+		 */
+		if ($app && is_array($redirect))
+		{
+			$menuaction = isset($redirect['menuaction']) && is_string($redirect['menuaction']) ? $redirect['menuaction'] : '';
+			if (explode('.', $menuaction)[0] !== $app)
+			{
+				return;
+			}
+		}
+
 		if (is_array($redirect) && count($redirect))
 		{
 			$redirect_data = array();

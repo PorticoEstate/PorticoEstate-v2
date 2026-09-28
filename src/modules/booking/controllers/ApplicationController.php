@@ -103,6 +103,12 @@ class ApplicationController
 			}
 			$app->num_associations = $totalAssociations;
 
+			// Associations of THIS application alone, for the accept gate. Accept
+			// is decided per row: ApplicationService::acceptApplication refuses a
+			// row with none of its own, whatever its combined siblings hold, so
+			// the gate uses the same call rather than the group sum above.
+			$ownAssociations = $this->repo->countAssociations($id);
+
 			// Is simple booking?
 			$resources = $this->repo->fetchResources($id);
 			$simple = true;
@@ -212,6 +218,7 @@ class ApplicationController
 				'messenger_enabled'            => $messengerEnabled,
 				'show_accept'                  => in_array($status, ['PENDING', 'REJECTED', 'NEWPARTIAL1']),
 				'num_associations'             => $app->num_associations,
+				'num_own_associations'         => $ownAssociations,
 				'hospitality_orders_pending'   => $hospitalityPending,
 				'show_reject'                  => $status !== 'REJECTED',
 				'display_in_dashboard'         => (int) ($row['display_in_dashboard'] ?? 1),

@@ -409,7 +409,10 @@
 
 		var decisionGroup = [];
 		if (tb.show_accept) {
-			if (tb.num_associations === 0) {
+			// Gate on this application's OWN associations, not the group sum in
+			// num_associations: the accept endpoint refuses a row that has none of
+			// its own, even when a combined sibling has some.
+			if (tb.num_own_associations === 0) {
 				decisionGroup.push(menuItem(lang('acceptRequiresAssociations'), { disabled: true, color: 'success', icon: icons.checkCircle }));
 			} else if (tb.hospitality_orders_pending > 0) {
 				// Same gate, second reason: every hospitality order must have been

@@ -1,0 +1,223 @@
+.footer-list {
+  a, a.span {
+    word-wrap: break-word;
+    white-space: normal;
+    overflow-wrap: break-word; /* Ensures compatibility */
+    word-break: break-all; /* Breaks long words at any character */
+  }
+}
+
+
+@mixin pill() {
+  padding: 0.713rem 1.5rem;
+  border: 1px solid $grey;
+  border-radius: $rounded-large;
+  color: $black;
+  background-color: $white;
+  line-height: 1.2;
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: transparent;
+    box-shadow: $box-shadow, $box-focus-shadow;
+  }
+
+  &:hover {
+    border-color: transparent;
+    color: $black;
+    box-shadow: $box-shadow, $box-focus-shadow-purple;
+  }
+}
+
+a:not(.pe-btn) {
+  &,
+  &:link,
+  &:visited {
+    color: $black;
+    text-decoration: underline;
+  }
+
+  &:hover,
+  &:focus,
+  &:active {
+    color: $purple;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: $box-focus-shadow;
+  }
+
+  &.arrow {
+    text-decoration: none;
+    position: relative;
+    padding-right: 1.25rem;
+
+    &::after {
+      content: "\f04b";
+      font-size: 0.625em;
+      color: $purple;
+      font-weight: 700;
+      font-family: "Font Awesome 5 Free";
+      position: absolute;
+      transform: rotate(-30deg);
+      right: 0;
+      top: -0.1rem;
+    }
+  }
+
+  &.link-text {
+    text-decoration: none;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &.normal {
+      font-weight: 400;
+    }
+
+    &.underline {
+      text-decoration: underline;
+    }
+
+    &-primary {
+      color: $purple;
+
+      &:hover {
+        color: $blue;
+      }
+    }
+
+    &-secondary {
+      color: $blue;
+
+      &:hover {
+        color: $purple;
+
+      }
+    }
+
+    &-white {
+      color: $white;
+    }
+
+  }
+
+  &.link-button {
+    @include pill;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 700;
+    position: relative;
+    text-decoration: none;
+    box-shadow: $box-shadow;
+    padding-top: 0.963rem;
+    padding-bottom: 0.963rem;
+
+    &::after {
+      content: "\f054";
+      padding-left: 1rem;
+      font-size: 1em;
+      color: $purple;
+      font-weight: $text-bold;
+      font-family: "Font Awesome 5 Free";
+    }
+
+    &:first-child:active:focus-visible {
+      box-shadow: $box-focus-shadow;
+    }
+
+    &:hover,
+    &:active {
+      border-color: $purple;
+    }
+
+    &:focus {
+      outline: none;
+    }
+
+    &:focus-visible {
+      border-color: $purple;
+      box-shadow: $box-focus-shadow;
+    }
+
+    &-primary {
+      background-color: $purple;
+      color: $white;
+
+      &::after {
+        color: $white;
+      }
+
+      &:hover,
+      &:active {
+        background-color: $white;
+        color: $purple;
+
+        &::after {
+          color: $purple;
+        }
+      }
+
+      &:focus-visible {
+        background-color: $purple;
+        color: $white;
+      }
+
+    }
+
+    &-secondary {
+      color: $purple;
+      background-color: $white;
+
+      &:hover,
+      &:active {
+        background-color: $purple;
+        color: $white;
+      }
+
+      &:focus-visible {
+        border-color: $purple;
+        background-color: $white;
+        color: $purple;
+      }
+    }
+
+    &--small {
+      font-size: 0.875rem;
+      padding: 0.344rem 1.25rem;
+    }
+
+    &--large {
+      padding: 0.657rem 1.25rem;
+      font-size: 1.125rem;
+    }
+
+    &--circle {
+      padding: 1rem;
+    }
+
+    &:disabled,
+    &[disabled] {
+      background-color: $grey-light;
+      color: $grey;
+      border-color: $grey;
+      opacity: 1;
+      pointer-events: none;
+    }
+
+    &--transparent {
+      background-color: transparent;
+      border: 0;
+      padding: 0.5rem;
+      min-width: 2.5rem;
+    }
+  }
+
+}

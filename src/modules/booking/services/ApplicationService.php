@@ -665,6 +665,19 @@ class ApplicationService
 		$existingAllocations = $this->repo->fetchExistingAllocations($appId);
 		$resourceDisplay = implode(', ', $resourceNames);
 
+		// Every element linked to this application, of any type and active or
+		// not, keyed like $lookupKey so an occurrence can carry the elements that
+		// match it exactly. Display only: nothing below reads these to decide
+		// exists/has_conflict or the counts, so the create-all path is unaffected.
+		$associationsByKey = [];
+		foreach ($this->repo->fetchAssociations($appId) as $association) {
+			$key = empty($association['from_']) || empty($association['to_']) ? ''
+				: date('Y-m-d H:i', strtotime($association['from_']))
+				. '_' . date('Y-m-d H:i', strtotime($association['to_']));
+			$associationsByKey[$key][] = $association;
+		}
+		$matchedKeys = [];
+
 		// Generate items
 		$items = [];
 		$maxIterations = 50;
@@ -692,7 +705,9 @@ class ApplicationService
 				'conflict_details' => [],
 				'schedule_link'    => '/?menuaction=bookingfrontend.uibuilding.schedule&id='
 					. $buildingId . '&backend=1&date=' . date('Y-m-d', $itemFromTs),
+				'associations'     => $associationsByKey[$lookupKey] ?? [],
 			];
+			$matchedKeys[$lookupKey] = true;
 
 			// Check if allocation already exists
 			if (isset($existingAllocations[$lookupKey])) {
@@ -717,8 +732,31 @@ class ApplicationService
 			$i++;
 		}
 
+		// Linked elements that match no occurrence exactly - an edited time, or
+		// an element created outside the series. Kept in their own key and never
+		// appended to `items`: createRecurringAllocations creates an allocation
+		// for every item that is neither existing nor conflicting.
+		$outsideSeries = [];
+		foreach ($associationsByKey as $key => $associations) {
+			if (isset($matchedKeys[$key])) {
+				continue;
+			}
+			foreach ($associations as $association) {
+				$assocFromTs = strtotime((string) $association['from_']);
+				$assocToTs = strtotime((string) $association['to_']);
+				$outsideSeries[] = $association + [
+					'date_display' => $assocFromTs ? date('d.m.Y', $assocFromTs) : '',
+					'day_name'     => $assocFromTs ? $this->norwegianDayName($assocFromTs) : '',
+					'time_display' => $assocFromTs && $assocToTs
+						? date('H:i', $assocFromTs) . ' - ' . date('H:i', $assocToTs) : '',
+				];
+			}
+		}
+		usort($outsideSeries, fn($a, $b) => strcmp((string) $a['from_'], (string) $b['from_']));
+
 		return [
 			'items'          => $items,
+			'outside_series' => $outsideSeries,
 			'counts'         => $counts,
 			'can_create'     => $counts['creatable'] > 0,
 			'season_info'    => $seasonInfo,

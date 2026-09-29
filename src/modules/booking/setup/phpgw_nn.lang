@@ -1256,3 +1256,5 @@ overwrite_all_prices	booking	nn	Overskriv alle
 keep_manual_prices	booking	nn	Behald dei manuelle
 cancel_price_update	booking	nn	Avbryt
 date and time	booking	nn	Tidspunkt
+outside_series	booking	nn	Utanfor serien
+other_associated_items	booking	nn	Andre element

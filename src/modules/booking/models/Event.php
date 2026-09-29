@@ -952,7 +952,7 @@ class Event extends BaseModel
 				':event_id' => $this->id,
 				':comment' => $comment,
 				':type' => $type,
-				':time' => time(),
+				':time' => gmdate('Y-m-d H:i:s'),
 				':author' => $author,
 				':author_name' => $authorName
 			]);

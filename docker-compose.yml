@@ -44,6 +44,9 @@ services:
             <<: *common-variables
             docker: "true"
             ENABLE_ASYNC_CRON: "1"
+            SCIM_TENANT_ID: ${SCIM_TENANT_ID:-}
+            SCIM_BEARER_TOKEN: ${SCIM_BEARER_TOKEN:-}
+            SCIM_PUBLIC_BASE_URL: ${SCIM_PUBLIC_BASE_URL:-}
             LANG: en_US.UTF-8
             LC_ALL: en_US.UTF-8
             LANGUAGE: en_US.UTF-8

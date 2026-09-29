@@ -703,11 +703,12 @@
 				'auth_type' => array('type' => 'varchar','precision' => 25,'nullable' => False),
 				'status' => array('type' => 'char','precision' => 1,'nullable' => False,'default' => 'A'),
 				'location' => array('type' => 'varchar','precision' => 200,'nullable' => False),
-				'account_lid' => array('type' => 'varchar','precision' => 100,'nullable' => False)
+				'account_lid' => array('type' => 'varchar','precision' => 100,'nullable' => False),
+				'account_id' => array('type' => 'int','precision' => 4,'nullable' => True)
 			),
 			'pk' => array('ext_user','location','auth_type'),
 			'fk' => array(),
-			'ix' => array(),
+			'ix' => array('account_id'),
 			'uc' => array()
 		),
 		'phpgw_mail_handler' => array(

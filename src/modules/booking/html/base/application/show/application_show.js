@@ -607,6 +607,23 @@
 		document.getElementById('application-header').innerHTML = html;
 	}
 
+	// The accept ("Godta søknaden") gating is derived from the association count
+	// captured server-side at page load. Anything that creates an association
+	// in-page must re-fetch the application and re-render the toolbar (which sits
+	// inside the header) — otherwise the button stays disabled until a reload.
+	function refreshToolbar(app) {
+		return fetchJson(apiUrl).then(function (freshApp) {
+			if (freshApp && freshApp.toolbar) {
+				app.toolbar = freshApp.toolbar;
+				app.num_associations = freshApp.num_associations;
+				renderToolbar(app);
+				renderHeader(app);
+			}
+		}).catch(function () {
+			// Non-fatal: leave the toolbar as-is if the refresh fails.
+		});
+	}
+
 	// ═══════════════════════════════════════════════════════════════════
 	// Details tab
 	// ═══════════════════════════════════════════════════════════════════
@@ -938,7 +955,7 @@
 		function collapseToEditLink(btn, cell, result) {
 			var link = document.createElement('a');
 			link.href = result.edit_url;
-			link.className = 'booking-button';
+			link.className = 'booking-button ds-button';
 			link.setAttribute('data-variant', 'tertiary');
 			link.setAttribute('data-color', 'success');
 			link.setAttribute('data-size', 'sm');
@@ -949,6 +966,7 @@
 			(split || btn).replaceWith(link);
 			clearConflict(cell);
 			clearGroupPicker(cell);
+			refreshToolbar(app);
 		}
 
 		// Inline group picker for multi-group-org bookings. The booking create
@@ -1467,20 +1485,7 @@
 				createBtn.textContent = lang('creatingAllocations') + '...';
 
 				postJson(apiUrl + '/create-recurring-allocations').then(function (result) {
-					// The accept ("Godta søknaden") gating is derived from the
-					// association count captured server-side at page load. Re-fetch the
-					// application so the toolbar reflects the allocations just created —
-					// otherwise the button stays disabled until a manual reload.
-					return fetchJson(apiUrl).then(function (freshApp) {
-						if (freshApp && freshApp.toolbar) {
-							app.toolbar = freshApp.toolbar;
-							app.num_associations = freshApp.num_associations;
-							renderToolbar(app);
-							renderHeader(app);
-						}
-					}).catch(function () {
-						// Non-fatal: leave the toolbar as-is if the refresh fails.
-					}).then(function () {
+					return refreshToolbar(app).then(function () {
 						// Refresh the section, passing result so the summary persists
 						loadRecurringPreview(app, data, result);
 					});

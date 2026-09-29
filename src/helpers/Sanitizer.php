@@ -75,6 +75,46 @@ class Sanitizer
 		return $clean_html;
 	}
 
+	/**
+	 * Decode HTML entities FIRST, then purify. Purify must run LAST: some
+	 * stored rows are entity-encoded (double-encoded legacy comment rows,
+	 * or literal "&lt;"/"&gt;" text that a DB read layer's own decode step
+	 * turns back into real "<"/">"), and clean_html() only recognises real
+	 * "<"/">" as markup — an entity-encoded payload like a stored
+	 * "&lt;img onerror=...&gt;" passes clean_html() untouched as inert text.
+	 * If a decode ran AFTER purification instead, that same payload would
+	 * be revived into live markup post-sanitisation. Decoding first and
+	 * purifying last closes both directions.
+	 *
+	 * Mirrors the 3-stage decode SerializableTrait::sanitizeString() already
+	 * used for the 'default' escape mode, so double-encoded rows normalise
+	 * the same way they did before purification was introduced.
+	 *
+	 * @param string $html    the (possibly entity-encoded) HTML to clean
+	 * @param string $base_url passed through to clean_html()
+	 * @return string purified HTML with entities normalised
+	 */
+	public static function decode_then_purify($html, $base_url = '')
+	{
+		$decoded = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+		$decoded = preg_replace_callback(
+			'/&#(\d+);/',
+			function ($matches)
+			{
+				return mb_chr($matches[1], 'UTF-8');
+			},
+			$decoded
+		);
+
+		if (strpos($decoded, '&amp;') !== false)
+		{
+			$decoded = html_entity_decode($decoded, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		}
+
+		return self::clean_html($decoded, $base_url);
+	}
+
 	public static function sanitize($input)
 	{
 		if (is_array($input))

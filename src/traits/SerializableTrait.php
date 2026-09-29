@@ -374,6 +374,17 @@ trait SerializableTrait
                 // Don't perform any escaping
                 return $value;
 
+            case 'purify':
+                // Decode THEN strip dangerous tags/attrs (script, event handlers)
+                // while keeping safe markup (p, strong, ul, ...) intact. Decoding
+                // first resolves double-encoded legacy rows before purification
+                // runs LAST — purifying an entity-encoded payload without decoding
+                // it first would leave it inert-looking but let a later decode
+                // revive it. Idempotent: already-clean HTML passes through
+                // unchanged, so this is safe to apply on every read regardless of
+                // whether the stored value was sanitised on write.
+                return \Sanitizer::decode_then_purify($value);
+
             case 'default':
             default:
                 // Full sanitization

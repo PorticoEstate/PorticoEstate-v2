@@ -4220,3 +4220,67 @@ function phpgwapi_upgrade0_9_17_568($oProc)
 		return $currentver;
 	}
 }
+
+$test[] = '0.9.17.569';
+/**
+ * Prevent multiple SCIM identities from mapping to one local account per tenant.
+ *
+ * @return string the new version number
+ */
+function phpgwapi_upgrade0_9_17_569($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	$oProc->AddColumn('phpgw_mapping', 'account_id', array(
+		'type' => 'int',
+		'precision' => 4,
+		'nullable' => true
+	));
+	$oProc->m_odb->query(
+		'UPDATE phpgw_mapping SET account_id = ('
+		. 'SELECT account_id FROM phpgw_accounts WHERE phpgw_accounts.account_lid = phpgw_mapping.account_lid'
+		. ') WHERE account_id IS NULL'
+	);
+
+	
+	$db = $oProc->m_odb;
+	$db->query(
+		"SELECT account_id, location FROM phpgw_mapping"
+		. " WHERE auth_type = 'scim' AND account_id IS NOT NULL"
+		. ' GROUP BY account_id, location HAVING COUNT(*) > 1 LIMIT 1'
+	);
+	if ($db->next_record())
+	{
+		$db->transaction_abort();
+		throw new RuntimeException(
+			'SCIM mapping duplicates must be resolved before creating phpgw_mapping_scim_account_uidx'
+		);
+	}
+
+	$metadata = $db->metaindexes('phpgw_mapping');
+	$indexExists = false;
+	foreach ($metadata as $indexName => $index)
+	{
+		if (strcasecmp($indexName, 'phpgw_mapping_scim_account_uidx') === 0)
+		{
+			$indexExists = true;
+			break;
+		}
+	}
+
+	if (!$indexExists)
+	{
+		$oProc->query(
+			'CREATE UNIQUE INDEX phpgw_mapping_scim_account_uidx'
+			. ' ON phpgw_mapping (account_id, location)'
+			. " WHERE auth_type = 'scim' AND account_id IS NOT NULL"
+		);
+	}
+	
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.9.17.570';
+		Settings::getInstance()->update('setup_info', ['phpgwapi' => ['currentver' => $currentver]]);
+		return $currentver;
+	}
+}

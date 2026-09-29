@@ -252,6 +252,19 @@ class AllocationCancellationRepository
 		$stmt->execute([':id' => $id]);
 	}
 
+	/**
+	 * Soft-withdraw: the row stays, only its active flag drops. Mirrors
+	 * ApplicationRepository::deactivateAssociatedEntities's own `UPDATE {table} SET active = 0`,
+	 * which is what a whole-application withdrawal already does to this same column - see
+	 * AllocationWithdrawalService's docblock for why a single-occurrence Min-side withdrawal uses
+	 * this instead of deleteAllocation().
+	 */
+	public function deactivateAllocation(int $id): void
+	{
+		$stmt = $this->db->prepare("UPDATE bb_allocation SET active = 0 WHERE id = :id");
+		$stmt->execute([':id' => $id]);
+	}
+
 	public function beginTransaction(): void
 	{
 		if (!$this->db->inTransaction())

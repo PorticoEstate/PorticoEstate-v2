@@ -89,7 +89,8 @@ export interface ManageModalAdapter<
 	 *  must be an explicit adapter field rather than a read of `entity.application_id`/
 	 *  `entity.type` alone. Defaults to falsy (absent) when an adapter does not set it, so a new
 	 *  adapter is correct-by-construction: it renders the step machine unless it deliberately
-	 *  opts into the application view. Only `event-manage-modal.tsx` sets this true. */
+	 *  opts into the application view. `event-manage-modal.tsx` sets it unconditionally;
+	 *  `allocation-manage-modal.tsx` sets it gated on `can_view_application` (GH #1393). */
 	usesApplicationView?: boolean;
 	titleName: (entity: TEntity) => string;
 	overviewExtraRows?: (entity: TEntity, t: TFunction) => ReactNode;
@@ -98,6 +99,10 @@ export interface ManageModalAdapter<
 	editMenuaction: string;
 	editLabelLangKey: string;
 	buildEditParams: (entity: TEntity) => Record<string, string | number | (string | number)[]>;
+	/** Opt-in override; when absent the edit link is always shown.
+	 *  allocation-manage-modal.tsx uses it to hide the link once the entity carries an
+	 *  application_id (GH #1393). Booking and event never set it, so they are unchanged. */
+	showEditLink?: (entity: TEntity) => boolean;
 	deleteFlagKey: 'user_can_delete_allocations' | 'user_can_delete_bookings' | 'user_can_delete_events';
 	cancelActionLangKey: string;
 	requestModeNoticeLangKey: string;
@@ -512,11 +517,13 @@ function ManageModal<
 									</Link>
 								</Button>
 							)}
-							<Button asChild variant="secondary" data-color="accent" className={styles.overviewActionButton}>
-								<Link href={editHref} target="_blank">
-									{t(adapter.editLabelLangKey)}
-								</Link>
-							</Button>
+							{(adapter.showEditLink?.(entity) ?? true) && (
+								<Button asChild variant="secondary" data-color="accent" className={styles.overviewActionButton}>
+									<Link href={editHref} target="_blank">
+										{t(adapter.editLabelLangKey)}
+									</Link>
+								</Button>
+							)}
 							{/* Design :392-397 — a plain flex column of full-width buttons, not a
 							    bordered card: THE action stack, not a fourth panel. The
 							    destructive action is a peer among these, not a primary "next" —
@@ -907,15 +914,13 @@ function ManageModal<
 	// is therefore reachable from within a single-occurrence modal — flagged, not decided, see
 	// task #23788's acceptance (c).
 	//
-	// GATED ON THE ADAPTER, NOT `entity.application_id` ALONE (task #24955): an allocation can
-	// carry a non-null application_id too (~23% of allocations do), and without `adapter.
-	// usesApplicationView` those took this branch as well — "administrer tildeling" wrongly
-	// opened the application view instead of the allocation's own step machine. The application
-	// view was only ever meant for events. `adapter.usesApplicationView` is the explicit opt-in
-	// (see the interface's own docblock above). `entity.type` would also work — it is `@Expose`d
-	// with an `@Default` on each concrete model and does arrive on the wire — but the adapter is
-	// already the type discriminator, and an optional flag set in one place leaves the other two
-	// adapters correct without either of them having to opt out.
+	// GATED ON THE ADAPTER, NOT `entity.application_id` ALONE (810a218ed): allocations carry a
+	// non-null application_id too, and keying off that alone made "administrer tildeling" open
+	// the application view instead of the allocation's own step machine. The adapter flag is the
+	// explicit opt-in; `entity.type` would also work, but the adapter is already the type
+	// discriminator and an optional flag leaves booking correct without having to opt out.
+	// The allocation adapter sets it too now (GH #1393), but only when the viewer can actually
+	// open that application — so the population that caused 810a218ed still gets the step machine.
 	if (adapter.usesApplicationView && entity.application_id) {
 		return (
 			<Dialog

@@ -1971,6 +1971,363 @@
                 }
             }
         },
+        "\/bookingfrontend\/allocations\/{id}\/cancel-preview": {
+            "post": {
+                "tags": [
+                    "Allocations"
+                ],
+                "summary": "Walk an allocation series and report what a cancellation would do",
+                "operationId": "9f6419dc4e4a6ab18ae1f3bd08cfbeb2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "secret",
+                        "in": "query",
+                        "description": "The owning application's secret, for a caller authorised by the emailed link",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "scope": {
+                                        "type": "string",
+                                        "enum": [
+                                            "occurrence",
+                                            "season",
+                                            "until"
+                                        ]
+                                    },
+                                    "repeat_until": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "field_interval": {
+                                        "type": "integer",
+                                        "default": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Per-occurrence preview of the series"
+                    },
+                    "400": {
+                        "description": "Unusable scope, repeat_until or field_interval"
+                    },
+                    "403": {
+                        "description": "Caller may not manage this allocation"
+                    },
+                    "404": {
+                        "description": "No such allocation"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/allocations\/{id}\/cancel": {
+            "post": {
+                "tags": [
+                    "Allocations"
+                ],
+                "summary": "Cancel the occurrences of an allocation series within a scope",
+                "operationId": "909927967820a801bb8fd63b07b566f8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "secret",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "scope": {
+                                        "type": "string",
+                                        "enum": [
+                                            "occurrence",
+                                            "season",
+                                            "until"
+                                        ]
+                                    },
+                                    "repeat_until": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "field_interval": {
+                                        "type": "integer",
+                                        "default": 1
+                                    },
+                                    "confirm_token": {
+                                        "description": "The token returned by cancel-preview for this exact set",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "What was deleted and what was spared"
+                    },
+                    "400": {
+                        "description": "Unusable scope or missing confirm_token"
+                    },
+                    "403": {
+                        "description": "Caller may not manage this allocation"
+                    },
+                    "404": {
+                        "description": "No such allocation"
+                    },
+                    "409": {
+                        "description": "confirm_token is stale, or the installation is in request mode"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/allocations\/{id}\/withdraw": {
+            "post": {
+                "tags": [
+                    "Allocations"
+                ],
+                "summary": "Withdraw a single allocation occurrence from Min side, with an optional comment",
+                "operationId": "7f2312d0f20d5f32fdadb2d15e0fa16b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "secret",
+                        "in": "query",
+                        "description": "The owning application's secret, for a caller authorised by the emailed link",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "comment": {
+                                        "description": "Optional message to the case officer, travels into the staff mail",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Withdrawn: the allocation is deactivated and the case officer notified"
+                    },
+                    "400": {
+                        "description": "Comment too long"
+                    },
+                    "403": {
+                        "description": "Caller may not manage this allocation"
+                    },
+                    "404": {
+                        "description": "No such allocation"
+                    },
+                    "409": {
+                        "description": "Already withdrawn, already started, or has no owning application"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/bookings\/{id}\/cancel-preview": {
+            "post": {
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Walk a booking series and report what a cancellation would do, including any delete_allocation cascade",
+                "operationId": "0e4741494accedea5c34e5d847c4bcfe",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "secret",
+                        "in": "query",
+                        "description": "The owning application's secret, for a caller authorised by the emailed link",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "scope": {
+                                        "type": "string",
+                                        "enum": [
+                                            "occurrence",
+                                            "season",
+                                            "until"
+                                        ]
+                                    },
+                                    "repeat_until": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "field_interval": {
+                                        "type": "integer",
+                                        "default": 1
+                                    },
+                                    "delete_allocation": {
+                                        "description": "Whether a cancel with this same body would also delete each occurrence's parent allocation, where eligible. The preview discloses the cascade either way.",
+                                        "type": "boolean",
+                                        "default": false
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Per-occurrence preview of the series, plus the delete_allocation cascade"
+                    },
+                    "400": {
+                        "description": "Unusable scope, repeat_until or field_interval"
+                    },
+                    "403": {
+                        "description": "Caller may not manage this booking"
+                    },
+                    "404": {
+                        "description": "No such booking"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/bookings\/{id}\/cancel": {
+            "post": {
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Cancel the occurrences of a booking series within a scope",
+                "operationId": "f31150589cd8f2a3e1e10485f332db0a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "secret",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "scope": {
+                                        "type": "string",
+                                        "enum": [
+                                            "occurrence",
+                                            "season",
+                                            "until"
+                                        ]
+                                    },
+                                    "repeat_until": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "field_interval": {
+                                        "type": "integer",
+                                        "default": 1
+                                    },
+                                    "delete_allocation": {
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "confirm_token": {
+                                        "description": "The token returned by cancel-preview for this exact set, INCLUDING delete_allocation",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "What was deleted (bookings and, where cascaded, allocations) and what was spared"
+                    },
+                    "400": {
+                        "description": "Unusable scope or missing confirm_token"
+                    },
+                    "403": {
+                        "description": "Caller may not manage this booking"
+                    },
+                    "404": {
+                        "description": "No such booking"
+                    },
+                    "409": {
+                        "description": "confirm_token is stale, or the installation is in request mode"
+                    }
+                }
+            }
+        },
         "\/bookingfrontend\/user": {
             "get": {
                 "tags": [
@@ -7238,6 +7595,934 @@
                         }
                     }
                 }
+            }
+        },
+        "\/api\/scim\/v2\/ServiceProviderConfig": {
+            "get": {
+                "tags": [
+                    "SCIM 2.0"
+                ],
+                "summary": "Read SCIM provider capabilities",
+                "operationId": "scimServiceProviderConfig",
+                "responses": {
+                    "200": {
+                        "description": "SCIM provider configuration",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid bearer token",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "SCIM is not configured",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "scimBearerAuth": []
+                    }
+                ]
+            }
+        },
+        "\/api\/scim\/v2\/ResourceTypes": {
+            "get": {
+                "tags": [
+                    "SCIM 2.0"
+                ],
+                "summary": "List supported SCIM resource types",
+                "operationId": "scimResourceTypes",
+                "responses": {
+                    "200": {
+                        "description": "Supported User and Group resource types",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimListResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid bearer token",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "scimBearerAuth": []
+                    }
+                ]
+            }
+        },
+        "\/api\/scim\/v2\/Schemas": {
+            "get": {
+                "tags": [
+                    "SCIM 2.0"
+                ],
+                "summary": "List supported SCIM schemas",
+                "operationId": "scimSchemas",
+                "responses": {
+                    "200": {
+                        "description": "User and Group schemas",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimListResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid bearer token",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "scimBearerAuth": []
+                    }
+                ]
+            }
+        },
+        "\/api\/scim\/v2\/Users": {
+            "get": {
+                "tags": [
+                    "SCIM 2.0 Users"
+                ],
+                "summary": "List provisioned users",
+                "operationId": "scimListUsers",
+                "parameters": [
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "description": "Supports userName eq, externalId eq and displayName eq",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "startIndex",
+                        "in": "query",
+                        "description": "1-based page index",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "Page size, capped at 100",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "maximum": 100,
+                            "minimum": 0
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated SCIM User list",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimListResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Unsupported SCIM filter",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid bearer token",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "scimBearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "SCIM 2.0 Users"
+                ],
+                "summary": "Create a provisioned user",
+                "description": "Idempotent by externalId within the configured Entra tenant.",
+                "operationId": "scimCreateUser",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/ScimUser"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User created",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimUser"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "User already exists for externalId",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimUser"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid User resource",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid bearer token",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "User uniqueness conflict",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "scimBearerAuth": []
+                    }
+                ]
+            }
+        },
+        "\/api\/scim\/v2\/Users\/{id}": {
+            "get": {
+                "tags": [
+                    "SCIM 2.0 Users"
+                ],
+                "summary": "Get a provisioned user",
+                "operationId": "scimGetUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Local account ID used as SCIM id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "SCIM User",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimUser"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid bearer token",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "scimBearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "SCIM 2.0 Users"
+                ],
+                "summary": "Replace a provisioned user's SCIM-managed attributes",
+                "operationId": "scimReplaceUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Local account ID used as SCIM id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/ScimUser"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated User",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimUser"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid User resource",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid bearer token",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "User uniqueness conflict",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "scimBearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "SCIM 2.0 Users"
+                ],
+                "summary": "Deactivate a provisioned user",
+                "description": "Soft-deactivates the account; it does not physically delete it.",
+                "operationId": "scimDeleteUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Local account ID used as SCIM id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "User deactivated"
+                    },
+                    "401": {
+                        "description": "Missing or invalid bearer token",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "scimBearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "SCIM 2.0 Users"
+                ],
+                "summary": "Patch a user's SCIM-managed attributes",
+                "description": "Supports Replace for active, userName, name.givenName, name.familyName, displayName and work email, including Entra path-less Replace values.",
+                "operationId": "scimPatchUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Local account ID used as SCIM id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "required": [
+                                    "Operations"
+                                ],
+                                "properties": {
+                                    "schemas": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "Operations": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated User",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimUser"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid PatchOp",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid bearer token",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "User uniqueness conflict",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "scimBearerAuth": []
+                    }
+                ]
+            }
+        },
+        "\/api\/scim\/v2\/Groups": {
+            "get": {
+                "tags": [
+                    "SCIM 2.0 Groups"
+                ],
+                "summary": "List groups mapped to the configured Entra tenant",
+                "operationId": "scimListGroups",
+                "parameters": [
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "description": "Supports displayName eq and externalId eq",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "startIndex",
+                        "in": "query",
+                        "description": "1-based page index",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "description": "Page size, capped at 100",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "maximum": 100,
+                            "minimum": 0
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated SCIM Group list",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimListResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Unsupported SCIM filter",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid bearer token",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "scimBearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "SCIM 2.0 Groups"
+                ],
+                "summary": "Create a provisioned group",
+                "description": "Idempotent by externalId within the configured Entra tenant.",
+                "operationId": "scimCreateGroup",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/ScimGroup"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Group created",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimGroup"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "Group already exists for externalId",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimGroup"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid Group resource",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid bearer token",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Group uniqueness conflict",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "scimBearerAuth": []
+                    }
+                ]
+            }
+        },
+        "\/api\/scim\/v2\/Groups\/{id}": {
+            "get": {
+                "tags": [
+                    "SCIM 2.0 Groups"
+                ],
+                "summary": "Get a provisioned group and its SCIM-mapped members",
+                "operationId": "scimGetGroup",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Local group account ID used as SCIM id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "SCIM Group",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimGroup"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid bearer token",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Group not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "scimBearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "SCIM 2.0 Groups"
+                ],
+                "summary": "Deactivate a provisioned group",
+                "description": "Soft-deactivates the group; it does not physically delete it.",
+                "operationId": "scimDeleteGroup",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Local group account ID used as SCIM id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Group deactivated"
+                    },
+                    "401": {
+                        "description": "Missing or invalid bearer token",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Group not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "scimBearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "SCIM 2.0 Groups"
+                ],
+                "summary": "Rename a group or add\/remove members",
+                "description": "Supports Replace displayName, Add members, and Remove members filtered by a quoted member id.",
+                "operationId": "scimPatchGroup",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Local group account ID used as SCIM id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "required": [
+                                    "Operations"
+                                ],
+                                "properties": {
+                                    "schemas": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "Operations": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated Group and membership",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimGroup"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Unsupported operation or unknown member",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid bearer token",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Group not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ScimError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "scimBearerAuth": []
+                    }
+                ]
             }
         },
         "\/login": {
@@ -12931,6 +14216,10 @@
                     },
                     "organization_shortname": {
                         "type": "string"
+                    },
+                    "can_view_application": {
+                        "description": "Whether the CURRENT viewer may open the linked application, evaluated in\nScheduleEntityService with the same predicate the application page itself\ngates on. Meaningless when application_id is null. Defaults false so any\npath that never runs the check cannot claim a viewability it did not\nevaluate.",
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -13464,6 +14753,10 @@
                     },
                     "participant_limit": {
                         "type": "integer"
+                    },
+                    "cancellation_closes_application": {
+                        "description": "True if cancelling this event would leave its application with no other active association, causing the application to be rejected",
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -14381,6 +15674,192 @@
                 },
                 "type": "object"
             },
+            "ScimError": {
+                "required": [
+                    "schemas",
+                    "status",
+                    "detail"
+                ],
+                "properties": {
+                    "schemas": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "scimType": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "detail": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "ScimUser": {
+                "required": [
+                    "schemas",
+                    "id",
+                    "externalId",
+                    "userName",
+                    "active"
+                ],
+                "properties": {
+                    "schemas": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "externalId": {
+                        "type": "string"
+                    },
+                    "userName": {
+                        "type": "string"
+                    },
+                    "active": {
+                        "type": "boolean"
+                    },
+                    "name": {
+                        "properties": {
+                            "givenName": {
+                                "type": "string"
+                            },
+                            "familyName": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "displayName": {
+                        "type": "string"
+                    },
+                    "emails": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                },
+                                "type": {
+                                    "type": "string"
+                                },
+                                "primary": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "meta": {
+                        "properties": {
+                            "resourceType": {
+                                "type": "string"
+                            },
+                            "location": {
+                                "type": "string",
+                                "format": "uri"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "ScimGroup": {
+                "required": [
+                    "schemas",
+                    "id",
+                    "externalId",
+                    "displayName"
+                ],
+                "properties": {
+                    "schemas": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "id": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "externalId": {
+                        "type": "string"
+                    },
+                    "displayName": {
+                        "type": "string"
+                    },
+                    "members": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                },
+                                "display": {
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "meta": {
+                        "properties": {
+                            "resourceType": {
+                                "type": "string"
+                            },
+                            "location": {
+                                "type": "string",
+                                "format": "uri"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "ScimListResponse": {
+                "required": [
+                    "schemas",
+                    "totalResults",
+                    "startIndex",
+                    "itemsPerPage",
+                    "Resources"
+                ],
+                "properties": {
+                    "schemas": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "totalResults": {
+                        "type": "integer"
+                    },
+                    "startIndex": {
+                        "type": "integer"
+                    },
+                    "itemsPerPage": {
+                        "type": "integer"
+                    },
+                    "Resources": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
             "EntityItem": {
                 "description": "A single entity item (EAV record)",
                 "properties": {
@@ -14930,6 +16409,11 @@
             }
         },
         "securitySchemes": {
+            "scimBearerAuth": {
+                "type": "http",
+                "bearerFormat": "opaque",
+                "scheme": "bearer"
+            },
             "session_auth": {
                 "type": "apiKey",
                 "in": "cookie",
@@ -14941,6 +16425,14 @@
         {
             "name": "Generic Registry",
             "description": "Generic registry operations for all modules (property, booking, rental, admin)"
+        },
+        {
+            "name": "Allocations",
+            "description": "Cancel-preview and scoped cancellation for allocation series"
+        },
+        {
+            "name": "Bookings",
+            "description": "Cancel-preview and scoped cancellation for a booking series"
         },
         {
             "name": "User",
@@ -15033,6 +16525,18 @@
         {
             "name": "Database",
             "description": "Database"
+        },
+        {
+            "name": "SCIM 2.0",
+            "description": "SCIM 2.0"
+        },
+        {
+            "name": "SCIM 2.0 Users",
+            "description": "SCIM 2.0 Users"
+        },
+        {
+            "name": "SCIM 2.0 Groups",
+            "description": "SCIM 2.0 Groups"
         },
         {
             "name": "API",

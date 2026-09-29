@@ -134,6 +134,28 @@ curl --silent --output /dev/null --write-out '%{http_code}\n' \
 
 Hvis serveren mangler `SCIM_BEARER_TOKEN`, svarer den HTTP 503. Dette er tilsiktet fail-closed oppførsel.
 
+### 5.1 Bruk SCIM-endepunktene fra Swagger UI
+
+Swagger UI kan brukes til manuell kontroll og testing av SCIM API-et:
+
+1. Åpne `https://portico.example.no/swagger` og logg inn i PorticoEstate hvis du blir bedt om det. Swagger-siden krever en gyldig PorticoEstate-sesjon.
+2. Velg **Authorize**.
+3. Finn `scimBearerAuth` og lim inn verdien av `SCIM_BEARER_TOKEN`. Skriv normalt bare tokenet, uten `Bearer ` foran; Swagger UI legger til scheme-prefikset.
+4. Lukk autorisasjonsdialogen. Velg serveren merket **Current server** dersom Swagger viser flere servere.
+5. Åpne taggen **SCIM 2.0 Users** eller **SCIM 2.0 Groups**, velg en operasjon og trykk **Try it out**.
+
+UI-sesjonen brukes bare for å åpne Swagger-siden. API-kallene autentiseres med SCIM bearer-tokenet. `SCIM_TENANT_ID` konfigureres på API-serveren og skal ikke sendes som query-parameter eller request-header fra Swagger.
+
+Start med lesekall:
+
+- `GET /api/scim/v2/ServiceProviderConfig`
+- `GET /api/scim/v2/Users`
+- `GET /api/scim/v2/Groups`
+
+Bruk bare testmiljø eller egne testressurser for writes. `POST /Users` og `POST /Groups` oppretter lokale ressurser. `PATCH` endrer attributter eller gruppemedlemskap. `DELETE` deaktiverer brukeren eller gruppen. Sletting gjennom SCIM er soft delete, men endringen påvirker faktisk lokal tilgang og data.
+
+Swagger UI må være tilgjengelig fra samme offentlige host som SCIM. Kontroller servervalget før **Try it out**; ikke send produksjonstoken til en `localhost`, ukjent eller ikke-HTTPS-server. Ikke bruk Swagger på en delt maskin eller la tokenet ligge autorisert i en nettleserøkt etter testing. Velg **Logout/Authorize → Logout** eller lukk økten når du er ferdig.
+
 ## 6. Oppsett i Microsoft Entra ID
 
 Navn i Entra-portalen kan variere noe mellom portalversjoner.
@@ -264,6 +286,16 @@ Kjør testen i testmiljø før Entra kobles til produksjon. I produksjon skal de
 4. Vent på ordinær provisioning eller bruk **Provision on demand**.
 5. Brukeren opprettes lokalt og kan logge inn via OIDC når tilgang er gitt.
 
+Teknisk skjer opprettelsen slik:
+
+1. Entra sender `POST /Users` med `externalId`, `userName`, navn, status og eventuelt e-post.
+2. PorticoEstate oppretter en bruker i `phpgw_accounts`. Databasen tildeler lokal `account_id`, som blir SCIM `id`.
+3. PorticoEstate oppretter en SCIM-rad i `phpgw_mapping` med `ext_user = externalId`, `account_id`, `auth_type = 'scim'` og `location = SCIM_TENANT_ID`.
+4. E-post lagres i `phpgw_accounts_data` som `scim_email`.
+5. Konto og mapping opprettes i samme transaksjon. Gjentatt provisioning med samme `externalId` finner eksisterende konto og skal ikke opprette en ny.
+
+Entra-objektets `objectId` bør mappes til `externalId`. Ikke bruk UPN eller e-post som `externalId`, siden disse kan endres.
+
 ### Endre påloggingsnavn
 
 1. Endre det authoritative attributtet i Entra.
@@ -276,13 +308,46 @@ Kjør testen i testmiljø før Entra kobles til produksjon. I produksjon skal de
 
 Fjern brukeren fra applikasjonens scope eller deaktiver brukeren etter virksomhetens policy. Entra sender `active = false` eller DELETE. PorticoEstate setter kontoen inaktiv, men beholder stabil mapping og historiske referanser.
 
+Ved `active = false` settes `phpgw_accounts.account_status` til `I`. Ved `DELETE /Users/{id}` settes samme status. SCIM-mappingen beholdes slik at ressursen beholder samme `id` og `externalId` ved eventuell reaktivering.
+
 ### Reaktivere bruker
 
 Tildel brukeren på nytt eller aktiver den i Entra. SCIM setter lokal konto aktiv igjen. Den eksisterende `account_id` brukes fortsatt.
 
 ### Administrere gruppe
 
-Tildel gruppen til Enterprise Application. Entra oppretter gruppen og sender medlemsendringer. Add/remove er idempotent. Manuelle lokale medlemskap fjernes ikke med mindre Entra eksplisitt sender remove for medlemmet.
+Entra administrerer bare gruppene som er tildelt Enterprise Application og som har en SCIM-mapping for den konfigurerte tenant-en. `GET /Groups` returnerer ikke alle lokale PorticoEstate-grupper.
+
+Første provisioning av en ny gruppe:
+
+1. Tildel Entra-gruppen til Enterprise Application.
+2. Entra sender `POST /Groups` med gruppens `objectId` som `externalId` og gruppenavnet som `displayName`.
+3. PorticoEstate oppretter en lokal gruppe i `phpgw_accounts` med `account_type = 'g'`. Lokal `account_id` blir SCIM `id`.
+4. PorticoEstate oppretter mapping i `phpgw_mapping` med `ext_user = externalId`, lokal `account_id`, `auth_type = 'scim'` og `location = SCIM_TENANT_ID`.
+
+Medlemskap synkroniseres separat etter at gruppen og brukerne finnes:
+
+1. Entra sender `PATCH /Groups/{groupId}` med `Add` på `members` for nye medlemmer.
+2. PorticoEstate kontrollerer at hvert medlem er en SCIM-mappet bruker i samme tenant.
+3. Koblingen lagres i `phpgw_group_map` som `(group_id, account_id)`, der begge ID-er er lokale `account_id`-verdier.
+4. Når medlemskap fjernes, sender Entra `Remove` for medlemmet, og PorticoEstate sletter den relasjonen.
+
+Gjenta add/remove-operasjoner er trygge: add er idempotent, og remove av en eksisterende relasjon gjentas uten å lage duplikater. Gruppens `GET /Groups/{id}`-respons inkluderer medlemmer som har en aktiv SCIM-mapping i samme tenant.
+
+`phpgw_group_map` skiller ikke mellom SCIM-opprettede og manuelt opprettede medlemskap. Hvis Entra sender `Remove` for en relasjon som også ble lagt inn manuelt, fjernes relasjonen. Ikke bland manuell medlemskapsadministrasjon og Entra-administrasjon for samme SCIM-gruppe uten en avtalt kildeautoritet.
+
+Ved senere rename bruker Entra `PATCH /Groups/{id}` med `Replace displayName`. Lokal `account_lid` oppdateres; gruppens `account_id` og Entra `externalId` endres ikke.
+
+**Eksisterende lokale grupper:** De blir ikke automatisk overtatt eller synlige for Entra. Skal en eksisterende gruppe administreres av Entra, må den kobles kontrollert til Entra-gruppens `objectId` og få en SCIM-mapping før provisioning startes. Ikke opprett mapping ved å gjette på gruppenavn; gruppenavn kan endres og trenger ikke være unike.
+
+Ved `DELETE /Groups/{id}` settes den lokale gruppens `account_status` til `I`; gruppen slettes ikke fysisk, og mappingen beholdes for identitet og historikk. **Begrensning i dagens implementasjon:** `GET /Groups` filtrerer på `phpgw_mapping.status = 'A'`, men ikke på `phpgw_accounts.account_status`. En soft-deaktivert gruppe kan derfor fortsatt dukke opp i gruppelisten. Avklar dette i Entra-testen før produksjonsbruk av gruppesletting. Entra sender medlemskapsendringer via Group PATCH, ikke via brukerens `groups`-attributt.
+
+### Hva Entra kan lese
+
+- `GET /Groups` lister mapping-rader med `status = 'A'`, `auth_type = 'scim'` og `location = SCIM_TENANT_ID`. Dette er mappingstatus, ikke nødvendigvis lokal gruppestatus.
+- `GET /Groups/{id}` returnerer gruppens SCIM-mappede medlemmer.
+- `GET /Users/{id}` returnerer ikke et `groups`-attributt i dagens implementasjon.
+- Denne flyten er Entra → PorticoEstate. Den synkroniserer ikke lokale grupper tilbake til Entra som Entra-grupper.
 
 ## 11. Datamodell
 

@@ -13,6 +13,74 @@ use Throwable;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
+/**
+ * @OA\SecurityScheme(
+ *     securityScheme="scimBearerAuth",
+ *     type="http",
+ *     scheme="bearer",
+ *     bearerFormat="opaque"
+ * )
+ * @OA\Schema(
+ *     schema="ScimError",
+ *     type="object",
+ *     required={"schemas", "status", "detail"},
+ *     @OA\Property(property="schemas", type="array", @OA\Items(type="string")),
+ *     @OA\Property(property="status", type="string"),
+ *     @OA\Property(property="scimType", type="string", nullable=true),
+ *     @OA\Property(property="detail", type="string")
+ * )
+ * @OA\Schema(
+ *     schema="ScimUser",
+ *     type="object",
+ *     required={"schemas", "id", "externalId", "userName", "active"},
+ *     @OA\Property(property="schemas", type="array", @OA\Items(type="string")),
+ *     @OA\Property(property="id", type="string", readOnly=true),
+ *     @OA\Property(property="externalId", type="string"),
+ *     @OA\Property(property="userName", type="string"),
+ *     @OA\Property(property="active", type="boolean"),
+ *     @OA\Property(property="name", type="object",
+ *         @OA\Property(property="givenName", type="string"),
+ *         @OA\Property(property="familyName", type="string")
+ *     ),
+ *     @OA\Property(property="displayName", type="string"),
+ *     @OA\Property(property="emails", type="array", @OA\Items(type="object",
+ *         @OA\Property(property="value", type="string"),
+ *         @OA\Property(property="type", type="string"),
+ *         @OA\Property(property="primary", type="boolean")
+ *     )),
+ *     @OA\Property(property="meta", type="object",
+ *         @OA\Property(property="resourceType", type="string"),
+ *         @OA\Property(property="location", type="string", format="uri")
+ *     )
+ * )
+ * @OA\Schema(
+ *     schema="ScimGroup",
+ *     type="object",
+ *     required={"schemas", "id", "externalId", "displayName"},
+ *     @OA\Property(property="schemas", type="array", @OA\Items(type="string")),
+ *     @OA\Property(property="id", type="string", readOnly=true),
+ *     @OA\Property(property="externalId", type="string"),
+ *     @OA\Property(property="displayName", type="string"),
+ *     @OA\Property(property="members", type="array", @OA\Items(type="object",
+ *         @OA\Property(property="value", type="string"),
+ *         @OA\Property(property="display", type="string")
+ *     )),
+ *     @OA\Property(property="meta", type="object",
+ *         @OA\Property(property="resourceType", type="string"),
+ *         @OA\Property(property="location", type="string", format="uri")
+ *     )
+ * )
+ * @OA\Schema(
+ *     schema="ScimListResponse",
+ *     type="object",
+ *     required={"schemas", "totalResults", "startIndex", "itemsPerPage", "Resources"},
+ *     @OA\Property(property="schemas", type="array", @OA\Items(type="string")),
+ *     @OA\Property(property="totalResults", type="integer"),
+ *     @OA\Property(property="startIndex", type="integer"),
+ *     @OA\Property(property="itemsPerPage", type="integer"),
+ *     @OA\Property(property="Resources", type="array", @OA\Items(type="object"))
+ * )
+ */
 final class ScimController
 {
 	private const USER_SCHEMA = 'urn:ietf:params:scim:schemas:core:2.0:User';
@@ -38,6 +106,18 @@ final class ScimController
 			: null;
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/api/scim/v2/ServiceProviderConfig",
+	 *     operationId="scimServiceProviderConfig",
+	 *     tags={"SCIM 2.0"},
+	 *     summary="Read SCIM provider capabilities",
+	 *     security={{"scimBearerAuth": {}}},
+	 *     @OA\Response(response=200, description="SCIM provider configuration", @OA\JsonContent(type="object")),
+	 *     @OA\Response(response=401, description="Missing or invalid bearer token", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=503, description="SCIM is not configured", @OA\JsonContent(ref="#/components/schemas/ScimError"))
+	 * )
+	 */
 	public function serviceProviderConfig(
 		ServerRequestInterface $request,
 		ResponseInterface $response
@@ -61,6 +141,17 @@ final class ScimController
 		], 200, $response);
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/api/scim/v2/ResourceTypes",
+	 *     operationId="scimResourceTypes",
+	 *     tags={"SCIM 2.0"},
+	 *     summary="List supported SCIM resource types",
+	 *     security={{"scimBearerAuth": {}}},
+	 *     @OA\Response(response=200, description="Supported User and Group resource types", @OA\JsonContent(ref="#/components/schemas/ScimListResponse")),
+	 *     @OA\Response(response=401, description="Missing or invalid bearer token", @OA\JsonContent(ref="#/components/schemas/ScimError"))
+	 * )
+	 */
 	public function resourceTypes(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
 	{
 		return ScimResponse::json([
@@ -87,6 +178,17 @@ final class ScimController
 		], 200, $response);
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/api/scim/v2/Schemas",
+	 *     operationId="scimSchemas",
+	 *     tags={"SCIM 2.0"},
+	 *     summary="List supported SCIM schemas",
+	 *     security={{"scimBearerAuth": {}}},
+	 *     @OA\Response(response=200, description="User and Group schemas", @OA\JsonContent(ref="#/components/schemas/ScimListResponse")),
+	 *     @OA\Response(response=401, description="Missing or invalid bearer token", @OA\JsonContent(ref="#/components/schemas/ScimError"))
+	 * )
+	 */
 	public function schemas(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
 	{
 		return ScimResponse::json([
@@ -101,6 +203,21 @@ final class ScimController
 		], 200, $response);
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/api/scim/v2/Users",
+	 *     operationId="scimListUsers",
+	 *     tags={"SCIM 2.0 Users"},
+	 *     summary="List provisioned users",
+	 *     security={{"scimBearerAuth": {}}},
+	 *     @OA\Parameter(name="filter", in="query", required=false, description="Supports userName eq, externalId eq and displayName eq", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="startIndex", in="query", required=false, description="1-based page index", @OA\Schema(type="integer", minimum=1, default=1)),
+	 *     @OA\Parameter(name="count", in="query", required=false, description="Page size, capped at 100", @OA\Schema(type="integer", minimum=0, maximum=100, default=100)),
+	 *     @OA\Response(response=200, description="Paginated SCIM User list", @OA\JsonContent(ref="#/components/schemas/ScimListResponse")),
+	 *     @OA\Response(response=400, description="Unsupported SCIM filter", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=401, description="Missing or invalid bearer token", @OA\JsonContent(ref="#/components/schemas/ScimError"))
+	 * )
+	 */
 	public function users(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
 	{
 		$query = $request->getQueryParams();
@@ -132,6 +249,19 @@ final class ScimController
 		], 200, $response);
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/api/scim/v2/Users/{id}",
+	 *     operationId="scimGetUser",
+	 *     tags={"SCIM 2.0 Users"},
+	 *     summary="Get a provisioned user",
+	 *     security={{"scimBearerAuth": {}}},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Local account ID used as SCIM id", @OA\Schema(type="integer", minimum=1)),
+	 *     @OA\Response(response=200, description="SCIM User", @OA\JsonContent(ref="#/components/schemas/ScimUser")),
+	 *     @OA\Response(response=401, description="Missing or invalid bearer token", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=404, description="User not found", @OA\JsonContent(ref="#/components/schemas/ScimError"))
+	 * )
+	 */
 	public function user(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
 	{
 		$id = filter_var($args['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
@@ -149,6 +279,22 @@ final class ScimController
 		return ScimResponse::json($this->mapper->user($row, $this->baseUrl($request)), 200, $response);
 	}
 
+	/**
+	 * @OA\Post(
+	 *     path="/api/scim/v2/Users",
+	 *     operationId="scimCreateUser",
+	 *     tags={"SCIM 2.0 Users"},
+	 *     summary="Create a provisioned user",
+	 *     description="Idempotent by externalId within the configured Entra tenant.",
+	 *     security={{"scimBearerAuth": {}}},
+	 *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/ScimUser")),
+	 *     @OA\Response(response=201, description="User created", @OA\JsonContent(ref="#/components/schemas/ScimUser")),
+	 *     @OA\Response(response=200, description="User already exists for externalId", @OA\JsonContent(ref="#/components/schemas/ScimUser")),
+	 *     @OA\Response(response=400, description="Invalid User resource", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=401, description="Missing or invalid bearer token", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=409, description="User uniqueness conflict", @OA\JsonContent(ref="#/components/schemas/ScimError"))
+	 * )
+	 */
 	public function createUser(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
 	{
 		try
@@ -179,6 +325,22 @@ final class ScimController
 		}
 	}
 
+	/**
+	 * @OA\Put(
+	 *     path="/api/scim/v2/Users/{id}",
+	 *     operationId="scimReplaceUser",
+	 *     tags={"SCIM 2.0 Users"},
+	 *     summary="Replace a provisioned user's SCIM-managed attributes",
+	 *     security={{"scimBearerAuth": {}}},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Local account ID used as SCIM id", @OA\Schema(type="integer", minimum=1)),
+	 *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/ScimUser")),
+	 *     @OA\Response(response=200, description="Updated User", @OA\JsonContent(ref="#/components/schemas/ScimUser")),
+	 *     @OA\Response(response=400, description="Invalid User resource", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=401, description="Missing or invalid bearer token", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=404, description="User not found", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=409, description="User uniqueness conflict", @OA\JsonContent(ref="#/components/schemas/ScimError"))
+	 * )
+	 */
 	public function replaceUser(
 		ServerRequestInterface $request,
 		ResponseInterface $response,
@@ -188,6 +350,23 @@ final class ScimController
 		return $this->updateUserResource($request, $response, $args, false);
 	}
 
+	/**
+	 * @OA\Patch(
+	 *     path="/api/scim/v2/Users/{id}",
+	 *     operationId="scimPatchUser",
+	 *     tags={"SCIM 2.0 Users"},
+	 *     summary="Patch a user's SCIM-managed attributes",
+	 *     description="Supports Replace for active, userName, name.givenName, name.familyName, displayName and work email, including Entra path-less Replace values.",
+	 *     security={{"scimBearerAuth": {}}},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Local account ID used as SCIM id", @OA\Schema(type="integer", minimum=1)),
+	 *     @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"Operations"}, @OA\Property(property="schemas", type="array", @OA\Items(type="string")), @OA\Property(property="Operations", type="array", @OA\Items(type="object")))),
+	 *     @OA\Response(response=200, description="Updated User", @OA\JsonContent(ref="#/components/schemas/ScimUser")),
+	 *     @OA\Response(response=400, description="Invalid PatchOp", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=401, description="Missing or invalid bearer token", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=404, description="User not found", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=409, description="User uniqueness conflict", @OA\JsonContent(ref="#/components/schemas/ScimError"))
+	 * )
+	 */
 	public function patchUser(
 		ServerRequestInterface $request,
 		ResponseInterface $response,
@@ -197,6 +376,20 @@ final class ScimController
 		return $this->updateUserResource($request, $response, $args, true);
 	}
 
+	/**
+	 * @OA\Delete(
+	 *     path="/api/scim/v2/Users/{id}",
+	 *     operationId="scimDeleteUser",
+	 *     tags={"SCIM 2.0 Users"},
+	 *     summary="Deactivate a provisioned user",
+	 *     description="Soft-deactivates the account; it does not physically delete it.",
+	 *     security={{"scimBearerAuth": {}}},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Local account ID used as SCIM id", @OA\Schema(type="integer", minimum=1)),
+	 *     @OA\Response(response=204, description="User deactivated"),
+	 *     @OA\Response(response=401, description="Missing or invalid bearer token", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=404, description="User not found", @OA\JsonContent(ref="#/components/schemas/ScimError"))
+	 * )
+	 */
 	public function deleteUser(
 		ServerRequestInterface $request,
 		ResponseInterface $response,
@@ -212,6 +405,21 @@ final class ScimController
 		return $response->withStatus(204);
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/api/scim/v2/Groups",
+	 *     operationId="scimListGroups",
+	 *     tags={"SCIM 2.0 Groups"},
+	 *     summary="List groups mapped to the configured Entra tenant",
+	 *     security={{"scimBearerAuth": {}}},
+	 *     @OA\Parameter(name="filter", in="query", required=false, description="Supports displayName eq and externalId eq", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="startIndex", in="query", required=false, description="1-based page index", @OA\Schema(type="integer", minimum=1, default=1)),
+	 *     @OA\Parameter(name="count", in="query", required=false, description="Page size, capped at 100", @OA\Schema(type="integer", minimum=0, maximum=100, default=100)),
+	 *     @OA\Response(response=200, description="Paginated SCIM Group list", @OA\JsonContent(ref="#/components/schemas/ScimListResponse")),
+	 *     @OA\Response(response=400, description="Unsupported SCIM filter", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=401, description="Missing or invalid bearer token", @OA\JsonContent(ref="#/components/schemas/ScimError"))
+	 * )
+	 */
 	public function groups(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
 	{
 		$query = $request->getQueryParams();
@@ -242,6 +450,19 @@ final class ScimController
 		], 200, $response);
 	}
 
+	/**
+	 * @OA\Get(
+	 *     path="/api/scim/v2/Groups/{id}",
+	 *     operationId="scimGetGroup",
+	 *     tags={"SCIM 2.0 Groups"},
+	 *     summary="Get a provisioned group and its SCIM-mapped members",
+	 *     security={{"scimBearerAuth": {}}},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Local group account ID used as SCIM id", @OA\Schema(type="integer", minimum=1)),
+	 *     @OA\Response(response=200, description="SCIM Group", @OA\JsonContent(ref="#/components/schemas/ScimGroup")),
+	 *     @OA\Response(response=401, description="Missing or invalid bearer token", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=404, description="Group not found", @OA\JsonContent(ref="#/components/schemas/ScimError"))
+	 * )
+	 */
 	public function group(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
 	{
 		$id = $this->resourceId($args);
@@ -258,6 +479,22 @@ final class ScimController
 		);
 	}
 
+	/**
+	 * @OA\Post(
+	 *     path="/api/scim/v2/Groups",
+	 *     operationId="scimCreateGroup",
+	 *     tags={"SCIM 2.0 Groups"},
+	 *     summary="Create a provisioned group",
+	 *     description="Idempotent by externalId within the configured Entra tenant.",
+	 *     security={{"scimBearerAuth": {}}},
+	 *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/ScimGroup")),
+	 *     @OA\Response(response=201, description="Group created", @OA\JsonContent(ref="#/components/schemas/ScimGroup")),
+	 *     @OA\Response(response=200, description="Group already exists for externalId", @OA\JsonContent(ref="#/components/schemas/ScimGroup")),
+	 *     @OA\Response(response=400, description="Invalid Group resource", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=401, description="Missing or invalid bearer token", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=409, description="Group uniqueness conflict", @OA\JsonContent(ref="#/components/schemas/ScimError"))
+	 * )
+	 */
 	public function createGroup(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
 	{
 		try
@@ -288,6 +525,22 @@ final class ScimController
 		}
 	}
 
+	/**
+	 * @OA\Patch(
+	 *     path="/api/scim/v2/Groups/{id}",
+	 *     operationId="scimPatchGroup",
+	 *     tags={"SCIM 2.0 Groups"},
+	 *     summary="Rename a group or add/remove members",
+	 *     description="Supports Replace displayName, Add members, and Remove members filtered by a quoted member id.",
+	 *     security={{"scimBearerAuth": {}}},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Local group account ID used as SCIM id", @OA\Schema(type="integer", minimum=1)),
+	 *     @OA\RequestBody(required=true, @OA\JsonContent(type="object", required={"Operations"}, @OA\Property(property="schemas", type="array", @OA\Items(type="string")), @OA\Property(property="Operations", type="array", @OA\Items(type="object")))),
+	 *     @OA\Response(response=200, description="Updated Group and membership", @OA\JsonContent(ref="#/components/schemas/ScimGroup")),
+	 *     @OA\Response(response=400, description="Unsupported operation or unknown member", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=401, description="Missing or invalid bearer token", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=404, description="Group not found", @OA\JsonContent(ref="#/components/schemas/ScimError"))
+	 * )
+	 */
 	public function patchGroup(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
 	{
 		$id = $this->resourceId($args);
@@ -356,6 +609,20 @@ final class ScimController
 		}
 	}
 
+	/**
+	 * @OA\Delete(
+	 *     path="/api/scim/v2/Groups/{id}",
+	 *     operationId="scimDeleteGroup",
+	 *     tags={"SCIM 2.0 Groups"},
+	 *     summary="Deactivate a provisioned group",
+	 *     description="Soft-deactivates the group; it does not physically delete it.",
+	 *     security={{"scimBearerAuth": {}}},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Local group account ID used as SCIM id", @OA\Schema(type="integer", minimum=1)),
+	 *     @OA\Response(response=204, description="Group deactivated"),
+	 *     @OA\Response(response=401, description="Missing or invalid bearer token", @OA\JsonContent(ref="#/components/schemas/ScimError")),
+	 *     @OA\Response(response=404, description="Group not found", @OA\JsonContent(ref="#/components/schemas/ScimError"))
+	 * )
+	 */
 	public function deleteGroup(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
 	{
 		$id = $this->resourceId($args);

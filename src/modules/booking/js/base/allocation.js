@@ -111,7 +111,53 @@ function populateSelectSeason(building_id, selection)
 		{name: 'data-validation-error-msg', value: 'Please select a season'},
 		{name: 'class', value: 'pure-u-1-4'}
 	];
-	populateSelect(url, selection, container, attr);
+
+	container.html("");
+	var select = document.createElement('select');
+	$.each(attr, function (i, v)
+	{
+		select.setAttribute(v['name'], v['value']);
+	});
+	container.append(select);
+
+	var emptyOption = document.createElement('option');
+	emptyOption.setAttribute('value', '');
+	emptyOption.text = '-----';
+	select.appendChild(emptyOption);
+
+	$.get(url, function (r)
+	{
+		$.each(r.data, function (index, value)
+		{
+			var option = document.createElement('option');
+			option.text = seasonOptionLabel(value);
+			option.setAttribute('value', value.id);
+			if (value.id == selection)
+			{
+				option.selected = true;
+			}
+			select.appendChild(option);
+		});
+	});
+}
+
+// from_/to_ arrive already Norwegian-formatted by uiseason::query() (pretty_timestamp),
+// the same formatting used for field_from/field_to on this form.
+function seasonOptionLabel(season)
+{
+	if (season.from_ && season.to_)
+	{
+		return season.name + ' (' + season.from_ + ' - ' + season.to_ + ')';
+	}
+	if (season.from_)
+	{
+		return season.name + ' (' + season.from_ + ' - ?)';
+	}
+	if (season.to_)
+	{
+		return season.name + ' (? - ' + season.to_ + ')';
+	}
+	return season.name;
 }
 function populateTableChkResources(building_id, selection)
 {

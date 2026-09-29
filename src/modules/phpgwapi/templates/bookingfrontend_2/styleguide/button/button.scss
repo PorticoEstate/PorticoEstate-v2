@@ -1,0 +1,237 @@
+:root {
+  --pe-btn-text-color: #{$purple};
+  --pe-btn-background-color: #{$white};
+  --pe-btn-border-color: #{$purple};
+  --pe-btn-hover-text-color: #{$white};
+  --pe-btn-hover-background-color: #{$purple};
+  --pe-btn-hover-border-color: #{$purple};
+  --pe-btn-focus-shadow: #{$box-focus-shadow};
+}
+
+
+a.pe-btn {
+  text-decoration: none;
+}
+
+.pe-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.875rem 0.625rem;
+  border: 2px solid var(--pe-btn-border-color);
+  border-radius: $rounded-mini;
+  @include applyFontProperties('label');
+  font-weight: $text-bold;
+  background: var(--pe-btn-background-color);
+  color: var(--pe-btn-text-color);
+
+
+  &:first-child:active:focus-visible {
+    box-shadow: var(--pe-btn-focus-shadow);
+
+  }
+
+  &:hover,
+  &:active {
+    border-color: var(--pe-btn-hover-border-color);
+    background: var(--pe-btn-hover-background-color);
+    color: var(--pe-btn-hover-text-color);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    border-color: var(--pe-btn-border-color);
+    box-shadow: var(--pe-btn-focus-shadow);
+  }
+
+  &--transparent {
+    --pe-btn-text-color: #{$black};
+    --pe-btn-hover-text-color: #{$purple};
+    --pe-btn-background-color: #{transparent};
+    --pe-btn-border-color: #{transparent};
+    --pe-btn-hover-border-color: #{transparent};
+    --pe-btn-hover-background-color: #{transparent};
+
+
+    padding: 0.5rem;
+    min-width: 2.5rem;
+  }
+
+  &-text {
+    text-decoration: none;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &.underline {
+      text-decoration: underline;
+    }
+
+    &-primary {
+      --bs-btn-close-color: #{$purple};
+      --pe-btn-text-color: #{$purple};
+      --pe-btn-hover-text-color: #{$blue};
+
+    }
+
+    &-secondary {
+      --pe-btn-text-color: #{$blue};
+      --pe-btn-hover-text-color: #{$purple};
+    }
+
+    &-white {
+      --pe-btn-text-color: #{$white};
+    }
+
+  }
+
+  &-primary {
+    --pe-btn-text-color: #{$white};
+    --pe-btn-background-color: #{$purple};
+    --pe-btn-hover-text-color: #{$purple};
+    --pe-btn-hover-background-color: #{$white};
+
+
+    &:focus-visible {
+      background: $purple;
+      color: $white;
+    }
+
+  }
+
+  &-secondary {
+    --pe-btn-text-color: #{$purple};
+    --pe-btn-background-color: #{$white};
+    --pe-btn-hover-text-color: #{$white};
+    --pe-btn-hover-background-color: #{$purple};
+
+
+    &:focus-visible {
+      border-color: $purple;
+      background: $white;
+      color: $purple;
+    }
+  }
+
+  i.fa-solid {
+    font-size: 1.5rem;
+  }
+
+  &-colour {
+    &-secondary {
+      --pe-btn-text-color: #{$blue};
+      --pe-btn-background-color: #{$white};
+      --pe-btn-border-color: #{$blue};
+      --pe-btn-hover-text-color: #{$white};
+      --pe-btn-hover-background-color: #{$blue};
+      --pe-btn-hover-border-color: #{$blue};
+
+      &:focus-visible {
+        border-color: $blue;
+        background: $white;
+        color: $blue;
+      }
+    }
+  }
+
+  &--small {
+    font-size: 0.875rem;
+    padding: 0.625rem 0.5rem;
+  }
+
+  &--large {
+    padding: 1.25rem 0.75rem;
+    @include applyFontSize('subtitle')
+  }
+
+  &--circle {
+    border-radius: $rounded-large;
+    padding: 1rem;
+  }
+
+  &:disabled,
+  &[disabled] {
+    background: $grey-light;
+    color: $grey;
+    border-color: $grey;
+    opacity: 1;
+    pointer-events: none;
+  }
+
+
+
+  &--small-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+
+    i {
+      display: flex; /* Ensure the icon itself is also flex */
+      align-items: center; /* Center vertically */
+      justify-content: center; /* Center horizontally */
+      width: 100%; /* Make the icon fill the button to center it properly */
+      &::before {
+        display: inline-block; /* Allows for text-centering within the flex item */
+        text-align: center;
+        width: 100%; /* Ensures the pseudo-element covers the flex item's area */
+      }
+
+    }
+
+    --pe-btn-hover-text-color: #{$purple};
+    --pe-btn-hover-background-color: #{$purple-16};
+    &:hover,
+    &:active {
+      fill: $purple;
+    }
+
+    &:focus-visible {
+      border-color: $purple;
+      background: $white;
+      color: $purple;
+      fill: $purple;
+    }
+
+    &.pe-btn-secondary {
+      --pe-btn-text-color: #{$black};
+      --pe-btn-background-color: #{$purple-16};
+      --pe-btn-hover-text-color: #{$white};
+      --pe-btn-hover-background-color: #{$purple};
+      fill: $black;
+
+      &:hover,
+      &:active {
+        fill: $white;
+      }
+
+      &:focus-visible {
+        border-color: $purple;
+        background: $white;
+        color: $purple;
+        fill: $purple;
+      }
+    }
+
+    //&:hover {
+    //  background-color: $color-y; /* Color Y on hover */
+    //}
+  }
+  &-text {
+    @include text-styles;
+  }
+
+}
+

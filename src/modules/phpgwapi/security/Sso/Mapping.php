@@ -88,7 +88,13 @@ abstract class Mapping_
 		$location = $this->location;
 		$auth_type = $this->auth_type;
 
-		$stmt = $this->db->prepare("SELECT * FROM phpgw_mapping WHERE ext_user = :ext_user AND status = 'A' AND location = :location AND auth_type = :auth_type");
+		$stmt = $this->db->prepare(
+			"SELECT COALESCE(a.account_lid, m.account_lid) AS account_lid"
+			. " FROM phpgw_mapping m"
+			. " LEFT JOIN phpgw_accounts a ON a.account_id = m.account_id"
+			. " WHERE m.ext_user = :ext_user AND m.status = 'A'"
+			. " AND m.location = :location AND m.auth_type = :auth_type"
+		);
 		$stmt->execute([':ext_user' => $ext_user, ':location' => $location, ':auth_type' => $auth_type]);
 
 		$row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -176,19 +182,22 @@ abstract class Mapping_
 
 		$location = &$this->location;
 		$auth_type = &$this->auth_type;
+		$account_stmt = $this->db->prepare('SELECT account_id FROM phpgw_accounts WHERE account_lid = :account_lid');
+		$account_stmt->execute([':account_lid' => $account_lid]);
+		$account_id = $account_stmt->fetchColumn();
 
 		$stmt = $this->db->prepare("SELECT account_lid FROM phpgw_mapping WHERE account_lid = :account_lid AND ext_user = :ext_user AND location = :location AND auth_type = :auth_type");
 		$stmt->execute([':account_lid' => $account_lid, ':ext_user' => $ext_user, ':location' => $location, ':auth_type' => $auth_type]);
 
 		if ($stmt->fetch())
 		{
-			$stmt = $this->db->prepare("UPDATE phpgw_mapping SET status = 'A' WHERE account_lid = :account_lid AND ext_user = :ext_user AND location = :location AND auth_type = :auth_type");
-			$stmt->execute([':account_lid' => $account_lid, ':ext_user' => $ext_user, ':location' => $location, ':auth_type' => $auth_type]);
+			$stmt = $this->db->prepare("UPDATE phpgw_mapping SET status = 'A', account_id = :account_id WHERE account_lid = :account_lid AND ext_user = :ext_user AND location = :location AND auth_type = :auth_type");
+			$stmt->execute([':account_id' => $account_id ?: null, ':account_lid' => $account_lid, ':ext_user' => $ext_user, ':location' => $location, ':auth_type' => $auth_type]);
 		}
 		else
 		{
-			$stmt = $this->db->prepare("INSERT INTO phpgw_mapping (ext_user, account_lid, status, location, auth_type) VALUES (:ext_user, :account_lid, 'A', :location, :auth_type)");
-			$stmt->execute([':ext_user' => $ext_user, ':account_lid' => $account_lid, ':location' => $location, ':auth_type' => $auth_type]);
+			$stmt = $this->db->prepare("INSERT INTO phpgw_mapping (ext_user, account_lid, account_id, status, location, auth_type) VALUES (:ext_user, :account_lid, :account_id, 'A', :location, :auth_type)");
+			$stmt->execute([':ext_user' => $ext_user, ':account_lid' => $account_lid, ':account_id' => $account_id ?: null, ':location' => $location, ':auth_type' => $auth_type]);
 		}
 	}
 
@@ -206,7 +215,12 @@ abstract class Mapping_
 		$location = &$this->location;
 		$auth_type = &$this->auth_type;
 
-		$stmt = $this->db->prepare("SELECT account_lid FROM phpgw_mapping WHERE ext_user = :ext_user AND location = :location AND auth_type = :auth_type");
+		$stmt = $this->db->prepare(
+			"SELECT COALESCE(a.account_lid, m.account_lid) AS account_lid"
+			. " FROM phpgw_mapping m"
+			. " LEFT JOIN phpgw_accounts a ON a.account_id = m.account_id"
+			. " WHERE m.ext_user = :ext_user AND m.location = :location AND m.auth_type = :auth_type"
+		);
 		$stmt->execute([':ext_user' => $ext_user, ':location' => $location, ':auth_type' => $auth_type]);
 
 		$row = $stmt->fetch(PDO::FETCH_ASSOC);

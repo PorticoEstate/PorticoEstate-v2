@@ -53,7 +53,7 @@ class booking_async_task_clean_up_old_posts extends booking_async_task
 
 			$value_set = array(
 				'application_id' => $id,
-				'time'			 => date('Y-m-d H:i:s'),
+				'time'			 => gmdate('Y-m-d H:i:s'),
 				'author'		 => 'Cronjob',
 				'comment'		 => 'Status changed to ACCEPTED by cronjob',
 				'type'			 => 'comment',
@@ -90,7 +90,7 @@ class booking_async_task_clean_up_old_posts extends booking_async_task
 
 			$value_set = array(
 				'application_id' => $id,
-				'time'			 => date('Y-m-d H:i:s'),
+				'time'			 => gmdate('Y-m-d H:i:s'),
 				'author'		 => 'Cronjob',
 				'comment'		 => 'Status changed to REJECTED by cronjob',
 				'type'			 => 'comment',

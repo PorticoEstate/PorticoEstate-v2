@@ -1121,3 +1121,6 @@ event_cancellation_closes_application	bookingfrontend	nn	Å avbestille dette arr
 applications_offline_banner	bookingfrontend	nn	Mista tilkopling til tenaren. Viser sist henta søknadar.
 refresh_unavailable_offline	bookingfrontend	nn	Kan ikkje oppdatere utan tilkopling
 repeating_direct_booking_warning	bookingfrontend	nn	Denne ressursen har direkte booking. Når du vel gjentakande vil søknaden bli sendt til saksbehandling i stedet for å bli godkjent automatisk.
+withdraw_timeslot	bookingfrontend	nn	Trekk tilbake
+confirm_withdraw_timeslot_description	bookingfrontend	nn	Er du sikker på at du vil trekkje tilbake denne enkelttimen? Saksbehandlar vil bli varsla om trekkinga.
+withdraw_timeslot_comment_label	bookingfrontend	nn	Kommentar til saksbehandlar (valfritt)

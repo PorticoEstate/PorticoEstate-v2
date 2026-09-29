@@ -134,6 +134,28 @@ curl --silent --output /dev/null --write-out '%{http_code}\n' \
 
 Hvis serveren mangler `SCIM_BEARER_TOKEN`, svarer den HTTP 503. Dette er tilsiktet fail-closed oppførsel.
 
+### 5.1 Bruk SCIM-endepunktene fra Swagger UI
+
+Swagger UI kan brukes til manuell kontroll og testing av SCIM API-et:
+
+1. Åpne `https://portico.example.no/swagger` og logg inn i PorticoEstate hvis du blir bedt om det. Swagger-siden krever en gyldig PorticoEstate-sesjon.
+2. Velg **Authorize**.
+3. Finn `scimBearerAuth` og lim inn verdien av `SCIM_BEARER_TOKEN`. Skriv normalt bare tokenet, uten `Bearer ` foran; Swagger UI legger til scheme-prefikset.
+4. Lukk autorisasjonsdialogen. Velg serveren merket **Current server** dersom Swagger viser flere servere.
+5. Åpne taggen **SCIM 2.0 Users** eller **SCIM 2.0 Groups**, velg en operasjon og trykk **Try it out**.
+
+UI-sesjonen brukes bare for å åpne Swagger-siden. API-kallene autentiseres med SCIM bearer-tokenet. `SCIM_TENANT_ID` konfigureres på API-serveren og skal ikke sendes som query-parameter eller request-header fra Swagger.
+
+Start med lesekall:
+
+- `GET /api/scim/v2/ServiceProviderConfig`
+- `GET /api/scim/v2/Users`
+- `GET /api/scim/v2/Groups`
+
+Bruk bare testmiljø eller egne testressurser for writes. `POST /Users` og `POST /Groups` oppretter lokale ressurser. `PATCH` endrer attributter eller gruppemedlemskap. `DELETE` deaktiverer brukeren eller gruppen. Sletting gjennom SCIM er soft delete, men endringen påvirker faktisk lokal tilgang og data.
+
+Swagger UI må være tilgjengelig fra samme offentlige host som SCIM. Kontroller servervalget før **Try it out**; ikke send produksjonstoken til en `localhost`, ukjent eller ikke-HTTPS-server. Ikke bruk Swagger på en delt maskin eller la tokenet ligge autorisert i en nettleserøkt etter testing. Velg **Logout/Authorize → Logout** eller lukk økten når du er ferdig.
+
 ## 6. Oppsett i Microsoft Entra ID
 
 Navn i Entra-portalen kan variere noe mellom portalversjoner.
@@ -294,7 +316,7 @@ Tildel brukeren på nytt eller aktiver den i Entra. SCIM setter lokal konto akti
 
 ### Administrere gruppe
 
-Entra administrerer bare gruppene som er tildelt Enterprise Application og som har en SCIM-mapping for den konfigurerte tenant-en. `GET /Groups` returnerer ikke alle lokale phpGroupWare-grupper.
+Entra administrerer bare gruppene som er tildelt Enterprise Application og som har en SCIM-mapping for den konfigurerte tenant-en. `GET /Groups` returnerer ikke alle lokale PorticoEstate-grupper.
 
 Første provisioning av en ny gruppe:
 

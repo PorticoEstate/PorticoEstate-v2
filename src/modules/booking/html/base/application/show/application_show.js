@@ -918,13 +918,15 @@
 				'</ul></div></div>';
 		}
 
-		// The <td>s of one date row. The create split stays until the row has an
-		// ACTIVE element of its own: delete only deactivates, so an inactive
-		// element no longer holds the slot and the officer can create again.
+		// The <td>s of one date row. A row counts as created once it has an element
+		// of its own, active or not: delete only deactivates, and accepting the
+		// application reactivates every element linked to it, so a replacement
+		// created next to an inactive element would end up double-booked. The
+		// inactive element stays inline with its activate button instead.
 		function dateRowCells(d) {
 			var elements = assocByRow[rowKey(d.application_id, d.from_)] || [];
 			elements.forEach(function (a) { placedAssocs[assocRef(a)] = true; });
-			var hasAssoc = elements.some(isAssocActive);
+			var hasAssoc = elements.length > 0;
 			var collisionTag;
 			if (hasAssoc) {
 				collisionTag = '<span class="booking-tag ds-tag" data-color="neutral">' + lang('dateCreated') + '</span>';
@@ -948,8 +950,8 @@
 				: rawAgegroups || [];
 			dateParamsMap[d.id] = buildDateParams(app, d, flatAgegroups, data.audience || {});
 
-			// Action: the row's own elements inline, then the create split while none
-			// of them is active.
+			// Action: the row's own elements inline, or the create split when it has
+			// none.
 			var actionHtml = elements.map(function (a) { return assocItemHtml(a, isCO); }).join('');
 			if (!hasAssoc) actionHtml += createSplitHtml(d);
 

@@ -117,27 +117,69 @@
 		return a.type + ':' + a.id;
 	}
 
-	// One linked element (allocation/booking/event) inline: type, id, cost,
-	// active, an edit link (same target as the legacy associations list,
-	// class.uiapplication.inc.php) and, for the case officer, the delete/activate
-	// button the delegated handlers in renderDetails act on.
-	function assocItemHtml(a, isCO) {
-		var active = isAssocActive(a);
-		var costVal = (a.cost != null && a.cost !== '' && Number(a.cost) !== 0) ? Number(a.cost).toFixed(2) : '—';
-		var editUrl = '/?menuaction=booking.ui' + encodeURIComponent(a.type) + '.edit&id=' + encodeURIComponent(a.id);
-		var html = '<div class="app-show__tags-row">' +
-			'<span class="booking-tag ds-tag" data-color="neutral">' + esc(enumLabel(a.type)) + ' #' + esc(a.id) + '</span>' +
-			'<span>' + esc(lang('cost')) + ': ' + costVal + '</span>' +
-			'<span>' + esc(lang('active')) + ': ' + esc(active ? lang('yes') : lang('no')) + '</span>' +
-			'<a class="booking-button ds-button" data-variant="tertiary" data-color="neutral" data-size="sm" href="' + esc(editUrl) + '">' + esc(lang('edit')) + '</a>';
-		if (isCO) {
-			if (active) {
-				html += '<button type="button" class="booking-button ds-button app-show__assoc-delete" data-booking-action="delete-association" data-variant="primary" data-color="danger" data-size="sm" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' + lang('delete') + '</button>';
-			} else {
-				html += '<button type="button" class="booking-button ds-button app-show__assoc-activate" data-booking-action="activate-association" data-variant="secondary" data-color="success" data-size="sm" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' + lang('activate') + '</button>';
+	// Same target as the legacy associations list (class.uiapplication.inc.php).
+	function assocEditUrl(a) {
+		return '/?menuaction=booking.ui' + encodeURIComponent(a.type) + '.edit&id=' + encodeURIComponent(a.id);
+	}
+
+	// Status cell: each linked element (allocation/booking/event) as a tag linking
+	// to its edit page, one line per element. The cost only when there is one, and
+	// "Inaktiv" only for a deactivated element. The link sits inside the tag: an
+	// <a class="ds-tag"> loses the tag background to the unlayered a-rule in
+	// pure-min.css.
+	function assocTagsHtml(elements) {
+		return elements.map(function (a) {
+			var html = '<div class="app-show__tags-row">' +
+				'<span class="booking-tag ds-tag" data-color="neutral"><a class="booking-link ds-link" href="' + esc(assocEditUrl(a)) + '">' + esc(enumLabel(a.type)) + ' #' + esc(a.id) + '</a></span>';
+			if (a.cost != null && a.cost !== '' && Number(a.cost) !== 0) {
+				html += '<span class="booking-tag ds-tag" data-color="neutral">' + esc(lang('cost')) + ': ' + Number(a.cost).toFixed(2) + '</span>';
 			}
+			if (!isAssocActive(a)) {
+				html += '<span class="booking-tag ds-tag" data-color="warning">' + esc(lang('inactive')) + '</span>';
+			}
+			return html + '</div>';
+		}).join('');
+	}
+
+	// Handling cell for a row's elements, built like the create split (createSplitHtml):
+	// "Endre" plus a caret menu holding the delete/activate item the delegated
+	// handlers in renderDetails act on. Only the case officer gets that menu; anyone
+	// else gets the plain edit button. Several elements share one menu button with
+	// an entry per element. The menu carries data-booking-role="dropdown" so the
+	// toolbar's placePopover anchors it under its button: a bare ds-dropdown sits
+	// at the top of the document, out of view once the page is scrolled. Popover
+	// ids only need to be unique on the page, and a counter stays unique when a
+	// date row is re-rendered in place.
+	var assocMenuSeq = 0;
+	function assocActionsHtml(elements, isCO) {
+		if (!elements.length) return '';
+		var menuId = 'assocmenu-' + (++assocMenuSeq);
+		// Icons as in the Handlinger menu: this page colours a menu item's icon, not
+		// its text, by data-color.
+		function toggleItem(a, suffix) {
+			var active = isAssocActive(a);
+			return '<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="' + (active ? 'delete-association' : 'activate-association') + '"' +
+				' data-color="' + (active ? 'danger' : 'success') + '" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' +
+				(active ? ICONS.xCircle : ICONS.checkCircle) + '<span>' + esc(lang(active ? 'delete' : 'activate') + suffix) + '</span></button></li>';
 		}
-		return html + '</div>';
+		function menu(listsHtml) {
+			return '<div class="booking-dropdown ds-dropdown app-show__menu app-show__split-menu" data-booking-role="dropdown" popover id="' + menuId + '">' + listsHtml + '</div>';
+		}
+		if (elements.length === 1) {
+			var a = elements[0];
+			var edit = '<a class="booking-button ds-button" data-variant="secondary" data-color="accent" data-size="sm" href="' + esc(assocEditUrl(a)) + '">' + esc(lang('edit')) + '</a>';
+			if (!isCO) return edit;
+			return '<div class="app-show__split">' + edit +
+				'<button type="button" class="booking-button ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '" aria-label="' + esc(lang('actions')) + '">' + ICONS.chevron + '</button>' +
+				menu('<ul>' + toggleItem(a, '') + '</ul>') + '</div>';
+		}
+		var lists = elements.map(function (a) {
+			var suffix = ' #' + a.id;
+			return '<ul><li><a class="booking-dropdown__item ds-dropdown__item" href="' + esc(assocEditUrl(a)) + '">' + ICONS.edit + '<span>' + esc(lang('edit') + suffix) + '</span></a></li>' +
+				(isCO ? toggleItem(a, suffix) : '') + '</ul>';
+		});
+		return '<button type="button" class="booking-button ds-button app-show__menu-trigger" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '">' + esc(lang('edit')) + ICONS.chevron + '</button>' +
+			menu(lists.join('<hr class="app-show__menu-sep">'));
 	}
 
 	// Elements that neither a date row nor the recurring table shows. placed holds
@@ -157,11 +199,11 @@
 		}
 		var html = '<table class="booking-table ds-table" data-size="sm" data-zebra><thead><tr>';
 		if (isCombined) html += '<th>' + lang('application') + '</th>';
-		html += '<th>' + lang('from') + '</th><th>' + lang('to') + '</th><th>' + lang('handling') + '</th></tr></thead><tbody>';
+		html += '<th>' + lang('from') + '</th><th>' + lang('to') + '</th><th>' + lang('status') + '</th><th>' + lang('handling') + '</th></tr></thead><tbody>';
 		others.forEach(function (a) {
 			html += '<tr>';
 			if (isCombined) html += '<td>#' + esc(a.application_id) + '</td>';
-			html += '<td>' + fmtDate(a.from_) + '</td><td>' + fmtDate(a.to_) + '</td><td>' + assocItemHtml(a, isCO) + '</td></tr>';
+			html += '<td>' + fmtDate(a.from_) + '</td><td>' + fmtDate(a.to_) + '</td><td>' + assocTagsHtml([a]) + '</td><td>' + assocActionsHtml([a], isCO) + '</td></tr>';
 		});
 		html += '</tbody></table>';
 		el.innerHTML = section(lang('otherAssociatedItems'), html, { icon: ICONS.link });
@@ -929,7 +971,7 @@
 			var hasAssoc = elements.length > 0;
 			var collisionTag;
 			if (hasAssoc) {
-				collisionTag = '<span class="booking-tag ds-tag" data-color="neutral">' + lang('dateCreated') + '</span>';
+				collisionTag = assocTagsHtml(elements);
 			} else if (d.collision) {
 				collisionTag = '<span class="booking-tag ds-tag" data-color="danger">' + lang('collision') + '</span>';
 			} else {
@@ -950,10 +992,8 @@
 				: rawAgegroups || [];
 			dateParamsMap[d.id] = buildDateParams(app, d, flatAgegroups, data.audience || {});
 
-			// Action: the row's own elements inline, or the create split when it has
-			// none.
-			var actionHtml = elements.map(function (a) { return assocItemHtml(a, isCO); }).join('');
-			if (!hasAssoc) actionHtml += createSplitHtml(d);
+			// Action: the row's own elements, or the create split when it has none.
+			var actionHtml = hasAssoc ? assocActionsHtml(elements, isCO) : createSplitHtml(d);
 
 			var cells = '';
 			if (isCombined) cells += '<td>#' + esc(d.application_id) + '</td>';
@@ -1550,8 +1590,8 @@
 					html += '<td>' + esc(a.day_name) + ' ' + esc(a.date_display) + '</td>';
 					html += '<td>' + esc(a.time_display) + '</td>';
 					html += '<td>&mdash;</td>';
-					html += '<td><span class="booking-tag ds-tag" data-color="warning">' + esc(lang('outsideSeries')) + '</span></td>';
-					html += '<td>' + assocItemHtml(a, isCO) + '</td>';
+					html += '<td><span class="booking-tag ds-tag" data-color="warning">' + esc(lang('outsideSeries')) + '</span>' + assocTagsHtml([a]) + '</td>';
+					html += '<td>' + assocActionsHtml([a], isCO) + '</td>';
 					html += '</tr>';
 					return;
 				}
@@ -1562,8 +1602,12 @@
 				html += '<td>' + esc(item.time_display) + '</td>';
 				html += '<td>' + esc(item.resource_display) + '</td>';
 
-				// Status column
-				if (item.exists) {
+				// Status column. The elements on this exact occurrence stand in for
+				// "Opprettet"; a collision or "not yet created" keeps its tag above them.
+				var elements = item.associations || [];
+				if (item.exists && elements.length) {
+					html += '<td>' + assocTagsHtml(elements) + '</td>';
+				} else if (item.exists) {
 					html += '<td><span class="booking-tag ds-tag" data-color="success">' + esc(lang('dateCreated')).replace(/^- | -$/g, '') + '</span></td>';
 				} else if (item.has_conflict) {
 					var conflictText = '';
@@ -1575,23 +1619,20 @@
 					if (conflictText) {
 						html += ' <span class="app-show__conflict-text">' + esc(conflictText) + '</span>';
 					}
-					html += '</td>';
+					html += assocTagsHtml(elements) + '</td>';
 				} else {
-					html += '<td><span class="booking-tag ds-tag" data-color="neutral">' + esc(lang('notYetCreated')) + '</span></td>';
+					html += '<td><span class="booking-tag ds-tag" data-color="neutral">' + esc(lang('notYetCreated')) + '</span>' + assocTagsHtml(elements) + '</td>';
 				}
 
 				// Action column: the elements on this exact occurrence, then the
 				// schedule link for a conflict.
-				var elements = item.associations || [];
-				var actionHtml = elements.map(function (a) {
-					placed[assocRef(a)] = true;
-					return assocItemHtml(a, isCO);
-				}).join('');
+				elements.forEach(function (a) { placed[assocRef(a)] = true; });
+				var actionHtml = assocActionsHtml(elements, isCO);
 				if (item.exists && !elements.length) {
 					// A preview without associations: link the allocation as before.
 					actionHtml = '<a class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-size="sm" href="/?menuaction=booking.uiallocation.edit&id=' + esc(item.allocation_id) + '">' + esc(lang('show')) + '</a>';
 				} else if (!item.exists && item.has_conflict) {
-					actionHtml += '<a class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-size="sm" href="' + esc(item.schedule_link) + '" target="_blank">' + esc(lang('schedule')) + '</a>';
+					actionHtml += (actionHtml ? ' ' : '') + '<a class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-size="sm" href="' + esc(item.schedule_link) + '" target="_blank">' + esc(lang('schedule')) + '</a>';
 				}
 				html += '<td>' + (actionHtml || '&mdash;') + '</td>';
 

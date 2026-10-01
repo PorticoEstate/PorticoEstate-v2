@@ -3213,6 +3213,14 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 			$check_customer_identifier = $this->get_customer_identifier_value_for($reservation) . '::' . $customer_number;
 		}
 
+		/**
+		 * Skille mellom hoved-organisasjonen og betalende underliggende organisasjon
+		 */
+		if (!empty($this->config_data['differentiate_org_payer']) && !empty($organization_number))
+		{
+			$check_customer_identifier = $payer_organization_number . '::' . $organization_number;
+		}
+
 		if (strlen($this->get_customer_identifier_value_for($reservation)) > 9)
 		{
 			$name = $contact_name;

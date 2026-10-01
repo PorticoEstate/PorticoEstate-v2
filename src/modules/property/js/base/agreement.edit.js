@@ -5,7 +5,7 @@
  */
 /* global JqueryPortico, oTable0, oTable1 */
 
-var sUrl_agreement = phpGWLink('index.php', {'menuaction': 'property.uiagreement.edit_data'}, true);
+var sUrl_agreement = phpGWLink('index.php', { 'menuaction': 'property.uiagreement.edit_data' }, true);
 
 onActionsClick_notify = function (type, ids, url)
 {
@@ -14,7 +14,7 @@ onActionsClick_notify = function (type, ids, url)
 		type: 'POST',
 		dataType: 'json',
 		url: sUrl_agreement,
-		data: {ids: ids, type: type},
+		data: { ids: ids, type: type },
 		success: function (data)
 		{
 
@@ -39,7 +39,7 @@ onAddClick_Alarm = function (type)
 			type: 'POST',
 			dataType: 'json',
 			url: sUrl_agreement,
-			data: {day: day, hour: hour, minute: minute, user_list: user, type: type, id: id},
+			data: { day: day, hour: hour, minute: minute, user_list: user, type: type, id: id },
 			success: function (data)
 			{
 				JqueryPortico.updateinlineTableHelper('datatable-container_0');
@@ -59,8 +59,7 @@ onUpdateClickIndex = function (type)
 	var oIndex = $('#new_index').val();
 	var id = $('#agreementid').val();
 
-	var api = $('#datatable-container_1').dataTable().api();
-	var selected = api.rows({selected: true}).data();
+	var selected = oTable1.rows('.selected').data();
 	var numSelected = selected.length;
 
 	if (numSelected == '0')
@@ -99,13 +98,13 @@ onUpdateClickIndex = function (type)
 		icoun[aData['id']] = aData['index_count'];
 	}
 
-	var sUrl_index = phpGWLink('index.php', {'menuaction': 'property.uiagreement.edit_data'}, true);
+	var sUrl_index = phpGWLink('index.php', { 'menuaction': 'property.uiagreement.edit_data' }, true);
 
 	$.ajax({
 		type: 'POST',
 		dataType: 'json',
 		url: sUrl_index,
-		data: {id: id, ids: ids, mcost: mcost, wcost: wcost, tcost: tcost, icoun: icoun, type: type, date: oDate, index: oIndex},
+		data: { id: id, ids: ids, mcost: mcost, wcost: wcost, tcost: tcost, icoun: icoun, type: type, date: oDate, index: oIndex },
 		success: function (data)
 		{
 			var obj = JSON.parse(data);
@@ -162,7 +161,7 @@ onUpdateClickItems = function (type)
 		type: 'POST',
 		dataType: 'json',
 		url: sUrl_agreement,
-		data: {id: id, ids: ids, mcost: mcost, wcost: wcost, tcost: tcost, icoun: icoun, type: type, date: oDate, index: oIndex},
+		data: { id: id, ids: ids, mcost: mcost, wcost: wcost, tcost: tcost, icoun: icoun, type: type, date: oDate, index: oIndex },
 		success: function (data)
 		{
 			var obj = JSON.parse(data);
@@ -186,12 +185,12 @@ onActionsClickDeleteLastIndex = function (type)
 		type: 'POST',
 		dataType: 'json',
 		url: sUrl_agreement,
-		data: {ids: oSelid, type: type, id: id},
+		data: { ids: oSelid, type: type, id: id },
 		success: function (data)
 		{
 			var obj = JSON.parse(data);
 			var newstr = obj.replace(/&amp;/gi, "&");
-//                console.log(newstr);
+			//                console.log(newstr);
 			JqueryPortico.updateinlineTableHelper(oTable0, newstr);
 			$('#values_date').val('');
 			$('#new_index').val('');
@@ -199,7 +198,7 @@ onActionsClickDeleteLastIndex = function (type)
 	});
 };
 
-set_tab  = function ()
+set_tab = function ()
 {
 
 };

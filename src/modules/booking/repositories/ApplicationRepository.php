@@ -370,7 +370,7 @@ class ApplicationRepository
 	{
 		try {
 			$stmt = $this->db->prepare(
-				"SELECT id, type, from_, to_, active, cost
+				"SELECT id, type, application_id, from_, to_, active, cost
 				 FROM bb_application_association
 				 WHERE application_id = :id
 				 ORDER BY from_ NULLS LAST"

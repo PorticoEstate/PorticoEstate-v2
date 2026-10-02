@@ -1282,3 +1282,5 @@ overwrite_all_prices	booking	no	Overskriv alle
 keep_manual_prices	booking	no	Behold de manuelle
 cancel_price_update	booking	no	Avbryt
 date and time	booking	no	Tidspunkt
+outside_series	booking	no	Utenfor serien
+other_associated_items	booking	no	Andre elementer

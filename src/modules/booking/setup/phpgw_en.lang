@@ -1281,3 +1281,5 @@ overwrite_all_prices	booking	en	Overwrite all
 keep_manual_prices	booking	en	Keep the manual prices
 cancel_price_update	booking	en	Cancel
 date and time	booking	en	Date and time
+outside_series	booking	en	Outside the series
+other_associated_items	booking	en	Other items

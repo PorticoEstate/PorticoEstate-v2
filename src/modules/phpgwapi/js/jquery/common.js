@@ -81,7 +81,7 @@ JqueryPortico.formatProject = function (key, oData)
 		return $('<div/>').text(rawValue || '').html();
 	}
 
-	var strURL = phpGWLink('index.php', {menuaction: 'property.uiproject.edit', id: projectId});
+	var strURL = phpGWLink('index.php', { menuaction: 'property.uiproject.edit', id: projectId });
 	return '<a href="' + strURL + '">' + projectId + '</a>';
 }
 
@@ -402,9 +402,9 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 
 	if (responsive == true)
 	{
-				responsive_def = {
+		responsive_def = {
 			details: {
-						display: DataTable.Responsive.display.childRowImmediate,
+				display: DataTable.Responsive.display.childRowImmediate,
 				type: ''
 			}
 		};
@@ -629,7 +629,7 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 
 	if (typeof oTable.api !== 'function')
 	{
-		oTable.api = function() { return oTable; };
+		oTable.api = function () { return oTable; };
 	}
 
 	if (select)
@@ -641,7 +641,7 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 				return;
 			}
 
-			oTable.buttons('.record').enable(oTable.rows({selected: true}).count() > 0);
+			oTable.buttons('.record').enable(oTable.rows({ selected: true }).count() > 0);
 			for (var n = 0; n < indexes.length; n++)
 			{
 				$(oTable.row(indexes[n]).node()).find('input.mychecks').prop('checked', event.type === 'select');
@@ -812,17 +812,17 @@ JqueryPortico.autocompleteHelper = function (baseUrl, field, hidden, container, 
 			source: function (request, response)
 			{
 				//console.log(request.term);
-					var requestData = {
-						query: String(request.term || '').trim()
-					};
-					if (baseUrl.indexOf('phpgw_return_as=json') === -1)
-					{
-						requestData.phpgw_return_as = 'json';
-					}
+				var requestData = {
+					query: String(request.term || '').trim()
+				};
+				if (baseUrl.indexOf('phpgw_return_as=json') === -1)
+				{
+					requestData.phpgw_return_as = 'json';
+				}
 				$.ajax({
 					url: baseUrl,
 					dataType: "json",
-						data: requestData,
+					data: requestData,
 					success: function (data)
 					{
 						var data_t = "";

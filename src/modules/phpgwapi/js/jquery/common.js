@@ -632,30 +632,35 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 		oTable.api = function() { return oTable; };
 	}
 
-	$("#" + container + ' tbody').on('click', 'tr', function ()
+	if (select)
 	{
-
-		$(this).toggleClass('selected');
-		var api = oTable;
-		var selectedRows = api.rows('.selected').data().length;
-
-		api.buttons('.record').enable(selectedRows > 0);
-
-		var row = $(this);
-		var checkbox = row.find('input[type="checkbox"], input[type="radio"]');
-
-		if (checkbox && checkbox.hasClass('mychecks'))
+		oTable.on('select.dt deselect.dt', function (event, dt, type, indexes)
 		{
-			if ($(this).hasClass('selected'))
+			if (type !== 'row')
 			{
-				checkbox.prop("checked", true);
+				return;
 			}
-			else
+
+			oTable.buttons('.record').enable(oTable.rows({selected: true}).count() > 0);
+			for (var n = 0; n < indexes.length; n++)
 			{
-				checkbox.prop("checked", false);
+				$(oTable.row(indexes[n]).node()).find('input.mychecks').prop('checked', event.type === 'select');
 			}
-		}
-	});
+		});
+	}
+	else
+	{
+		$("#" + container + ' tbody').on('click', 'tr', function ()
+		{
+			$(this).toggleClass('selected');
+			var selectedRows = oTable.rows('.selected').data().length;
+
+			oTable.buttons('.record').enable(selectedRows > 0);
+
+			var checkbox = $(this).find('input.mychecks');
+			checkbox.prop('checked', $(this).hasClass('selected'));
+		});
+	}
 
 	return oTable;
 };

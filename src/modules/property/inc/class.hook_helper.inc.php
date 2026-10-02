@@ -474,6 +474,7 @@ JS;
 						menuaction:'property.uitenant_claim.query2',
 						order:'id',
 						sort:'asc',
+						status:['open', 'prepend'],
 						user_id:{$accound_id},
 						result:10
 						}, true);
@@ -484,6 +485,7 @@ JS;
 						{key: 'claim_id', label: lang['id'], formatter: genericLink},
 						{key: 'name', label: lang['name']},
 						{key: 'address', label: lang['address']},
+						{key: 'status', label: lang['status']},
 						{key: 'entry_date', label: lang['entry_date']}
 						];
 

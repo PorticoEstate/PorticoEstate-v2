@@ -23,9 +23,25 @@ function phpGWLink(strURL, oArgs, bAsJSON)
 		oArgs = new Object();
 	}
 
-	for (obj in oArgs)
+	for (var obj in oArgs)
 	{
-		strNewURL += obj + '=' + oArgs[obj] + '&';
+		if (Array.isArray(oArgs[obj]))
+		{
+			var arrayKey = obj.slice(-2) === '[]' ? obj : obj + '[]';
+			var arrayParams = new URLSearchParams();
+			for (var index = 0; index < oArgs[obj].length; index++)
+			{
+				arrayParams.append(arrayKey, oArgs[obj][index]);
+			}
+			if (arrayParams.toString())
+			{
+				strNewURL += arrayParams.toString() + '&';
+			}
+		}
+		else
+		{
+			strNewURL += obj + '=' + oArgs[obj] + '&';
+		}
 	}
 	strNewURL += arURLParts[1];
 

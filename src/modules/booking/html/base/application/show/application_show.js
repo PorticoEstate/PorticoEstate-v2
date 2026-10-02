@@ -952,7 +952,7 @@
 			return '<div class="app-show__split">' +
 				'<button type="button" class="booking-button ds-button" data-variant="primary" data-color="accent" data-size="sm" data-booking-action="create-date" data-create="event" data-date-id="' + d.id + '">' + esc(lang('createEvent')) + '</button>' +
 				'<button type="button" class="booking-button ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '" aria-label="' + esc(lang('dateActions')) + '">' + ICONS.chevron + '</button>' +
-				'<div class="booking-dropdown ds-dropdown app-show__menu app-show__split-menu" popover id="' + menuId + '"><ul>' +
+				'<div class="booking-dropdown ds-dropdown app-show__menu app-show__split-menu" data-booking-role="dropdown" popover id="' + menuId + '"><ul>' +
 				(hasOrg ? '<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="create-date" data-create="allocation" data-date-id="' + d.id + '"><span>' + esc(lang('createAllocation')) + '</span></button></li>' : '') +
 				'<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="create-date" data-create="booking" data-date-id="' + d.id + '"><span>' + esc(lang('createBooking')) + '</span></button></li>' +
 				// Reject only this sub-application (combined carts) — siblings stay open.

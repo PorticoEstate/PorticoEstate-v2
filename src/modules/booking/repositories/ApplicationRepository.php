@@ -86,6 +86,20 @@ class ApplicationRepository
 		return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'resource_id');
 	}
 
+	/**
+	 * IDs of every resource linked to a building.
+	 *
+	 * @return int[]
+	 */
+	public function fetchBuildingResourceIds(int $buildingId): array
+	{
+		$stmt = $this->db->prepare(
+			"SELECT resource_id FROM bb_building_resource WHERE building_id = :id"
+		);
+		$stmt->execute([':id' => $buildingId]);
+		return array_map('intval', array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'resource_id'));
+	}
+
 	// ── Allocation recurrence groups ────────────────────────────────────
 
 	/**
@@ -370,7 +384,7 @@ class ApplicationRepository
 	{
 		try {
 			$stmt = $this->db->prepare(
-				"SELECT id, type, from_, to_, active, cost
+				"SELECT id, type, application_id, from_, to_, active, cost
 				 FROM bb_application_association
 				 WHERE application_id = :id
 				 ORDER BY from_ NULLS LAST"
@@ -568,6 +582,58 @@ class ApplicationRepository
 		}
 	}
 
+	/**
+	 * Active organizations whose name or organization number contains $query,
+	 * for the create modal's organization search. Returns only the columns the
+	 * picker shows: the legacy search (uiorganization.index) also sends contacts
+	 * and customer_ssn per row.
+	 *
+	 * @return array{total: int, results: array<int, array{id: int, name: string, organization_number: string}>}
+	 */
+	public function searchOrganizations(string $query, int $limit): array
+	{
+		$pattern = '%' . addcslashes($query, '\\%_') . '%';
+		$where = "WHERE active = 1 AND (name ILIKE :name OR organization_number ILIKE :number)";
+		$params = [':name' => $pattern, ':number' => $pattern];
+
+		$count = $this->db->prepare("SELECT count(*) FROM bb_organization {$where}");
+		$count->execute($params);
+		$total = (int) $count->fetchColumn();
+
+		$stmt = $this->db->prepare(
+			"SELECT id, name, organization_number
+			 FROM bb_organization
+			 {$where}
+			 ORDER BY name ASC, id ASC
+			 LIMIT " . max(1, $limit)
+		);
+		$stmt->execute($params);
+
+		$results = array_map(function (array $row): array {
+			return [
+				'id' => (int) $row['id'],
+				'name' => $this->decodeEntities($row['name']),
+				'organization_number' => (string) ($row['organization_number'] ?? ''),
+			];
+		}, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+		return ['total' => $total, 'results' => $results];
+	}
+
+	/**
+	 * IDs of the organization's active groups (the groups a booking can be made for).
+	 *
+	 * @return int[]
+	 */
+	public function fetchActiveGroupIds(int $organizationId): array
+	{
+		$stmt = $this->db->prepare(
+			"SELECT id FROM bb_group WHERE organization_id = :org_id AND active = 1 ORDER BY id"
+		);
+		$stmt->execute([':org_id' => $organizationId]);
+		return array_map('intval', array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'id'));
+	}
+
 	// ── Activity ────────────────────────────────────────────────────────
 
 	public function fetchActivityName(int $activityId): ?string
@@ -712,6 +778,36 @@ class ApplicationRepository
 		$stmt->execute([':building_id' => $buildingId, ':d' => $appDate]);
 		$row = $stmt->fetch(PDO::FETCH_ASSOC);
 		return $row ?: null;
+	}
+
+	/**
+	 * Every season of the building that covers $date (Y-m-d), for the create
+	 * modal's season select. Unlike fetchSeasonInfo() this does not pick one: a
+	 * building with overlapping seasons lists them all and the officer chooses.
+	 * Same filters as the legacy season list (active, not archived).
+	 */
+	public function fetchSeasonsCovering(int $buildingId, string $date): array
+	{
+		$stmt = $this->db->prepare(
+			"SELECT id, name, from_, to_
+			 FROM bb_season
+			 WHERE active = 1
+			   AND status <> 'ARCHIVED'
+			   AND building_id = :building_id
+			   AND from_ <= :from_date
+			   AND to_ >= :to_date
+			 ORDER BY from_ DESC, id ASC"
+		);
+		$stmt->execute([':building_id' => $buildingId, ':from_date' => $date, ':to_date' => $date]);
+
+		return array_map(function (array $row): array {
+			return [
+				'id' => (int) $row['id'],
+				'name' => $this->decodeEntities($row['name']),
+				'from_' => $row['from_'],
+				'to_' => $row['to_'],
+			];
+		}, $stmt->fetchAll(PDO::FETCH_ASSOC));
 	}
 
 	// ── Assign / Unassign ──────────────────────────────────────────────

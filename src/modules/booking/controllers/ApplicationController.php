@@ -17,6 +17,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use RuntimeException;
 use Exception;
+use Sanitizer;
 
 /**
  * REST API controller for booking applications (admin).
@@ -102,6 +103,12 @@ class ApplicationController
 				$totalAssociations += $this->repo->countAssociations($appId);
 			}
 			$app->num_associations = $totalAssociations;
+
+			// Associations of THIS application alone, for the accept gate. Accept
+			// is decided per row: ApplicationService::acceptApplication refuses a
+			// row with none of its own, whatever its combined siblings hold, so
+			// the gate uses the same call rather than the group sum above.
+			$ownAssociations = $this->repo->countAssociations($id);
 
 			// Is simple booking?
 			$resources = $this->repo->fetchResources($id);
@@ -212,6 +219,7 @@ class ApplicationController
 				'messenger_enabled'            => $messengerEnabled,
 				'show_accept'                  => in_array($status, ['PENDING', 'REJECTED', 'NEWPARTIAL1']),
 				'num_associations'             => $app->num_associations,
+				'num_own_associations'         => $ownAssociations,
 				'hospitality_orders_pending'   => $hospitalityPending,
 				'show_reject'                  => $status !== 'REJECTED',
 				'display_in_dashboard'         => (int) ($row['display_in_dashboard'] ?? 1),
@@ -887,6 +895,242 @@ class ApplicationController
 		try {
 			$result = $this->service->createRecurringAllocations($id, $this->currentAccountId);
 			return ResponseHelper::sendJSONResponse($result, 200, $response);
+		} catch (RuntimeException $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], $this->httpCode($e));
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
+		}
+	}
+
+	// ── Create modal: org search, seasons, allocation/booking create ────
+
+	/**
+	 * The application {id}, or the error response to send when it is missing or
+	 * the current user is not its case officer. The create modal's four
+	 * endpoints share this one gate.
+	 */
+	private function caseOfficerApplication(array $args, string $action): array|Response
+	{
+		$id = $this->getApplicationId($args);
+		if (!$id) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Missing application ID'], 400);
+		}
+
+		$app = $this->repo->getById($id);
+		if (!$app) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Application not found'], 404);
+		}
+		if ((int) ($app['case_officer_id'] ?? 0) !== $this->currentAccountId) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Only the case officer can ' . $action], 403);
+		}
+
+		return $app;
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/booking/applications/{id}/organizations",
+	 *     summary="Search active organizations for the application's create modal",
+	 *     tags={"Applications"},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Application ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="query", in="query", required=true, description="Part of the name or organization number, at least 2 characters", @OA\Schema(type="string")),
+	 *     @OA\Parameter(name="limit", in="query", required=false, description="Max results (1-20)", @OA\Schema(type="integer", default=20)),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Matching organizations and the total match count",
+	 *         @OA\JsonContent(type="object")
+	 *     ),
+	 *     @OA\Response(response=403, description="Not the case officer"),
+	 *     @OA\Response(response=404, description="Application not found")
+	 * )
+	 */
+	public function searchOrganizations(Request $request, Response $response, array $args): Response
+	{
+		$app = $this->caseOfficerApplication($args, 'search organizations');
+		if ($app instanceof Response) {
+			return $app;
+		}
+
+		$params = $request->getQueryParams();
+		$query = trim((string) ($params['query'] ?? ''));
+		if (mb_strlen($query) < 2) {
+			return ResponseHelper::sendJSONResponse(['total' => 0, 'results' => []], 200, $response);
+		}
+		$limit = min(20, max(1, (int) ($params['limit'] ?? 20)));
+
+		try {
+			$result = $this->repo->searchOrganizations(mb_substr($query, 0, 100), $limit);
+			return ResponseHelper::sendJSONResponse($result, 200, $response);
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
+		}
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/booking/applications/{id}/seasons",
+	 *     summary="Seasons of the application's building that cover a date",
+	 *     tags={"Applications"},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Application ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="date", in="query", required=true, description="Date (Y-m-d)", @OA\Schema(type="string", format="date")),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Covering seasons, newest first",
+	 *         @OA\JsonContent(type="array", @OA\Items(type="object"))
+	 *     ),
+	 *     @OA\Response(response=400, description="Invalid date"),
+	 *     @OA\Response(response=403, description="Not the case officer"),
+	 *     @OA\Response(response=404, description="Application not found")
+	 * )
+	 */
+	public function showSeasons(Request $request, Response $response, array $args): Response
+	{
+		$app = $this->caseOfficerApplication($args, 'list seasons');
+		if ($app instanceof Response) {
+			return $app;
+		}
+
+		$date = (string) ($request->getQueryParams()['date'] ?? '');
+		$parsed = \DateTime::createFromFormat('!Y-m-d', $date);
+		if (!$parsed || $parsed->format('Y-m-d') !== $date) {
+			return ResponseHelper::sendErrorResponse(['error' => 'date must be Y-m-d'], 400);
+		}
+
+		$buildingId = (int) ($app['building_id'] ?? 0);
+		if (!$buildingId) {
+			return ResponseHelper::sendJSONResponse([], 200, $response);
+		}
+
+		try {
+			$seasons = $this->repo->fetchSeasonsCovering($buildingId, $date);
+			return ResponseHelper::sendJSONResponse($seasons, 200, $response);
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
+		}
+	}
+
+	/**
+	 * The fields an officer sets in the create modal. Everything else the
+	 * create needs (application, building, activity, audience, agegroups) is
+	 * taken from the application server-side, never from the request.
+	 */
+	private function createInput(Request $request, string $type): array
+	{
+		$body = json_decode((string) $request->getBody(), true);
+		if (!is_array($body)) {
+			$body = [];
+		}
+
+		$resourceIds = array_map('intval', (array) ($body['resource_ids'] ?? []));
+		$input = [
+			'organization_id' => (int) ($body['organization_id'] ?? 0),
+			'season_id'       => (int) ($body['season_id'] ?? 0),
+			'from_'           => trim((string) ($body['from_'] ?? '')),
+			'to_'             => trim((string) ($body['to_'] ?? '')),
+			'resource_ids'    => array_values(array_unique(array_filter($resourceIds, fn (int $r): bool => $r > 0))),
+			'cost'            => (float) ($body['cost'] ?? 0),
+		];
+
+		if ($type === 'booking') {
+			$input['group_id'] = (int) ($body['group_id'] ?? 0);
+		} else {
+			$input['skip_bas'] = empty($body['skip_bas']) ? 0 : 1;
+			$input['additional_invoice_information'] = Sanitizer::clean_value((string) ($body['additional_invoice_information'] ?? ''), 'string');
+		}
+
+		return $input;
+	}
+
+	/**
+	 * A create result: 201 with {id, type, edit_url}, or 422 with {errors} when
+	 * the service refused it.
+	 */
+	private function createResponse(array $result, Response $response): Response
+	{
+		if (!empty($result['errors'])) {
+			return ResponseHelper::sendJSONResponse($result, 422, $response);
+		}
+		return ResponseHelper::sendJSONResponse($result, 201, $response);
+	}
+
+	/**
+	 * @OA\Post(
+	 *     path="/booking/applications/{id}/allocations",
+	 *     summary="Create an allocation for a date of the application",
+	 *     tags={"Applications"},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Application ID (the date's own application in a combined cart)", @OA\Schema(type="integer")),
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(
+	 *             required={"organization_id", "season_id", "from_", "to_", "resource_ids"},
+	 *             @OA\Property(property="organization_id", type="integer"),
+	 *             @OA\Property(property="season_id", type="integer"),
+	 *             @OA\Property(property="from_", type="string", format="date-time"),
+	 *             @OA\Property(property="to_", type="string", format="date-time"),
+	 *             @OA\Property(property="resource_ids", type="array", @OA\Items(type="integer")),
+	 *             @OA\Property(property="cost", type="number"),
+	 *             @OA\Property(property="skip_bas", type="integer"),
+	 *             @OA\Property(property="additional_invoice_information", type="string")
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=201, description="Created: {id, type, edit_url}", @OA\JsonContent(type="object")),
+	 *     @OA\Response(response=403, description="Not the case officer"),
+	 *     @OA\Response(response=404, description="Application not found"),
+	 *     @OA\Response(response=422, description="Refused: {errors}")
+	 * )
+	 */
+	public function createAllocation(Request $request, Response $response, array $args): Response
+	{
+		$app = $this->caseOfficerApplication($args, 'create allocations');
+		if ($app instanceof Response) {
+			return $app;
+		}
+
+		try {
+			$result = $this->service->createAllocationForApplication((int) $app['id'], $this->currentAccountId, $this->createInput($request, 'allocation'));
+			return $this->createResponse($result, $response);
+		} catch (RuntimeException $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], $this->httpCode($e));
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
+		}
+	}
+
+	/**
+	 * @OA\Post(
+	 *     path="/booking/applications/{id}/bookings",
+	 *     summary="Create a booking (interntildeling) for a date of the application",
+	 *     tags={"Applications"},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Application ID (the date's own application in a combined cart)", @OA\Schema(type="integer")),
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(
+	 *             required={"organization_id", "group_id", "season_id", "from_", "to_", "resource_ids"},
+	 *             @OA\Property(property="organization_id", type="integer"),
+	 *             @OA\Property(property="group_id", type="integer"),
+	 *             @OA\Property(property="season_id", type="integer"),
+	 *             @OA\Property(property="from_", type="string", format="date-time"),
+	 *             @OA\Property(property="to_", type="string", format="date-time"),
+	 *             @OA\Property(property="resource_ids", type="array", @OA\Items(type="integer")),
+	 *             @OA\Property(property="cost", type="number")
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=201, description="Created: {id, type, edit_url}", @OA\JsonContent(type="object")),
+	 *     @OA\Response(response=403, description="Not the case officer"),
+	 *     @OA\Response(response=404, description="Application not found"),
+	 *     @OA\Response(response=422, description="Refused: {errors}")
+	 * )
+	 */
+	public function createBooking(Request $request, Response $response, array $args): Response
+	{
+		$app = $this->caseOfficerApplication($args, 'create bookings');
+		if ($app instanceof Response) {
+			return $app;
+		}
+
+		try {
+			$result = $this->service->createBookingForApplication((int) $app['id'], $this->currentAccountId, $this->createInput($request, 'booking'));
+			return $this->createResponse($result, $response);
 		} catch (RuntimeException $e) {
 			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], $this->httpCode($e));
 		} catch (Exception $e) {

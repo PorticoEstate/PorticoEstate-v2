@@ -1281,3 +1281,12 @@ overwrite_all_prices	booking	en	Overwrite all
 keep_manual_prices	booking	en	Keep the manual prices
 cancel_price_update	booking	en	Cancel
 date and time	booking	en	Date and time
+outside_series	booking	en	Outside the series
+other_associated_items	booking	en	Other items
+select_organization	booking	en	Select organization
+search_organization_hint	booking	en	Search by name or organization number
+no_organizations_found	booking	en	No organizations found
+refine_organization_search	booking	en	More matches – type more to narrow down
+no_season_for_date	booking	en	No active season covers this date
+resource_not_in_building	booking	en	The resource does not belong to this building
+group_not_in_organization	booking	en	The group does not belong to the selected organization

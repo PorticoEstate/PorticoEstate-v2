@@ -26,6 +26,7 @@ $scanSources = [
 	SRC_ROOT_PATH . '/modules/bookingfrontend/helpers',
 	SRC_ROOT_PATH . '/modules/phpgwapi/helpers/LoginHelper.php',
 	SRC_ROOT_PATH . '/modules/phpgwapi/controllers/DatabaseController.php',
+	SRC_ROOT_PATH . '/modules/phpgwapi/controllers/ScimController.php',
 	SRC_ROOT_PATH . '/controllers/GenericRegistryController.php',
 	SRC_ROOT_PATH . '/modules/booking/controllers/EventController.php',
 	SRC_ROOT_PATH . '/modules/property/controllers/EntityController.php',
@@ -74,14 +75,14 @@ if (!isset($spec['components']))
 
 if (!isset($spec['components']['securitySchemes']))
 {
-	$spec['components']['securitySchemes'] = [
-		'session_auth' => [
-			'type' => 'apiKey',
-			'in' => 'cookie',
-			'name' => 'sessionphpgwsessid'
-		]
-	];
+	$spec['components']['securitySchemes'] = [];
 }
+
+$spec['components']['securitySchemes']['session_auth'] ??= [
+	'type' => 'apiKey',
+	'in' => 'cookie',
+	'name' => 'sessionphpgwsessid'
+];
 
 
 // Output the OpenAPI specification

@@ -1030,6 +1030,14 @@ class ApplicationController extends DocumentController
      *     @OA\Response(
      *         response=404,
      *         description="Application not found"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="A file was refused (type, size or name); none of the files were stored",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="error", type="string"),
+     *             @OA\Property(property="errors", type="array", @OA\Items(type="string"))
+     *         )
      *     )
      * )
      */
@@ -1068,44 +1076,21 @@ class ApplicationController extends DocumentController
                 $files = [$files];
             }
 
-            $documents = [];
             $parseBody = $request->getParsedBody();
-            $description = $parseBody['description'] ?? null;
-            $focalPointX = $parseBody['focal_point_x'] ?? null;
-            $focalPointY = $parseBody['focal_point_y'] ?? null;
 
-            foreach ($files as $file) {
-                // Basic validation
-                $filename = $file->getClientFilename();
-//                $fileType = $this->documentService->getFileTypeFromFilename($filename);
-//
-//                if (!$this->documentService->isAllowedFileType($fileType)) {
-//                    return ResponseHelper::sendErrorResponse(
-//                        ['error' => "File type not allowed for: {$filename}"],
-//                        400
-//                    );
-//                }
-
-                // Create document record
-                $document = [
-                    'category' => Document::CATEGORY_OTHER,
-                    'owner_id' => $applicationId,
-                    'name' => $filename,
-                    'description' => $description ?? $filename
-                ];
-
-                // Add focal point if provided
-                if ($focalPointX !== null && $focalPointY !== null) {
-                    $document['focal_point_x'] = $focalPointX;
-                    $document['focal_point_y'] = $focalPointY;
-                }
-
-                $docId = $this->documentService->createDocument($document);
-
-                // Move uploaded file to correct location
-                $this->documentService->saveDocumentFile($docId, $file);
-                $documents[] = $docId;
+            // Every file is checked before any is stored; one refused file stores none.
+            $result = $this->documentService->storeUploads($applicationId, $files, [
+                'description' => $parseBody['description'] ?? null,
+                'focal_point_x' => $parseBody['focal_point_x'] ?? null,
+                'focal_point_y' => $parseBody['focal_point_y'] ?? null,
+            ]);
+            if (!empty($result['errors'])) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => implode("\n", $result['errors']), 'errors' => $result['errors']],
+                    422
+                );
             }
+            $documents = $result['ids'];
 
             WebSocketHelper::triggerPartialApplicationsUpdate();
 

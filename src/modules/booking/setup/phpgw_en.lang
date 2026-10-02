@@ -1290,3 +1290,13 @@ refine_organization_search	booking	en	More matches – type more to narrow down
 no_season_for_date	booking	en	No active season covers this date
 resource_not_in_building	booking	en	The resource does not belong to this building
 group_not_in_organization	booking	en	The group does not belong to the selected organization
+attachment_invalid_type	booking	en	File type not allowed. Allowed file types: %1
+attachment_too_large	booking	en	The file is too large. The maximum size is %1 MB
+attachment_invalid_name	booking	en	Invalid file name
+attachment_upload_failed	booking	en	The upload failed
+attachment_hint	booking	en	Max %1 MB. Allowed file types: %2
+add_attachment	booking	en	Add attachment
+no_attachments	booking	en	No attachments
+attachment_uploaded	booking	en	The attachment was uploaded
+attachment_deleted	booking	en	The attachment was deleted
+delete_attachment_confirm	booking	en	Delete the attachment?

@@ -8,9 +8,16 @@ use App\modules\booking\models\Document;
 use Psr\Http\Message\UploadedFileInterface;
 use PDO;
 use Exception;
+use Throwable;
 
 class DocumentService
 {
+    /** File types an uploaded document may have (by its last extension). */
+    public const UPLOAD_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'xls', 'xlsx', 'doc', 'docx', 'txt', 'pdf', 'odt', 'ods'];
+    public const UPLOAD_MAX_BYTES = 20 * 1024 * 1024;
+    /** The file is stored as "{id}_{name}", which must fit a 255-byte file name. */
+    public const UPLOAD_NAME_MAX_BYTES = 200;
+
     private $documentRepository;
     private $ownerType;
 
@@ -155,9 +162,159 @@ class DocumentService
         return $id;
     }
 
+    /**
+     * The name an uploaded file is stored under, or null when the client's name
+     * cannot be used. Invalid UTF-8, control characters and '..' are refused, not
+     * repaired. Otherwise only the base name is kept, and any character outside
+     * letters, digits, spaces and . _ - ( ) + , & ' becomes '_'.
+     */
+    public function uploadFileName(UploadedFileInterface $file): ?string
+    {
+        $name = (string)$file->getClientFilename();
+        if (!mb_check_encoding($name, 'UTF-8') || preg_match('/\p{Cc}/u', $name) || str_contains($name, '..')) {
+            return null;
+        }
 
+        // PHP already strips directories from $_FILES names; this does not rely on it.
+        $name = substr(strrchr('/' . str_replace('\\', '/', $name), '/'), 1);
+        $name = trim(preg_replace("/[^\\p{L}\\p{M}\\p{N} ._\\-()+,&']/u", '_', $name));
 
-    public function saveDocumentFile(int $documentId, UploadedFileInterface $file): void
+        if ($name === '' || $name === '.' || strlen($name) > self::UPLOAD_NAME_MAX_BYTES) {
+            return null;
+        }
+        return $name;
+    }
+
+    /**
+     * Why an uploaded file may not be stored, as a translated message, or null
+     * when it may.
+     */
+    public function validateUpload(UploadedFileInterface $file): ?string
+    {
+        $tooLarge = lang('booking.attachment_too_large', self::UPLOAD_MAX_BYTES / (1024 * 1024));
+
+        switch ($file->getError()) {
+            case UPLOAD_ERR_OK:
+                break;
+            case UPLOAD_ERR_NO_FILE:
+                return lang('booking.Missing file for document');
+            case UPLOAD_ERR_INI_SIZE:
+            case UPLOAD_ERR_FORM_SIZE:
+                return $tooLarge;
+            default:
+                return lang('booking.attachment_upload_failed');
+        }
+
+        $size = $file->getSize();
+        if ($size === null) {
+            return lang('booking.attachment_upload_failed');
+        }
+        if ($size > self::UPLOAD_MAX_BYTES) {
+            return $tooLarge;
+        }
+
+        $name = $this->uploadFileName($file);
+        if ($name === null) {
+            return lang('booking.attachment_invalid_name');
+        }
+
+        $dot = strrpos($name, '.');
+        $extension = $dot === false ? '' : strtolower(substr($name, $dot + 1));
+        if (!in_array($extension, self::UPLOAD_EXTENSIONS, true)) {
+            return lang('booking.attachment_invalid_type', implode(', ', self::UPLOAD_EXTENSIONS));
+        }
+
+        return null;
+    }
+
+    /**
+     * Store every uploaded file as a document (category 'other') of $ownerId, or
+     * none of them: all files are validated before anything is written, and a
+     * failed write takes back what this call already stored.
+     *
+     * @param UploadedFileInterface[] $files
+     * @param array $fields description, focal_point_x and focal_point_y; anything else is ignored
+     * @return array ['ids' => int[]] when stored, ['errors' => string[]] when refused
+     */
+    public function storeUploads(int $ownerId, array $files, array $fields = []): array
+    {
+        $errors = [];
+        foreach ($files as $file) {
+            $error = $this->validateUpload($file);
+            if ($error !== null) {
+                $label = $this->uploadLabel($file);
+                $errors[] = $label === '' ? $error : $label . ': ' . $error;
+            }
+        }
+        if ($errors) {
+            return ['errors' => $errors];
+        }
+
+        $ids = [];
+        try {
+            foreach ($files as $file) {
+                $ids[] = $this->storeUpload($ownerId, $file, $fields);
+            }
+        } catch (Throwable $e) {
+            foreach ($ids as $id) {
+                $this->discardDocument($id);
+            }
+            throw $e;
+        }
+
+        return ['ids' => $ids];
+    }
+
+    private function storeUpload(int $ownerId, UploadedFileInterface $file, array $fields): int
+    {
+        $name = $this->uploadFileName($file);
+        $document = [
+            'category' => Document::CATEGORY_OTHER,
+            'owner_id' => $ownerId,
+            'name' => $name,
+            'description' => $fields['description'] ?? $name,
+        ];
+        if (isset($fields['focal_point_x'], $fields['focal_point_y'])) {
+            $document['focal_point_x'] = $fields['focal_point_x'];
+            $document['focal_point_y'] = $fields['focal_point_y'];
+        }
+
+        $id = $this->createDocument($document);
+        try {
+            $this->saveDocumentFile($id, $file);
+        } catch (Throwable $e) {
+            // The row must not outlive a file that never arrived.
+            $this->discardDocument($id);
+            throw $e;
+        }
+
+        return $id;
+    }
+
+    /**
+     * Remove a document this service just stored. A failure here is logged, so
+     * it does not hide the error that made the removal necessary.
+     */
+    private function discardDocument(int $documentId): void
+    {
+        try {
+            $this->documentRepository->deleteDocument($documentId);
+        } catch (Throwable $e) {
+            error_log("DocumentService: could not remove document {$documentId}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * The client's file name, made safe to echo back in a message.
+     */
+    private function uploadLabel(UploadedFileInterface $file): string
+    {
+        $name = mb_convert_encoding((string)$file->getClientFilename(), 'UTF-8', 'UTF-8');
+        $name = preg_replace('/\p{Cc}/u', '', $name) ?? '';
+        return mb_strimwidth($name, 0, 80, '…', 'UTF-8');
+    }
+
+    private function saveDocumentFile(int $documentId, UploadedFileInterface $file): void
     {
         $document = $this->getDocumentById($documentId);
         if (!$document) {

@@ -1258,3 +1258,10 @@ cancel_price_update	booking	nn	Avbryt
 date and time	booking	nn	Tidspunkt
 outside_series	booking	nn	Utanfor serien
 other_associated_items	booking	nn	Andre element
+select_organization	booking	nn	Vel organisasjon
+search_organization_hint	booking	nn	Søk på namn eller organisasjonsnummer
+no_organizations_found	booking	nn	Ingen organisasjonar funne
+refine_organization_search	booking	nn	Fleire treff – skriv meir for å avgrense
+no_season_for_date	booking	nn	Ingen aktiv sesong dekkjer denne datoen
+resource_not_in_building	booking	nn	Ressursen høyrer ikkje til dette bygget
+group_not_in_organization	booking	nn	Gruppa høyrer ikkje til den valde organisasjonen

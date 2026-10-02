@@ -880,6 +880,293 @@ class ApplicationService
 	}
 
 	/**
+	 * Create one allocation for a date of the application, from the create
+	 * modal (POST /booking/applications/{id}/allocations).
+	 *
+	 * Validates, authorizes and inserts through the legacy boallocation, like the
+	 * legacy form (uiallocation::add): the same required fields, overlap checks
+	 * and season fit (soallocation::doValidate), the same role check, then
+	 * id_string and the application's purchase order.
+	 *
+	 * @param array $input whitelisted by ApplicationController::createAllocation
+	 * @return array {id, type, edit_url}, or {errors: {field: [message]}} when refused
+	 */
+	public function createAllocationForApplication(int $appId, int $accountId, array $input): array
+	{
+		$app = $this->requireApplication($appId);
+		$buildingId = (int) ($app['building_id'] ?? 0);
+
+		$allocation = [
+			'application_id'                 => $appId,
+			'organization_id'                => $input['organization_id'] ?: '',
+			'season_id'                      => $input['season_id'] ?: '',
+			'building_id'                    => $buildingId,
+			'building_name'                  => $this->repo->fetchBuildingName($buildingId),
+			'from_'                          => $this->legacyTime($input['from_'], 'Y-m-d H:i'),
+			'to_'                            => $this->legacyTime($input['to_'], 'Y-m-d H:i'),
+			'resources'                      => $input['resource_ids'],
+			'cost'                           => $input['cost'],
+			'skip_bas'                       => $input['skip_bas'],
+			'additional_invoice_information' => $input['additional_invoice_information'],
+			'active'                         => '1',
+			'completed'                      => '0',
+			// A new allocation is never price locked; uiallocation::add seeds it too.
+			'price_locked'                   => 0,
+		];
+		$this->addCostHistory($allocation, (float) $input['cost']);
+
+		$allocationBo = \CreateObject('booking.boallocation');
+		$errors = array_merge_recursive(
+			$this->checkResources($buildingId, $input['resource_ids']),
+			$this->legacyValidate($allocationBo, $allocation)
+		);
+		if ($errors) {
+			return ['errors' => $errors];
+		}
+
+		if (!$allocationBo->allow_create($allocation)) {
+			throw new RuntimeException('Not allowed to create this allocation', 403);
+		}
+
+		$receipt = $allocationBo->add($allocation);
+		$allocationId = (int) $receipt['id'];
+		$allocationBo->so->update_id_string($allocationId);
+		$this->attachPurchaseOrder($allocationId, $appId, $this->currentFullName());
+
+		return [
+			'id'       => $allocationId,
+			'type'     => 'allocation',
+			'edit_url' => '/?menuaction=booking.uiallocation.show&id=' . $allocationId,
+		];
+	}
+
+	/**
+	 * Create one booking (interntildeling) for a date of the application, from
+	 * the create modal (POST /booking/applications/{id}/bookings).
+	 *
+	 * Like the legacy single-date path (uibooking::add): the booking is validated
+	 * through bobooking, and is made inside an allocation for the same
+	 * organization, slot and resources, created first. The two inserts share one
+	 * transaction, so a failed booking leaves no allocation behind.
+	 *
+	 * @param array $input whitelisted by ApplicationController::createBooking
+	 * @return array {id, type, allocation_id, edit_url}, or {errors: {field: [message]}} when refused
+	 */
+	public function createBookingForApplication(int $appId, int $accountId, array $input): array
+	{
+		$app = $this->requireApplication($appId);
+		$buildingId = (int) ($app['building_id'] ?? 0);
+		$buildingName = $this->repo->fetchBuildingName($buildingId);
+		$orgId = (int) $input['organization_id'];
+		$groupId = (int) $input['group_id'];
+
+		$errors = $this->checkResources($buildingId, $input['resource_ids']);
+
+		if (!$orgId) {
+			// The booking itself has no organization field, so its validation would
+			// not catch this; the allocation it is made inside needs one.
+			$errors['organization_id'][] = lang('booking.Field %1 is required', lang('booking.organization_id'));
+		} else {
+			$groupIds = $this->repo->fetchActiveGroupIds($orgId);
+			// A single-group organization books as that group (uibooking::add).
+			if (!$groupId && count($groupIds) === 1) {
+				$groupId = $groupIds[0];
+			}
+			if ($groupId && !in_array($groupId, $groupIds, true)) {
+				$errors['group_id'][] = lang('booking.group_not_in_organization');
+			}
+		}
+
+		$from = $this->legacyTime($input['from_'], 'Y-m-d H:i:s');
+		$to = $this->legacyTime($input['to_'], 'Y-m-d H:i:s');
+
+		// The agegroups are copied with both sexes: the legacy booking form only
+		// posts the male count, so it stores the female count as 0. With no
+		// participant at all the counts stay empty, as boagegroup::extract_form_data
+		// leaves them, so validation asks for the number of participants.
+		$rows = $this->repo->fetchAgegroups($appId);
+		$hasParticipants = false;
+		foreach ($rows as $row) {
+			if ((int) $row['male'] > 0 || (int) $row['female'] > 0) {
+				$hasParticipants = true;
+			}
+		}
+		$agegroups = array_map(static function (array $row) use ($hasParticipants): array {
+			return [
+				'agegroup_id' => (int) $row['id'],
+				'male'        => $hasParticipants ? (int) $row['male'] : null,
+				'female'      => $hasParticipants ? (int) $row['female'] : null,
+			];
+		}, $rows);
+
+		$booking = [
+			'application_id' => $appId,
+			'activity_id'    => (int) ($app['activity_id'] ?? 0),
+			'group_id'       => $groupId ?: '',
+			'season_id'      => $input['season_id'] ?: '',
+			'building_id'    => $buildingId,
+			'building_name'  => $buildingName,
+			'from_'          => $from,
+			'to_'            => $to,
+			'resources'      => $input['resource_ids'],
+			'cost'           => $input['cost'],
+			'audience'       => $this->repo->fetchTargetAudienceIds($appId),
+			'agegroups'      => $agegroups,
+			'skip_bas'       => 0,
+			'active'         => '1',
+			'completed'      => '0',
+			// uibooking::add sets every new booking to remind, whatever is posted.
+			'reminder'       => '1',
+			'secret'         => bin2hex(random_bytes(16)),
+		];
+		$this->addCostHistory($booking, (float) $input['cost']);
+
+		$bookingBo = \CreateObject('booking.bobooking');
+		$validation = $this->legacyValidate($bookingBo, $booking);
+		// uibooking::add lets a booking overlap an event: it drops that error.
+		unset($validation['event']);
+		$errors = array_merge_recursive($errors, $validation);
+		if ($errors) {
+			return ['errors' => $errors];
+		}
+
+		$allocation = [
+			'application_id'  => $appId,
+			'organization_id' => $orgId,
+			'season_id'       => $booking['season_id'],
+			'building_id'     => $buildingId,
+			'building_name'   => $buildingName,
+			'from_'           => $from,
+			'to_'             => $to,
+			'resources'       => $booking['resources'],
+			'cost'            => $booking['cost'],
+			'active'          => '1',
+			'completed'       => '0',
+		];
+		$allocationBo = \CreateObject('booking.boallocation');
+
+		if (!$bookingBo->allow_create($booking) || !$allocationBo->allow_create($allocation)) {
+			throw new RuntimeException('Not allowed to create this booking', 403);
+		}
+
+		// The legacy add() joins a transaction that is already open instead of
+		// committing its own, so this one covers both inserts. It must be the only
+		// one: Db keeps a single flag, so an inner begin/commit would end it early.
+		$db = \App\Database\Db::getInstance();
+		if ($db->get_transaction()) {
+			throw new RuntimeException('Cannot create the booking inside an open transaction', 500);
+		}
+		$db->transaction_begin();
+		try {
+			$allocationReceipt = $allocationBo->add($allocation);
+			$booking['allocation_id'] = (int) $allocationReceipt['id'];
+			$bookingReceipt = $bookingBo->add($booking);
+			$db->transaction_commit();
+		} catch (\Throwable $e) {
+			$db->transaction_abort();
+			error_log("Creating a booking for application {$appId} failed: " . $e->getMessage());
+			throw new RuntimeException('The booking could not be saved', 500);
+		}
+
+		$bookingId = (int) $bookingReceipt['id'];
+		return [
+			'id'            => $bookingId,
+			'type'          => 'booking',
+			'allocation_id' => $booking['allocation_id'],
+			'edit_url'      => '/?menuaction=booking.uibooking.show&id=' . $bookingId,
+		];
+	}
+
+	private function requireApplication(int $appId): array
+	{
+		$app = $this->repo->getById($appId);
+		if (!$app) {
+			throw new RuntimeException('Application not found', 404);
+		}
+		return $app;
+	}
+
+	/**
+	 * The legacy validation errors for an entity, as {field: [message]}.
+	 */
+	private function legacyValidate($bo, array $entity): array
+	{
+		// The validator reads every defined field; an absent one validates like
+		// null, so name them all and spare the error log the undefined keys.
+		foreach (array_keys($bo->so->get_field_defs()) as $field) {
+			if (!array_key_exists($field, $entity)) {
+				$entity[$field] = null;
+			}
+		}
+
+		try {
+			return $bo->validate($entity);
+		} catch (\InvalidArgumentException $e) {
+			// soseason::timespan_within_season throws for a season that does not exist.
+			return ['season_id' => [lang('booking.please select a season')]];
+		}
+	}
+
+	/**
+	 * A resource that does not belong to the application's building, as a
+	 * validation error. The legacy form only lists the building's resources but
+	 * its handler accepts any id.
+	 */
+	private function checkResources(int $buildingId, array $resourceIds): array
+	{
+		$allowed = $this->repo->fetchBuildingResourceIds($buildingId);
+		foreach ($resourceIds as $resourceId) {
+			if (!in_array((int) $resourceId, $allowed, true)) {
+				return ['resources' => [lang('booking.resource_not_in_building')]];
+			}
+		}
+		return [];
+	}
+
+	/**
+	 * One cost history row when the officer set a price, like add_cost_history()
+	 * in the legacy allocation and booking forms.
+	 */
+	private function addCostHistory(array &$entity, float $cost): void
+	{
+		if ($cost == 0.0) {
+			return;
+		}
+		$entity['costs'][] = [
+			'time'    => 'now',
+			'author'  => $this->currentFullName(),
+			'comment' => lang('booking.cost is set'),
+			'cost'    => $cost,
+		];
+	}
+
+	/**
+	 * The modal's naive local time ("Y-m-d\TH:i[:s]") in the format the legacy
+	 * store expects, or '' when it does not parse, so validation reports it as
+	 * missing.
+	 */
+	private function legacyTime(string $value, string $format): string
+	{
+		$value = str_replace('T', ' ', trim($value));
+		foreach (['Y-m-d H:i:s', 'Y-m-d H:i'] as $inputFormat) {
+			$time = \DateTime::createFromFormat('!' . $inputFormat, $value);
+			if ($time && $time->format($inputFormat) === $value) {
+				return $time->format($format);
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * The current user's full name, as the legacy forms write it into cost history.
+	 */
+	private function currentFullName(): string
+	{
+		$user = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+		return (string) ($user['fullname'] ?? '');
+	}
+
+	/**
 	 * Carry the application's purchase order onto an allocation just created
 	 * for it, and price the allocation from the result.
 	 *

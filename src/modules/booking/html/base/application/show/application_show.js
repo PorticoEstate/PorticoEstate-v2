@@ -935,9 +935,10 @@
 		// assocRef of every element a date row shows; the rest go to "Andre elementer".
 		var placedAssocs = {};
 
-		// Allocations are org-level grants: an individual/SSN application has no
-		// organisation, so the Allocation option is hidden for those (booking/event
-		// only). Booking/event remain available to individuals.
+		// Allocations and bookings belong to an organisation. An individual/SSN
+		// application has none to create them for, so for those two the officer
+		// picks one in the create modal; organisation applications create them in
+		// one click.
 		var hasOrg = !!(app.customer_organization_id || app.customer_organization_number);
 
 		// Split button — primary "Lag arrangement" + caret dropdown for the rest.
@@ -953,7 +954,7 @@
 				'<button type="button" class="booking-button ds-button" data-variant="primary" data-color="accent" data-size="sm" data-booking-action="create-date" data-create="event" data-date-id="' + d.id + '">' + esc(lang('createEvent')) + '</button>' +
 				'<button type="button" class="booking-button ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '" aria-label="' + esc(lang('dateActions')) + '">' + ICONS.chevron + '</button>' +
 				'<div class="booking-dropdown ds-dropdown app-show__menu app-show__split-menu" data-booking-role="dropdown" popover id="' + menuId + '"><ul>' +
-				(hasOrg ? '<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="create-date" data-create="allocation" data-date-id="' + d.id + '"><span>' + esc(lang('createAllocation')) + '</span></button></li>' : '') +
+				'<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="create-date" data-create="allocation" data-date-id="' + d.id + '"><span>' + esc(lang('createAllocation')) + '</span></button></li>' +
 				'<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="create-date" data-create="booking" data-date-id="' + d.id + '"><span>' + esc(lang('createBooking')) + '</span></button></li>' +
 				// Reject only this sub-application (combined carts) — siblings stay open.
 				(isCombined ? '<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="reject-application" data-color="danger" data-reject-app="' + esc(d.application_id) + '"><span>' + esc(lang('rejectApplication')) + '</span></button></li>' : '') +
@@ -1175,6 +1176,270 @@
 			});
 		}
 
+		// Create modal for an applicant without an organisation. It recreates the
+		// legacy allocation/booking form (organisation search, group, season,
+		// time, resources, price) and creates through the REST layer only. The
+		// building, activity, audience and agegroups come from the application
+		// server-side, so the modal does not send them.
+		function showCreateModal(kind, d) {
+			if (!d) return;
+			var isBooking = kind === 'booking';
+			// In a combined cart the date belongs to its own sub-application.
+			var appUrl = apiUrl.replace(/\/\d+$/, '/' + d.application_id);
+			var restRoot = apiUrl.replace(/\/applications\/\d+.*$/, '');
+			var dateResources = (d.resources || []).map(String);
+
+			function modalField(id, label, controlHtml, description) {
+				return '<div class="booking-field ds-field" data-size="sm">' +
+					'<label class="booking-label ds-label" for="' + id + '">' + esc(label) + '</label>' +
+					(description ? '<div data-field="description">' + esc(description) + '</div>' : '') +
+					controlHtml + '</div>';
+			}
+
+			// "2030-10-14T10:00:00+02:00" → the datetime-local value "2030-10-14T10:00"
+			function localValue(iso) {
+				return normDate(iso).substring(0, 16);
+			}
+
+			function dayLabel(ymd) {
+				return String(ymd || '').substring(0, 10).split('-').reverse().join('.');
+			}
+
+			var body = '<div class="app-show__create-form">' +
+				'<div class="booking-alert ds-alert" data-color="danger" role="alert" data-create-errors hidden></div>' +
+				'<p class="booking-paragraph ds-paragraph" data-size="sm">' + esc(lang('building')) + ': ' + esc(app.building_name) +
+					(isCombined ? ' · ' + esc(lang('application')) + ' #' + esc(d.application_id) : '') + '</p>' +
+				modalField('modal-create-org-q', lang('organization') + ' *',
+					'<input type="search" id="modal-create-org-q" class="booking-input ds-input" autocomplete="off">',
+					lang('searchOrganizationHint')) +
+				'<div class="booking-field ds-field" data-size="sm" data-create-org-field hidden>' +
+					'<label class="booking-label ds-label" for="modal-create-org">' + esc(lang('selectOrganization')) + '</label>' +
+					'<select id="modal-create-org" class="booking-input ds-input"></select></div>' +
+				'<p class="booking-paragraph ds-paragraph" data-size="sm" data-create-org-hint hidden></p>' +
+				(isBooking ? modalField('modal-create-group', lang('selectGroup') + ' *',
+					'<select id="modal-create-group" class="booking-input ds-input" disabled><option value="">' + esc(lang('selectGroup')) + '…</option></select>') : '') +
+				modalField('modal-create-season', lang('season') + ' *',
+					'<select id="modal-create-season" class="booking-input ds-input" disabled><option value="">' + esc(lang('loading')) + '…</option></select>') +
+				modalField('modal-create-from', lang('from') + ' *',
+					'<input type="datetime-local" id="modal-create-from" class="booking-input ds-input" value="' + esc(localValue(d.from_)) + '">') +
+				modalField('modal-create-to', lang('to') + ' *',
+					'<input type="datetime-local" id="modal-create-to" class="booking-input ds-input" value="' + esc(localValue(d.to_)) + '">') +
+				'<fieldset class="booking-fieldset ds-fieldset" data-size="sm">' +
+					'<legend class="booking-label ds-label">' + esc(lang('resources')) + ' *</legend>' +
+					'<div class="app-show__create-resources" data-create-resources>' + esc(lang('loading')) + '…</div></fieldset>' +
+				modalField('modal-create-cost', lang('cost'),
+					'<input type="number" id="modal-create-cost" class="booking-input ds-input" min="0" step="0.01" value="0">') +
+				(isBooking ? '' :
+					modalField('modal-create-invoice', lang('additionalInvoiceInformation'),
+						'<textarea id="modal-create-invoice" class="booking-input ds-input" rows="2"></textarea>') +
+					'<div class="booking-field ds-field" data-size="sm"><input type="checkbox" class="booking-input ds-input" id="modal-create-skip-bas">' +
+					'<label class="booking-label ds-label" for="modal-create-skip-bas">' + esc(lang('skipBas')) + '</label></div>') +
+				'</div>';
+			var footer = '<button type="button" class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+				'<button type="button" class="booking-button ds-button" data-variant="primary" data-color="accent" data-create-submit>' + esc(lang('save')) + '</button>';
+
+			var dlg = showModal('create-dialog', lang(isBooking ? 'createBooking' : 'createAllocation') + ' – ' + fmtDate(d.from_), body, footer);
+			function q(selector) { return dlg.querySelector(selector); }
+
+			var orgInput = q('#modal-create-org-q');
+			var orgField = q('[data-create-org-field]');
+			var orgSelect = q('#modal-create-org');
+			var orgHint = q('[data-create-org-hint]');
+			var groupSelect = q('#modal-create-group');
+			var seasonSelect = q('#modal-create-season');
+			var fromInput = q('#modal-create-from');
+			var toInput = q('#modal-create-to');
+			var resourcesBox = q('[data-create-resources]');
+			var errorsBox = q('[data-create-errors]');
+			var submitBtn = q('[data-create-submit]');
+
+			// Each lookup renders only the answer to its latest request: debounced
+			// searches and quick re-choices can come back out of order.
+			var orgSeq = 0, groupSeq = 0, seasonSeq = 0;
+			var searchTimer = null;
+
+			function showOrgHint(text) {
+				orgHint.textContent = text || '';
+				orgHint.hidden = !text;
+			}
+
+			function resetGroups() {
+				if (!groupSelect) return;
+				groupSeq++;
+				groupSelect.innerHTML = '<option value="">' + esc(lang('selectGroup')) + '…</option>';
+				groupSelect.disabled = true;
+			}
+
+			function searchOrganizations() {
+				var query = orgInput.value.trim();
+				var seq = ++orgSeq;
+				orgSelect.innerHTML = '';
+				orgField.hidden = true;
+				resetGroups();
+				if (query.length < 2) {
+					showOrgHint('');
+					return;
+				}
+				fetchJson(appUrl + '/organizations?query=' + encodeURIComponent(query)).then(function (res) {
+					if (seq !== orgSeq) return;
+					var rows = (res && res.results) || [];
+					if (!rows.length) {
+						showOrgHint(lang('noOrganizationsFound'));
+						return;
+					}
+					showOrgHint('');
+					orgSelect.innerHTML = '<option value="">' + esc(lang('selectOrganization')) + '…</option>' +
+						rows.map(function (o) {
+							return '<option value="' + esc(o.id) + '">' + esc(o.name) +
+								(o.organization_number ? ' (' + esc(o.organization_number) + ')' : '') + '</option>';
+						}).join('') +
+						(res.total > rows.length ? '<option value="" disabled>' + esc(lang('refineOrganizationSearch')) + '</option>' : '');
+					orgField.hidden = false;
+				}).catch(function () {
+					if (seq === orgSeq) showOrgHint(lang('error'));
+				});
+			}
+
+			orgInput.addEventListener('input', function () {
+				orgSeq++;
+				clearTimeout(searchTimer);
+				searchTimer = setTimeout(searchOrganizations, 300);
+			});
+
+			function loadGroups(orgId) {
+				var seq = ++groupSeq;
+				groupSelect.innerHTML = '<option value="">' + esc(lang('loading')) + '…</option>';
+				groupSelect.disabled = true;
+				fetchJson(restRoot + '/organizations/' + encodeURIComponent(orgId) + '/groups').then(function (groups) {
+					if (seq !== groupSeq) return;
+					groups = groups || [];
+					groupSelect.innerHTML = '<option value="">' + esc(lang('selectGroup')) + '…</option>' +
+						groups.map(function (g) {
+							return '<option value="' + esc(g.id) + '">' + esc(g.name) + '</option>';
+						}).join('');
+					// A single active group is the one the server would pick anyway.
+					if (groups.length === 1) groupSelect.value = String(groups[0].id);
+					groupSelect.disabled = false;
+				}).catch(function () {
+					if (seq === groupSeq) groupSelect.innerHTML = '<option value="">' + esc(lang('error')) + '</option>';
+				});
+			}
+
+			orgSelect.addEventListener('change', function () {
+				if (!groupSelect) return;
+				if (orgSelect.value) loadGroups(orgSelect.value);
+				else resetGroups();
+			});
+
+			// Seasons of the building covering the start date: one is preselected,
+			// several (overlapping seasons) are left for the officer to choose.
+			function loadSeasons() {
+				var date = fromInput.value.substring(0, 10);
+				var seq = ++seasonSeq;
+				seasonSelect.disabled = true;
+				seasonSelect.innerHTML = '<option value="">' + esc(lang('loading')) + '…</option>';
+				if (!date) return;
+				fetchJson(appUrl + '/seasons?date=' + encodeURIComponent(date)).then(function (seasons) {
+					if (seq !== seasonSeq) return;
+					seasons = seasons || [];
+					if (!seasons.length) {
+						seasonSelect.innerHTML = '<option value="">' + esc(lang('noSeasonForDate')) + '</option>';
+						return;
+					}
+					seasonSelect.innerHTML = (seasons.length > 1 ? '<option value="">' + esc(lang('selectSeason')) + '</option>' : '') +
+						seasons.map(function (s) {
+							return '<option value="' + esc(s.id) + '">' + esc(s.name) +
+								' (' + esc(dayLabel(s.from_)) + ' – ' + esc(dayLabel(s.to_)) + ')</option>';
+						}).join('');
+					seasonSelect.disabled = false;
+				}).catch(function () {
+					if (seq === seasonSeq) seasonSelect.innerHTML = '<option value="">' + esc(lang('error')) + '</option>';
+				});
+			}
+
+			fromInput.addEventListener('change', loadSeasons);
+			loadSeasons();
+
+			// The building's resources, with the date's own resources checked.
+			fetchJson(restRoot + '/buildings/' + encodeURIComponent(app.building_id) + '/resources').then(function (resources) {
+				resourcesBox.innerHTML = (resources || []).map(function (r) {
+					var id = 'modal-create-res-' + r.id;
+					return '<div class="booking-field ds-field" data-size="sm">' +
+						'<input type="checkbox" class="booking-input ds-input" id="' + esc(id) + '" value="' + esc(r.id) + '"' +
+						(dateResources.indexOf(String(r.id)) !== -1 ? ' checked' : '') + '>' +
+						'<label class="booking-label ds-label" for="' + esc(id) + '">' + esc(r.name) + '</label></div>';
+				}).join('');
+			}).catch(function () {
+				resourcesBox.textContent = lang('error');
+			});
+
+			function showErrors(messages) {
+				errorsBox.innerHTML = messages.map(function (m) {
+					return '<p class="booking-paragraph ds-paragraph" data-size="sm">' + esc(m) + '</p>';
+				}).join('');
+				errorsBox.hidden = !messages.length;
+				if (messages.length) errorsBox.scrollIntoView({ block: 'nearest' });
+			}
+
+			// datetime-local "2030-10-14T10:00" → naive local time with seconds
+			function serverTime(value) {
+				return value ? value.substring(0, 16) + ':00' : '';
+			}
+
+			// One create POST per Lagre; the server validates everything.
+			submitBtn.addEventListener('click', function () {
+				var payload = {
+					organization_id: parseInt(orgSelect.value, 10) || 0,
+					season_id: parseInt(seasonSelect.value, 10) || 0,
+					from_: serverTime(fromInput.value),
+					to_: serverTime(toInput.value),
+					resource_ids: Array.prototype.map.call(resourcesBox.querySelectorAll('input[type="checkbox"]:checked'), function (c) {
+						return parseInt(c.value, 10);
+					}),
+					cost: parseFloat(q('#modal-create-cost').value) || 0
+				};
+				if (isBooking) {
+					payload.group_id = parseInt(groupSelect.value, 10) || 0;
+				} else {
+					payload.skip_bas = q('#modal-create-skip-bas').checked ? 1 : 0;
+					payload.additional_invoice_information = q('#modal-create-invoice').value;
+				}
+
+				submitBtn.disabled = true;
+				submitBtn.setAttribute('aria-busy', 'true');
+				showErrors([]);
+
+				fetch(appUrl + (isBooking ? '/bookings' : '/allocations'), {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(payload)
+				}).then(function (res) {
+					return res.json().catch(function () { return {}; }).then(function (json) {
+						if (!res.ok) throw { status: res.status, body: json };
+						return json;
+					});
+				}).then(function () {
+					closeModal('create-dialog');
+					showToast(lang('successfullyCreated'));
+					refreshToolbar(app);
+					var tr = root.querySelector('tr[data-date-id="' + d.id + '"]');
+					if (tr) refreshDateRow(tr.cells[tr.cells.length - 1]);
+				}).catch(function (err) {
+					submitBtn.disabled = false;
+					submitBtn.removeAttribute('aria-busy');
+					var res = (err && err.body) || {};
+					var messages = res.errors
+						? [].concat.apply([], Object.keys(res.errors).map(function (k) { return [].concat(res.errors[k]); }))
+						: [];
+					if (!messages.length) {
+						messages = [lang('error') + ': ' + (res.error || (err && err.status ? 'HTTP ' + err.status : (err && err.message) || ''))];
+					}
+					showErrors(messages);
+				});
+			});
+		}
+
 		// Delegated event: date action split button (primary + dropdown items)
 		root.addEventListener('click', function (e) {
 					var btn = e.target.closest('[data-booking-action="create-date"]');
@@ -1190,6 +1455,15 @@
 			};
 			var url = urls[btn.dataset.create];
 			if (!url) return;
+
+			// No organisation on the application: the officer picks one in the
+			// create modal, which posts nothing until Lagre.
+			if (!hasOrg && (btn.dataset.create === 'allocation' || btn.dataset.create === 'booking')) {
+				var pop = btn.closest('[data-booking-role="dropdown"]');
+				if (pop && pop.matches(':popover-open')) pop.hidePopover();
+				showCreateModal(btn.dataset.create, datesById[btn.dataset.dateId]);
+				return;
+			}
 
 			// Disable only the clicked button while submitting. The three
 			// create actions (allocation/booking/event) for a date are

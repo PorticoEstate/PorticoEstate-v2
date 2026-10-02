@@ -242,6 +242,11 @@ $app->group('/booking/applications', function (RouteCollectorProxy $group)
 	$group->get('/{id:[0-9]+}/recurring-preview', ApplicationController::class . ':recurringPreview');
 	$group->post('/{id:[0-9]+}/create-recurring-allocations', ApplicationController::class . ':createRecurringAllocations');
 	$group->get('/{id:[0-9]+}/hospitalities', ApplicationController::class . ':showHospitalities');
+	// Create modal for applicants without an organization
+	$group->get('/{id:[0-9]+}/organizations', ApplicationController::class . ':searchOrganizations');
+	$group->get('/{id:[0-9]+}/seasons', ApplicationController::class . ':showSeasons');
+	$group->post('/{id:[0-9]+}/allocations', ApplicationController::class . ':createAllocation');
+	$group->post('/{id:[0-9]+}/bookings', ApplicationController::class . ':createBooking');
 })
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));

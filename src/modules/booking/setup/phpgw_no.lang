@@ -1284,3 +1284,10 @@ cancel_price_update	booking	no	Avbryt
 date and time	booking	no	Tidspunkt
 outside_series	booking	no	Utenfor serien
 other_associated_items	booking	no	Andre elementer
+select_organization	booking	no	Velg organisasjon
+search_organization_hint	booking	no	Søk på navn eller organisasjonsnummer
+no_organizations_found	booking	no	Ingen organisasjoner funnet
+refine_organization_search	booking	no	Flere treff – skriv mer for å avgrense
+no_season_for_date	booking	no	Ingen aktiv sesong dekker denne datoen
+resource_not_in_building	booking	no	Ressursen hører ikke til dette bygget
+group_not_in_organization	booking	no	Gruppen hører ikke til den valgte organisasjonen

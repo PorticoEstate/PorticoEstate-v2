@@ -13,6 +13,7 @@ use App\modules\bookingfrontend\repositories\ArticleRepository;
 use App\modules\bookingfrontend\services\applications\ApplicationService;
 use App\modules\bookingfrontend\services\FreeTimeService;
 use App\modules\phpgwapi\security\Sessions;
+use App\modules\phpgwapi\services\Log;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -1101,9 +1102,16 @@ class ApplicationController extends DocumentController
             ]));
             return $response->withHeader('Content-Type', 'application/json');
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
+            // The message, file and trace go to phpgw_log, not to the citizen.
+            $log = new Log();
+            $log->fatal([
+                'text' => get_class($e) . ': ' . $e->getMessage() . "\n" . $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
             return ResponseHelper::sendErrorResponse(
-                ['error' => "Error uploading files: " . $e->getMessage()],
+                ['error' => lang('booking.attachment_upload_failed')],
                 500
             );
         }

@@ -1301,3 +1301,5 @@ no_attachments	booking	no	Ingen vedlegg
 attachment_uploaded	booking	no	Vedlegget er lastet opp
 attachment_deleted	booking	no	Vedlegget er slettet
 delete_attachment_confirm	booking	no	Vil du slette vedlegget?
+attachment_empty	booking	no	Filen er tom
+attachment_delete_failed	booking	no	Slettingen feilet

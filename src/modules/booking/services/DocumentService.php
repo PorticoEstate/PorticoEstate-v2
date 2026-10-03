@@ -209,6 +209,9 @@ class DocumentService
         if ($size === null) {
             return lang('booking.attachment_upload_failed');
         }
+        if ($size === 0) {
+            return lang('booking.attachment_empty');
+        }
         if ($size > self::UPLOAD_MAX_BYTES) {
             return $tooLarge;
         }

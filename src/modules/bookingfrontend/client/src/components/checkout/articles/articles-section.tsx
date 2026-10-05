@@ -48,6 +48,14 @@ const applicationLines = (application: IApplication): IOrderLine[] =>
     (application.orders ?? []).flatMap(order => order.lines ?? []);
 
 /**
+ * Whether a room in the application still waits for its price. Its sum leaves
+ * that room out, so a total including it is not yet known.
+ */
+export const hasPendingPriceChoice = (application: IApplication, articles: IArticle[]) =>
+    applicationLines(application).some(line =>
+        isPricePending(line, articles.find(a => a.id === line.article_mapping_id)));
+
+/**
  * The first room in the cart whose price has yet to be chosen, if any.
  */
 export const findPendingPriceChoice = (applications: IApplication[], articles: IArticle[]) => {
@@ -112,9 +120,9 @@ const ArticlesSection: FC<ArticlesSectionProps> = ({applications, showPriceChoic
         return null;
     }
 
-    const articlesTotal = groups
-        .flatMap(group => group.lines)
-        .reduce((sum, line) => sum + line.total, 0);
+    const allLines = groups.flatMap(group => group.lines);
+    const articlesTotal = allLines.reduce((sum, line) => sum + line.total, 0);
+    const totalPending = allLines.some(line => line.pricePending);
 
     // Re-save the application's order with the chosen price; the server prices
     // the line from the price row, never from the client
@@ -195,10 +203,10 @@ const ArticlesSection: FC<ArticlesSectionProps> = ({applications, showPriceChoic
                 </Table.Body>
             </Table>
 
-            {articlesTotal > 0 && (
+            {(articlesTotal > 0 || totalPending) && (
                 <div className={styles.articlesTotal}>
                     <span>{t('bookingfrontend.articles')} {t('bookingfrontend.total').toLowerCase()}:</span>
-                    <span>{formatCurrency(articlesTotal)}</span>
+                    <span>{totalPending ? t('bookingfrontend.price_pending') : formatCurrency(articlesTotal)}</span>
                 </div>
             )}
         </div>

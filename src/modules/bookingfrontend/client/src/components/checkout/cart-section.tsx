@@ -18,9 +18,11 @@ interface CartSectionProps {
     onBuildingParentIdChange?: (buildingId: number, parentId: number) => void;
     /** Show the error at a room price that still has to be chosen */
     showPriceChoiceErrors?: boolean;
+    /** Applications with a room whose price is still to be chosen */
+    pendingPriceApplicationIds?: Set<number>;
 }
 
-const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication, buildingParentIds, onBuildingParentIdChange, showPriceChoiceErrors}) => {
+const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication, buildingParentIds, onBuildingParentIdChange, showPriceChoiceErrors, pendingPriceApplicationIds}) => {
     const t = useTrans();
     const {data: serverSettings} = useServerSettings();
     const enableHospitality = !!serverSettings?.booking_config?.enable_hospitality;
@@ -60,6 +62,14 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
             return total + cost;
         }, 0);
     };
+
+    // A room whose price is still to be chosen counts as 0 in the sum, so the
+    // total is not shown until the price is chosen
+    const hasPendingPrice = (apps: IApplication[]): boolean =>
+        apps.some(app => pendingPriceApplicationIds?.has(app.id) ?? false);
+
+    const formatTotal = (apps: IApplication[], total: number): string =>
+        hasPendingPrice(apps) ? t('bookingfrontend.price_pending') : formatCurrency(total);
 
     // Separate recurring and regular applications, then group regular applications by building
     const {regularApplicationsByBuilding, recurringApplications} = useMemo(() => {
@@ -134,10 +144,10 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                             applications={buildingGroup.applications}
                         />
                         )}
-                        {showSectionTotals && sectionTotal > 0 && (
+                        {showSectionTotals && (sectionTotal > 0 || hasPendingPrice(buildingGroup.applications)) && (
                             <div className={styles.sectionTotal}>
                                 <strong>{t('bookingfrontend.total')}:</strong>
-                                <strong>{formatCurrency(sectionTotal)}</strong>
+                                <strong>{formatTotal(buildingGroup.applications, sectionTotal)}</strong>
                             </div>
                         )}
                     </section>
@@ -161,10 +171,10 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                             onParentIdChange={undefined}
                         />
                         <ArticlesSection applications={recurringApplications} showPriceChoiceErrors={showPriceChoiceErrors}/>
-                        {showSectionTotals && recurringTotal > 0 && (
+                        {showSectionTotals && (recurringTotal > 0 || hasPendingPrice(recurringApplications)) && (
                             <div className={styles.sectionTotal}>
                                 <strong>{t('bookingfrontend.total')}:</strong>
-                                <strong>{formatCurrency(recurringTotal)}</strong>
+                                <strong>{formatTotal(recurringApplications, recurringTotal)}</strong>
                             </div>
                         )}
                     </section>
@@ -172,10 +182,10 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
             })()}
 
             {/* Grand Total */}
-            {grandTotal > 0 && (
+            {(grandTotal > 0 || hasPendingPrice(applications)) && (
                 <div className={styles.grandTotal}>
                     <strong>{t('bookingfrontend.total')}:</strong>
-                    <strong>{formatCurrency(grandTotal)}</strong>
+                    <strong>{formatTotal(applications, grandTotal)}</strong>
                 </div>
             )}
         </div>

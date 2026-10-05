@@ -2,7 +2,7 @@
 import React, {FC, useState, useMemo, useEffect} from 'react';
 import CartSection from "./cart-section";
 import {useBookingUser, usePartialApplications, useUpdatePartialApplication, useResourceRegulationDocuments, useResourceArticles} from "@/service/hooks/api-hooks";
-import {findPendingPriceChoice, priceChoiceFieldId} from "@/components/checkout/articles/articles-section";
+import {findPendingPriceChoice, hasPendingPriceChoice, priceChoiceFieldId} from "@/components/checkout/articles/articles-section";
 import { CheckoutEventDetailsData, createCheckoutEventDetailsSchema } from './checkout-event-details-schema';
 import { BillingFormData } from './billing-form-schema';
 import CheckoutEventDetails from "@/components/checkout/checkout-event-details";
@@ -143,6 +143,11 @@ const CheckoutContent: FC = () => {
     // choice; the applications cannot be submitted until it is made
     const {data: cartArticles} = useResourceArticles({resourceIds: resources.map(resource => resource.id)});
     const pendingPriceChoice = findPendingPriceChoice(applications?.list ?? [], cartArticles ?? []);
+    const pendingPriceApplicationIds = useMemo(() => new Set(
+        (applications?.list ?? [])
+            .filter(app => hasPendingPriceChoice(app, cartArticles ?? []))
+            .map(app => app.id)
+    ), [applications?.list, cartArticles]);
     const [showPriceChoiceErrors, setShowPriceChoiceErrors] = useState(false);
 
     // Shows the error at the field and by the submit buttons, and moves focus to the field
@@ -442,6 +447,7 @@ const CheckoutContent: FC = () => {
                 buildingParentIds={buildingParentIds}
                 onBuildingParentIdChange={handleBuildingParentIdChange}
                 showPriceChoiceErrors={showPriceChoiceErrors}
+                pendingPriceApplicationIds={pendingPriceApplicationIds}
             />
 
             {process.env.NODE_ENV === 'development' && (

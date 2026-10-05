@@ -586,14 +586,16 @@
 		}
 
 		/**
-		 * The season a recurring application's allocations are proposed in, out of
-		 * $seasons in the order they were read. A building can have several active
-		 * seasons over the same dates, each holding its own resources, so the one
-		 * holding the most of the application's resources wins; between equals the
-		 * first one read does, and the caller's ORDER BY settles it.
+		 * The season a recurring series is put in where nobody chose one for it: the
+		 * wizard's prefill, and a date of the series outside the season the officer
+		 * did choose. Picked out of $seasons in the order they were read. A building
+		 * can have several active seasons over the same dates, each holding its own
+		 * resources, so the one holding the most of the series' resources wins;
+		 * between equals the first one read does, and the caller's ORDER BY settles
+		 * it.
 		 *
 		 * @param array $seasons seasons as read, each with its 'resources'
-		 * @param array $resource_ids the application's resources
+		 * @param array $resource_ids the series' resources
 		 * @return int|null
 		 */
 		private function pick_recurring_season( array $seasons, array $resource_ids )
@@ -980,21 +982,30 @@
 						$allocation['from_'] = $fromdate;
 						$allocation['to_'] = $todate;
 
-						// Update season_id for each date - it may span different seasons
+						// Update season_id for each date - it may span different seasons. A date
+						// inside the season the officer chose keeps it; only a date outside it is
+						// given another, picked the same way as the prefill.
 						$iter_date = date('Y-m-d', strtotime($fromdate));
-						$iter_seasons = $this->season_bo->read(array(
-							'filters' => array(
-								'active' => 1,
-								'building_id' => $allocation['building_id'],
-								'where' => array(
-									"%%table%%.from_ <= '{$iter_date}'",
-									"%%table%%.to_ >= '{$iter_date}'"
-								)
-							),
-							'results' => 1
-						));
-						if (!empty($iter_seasons['results'][0])) {
-							$allocation['season_id'] = $iter_seasons['results'][0]['id'];
+						if (!empty($season['id']) && strtotime($season['from_']) <= strtotime($iter_date) && strtotime($season['to_']) >= strtotime($iter_date)) {
+							$allocation['season_id'] = $season['id'];
+						} else {
+							$iter_seasons = $this->season_bo->read(array(
+								'filters' => array(
+									'active' => 1,
+									'building_id' => $allocation['building_id'],
+									'where' => array(
+										"%%table%%.from_ <= '{$iter_date}'",
+										"%%table%%.to_ >= '{$iter_date}'"
+									)
+								),
+								'sort' => array('from_', 'id'),
+								'dir' => 'desc',
+								'results' => -1
+							));
+							$iter_season_id = $this->pick_recurring_season($iter_seasons['results'], (array)$allocation['resources']);
+							if ($iter_season_id) {
+								$allocation['season_id'] = $iter_season_id;
+							}
 						}
 						// If no season found, keep the previous season_id and let validation catch it
 

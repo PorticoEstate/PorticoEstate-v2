@@ -410,6 +410,30 @@
 	gap: 0.25rem 1rem;
 }
 
+/* The case officer's attachment form under the Dokumenter list; the button keeps
+   its own width instead of stretching across the card. */
+.app-show__upload-form {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 0.75rem;
+	margin-top: 1rem;
+}
+
+/* Designsystemet has no file input, and ds-input gives this one the fixed height
+   of a text field, which clips the browser's file button. The field grows to fit
+   the button, and the button takes the spacing and radius of the page's buttons. */
+.app-show__upload-form input[type="file"] {
+	height: auto;
+	padding: var(--ds-size-2);
+}
+
+.app-show__upload-form input[type="file"]::file-selector-button {
+	margin-right: var(--ds-size-3);
+	padding: var(--ds-size-2) var(--ds-size-4);
+	border-radius: var(--ds-border-radius-default);
+}
+
 /* Designsystemet dialog */
 .app-show__dialog-footer {
 	display: flex;

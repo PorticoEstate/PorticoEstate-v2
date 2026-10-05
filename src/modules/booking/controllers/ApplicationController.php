@@ -2,6 +2,7 @@
 
 namespace App\modules\booking\controllers;
 
+use App\modules\phpgwapi\services\Log;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\booking\models\Application;
 use App\modules\booking\models\ApplicationComment;
@@ -10,11 +11,13 @@ use App\modules\booking\models\Document;
 use App\modules\booking\models\Order;
 use App\modules\booking\repositories\ApplicationRepository;
 use App\modules\booking\services\ApplicationService;
+use App\modules\booking\services\DocumentService;
 use App\helpers\ResponseHelper;
 
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Psr\Http\Message\UploadedFileInterface;
 use RuntimeException;
 use Exception;
 use Sanitizer;
@@ -657,13 +660,116 @@ class ApplicationController
 		try {
 			$rows = $this->repo->fetchDocuments($id);
 			$documents = array_map(function ($row) {
-				$doc = (new Document($row, Document::OWNER_APPLICATION))->serialize();
-				$doc['download_url'] = '/?menuaction=booking.uidocument_application.download&id=' . $row['id'];
-				return $doc;
+				return $this->documentJson(new Document($row, Document::OWNER_APPLICATION));
 			}, $rows);
 			return ResponseHelper::sendJSONResponse($documents, 200, $response);
 		} catch (Exception $e) {
 			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
+		}
+	}
+
+	/**
+	 * A document as the documents list returns it, with its download link.
+	 */
+	private function documentJson(Document $document): array
+	{
+		$doc = $document->serialize();
+		$doc['download_url'] = '/?menuaction=booking.uidocument_application.download&id=' . $document->id;
+		return $doc;
+	}
+
+	/**
+	 * Log a failed document request to phpgw_log. The response only says that it
+	 * failed: the message, file and trace stay on the server.
+	 */
+	private function logDocumentError(\Throwable $e): void
+	{
+		$log = new Log();
+		$log->fatal([
+			'text' => get_class($e) . ': ' . $e->getMessage() . "\n" . $e->getTraceAsString(),
+			'file' => $e->getFile(),
+			'line' => $e->getLine(),
+		]);
+	}
+
+	/**
+	 * @OA\Post(
+	 *     path="/booking/applications/{id}/documents",
+	 *     summary="Upload an attachment to the application (case officer only)",
+	 *     tags={"Applications"},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Application ID", @OA\Schema(type="integer")),
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\MediaType(
+	 *             mediaType="multipart/form-data",
+	 *             @OA\Schema(required={"file"}, @OA\Property(property="file", type="string", format="binary"))
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=201, description="Stored: {document}", @OA\JsonContent(type="object")),
+	 *     @OA\Response(response=403, description="Not the case officer"),
+	 *     @OA\Response(response=404, description="Application not found"),
+	 *     @OA\Response(response=422, description="Refused: {errors: {file: [message]}}")
+	 * )
+	 */
+	public function uploadDocument(Request $request, Response $response, array $args): Response
+	{
+		// The gate is inside the try: an Error in it must get the JSON 500, not the global handler's HTML 200.
+		try {
+			$app = $this->caseOfficerApplication($args, 'upload attachments');
+			if ($app instanceof Response) {
+				return $app;
+			}
+
+			$file = $request->getUploadedFiles()['file'] ?? null;
+			if (!$file instanceof UploadedFileInterface) {
+				return ResponseHelper::sendJSONResponse(['errors' => ['file' => [lang('booking.Missing file for document')]]], 422, $response);
+			}
+
+			$documents = new DocumentService(Document::OWNER_APPLICATION);
+			$result = $documents->storeUploads((int) $app['id'], [$file]);
+			if (!empty($result['errors'])) {
+				return ResponseHelper::sendJSONResponse(['errors' => ['file' => $result['errors']]], 422, $response);
+			}
+			$document = $documents->getDocumentById($result['ids'][0]);
+			return ResponseHelper::sendJSONResponse(['document' => $this->documentJson($document)], 201, $response);
+		} catch (\Throwable $e) {
+			$this->logDocumentError($e);
+			return ResponseHelper::sendErrorResponse(['error' => lang('booking.attachment_upload_failed')], 500);
+		}
+	}
+
+	/**
+	 * @OA\Delete(
+	 *     path="/booking/applications/{id}/documents/{docId}",
+	 *     summary="Delete an attachment of the application (case officer only)",
+	 *     tags={"Applications"},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Application ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="docId", in="path", required=true, description="Document ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=204, description="Deleted"),
+	 *     @OA\Response(response=403, description="Not the case officer"),
+	 *     @OA\Response(response=404, description="Application, or a document of it, not found")
+	 * )
+	 */
+	public function deleteDocument(Request $request, Response $response, array $args): Response
+	{
+		// The gate is inside the try, as in uploadDocument.
+		try {
+			$app = $this->caseOfficerApplication($args, 'delete attachments');
+			if ($app instanceof Response) {
+				return $app;
+			}
+
+			$documents = new DocumentService(Document::OWNER_APPLICATION);
+			$document = $documents->getDocumentById((int) ($args['docId'] ?? 0));
+			// Only a document of THIS application: the id in the path must not reach another one's.
+			if (!$document || (int) $document->owner_id !== (int) $app['id']) {
+				return ResponseHelper::sendErrorResponse(['error' => 'Document not found'], 404);
+			}
+			$documents->deleteDocument((int) $document->id);
+			return $response->withStatus(204);
+		} catch (\Throwable $e) {
+			$this->logDocumentError($e);
+			return ResponseHelper::sendErrorResponse(['error' => lang('booking.attachment_delete_failed')], 500);
 		}
 	}
 

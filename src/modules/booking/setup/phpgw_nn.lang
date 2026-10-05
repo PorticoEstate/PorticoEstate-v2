@@ -1265,3 +1265,15 @@ refine_organization_search	booking	nn	Fleire treff – skriv meir for å avgrens
 no_season_for_date	booking	nn	Ingen aktiv sesong dekkjer denne datoen
 resource_not_in_building	booking	nn	Ressursen høyrer ikkje til dette bygget
 group_not_in_organization	booking	nn	Gruppa høyrer ikkje til den valde organisasjonen
+attachment_invalid_type	booking	nn	Filtypen er ikkje tillaten. Tillatne filtypar: %1
+attachment_too_large	booking	nn	Fila er for stor. Største tillatne storleik er %1 MB
+attachment_invalid_name	booking	nn	Ugyldig filnamn
+attachment_upload_failed	booking	nn	Opplastinga feila
+attachment_hint	booking	nn	Maks %1 MB. Tillatne filtypar: %2
+add_attachment	booking	nn	Legg til vedlegg
+no_attachments	booking	nn	Ingen vedlegg
+attachment_uploaded	booking	nn	Vedlegget er lasta opp
+attachment_deleted	booking	nn	Vedlegget er sletta
+delete_attachment_confirm	booking	nn	Vil du slette vedlegget?
+attachment_empty	booking	nn	Fila er tom
+attachment_delete_failed	booking	nn	Slettinga feila

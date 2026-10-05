@@ -227,6 +227,8 @@ $app->group('/booking/applications', function (RouteCollectorProxy $group)
 	$group->get('/{id:[0-9]+}/comments', ApplicationController::class . ':showComments');
 	$group->get('/{id:[0-9]+}/internal-notes', ApplicationController::class . ':showInternalNotes');
 	$group->get('/{id:[0-9]+}/documents', ApplicationController::class . ':showDocuments');
+	$group->post('/{id:[0-9]+}/documents', ApplicationController::class . ':uploadDocument');
+	$group->delete('/{id:[0-9]+}/documents/{docId:[0-9]+}', ApplicationController::class . ':deleteDocument');
 	$group->get('/{id:[0-9]+}/orders', ApplicationController::class . ':showOrders');
 	$group->get('/{id:[0-9]+}/associations', ApplicationController::class . ':showAssociations');
 	$group->delete('/{id:[0-9]+}/associations/{assocId:[0-9]+}', ApplicationController::class . ':deleteAssociation');

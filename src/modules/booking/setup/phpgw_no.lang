@@ -1291,3 +1291,15 @@ refine_organization_search	booking	no	Flere treff – skriv mer for å avgrense
 no_season_for_date	booking	no	Ingen aktiv sesong dekker denne datoen
 resource_not_in_building	booking	no	Ressursen hører ikke til dette bygget
 group_not_in_organization	booking	no	Gruppen hører ikke til den valgte organisasjonen
+attachment_invalid_type	booking	no	Filtypen er ikke tillatt. Tillatte filtyper: %1
+attachment_too_large	booking	no	Filen er for stor. Største tillatte størrelse er %1 MB
+attachment_invalid_name	booking	no	Ugyldig filnavn
+attachment_upload_failed	booking	no	Opplastingen feilet
+attachment_hint	booking	no	Maks %1 MB. Tillatte filtyper: %2
+add_attachment	booking	no	Legg til vedlegg
+no_attachments	booking	no	Ingen vedlegg
+attachment_uploaded	booking	no	Vedlegget er lastet opp
+attachment_deleted	booking	no	Vedlegget er slettet
+delete_attachment_confirm	booking	no	Vil du slette vedlegget?
+attachment_empty	booking	no	Filen er tom
+attachment_delete_failed	booking	no	Slettingen feilet

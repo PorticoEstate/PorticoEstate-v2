@@ -1124,3 +1124,12 @@ repeating_direct_booking_warning	bookingfrontend	en	This resource uses direct bo
 withdraw_timeslot	bookingfrontend	en	Withdraw
 confirm_withdraw_timeslot_description	bookingfrontend	en	Are you sure you want to withdraw this single timeslot? The case officer will be notified of the withdrawal.
 withdraw_timeslot_comment_label	bookingfrontend	en	Comment to the case officer (optional)
+price_choice_label	bookingfrontend	en	Who are you applying as?
+price_choice_help	bookingfrontend	en	The price depends on who is renting — choose the category that fits.
+price_choice_placeholder	bookingfrontend	en	Choose a price category
+price_choice_required	bookingfrontend	en	You must choose a price category
+price_choice_required_footer	bookingfrontend	en	Choose a price category to save the application.
+price_choice_required_checkout	bookingfrontend	en	Choose a price category before you submit.
+price_pending	bookingfrontend	en	Calculated once you have chosen
+does_not_affect_price	bookingfrontend	en	Does not affect the price.
+price_category	bookingfrontend	en	Price category

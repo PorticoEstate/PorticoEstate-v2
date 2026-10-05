@@ -984,10 +984,13 @@
 
 						// Update season_id for each date - it may span different seasons. A date
 						// inside the season the officer chose keeps it; only a date outside it is
-						// given another, picked the same way as the prefill.
+						// given another, picked the same way as the prefill. The date's season goes
+						// on its own copy, never on $allocation: $allocation keeps the officer's,
+						// and step 2 renders it into the form that Lagre posts.
+						$occurrence = $allocation;
 						$iter_date = date('Y-m-d', strtotime($fromdate));
 						if (!empty($season['id']) && strtotime($season['from_']) <= strtotime($iter_date) && strtotime($season['to_']) >= strtotime($iter_date)) {
-							$allocation['season_id'] = $season['id'];
+							$occurrence['season_id'] = $season['id'];
 						} else {
 							$iter_seasons = $this->season_bo->read(array(
 								'filters' => array(
@@ -1004,12 +1007,12 @@
 							));
 							$iter_season_id = $this->pick_recurring_season($iter_seasons['results'], (array)$allocation['resources']);
 							if ($iter_season_id) {
-								$allocation['season_id'] = $iter_season_id;
+								$occurrence['season_id'] = $iter_season_id;
 							}
 						}
-						// If no season found, keep the previous season_id and let validation catch it
+						// If no season found, keep the officer's season_id and let validation catch it
 
-						$err = $this->bo->validate($allocation);
+						$err = $this->bo->validate($occurrence);
 						if ($err)
 						{
 							// If skip_conflicts is enabled, don't save invalid dates - just skip them
@@ -1047,7 +1050,7 @@
 							{
 								try
 								{
-									$receipt = $this->bo->add($allocation);
+									$receipt = $this->bo->add($occurrence);
 									$allocation['id'] = $receipt['id'];
 									$last_successful_id = $receipt['id'];
 									$this->bo->so->update_id_string($allocation['id']);
@@ -1071,7 +1074,8 @@
 											{
 												$this->add_cost_history($allocation, lang('cost is set'), $purchase_order_result['sum']);
 												$allocation['cost'] = (float)$purchase_order_result['sum'];
-												$this->bo->update($allocation);
+												// Written with this date's season, not the officer's
+												$this->bo->update(array_merge($allocation, array('season_id' => $occurrence['season_id'])));
 											}
 										}
 									}

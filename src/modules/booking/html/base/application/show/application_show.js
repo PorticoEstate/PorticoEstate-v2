@@ -1575,17 +1575,28 @@
 		bindDocuments(isCO);
 
 		// Orders (only when articles config is enabled)
-		// Aggregate all order lines by article into a single summary table (matches legacy)
+		// Aggregate all order lines by article into a single summary table (matches legacy).
+		// Lines priced differently stay apart: the price the citizen chose and
+		// the unit price the row shows are part of the key, so one row never
+		// stands for two prices, also for lines saved without a chosen price.
 		var orders = data.orders || [];
 		if (app.activate_application_articles && orders.length > 0) {
 			var articleMap = {};
 			var grandTotal = 0;
 			orders.forEach(function (order) {
 				(order.lines || []).forEach(function (line) {
-					var key = line.article_mapping_id || line.name;
+					var lineAmount = Number(line.amount) || 0;
+					var lineTax = Number(line.tax) || 0;
+					// Derive unit price from the line (amount / quantity)
+					var qty = Number(line.quantity) || 1;
+					var unitPrice = lineAmount / qty;
+					var key = (line.article_mapping_id || line.name) + '|' +
+						(line.article_price_id || '') + '|' + (line.price_label || '') + '|' +
+						unitPrice.toFixed(2);
 					if (!articleMap[key]) {
 						articleMap[key] = {
 							name: line.name,
+							price_label: line.price_label || '',
 							unit: line.unit,
 							unit_price: 0,
 							tax_per_unit: 0,
@@ -1594,12 +1605,8 @@
 						};
 					}
 					articleMap[key].quantity += Number(line.quantity) || 0;
-					var lineAmount = Number(line.amount) || 0;
-					var lineTax = Number(line.tax) || 0;
 					articleMap[key].total += lineAmount + lineTax;
-					// Derive unit price from the line (amount / quantity)
-					var qty = Number(line.quantity) || 1;
-					articleMap[key].unit_price = (lineAmount / qty);
+					articleMap[key].unit_price = unitPrice;
 					articleMap[key].tax_per_unit = (lineTax / qty);
 					grandTotal += lineAmount + lineTax;
 				});
@@ -1615,7 +1622,10 @@
 					'<thead><tr><th>' + lang('article') + '</th><th>' + lang('unit') + '</th><th class="app-show__num">' + lang('unitPrice') + '</th><th class="app-show__num">' + lang('tax') + '</th><th class="app-show__num">' + lang('quantity') + '</th><th class="app-show__num">' + lang('sum') + '</th></tr></thead><tbody>';
 				articleKeys.forEach(function (key) {
 					var a = articleMap[key];
-					ordersHtml += '<tr><td>' + esc(a.name) + '</td><td>' + esc(enumLabel(a.unit)) + '</td><td class="app-show__num">' + a.unit_price.toFixed(2) + '</td><td class="app-show__num">' + a.tax_per_unit.toFixed(2) + '</td><td class="app-show__num">' + a.quantity + '</td><td class="app-show__num">' + a.total.toFixed(2) + '</td></tr>';
+					var priceCategory = a.price_label
+						? '<div class="booking-paragraph ds-paragraph" data-size="sm">' + esc(lang('price_category')) + ': ' + esc(a.price_label) + '</div>'
+						: '';
+					ordersHtml += '<tr><td>' + esc(a.name) + priceCategory + '</td><td>' + esc(enumLabel(a.unit)) + '</td><td class="app-show__num">' + a.unit_price.toFixed(2) + '</td><td class="app-show__num">' + a.tax_per_unit.toFixed(2) + '</td><td class="app-show__num">' + a.quantity + '</td><td class="app-show__num">' + a.total.toFixed(2) + '</td></tr>';
 				});
 				ordersHtml += '</tbody>' +
 					'<tfoot><tr><td colspan="5">' + lang('sum') + ':</td><td class="app-show__num">' + grandTotal.toFixed(2) + '</td></tr></tfoot>' +

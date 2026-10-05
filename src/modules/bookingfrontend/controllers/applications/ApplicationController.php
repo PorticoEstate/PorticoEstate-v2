@@ -4,6 +4,7 @@ namespace App\modules\bookingfrontend\controllers\applications;
 
 use App\modules\bookingfrontend\controllers\DocumentController;
 use App\modules\bookingfrontend\helpers\ApplicationHelper;
+use App\modules\bookingfrontend\helpers\PriceChoiceException;
 use App\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\helpers\WebSocketHelper;
@@ -497,7 +498,8 @@ class ApplicationController extends DocumentController
      *                     type="object",
      *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
      *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
-     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items"),
+     *                     @OA\Property(property="price_id", type="integer", nullable=true, description="The resource's chosen price (a price_options[].price_id from /applications/articles); only for the resource itself")
      *                 )
      *             ),
      *             @OA\Property(
@@ -523,6 +525,10 @@ class ApplicationController extends DocumentController
      *     @OA\Response(
      *         response=400,
      *         description="Invalid input or missing session"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Refused price choice: {error, errors, code: price_choice_required|price_choice_invalid, article_mapping_id}"
      *     )
      * )
      */
@@ -588,6 +594,8 @@ class ApplicationController extends DocumentController
             $response->getBody()->write(json_encode($responseData));
             return $response->withStatus(201)
                 ->withHeader('Content-Type', 'application/json');
+        } catch (PriceChoiceException $e) {
+            return ResponseHelper::sendErrorResponse($e->toResponseBody(), 422);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => "Error creating partial application: " . $e->getMessage()],
@@ -618,7 +626,8 @@ class ApplicationController extends DocumentController
      *                     type="object",
      *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
      *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
-     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items"),
+     *                     @OA\Property(property="price_id", type="integer", nullable=true, description="The resource's chosen price (a price_options[].price_id from /applications/articles); only for the resource itself")
      *                 )
      *             )
      *         )
@@ -626,6 +635,10 @@ class ApplicationController extends DocumentController
      *     @OA\Response(
      *         response=200,
      *         description="Application updated successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Refused price choice: {error, errors, code: price_choice_required|price_choice_invalid, article_mapping_id}"
      *     )
      * )
      */
@@ -670,6 +683,8 @@ class ApplicationController extends DocumentController
                 ->withHeader('Content-Type', 'application/json');
 
 
+        } catch (PriceChoiceException $e) {
+            return ResponseHelper::sendErrorResponse($e->toResponseBody(), 422);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => "Error updating application: " . $e->getMessage()],
@@ -725,7 +740,8 @@ class ApplicationController extends DocumentController
      *                     type="object",
      *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
      *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
-     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items"),
+     *                     @OA\Property(property="price_id", type="integer", nullable=true, description="The resource's chosen price (a price_options[].price_id from /applications/articles); only for the resource itself")
      *                 )
      *             ),
      *             @OA\Property(
@@ -754,6 +770,10 @@ class ApplicationController extends DocumentController
      *     @OA\Response(
      *         response=404,
      *         description="Application not found"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Refused price choice: {error, errors, code: price_choice_required|price_choice_invalid, article_mapping_id}"
      *     )
      * )
      */
@@ -807,6 +827,8 @@ class ApplicationController extends DocumentController
             return $response->withStatus(200)
                 ->withHeader('Content-Type', 'application/json');
 
+        } catch (PriceChoiceException $e) {
+            return ResponseHelper::sendErrorResponse($e->toResponseBody(), 422);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => "Error updating application: " . $e->getMessage()],

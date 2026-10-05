@@ -1302,3 +1302,4 @@ attachment_deleted	booking	en	The attachment was deleted
 delete_attachment_confirm	booking	en	Delete the attachment?
 attachment_empty	booking	en	The file is empty
 attachment_delete_failed	booking	en	The deletion failed
+price_category	booking	en	Price category

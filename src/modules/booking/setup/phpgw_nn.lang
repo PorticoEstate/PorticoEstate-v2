@@ -1277,3 +1277,4 @@ attachment_deleted	booking	nn	Vedlegget er sletta
 delete_attachment_confirm	booking	nn	Vil du slette vedlegget?
 attachment_empty	booking	nn	Fila er tom
 attachment_delete_failed	booking	nn	Slettinga feila
+price_category	booking	nn	Priskategori

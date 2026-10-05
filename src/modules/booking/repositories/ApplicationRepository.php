@@ -702,6 +702,7 @@ class ApplicationRepository
 		$stmt = $this->db->prepare(
 			"SELECT po.id AS order_id, pol.id AS line_id,
 			        pol.article_mapping_id, pol.quantity, pol.amount, pol.tax,
+			        pol.article_price_id, pol.price_label,
 			        am.unit,
 			        CASE WHEN r.name IS NULL THEN s.name ELSE r.name END AS article_name
 			 FROM bb_purchase_order po
@@ -732,6 +733,9 @@ class ApplicationRepository
 				'quantity'           => (int) ($row['quantity'] ?? 0),
 				'amount'             => $amount,
 				'tax'                => $tax,
+				// The citizen's price choice, when they had one
+				'article_price_id'   => $row['article_price_id'] !== null ? (int) $row['article_price_id'] : null,
+				'price_label'        => $row['price_label'] !== null ? $this->decodeEntities($row['price_label']) : null,
 			];
 			$orders[$oid]['sum'] += $amount + $tax;
 		}

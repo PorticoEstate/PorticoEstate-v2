@@ -237,6 +237,10 @@ class ApplicationService
                 throw new Exception('No partial applications found for checkout');
             }
 
+            // A timeslot booking leaves the resource unpriced until the citizen
+            // has chosen a price; it must not be submitted as free
+            $this->articleRepository->assertPriceChoicesMade(array_column($applications, 'id'));
+
             $resourceBookings = [];
             foreach ($applications as $application)
             {

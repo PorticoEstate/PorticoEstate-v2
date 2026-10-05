@@ -1576,16 +1576,23 @@
 
 		// Orders (only when articles config is enabled)
 		// Aggregate all order lines by article into a single summary table (matches legacy).
-		// Lines the citizen priced differently stay apart: the price they chose
-		// is part of the key, so one row never stands for two prices.
+		// Lines priced differently stay apart: the price the citizen chose and
+		// the unit price the row shows are part of the key, so one row never
+		// stands for two prices, also for lines saved without a chosen price.
 		var orders = data.orders || [];
 		if (app.activate_application_articles && orders.length > 0) {
 			var articleMap = {};
 			var grandTotal = 0;
 			orders.forEach(function (order) {
 				(order.lines || []).forEach(function (line) {
+					var lineAmount = Number(line.amount) || 0;
+					var lineTax = Number(line.tax) || 0;
+					// Derive unit price from the line (amount / quantity)
+					var qty = Number(line.quantity) || 1;
+					var unitPrice = lineAmount / qty;
 					var key = (line.article_mapping_id || line.name) + '|' +
-						(line.article_price_id || '') + '|' + (line.price_label || '');
+						(line.article_price_id || '') + '|' + (line.price_label || '') + '|' +
+						unitPrice.toFixed(2);
 					if (!articleMap[key]) {
 						articleMap[key] = {
 							name: line.name,
@@ -1598,12 +1605,8 @@
 						};
 					}
 					articleMap[key].quantity += Number(line.quantity) || 0;
-					var lineAmount = Number(line.amount) || 0;
-					var lineTax = Number(line.tax) || 0;
 					articleMap[key].total += lineAmount + lineTax;
-					// Derive unit price from the line (amount / quantity)
-					var qty = Number(line.quantity) || 1;
-					articleMap[key].unit_price = (lineAmount / qty);
+					articleMap[key].unit_price = unitPrice;
 					articleMap[key].tax_per_unit = (lineTax / qty);
 					grandTotal += lineAmount + lineTax;
 				});

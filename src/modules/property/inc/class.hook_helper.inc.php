@@ -474,7 +474,7 @@ JS;
 						menuaction:'property.uitenant_claim.query2',
 						order:'id',
 						sort:'asc',
-						status:['open', 'prepend'],
+						status:['open', 'prepend', 'pending'],
 						user_id:{$accound_id},
 						result:10
 						}, true);

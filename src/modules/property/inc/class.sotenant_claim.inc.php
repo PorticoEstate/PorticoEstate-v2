@@ -116,9 +116,14 @@ class property_sotenant_claim
 
 		if ($status && $status != 'all')
 		{
-			$filtermethod	 .= " $where fm_tenant_claim.status='{$status}'";
-			$filtermethod_ticket	 .= " $where fm_tenant_claim.status='{$status}'";
-			$filtermethod_other	 .= " $where fm_tenant_claim.status='{$status}'";
+			if(!is_array($status))
+			{
+				$status = [(string)$status];
+			}
+		
+			$filtermethod	 .= " $where fm_tenant_claim.status IN ('" . implode("','", $status) . "')";
+			$filtermethod_ticket	 .= " $where fm_tenant_claim.status IN ('" . implode("','", $status) . "')";
+			$filtermethod_other	 .= " $where fm_tenant_claim.status IN ('" . implode("','", $status) . "')";
 			$where			 = 'AND';
 		}
 

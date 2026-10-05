@@ -3107,6 +3107,16 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 			$additional_invoice_information = '';
 		}
 
+		if (!empty($test['application_id']))
+		{
+			$application_id = $test['application_id'];
+			$application = $this->application_bo->read_single($application_id);
+			$contact_name = $application['contact_name'];
+			$street = $application['responsible_street'];
+			$zip_code = $application['responsible_zip_code'];
+			$city = $application['responsible_city'];
+		}
+
 
 		$type = $reservation['customer_type'];
 
@@ -3126,7 +3136,7 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 					$org = $this->organization_bo->read_single($reservation['organization_id']);
 					if (!empty($org['contacts'][0]['name']))
 					{
-						$contact_name = $org['contacts'][0]['name'];
+						$contact_name = $contact_name ? $contact_name : $org['contacts'][0]['name'];
 					}
 				}
 				break;
@@ -3136,12 +3146,12 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 					$group = CreateObject('booking.sogroup')->read_single($test['group_id']);
 					if (!empty($group['contacts'][0]['name']))
 					{
-						$contact_name = $group['contacts'][0]['name'];
+						$contact_name = $contact_name ? $contact_name : $group['contacts'][0]['name'];
 					}
 				}
 				break;
 			case 'event':
-				$contact_name = $test['contact_name'];
+				$contact_name = $contact_name ? $contact_name : $test['contact_name'];
 				break;
 			default:
 				break;
@@ -3211,6 +3221,14 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 		{
 			//Nøkkelfelt, kundens personnr/orgnr. - men differensiert for undergrupper innenfor samme orgnr
 			$check_customer_identifier = $this->get_customer_identifier_value_for($reservation) . '::' . $customer_number;
+		}
+
+		/**
+		 * Skille mellom hoved-organisasjonen og betalende underliggende organisasjon
+		 */
+		if (!empty($this->config_data['differentiate_org_payer']) && !empty($organization_number))
+		{
+			$check_customer_identifier = $payer_organization_number . '::' . $organization_number;
 		}
 
 		if (strlen($this->get_customer_identifier_value_for($reservation)) > 9)

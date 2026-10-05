@@ -1566,20 +1566,13 @@
 			});
 		});
 
-		// Documents
-		var docs = data.documents || [];
-		if (docs.length > 0) {
-			var docsHtml = '<table class="booking-table ds-table" data-size="sm" data-zebra>' +
-				'<thead><tr><th>' + lang('name') + '</th><th>' + lang('category') + '</th></tr></thead><tbody>';
-			docs.forEach(function (doc) {
-				var nameCell = doc.download_url
-					? '<a href="' + esc(doc.download_url) + '">' + esc(doc.name) + '</a>'
-					: esc(doc.name);
-				docsHtml += '<tr><td>' + nameCell + '</td><td>' + esc(enumLabel(doc.category)) + '</td></tr>';
-			});
-			docsHtml += '</tbody></table>';
-			html += section(lang('documents'), docsHtml, { icon: ICONS.doc });
-		}
+		// Documents: always shown, so the case officer can add the first one. The
+		// list re-renders in place after an upload or a delete.
+		html += section(lang('documents'),
+			'<div id="application-documents">' + documentsHtml(data.documents || [], isCO) + '</div>' +
+			(isCO ? documentUploadHtml() : ''),
+			{ icon: ICONS.doc });
+		bindDocuments(isCO);
 
 		// Orders (only when articles config is enabled)
 		// Aggregate all order lines by article into a single summary table (matches legacy)
@@ -1653,6 +1646,140 @@
 		} else {
 			renderOtherAssociations(app, data, placedAssocs);
 		}
+	}
+
+	// ═══════════════════════════════════════════════════════════════════
+	// Documents (attachments)
+	// ═══════════════════════════════════════════════════════════════════
+
+	function documentsHtml(docs, isCO) {
+		if (!docs.length) {
+			return '<p class="app-show__empty">' + esc(lang('noAttachments')) + '</p>';
+		}
+		var html = '<table class="booking-table ds-table" data-size="sm" data-zebra>' +
+			'<thead><tr><th>' + esc(lang('name')) + '</th><th>' + esc(lang('category')) + '</th>' +
+			(isCO ? '<th>' + esc(lang('delete')) + '</th>' : '') + '</tr></thead><tbody>';
+		docs.forEach(function (doc) {
+			var nameCell = doc.download_url
+				? '<a href="' + esc(doc.download_url) + '">' + esc(doc.name) + '</a>'
+				: esc(doc.name);
+			html += '<tr><td>' + nameCell + '</td><td>' + esc(enumLabel(doc.category)) + '</td>';
+			if (isCO) {
+				html += '<td><button type="button" class="booking-button ds-button" data-variant="tertiary" data-color="danger" data-size="sm"' +
+					' data-booking-action="delete-document" data-doc-id="' + esc(doc.id) + '">' + esc(lang('delete')) + '</button></td>';
+			}
+			html += '</tr>';
+		});
+		return html + '</tbody></table>';
+	}
+
+	// The case officer's upload form: one file per upload.
+	function documentUploadHtml() {
+		return '<div class="app-show__upload-form">' +
+			'<div class="booking-field ds-field" data-size="sm">' +
+				'<label class="booking-label ds-label" for="application-document-file">' + esc(lang('addAttachment')) + '</label>' +
+				'<div data-field="description">' + esc(lang('attachmentHint')) + '</div>' +
+				'<input type="file" class="booking-input ds-input" id="application-document-file" accept="' + esc(root.dataset.attachmentAccept || '') + '">' +
+			'</div>' +
+			'<div class="booking-alert ds-alert" data-color="danger" role="alert" data-document-errors hidden></div>' +
+			'<button type="button" class="booking-button ds-button" data-variant="secondary" data-color="accent" data-size="sm" data-booking-action="upload-document">' + esc(lang('upload')) + '</button>' +
+		'</div>';
+	}
+
+	function showDocumentErrors(messages) {
+		var box = root.querySelector('[data-document-errors]');
+		if (!box) return;
+		box.innerHTML = messages.map(function (m) {
+			return '<p class="booking-paragraph ds-paragraph" data-size="sm">' + esc(m) + '</p>';
+		}).join('');
+		box.hidden = !messages.length;
+	}
+
+	// The messages of a failed request: the server's {errors} or {error}. A body
+	// that is not JSON comes from in front of the app: a 413 there means too large.
+	function documentErrorMessages(status, body) {
+		if (body && body.errors) {
+			return [].concat.apply([], Object.keys(body.errors).map(function (k) { return [].concat(body.errors[k]); }));
+		}
+		if (body && body.error) return [body.error];
+		if (status === 413) return [lang('attachmentTooLarge')];
+		return [lang('attachmentUploadFailed') + (status ? ' (HTTP ' + status + ')' : '')];
+	}
+
+	function sendDocumentRequest(url, options) {
+		return fetch(url, Object.assign({ credentials: 'same-origin' }, options)).then(function (res) {
+			if (res.ok) return res;
+			return res.json().catch(function () { return null; }).then(function (body) {
+				throw { messages: documentErrorMessages(res.status, body) };
+			});
+		}, function () {
+			throw { messages: [lang('attachmentUploadFailed')] };
+		});
+	}
+
+	function refreshDocuments(isCO) {
+		var container = document.getElementById('application-documents');
+		return fetchJson(apiUrl + '/documents').then(function (docs) {
+			container.innerHTML = documentsHtml(docs || [], isCO);
+		}).catch(function (err) {
+			container.innerHTML = '<p class="app-show__empty">' + esc(lang('error')) + ': ' + esc(err.message) + '</p>';
+		});
+	}
+
+	function bindDocuments(isCO) {
+		if (!isCO) return;
+
+		// One POST per click: the button stays disabled until the request settles,
+		// so a double click lands on a disabled button.
+		root.addEventListener('click', function (e) {
+			var btn = e.target.closest('[data-booking-action="upload-document"]');
+			if (!btn || btn.disabled) return;
+			var input = document.getElementById('application-document-file');
+			var file = input.files && input.files[0];
+			if (!file) {
+				showDocumentErrors([lang('missingFileForDocument')]);
+				return;
+			}
+			if (file.size > Number(root.dataset.attachmentMaxBytes)) {
+				showDocumentErrors([lang('attachmentTooLarge')]);
+				return;
+			}
+
+			var body = new FormData();
+			body.append('file', file);
+			btn.disabled = true;
+			btn.setAttribute('aria-busy', 'true');
+			input.disabled = true;
+			showDocumentErrors([]);
+
+			sendDocumentRequest(apiUrl + '/documents', { method: 'POST', body: body }).then(function () {
+				input.value = '';
+				showToast(lang('attachmentUploaded'));
+				return refreshDocuments(isCO);
+			}, function (err) {
+				showDocumentErrors(err.messages);
+			}).then(function () {
+				btn.disabled = false;
+				btn.removeAttribute('aria-busy');
+				input.disabled = false;
+			});
+		});
+
+		root.addEventListener('click', function (e) {
+			var btn = e.target.closest('[data-booking-action="delete-document"]');
+			if (!btn || btn.disabled) return;
+			if (!confirm(lang('deleteAttachmentConfirm'))) return;
+			btn.disabled = true;
+			showDocumentErrors([]);
+
+			sendDocumentRequest(apiUrl + '/documents/' + encodeURIComponent(btn.dataset.docId), { method: 'DELETE' }).then(function () {
+				showToast(lang('attachmentDeleted'));
+				return refreshDocuments(isCO);
+			}, function (err) {
+				btn.disabled = false;
+				showDocumentErrors(err.messages);
+			});
+		});
 	}
 
 	// ═══════════════════════════════════════════════════════════════════

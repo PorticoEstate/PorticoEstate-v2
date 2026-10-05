@@ -203,6 +203,19 @@
 	 data-lang-comment="{{ lang('booking.comment') }}"{% endif %}
 	 data-lang-save="{{ lang('common.save') }}"
 	 data-lang-saved="{{ lang('booking.saved') }}"
+	 {# Attachments: the limit and the types are the server's own (DocumentService). #}
+	 data-attachment-max-bytes="{{ attachment_max_bytes }}"
+	 data-attachment-accept="{{ attachment_extensions|default([])|map(e => '.' ~ e)|join(',') }}"
+	 data-lang-no-attachments="{{ lang('booking.no_attachments') }}"
+	 data-lang-add-attachment="{{ lang('booking.add_attachment') }}"
+	 data-lang-attachment-hint="{{ lang('booking.attachment_hint', attachment_max_mb, attachment_extensions|default([])|join(', ')) }}"
+	 data-lang-attachment-too-large="{{ lang('booking.attachment_too_large', attachment_max_mb) }}"
+	 data-lang-attachment-upload-failed="{{ lang('booking.attachment_upload_failed') }}"
+	 data-lang-attachment-uploaded="{{ lang('booking.attachment_uploaded') }}"
+	 data-lang-attachment-deleted="{{ lang('booking.attachment_deleted') }}"
+	 data-lang-delete-attachment-confirm="{{ lang('booking.delete_attachment_confirm') }}"
+	 data-lang-missing-file-for-document="{{ lang('booking.Missing file for document') }}"
+	 data-lang-upload="{{ lang('booking.Upload') }}"
 >
 	{# Loading state — replaced by JS once data arrives #}
 	<div id="application-loading" class="app-show__loading">

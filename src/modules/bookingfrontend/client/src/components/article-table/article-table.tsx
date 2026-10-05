@@ -1,5 +1,5 @@
 // components/article-table/article-table.tsx
-import React, {useEffect, useMemo} from 'react';
+import React, {useCallback, useEffect, useMemo} from 'react';
 import {Checkbox, Table, Textfield, Spinner, Button} from '@digdir/designsystemet-react';
 import {useResourceArticles} from '@/service/hooks/api-hooks';
 import {ArticleOrder, IArticle} from '@/service/types/api/order-articles.types';
@@ -49,6 +49,18 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 		return new Map(selectedArticles?.map(article => [article.id, article]));
 	}, [selectedArticles]);
 
+	// A room with several prices costs what the applicant chose (or the default);
+	// null while nothing is chosen, so the price is pending rather than 0
+	const unitPriceOf = useCallback((article: IArticle): number | null => {
+		const options = article.price_options ?? [];
+		if (options.length < 2) {
+			return parseFloat(article.unit_price);
+		}
+		const priceId = selectedArticlesMap.get(article.id)?.price_id ?? article.default_price_id;
+		const option = options.find(o => o.price_id === priceId);
+		return option ? parseFloat(option.price) : null;
+	}, [selectedArticlesMap]);
+
 	// Fetch articles for selected resources (only in articles mode)
 	const {data: articles, isLoading, error} = useResourceArticles({
 		resourceIds: mode === 'articles' && resourceIds ? resourceIds.filter(id => id > 0) : []
@@ -94,10 +106,11 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 		const mainArticles = articles.filter(a => !a.parent_mapping_id);
 		const childArticles = articles.filter(a => a.parent_mapping_id);
 
-		// Filter out mandatory free articles
+		// Filter out mandatory free articles. A room with several prices is never
+		// "free": its price depends on the applicant's choice
 		const filterMandatoryFreeArticle = (article: IArticle) => {
 			const isMandatory = article.mandatory === 1 || article.mandatory === '1';
-			const isFree = parseFloat(article.price) === 0;
+			const isFree = parseFloat(article.price) === 0 && (article.price_options?.length ?? 0) < 2;
 			return !(isMandatory && isFree);
 		};
 
@@ -175,7 +188,9 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 				updatedArticles.push({
 					id: article.id,
 					quantity: durationHours,
-					parent_id: article.parent_mapping_id || null
+					parent_id: article.parent_mapping_id || null,
+					// The preselected price; none while the applicant must choose
+					price_id: article.default_price_id ?? null
 				});
 			});
 			hasUpdates = true;
@@ -259,9 +274,10 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 		onArticlesChange(newArticles);
 	};
 
-	// Calculate total price for all selected articles
-	const totalPrice = useMemo(() => {
-		return selectedArticles.reduce((total, articleOrder) => {
+	// Calculate total price for all selected articles; pending while a room's price is not chosen
+	const {totalPrice, pricePending} = useMemo(() => {
+		let pending = false;
+		const total = selectedArticles.reduce((total, articleOrder) => {
 			const article = articles?.find(a => a.id === articleOrder.id);
 			if (article) {
 				const isMandatoryHourly = article.unit === 'hour' &&
@@ -269,11 +285,17 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 					(article.mandatory === 1 || article.mandatory === '1');
 
 				const quantity = isMandatoryHourly ? durationHours : articleOrder.quantity;
-				return total + (parseFloat(article.unit_price) * quantity);
+				const unitPrice = unitPriceOf(article);
+				if (unitPrice === null) {
+					pending = true;
+					return total;
+				}
+				return total + (unitPrice * quantity);
 			}
 			return total;
 		}, 0).toFixed(2);
-	}, [selectedArticles, articles, durationHours]);
+		return {totalPrice: total, pricePending: pending};
+	}, [selectedArticles, articles, durationHours, unitPriceOf]);
 
 	// Helper functions for incrementing and decrementing quantity
 	const incrementQuantity = (article: IArticle) => {
@@ -388,7 +410,12 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 
 								// For mandatory hourly articles, calculate total based on duration
 								const calculatedQuantity = isMandatoryHourly ? durationHours : quantity;
-								const total = (parseFloat(article.unit_price) * calculatedQuantity).toFixed(2);
+								const unitPrice = unitPriceOf(article);
+								const total = unitPrice === null ? null : (unitPrice * calculatedQuantity).toFixed(2);
+								// The price incl. tax, as the chosen option has it
+								const displayPrice = (article.price_options?.length ?? 0) > 1
+									? (unitPrice === null ? null : unitPrice.toFixed(2))
+									: article.price;
 
 								return (
 									<Table.Row key={article.id}>
@@ -399,7 +426,9 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 													 dangerouslySetInnerHTML={{__html: article.article_remark}}></div>
 											)}
 										</Table.Cell>
-										<Table.Cell>{article.price} kr</Table.Cell>
+										<Table.Cell>
+											{displayPrice === null ? t('bookingfrontend.price_pending') : `${displayPrice} kr`}
+										</Table.Cell>
 										{!readOnly && (
 											<Table.Cell>
 												<div className={styles.quantityControls}>
@@ -461,7 +490,9 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 												</div>
 											</Table.Cell>
 										)}
-										<Table.Cell>{isSelected ? `${total} kr` : '-'}</Table.Cell>
+										<Table.Cell>
+											{!isSelected ? '-' : total === null ? t('bookingfrontend.price_pending') : `${total} kr`}
+										</Table.Cell>
 									</Table.Row>
 								);
 							})}
@@ -470,10 +501,10 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 				</div>
 			))}
 
-			{mode === 'articles' && parseFloat(totalPrice) > 0 && (
-				<div className={styles.totalSection}>
+			{mode === 'articles' && (pricePending || parseFloat(totalPrice) > 0) && (
+				<div className={styles.totalSection} aria-live="polite">
 					<strong>{t('bookingfrontend.total')}:</strong>
-					<span>{totalPrice} kr</span>
+					<span>{pricePending ? t('bookingfrontend.price_pending') : `${totalPrice} kr`}</span>
 				</div>
 			)}
 			

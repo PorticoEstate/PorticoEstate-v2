@@ -6,6 +6,7 @@ import {
 	Checkbox,
 	Chip, Details,
 	Field,
+	Paragraph,
 	Select, Spinner,
 	Switch,
 	Tag,
@@ -29,7 +30,7 @@ import {
 	useCreatePartialApplication, useDeleteApplicationDocument, useDeletePartialApplication,
 	usePartialApplications,
 	useUpdatePartialApplication, useUploadApplicationDocument, useBuildingSchedule,
-	useServerSettings
+	useServerSettings, useResourceArticles
 } from "@/service/hooks/api-hooks";
 import {NewPartialApplication, IUpdatePartialApplication, IApplication, RecurringInfo, RecurringInfoUtils} from "@/service/types/api/application.types";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
@@ -38,7 +39,8 @@ import CalendarDatePicker from "@/components/date-time-picker/calendar-date-pick
 import {ApplicationFormData, applicationFormSchema} from './application-form';
 import {IBookingUser, IDelegate} from "@/service/types/api.types";
 import ArticleTable from "@/components/article-table/article-table";
-import {ArticleOrder} from "@/service/types/api/order-articles.types";
+import PriceChoiceField from "@/components/price-choice/price-choice-field";
+import {ArticleOrder, IArticle} from "@/service/types/api/order-articles.types";
 import {isDevMode, phpGWLink} from "@/service/util";
 import {IEvent} from "@/service/pecalendar.types";
 import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
@@ -345,7 +347,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 							articleOrders.push({
 								id: line.article_mapping_id,
 								quantity: +line.quantity,
-								parent_id: line.parent_mapping_id > 0 ? line.parent_mapping_id : null
+								parent_id: line.parent_mapping_id > 0 ? line.parent_mapping_id : null,
+								// The price the applicant chose for this application
+								price_id: line.article_price_id ?? null
 							});
 						});
 					}
@@ -674,6 +678,56 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 
 	const selectedResources = watch('resources');
 
+	// Rooms whose price the applicant chooses ("Hvem søker du som?"): only where
+	// articles are in use, and only for a room with more than one price
+	const articlesEnabled = serverSettings?.booking_config?.activate_application_articles === true;
+	const {data: resourceArticles} = useResourceArticles({
+		resourceIds: articlesEnabled ? selectedResources.map(id => parseInt(id)).filter(id => id > 0) : []
+	});
+	const priceChoiceArticles = useMemo(() => (resourceArticles ?? []).filter(article =>
+		article.resource_id && (article.price_options?.length ?? 0) > 1
+	), [resourceArticles]);
+	const watchedArticles = watch('articles');
+	const [priceChoiceSubmitted, setPriceChoiceSubmitted] = useState(false);
+	const priceChoiceRefs = useRef(new Map<number, HTMLSelectElement>());
+
+	// The price in force for a room: the applicant's choice while it is still
+	// offered, otherwise the default. Null means a choice is still needed.
+	const priceChoiceOf = (article: IArticle): number | null => {
+		const chosen = watchedArticles?.find(a => a.id === article.id)?.price_id;
+		if (chosen != null) {
+			return article.price_options?.some(option => option.price_id === chosen) ? chosen : null;
+		}
+		return article.default_price_id ?? null;
+	};
+	const missingPriceChoice = priceChoiceArticles.find(article => priceChoiceOf(article) === null);
+
+	const choosePrice = (article: IArticle, priceId: number) => {
+		const current = getValues('articles') ?? [];
+		const updated: ArticleOrder[] = current.some(a => a.id === article.id)
+			? current.map(a => a.id === article.id ? {...a, price_id: priceId} : a)
+			: [...current, {id: article.id, quantity: 1, parent_id: article.parent_mapping_id || null, price_id: priceId}];
+		setValue('articles', updated, {shouldDirty: true});
+	};
+
+	// The quantity the room's price line is multiplied by: whole hours for an hourly room
+	const priceQuantityOf = (article: IArticle): number => {
+		if (article.unit === 'hour' && startTime && endTime) {
+			return Math.max(1, Math.ceil(DateTime.fromJSDate(endTime).diff(DateTime.fromJSDate(startTime), 'hours').hours));
+		}
+		return watchedArticles?.find(a => a.id === article.id)?.quantity || 1;
+	};
+
+	// Submitting without a required price choice shows the error at the field and
+	// in the bottom bar, and moves focus to the field; nothing is sent
+	const submitForm = async (event?: React.BaseSyntheticEvent) => {
+		setPriceChoiceSubmitted(true);
+		await handleSubmit(onSubmit)(event);
+		if (missingPriceChoice) {
+			priceChoiceRefs.current.get(missingPriceChoice.id)?.focus();
+		}
+	};
+
 	// A repeating direct-booking application is always sent to case handling instead of
 	// being auto-accepted (see ApplicationService::checkoutPartials() "Repeating direct
 	// bookings should be sent for review, not auto-accepted"), so warn the applicant here.
@@ -813,6 +867,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 
 	const onSubmit = async (data: ApplicationFormData) => {
 		if (!building || !buildingResources) {
+			return;
+		}
+
+		// A room's price must be chosen first; submitForm shows why and moves focus there
+		if (missingPriceChoice) {
 			return;
 		}
 
@@ -1196,7 +1255,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 
 
 	return (
-		<form onSubmit={handleSubmit(onSubmit)}>
+		<form onSubmit={submitForm}>
 			<MobileDialog
 				dialogId={'application-dialog'}
 				open={true}
@@ -1209,6 +1268,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				}
 				footer={
 					<div style={{display: 'flex', gap: '1rem'}}>
+						{priceChoiceSubmitted && missingPriceChoice && (
+							<ValidationMessage>{t('bookingfrontend.price_choice_required_footer')}</ValidationMessage>
+						)}
 						{existingApplication && (
 							<Button
 								variant="tertiary"
@@ -1595,6 +1657,28 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 						)}
 					</div>
 
+					{priceChoiceArticles.map(article => (
+						<div key={article.id} className={`${styles.formGroup} ${styles.wide}`}>
+							<PriceChoiceField
+								ref={(select) => {
+									if (select) {
+										priceChoiceRefs.current.set(article.id, select);
+									} else {
+										priceChoiceRefs.current.delete(article.id);
+									}
+								}}
+								options={article.price_options ?? []}
+								value={priceChoiceOf(article)}
+								onChange={(priceId) => choosePrice(article, priceId)}
+								resourceName={priceChoiceArticles.length > 1 ? article.name : undefined}
+								quantity={priceQuantityOf(article)}
+								error={priceChoiceSubmitted && priceChoiceOf(article) === null
+									? t('bookingfrontend.price_choice_required')
+									: undefined}
+							/>
+						</div>
+					))}
+
 					{/* Articles section - only show if activated in server settings */}
 					{selectedResources.length > 0 && serverSettings?.booking_config?.activate_application_articles === true && (
 						<div className={`${styles.formGroup} ${styles.wide}`}>
@@ -1626,6 +1710,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 							defaultValue={existingApplication?.audience || []}
 							render={({field}) => (
 								<Field>
+									{priceChoiceArticles.length > 0 && (
+										<Field.Description>{t('bookingfrontend.does_not_affect_price')}</Field.Description>
+									)}
 									<Select
 										required
 										{...field}
@@ -1656,6 +1743,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 						<div className={styles.resourcesHeader}
 							 style={{flexDirection: 'column', alignItems: 'flex-start'}}>
 							<h4>{t('bookingfrontend.estimated number of participants')} <span className="required-asterisk">*</span></h4>
+							{priceChoiceArticles.length > 0 && (
+								<Paragraph data-size="sm">{t('bookingfrontend.does_not_affect_price')}</Paragraph>
+							)}
 							{errors.agegroups?.['root']?.message && (
 								<span className={styles.error}>{t(errors.agegroups?.['root']?.message)}</span>
 							)}

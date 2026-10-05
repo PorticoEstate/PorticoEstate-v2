@@ -16,6 +16,7 @@ export const applicationFormSchema = z.object({
 		id: z.number(),
 		quantity: z.number().min(0),
 		parent_id: z.number().nullable().optional(),
+		price_id: z.number().nullable().optional(),
 	})).optional(),
 	agegroups: z.array(z.object({
 		id: z.number(),

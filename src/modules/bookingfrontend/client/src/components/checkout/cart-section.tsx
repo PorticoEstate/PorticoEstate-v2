@@ -16,9 +16,11 @@ interface CartSectionProps {
     setCurrentApplication: Dispatch<{ application_id: number, date_id: number, building_id: number } | undefined>;
     buildingParentIds?: Record<number, number>;
     onBuildingParentIdChange?: (buildingId: number, parentId: number) => void;
+    /** Show the error at a room price that still has to be chosen */
+    showPriceChoiceErrors?: boolean;
 }
 
-const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication, buildingParentIds, onBuildingParentIdChange}) => {
+const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication, buildingParentIds, onBuildingParentIdChange, showPriceChoiceErrors}) => {
     const t = useTrans();
     const {data: serverSettings} = useServerSettings();
     const enableHospitality = !!serverSettings?.booking_config?.enable_hospitality;
@@ -125,7 +127,7 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                             onParentIdChange={onBuildingParentIdChange ? (parentId) => onBuildingParentIdChange(buildingGroup.buildingId, parentId) : undefined}
                             buildingId={buildingGroup.buildingId}
                         />
-                        <ArticlesSection applications={buildingGroup.applications}/>
+                        <ArticlesSection applications={buildingGroup.applications} showPriceChoiceErrors={showPriceChoiceErrors}/>
                         {enableHospitality && (
                         <HospitalitySection
                             applicationIds={buildingGroup.applications.map(a => a.id)}
@@ -158,7 +160,7 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                             selectedParentId={undefined}
                             onParentIdChange={undefined}
                         />
-                        <ArticlesSection applications={recurringApplications}/>
+                        <ArticlesSection applications={recurringApplications} showPriceChoiceErrors={showPriceChoiceErrors}/>
                         {showSectionTotals && recurringTotal > 0 && (
                             <div className={styles.sectionTotal}>
                                 <strong>{t('bookingfrontend.total')}:</strong>

@@ -40,6 +40,8 @@ interface BillingFormProps {
 	vippsLoading?: boolean;
 	submitting?: boolean;
 	applications?: IApplication[];
+	/** Why the applications cannot be submitted yet, shown by the submit buttons */
+	submitError?: string;
 }
 
 type OrganizationOption = {
@@ -65,7 +67,8 @@ const BillingForm: FC<BillingFormProps> = ({
 											   showDocumentsError = false,
 											   vippsLoading = false,
 											   submitting = false,
-											   applications = []
+											   applications = [],
+											   submitError
 										   }) => {
 	const t = useTrans();
 	const {data: myOrganizations, isLoading: orgLoading} = useMyOrganizations();
@@ -691,6 +694,7 @@ const BillingForm: FC<BillingFormProps> = ({
 				{/*</div>*/}
 
 				<div className={styles.submitSection}>
+					{submitError && <ValidationMessage>{submitError}</ValidationMessage>}
 					{/* Show two options when user has both Vipps and normal applications */}
 					{paymentEligibility?.eligible ? (
 						<>

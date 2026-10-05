@@ -1124,3 +1124,12 @@ repeating_direct_booking_warning	bookingfrontend	nn	Denne ressursen har direkte 
 withdraw_timeslot	bookingfrontend	nn	Trekk tilbake
 confirm_withdraw_timeslot_description	bookingfrontend	nn	Er du sikker på at du vil trekkje tilbake denne enkelttimen? Saksbehandlar vil bli varsla om trekkinga.
 withdraw_timeslot_comment_label	bookingfrontend	nn	Kommentar til saksbehandlar (valfritt)
+price_choice_label	bookingfrontend	nn	Kven søkjer du som?
+price_choice_help	bookingfrontend	nn	Prisen er avhengig av kven som leiger — vel kategorien som passar.
+price_choice_placeholder	bookingfrontend	nn	Vel priskategori
+price_choice_required	bookingfrontend	nn	Du må velje priskategori
+price_choice_required_footer	bookingfrontend	nn	Vel priskategori for å lagre søknaden.
+price_choice_required_checkout	bookingfrontend	nn	Vel priskategori før du sender inn.
+price_pending	bookingfrontend	nn	Blir rekna ut når du har valt
+does_not_affect_price	bookingfrontend	nn	Påverkar ikkje prisen.
+price_category	bookingfrontend	nn	Priskategori

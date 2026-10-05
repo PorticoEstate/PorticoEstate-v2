@@ -196,6 +196,8 @@ class property_botenant_claim
 			'open' => lang('open'),
 			'closed' => lang('closed'),
 			'ready' => lang('ready for processing claim'),
+			'prepend' => 'Send varsel',
+			'pending' => 'Varsel er sendt-avventer fakturering',
 			'error' => 'Feil / mangler',
 			'closed2' => 'Avsluttet, ikke fakturert'
 		];

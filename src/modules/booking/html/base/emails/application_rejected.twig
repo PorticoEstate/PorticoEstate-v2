@@ -17,8 +17,9 @@
 </pre>
 {% endif %}
 
+{# Case officer comment - HTML from the rich-text editor, purified when it was posted, so rendered rather than escaped #}
 {% if comment %}
-<p><strong>Kommentar fra saksbehandler:</strong><br />{{ comment }}</p>
+<div style="margin: 1em 0;"><strong>Kommentar fra saksbehandler:</strong><div>{{ comment|safe_html }}</div></div>
 {% endif %}
 
 <p>{{ mail_rejected|safe_html }} <a href="{{ link }}">Link til {{ systemname }}: søknad #{{ application_id }}</a></p>

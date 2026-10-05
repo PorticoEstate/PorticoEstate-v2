@@ -585,6 +585,35 @@
 			));
 		}
 
+		/**
+		 * The season a recurring application's allocations are proposed in, out of
+		 * $seasons in the order they were read. A building can have several active
+		 * seasons over the same dates, each holding its own resources, so the one
+		 * holding the most of the application's resources wins; between equals the
+		 * first one read does, and the caller's ORDER BY settles it.
+		 *
+		 * @param array $seasons seasons as read, each with its 'resources'
+		 * @param array $resource_ids the application's resources
+		 * @return int|null
+		 */
+		private function pick_recurring_season( array $seasons, array $resource_ids )
+		{
+			$season_id = null;
+			$most_held = -1;
+
+			foreach ($seasons as $season)
+			{
+				$held = count(array_intersect($resource_ids, !empty($season['resources']) ? $season['resources'] : array()));
+				if ($held > $most_held)
+				{
+					$season_id = (int)$season['id'];
+					$most_held = $held;
+				}
+			}
+
+			return $season_id;
+		}
+
 		public function add()
 		{
 			$isJsonRequest = self::handleJsonPost();
@@ -623,34 +652,42 @@
 					$allocation['building_id'] = $recurring_app['building_id'];
 					$allocation['building_name'] = $recurring_app['building_name'];
 					
-					// Set season based on application dates - find season that contains the first application date
-					if (!empty($recurring_app['dates']) && is_array($recurring_app['dates'])) {
+					// Set season based on application dates - find season that contains the first application date.
+					// Only while the officer has not chosen one: the form posts back to this
+					// same URL, recurring_application_id and all, so this runs again on every
+					// step, and a season picked on the form has to survive it.
+					$resource_ids = !empty($recurring_app['resources']) ? $recurring_app['resources'] : array();
+					if (!Sanitizer::get_var('season_id', 'int', 'POST') && !empty($recurring_app['dates']) && is_array($recurring_app['dates'])) {
 						$first_date = $recurring_app['dates'][0];
 						$app_date = date('Y-m-d', strtotime($first_date['from_']));
-						
-						// Find seasons for this building that are active and contain the application date
+
+						// Find seasons for this building that are active and contain the application date.
+						// All of them, in a fixed order, so the pick never rests on how the rows
+						// happen to come back.
 						$matching_seasons = $this->season_bo->read(array(
 							'filters' => array(
-								'active' => 1, 
+								'active' => 1,
 								'building_id' => $recurring_app['building_id'],
 								'where' => array(
 									"%%table%%.from_ <= '{$app_date}'",
 									"%%table%%.to_ >= '{$app_date}'"
 								)
-							), 
-							'results' => 1
+							),
+							'sort' => array('from_', 'id'),
+							'dir' => 'desc',
+							'results' => -1
 						));
-						
-						if (!empty($matching_seasons['results'][0])) {
-							$allocation['season_id'] = $matching_seasons['results'][0]['id'];
-							$_POST['season_id'] = $matching_seasons['results'][0]['id'];
-						} else {
+						$season_id = $this->pick_recurring_season($matching_seasons['results'], $resource_ids);
+
+						if (!$season_id) {
 							// Fallback to current active season if no matching season found
-							$current_seasons = $this->season_bo->read(array('filters' => array('active' => 1, 'building_id' => $recurring_app['building_id']), 'sort' => 'to_', 'dir' => 'desc', 'results' => 1));
-							if (!empty($current_seasons['results'][0])) {
-								$allocation['season_id'] = $current_seasons['results'][0]['id'];
-								$_POST['season_id'] = $current_seasons['results'][0]['id'];
-							}
+							$current_seasons = $this->season_bo->read(array('filters' => array('active' => 1, 'building_id' => $recurring_app['building_id']), 'sort' => array('to_', 'id'), 'dir' => 'desc', 'results' => -1));
+							$season_id = $this->pick_recurring_season($current_seasons['results'], $resource_ids);
+						}
+
+						if ($season_id) {
+							$allocation['season_id'] = $season_id;
+							$_POST['season_id'] = $season_id;
 						}
 					}
 

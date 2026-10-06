@@ -317,7 +317,7 @@ class ApplicationService
 		if ($this->combineApplications) {
 			$relatedInfo = $this->repo->getRelatedApplications($appId);
 			if ($relatedInfo['total_count'] > 1) {
-				$cartIds = $relatedInfo['application_ids'];
+				$cartIds = $this->cartIdsParentFirst($relatedInfo);
 				$relatedIds = array_filter(
 					$relatedInfo['application_ids'],
 					fn(int $id) => $id !== $appId
@@ -394,7 +394,7 @@ class ApplicationService
 		if ($cascade && $this->combineApplications) {
 			$relatedInfo = $this->repo->getRelatedApplications($appId);
 			if ($relatedInfo['total_count'] > 1) {
-				$cartIds = $relatedInfo['application_ids'];
+				$cartIds = $this->cartIdsParentFirst($relatedInfo);
 				$relatedIds = array_filter(
 					$relatedInfo['application_ids'],
 					fn(int $id) => $id !== $appId
@@ -523,6 +523,23 @@ class ApplicationService
 		}
 
 		return Sanitizer::clean_html(nl2br(htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), false));
+	}
+
+	/**
+	 * The ids of a combined cart with the parent first, then the other parts by id. This is
+	 * the order the legacy group email gets them in (soapplication::get_related_applications):
+	 * the email takes its "Se søknad" number from the first one and, when the parent is
+	 * accepted, its link from the parent, so the two only agree when the parent comes first.
+	 *
+	 * @param array{application_ids: int[], parent_id: ?int} $relatedInfo
+	 * @return int[]
+	 */
+	private function cartIdsParentFirst(array $relatedInfo): array
+	{
+		$parentId = (int) ($relatedInfo['parent_id'] ?? 0);
+		$parentFirst = $parentId > 0 ? [$parentId] : [];
+
+		return array_values(array_unique(array_merge($parentFirst, $relatedInfo['application_ids'])));
 	}
 
 	/**

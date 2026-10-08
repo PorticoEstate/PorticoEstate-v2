@@ -304,12 +304,26 @@ class Sessions
 			return false;
 		}
 
+		$account_id = $accounts->name2id($this->_account_lid);
+		if (!$account_id && ($this->serverSettings['auth_type'] ?? '') === 'sql')
+		{
+			// For SQL login, resolve an unmatched short username to a stored full email
+			// only when exactly one active user has that local part (before @).
+			$emailLogin = $this->resolveEmailLoginAlias($this->_account_lid);
+			if ($emailLogin !== null)
+			{
+				$this->_account_lid = $emailLogin;
+				$account_id = $accounts->name2id($this->_account_lid);
+				$login = $emailLogin . '#' . explode('#', $login, 2)[1] ?? $login;
+			}
+		}
+
 		if (
 			\App\modules\phpgwapi\security\GloballyDenied::user($this->_account_lid)
 
-			|| !$accounts->name2id($this->_account_lid)
+			|| !$account_id
 			|| (!$skip_auth && !$this->Auth->authenticate($this->_account_lid, $this->_passwd))
-			|| get_class($accounts->get($accounts->name2id($this->_account_lid)))
+			|| get_class($accounts->get($account_id))
 			== phpgwapi_account::CLASS_TYPE_GROUP
 		)
 		{
@@ -322,7 +336,7 @@ class Sessions
 		}
 
 
-		$this->_account_id = $accounts->name2id($this->_account_lid);
+		$this->_account_id = $account_id;
 
 		Settings::getInstance()->setAccountId($this->_account_id);
 		$accounts->set_account($this->_account_id);
@@ -1027,6 +1041,26 @@ class Sessions
 		$this->_account_domain = $this->serverSettings['default_domain'];
 	}
 
+	private function resolveEmailLoginAlias(string $username): ?string
+	{
+		if ($username === '' || strpos($username, '@') !== false)
+		{
+			return null;
+		}
+
+		$statement = $this->db->prepare(
+			"SELECT account_lid FROM phpgw_accounts"
+			. " WHERE account_type = 'u' AND account_status = 'A'"
+			. " AND POSITION('@' IN account_lid) > 0"
+			. " AND split_part(account_lid, '@', 1) = :local_part"
+			. " LIMIT 2"
+		);
+		$statement->execute([':local_part' => $username]);
+		$matches = $statement->fetchAll(\PDO::FETCH_COLUMN);
+
+		return count($matches) === 1 ? (string) $matches[0] : null;
+	}
+
 	/**
 	 * Protect against brute force attacks, block login if too many unsuccessful login attmepts
 	 *
@@ -1345,18 +1379,4 @@ class Sessions
 		return true;
 	}
 
-	/**
-	 * Send an error response
-	 *
-	 * @param array $error
-	 * @param int   $statusCode
-	 *
-	 * @return Response
-	 */
-	private function sendErrorResponse($error, $statusCode = 401): Response
-	{
-		$response = new Response();
-		$response->getBody()->write(json_encode($error));
-		return $response->withHeader('Content-Type', 'application/json')->withStatus($statusCode);
-	}
 }

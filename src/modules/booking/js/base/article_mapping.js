@@ -1,4 +1,4 @@
-/* global initialSelection, lang */
+/* global initialSelection, lang, tax_percentages */
 
 var building_id_selection = "";
 var resource_id_selection = "";
@@ -22,6 +22,32 @@ $(document).ready(function ()
 		errorMessage: 'please enter both a date and prize',
 		errorMessageKey: ''
 	});
+
+	$.formUtils.addValidator({
+		name: 'article_price',
+		validatorFunction: function (value)
+		{
+			return article_price.parseCents(value) !== null;
+		},
+		errorMessage: '',
+		errorMessageKey: ''
+	});
+
+	$('#price').on('input', fill_price_incl);
+	$('#price_incl').on('input', fill_price_ex);
+	$('#price, #price_incl').on('change', function ()
+	{
+		var cents = article_price.parseCents($(this).val());
+		if (cents !== null)
+		{
+			$(this).val(article_price.format(cents, ','));
+		}
+	});
+	$('#tax_code').on('change', function ()
+	{
+		show_prizing_tax(true);
+	});
+	show_prizing_tax(false);
 
 
 	$("#field_article_cat_id").change(function ()
@@ -49,6 +75,144 @@ $(document).ready(function ()
 		'field_building_name', 'field_building_id', 'building_container');
 
 });
+
+/**
+ * Prising: a price is typed and stored ex. VAT, and the VAT-inclusive field
+ * beside it is worked out from the tax code and never posted. Parsing and
+ * rounding are those of App\modules\booking\helpers\ArticlePriceInput, so
+ * the figures shown while typing are the ones stored; change both or neither.
+ */
+var article_price = {
+	maxIntegerDigits: 8,
+
+	/**
+	 * A typed price in øre, or null when it is not a price. The last '.' or
+	 * ',' is the decimal mark when one or two digits follow it; every other
+	 * separator, and whitespace, groups thousands.
+	 */
+	parseCents: function (input)
+	{
+		var value = String(input === null || input === undefined ? '' : input).replace(/[ \t\n\r\f\v   ]+/g, '');
+		var matches = value.match(/^([+-]?)([0-9.,]*[0-9][0-9.,]*)$/);
+		if (!matches)
+		{
+			return null;
+		}
+
+		var integer = matches[2];
+		var fraction = '';
+		var parts = matches[2].match(/^(.*)[.,]([0-9]{1,2})$/);
+		if (parts)
+		{
+			integer = parts[1];
+			fraction = parts[2];
+		}
+
+		if (/[.,]/.test(integer) && !/^[1-9][0-9]{0,2}([.,][0-9]{3})+$/.test(integer))
+		{
+			return null;
+		}
+
+		integer = integer.replace(/[.,]/g, '').replace(/^0+/, '');
+		if (integer.length > this.maxIntegerDigits)
+		{
+			return null;
+		}
+
+		var cents = Number(integer || '0') * 100 + Number((fraction + '00').slice(0, 2));
+		return matches[1] === '-' ? -cents : cents;
+	},
+
+	/** Øre as a decimal string with two decimals and no grouping */
+	format: function (cents, decimalMark)
+	{
+		var magnitude = Math.abs(cents);
+		var fraction = String(magnitude % 100);
+		return (cents < 0 ? '-' : '') + Math.floor(magnitude / 100) + decimalMark + (fraction.length < 2 ? '0' + fraction : fraction);
+	},
+
+	/** Ex. to incl. VAT, half away from zero to whole øre, as billed */
+	inclVatCents: function (exCents, percent)
+	{
+		var magnitude = Math.floor((Math.abs(exCents) * (100 + percent) * 2 + 100) / 200);
+		return exCents < 0 ? -magnitude : magnitude;
+	},
+
+	/** Incl. to ex. VAT, half away from zero to whole øre */
+	exVatCents: function (inclCents, percent)
+	{
+		var magnitude = Math.floor((Math.abs(inclCents) * 200 + (100 + percent)) / (2 * (100 + percent)));
+		return inclCents < 0 ? -magnitude : magnitude;
+	}
+};
+
+/** The rate of the tax code selected on the article tab, or null without one */
+function prizing_tax_percent()
+{
+	var code = $('#tax_code').val();
+	if (typeof tax_percentages === 'undefined' || code === null || code === '' || !(code in tax_percentages) || tax_percentages[code] === null)
+	{
+		return null;
+	}
+	return Number(tax_percentages[code]);
+}
+
+function show_prizing_tax(recalculate)
+{
+	var percent = prizing_tax_percent();
+	var name = $('#tax_code option:selected').text();
+
+	$('#prizing_tax_code').text(percent === null ? name + ' – ' + lang['vat_rate_missing'] : name + ' (' + percent + ' %)');
+	$('#price_incl').prop('disabled', percent === null);
+
+	if (!recalculate)
+	{
+		return;
+	}
+
+	fill_price_incl();
+	$('#datatable-container_0 .price-incl[data-ex-cents]').each(function ()
+	{
+		var ex_cents = parseInt($(this).attr('data-ex-cents'), 10);
+		$(this).text(percent === null ? '–' : article_price.format(article_price.inclVatCents(ex_cents, percent), '.'));
+	});
+}
+
+function fill_price_incl()
+{
+	var percent = prizing_tax_percent();
+	var ex_cents = article_price.parseCents($('#price').val());
+
+	$('#price_incl_note').prop('hidden', true);
+	$('#price_incl').val(percent === null || ex_cents === null ? '' : article_price.format(article_price.inclVatCents(ex_cents, percent), ','));
+}
+
+function fill_price_ex()
+{
+	var percent = prizing_tax_percent();
+	var incl_cents = article_price.parseCents($('#price_incl').val());
+	var note = $('#price_incl_note').prop('hidden', true);
+
+	if (percent === null)
+	{
+		return;
+	}
+	if (incl_cents === null)
+	{
+		$('#price').val('');
+		return;
+	}
+
+	var ex_cents = article_price.exVatCents(incl_cents, percent);
+	$('#price').val(article_price.format(ex_cents, ','));
+
+	// At 25 %, one øre amount in five has no price ex. VAT that gives it
+	var reached = article_price.inclVatCents(ex_cents, percent);
+	if (reached !== incl_cents)
+	{
+		note.text(lang['price_incl_vat_nearest'] + ' ' + article_price.format(reached, ',')).prop('hidden', false);
+	}
+}
 
 function set_tab(tab)
 {

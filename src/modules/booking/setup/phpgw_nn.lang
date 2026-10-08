@@ -1278,3 +1278,9 @@ delete_attachment_confirm	booking	nn	Vil du slette vedlegget?
 attachment_empty	booking	nn	Fila er tom
 attachment_delete_failed	booking	nn	Slettinga feila
 price_category	booking	nn	Priskategori
+price_ex_vat	booking	nn	Pris eks. mva
+price_incl_vat	booking	nn	Pris inkl. mva
+price_incl_vat_nearest	booking	nn	Nærmaste moglege pris inkl. mva:
+vat_rate_missing	booking	nn	mva-koden manglar sats
+price_invalid	booking	nn	Ugyldig pris
+price_invalid_not_saved	booking	nn	Ugyldig pris – den nye prisen vart ikkje lagra

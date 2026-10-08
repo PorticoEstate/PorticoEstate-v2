@@ -28,6 +28,7 @@
  * @version $Id: $
  */
 
+use App\modules\booking\helpers\ArticlePriceInput;
 use App\modules\phpgwapi\services\Settings;
 
 phpgw::import_class('phpgwapi.uicommon');
@@ -421,8 +422,25 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 
 		$pricing	 = $this->bo->get_pricing($id);
 		$dateformat	 = $this->userSettings['preferences']['common']['dateformat'];
+
+		// Prices are stored ex. VAT; the VAT-inclusive column is worked out
+		// from the mapping's tax code, as a purchase order line bills it
+		$tax_percentages = $this->bo->get_tax_percentages();
+		$tax_code		 = $article->tax_code;
+		$tax_percent	 = is_numeric($tax_code) && array_key_exists((int)$tax_code, $tax_percentages) ? $tax_percentages[(int)$tax_code] : null;
+
 		foreach ($pricing as $key => &$price)
 		{
+			$ex_cents = ArticlePriceInput::parseCents((string)$price['price']);
+			if ($ex_cents === null)
+			{
+				$price['price_incl'] = '';
+			}
+			else
+			{
+				$price_incl			 = $tax_percent === null ? '–' : ArticlePriceInput::format(ArticlePriceInput::inclVatCents($ex_cents, $tax_percent));
+				$price['price_incl'] = "<span class='price-incl' data-ex-cents='{$ex_cents}'>{$price_incl}</span>";
+			}
 			$price['value_date']		 = $this->phpgwapi_common->show_date(strtotime($price['from_']), 'Y-m-d');
 			$active_checked				 = $price['active'] ? 'checked' : '';
 			$price['active_checkbox']	 = "<input type='checkbox' {$active_checked}  name='price_table[active][{$price['id']}]' value='1'>";
@@ -434,7 +452,8 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 		$pricing_def = array(
 			array('key' => 'id', 'label' => '#', 'sortable' => true, 'resizeable' => true),
 			array('key' => 'article_mapping_id', 'label' => lang('article id'), 'sortable' => true, 'resizeable' => true),
-			array('key' => 'price', 'label' => lang('price'), 'sortable' => true, 'resizeable' => true),
+			array('key' => 'price', 'label' => lang('price_ex_vat'), 'sortable' => true, 'resizeable' => true),
+			array('key' => 'price_incl', 'label' => lang('price_incl_vat'), 'sortable' => false, 'resizeable' => true),
 			array('key' => 'value_date', 'label' => lang('from'), 'sortable' => true, 'resizeable' => true),
 			array('key' => 'remark', 'label' => lang('remark'), 'sortable' => true, 'resizeable' => true),
 			array('key' => 'active_checkbox', 'label' => lang('active'), 'sortable' => false, 'resizeable' => true),
@@ -588,6 +607,7 @@ JS;
 			'article_categories'	 => array('options' => $this->get_category_options($article->article_cat_id)),
 			'unit_list'				 => array('options' => $this->get_unit_list($article->unit)),
 			'tax_code_list'			 => array('options' => execMethod('booking.bogeneric.get_list', array('type' => 'tax', 'order' => 'id', 'selected' => $article->tax_code))),
+			'tax_percentages_json'	 => json_encode($tax_percentages, JSON_FORCE_OBJECT),
 			'article_group_list'	 => array('options' => execMethod('booking.bogeneric.get_list', array('type' => 'article_group', 'order' => 'id', 'selected' => $article->group_id))),
 			'service_list'			 => ($id && $article->article_cat_id == 2) ? array('options' => $this->get_services($article->article_id)) : array(),
 			'mode'					 => $mode,

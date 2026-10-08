@@ -26,6 +26,10 @@
 	 * @subpackage article
 	 * @version $Id: $
 	 */
+
+	use App\modules\booking\helpers\ArticlePriceInput;
+	use App\modules\phpgwapi\services\Cache;
+
 	phpgw::import_class('phpgwapi.socommon');
 	include_class('booking', 'article_mapping', 'inc/model/');
 
@@ -152,14 +156,20 @@
 			}
 
 			$date_from	 = phpgwapi_datetime::date_to_timestamp($article_prizing['date_from']);
-			$price		 = floatval(str_replace(',', '.', str_replace('.', '', $article_prizing['price'])));
+			$price_cents = ArticlePriceInput::parseCents($article_prizing['price']);
 
-			if (($price || $price == 0) && $date_from)
+			if ($price_cents === null)
+			{
+				Cache::message_set(lang('price_invalid_not_saved'), 'error');
+				return;
+			}
+
+			if ($date_from)
 			{
 				$value_set = array
 					(
 					'article_mapping_id' => $article_mapping_id,
-					'price'				 => $price,
+					'price'				 => ArticlePriceInput::format($price_cents),
 					'from_'				 => date('Y-m-d', $date_from),
 					'remark'			 => $article_prizing['remark'],
 				);
@@ -194,6 +204,24 @@
 				);
 			}
 			return $pricing;
+		}
+
+		/**
+		 * The VAT rate of every tax code, keyed by code; null where the code
+		 * has no rate
+		 */
+		public function get_tax_percentages()
+		{
+			$percentages = array();
+
+			$this->db->query('SELECT id, percent_ FROM fm_ecomva', __LINE__, __FILE__);
+
+			while ($this->db->next_record())
+			{
+				$percent = $this->db->f('percent_');
+				$percentages[(int)$this->db->f('id')] = ($percent === null || $percent === '') ? null : (int)$percent;
+			}
+			return $percentages;
 		}
 
 		/**

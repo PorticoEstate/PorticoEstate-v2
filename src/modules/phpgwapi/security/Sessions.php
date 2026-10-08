@@ -314,6 +314,7 @@ class Sessions
 			{
 				$this->_account_lid = $emailLogin;
 				$account_id = $accounts->name2id($this->_account_lid);
+				$login = $emailLogin . '#' . explode('#', $login, 2)[1] ?? $login;
 			}
 		}
 
@@ -1040,16 +1041,6 @@ class Sessions
 		$this->_account_domain = $this->serverSettings['default_domain'];
 	}
 
-	/**
-	 * Resolve a short username to a uniquely matching stored email account_lid.
-	 * Only active user accounts containing @ are considered, with an exact
-	 * match on the local part (before @). Fetch at most two rows to detect
-	 * ambiguity rather than choosing between accounts with different domains.
-	 *
-	 * @param string $username Short username without @.
-	 * @return string|null Stored account_lid for exactly one match; null for
-	 *                     empty or email input, no match, or ambiguous matches.
-	 */
 	private function resolveEmailLoginAlias(string $username): ?string
 	{
 		if ($username === '' || strpos($username, '@') !== false)

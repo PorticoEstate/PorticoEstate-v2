@@ -310,11 +310,14 @@ class ApplicationService
 
 		$acceptedIds = [$appId];
 		$rejectedIds = [];
+		// Every application in the combined cart, set only when there is one
+		$cartIds = [];
 
 		// Handle combined applications
 		if ($this->combineApplications) {
 			$relatedInfo = $this->repo->getRelatedApplications($appId);
 			if ($relatedInfo['total_count'] > 1) {
+				$cartIds = $this->cartIdsParentFirst($relatedInfo);
 				$relatedIds = array_filter(
 					$relatedInfo['application_ids'],
 					fn(int $id) => $id !== $appId
@@ -337,18 +340,15 @@ class ApplicationService
 							'comment'
 						);
 						$rejectedIds[] = $relatedId;
-
-						if ($sendEmail) {
-							$this->sendNotificationSafe($relatedId);
-						}
 					}
 				}
 			}
 		}
 
-		// Send email for the primary application
+		// One email to the applicant: for a combined cart it covers every part and its
+		// outcome (an auto-rejected part is listed there, not mailed separately).
 		if ($sendEmail) {
-			$this->sendNotificationSafe($appId);
+			$this->sendStatusNotification($appId, $cartIds, $message);
 		}
 
 		return [
@@ -387,10 +387,14 @@ class ApplicationService
 		$this->repo->updateStatus($appId, 'REJECTED');
 		$this->repo->deactivateAssociations($appId);
 
+		// Every application in the combined cart, set only when the rejection cascades to one
+		$cartIds = [];
+
 		// Handle combined applications (skipped for a single-application rejection)
 		if ($cascade && $this->combineApplications) {
 			$relatedInfo = $this->repo->getRelatedApplications($appId);
 			if ($relatedInfo['total_count'] > 1) {
+				$cartIds = $this->cartIdsParentFirst($relatedInfo);
 				$relatedIds = array_filter(
 					$relatedInfo['application_ids'],
 					fn(int $id) => $id !== $appId
@@ -400,16 +404,13 @@ class ApplicationService
 					$this->repo->updateStatus($relatedId, 'REJECTED');
 					$this->repo->deactivateAssociations($relatedId);
 					$this->repo->addComment($relatedId, $authorName, $reason, 'comment');
-
-					if ($sendEmail) {
-						$this->sendNotificationSafe($relatedId);
-					}
 				}
 			}
 		}
 
+		// One email to the applicant, covering the whole cart when the rejection cascaded
 		if ($sendEmail) {
-			$this->sendNotificationSafe($appId);
+			$this->sendStatusNotification($appId, $cartIds, $reason);
 		}
 	}
 
@@ -508,14 +509,103 @@ class ApplicationService
 	}
 
 	/**
+	 * Turn the case officer's accept/reject message into HTML for the status email.
+	 *
+	 * The message is plain text from a textarea and is stored as typed, while the email
+	 * templates output the comment unescaped. So escape it (markup the officer typed is
+	 * shown as text), keep its line breaks, and purify the result like the rich-editor
+	 * input from the legacy UI.
+	 */
+	private function statusMessageToMailHtml(string $message): string
+	{
+		if ($message === '') {
+			return '';
+		}
+
+		return Sanitizer::clean_html(nl2br(htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), false));
+	}
+
+	/**
+	 * The ids of a combined cart with the parent first, then the other parts by id. This is
+	 * the order the legacy group email gets them in (soapplication::get_related_applications):
+	 * the email takes its "Se søknad" number from the first one and, when the parent is
+	 * accepted, its link from the parent, so the two only agree when the parent comes first.
+	 *
+	 * @param array{application_ids: int[], parent_id: ?int} $relatedInfo
+	 * @return int[]
+	 */
+	private function cartIdsParentFirst(array $relatedInfo): array
+	{
+		$parentId = (int) ($relatedInfo['parent_id'] ?? 0);
+		$parentFirst = $parentId > 0 ? [$parentId] : [];
+
+		return array_values(array_unique(array_merge($parentFirst, $relatedInfo['application_ids'])));
+	}
+
+	/**
+	 * Send the accept/reject email to the applicant, carrying the case officer's message.
+	 *
+	 * @param int[]  $cartIds Every application in the combined cart, or empty for a single
+	 *                        application. A cart gets one email listing each part and its
+	 *                        outcome, as the legacy UI sends it.
+	 * @param string $message The case officer's message as typed ('' for none).
+	 */
+	private function sendStatusNotification(int $appId, array $cartIds, string $message): void
+	{
+		$messageHtml = $this->statusMessageToMailHtml($message);
+
+		if (!empty($cartIds)) {
+			$this->sendGroupNotificationSafe($cartIds, $messageHtml);
+		} else {
+			$this->sendNotificationSafe($appId, null, $messageHtml);
+		}
+	}
+
+	/**
+	 * Send one notification email covering every application in a combined cart,
+	 * suppressing exceptions (logs on failure).
+	 *
+	 * @param int[]  $appIds            The cart's applications, in the order the legacy
+	 *                                  group email gets them (parent first).
+	 * @param string $statusMessageHtml The case officer's message, already made safe by
+	 *                                  statusMessageToMailHtml() ('' for none).
+	 */
+	private function sendGroupNotificationSafe(array $appIds, string $statusMessageHtml): void
+	{
+		try {
+			$applications = [];
+			foreach ($appIds as $id) {
+				$row = $this->repo->getById($id);
+				if (!$row) continue;
+
+				$emailApp = $this->buildEmailApplicationData($id, $row);
+				if ($statusMessageHtml !== '') {
+					$emailApp['comment'] = $statusMessageHtml;
+				}
+				$applications[] = $emailApp;
+			}
+
+			if (empty($applications)) return;
+
+			$emailService = new EmailService();
+			$emailService->sendApplicationGroupNotification($applications, false);
+		} catch (\Throwable $e) {
+			error_log('Failed to send group notification for applications ' . implode(',', $appIds) . ': ' . $e->getMessage());
+		}
+	}
+
+	/**
 	 * Send notification email, suppressing exceptions (logs on failure).
 	 *
-	 * @param string|null $commentText When set (case-officer reply path), the text is
-	 *                                 threaded into the email body so the applicant sees
-	 *                                 the actual message. Left null for status-change
-	 *                                 notifications (accept/reject), which are unchanged.
+	 * @param string|null $commentText       When set (case-officer reply path), the text is
+	 *                                       threaded into the email body so the applicant sees
+	 *                                       the actual message, and the comment email is sent
+	 *                                       regardless of status.
+	 * @param string      $statusMessageHtml The case officer's accept/reject message, already
+	 *                                       made safe by statusMessageToMailHtml(). Shown in
+	 *                                       the status email; '' leaves that section out.
 	 */
-	private function sendNotificationSafe(int $appId, ?string $commentText = null): void
+	private function sendNotificationSafe(int $appId, ?string $commentText = null, string $statusMessageHtml = ''): void
 	{
 		try {
 			$row = $this->repo->getById($appId);
@@ -527,6 +617,8 @@ class ApplicationService
 			$isCommentReply = $commentText !== null;
 			if ($isCommentReply) {
 				$emailApp['comment'] = $commentText;
+			} elseif ($statusMessageHtml !== '') {
+				$emailApp['comment'] = $statusMessageHtml;
 			}
 			$emailService = new EmailService();
 			$emailService->sendApplicationNotification($emailApp, false, false, $isCommentReply);

@@ -1379,18 +1379,4 @@ class Sessions
 		return true;
 	}
 
-	/**
-	 * Send an error response
-	 *
-	 * @param array $error
-	 * @param int   $statusCode
-	 *
-	 * @return Response
-	 */
-	private function sendErrorResponse($error, $statusCode = 401): Response
-	{
-		$response = new Response();
-		$response->getBody()->write(json_encode($error));
-		return $response->withHeader('Content-Type', 'application/json')->withStatus($statusCode);
-	}
 }

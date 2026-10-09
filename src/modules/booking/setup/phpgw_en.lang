@@ -1303,3 +1303,10 @@ delete_attachment_confirm	booking	en	Delete the attachment?
 attachment_empty	booking	en	The file is empty
 attachment_delete_failed	booking	en	The deletion failed
 price_category	booking	en	Price category
+price_ex_vat	booking	en	Price excl. VAT
+price_incl_vat	booking	en	Price incl. VAT
+price_incl_vat_nearest	booking	en	Nearest possible price incl. VAT:
+vat_rate_missing	booking	en	the VAT code has no rate
+price_invalid	booking	en	Invalid price
+price_invalid_not_saved	booking	en	Invalid price – the new price was not saved
+price_row_invalid_not_saved	booking	en	Invalid price or date on row %1 – the row was not changed

@@ -1304,3 +1304,10 @@ delete_attachment_confirm	booking	no	Vil du slette vedlegget?
 attachment_empty	booking	no	Filen er tom
 attachment_delete_failed	booking	no	Slettingen feilet
 price_category	booking	no	Priskategori
+price_ex_vat	booking	no	Pris eks. mva
+price_incl_vat	booking	no	Pris inkl. mva
+price_incl_vat_nearest	booking	no	Nærmeste mulige pris inkl. mva:
+vat_rate_missing	booking	no	mva-koden mangler sats
+price_invalid	booking	no	Ugyldig pris
+price_invalid_not_saved	booking	no	Ugyldig pris – den nye prisen ble ikke lagret
+price_row_invalid_not_saved	booking	no	Ugyldig pris eller dato på rad %1 – raden ble ikke endret

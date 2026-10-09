@@ -108,6 +108,7 @@
 			$this->db->transaction_begin();
 
 			$this->set_prizing_defaults($object->get_id());
+			$this->set_prices($object->get_id());
 			$this->set_prizing($object->get_id());
 			parent::update($object);
 
@@ -144,6 +145,122 @@
 				$this->db->query($sql, __LINE__, __FILE__);
 			}
 
+		}
+
+		/**
+		 * Change the price, date and remark of prices already stored. The page
+		 * names a field only once it is edited, so only edited fields are
+		 * posted, and a field posted as it already reads is left alone. A row
+		 * with an invalid price or date is not changed at all.
+		 *
+		 * Runs after set_prizing_defaults(), so a row ticked for deletion is
+		 * gone and its edits are dropped.
+		 */
+		private function set_prices( $article_mapping_id )
+		{
+			$article_prices = Sanitizer::get_var('article_prices');
+
+			if (empty($article_prices) || !is_array($article_prices))
+			{
+				return;
+			}
+
+			$refused = array();
+			foreach ($article_prices as $price_id => $posted)
+			{
+				$price_id = (int)$price_id;
+				if (!is_array($posted))
+				{
+					continue;
+				}
+
+				$this->db->query('SELECT price, from_, remark FROM bb_article_price'
+					. " WHERE id = {$price_id} AND article_mapping_id = " . (int)$article_mapping_id, __LINE__, __FILE__);
+
+				if (!$this->db->next_record())
+				{
+					continue;
+				}
+
+				$stored_cents	 = ArticlePriceInput::parseCents((string)$this->db->f('price'));
+				$stored_date	 = substr((string)$this->db->f('from_'), 0, 10);
+				$stored_remark	 = $this->db->f('remark', true);
+
+				// A field posted as anything but text is no price, date or remark
+				$value_set	 = array();
+				$valid		 = count(array_filter($posted, 'is_string')) === count($posted);
+
+				if (!$valid)
+				{
+					$refused[] = $price_id;
+					continue;
+				}
+
+				if (array_key_exists('price', $posted))
+				{
+					$cents = ArticlePriceInput::parseCents($posted['price']);
+					if ($cents === null)
+					{
+						$valid = false;
+					}
+					else if ($cents !== $stored_cents)
+					{
+						$value_set['price'] = ArticlePriceInput::format($cents);
+					}
+				}
+
+				if (array_key_exists('from_', $posted))
+				{
+					$date = ArticlePriceInput::parseDate($posted['from_']);
+					if ($date === null)
+					{
+						$valid = false;
+					}
+					else if ($date !== $stored_date)
+					{
+						$value_set['from_'] = $date;
+					}
+				}
+
+				// The page shows the remark decoded, and a remark posted back as
+				// shown does not always encode to the bytes it was stored as. So
+				// the post is compared with what was shown, cleaned the way the
+				// post was
+				if (array_key_exists('remark', $posted))
+				{
+					$remark = (string)$posted['remark'];
+					if ($remark !== Sanitizer::clean_value($stored_remark))
+					{
+						$value_set['remark'] = $remark;
+					}
+				}
+
+				if (!$valid)
+				{
+					$refused[] = $price_id;
+					continue;
+				}
+
+				if (!$value_set)
+				{
+					continue;
+				}
+
+				// Each value goes in as set_prizing() inserts it
+				$set = array();
+				foreach ($value_set as $field => $value)
+				{
+					$set[] = "{$field} = " . $this->db->validate_insert(array($value));
+				}
+
+				$this->db->query('UPDATE bb_article_price SET ' . implode(', ', $set)
+					. " WHERE id = {$price_id} AND article_mapping_id = " . (int)$article_mapping_id, __LINE__, __FILE__);
+			}
+
+			if ($refused)
+			{
+				Cache::message_set(lang('price_row_invalid_not_saved', implode(', ', $refused)), 'error');
+			}
 		}
 
 		private function set_prizing( $article_mapping_id )

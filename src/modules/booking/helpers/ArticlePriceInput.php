@@ -3,8 +3,8 @@
 namespace App\modules\booking\helpers;
 
 /**
- * The price an administrator types on the article mapping's "Prising" tab,
- * and the VAT-inclusive figure shown beside it.
+ * The price and date an administrator types on the article mapping's
+ * "Prising" tab, and the VAT-inclusive figure shown beside the price.
  *
  * js/base/article_mapping.js runs the same rules in the browser, so the
  * figures shown while typing are the ones stored; change both or neither.
@@ -57,6 +57,24 @@ class ArticlePriceInput
 		$cents = (int)$integer * 100 + (int)str_pad($fraction, 2, '0');
 
 		return $matches[1] === '-' ? -$cents : $cents;
+	}
+
+	/**
+	 * A typed "valid from" date as YYYY-MM-DD, or null when it is not one.
+	 * Only that form is read, as the price history shows and picks it, so
+	 * "15.10.2030" and "2030-02-30" are refused rather than guessed at.
+	 */
+	public static function parseDate(?string $input): ?string
+	{
+		$value = trim((string)$input);
+
+		if (!preg_match('/^([0-9]{4})-([0-9]{2})-([0-9]{2})$/', $value, $matches)
+			|| !checkdate((int)$matches[2], (int)$matches[3], (int)$matches[1]))
+		{
+			return null;
+		}
+
+		return $value;
 	}
 
 	/**

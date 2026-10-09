@@ -429,19 +429,30 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 		$tax_code		 = $article->tax_code;
 		$tax_percent	 = is_numeric($tax_code) && array_key_exists((int)$tax_code, $tax_percentages) ? $tax_percentages[(int)$tax_code] : null;
 
+		$lang_price_invalid	 = htmlspecialchars(lang('price_invalid'), ENT_QUOTES, 'UTF-8');
+		$lang_date_invalid	 = htmlspecialchars(lang('Invalid from date'), ENT_QUOTES, 'UTF-8');
+		$incl_disabled		 = $tax_percent === null ? 'disabled' : '';
+
+		// A stored price is edited in place. Its fields keep their name in
+		// data-name until article_mapping.js sets it on an edit, so a save
+		// that edits nothing posts nothing for them. The date is the stored
+		// day as eligibility reads it, without a time zone shift.
 		foreach ($pricing as $key => &$price)
 		{
-			$ex_cents = ArticlePriceInput::parseCents((string)$price['price']);
-			if ($ex_cents === null)
-			{
-				$price['price_incl'] = '';
-			}
-			else
-			{
-				$price_incl			 = $tax_percent === null ? '–' : ArticlePriceInput::format(ArticlePriceInput::inclVatCents($ex_cents, $tax_percent));
-				$price['price_incl'] = "<span class='price-incl' data-ex-cents='{$ex_cents}'>{$price_incl}</span>";
-			}
-			$price['value_date']		 = $this->phpgwapi_common->show_date(strtotime($price['from_']), 'Y-m-d');
+			$ex_cents	 = ArticlePriceInput::parseCents((string)$price['price']);
+			$price_ex	 = $ex_cents === null ? '' : ArticlePriceInput::format($ex_cents, ',');
+			$price_incl	 = $ex_cents === null || $tax_percent === null ? '' : ArticlePriceInput::format(ArticlePriceInput::inclVatCents($ex_cents, $tax_percent), ',');
+			$date_from	 = substr((string)$price['from_'], 0, 10);
+			$remark		 = htmlspecialchars((string)$price['remark'], ENT_QUOTES, 'UTF-8');
+			$name		 = "article_prices[{$price['id']}]";
+
+			$price['price_input']		 = "<input type='text' class='price-row-ex' data-name='{$name}[price]' value='{$price_ex}' size='8' inputmode='decimal' autocomplete='off'"
+				. " data-validation='article_price_row' data-validation-error-msg='{$lang_price_invalid}'>";
+			$price['price_incl_input']	 = "<input type='text' class='price-row-incl' value='{$price_incl}' size='8' inputmode='decimal' autocomplete='off' {$incl_disabled}>"
+				. "<span class='price-row-incl-note' hidden='hidden'></span>";
+			$price['from_input']		 = "<input type='text' class='price-row-from' data-name='{$name}[from_]' value='{$date_from}' size='10' autocomplete='off' placeholder='YYYY-MM-DD'"
+				. " data-validation='article_price_from' data-validation-error-msg='{$lang_date_invalid}'>";
+			$price['remark_input']		 = "<input type='text' class='price-row-remark' data-name='{$name}[remark]' value='{$remark}' size='20'>";
 			$active_checked				 = $price['active'] ? 'checked' : '';
 			$price['active_checkbox']	 = "<input type='checkbox' {$active_checked}  name='price_table[active][{$price['id']}]' value='1'>";
 			$default_checked			 = $price['default_'] ? 'checked' : '';
@@ -452,21 +463,26 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 		$pricing_def = array(
 			array('key' => 'id', 'label' => '#', 'sortable' => true, 'resizeable' => true),
 			array('key' => 'article_mapping_id', 'label' => lang('article id'), 'sortable' => true, 'resizeable' => true),
-			array('key' => 'price', 'label' => lang('price_ex_vat'), 'sortable' => true, 'resizeable' => true),
-			array('key' => 'price_incl', 'label' => lang('price_incl_vat'), 'sortable' => false, 'resizeable' => true),
-			array('key' => 'value_date', 'label' => lang('from'), 'sortable' => true, 'resizeable' => true),
-			array('key' => 'remark', 'label' => lang('remark'), 'sortable' => true, 'resizeable' => true),
+			array('key' => 'price_input', 'label' => lang('price_ex_vat'), 'sortable' => false, 'resizeable' => true),
+			array('key' => 'price_incl_input', 'label' => lang('price_incl_vat'), 'sortable' => false, 'resizeable' => true),
+			array('key' => 'from_input', 'label' => lang('from'), 'sortable' => false, 'resizeable' => true),
+			array('key' => 'remark_input', 'label' => lang('remark'), 'sortable' => false, 'resizeable' => true),
 			array('key' => 'active_checkbox', 'label' => lang('active'), 'sortable' => false, 'resizeable' => true),
 			array('key' => 'default_radio', 'label' => lang('default'), 'sortable' => false, 'resizeable' => true),
 			array('key' => 'delete_checkbox', 'label' => lang('delete'), 'sortable' => false, 'resizeable' => true),
 		);
 
+		// The table's JSON reaches its inline script through
+		// phpgwapi_xmlhelper::toXML(), which entity-decodes every string. With
+		// & < > ' " written as \u escapes there is nothing for it to decode, so
+		// a cell's escaped remark stays escaped and no "</script" can end the
+		// script early.
 		$datatable_def	 = array();
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_0',
 			'requestUrl' => "''",
 			'ColumnDefs' => $pricing_def,
-			'data'		 => json_encode($pricing),
+			'data'		 => json_encode($pricing, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT),
 			'config'	 => array(
 				array('disableFilter' => true),
 				array('disablePagination' => true)

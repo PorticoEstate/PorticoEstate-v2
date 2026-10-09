@@ -33,16 +33,79 @@ $(document).ready(function ()
 		errorMessageKey: ''
 	});
 
-	$('#price').on('input', fill_price_incl);
-	$('#price_incl').on('input', fill_price_ex);
-	$('#price, #price_incl').on('change', function ()
-	{
-		var cents = article_price.parseCents($(this).val());
-		if (cents !== null)
+	// A stored price's fields are only posted once named, so an unnamed one
+	// was left as it is and passes
+	$.formUtils.addValidator({
+		name: 'article_price_row',
+		validatorFunction: function (value, $el)
 		{
-			$(this).val(article_price.format(cents, ','));
-		}
+			return !$el.attr('name') || article_price.parseCents(value) !== null;
+		},
+		errorMessage: '',
+		errorMessageKey: ''
 	});
+
+	$.formUtils.addValidator({
+		name: 'article_price_from',
+		validatorFunction: function (value, $el)
+		{
+			return !$el.attr('name') || article_price.parseDate(value) !== null;
+		},
+		errorMessage: '',
+		errorMessageKey: ''
+	});
+
+	$('#price').on('input', function ()
+	{
+		fill_price_incl($('#price'), $('#price_incl'), $('#price_incl_note'));
+	});
+	$('#price_incl').on('input', function ()
+	{
+		fill_price_ex($('#price'), $('#price_incl'), $('#price_incl_note'));
+	});
+	$('#price, #price_incl').on('change', show_canonical_price);
+
+	// The prices already stored, in the history table: a field gets the name
+	// it is posted under once it is edited, and not before
+	$('#prizing').on('input change', '.price-row-ex, .price-row-from, .price-row-remark', function ()
+	{
+		name_price_field($(this));
+	});
+	$('#prizing').on('input', '.price-row-ex', function ()
+	{
+		var row = $(this).closest('tr');
+		fill_price_incl(row.find('.price-row-ex'), row.find('.price-row-incl'), row.find('.price-row-incl-note'));
+	});
+	$('#prizing').on('input', '.price-row-incl', function ()
+	{
+		var row = $(this).closest('tr');
+		fill_price_ex(row.find('.price-row-ex'), row.find('.price-row-incl'), row.find('.price-row-incl-note'));
+	});
+	$('#prizing').on('change', '.price-row-ex, .price-row-incl', show_canonical_price);
+	$('#prizing').on('focus', '.price-row-from', function ()
+	{
+		var from = $(this);
+		if (from.data('xdsoft_datetimepicker'))
+		{
+			return;
+		}
+		from.datetimepicker({
+			format: 'Y-m-d',
+			datepicker: true,
+			timepicker: false,
+			weeks: true,
+			dayOfWeekStart: 1,
+			// Left alone, the picker puts today in place of a date it cannot
+			// read and turns the date as the mouse wheel passes over it
+			validateOnBlur: false,
+			scrollInput: false,
+			// Only with this set does a picked date fire 'change' on the input
+			onChangeDateTime: function ()
+			{
+			}
+		}).datetimepicker('show');
+	});
+
 	$('#tax_code').on('change', function ()
 	{
 		show_prizing_tax(true);
@@ -123,6 +186,32 @@ var article_price = {
 		return matches[1] === '-' ? -cents : cents;
 	},
 
+	/**
+	 * A typed "valid from" date as YYYY-MM-DD, or null when it is not one.
+	 * Trims as PHP's trim() does, and accepts what PHP's checkdate() does.
+	 */
+	parseDate: function (input)
+	{
+		var value = String(input === null || input === undefined ? '' : input).replace(/^[ \t\n\r\0\x0B]+|[ \t\n\r\0\x0B]+$/g, '');
+		var matches = value.match(/^([0-9]{4})-([0-9]{2})-([0-9]{2})$/);
+		if (!matches)
+		{
+			return null;
+		}
+
+		var year = Number(matches[1]);
+		var month = Number(matches[2]);
+		var day = Number(matches[3]);
+		var leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+		var days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+		if (year < 1 || month < 1 || month > 12 || day < 1 || day > days[month - 1])
+		{
+			return null;
+		}
+		return value;
+	},
+
 	/** Øre as a decimal string with two decimals and no grouping */
 	format: function (cents, decimalMark)
 	{
@@ -163,48 +252,70 @@ function show_prizing_tax(recalculate)
 	var name = $('#tax_code option:selected').text();
 
 	$('#prizing_tax_code').text(percent === null ? name + ' – ' + lang['vat_rate_missing'] : name + ' (' + percent + ' %)');
-	$('#price_incl').prop('disabled', percent === null);
+	$('#price_incl, #datatable-container_0 .price-row-incl').prop('disabled', percent === null);
 
 	if (!recalculate)
 	{
 		return;
 	}
 
-	fill_price_incl();
-	$('#datatable-container_0 .price-incl[data-ex-cents]').each(function ()
+	fill_price_incl($('#price'), $('#price_incl'), $('#price_incl_note'));
+	$('#datatable-container_0 tr').has('.price-row-ex').each(function ()
 	{
-		var ex_cents = parseInt($(this).attr('data-ex-cents'), 10);
-		$(this).text(percent === null ? '–' : article_price.format(article_price.inclVatCents(ex_cents, percent), '.'));
+		var row = $(this);
+		fill_price_incl(row.find('.price-row-ex'), row.find('.price-row-incl'), row.find('.price-row-incl-note'));
 	});
 }
 
-function fill_price_incl()
+/** A stored price's field, edited: posted from now on */
+function name_price_field(field)
 {
-	var percent = prizing_tax_percent();
-	var ex_cents = article_price.parseCents($('#price').val());
-
-	$('#price_incl_note').prop('hidden', true);
-	$('#price_incl').val(percent === null || ex_cents === null ? '' : article_price.format(article_price.inclVatCents(ex_cents, percent), ','));
+	field.attr('name', field.attr('data-name'));
 }
 
-function fill_price_ex()
+/** Rewrite a price as it is read, so the admin sees what will be stored */
+function show_canonical_price()
+{
+	var cents = article_price.parseCents($(this).val());
+	if (cents !== null)
+	{
+		$(this).val(article_price.format(cents, ','));
+	}
+}
+
+/** Fill the price incl. VAT from the price ex. VAT beside it */
+function fill_price_incl(ex, incl, note)
 {
 	var percent = prizing_tax_percent();
-	var incl_cents = article_price.parseCents($('#price_incl').val());
-	var note = $('#price_incl_note').prop('hidden', true);
+	var ex_cents = article_price.parseCents(ex.val());
+
+	note.prop('hidden', true);
+	incl.val(percent === null || ex_cents === null ? '' : article_price.format(article_price.inclVatCents(ex_cents, percent), ','));
+}
+
+/** Fill the price ex. VAT from the price incl. VAT beside it */
+function fill_price_ex(ex, incl, note)
+{
+	var percent = prizing_tax_percent();
+	var incl_cents = article_price.parseCents(incl.val());
+	note.prop('hidden', true);
 
 	if (percent === null)
 	{
 		return;
 	}
+	if (ex.attr('data-name'))
+	{
+		name_price_field(ex);
+	}
 	if (incl_cents === null)
 	{
-		$('#price').val('');
+		ex.val('');
 		return;
 	}
 
 	var ex_cents = article_price.exVatCents(incl_cents, percent);
-	$('#price').val(article_price.format(ex_cents, ','));
+	ex.val(article_price.format(ex_cents, ','));
 
 	// At 25 %, one øre amount in five has no price ex. VAT that gives it
 	var reached = article_price.inclVatCents(ex_cents, percent);

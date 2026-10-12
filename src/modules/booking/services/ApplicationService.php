@@ -774,11 +774,13 @@ class ApplicationService
 		// not, placed on the occurrence it belongs to - also after its time was
 		// changed (placeElements). An occurrence holding an active element of
 		// its own exists: createRecurringAllocations skips it, so a moved
-		// occurrence is never created a second time.
+		// occurrence is never created a second time. Only the series' own
+		// allocations are placed by date alone - see placeElements.
 		$placement = $this->placeElements(
 			$occurrences,
 			$this->repo->fetchAssociations($appId),
-			$this->repo->fetchAllocationGroupMap($appId)
+			$this->repo->fetchAllocationGroupMap($appId),
+			true
 		);
 
 		$items = [];
@@ -924,7 +926,12 @@ class ApplicationService
 	 *     then the nearest start, then the first slot. Allocations of the
 	 *     series' recurrence group are placed first, so a moved occurrence wins
 	 *     its date over an extra allocation made on the same day. The series is
-	 *     the oldest group, the one resolveAllocationGroupId reuses;
+	 *     the oldest group, the one resolveAllocationGroupId reuses.
+	 *     With $dateMatchSeriesOnly - a recurring application's occurrences -
+	 *     only the series' allocations are matched by date alone; any other
+	 *     element has to overlap the occurrence. An occurrence holding an
+	 *     element exists, so an unrelated element made on its date would
+	 *     otherwise stop the series from ever being created on that day;
 	 *  3. what is left belongs to no slot. An element moved to another day ends
 	 *     up here: nothing is left to tell which slot it came from.
 	 *
@@ -933,7 +940,7 @@ class ApplicationService
 	 * @param array<int, ?int> $allocationGroups allocation id => allocation_group_id
 	 * @return array{placed: array<int|string, array>, unplaced: array}
 	 */
-	private function placeElements(array $slots, array $elements, array $allocationGroups): array
+	private function placeElements(array $slots, array $elements, array $allocationGroups, bool $dateMatchSeriesOnly = false): array
 	{
 		$slotTimes = [];
 		foreach ($slots as $key => $slot) {
@@ -984,6 +991,7 @@ class ApplicationService
 		foreach ($rest as $element) {
 			$from = empty($element['from_']) ? false : strtotime((string) $element['from_']);
 			$to = empty($element['to_']) ? false : strtotime((string) $element['to_']);
+			$byDate = !$dateMatchSeriesOnly || $inSeries($element);
 			$best = null;
 			if ($from && $to) {
 				foreach ($slotTimes as $key => $slot) {
@@ -991,7 +999,7 @@ class ApplicationService
 						continue;
 					}
 					$overlap = max(0, min($to, $slot['to']) - max($from, $slot['from']));
-					if ($overlap === 0 && date('Y-m-d', $from) !== $slot['date']) {
+					if ($overlap === 0 && (!$byDate || date('Y-m-d', $from) !== $slot['date'])) {
 						continue;
 					}
 					$distance = abs($slot['from'] - $from);

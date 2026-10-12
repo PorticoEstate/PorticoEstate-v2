@@ -1144,3 +1144,4 @@ confirm_withdraw_whole_application_description	bookingfrontend	no	Søknaden trek
 withdraw_whole_application_failed	bookingfrontend	no	Søknaden kunne ikke trekkes. Prøv igjen.
 withdraw_whole_application_help_no_selection	bookingfrontend	no	Trekker søknaden og alle reserverte tider i den.
 cancel_whole_application_help_no_selection	bookingfrontend	no	Avbestiller søknaden og alle reserverte tider i den.
+change_request_pending	bookingfrontend	no	Ønsket endring til kl. {{time}} venter på saksbehandling

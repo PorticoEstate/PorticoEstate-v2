@@ -3,6 +3,7 @@
 namespace App\modules\bookingfrontend\services;
 
 use App\Database\Db;
+use App\modules\booking\repositories\ApplicationChangeRequestRepository;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\helpers\ApplicationHelper;
 use App\modules\bookingfrontend\repositories\ApplicationRepository;
@@ -76,6 +77,7 @@ class ScheduleEntityService
             $userOrgs = $this->bouser->organizations ? array_column($this->bouser->organizations, 'orgnr') : null;
 
             $results = [];
+            $ownEvents = [];
             foreach ($this->groupByEntity($rows) as $eventGroup) {
                 $event = new Event($eventGroup[0]);
                 $event->resources = array_map([$this, 'formatResource'], $eventGroup);
@@ -86,11 +88,52 @@ class ScheduleEntityService
                 $this->addEditCancelLinks($eventData, $config, 'event', $application);
 
                 $results[] = $eventData;
+                // The secret is exposed to the event's owner only, the one who can ask for a new time
+                if (isset($eventData['secret'])) {
+                    $ownEvents[count($results) - 1] = $eventGroup[0];
+                }
             }
+
+            $this->addPendingChanges($results, $ownEvents);
 
             return $results;
         } catch (Exception $e) {
             throw new Exception("Error fetching events for application {$applicationId}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Add the time the owner has asked for (an open bb_application_change_request)
+     * to each of the owner's events, as pending_change {from_, to_} in the same
+     * Europe/Oslo ISO format as from_/to_. A request made from a time the event
+     * no longer has - it was changed after the request - is left out.
+     *
+     * @param array $results serialized events
+     * @param array<int, array> $ownEvents bb_event rows of the owner's events, by index in $results
+     */
+    private function addPendingChanges(array &$results, array $ownEvents): void
+    {
+        if (!$ownEvents) {
+            return;
+        }
+
+        $requests = (new ApplicationChangeRequestRepository())->findOpenForElements(
+            'event',
+            array_map(fn(array $row) => (int)$row['id'], $ownEvents)
+        );
+
+        $oslo = new \DateTimeZone('Europe/Oslo');
+        foreach ($ownEvents as $index => $row) {
+            $request = $requests[(int)$row['id']] ?? null;
+            if (!$request
+                || strtotime($row['from_']) !== strtotime($request['old_from_'])
+                || strtotime($row['to_']) !== strtotime($request['old_to_'])) {
+                continue;
+            }
+            $results[$index]['pending_change'] = [
+                'from_' => (new DateTime($request['new_from_'], $oslo))->format('c'),
+                'to_' => (new DateTime($request['new_to_'], $oslo))->format('c'),
+            ];
         }
     }
 

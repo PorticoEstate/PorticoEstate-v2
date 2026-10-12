@@ -85,6 +85,10 @@ export interface IAPIEvent extends IAPIScheduleEntity {
 	// organizations/applications), curl-verified present and varying (true/false) on
 	// buildings/{id}/schedule — the endpoint the calendar popper itself reads (#23473).
 	cancellation_closes_application: boolean;
+	// The time the owner has asked for and the case officer has not yet decided on
+	// (bb_application_change_request). Only applications/{id}/schedule sends it, and only
+	// on the owner's events (ScheduleEntityService::addPendingChanges).
+	pending_change?: { from_: string; to_: string };
 }
 
 

@@ -1286,3 +1286,18 @@ price_invalid	booking	nn	Ugyldig pris
 price_invalid_not_saved	booking	nn	Ugyldig pris – den nye prisen vart ikkje lagra
 price_row_invalid_not_saved	booking	nn	Ugyldig pris eller dato på rad %1 – rada vart ikkje endra
 session_expired_log_in_again	booking	nn	Sesjonen din er gått ut. Logg inn på nytt i ei anna fane og prøv igjen.
+change_requested_time	booking	nn	Ønskt ny tid
+current_time	booking	nn	Noverande tid
+accept_change	booking	nn	Godta endring
+reject_change	booking	nn	Avslå endring
+accept_change_help	booking	nn	Arrangementet får den ønskte tida. Tida blir sjekka mot andre reservasjonar før noko blir lagra.
+reject_change_help	booking	nn	Arrangementet beheld noverande tid, og førespurnaden blir lukka.
+change_price_not_recalculated	booking	nn	Arrangementet har timepris. Prisen blir ikkje rekna ut på nytt for den nye tida – kontroller artiklane under Endre.
+change_accepted	booking	nn	Endringa er lagra
+change_rejected	booking	nn	Endringa er avslått
+change_conflicts_with	booking	nn	Den nye tida kolliderer med
+change_request_not_open	booking	nn	Førespurnaden er alt behandla
+change_request_stale	booking	nn	Arrangementet er endra etter førespurnaden
+change_request_element_inactive	booking	nn	Arrangementet er ikkje aktivt
+change_request_dates_ambiguous	booking	nn	Fann ikkje datoraden til arrangementet
+change_applied_without_application_date	booking	nn	Endringa er lagra. Ingen søknadsdato høyrde til arrangementet, så datoane i søknaden er uendra.

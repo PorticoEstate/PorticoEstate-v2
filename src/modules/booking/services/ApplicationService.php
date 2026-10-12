@@ -1031,10 +1031,8 @@ class ApplicationService
 	 */
 	private function slotForeignCollisions(array $resourceIds, string $from, string $to, array $slotElements): array
 	{
-		$own = [];
 		$windows = [];
 		foreach ($slotElements as $element) {
-			$own[$element['type'] . ':' . $element['id']] = true;
 			if ((int) $element['active'] === 1 && !empty($element['from_']) && !empty($element['to_'])) {
 				$windows[] = [(string) $element['from_'], (string) $element['to_']];
 			}
@@ -1045,11 +1043,34 @@ class ApplicationService
 
 		$foreign = [];
 		foreach ($windows as [$windowFrom, $windowTo]) {
-			foreach ($this->repo->getCollisionDetails($resourceIds, $windowFrom, $windowTo) as $collision) {
-				$ref = $collision['type'] . ':' . $collision['id'];
-				if (!isset($own[$ref])) {
-					$foreign[$ref] = $collision;
-				}
+			foreach ($this->windowForeignCollisions($resourceIds, $windowFrom, $windowTo, $slotElements) as $collision) {
+				$foreign[$collision['type'] . ':' . $collision['id']] = $collision;
+			}
+		}
+		return array_values($foreign);
+	}
+
+	/**
+	 * Active elements colliding with one time window on the resources, other
+	 * than the given own elements - the check slotForeignCollisions runs per
+	 * window. An applicant's requested new time is checked with it before the
+	 * case officer's "Godta endring" applies the time (ApplicationChangeRequestService).
+	 *
+	 * @param array $ownElements elements ({type, id}) that do not count as collisions
+	 * @return array<array{id:int, type:string, name:string, from_:string, to_:string, application_id:?int}>
+	 */
+	public function windowForeignCollisions(array $resourceIds, string $from, string $to, array $ownElements): array
+	{
+		$own = [];
+		foreach ($ownElements as $element) {
+			$own[$element['type'] . ':' . $element['id']] = true;
+		}
+
+		$foreign = [];
+		foreach ($this->repo->getCollisionDetails($resourceIds, $from, $to) as $collision) {
+			$ref = $collision['type'] . ':' . $collision['id'];
+			if (!isset($own[$ref])) {
+				$foreign[$ref] = $collision;
 			}
 		}
 		return array_values($foreign);

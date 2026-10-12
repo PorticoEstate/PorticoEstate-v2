@@ -458,6 +458,10 @@ const ReservedTimesList: FC<{
 
                 const hasActions = showCalendarLink || showRegisterParticipants || showEdit || !!newBookingHref || showWithdraw;
 
+                // The time the owner asked for on the event's edit page, until the case officer
+                // accepts or rejects it. The server sends it for the owner's events only.
+                const pendingChange = row.type === 'event' ? (entity as IAPIEvent).pending_change : undefined;
+
                 return (
                     <div
                         key={rowKey}
@@ -475,6 +479,13 @@ const ReservedTimesList: FC<{
                                 <div className={styles.secondary}>
                                     kl. {f.time}{sameDay ? `–${to.time}` : ` → ${to.full} kl. ${to.time}`}
                                 </div>
+                                {pendingChange && (
+                                    <Tag data-color="warning" data-size="sm">
+                                        {t('bookingfrontend.change_request_pending', {
+                                            time: `${fmtDate(pendingChange.from_).time}–${fmtDate(pendingChange.to_).time}`,
+                                        })}
+                                    </Tag>
+                                )}
                             </div>
                             {isHighlighted && (
                                 <Tag data-color="accent" data-size="sm">{t('bookingfrontend.selected')}</Tag>

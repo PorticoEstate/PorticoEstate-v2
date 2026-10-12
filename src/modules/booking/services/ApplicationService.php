@@ -751,38 +751,45 @@ class ApplicationService
 			$repeatUntilTs += 86400;
 		}
 
-		// Fetch resources and existing allocations
+		// Fetch resources
 		$resourceIds = $this->repo->fetchResourceIds($appId);
 		$resourceNames = $this->repo->getResourceNames($resourceIds);
-		$existingAllocations = $this->repo->fetchExistingAllocations($appId);
 		$resourceDisplay = implode(', ', $resourceNames);
 
-		// Every element linked to this application, of any type and active or
-		// not, keyed like $lookupKey so an occurrence can carry the elements that
-		// match it exactly. Display only: nothing below reads these to decide
-		// exists/has_conflict or the counts, so the create-all path is unaffected.
-		$associationsByKey = [];
-		foreach ($this->repo->fetchAssociations($appId) as $association) {
-			$key = empty($association['from_']) || empty($association['to_']) ? ''
-				: date('Y-m-d H:i', strtotime($association['from_']))
-				. '_' . date('Y-m-d H:i', strtotime($association['to_']));
-			$associationsByKey[$key][] = $association;
-		}
-		$matchedKeys = [];
-
-		// Generate items
-		$items = [];
+		// Generate the occurrences
+		$occurrences = [];
 		$maxIterations = 50;
-		$counts = ['total' => 0, 'existing' => 0, 'conflict' => 0, 'creatable' => 0];
 		$i = 0;
 
 		// Loop: from_ts + (interval * i) until repeat_until, matching legacy condition
 		while (($toTs + ($intervalSeconds * $i)) <= $repeatUntilTs && $i < $maxIterations) {
-			$itemFromTs = $fromTs + ($intervalSeconds * $i);
-			$itemToTs = $toTs + ($intervalSeconds * $i);
-			$itemFrom = date('Y-m-d H:i', $itemFromTs);
-			$itemTo = date('Y-m-d H:i', $itemToTs);
-			$lookupKey = $itemFrom . '_' . $itemTo;
+			$occurrences[] = [
+				'from_' => date('Y-m-d H:i', $fromTs + ($intervalSeconds * $i)),
+				'to_'   => date('Y-m-d H:i', $toTs + ($intervalSeconds * $i)),
+			];
+			$i++;
+		}
+
+		// Every element linked to this application, of any type and active or
+		// not, placed on the occurrence it belongs to - also after its time was
+		// changed (placeElements). An occurrence holding an active element of
+		// its own exists: createRecurringAllocations skips it, so a moved
+		// occurrence is never created a second time.
+		$placement = $this->placeElements(
+			$occurrences,
+			$this->repo->fetchAssociations($appId),
+			$this->repo->fetchAllocationGroupMap($appId)
+		);
+
+		$items = [];
+		$counts = ['total' => 0, 'existing' => 0, 'conflict' => 0, 'creatable' => 0];
+
+		foreach ($occurrences as $index => $occurrence) {
+			$itemFrom = $occurrence['from_'];
+			$itemTo = $occurrence['to_'];
+			$itemFromTs = strtotime($itemFrom);
+			$itemToTs = strtotime($itemTo);
+			$elements = $placement['placed'][$index] ?? [];
 
 			$item = [
 				'from_'            => $itemFrom,
@@ -797,17 +804,32 @@ class ApplicationService
 				'conflict_details' => [],
 				'schedule_link'    => '/?menuaction=bookingfrontend.uibuilding.schedule&id='
 					. $buildingId . '&backend=1&date=' . date('Y-m-d', $itemFromTs),
-				'associations'     => $associationsByKey[$lookupKey] ?? [],
+				'associations'     => $elements,
 			];
-			$matchedKeys[$lookupKey] = true;
 
-			// Check if allocation already exists
-			if (isset($existingAllocations[$lookupKey])) {
+			// Check if the occurrence already holds an active element of its own
+			foreach ($elements as $element) {
+				if ((int) $element['active'] !== 1) {
+					continue;
+				}
 				$item['exists'] = true;
-				$item['allocation_id'] = (int) $existingAllocations[$lookupKey]['id'];
+				if ($element['type'] === 'allocation' && $item['allocation_id'] === null) {
+					$item['allocation_id'] = (int) $element['id'];
+				}
+			}
+
+			// Collisions with anything that is not the occurrence's own. For an
+			// open occurrence this is the same set as conflict_details below.
+			$item['collision_foreign_details'] = $this->slotForeignCollisions(
+				$resourceIds, $itemFrom, $itemTo, $elements
+			);
+			$item['collision_foreign'] = !empty($item['collision_foreign_details']);
+
+			if ($item['exists']) {
 				$counts['existing']++;
 			} else {
-				// Check collision
+				// Check collision. Own elements included on purpose: this is what
+				// stops createRecurringAllocations from booking over them.
 				if ($this->repo->hasCollision($resourceIds, $itemFrom, $itemTo)) {
 					$item['has_conflict'] = true;
 					$item['conflict_details'] = $this->repo->getCollisionDetails(
@@ -821,28 +843,22 @@ class ApplicationService
 
 			$counts['total']++;
 			$items[] = $item;
-			$i++;
 		}
 
-		// Linked elements that match no occurrence exactly - an edited time, or
-		// an element created outside the series. Kept in their own key and never
-		// appended to `items`: createRecurringAllocations creates an allocation
-		// for every item that is neither existing nor conflicting.
+		// Linked elements that belong to no occurrence - moved to another day, or
+		// created outside the series. Kept in their own key and never appended to
+		// `items`: createRecurringAllocations creates an allocation for every
+		// item that is neither existing nor conflicting.
 		$outsideSeries = [];
-		foreach ($associationsByKey as $key => $associations) {
-			if (isset($matchedKeys[$key])) {
-				continue;
-			}
-			foreach ($associations as $association) {
-				$assocFromTs = strtotime((string) $association['from_']);
-				$assocToTs = strtotime((string) $association['to_']);
-				$outsideSeries[] = $association + [
-					'date_display' => $assocFromTs ? date('d.m.Y', $assocFromTs) : '',
-					'day_name'     => $assocFromTs ? $this->norwegianDayName($assocFromTs) : '',
-					'time_display' => $assocFromTs && $assocToTs
-						? date('H:i', $assocFromTs) . ' - ' . date('H:i', $assocToTs) : '',
-				];
-			}
+		foreach ($placement['unplaced'] as $association) {
+			$assocFromTs = strtotime((string) $association['from_']);
+			$assocToTs = strtotime((string) $association['to_']);
+			$outsideSeries[] = $association + [
+				'date_display' => $assocFromTs ? date('d.m.Y', $assocFromTs) : '',
+				'day_name'     => $assocFromTs ? $this->norwegianDayName($assocFromTs) : '',
+				'time_display' => $assocFromTs && $assocToTs
+					? date('H:i', $assocFromTs) . ' - ' . date('H:i', $assocToTs) : '',
+			];
 		}
 		usort($outsideSeries, fn($a, $b) => strcmp((string) $a['from_'], (string) $b['from_']));
 
@@ -855,6 +871,180 @@ class ApplicationService
 			'recurring_data' => $recurringData,
 			'interval_weeks' => $intervalWeeks,
 		];
+	}
+
+	// ── Element placement ──────────────────────────────────────────────
+
+	/**
+	 * The application's date rows, keyed by date id: the elements placed on each
+	 * row (placeElements) and what the row collides with that is not its own
+	 * (slotForeignCollisions).
+	 *
+	 * @param array $dates bb_application_date rows of the application
+	 * @param int[] $resourceIds the application's resources
+	 * @return array<int, array{associations: array, collision_foreign_details: array}>
+	 */
+	public function placeDateElements(int $appId, array $dates, array $resourceIds): array
+	{
+		$slots = [];
+		foreach ($dates as $date) {
+			$slots[(int) $date['id']] = $date;
+		}
+
+		$placement = $this->placeElements(
+			$slots,
+			$this->repo->fetchAssociations($appId),
+			$this->repo->fetchAllocationGroupMap($appId)
+		);
+
+		$rows = [];
+		foreach ($slots as $dateId => $date) {
+			$elements = $placement['placed'][$dateId] ?? [];
+			$rows[$dateId] = [
+				'associations'              => $elements,
+				'collision_foreign_details' => $this->slotForeignCollisions(
+					$resourceIds, $date['from_'], $date['to_'], $elements
+				),
+			];
+		}
+		return $rows;
+	}
+
+	/**
+	 * Place an application's linked elements on its slots - its date rows, or
+	 * the occurrences of a recurring application.
+	 *
+	 * Nothing stored links an element to the slot it was created from: elements
+	 * carry only application_id, and date rows are deleted and re-inserted when
+	 * an application is edited. So the link is recovered from the times:
+	 *  1. an element starting exactly when a slot starts belongs to it - any
+	 *     number of them;
+	 *  2. any other element goes to a slot on the same calendar date, or one it
+	 *     overlaps, that holds no element of its type yet: the largest overlap,
+	 *     then the nearest start, then the first slot. Allocations of the
+	 *     series' recurrence group are placed first, so a moved occurrence wins
+	 *     its date over an extra allocation made on the same day. The series is
+	 *     the oldest group, the one resolveAllocationGroupId reuses;
+	 *  3. what is left belongs to no slot. An element moved to another day ends
+	 *     up here: nothing is left to tell which slot it came from.
+	 *
+	 * @param array<int|string, array{from_:string, to_:string}> $slots
+	 * @param array $elements bb_application_association rows of ONE application
+	 * @param array<int, ?int> $allocationGroups allocation id => allocation_group_id
+	 * @return array{placed: array<int|string, array>, unplaced: array}
+	 */
+	private function placeElements(array $slots, array $elements, array $allocationGroups): array
+	{
+		$slotTimes = [];
+		foreach ($slots as $key => $slot) {
+			$from = strtotime((string) $slot['from_']);
+			$to = strtotime((string) $slot['to_']);
+			if ($from && $to) {
+				$slotTimes[$key] = ['from' => $from, 'to' => $to, 'date' => date('Y-m-d', $from)];
+			}
+		}
+
+		$placed = [];
+		$typesPlaced = [];
+		$place = function ($key, array $element) use (&$placed, &$typesPlaced) {
+			$placed[$key][] = $element;
+			$typesPlaced[$key][$element['type']] = true;
+		};
+
+		// 1. Exact start
+		$rest = [];
+		foreach ($elements as $element) {
+			$from = empty($element['from_']) ? false : strtotime((string) $element['from_']);
+			$match = null;
+			if ($from) {
+				foreach ($slotTimes as $key => $slot) {
+					if ($slot['from'] === $from) {
+						$match = $key;
+						break;
+					}
+				}
+			}
+			if ($match !== null) {
+				$place($match, $element);
+			} else {
+				$rest[] = $element;
+			}
+		}
+
+		// 2. Same date or overlap, one element of a type per slot
+		$groups = array_filter($allocationGroups, fn($group) => $group !== null);
+		$seriesGroup = $groups ? min($groups) : null;
+		$inSeries = fn(array $element) => $seriesGroup !== null
+			&& $element['type'] === 'allocation'
+			&& ($allocationGroups[(int) $element['id']] ?? null) === $seriesGroup;
+		usort($rest, fn($a, $b) => [!$inSeries($a), strtotime((string) $a['from_']), (int) $a['id']]
+			<=> [!$inSeries($b), strtotime((string) $b['from_']), (int) $b['id']]);
+
+		$unplaced = [];
+		foreach ($rest as $element) {
+			$from = empty($element['from_']) ? false : strtotime((string) $element['from_']);
+			$to = empty($element['to_']) ? false : strtotime((string) $element['to_']);
+			$best = null;
+			if ($from && $to) {
+				foreach ($slotTimes as $key => $slot) {
+					if (isset($typesPlaced[$key][$element['type']])) {
+						continue;
+					}
+					$overlap = max(0, min($to, $slot['to']) - max($from, $slot['from']));
+					if ($overlap === 0 && date('Y-m-d', $from) !== $slot['date']) {
+						continue;
+					}
+					$distance = abs($slot['from'] - $from);
+					if ($best === null || $overlap > $best['overlap']
+						|| ($overlap === $best['overlap'] && $distance < $best['distance'])) {
+						$best = ['key' => $key, 'overlap' => $overlap, 'distance' => $distance];
+					}
+				}
+			}
+			if ($best !== null) {
+				$place($best['key'], $element);
+			} else {
+				$unplaced[] = $element;
+			}
+		}
+
+		return ['placed' => $placed, 'unplaced' => $unplaced];
+	}
+
+	/**
+	 * Active elements colliding with what a slot holds, other than the slot's
+	 * own elements: another application's, or this application's sitting on
+	 * another slot. A slot holds the times of its active elements - a moved
+	 * element holds its new time - or, with none, the time that was asked for.
+	 * Searched on the application's resources, like hasCollision.
+	 *
+	 * @param array $slotElements the elements placed on the slot
+	 * @return array<array{id:int, type:string, name:string, from_:string, to_:string, application_id:?int}>
+	 */
+	private function slotForeignCollisions(array $resourceIds, string $from, string $to, array $slotElements): array
+	{
+		$own = [];
+		$windows = [];
+		foreach ($slotElements as $element) {
+			$own[$element['type'] . ':' . $element['id']] = true;
+			if ((int) $element['active'] === 1 && !empty($element['from_']) && !empty($element['to_'])) {
+				$windows[] = [(string) $element['from_'], (string) $element['to_']];
+			}
+		}
+		if (!$windows) {
+			$windows[] = [$from, $to];
+		}
+
+		$foreign = [];
+		foreach ($windows as [$windowFrom, $windowTo]) {
+			foreach ($this->repo->getCollisionDetails($resourceIds, $windowFrom, $windowTo) as $collision) {
+				$ref = $collision['type'] . ':' . $collision['id'];
+				if (!isset($own[$ref])) {
+					$foreign[$ref] = $collision;
+				}
+			}
+		}
+		return array_values($foreign);
 	}
 
 	// ── Create recurring allocations ───────────────────────────────────

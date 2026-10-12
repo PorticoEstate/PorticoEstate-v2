@@ -122,15 +122,47 @@
 		return '/?menuaction=booking.ui' + encodeURIComponent(a.type) + '.edit&id=' + encodeURIComponent(a.id);
 	}
 
+	// "2026-10-22T09:00:00+02:00" or "2026-10-22 09:00:00" → "2026-10-22 09:00".
+	// The dates API sends ISO 8601, associations and the recurring preview raw
+	// PG timestamps; both are local time.
+	function minuteKey(s) {
+		return String(s || '').substring(0, 16).replace('T', ' ');
+	}
+
+	// An element's own time when it differs from the slot (date row or
+	// occurrence) it is placed on, e.g. after its time was changed: "12:00–13:30",
+	// with the date in front when the day differs too. Empty when it matches.
+	function assocTimeText(a, slot) {
+		if (!slot || !a.from_ || !a.to_) return '';
+		var from = minuteKey(a.from_), to = minuteKey(a.to_);
+		if (from === minuteKey(slot.from_) && to === minuteKey(slot.to_)) return '';
+		var day = from.substring(0, 10) === minuteKey(slot.from_).substring(0, 10)
+			? '' : from.substring(0, 10).split('-').reverse().slice(0, 2).join('.') + ' ';
+		return day + from.substring(11) + '–' + to.substring(11);
+	}
+
+	// What a slot collides with, from collision details ({type, name}):
+	// "allocation (Bølleball forening), event (…)".
+	function conflictText(details) {
+		return (details || []).map(function (c) {
+			return c.type + (c.name ? ' (' + c.name + ')' : '');
+		}).join(', ');
+	}
+
 	// Status cell: each linked element (allocation/booking/event) as a tag linking
-	// to its edit page, one line per element. The cost only when there is one, and
+	// to its edit page, one line per element. Its time when it differs from the
+	// slot it sits on (assocTimeText), the cost only when there is one, and
 	// "Inaktiv" only for a deactivated element. The link sits inside the tag: an
 	// <a class="ds-tag"> loses the tag background to the unlayered a-rule in
 	// pure-min.css.
-	function assocTagsHtml(elements) {
+	function assocTagsHtml(elements, slot) {
 		return elements.map(function (a) {
 			var html = '<div class="app-show__tags-row">' +
 				'<span class="booking-tag ds-tag" data-color="neutral"><a class="booking-link ds-link" href="' + esc(assocEditUrl(a)) + '">' + esc(enumLabel(a.type)) + ' #' + esc(a.id) + '</a></span>';
+			var time = assocTimeText(a, slot);
+			if (time) {
+				html += '<span class="booking-tag ds-tag" data-color="neutral">' + esc(time) + '</span>';
+			}
 			if (a.cost != null && a.cost !== '' && Number(a.cost) !== 0) {
 				html += '<span class="booking-tag ds-tag" data-color="neutral">' + esc(lang('cost')) + ': ' + Number(a.cost).toFixed(2) + '</span>';
 			}
@@ -902,32 +934,14 @@
 		var isRecurring = !!app.recurring_data;
 		var dates = data.dates || [];
 
-		// Match associations to dates on a normalised from_.
-		// Dates API returns ISO 8601 ("2026-02-19T19:30:00+01:00"),
-		// associations come as raw PG timestamps ("2026-02-19 19:30:00").
-		// Strip timezone and separators to get a canonical "YYYY-MM-DDTHH:MM:SS" key.
+		// Dates API returns ISO 8601 ("2026-02-19T19:30:00+01:00"); strip the
+		// timezone to a canonical "YYYY-MM-DDTHH:MM:SS".
 		function normDate(s) {
 			if (!s) return '';
 			// Take only the first 19 chars ("2026-02-19T19:30:00" or "2026-02-19 19:30:00")
 			// and normalise the separator to 'T'.
 			return s.substring(0, 19).replace(' ', 'T');
 		}
-
-		// Elements per date row, keyed on the sub-application AND the start: in a
-		// combined cart two sub-applications can share a start, and an element
-		// belongs only to the row of the application it is linked to.
-		function rowKey(appId, from) {
-			return appId + '|' + normDate(from);
-		}
-		var assocByRow = {};
-		function indexAssociations() {
-			assocByRow = {};
-			(data.associations || []).forEach(function (a) {
-				var key = rowKey(a.application_id, a.from_);
-				(assocByRow[key] = assocByRow[key] || []).push(a);
-			});
-		}
-		indexAssociations();
 
 		// Build params map for each date (for the create dropdown)
 		var dateParamsMap = {};
@@ -961,27 +975,33 @@
 				'</ul></div></div>';
 		}
 
-		// The <td>s of one date row. A row counts as created once it has an element
-		// of its own, active or not: delete only deactivates, and accepting the
-		// application reactivates every element linked to it, so a replacement
-		// created next to an inactive element would end up double-booked. The
-		// inactive element stays inline with its activate button instead.
+		// The <td>s of one date row. The server places the row's own elements on it
+		// (d.associations), also after their time was changed. A row counts as
+		// created once it has an element of its own, active or not: delete only
+		// deactivates, and accepting the application reactivates every element
+		// linked to it, so a replacement created next to an inactive element would
+		// end up double-booked. The inactive element stays inline with its activate
+		// button instead. A collision is one with anything but the row's own
+		// elements (d.collision_foreign), so it shows next to them too.
 		function dateRowCells(d) {
-			var elements = assocByRow[rowKey(d.application_id, d.from_)] || [];
+			var elements = d.associations || [];
 			elements.forEach(function (a) { placedAssocs[assocRef(a)] = true; });
 			var hasAssoc = elements.length > 0;
-			var collisionTag;
-			if (hasAssoc) {
-				collisionTag = assocTagsHtml(elements);
-			} else if (d.collision) {
+			var collisionTag = '';
+			if (d.collision_foreign) {
 				collisionTag = '<span class="booking-tag ds-tag" data-color="danger">' + lang('collision') + '</span>';
-			} else {
+				var conflict = conflictText(d.collision_foreign_details);
+				if (conflict) collisionTag += ' <span class="app-show__conflict-text">' + esc(conflict) + '</span>';
+			}
+			if (hasAssoc) {
+				collisionTag += assocTagsHtml(elements, d);
+			} else if (!d.collision_foreign) {
 				collisionTag = '<span class="booking-tag ds-tag" data-color="success">' + lang('noCollision') + '</span>';
 			}
 
-			// Schedule link: show on collision + case officer + no association
+			// Schedule link: show on collision + case officer
 			var scheduleIcon = '';
-			if (isCO && d.collision && !hasAssoc) {
+			if (isCO && d.collision_foreign) {
 				scheduleIcon = ' <a href="javascript:void(0)" class="app-show__schedule-link" data-booking-action="open-schedule" data-schedule-date="' + esc(d.from_) + '" title="' + lang('schedule') + '">' +
 					'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
 					'</a>';
@@ -1102,17 +1122,19 @@
 			refreshDateRow(cell);
 		}
 
-		// Re-render a date row from freshly fetched associations, so an element
-		// created in-page shows inline with its delete button without a reload.
-		// If the fetch fails the row keeps the ✓ + Edit link left above.
+		// Re-render a date row from freshly fetched dates (which carry the row's
+		// elements), so an element created in-page shows inline with its delete
+		// button without a reload. If the fetch fails the row keeps the ✓ + Edit
+		// link left above.
 		function refreshDateRow(cell) {
 			var tr = cell && cell.closest('tr[data-date-id]');
 			var d = tr && datesById[tr.dataset.dateId];
 			if (!d) return;
-			fetchJson(apiUrl + '/associations').then(function (assocs) {
-				data.associations = assocs || [];
-				indexAssociations();
-				tr.innerHTML = dateRowCells(d);
+			fetchJson(apiUrl + '/dates').then(function (freshDates) {
+				var fresh = (freshDates || []).filter(function (x) { return String(x.id) === String(d.id); })[0];
+				if (!fresh) return;
+				datesById[fresh.id] = fresh;
+				tr.innerHTML = dateRowCells(fresh);
 			}).catch(function () {
 				// Non-fatal: the ✓ + Edit link still leads to the element.
 			});
@@ -2013,36 +2035,35 @@
 				html += '<td>' + esc(item.time_display) + '</td>';
 				html += '<td>' + esc(item.resource_display) + '</td>';
 
-				// Status column. The elements on this exact occurrence stand in for
-				// "Opprettet"; a collision or "not yet created" keeps its tag above them.
+				// Status column. The elements placed on this occurrence (also after
+				// their time was changed) stand in for "Opprettet"; a collision or "not
+				// yet created" keeps its tag above them. An existing occurrence shows
+				// a collision with anything but its own elements (collision_foreign).
 				var elements = item.associations || [];
+				function collisionHtml(details) {
+					var text = conflictText(details);
+					return '<span class="booking-tag ds-tag" data-color="danger">' + esc(lang('collision')) + '</span>' +
+						(text ? ' <span class="app-show__conflict-text">' + esc(text) + '</span>' : '');
+				}
 				if (item.exists && elements.length) {
-					html += '<td>' + assocTagsHtml(elements) + '</td>';
+					html += '<td>' + (item.collision_foreign ? collisionHtml(item.collision_foreign_details) : '') +
+						assocTagsHtml(elements, item) + '</td>';
 				} else if (item.exists) {
 					html += '<td><span class="booking-tag ds-tag" data-color="success">' + esc(lang('dateCreated')).replace(/^- | -$/g, '') + '</span></td>';
 				} else if (item.has_conflict) {
-					var conflictText = '';
-					(item.conflict_details || []).forEach(function (c) {
-						if (conflictText) conflictText += ', ';
-						conflictText += c.type + (c.name ? ' (' + c.name + ')' : '');
-					});
-					html += '<td><span class="booking-tag ds-tag" data-color="danger">' + esc(lang('collision')) + '</span>';
-					if (conflictText) {
-						html += ' <span class="app-show__conflict-text">' + esc(conflictText) + '</span>';
-					}
-					html += assocTagsHtml(elements) + '</td>';
+					html += '<td>' + collisionHtml(item.conflict_details) + assocTagsHtml(elements, item) + '</td>';
 				} else {
-					html += '<td><span class="booking-tag ds-tag" data-color="neutral">' + esc(lang('notYetCreated')) + '</span>' + assocTagsHtml(elements) + '</td>';
+					html += '<td><span class="booking-tag ds-tag" data-color="neutral">' + esc(lang('notYetCreated')) + '</span>' + assocTagsHtml(elements, item) + '</td>';
 				}
 
-				// Action column: the elements on this exact occurrence, then the
+				// Action column: the elements placed on this occurrence, then the
 				// schedule link for a conflict.
 				elements.forEach(function (a) { placed[assocRef(a)] = true; });
 				var actionHtml = assocActionsHtml(elements, isCO);
 				if (item.exists && !elements.length) {
 					// A preview without associations: link the allocation as before.
 					actionHtml = '<a class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-size="sm" href="/?menuaction=booking.uiallocation.edit&id=' + esc(item.allocation_id) + '">' + esc(lang('show')) + '</a>';
-				} else if (!item.exists && item.has_conflict) {
+				} else if (item.has_conflict || item.collision_foreign) {
 					actionHtml += (actionHtml ? ' ' : '') + '<a class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-size="sm" href="' + esc(item.schedule_link) + '" target="_blank">' + esc(lang('schedule')) + '</a>';
 				}
 				html += '<td>' + (actionHtml || '&mdash;') + '</td>';

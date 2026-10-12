@@ -1285,3 +1285,4 @@ vat_rate_missing	booking	nn	mva-koden manglar sats
 price_invalid	booking	nn	Ugyldig pris
 price_invalid_not_saved	booking	nn	Ugyldig pris – den nye prisen vart ikkje lagra
 price_row_invalid_not_saved	booking	nn	Ugyldig pris eller dato på rad %1 – rada vart ikkje endra
+session_expired_log_in_again	booking	nn	Sesjonen din er gått ut. Logg inn på nytt i ei anna fane og prøv igjen.

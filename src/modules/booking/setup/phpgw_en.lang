@@ -1310,3 +1310,4 @@ vat_rate_missing	booking	en	the VAT code has no rate
 price_invalid	booking	en	Invalid price
 price_invalid_not_saved	booking	en	Invalid price – the new price was not saved
 price_row_invalid_not_saved	booking	en	Invalid price or date on row %1 – the row was not changed
+session_expired_log_in_again	booking	en	Your session has expired. Log in again in another tab and try again.

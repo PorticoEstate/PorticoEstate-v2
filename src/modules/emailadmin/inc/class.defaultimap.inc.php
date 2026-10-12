@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../email/inc/imap_config.php';
 
 use App\modules\phpgwapi\services\Cache;
+use Webklex\PHPIMAP\ClientManager;
 
 /***************************************************************************\
  * EGroupWare - EMailAdmin                                                   *
@@ -15,11 +16,6 @@ use App\modules\phpgwapi\services\Cache;
 	\***************************************************************************/
 /* $Id$ */
 
-if (!include_once PHPGW_INCLUDE_ROOT . '/felamimail/inc/egw-pear/Net/IMAP.php')
-{
-	throw new Exception('missing egw-pear package');
-}
-
 define('IMAP_NAMESPACE_PERSONAL', 'personal');
 define('IMAP_NAMESPACE_OTHERS', 'others');
 define('IMAP_NAMESPACE_SHARED', 'shared');
@@ -30,78 +26,22 @@ define('IMAP_NAMESPACE_ALL', 'all');
  * This is the base class for all other imap classes.
  *
  */
-class defaultimap extends Net_IMAP
+
+class defaultimap
 {
 	var $phpgwapi_common;
-
-	/**
-	 * the password to be used for admin connections
-	 *
-	 * @var string
-	 */
+	var $clientManager;
+	var $client;
+	var $_connected = false;
 	var $adminPassword;
-
-	/**
-	 * the username to be used for admin connections
-	 *
-	 * @var string
-	 */
 	var $adminUsername;
-
-	/**
-	 * enable encryption
-	 *
-	 * @var bool
-	 */
 	var $encryption;
-
-	/**
-	 * the hostname/ip address of the imap server
-	 *
-	 * @var string
-	 */
 	var $host;
-
-	/**
-	 * the password for the user
-	 *
-	 * @var string
-	 */
 	var $password;
-
-	/**
-	 * the port of the imap server
-	 *
-	 * @var integer
-	 */
 	var $port = 143;
-
-	/**
-	 * the username
-	 *
-	 * @var string
-	 */
 	var $username;
-
-	/**
-	 * the domainname to be used for vmailmgr logins
-	 *
-	 * @var string
-	 */
 	var $domainname = false;
-
-	/**
-	 * validate ssl certificate
-	 *
-	 * @var bool
-	 */
 	var $validatecert;
-
-	/**
-	 * the mailbox delimiter
-	 *
-	 * @var string
-	 */
 	var $mailboxDelimiter = '/';
 
 	/**
@@ -128,8 +68,7 @@ class defaultimap extends Net_IMAP
 
 
 	/**
-	 * disable internal conversion from/to ut7
-	 * get's used by Net_IMAP
+	 * disable internal conversion from/to UTF7
 	 *
 	 * @var array
 	 */
@@ -150,15 +89,13 @@ class defaultimap extends Net_IMAP
 	function __construct()
 	{
 		$this->phpgwapi_common = new \phpgwapi_common();
+		$this->clientManager = new ClientManager();
 		if (function_exists('mb_convert_encoding'))
 		{
 			$this->mbAvailable = TRUE;
 		}
 
 		$this->restoreSessionData();
-
-		// construtor for Net_IMAP stuff
-		$this->Net_IMAPProtocol();
 	}
 
 	/**
@@ -196,7 +133,18 @@ class defaultimap extends Net_IMAP
 
 	function disconnect()
 	{
-		parent::disconnect();
+		if ($this->client)
+		{
+			try
+			{
+				$this->client->disconnect();
+			}
+			catch (\Throwable $exception)
+			{
+				$this->_connectionErrorObject = $exception;
+			}
+		}
+		$this->_connected = false;
 		$this->_isConnected = false;
 	}
 
@@ -218,6 +166,25 @@ class defaultimap extends Net_IMAP
 		return IMAPManager::imap_utf7_encode($_folderName);
 	}
 
+	private function protocol()
+	{
+		if (!$this->client)
+		{
+			throw new \RuntimeException('IMAP connection has not been opened');
+		}
+		return $this->client->getConnection();
+	}
+
+	function hasCapability($_capability)
+	{
+		$capabilities = $this->getCapabilities();
+		foreach ((array) $capabilities as $capability)
+		{
+			if (strcasecmp((string) $capability, (string) $_capability) === 0) return true;
+		}
+		return false;
+	}
+
 	/**
 	 * returns the supported capabilities of the imap server
 	 * return false if the imap server does not support capabilities
@@ -226,12 +193,19 @@ class defaultimap extends Net_IMAP
 	 */
 	function getCapabilities()
 	{
-		if (!is_array($this->sessionData['capabilities'][$this->host]))
+		try
 		{
+			if (!isset($this->sessionData['capabilities'][$this->host]))
+			{
+				$this->sessionData['capabilities'][$this->host] = $this->protocol()->getCapabilities()->validatedData();
+			}
+			return $this->sessionData['capabilities'][$this->host];
+		}
+		catch (\Throwable $exception)
+		{
+			$this->_connectionErrorObject = $exception;
 			return false;
 		}
-
-		return $this->sessionData['capabilities'][$this->host];
 	}
 
 	/**
@@ -354,50 +328,188 @@ class defaultimap extends Net_IMAP
 	 */
 	function getNameSpaces()
 	{
-		if (!$this->_isConnected)
+		if (!$this->_isConnected) return false;
+
+		$result = [];
+		try
 		{
-			return false;
-		}
-		$retrieveDefault = false;
-		if ($this->hasCapability('NAMESPACE'))
-		{
-			$nameSpace = $this->getNamespace();
-			if (PEAR::isError($nameSpace))
+			$response = $this->protocol()->requestAndResponse('NAMESPACE', [], true);
+			$namespaceLine = '';
+			foreach ($response->getResponse() as $line)
 			{
-				if ($this->debug) error_log("emailadmin::defaultimap->getNameSpaces:" . print_r($nameSpace, true));
-				$retrieveDefault = true;
-			}
-			else
-			{
-				$result = array();
-
-				$result['personal']	= $nameSpace['personal'];
-
-				if (is_array($nameSpace['others']))
+				if (stripos((string) $line, '* NAMESPACE ') === 0)
 				{
-					$result['others']	= $nameSpace['others'];
-				}
-
-				if (is_array($nameSpace['shared']))
-				{
-					$result['shared']	= $nameSpace['shared'];
+					$namespaceLine = trim(substr((string) $line, strlen('* NAMESPACE ')));
+					break;
 				}
 			}
-		}
-		if (!$this->hasCapability('NAMESPACE') || $retrieveDefault)
-		{
-			$delimiter = $this->getHierarchyDelimiter();
-			if (PEAR::isError($delimiter)) $delimiter = '/';
+			$groups = [];
+			$position = 0;
+			$length = strlen($namespaceLine);
+			for ($groupIndex = 0; $groupIndex < 3 && $position < $length; $groupIndex++)
+			{
+				while ($position < $length && ctype_space($namespaceLine[$position])) $position++;
+				if (strtoupper(substr($namespaceLine, $position, 3)) === 'NIL')
+				{
+					$groups[] = null;
+					$position += 3;
+					continue;
+				}
+				if ($position >= $length || $namespaceLine[$position] !== '(') break;
 
-			$result['personal']     = array(
-				0 => array(
-					'name'		=> '',
-					'delimiter'	=> $delimiter
-				)
-			);
+				$start = $position;
+				$depth = 0;
+				$quoted = false;
+				$escaped = false;
+				for (; $position < $length; $position++)
+				{
+					$character = $namespaceLine[$position];
+					if ($quoted)
+					{
+						if ($escaped) $escaped = false;
+						elseif ($character === '\\') $escaped = true;
+						elseif ($character === '"') $quoted = false;
+						continue;
+					}
+					if ($character === '"') $quoted = true;
+					elseif ($character === '(') $depth++;
+					elseif ($character === ')' && --$depth === 0)
+					{
+						$position++;
+						break;
+					}
+				}
+				$groups[] = substr($namespaceLine, $start, $position - $start);
+			}
+			$keys = ['personal', 'others', 'shared'];
+			foreach ($groups as $index => $group)
+			{
+				if (strtoupper(trim($group)) === 'NIL') continue;
+				if (preg_match_all('/\("((?:\\\\.|[^"\\\\])*)"\s+"((?:\\\\.|[^"\\\\])*)"/', $group, $matches, PREG_SET_ORDER))
+				{
+					foreach ($matches as $match)
+					{
+						$result[$keys[$index]][] = [
+							'name' => stripcslashes($match[1]),
+							'delimiter' => stripcslashes($match[2]),
+						];
+					}
+				}
+			}
 		}
+		catch (\Throwable $exception)
+		{
+			$this->_connectionErrorObject = $exception;
+		}
+
+		$result['personal'] = $result['personal'] ?? [['name' => '', 'delimiter' => $this->mailboxDelimiter ?: '/']];
 
 		return $result;
+	}
+
+	function getMailboxes($_reference = '', $_pattern = '*', $_return = false)
+	{
+		try
+		{
+			return $this->protocol()->folders((string) $_reference, (string) $_pattern)->validatedData();
+		}
+		catch (\Throwable $exception)
+		{
+			$this->_connectionErrorObject = $exception;
+			return false;
+		}
+	}
+
+	function createMailbox($_mailboxName)
+	{
+		try
+		{
+			return (bool) $this->client->createFolder((string) $_mailboxName, false);
+		}
+		catch (\Throwable $exception)
+		{
+			$this->_connectionErrorObject = $exception;
+			return false;
+		}
+	}
+
+	function deleteMailbox($_mailboxName)
+	{
+		try
+		{
+			$this->client->deleteFolder((string) $_mailboxName, false);
+			return true;
+		}
+		catch (\Throwable $exception)
+		{
+			$this->_connectionErrorObject = $exception;
+			return false;
+		}
+	}
+
+	function setACL($_mailboxName, $_identifier, $_rights)
+	{
+		try
+		{
+			$protocol = $this->protocol();
+			$response = $protocol->requestAndResponse('SETACL', [
+				$protocol->escapeString((string) $_mailboxName),
+				$protocol->escapeString((string) $_identifier),
+				$protocol->escapeString((string) $_rights),
+			], true);
+			return $response->successful();
+		}
+		catch (\Throwable $exception)
+		{
+			$this->_connectionErrorObject = $exception;
+			return false;
+		}
+	}
+
+	function getStorageQuota($_quotaRoot)
+	{
+		try
+		{
+			$response = $this->protocol()->getQuotaRoot((string) $_quotaRoot);
+			foreach ($response->data() as $line)
+			{
+				if (is_array($line) && isset($line[1]) && strtoupper((string) $line[1]) === 'QUOTA')
+				{
+					foreach ((array) ($line[3] ?? []) as $quota)
+					{
+						if (is_array($quota) && strtoupper((string) ($quota[0] ?? '')) === 'STORAGE')
+						{
+							return ['QUSED' => (int) ($quota[1] ?? 0), 'QMAX' => (int) ($quota[2] ?? 0)];
+						}
+					}
+				}
+			}
+			return false;
+		}
+		catch (\Throwable $exception)
+		{
+			$this->_connectionErrorObject = $exception;
+			return false;
+		}
+	}
+
+	function setStorageQuota($_quotaRoot, $_quota)
+	{
+		try
+		{
+			$protocol = $this->protocol();
+			$quota = (int) $_quota < 0 ? '()' : '(STORAGE ' . (int) $_quota . ')';
+			$response = $protocol->requestAndResponse('SETQUOTA', [
+				$protocol->escapeString((string) $_quotaRoot),
+				$quota,
+			], true);
+			return $response->successful();
+		}
+		catch (\Throwable $exception)
+		{
+			$this->_connectionErrorObject = $exception;
+			return false;
+		}
 	}
 
 	/**
@@ -452,7 +564,10 @@ class defaultimap extends Net_IMAP
 	 */
 	function getUserData($_username)
 	{
-		$this->openConnection(true);
+		if (!$this->openConnection(true))
+		{
+			return false;
+		}
 
 		$userData = array();
 
@@ -476,38 +591,44 @@ class defaultimap extends Net_IMAP
 	function openConnection($_adminConnection = false)
 	{
 		unset($this->_connectionErrorObject);
-
-		if ($_adminConnection)
+		$this->disconnect();
+		$this->isAdminConnection = (bool) $_adminConnection;
+		$username = $_adminConnection ? $this->adminUsername : ($this->loginName ?: $this->username);
+		$password = $_adminConnection ? $this->adminPassword : $this->password;
+		$encryption = match ((int) $this->encryption)
 		{
-			$username	= $this->adminUsername;
-			$password	= $this->adminPassword;
-			$options	= '';
-			$this->isAdminConnection = true;
+			1 => 'starttls',
+			2 => 'tls',
+			3 => 'ssl',
+			default => 'none',
+		};
+
+		try
+		{
+			$this->client = $this->clientManager->make([
+				'host' => (string) $this->host,
+				'port' => (int) $this->port,
+				'protocol' => 'imap',
+				'encryption' => $encryption,
+				'validate_cert' => $this->validatecert !== false,
+				'username' => (string) $username,
+				'password' => (string) $password,
+				'authentication' => 'login',
+				'timeout' => 20,
+			]);
+			$this->client->connect();
+			$this->_connected = true;
+			$this->_isConnected = true;
+			return true;
 		}
-		else
+		catch (\Throwable $exception)
 		{
-			$username	= $this->loginName;
-			$password	= $this->password;
-			$options	= $_options;
-			$this->isAdminConnection = false;
-		}
-
-		$this->setStreamContextOptions($this->_getTransportOptions());
-		$this->setTimeout(20);
-
-		if (PEAR::isError($status = $this->connect($this->_getTransportString(), $this->port, $this->encryption == 1)))
-		{
-			$this->_connectionErrorObject = $status;
+			$this->_connectionErrorObject = $exception;
+			$this->client = null;
+			$this->_connected = false;
+			$this->_isConnected = false;
 			return false;
 		}
-
-		if (PEAR::isError($status = $this->login($username, $password, TRUE, !$this->isAdminConnection)))
-		{
-			$this->_connectionErrorObject = $status;
-			return false;
-		}
-
-		return true;
 	}
 
 	/**

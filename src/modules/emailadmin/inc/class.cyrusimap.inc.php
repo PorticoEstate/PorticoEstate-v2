@@ -63,13 +63,13 @@ class cyrusimap extends defaultimap
 		$mailboxName = $this->getUserMailboxString($username);
 
 		// give the admin account the rights to delete this mailbox
-		if (PEAR::isError($this->setACL($mailboxName, $this->adminUsername, 'lrswipcda')))
+		if (!$this->setACL($mailboxName, $this->adminUsername, 'lrswipcda'))
 		{
 			$this->disconnect();
 			return false;
 		}
 
-		if (PEAR::isError($this->deleteMailbox($mailboxName)))
+		if (!$this->deleteMailbox($mailboxName))
 		{
 			$this->disconnect();
 			return false;
@@ -128,17 +128,17 @@ class cyrusimap extends defaultimap
 		if ((int)$_quota > 0)
 		{
 			// enable quota
-			$quota_value = $this->setStorageQuota($mailboxName, (int)$_quota * 1024);
+			$quotaValue = $this->setStorageQuota($mailboxName, (int)$_quota * 1024);
 		}
 		else
 		{
 			// disable quota
-			$quota_value = $this->setStorageQuota($mailboxName, -1);
+			$quotaValue = $this->setStorageQuota($mailboxName, -1);
 		}
 
 		$this->disconnect();
 
-		return true;
+		return $quotaValue;
 	}
 
 	function updateAccount($_hookValues)
@@ -166,16 +166,22 @@ class cyrusimap extends defaultimap
 		}
 
 		// create the mailbox
-		$mailboxName = $this->getUserMailboxString($username, $mailboxName);
+		$mailboxName = $this->getUserMailboxString($username);
 		$folderInfo = $this->getMailboxes('', $mailboxName, true);
-		if (empty($folderInfo))
+		if (!$folderInfo)
 		{
-			if (!PEAR::isError($this->createMailbox($mailboxName)))
+			if ($this->createMailbox($mailboxName))
 			{
-				if (PEAR::isError($this->setACL($mailboxName, $username, "lrswipcda")))
+				if (!$this->setACL($mailboxName, $username, 'lrswipcda'))
 				{
-					# log error message
+					$this->disconnect();
+					return false;
 				}
+			}
+			else
+			{
+				$this->disconnect();
+				return false;
 			}
 		}
 		$this->disconnect();

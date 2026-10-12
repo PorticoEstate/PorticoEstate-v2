@@ -11,6 +11,8 @@
 	\***************************************************************************/
 	/* $Id$ */
 
+	use App\modules\phpgwapi\services\Settings;
+
 	phpgw::import_class('felamimail.html');	
 
 	class emailadmin_ui
@@ -75,9 +77,10 @@
 
 		static function getAllApps()
 		{
+			$apps = Settings::getInstance()->get('apps');
 			$applications = array(
-				'calendar'	=> $GLOBALS['phpgw_info']['apps']['calendar']['title'],
-				'felamimail' 	=> $GLOBALS['phpgw_info']['apps']['felamimail']['title'],
+				'calendar'	=> $apps['calendar']['title'],
+				'felamimail' 	=> $apps['felamimail']['title'],
 			);
 			asort($applications);
 			return $applications = array_merge(array('' => lang('any application')),$applications);
@@ -85,7 +88,7 @@
 
 		function addProfile()
 		{
-			$GLOBALS['phpgw_info']['flags']['noframework'] = true;
+			Settings::getInstance()->update('flags', ['noframework' => true]);
 			$allGroups = self:: getAllGroups();
 			$allUsers = self::getAllUsers();
 			$applications = self::getAllApps();	
@@ -190,13 +193,13 @@
 		function display_app_header()
 		{
 			phpgwapi_js::getInstance()->validate_file('tabs','tabs');
-			$GLOBALS['phpgw_info']['flags']['include_xajax'] = True;
+			Settings::getInstance()->update('flags', ['include_xajax' => true]);
 
 			switch($_GET['menuaction'])
 			{
 				case 'emailadmin.emailadmin_ui.addProfile':
 				case 'emailadmin.emailadmin_ui.editProfile':
-					$GLOBALS['phpgw_info']['nofooter'] = true;
+					Settings::getInstance()->update('flags', ['nofooter' => true]);
 					phpgwapi_js::getInstance()->validate_file('jscode','editProfile','emailadmin');
 					phpgwapi_js::getInstance()->set_onload('javascript:initAll();');
 					#phpgwapi_js::getInstance()->set_onload('smtp.init();');
@@ -215,7 +218,7 @@
 		}
 
 		function editProfile($_profileID='') {
-			$GLOBALS['phpgw_info']['flags']['noframework'] = true;
+			Settings::getInstance()->update('flags', ['noframework' => true]);
 			$allGroups = self:: getAllGroups();
 			$allUsers = self::getAllUsers();
 			$applications = self::getAllApps();
@@ -399,7 +402,8 @@
 									'" onClick="return confirm(\''.lang('Do you really want to delete this Profile').'?\')">'.
 									lang('delete').'</a>';
 
-					$application = (empty($profileList[$i]['ea_appname']) ? lang('any application') : $GLOBALS['phpgw_info']['apps'][$profileList[$i]['ea_appname']]['title']);
+					$apps = Settings::getInstance()->get('apps');
+					$application = (empty($profileList[$i]['ea_appname']) ? lang('any application') : $apps[$profileList[$i]['ea_appname']]['title']);
 					$linkData = array
 					(
 						'menuaction'	=> 'emailadmin.emailadmin_ui.editProfile',
@@ -496,7 +500,7 @@
 			$template->set_block('body','header_row','headerRow');
 		
 			$var = Array(
-				'th_bg'			=> $GLOBALS['phpgw_info']['theme']['th_bg'],
+				'th_bg'			=> Settings::getInstance()->get('theme')['th_bg'],
 				'left_next_matchs'	=> $this->nextmatchs->left('/index.php',$start,$total,'menuaction=emailadmin.emailadmin_ui.listServers'),
 				'right_next_matchs'	=> $this->nextmatchs->right('/admin/groups.php',$start,$total,'menuaction=emailadmin.emailadmin_ui.listServers'),
 				'lang_groups'		=> lang('user groups'),

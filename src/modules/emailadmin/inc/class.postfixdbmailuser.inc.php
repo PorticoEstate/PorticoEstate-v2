@@ -1,4 +1,6 @@
 <?php
+use App\modules\phpgwapi\services\Settings;
+
 	/***************************************************************************\
 	* EGroupWare - EMailAdmin                                                   *
 	* http://www.egroupware.org                                                 *
@@ -25,7 +27,7 @@
 			
 			$filter = "uid=".$_hookValues['account_lid'];
 
-			$sri = @ldap_search($ds,$GLOBALS['phpgw_info']['server']['ldap_context'],$filter);
+			$sri = @ldap_search($ds,Settings::getInstance()->get('server')['ldap_context'],$filter);
 			if ($sri)
 			{
 				$allValues 	= ldap_get_entries($ds, $sri);
@@ -63,11 +65,11 @@
 			$ds = $GLOBALS['phpgw']->common->ldapConnect();
 			$filter 	= sprintf("(&(uid=%s)(objectclass=posixAccount))",$_accountName);
 			$attributes	= array('dn','mail','mailAlternateAddress');
-			$sri = @ldap_search($ds, $GLOBALS['phpgw_info']['server']['ldap_context'], $filter, $attributes);
+			$sri = @ldap_search($ds, Settings::getInstance()->get('server')['ldap_context'], $filter, $attributes);
 			
 			if ($sri)
 			{
-				$realName = trim($GLOBALS['phpgw_info']['user']['firstname'] . (!empty($GLOBALS['phpgw_info']['user']['firstname']) ? ' ' : '') . $GLOBALS['phpgw_info']['user']['lastname']);
+				$realName = trim(Settings::getInstance()->get('user')['firstname'] . (!empty(Settings::getInstance()->get('user')['firstname']) ? ' ' : '') . Settings::getInstance()->get('user')['lastname']);
 				$allValues = ldap_get_entries($ds, $sri);
 				if(isset($allValues[0]['mail'][0]))
 				{
@@ -101,7 +103,7 @@
 
 			$ldap = $GLOBALS['phpgw']->common->ldapConnect();
 			
-			if (($sri = @ldap_search($ldap,$GLOBALS['phpgw_info']['server']['ldap_context'],"(uidnumber=$_uidnumber)")))
+			if (($sri = @ldap_search($ldap,Settings::getInstance()->get('server')['ldap_context'],"(uidnumber=$_uidnumber)")))
 			{
 				$allValues = ldap_get_entries($ldap, $sri);
 				if ($allValues['count'] > 0)
@@ -129,7 +131,7 @@
 
 			$ldap = $GLOBALS['phpgw']->common->ldapConnect();
 
-			$sri = @ldap_search($ldap,$GLOBALS['phpgw_info']['server']['ldap_context'],$filter);
+			$sri = @ldap_search($ldap,Settings::getInstance()->get('server')['ldap_context'],$filter);
 			if ($sri) {
 				$allValues 	= ldap_get_entries($ldap, $sri);
 
@@ -170,7 +172,7 @@
 			$ds = $GLOBALS['phpgw']->common->ldapConnect();
 			$filter 	= sprintf("(&(uidnumber=%s)(objectclass=posixAccount))",$_accountID);
 			$attributes	= array('dn','mailforwardingaddress','deliverymode','objectclass');
-			$sri = ldap_search($ds, $GLOBALS['phpgw_info']['server']['ldap_context'], $filter, $attributes);
+			$sri = ldap_search($ds, Settings::getInstance()->get('server')['ldap_context'], $filter, $attributes);
 			
 			if ($sri)
 			{

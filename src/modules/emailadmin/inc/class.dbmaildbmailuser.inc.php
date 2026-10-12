@@ -1,4 +1,6 @@
 <?php
+use App\modules\phpgwapi\services\Settings;
+
 	/***************************************************************************\
 	* EGroupWare - EMailAdmin                                                   *
 	* http://www.egroupware.org                                                 *
@@ -31,18 +33,18 @@
 			$userData = array();
 			
 			$ds = $GLOBALS['phpgw']->ldap->ldapConnect(
-				$GLOBALS['phpgw_info']['server']['ldap_host'],
-				$GLOBALS['phpgw_info']['server']['ldap_root_dn'],
-				$GLOBALS['phpgw_info']['server']['ldap_root_pw']
+				Settings::getInstance()->get('server')['ldap_host'],
+				Settings::getInstance()->get('server')['ldap_root_dn'],
+				Settings::getInstance()->get('server')['ldap_root_pw']
 			);
 			
 			if(!is_resource($ds)) {
 				return false;
 			}
 
-			$filter		= '(&(objectclass=posixaccount)(uid='. $_username .')(dbmailGID='. sprintf("%u", crc32($GLOBALS['phpgw_info']['server']['install_id'])) .'))';
+			$filter		= '(&(objectclass=posixaccount)(uid='. $_username .')(dbmailGID='. sprintf("%u", crc32(Settings::getInstance()->get('server')['install_id'])) .'))';
 			$justthese	= array('dn', 'objectclass', 'mailQuota');
-			if($sri = ldap_search($ds, $GLOBALS['phpgw_info']['server']['ldap_context'], $filter, $justthese)) {
+			if($sri = ldap_search($ds, Settings::getInstance()->get('server')['ldap_context'], $filter, $justthese)) {
 
 				if($info = ldap_get_entries($ds, $sri)) {
 					if(isset($info[0]['mailquota'][0])) {
@@ -59,9 +61,9 @@
 			}
 			
 			$ds = $GLOBALS['phpgw']->ldap->ldapConnect(
-				$GLOBALS['phpgw_info']['server']['ldap_host'],
-				$GLOBALS['phpgw_info']['server']['ldap_root_dn'],
-				$GLOBALS['phpgw_info']['server']['ldap_root_pw']
+				Settings::getInstance()->get('server')['ldap_host'],
+				Settings::getInstance()->get('server')['ldap_root_dn'],
+				Settings::getInstance()->get('server')['ldap_root_pw']
 			);
 			
 			if(!is_resource($ds)) {
@@ -70,7 +72,7 @@
 
 			$filter		= '(&(objectclass=posixaccount)(uidnumber='. $uidnumber .'))';
 			$justthese	= array('dn', 'objectclass', 'dbmailUID', 'dbmailGID', 'mail');
-			$sri = ldap_search($ds, $GLOBALS['phpgw_info']['server']['ldap_context'], $filter, $justthese);
+			$sri = ldap_search($ds, Settings::getInstance()->get('server')['ldap_context'], $filter, $justthese);
 
 			if($info = ldap_get_entries($ds, $sri)) {
 				if((!in_array('dbmailuser',$info[0]['objectclass']) && !in_array('dbmailUser',$info[0]['objectclass'])) && $info[0]['mail']) {
@@ -78,7 +80,7 @@
 					unset($newData['objectclass']['count']);
 					$newData['objectclass'][] = 'dbmailuser';
 					sort($newData['objectclass']);
-					$newData['dbmailGID']	= sprintf("%u", crc32($GLOBALS['phpgw_info']['server']['install_id']));
+					$newData['dbmailGID']	= sprintf("%u", crc32(Settings::getInstance()->get('server')['install_id']));
 					$newData['dbmailUID']	= (!empty($this->domainName)) ? $_hookValues['account_lid'] .'@'. $this->domainName : $_hookValues['account_lid'];
 					
 					if(!ldap_modify($ds, $info[0]['dn'], $newData)) {
@@ -89,7 +91,7 @@
 				} else {
 					$newData = array();
 					$newData['dbmailUID']	= (!empty($this->domainName)) ? $_hookValues['account_lid'] .'@'. $this->domainName : $_hookValues['account_lid'];
-					$newData['dbmailGID']	= sprintf("%u", crc32($GLOBALS['phpgw_info']['server']['install_id']));
+					$newData['dbmailGID']	= sprintf("%u", crc32(Settings::getInstance()->get('server')['install_id']));
 						
 					if(!ldap_modify($ds, $info[0]['dn'], $newData)) {
 						print ldap_error($ds);
@@ -105,9 +107,9 @@
 
 		function setUserData($_username, $_quota) {
 			$ds = $GLOBALS['phpgw']->ldap->ldapConnect(
-				$GLOBALS['phpgw_info']['server']['ldap_host'],
-				$GLOBALS['phpgw_info']['server']['ldap_root_dn'],
-				$GLOBALS['phpgw_info']['server']['ldap_root_pw']
+				Settings::getInstance()->get('server')['ldap_host'],
+				Settings::getInstance()->get('server')['ldap_root_dn'],
+				Settings::getInstance()->get('server')['ldap_root_pw']
 			);
 			
 			if(!is_resource($ds)) {
@@ -116,7 +118,7 @@
 
 			$filter		= '(&(objectclass=posixaccount)(uid='. $_username .'))';
 			$justthese	= array('dn', 'objectclass', 'dbmailGID', 'dbmailUID', 'mail');
-			$sri = ldap_search($ds, $GLOBALS['phpgw_info']['server']['ldap_context'], $filter, $justthese);
+			$sri = ldap_search($ds, Settings::getInstance()->get('server')['ldap_context'], $filter, $justthese);
 
 			if($info = ldap_get_entries($ds, $sri)) {
 				$validLDAPConfig = false;
@@ -129,7 +131,7 @@
 					unset($newData['objectclass']['count']);
 					$newData['objectclass'][] = 'dbmailUser';
 					sort($newData['objectclass']);
-					$newData['dbmailGID']	= sprintf("%u", crc32($GLOBALS['phpgw_info']['server']['install_id']));
+					$newData['dbmailGID']	= sprintf("%u", crc32(Settings::getInstance()->get('server')['install_id']));
 					$newData['dbmailUID']	= (!empty($this->domainName)) ? $_username .'@'. $this->domainName : $_username;
 					
 					if(ldap_modify($ds, $info[0]['dn'], $newData)) {
@@ -148,7 +150,7 @@
 				
 					if ((in_array('dbmailuser',$info[0]['objectclass']) || in_array('dbmailUser',$info[0]['objectclass'])) && !$info[0]['dbmailgid']) {
 						$newData = array();
-						$newData['dbmailGID']	= sprintf("%u", crc32($GLOBALS['phpgw_info']['server']['install_id']));
+						$newData['dbmailGID']	= sprintf("%u", crc32(Settings::getInstance()->get('server')['install_id']));
 
 						if(!ldap_modify($ds, $info[0]['dn'], $newData)) {
 							#print ldap_error($ds);

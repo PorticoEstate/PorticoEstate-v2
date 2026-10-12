@@ -1,4 +1,6 @@
 <?php
+use App\modules\phpgwapi\services\Settings;
+
 	/***************************************************************************\
 	* EGroupWare - EMailAdmin                                                   *
 	* http://www.egroupware.org                                                 *
@@ -187,7 +189,7 @@
 				}
 			}
 			// retrieve primary-group settings if set
-			if (isset($GLOBALS['phpgw_info']['user']['account_primary_group']) && is_array($_groups) && $_groups[1] == $GLOBALS['phpgw_info']['user']['account_primary_group']) {
+			if (isset(Settings::getInstance()->get('user')['account_primary_group']) && is_array($_groups) && $_groups[1] == Settings::getInstance()->get('user')['account_primary_group']) {
 				$this->db->select($this->table,'ea_profile_id',$this->db->expression($this->table,'(',array('ea_group'=>$_groups[1]),' and ea_active=1)'), __LINE__, __FILE__, false, 'ORDER BY ea_order', false, 1);
 				if (($data = $this->db->row(true))) {
 					$groupDefaults = $this->getProfile($data['ea_profile_id'], $this->db_cols);
@@ -282,7 +284,7 @@
 		{
 			$ldap = $GLOBALS['phpgw']->common->ldapConnect();
 			
-			if (($sri = @ldap_search($ldap,$GLOBALS['phpgw_info']['server']['ldap_context'],"(uidnumber=$_accountID)")))
+			if (($sri = @ldap_search($ldap,Settings::getInstance()->get('server')['ldap_context'],"(uidnumber=$_accountID)")))
 			{
 				$allValues = ldap_get_entries($ldap, $sri);
 				if ($allValues['count'] > 0)
@@ -320,7 +322,7 @@
 				$filter = "uid=$_accountID";
 			}
 
-			$sri = @ldap_search($ldap,$GLOBALS['phpgw_info']['server']['ldap_context'],$filter);
+			$sri = @ldap_search($ldap,Settings::getInstance()->get('server')['ldap_context'],$filter);
 			if ($sri)
 			{
 				$allValues 	= ldap_get_entries($ldap, $sri);
@@ -411,7 +413,7 @@
 			
 			// also update the account_email field in egw_accounts
 			// when using sql account storage
-			if($GLOBALS['phpgw_info']['server']['account_repository'] == 'sql')
+			if(Settings::getInstance()->get('server')['account_repository'] == 'sql')
 			{
 				$this->db->update('egw_accounts',array(
 						'account_email'	=> $_accountData["mailLocalAddress"]

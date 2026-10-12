@@ -1,0 +1,54 @@
+.emailadmin-page {
+	--emailadmin-ink: #18232b;
+	--emailadmin-muted: #52636d;
+	--emailadmin-line: #c8d2d8;
+	--emailadmin-accent: #005b78;
+	--emailadmin-surface: #f4f7f8;
+	color: var(--emailadmin-ink);
+	max-width: 1180px;
+	margin: 0 auto;
+	padding: 1.25rem;
+}
+
+.emailadmin-heading, .emailadmin-actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: .75rem;
+	margin-bottom: 1rem;
+}
+
+.emailadmin-heading h1 { margin: 0; font-size: 1.55rem; }
+.emailadmin-page fieldset { border: 1px solid var(--emailadmin-line); margin: 0 0 1rem; padding: 1rem; }
+.emailadmin-page legend { font-weight: 700; padding: 0 .35rem; }
+.emailadmin-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem 1.2rem; }
+.emailadmin-page label { display: flex; flex-direction: column; gap: .35rem; color: var(--emailadmin-muted); font-size: .92rem; }
+.emailadmin-page input:not([type=checkbox]):not([type=radio]), .emailadmin-page select, .emailadmin-page textarea {
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 2.5rem;
+	border: 1px solid var(--emailadmin-line);
+	border-radius: 3px;
+	padding: .45rem .55rem;
+	background: #fff;
+	color: var(--emailadmin-ink);
+}
+.emailadmin-checks { display: flex; flex-wrap: wrap; gap: .6rem 1.3rem; margin: 1rem 0; }
+.emailadmin-checks label { flex-direction: row; align-items: center; }
+.emailadmin-button { display: inline-flex; align-items: center; justify-content: center; border: 1px solid #8798a1; border-radius: 3px; padding: .5rem .8rem; color: var(--emailadmin-ink); text-decoration: none; background: #fff; cursor: pointer; }
+.emailadmin-button--primary { background: var(--emailadmin-accent); border-color: var(--emailadmin-accent); color: #fff; }
+.emailadmin-table-scroll { overflow-x: auto; }
+.emailadmin-table { width: 100%; border-collapse: collapse; background: #fff; }
+.emailadmin-table th, .emailadmin-table td { padding: .65rem; border-bottom: 1px solid var(--emailadmin-line); text-align: left; vertical-align: middle; }
+.emailadmin-table th { background: var(--emailadmin-surface); }
+.emailadmin-table td:last-child { white-space: nowrap; }
+.emailadmin-row-actions { display: flex; gap: .4rem; }
+.emailadmin-row-actions button { border: 1px solid var(--emailadmin-line); border-radius: 3px; padding: .25rem .45rem; background: #fff; color: var(--emailadmin-ink); cursor: pointer; }
+.emailadmin-alert { margin: 0 0 1rem; padding: .7rem; border-left: 4px solid #a32c2c; background: #fff0f0; color: #681d1d; }
+.emailadmin-inline { display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; min-height: 2.5rem; }
+
+@media (max-width: 700px) {
+	.emailadmin-page { padding: .75rem; }
+	.emailadmin-grid { grid-template-columns: 1fr; }
+	.emailadmin-heading { align-items: flex-start; }
+}

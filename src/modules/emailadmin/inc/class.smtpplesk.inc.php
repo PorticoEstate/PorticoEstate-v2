@@ -1,4 +1,6 @@
 <?php
+use App\modules\phpgwapi\services\Settings;
+
 /***************************************************************************\
 * EGroupWare - EMailAdmin SMTP via Plesk                                    *
 * http://www.egroupware.org                                                 *
@@ -71,8 +73,8 @@ class smtpplesk extends defaultsmtp
 		//echo "<p>smtpplesk::getAccountEmailAddress()</p>\n";
 		
 		return array(array(
-			'name'		=> $GLOBALS['phpgw_info']['user']['fullname'],
-			'address'	=> $GLOBALS['phpgw_info']['user']['email'],
+			'name'		=> Settings::getInstance()->get('user')['fullname'],
+			'address'	=> Settings::getInstance()->get('user')['email'],
 			'type'		=> 'default'
 		));
 	}

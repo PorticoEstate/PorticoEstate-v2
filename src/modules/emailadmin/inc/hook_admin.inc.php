@@ -14,7 +14,7 @@
 // Only Modify the $file and $title variables.....
 	$title = $appname;
 	$file = Array(
-		'Site Configuration'	=> phpgw::link('/index.php','menuaction=emailadmin.emailadmin_ui.listProfiles')
+		'Site Configuration'	=> phpgw::link('/emailadmin/view/profiles')
 	);
 
 //Do not modify below this line

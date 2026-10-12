@@ -1,4 +1,6 @@
 <?php
+use App\modules\phpgwapi\services\Settings;
+
 /**
  * eGroupWare EmailAdmin - Postfix with inetOrgPerson schema
  *
@@ -40,11 +42,11 @@ class postfixinetorgperson extends defaultsmtp
 	{
 		$emailAddresses	= array();
 		$ds = $GLOBALS['phpgw']->common->ldapConnect();
-		$sri = @ldap_search($ds, $GLOBALS['phpgw_info']['server']['ldap_context'],"(&(uid=$_accountName)(objectclass=posixAccount))",array('dn','mail'));
+		$sri = @ldap_search($ds, Settings::getInstance()->get('server')['ldap_context'],"(&(uid=$_accountName)(objectclass=posixAccount))",array('dn','mail'));
 		
 		if ($sri && ($allValues = ldap_get_entries($ds, $sri)) && is_array($allValues[0]['mail']))
 		{
-			$realName = trim($GLOBALS['phpgw_info']['user']['firstname'] . (!empty($GLOBALS['phpgw_info']['user']['firstname']) ? ' ' : '') . $GLOBALS['phpgw_info']['user']['lastname']);
+			$realName = trim(Settings::getInstance()->get('user')['firstname'] . (!empty(Settings::getInstance()->get('user')['firstname']) ? ' ' : '') . Settings::getInstance()->get('user')['lastname']);
 			foreach($allValues[0]['mail'] as $n => $mail)
 			{
 				if (!is_numeric($n)) continue;
@@ -71,7 +73,7 @@ class postfixinetorgperson extends defaultsmtp
 		$userdata = array();
 		$ldap = $GLOBALS['phpgw']->common->ldapConnect();
 		
-		if (($sri = @ldap_search($ldap,$GLOBALS['phpgw_info']['server']['ldap_context'],'uidnumber='.(int)$_uidnumber,array('mail'))))
+		if (($sri = @ldap_search($ldap,Settings::getInstance()->get('server')['ldap_context'],'uidnumber='.(int)$_uidnumber,array('mail'))))
 		{
 			$allValues = ldap_get_entries($ldap, $sri);
 			if ($allValues['count'] > 0)
@@ -107,7 +109,7 @@ class postfixinetorgperson extends defaultsmtp
 
 		$ldap = $GLOBALS['phpgw']->common->ldapConnect();
 
-		if (($sri = @ldap_search($ldap,$GLOBALS['phpgw_info']['server']['ldap_context'],'uidnumber='.(int)$_uidnumber,array('dn')))) 
+		if (($sri = @ldap_search($ldap,Settings::getInstance()->get('server')['ldap_context'],'uidnumber='.(int)$_uidnumber,array('dn'))))
 		{
 			$allValues 	= ldap_get_entries($ldap, $sri);
 			$accountDN 	= $allValues[0]['dn'];

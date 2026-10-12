@@ -1,4 +1,6 @@
 <?php
+	use App\modules\phpgwapi\services\Settings;
+
 	/***************************************************************************\
 	* eGroupWare                                                                *
 	* http://www.egroupware.org                                                 *
@@ -31,7 +33,7 @@
 		function display_app_header()
 		{
 			phpgwapi_js::getInstance()->validate_file('jscode','editUserdata','emailadmin');
-			$GLOBALS['phpgw_info']['flags']['include_xajax'] = True;
+			Settings::getInstance()->update('flags', ['include_xajax' => true]);
 
 			$GLOBALS['phpgw']->common->egw_header();
 			echo parse_navbar();
@@ -49,9 +51,10 @@
 			$this->t->set_file(array("editUserData" => "edituserdata.tpl"));
 			$this->t->set_block('editUserData','form','form');
 			$this->t->set_block('editUserData','link_row','link_row');
-			$this->t->set_var("th_bg",$GLOBALS['phpgw_info']["theme"]["th_bg"]);
-			$this->t->set_var("tr_color1",$GLOBALS['phpgw_info']["theme"]["row_on"]);
-			$this->t->set_var("tr_color2",$GLOBALS['phpgw_info']["theme"]["row_off"]);
+			$theme = Settings::getInstance()->get('theme');
+			$this->t->set_var("th_bg",$theme["th_bg"]);
+			$this->t->set_var("tr_color1",$theme["row_on"]);
+			$this->t->set_var("tr_color2",$theme["row_off"]);
 
 			$this->t->set_var("lang_email_config",lang("edit email settings"));
 			$this->t->set_var("lang_emailAddress",lang("email address"));
@@ -187,7 +190,7 @@
 		
 		function translate()
 		{
-			$this->t->set_var('th_bg',$GLOBALS['phpgw_info']['theme']['th_bg']);
+			$this->t->set_var('th_bg',Settings::getInstance()->get('theme')['th_bg']);
 
 			$this->t->set_var('lang_add',lang('add'));
 			$this->t->set_var('lang_done',lang('Done'));

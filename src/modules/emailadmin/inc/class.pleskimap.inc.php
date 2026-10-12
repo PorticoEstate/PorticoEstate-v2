@@ -1,4 +1,6 @@
 <?php
+use App\modules\phpgwapi\services\Settings;
+
 /***************************************************************************\
 * EGroupWare - EMailAdmin IMAP via Plesk                                    *
 * http://www.egroupware.org                                                 *
@@ -65,7 +67,7 @@ class pleskimap extends defaultimap
 		//echo "<p>pleskimap::addAccount(".print_r($hookValues,true).")</p>\n";
 
 		$defaultDomain = $this->profileData['defaultDomain'] ? $this->profileData['defaultDomain'] :
-			$GLOBALS['phpgw_info']['server']['mail_suffix'];
+			Settings::getInstance()->get('server')['mail_suffix'];
 
 		$localEmail = $hookValues['account_lid'].'@'.$defaultDomain;
 		$aliases = $forwards = array();
@@ -341,7 +343,7 @@ class pleskimap extends defaultimap
 			return false;
 		}
 		$defaultDomain = $this->profileData['defaultDomain'] ? $this->profileData['defaultDomain'] :
-			$GLOBALS['phpgw_info']['server']['mail_suffix'];
+			Settings::getInstance()->get('server')['mail_suffix'];
 
 		if ($action == 'update' && !($info = $this->plesk_mail('info',$account)))
 		{

@@ -1,4 +1,6 @@
 <?php
+use App\modules\phpgwapi\services\Settings;
+
 	/***************************************************************************\
 	* EGroupWare - EMailAdmin                                                   *
 	* http://www.egroupware.org                                                 *
@@ -30,7 +32,7 @@
 		// the constructor
 		function __construct($defaultDomain=null)
 		{
-			$this->defaultDomain = $defaultDomain ? $defaultDomain : $GLOBALS['phpgw_info']['server']['mail_suffix'];
+			$this->defaultDomain = $defaultDomain ? $defaultDomain : Settings::getInstance()->get('server')['mail_suffix'];
 		}
 		
 		// add a account
@@ -52,7 +54,7 @@
 			if(empty($emailAddress))
 				$emailAddress = $_accountName.'@'.$this->defaultDomain;
 
-			$realName = trim($GLOBALS['phpgw_info']['user']['firstname'] . (!empty($GLOBALS['phpgw_info']['user']['firstname']) ? ' ' : '') . $GLOBALS['phpgw_info']['user']['lastname']);
+			$realName = trim(Settings::getInstance()->get('user')['firstname'] . (!empty(Settings::getInstance()->get('user')['firstname']) ? ' ' : '') . Settings::getInstance()->get('user')['lastname']);
 
 			return array(
 				array(

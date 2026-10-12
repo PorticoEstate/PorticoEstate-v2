@@ -1,0 +1,61 @@
+{% extends layout|default('@views/_layout.twig') %}
+
+{% block title %}{{ profile_id ? lang('edit profile') : lang('add profile') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/profiles/emailadmin.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<main class="emailadmin-page" id="emailadmin-editor"
+	data-api-url="{{ api_url|e('html_attr') }}"
+	data-profile-id="{{ profile_id }}"
+	data-any-application="{{ lang('any application')|e('html_attr') }}"
+	data-csrf-name="{{ csrf.name|e('html_attr') }}"
+	data-csrf-value="{{ csrf.value|e('html_attr') }}"
+	data-options="{{ {apps: apps, groups: groups, users: users, smtp: smtp, imap: imap}|json_encode|e('html_attr') }}">
+	<header class="emailadmin-heading">
+		<h1>{{ profile_id ? lang('edit profile') : lang('add profile') }}</h1>
+		<a class="emailadmin-button" href="{{ list_url|e }}">{{ lang('Back') }}</a>
+	</header>
+	<div class="emailadmin-alert" id="emailadmin-error" role="alert" hidden></div>
+	<form id="emailadmin-profile-form">
+		<fieldset>
+			<legend>{{ lang('Global options') }}</legend>
+			<div class="emailadmin-grid">
+				<label>{{ lang('Profile Name') }}<input name="globalsettings[description]" required></label>
+				<label>{{ lang('Default domain') }}<input name="globalsettings[defaultDomain]"></label>
+				<label>{{ lang('Organisation name') }}<input name="globalsettings[organisationName]"></label>
+				<label>{{ lang('Can be used by application') }}<select name="globalsettings[ea_appname]" id="emailadmin-app"></select></label>
+				<label>{{ lang('Can be used by group') }}<select name="globalsettings[ea_group]" id="emailadmin-group"></select></label>
+				<label>{{ lang('Can be used by user') }}<select name="globalsettings[ea_user]" id="emailadmin-user"></select></label>
+			</div>
+			<div class="emailadmin-checks">
+				<label><input type="checkbox" name="globalsettings[ea_active]"> {{ lang('Profile is active') }}</label>
+				<label><input type="checkbox" name="globalsettings[userDefinedIdentities]"> {{ lang('Users can define their own identities') }}</label>
+				<label><input type="checkbox" name="globalsettings[userDefinedAccounts]"> {{ lang('Users can define their own email accounts') }}</label>
+				<label><input type="checkbox" name="globalsettings[ea_user_defined_signatures]"> {{ lang('Users can define their own signatures') }}</label>
+			</div>
+			<label>{{ lang('Default signature') }}<textarea name="globalsettings[ea_default_signature]" rows="5"></textarea></label>
+		</fieldset>
+		<fieldset>
+			<legend>{{ lang('SMTP settings') }}</legend>
+			<label>{{ lang('Select type of SMTP server') }}<select id="emailadmin-smtp-type" name="smtpsettings[smtpType]"></select></label>
+			<div id="emailadmin-smtp-fields" class="emailadmin-grid"></div>
+		</fieldset>
+		<fieldset>
+			<legend>{{ lang('IMAP settings') }}</legend>
+			<label>{{ lang('Select type of IMAP server') }}<select id="emailadmin-imap-type" name="imapsettings[imapType]"></select></label>
+			<div id="emailadmin-imap-fields" class="emailadmin-grid"></div>
+		</fieldset>
+		<div class="emailadmin-actions">
+			<button class="emailadmin-button emailadmin-button--primary" type="submit">{{ lang('Save') }}</button>
+			<a class="emailadmin-button" href="{{ list_url|e }}">{{ lang('Cancel') }}</a>
+		</div>
+	</form>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/profiles/emailadmin_edit.js') }}</script>
+{% endblock %}

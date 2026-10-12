@@ -26,10 +26,10 @@ use App\modules\phpgwapi\services\Settings;
 		function addAccount($_hookValues)
 		{
 			$mailLocalAddress = $_hookValues['account_email'] ? $_hookValues['account_email'] :
-				$GLOBALS['phpgw']->common->email_address($_hookValues['account_firstname'],
+				$this->phpgwapi_common->email_address($_hookValues['account_firstname'],
 					$_hookValues['account_lastname'],$_hookValues['account_lid'],$this->defaultDomain);
 
-			$ds = $GLOBALS['phpgw']->common->ldapConnect();
+			$ds = $this->phpgwapi_common->ldapConnect();
 			
 			$filter = "uid=".$_hookValues['account_lid'];
 
@@ -75,10 +75,10 @@ use App\modules\phpgwapi\services\Settings;
 		function updateAccount($_hookValues)
 		{
 			$mailLocalAddress = $_hookValues['account_email'] ? $_hookValues['account_email'] :
-				$GLOBALS['phpgw']->common->email_address($_hookValues['account_firstname'],
+				$this->phpgwapi_common->email_address($_hookValues['account_firstname'],
 					$_hookValues['account_lastname'],$_hookValues['account_lid'],$this->defaultDomain);
 
-			$ds = $GLOBALS['phpgw']->common->ldapConnect();
+			$ds = $this->phpgwapi_common->ldapConnect();
 			$filter 	= "(&(uid=$_hookValues[account_lid])(objectclass=posixAccount))";
 			$attributes	= array('dn','objectclass');
 			if (!($sri = @ldap_search($ds, Settings::getInstance()->get('server')['ldap_context'], $filter, $attributes)))
@@ -110,7 +110,7 @@ use App\modules\phpgwapi\services\Settings;
 		function getAccountEmailAddress($_accountName)
 		{
 			$emailAddresses	= array();
-			$ds = $GLOBALS['phpgw']->common->ldapConnect();
+			$ds = $this->phpgwapi_common->ldapConnect();
 			$filter 	= sprintf("(&(uid=%s)(objectclass=posixAccount))",$_accountName);
 			$attributes	= array('dn','mail','mailAlternateAddress');
 			$sri = @ldap_search($ds, Settings::getInstance()->get('server')['ldap_context'], $filter, $attributes);
@@ -150,7 +150,7 @@ use App\modules\phpgwapi\services\Settings;
 		{
 			$userData = array();
 
-			$ldap = $GLOBALS['phpgw']->common->ldapConnect();
+			$ldap = $this->phpgwapi_common->ldapConnect();
 			
 			if (($sri = @ldap_search($ldap,Settings::getInstance()->get('server')['ldap_context'],"(uidnumber=$_uidnumber)")))
 			{
@@ -180,7 +180,7 @@ use App\modules\phpgwapi\services\Settings;
 		{
 			$filter = "uidnumber=$_uidnumber";
 
-			$ldap = $GLOBALS['phpgw']->common->ldapConnect();
+			$ldap = $this->phpgwapi_common->ldapConnect();
 
 			if (!($sri = @ldap_search($ldap,Settings::getInstance()->get('server')['ldap_context'],$filter)))
 			{
@@ -217,7 +217,7 @@ use App\modules\phpgwapi\services\Settings;
 		
 		function saveSMTPForwarding($_accountID, $_forwardingAddress, $_keepLocalCopy)
 		{
-			$ds = $GLOBALS['phpgw']->common->ldapConnect();
+			$ds = $this->phpgwapi_common->ldapConnect();
 			$filter 	= sprintf("(&(uidnumber=%s)(objectclass=posixAccount))",$_accountID);
 			$attributes	= array('dn','mailforwardingaddress','deliverymode','objectclass');
 			

@@ -16,6 +16,8 @@ use App\modules\phpgwapi\services\Settings;
 
 	class defaultsmtp
 	{
+		var $phpgwapi_common;
+
 		var $smtpAuth = false;
 		
 		var $editForwardingAddress = false;		
@@ -33,6 +35,7 @@ use App\modules\phpgwapi\services\Settings;
 		// the constructor
 		function __construct($defaultDomain=null)
 		{
+			$this->phpgwapi_common = new \phpgwapi_common();
 			$this->defaultDomain = $defaultDomain ? $defaultDomain : Settings::getInstance()->get('server')['mail_suffix'];
 		}
 		

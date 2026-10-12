@@ -17,6 +17,8 @@
 	class uiuserdata
 	{
 
+		var $phpgwapi_common;
+
 		var $public_functions = array
 		(
 			'editUserData'	=> True,
@@ -26,6 +28,7 @@
 		var $t,$boemailadmin;
 		function __construct()
 		{
+			$this->phpgwapi_common = new \phpgwapi_common();
 			$this->t			=& CreateObject('phpgwapi.template',PHPGW_APP_TPL);
 			$this->boemailadmin		= new emailadmin_bo();
 		}
@@ -35,7 +38,7 @@
 			phpgwapi_js::getInstance()->validate_file('jscode','editUserdata','emailadmin');
 			Settings::getInstance()->update('flags', ['include_xajax' => true]);
 
-			$GLOBALS['phpgw']->common->egw_header();
+			$this->phpgwapi_common->egw_header();
 			echo parse_navbar();
 		}
 
@@ -76,9 +79,9 @@
 			);
 			$this->t->set_var("form_action", phpgw::link('/index.php',$linkData));
 
-			$this->t->set_var('url_image_add',$GLOBALS['phpgw']->common->image('phpgwapi','new'));
-			$this->t->set_var('url_image_edit',$GLOBALS['phpgw']->common->image('phpgwapi','edit'));
-			$this->t->set_var('url_image_delete',$GLOBALS['phpgw']->common->image('phpgwapi','delete'));
+			$this->t->set_var('url_image_add',$this->phpgwapi_common->image('phpgwapi','new'));
+			$this->t->set_var('url_image_edit',$this->phpgwapi_common->image('phpgwapi','edit'));
+			$this->t->set_var('url_image_delete',$this->phpgwapi_common->image('phpgwapi','delete'));
 			
 			// only when we show a existing user
 			if($userData = $this->boemailadmin->getUserData($accountID)) {

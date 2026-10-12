@@ -41,7 +41,7 @@ class postfixinetorgperson extends defaultsmtp
 	function getAccountEmailAddress($_accountName)
 	{
 		$emailAddresses	= array();
-		$ds = $GLOBALS['phpgw']->common->ldapConnect();
+		$ds = $this->phpgwapi_common->ldapConnect();
 		$sri = @ldap_search($ds, Settings::getInstance()->get('server')['ldap_context'],"(&(uid=$_accountName)(objectclass=posixAccount))",array('dn','mail'));
 		
 		if ($sri && ($allValues = ldap_get_entries($ds, $sri)) && is_array($allValues[0]['mail']))
@@ -71,7 +71,7 @@ class postfixinetorgperson extends defaultsmtp
 	function getUserData($_uidnumber) 
 	{
 		$userdata = array();
-		$ldap = $GLOBALS['phpgw']->common->ldapConnect();
+		$ldap = $this->phpgwapi_common->ldapConnect();
 		
 		if (($sri = @ldap_search($ldap,Settings::getInstance()->get('server')['ldap_context'],'uidnumber='.(int)$_uidnumber,array('mail'))))
 		{
@@ -107,7 +107,7 @@ class postfixinetorgperson extends defaultsmtp
 	{
 		$filter = "uidnumber=$_uidnumber";
 
-		$ldap = $GLOBALS['phpgw']->common->ldapConnect();
+		$ldap = $this->phpgwapi_common->ldapConnect();
 
 		if (($sri = @ldap_search($ldap,Settings::getInstance()->get('server')['ldap_context'],'uidnumber='.(int)$_uidnumber,array('dn'))))
 		{

@@ -16,6 +16,7 @@ use App\modules\phpgwapi\services\Settings;
 	phpgw::import_class('felamimail.bofelamimail');	
 	class emailadmin_so
 	{
+		var $phpgwapi_common;
 		var $db;
 		var $table = 'egw_emailadmin';
 		var $db_cols = array(
@@ -63,6 +64,7 @@ use App\modules\phpgwapi\services\Settings;
 
 		function __construct()
 		{
+			$this->phpgwapi_common = new \phpgwapi_common();
 			if (isset($GLOBALS['phpgw_setup']->db) && is_object($GLOBALS['phpgw_setup']->db))
 			{
 				$this->db = clone($GLOBALS['phpgw_setup']->db);
@@ -282,7 +284,7 @@ use App\modules\phpgwapi\services\Settings;
 
 		function getUserData($_accountID)
 		{
-			$ldap = $GLOBALS['phpgw']->common->ldapConnect();
+			$ldap = $this->phpgwapi_common->ldapConnect();
 			
 			if (($sri = @ldap_search($ldap,Settings::getInstance()->get('server')['ldap_context'],"(uidnumber=$_accountID)")))
 			{
@@ -311,7 +313,7 @@ use App\modules\phpgwapi\services\Settings;
 		
 		function saveUserData($_accountID, $_accountData)
 		{
-			$ldap = $GLOBALS['phpgw']->common->ldapConnect();
+			$ldap = $this->phpgwapi_common->ldapConnect();
 			// need to be fixed
 			if(is_numeric($_accountID))
 			{

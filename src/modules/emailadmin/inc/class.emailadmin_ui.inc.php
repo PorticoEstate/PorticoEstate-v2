@@ -19,6 +19,8 @@
 	class emailadmin_ui
 	{
 		
+		var $phpgwapi_common;
+
 		var $public_functions = array
 		(
 			'addProfile'	=> True,
@@ -37,6 +39,7 @@
 
 		function __construct()
 		{
+			$this->phpgwapi_common = new \phpgwapi_common();
 			$this->nextmatchs   =& CreateObject('phpgwapi.nextmatchs');
 			$this->t            =& CreateObject('phpgwapi.template',PHPGW_APP_TPL);
 			$this->boemailadmin = CreateObject('emailadmin.emailadmin_bo');
@@ -214,7 +217,7 @@
 
 					break;
 			}
-			$GLOBALS['phpgw']->common->phpgw_header();
+			$this->phpgwapi_common->phpgw_header();
 			
 			if($_GET['menuaction'] == 'emailadmin.emailadmin_ui.listProfiles' || $_GET['menuaction'] == 'emailadmin.emailadmin_ui.deleteProfile')
 				echo parse_navbar();
@@ -439,8 +442,8 @@
 					$userLink = '<a href="'. $groupLink_data . '">'. $userLink . '</a>';
 					$activeLink = '<a href="'. $groupLink_data . '">'. $activeLink . '</a>';
 
-					$moveButtons = '<img src="'. $GLOBALS['phpgw']->common->image('phpgwapi', 'up') .'" onclick="moveUp(this)">&nbsp;'.
-						       '<img src="'. $GLOBALS['phpgw']->common->image('phpgwapi', 'down') .'" onclick="moveDown(this)">';
+					$moveButtons = '<img src="'. $this->phpgwapi_common->image('phpgwapi', 'up') .'" onclick="moveUp(this)">&nbsp;'.
+						       '<img src="'. $this->phpgwapi_common->image('phpgwapi', 'down') .'" onclick="moveDown(this)">';
 					
 					$data['profile_'.$profileList[$i]['profileID']] = array(
 						$descriptionLink,
@@ -596,7 +599,7 @@
 			$this->boemailadmin->saveProfile($globalSettings, $smtpSettings, $imapSettings);
 			execMethod('phpgwapi.menu.clear');//new menu items depending on users rights to define own accounts
 			print "<script type=\"text/javascript\">opener.location.reload(); window.close();</script>";
-			$GLOBALS['phpgw']->common->egw_exit();
+			$this->phpgwapi_common->egw_exit();
 			exit;
 		}
 		

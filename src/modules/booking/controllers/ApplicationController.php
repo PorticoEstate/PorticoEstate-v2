@@ -367,11 +367,12 @@ class ApplicationController
 	 * @OA\Get(
 	 *     path="/booking/applications/{id}/dates",
 	 *     summary="Get application dates with collision info",
+	 *     description="collision: any active element overlaps the requested time, the application's own included. associations: the application's elements placed on the row, also after their time was changed. collision_foreign / collision_foreign_details: active elements other than the row's own that overlap what the row holds (its active elements' times, else the requested time).",
 	 *     tags={"Applications"},
 	 *     @OA\Parameter(name="id", in="path", required=true, description="Application ID", @OA\Schema(type="integer")),
 	 *     @OA\Response(
 	 *         response=200,
-	 *         description="List of dates with resource and collision data",
+	 *         description="List of dates with resource, placed element and collision data",
 	 *         @OA\JsonContent(type="array", @OA\Items(type="object"))
 	 *     ),
 	 *     @OA\Response(response=400, description="Missing application ID"),
@@ -397,16 +398,23 @@ class ApplicationController
 				$resources = $this->repo->fetchResources($appId);
 				$resourceIds = array_column($resources, 'id');
 				$resourceNameMap = $this->repo->getResourceNames($resourceIds);
+				$placedRows = $this->service->placeDateElements($appId, $dates, $resourceIds);
 
 				foreach ($dates as $date) {
 					$collision = $this->repo->hasCollision($resourceIds, $date['from_'], $date['to_']);
+					$placed = $placedRows[(int) $date['id']];
 					$dateModel = new Date($date);
 					$serialized = $dateModel->serialize();
 					$serialized['resources'] = $resourceIds;
 					$serialized['resource_names'] = implode(', ', array_intersect_key($resourceNameMap, array_flip($resourceIds)));
 					$serialized['application_id'] = $appId;
 					$serialized['application_name'] = $app['name'] ?? '';
+					// Any active element on the requested time, the application's own included
 					$serialized['collision'] = $collision;
+					// The row's own elements, and what else collides with what the row holds
+					$serialized['associations'] = $placed['associations'];
+					$serialized['collision_foreign'] = !empty($placed['collision_foreign_details']);
+					$serialized['collision_foreign_details'] = $placed['collision_foreign_details'];
 					$combinedDates[] = $serialized;
 				}
 			}

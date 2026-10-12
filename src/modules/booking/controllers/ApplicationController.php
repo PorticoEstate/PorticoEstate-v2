@@ -891,7 +891,10 @@ class ApplicationController
 		}
 
 		try {
-			$success = $this->repo->deactivateAssociation($type, $assocId);
+			// Only an element of this application or a related one, the set the
+			// page lists (showAssociations); anything else is not found from here
+			$relatedInfo = $this->repo->getRelatedApplications($id);
+			$success = $this->repo->deactivateAssociation($type, $assocId, $relatedInfo['application_ids']);
 			if (!$success) {
 				return ResponseHelper::sendErrorResponse(['error' => 'Association not found'], 404);
 			}
@@ -927,7 +930,9 @@ class ApplicationController
 		}
 
 		try {
-			$success = $this->repo->reactivateAssociation($type, $assocId);
+			// Same scope as deleteAssociation
+			$relatedInfo = $this->repo->getRelatedApplications($id);
+			$success = $this->repo->reactivateAssociation($type, $assocId, $relatedInfo['application_ids']);
 			if (!$success) {
 				return ResponseHelper::sendErrorResponse(['error' => 'Association not found'], 404);
 			}

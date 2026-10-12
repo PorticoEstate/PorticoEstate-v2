@@ -1,4 +1,5 @@
 <?php
+use App\Database\Db;
 use App\modules\phpgwapi\services\Settings;
 
 	/***************************************************************************\
@@ -65,16 +66,7 @@ use App\modules\phpgwapi\services\Settings;
 		function __construct()
 		{
 			$this->phpgwapi_common = new \phpgwapi_common();
-			if (isset($GLOBALS['phpgw_setup']->db) && is_object($GLOBALS['phpgw_setup']->db))
-			{
-				$this->db = clone($GLOBALS['phpgw_setup']->db);
-			}
-			else
-			{
-//				$this->db = clone($GLOBALS['phpgw']->db);
-				$this->db = createobject('felamimail.egw_db');
-			}
-//			$this->db->set_app('emailadmin');
+			$this->db = Db::getInstance();
 		}
 
 		/**
@@ -113,16 +105,67 @@ use App\modules\phpgwapi\services\Settings;
 			return $vals;
 		}
 
+		private function mapDbColumns(array $values): array
+		{
+			$mapped = $this->vals2db($values);
+			foreach (array_keys($mapped) as $column)
+			{
+				if (!array_key_exists($column, $this->db_cols))
+				{
+					unset($mapped[$column]);
+				}
+			}
+			return $mapped;
+		}
+
+		private function fetchProfileId(string $where, array $parameters): ?int
+		{
+			$statement = $this->db->prepare(
+				"SELECT ea_profile_id FROM {$this->table} WHERE {$where} ORDER BY ea_order"
+			);
+			$statement->execute($parameters);
+			$id = $statement->fetchColumn();
+			return $id === false ? null : (int) $id;
+		}
+
 		function updateProfile($_globalSettings, $_smtpSettings=array(), $_imapSettings=array())
 		{
 			$profileID = (int) $_globalSettings['profileID'];
 			unset($_globalSettings['profileID']);
+			$values = $this->mapDbColumns($_smtpSettings + $_globalSettings + $_imapSettings);
+			if (!$values) return $profileID;
 
-			$where = $profileID ? array('ea_profile_id' => $profileID) : false;
+			$parameters = [];
+			if ($profileID)
+			{
+				$assignments = [];
+				foreach ($values as $column => $value)
+				{
+					$placeholder = ':value' . count($parameters);
+					$assignments[] = $column . ' = ' . $placeholder;
+					$parameters[$placeholder] = $value;
+				}
+				$parameters[':profile_id'] = $profileID;
+				$statement = $this->db->prepare(
+					"UPDATE {$this->table} SET " . implode(', ', $assignments) . ' WHERE ea_profile_id = :profile_id'
+				);
+				$statement->execute($parameters);
+				return $profileID;
+			}
 
-			$this->db->insert($this->table,$this->vals2db($_smtpSettings+$_globalSettings+$_imapSettings),$where,__LINE__,__FILE__, 'emailadmin');
-
-			return $profileID ? $profileID : $this->db->get_last_insert_id($this->table,'ea_profile_id');
+			$columns = array_keys($values);
+			$placeholders = [];
+			foreach ($values as $value)
+			{
+				$placeholder = ':value' . count($parameters);
+				$placeholders[] = $placeholder;
+				$parameters[$placeholder] = $value;
+			}
+			$statement = $this->db->prepare(
+				"INSERT INTO {$this->table} (" . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')'
+			);
+			$statement->execute($parameters);
+			return (int) $this->db->get_last_insert_id($this->table, 'ea_profile_id');
 		}
 
 		function addProfile($_globalSettings, $_smtpSettings, $_imapSettings)
@@ -134,76 +177,75 @@ use App\modules\phpgwapi\services\Settings;
 
 		function deleteProfile($_profileID)
 		{
-			$this->db->delete($this->table,array('ea_profile_id' => $_profileID),__LINE__ , __FILE__);
+			$statement = $this->db->prepare("DELETE FROM {$this->table} WHERE ea_profile_id = :profile_id");
+			$statement->execute([':profile_id' => (int) $_profileID]);
 		}
 
 		function getProfile($_profileID, $_fieldNames)
 		{
-			$_fieldNames = array_keys($this->vals2db(array_flip($_fieldNames)));
-			$this->db->select($this->table,$_fieldNames,array('ea_profile_id' => $_profileID), __LINE__, __FILE__);
-			
-			if (($data = $this->db->row(true))) {
-				return $this->db2vals($data);
-			}
-			return $data;
+			$columns = array_keys($this->mapDbColumns(array_fill_keys((array) $_fieldNames, null)));
+			if (!$columns) return false;
+			$statement = $this->db->prepare(
+				"SELECT " . implode(', ', $columns) . " FROM {$this->table} WHERE ea_profile_id = :profile_id"
+			);
+			$statement->execute([':profile_id' => (int) $_profileID]);
+			$data = $statement->fetch(\PDO::FETCH_ASSOC);
+			return $data ? $this->db2vals($data) : false;
 		}
 		
 		function getUserProfile($_appName, $_groups, $_user = NULL)
 		{
 			if(empty($_appName) || !is_array($_groups))
 				return false;
-			if (!empty($_user)) {	
-				$where = $this->db->expression(
-					$this->table,'(',
-					array('ea_appname'=>$_appName),
-					' OR ea_appname IS NULL or ea_appname = \'\') and ',
-					'(',
-					array('ea_group'=>$_groups),
-					' OR ea_group IS NULL or ea_group = \'\') and ',
-					'(',
-					array('ea_user'=>$_user),
-					' OR ea_user IS NULL or ea_user = \'0\' or ea_user = \'\')'
-				);
-			} else {
-				$where = $this->db->expression(
-					$this->table,'(',
-					array('ea_appname'=>$_appName),
-					' OR ea_appname IS NULL or ea_appname = \'\') and ',
-					'(',
-					array('ea_group'=>$_groups),
-					' OR ea_group IS NULL or ea_group = \'\')'
-				);
+			$groupIds = array_values(array_map('intval', $_groups));
+			if (!$groupIds) $groupIds = [0];
+			$groupPlaceholders = [];
+			$parameters = [':app_name' => $_appName];
+			foreach ($groupIds as $index => $groupId)
+			{
+				$placeholder = ':group_' . $index;
+				$groupPlaceholders[] = $placeholder;
+				$parameters[$placeholder] = $groupId;
+			}
+			$where = '(ea_appname = :app_name OR ea_appname IS NULL OR ea_appname = \'\')'
+				. ' AND (ea_group IN (' . implode(', ', $groupPlaceholders) . ') OR ea_group IS NULL OR ea_group = \'\')';
+			if (!empty($_user))
+			{
+				$where .= ' AND (ea_user = :user_id OR ea_user IS NULL OR ea_user = 0 OR ea_user = \'\')';
+				$parameters[':user_id'] = (int) $_user;
 			}
 			$anyValues = 0;
+			$globalDefaults = [];
 			// retrieve the Global/Overall Settings
-			$this->db->select($this->table,'ea_profile_id',$where, __LINE__, __FILE__, false, 'ORDER BY ea_order', false, 1);
-			if (($data = $this->db->row(true))) {
-				$globalDefaults = $this->getProfile($data['ea_profile_id'], $this->db_cols);
+			$profileId = $this->fetchProfileId($where, $parameters);
+			if ($profileId) {
+				$globalDefaults = $this->getProfile($profileId, $this->db_cols);
 				$anyValues++;
 			}
 			// retrieve application settings if set
 			if (strlen($_appName)>0) {
-				$this->db->select($this->table,'ea_profile_id',$this->db->expression($this->table,'(',array('ea_appname'=>$_appName),' and ea_active=1)'), __LINE__, __FILE__, false, 'ORDER BY ea_order', false, 1);
-				if (($data = $this->db->row(true))) {
-					$appDefaults = $this->getProfile($data['ea_profile_id'], $this->db_cols);
+				$appId = $this->fetchProfileId('ea_appname = :app_name AND ea_active = 1', [':app_name' => $_appName]);
+				if ($appId) {
+					$appDefaults = $this->getProfile($appId, $this->db_cols);
 					$globalDefaults = self::mergeProfileData($globalDefaults, $appDefaults);
 					$anyValues++;
 				}
 			}
 			// retrieve primary-group settings if set
-			if (isset(Settings::getInstance()->get('user')['account_primary_group']) && is_array($_groups) && $_groups[1] == Settings::getInstance()->get('user')['account_primary_group']) {
-				$this->db->select($this->table,'ea_profile_id',$this->db->expression($this->table,'(',array('ea_group'=>$_groups[1]),' and ea_active=1)'), __LINE__, __FILE__, false, 'ORDER BY ea_order', false, 1);
-				if (($data = $this->db->row(true))) {
-					$groupDefaults = $this->getProfile($data['ea_profile_id'], $this->db_cols);
+			$primaryGroup = Settings::getInstance()->get('user')['account_primary_group'] ?? null;
+			if ($primaryGroup && isset($_groups[1]) && (int) $_groups[1] === (int) $primaryGroup) {
+				$groupId = $this->fetchProfileId('ea_group = :group_id AND ea_active = 1', [':group_id' => (int) $_groups[1]]);
+				if ($groupId) {
+					$groupDefaults = $this->getProfile($groupId, $this->db_cols);
 					$globalDefaults = self::mergeProfileData($globalDefaults, $groupDefaults);
 					$anyValues++;
 				}
 			}
 			// retrieve usersettings if set
 			if (!empty($_user) && $_user != 0) {
-				$this->db->select($this->table,'ea_profile_id',$this->db->expression($this->table,'(',array('ea_user'=>$_user),' and ea_active=1)'), __LINE__, __FILE__, false, 'ORDER BY ea_order', false, 1);
-				if (($data = $this->db->row(true))) {
-					$userDefaults = $this->getProfile($data['ea_profile_id'], $this->db_cols);
+				$userId = $this->fetchProfileId('ea_user = :user_id AND ea_active = 1', [':user_id' => (int) $_user]);
+				if ($userId) {
+					$userDefaults = $this->getProfile($userId, $this->db_cols);
 					$globalDefaults = self::mergeProfileData($globalDefaults, $userDefaults);
 					$anyValues++;
 				}
@@ -261,21 +303,26 @@ use App\modules\phpgwapi\services\Settings;
 		
 		function getProfileList($_profileID=0,$_defaultProfile=false)
 		{
-			$where = false;
+			$where = '';
+			$parameters = [];
 			if ((int) $_profileID)
 			{
-				$where = array('ea_profile_id' => $_profileID);
+				$where = 'ea_profile_id = :profile_id';
+				$parameters[':profile_id'] = (int) $_profileID;
 			}
 			elseif ($_defaultProfile)
 			{
-				$where['ea_appname'] = '';
-				$where['ea_group'] = 0;
-				$where['ea_user'] = 0;
+				$where = 'ea_appname = :app_name AND ea_group = 0 AND ea_user = 0';
+				$parameters[':app_name'] = '';
 			}			
-			$this->db->select($this->table,'*',$where, __LINE__,__FILE__,false,(int) $_profileID ? '' : 'ORDER BY ea_order');
-
-			$serverList = false;
-			while (($row = $this->db->row(true)))
+			$sql = "SELECT * FROM {$this->table}" . ($where !== '' ? ' WHERE ' . $where : '')
+				. ((int) $_profileID ? '' : ' ORDER BY ea_order');
+			$statement = $this->db->prepare($sql);
+			$statement->execute($parameters);
+			$rows = $statement->fetchAll(\PDO::FETCH_ASSOC);
+			if (!$rows) return false;
+			$serverList = [];
+			foreach ($rows as $row)
 			{
 				$serverList[] = $this->db2vals($row);
 			}
@@ -417,26 +464,24 @@ use App\modules\phpgwapi\services\Settings;
 			// when using sql account storage
 			if(Settings::getInstance()->get('server')['account_repository'] == 'sql')
 			{
-				$this->db->update('egw_accounts',array(
-						'account_email'	=> $_accountData["mailLocalAddress"]
-					),
-					array(
-						'account_id'	=> $_accountID
-					),__LINE__,__FILE__
-				);
+				$statement = $this->db->prepare('UPDATE egw_accounts SET account_email = :email WHERE account_id = :account_id');
+				$statement->execute([
+					':email' => $_accountData['mailLocalAddress'],
+					':account_id' => (int) $_accountID,
+				]);
 			}
 			return true;
 		}
 		
 		function setOrder($_order)
 		{
+			$statement = $this->db->prepare("UPDATE {$this->table} SET ea_order = :order WHERE ea_profile_id = :profile_id");
 			foreach($_order as $order => $profileID)
 			{
-				$this->db->update($this->table,array(
-					'ea_order'  => $order,
-				),array(
-					'ea_profile_id' => $profileID,
-				),__LINE__, __FILE__);
+				$statement->execute([
+					':order' => (int) $order,
+					':profile_id' => (int) $profileID,
+				]);
 			}
 		}
 	}

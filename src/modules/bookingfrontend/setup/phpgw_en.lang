@@ -1141,3 +1141,5 @@ withdraw_whole_application	bookingfrontend	en	Withdraw the whole application
 withdraw_whole_application_help	bookingfrontend	en	Withdraws the application and every reserved time in it, not only the time you selected.
 confirm_withdraw_whole_application_description	bookingfrontend	en	The application is withdrawn and every reserved time in it is released. Number of reserved times: {{count}}. This cannot be undone.
 withdraw_whole_application_failed	bookingfrontend	en	The application could not be withdrawn. Please try again.
+withdraw_whole_application_help_no_selection	bookingfrontend	en	Withdraws the application and every reserved time in it.
+cancel_whole_application_help_no_selection	bookingfrontend	en	Cancels the application and every reserved time in it.

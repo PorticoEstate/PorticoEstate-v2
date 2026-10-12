@@ -933,17 +933,23 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
             : null;
     const withdrawalDisabled = !!withdrawalBlockedReason;
     // Approved applications are "cancelled", not-yet-approved ones are "withdrawn" — every
-    // text of the whole-application action carries that verb.
+    // text of the whole-application action carries that verb. The help only says "not only the
+    // time you selected" when a time was selected (the calendar modal's highlight); on Min side
+    // nothing is.
     const wholeCancelText = isAccepted
         ? {
             label: t('bookingfrontend.cancel_whole_application'),
-            help: t('bookingfrontend.cancel_whole_application_help'),
+            help: t(props.highlight
+                ? 'bookingfrontend.cancel_whole_application_help'
+                : 'bookingfrontend.cancel_whole_application_help_no_selection'),
             confirmKey: 'bookingfrontend.confirm_cancel_whole_application_description',
             failed: t('bookingfrontend.cancel_whole_application_failed'),
         }
         : {
             label: t('bookingfrontend.withdraw_whole_application'),
-            help: t('bookingfrontend.withdraw_whole_application_help'),
+            help: t(props.highlight
+                ? 'bookingfrontend.withdraw_whole_application_help'
+                : 'bookingfrontend.withdraw_whole_application_help_no_selection'),
             confirmKey: 'bookingfrontend.confirm_withdraw_whole_application_description',
             failed: t('bookingfrontend.withdraw_whole_application_failed'),
         };

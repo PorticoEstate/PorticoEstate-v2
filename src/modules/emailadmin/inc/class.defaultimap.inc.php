@@ -321,6 +321,32 @@ class defaultimap
 
 		return $mailboxString;
 	}
+
+	function getMailboxString($_folderName = '')
+	{
+		$host = (string) ($this->host ?? '');
+		$port = (int) ($this->port ?? 143);
+		$flags = '/imap';
+		if ((int) $this->encryption === 3)
+		{
+			$flags .= '/ssl';
+		}
+		elseif ((int) $this->encryption === 1 || (int) $this->encryption === 2)
+		{
+			$flags .= '/tls';
+		}
+		else
+		{
+			$flags .= '/notls';
+		}
+		if ($this->validatecert === false)
+		{
+			$flags .= '/novalidate-cert';
+		}
+
+		return sprintf('{%s:%d%s}%s', $host, $port, $flags, (string) $_folderName);
+	}
+
 	/**
 	 * get list of namespaces
 	 *

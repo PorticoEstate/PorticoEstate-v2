@@ -102,7 +102,7 @@ class pleskimap extends defaultimap
 			$this->allways_create_mailbox
 		);
 
-		if (!$info['SUCCESS']) return false;
+		if (!is_array($info) || empty($info['SUCCESS'])) return false;
 
 		if ($forwards && !$this->allways_create_mailbox) return true;	// no mailbox created, only a forward
 
@@ -156,7 +156,8 @@ class pleskimap extends defaultimap
 	{
 		//echo "<p>pleskimap::getUserData('$accountID')</p>\n";
 
-		if (!($info = $this->plesk_mail('info', $accountID))) return false;
+		$info = $this->plesk_mail('info', $accountID);
+		if (!is_array($info)) return false;
 		//_debug_array($info);
 
 		$data = array(
@@ -192,13 +193,12 @@ class pleskimap extends defaultimap
 			$accountData['mailAlternateAddress'] ? $accountData['mailAlternateAddress'] : array(),
 			$accountData['mailRoutingAddress'] ? $accountData['mailRoutingAddress'] : array(),
 			empty($accountData['deliveryMode']),
-			1024 * (float)$accountData['quotaLimit'],
-			$accountData['accountStatus'] == 'active'
+			1024 * (float)$accountData['quotaLimit']
 		);
 
-		if (!$info['SUCCSESS'])
+		if (!is_array($info) || empty($info['SUCCSESS']))
 		{
-			if ($info) $this->error = implode(', ', $info);
+			if (is_array($info)) $this->error = implode(', ', $info);
 			return false;
 		}
 		return true;
@@ -363,9 +363,14 @@ class pleskimap extends defaultimap
 		$defaultDomain = $this->profileData['defaultDomain'] ? $this->profileData['defaultDomain'] :
 			Settings::getInstance()->get('server')['mail_suffix'];
 
-		if ($action == 'update' && !($info = $this->plesk_mail('info', $account)))
+		$info = null;
+		if ($action == 'update')
 		{
-			$action = 'create';	// mail-account does not yet exist --> create it
+			$info = $this->plesk_mail('info', $account);
+			if (!is_array($info))
+			{
+				$action = 'create';	// mail-account does not yet exist --> create it
+			}
 		}
 		$localEmail = $account_lid . '@' . $defaultDomain;
 		$script = $this->psa_mail_script . ' --' . $action . ' ' . $localEmail;
@@ -400,7 +405,7 @@ class pleskimap extends defaultimap
 			{
 				if (!is_null($aliases))
 				{
-					$existing_aliases = explode(' ', $info['Alias(es)']);	// without domain!
+					$existing_aliases = explode(' ', (string) ($info['Alias(es)'] ?? ''));	// without domain!
 					$delete_aliases = array();
 					foreach ($existing_aliases as $alias)
 					{

@@ -2504,6 +2504,7 @@
 			postJsonBody(apiUrl + '/change-requests/' + encodeURIComponent(req.id) + '/' + (accept ? 'accept' : 'reject'), {}).then(function (result) {
 				closeModal(dialogId);
 				var done = !accept ? lang('changeRejected')
+					: result && result.application_date_shared ? lang('changeAppliedSharedApplicationDate')
 					: (result && result.application_date_id == null ? lang('changeAppliedWithoutApplicationDate') : lang('changeAccepted'));
 				showToast(done);
 				setTimeout(function () { window.location.reload(); }, 800);

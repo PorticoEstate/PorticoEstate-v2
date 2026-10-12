@@ -15,9 +15,10 @@ use RuntimeException;
  * for a time outside the one approved; the request is stored on the element
  * and the application keeps its status. "Godta endring" moves the SAME event to
  * the requested time - nothing is deleted or recreated - and keeps its date row
- * and the application's date row on that time; "Avslå endring" keeps the old
- * time. Neither writes a comment or sends mail. Only event requests can be
- * accepted; element_type admits allocations for later.
+ * and, when the event is alone on it, the application's date row on that
+ * time; "Avslå endring" keeps the old time.
+ * Neither writes a comment or sends mail. Only event requests can be accepted;
+ * element_type admits allocations for later.
  */
 class ApplicationChangeRequestService
 {
@@ -85,7 +86,11 @@ class ApplicationChangeRequestService
 	 * collides with anything on the application's resources other than the
 	 * elements of the event's own slot (the #1438 rule the date rows show).
 	 *
-	 * @return array{status:string, event_id:int, from_:string, to_:string, application_date_id:?int, price_review:bool}
+	 * The application's date row moves with the event when the event is the
+	 * only active element on it; a row it shares keeps its time
+	 * (application_date_shared), and an event on no row moves alone.
+	 *
+	 * @return array{status:string, event_id:int, from_:string, to_:string, application_date_id:?int, application_date_shared:bool, price_review:bool}
 	 * @throws RuntimeException 404 unknown request, 409 refused, 422 not an event
 	 */
 	public function accept(int $appId, int $requestId, int $accountId): array
@@ -137,7 +142,10 @@ class ApplicationChangeRequestService
 				throw new RuntimeException(lang('booking.change_request_dates_ambiguous'), 409);
 			}
 			$this->requests->updateEventTime($eventId, $newFrom, $newTo);
-			if ($slot !== null) {
+			// A date row holding other active elements stays on their time: the
+			// event leaves it and is placed apart, like any moved element.
+			$moveDate = $slot !== null && !$this->holdsOtherActiveElement($slot['elements'], $eventId);
+			if ($moveDate) {
 				$this->requests->updateApplicationDate($slot['date_id'], $applicationId, $newFrom, $newTo);
 				$this->updateApplicationFrom($applicationId);
 			}
@@ -158,12 +166,13 @@ class ApplicationChangeRequestService
 		$this->notifyWebhook($eventId, $legacyEvent['resources'] ?? []);
 
 		return [
-			'status'              => 'ok',
-			'event_id'            => $eventId,
-			'from_'               => $newFrom,
-			'to_'                 => $newTo,
-			'application_date_id' => $slot['date_id'] ?? null,
-			'price_review'        => in_array($eventId, $this->requests->findEventsWithHourlyPrice([$eventId]), true),
+			'status'                  => 'ok',
+			'event_id'                => $eventId,
+			'from_'                   => $newFrom,
+			'to_'                     => $newTo,
+			'application_date_id'     => $moveDate ? $slot['date_id'] : null,
+			'application_date_shared' => $slot !== null && !$moveDate,
+			'price_review'            => in_array($eventId, $this->requests->findEventsWithHourlyPrice([$eventId]), true),
 		];
 	}
 
@@ -238,6 +247,21 @@ class ApplicationChangeRequestService
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Whether a date row's elements (findSlot) hold an active element other than
+	 * the event. An inactive one does not keep the row on its time.
+	 */
+	private function holdsOtherActiveElement(array $elements, int $eventId): bool
+	{
+		foreach ($elements as $element) {
+			$isEvent = $element['type'] === 'event' && (int) $element['id'] === $eventId;
+			if (!$isEvent && (int) $element['active'] === 1) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

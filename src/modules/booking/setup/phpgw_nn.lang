@@ -1301,3 +1301,4 @@ change_request_stale	booking	nn	Arrangementet er endra etter førespurnaden
 change_request_element_inactive	booking	nn	Arrangementet er ikkje aktivt
 change_request_dates_ambiguous	booking	nn	Fann ikkje datoraden til arrangementet
 change_applied_without_application_date	booking	nn	Endringa er lagra. Ingen søknadsdato høyrde til arrangementet, så datoane i søknaden er uendra.
+change_applied_shared_application_date	booking	nn	Endringa er lagra. Søknadsdatoen gjeld òg andre element, så datoane i søknaden er uendra.

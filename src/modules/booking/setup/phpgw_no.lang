@@ -1327,3 +1327,4 @@ change_request_stale	booking	no	Arrangementet er endret etter forespørselen
 change_request_element_inactive	booking	no	Arrangementet er ikke aktivt
 change_request_dates_ambiguous	booking	no	Fant ikke arrangementets datorad
 change_applied_without_application_date	booking	no	Endringen er lagret. Ingen søknadsdato hørte til arrangementet, så søknadens datoer er uendret.
+change_applied_shared_application_date	booking	no	Endringen er lagret. Søknadsdatoen gjelder også andre elementer, så søknadens datoer er uendret.

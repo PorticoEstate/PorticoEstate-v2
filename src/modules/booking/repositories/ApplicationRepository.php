@@ -478,7 +478,7 @@ class ApplicationRepository
 	 * Return detail rows for every conflicting item in a time range.
 	 * Similar to hasCollision() but returns type/name/times instead of bool.
 	 *
-	 * @return array<array{id:int, type:string, name:string, from_:string, to_:string}>
+	 * @return array<array{id:int, type:string, name:string, from_:string, to_:string, application_id:?int}>
 	 */
 	public function getCollisionDetails(array $resourceIds, string $from, string $to): array
 	{
@@ -489,7 +489,7 @@ class ApplicationRepository
 
 		$sql = "
 			SELECT a.id, 'allocation' AS type,
-			       COALESCE(o.name, '') AS name, a.from_, a.to_
+			       COALESCE(o.name, '') AS name, a.from_, a.to_, a.application_id
 			FROM bb_allocation a
 			JOIN bb_allocation_resource ar ON a.id = ar.allocation_id
 			LEFT JOIN bb_organization o ON a.organization_id = o.id
@@ -497,14 +497,14 @@ class ApplicationRepository
 			  AND a.from_ < :to1 AND a.to_ > :from1
 			UNION ALL
 			SELECT e.id, 'event' AS type,
-			       COALESCE(e.name, '') AS name, e.from_, e.to_
+			       COALESCE(e.name, '') AS name, e.from_, e.to_, e.application_id
 			FROM bb_event e
 			JOIN bb_event_resource er ON e.id = er.event_id
 			WHERE er.resource_id IN ({$rids}) AND e.active = 1
 			  AND e.from_ < :to2 AND e.to_ > :from2
 			UNION ALL
 			SELECT b.id, 'booking' AS type,
-			       COALESCE(g.name, '') AS name, b.from_, b.to_
+			       COALESCE(g.name, '') AS name, b.from_, b.to_, b.application_id
 			FROM bb_booking b
 			JOIN bb_booking_resource br ON b.id = br.booking_id
 			LEFT JOIN bb_group g ON b.group_id = g.id
@@ -521,30 +521,24 @@ class ApplicationRepository
 		return $stmt->fetchAll(PDO::FETCH_ASSOC);
 	}
 
-	// ── Existing allocations for an application ────────────────────────
+	// ── Recurrence groups of an application's allocations ──────────────
 
 	/**
-	 * Fetch active allocations already created for this application.
-	 * Keyed by "Y-m-d H:i_Y-m-d H:i" for quick lookup.
+	 * The recurrence group of each of the application's allocations, active or
+	 * not, keyed by allocation id; null for an allocation in no group.
 	 *
-	 * @return array<string, array{id:int, from_:string, to_:string}>
+	 * @return array<int, ?int>
 	 */
-	public function fetchExistingAllocations(int $applicationId): array
+	public function fetchAllocationGroupMap(int $applicationId): array
 	{
 		$stmt = $this->db->prepare(
-			"SELECT id, from_, to_
-			 FROM bb_allocation
-			 WHERE application_id = :id AND active = 1
-			 ORDER BY from_"
+			"SELECT id, allocation_group_id FROM bb_allocation WHERE application_id = :id"
 		);
 		$stmt->execute([':id' => $applicationId]);
-		$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 		$map = [];
-		foreach ($rows as $row) {
-			$key = date('Y-m-d H:i', strtotime($row['from_']))
-				. '_' . date('Y-m-d H:i', strtotime($row['to_']));
-			$map[$key] = $row;
+		foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+			$map[(int) $row['id']] = $row['allocation_group_id'] !== null ? (int) $row['allocation_group_id'] : null;
 		}
 		return $map;
 	}

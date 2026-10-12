@@ -196,7 +196,7 @@ require_once __DIR__ . '/../../email/inc/imap_config.php';
 		}
 		
 		/**
-		 * converts a foldername from current system charset to UTF7
+		 * converts a UTF-8 foldername to IMAP UTF7
 		 *
 		 * @param string $_folderName
 		 * @return string the encoded foldername
@@ -204,7 +204,7 @@ require_once __DIR__ . '/../../email/inc/imap_config.php';
 		function encodeFolderName($_folderName)
 		{
 			if($this->mbAvailable) {
-				return mb_convert_encoding($_folderName, "UTF7-IMAP", $GLOBALS['phpgw']->translation->charset());
+				return mb_convert_encoding($_folderName, 'UTF7-IMAP', 'UTF-8');
 			}
 
 			// if not

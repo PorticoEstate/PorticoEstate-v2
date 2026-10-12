@@ -20,7 +20,7 @@
 		function __construct()
 		{
 			$this->bo		= new emailadmin_bo();
-/*			$this->bofelamimail	=& CreateObject('felamimail.bofelamimail',$GLOBALS['phpgw']->translation->charset());
+/*			$this->bofelamimail	=& CreateObject('felamimail.bofelamimail');
 			$this->uiwidgets	=& CreateObject('felamimail.uiwidgets');
 			$this->bofelamimail->openConnection();
 

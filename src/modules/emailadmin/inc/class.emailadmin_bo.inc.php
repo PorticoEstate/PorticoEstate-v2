@@ -16,6 +16,7 @@ require_once __DIR__ . '/../../email/inc/imap_config.php';
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
+use App\modules\phpgwapi\services\Hooks;
 
 class emailadmin_bo
 {
@@ -819,7 +820,7 @@ class emailadmin_bo
 			// calling a hook to allow other apps to monitor the changes
 			$_formData['account_id'] = $_accountID;
 			$_formData['location'] = 'editaccountemail';
-			$GLOBALS['phpgw']->hooks->process($_formData);
+			(new Hooks())->process($_formData);
 
 			return true;
 			$this->sessionData = array();

@@ -20,13 +20,7 @@ class postfixdbmailuser extends defaultsmtp
 {
 	function addAccount($_hookValues)
 	{
-		$mailLocalAddress = $_hookValues['account_email'] ? $_hookValues['account_email'] :
-			$this->phpgwapi_common->email_address(
-				$_hookValues['account_firstname'],
-				$_hookValues['account_lastname'],
-				$_hookValues['account_lid'],
-				$this->defaultDomain
-			);
+		$mailLocalAddress = $this->getAccountEmailAddressFromHook($_hookValues);
 
 		$ds = $this->phpgwapi_common->ldapConnect();
 

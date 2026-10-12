@@ -71,6 +71,22 @@ class defaultsmtp
 		);
 	}
 
+	function getAccountEmailAddressFromHook(array $_hookValues): string
+	{
+		$emailAddress = trim((string) ($_hookValues['account_email'] ?? ''));
+		if ($emailAddress !== '')
+		{
+			return $emailAddress;
+		}
+
+		$accountName = trim((string) ($_hookValues['account_lid'] ?? ''));
+		if (filter_var($accountName, FILTER_VALIDATE_EMAIL))
+		{
+			return $accountName;
+		}
+		return $accountName !== '' ? $accountName . '@' . $this->defaultDomain : '';
+	}
+
 	function getUserData($_uidnumber)
 	{
 		$userData = array();

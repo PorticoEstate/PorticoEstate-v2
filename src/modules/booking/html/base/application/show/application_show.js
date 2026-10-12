@@ -308,6 +308,11 @@
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(data || {})
 		}).then(function (res) {
+			// An expired session is redirected to the login page, which fetch follows
+			// silently — the body is then HTML, not JSON
+			if ((res.headers.get('content-type') || '').indexOf('application/json') === -1) {
+				throw new Error(res.redirected ? lang('sessionExpiredLogInAgain') : 'HTTP ' + res.status);
+			}
 			return res.json().then(function (json) {
 				if (!res.ok) throw new Error(json.error || 'HTTP ' + res.status);
 				return json;
@@ -2431,7 +2436,8 @@
 
 		var body = '<div class="booking-field ds-field" data-size="sm">' +
 			'<label class="booking-label ds-label" for="modal-reject-text">' + esc(lang('rejectionReason')) + ' *</label>' +
-			'<textarea id="modal-reject-text" class="booking-input ds-input" rows="4" required></textarea></div>' +
+			'<textarea id="modal-reject-text" class="booking-input ds-input" rows="4" required aria-describedby="modal-reject-error"></textarea>' +
+			'<p id="modal-reject-error" class="booking-validation-message ds-validation-message" data-color="danger" hidden>' + esc(lang('rejectionReasonRequired')) + '</p></div>' +
 			'<div class="booking-field ds-field" data-size="sm"><input type="checkbox" class="booking-input ds-input" id="modal-reject-email" checked>' +
 			'<label class="booking-label ds-label" for="modal-reject-email">' + esc(lang('sendEmailToApplicant')) + '</label></div>';
 		var footer = '<button type="button" class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
@@ -2440,11 +2446,16 @@
 		showModal('reject-dialog', title, body, footer);
 
 		document.getElementById('modal-reject-submit').addEventListener('click', function () {
-			var text = document.getElementById('modal-reject-text').value.trim();
+			var textarea = document.getElementById('modal-reject-text');
+			var text = textarea.value.trim();
+			var error = document.getElementById('modal-reject-error');
+			error.hidden = !!text;
 			if (!text) {
-				document.getElementById('modal-reject-text').focus();
+				textarea.setAttribute('aria-invalid', 'true');
+				textarea.focus();
 				return;
 			}
+			textarea.removeAttribute('aria-invalid');
 			var btn = this;
 			btn.disabled = true;
 			btn.textContent = '...';

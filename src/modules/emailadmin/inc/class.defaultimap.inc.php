@@ -1,384 +1,412 @@
 <?php
 require_once __DIR__ . '/../../email/inc/imap_config.php';
-	use App\modules\phpgwapi\services\Cache;
 
-	/***************************************************************************\
-	* EGroupWare - EMailAdmin                                                   *
-	* http://www.egroupware.org                                                 *
-	* Written by : Lars Kneschke [lkneschke@linux-at-work.de]                   *
-	* -------------------------------------------------                         *
-	* This program is free software; you can redistribute it and/or modify it   *
-	* under the terms of the GNU General Public License as published by the     *
-	* Free Software Foundation; either version 2 of the License, or (at your    *
-	* option) any later version.                                                *
+use App\modules\phpgwapi\services\Cache;
+
+/***************************************************************************\
+ * EGroupWare - EMailAdmin                                                   *
+ * http://www.egroupware.org                                                 *
+ * Written by : Lars Kneschke [lkneschke@linux-at-work.de]                   *
+ * -------------------------------------------------                         *
+ * This program is free software; you can redistribute it and/or modify it   *
+ * under the terms of the GNU General Public License as published by the     *
+ * Free Software Foundation; either version 2 of the License, or (at your    *
+ * option) any later version.                                                *
 	\***************************************************************************/
-	/* $Id$ */
+/* $Id$ */
 
-	if(!include_once PHPGW_INCLUDE_ROOT.'/felamimail/inc/egw-pear/Net/IMAP.php')
-	{
-		throw new Exception('missing egw-pear package');
-	}
+if (!include_once PHPGW_INCLUDE_ROOT . '/felamimail/inc/egw-pear/Net/IMAP.php')
+{
+	throw new Exception('missing egw-pear package');
+}
 
-	define('IMAP_NAMESPACE_PERSONAL', 'personal');
-	define('IMAP_NAMESPACE_OTHERS'	, 'others');
-	define('IMAP_NAMESPACE_SHARED'	, 'shared');
-	define('IMAP_NAMESPACE_ALL'	, 'all');
+define('IMAP_NAMESPACE_PERSONAL', 'personal');
+define('IMAP_NAMESPACE_OTHERS', 'others');
+define('IMAP_NAMESPACE_SHARED', 'shared');
+define('IMAP_NAMESPACE_ALL', 'all');
+
+/**
+ * This class holds all information about the imap connection.
+ * This is the base class for all other imap classes.
+ *
+ */
+class defaultimap extends Net_IMAP
+{
+	var $phpgwapi_common;
 
 	/**
-	 * This class holds all information about the imap connection.
-	 * This is the base class for all other imap classes.
+	 * the password to be used for admin connections
 	 *
+	 * @var string
 	 */
-	class defaultimap extends Net_IMAP
+	var $adminPassword;
+
+	/**
+	 * the username to be used for admin connections
+	 *
+	 * @var string
+	 */
+	var $adminUsername;
+
+	/**
+	 * enable encryption
+	 *
+	 * @var bool
+	 */
+	var $encryption;
+
+	/**
+	 * the hostname/ip address of the imap server
+	 *
+	 * @var string
+	 */
+	var $host;
+
+	/**
+	 * the password for the user
+	 *
+	 * @var string
+	 */
+	var $password;
+
+	/**
+	 * the port of the imap server
+	 *
+	 * @var integer
+	 */
+	var $port = 143;
+
+	/**
+	 * the username
+	 *
+	 * @var string
+	 */
+	var $username;
+
+	/**
+	 * the domainname to be used for vmailmgr logins
+	 *
+	 * @var string
+	 */
+	var $domainname = false;
+
+	/**
+	 * validate ssl certificate
+	 *
+	 * @var bool
+	 */
+	var $validatecert;
+
+	/**
+	 * the mailbox delimiter
+	 *
+	 * @var string
+	 */
+	var $mailboxDelimiter = '/';
+
+	/**
+	 * the mailbox prefix. maybe used by uw-imap only?
+	 *
+	 * @var string
+	 */
+	var $mailboxPrefix = '~/mail';
+
+	/**
+	 * is the mbstring extension available
+	 *
+	 * @var unknown_type
+	 */
+	var $mbAvailable;
+
+	/**
+	 * Mailboxes which get automatic created for new accounts (INBOX == '')
+	 *
+	 * @var array
+	 */
+	var $imapLoginType;
+	var $defaultDomain;
+
+
+	/**
+	 * disable internal conversion from/to ut7
+	 * get's used by Net_IMAP
+	 *
+	 * @var array
+	 */
+	var $_useUTF_7 = false;
+
+	/**
+	 * a debug switch
+	 */
+	var $debug = false;
+
+	var $_isConnected, $sessionData, $loginType, $domainName, $isAdminConnection, $loginName, $_connectionErrorObject;
+
+	/**
+	 * the construtor
+	 *
+	 * @return void
+	 */
+	function __construct()
 	{
-		var $phpgwapi_common;
-
-		/**
-		 * the password to be used for admin connections
-		 *
-		 * @var string
-		 */
-		var $adminPassword;
-		
-		/**
-		 * the username to be used for admin connections
-		 *
-		 * @var string
-		 */
-		var $adminUsername;
-		
-		/**
-		 * enable encryption
-		 *
-		 * @var bool
-		 */
-		var $encryption;
-		
-		/**
-		 * the hostname/ip address of the imap server
-		 *
-		 * @var string
-		 */
-		var $host;
-		
-		/**
-		 * the password for the user
-		 *
-		 * @var string
-		 */
-		var $password;
-		
-		/**
-		 * the port of the imap server
-		 *
-		 * @var integer
-		 */
-		var $port = 143;
-
-		/**
-		 * the username
-		 *
-		 * @var string
-		 */
-		var $username;
-
-		/**
-		 * the domainname to be used for vmailmgr logins
-		 *
-		 * @var string
-		 */
-		var $domainname = false;
-
-		/**
-		 * validate ssl certificate
-		 *
-		 * @var bool
-		 */
-		var $validatecert;
-		
-		/**
-		 * the mailbox delimiter
-		 *
-		 * @var string
-		 */
-		var $mailboxDelimiter = '/';
-
-		/**
-		 * the mailbox prefix. maybe used by uw-imap only?
-		 *
-		 * @var string
-		 */
-		var $mailboxPrefix = '~/mail';
-
-		/**
-		 * is the mbstring extension available
-		 *
-		 * @var unknown_type
-		 */
-		var $mbAvailable;
-		
-		/**
-		 * Mailboxes which get automatic created for new accounts (INBOX == '')
-		 *
-		 * @var array
-		 */
-		var $imapLoginType;
-		var $defaultDomain;
-		
-		
-		/**
-		 * disable internal conversion from/to ut7
-		 * get's used by Net_IMAP
-		 *
-		 * @var array
-		 */
-		var $_useUTF_7 = false;
-
-		/**
-		 * a debug switch
-		 */
-		var $debug = false;
-
-		var $_isConnected,$sessionData,$loginType,$domainName, $isAdminConnection,$loginName,$_connectionErrorObject;
-		
-		/**
-		 * the construtor
-		 *
-		 * @return void
-		 */
-		function __construct()
+		$this->phpgwapi_common = new \phpgwapi_common();
+		if (function_exists('mb_convert_encoding'))
 		{
-			$this->phpgwapi_common = new \phpgwapi_common();
-			if (function_exists('mb_convert_encoding')) {
-				$this->mbAvailable = TRUE;
-			}
-
-			$this->restoreSessionData();
-			
-			// construtor for Net_IMAP stuff
-			$this->Net_IMAPProtocol();
-		}
-		
-		/**
-		 * adds a account on the imap server
-		 *
-		 * @param array $_hookValues
-		 * @return bool true on success, false on failure
-		 */
-		function addAccount($_hookValues)
-		{
-			return true;
+			$this->mbAvailable = TRUE;
 		}
 
-		/**
-		 * updates a account on the imap server
-		 *
-		 * @param array $_hookValues
-		 * @return bool true on success, false on failure
-		 */
-		function updateAccount($_hookValues)
+		$this->restoreSessionData();
+
+		// construtor for Net_IMAP stuff
+		$this->Net_IMAPProtocol();
+	}
+
+	/**
+	 * adds a account on the imap server
+	 *
+	 * @param array $_hookValues
+	 * @return bool true on success, false on failure
+	 */
+	function addAccount($_hookValues)
+	{
+		return true;
+	}
+
+	/**
+	 * updates a account on the imap server
+	 *
+	 * @param array $_hookValues
+	 * @return bool true on success, false on failure
+	 */
+	function updateAccount($_hookValues)
+	{
+		return true;
+	}
+
+	/**
+	 * deletes a account on the imap server
+	 *
+	 * @param array $_hookValues
+	 * @return bool true on success, false on failure
+	 */
+	function deleteAccount($_hookValues)
+	{
+		return true;
+	}
+
+	function disconnect()
+	{
+		parent::disconnect();
+		$this->_isConnected = false;
+	}
+
+	/**
+	 * converts a UTF-8 foldername to IMAP UTF7
+	 *
+	 * @param string $_folderName
+	 * @return string the encoded foldername
+	 */
+	function encodeFolderName($_folderName)
+	{
+		if ($this->mbAvailable)
 		{
-			return true;
+			return mb_convert_encoding($_folderName, 'UTF7-IMAP', 'UTF-8');
 		}
 
-		/**
-		 * deletes a account on the imap server
-		 *
-		 * @param array $_hookValues
-		 * @return bool true on success, false on failure
-		 */
-		function deleteAccount($_hookValues)
-		{
-			return true;
-		}
-		
-		function disconnect()
-		{
-			parent::disconnect();
-			$this->_isConnected = false;
-		}
-		
-		/**
-		 * converts a UTF-8 foldername to IMAP UTF7
-		 *
-		 * @param string $_folderName
-		 * @return string the encoded foldername
-		 */
-		function encodeFolderName($_folderName)
-		{
-			if($this->mbAvailable) {
-				return mb_convert_encoding($_folderName, 'UTF7-IMAP', 'UTF-8');
-			}
+		// if not
+		// we can encode only from ISO 8859-1
+		return IMAPManager::imap_utf7_encode($_folderName);
+	}
 
-			// if not
-			// we can encode only from ISO 8859-1
-			return IMAPManager::imap_utf7_encode($_folderName);
-		}
-		
-		/**
-		 * returns the supported capabilities of the imap server
-		 * return false if the imap server does not support capabilities
-		 * 
-		 * @return array the supported capabilites
-		 */
-		function getCapabilities() 
+	/**
+	 * returns the supported capabilities of the imap server
+	 * return false if the imap server does not support capabilities
+	 * 
+	 * @return array the supported capabilites
+	 */
+	function getCapabilities()
+	{
+		if (!is_array($this->sessionData['capabilities'][$this->host]))
 		{
-			if(!is_array($this->sessionData['capabilities'][$this->host])) {
-				return false;
-			}
-			
-			return $this->sessionData['capabilities'][$this->host];
-		}
-		
-		/**
-		 * return the delimiter used by the current imap server
-		 *
-		 * @return string the delimimiter
-		 */
-		function getDelimiter() 
-		{
-			return isset($this->sessionData['delimiter'][$this->host]) ? $this->sessionData['delimiter'][$this->host] : $this->mailboxDelimiter;
-		}
-		
-		/**
-		 * Create transport string
-		 *
-		 * @return string the transportstring
-		 */
-		function _getTransportString() 
-		{
-			if($this->encryption == 2) {
-				$connectionString = "tls://". $this->host;
-			} elseif($this->encryption == 3) {
-				$connectionString = "ssl://". $this->host;
-			} else {
-				// no tls
-				$connectionString = $this->host;
-			}
-		
-			return $connectionString;
+			return false;
 		}
 
-		/**
-		 * Create the options array for SSL/TLS connections
-		 *
-		 * @return string the transportstring
-		 */
-		function _getTransportOptions() 
+		return $this->sessionData['capabilities'][$this->host];
+	}
+
+	/**
+	 * return the delimiter used by the current imap server
+	 *
+	 * @return string the delimimiter
+	 */
+	function getDelimiter()
+	{
+		return isset($this->sessionData['delimiter'][$this->host]) ? $this->sessionData['delimiter'][$this->host] : $this->mailboxDelimiter;
+	}
+
+	/**
+	 * Create transport string
+	 *
+	 * @return string the transportstring
+	 */
+	function _getTransportString()
+	{
+		if ($this->encryption == 2)
 		{
-			if($this->validatecert === false) {
-				if($this->encryption == 2) {
-					 return array(
-						'tls' => array(
-							'verify_peer' => false,
-							'allow_self_signed' => true,
-						)
-					);
-				} elseif($this->encryption == 3) {
-					return array(
-						'ssl' => array(
-							'verify_peer' => false,
-							'allow_self_signed' => true,
-						)
-					);
-				}
-			} else {
-				if($this->encryption == 2) {
-					return array(
-						'tls' => array(
-							'verify_peer' => true,
-							'allow_self_signed' => false,
-						)
-					);
-				} elseif($this->encryption == 3) {
-					return array(
-						'ssl' => array(
-							'verify_peer' => true,
-							'allow_self_signed' => false,
-						)
-					);
-				}
-			}
-		
-			return null;
+			$connectionString = "tls://" . $this->host;
+		}
+		elseif ($this->encryption == 3)
+		{
+			$connectionString = "ssl://" . $this->host;
+		}
+		else
+		{
+			// no tls
+			$connectionString = $this->host;
 		}
 
-		/**
-		 * Create mailbox string from given mailbox-name and user-name
-		 *
-		 * @param string $_folderName='' 
-		 * @return string utf-7 encoded (done in getMailboxName)
-		 */
-		function getUserMailboxString($_username, $_folderName='') 
+		return $connectionString;
+	}
+
+	/**
+	 * Create the options array for SSL/TLS connections
+	 *
+	 * @return string the transportstring
+	 */
+	function _getTransportOptions()
+	{
+		if ($this->validatecert === false)
 		{
-			$nameSpaces = $this->getNameSpaces();
-
-			if(!isset($nameSpaces['others'])) {
-				return false;
-			}
-			
-			$username = $_username;
-
-			if($this->loginType == 'vmailmgr') {
-				$username .= '@'. $this->domainName;
-			}
-
-			$mailboxString = $nameSpaces['others'][0]['name'] . $username . (!empty($_folderName) ? $nameSpaces['others'][0]['delimiter'] . $_folderName : '');
-			
-			return $mailboxString;
-		}
-		/**
-		 * get list of namespaces
-		 *
-		 * @return array array containing information about namespace
-		 */
-		function getNameSpaces() 
-		{
-			if(!$this->_isConnected) {
-				return false;
-			}
-			$retrieveDefault = false;
-			if($this->hasCapability('NAMESPACE')) {
-				$nameSpace = $this->getNamespace();
-				if( PEAR::isError($nameSpace)) {
-					if ($this->debug) error_log("emailadmin::defaultimap->getNameSpaces:".print_r($nameSpace,true));
-					$retrieveDefault = true;
-				} else {
-					$result = array();
-
-					$result['personal']	= $nameSpace['personal'];
-
-					if(is_array($nameSpace['others'])) {
-						$result['others']	= $nameSpace['others'];
-					}
-			
-					if(is_array($nameSpace['shared'])) {
-						$result['shared']	= $nameSpace['shared'];
-					}
-				}
-			} 
-			if (!$this->hasCapability('NAMESPACE') || $retrieveDefault) {
-				$delimiter = $this->getHierarchyDelimiter();
-				if( PEAR::isError($delimiter)) $delimiter = '/';
-	
-				$result['personal']     = array(
-					0 => array(
-						'name'		=> '',
-						'delimiter'	=> $delimiter
+			if ($this->encryption == 2)
+			{
+				return array(
+					'tls' => array(
+						'verify_peer' => false,
+						'allow_self_signed' => true,
 					)
 				);
 			}
-					
-			return $result;
+			elseif ($this->encryption == 3)
+			{
+				return array(
+					'ssl' => array(
+						'verify_peer' => false,
+						'allow_self_signed' => true,
+					)
+				);
+			}
 		}
-		
-		/**
-		 * returns the quota for given foldername
-		 * gets quota for the current user only
-		 *
-		 * @param string $_folderName
-		 * @return string the current quota for this folder
-		 */
+		else
+		{
+			if ($this->encryption == 2)
+			{
+				return array(
+					'tls' => array(
+						'verify_peer' => true,
+						'allow_self_signed' => false,
+					)
+				);
+			}
+			elseif ($this->encryption == 3)
+			{
+				return array(
+					'ssl' => array(
+						'verify_peer' => true,
+						'allow_self_signed' => false,
+					)
+				);
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Create mailbox string from given mailbox-name and user-name
+	 *
+	 * @param string $_folderName='' 
+	 * @return string utf-7 encoded (done in getMailboxName)
+	 */
+	function getUserMailboxString($_username, $_folderName = '')
+	{
+		$nameSpaces = $this->getNameSpaces();
+
+		if (!isset($nameSpaces['others']))
+		{
+			return false;
+		}
+
+		$username = $_username;
+
+		if ($this->loginType == 'vmailmgr')
+		{
+			$username .= '@' . $this->domainName;
+		}
+
+		$mailboxString = $nameSpaces['others'][0]['name'] . $username . (!empty($_folderName) ? $nameSpaces['others'][0]['delimiter'] . $_folderName : '');
+
+		return $mailboxString;
+	}
+	/**
+	 * get list of namespaces
+	 *
+	 * @return array array containing information about namespace
+	 */
+	function getNameSpaces()
+	{
+		if (!$this->_isConnected)
+		{
+			return false;
+		}
+		$retrieveDefault = false;
+		if ($this->hasCapability('NAMESPACE'))
+		{
+			$nameSpace = $this->getNamespace();
+			if (PEAR::isError($nameSpace))
+			{
+				if ($this->debug) error_log("emailadmin::defaultimap->getNameSpaces:" . print_r($nameSpace, true));
+				$retrieveDefault = true;
+			}
+			else
+			{
+				$result = array();
+
+				$result['personal']	= $nameSpace['personal'];
+
+				if (is_array($nameSpace['others']))
+				{
+					$result['others']	= $nameSpace['others'];
+				}
+
+				if (is_array($nameSpace['shared']))
+				{
+					$result['shared']	= $nameSpace['shared'];
+				}
+			}
+		}
+		if (!$this->hasCapability('NAMESPACE') || $retrieveDefault)
+		{
+			$delimiter = $this->getHierarchyDelimiter();
+			if (PEAR::isError($delimiter)) $delimiter = '/';
+
+			$result['personal']     = array(
+				0 => array(
+					'name'		=> '',
+					'delimiter'	=> $delimiter
+				)
+			);
+		}
+
+		return $result;
+	}
+
+	/**
+	 * returns the quota for given foldername
+	 * gets quota for the current user only
+	 *
+	 * @param string $_folderName
+	 * @return string the current quota for this folder
+	 */
 	#	function getQuota($_folderName) 
 	#	{
 	#		if(!is_resource($this->mbox)) {
@@ -394,125 +422,132 @@ require_once __DIR__ . '/../../email/inc/imap_config.php';
 	#
 	#		return false;
 	#	}
-		
-		/**
-		 * return the quota for another user
-		 * used by admin connections only
-		 *
-		 * @param string $_username
-		 * @return string the quota for specified user
-		 */
-		function getQuotaByUser($_username) 
+
+	/**
+	 * return the quota for another user
+	 * used by admin connections only
+	 *
+	 * @param string $_username
+	 * @return string the quota for specified user
+	 */
+	function getQuotaByUser($_username)
+	{
+		$mailboxName = $this->getUserMailboxString($_username);
+		$storageQuota = $this->getStorageQuota($mailboxName);
+
+		if (is_array($storageQuota) && isset($storageQuota['QMAX']))
 		{
-			$mailboxName = $this->getUserMailboxString($_username);
-			$storageQuota = $this->getStorageQuota($mailboxName); 
+			return (int)$storageQuota['QMAX'];
+		}
 
-			if(is_array($storageQuota) && isset($storageQuota['QMAX'])) {
-				return (int)$storageQuota['QMAX'];
-			}
+		return false;
+	}
 
+	/**
+	 * returns information about a user
+	 * currently only supported information is the current quota
+	 *
+	 * @param string $_username
+	 * @return array userdata
+	 */
+	function getUserData($_username)
+	{
+		$this->openConnection(true);
+
+		$userData = array();
+
+		if ($quota = $this->getQuotaByUser($_username))
+		{
+			$userData['quotaLimit'] = $quota / 1024;
+		}
+
+		$this->disconnect();
+
+		return $userData;
+	}
+
+	/**
+	 * opens a connection to a imap server
+	 *
+	 * @param bool $_adminConnection create admin connection if true
+	 *
+	 * @return resource the imap connection
+	 */
+	function openConnection($_adminConnection = false)
+	{
+		unset($this->_connectionErrorObject);
+
+		if ($_adminConnection)
+		{
+			$username	= $this->adminUsername;
+			$password	= $this->adminPassword;
+			$options	= '';
+			$this->isAdminConnection = true;
+		}
+		else
+		{
+			$username	= $this->loginName;
+			$password	= $this->password;
+			$options	= $_options;
+			$this->isAdminConnection = false;
+		}
+
+		$this->setStreamContextOptions($this->_getTransportOptions());
+		$this->setTimeout(20);
+
+		if (PEAR::isError($status = $this->connect($this->_getTransportString(), $this->port, $this->encryption == 1)))
+		{
+			$this->_connectionErrorObject = $status;
 			return false;
 		}
-		
-		/**
-		 * returns information about a user
-		 * currently only supported information is the current quota
-		 *
-		 * @param string $_username
-		 * @return array userdata
-		 */
-		function getUserData($_username) 
-		{
-			$this->openConnection(true);
 
-			$userData = array();
-
-			if($quota = $this->getQuotaByUser($_username)) {
-				$userData['quotaLimit'] = $quota / 1024;
-			}
-			
-			$this->disconnect();
-			
-			return $userData;
-		}
-		
-		/**
-		 * opens a connection to a imap server
-		 *
-		 * @param bool $_adminConnection create admin connection if true
-		 *
-		 * @return resource the imap connection
-		 */
-		function openConnection($_adminConnection=false) 
+		if (PEAR::isError($status = $this->login($username, $password, TRUE, !$this->isAdminConnection)))
 		{
-			unset($this->_connectionErrorObject);
-			
-			if($_adminConnection) {
-				$username	= $this->adminUsername;
-				$password	= $this->adminPassword;
-				$options	= '';
-				$this->isAdminConnection = true;
-			} else {
-				$username	= $this->loginName;
-				$password	= $this->password;
-				$options	= $_options;
-				$this->isAdminConnection = false;
-			}
-			
-			$this->setStreamContextOptions($this->_getTransportOptions());
-			$this->setTimeout(20);
-			
-			if( PEAR::isError($status = $this->connect($this->_getTransportString(), $this->port, $this->encryption == 1)) ) {
-				$this->_connectionErrorObject = $status;
-				return false;
-			}
-			
-			if( PEAR::isError($status = $this->login($username, $password, TRUE, !$this->isAdminConnection)) ) {
-				$this->_connectionErrorObject = $status;
-				return false;
-			}
-			
-			return true;
-		}		
-
-		/**
-		 * restore session variable
-		 *
-		 */
-		function restoreSessionData() 
-		{
-			$this->sessionData = Cache::session_get('emailadmin', 'imap_session_data');
-		}
-		
-		/**
-		 * save session variable
-		 *
-		 */
-		function saveSessionData() 
-		{
-			Cache::session_set('emailadmin', 'imap_session_data', $this->sessionData);
-		}
-		
-		/**
-		 * set userdata
-		 *
-		 * @param string $_username username of the user
-		 * @param int $_quota quota in bytes
-		 * @return bool true on success, false on failure
-		 */
-		function setUserData($_username, $_quota) 
-		{
-			return true;
+			$this->_connectionErrorObject = $status;
+			return false;
 		}
 
-		/**
-		 * check if imap server supports given capability
-		 *
-		 * @param string $_capability the capability to check for
-		 * @return bool true if capability is supported, false if not
-		 */
-		function supportsCapability($_capability) 
-		{
-			return $this->hasCapability($_capability);
-		}
+		return true;
 	}
+
+	/**
+	 * restore session variable
+	 *
+	 */
+	function restoreSessionData()
+	{
+		$this->sessionData = Cache::session_get('emailadmin', 'imap_session_data');
+	}
+
+	/**
+	 * save session variable
+	 *
+	 */
+	function saveSessionData()
+	{
+		Cache::session_set('emailadmin', 'imap_session_data', $this->sessionData);
+	}
+
+	/**
+	 * set userdata
+	 *
+	 * @param string $_username username of the user
+	 * @param int $_quota quota in bytes
+	 * @return bool true on success, false on failure
+	 */
+	function setUserData($_username, $_quota)
+	{
+		return true;
+	}
+
+	/**
+	 * check if imap server supports given capability
+	 *
+	 * @param string $_capability the capability to check for
+	 * @return bool true if capability is supported, false if not
+	 */
+	function supportsCapability($_capability)
+	{
+		return $this->hasCapability($_capability);
+	}
+}

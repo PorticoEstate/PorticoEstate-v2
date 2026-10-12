@@ -5,6 +5,7 @@ namespace App\modules\emailadmin\viewcontrollers;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
 use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Csrf\Guard;
@@ -44,6 +45,7 @@ class EmailadminViewController
 	private function options(): array
 	{
 		$bo = \CreateObject('emailadmin.emailadmin_bo', true);
+		$accounts_obj = new Accounts();
 		$apps = [];
 		foreach ((array) (Settings::getInstance()->get('apps') ?: []) as $app => $details)
 		{
@@ -56,11 +58,11 @@ class EmailadminViewController
 
 		$groups = [['id' => 0, 'name' => lang('any group')]];
 		$users = [['id' => 0, 'name' => lang('any user')]];
-		foreach ((array) $GLOBALS['phpgw']->accounts->get_list('groups') as $group)
+		foreach ((array) $accounts_obj->get_list('groups') as $group)
 		{
 			$groups[] = ['id' => (int) $group->id, 'name' => (string) $group->lid];
 		}
-		foreach ((array) $GLOBALS['phpgw']->accounts->get_list('accounts') as $user)
+		foreach ((array) $accounts_obj->get_list('accounts') as $user)
 		{
 			$users[] = ['id' => (int) $user->id, 'name' => (string) $user->lid];
 		}

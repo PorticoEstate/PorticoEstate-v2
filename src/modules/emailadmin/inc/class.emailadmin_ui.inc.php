@@ -12,6 +12,7 @@
 	/* $Id$ */
 
 	use App\modules\phpgwapi\services\Settings;
+	use App\modules\phpgwapi\controllers\Accounts\Accounts;
 
 	phpgw::import_class('felamimail.html');	
 
@@ -44,7 +45,8 @@
 		
 		static function getAllGroups()
 		{
-			$allGroups = $GLOBALS['phpgw']->accounts->get_list('groups');
+			$accounts_obj = new Accounts();
+			$allGroups = $accounts_obj->get_list('groups');
 			foreach($allGroups as $groupInfo)
 			{
 				$groups[$groupInfo->id] = $groupInfo->lid;
@@ -61,7 +63,8 @@
 
 		static function getAllUsers()
 		{
-			$allUsers = $GLOBALS['phpgw']->accounts->get_list('accounts');
+			$accounts_obj = new Accounts();
+			$allUsers = $accounts_obj->get_list('accounts');
 			foreach($allUsers as $userInfo)
 			{
 				$users[$userInfo->id] = $userInfo->lid;
@@ -348,6 +351,7 @@
 			$this->translate();
 
 			$profileList = $this->boemailadmin->getProfileList();
+			$accounts_obj = new Accounts();
 		
 			// create the data array
 			if ($profileList)
@@ -417,8 +421,8 @@
 
 					$applicationLink = '<a href="'. $applicationLink_data . '">'. $application . '</a>';
 
-					$group = (empty($profileList[$i]['ea_group']) ? lang('any group') : $GLOBALS['phpgw']->accounts->id2name($profileList[$i]['ea_group']));
-					$user = (empty($profileList[$i]['ea_user']) ? lang('any user') : $GLOBALS['phpgw']->accounts->id2name($profileList[$i]['ea_user']));
+					$group = (empty($profileList[$i]['ea_group']) ? lang('any group') : $accounts_obj->id2name($profileList[$i]['ea_group']));
+					$user = (empty($profileList[$i]['ea_user']) ? lang('any user') : $accounts_obj->id2name($profileList[$i]['ea_user']));
 					$isactive = (empty($profileList[$i]['ea_active']) ? lang('inactive') : ($profileList[$i]['ea_active']>0 ? lang('active') : lang('inactive')));
 					$linkData = array
 					(

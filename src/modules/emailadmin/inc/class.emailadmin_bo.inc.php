@@ -15,6 +15,7 @@ require_once __DIR__ . '/../../email/inc/imap_config.php';
 
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\controllers\Accounts\Accounts;
 
 class emailadmin_bo
 {
@@ -494,7 +495,8 @@ class emailadmin_bo
 			{
 				$groups[] = Settings::getInstance()->get('user')['account_primary_group'];
 			}
-			$userGroups = $GLOBALS['phpgw']->accounts->membership(Settings::getInstance()->get('user')['account_id']);
+			$accounts_obj = new Accounts();
+			$userGroups = $accounts_obj->membership(Settings::getInstance()->get('user')['account_id']);
 			foreach ((array)$userGroups as $groupInfo)
 			{
 				$groups[] = $groupInfo->id;
@@ -591,10 +593,11 @@ class emailadmin_bo
 
 	function getUserData($_accountID)
 	{
+		$accounts_obj = new Accounts();
 		if ($userProfile = $this->getUserProfile('felamimail'))
 		{
 			$icServer = $userProfile->getIncomingServer(0);
-			if (is_a($icServer, 'defaultimap') && $username = $GLOBALS['phpgw']->accounts->id2name($_accountID))
+			if (is_a($icServer, 'defaultimap') && $username = $accounts_obj->id2name($_accountID))
 			{
 				$icUserData = $icServer->getUserData($username);
 			}
@@ -790,6 +793,7 @@ class emailadmin_bo
 
 	function saveUserData($_accountID, $_formData)
 	{
+		$accounts_obj = new Accounts();
 
 		if ($userProfile = $this->getUserProfile('felamimail'))
 		{
@@ -807,7 +811,7 @@ class emailadmin_bo
 			}
 
 			$icServer = $userProfile->getIncomingServer(0);
-			if (is_a($icServer, 'defaultimap') && $username = $GLOBALS['phpgw']->accounts->id2name($_accountID))
+			if (is_a($icServer, 'defaultimap') && $username = $accounts_obj->id2name($_accountID))
 			{
 				$icServer->setUserData($username, $_formData['quotaLimit']);
 			}

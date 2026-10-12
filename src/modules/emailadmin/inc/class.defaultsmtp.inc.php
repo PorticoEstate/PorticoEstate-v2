@@ -1,4 +1,5 @@
 <?php
+use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\services\Settings;
 
 	/***************************************************************************\
@@ -49,9 +50,10 @@ use App\modules\phpgwapi\services\Settings;
 		
 		function getAccountEmailAddress($_accountName)
 		{
-			$accountID = $GLOBALS['phpgw']->accounts->name2id($_accountName);
-			$emailAddress = $GLOBALS['phpgw']->accounts->id2name($accountID,'account_email');
-			if(empty($emailAddress))
+			$accounts_obj = new Accounts();
+			$accountID = $accounts_obj->name2id($_accountName);
+			$emailAddress = $accounts_obj->id2name($accountID);
+			if (!filter_var($emailAddress, FILTER_VALIDATE_EMAIL))
 				$emailAddress = $_accountName.'@'.$this->defaultDomain;
 
 			$realName = trim(Settings::getInstance()->get('user')['firstname'] . (!empty(Settings::getInstance()->get('user')['firstname']) ? ' ' : '') . Settings::getInstance()->get('user')['lastname']);

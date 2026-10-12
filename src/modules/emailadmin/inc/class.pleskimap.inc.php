@@ -1,5 +1,6 @@
 <?php
 	use App\modules\phpgwapi\services\Cache;
+	use App\modules\phpgwapi\controllers\Accounts\Accounts;
 
 use App\modules\phpgwapi\services\Settings;
 
@@ -322,15 +323,16 @@ class pleskimap extends defaultimap
 	 */
 	function plesk_mail($action,$account,$password=null,$aliases=null,$forwards=null,$keepLocalCopy=null,$quota_kb=null)
 	{
+		$accounts_obj = new Accounts();
 		//echo "<p>smtpplesk::plesk_mail('$action','$account','$password',".print_r($aliases,true).",".print_r($forwards,true).",".(is_null($keepLocalCopy)?'':(int)$keepLocalCopy).",$quota_kb)</p>\n";
 
 		$this->error = false;
 
 		if (is_numeric($account))
 		{
-			$account_lid = $GLOBALS['phpgw']->accounts->id2name($account);
+			$account_lid = $accounts_obj->id2name($account);
 		}
-		elseif ($GLOBALS['phpgw']->accounts->name2id($account))
+		elseif ($accounts_obj->name2id($account))
 		{
 			$account_lid = $account;
 		}

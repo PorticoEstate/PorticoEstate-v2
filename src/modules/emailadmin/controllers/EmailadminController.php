@@ -3,6 +3,7 @@
 namespace App\modules\emailadmin\controllers;
 
 use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -64,15 +65,15 @@ class EmailadminController
 		$apps = (array) Settings::getInstance()->get('apps');
 		$groupId = (int) ($profile['ea_group'] ?? 0);
 		$userId = (int) ($profile['ea_user'] ?? 0);
-		$accountNames = $GLOBALS['phpgw']->accounts;
+		$accounts_obj = new Accounts();
 		return [
 			'profileID' => (int) ($profile['profileID'] ?? 0),
 			'description' => (string) ($profile['description'] ?? ''),
 			'smtpServer' => (string) ($profile['smtpServer'] ?? ''),
 			'imapServer' => (string) ($profile['imapServer'] ?? ''),
 			'ea_appname' => empty($profile['ea_appname']) ? lang('any application') : (string) ($apps[$profile['ea_appname']]['title'] ?? $profile['ea_appname']),
-			'ea_group' => $groupId ? (string) $accountNames->id2name($groupId) : lang('any group'),
-			'ea_user' => $userId ? (string) $accountNames->id2name($userId) : lang('any user'),
+			'ea_group' => $groupId ? (string) $accounts_obj->id2name($groupId) : lang('any group'),
+			'ea_user' => $userId ? (string) $accounts_obj->id2name($userId) : lang('any user'),
 			'ea_active' => (bool) ($profile['ea_active'] ?? false),
 			'ea_order' => (int) ($profile['ea_order'] ?? 0),
 		];

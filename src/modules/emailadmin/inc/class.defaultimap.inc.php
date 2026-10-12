@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../../email/inc/imap_config.php';
+	use App\modules\phpgwapi\services\Cache;
+
 	/***************************************************************************\
 	* EGroupWare - EMailAdmin                                                   *
 	* http://www.egroupware.org                                                 *
@@ -476,7 +478,7 @@ require_once __DIR__ . '/../../email/inc/imap_config.php';
 		 */
 		function restoreSessionData() 
 		{
-			$this->sessionData = $GLOBALS['phpgw']->session->appsession('imap_session_data');
+			$this->sessionData = Cache::session_get('emailadmin', 'imap_session_data');
 		}
 		
 		/**
@@ -485,7 +487,7 @@ require_once __DIR__ . '/../../email/inc/imap_config.php';
 		 */
 		function saveSessionData() 
 		{
-			$GLOBALS['phpgw']->session->appsession('imap_session_data','',$this->sessionData);
+			Cache::session_set('emailadmin', 'imap_session_data', $this->sessionData);
 		}
 		
 		/**

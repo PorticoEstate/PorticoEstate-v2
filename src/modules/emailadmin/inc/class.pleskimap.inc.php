@@ -1,4 +1,6 @@
 <?php
+	use App\modules\phpgwapi\services\Cache;
+
 use App\modules\phpgwapi\services\Settings;
 
 /***************************************************************************\
@@ -355,7 +357,7 @@ class pleskimap extends defaultimap
 		if ($action != 'info')
 		{
 			// invalidate our cache
-			$GLOBALS['phpgw']->session->appsession('plesk-email-'.$account_lid,'emailadmin',false);
+			Cache::session_set('emailadmin', 'plesk-email-' . $account_lid, false);
 
 			// we dont set passwords shorten then 5 chars, as it only give an error in plesk
 			if (!is_null($password) && $password)

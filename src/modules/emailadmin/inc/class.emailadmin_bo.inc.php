@@ -613,8 +613,8 @@ class emailadmin_bo
 
 	function restoreSessionData()
 	{
-		$this->sessionData = (array)$GLOBALS['phpgw']->session->appsession('session_data', 'emailadmin');
-		#$this->userSessionData = $GLOBALS['phpgw']->session->appsession('user_session_data','emailadmin');
+		$this->sessionData = (array) Cache::session_get('emailadmin', 'session_data');
+		# $this->userSessionData = Cache::session_get('emailadmin', 'user_session_data');
 
 	}
 
@@ -784,8 +784,8 @@ class emailadmin_bo
 
 	function saveSessionData()
 	{
-		//	$GLOBALS['phpgw']->session->appsession('session_data','emailadmin',$this->sessionData);
-		#$GLOBALS['phpgw']->session->appsession('user_session_data','',$this->userSessionData);
+		// Cache::session_set('emailadmin', 'session_data', $this->sessionData);
+		# Cache::session_set('emailadmin', 'user_session_data', $this->userSessionData);
 	}
 
 	function saveUserData($_accountID, $_formData)

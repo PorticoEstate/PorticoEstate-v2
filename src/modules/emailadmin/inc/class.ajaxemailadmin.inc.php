@@ -1,4 +1,6 @@
 <?php
+	use App\modules\phpgwapi\services\Cache;
+
 	/***************************************************************************\
 	* eGroupWare - EmailAdmin                                                   *
 	* http://www.linux-at-work.de                                               *
@@ -22,8 +24,8 @@
 			$this->uiwidgets	=& CreateObject('felamimail.uiwidgets');
 			$this->bofelamimail->openConnection();
 
-			$this->sessionDataAjax	= $GLOBALS['phpgw']->session->appsession('ajax_session_data');
-			$this->sessionData	= $GLOBALS['phpgw']->session->appsession('session_data');
+			$this->sessionDataAjax	= Cache::session_get('emailadmin', 'ajax_session_data');
+			$this->sessionData	= Cache::session_get('emailadmin', 'session_data');
 
 			if(!isset($this->sessionDataAjax['folderName']))
 				$this->sessionDataAjax['folderName'] = 'INBOX';

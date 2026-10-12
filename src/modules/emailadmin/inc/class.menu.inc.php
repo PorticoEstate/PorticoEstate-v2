@@ -17,14 +17,26 @@ class emailadmin_menu
 		$incomingApp = $flags['currentapp'] ?? '';
 		Settings::getInstance()->update('flags', ['currentapp' => 'emailadmin']);
 		$translation = Translation::getInstance();
-		$menus = [
-			'admin' => [
-				'configuration' => [
-					'text' => $translation->translate('Site Configuration', [], true),
-					'url' => phpgw::link('/emailadmin/view/profiles'),
-				],
-			],
-		];
+
+
+		$menus['toolbar'] = array();
+
+
+		$menus['admin'] = array(
+			'index'	 => array(
+				'text'		 => lang('Configuration'),
+				'url'		 => phpgw::link('/index.php', array(
+					'menuaction' => 'admin.uiconfig.index',
+					'appname'	 => 'emailadmin'
+				))
+			),
+			'emailadmin' => array(
+				'text'	=> $translation->translate('emailadmin', array(), true),
+				'url' => phpgw::link('/emailadmin/view/profiles'),
+			),
+		);
+
+
 		Settings::getInstance()->update('flags', ['currentapp' => $incomingApp]);
 
 		return $menus;

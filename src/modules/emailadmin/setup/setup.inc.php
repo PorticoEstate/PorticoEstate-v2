@@ -33,8 +33,10 @@ $setup_info['emailadmin']['maintainer'][] = array(
 $setup_info['emailadmin']['tables'][]	= 'egw_emailadmin';
 
 /* The hooks this app includes, needed for hooks registration */
-$setup_info['emailadmin']['hooks'][] = 'admin';
-$setup_info['emailadmin']['hooks']['menu'] = 'emailadmin.menu.get_menu';
+$setup_info['emailadmin']['hooks'] = array(
+	'admin',
+	'menu' => 'emailadmin.menu.get_menu'
+);
 
 /* Dependencies for this app to work */
 $setup_info['emailadmin']['depends'][] = array(

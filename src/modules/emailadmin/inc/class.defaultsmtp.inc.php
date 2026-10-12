@@ -80,7 +80,7 @@ use App\modules\phpgwapi\services\Settings;
 			return true;
 		}
 
-		function setUserData($_uidnumber, $_mailAlternateAddress, $_mailForwardingAddress, $_deliveryMode) {
+		function setUserData($_uidnumber, $_mailAlternateAddress, $_mailForwardingAddress, $_deliveryMode, $_accountStatus = null, $_mailLocalAddress = null) {
 			return true;
 		}
 		

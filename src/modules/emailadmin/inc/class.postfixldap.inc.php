@@ -176,7 +176,7 @@ use App\modules\phpgwapi\services\Settings;
 			return $userData;
 		}
 		
-		function setUserData($_uidnumber, $_mailAlternateAddress, $_mailForwardingAddress, $_deliveryMode, $_accountStatus, $_mailLocalAddress) 
+		function setUserData($_uidnumber, $_mailAlternateAddress, $_mailForwardingAddress, $_deliveryMode, $_accountStatus = null, $_mailLocalAddress = null) 
 		{
 			$filter = "uidnumber=$_uidnumber";
 

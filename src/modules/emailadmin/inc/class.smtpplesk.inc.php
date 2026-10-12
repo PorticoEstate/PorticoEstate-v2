@@ -69,7 +69,7 @@ class smtpplesk extends defaultsmtp
 	 * @param string/int $accountName account-id or -lis (name)
 	 * @return array of arrays with keys name, address and type={default|alternate}
 	 */
-	function getAccountEmailAddress()
+	function getAccountEmailAddress($_accountName)
 	{
 		//echo "<p>smtpplesk::getAccountEmailAddress()</p>\n";
 

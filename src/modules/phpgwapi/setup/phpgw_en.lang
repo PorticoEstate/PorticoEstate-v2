@@ -605,3 +605,4 @@ email_required	common	en	Email is required
 first	common	en	First
 last	common	en	Last
 previous	common	en	Previous
+session_expired_log_in_again	common	en	Your session has expired. Log in again in another tab and try again.

@@ -272,7 +272,7 @@ class phpgwapi_common
 	 * @param string $host LDAP host name
 	 * @param string $dn LDAP distinguised name
 	 * @param string $passwd LDAP password
-	 * @return resource LDAP link identifier
+	 * @return \LDAP\Connection|false LDAP connection or false on failure
 	 */
 	public function ldapConnect($host = '', $dn = '', $passwd = '')
 	{

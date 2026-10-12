@@ -31,6 +31,8 @@ require_once __DIR__ . '/../../email/inc/imap_config.php';
 	 */
 	class defaultimap extends Net_IMAP
 	{
+		var $phpgwapi_common;
+
 		/**
 		 * the password to be used for admin connections
 		 *
@@ -146,6 +148,7 @@ require_once __DIR__ . '/../../email/inc/imap_config.php';
 		 */
 		function __construct()
 		{
+			$this->phpgwapi_common = new \phpgwapi_common();
 			if (function_exists('mb_convert_encoding')) {
 				$this->mbAvailable = TRUE;
 			}

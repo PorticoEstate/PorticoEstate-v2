@@ -32,7 +32,7 @@ use App\modules\phpgwapi\services\Settings;
 		function getUserData($_username) {
 			$userData = array();
 			
-			$ds = $GLOBALS['phpgw']->ldap->ldapConnect(
+			$ds = $this->phpgwapi_common->ldapConnect(
 				Settings::getInstance()->get('server')['ldap_host'],
 				Settings::getInstance()->get('server')['ldap_root_dn'],
 				Settings::getInstance()->get('server')['ldap_root_pw']
@@ -60,7 +60,7 @@ use App\modules\phpgwapi\services\Settings;
 				return false;
 			}
 			
-			$ds = $GLOBALS['phpgw']->ldap->ldapConnect(
+			$ds = $this->phpgwapi_common->ldapConnect(
 				Settings::getInstance()->get('server')['ldap_host'],
 				Settings::getInstance()->get('server')['ldap_root_dn'],
 				Settings::getInstance()->get('server')['ldap_root_pw']
@@ -106,7 +106,7 @@ use App\modules\phpgwapi\services\Settings;
 		}
 
 		function setUserData($_username, $_quota) {
-			$ds = $GLOBALS['phpgw']->ldap->ldapConnect(
+			$ds = $this->phpgwapi_common->ldapConnect(
 				Settings::getInstance()->get('server')['ldap_host'],
 				Settings::getInstance()->get('server')['ldap_root_dn'],
 				Settings::getInstance()->get('server')['ldap_root_pw']

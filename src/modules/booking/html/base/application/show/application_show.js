@@ -169,8 +169,29 @@
 			if (!isAssocActive(a)) {
 				html += '<span class="booking-tag ds-tag" data-color="warning">' + esc(lang('inactive')) + '</span>';
 			}
+			var req = changeRequests[assocRef(a)];
+			if (req) {
+				html += '<span class="booking-tag ds-tag" data-color="warning">' + esc(lang('changeRequestedTime')) + ': ' + esc(changeTimeText(req)) + '</span>';
+				if (req.stale) {
+					html += '<span class="booking-tag ds-tag" data-color="neutral">' + esc(lang('changeRequestStale')) + '</span>';
+				}
+			}
 			return html + '</div>';
 		}).join('');
+	}
+
+	// The applicant's open requests for a new time on an element
+	// (bb_application_change_request), by assocRef. Set from /change-requests
+	// before the page renders.
+	var changeRequests = {};
+
+	// The requested time: "18:00–20:00", with the date in front when it is
+	// another day than the element's time when asked.
+	function changeTimeText(req) {
+		var from = minuteKey(req.new_from_), to = minuteKey(req.new_to_);
+		var day = from.substring(0, 10) === minuteKey(req.old_from_).substring(0, 10)
+			? '' : from.substring(0, 10).split('-').reverse().slice(0, 2).join('.') + ' ';
+		return day + from.substring(11) + '–' + to.substring(11);
 	}
 
 	// Handling cell for a row's elements, built like the create split (createSplitHtml):
@@ -194,6 +215,20 @@
 				' data-color="' + (active ? 'danger' : 'success') + '" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' +
 				(active ? ICONS.xCircle : ICONS.checkCircle) + '<span>' + esc(lang(active ? 'delete' : 'activate') + suffix) + '</span></button></li>';
 		}
+		// "Godta endring" and "Avslå endring" for an open change request. Accept is
+		// left out when the element's time moved after the request or the element
+		// is inactive: the server refuses both, and rejecting is what is left.
+		function changeItems(a, suffix) {
+			var req = changeRequests[assocRef(a)];
+			if (!req) return '';
+			var html = '';
+			if (!req.stale && req.element_active) {
+				html += '<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="change-request" data-change-action="accept"' +
+					' data-color="success" data-change-ref="' + esc(assocRef(a)) + '">' + ICONS.checkCircle + '<span>' + esc(lang('acceptChange') + suffix) + '</span></button></li>';
+			}
+			return html + '<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="change-request" data-change-action="reject"' +
+				' data-color="danger" data-change-ref="' + esc(assocRef(a)) + '">' + ICONS.xCircle + '<span>' + esc(lang('rejectChange') + suffix) + '</span></button></li>';
+		}
 		function menu(listsHtml) {
 			return '<div class="booking-dropdown ds-dropdown app-show__menu app-show__split-menu" data-booking-role="dropdown" popover id="' + menuId + '">' + listsHtml + '</div>';
 		}
@@ -203,12 +238,12 @@
 			if (!isCO) return edit;
 			return '<div class="app-show__split">' + edit +
 				'<button type="button" class="booking-button ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '" aria-label="' + esc(lang('actions')) + '">' + ICONS.chevron + '</button>' +
-				menu('<ul>' + toggleItem(a, '') + '</ul>') + '</div>';
+				menu('<ul>' + changeItems(a, '') + toggleItem(a, '') + '</ul>') + '</div>';
 		}
 		var lists = elements.map(function (a) {
 			var suffix = ' #' + a.id;
 			return '<ul><li><a class="booking-dropdown__item ds-dropdown__item" href="' + esc(assocEditUrl(a)) + '">' + ICONS.edit + '<span>' + esc(lang('edit') + suffix) + '</span></a></li>' +
-				(isCO ? toggleItem(a, suffix) : '') + '</ul>';
+				(isCO ? changeItems(a, suffix) + toggleItem(a, suffix) : '') + '</ul>';
 		});
 		return '<button type="button" class="booking-button ds-button app-show__menu-trigger" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '">' + esc(lang('edit')) + ICONS.chevron + '</button>' +
 			menu(lists.join('<hr class="app-show__menu-sep">'));
@@ -398,7 +433,11 @@
 		fetchJson(apiUrl + '/orders'),          // 8: orders
 		fetchJson(apiUrl + '/related'),         // 9: related applications
 		fetchJson(apiUrl + '/associations'),    // 10: associations
+		fetchJson(apiUrl + '/change-requests'), // 11: open change requests
 	]).then(function (results) {
+		(results[11] || []).forEach(function (req) {
+			changeRequests[req.element_type + ':' + req.element_id] = req;
+		});
 		render({
 			application:    results[0],
 			dates:          results[1],
@@ -1597,6 +1636,16 @@
 			});
 		});
 
+		// Delegated event: "Godta endring" / "Avslå endring" on an element
+		root.addEventListener('click', function (e) {
+			var btn = e.target.closest('[data-booking-action="change-request"]');
+			if (!btn) return;
+			var pop = btn.closest('[data-booking-role="dropdown"]');
+			if (pop && pop.matches(':popover-open')) pop.hidePopover();
+			var req = changeRequests[btn.dataset.changeRef];
+			if (req) showChangeRequestModal(req, btn.dataset.changeAction === 'accept');
+		});
+
 		// Documents: always shown, so the case officer can add the first one. The
 		// list re-renders in place after an upload or a delete.
 		html += section(lang('documents'),
@@ -2419,6 +2468,55 @@
 				btn.disabled = false;
 				btn.textContent = lang('approve');
 				alert(lang('error') + ': ' + err.message);
+			});
+		});
+	}
+
+	// ── Change request modal (Godta endring / Avslå endring) ───────────
+
+	// The applicant's request for a new time on one element. Accepting moves the
+	// element to that time once the server has checked it against everything else
+	// on the resources; a refusal is shown here, nothing is written and the
+	// request stays open. Rejecting keeps the element's time. Neither notifies
+	// the applicant.
+	function showChangeRequestModal(req, accept) {
+		var dialogId = 'change-request-dialog';
+		var times = defGrid(
+			field(enumLabel(req.element_type), '#' + req.element_id) +
+			field(lang('currentTime'), fmtDate(req.old_from_) + ' – ' + minuteKey(req.old_to_).substring(11)) +
+			field(lang('changeRequestedTime'), fmtDate(req.new_from_) + ' – ' + minuteKey(req.new_to_).substring(11))
+		);
+		var body = '<div class="booking-alert ds-alert" data-color="danger" role="alert" id="modal-change-error" hidden></div>' +
+			'<p class="booking-paragraph ds-paragraph" data-size="sm">' + esc(lang(accept ? 'acceptChangeHelp' : 'rejectChangeHelp')) + '</p>' +
+			times +
+			(accept && req.price_review
+				? '<div class="booking-alert ds-alert" data-color="warning"><p class="booking-paragraph ds-paragraph">' + esc(lang('changePriceNotRecalculated')) + '</p></div>'
+				: '');
+		var label = lang(accept ? 'acceptChange' : 'rejectChange');
+		var footer = '<button type="button" class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="booking-button ds-button" data-variant="primary" data-color="' + (accept ? 'success' : 'danger') + '" id="modal-change-submit">' + esc(label) + '</button>';
+
+		showModal(dialogId, label, body, footer);
+
+		document.getElementById('modal-change-submit').addEventListener('click', function () {
+			var btn = this;
+			var errorBox = document.getElementById('modal-change-error');
+			errorBox.hidden = true;
+			btn.disabled = true;
+			btn.textContent = '...';
+
+			postJsonBody(apiUrl + '/change-requests/' + encodeURIComponent(req.id) + '/' + (accept ? 'accept' : 'reject'), {}).then(function (result) {
+				closeModal(dialogId);
+				var done = !accept ? lang('changeRejected')
+					: result && result.application_date_shared ? lang('changeAppliedSharedApplicationDate')
+					: (result && result.application_date_id == null ? lang('changeAppliedWithoutApplicationDate') : lang('changeAccepted'));
+				showToast(done);
+				setTimeout(function () { window.location.reload(); }, 800);
+			}).catch(function (err) {
+				btn.disabled = false;
+				btn.textContent = label;
+				errorBox.innerHTML = '<p class="booking-paragraph ds-paragraph" data-size="sm">' + esc(err.message) + '</p>';
+				errorBox.hidden = false;
 			});
 		});
 	}

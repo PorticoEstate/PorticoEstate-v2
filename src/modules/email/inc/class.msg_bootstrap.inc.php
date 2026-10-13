@@ -29,6 +29,11 @@
 	*/	
 	class email_msg_bootstrap
 	{
+		public const LOGIN_NOT_SPECIFIED = 0;
+		public const LOGIN_NEVER = 1;
+		public const LOGIN_ONLY_IF_NEEDED = 2;
+		public const LOGIN_YES = 3;
+
 		/**
 		 * @var boolean $do_login Defaults to True, most often you do not need to change this.
 		 */
@@ -41,19 +46,16 @@
 		
 		function __construct()
 		{
-			if (defined('BS_LOGIN_NEVER') == False)
+			$loginModes = array(
+				'BS_LOGIN_NOT_SPECIFIED' => self::LOGIN_NOT_SPECIFIED,
+				'BS_LOGIN_NEVER' => self::LOGIN_NEVER,
+				'BS_LOGIN_ONLY_IF_NEEDED' => self::LOGIN_ONLY_IF_NEEDED,
+				'BS_LOGIN_YES' => self::LOGIN_YES,
+			);
+			foreach ($loginModes as $name => $value)
 			{
-				define('BS_LOGIN_NOT_SPECIFIED',0);
-				// never log in no matter what
-				define('BS_LOGIN_NEVER',1);
-				// do not login unless required (caching in effect)
-				define('BS_LOGIN_ONLY_IF_NEEDED',2);
-				// login definately do it (if not caching)
-				define('BS_LOGIN_YES',3);
-				//define('BS_LOGIN_DEMAND_ONLY',3);
-				//define('BS_LOGIN_NEEDED',4);
+				if (!defined($name)) define($name, $value);
 			}
-			//return;
 		}
 		
 		
@@ -85,13 +87,13 @@
 			// backward compat, when this was only true or false
 			if (is_bool($do_login))
 			{
-				if ($do_login == True)
+				if ($do_login)
 				{
-					$this->do_login_ex = BS_LOGIN_ONLY_IF_NEEDED;
+					$this->do_login_ex = self::LOGIN_ONLY_IF_NEEDED;
 				}
 				else
 				{
-					$this->do_login_ex = BS_LOGIN_NEVER;
+					$this->do_login_ex = self::LOGIN_NEVER;
 				}
 
 				$this->do_login = $do_login;
@@ -101,25 +103,16 @@
 			}
 			elseif (is_int($do_login))
 			{
-				// new way has 3 possibilities
-				$this->do_login = true;
-				switch($do_login)
-				{
-					case BS_LOGIN_NEVER:
-						$this->do_login = false;
-						// no break here - we want to fall thru
-					case BS_LOGIN_ONLY_IF_NEEDED:
-					case BS_LOGIN_YES:
-						$this->do_login_ex = $do_login;
-
-					default:
-							$this->do_login_ex = BS_LOGIN_ONLY_IF_NEEDED;
-				}
+				$validModes = [self::LOGIN_NEVER, self::LOGIN_ONLY_IF_NEEDED, self::LOGIN_YES];
+				$this->do_login_ex = in_array($do_login, $validModes, true)
+					? $do_login
+					: self::LOGIN_ONLY_IF_NEEDED;
+				$this->do_login = $this->do_login_ex !== self::LOGIN_NEVER;
 			}
 			else
 			{
-				$this->do_login = True;
-				$this->do_login_ex = BS_LOGIN_ONLY_IF_NEEDED;
+				$this->do_login = true;
+				$this->do_login_ex = self::LOGIN_ONLY_IF_NEEDED;
 			}
 			return $this->do_login_ex;
 		}
@@ -185,7 +178,7 @@
 			if ($this->debug_level > 0) { echo 'ENTERING: msg_bootstrap: ensure_mail_msg_exists: (called_by: '.$called_by.')'.'<br />'; }
 			
 			// make sure do_login has been set
-			if ($this->get_do_login_ex() == BS_LOGIN_NOT_SPECIFIED)
+			if ($this->get_do_login_ex() == self::LOGIN_NOT_SPECIFIED)
 			{
 				// this gives us a good general default value
 				$tmp_prev_value = $this->get_do_login();
@@ -212,7 +205,7 @@
 			{
 				// mail_msg had already run thru "begin_request", do not call it again
 				if ($this->debug_level > 0) { echo 'msg_bootstrap: ensure_mail_msg_exists('.__LINE__.'): (called_by: '.$called_by.'): LEAVING , msg object already initialized<br />'; }
-				return True;
+				return true;
 			}
 			
 			$args_array = array

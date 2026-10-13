@@ -7,6 +7,8 @@ use App\modules\booking\repositories\ApplicationChangeRequestRepository;
 use App\modules\booking\services\WebhookNotifier;
 use App\modules\bookingfrontend\repositories\AllocationCancellationRepository;
 use App\modules\bookingfrontend\repositories\AllocationTimeChangeRepository;
+use App\modules\bookingfrontend\helpers\UserHelper;
+use App\modules\bookingfrontend\models\User;
 use App\modules\bookingfrontend\services\applications\ApplicationCommentsService;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -54,7 +56,8 @@ class AllocationTimeChangeService
 	 * @param string      $from       The new start, naive local "Y-m-d H:i"
 	 * @param string      $to         The new end, naive local "Y-m-d H:i"
 	 * @param string      $comment    The applicant's own words to the case officer; may be empty
-	 * @param string|null $author     Comment author, resolved the way every comment's is
+	 * @param string|null $author     Comment author, resolved the way every comment's is; null
+	 *                                means the logged-in user, as ApplicationCommentsService::addComment reads it
 	 * @return array{outcome:string, allocation_id:int, application_id:int, from_:string, to_:string}
 	 *         plus request_id for a request, price for a shortening
 	 * @throws InvalidArgumentException 400: the new time is unusable
@@ -66,6 +69,9 @@ class AllocationTimeChangeService
 		if ($applicationId <= 0) {
 			throw new RuntimeException(lang('bookingfrontend.allocation_change_no_application'), 409);
 		}
+		// The comment falls back to the logged-in user's name by itself; the cost history
+		// and the change request take the author as given, so they get the same name here.
+		$author ??= (new User(new UserHelper()))->name;
 		if ((int) $allocation['active'] !== 1) {
 			throw new RuntimeException(lang('bookingfrontend.allocation_change_inactive'), 409);
 		}
@@ -240,7 +246,8 @@ class AllocationTimeChangeService
 	 * or nothing: one hour line off the rule and the order is not touched.
 	 *
 	 * Not recalculated - the price stays, and the comment says why - when the
-	 * case officer set the price by hand (price_locked), when there is no order
+	 * price is locked (price_locked: set by the case officer by hand, or locked by
+	 * an earlier shortening), when there is no order
 	 * or more than one, when the order is parent-less (the application's own
 	 * order, which later allocations of the application are copied from,
 	 * sopurchase_order::copy_purchase_order_from_application), or when it is
@@ -270,7 +277,7 @@ class AllocationTimeChangeService
 		];
 
 		if ((int) $allocation['price_locked'] === 1) {
-			return $kept('kept_locked', null, 'bookingfrontend.allocation_price_kept_locked');
+			return $kept('kept_locked', null, 'bookingfrontend.allocation_price_locked');
 		}
 
 		$orders = $this->repository->findOwnOrders($allocationId);

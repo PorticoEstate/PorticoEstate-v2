@@ -1165,3 +1165,4 @@ allocation_price_kept_locked	bookingfrontend	no	Pris ikke omregnet: prisen er sa
 allocation_price_master_order	bookingfrontend	no	Pris ikke omregnet: søknadens hovedordre.
 allocation_price_not_recalculated	bookingfrontend	no	Pris ikke omregnet: saksbehandler kontrollerer prisen.
 allocation_cost_recalculated_after_shortening	bookingfrontend	no	Pris omregnet etter forkorting (%1). Pris låst etter forkorting.
+allocation_price_locked	bookingfrontend	no	Pris ikke omregnet: prisen er låst.

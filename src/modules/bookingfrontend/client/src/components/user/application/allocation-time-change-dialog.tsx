@@ -92,7 +92,7 @@ const AllocationTimeChangeDialog: FC<{
                         </Paragraph>
                         <Textfield
                             type="time"
-                            label={t('bookingfrontend.From time')}
+                            label={t('bookingfrontend.from time')}
                             value={fromTime}
                             onChange={(e) => setFromTime(e.target.value)}
                             disabled={mutation.isPending}
@@ -100,7 +100,7 @@ const AllocationTimeChangeDialog: FC<{
                         />
                         <Textfield
                             type="time"
-                            label={t('bookingfrontend.To time')}
+                            label={t('bookingfrontend.to time')}
                             value={toTime}
                             onChange={(e) => setToTime(e.target.value)}
                             disabled={mutation.isPending}

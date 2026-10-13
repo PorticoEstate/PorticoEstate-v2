@@ -1,0 +1,34 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Folders') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/folders.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<main class="email-folders" id="email-folders" data-api-url="{{ api_url|e('html_attr') }}">
+	<header class="email-folders-header">
+		<div>
+			<p>{{ lang('E-Mail') }}</p>
+			<h1>{{ lang('Folders') }}</h1>
+		</div>
+		<nav class="email-folders-actions">
+			<a class="email-folders-button" href="{{ manage_url|e }}">{{ lang('Manage folders') }}</a>
+			<a class="email-folders-button" href="{{ inbox_url|e }}">{{ lang('Back to inbox') }}</a>
+		</nav>
+	</header>
+	<div class="email-folders-status" id="email-folders-status" role="status" aria-live="polite">{{ lang('Loading folders') }}</div>
+	<div class="email-folders-error" id="email-folders-error" role="alert" hidden></div>
+	<div class="email-folders-table-wrap">
+		<table class="email-folders-table">
+			<thead><tr><th scope="col">{{ lang('Folder') }}</th><th scope="col">{{ lang('Unread') }}</th><th scope="col">{{ lang('Total') }}</th></tr></thead>
+			<tbody id="email-folders-rows"></tbody>
+		</table>
+	</div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/folders.js') }}</script>
+{% endblock %}

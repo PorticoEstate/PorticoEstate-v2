@@ -42,6 +42,14 @@
 		*/
 		function compose($reuse_feed_args='')
 		{			
+			if ($reuse_feed_args !== 'mail_spell_special_handling')
+			{
+				$query = $_GET;
+				unset($query['menuaction']);
+				phpgw::redirect_link('/email/view/compose', $query);
+				return;
+			}
+
 			if ((is_string($reuse_feed_args))
 			&& ($reuse_feed_args == ''))
 			{

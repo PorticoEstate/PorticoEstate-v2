@@ -33,7 +33,7 @@
 		{
 			// make sure we have msg object
 			$msg_bootstrap = CreateObject("email.msg_bootstrap");
-			$msg_bootstrap->set_do_login(BS_LOGIN_ONLY_IF_NEEDED);
+			$msg_bootstrap->set_do_login(\email_msg_bootstrap::LOGIN_ONLY_IF_NEEDED);
 			$msg_bootstrap->ensure_mail_msg_exists('email.uisearch *constructor*', 0);
 			//return;
 
@@ -71,6 +71,11 @@
 
 		function form()
 		{
+			$query = $_GET;
+			unset($query['menuaction']);
+			phpgw::redirect_link('/email/view/search', $query);
+			return;
+
 			unset($GLOBALS['phpgw_info']['flags']['noheader']);
 			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
 			$GLOBALS['phpgw_info']['flags']['noappheader'] = True;

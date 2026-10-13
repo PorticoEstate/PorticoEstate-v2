@@ -40,6 +40,11 @@
 		*/
 		function message()
 		{
+			$query = $_GET;
+			unset($query['menuaction']);
+			phpgw::redirect_link('/email/view/message', $query);
+			return;
+
 			$this->bo = CreateObject("email.bomessage");
 			$this->bo->message_data();
 			

@@ -312,6 +312,10 @@
 			{
 				$folder_long = $folder_list[$i]['folder_long'];
 				$folder_short = $folder_list[$i]['folder_short'];
+				$this->xi['folder_list_display'][$i]['folder_long'] = (string) $folder_long;
+				$this->xi['folder_list_display'][$i]['folder_short'] = (string) $folder_short;
+				$this->xi['folder_list_display'][$i]['folder_param'] = $GLOBALS['phpgw']->msg->prep_folder_out($folder_long);
+				$this->xi['folder_list_display'][$i]['acctnum'] = (int) $GLOBALS['phpgw']->msg->get_acctnum();
 				
 				if ($this->use_cachable_status == True)
 				{
@@ -362,14 +366,18 @@
 				
 				if ($this->use_cachable_status == True)
 				{
-					$this->xi['folder_list_display'][$i]['msgs_unseen'] = number_format($folder_status_info['number_new']);
-					$this->xi['folder_list_display'][$i]['msgs_total'] = number_format($folder_status_info['number_all']);
+					$unseen = (int) ($folder_status_info['number_new'] ?? 0);
+					$total = (int) ($folder_status_info['number_all'] ?? 0);
 				}
 				else
 				{
-					$this->xi['folder_list_display'][$i]['msgs_unseen'] = number_format($mailbox_status->unseen);
-					$this->xi['folder_list_display'][$i]['msgs_total'] = number_format($mailbox_status->messages);
+					$unseen = (int) ($mailbox_status->unseen ?? 0);
+					$total = (int) ($mailbox_status->messages ?? 0);
 				}
+				$this->xi['folder_list_display'][$i]['unseen_count'] = $unseen;
+				$this->xi['folder_list_display'][$i]['total_count'] = $total;
+				$this->xi['folder_list_display'][$i]['msgs_unseen'] = number_format($unseen);
+				$this->xi['folder_list_display'][$i]['msgs_total'] = number_format($total);
 			}
 			if ($this->debug > 2) { echo 'email.bofolder.folder_data('.__LINE__.'): $this->xi[folder_list_display] dump:<pre>'; print_r($this->xi['folder_list_display']); echo '</pre>'; }
 			

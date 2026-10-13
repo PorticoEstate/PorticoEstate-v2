@@ -1,0 +1,49 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Compose') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/compose.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<main class="email-compose" id="email-compose"
+	data-api-url="{{ api_url|e('html_attr') }}"
+	data-return-url="{{ return_url|e('html_attr') }}"
+	data-context="{{ context|json_encode|e('html_attr') }}"
+	data-csrf-name="{{ csrf.name|e('html_attr') }}"
+	data-csrf-value="{{ csrf.value|e('html_attr') }}">
+	<header class="email-compose-header">
+		<div>
+			<p>{{ lang('E-Mail') }}</p>
+			<h1>{{ lang('Compose') }}</h1>
+		</div>
+		<a class="email-compose-button" href="{{ return_url|e }}">{{ lang('Cancel') }}</a>
+	</header>
+	<div class="email-compose-error" id="email-compose-error" role="alert" hidden></div>
+	<div class="email-compose-status" id="email-compose-status" role="status" aria-live="polite" hidden></div>
+	<form id="email-compose-form" name="doit">
+		<div class="email-compose-recipients">
+			<label>{{ lang('To') }}<input name="to" type="text" autocomplete="email" value="{{ to }}"></label>
+			<label>{{ lang('Cc') }}<input name="cc" type="text" value="{{ cc }}"></label>
+			<label>{{ lang('Bcc') }}<input name="bcc" type="text" value="{{ bcc }}"></label>
+		</div>
+		<label>{{ lang('Subject') }}<input name="subject" type="text" value="{{ subject }}"></label>
+		<label>{{ lang('Message') }}<textarea name="body" rows="18">{{ body }}</textarea></label>
+		<input type="hidden" name="attached_filenames" value="">
+		<p><a class="email-compose-button" href="{{ attach_url|e }}" target="email-attachments">{{ lang('Attach files') }}</a></p>
+		<div class="email-compose-options">
+			{% if has_signature %}<label><input name="attach_sig" type="checkbox" {{ attach_signature ? 'checked' }}> {{ lang('Attach signature') }}</label>{% endif %}
+			<label><input name="req_notify" type="checkbox"> {{ lang('Notify on delivery') }}</label>
+		</div>
+		<div class="email-compose-actions">
+			<button class="email-compose-button email-compose-button--primary" type="submit">{{ lang('Send') }}</button>
+			<a class="email-compose-button" href="{{ return_url|e }}">{{ lang('Cancel') }}</a>
+		</div>
+	</form>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/compose.js') }}</script>
+{% endblock %}

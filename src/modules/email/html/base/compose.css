@@ -1,0 +1,17 @@
+.email-compose { --mail-ink: #1d292f; --mail-muted: #53636b; --mail-line: #cbd4d8; --mail-accent: #075d73; color: var(--mail-ink); max-width: 980px; margin: 0 auto; padding: 1.25rem; }
+.email-compose-header, .email-compose-actions { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1rem; }
+.email-compose-header p { margin: 0 0 .2rem; color: var(--mail-muted); font-size: .82rem; }
+.email-compose-header h1 { margin: 0; font-size: 1.55rem; }
+.email-compose label { display: flex; flex-direction: column; gap: .35rem; margin-bottom: .75rem; color: var(--mail-muted); font-size: .92rem; }
+.email-compose input:not([type=checkbox]), .email-compose textarea { box-sizing: border-box; width: 100%; border: 1px solid var(--mail-line); border-radius: 3px; padding: .5rem .6rem; background: #fff; color: var(--mail-ink); font: inherit; }
+.email-compose input:not([type=checkbox]) { min-height: 2.5rem; }
+.email-compose textarea { min-height: 22rem; resize: vertical; }
+.email-compose-recipients { display: grid; grid-template-columns: 1fr; gap: .1rem; }
+.email-compose-options { display: flex; flex-wrap: wrap; gap: 1rem; margin: .75rem 0; }
+.email-compose-options label { flex-direction: row; align-items: center; margin: 0; }
+.email-compose-button { display: inline-flex; align-items: center; justify-content: center; min-height: 2.3rem; padding: .45rem .8rem; border: 1px solid #9aa9af; border-radius: 3px; background: #fff; color: var(--mail-ink); text-decoration: none; cursor: pointer; }
+.email-compose-button--primary { background: var(--mail-accent); border-color: var(--mail-accent); color: #fff; }
+.email-compose-button:disabled { opacity: .55; cursor: default; }
+.email-compose-error { margin: .75rem 0; padding: .75rem; border-left: 4px solid #a32c2c; background: #fff0f0; color: #681d1d; }
+.email-compose-status { margin: .75rem 0; padding: .75rem; border-left: 4px solid #36794a; background: #edf7ef; color: #245334; }
+@media (max-width: 700px) { .email-compose { padding: .75rem; } .email-compose-header { align-items: flex-start; } .email-compose textarea { min-height: 16rem; } }

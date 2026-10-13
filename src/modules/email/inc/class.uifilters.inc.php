@@ -647,6 +647,11 @@
 		*/
 		function filters_list()
 		{
+			$query = $_GET;
+			unset($query['menuaction']);
+			phpgw::redirect_link('/email/view/filters', $query);
+			return;
+
 			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
 			{
 				// we point to the global template for this version of phpgw templatings

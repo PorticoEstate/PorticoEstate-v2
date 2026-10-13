@@ -45,7 +45,7 @@ class Sanitizer
 		//require_once PHPGW_SERVER_ROOT . '/phpgwapi/inc/htmlpurifier/vendor/ezyang/htmlpurifier/library/HTMLPurifier.auto.php';
 
 		$config = HTMLPurifier_Config::createDefault();
-		$config->set('Core', 'DefinitionCache', null);
+		$config->set('Cache.DefinitionImpl', null);
 		$config->set('HTML.Doctype', 'HTML 4.01 Transitional');
 		$config->set('HTML.Allowed', 'u,p,b,i,span[style],p,strong,em,li,ul,ol,div[align],br,img');
 		$config->set('HTML.AllowedAttributes', 'class, src, height, width, alt, id, target, href, colspan');

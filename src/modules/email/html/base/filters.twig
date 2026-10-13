@@ -1,0 +1,37 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Filters') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/filters.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<main class="email-filters" id="email-filters"
+	data-api-url="{{ api_url|e('html_attr') }}"
+	data-new-url="{{ new_url|e('html_attr') }}"
+	data-run-url="{{ run_url|e('html_attr') }}"
+	data-test-url="{{ test_url|e('html_attr') }}">
+	<header class="email-filters-header">
+		<div><p>{{ lang('E-Mail') }}</p><h1>{{ lang('Filters') }}</h1></div>
+		<nav>
+			<a class="email-filters-button email-filters-button--primary" href="{{ new_url|e }}">{{ lang('New filter') }}</a>
+			<a class="email-filters-button" href="{{ run_url|e }}">{{ lang('Apply all') }}</a>
+			<a class="email-filters-button" href="{{ test_url|e }}">{{ lang('Test all') }}</a>
+		</nav>
+	</header>
+	<div class="email-filters-status" id="email-filters-status" role="status" aria-live="polite">{{ lang('Loading filters') }}</div>
+	<div class="email-filters-error" id="email-filters-error" role="alert" hidden></div>
+	<div class="email-filters-table-wrap">
+		<table class="email-filters-table">
+			<thead><tr><th scope="col">{{ lang('Filter') }}</th><th scope="col">{{ lang('Sources') }}</th><th scope="col">{{ lang('Conditions') }}</th><th scope="col">{{ lang('Actions') }}</th><th scope="col">{{ lang('Manage') }}</th></tr></thead>
+			<tbody id="email-filters-rows"></tbody>
+		</table>
+	</div>
+	<footer class="email-filters-footer"><a href="{{ inbox_url|e }}">{{ lang('Back to inbox') }}</a></footer>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/filters.js') }}</script>
+{% endblock %}

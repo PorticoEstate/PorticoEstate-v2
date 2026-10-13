@@ -34,6 +34,7 @@
 		var $not_set='-1';
 		var $mail_out = array();
 		var $smtp;
+		var $api_mode = false;
 		var $xi;
 		
 		// debug level between 0 to 3
@@ -336,11 +337,7 @@
 			$this->prepare_message();
 
 			$returnccode = $this->smtp->Send();
-
-			if( !$this->smtp->ErrorInfo && (!isset($returncode) || !$returncode))//need to work out why it does this sometimes!
-			{
-				$returncode = 1;
-			}
+			$returncode = (bool) $returnccode;
 			
 			/*
 			// ===== DEBUG =====	
@@ -357,12 +354,26 @@
 				$success = $this->copy_to_sent_folder($this->smtp->getHeader() . "\n" . $this->smtp->getBody());
 			}
 
-			if(isset($is_reply) && $is_reply && $returncode )
+			$msgball = (array) $GLOBALS['phpgw']->msg->get_arg_value('msgball');
+			$is_reply = in_array($GLOBALS['phpgw']->msg->recall_desired_action(), ['reply', 'replyall'], true);
+			if ($is_reply && $returncode)
 			{
 				$this->mark_as_replied($msgball);
 			}
 			
 			$return_to_folder_href = $this->get_return_to();
+			if ($this->api_mode)
+			{
+				$sent = (bool) $returnccode;
+				$error = $sent ? '' : (string) ($this->smtp->ErrorInfo ?? '');
+				$this->send_message_cleanup();
+				if (is_object($GLOBALS['phpgw']->msg))
+				{
+					$GLOBALS['phpgw']->msg = '';
+					unset($GLOBALS['phpgw']->msg);
+				}
+				return ['sent' => $sent, 'error' => $error];
+			}
 			
 			if ($returnccode)
 			{
@@ -405,13 +416,14 @@
 			else
 			{
 				// ERROR - mail NOT sent
+				$return_to_folder_url = phpgw::link('/index.php', $return_to_folder_href);
 				echo '<html><body>'."\r\n";
 				echo '<h2>Your message could <b>not</b> be sent!</h2>'."\r\n";
 				echo '<h3>The mail server returned:</h3>'."\r\n";
 				echo '<pre>';
 				$this->smtp->ErrorInfo;
 				echo '</pre>'."\r\n";
-				echo '<p>To go back to the msg list, click <a href="'.$return_to_folder_href.'">here</a> </p>'."\r\n";
+				echo '<p>To go back to the msg list, click <a href="'.$return_to_folder_url.'">here</a> </p>'."\r\n";
 				echo '</body></html>';
 				$this->send_message_cleanup();
 			}
@@ -661,7 +673,7 @@
 			if ($cc)
 			{
 				$cc_array = $GLOBALS['phpgw']->msg->make_rfc_addy_array($cc);
-				if( $cc_array && is_array($to_array) )
+				if ($cc_array && is_array($cc_array))
 				{
 					foreach( $cc_array as $recip )
 					{
@@ -673,7 +685,7 @@
 			if ($bcc)
 			{
 				$bcc_array = $GLOBALS['phpgw']->msg->make_rfc_addy_array($bcc);
-				if( $bcc_array && is_array($to_array) )
+				if ($bcc_array && is_array($bcc_array))
 				{
 					foreach( $bcc_array as $recip )
 					{

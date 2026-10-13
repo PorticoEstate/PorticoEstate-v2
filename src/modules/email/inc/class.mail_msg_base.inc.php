@@ -311,7 +311,7 @@
 		var $extra_and_default_acounts = array();
 		
 		// svc_debug object goes here in the constructor
-		var $dbug='##NOTHING##';
+		public ?svc_debug $dbug = null;
 		
 		// DEBUG FLAGS generally take int 0, 1, 2, or 3
 		var $debug_logins = 0;
@@ -347,7 +347,7 @@
 		*/
 		function __construct()
 		{
-			if (($this->debug_logins > 0) && (is_object($this->dbug->out))) { $this->dbug->out('mail_msg('.__LINE__.'): *constructor*: $GLOBALS[PHP_SELF] = ['.$_SERVER['PHP_SELF'].'] $this->acctnum = ['.$this->acctnum.']  get_class($this) : "'.get_class($this).'" ; get_parent_class($this) : "'.get_parent_class($this).'"<br />'); }
+			if (($this->debug_logins > 0) && ($this->dbug !== null)) { $this->dbug->out('mail_msg('.__LINE__.'): *constructor*: $GLOBALS[PHP_SELF] = ['.$_SERVER['PHP_SELF'].'] $this->acctnum = ['.$this->acctnum.']  get_class($this) : "'.get_class($this).'" ; get_parent_class($this) : "'.get_parent_class($this).'"<br />'); }
 			if ($this->debug_logins > 0) { echo 'mail_msg('.__LINE__.'): *constructor*: $GLOBALS[PHP_SELF] = ['.$_SERVER['PHP_SELF'].'] $this->acctnum = ['.$this->acctnum.']  get_class($this) : "'.get_class($this).'" ; get_parent_class($this) : "'.get_parent_class($this).'"<br />'; }
 			return;
 		}
@@ -373,7 +373,7 @@
 			
 			// ... OK ... now we actually do the CONSTRUCTOR
 			// svc_debug object goes here
-			if ($this->dbug == '##NOTHING##')
+			if ($this->dbug === null)
 			{
 				$this->dbug = CreateObject('email.svc_debug');
 			}

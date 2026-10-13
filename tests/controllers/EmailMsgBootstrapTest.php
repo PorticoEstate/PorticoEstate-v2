@@ -167,6 +167,22 @@ namespace Tests\Controllers
 			$this->assertSame('body', $mail->phpgw_fetchbody($msgball));
 		}
 
+		public function testMoveDebuggingUsesTheTypedLogger(): void
+		{
+			require_once __DIR__ . '/../../src/modules/email/inc/class.svc_debug.inc.php';
+			$mail = $this->getMockBuilder(\mail_msg::class)->onlyMethods(['buffer_move_commands', 'track_expungable_folders'])->getMock();
+			$this->assertNull($mail->dbug);
+			$logger = $this->getMockBuilder(\svc_debug::class)->onlyMethods(['out'])->getMock();
+			$logger->expects($this->exactly(2))->method('out');
+			$mail->dbug = $logger;
+			$mail->debug_wrapper_dcom_calls = 1;
+			$msgball = ['acctnum' => 3, 'folder' => 'INBOX', 'msgnum' => 12];
+			$target = ['acctnum' => 3, 'folder' => 'Archive'];
+			$mail->expects($this->once())->method('buffer_move_commands')->with($msgball, $target);
+			$mail->expects($this->once())->method('track_expungable_folders')->with($msgball);
+			$this->assertTrue($mail->industrial_interacct_mail_move($msgball, $target));
+		}
+
 		public function testEndRequestClosesTheOwnedAccountStream(): void
 		{
 			$mail = $this->getMockBuilder(\mail_msg::class)->onlyMethods(['get_isset_arg', 'get_arg_value', 'set_arg_value'])->getMock();

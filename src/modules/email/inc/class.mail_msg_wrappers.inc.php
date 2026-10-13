@@ -49,7 +49,7 @@
 			return \App\modules\phpgwapi\services\Cache::session_set($module, $location, $data);
 		}
 
-		public static function getInstance(): self
+		public static function getInstance(): \mail_msg
 		{
 			if (self::$instance === null)
 			{

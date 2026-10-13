@@ -41,15 +41,15 @@
 	//@set_time_limit(0);
 	$pass_the_ball_uri = array();
 	
-	if ($GLOBALS['phpgw']->msg->get_isset_arg('fldball'))
+	if (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('fldball'))
 	{
-		$my_fldball = $GLOBALS['phpgw']->msg->get_arg_value('fldball');
+		$my_fldball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('fldball');
 		$pass_the_ball_uri = array('fldball[folder]'=>$my_fldball['folder'],
 						'fldball[acctnum]'=>$my_fldball['acctnum']);
 	}
-	elseif ($GLOBALS['phpgw']->msg->get_isset_arg('msgball'))
+	elseif (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('msgball'))
 	{
-		$my_msgball = $GLOBALS['phpgw']->msg->get_arg_value('msgball');
+		$my_msgball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgball');
 		$pass_the_ball_uri = array('msgball[folder]'=>$my_msgball['folder'],
 						'msgball[acctnum]'=>$my_msgball['acctnum'],
 						'msgball[msgnum]'=>$my_msgball['msgnum']);
@@ -75,7 +75,7 @@
 				+$pass_the_ball_uri
 				);
 	
-	if (is_object($GLOBALS['phpgw']->msg))
+	if (\App\modules\email\services\MailMessage::hasInstance())
 	{
 		$terminate = True;
 	}
@@ -87,10 +87,9 @@
 	if ($terminate == True)
 	{
 		// close down ALL mailserver streams
-		$GLOBALS['phpgw']->msg->end_request();
+		\App\modules\email\services\MailMessage::getInstance()->end_request();
 		// destroy the object
-		$GLOBALS['phpgw']->msg = '';
-		unset($GLOBALS['phpgw']->msg);
+		\App\modules\email\services\MailMessage::releaseInstance();
 	}
 	// shut down this transaction
 	$GLOBALS['phpgw']->common->phpgw_exit(False);

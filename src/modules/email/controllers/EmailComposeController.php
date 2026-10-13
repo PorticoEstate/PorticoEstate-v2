@@ -43,11 +43,10 @@ class EmailComposeController
 		}
 		catch (\Throwable $exception)
 		{
-			if (isset($GLOBALS['phpgw']->msg) && is_object($GLOBALS['phpgw']->msg))
+			if (\App\modules\email\services\MailMessage::hasInstance() && \App\modules\email\services\MailMessage::hasInstance())
 			{
-				$GLOBALS['phpgw']->msg->end_request();
-				$GLOBALS['phpgw']->msg = '';
-				unset($GLOBALS['phpgw']->msg);
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
 			}
 			return $this->json($response, ['error' => lang('Unable to send message')], 500);
 		}

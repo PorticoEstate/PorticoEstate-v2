@@ -65,7 +65,7 @@
 			// pass "special_instructions" back to bocompose, so leave this here
 			$this->bo->compose($reuse_feed_args);
 			
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// we point to the global template for this version of phpgw templatings
 				$this->tpl =& $GLOBALS['phpgw']->template;
@@ -77,7 +77,7 @@
 				$this->tpl = CreateObject('phpgwapi.template',PHPGW_APP_TPL);
 			}
 			
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// we are the BO and the UI, we take care of outputting the HTML to the client browser
 				unset($GLOBALS['phpgw_info']['flags']['noheader']);
@@ -181,8 +181,8 @@
 			}
 			
 			// new way to handle debug data, if there is debug data, this will put it in the template source data vars
-			$this->tpl->set_var('debugdata', $GLOBALS['phpgw']->msg->dbug->notice_pagedone());
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			$this->tpl->set_var('debugdata', \App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone());
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// we are the BO and the UI, we take care of outputting the HTML to the client browser
 				$this->tpl->pfp('out','T_compose_out');
@@ -200,6 +200,6 @@
 				phpgwapi_xslttemplates::getInstance()->pp();
 			}
 			
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 		}
 	}

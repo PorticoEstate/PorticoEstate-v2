@@ -48,7 +48,7 @@
 			$this->bo = CreateObject("email.bomessage");
 			$this->bo->message_data();
 			
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// we point to the global template for this version of phpgw templatings
 				$this->tpl =& $GLOBALS['phpgw']->template;
@@ -60,7 +60,7 @@
 				$this->tpl = CreateObject('phpgwapi.template',PHPGW_APP_TPL);
 			}
 			
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// NOW we can out the header, because "index_data()" filled this global
 				//	$GLOBALS['phpgw_info']['flags']['email_refresh_uri']
@@ -231,7 +231,7 @@
 		//	$this->tpl->set_var('theme_row_on',$this->bo->xi['theme_row_on']);
 			
 			// ----  so called "TOOLBAR" between the msg header data and the message siaplay
-			switch ($GLOBALS['phpgw']->msg->get_pref_value('button_type'))
+			switch (\App\modules\email\services\MailMessage::getInstance()->get_pref_value('button_type'))
 			{
 				case 'text':
 					$this->tpl->set_var('view_option',$this->bo->xi['view_option']);
@@ -317,11 +317,11 @@
 			}
 
 			if( !$this->bo->flags['Draft']
-				&& ( ( $GLOBALS['phpgw']->msg->get_pref_value('mail_server_type') != 'imap' //if not imap/s skip
-					&& $GLOBALS['phpgw']->msg->get_pref_value('mail_server_type') == 'imaps' )
-					|| ( !$GLOBALS['phpgw']->msg->get_pref_value('use_sent_folder') 
-					|| $GLOBALS['phpgw']->msg->get_folder_short($GLOBALS['phpgw']->msg->get_arg_value('folder'))
-						!= $GLOBALS['phpgw']->msg->get_folder_short($GLOBALS['phpgw']->msg->get_pref_value('sent_folder_name')) )
+				&& ( ( \App\modules\email\services\MailMessage::getInstance()->get_pref_value('mail_server_type') != 'imap' //if not imap/s skip
+					&& \App\modules\email\services\MailMessage::getInstance()->get_pref_value('mail_server_type') == 'imaps' )
+					|| ( !\App\modules\email\services\MailMessage::getInstance()->get_pref_value('use_sent_folder')
+					|| \App\modules\email\services\MailMessage::getInstance()->get_folder_short(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder'))
+						!= \App\modules\email\services\MailMessage::getInstance()->get_folder_short(\App\modules\email\services\MailMessage::getInstance()->get_pref_value('sent_folder_name')) )
 				)
 			)
 			{
@@ -346,7 +346,7 @@
 				{
 					$this->tpl->set_var('title_text',$this->bo->part_nice[$i]['title_text']);
 					$this->tpl->set_var('display_str',$this->bo->part_nice[$i]['display_str']);
-					$this->tpl->set_var('message_body',$GLOBALS['phpgw']->msg->ascii2utf($this->bo->part_nice[$i]['message_body']));
+					$this->tpl->set_var('message_body',\App\modules\email\services\MailMessage::getInstance()->ascii2utf($this->bo->part_nice[$i]['message_body']));
 					//$this->tpl->parse('V_display_part','B_display_part', True);
 					//if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
 					//{
@@ -373,13 +373,13 @@
 					$this->tpl->pfp('out','T_message_echo_dump');
 					
 					// -----  Prepare $msgball data for phpgw_fetchbody()
-					$msgball = $GLOBALS['phpgw']->msg->get_arg_value('msgball');
+					$msgball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgball');
 					$msgball['part_no'] = $this->bo->part_nice[$i]['m_part_num_mime'];
 					
 					// -----  Echo This Data Directly to the Client
 					// since the php version of this of b0rked for large msgs, perhaps use sockets code?
 					echo '<pre>';
-					echo $GLOBALS['phpgw']->msg->ascii2utf($GLOBALS['phpgw']->msg->phpgw_fetchbody($msgball));
+					echo \App\modules\email\services\MailMessage::getInstance()->ascii2utf(\App\modules\email\services\MailMessage::getInstance()->phpgw_fetchbody($msgball));
 					echo '</pre>';
 					// -----  Close Table
 					$this->tpl->set_var('V_setup_echo_dump','');
@@ -401,7 +401,7 @@
 			//}
 			
 			// new way to handle debug data, if there is debug data, this will put it in the template source data vars
-			$this->tpl->set_var('debugdata', $GLOBALS['phpgw']->msg->dbug->notice_pagedone());
+			$this->tpl->set_var('debugdata', \App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone());
 			
 			if ((isset($did_echo_dump))
 			&& ($did_echo_dump == True))
@@ -409,7 +409,7 @@
 				// DO NOTHING!
 				// echo dump already outputted the template
 			}
-			elseif ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			elseif (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				$this->tpl->pfp('out','T_message_main');
 				//$GLOBALS['phpgw']->common->phpgw_footer();
@@ -453,10 +453,9 @@
 			}
 
 			// close down ALL mailserver streams
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 			// destroy the object
-			$GLOBALS['phpgw']->msg = '';
-			unset($GLOBALS['phpgw']->msg);
+			\App\modules\email\services\MailMessage::releaseInstance();
 		}
 		
 		/*!
@@ -470,7 +469,7 @@
 			$this->bo = CreateObject("email.bomessage");
 			$this->bo->message_data();
 			
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// we point to the global template for this version of phpgw templatings
 				$this->tpl =& $GLOBALS['phpgw']->template;
@@ -483,7 +482,7 @@
 				$this->tpl = CreateObject('phpgwapi.template',PHPGW_APP_TPL);
 			}
 			
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				$GLOBALS['phpgw_info']['flags']['noheader'] = True;
 				$GLOBALS['phpgw_info']['flags']['nonavbar'] = True;
@@ -596,13 +595,13 @@
 					$this->tpl->pfp('out','T_message_echo_dump');
 					
 					// -----  Prepare $msgball data for phpgw_fetchbody()
-					$msgball = $GLOBALS['phpgw']->msg->get_arg_value('msgball');
+					$msgball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgball');
 					$msgball['part_no'] = $this->bo->part_nice[$i]['m_part_num_mime'];
 					
 					// -----  Echo This Data Directly to the Client
 					// since the php version of this of b0rked for large msgs, perhaps use sockets code?
 					echo '<pre>';
-					echo $GLOBALS['phpgw']->msg->phpgw_fetchbody($msgball);
+					echo \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchbody($msgball);
 					echo '</pre>';
 					// -----  Close Table
 					$this->tpl->set_var('V_setup_echo_dump','');
@@ -622,7 +621,7 @@
 				// DO NOTHING!
 				// echo dump already outputted the template
 			}
-			elseif ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			elseif (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				$this->tpl->pfp('out','T_message_printable');
 				//$GLOBALS['phpgw']->common->phpgw_footer();
@@ -646,13 +645,12 @@
 				//phpgwapi_xslttemplates::getInstance()->set_var('phpgw',array('generic_out' => $data));
 			}
 			
-			if (is_object($GLOBALS['phpgw']->msg))
+			if (\App\modules\email\services\MailMessage::hasInstance())
 			{
 				// close down ALL mailserver streams
-				$GLOBALS['phpgw']->msg->end_request();
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
 				// destroy the object
-				$GLOBALS['phpgw']->msg = '';
-				unset($GLOBALS['phpgw']->msg);
+				\App\modules\email\services\MailMessage::releaseInstance();
 			}
 			// shut down this transaction
 			$GLOBALS['phpgw']->common->phpgw_exit(False);

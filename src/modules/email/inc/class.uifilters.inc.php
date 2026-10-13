@@ -65,7 +65,7 @@
 		*/
 		function filters_edit()
 		{			
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// we point to the global template for this version of phpgw templatings
 				$this->tpl =& $GLOBALS['phpgw']->template;
@@ -77,7 +77,7 @@
 				$this->tpl = CreateObject('phpgwapi.template',PHPGW_APP_TPL);
 			}
 			
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				unset($GLOBALS['phpgw_info']['flags']['noheader']);
 				unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
@@ -277,7 +277,7 @@
 						'pre_select_multi'		=> $pre_select_multi
 					);
 					// get you custom built HTML combobox (a.k.a. selectbox) widget
-					$account_multi_box = $GLOBALS['phpgw']->msg->all_ex_accounts_listbox($feed_args);
+					$account_multi_box = \App\modules\email\services\MailMessage::getInstance()->all_ex_accounts_listbox($feed_args);
 					$this->tpl->set_var('account_multi_box', $account_multi_box);
 					$V_match_left_td = $this->tpl->parse('V_match_account_box','B_match_account_box');	
 				}
@@ -400,7 +400,7 @@
 				$this->tpl->set_var('matchthis_textbox_name',$matchthis_textbox_name);
 				$this->tpl->set_var('match_textbox_txt',$match_textbox_txt);
 				$this->tpl->set_var('V_match_left_td',$V_match_left_td);
-				if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+				if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 				{
 					$this->tpl->parse('V_matches_row','B_matches_row',True);
 				}
@@ -409,7 +409,7 @@
 					$V_matches_row = $V_matches_row . $this->tpl->parse('V_matches_row','B_matches_row');
 				}
 			}
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt == False)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt == False)
 			{
 				$this->tpl->set_var('V_matches_row',$V_matches_row);
 			}
@@ -454,7 +454,7 @@
 					$pre_select_folder = $parsed_folder['folder'];
 					$pre_select_folder_acctnum = $parsed_folder['acctnum'];
 					$pre_select_fldball = array();
-					$pre_select_fldball['folder'] = $GLOBALS['phpgw']->msg->prep_folder_out($parsed_folder['folder']);
+					$pre_select_fldball['folder'] = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out($parsed_folder['folder']);
 					$pre_select_fldball['acctnum'] = (int)$parsed_folder['acctnum'];
 					//echo '$pre_select_folder: ['.$pre_select_folder.'] ; pre_select_folder_acctnum ['.$pre_select_folder_acctnum.']';
 				}
@@ -547,8 +547,8 @@
 			$this->tpl->set_var('V_mlist_html',$mlist_html);
 			
 			// new way to handle debug data, if there is debug data, this will put it in the template source data vars
-			$this->tpl->set_var('debugdata', trim($GLOBALS['phpgw']->msg->dbug->notice_pagedone()));
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			$this->tpl->set_var('debugdata', trim(\App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone()));
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				//$this->tpl->set_var('debugdata', $GLOBALS['phpgw']->msg->dbug->notice_pagedone());
 				// COMMENT NEXT LINE OUT for producvtion use, (unknowns should be "remove"d in production use)
@@ -570,7 +570,7 @@
 			}
 			
 			// tell the msg object we are done with it
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 		}
 
 		/*!
@@ -652,7 +652,7 @@
 			phpgw::redirect_link('/email/view/filters', $query);
 			return;
 
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// we point to the global template for this version of phpgw templatings
 				$this->tpl =& $GLOBALS['phpgw']->template;
@@ -664,7 +664,7 @@
 				$this->tpl = CreateObject('phpgwapi.template',PHPGW_APP_TPL);
 			}
 			
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				unset($GLOBALS['phpgw_info']['flags']['noheader']);
 				unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
@@ -800,7 +800,7 @@
 					$this->tpl->set_var('move_down_href',$filters_list[$i]['move_down_href']);
 					$this->tpl->set_var('edit_href',$filters_list[$i]['edit_href']);
 					$this->tpl->set_var('delete_href',$filters_list[$i]['delete_href']);
-					if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+					if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 					{
 						$this->tpl->parse('V_filter_list_row','B_filter_list_row', True);
 					}
@@ -810,7 +810,7 @@
 					}
 				}
 			}
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt == False)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt == False)
 			{
 					$this->tpl->set_var('V_filter_list_row',$V_filter_list_row);
 			}
@@ -843,8 +843,8 @@
 			$this->tpl->set_var('test_all_filters_href',$test_all_filters_href);
 			
 			// new way to handle debug data, if there is debug data, this will put it in the template source data vars
-			$this->tpl->set_var('debugdata', $GLOBALS['phpgw']->msg->dbug->notice_pagedone());
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			$this->tpl->set_var('debugdata', \App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone());
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// COMMENT NEXT LINE OUT for producvtion use, (unknowns should be "remove"d in production use)
 				$this->tpl->set_unknowns("comment");
@@ -866,7 +866,7 @@
 			}
 				
 			// tell the msg object we are done with it
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 		}
 		
 		

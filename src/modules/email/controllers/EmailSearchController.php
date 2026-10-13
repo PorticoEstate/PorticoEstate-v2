@@ -34,7 +34,7 @@ class EmailSearchController
 			$bootstrap = \CreateObject('email.msg_bootstrap');
 			$bootstrap->set_do_login(\email_msg_bootstrap::LOGIN_ONLY_IF_NEEDED);
 			$bootstrap->ensure_mail_msg_exists('email.api.search', 0);
-			$mail = $GLOBALS['phpgw']->msg;
+			$mail = \App\modules\email\services\MailMessage::getInstance();
 			$availableFolders = (array) $mail->get_arg_value('folder_list', $criteria['account']);
 			$foldersByName = [];
 			foreach ($availableFolders as $folder)
@@ -107,8 +107,7 @@ class EmailSearchController
 			if (is_object($mail))
 			{
 				$mail->end_request();
-				$GLOBALS['phpgw']->msg = '';
-				unset($GLOBALS['phpgw']->msg);
+				\App\modules\email\services\MailMessage::releaseInstance();
 			}
 			$_POST = $originalPost;
 		}

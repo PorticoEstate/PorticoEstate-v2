@@ -344,10 +344,10 @@
 			//while($pref = each($GLOBALS['phpgw_info']['user']['preferences']['nntp']))
 			foreach($GLOBALS['phpgw_info']['user']['preferences']['nntp'] as $key => $value)
 			{
-				$GLOBALS['phpgw']->db->query('SELECT name FROM newsgroups WHERE con='.$key);
-				while($GLOBALS['phpgw']->db->next_record())
+				\App\Database\Db::getInstance()->query('SELECT name FROM newsgroups WHERE con='.$key);
+				while(\App\Database\Db::getInstance()->next_record())
 				{
-					$item_tags = $item_tags .'<option value="' . urlencode($GLOBALS['phpgw']->db->f('name')) . '">' . $GLOBALS['phpgw']->db->f('name')
+					$item_tags = $item_tags .'<option value="' . urlencode(\App\Database\Db::getInstance()->f('name')) . '">' . \App\Database\Db::getInstance()->f('name')
 					  . '</option>';
 				}
 			}
@@ -378,7 +378,7 @@
 					$tmp_fldball = array();
 					$tmp_fldball['folder'] = $folder_long;
 					$tmp_fldball['acctnum'] = $acctnum;
-					$folder_status = $GLOBALS['phpgw']->msg->get_folder_status_info($tmp_fldball);
+					$folder_status = \App\modules\email\services\MailMessage::getInstance()->get_folder_status_info($tmp_fldball);
 					$folder_unseen = number_format($folder_status['number_new']);
 					$tmp_fldball = array();
 				} 
@@ -551,10 +551,10 @@
 					//while($pref = each($GLOBALS['phpgw_info']['user']['preferences']['nntp']))
 					foreach($GLOBALS['phpgw_info']['user']['preferences']['nntp'] as $key => $value)
 					{
-						$GLOBALS['phpgw']->db->query('SELECT name FROM newsgroups WHERE con='.$key);
-						while($GLOBALS['phpgw']->db->next_record())
+						\App\Database\Db::getInstance()->query('SELECT name FROM newsgroups WHERE con='.$key);
+						while(\App\Database\Db::getInstance()->next_record())
 						{
-							$item_tags .= '<option value="' . urlencode($GLOBALS['phpgw']->db->f('name')) . '">' . $GLOBALS['phpgw']->db->f('name')
+							$item_tags .= '<option value="' . urlencode(\App\Database\Db::getInstance()->f('name')) . '">' . \App\Database\Db::getInstance()->f('name')
 							  . '</option>';
 						}
 					}
@@ -1876,8 +1876,9 @@
 
 			// TEMPORARY HACK FOR SOCKET POP3 CLASS - feed it DUMB mime part numbers
 
-			if ((isset($GLOBALS['phpgw_dcom_'.$this->acctnum]->dcom->imap_builtin))
-			&& ($GLOBALS['phpgw_dcom_'.$this->acctnum]->dcom->imap_builtin == False)
+			if ($this->hasTransport((int) $this->acctnum)
+			&& (isset($this->getTransport($this->acctnum)->imap_builtin))
+			&& ($this->getTransport($this->acctnum)->imap_builtin == False)
 			&& (stristr($this->get_pref_value('mail_server_type'), 'pop3')))
 			{
 				// Make ***DUMB*** Mime Number THE PRIMARY MIME NUMBER we will use
@@ -3079,9 +3080,9 @@ $hdr_envelope->udate = $new_time;
 
 			// DATE
 			// date_time has both date and time, which probably is long enough to make a TD cell wrap text to 2 lines
-			$msg_date_time = $GLOBALS['phpgw']->common->show_date($hdr_envelope->udate);
+			$msg_date_time = $this->getCommon()->show_date($hdr_envelope->udate);
 //echo"$msg_date_time";
-			if($GLOBALS['phpgw']->common->show_date($hdr_envelope->udate,'Ymd') != date('Ymd'))
+			if($this->getCommon()->show_date($hdr_envelope->udate,'Ymd') != date('Ymd'))
 			{
 				// this strips the time part, leaving only the date, better for single line TD cells
 				$msg_list_display[$x]['msg_date'] = preg_replace("/ - .*$/", '', $msg_date_time);

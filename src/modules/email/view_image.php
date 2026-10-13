@@ -1,73 +1,38 @@
 <?php
-	/**
-	* EMail
-	*
-	* @author Mark C3ushman <mark@cushman.net>
-	* @copyright Copyright (C) xxxx Mark C3ushman
-	* @copyright Copyright (C) 2003-2005 Free Software Foundation, Inc. http://www.fsf.org/
-	* @license http://www.gnu.org/licenses/gpl.html GNU General Public License
-	* @package email
-	* @version $Id$
-	* @internal Based on Aeromail http://the.cushman.net/
-	*/
-
 	$GLOBALS['phpgw_info']['flags'] = array(
 		'currentapp' => 'email',
-		'enable_network_class' => True, 
+		'enable_network_class' => True,
 		'noheader' => True,
 		'nonavbar' => True
 	);
-	
-	/**
-	* Include phpgroupware header
-	*/
+
 	include('../header.inc.php');
-	
-	
-	/*
-	if (isset($GLOBALS['phpgw_info']['flags']['newsmode']) && $GLOBALS['phpgw_info']['flags']['newsmode'])
-	{
-		$GLOBALS['phpgw']->common->read_preferences('nntp');
-	}
-	@set_time_limit(0);
 
-	echo 'Mailbox = '.$mailbox.'<br />'."\n";
-	echo 'Mailbox = '.$GLOBALS['phpgw']->msg->mailsvr_stream.'<br />'."\n";
-	echo 'Msgnum = '.$m.'<br />'."\n";
-	echo 'Part Number = '.$p.'<br />'."\n";
-	echo 'Subtype = '.$s.'<br />'."\n";
-	*/
-	//$data = $GLOBALS['phpgw']->dcom->fetchbody($GLOBALS['phpgw']->msg->mailsvr_stream, $m, $p);
-	$data = $GLOBALS['phpgw']->msg->phpgw_fetchbody($p);
-	//$picture = $GLOBALS['phpgw']->dcom->base64($data);
-	$picture = $GLOBALS['phpgw']->msg->de_base64($data);
+	$query = $_GET;
+	$msgball = is_array($query['msgball'] ?? null) ? $query['msgball'] : [];
+	$msgball['acctnum'] = $msgball['acctnum'] ?? ($query['acctnum'] ?? null);
+	$msgball['folder'] = $msgball['folder'] ?? ($query['folder'] ?? ($query['mailbox'] ?? null));
+	$msgball['msgnum'] = $msgball['msgnum'] ?? ($query['m'] ?? null);
+	$msgball['part_no'] = $msgball['part_no'] ?? ($query['p'] ?? null);
 
-	//  echo strlen($picture)."<br />\n";
-	//  echo $data;
+	if (
+		!is_scalar($msgball['acctnum']) || !is_numeric($msgball['acctnum'])
+		|| !is_string($msgball['folder']) || $msgball['folder'] === ''
+		|| !is_scalar($msgball['msgnum']) || !is_numeric($msgball['msgnum'])
+		|| !is_string($msgball['part_no']) || !preg_match('/^\d+(?:\.\d+)*$/', $msgball['part_no'])
+	)
+	{
+		http_response_code(400);
+		header('Content-Type: text/plain; charset=utf-8');
+		echo 'Invalid image reference';
+		exit;
+	}
 
-	Header('Content-length: '.strlen($picture));
-	Header('Content-type: image/'.$s);
-	Header('Content-disposition: attachment; filename="'.urldecode($n).'"');
-	echo $picture;
-	flush();
-
-	// IS THIS FILE EVER USED ANYMORE?
-	if (is_object($GLOBALS['phpgw']->msg))
-	{
-		$terminate = True;
-	}
-	else
-	{
-		$terminate = False;
-	}
-	
-	if ($terminate == True)
-	{
-		// close down ALL mailserver streams
-		$GLOBALS['phpgw']->msg->end_request();
-		// destroy the object
-		$GLOBALS['phpgw']->msg = '';
-		unset($GLOBALS['phpgw']->msg);
-	}
-	// shut down this transaction
-	$GLOBALS['phpgw']->common->phpgw_exit(False);
+	header('Location: ' . \phpgw::link('/email/api/attachment', [
+		'msgball[acctnum]' => $msgball['acctnum'],
+		'msgball[folder]' => $msgball['folder'],
+		'msgball[msgnum]' => $msgball['msgnum'],
+		'msgball[part_no]' => $msgball['part_no'],
+		'inline' => '1',
+	]), true, 302);
+	exit;

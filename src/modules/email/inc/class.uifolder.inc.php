@@ -38,7 +38,7 @@
 			$this->bo = CreateObject('email.bofolder');
 			$this->bo->folder();
 			
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// we point to the global template for this version of phpgw templatings
 				$this->tpl =& $GLOBALS['phpgw']->template;
@@ -50,7 +50,7 @@
 				$this->tpl = CreateObject('phpgwapi.template',PHPGW_APP_TPL);
 			}
 			
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				unset($GLOBALS['phpgw_info']['flags']['noheader']);
 				unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
@@ -133,8 +133,8 @@
 		//	$this->tpl->set_var('th_backcolor',$this->bo->xi['th_backcolor']);
 			
 			// new way to handle debug data, if there is debug data, this will put it in the template source data vars
-			$this->tpl->set_var('debugdata', $GLOBALS['phpgw']->msg->dbug->notice_pagedone());
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			$this->tpl->set_var('debugdata', \App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone());
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// COMMENT NEXT LINE OUT for producvtion use, (unknowns should be "remove"d in production use)
 				$this->tpl->set_unknowns('comment');
@@ -158,9 +158,8 @@
 			}
 			
 			// close down ALL mailserver streams
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 			// destroy the object
-			$GLOBALS['phpgw']->msg = '';
-			unset($GLOBALS['phpgw']->msg);
+			\App\modules\email\services\MailMessage::releaseInstance();
 		}
 	}

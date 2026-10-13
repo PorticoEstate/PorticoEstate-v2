@@ -114,7 +114,7 @@
 		*/
 		function fill_control_data_gpc()
 		{
-			if ($this->debug > 2) { echo 'emai.boattach_file.attach ('.__LINE__.'): $GLOBALS[phpgw]->msg->ref_POST data DUMP<pre>'; print_r($GLOBALS['phpgw']->msg->ref_POST);  echo '</pre>'; }
+			if ($this->debug > 2) { echo 'emai.boattach_file.attach ('.__LINE__.'): $GLOBALS[phpgw]->msg->ref_POST data DUMP<pre>'; print_r(\App\modules\email\services\MailMessage::getInstance()->ref_POST);  echo '</pre>'; }
 			
 			$this->control_data['action'] = htmlentities(Sanitizer::get_var('action', 'string', 'POST' ) );
 			$this->control_data['delete'] = Sanitizer::get_var('delete', 'array', 'POST' );
@@ -140,10 +140,10 @@
 			{
 				if ($this->debug > 1) { echo 'emai.boattach_file.fill_file_data_gpc ('.__LINE__.'): using msg->ref_FILES to fill $this->file_data[] <br />'; } 
 				if ($this->debug > 2) { echo 'emai.boattach_file.fill_file_data_gpc ('.__LINE__.'): msg->ref_FILE dump: '.htmlspecialchars(serialize($_FILES)).'<br />'; } 
-				$this->file_data['file_tmp_name'] = $GLOBALS['phpgw']->msg->stripslashes_gpc(trim($_FILES['uploadedfile']['tmp_name']));
-				$this->file_data['file_name'] = $GLOBALS['phpgw']->msg->stripslashes_gpc(trim($_FILES['uploadedfile']['name']));
-				$this->file_data['file_size'] = $GLOBALS['phpgw']->msg->stripslashes_gpc(trim($_FILES['uploadedfile']['size']));
-				$this->file_data['file_type'] = $GLOBALS['phpgw']->msg->stripslashes_gpc(trim($_FILES['uploadedfile']['type']));
+				$this->file_data['file_tmp_name'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim($_FILES['uploadedfile']['tmp_name']));
+				$this->file_data['file_name'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim($_FILES['uploadedfile']['name']));
+				$this->file_data['file_size'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim($_FILES['uploadedfile']['size']));
+				$this->file_data['file_type'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim($_FILES['uploadedfile']['type']));
 			}
 			
 			// sometimes PHP is very clue-less about MIME types, and gives NO file_type
@@ -207,7 +207,7 @@
 					. '<br />';
 			}
 		
-			$this->uploaddir = $GLOBALS['phpgw']->msg->att_files_dir;
+			$this->uploaddir = \App\modules\email\services\MailMessage::getInstance()->att_files_dir;
 			if (!is_dir($this->uploaddir))
 			{
 				mkdir($this->uploaddir,0700);

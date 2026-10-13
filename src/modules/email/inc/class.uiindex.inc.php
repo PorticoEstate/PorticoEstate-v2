@@ -78,8 +78,8 @@
 			$GLOBALS['phpgw']->common->phpgw_header(true);
 			$this->tpl->set_root(PHPGW_APP_TPL);
 			
-			$this->bo->xi['my_layout'] = $GLOBALS['phpgw']->msg->get_pref_value('layout');
-			$this->bo->xi['my_browser'] = $GLOBALS['phpgw']->msg->browser;
+			$this->bo->xi['my_layout'] = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('layout');
+			$this->bo->xi['my_browser'] = \App\modules\email\services\MailMessage::getInstance()->browser;
 			
 			$this->tpl->set_file(array(		
 				//'T_form_delmov_init' => 'index_form_delmov_init.tpl',
@@ -135,11 +135,11 @@
 			);
 			$this->tpl->set_var($tpl_vars);
 
-			if( ($GLOBALS['phpgw']->msg->get_pref_value('mail_server_type') == 'imap' //if not imap/s skip
-					|| $GLOBALS['phpgw']->msg->get_pref_value('mail_server_type') == 'imaps' )
-				&& $GLOBALS['phpgw']->msg->get_pref_value('use_trash_folder') //no trash then pointless
-				&& $GLOBALS['phpgw']->msg->get_folder_short($GLOBALS['phpgw']->msg->get_arg_value('folder'))
-					 == $GLOBALS['phpgw']->msg->get_folder_short($GLOBALS['phpgw']->msg->get_pref_value('trash_folder_name')))//not trash folder then don't show
+			if( (\App\modules\email\services\MailMessage::getInstance()->get_pref_value('mail_server_type') == 'imap' //if not imap/s skip
+					|| \App\modules\email\services\MailMessage::getInstance()->get_pref_value('mail_server_type') == 'imaps' )
+				&& \App\modules\email\services\MailMessage::getInstance()->get_pref_value('use_trash_folder') //no trash then pointless
+				&& \App\modules\email\services\MailMessage::getInstance()->get_folder_short(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder'))
+					 == \App\modules\email\services\MailMessage::getInstance()->get_folder_short(\App\modules\email\services\MailMessage::getInstance()->get_pref_value('trash_folder_name')))//not trash folder then don't show
 			{
 				$this->tpl->set_var(
 						array(
@@ -159,11 +159,11 @@
 			//= = = = TESTING NEW TOOLBAR WIDGET = = = 
 			$this->widgets = CreateObject('email.html_widgets');
 			// this will have a msg to the user if messages were moved or deleted
-			$this->widgets->set_toolbar_msg($GLOBALS['phpgw']->msg->report_moved_or_deleted());
+			$this->widgets->set_toolbar_msg(\App\modules\email\services\MailMessage::getInstance()->report_moved_or_deleted());
 			$this->tpl->set_var('widget_toolbar',$this->widgets->get_toolbar());
 			$this->tpl->set_var('geek_bar',$this->widgets->get_geek_bar());
 			// stats row, generated in a single function call
-			$this->tpl->set_var('stats_data_display', $this->bo->get_index_stats_block((string)$GLOBALS['phpgw']->msg->get_pref_value('layout')));
+			$this->tpl->set_var('stats_data_display', $this->bo->get_index_stats_block((string)\App\modules\email\services\MailMessage::getInstance()->get_pref_value('layout')));
 			
 			if ($this->bo->xi['folder_info']['number_all'] == 0)
 			{
@@ -248,8 +248,8 @@
 					$this->tpl->set_var('all_flags_images',$all_flags_images);
 					
 					// are we IN THE SENT folder or not
-					if (	$GLOBALS['phpgw']->msg->get_folder_short($GLOBALS['phpgw']->msg->get_arg_value('folder'))
-					 != $GLOBALS['phpgw']->msg->get_folder_short($GLOBALS['phpgw']->msg->get_pref_value('sent_folder_name')))
+					if (	\App\modules\email\services\MailMessage::getInstance()->get_folder_short(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder'))
+					 != \App\modules\email\services\MailMessage::getInstance()->get_folder_short(\App\modules\email\services\MailMessage::getInstance()->get_pref_value('sent_folder_name')))
 					{
 						// in every folder EXCEPT "Sent" folder, we show who the message came from
 						$tpl_vars = Array(
@@ -410,7 +410,7 @@
 			*/
 			
 			// new way to handle debug data, if this array has anything, put it in the template source data vars
-			$this->tpl->set_var('debugdata',$GLOBALS['phpgw']->msg->dbug->notice_pagedone());
+			$this->tpl->set_var('debugdata',\App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone());
 			
 			// COMMENT NEXT LINE OUT for producvtion use, (unknowns should be "remove"d in production use)
 			$this->tpl->set_unknowns('comment');
@@ -421,10 +421,9 @@
 			// if we do that, the client browser will get TWO page footers, so we do not call it here
 			
 			// close down ALL mailserver streams
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 			// destroy the object
-			$GLOBALS['phpgw']->msg = '';
-			unset($GLOBALS['phpgw']->msg);
+			\App\modules\email\services\MailMessage::releaseInstance();
 		}
 
 		/*!
@@ -437,15 +436,15 @@
 		{
 			phpgwapi_xslttemplates::getInstance()->add_file(array('app_data'));
 			
-			$this->bo->xi['my_layout'] = $GLOBALS['phpgw']->msg->get_pref_value('layout');
-			$this->bo->xi['my_browser'] = $GLOBALS['phpgw']->msg->browser;
+			$this->bo->xi['my_layout'] = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('layout');
+			$this->bo->xi['my_browser'] = \App\modules\email\services\MailMessage::getInstance()->browser;
 			
 			//$this->bo->xi['compose_text'] = lang('Compose');
 			
 			//= = = =  TOOLBAR WIDGET = = = 
 			$this->widgets = CreateObject('email.html_widgets');
 			// this will have a msg to the user if messages were moved or deleted
-			$this->widgets->set_toolbar_msg($GLOBALS['phpgw']->msg->report_moved_or_deleted());
+			$this->widgets->set_toolbar_msg(\App\modules\email\services\MailMessage::getInstance()->report_moved_or_deleted());
 			$widget_toolbar = $this->widgets->get_toolbar();
 			$geek_bar = $this->widgets->get_geek_bar();
 			
@@ -455,7 +454,7 @@
 				'index_js' => $this->index_xslt_javascript(),
 				'widget_toolbar' => $widget_toolbar,
 				'geek_bar' => $geek_bar,
-				'stats_data_display' => $this->bo->get_index_stats_block((string)$GLOBALS['phpgw']->msg->get_pref_value('layout')),
+				'stats_data_display' => $this->bo->get_index_stats_block((string)\App\modules\email\services\MailMessage::getInstance()->get_pref_value('layout')),
 				'arrows_backcolor_class' => $this->bo->xi['arrows_backcolor_class'],
 				'first_page' => $this->bo->xi['first_page'],
 				'prev_page' => $this->bo->xi['prev_page'],
@@ -489,7 +488,7 @@
 				'auto_refresh_widget' => $this->bo->xi['auto_refresh_widget']
 			);
 			// new way to handle debug data, if this array has anything, put it in the template source data vars
-			$data['debugdata'] = $GLOBALS['phpgw']->msg->dbug->notice_pagedone();
+			$data['debugdata'] = \App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone();
 			
 			$GLOBALS['phpgw_info']['flags']['email']['app_header'] = lang('E-Mail') . ': ' . lang('list messages');
 			$GLOBALS['phpgw_info']['flags']['app_header'] = lang('E-Mail') . ': ' . lang('list messages');
@@ -497,10 +496,9 @@
 			phpgwapi_xslttemplates::getInstance()->pp();
 			
 			// close down ALL mailserver streams
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 			// destroy the object
-			$GLOBALS['phpgw']->msg = '';
-			unset($GLOBALS['phpgw']->msg);
+			\App\modules\email\services\MailMessage::releaseInstance();
 		}
 
 		/*!
@@ -572,8 +570,8 @@ EOD;
 			$GLOBALS['phpgw']->template->set_root(PHPGW_APP_TPL);
 
 			// MUCH of this data may not be necessary nor used for mlists 
-			$this->bo->xi['my_layout'] = $GLOBALS['phpgw']->msg->prefs['layout'];
-			$this->bo->xi['my_browser'] = $GLOBALS['phpgw']->msg->browser;
+			$this->bo->xi['my_layout'] = \App\modules\email\services\MailMessage::getInstance()->prefs['layout'];
+			$this->bo->xi['my_browser'] = \App\modules\email\services\MailMessage::getInstance()->browser;
 			
 			//$GLOBALS['phpgw']->template = CreateObject('phpgwapi.template',PHPGW_APP_TPL);
 			$GLOBALS['phpgw']->template->set_file(array(		
@@ -785,11 +783,11 @@ EOD;
 			$GLOBALS['phpgw']->template->set_var($tpl_vars);
 			
 			// make the voluminous MLIST hidden vars array
-			$loop_to = count($GLOBALS['phpgw']->msg->args['mlist_set']);
+			$loop_to = count(\App\modules\email\services\MailMessage::getInstance()->args['mlist_set']);
 			$mlist_hidden_vars = '';
 			for ($i=0; $i < $loop_to; $i++)
 			{
-				$this_msg_num = $GLOBALS['phpgw']->msg->args['mlist_set'][$i];
+				$this_msg_num = \App\modules\email\services\MailMessage::getInstance()->args['mlist_set'][$i];
 				$mlist_hidden_vars .= '<input type="hidden" name="mlist_set['.(string)$i.']" value="'.$this_msg_num.'">'."\r\n";
 			}
 			// make the first prev next last arrows			
@@ -818,7 +816,7 @@ EOD;
 			}
 			*/
 			
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 			
 			// we are the BO and the UI, we take care of outputting the HTML to the client browser
 			// Template->pparse means "print parse" which parses the template and uses php print command

@@ -1132,8 +1132,8 @@
 			else
 			{
 				// we need an "fq_folder" to call this function
-				$fq_folder =	 $GLOBALS['phpgw']->msg->get_arg_value('mailsvr_callstr')
-							.$GLOBALS['phpgw']->msg->get_arg_value('folder');
+				$fq_folder =	 \App\modules\email\services\MailMessage::getInstance()->get_arg_value('mailsvr_callstr')
+							.\App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder');
 				if ($this->debug_dcom >= 2) { echo 'imap: sort: NO L1 class var cached num msgs data, calling this->status with $fq_folder ['.htmlspecialchars($fq_folder).']<br />'; }
 				$status_data = $this->status($stream_notused, $fq_folder,PE_IMAP_SA_ALL);
 				$num_msgs = $status_data->messages;

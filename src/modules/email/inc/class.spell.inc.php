@@ -429,9 +429,9 @@
 		{
 			$tmp_text = $this->body_orig;
 			// make all stray CR and LF  into CRLF combos which is standard text structure in the email world
-			$tmp_text = $GLOBALS['phpgw']->msg->normalize_crlf($tmp_text);
+			$tmp_text = \App\modules\email\services\MailMessage::getInstance()->normalize_crlf($tmp_text);
 			// we do not want to spell check html specialchars (&gt, $lt), so DECODE them now
-			$tmp_text = $GLOBALS['phpgw']->msg->htmlspecialchars_decode($tmp_text);
+			$tmp_text = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_decode($tmp_text);
 			// now body is tripped and normalized as much as is possible before we do esoteric stuff in the spellcheck function
 			$this->body_orig = $tmp_text;
 			// note - although we do not want to spell check html specialchars, we still need to REENCODE them for display to the user
@@ -455,7 +455,7 @@
 			$body_display = $feed_text;
 			// to make the body DISPLAYABLE to the user, do 2 things
 			// 1) enc ode any offensive ASCII (&, ", ', <, >) into their html specialchars equivalents
-			$body_display = $GLOBALS['phpgw']->msg->htmlspecialchars_encode($body_display);
+			$body_display = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($body_display);
 			// 2) convert linebreaks to <br /> tags
 			//$body_display = ereg_replace("\r\n","_CRLF_",$body_display);
 			//$body_display = ereg_replace("\r\n","<br />",$body_display);
@@ -922,7 +922,7 @@
 			
 			// now prepare to check words.
 			$this->body_array = array();
-			$this->body_array = $GLOBALS['phpgw']->msg->explode_linebreaks($this->body_orig);
+			$this->body_array = \App\modules\email\services\MailMessage::getInstance()->explode_linebreaks($this->body_orig);
 			
 			if ($this->debug_spellcheck > 0) { echo 'spell_review: $this->body_array DUMP <pre>'; print_r($this->body_array); echo '</pre>'; }
 			
@@ -1030,7 +1030,7 @@
 				$this_line_str = $this->body_array[$i];
 				// first, we can encode the html specialchars that exist in the orig line
 				// this *should* not add any spaces, so word number data should still be valid
-				$this_line_str = $GLOBALS['phpgw']->msg->htmlspecialchars_encode($this_line_str);
+				$this_line_str = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($this_line_str);
 				if ($this->debug_spellcheck > 0) { echo 'spell_review: RECONSTRUCT BODY this_line: ['.$this_line_str.']<br />'; }
 				
 				// any and all bad words in this line of text are flagged now
@@ -1072,44 +1072,44 @@
 			// this function is in class.msgl_bootstrap.inc.php, we created in the constructor for this class.
 			$this->msg_bootstrap->ensure_mail_msg_exists('email.spell.spell_finished', $this->debug_spell_finished);
 			
-			if ($this->debug_spell_finished > 2) { 	echo 'email.spell.spell_finished: data dump: $GLOBALS[HTTP_POST_VARS]<pre>'; print_r($GLOBALS['phpgw']->msg->ref_POST); echo '</pre>'."\r\n";
-									echo 'email.spell.spell_finished: data dump: $GLOBALS[HTTP_GET_VARS]<pre>'; print_r($GLOBALS['phpgw']->msg->ref_GET); echo '</pre>'."\r\n"; }
+			if ($this->debug_spell_finished > 2) { 	echo 'email.spell.spell_finished: data dump: $GLOBALS[HTTP_POST_VARS]<pre>'; print_r(\App\modules\email\services\MailMessage::getInstance()->ref_POST); echo '</pre>'."\r\n";
+									echo 'email.spell.spell_finished: data dump: $GLOBALS[HTTP_GET_VARS]<pre>'; print_r(\App\modules\email\services\MailMessage::getInstance()->ref_GET); echo '</pre>'."\r\n"; }
 			
 			// recover the body_orig
-			$this->body_orig = urldecode($GLOBALS['phpgw']->msg->ref_POST['body_orig_b64_urlencode']);
+			$this->body_orig = urldecode(\App\modules\email\services\MailMessage::getInstance()->ref_POST['body_orig_b64_urlencode']);
 			$this->body_orig = base64_decode($this->body_orig);
 			if ($this->debug_spell_finished > 1) { echo 'email.spell.spell_finished: recovered $this->body_orig DUMP:<pre>'; print_r($this->body_orig); echo '</pre>'; }
 			
 			// CANCEL OR APPLY - which button was pressed
-			if ((isset($GLOBALS['phpgw']->msg->ref_POST['btn_apply']))
-			&& ($GLOBALS['phpgw']->msg->ref_POST['btn_apply'] != ''))
+			if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_apply']))
+			&& (\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_apply'] != ''))
 			{
 				if ($this->debug_spell_finished > 1) { echo 'email.spell.spell_finished: btn_apply was pressed<br />'; }
 				// recover the spellcheck data which was encooded as a URI get string in the spelling comboboxes
 				$all_badwords = array();
 				// ----  extract any "fake_uri" embedded data from HTTP_POST_VARS  ----
 				// note: this happens automatically for HTTP_GET_VARS 
-				if (is_array($GLOBALS['phpgw']->msg->ref_POST))
+				if (is_array(\App\modules\email\services\MailMessage::getInstance()->ref_POST))
 				{
 					if ($this->debug_spell_finished > 1) { echo '$GLOBALS[HTTP_POST_VARS] is array<br />'; }
 					//@reset($GLOBALS['phpgw']->msg->ref_POST);
 					//while(list($key,$value) = each($GLOBALS['phpgw']->msg->ref_POST))
-					foreach($GLOBALS['phpgw']->msg->ref_POST as $key => $value)
+					foreach(\App\modules\email\services\MailMessage::getInstance()->ref_POST as $key => $value)
 					{
 						// looking for any key like this: "lineX_wordX_alphachars"
 						if (stristr($key, '_word'))
 						{
-							$uri_type_string = $GLOBALS['phpgw']->msg->ref_POST[$key];
+							$uri_type_string = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$key];
 							$embeded_data = array();
 							// parse_str also urldecodes the items automatically.
 							parse_str($uri_type_string, $embeded_data);
 							// stripslashes_gpc if needed
-							$embeded_data['orig_word'] = $GLOBALS['phpgw']->msg->stripslashes_gpc($embeded_data['orig_word']);
-							$embeded_data['orig_word_clean'] = $GLOBALS['phpgw']->msg->stripslashes_gpc($embeded_data['orig_word_clean']);
-							$embeded_data['suggestion_value'] = $GLOBALS['phpgw']->msg->stripslashes_gpc($embeded_data['suggestion_value']);
+							$embeded_data['orig_word'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($embeded_data['orig_word']);
+							$embeded_data['orig_word_clean'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($embeded_data['orig_word_clean']);
+							$embeded_data['suggestion_value'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($embeded_data['suggestion_value']);
 							// add the key just for the record, we may not need it 
 							//it needs urldecoded since it did not pass thru parse_str
-							$embeded_data['post_key'] =  $GLOBALS['phpgw']->msg->stripslashes_gpc(urldecode($key));
+							$embeded_data['post_key'] =  \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(urldecode($key));
 							$idx = count($all_badwords);
 							$all_badwords[$idx] = $embeded_data;
 						}
@@ -1123,7 +1123,7 @@
 				if ($this->debug_spell_finished > 1) { echo 'email.spell.spell_finished: btn_apply was pressed, fix misspelled words if necessary <br />'; }
 				
 				$this->body_array = array();
-				$this->body_array = $GLOBALS['phpgw']->msg->explode_linebreaks($this->body_orig);
+				$this->body_array = \App\modules\email\services\MailMessage::getInstance()->explode_linebreaks($this->body_orig);
 				
 				if ($this->debug_spell_finished > 2) { echo 'email.spell.spell_finished: $this->body_array DUMP <pre>'; print_r($this->body_array); echo '</pre>'; }
 				
@@ -1152,9 +1152,9 @@
 			if ($this->debug_spell_finished > 1) { echo 'email.spell.spell_finished: FINAL PROCESSED BODY: $this->body_with_suggest:<pre>'.$this->body_with_suggest.'</pre>'; }
 			
 			// TELL BOCOMPOSE TO DO ITS THING WITH THIS SPELL FIXED BODY
-			$GLOBALS['phpgw']->msg->set_arg_value('body', $this->body_with_suggest);
-			$GLOBALS['phpgw']->uicompose = CreateObject("email.uicompose");
-			$GLOBALS['phpgw']->uicompose->compose('mail_spell_special_handling');
+			\App\modules\email\services\MailMessage::getInstance()->set_arg_value('body', $this->body_with_suggest);
+			$compose = CreateObject("email.uicompose");
+			$compose->compose('mail_spell_special_handling');
 			
 			
 			

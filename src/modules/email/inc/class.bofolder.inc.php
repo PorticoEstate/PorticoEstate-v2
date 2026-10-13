@@ -73,47 +73,47 @@
 		{
 			if ($this->debug > 0) { echo 'ENTERING: email.bofolder.folder_action('.__LINE__.')'.'<br />'; }
 			// ----  Create or Delete or Rename a Folder ?  ----
-			if (($GLOBALS['phpgw']->msg->get_arg_value('action') == 'create')
-			|| ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'delete')
-			|| ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'rename')
-			|| ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'create_expert')
-			|| ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'delete_expert')
-			|| ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'rename_expert'))
+			if ((\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'create')
+			|| (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'delete')
+			|| (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'rename')
+			|| (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'create_expert')
+			|| (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'delete_expert')
+			|| (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'rename_expert'))
 			{
 				// we have been requested to do a folder action
 				
 				// basic sanity check
-				if ( ($GLOBALS['phpgw']->msg->get_isset_arg('["target_fldball"]["folder"]') == False)
-				|| ($GLOBALS['phpgw']->msg->get_arg_value('["target_fldball"]["folder"]') == '') )
+				if ( (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('["target_fldball"]["folder"]') == False)
+				|| (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('["target_fldball"]["folder"]') == '') )
 				{
 					// Error Result Message
 					$action_report = lang('Please type a folder name in the text box');
 				}
-				elseif ( (($GLOBALS['phpgw']->msg->get_arg_value('action') == 'rename')
-				  || ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'rename_expert'))
-				&& (($GLOBALS['phpgw']->msg->get_isset_arg('["source_fldball"]["folder"]') == False)
-				  || ($GLOBALS['phpgw']->msg->get_arg_value('["source_fldball"]["folder"]') == '')) )
+				elseif ( ((\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'rename')
+				  || (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'rename_expert'))
+				&& ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('["source_fldball"]["folder"]') == False)
+				  || (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('["source_fldball"]["folder"]') == '')) )
 				{
 					// Error Result Message
 					$action_report = lang('Please select a folder to rename');
 				}
 				else
 				{
-					$source_fldball = $GLOBALS['phpgw']->msg->get_arg_value('source_fldball');
-					$target_fldball = $GLOBALS['phpgw']->msg->get_arg_value('target_fldball');
-					if ($this->debug > 1) { echo 'email.bofolder.folder_action('.__LINE__.'): we will delete, rename, or create a folder; ->msg->get_arg_value("action") is ['.$GLOBALS['phpgw']->msg->get_arg_value('action').']'.'<br />'; }
+					$source_fldball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('source_fldball');
+					$target_fldball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('target_fldball');
+					if ($this->debug > 1) { echo 'email.bofolder.folder_action('.__LINE__.'): we will delete, rename, or create a folder; ->msg->get_arg_value("action") is ['.\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action').']'.'<br />'; }
 					if ($this->debug > 2) { echo 'email.bofolder.folder_action('.__LINE__.'): $source_fldball DUMP<pre>'; print_r($source_fldball); echo '<pre>'; }
 					if ($this->debug > 2) { echo 'email.bofolder.folder_action('.__LINE__.'): $target_fldball DUMP<pre>'; print_r($target_fldball); echo '<pre>'; }
 					
 					//  ----  Establish Email Server Connectivity Conventions  ----
-					$server_str = $GLOBALS['phpgw']->msg->get_arg_value('mailsvr_callstr');
-					$name_space = $GLOBALS['phpgw']->msg->get_arg_value('mailsvr_namespace');
-					$dot_or_slash = $GLOBALS['phpgw']->msg->get_arg_value('mailsvr_delimiter');
+					$server_str = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('mailsvr_callstr');
+					$name_space = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('mailsvr_namespace');
+					$dot_or_slash = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('mailsvr_delimiter');
 					
 					// ---- Prep Target Folder
 					// get rid of the escape \ that magic_quotes HTTP POST will add
 					// " becomes \" and  '  becomes  \'  and  \  becomes \\
-					$target_stripped = $GLOBALS['phpgw']->msg->stripslashes_gpc($target_fldball['folder']);
+					$target_stripped = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($target_fldball['folder']);
 					$target_fldball['folder'] = $target_stripped;
 					// == is that necessary ? == are folder names allowed with '  "  \  in them ? ===
 					// rfc2060 does NOT prohibit them
@@ -123,9 +123,9 @@
 					// although the user had to type in the folder name
 					// for these actions,  the "expert" tag means:
 					// "do not add the name space for me, I'm an expert and I know what I'm doing"
-					if (($GLOBALS['phpgw']->msg->get_arg_value('action') == 'create_expert')
-					|| ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'delete_expert')
-					|| ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'rename_expert'))
+					if ((\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'create_expert')
+					|| (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'delete_expert')
+					|| (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'rename_expert'))
 					{
 						// other than stripslashes_gpc,  do nothing
 						// the user is an expert, do not alter the phpgw->msg->get_arg_value('target_folder') name at all
@@ -135,7 +135,7 @@
 						// since the user is not an "expert", we properly prepare the folder name
 						// see if the folder already exists in the folder lookup list
 						// this would be the case if the user is deleting a folder
-						$target_lookup = $GLOBALS['phpgw']->msg->folder_lookup('', $target_fldball['folder']);
+						$target_lookup = \App\modules\email\services\MailMessage::getInstance()->folder_lookup('', $target_fldball['folder']);
 						if ($target_lookup != '')
 						{
 							// phpgw->msg->get_arg_value('target_folder') returned an official long name from the lookup
@@ -145,7 +145,7 @@
 						{
 							// the lookup failed, so this is not an existing folder
 							// we have to add the namespace for the user
-							$target_long = $GLOBALS['phpgw']->msg->get_folder_long($target_fldball['folder']);
+							$target_long = \App\modules\email\services\MailMessage::getInstance()->get_folder_long($target_fldball['folder']);
 							$target_fldball['folder'] = $target_long;
 						}
 					}
@@ -153,7 +153,7 @@
 					// add server string to target folder
 					//$target_fldball['folder'] = $server_str.$target_fldball['folder'];
 					//$target_fldball['folder'] = $target_fldball['folder'];
-					$re_encoded = $GLOBALS['phpgw']->msg->prep_folder_out($target_fldball['folder']);
+					$re_encoded = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out($target_fldball['folder']);
 					$target_fldball['folder'] = $re_encoded;
 					
 					if ($this->debug > 2) { echo 'email.bofolder.folder_action('.__LINE__.'): processed $target_fldball DUMP<pre>'; print_r($target_fldball); echo '<pre>'; }
@@ -164,12 +164,12 @@
 					// immediately get this flag if it has been set, and will get fresh folder list from the mailserver
 					
 					// =====  NOTE:  maybe some "are you sure" code ????  =====
-					if (($GLOBALS['phpgw']->msg->get_arg_value('action') == 'create')
-					|| ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'create_expert'))
+					if ((\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'create')
+					|| (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'create_expert'))
 					{
 						if ($this->debug > 1) { echo 'email.bofolder.folder_action('.__LINE__.'): calling ->phpgw_createmailbox_ex($target_fldball) DUMP<pre>'; print_r($target_fldball); echo '<pre>'; }
 						//$success = $GLOBALS['phpgw']->msg->phpgw_createmailbox($target_fldball);
-						$success = $GLOBALS['phpgw']->msg->phpgw_createmailbox_ex($target_fldball);
+						$success = \App\modules\email\services\MailMessage::getInstance()->phpgw_createmailbox_ex($target_fldball);
 						// UPDATE: use new phpgw_createmailbox_ex, it wants NO server str, and a urlENcoded foldername
 						//$no_server_str = str_replace($server_str, '', $target_fldball['folder']);
 						//$re_encoded = $GLOBALS['phpgw']->msg->prep_folder_out($no_server_str);
@@ -177,14 +177,14 @@
 						//if ($this->debug > 1) { echo 'email.bofolder.folder_action('.__LINE__.'): calling ->phpgw_createmailbox_ex($target_fldball) DUMP<pre>'; print_r($target_fldball); echo '<pre>'; }
 						//$success = $GLOBALS['phpgw']->msg->phpgw_createmailbox_ex($target_fldball);
 					}
-					elseif (($GLOBALS['phpgw']->msg->get_arg_value('action') == 'delete')
-					|| ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'delete_expert'))
+					elseif ((\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'delete')
+					|| (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'delete_expert'))
 					{
 						//$success = $GLOBALS['phpgw']->msg->phpgw_deletemailbox($target_fldball);
-						$success = $GLOBALS['phpgw']->msg->phpgw_deletemailbox_ex($target_fldball);
+						$success = \App\modules\email\services\MailMessage::getInstance()->phpgw_deletemailbox_ex($target_fldball);
 					}
-					elseif (($GLOBALS['phpgw']->msg->get_arg_value('action') == 'rename')
-					|| ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'rename_expert'))
+					elseif ((\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'rename')
+					|| (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'rename_expert'))
 					{
 						// phpgw->msg->get_arg_value('source_folder') is taken directly from the listbox, so it *should* be official long name already
 						// but it does need to be prep'd in because we prep out the foldernames put in that listbox
@@ -193,18 +193,18 @@
 						// add server string to source folder
 						//$source_fldball['folder'] = $server_str.$source_fldball['folder'];
 						//$success = $GLOBALS['phpgw']->msg->phpgw_renamemailbox($source_fldball, $target_fldball);
-						$src_re_encoded = $GLOBALS['phpgw']->msg->prep_folder_out($source_fldball['folder']);
+						$src_re_encoded = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out($source_fldball['folder']);
 						$source_fldball['folder'] = $src_re_encoded;
-						$success = $GLOBALS['phpgw']->msg->phpgw_renamemailbox_ex($source_fldball, $target_fldball);
+						$success = \App\modules\email\services\MailMessage::getInstance()->phpgw_renamemailbox_ex($source_fldball, $target_fldball);
 					}
 					
 					// Result Message
 					// we are not sure which folder will actually exists, new or old, so we can not really use "prep_folder_in" unless we check
 					if (isset($target_fldball['folder']))
 					{
-						if ($GLOBALS['phpgw']->msg->prep_folder_in($target_fldball['folder']))
+						if (\App\modules\email\services\MailMessage::getInstance()->prep_folder_in($target_fldball['folder']))
 						{
-							$target_folder_decoded = $GLOBALS['phpgw']->msg->prep_folder_in($target_fldball['folder']);
+							$target_folder_decoded = \App\modules\email\services\MailMessage::getInstance()->prep_folder_in($target_fldball['folder']);
 						}
 						elseif (urldecode($target_fldball['folder']))
 						{
@@ -217,9 +217,9 @@
 					}
 					if (isset($source_fldball['folder']))
 					{
-						if ($GLOBALS['phpgw']->msg->prep_folder_in($source_fldball['folder']))
+						if (\App\modules\email\services\MailMessage::getInstance()->prep_folder_in($source_fldball['folder']))
 						{
-							$source_folder_decoded = $GLOBALS['phpgw']->msg->prep_folder_in($source_fldball['folder']);
+							$source_folder_decoded = \App\modules\email\services\MailMessage::getInstance()->prep_folder_in($source_fldball['folder']);
 						}
 						elseif (urldecode($source_fldball['folder']))
 						{
@@ -231,11 +231,11 @@
 						}
 					}
 					
-					if (($GLOBALS['phpgw']->msg->get_arg_value('action') == 'rename')
-					|| ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'rename_expert'))
+					if ((\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'rename')
+					|| (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'rename_expert'))
 					{
 						$action_report =
-							'<em>'.$GLOBALS['phpgw']->msg->get_arg_value('action') .' '.lang('folder').'</em>'
+							'<em>'.\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') .' '.lang('folder').'</em>'
 							.'<br />'
 							.htmlspecialchars($source_folder_decoded)
 							.'<br />'
@@ -248,7 +248,7 @@
 					else
 					{
 						$action_report = 
-							'<em>'.$GLOBALS['phpgw']->msg->get_arg_value('action').' '.lang('folder').'</em>'
+							'<em>'.\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action').' '.lang('folder').'</em>'
 							.'<br />'
 							.htmlspecialchars($target_folder_decoded)
 							.'<br />'
@@ -262,7 +262,7 @@
 					}
 					else
 					{
-						$imap_err = $GLOBALS['phpgw']->msg->phpgw_server_last_error();
+						$imap_err = \App\modules\email\services\MailMessage::getInstance()->phpgw_server_last_error();
 						if ($imap_err == '')
 						{
 							$imap_err = lang('unknown error');
@@ -295,13 +295,13 @@
 		{
 			if ($this->debug > 0) { echo 'ENTERING: email.bofolder.folder_data('.__LINE__.')'.'<br />'; } 
 			//  ----  Establish Email Server Connectivity Conventions  ----
-			$server_str = $GLOBALS['phpgw']->msg->get_arg_value('mailsvr_callstr');
-			$name_space = $GLOBALS['phpgw']->msg->get_arg_value('mailsvr_namespace');
-			$dot_or_slash = $GLOBALS['phpgw']->msg->get_arg_value('mailsvr_delimiter');
+			$server_str = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('mailsvr_callstr');
+			$name_space = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('mailsvr_namespace');
+			$dot_or_slash = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('mailsvr_delimiter');
 			
 			// ----  Get a List Of All Folders  AND Display them ----
 			//$folder_list = $GLOBALS['phpgw']->msg->get_folder_list();
-			$folder_list = $GLOBALS['phpgw']->msg->get_arg_value('folder_list');
+			$folder_list = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder_list');
 			//$folder_list =& $GLOBALS['phpgw']->msg->get_arg_value_ref('folder_list');
 			
 			if ($this->debug > 2) { echo 'email.bofolder.folder_data('.__LINE__.'): $folder_list[] dump:<pre>'; print_r($folder_list); echo '</pre>'; }
@@ -314,22 +314,22 @@
 				$folder_short = $folder_list[$i]['folder_short'];
 				$this->xi['folder_list_display'][$i]['folder_long'] = (string) $folder_long;
 				$this->xi['folder_list_display'][$i]['folder_short'] = (string) $folder_short;
-				$this->xi['folder_list_display'][$i]['folder_param'] = $GLOBALS['phpgw']->msg->prep_folder_out($folder_long);
-				$this->xi['folder_list_display'][$i]['acctnum'] = (int) $GLOBALS['phpgw']->msg->get_acctnum();
+				$this->xi['folder_list_display'][$i]['folder_param'] = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out($folder_long);
+				$this->xi['folder_list_display'][$i]['acctnum'] = (int) \App\modules\email\services\MailMessage::getInstance()->get_acctnum();
 				
 				if ($this->use_cachable_status == True)
 				{
 					$feed_fldball = array();
-					$feed_fldball['folder'] = $GLOBALS['phpgw']->msg->prep_folder_out($folder_long);
-					$feed_fldball['acctnum'] = $GLOBALS['phpgw']->msg->get_acctnum();
+					$feed_fldball['folder'] = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out($folder_long);
+					$feed_fldball['acctnum'] = \App\modules\email\services\MailMessage::getInstance()->get_acctnum();
 					$folder_status_info = array();
-					$folder_status_info = $GLOBALS['phpgw']->msg->get_folder_status_info($feed_fldball);
+					$folder_status_info = \App\modules\email\services\MailMessage::getInstance()->get_folder_status_info($feed_fldball);
 				}
 				else
 				{
 					// SA_ALL gets the stats for the number of:  messages, recent, unseen, uidnext, uidvalidity
 					// THIS DOES NOT USE THE CACHEABLE FUNCTION
-					$mailbox_status = $GLOBALS['phpgw']->msg->phpgw_status("$folder_long");
+					$mailbox_status = \App\modules\email\services\MailMessage::getInstance()->phpgw_status("$folder_long");
 				}
 				
 				//debug
@@ -348,11 +348,11 @@
 				$this->xi['folder_list_display'][$i]['folder_link'] = phpgw::link(
 								'/index.php',array(
 								'menuaction'=>'email.uiindex.index',
-								'fldball[folder]'=>$GLOBALS['phpgw']->msg->prep_folder_out($folder_long),
-								'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum()));
+								'fldball[folder]'=>\App\modules\email\services\MailMessage::getInstance()->prep_folder_out($folder_long),
+								'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum()));
 				
-				if (($GLOBALS['phpgw']->msg->get_isset_arg('show_long') == True)
-				&& ($GLOBALS['phpgw']->msg->get_arg_value('show_long') != ''))
+				if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('show_long') == True)
+				&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('show_long') != ''))
 				{
 					$this->xi['folder_list_display'][$i]['folder_name'] = $folder_long;
 				}
@@ -362,7 +362,7 @@
 				}
 				// make sure unusual entities are encoded for html display
 				$this->xi['folder_list_display'][$i]['folder_name'] = 
-					$GLOBALS['phpgw']->msg->htmlspecialchars_encode($this->xi['folder_list_display'][$i]['folder_name']);
+					\App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($this->xi['folder_list_display'][$i]['folder_name']);
 				
 				if ($this->use_cachable_status == True)
 				{
@@ -384,7 +384,7 @@
 			// information for target folder for create and delete, where no "source_fldball" is present
 			// because you are NOT manipulating an *existing* folder
 			$this->xi['hiddenvar_target_acctnum_name'] = 'target_fldball[acctnum]';
-			$this->xi['hiddenvar_target_acctnum_value'] = (string)$GLOBALS['phpgw']->msg->get_acctnum();
+			$this->xi['hiddenvar_target_acctnum_value'] = (string)\App\modules\email\services\MailMessage::getInstance()->get_acctnum();
 			$this->xi['target_fldball_boxname'] = 'target_fldball[folder]';
 			
 			// make your HTML listbox of all folders
@@ -405,7 +405,7 @@
 				'first_line_txt'	=> lang('choose for rename')
 			);
 			// get you custom built HTML listbox (a.k.a. selectbox) widget
-			$this->xi['all_folders_listbox'] = $GLOBALS['phpgw']->msg->all_folders_listbox($feed_args);
+			$this->xi['all_folders_listbox'] = \App\modules\email\services\MailMessage::getInstance()->all_folders_listbox($feed_args);
 			
 			// ----  Set Up Form Variables  ---
 			$this->xi['form_action'] = phpgw::link(
@@ -431,20 +431,20 @@
 			$this->xi['label_new_text'] = lang('New');
 			$this->xi['label_total_text'] = lang('Total');
 			// Check if we are supposed to show long or short folder names and create opposite link
-        if (($GLOBALS['phpgw']->msg->get_isset_arg('show_long') == true) && ($GLOBALS['phpgw']->msg->get_arg_value('show_long') != '')) {
+        if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('show_long') == true) && (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('show_long') != '')) {
             $this->xi['view_txt'] = lang('Show short names'); 
             // $this->xi['view_short_lnk'] = phpgw::link('/'.$GLOBALS['phpgw_info']['flags']['currentapp'].'/folder.php');
             $this->xi['view_lnk'] = phpgw::link('/index.php',array(
                 									'menuaction'=>'email.uifolder.folder',
-                									'fldball[folder]'=> $GLOBALS['phpgw']->msg->prep_folder_out(),
-                									'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum()));
+									'fldball[folder]'=> \App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+									'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum()));
         } else {
             $this->xi['view_txt'] = lang('Show long names'); 
             // $this->xi['view_long_lnk'] = phpgw::link('/'.$GLOBALS['phpgw_info']['flags']['currentapp'].'/folder.php?show_long=1');
             $this->xi['view_lnk'] = phpgw::link('/index.php',array(
                 									'menuaction'=>'email.uifolder.folder',
-                									'fldball[folder]'=> $GLOBALS['phpgw']->msg->prep_folder_out(),
-                									'fldball[acctnum]'=> $GLOBALS['phpgw']->msg->get_acctnum(),
+									'fldball[folder]'=> \App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+									'fldball[acctnum]'=> \App\modules\email\services\MailMessage::getInstance()->get_acctnum(),
                 									'show_long'=>1));
         } 
 		// Depreciated 

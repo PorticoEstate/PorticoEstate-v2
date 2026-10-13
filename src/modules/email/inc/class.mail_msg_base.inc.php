@@ -439,16 +439,7 @@
 			// relfbecker recommends NOT using a version test for xslt check
 			if ($this->phpgw_before_xslt == '-1')
 			{
-				if (is_object($GLOBALS['phpgw']->xslttpl))
-				{
-//					$this->phpgw_before_xslt = False; // disable xslt-version for now (seems to have issues with utf)
-					$this->phpgw_before_xslt = true;
-
-				}
-				else
-				{
-					$this->phpgw_before_xslt = True;
-				}
+				$this->phpgw_before_xslt = true;
 			}
 			
 			$this->known_external_args = array(
@@ -912,7 +903,7 @@
 				//$this->unprocessed_prefs = $GLOBALS['phpgw']->preferences->create_email_preferences();
 				$tmp_email_only_prefs = array();
 				if ($this->debug_logins > 1) { $this->dbug->out('mail_msg.begin_request('.__LINE__.'): calling create_email_preferences, may be time consuming<br />'); } 
-				$tmp_email_only_prefs = $GLOBALS['phpgw']->preferences->create_email_preferences();
+				$tmp_email_only_prefs = \App\modules\phpgwapi\services\Preferences::getInstance()->create_email_preferences();
 				// clean "unprocessed_prefs" so all prefs oher than email are NOT included 
 				$this->unprocessed_prefs = array();
 				$this->unprocessed_prefs['email'] = array();
@@ -1045,7 +1036,7 @@
 							// by specifing the secong function arg as the integer of this particular enabled account
 							$this_ex_acctnum = $this->extra_accounts[$next_pos]['acctnum'];
 							if ($this->debug_logins > 1) { $this->dbug->out('mail_msg.begin_request('.__LINE__.'): CALLING create_email_preferences("", $this_ex_acctnum) for specific account, where $this_ex_acctnum: ['.serialize($this_ex_acctnum).'] <br />'); }
-							$sub_tmp_prefs = $GLOBALS['phpgw']->preferences->create_email_preferences('', $this_ex_acctnum);
+							$sub_tmp_prefs = \App\modules\phpgwapi\services\Preferences::getInstance()->create_email_preferences('', $this_ex_acctnum);
 							// now put these processed prefs in the correct location  in our prefs array
 							$this->set_pref_array($sub_tmp_prefs['email'], $this_ex_acctnum);
 						}
@@ -1412,8 +1403,8 @@
 				// ok, now put that object into the array
 				//$this_acctnum = $this->get_acctnum();
 				if ($this->debug_logins > 1) { $this->dbug->out('mail_msg.begin_request('.__LINE__.'): creating new dcom_holder at $GLOBALS[phpgw_dcom_'.$acctnum.'] = new mail_dcom_holder'.'<br />'); }
-				$GLOBALS['phpgw_dcom_'.$acctnum] = new mail_dcom_holder;
-				$GLOBALS['phpgw_dcom_'.$acctnum]->dcom = CreateObject("email.mail_dcom", $this_server_type);
+
+				$this->setTransport($acctnum, CreateObject("email.mail_dcom", $this_server_type));
 				// initialize the dcom class variables
 				//$GLOBALS['phpgw_dcom_'.$acctnum]->dcom->mail_dcom_base();
 				
@@ -1422,18 +1413,18 @@
 				if (($this->get_isset_pref('enable_utf7'))
 				&& ($this->get_pref_value('enable_utf7')))
 				{
-					$GLOBALS['phpgw_dcom_'.$acctnum]->dcom->enable_utf7 = True;
+					$this->getTransport($acctnum)->enable_utf7 = True;
 				}
 				// (2)  Do We Force use of msg UID's
 				if ($this->force_msg_uids == True)
 				{
-					$GLOBALS['phpgw_dcom_'.$acctnum]->dcom->force_msg_uids = True;
+					$this->getTransport($acctnum)->force_msg_uids = True;
 				}
 				
 				//@set_time_limit(60);
 				// login to INBOX because we know that always(?) should exist on an imap server and pop server
 				// after we are logged in we can get additional info that will lead us to the desired folder (if not INBOX)
-				$mailsvr_stream = $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->open($mailsvr_callstr."INBOX", $user, $pass, 0);
+				$mailsvr_stream = $this->getTransport($acctnum)->open($mailsvr_callstr."INBOX", $user, $pass, 0);
 				$pass = '';
 				
 				if ($this->debug_logins > 1) { $this->dbug->out('mail_msg.begin_request('.__LINE__.'): open returns $mailsvr_stream = ['.serialize($mailsvr_stream).']<br />'); } 
@@ -1482,7 +1473,7 @@
 					if ($this->debug_logins > 1) { $this->dbug->out('mail_msg.begin_request('.__LINE__.'): about to issue: $GLOBALS[phpgw_dcom_'.$acctnum.']->dcom->reopen('.$mailsvr_stream.', '.$mailsvr_callstr.$processed_folder_arg,', )'.'<br />'); } 
 					//$did_reopen = $tmp_a['dcom']->reopen($mailsvr_stream, $mailsvr_callstr.$processed_folder_arg, '');
 					if ($this->debug_logins > 0) { $this->dbug->out('mail_msg: begin_request('.__LINE__.'): <font color="red">MAIL SERVER COMMAND</font>'.'<br />'); } 
-					$did_reopen = $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->reopen($mailsvr_stream, $mailsvr_callstr.$processed_folder_arg);
+					$did_reopen = $this->getTransport($acctnum)->reopen($mailsvr_stream, $mailsvr_callstr.$processed_folder_arg);
 					if ($this->debug_logins > 1) { $this->dbug->out('mail_msg.begin_request('.__LINE__.'): reopen returns: '.serialize($did_reopen).'<br />'); } 
 					// error check
 					if ($did_reopen == False)
@@ -1606,7 +1597,7 @@
 					// SLEEP seems to give the server time to send its OK response, used tcpdump to confirm this
 					//sleep(1);
 					if ($this->debug_logins > 0) { $this->dbug->out('mail_msg: end_request('.__LINE__.'): <font color="red">MAIL SERVER COMMAND</font>'.'<br />'); } 
-					$GLOBALS['phpgw_dcom_'.$this_acctnum]->dcom->close($mailsvr_stream);
+					$this->getTransport($this_acctnum)->close($mailsvr_stream);
 					// sleep here does not have any effect
 					//sleep(1);
 					$this->set_arg_value('mailsvr_stream', '', $this_acctnum);
@@ -1726,24 +1717,24 @@
 				// ----  Create email server Data Communication Class  ----
 				$this_server_type = $this->get_pref_value('mail_server_type', $acctnum);
 				if ($this->debug_logins > 1) { $this->dbug->out('mail_msg: ensure_stream_and_folder: creating new dcom_holder at $GLOBALS["phpgw_dcom_'.$acctnum.'] = new mail_dcom_holder'.'<br />'); }
-				$GLOBALS['phpgw_dcom_'.$acctnum] = new mail_dcom_holder;
-				$GLOBALS['phpgw_dcom_'.$acctnum]->dcom = CreateObject("email.mail_dcom", $this_server_type);
+
+				$this->setTransport($acctnum, CreateObject("email.mail_dcom", $this_server_type));
 		//		$GLOBALS['phpgw_dcom_'.$acctnum]->dcom->mail_dcom_base();
 
 				if (($this->get_isset_pref('enable_utf7', $acctnum))
 						&& ($this->get_pref_value('enable_utf7', $acctnum)))
 				{
-					$GLOBALS['phpgw_dcom_'.$acctnum]->dcom->enable_utf7 = True;
+					$this->getTransport($acctnum)->enable_utf7 = True;
 				}
 				if ($this->force_msg_uids == True)
 				{
-					$GLOBALS['phpgw_dcom_'.$acctnum]->dcom->force_msg_uids = True;
+					$this->getTransport($acctnum)->force_msg_uids = True;
 				}
 				// log in to INBOX because we know INBOX should exist on every mail server, "reopen" to desired folder (if different) later
 				//@set_time_limit(60);
 				if ($this->debug_logins > 1) { $this->dbug->out('mail_msg: ensure_stream_and_folder: about to call dcom->open: $GLOBALS[phpgw_dcom_'.$acctnum.']->dcom->open('.$mailsvr_callstr."INBOX".', '.$user.', '.$pass.', )'.'<br />'); }
 				if ($this->debug_logins > 0) { $this->dbug->out('mail_msg: ensure_stream_and_folder('.__LINE__.'): <font color="red">MAIL SERVER COMMAND</font>'.'<br />'); } 
-				$mailsvr_stream = $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->open($mailsvr_callstr."INBOX", $user, $pass, 0);
+				$mailsvr_stream = $this->getTransport($acctnum)->open($mailsvr_callstr."INBOX", $user, $pass, 0);
 				$pass = '';
 				//@set_time_limit(0);
 				if ($this->debug_logins > 1) { $this->dbug->out('mail_msg: ensure_stream_and_folder: open returns $mailsvr_stream = ['.serialize($mailsvr_stream).']<br />'); } 
@@ -1869,7 +1860,7 @@
 					if ($this->debug_logins > 1) { $this->dbug->out('mail_msg: ensure_stream_and_folder('.__LINE__.'): need to switch folders (reopen) from $preped_current_folder_arg ['.$preped_current_folder_arg.'] to $preped_folder: '.$preped_folder.'<br />'); } 
 					if ($this->debug_logins > 1) { $this->dbug->out('mail_msg: ensure_stream_and_folder('.__LINE__.'): about to issue: $GLOBALS[phpgw_dcom_'.$acctnum.']->dcom->reopen('.$mailsvr_stream.', '.$mailsvr_callstr.$preped_folder,', )'.'<br />'); } 
 					if ($this->debug_logins > 0) { $this->dbug->out('mail_msg: ensure_stream_and_folder('.__LINE__.'): <font color="red">MAIL SERVER COMMAND</font>'.'<br />'); } 
-					$did_reopen = $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->reopen($mailsvr_stream, $mailsvr_callstr.$preped_folder);
+					$did_reopen = $this->getTransport($acctnum)->reopen($mailsvr_stream, $mailsvr_callstr.$preped_folder);
 					if ($this->debug_logins > 1) { $this->dbug->out('mail_msg: ensure_stream_and_folder('.__LINE__.'): reopen returns: '.serialize($did_reopen).'<br />'); } 
 					if ($did_reopen == False)
 					{
@@ -1982,7 +1973,7 @@
 			// HOW we were called determines HOW we display the error 
 			if ( preg_match('/menuaction=email/', Sanitizer::get_var('REQUEST_URI', 'string', 'SERVER') ) ) 
 			{
-				$GLOBALS['phpgw']->common->phpgw_header(true);
+				$this->getCommon()->phpgw_header(true);
 				// we were called from within the email app itself
 				// so show the error PAGE and then have it EXIT for us
 				// use the error report page widget
@@ -2009,7 +2000,7 @@
 				if ($this->debug_logins > 0) { $this->dbug->out('mail_msg: login_error('.__LINE__.'): LEAVING, called from within the email app, so use out own error page and exit.<br />'); }
 				// by putting anything (or TRUE) in the param of this function, it will shutdown the script for us.
 				$widgets->display_error_report_page(true);
-				$GLOBALS['phpgw']->common->phpgw_exit(False);
+				$this->getCommon()->phpgw_exit(False);
 			}
 			return false;
 		}
@@ -2134,7 +2125,7 @@ HTML;
 				{
 					echo 'mail_msg: loginerr_tryagain_buggy_cert: UNABLE to recover from this bug, exiting ...';
 					if ($this->debug_logins > 0) { $this->dbug->out('mail_msg: loginerr_tryagain_buggy_cert('.__LINE__.'): LEAVING<br />'); }
-					$GLOBALS['phpgw']->common->phpgw_exit(False);
+					$this->getCommon()->phpgw_exit(False);
 				}
 				else
 				{
@@ -3351,8 +3342,8 @@ HTML;
 			$encrypted = $this->crypto->encrypt($unencrypted);
 			if($data <> $encrypted)
 			{
-				$unencrypted = $GLOBALS['phpgw']->crypto->decrypt($data);
-				$encrypted = $GLOBALS['phpgw']->crypto->encrypt($unencrypted);
+				$unencrypted = \App\modules\phpgwapi\services\Crypto::getInstance()->decrypt($data);
+				$encrypted = \App\modules\phpgwapi\services\Crypto::getInstance()->encrypt($unencrypted);
 			}
 			return $unencrypted;
 		}
@@ -3591,7 +3582,7 @@ HTML;
 				if ($debug_explode) { $this->dbug->out('[known sep] PRE replace: '.$this->htmlspecialchars_encode($data).'<br />'.'<br />'); }
 				//$known_sep_item = "_SEP_COMPLEX_SEP_";
 				// introduce some randomness to make accidental replacements less likely
-				$sep_rand = $GLOBALS['phpgw']->common->randomstring(3);
+				$sep_rand = $this->getCommon()->randomstring(3);
 				$known_sep_item = "_SEP_COMPLEX_".$sep_rand."_SEP_";
 				$data = str_replace('" <',$known_sep_item,$data);
 				if ($debug_explode) { $this->dbug->out('[known sep] POST replace: '.$this->htmlspecialchars_encode($data).'<br />'.'<br />'); }
@@ -3603,7 +3594,7 @@ HTML;
 				if ($debug_explode) { $this->dbug->out('PRE replace: '.$this->htmlspecialchars_encode($data).'<br />'.'<br />'); }
 				//$comma_replacement = "_C_O_M_M_A_";
 				// introduce some randomness to make accidental replacements less likely
-				$comma_rand = $GLOBALS['phpgw']->common->randomstring(3);
+				$comma_rand = $this->getCommon()->randomstring(3);
 				$comma_replacement = "_C_O_M_".$comma_rand."_M_A_";
 				//$data = preg_replace('/(".*?)[,](.*?'.$known_sep_item.')/',"$1"."$comma_replacement "."$2", $data);
 				//$data = preg_replace('/(".*?)(?<!>)[,](.*?'.$known_sep_item.')/',"$1"."$comma_replacement"."$2", $data);
@@ -3885,7 +3876,7 @@ HTML;
 			
 			$rand_stuff = Array();
 			$rand_stuff[0]['length'] = $part_length;
-			$rand_stuff[0]['string'] = $GLOBALS['phpgw']->common->randomstring($rand_stuff[0]['length']);
+			$rand_stuff[0]['string'] = $this->getCommon()->randomstring($rand_stuff[0]['length']);
 			$rand_stuff[0]['rand_numbers'] = '';
 			for ($i = 0; $i < $rand_stuff[0]['length']; $i++)
 			{
@@ -3902,7 +3893,7 @@ HTML;
 				}
 			}
 			$rand_stuff[1]['length'] = $part_length;
-			$rand_stuff[1]['string'] = $GLOBALS['phpgw']->common->randomstring($rand_stuff[1]['length']);
+			$rand_stuff[1]['string'] = $this->getCommon()->randomstring($rand_stuff[1]['length']);
 			$rand_stuff[1]['rand_numbers'] = '';
 			for ($i = 0; $i < $rand_stuff[1]['length']; $i++)
 			{
@@ -3918,8 +3909,8 @@ HTML;
 					$rand_stuff[1]['rand_numbers'] .= ord($rand_stuff[1]['string'][$i]);
 				}
 			}
-			$unique_boundary = '---=_Next_Part_'.$rand_stuff[0]['rand_numbers'].'_'.$GLOBALS['phpgw']->common->randomstring($part_length)
-				.'_'.$GLOBALS['phpgw']->common->randomstring($part_length).'_'.$rand_stuff[1]['rand_numbers'];
+			$unique_boundary = '---=_Next_Part_'.$rand_stuff[0]['rand_numbers'].'_'.$this->getCommon()->randomstring($part_length)
+				.'_'.$this->getCommon()->randomstring($part_length).'_'.$rand_stuff[1]['rand_numbers'];
 			
 			return $unique_boundary;
 		}
@@ -3940,7 +3931,7 @@ HTML;
 			}
 			else
 			{
-				$id_suffix = $GLOBALS['phpgw']->common->randomstring(3).'local';
+				$id_suffix = $this->getCommon()->randomstring(3).'local';
 			}
 			// gives you timezone dot microseconds space datetime
 			$stamp = microtime();
@@ -3951,7 +3942,7 @@ HTML;
 			// formay the datetime into YYYYMMDD
 			$stamp[1] = date('Ymd', $stamp[1]);
 			// a small random string for the middle
-			$rand_middle = $GLOBALS['phpgw']->common->randomstring(3);
+			$rand_middle = $this->getCommon()->randomstring(3);
 			
 			$mess_id = '<'.$stamp[1].'.'.$rand_middle.'.'.$stamp[0].'@'.$id_suffix.'>';
 			return $mess_id;
@@ -5285,7 +5276,7 @@ HTML;
 						else
 						{
 							$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$extra_keys]
-								= $GLOBALS['phpgw']->session->appsession($my_location, 'email');
+								= $this->appSession($my_location, 'email');
 						}
 						if ($this->debug_events > 2) { $this->dbug->out('email_msg_base: event_msg_seen('.__LINE__.'): (extreme mode) [email][dat]['.$acctnum.']['.$data_name.']['.$extra_keys.']  DUMP:', $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$extra_keys]); } 
 					}
@@ -5329,7 +5320,7 @@ HTML;
 							}
 							else
 							{
-								$GLOBALS['phpgw']->session->appsession($my_location, 'email', $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$extra_keys]);
+								$this->appSession($my_location, 'email', $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$extra_keys]);
 							}
 						}
 						$did_alter = True;
@@ -5433,7 +5424,7 @@ HTML;
 					else
 					{
 						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list'][$ex_folder]
-							= $GLOBALS['phpgw']->session->appsession($my_location, 'email');
+							= $this->appSession($my_location, 'email');
 					}
 					//if ($this->debug_events > 2) { $this->dbug->out('email_msg_base: event_msg_move_or_delete('.__LINE__.'): (extreme mode) [email][dat]['.$acctnum.'][msgball_list] DUMP:<pre>'; print_r($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list'][ex_folder]); echo '</pre>'); }
 				}
@@ -5576,7 +5567,7 @@ HTML;
 						}
 						else
 						{
-							$GLOBALS['phpgw']->session->appsession($my_location, 'email', $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list'][$ex_folder]);
+							$this->appSession($my_location, 'email', $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list'][$ex_folder]);
 						}
 					}
 					$did_alter = True;
@@ -5641,7 +5632,7 @@ HTML;
 					else
 					{
 						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['folder_status_info'][$ex_folder]
-							= $GLOBALS['phpgw']->session->appsession($my_location, 'email');
+							= $this->appSession($my_location, 'email');
 					}
 					//if ($this->debug_events > 2) { $this->dbug->out('email_msg_base: event_msg_move_or_delete('.__LINE__.'): (extreme mode) [email][dat]['.$acctnum.'][folder_status_info]['.$ex_folder.'] DUMP:<pre>'; print_r($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['folder_status_info'][$ex_folder]); echo '</pre>'); }
 				}
@@ -5694,7 +5685,7 @@ HTML;
 						}
 						else
 						{
-							$GLOBALS['phpgw']->session->appsession($my_location, 'email', $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['folder_status_info'][$ex_folder]);
+							$this->appSession($my_location, 'email', $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['folder_status_info'][$ex_folder]);
 						}
 					}
 					$did_alter = True;

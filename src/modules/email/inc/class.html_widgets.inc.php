@@ -915,10 +915,10 @@
 			$this->tpl->set_var('toolbar_font_size','2');
 			$this->tpl->set_var('report_this_font_size','1');
 			
-			$this->tpl->set_var('report_this', $GLOBALS['phpgw']->msg->report_moved_or_deleted());
+			$this->tpl->set_var('report_this', \App\modules\email\services\MailMessage::getInstance()->report_moved_or_deleted());
 			
-			$icon_theme = $GLOBALS['phpgw']->msg->get_pref_value('icon_theme',$GLOBALS['phpgw']->msg->get_acctnum());
-			$icon_size = $GLOBALS['phpgw']->msg->get_pref_value('icon_size',$GLOBALS['phpgw']->msg->get_acctnum());
+			$icon_theme = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('icon_theme',\App\modules\email\services\MailMessage::getInstance()->get_acctnum());
+			$icon_size = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('icon_size',\App\modules\email\services\MailMessage::getInstance()->get_acctnum());
 			$svr_image_dir = PHPGW_IMAGES_DIR;
 			$image_dir = PHPGW_IMAGES;
 			
@@ -929,35 +929,35 @@
 									'menuaction' => 'email.uifolder.folder',
 									// going to the folder list page, we only need log into the INBOX folder
 									'fldball[folder]' => 'INBOX',
-									'fldball[acctnum]' => $GLOBALS['phpgw']->msg->get_acctnum()));
+									'fldball[acctnum]' => \App\modules\email\services\MailMessage::getInstance()->get_acctnum()));
 			$compose_link = phpgw::link('/index.php',array(
 									'menuaction' => 'email.uicompose.compose',
 									// this data tells us where to return to after sending a message
-									'fldball[folder]' => $GLOBALS['phpgw']->msg->prep_folder_out(),
-									'fldball[acctnum]' => $GLOBALS['phpgw']->msg->get_acctnum(),
-									'sort' => $GLOBALS['phpgw']->msg->get_arg_value('sort'),
-									'order' => $GLOBALS['phpgw']->msg->get_arg_value('order'),
-									'start' => $GLOBALS['phpgw']->msg->get_arg_value('start')));
+									'fldball[folder]' => \App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+									'fldball[acctnum]' => \App\modules\email\services\MailMessage::getInstance()->get_acctnum(),
+									'sort' => \App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+									'order' => \App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+									'start' => \App\modules\email\services\MailMessage::getInstance()->get_arg_value('start')));
 			$search_link = phpgw::link('/index.php', array(
 									'menuaction' => 'email.uisearch.form',
 									// this data tells us what account we are operating in
-									'fldball[folder]' => $GLOBALS['phpgw']->msg->prep_folder_out(),
-									'fldball[acctnum]' => $GLOBALS['phpgw']->msg->get_acctnum()
+									'fldball[folder]' => \App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+									'fldball[acctnum]' => \App\modules\email\services\MailMessage::getInstance()->get_acctnum()
 ));
 	
 			$filters_link = phpgw::link('/index.php',array(
 								'menuaction' => 'email.uifilters.filters_list',
 								// this data tells us what folder and account was last active
-								'fldball[folder]' => $GLOBALS['phpgw']->msg->prep_folder_out(),
-								'fldball[acctnum]' => $GLOBALS['phpgw']->msg->get_acctnum()));
+								'fldball[folder]' => \App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+								'fldball[acctnum]' => \App\modules\email\services\MailMessage::getInstance()->get_acctnum()));
 			$accounts_link = phpgw::link('/index.php',array('menuaction'=>'email.uipreferences.ex_accounts_list'));
 			$email_prefs_link = phpgw::link('/index.php',array(
 								'menuaction' => 'email.uipreferences.preferences',
-								'ex_acctnum' => $GLOBALS['phpgw']->msg->get_acctnum()));					
+								'ex_acctnum' => \App\modules\email\services\MailMessage::getInstance()->get_acctnum()));
 			// Check to see if mailserver supports folders.
-			$has_folders = $GLOBALS['phpgw']->msg->get_mailsvr_supports_folders();
+			$has_folders = \App\modules\email\services\MailMessage::getInstance()->get_mailsvr_supports_folders();
 			// Create Buttons
-			switch ($GLOBALS['phpgw']->msg->get_pref_value('button_type'))
+			switch (\App\modules\email\services\MailMessage::getInstance()->get_pref_value('button_type'))
 			{
 				case 'text':
 					//Create Compose Button
@@ -1005,29 +1005,29 @@
 				case 'image':
 					//Create Compose Button
 					$this->set_href_link($compose_link);
-					$this->set_href_clickme($this->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/compose-message-'.$icon_size,'_on'),lang('Compose'),'','','0'));
+					$this->set_href_clickme($this->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/compose-message-'.$icon_size,'_on'),lang('Compose'),'','','0'));
 					$this->tpl->set_var('compose_img_link', $this->get_href());
 					$this->tpl->set_var('compose_txt_link', '&nbsp;');			
 					//Create Search Button
 					$this->set_href_link($search_link);
 					//$this->set_href_clickme($this->img_maketag($image_dir.'/'.$icon_theme.'-search-16.png',lang('Search'),'','','0'));
 					// will fix this later when new images are made
-					$this->set_href_clickme($this->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/search-'.$icon_size,'_on'),lang('Search'),'','','0'));
+					$this->set_href_clickme($this->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/search-'.$icon_size,'_on'),lang('Search'),'','','0'));
 					$this->tpl->set_var('search_img_link', $this->get_href());
 					$this->tpl->set_var('search_txt_link', '&nbsp;');			
 					//Create Filter Button
 					$this->set_href_link($filters_link);
-					$this->set_href_clickme($this->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/filters-'.$icon_size,'_on'),lang('Filters'),'','','0'));
+					$this->set_href_clickme($this->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/filters-'.$icon_size,'_on'),lang('Filters'),'','','0'));
 					$this->tpl->set_var('filters_img_link', $this->get_href());
 					$this->tpl->set_var('filters_txt_link', '&nbsp;');
 					//Create Accounts Button
 					$this->set_href_link($accounts_link);
-					$this->set_href_clickme($this->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/accounts-'.$icon_size,'_on'),lang('Accounts'),'','','0'));
+					$this->set_href_clickme($this->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/accounts-'.$icon_size,'_on'),lang('Accounts'),'','','0'));
 					$this->tpl->set_var('accounts_img_link', $this->get_href());
 					$this->tpl->set_var('accounts_txt_link', '&nbsp;');
 					//Create Settings Button
 					$this->set_href_link($email_prefs_link);
-					$this->set_href_clickme($this->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/customize-'.$icon_size,'_on'),lang('Settings'),'','','0'));
+					$this->set_href_clickme($this->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/customize-'.$icon_size,'_on'),lang('Settings'),'','','0'));
 					$this->tpl->set_var('settings_img_link', $this->get_href());
 					$this->tpl->set_var('settings_txt_link', '&nbsp;');
 					//Check for folder support and create Folder Button
@@ -1035,7 +1035,7 @@
 					{
 						//Create Folder Image Link
 						$this->set_href_link($folders_link);
-						$this->set_href_clickme($this->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/folder-'.$icon_size,'_on'),lang('Folders'),'','','0'));
+						$this->set_href_clickme($this->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/folder-'.$icon_size,'_on'),lang('Folders'),'','','0'));
 						$this->tpl->set_var('folders_img_link', $this->get_href());
 						$this->tpl->set_var('folders_txt_link', '&nbsp;');
 						
@@ -1049,7 +1049,7 @@
 				case 'both':
 					//Create Compose Button
 					$this->set_href_link($compose_link);
-					$this->set_href_clickme($this->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/compose-message-'.$icon_size,'_on'),lang('Compose'),'','','0'));
+					$this->set_href_clickme($this->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/compose-message-'.$icon_size,'_on'),lang('Compose'),'','','0'));
 					$this->tpl->set_var('compose_img_link', $this->get_href());
 					$this->set_href_link($compose_link);
 					$this->set_href_clickme(lang('Compose'));
@@ -1058,28 +1058,28 @@
 					$this->set_href_link($search_link);
 					//$this->set_href_clickme($this->img_maketag($image_dir.'/'.$icon_theme.'-search-16.png',lang('Search'),'','','0'));
 					// will fix this later when new images are made
-					$this->set_href_clickme($this->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/search-'.$icon_size,'_on'),lang('Search'),'','','0'));
+					$this->set_href_clickme($this->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/search-'.$icon_size,'_on'),lang('Search'),'','','0'));
 					$this->tpl->set_var('search_img_link', $this->get_href());
 					$this->set_href_link($search_link);
 					$this->set_href_clickme(lang('Search'));
 					$this->tpl->set_var('search_txt_link', $this->get_href());			
 					//Create Filter Button
 					$this->set_href_link($filters_link);
-					$this->set_href_clickme($this->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/filters-'.$icon_size,'_on'),lang('Filters'),'','','0'));
+					$this->set_href_clickme($this->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/filters-'.$icon_size,'_on'),lang('Filters'),'','','0'));
 					$this->tpl->set_var('filters_img_link', $this->get_href());
 					$this->set_href_link($filters_link);
 					$this->set_href_clickme(lang('Filters'));
 					$this->tpl->set_var('filters_txt_link', $this->get_href());
 					//Create Accounts Button
 					$this->set_href_link($accounts_link);
-					$this->set_href_clickme($this->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/accounts-'.$icon_size,'_on'),lang('Accounts'),'','','0'));
+					$this->set_href_clickme($this->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/accounts-'.$icon_size,'_on'),lang('Accounts'),'','','0'));
 					$this->tpl->set_var('accounts_img_link', $this->get_href());
 					$this->set_href_link($accounts_link);
 					$this->set_href_clickme(lang('Accounts'));
 					$this->tpl->set_var('accounts_txt_link', $this->get_href());
 					//Create Settings Button
 					$this->set_href_link($email_prefs_link);
-					$this->set_href_clickme($this->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/customize-'.$icon_size,'_on'),lang('Settings'),'','','0'));
+					$this->set_href_clickme($this->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/customize-'.$icon_size,'_on'),lang('Settings'),'','','0'));
 					$this->tpl->set_var('settings_img_link', $this->get_href());
 					$this->set_href_link($email_prefs_link);
 					$this->set_href_clickme(lang('Settings'));
@@ -1089,7 +1089,7 @@
 					{
 						//Create Folder Image Link
 						$this->set_href_link($folders_link);
-						$this->set_href_clickme($this->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/folder-'.$icon_size,'_on'),lang('Folders'),'','','0'));
+						$this->set_href_clickme($this->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/folder-'.$icon_size,'_on'),lang('Folders'),'','','0'));
 						$this->tpl->set_var('folders_img_link', $this->get_href());
 						//Create Folder Text Link
 						$this->set_href_link($folders_link);
@@ -1187,7 +1187,7 @@
 			{
 				$form_reference = 'folders_cbox';
 			}
-			$acctnum = $GLOBALS['phpgw']->msg->get_acctnum();
+			$acctnum = \App\modules\email\services\MailMessage::getInstance()->get_acctnum();
 			
 			$this->new_combobox();
 			if ($is_move_box)
@@ -1216,22 +1216,22 @@
 			
 			// get the actual list of folders we are going to put into the combobox
 			//$folder_list = $GLOBALS['phpgw']->msg->get_folder_list();
-			$folder_list = $GLOBALS['phpgw']->msg->get_arg_value('folder_list', $acctnum);
+			$folder_list = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder_list', $acctnum);
 			//$folder_list =& $GLOBALS['phpgw']->msg->get_arg_value_ref('folder_list');
 			
-			$listbox_show_unseen = $GLOBALS['phpgw']->msg->get_isset_pref('newmsg_combobox', $acctnum);
+			$listbox_show_unseen = \App\modules\email\services\MailMessage::getInstance()->get_isset_pref('newmsg_combobox', $acctnum);
 			
 			for ($i=0; $i<count($folder_list);$i++)
 			{
 				// folder long needs urlencoding ONCE, string can NOT be plain and can NOT be urlencoded more once.
 				//$folder_long = $GLOBALS['phpgw']->msg->ensure_one_urlencoding($folder_list[$i]['folder_long']);
-				$folder_long = $GLOBALS['phpgw']->msg->prep_folder_out($folder_list[$i]['folder_long']);
+				$folder_long = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out($folder_list[$i]['folder_long']);
 				// for display to the user, if this is the INBOX, then translate that using lang INBOX
 				if ($folder_list[$i]['folder_short'] == 'INBOX')
 				{
 				    //$folder_short = lang('INBOX');
 					// try this for common folder related lang strings
-					$folder_short = $GLOBALS['phpgw']->msg->get_common_langs('lang_inbox');
+					$folder_short = \App\modules\email\services\MailMessage::getInstance()->get_common_langs('lang_inbox');
 				}
 				else
 				{
@@ -1259,7 +1259,7 @@
 					$tmp_fldball = array();
 					$tmp_fldball['folder'] = $folder_long;
 					$tmp_fldball['acctnum'] = $folder_acctnum;
-					$folder_status = $GLOBALS['phpgw']->msg->get_folder_status_info($tmp_fldball);
+					$folder_status = \App\modules\email\services\MailMessage::getInstance()->get_folder_status_info($tmp_fldball);
 					$folder_unseen = number_format($folder_status['number_new']);
 					$tmp_fldball = array();
 				}
@@ -1305,7 +1305,7 @@
 					'on_change'			=> '',
 					'first_line_txt'	=> lang('if fileto then select destination folder')
 				);
-				$folder_listbox = $GLOBALS['phpgw']->msg->folders_mega_listbox($feed_args);
+				$folder_listbox = \App\modules\email\services\MailMessage::getInstance()->folders_mega_listbox($feed_args);
 		}
 		
 		/*!
@@ -1432,10 +1432,10 @@
 			}
 			
 			// we need the loop to include the default account AS WELL AS the extra accounts
-			for ($x=0; $x < count($GLOBALS['phpgw']->msg->extra_and_default_acounts); $x++)
+			for ($x=0; $x < count(\App\modules\email\services\MailMessage::getInstance()->extra_and_default_acounts); $x++)
 			{
-				$this_acctnum = $GLOBALS['phpgw']->msg->extra_and_default_acounts[$x]['acctnum'];
-				$this_status = $GLOBALS['phpgw']->msg->extra_and_default_acounts[$x]['status'];
+				$this_acctnum = \App\modules\email\services\MailMessage::getInstance()->extra_and_default_acounts[$x]['acctnum'];
+				$this_status = \App\modules\email\services\MailMessage::getInstance()->extra_and_default_acounts[$x]['status'];
 				// do not enable this yet, maybe later
 				//$listbox_show_unseen = $GLOBALS['phpgw']->msg->get_isset_pref('newmsg_combobox', $acctnum);
 				$listbox_show_unseen = False;
@@ -1446,7 +1446,7 @@
 				}
 				else
 				{
-					$folder_list = $GLOBALS['phpgw']->msg->get_arg_value('folder_list', $this_acctnum);
+					$folder_list = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder_list', $this_acctnum);
 					if ($debug_mega_listbox > 1) { echo 'folders_mega_listbox('.__LINE__.'): $this_acctnum ['.$this_acctnum.'] IS enabled, got folder list<br />'; }
 					if ($debug_mega_listbox > 2) { echo 'folders_mega_listbox('.__LINE__.'): $folder_list for $this_acctnum ['.$this_acctnum.'] DUMP<pre>'; print_r($folder_list); echo '</pre>'; }
 					
@@ -1454,7 +1454,7 @@
 					for ($i=0; $i<count($folder_list);$i++)
 					{
 						$folder_long = $folder_list[$i]['folder_long'];
-						$folder_long_preped_out = $GLOBALS['phpgw']->msg->prep_folder_out($folder_long);
+						$folder_long_preped_out = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out($folder_long);
 						$folder_short = $folder_list[$i]['folder_short'];
 						// yes we need $folder_acctnum to help make the "folder ball", yes I know it *should* be the same as $this_acctnum
 						$folder_acctnum = $folder_list[$i]['acctnum'];
@@ -1487,7 +1487,7 @@
 								$tmp_fldball = array();
 								$tmp_fldball['folder'] = $folder_long;
 								$tmp_fldball['acctnum'] = $folder_acctnum;
-								$folder_status = $GLOBALS['phpgw']->msg->get_folder_status_info($tmp_fldball);
+								$folder_status = \App\modules\email\services\MailMessage::getInstance()->get_folder_status_info($tmp_fldball);
 								$folder_unseen = number_format($folder_status['number_new']);
 								// complete the text here so we do not need another if ... then below
 								$folder_unseen = ' ('. $folder_unseen.')';
@@ -1544,17 +1544,17 @@
 			
 			//$debug_widget = True;
 			$debug_widget = False;
-			$acctnum = $GLOBALS['phpgw']->msg->get_acctnum();
+			$acctnum = \App\modules\email\services\MailMessage::getInstance()->get_acctnum();
 			
 			$this->new_combobox();
 			$this->set_cbox_name('fldball_fake_uri');
 			$this->set_cbox_onChange('document.accounts_cbox.submit()');
 			
-			for ($i=0; $i < count($GLOBALS['phpgw']->msg->extra_and_default_acounts); $i++)
+			for ($i=0; $i < count(\App\modules\email\services\MailMessage::getInstance()->extra_and_default_acounts); $i++)
 			{
-				$this_acctnum = $GLOBALS['phpgw']->msg->extra_and_default_acounts[$i]['acctnum'];
-				$this_acct_status = $GLOBALS['phpgw']->msg->extra_and_default_acounts[$i]['status'];
-				$this_acct_fullname = $GLOBALS['phpgw']->msg->get_pref_value('fullname', $this_acctnum);
+				$this_acctnum = \App\modules\email\services\MailMessage::getInstance()->extra_and_default_acounts[$i]['acctnum'];
+				$this_acct_status = \App\modules\email\services\MailMessage::getInstance()->extra_and_default_acounts[$i]['status'];
+				$this_acct_fullname = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('fullname', $this_acctnum);
 				
 				if ($this_acct_status == 'disabled')
 				{
@@ -1565,10 +1565,10 @@
 				elseif ($this_acct_status == 'enabled')
 				{
 					// set_cbox_item(value, text, selected(optional, boolean, default false)
-					if ($GLOBALS['phpgw']->msg->get_pref_value('account_name', $this_acctnum))
+					if (\App\modules\email\services\MailMessage::getInstance()->get_pref_value('account_name', $this_acctnum))
 					{
 						$this->set_cbox_item('&folder=INBOX&acctnum='.$this_acctnum, 
-						$GLOBALS['phpgw']->msg->get_pref_value('account_name', $this_acctnum),
+						\App\modules\email\services\MailMessage::getInstance()->get_pref_value('account_name', $this_acctnum),
 						((string)$acctnum == (string)$this_acctnum));
 							
 					} else {
@@ -1599,9 +1599,9 @@
 		*/
 		function auto_refresh($reload_me='', $feed_refresh_ms='')
 		{
-			if ($GLOBALS['phpgw']->msg->get_isset_pref('refresh_ms'))
+			if (\App\modules\email\services\MailMessage::getInstance()->get_isset_pref('refresh_ms'))
 			{
-				$pref_refresh_ms = $GLOBALS['phpgw']->msg->get_pref_value('refresh_ms');
+				$pref_refresh_ms = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('refresh_ms');
 			}
 			else
 			{
@@ -1817,10 +1817,10 @@
 			// do we exit the script here?
 			if ($do_exit)
 			{
-				if (is_object($GLOBALS['phpgw']->msg))
+				if (\App\modules\email\services\MailMessage::hasInstance())
 				{
-					$GLOBALS['phpgw']->msg->end_request();
-					unset($GLOBALS['phpgw']->msg);
+					\App\modules\email\services\MailMessage::getInstance()->end_request();
+					\App\modules\email\services\MailMessage::releaseInstance();
 				}
 				$GLOBALS['phpgw']->common->phpgw_exit();
 			}
@@ -1837,7 +1837,7 @@
 			return '';
 
 			$row_on = $GLOBALS['phpgw_info']['theme']['row_on'];
-			$this_server_type = $GLOBALS['phpgw']->msg->get_pref_value('mail_server_type');
+			$this_server_type = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('mail_server_type');
 			if (extension_loaded('imap') && function_exists('imap_open'))
 			{
 				$library_usage = 'builtin';
@@ -1847,7 +1847,7 @@
 				$library_usage = 'AM sockets';
 			}
 			$anglemail_table_exists = 'installed';
-			if ($GLOBALS['phpgw']->msg->so->so_am_table_exists() == False)
+			if (\App\modules\email\services\MailMessage::getInstance()->so->so_am_table_exists() == False)
 			{
 				$anglemail_table_exists = 'NOT '.$anglemail_table_exists;
 			}
@@ -1866,7 +1866,7 @@
 			{
 				$spell_available = 'NOT '.$spell_available;
 			}
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt == True)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt == True)
 			{
 				$using_xslt = 'no';
 			}
@@ -1878,13 +1878,13 @@
 			// did we connect
 			$accts_connected = '';
 			// put together a list of all enabled accounts so we will check them for an open stream
-			for ($i=0; $i < count($GLOBALS['phpgw']->msg->extra_and_default_acounts); $i++)
+			for ($i=0; $i < count(\App\modules\email\services\MailMessage::getInstance()->extra_and_default_acounts); $i++)
 			{
-				if ($GLOBALS['phpgw']->msg->extra_and_default_acounts[$i]['status'] == 'enabled')
+				if (\App\modules\email\services\MailMessage::getInstance()->extra_and_default_acounts[$i]['status'] == 'enabled')
 				{
-					$this_acctnum = (int)$GLOBALS['phpgw']->msg->extra_and_default_acounts[$i]['acctnum'];
-					if (($GLOBALS['phpgw']->msg->get_isset_arg('mailsvr_stream', $this_acctnum) == True)
-					&& ((string)$GLOBALS['phpgw']->msg->get_arg_value('mailsvr_stream', $this_acctnum) != ''))
+					$this_acctnum = (int)\App\modules\email\services\MailMessage::getInstance()->extra_and_default_acounts[$i]['acctnum'];
+					if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('mailsvr_stream', $this_acctnum) == True)
+					&& ((string)\App\modules\email\services\MailMessage::getInstance()->get_arg_value('mailsvr_stream', $this_acctnum) != ''))
 					{
 						$accts_connected .= (string)$this_acctnum.',';
 					}

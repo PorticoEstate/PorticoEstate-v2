@@ -35,7 +35,7 @@
 	// this pref is either set for "ON", of not set which represents a "no"
 	// other accounts can be shown by (1) giving the extra accounts access to this pref item, and 
 	// (2) by doing a loop testing for accounts other then just account 0
-	if ($GLOBALS['phpgw']->msg->get_isset_pref('mainscreen_showmail', 0))
+	if (\App\modules\email\services\MailMessage::getInstance()->get_isset_pref('mainscreen_showmail', 0))
 	{
 		// from here on, msg objects opens streams on demand if requied
 		$data = Array();
@@ -49,7 +49,7 @@
 		  $inbox_data['number_all'] integer - for IMAP and pop3 is total number messages in that inbox
 		*/
 		$inbox_data = Array();
-		$inbox_data = $GLOBALS['phpgw']->msg->new_message_check();
+		$inbox_data = \App\modules\email\services\MailMessage::getInstance()->new_message_check();
 		//if ($debug_hook_home > 2) { echo 'hook_home('.__LINE__.'): $inbox_data dump:<pre>'; print_r($inbox_data); echo '</pre>'; } 
 
 		$title = '<font color="#FFFFFF">'.lang('EMail').' '.$inbox_data['alert_string'].'</font>';
@@ -65,15 +65,15 @@
 		if ($inbox_data['number_all'] > 0)
 		{
 			$msgball_list = array();
-			$msgball_list = $GLOBALS['phpgw']->msg->get_msgball_list();
+			$msgball_list = \App\modules\email\services\MailMessage::getInstance()->get_msgball_list();
 		}
 		//if ($debug_hook_home > 2) { echo 'hook_home('.__LINE__.'): call to "get_msgball_list" returns $msgball_list dump:<pre>'; print_r($msgball_list); echo '</pre>'; } 
 		for($i=0; $i<$check_msgs; $i++)
 		{
-			$this_loop_msgball = $GLOBALS['phpgw']->msg->ball_data_parse_str($msgball_list[$i]);
+			$this_loop_msgball = \App\modules\email\services\MailMessage::getInstance()->ball_data_parse_str($msgball_list[$i]);
 			//if ($debug_hook_home > 1) { echo ' * hook_home('.__LINE__.'): $msgball_list['.$i.'] ['.$msgball_list[$i].']; $this_loop_msgball: ['.serialize($this_loop_msgball).']<br />'; } 
-			$msg_headers = $GLOBALS['phpgw']->msg->phpgw_header($this_loop_msgball);
-			$subject = $GLOBALS['phpgw']->msg->get_subject($msg_headers,'');
+			$msg_headers = \App\modules\email\services\MailMessage::getInstance()->phpgw_header($this_loop_msgball);
+			$subject = \App\modules\email\services\MailMessage::getInstance()->get_subject($msg_headers,'');
 			if(strlen($subject) > 65)
 			{
 				$subject = substr($subject,0,65).' ...';
@@ -102,7 +102,7 @@
 
 		// ADD FOLDER LISTBOX TO HOME PAGE (Needs to be TEMPLATED)
 		// Does This Mailbox Support Folders (i.e. more than just INBOX)?
-		if($GLOBALS['phpgw']->msg->get_mailsvr_supports_folders() == False)
+		if(\App\modules\email\services\MailMessage::getInstance()->get_mailsvr_supports_folders() == False)
 		{
 			$extra_data = '&nbsp; &nbsp;'.$compose_href;
 		}
@@ -297,5 +297,5 @@
 	
 	// we create the msg object initially so we can have access to the multi-account preferences, 
 	// so even if we did not output any data here, we still must call this "end_request" function, it is kind of like a destructor
-	$GLOBALS['phpgw']->msg->end_request();
+	\App\modules\email\services\MailMessage::getInstance()->end_request();
 

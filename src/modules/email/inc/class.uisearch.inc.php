@@ -86,12 +86,12 @@
 			//$GLOBALS['phpgw']->msg->begin_request( array("do_login" => True) );
 			//$GLOBALS['phpgw']->msg->ensure_stream_and_folder();
 
-			$GLOBALS['phpgw']->htmlwid = CreateObject('email.html_widgets');
-			print $GLOBALS['phpgw']->htmlwid->get_toolbar();
+			$widgets = CreateObject('email.html_widgets');
+			print $widgets->get_toolbar();
 
 			# get folder list
 			//$folder_list = $GLOBALS['phpgw']->msg->get_folder_list();
-			$folder_list = $GLOBALS['phpgw']->msg->get_arg_value('folder_list');
+			$folder_list = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder_list');
 
 			$todays_date = $this->get_date();
 			$week_date = $this->get_week_date(1);
@@ -112,9 +112,9 @@
 					'menuaction' => 'email.uisearch.search',
 					// this data tells us what folder and account was last active
 					// SET GENERIC fldbal to INBOX just so we have a folder element
-					'fldball[folder]' => $GLOBALS['phpgw']->msg->prep_folder_out(),
+					'fldball[folder]' => \App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
 					// this preserves the acctnum we want to search
-					'fldball[acctnum]' => $GLOBALS['phpgw']->msg->get_acctnum()
+					'fldball[acctnum]' => \App\modules\email\services\MailMessage::getInstance()->get_acctnum()
 				)
 			));	
 	
@@ -295,8 +295,8 @@
 			
 			$t->pparse("frmoutput", "frmhandle");
 			
-			$GLOBALS['phpgw']->msg->end_request();
-			unset($GLOBALS['phpgw']->msg);
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
+			\App\modules\email\services\MailMessage::releaseInstance();
 			
 		}
 			
@@ -312,8 +312,8 @@
 			//$GLOBALS['phpgw']->msg->begin_request( array("do_login" => True) );
 			//$GLOBALS['phpgw']->msg->ensure_stream_and_folder();
 
-			$GLOBALS['phpgw']->htmlwid = CreateObject('email.html_widgets');
-			print $GLOBALS['phpgw']->htmlwid->get_toolbar();
+			$widgets = CreateObject('email.html_widgets');
+			print $widgets->get_toolbar();
 
 			
 			# output the javascript stuff
@@ -332,7 +332,7 @@
 				# Get folder to search in
 				$search_vars['fldball']['folder'] = $ext_folder_list[$j];
 				// REMEMBER what account we are searching
-				$search_vars['fldball']['acctnum'] = $GLOBALS['phpgw']->msg->get_acctnum();
+				$search_vars['fldball']['acctnum'] = \App\modules\email\services\MailMessage::getInstance()->get_acctnum();
 
 				# Get and process the textbox values
 				$search_vars['str']['SUBJECT'] = trim(Sanitizer::get_var('search_subject'));
@@ -391,7 +391,7 @@
 				}
 		
 				$imap_search_str = rtrim($imap_search_str);
-				$search_results = $GLOBALS['phpgw']->msg->phpgw_search($search_vars['fldball'], $imap_search_str, 0);
+				$search_results = \App\modules\email\services\MailMessage::getInstance()->phpgw_search($search_vars['fldball'], $imap_search_str, 0);
 
 				if (is_array($search_results))
 				{
@@ -432,11 +432,11 @@
 					$msgball['acctnum'] = $search_vars['fldball']['acctnum'];
 					$msgball['msgnum'] = $search_results[$i];
 		
-					$header_info = $GLOBALS['phpgw']->msg->phpgw_header($msgball);
+					$header_info = \App\modules\email\services\MailMessage::getInstance()->phpgw_header($msgball);
 		
 					# fill checkbox value
 					//$t->set_var('checkbox_val', 'msgball[msgnum]='.$search_results[$i].'&msgball[folder]='.urlencode($GLOBALS['phpgw']->msg->get_folder_long($search_vars['fldball']['folder'])).'&msgball[acctnum]='.$GLOBALS['phpgw']->msg->get_acctnum());
-					$t->set_var('checkbox_val', 'msgball[msgnum]='.$search_results[$i].'&msgball[folder]='.urlencode($GLOBALS['phpgw']->msg->get_folder_long($search_vars['fldball']['folder'])).'&msgball[acctnum]='.$search_vars['fldball']['acctnum']);
+					$t->set_var('checkbox_val', 'msgball[msgnum]='.$search_results[$i].'&msgball[folder]='.urlencode(\App\modules\email\services\MailMessage::getInstance()->get_folder_long($search_vars['fldball']['folder'])).'&msgball[acctnum]='.$search_vars['fldball']['acctnum']);
 		
 					$t->set_var("from", $header_info->fromaddress);
 					$msg_link = phpgw::link('/index.php', array('menuaction'=>'email.uimessage.message','msgball[msgnum]'=>$search_results[$i],'msgball[folder]'=>$search_vars['fldball']['folder'],'msgball[acctnum]'=>$search_vars['fldball']['acctnum']));
@@ -449,13 +449,13 @@
 				}
 
 				# get folder list
-				$folder_list = $GLOBALS['phpgw']->msg->get_folder_list();
+				$folder_list = \App\modules\email\services\MailMessage::getInstance()->get_folder_list();
 				$t->set_block("search", "folder_list", "folders_list");
 				for ($i=0;$i<count($folder_list);$i++)
 				{
 					if ($folder_list[$i]['folder_short'] != $search_vars['fldball']['folder'])
 					{
-						$t->set_var('fld_link', '&folder='.urlencode($folder_list[$i]['folder_long']).'&acctnum='.$GLOBALS['phpgw']->msg->get_acctnum());
+						$t->set_var('fld_link', '&folder='.urlencode($folder_list[$i]['folder_long']).'&acctnum='.\App\modules\email\services\MailMessage::getInstance()->get_acctnum());
 						$t->set_var("fld_value", $folder_list[$i]['folder_short']);
 						$t->parse("folders_list", "folder_list", True);
 					}
@@ -472,8 +472,8 @@
 				$t->pparse("output", "search");
 
 			}
-			$GLOBALS['phpgw']->msg->end_request();
-			unset($GLOBALS['phpgw']->msg);
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
+			\App\modules\email\services\MailMessage::releaseInstance();
 		}	
 
 		

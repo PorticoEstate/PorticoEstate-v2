@@ -39,7 +39,7 @@
 		*/
 		function __construct()
 		{
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: ('.__LINE__.'): *constructor*<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: ('.__LINE__.'): *constructor*<br />'); }
 			return;
 		}
 
@@ -112,9 +112,9 @@
 		*/
 		function so_save_session_cache_item($data_name='misc',$data,$acctnum='',$extra_keys='')
 		{
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_save_session_cache_item('.__LINE__.'): ENTERED, $this->PARENT->session_cache_enabled='.serialize($GLOBALS['phpgw']->msg->session_cache_enabled).', $data_name: ['.$data_name.'], $acctnum (optional): ['.$acctnum.'], $extra_keys: ['.$extra_keys.']<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_save_session_cache_item('.__LINE__.'): ENTERED, $this->PARENT->session_cache_enabled='.serialize(\App\modules\email\services\MailMessage::getInstance()->session_cache_enabled).', $data_name: ['.$data_name.'], $acctnum (optional): ['.$acctnum.'], $extra_keys: ['.$extra_keys.']<br />'); }
 
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_save_session_cache_item('.__LINE__.'): LEAVING <br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_save_session_cache_item('.__LINE__.'): LEAVING <br />'); }
 		}
 
 
@@ -126,9 +126,9 @@
 		*/
 		function so_read_session_cache_item($data_name='misc', $acctnum='', $ex_folder='', $ex_msgnum='')
 		{
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_read_session_cache_item('.__LINE__.'): ENTERED, $data_name: ['.$data_name.']; optional: $acctnum: ['.$acctnum.'], $ex_folder: ['.$ex_folder.'], $ex_msgnum: ['.$ex_msgnum.'] '.'<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_read_session_cache_item('.__LINE__.'): ENTERED, $data_name: ['.$data_name.']; optional: $acctnum: ['.$acctnum.'], $ex_folder: ['.$ex_folder.'], $ex_msgnum: ['.$ex_msgnum.'] '.'<br />'); }
 
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_read_session_cache_item('.__LINE__.'): LEAVING <br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_read_session_cache_item('.__LINE__.'): LEAVING <br />'); }
 		}
 
 		/*!
@@ -140,9 +140,9 @@
 		*/
 		function so_expire_session_cache_item($data_name='misc',$acctnum='', $ex_folder='', $ex_msgnum='')
 		{
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_expire_session_cache_item('.__LINE__.'): ENTERED, $this->PARENT->session_cache_enabled='.serialize($GLOBALS['phpgw']->msg->session_cache_enabled).', $data_name: ['.$data_name.'], $acctnum (optional): ['.$acctnum.'], $extra_keys: ['.$extra_keys.']<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_expire_session_cache_item('.__LINE__.'): ENTERED, $this->PARENT->session_cache_enabled='.serialize(\App\modules\email\services\MailMessage::getInstance()->session_cache_enabled).', $data_name: ['.$data_name.'], $acctnum (optional): ['.$acctnum.'], $extra_keys: ['.$extra_keys.']<br />'); }
 
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_expire_session_cache_item('.__LINE__.'): LEAVING <br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_expire_session_cache_item('.__LINE__.'): LEAVING <br />'); }
 		}
 
 
@@ -177,10 +177,10 @@
 		*/
 		function prep_db_session_compat($called_by='not_specified')
 		{
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: prep_db_session_compat('.__LINE__.'): ENTERING, $called_by ['.$called_by.']<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: prep_db_session_compat('.__LINE__.'): ENTERING, $called_by ['.$called_by.']<br />'); }
 			// UNDER DEVELOPMEMT - backwards_compat with sessions_db where php4 sessions are not being used
 			if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-			|| ($GLOBALS['phpgw']->msg->use_private_table == True))
+			|| (\App\modules\email\services\MailMessage::getInstance()->use_private_table == True))
 			{
 				// REF_SESSION should not really be in $_SESSION namespace so RE-CREATE all this outside of php4 sessions
 				// we are going to make this for our own use
@@ -203,12 +203,12 @@
 					$GLOBALS['email_dbsession_compat']['phpgw_session']['phpgw_app_sessions']['email'] = array();
 				}
 				// recreate the REF_SESSION to point to this, since it may not have existed earlier
-				$GLOBALS['phpgw']->msg->ref_SESSION =& $GLOBALS['email_dbsession_compat'];
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: prep_db_session_compat('.__LINE__.'): LEAVING, session_db IS in use, so we created $GLOBALS[email_dbsession_compat][phpgw_session][phpgw_app_sessions][email]<br />'); }
+				\App\modules\email\services\MailMessage::getInstance()->ref_SESSION =& $GLOBALS['email_dbsession_compat'];
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: prep_db_session_compat('.__LINE__.'): LEAVING, session_db IS in use, so we created $GLOBALS[email_dbsession_compat][phpgw_session][phpgw_app_sessions][email]<br />'); }
 			}
 			else
 			{
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: prep_db_session_compat('.__LINE__.'): LEAVING, session_db is NOT in use, took no action, nothing needed.<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: prep_db_session_compat('.__LINE__.'): LEAVING, session_db is NOT in use, took no action, nothing needed.<br />'); }
 			}
 		}
 
@@ -231,17 +231,17 @@
 			$this->so_clear_data_group();
 			// for DB sessions_db, OR used for anglemail table
 			if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-			|| ($GLOBALS['phpgw']->msg->use_private_table == True))
+			|| (\App\modules\email\services\MailMessage::getInstance()->use_private_table == True))
 			{
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: expire_db_session_bulk_data('.__LINE__.'): ENTERING, session_db IS in use, $called_by ['.$called_by.']<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: expire_db_session_bulk_data('.__LINE__.'): ENTERING, session_db IS in use, $called_by ['.$called_by.']<br />'); }
 				// RETAIN IMPORTANT DATA
 				$retained_data=array();
-				for ($i=0; $i < count($GLOBALS['phpgw']->msg->extra_and_default_acounts); $i++)
+				for ($i=0; $i < count(\App\modules\email\services\MailMessage::getInstance()->extra_and_default_acounts); $i++)
 				{
-					if ($GLOBALS['phpgw']->msg->extra_and_default_acounts[$i]['status'] == 'enabled')
+					if (\App\modules\email\services\MailMessage::getInstance()->extra_and_default_acounts[$i]['status'] == 'enabled')
 					{
-						$this_acctnum = $GLOBALS['phpgw']->msg->extra_and_default_acounts[$i]['acctnum'];
-						if ($GLOBALS['phpgw']->msg->use_private_table == True)
+						$this_acctnum = \App\modules\email\services\MailMessage::getInstance()->extra_and_default_acounts[$i]['acctnum'];
+						if (\App\modules\email\services\MailMessage::getInstance()->use_private_table == True)
 						{
 							$retained_data[$this_acctnum]['mailsvr_callstr'] = $this->so_get_data((string)$this_acctnum.';mailsvr_callstr');
 							$retained_data[$this_acctnum]['folder_list'] = $this->so_get_data((string)$this_acctnum.';folder_list');
@@ -256,7 +256,7 @@
 					}
 				}
 
-				if ($GLOBALS['phpgw']->msg->use_private_table == True)
+				if (\App\modules\email\services\MailMessage::getInstance()->use_private_table == True)
 				{
 					// WIPE CLEAN THE CACHE all data for this user
 					$this->so_clear_all_data_this_user();
@@ -274,14 +274,14 @@
 				if ($wipe_absolutely_everything == False)
 				{
 					// RE-INSERT IMPORTANT DATA
-					for ($i=0; $i < count($GLOBALS['phpgw']->msg->extra_and_default_acounts); $i++)
+					for ($i=0; $i < count(\App\modules\email\services\MailMessage::getInstance()->extra_and_default_acounts); $i++)
 					{
-						if ($GLOBALS['phpgw']->msg->extra_and_default_acounts[$i]['status'] == 'enabled')
+						if (\App\modules\email\services\MailMessage::getInstance()->extra_and_default_acounts[$i]['status'] == 'enabled')
 						{
-							$this_acctnum = $GLOBALS['phpgw']->msg->extra_and_default_acounts[$i]['acctnum'];
+							$this_acctnum = \App\modules\email\services\MailMessage::getInstance()->extra_and_default_acounts[$i]['acctnum'];
 							if ($retained_data[$this_acctnum]['mailsvr_callstr'])
 							{
-								if ($GLOBALS['phpgw']->msg->use_private_table == True)
+								if (\App\modules\email\services\MailMessage::getInstance()->use_private_table == True)
 								{
 									$this->so_set_data((string)$this_acctnum.';mailsvr_callstr', $retained_data[$this_acctnum]['mailsvr_callstr']);
 								}
@@ -292,7 +292,7 @@
 							}
 							if ($retained_data[$this_acctnum]['folder_list'])
 							{
-								if ($GLOBALS['phpgw']->msg->use_private_table == True)
+								if (\App\modules\email\services\MailMessage::getInstance()->use_private_table == True)
 								{
 									$this->so_set_data((string)$this_acctnum.';folder_list', $retained_data[$this_acctnum]['folder_list']);
 								}
@@ -303,7 +303,7 @@
 							}
 							if ($retained_data[$this_acctnum]['mailsvr_namespace'])
 							{
-								if ($GLOBALS['phpgw']->msg->use_private_table == True)
+								if (\App\modules\email\services\MailMessage::getInstance()->use_private_table == True)
 								{
 									$this->so_set_data((string)$this_acctnum.';mailsvr_namespace', $retained_data[$this_acctnum]['mailsvr_namespace']);
 								}
@@ -315,7 +315,7 @@
 						}
 					}
 				}
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: expire_db_session_bulk_data('.__LINE__.'): LEAVING, session_db IS in use, did erase all email appsession data<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: expire_db_session_bulk_data('.__LINE__.'): LEAVING, session_db IS in use, did erase all email appsession data<br />'); }
 			}
 		}
 
@@ -374,7 +374,7 @@
 		*/
 		function so_set_data($data_key, $content, $compression=False)
 		{
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_set_data('.__LINE__.'): ENTERING, $data_key ['.$data_key.'], $compression ['.serialize($compression).']<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_set_data('.__LINE__.'): ENTERING, $data_key ['.$data_key.'], $compression ['.serialize($compression).']<br />'); }
 			$account_id = get_account_id();
 			$data_key = $GLOBALS['phpgw']->db->db_addslashes($data_key);
 			// for compression, first choice is BZ2, second choice is GZ
@@ -393,7 +393,7 @@
 				$content_preped = base64_encode(gzcompress(serialize($content)));
 				$content = '';
 				unset($content);
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_set_data('.__LINE__.'): $compression is ['.serialize($compression).'] AND we did serialize and <font color="green">did GZ compress</font>, no addslashes for compressed content<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_set_data('.__LINE__.'): $compression is ['.serialize($compression).'] AND we did serialize and <font color="green">did GZ compress</font>, no addslashes for compressed content<br />'); }
 			}
 			else
 			{
@@ -409,7 +409,7 @@
 				}
 				$content = '';
 				unset($content);
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_set_data('.__LINE__.'): $compress is ['.serialize($compress).'] AND we did serialize with NO compression<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_set_data('.__LINE__.'): $compress is ['.serialize($compress).'] AND we did serialize with NO compression<br />'); }
 			}
 
 			$GLOBALS['phpgw']->db->query("SELECT content FROM phpgw_anglemail WHERE "
@@ -425,7 +425,7 @@
 				$GLOBALS['phpgw']->db->query("UPDATE phpgw_anglemail set content='" . $content_preped
 					. "' WHERE account_id='" . $account_id . "' AND data_key='" . $data_key . "'",__LINE__,__FILE__);
 			}
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_set_data('.__LINE__.'): LEAVING <br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_set_data('.__LINE__.'): LEAVING <br />'); }
 		}
 
 		/*!
@@ -434,7 +434,7 @@
 		*/
 		function so_get_data($data_key, $compression=False)
 		{
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): ENTERING, $data_key ['.$data_key.'], $compression ['.serialize($compression).']<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): ENTERING, $data_key ['.$data_key.'], $compression ['.serialize($compression).']<br />'); }
 
 			// initialize vars to blank
 			$my_content = '';
@@ -444,10 +444,10 @@
 			&& ($this->so_have_data_group() == False)
 			&& ($this->data_group_done_filled < 3))
 			{
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): requesting to fill group data<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): requesting to fill group data<br />'); }
 				// TRUE = make this into a generic LIKE match string
 				$func_returns = $this->so_fill_data_group($data_key, True);
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): fill group data function returns $func_returns ['.serialize($func_returns).']<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): fill group data function returns $func_returns ['.serialize($func_returns).']<br />'); }
 			}
 			else if (
 			   ($this->use_group_data == True)
@@ -462,28 +462,28 @@
 				// i.e. the first thing to come in here with a folder element in it,
 				// then we are allowed one more try for the next item that is requested
 				// after that that is NOT folder_status_info
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): folder_ststus_info retry block, first trigger was folder_status_info, so now wipe existing group data and retry<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): folder_ststus_info retry block, first trigger was folder_status_info, so now wipe existing group data and retry<br />'); }
 				$this->so_clear_data_group();
 				// TRUE = make this into a generic LIKE match string
 				$func_returns = $this->so_fill_data_group($data_key, True);
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): retry of fill group data function returns $func_returns ['.serialize($func_returns).']<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): retry of fill group data function returns $func_returns ['.serialize($func_returns).']<br />'); }
 			}
 
 			if (($this->use_group_data == False)
 			|| ($this->so_have_data_group() == False))
 			{
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): group data either disabled or nothing returned, requesting individual data record<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): group data either disabled or nothing returned, requesting individual data record<br />'); }
 				$account_id = get_account_id();
 				$data_key = $GLOBALS['phpgw']->db->db_addslashes($data_key);
 
 				$GLOBALS['phpgw']->db->query("SELECT content FROM phpgw_anglemail WHERE "
 					. "account_id = '".$account_id."' AND data_key = '".$data_key."'",__LINE__,__FILE__);
 
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): $GLOBALS[phpgw]->db->num_rows() = ['.$GLOBALS['phpgw']->db->num_rows().'] <br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): $GLOBALS[phpgw]->db->num_rows() = ['.$GLOBALS['phpgw']->db->num_rows().'] <br />'); }
 
 				if ($GLOBALS['phpgw']->db->num_rows()==0)
 				{
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): LEAVING, returning False<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): LEAVING, returning False<br />'); }
 					return False;
 				}
 			}
@@ -497,27 +497,27 @@
 				{
 					// no stripslashes for compressed data (False)
 					$my_content = $this->so_lookup_data_group($data_key, False);
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): using SO_LOOKUP_DATA_GROUP <br />'); }
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 2) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): so_lookup_data_group $my_content DUMP:', $my_content); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): using SO_LOOKUP_DATA_GROUP <br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): so_lookup_data_group $my_content DUMP:', $my_content); }
 				}
 				else
 				{
 					$GLOBALS['phpgw']->db->next_record();
 					// no stripslashes for compressed data
 					$my_content = $GLOBALS['phpgw']->db->f('content');
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): query for individual record, NOT using group data<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): query for individual record, NOT using group data<br />'); }
 				}
 				$comp_desc = array();
 				$comp_desc['before_decomp'] = 'NA';
 				$comp_desc['after_decomp'] = 'NA';
 				$comp_desc['ratio_txt'] = 'NA';
 				$comp_desc['ratio_math'] = 'NA';
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $comp_desc['before_decomp'] = strlen($my_content); }
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): strlen($my_content) is ['.$comp_desc['before_decomp'].'], BEFORE decompress, $compression is ['.serialize($compression).']<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { $comp_desc['before_decomp'] = strlen($my_content); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): strlen($my_content) is ['.$comp_desc['before_decomp'].'], BEFORE decompress, $compression is ['.serialize($compression).']<br />'); }
 				//if ($GLOBALS['phpgw']->msg->debug_so_class > 2) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): $GLOBALS[phpgw]->db->next_record() yields $my_content DUMP:', $my_content); }
 				if (!$my_content)
 				{
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): LEAVING, returning False<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): LEAVING, returning False<br />'); }
 					return False;
 				}
 				// for compression, first choice is BZ2, second choice is GZ
@@ -532,26 +532,26 @@
 				if (function_exists('gzuncompress'))
 				{
 					$my_content_preped = unserialize(gzuncompress(base64_decode($my_content)));
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $comp_desc['after_decomp'] = strlen(serialize($my_content_preped)); $comp_desc['ratio_math'] = (string)(round(($comp_desc['after_decomp']/$comp_desc['before_decomp']), 1) * 1).'X'; $comp_desc['ratio_txt'] = 'pre/post is ['.$comp_desc['before_decomp'].' to '.$comp_desc['after_decomp']; }
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): $compression: ['.serialize($compression).'] using <font color="brown">GZ uncompress</font> pre/post is ['.$comp_desc['ratio_txt'].']; ratio: ['.$comp_desc['ratio_math'].'] <br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { $comp_desc['after_decomp'] = strlen(serialize($my_content_preped)); $comp_desc['ratio_math'] = (string)(round(($comp_desc['after_decomp']/$comp_desc['before_decomp']), 1) * 1).'X'; $comp_desc['ratio_txt'] = 'pre/post is ['.$comp_desc['before_decomp'].' to '.$comp_desc['after_decomp']; }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): $compression: ['.serialize($compression).'] using <font color="brown">GZ uncompress</font> pre/post is ['.$comp_desc['ratio_txt'].']; ratio: ['.$comp_desc['ratio_math'].'] <br />'); }
 				}
 				else
 				{
 					$my_content_preped = '';
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): ERROR: $compression: ['.serialize($compression).'] <font color="brown">decompression ERROR</font> neither "bzdecompress" (first choice) nor "gzuncompress" (second choice) is available<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): ERROR: $compression: ['.serialize($compression).'] <font color="brown">decompression ERROR</font> neither "bzdecompress" (first choice) nor "gzuncompress" (second choice) is available<br />'); }
 				}
 				$my_content = '';
 				unset($my_content);
 				if (!$my_content_preped)
 				{
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 2) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): AFTER DECOMPRESS and UNserialization $my_content_preped is GONE!'); }
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): LEAVING, returning False, <font color="red">content did not unserialize, compression was in use </font> <br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): AFTER DECOMPRESS and UNserialization $my_content_preped is GONE!'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): LEAVING, returning False, <font color="red">content did not unserialize, compression was in use </font> <br />'); }
 					return False;
 				}
 				else
 				{
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 2) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): AFTER DECOMPRESS and UNserialization $my_content_preped DUMP:', $my_content_preped); }
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): LEAVING, got content, <font color="brown"> did decompress </font> , returning that content<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): AFTER DECOMPRESS and UNserialization $my_content_preped DUMP:', $my_content_preped); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): LEAVING, got content, <font color="brown"> did decompress </font> , returning that content<br />'); }
 					return $my_content_preped;
 				}
 			}
@@ -562,36 +562,36 @@
 				{
 					// not using compression so we will stripslashes
 					$my_content = $this->so_lookup_data_group($data_key, True);
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): using SO_LOOKUP_DATA_GROUP <br />'); }
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 2) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): so_lookup_data_group $my_content DUMP:', $my_content); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): using SO_LOOKUP_DATA_GROUP <br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): so_lookup_data_group $my_content DUMP:', $my_content); }
 				}
 				else
 				{
 					$GLOBALS['phpgw']->db->next_record();
 					// NOTE: we only stripslashes when NOT using compression
 					$my_content = $GLOBALS['phpgw']->db->f('content', 'stripslashes');
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): query for individual record, NOT using group data<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): query for individual record, NOT using group data<br />'); }
 				}
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): strlen($my_content) is ['.strlen($my_content).']<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): strlen($my_content) is ['.strlen($my_content).']<br />'); }
 				//if ($GLOBALS['phpgw']->msg->debug_so_class > 2) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): $GLOBALS[phpgw]->db->next_record() yields $my_content DUMP:', $my_content); }
 				if (!$my_content)
 				{
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): LEAVING, returning False<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): LEAVING, returning False<br />'); }
 					return False;
 				}
 				// we serialize only NON-strings,
 				// so unserialize only if content is already serialized
 				//if ($GLOBALS['phpgw']->msg->is_serialized_str($my_content) == True)
-				if ($GLOBALS['phpgw']->msg->is_serialized_smarter($my_content) == True)
+				if (\App\modules\email\services\MailMessage::getInstance()->is_serialized_smarter($my_content) == True)
 				{
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): we need to unserialize this <br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): we need to unserialize this <br />'); }
 					$my_content_preped = unserialize($my_content);
 					// DID IT WORK
 					//$try_recover = True;
 					$try_recover = False;
 					if (!$my_content_preped)
 					{
-						if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): <b> <font color="red">ERROR unserializing </font> </b> , probably a slashes problem<br />'); }
+						if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): <b> <font color="red">ERROR unserializing </font> </b> , probably a slashes problem<br />'); }
 						if ($try_recover == True)
 						{
 							// try some recovery methods
@@ -609,11 +609,11 @@
 							$my_content_recover = str_replace('"','\"',$my_content_recover);
 							$my_content_recover = str_replace('_LEGITQUOTE_','"',$my_content_recover);
 							//$my_content_recover = str_replace('_ESCAPEDSLASH_','\/',$my_content_recover);
-							if ($GLOBALS['phpgw']->msg->debug_so_class > 2) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): so_lookup_data_group $my_content_recover DUMP:', $my_content_recover); }
+							if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): so_lookup_data_group $my_content_recover DUMP:', $my_content_recover); }
 							$my_content_preped = unserialize($my_content_recover);
 							if (!$my_content_preped)
 							{
-								if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): <b> <font color="red">2nd ERROR unserializing </font> </b> , recovery did not work, probably a slashes problem<br />'); }
+								if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): <b> <font color="red">2nd ERROR unserializing </font> </b> , recovery did not work, probably a slashes problem<br />'); }
 							}
 						}
 					}
@@ -626,14 +626,14 @@
 				unset($my_content);
 				if (!$my_content_preped)
 				{
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 2) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): AFTER UNserialization $my_content_preped is GONE!'); }
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): LEAVING, returning False, <font color="red">content did not unserialize </font> <br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): AFTER UNserialization $my_content_preped is GONE!'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): LEAVING, returning False, <font color="red">content did not unserialize </font> <br />'); }
 					return False;
 				}
 				else
 				{
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 2) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): AFTER UNserialization $my_content_preped DUMP:', $my_content_preped); }
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): LEAVING, got content, returning that content<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): AFTER UNserialization $my_content_preped DUMP:', $my_content_preped); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_get_data('.__LINE__.'): LEAVING, got content, returning that content<br />'); }
 					return $my_content_preped;
 				}
 			}
@@ -675,18 +675,18 @@
 		*/
 		function so_prop_use_group_data($feed_value='##NOTHING##')
 		{
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): ENTERING, current $this->use_group_data ['.serialize($this->use_group_data).'], $feed_value ['.serialize($feed_value).']<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): ENTERING, current $this->use_group_data ['.serialize($this->use_group_data).'], $feed_value ['.serialize($feed_value).']<br />'); }
 			if ((string)$feed_value == '##NOTHING##')
 			{
 				// do nothing skip down to the return statement
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): do nothing, $feed_value ['.serialize($feed_value).'] == "##NOTHING##" means only return current property<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): do nothing, $feed_value ['.serialize($feed_value).'] == "##NOTHING##" means only return current property<br />'); }
 				//return $this->use_group_data;
 			}
 			elseif ($feed_value)
 			{
 				if ($this->use_group_data != True)
 				{
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): toggle $this->use_group_data to True, and thus call "so_clear_data_group" and set "data_group_done_filled" to 0 and then set to True<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): toggle $this->use_group_data to True, and thus call "so_clear_data_group" and set "data_group_done_filled" to 0 and then set to True<br />'); }
 					// maybe we should clear any stored data, huh?
 					$this->so_clear_data_group();
 					// and maybe we should reset this excess query counter too, huh?
@@ -695,28 +695,28 @@
 				}
 				else
 				{
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): do nothing, use_group_data is already TRUE<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): do nothing, use_group_data is already TRUE<br />'); }
 				}
 			}
 			elseif (!$feed_value)
 			{
 				if ($this->use_group_data != False)
 				{
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): toggle $this->use_group_data to False, and thus call "so_clear_data_group" and then set to False<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): toggle $this->use_group_data to False, and thus call "so_clear_data_group" and then set to False<br />'); }
 					// maybe we should clear any stored data, huh?
 					$this->so_clear_data_group();
 					$this->use_group_data = False;
 				}
 				else
 				{
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): do nothing, use_group_data is already FALSE<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): do nothing, use_group_data is already FALSE<br />'); }
 				}
 			}
 			else
 			{
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): ERROR why am I here?<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): ERROR why am I here?<br />'); }
 			}
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): LEAVING, returning $this->use_group_data ['.serialize($this->use_group_data).']<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_prop_use_group_data('.__LINE__.'): LEAVING, returning $this->use_group_data ['.serialize($this->use_group_data).']<br />'); }
 			return $this->use_group_data;
 		}
 
@@ -726,17 +726,17 @@
 		*/
 		function so_fill_data_group($data_key_partial='', $make_like=True)
 		{
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_fill_data_group('.__LINE__.'): ENTERING, $data_key_partial ['.$data_key_partial.']  $make_like ['.serialize($make_like).']<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_fill_data_group('.__LINE__.'): ENTERING, $data_key_partial ['.$data_key_partial.']  $make_like ['.serialize($make_like).']<br />'); }
 			if ($this->use_group_data == False)
 			{
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_fill_data_group('.__LINE__.'): LEAVING returning False<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_fill_data_group('.__LINE__.'): LEAVING returning False<br />'); }
 				return False;
 			}
 
 			$this->data_group_array = array();
 			if (!$data_key_partial)
 			{
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_fill_data_group('.__LINE__.'): LEAVING returning False<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_fill_data_group('.__LINE__.'): LEAVING returning False<br />'); }
 				return False;
 			}
 
@@ -756,7 +756,7 @@
 					// since cached folder stats may be simply to fill the combobox and not related
 					// to the folder we really need the group data for
 					$this->data_group_last_trigger = $data_key_partial;
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_fill_data_group('.__LINE__.'):  setting $this->data_group_last_trigger ['.$this->data_group_last_trigger.']<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_fill_data_group('.__LINE__.'):  setting $this->data_group_last_trigger ['.$this->data_group_last_trigger.']<br />'); }
 					// prep for group data query
 					$data_key = $data_key_exploded[0].';%;'.$data_key_exploded[2].';%';
 					//$data_key = $data_key_exploded[0].'\;%\;'.$data_key_exploded[2].'\;%';
@@ -800,7 +800,7 @@
 				{
 					// Data Key does NOT have a folder name
 					// means the way we get mass group data will not be worth it
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_fill_data_group('.__LINE__.'): LEAVING returning False<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_fill_data_group('.__LINE__.'): LEAVING returning False<br />'); }
 					return False;
 				}
 			}
@@ -875,13 +875,13 @@
 				$GLOBALS['phpgw']->db->query("SELECT * FROM phpgw_anglemail WHERE "
 					. "account_id = '".$account_id."' AND data_key LIKE '".$data_key."'",__LINE__,__FILE__);
 			}
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_fill_data_group('.__LINE__.'): $data_key ['.htmlspecialchars($data_key).'] $data_key_msgball ['.htmlspecialchars($data_key_msgball).'] $data_key_folder_status_info ['.htmlspecialchars($data_key_folder_status_info).']<br />'); }
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_fill_data_group('.__LINE__.'): $data_key_folder_list ['.htmlspecialchars($data_key_folder_list).'] $data_key_mailsvr_callstr ['.htmlspecialchars($data_key_mailsvr_callstr).'] $data_key_mailsvr_namespace ['.htmlspecialchars($data_key_mailsvr_namespace).']<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_fill_data_group('.__LINE__.'): $data_key ['.htmlspecialchars($data_key).'] $data_key_msgball ['.htmlspecialchars($data_key_msgball).'] $data_key_folder_status_info ['.htmlspecialchars($data_key_folder_status_info).']<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_fill_data_group('.__LINE__.'): $data_key_folder_list ['.htmlspecialchars($data_key_folder_list).'] $data_key_mailsvr_callstr ['.htmlspecialchars($data_key_mailsvr_callstr).'] $data_key_mailsvr_namespace ['.htmlspecialchars($data_key_mailsvr_namespace).']<br />'); }
 			$num_rows = $GLOBALS['phpgw']->db->num_rows();
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_fill_data_group('.__LINE__.'): $num_rows ['.$num_rows.']<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_fill_data_group('.__LINE__.'): $num_rows ['.$num_rows.']<br />'); }
 			if ($num_rows == 0)
 			{
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_fill_data_group('.__LINE__.'): LEAVING returning False<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_fill_data_group('.__LINE__.'): LEAVING returning False<br />'); }
 				return False;
 			}
 			// increment counter how many times we have filled group data
@@ -897,8 +897,8 @@
 				$my_content = $GLOBALS['phpgw']->db->f('content');
 				$this->data_group_array[$my_data_key] = $my_content;
 			}
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 2) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg: so_fill_data_group('.__LINE__.'): $this->data_group_array DUMP:', $this->data_group_array); }
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_fill_data_group('.__LINE__.'): LEAVING returning TRUE, did fill group data<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg: so_fill_data_group('.__LINE__.'): $this->data_group_array DUMP:', $this->data_group_array); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_fill_data_group('.__LINE__.'): LEAVING returning TRUE, did fill group data<br />'); }
 			return True;
 		}
 
@@ -992,11 +992,11 @@
 		*/
 		function so_appsession_passthru($location='',$data='##NOTHING##', $compression=False)
 		{
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): ENTERING: $location ['.$location.'], $compression ['.serialize($compression).']<br />'); }
-			if ($GLOBALS['phpgw']->msg->session_cache_enabled == False)
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): ENTERING: $location ['.$location.'], $compression ['.serialize($compression).']<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->session_cache_enabled == False)
 			{
 				// flag means we do not use any session caching
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): LEAVING, msg->session_cache_enabled False, so disabled session caching, returning False<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): LEAVING, msg->session_cache_enabled False, so disabled session caching, returning False<br />'); }
 				return False;
 			}
 			// ok we are allowed to do session caching ...
@@ -1005,7 +1005,7 @@
 			if ( is_scalar($data) && $data == '##NOTHING##')
 			{
 				// means we are GETTING data from appsession
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): request to get data<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): request to get data<br />'); }
 				if (($compression)
 				&& (function_exists('gzuncompress')))
 				{
@@ -1013,34 +1013,34 @@
 					$content_preped = base64_encode(gzuncompress(serialize($content)));
 					$content = '';
 					unset($content);
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): LEAVING, returning passthru data hopefully<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): LEAVING, returning passthru data hopefully<br />'); }
 					return $content_preped;
 				}
 				else
 				{
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): LEAVING, returning passthru data<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): LEAVING, returning passthru data<br />'); }
 					return $GLOBALS['phpgw']->session->appsession($location, 'email');
 				}
 			}
 			else
 			{
 				// means we are SETTING data to appsession
-				if ($GLOBALS['phpgw']->msg->debug_so_class > 1) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): request to SET data<br />'); }
+				if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): request to SET data<br />'); }
 				if (($compression)
 				&& (function_exists('gzcompress')))
 				{
 					$content_preped = base64_encode(gzcompress(serialize($data)));
 					$data = '';
 					unset($data);
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): LEAVING, returning passthru value<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): LEAVING, returning passthru value<br />'); }
 					return $GLOBALS['phpgw']->session->appsession($location, 'email', $content_preped);
 				}
 				else
 				{
-					if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): LEAVING, returning passthru value<br />'); }
+					if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): LEAVING, returning passthru value<br />'); }
 					return $GLOBALS['phpgw']->session->appsession($location, 'email', $data);
 				}
 			}
-			if ($GLOBALS['phpgw']->msg->debug_so_class > 0) { $GLOBALS['phpgw']->msg->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): ERROR: we should have returned by now<br />'); }
+			if (\App\modules\email\services\MailMessage::getInstance()->debug_so_class > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('so_mail_msg.so_appsession_passthru('.__LINE__.'): ERROR: we should have returned by now<br />'); }
 		}
 	}

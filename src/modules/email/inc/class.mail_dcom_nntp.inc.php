@@ -187,7 +187,7 @@ require_once __DIR__ . '/imap_config.php';
 				return False;
 			}
 
-			$server_str = $GLOBALS['phpgw']->msg->get_mailsvr_callstr();
+			$server_str = \App\modules\email\services\MailMessage::getInstance()->get_mailsvr_callstr();
 			$mbox = $this->open($server_str.$folder, $user, $pass);
 
 			error_reporting(error_reporting() + 2);
@@ -196,13 +196,13 @@ require_once __DIR__ . '/imap_config.php';
 
 		function construct_folder_str($folder)
 		{
-			$folder_str = $GLOBALS['phpgw']->msg->get_folder_long($folder);
+			$folder_str = \App\modules\email\services\MailMessage::getInstance()->get_folder_long($folder);
 			return $folder_str;
 		}
 
 		function deconstruct_folder_str($folder)
 		{
-			$folder_str = $GLOBALS['phpgw']->msg->get_folder_short($folder);
+			$folder_str = \App\modules\email\services\MailMessage::getInstance()->get_folder_short($folder);
 			return $folder_str;
 		}
 	}

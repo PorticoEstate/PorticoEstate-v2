@@ -105,16 +105,16 @@
 			$this->msg_bootstrap->set_do_login(BS_LOGIN_ONLY_IF_NEEDED);
 			$this->msg_bootstrap->ensure_mail_msg_exists('email.bofilters *constructor*', $this->debug);
 			
-			$this->not_set = $GLOBALS['phpgw']->msg->not_set;
+			$this->not_set = \App\modules\email\services\MailMessage::getInstance()->not_set;
 			// when we get filter data from database, we undo the DB defang ONLY is we are going to USE the filters
 			// because if only displaying the filter data in a form, the data needs to remain html encoded
-			if (isset($GLOBALS['phpgw']->msg->ref_GET['menuaction']))
+			if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_GET['menuaction']))
 			{
-				$my_menuaction = $GLOBALS['phpgw']->msg->ref_GET['menuaction'];
+				$my_menuaction = \App\modules\email\services\MailMessage::getInstance()->ref_GET['menuaction'];
 			}
-			elseif (isset($GLOBALS['phpgw']->msg->ref_POST['menuaction']))
+			elseif (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['menuaction']))
 			{
-				$my_menuaction = $GLOBALS['phpgw']->msg->ref_POST['menuaction'];
+				$my_menuaction = \App\modules\email\services\MailMessage::getInstance()->ref_POST['menuaction'];
 			}
 			else
 			{
@@ -174,10 +174,10 @@
 			
 			// METHOD1 - uses email msg objects "raw_filters" array
 			$this->all_filters = array();
-			if ((isset($GLOBALS['phpgw']->msg->raw_filters))
-			&& (is_array($GLOBALS['phpgw']->msg->raw_filters)))
+			if ((isset(\App\modules\email\services\MailMessage::getInstance()->raw_filters))
+			&& (is_array(\App\modules\email\services\MailMessage::getInstance()->raw_filters)))
 			{
-				$this->all_filters = $GLOBALS['phpgw']->msg->raw_filters;
+				$this->all_filters = \App\modules\email\services\MailMessage::getInstance()->raw_filters;
 			}
 			// fallback location to try also
 			elseif ((isset($GLOBALS['phpgw']->preferences->data['email']['filters']))
@@ -210,27 +210,27 @@
 		function obtain_filer_num($get_next_avail_if_none=True)
 		{
 			if ($this->debug > 0) { echo 'bofilters.obtain_filer_num: ENTERING ; $get_next_avail_if_none : [<code>'.serialize($get_next_avail_if_none).'</code>]<br />'."\r\n"; }
-			if (isset($GLOBALS['phpgw']->msg->ref_POST['filter_num']))
+			if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['filter_num']))
 			{
-				if ($GLOBALS['phpgw']->msg->ref_POST['filter_num'] == $this->add_new_filter_token)
+				if (\App\modules\email\services\MailMessage::getInstance()->ref_POST['filter_num'] == $this->add_new_filter_token)
 				{
 					$filter_num = $this->get_next_avail_num();
 				}
 				else
 				{
-					$filter_num = $GLOBALS['phpgw']->msg->ref_POST['filter_num'];
+					$filter_num = \App\modules\email\services\MailMessage::getInstance()->ref_POST['filter_num'];
 					$filter_num = (int)$filter_num;
 				}
 			}
-			elseif (isset($GLOBALS['phpgw']->msg->ref_GET['filter_num']))
+			elseif (isset(\App\modules\email\services\MailMessage::getInstance()->ref_GET['filter_num']))
 			{
-				if ($GLOBALS['phpgw']->msg->ref_GET['filter_num'] == $this->add_new_filter_token)
+				if (\App\modules\email\services\MailMessage::getInstance()->ref_GET['filter_num'] == $this->add_new_filter_token)
 				{
 					$filter_num = $this->get_next_avail_num();
 				}
 				else
 				{
-					$filter_num = $GLOBALS['phpgw']->msg->ref_GET['filter_num'];
+					$filter_num = \App\modules\email\services\MailMessage::getInstance()->ref_GET['filter_num'];
 					$filter_num = (int)$filter_num;
 				}
 			}
@@ -263,13 +263,13 @@
 		*/
 		function just_testing()
 		{
-			if ((isset($GLOBALS['phpgw']->msg->ref_POST['filter_test']))
-			&& ((string)$GLOBALS['phpgw']->msg->ref_POST['filter_test'] != ''))
+			if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['filter_test']))
+			&& ((string)\App\modules\email\services\MailMessage::getInstance()->ref_POST['filter_test'] != ''))
 			{
 				$just_testing = True;
 			}
-			elseif ((isset($GLOBALS['phpgw']->msg->ref_GET['filter_test']))
-			&& ((string)$GLOBALS['phpgw']->msg->ref_GET['filter_test'] != ''))
+			elseif ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_GET['filter_test']))
+			&& ((string)\App\modules\email\services\MailMessage::getInstance()->ref_GET['filter_test'] != ''))
 			{
 				$just_testing = True;
 			}
@@ -450,7 +450,7 @@
 			}
 			// undo the _LAME_ way to make the value "database friendly"
 			// return slashes and quotes to their actual form as slashes and quotes
-			$un_defanged_string = $GLOBALS['phpgw']->msg->html_quotes_decode($pref_string);
+			$un_defanged_string = \App\modules\email\services\MailMessage::getInstance()->html_quotes_decode($pref_string);
 			if ($this->debug_set_prefs > 0) { echo 'bofilters.string_undo_defang('.__LINE__.'): LEAVING returning $un_defanged_string ['.serialize($un_defanged_string).']<br />'."\r\n"; } 
 			return $un_defanged_string;
 		}
@@ -475,10 +475,10 @@
 			}
 			// typical "user_string" needs to strip any slashes 
 			// that PHP "magic_quotes_gpc"may have added
-			$prepared_string = $GLOBALS['phpgw']->msg->stripslashes_gpc($user_string);
+			$prepared_string = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($user_string);
 			// and this is a _LAME_ way to make the value "database friendly"
 			// because slashes and quotes will FRY the whole preferences repository
-			$prepared_string = $GLOBALS['phpgw']->msg->html_quotes_encode($prepared_string);
+			$prepared_string = \App\modules\email\services\MailMessage::getInstance()->html_quotes_encode($prepared_string);
 			if ($this->debug_set_prefs > 0) { echo 'bofilters.string_strip_and_defang: LEAVING returning $prepared_string ['.serialize($prepared_string).']<br />'."\r\n"; } 
 			return $prepared_string;
 		}
@@ -501,18 +501,18 @@
 			
 			//source_accounts
 			$seen_list_items=array();
-			$loops = count($GLOBALS['phpgw']->msg->ref_POST[$key]);
+			$loops = count(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$key]);
 			for($i=0;$i < $loops;$i++)
 			{
 				// buggy apache2: do duplicate test on the supplied $key array items
-				if (in_array($GLOBALS['phpgw']->msg->ref_POST[$key][$i], $seen_list_items) == True)
+				if (in_array(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$key][$i], $seen_list_items) == True)
 				{
 					$did_alter = True;
-					if ($this->debug_set_prefs > 1) { echo 'bofilters: check_duplicate_submit_elements('.__LINE__.'): <u>unsetting</u> and *skipping* duplicate (buggy apache2) POST ['.$key.']['.$i.'] array item ['.$GLOBALS['phpgw']->msg->ref_POST[$key][$i].'] <br />'; }
-					$GLOBALS['phpgw']->msg->ref_POST[$key][$i] = '';
+					if ($this->debug_set_prefs > 1) { echo 'bofilters: check_duplicate_submit_elements('.__LINE__.'): <u>unsetting</u> and *skipping* duplicate (buggy apache2) POST ['.$key.']['.$i.'] array item ['.\App\modules\email\services\MailMessage::getInstance()->ref_POST[$key][$i].'] <br />'; }
+					\App\modules\email\services\MailMessage::getInstance()->ref_POST[$key][$i] = '';
 					// can I UNSET this and have the next $i index item actually be the next one
 					// YES, a) array count calculated before loop, and b) does not squash array to unset an item
-					unset($GLOBALS['phpgw']->msg->ref_POST[$key][$i]);
+					unset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$key][$i]);
 					//array_splice($GLOBALS['phpgw']->msg->ref_POST[$key], $i, 1);
 					// NOTE USE OF CONTINUE COMMAND HERE!
 					// we do not increase $i because the next array item just fell into the current slot
@@ -522,9 +522,9 @@
 				else
 				{
 					// track seen items for duplicate test
-					if ($this->debug_set_prefs > 1) { echo 'bofilters: check_duplicate_submit_elements('.__LINE__.'): good (not duplicate, not buggy apache2) POST ['.$key.']['.$i.'] array item ['.$GLOBALS['phpgw']->msg->ref_POST[$key][$i].'] <br />'; }
+					if ($this->debug_set_prefs > 1) { echo 'bofilters: check_duplicate_submit_elements('.__LINE__.'): good (not duplicate, not buggy apache2) POST ['.$key.']['.$i.'] array item ['.\App\modules\email\services\MailMessage::getInstance()->ref_POST[$key][$i].'] <br />'; }
 					$tmp_next_idx = count($seen_list_items);
-					$seen_list_items[$tmp_next_idx] = $GLOBALS['phpgw']->msg->ref_POST[$key][$i];
+					$seen_list_items[$tmp_next_idx] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$key][$i];
 				}
 			}
 			
@@ -539,7 +539,7 @@
 		function process_submitted_data()
 		{
 			if ($this->debug_set_prefs > 0) { echo 'bofilters.process_submitted_data('.__LINE__.'): ENTERING<br />'."\r\n"; }
-			if ($this->debug_set_prefs > 2) { echo 'bofilters.process_submitted_data('.__LINE__.'): (pre-buggy apache2 check) ref_POST dump:<pre>'; print_r($GLOBALS['phpgw']->msg->ref_POST); echo '</pre>'."\r\n"; }
+			if ($this->debug_set_prefs > 2) { echo 'bofilters.process_submitted_data('.__LINE__.'): (pre-buggy apache2 check) ref_POST dump:<pre>'; print_r(\App\modules\email\services\MailMessage::getInstance()->ref_POST); echo '</pre>'."\r\n"; }
 			$this->check_duplicate_submit_elements('source_accounts');
 			
 			//if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data: caling $this->distill_filter_args<br />'."\r\n"; }
@@ -560,10 +560,10 @@
 			if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): $this_filter[filter_num]: ['.$found_filter_num.']<br />'; }
 			
 			// FILTER NAME
-			if ((isset($GLOBALS['phpgw']->msg->ref_POST['filtername']))
-			&& ((string)$GLOBALS['phpgw']->msg->ref_POST['filtername'] != ''))
+			if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['filtername']))
+			&& ((string)\App\modules\email\services\MailMessage::getInstance()->ref_POST['filtername'] != ''))
 			{
-				$this_filter['filtername'] = $GLOBALS['phpgw']->msg->ref_POST['filtername'];
+				$this_filter['filtername'] = \App\modules\email\services\MailMessage::getInstance()->ref_POST['filtername'];
 				// DEFANG on "filtername" (will need to reverse that on read)
 				$this_filter['filtername'] = $this->string_strip_and_defang($this_filter['filtername']);
 			}
@@ -577,14 +577,14 @@
 			// ---- The Rest of the data is submitted in  Array Form ----
 			
 			// SOURCE ACCOUNTS
-			if ((isset($GLOBALS['phpgw']->msg->ref_POST['source_accounts']))
-			&& ((string)$GLOBALS['phpgw']->msg->ref_POST['source_accounts'] != ''))
+			if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['source_accounts']))
+			&& ((string)\App\modules\email\services\MailMessage::getInstance()->ref_POST['source_accounts'] != ''))
 			{
 				// extract the "fake uri" data with parse_str
 				// and fill our filter struct
-				for ($i=0; $i < count($GLOBALS['phpgw']->msg->ref_POST['source_accounts']); $i++)
+				for ($i=0; $i < count(\App\modules\email\services\MailMessage::getInstance()->ref_POST['source_accounts']); $i++)
 				{
-					parse_str($GLOBALS['phpgw']->msg->ref_POST['source_accounts'][$i], $this_filter['source_accounts'][$i]);
+					parse_str(\App\modules\email\services\MailMessage::getInstance()->ref_POST['source_accounts'][$i], $this_filter['source_accounts'][$i]);
 					// re-urlencode the foldername, because we generally keep the fldball urlencoded
 					$this_filter['source_accounts'][$i]['folder'] = urlencode($this_filter['source_accounts'][$i]['folder']);
 					// make sure acctnum is an int
@@ -606,9 +606,9 @@
 			$this_filter['actions'] = Array();
 			// look for top level "match_X[]" and "action_X[]" items
 			//while(list($key,$value) = each($GLOBALS['phpgw']->msg->ref_POST))
-                        if (is_array($GLOBALS['phpgw']->msg->ref_POST))
+                        if (is_array(\App\modules\email\services\MailMessage::getInstance()->ref_POST))
                         {
-                            foreach($GLOBALS['phpgw']->msg->ref_POST as $key => $value)
+                            foreach(\App\modules\email\services\MailMessage::getInstance()->ref_POST as $key => $value)
                             {
 				// do not walk thru data we already obtained
 				if (($key == 'filter_num')
@@ -625,7 +625,7 @@
 					// now we grab the index value from the key string
 					$match_this_idx = (int)$key[6];
 					if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): match_this_idx grabbed value: ['.$match_this_idx.']<br />'; }
-					$match_data = $GLOBALS['phpgw']->msg->ref_POST[$key];
+					$match_data = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$key];
 					// is this row even being used?
 					if ((isset($match_data['andor']))
 					&& ($match_data['andor'] == 'ignore_me'))
@@ -647,7 +647,7 @@
 					// now we grab the index value from the key string
 					$action_this_idx = (int)$key[7];
 					if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): action_this_idx grabbed value: ['.$action_this_idx.']<br />'; }
-					$action_data = $GLOBALS['phpgw']->msg->ref_POST[$key];
+					$action_data = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$key];
 					if ((isset($action_data['judgement']))
 					&& ($action_data['judgement'] == 'ignore_me'))
 					{
@@ -713,7 +713,7 @@
 			// NEW we need to wipe the cached filters
 			$my_location = '0;cached_prefs';
 			if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository('.__LINE__.'): NEW: EXPIRE CACHED PREFERENCES, calling ->msg->so->so_appsession_passthru('.$my_location.', " ")<br />'; }
-			$GLOBALS['phpgw']->msg->so->so_appsession_passthru($my_location, ' ');
+			\App\modules\email\services\MailMessage::getInstance()->so->so_appsession_passthru($my_location, ' ');
 			
 			// first we delete any existing data at the desired prefs location
 			$pref_struct_str = '["filters"]';
@@ -828,7 +828,7 @@
 				
 			}
 			// end the email session
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 			
 			// redirect user back to filters list page
 			$take_me_to_url = phpgw::link(
@@ -929,7 +929,7 @@
 			// ok, filters have run, EXPUNGE now
 			if ($this->debug > 1) { echo 'bofilters.do_filter ('.__LINE__.'): done filtering, now call $GLOBALS[phpgw]->msg->expunge_expungable_folders<br />'; }
 			$did_expunge = False;
-			$did_expunge = $GLOBALS['phpgw']->msg->expunge_expungable_folders('bofilters.do_filter LINE '.__LINE__);
+			$did_expunge = \App\modules\email\services\MailMessage::getInstance()->expunge_expungable_folders('bofilters.do_filter LINE '.__LINE__);
 			if ($this->debug > 1) { echo 'bofilters.do_filter ('.__LINE__.'): $GLOBALS[phpgw]->msg->expunge_expungable_folders() returns ['.serialize($did_expunge).']<br />'; }
 			
 			// ok, filters have run, do we have a report to show?
@@ -970,7 +970,7 @@
 				}
 			}
 			if ($this->debug > 1) { echo 'bofilters.do_filter('.__LINE__.'): calling end_request<br />'; }
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 			if ($this->debug > 0) { echo 'bofilters.do_filter('.__LINE__.'): LEAVING<br />'; }
 			$take_me_to_url = phpgw::link(
 										'/index.php',array(
@@ -1029,7 +1029,7 @@
 					if ($this->debug > 1) { echo 'bofilters.run_single_filter('.__LINE__.'): get_msgball_list for later XOR ing for <code>['.serialize($fake_fldball).']</code><br />'; }
 					//$this->inbox_full_msgball_list[$src_acct_loop_num] = $GLOBALS['phpgw']->msg->get_msgball_list($fake_fldball['acctnum'], $fake_fldball['folder']);
 					// FIXME: FOR BACKWARDS COMPAT WE GET AN OLD STYLE MSGBALL LIST
-					$this->inbox_full_msgball_list[$src_acct_loop_num] = $GLOBALS['phpgw']->msg->get_msgball_list_oldschool($fake_fldball['acctnum'], $fake_fldball['folder']);
+					$this->inbox_full_msgball_list[$src_acct_loop_num] = \App\modules\email\services\MailMessage::getInstance()->get_msgball_list_oldschool($fake_fldball['acctnum'], $fake_fldball['folder']);
 					//if ($this->debug > 2) { echo 'bofilters.run_single_filter: $this->inbox_full_msgball_list['.$src_acct_loop_num.'] DUMP:<pre>'; print_r($this->inbox_full_msgball_list[$src_acct_loop_num]); echo "</pre>\r\n"; }
 				}
 				
@@ -1049,7 +1049,7 @@
 					// we need to get the headers
 					// NOTE THIS REQUIRES OLDSCHOOL msgball list, fix this in transition to uri only msgball info
 					$msgball_this_iteration = $this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration];
-					$headers_text = $GLOBALS['phpgw']->msg->phpgw_fetchheader($msgball_this_iteration);
+					$headers_text = \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchheader($msgball_this_iteration);
 					
 					// NOTE BUG: there is a bug here when the recieved headers are not contiguous, 
 					//   when an erronious other header intupts the recieved headers block
@@ -1078,7 +1078,7 @@
 					$headers_text = trim($headers_text);
 					// decode encoded headers (if any)
 					//$headers_text = $GLOBALS['phpgw']->msg->decode_rfc_header($headers_text);
-					$headers_text = $GLOBALS['phpgw']->msg->decode_rfc_header_glob($headers_text);
+					$headers_text = \App\modules\email\services\MailMessage::getInstance()->decode_rfc_header_glob($headers_text);
 					// make all Received headers stripped of their preceeding CRLF,  preg option i = case insensitive; m = multi line
 					$headers_text = preg_replace('/'."\r\n".'received: /mi', 'CRLF Received: ', $headers_text);
 					// split the string based on the FIRST CRLF and make only the first Received header have a preceeding "\r\n"
@@ -1446,7 +1446,7 @@
 						if ($this->debug > 2) { echo 'bofilters.filter_action_sequence: $to_fldball DUMP:<pre>'; print_r($to_fldball); echo "</pre>\r\n"; }
 						if ($this->debug > 1) { echo 'bofilters.filter_action_sequence: pre-move info: $mov_msgball [<code>'.serialize($mov_msgball).'</code>]<br />'; }
 						//echo 'EXIT NOT READY TO APPLY THE FILTER YET<br />';
-						$good_to_go = $GLOBALS['phpgw']->msg->industrial_interacct_mail_move($mov_msgball, $to_fldball);
+						$good_to_go = \App\modules\email\services\MailMessage::getInstance()->industrial_interacct_mail_move($mov_msgball, $to_fldball);
 							
 						if (!$good_to_go)
 						{
@@ -1510,7 +1510,7 @@
 				if ($this->debug > 2) { echo 'bofilters.run_single_filter:  $this->each_filter_mball_list['.$filter_num.'] DUMP:<pre>'; print_r($this->each_filter_mball_list[$filter_num]); echo "</pre>\r\n"; }
 				// retrieve user displayable data for each message in the result set
 				//$this->result_set_mlist = $GLOBALS['phpgw']->msg->get_msg_list_display($fake_folder_info,$this->each_filter_mball_list[$filter_num]);
-				$this->result_set_mlist = $GLOBALS['phpgw']->msg->get_msg_list_display($fake_folder_info,$new_style_msgball_list);
+				$this->result_set_mlist = \App\modules\email\services\MailMessage::getInstance()->get_msg_list_display($fake_folder_info,$new_style_msgball_list);
 				// save this report data for later use, add it to any other previous report
 				parse_str($this_filter['actions'][0]['folder'], $target_folder);
 				$this->html_matches_table .= 

@@ -193,7 +193,7 @@ lang_warn_style_sheet = lang of "warn_style_sheet"
 			// we know we have msg object, now make convience reference
 			if ($this->msg == '##NOTHING##')
 			{
-				$this->msg =& $GLOBALS['phpgw']->msg;
+				$this->msg = \App\modules\email\services\MailMessage::getInstance();
 			}
 			// now we can use msg object debug calls
 			if ($this->debug > 0) { $this->msg->dbug->out('ENTERING: email.bomessage.message_data('.__LINE__.')'.'<br />'); }
@@ -202,8 +202,8 @@ lang_warn_style_sheet = lang of "warn_style_sheet"
 			// ---- BEGIN BOMESSAGE ----
 			
 			// if preserving no_fmt then add it to every navigation (prev, next) links
-			if (($GLOBALS['phpgw']->msg->get_isset_arg('no_fmt'))
-			&& ($GLOBALS['phpgw']->msg->get_arg_value('no_fmt') != '')
+			if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('no_fmt'))
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('no_fmt') != '')
 			&& ($this->preserve_no_fmt == True))
 			{
 				$this->no_fmt = array('no_fmt'=>1);
@@ -219,8 +219,8 @@ lang_warn_style_sheet = lang of "warn_style_sheet"
 			//$icon_theme = $GLOBALS['phpgw']->msg->get_pref_value('icon_theme',$acctnum);
 			//$icon_size = $GLOBALS['phpgw']->msg->get_pref_value('icon_size',$acctnum);
 			// we do not really have to specify an acct num, the "current acctnum" will be used if we do not specify one here
-			$this->icon_theme = $GLOBALS['phpgw']->msg->get_pref_value('icon_theme');
-			$this->icon_size = $GLOBALS['phpgw']->msg->get_pref_value('icon_size');
+			$this->icon_theme = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('icon_theme');
+			$this->icon_size = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('icon_size');
 			
 			// ---- account switchbox  ----
 			// make a HTML comobox used to switch accounts
@@ -230,19 +230,19 @@ lang_warn_style_sheet = lang of "warn_style_sheet"
 			if ($make_acctbox)
 			{
 				$feed_args = Array(
-					'pre_select_acctnum'	=> $GLOBALS['phpgw']->msg->get_acctnum(),
+					'pre_select_acctnum'	=> \App\modules\email\services\MailMessage::getInstance()->get_acctnum(),
 					'widget_name'		=> 'fldball_fake_uri',
 					'folder_key_name'	=> 'folder',
 					'acctnum_key_name'	=> 'acctnum',
 					'on_change'		=> 'document.acctbox.submit()'
 				);
-				$this->xi['acctbox_listbox'] = $GLOBALS['phpgw']->msg->all_ex_accounts_listbox($feed_args);
+				$this->xi['acctbox_listbox'] = \App\modules\email\services\MailMessage::getInstance()->all_ex_accounts_listbox($feed_args);
 				$this->xi['accounts_link'] = phpgw::link(
 								'/index.php',array(
 								 'menuaction'=>'email.uipreferences.ex_accounts_list'));
 //				$this->xi['accounts_img'] = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on($this->icon_theme.'/accounts-24','_on'),$this->xi['folders_txt1'],'','','0');
-				$this->xi['accounts_img'] = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on($this->icon_theme.'/accounts-24','_on'),'','','','0');
-				$this->xi['ilnk_accounts'] = $GLOBALS['phpgw']->msg->href_maketag($this->xi['accounts_link'],$this->xi['accounts_img']);
+				$this->xi['accounts_img'] = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on($this->icon_theme.'/accounts-24','_on'),'','','','0');
+				$this->xi['ilnk_accounts'] = \App\modules\email\services\MailMessage::getInstance()->href_maketag($this->xi['accounts_link'],$this->xi['accounts_img']);
 			}
 			else
 			{
@@ -258,9 +258,9 @@ lang_warn_style_sheet = lang of "warn_style_sheet"
 			// ---- Move Message Box  ----
 			// borrow code from boindex and uiindex for this functionality
 			// pass on (preserve these valus) after the message move
-			$this->xi['move_current_sort'] = $GLOBALS['phpgw']->msg->get_arg_value('sort');
-			$this->xi['move_current_order'] = $GLOBALS['phpgw']->msg->get_arg_value('order');
-			$this->xi['move_current_start'] = $GLOBALS['phpgw']->msg->get_arg_value('start');
+			$this->xi['move_current_sort'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort');
+			$this->xi['move_current_order'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('order');
+			$this->xi['move_current_start'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('start');
 			// POST MOVE INSTRUCTIONS
 			// will pass as hidden var, this is the name of the POST var
 			$this->xi['move_postmove_goto_name'] = 'move_postmove_goto';
@@ -274,11 +274,11 @@ lang_warn_style_sheet = lang of "warn_style_sheet"
 								'menuaction'=>'email.boaction.delmov')+$this->no_fmt);
 			$this->xi['frm_delmov_name'] = 'delmov';
 			// imitate the stuff that happens when message(s) is/are selected on the uiindex page, then the move combobox is used
-			$this->xi['mlist_embedded_uri'] = $GLOBALS['phpgw']->msg->get_arg_value('["msgball"]["uri"]');
+			$this->xi['mlist_embedded_uri'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('["msgball"]["uri"]');
 			// add a special flag to the uri to indicate we should goto the next message, not to the index page
 			//$this->xi['mlist_embedded_uri'] .= '&msgball[called_by]=uimessage';
 			// that has been REPLACED by "move_postmove_goto" POST var
-			$this->xi['mailsvr_supports_folders'] = $GLOBALS['phpgw']->msg->get_mailsvr_supports_folders();
+			$this->xi['mailsvr_supports_folders'] = \App\modules\email\services\MailMessage::getInstance()->get_mailsvr_supports_folders();
 			if ($this->xi['mailsvr_supports_folders'])
 			{
 				/*
@@ -299,8 +299,8 @@ lang_warn_style_sheet = lang of "warn_style_sheet"
 				// UPDATE use the newer widgets high level function
 				$my_cbox_widgets = CreateObject('email.html_widgets');
 				$skip_fldball = array();
-				$skip_fldball['acctnum'] = $GLOBALS['phpgw']->msg->get_acctnum();
-				$skip_fldball['folder'] = $GLOBALS['phpgw']->msg->prep_folder_out($GLOBALS['phpgw']->msg->get_arg_value('folder'));
+				$skip_fldball['acctnum'] = \App\modules\email\services\MailMessage::getInstance()->get_acctnum();
+				$skip_fldball['folder'] = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder'));
 				$this->xi['delmov_listbox'] = $my_cbox_widgets->all_folders_combobox('delmov', True, $skip_fldball, $this->xi['lang_move_this_message_into']);
 			}
 			else
@@ -312,16 +312,16 @@ lang_warn_style_sheet = lang of "warn_style_sheet"
 			
 			
 			// ----  Fill Some Important Variables  -----
-			$sm_envelope_img = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/address-conduit-16','_on'),lang('add to address book'),'','','0');
+			$sm_envelope_img = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/address-conduit-16','_on'),lang('add to address book'),'','','0');
 
-			$not_set = $GLOBALS['phpgw']->msg->not_set;
+			$not_set = \App\modules\email\services\MailMessage::getInstance()->not_set;
 			
 			// ----  General Information about The Message  -----
-			$msgball = $GLOBALS['phpgw']->msg->get_arg_value('msgball');
+			$msgball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgball');
 			
 			if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'):  processed msgball DUMP:', $msgball); } 
-			$msg_struct = $GLOBALS['phpgw']->msg->phpgw_fetchstructure($msgball);
-			$msg_headers = $GLOBALS['phpgw']->msg->phpgw_header($msgball);
+			$msg_struct = \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchstructure($msgball);
+			$msg_headers = \App\modules\email\services\MailMessage::getInstance()->phpgw_header($msgball);
 			
 			if ($this->debug > 2) { $this->msg->dbug->out('class.bomessage.message_data('.__LINE__.'): $msg_struct DUMP:', $msg_struct);  }
 			if ($this->debug > 2) { $this->msg->dbug->out('class.bomessage.message_data('.__LINE__.'): $msg_headers DUMP:', $msg_headers);  }
@@ -349,11 +349,11 @@ lang_warn_style_sheet = lang of "warn_style_sheet"
 					);
 			
 			$folder_info = array();
-			$folder_info = $GLOBALS['phpgw']->msg->get_folder_status_info();
+			$folder_info = \App\modules\email\services\MailMessage::getInstance()->get_folder_status_info();
 			if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'):  get_folder_status_info() DUMP:', $folder_info); }
 			$totalmessages = $folder_info['number_all'];
 			
-			$subject = $GLOBALS['phpgw']->msg->get_subject($msg_headers,'');
+			$subject = \App\modules\email\services\MailMessage::getInstance()->get_subject($msg_headers,'');
 
 			/*
 # begin GMT handling by "acros"
@@ -414,9 +414,9 @@ $msg_headers->udate = $new_time;
 			$get_back_here_url = phpgw::link(
 				'/index.php',array(
 				  'menuaction'=>'email.uimessage.message',
-				'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-				'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-				'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'))
+				'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+				'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+				'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'))
 				+$this->no_fmt
 				+$msgball['uri']);
 			
@@ -427,13 +427,13 @@ $msg_headers->udate = $new_time;
 			$this->xi['application'] = '';
 			// THIS IS NOT CACHED DATA, only call this is session_cache_extreme is FALSE
 			// or else we will connect even if we ALREADY HAVE THE BODY IN CACHE!!!
-			if ($GLOBALS['phpgw']->msg->session_cache_extreme == True)
+			if (\App\modules\email\services\MailMessage::getInstance()->session_cache_extreme == True)
 			{
 				$msgtype = '';
 			}
 			else
 			{
-				$msgtype = $GLOBALS['phpgw']->msg->phpgw_get_flag('X-phpGW-Type');
+				$msgtype = \App\modules\email\services\MailMessage::getInstance()->phpgw_get_flag('X-phpGW-Type');
 			}
 			$this->xi['msgtype'] = $msgtype;
 			
@@ -451,31 +451,31 @@ $msg_headers->udate = $new_time;
 			}
 			
 			// if we are on INBOX translate it
-			if ($GLOBALS['phpgw']->msg->get_folder_short($msgball['folder']) == 'INBOX')
+			if (\App\modules\email\services\MailMessage::getInstance()->get_folder_short($msgball['folder']) == 'INBOX')
 			{
 				//$nice_folder_name = lang('INBOX');
 				// try this for common folder related lang strings
 				//$common_langs = $GLOBALS['phpgw']->msg->get_common_langs();
 				//$nice_folder_name = $common_langs['lang_inbox'];
 				// or try this shortcut, it works too
-				$nice_folder_name = $GLOBALS['phpgw']->msg->get_common_langs('lang_inbox');
+				$nice_folder_name = \App\modules\email\services\MailMessage::getInstance()->get_common_langs('lang_inbox');
 			}
 			else
 			{
-				$nice_folder_name = $GLOBALS['phpgw']->msg->get_folder_short($msgball['folder']);
+				$nice_folder_name = \App\modules\email\services\MailMessage::getInstance()->get_folder_short($msgball['folder']);
 			}
 			
 			// ----  What Folder To Return To  -----
 			//$lnk_goback_folder = $GLOBALS['phpgw']->msg->href_maketag(
-			$lnk_goback_folder = $GLOBALS['phpgw']->msg->href_maketag_class(
+			$lnk_goback_folder = \App\modules\email\services\MailMessage::getInstance()->href_maketag_class(
 				phpgw::link(
 					 '/index.php',array(
 					'menuaction'=>'email.uiindex.index',	
 					'fldball[folder]'=>$msgball['folder'],
 					'fldball[acctnum]'=>$msgball['acctnum'],
-					'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-					'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-					'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'))),
+					'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+					'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+					'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'))),
 				//$GLOBALS['phpgw']->msg->get_folder_short($msgball['folder']));
 				$nice_folder_name,
 				// his class name is reference to a css on the page itself, for the A item
@@ -486,7 +486,7 @@ $msg_headers->udate = $new_time;
 			// get the data for goto previous / goto next message handling
 			// NOTE: the one arg for this function is only there to support the old, broken method
 			// in the event that the "get_msgball_list()" returns bogus data or is not available
-			$nav_data = $GLOBALS['phpgw']->msg->prev_next_navigation($folder_info['number_all']);
+			$nav_data = \App\modules\email\services\MailMessage::getInstance()->prev_next_navigation($folder_info['number_all']);
 			if ($this->debug_nav > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): $nav_data[] DUMP:', $nav_data); }
 
 			// ----  "Go To Previous Message" Handling  -----
@@ -497,21 +497,21 @@ $msg_headers->udate = $new_time;
 				$prev_msg_link = phpgw::link(
 					'/index.php',array(
 					 'menuaction'=>'email.uimessage.message',
-					'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-					'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-					'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'))
+					'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+					'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+					'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'))
 					+$this->no_fmt
 					+$nav_uri);
 
-				$prev_msg_img = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/arrow-left-24','_on'),$this->xi['lang_previous_message'],'','','0');
-				$href_prev_msg = $GLOBALS['phpgw']->msg->href_maketag_class($prev_msg_link,'[&lt; '.$this->xi['lang_previous_message'].']', 'c_replybar');
-				$ilnk_prev_msg = $GLOBALS['phpgw']->msg->href_maketag($prev_msg_link,$prev_msg_img);
+				$prev_msg_img = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/arrow-left-24','_on'),$this->xi['lang_previous_message'],'','','0');
+				$href_prev_msg = \App\modules\email\services\MailMessage::getInstance()->href_maketag_class($prev_msg_link,'[&lt; '.$this->xi['lang_previous_message'].']', 'c_replybar');
+				$ilnk_prev_msg = \App\modules\email\services\MailMessage::getInstance()->href_maketag($prev_msg_link,$prev_msg_img);
 			}
 			else
 			{
 				// not a clickable link, just text saying "no prev message"
 				$href_prev_msg = '['.$this->xi['lang_no_previous_message'].']';
-				$ilnk_prev_msg = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/arrow-left-no-24','_on'),$this->xi['lang_no_previous_message'],'','','0');
+				$ilnk_prev_msg = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/arrow-left-no-24','_on'),$this->xi['lang_no_previous_message'],'','','0');
 
 			}
 			
@@ -526,20 +526,20 @@ $msg_headers->udate = $new_time;
 				$next_msg_link = phpgw::link(
 					'/index.php',array(
 					 'menuaction'=>'email.uimessage.message',
-					'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-					'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-					'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'))
+					'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+					'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+					'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'))
 					+$this->no_fmt
 					+$nav_uri);
-				$next_msg_img = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/arrow-right-24','_on'),$this->xi['lang_next_message'],'','','0');
-				$href_next_msg = $GLOBALS['phpgw']->msg->href_maketag_class($next_msg_link,'['.$this->xi['lang_next_message'].' &gt;]', 'c_replybar');
-				$ilnk_next_msg = $GLOBALS['phpgw']->msg->href_maketag($next_msg_link,$next_msg_img);
+				$next_msg_img = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/arrow-right-24','_on'),$this->xi['lang_next_message'],'','','0');
+				$href_next_msg = \App\modules\email\services\MailMessage::getInstance()->href_maketag_class($next_msg_link,'['.$this->xi['lang_next_message'].' &gt;]', 'c_replybar');
+				$ilnk_next_msg = \App\modules\email\services\MailMessage::getInstance()->href_maketag($next_msg_link,$next_msg_img);
 			}
 			else
 			{
 				// not a clickable link, just text saying "no next message"
 				$href_next_msg = '['.$this->xi['lang__no_next_message'].']';
-				$ilnk_next_msg = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/arrow-right-no-24','_on'),$this->xi['lang__no_next_message'],'','','0');
+				$ilnk_next_msg = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/arrow-right-no-24','_on'),$this->xi['lang__no_next_message'],'','','0');
 			}
 			
 			//if ($this->debug > 0) { echo 'messages.php step4 $nav_data[] $ilnk_next_msg: '.$ilnk_next_msg.'<br />'; }
@@ -572,11 +572,11 @@ $msg_headers->udate = $new_time;
 				$this->xi['move_postmove_goto_value'] = phpgw::link(
 						'/index.php',array(
 						 'menuaction'=>'email.uiindex.index',
-						'fldball[folder]'=>$GLOBALS['phpgw']->msg->prep_folder_out(),
-						'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum(),
-						'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-						'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-						'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'))
+						'fldball[folder]'=>\App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+						'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum(),
+						'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+						'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+						'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'))
 						// This "no_fmt" does not apply of we are going back to the index page, it only applies to viewing messages.
 						//+$this->no_fmt
 						);
@@ -611,22 +611,22 @@ $msg_headers->udate = $new_time;
 				}
 				else
 				{
-					$from_personal = $GLOBALS['phpgw']->msg->decode_header_string($from->personal);
+					$from_personal = \App\modules\email\services\MailMessage::getInstance()->decode_header_string($from->personal);
 				}
 				// escape certain undesirable chars before HTML display
-				$from_personal =  $GLOBALS['phpgw']->msg->htmlspecialchars_encode($from_personal);
-				$from_personal = $GLOBALS['phpgw']->msg->ascii2utf($from_personal);
-				$from_plain = $GLOBALS['phpgw']->msg->ascii2utf($from_plain);
+				$from_personal =  \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($from_personal);
+				$from_personal = \App\modules\email\services\MailMessage::getInstance()->ascii2utf($from_personal);
+				$from_plain = \App\modules\email\services\MailMessage::getInstance()->ascii2utf($from_plain);
 
 				// display "From" according to user preferences
-				if (($GLOBALS['phpgw']->msg->get_isset_pref('show_addresses'))
-				&& ($GLOBALS['phpgw']->msg->get_pref_value('show_addresses') != 'none')
+				if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_pref('show_addresses'))
+				&& (\App\modules\email\services\MailMessage::getInstance()->get_pref_value('show_addresses') != 'none')
 				&& ($from_personal != $from_plain))
 				{
 					// user wants to see "personal" info AND the plain address, and we have both available to us
 					$from_extra_info = ' ('.$from_plain.') ';
 					// escape certain undesirable chars before HTML display
-					$from_extra_info =  $GLOBALS['phpgw']->msg->htmlspecialchars_encode($from_extra_info);
+					$from_extra_info =  \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($from_extra_info);
 				}
 				else
 				{
@@ -636,7 +636,7 @@ $msg_headers->udate = $new_time;
 				
 				// first text in the "from" table data, AND click on it to compose a new, blank email to this email address
 				$from_and_compose_link = 
-					$GLOBALS['phpgw']->msg->href_maketag(phpgw::link(
+					\App\modules\email\services\MailMessage::getInstance()->href_maketag(phpgw::link(
 						'/index.php',array(
 						 'menuaction'=>'email.uicompose.compose',
 						 // DO NOT USE msgball[] - bosend will interpret this incorrectly as a reply or forward
@@ -645,14 +645,14 @@ $msg_headers->udate = $new_time;
 						'to'=>urlencode($from_plain),
 						'personal'=>urlencode($from_personal),
 						// preserve these things for when we return to the message list after the send
-						'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-						'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-						'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'))),
+						'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+						'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+						'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'))),
 					$from_personal);
 				
 				// click on the little envelope image to add this person/address to your address book
 				$from_addybook_add = 
-					$GLOBALS['phpgw']->msg->href_maketag(
+					\App\modules\email\services\MailMessage::getInstance()->href_maketag(
 						phpgw::link
 							(
 								'/index.php',
@@ -696,26 +696,26 @@ $msg_headers->udate = $new_time;
 					}
 					else
 					{
-						$to_personal = $GLOBALS['phpgw']->msg->decode_header_string($topeople->personal);
+						$to_personal = \App\modules\email\services\MailMessage::getInstance()->decode_header_string($topeople->personal);
 					}
 					// escape certain undesirable chars before HTML display
-					$to_personal =  $GLOBALS['phpgw']->msg->htmlspecialchars_encode($to_personal);
-					$to_personal = $GLOBALS['phpgw']->msg->ascii2utf($to_personal);
-					$to_plain = $GLOBALS['phpgw']->msg->ascii2utf($to_plain);
+					$to_personal =  \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($to_personal);
+					$to_personal = \App\modules\email\services\MailMessage::getInstance()->ascii2utf($to_personal);
+					$to_plain = \App\modules\email\services\MailMessage::getInstance()->ascii2utf($to_plain);
 
-					if (($GLOBALS['phpgw']->msg->get_pref_value('show_addresses') != 'none')
+					if ((\App\modules\email\services\MailMessage::getInstance()->get_pref_value('show_addresses') != 'none')
 					&& ($to_personal != $to_plain))
 					{
 						$to_extra_info = ' ('.$to_plain.') ';
 						// escape certain undesirable chars before HTML display
-						$to_extra_info =  $GLOBALS['phpgw']->msg->htmlspecialchars_encode($to_extra_info);
+						$to_extra_info =  \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($to_extra_info);
 					}
 					else
 					{
 						$to_extra_info = ' ';
 					}
 
-					$to_real_name = $GLOBALS['phpgw']->msg->href_maketag(
+					$to_real_name = \App\modules\email\services\MailMessage::getInstance()->href_maketag(
 						phpgw::link(
 							'/index.php',array(
 							 'menuaction'=>'email.uicompose.compose',
@@ -725,16 +725,16 @@ $msg_headers->udate = $new_time;
 							'to'=>urlencode($to_plain),
 							'personal'=>urlencode($to_personal),
 							// preserve these things for when we return to the message list after the send
-							'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-							'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-							'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'))),
+							'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+							'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+							'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'))),
 						$to_personal);
 					
 					// I honestly think this needs some attention here.. I feel this isn't used anymore like this..
 					// new call should be performed..
 					// Skeeter
 					
-					$to_addybook_add = $GLOBALS['phpgw']->msg->href_maketag(
+					$to_addybook_add = \App\modules\email\services\MailMessage::getInstance()->href_maketag(
 						phpgw::link(
 							 '/index.php',array(
 							 'menuaction'=>'addressbook.uiaddressbook_persons.add_email',
@@ -771,26 +771,26 @@ $msg_headers->udate = $new_time;
 					}
 					else
 					{
-						$cc_personal = $GLOBALS['phpgw']->msg->decode_header_string($ccpeople->personal);
+						$cc_personal = \App\modules\email\services\MailMessage::getInstance()->decode_header_string($ccpeople->personal);
 					}
 					// escape certain undesirable chars before HTML display
-					$cc_personal =  $GLOBALS['phpgw']->msg->htmlspecialchars_encode($cc_personal);
-					$cc_personal = $GLOBALS['phpgw']->msg->ascii2utf($cc_personal);
-					$cc_plain = $GLOBALS['phpgw']->msg->ascii2utf($cc_plain);
+					$cc_personal =  \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($cc_personal);
+					$cc_personal = \App\modules\email\services\MailMessage::getInstance()->ascii2utf($cc_personal);
+					$cc_plain = \App\modules\email\services\MailMessage::getInstance()->ascii2utf($cc_plain);
 
 					//if (($GLOBALS['phpgw_info']['user']['preferences']['email']['show_addresses'] != 'none')
-					if (($GLOBALS['phpgw']->msg->get_pref_value('show_addresses') != 'none')
+					if ((\App\modules\email\services\MailMessage::getInstance()->get_pref_value('show_addresses') != 'none')
 					&& ($cc_personal != $cc_plain))
 					{
 						$cc_extra_info = ' ('.$cc_plain.') ';
 						// escape certain undesirable chars before HTML display
-						$cc_extra_info =  $GLOBALS['phpgw']->msg->htmlspecialchars_encode($cc_extra_info);
+						$cc_extra_info =  \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($cc_extra_info);
 					}
 					else
 					{
 						$cc_extra_info = ' ';
 					}
-					$cc_real_name = $GLOBALS['phpgw']->msg->href_maketag(phpgw::link(
+					$cc_real_name = \App\modules\email\services\MailMessage::getInstance()->href_maketag(phpgw::link(
 							'/index.php',array(
 							 'menuaction'=>'email.uicompose.compose',
 							// DO NOT USE msgball - bosend will interpret this the wrong way
@@ -800,12 +800,12 @@ $msg_headers->udate = $new_time;
 							'to'=>urlencode($cc_plain),
 							'personal'=>urlencode($cc_personal),
 							// preserve these things for when we return to the message list after the send
-							'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-							'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-							'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'))),
+							'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+							'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+							'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'))),
 						$cc_personal);
 					
-					$cc_addybook_add = $GLOBALS['phpgw']->msg->href_maketag(
+					$cc_addybook_add = \App\modules\email\services\MailMessage::getInstance()->href_maketag(
 						phpgw::link(
 							 '/index.php',array(
 							 'menuaction'=>'addressbook.uiaddressbook_persons.add_email',
@@ -837,7 +837,7 @@ $msg_headers->udate = $new_time;
 			// ---- Generate phpgw CUSTOM FLATTENED FETCHSTRUCTURE ARRAY  -----
 			$this->part_nice = Array();
 			// NO NEED TO CACHE THIS DATA, NO CONTACT WITH MAILSERVER IS NEEDED FOR THIS DATA
-			$this->part_nice = $GLOBALS['phpgw']->msg->get_flat_pgw_struct($msg_struct);
+			$this->part_nice = \App\modules\email\services\MailMessage::getInstance()->get_flat_pgw_struct($msg_struct);
 			if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): $this->part_nice DUMP:', $this->part_nice); }
 			
 			
@@ -849,7 +849,7 @@ $msg_headers->udate = $new_time;
 				if ($this->part_nice[$j]['ex_attachment'])
 				{
 					$list_of_files .= $this->part_nice[$j]['ex_part_clickable']
-						.' ('. $GLOBALS['phpgw']->msg->format_byte_size($this->part_nice[$j]['bytes']).')' .', ';
+						.' ('. \App\modules\email\services\MailMessage::getInstance()->format_byte_size($this->part_nice[$j]['bytes']).')' .', ';
 						// this is where future 1 click "put  this in my VFS space" will go.
 						//.' ('. $GLOBALS['phpgw']->msg->format_byte_size($this->part_nice[$j]['bytes']).')' .' [VFS!], ';
 				}
@@ -916,77 +916,77 @@ $msg_headers->udate = $new_time;
 			$fwd_proc = 'encapsulate';
 			
 			// ----  Images and Hrefs For Reply, ReplyAll, Forward, and Delete  -----
-			$reply_img = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/reply','_on'),$this->xi['lang_reply'],'','','0');
+			$reply_img = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/reply','_on'),$this->xi['lang_reply'],'','','0');
 			$reply_url = phpgw::link(
 					'/index.php',array(
 					'menuaction'=>'email.uicompose.compose',
 					'action'=>'reply',
 					// preserve these things for when we return to the message list after the send
-					'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-					'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-					'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'))
+					'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+					'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+					'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'))
 					+$msgball['uri']
 					+$first_presentable);
-			$href_reply = $GLOBALS['phpgw']->msg->href_maketag_class($reply_url, $this->xi['lang_reply'], 'c_replybar');
-			$ilnk_reply = $GLOBALS['phpgw']->msg->href_maketag($reply_url, $reply_img);
+			$href_reply = \App\modules\email\services\MailMessage::getInstance()->href_maketag_class($reply_url, $this->xi['lang_reply'], 'c_replybar');
+			$ilnk_reply = \App\modules\email\services\MailMessage::getInstance()->href_maketag($reply_url, $reply_img);
 			
-			$replyall_img = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/reply-all','_on'),$this->xi['lang_reply_all'],'','','0');
+			$replyall_img = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/reply-all','_on'),$this->xi['lang_reply_all'],'','','0');
 			$replyall_url = phpgw::link(
 					'/index.php',array(
 					'menuaction'=>'email.uicompose.compose',
 					'action'=>'replyall',
 					// preserve these things for when we return to the message list after the send
-					'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-					'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-					'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'))
+					'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+					'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+					'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'))
 					+$msgball['uri']
 					+$first_presentable);
-			$href_replyall = $GLOBALS['phpgw']->msg->href_maketag_class($replyall_url, $this->xi['lang_reply_all'], 'c_replybar');
-			$ilnk_replyall = $GLOBALS['phpgw']->msg->href_maketag($replyall_url, $replyall_img);
+			$href_replyall = \App\modules\email\services\MailMessage::getInstance()->href_maketag_class($replyall_url, $this->xi['lang_reply_all'], 'c_replybar');
+			$ilnk_replyall = \App\modules\email\services\MailMessage::getInstance()->href_maketag($replyall_url, $replyall_img);
 			
-			$forward_img = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/forward','_on'),$this->xi['lang_forward'],'','','0');
+			$forward_img = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/forward','_on'),$this->xi['lang_forward'],'','','0');
 			$forward_url =  phpgw::link(
 					'/index.php',array(
 					 'menuaction'=>'email.uicompose.compose',
 					'action'=>'forward',
 					'fwd_proc'=>$fwd_proc,
 					// preserve these things for when we return to the message list after the send
-					'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-					'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-					'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'))
+					'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+					'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+					'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'))
 					+$msgball['uri']
 					+$first_presentable);
-			$href_forward = $GLOBALS['phpgw']->msg->href_maketag_class($forward_url, $this->xi['lang_forward'], 'c_replybar');
-			$ilnk_forward = $GLOBALS['phpgw']->msg->href_maketag($forward_url, $forward_img);
+			$href_forward = \App\modules\email\services\MailMessage::getInstance()->href_maketag_class($forward_url, $this->xi['lang_forward'], 'c_replybar');
+			$ilnk_forward = \App\modules\email\services\MailMessage::getInstance()->href_maketag($forward_url, $forward_img);
 			
-			$delete_img = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/delete-message','_on'),$this->xi['lang_delete'],'','','0');
+			$delete_img = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/delete-message','_on'),$this->xi['lang_delete'],'','','0');
 			$delete_url = phpgw::link(
 					 '/index.php',array(
 					'menuaction'=>'email.boaction.delmov',
 					'what'=>'delete_single_msg',
 					// preserve these things for when we return to the message list after the send
-					'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-					'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-					'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'))
+					'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+					'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+					'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'))
 					+$this->no_fmt
 					+$msgball['uri']);
 			
-			$href_delete= $GLOBALS['phpgw']->msg->href_maketag_class($delete_url, $this->xi['lang_delete'], 'c_replybar');
-			$ilnk_delete = $GLOBALS['phpgw']->msg->href_maketag($delete_url, $delete_img);
+			$href_delete= \App\modules\email\services\MailMessage::getInstance()->href_maketag_class($delete_url, $this->xi['lang_delete'], 'c_replybar');
+			$ilnk_delete = \App\modules\email\services\MailMessage::getInstance()->href_maketag($delete_url, $delete_img);
 
-			$edit_img = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/compose-message-'.$this->icon_size,'_on'),$this->xi['lang_edit'],'','','0');
+			$edit_img = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/compose-message-'.$this->icon_size,'_on'),$this->xi['lang_edit'],'','','0');
 			$edit_url =  phpgw::link(
 					'/index.php',array(
 					 'menuaction'=>'email.uicompose.compose',
 					'action'=>'edit',
 					// preserve these things for when we return to the message list after the send
-					'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-					'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-					'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'))
+					'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+					'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+					'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'))
 					+$msgball['uri']
 					+$first_presentable);
-			$href_edit = $GLOBALS['phpgw']->msg->href_maketag_class($edit_url, $this->xi['lang_edit'], 'c_replybar');
-			$ilnk_edit = $GLOBALS['phpgw']->msg->href_maketag($edit_url, $edit_img);
+			$href_edit = \App\modules\email\services\MailMessage::getInstance()->href_maketag_class($edit_url, $this->xi['lang_edit'], 'c_replybar');
+			$ilnk_edit = \App\modules\email\services\MailMessage::getInstance()->href_maketag($edit_url, $edit_img);
 			
 		//	$this->xi['theme_font'] = $GLOBALS['phpgw_info']['theme']['font'];
 		//	$this->xi['reply_btns_bkcolor'] = $GLOBALS['phpgw_info']['theme']['em_folder'];
@@ -1014,8 +1014,8 @@ $msg_headers->udate = $new_time;
 				$all_keys = array_keys($this->part_nice);
 				$str_keys = implode(', ',$all_keys);
 				
-				$msg_raw_headers = $GLOBALS['phpgw']->msg->phpgw_fetchheader('');
-				$msg_raw_headers = $GLOBALS['phpgw']->msg->htmlspecialchars_encode($msg_raw_headers);
+				$msg_raw_headers = \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchheader('');
+				$msg_raw_headers = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($msg_raw_headers);
 				
 				$crlf = "\r\n";
 				//$msg_body_info = '<pre>' .$crlf;
@@ -1035,7 +1035,7 @@ $msg_headers->udate = $new_time;
 				
 				$msg_body_info .= 'This message has '.$max_parts.' part(s)' .$crlf;
 				$msg_body_info .= 'deepest_level: '.$deepest_level .$crlf;
-				$msg_body_info .= 'Array Keys: '.$GLOBALS['phpgw']->msg->array_keys_str($this->part_nice) .$crlf;
+				$msg_body_info .= 'Array Keys: '.\App\modules\email\services\MailMessage::getInstance()->array_keys_str($this->part_nice) .$crlf;
 				$msg_body_info .= $crlf;
 				
 				for ($i = 0; $i < count($this->part_nice); $i++)
@@ -1149,8 +1149,8 @@ $msg_headers->udate = $new_time;
 			// ----  so called "little toolbar (not the real toolbar) between the msg header data and the message siaplay
 			// (1) "view formatted/unformatted" link goes there, (MAYBE CALL IT "PLAIN TEXT" INSTEAD?)
 			// this template var will be filled with something below if appropriate, else it stays empty
-			$view_unformatted_img = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email','view_nofmt-'.$this->icon_size,'_on'),$this->xi['lang_view_unformatted'],'','','0');
-			$view_formatted_img = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email','view_formatted-'.$this->icon_size,'_on'),$this->xi['lang_view_formatted'],'','','0');
+			$view_unformatted_img = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email','view_nofmt-'.$this->icon_size,'_on'),$this->xi['lang_view_unformatted'],'','','0');
+			$view_formatted_img = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email','view_formatted-'.$this->icon_size,'_on'),$this->xi['lang_view_formatted'],'','','0');
 			$this->xi['view_option'] = '&nbsp';
 			// base URLs for the "view unformatted" or "view formatted" option
 			// if "vew_unformatted" if the url, then "&no_fmt=1" will be added below
@@ -1159,15 +1159,15 @@ $msg_headers->udate = $new_time;
 				'/index.php',array(
 				 'menuaction'=>'email.uimessage.message',
 				// preserve these things for when we return to the message list after the send
-				'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-				'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-				'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'),
+				'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+				'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+				'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'),
 				)
 				+$msgball['uri']
 			);
 			
 			// (2) view headers option
-			$view_headers_img = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email','view_headers-'.$this->icon_size,'_on'),$this->xi['lang_view_headers'],'','','0');
+			$view_headers_img = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email','view_headers-'.$this->icon_size,'_on'),$this->xi['lang_view_headers'],'','','0');
 			$this_msgball = $msgball;
 			$this_msgball['part_no'] = 0;
 			$view_headers_url = phpgw::link(
@@ -1186,7 +1186,7 @@ $msg_headers->udate = $new_time;
 			$this->xi['view_headers_ilnk'] = $view_headers_ilnk;
 			
 			// (3) view or download the raw message, including headers
-			$view_raw_message_img = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email','view_raw-'.$this->icon_size,'_on'),$this->xi['lang_view_raw_message'],'','','0');
+			$view_raw_message_img = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email','view_raw-'.$this->icon_size,'_on'),$this->xi['lang_view_raw_message'],'','','0');
 			$this_msgball = $msgball;
 			$this_msgball['part_no'] = 'raw_message';
 			$view_raw_message_url = phpgw::link(
@@ -1205,7 +1205,7 @@ $msg_headers->udate = $new_time;
 			$this->xi['view_raw_message_ilnk'] = $view_raw_message_ilnk;
 			
 			// (4) view printer friendly version
-			$view_printable_img = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email','view_printable-'.$this->icon_size,'_on'),$this->xi['lang_view_printable'],'','','0');
+			$view_printable_img = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email','view_printable-'.$this->icon_size,'_on'),$this->xi['lang_view_printable'],'','','0');
 			$view_printable_url = phpgw::link(
 				'/index.php',array(
 				 'menuaction'=>'email.uimessage.printable')
@@ -1287,7 +1287,7 @@ $msg_headers->udate = $new_time;
 					// ====  MIME IGNORANT SERVER  ====
 					$title_text = '&nbsp;Mime-Ignorant Email Server: ';
 					$this->part_nice[$i]['title_text'] = $title_text;
-					$display_str = $this->xi['lang_keywords'].': '.$this->part_nice[$i]['m_keywords'].' - '.$GLOBALS['phpgw']->msg->format_byte_size(strlen($dsp));
+					$display_str = $this->xi['lang_keywords'].': '.$this->part_nice[$i]['m_keywords'].' - '.\App\modules\email\services\MailMessage::getInstance()->format_byte_size(strlen($dsp));
 					$this->part_nice[$i]['display_str'] = $display_str;
 					
 					//$msg_raw_headers = $GLOBALS['phpgw']->dcom->fetchheader($mailbox, $GLOBALS['phpgw']->msg->get_arg_value('msgnum'));
@@ -1297,7 +1297,7 @@ $msg_headers->udate = $new_time;
 					//$msg_body = $GLOBALS['phpgw']->dcom->fetchbody($mailbox, $GLOBALS['phpgw']->msg->get_arg_value('msgnum'), '1');
 					//$msg_body = $GLOBALS['phpgw']->dcom->get_body($mailbox, $GLOBALS['phpgw']->msg->get_arg_value('msgnum'));
 					//$msg_body = $GLOBALS['phpgw']->dcom->get_body($GLOBALS['phpgw']->msg->mailsvr_stream, $GLOBALS['phpgw']->msg->get_arg_value('msgnum'));
-					$msg_body = $GLOBALS['phpgw']->msg->phpgw_body();
+					$msg_body = \App\modules\email\services\MailMessage::getInstance()->phpgw_body();
 					
 					// GET THE BOUNDRY
 					for ($bs=0;$bs<count($msg_struct->parameters);$bs++)
@@ -1326,7 +1326,7 @@ $msg_headers->udate = $new_time;
 						.'<br /> === BODY ==== <br /><br />';
 					$this_msgball = $msgball;
 					$this_msgball['part_no'] = $this->part_nice[$i]['m_part_num_mime'];
-					$dsp .= $GLOBALS['phpgw']->msg->phpgw_fetchbody($this_msgball);
+					$dsp .= \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchbody($this_msgball);
 					
 					$this->part_nice[$i]['message_body'] = $dsp;
 					
@@ -1347,8 +1347,8 @@ $msg_headers->udate = $new_time;
 					if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: ECHO OUT: part meets five criteria <br />'); }
 					
 					$title_text = '&nbsp;'.$this->xi['lang_message'].': ';
-					$display_str = $this->xi['lang_keywords'].': '.$this->part_nice[$i]['m_keywords'].' - '.$GLOBALS['phpgw']->msg->format_byte_size($this->part_nice[$i]['bytes'])
-						.'; meets force_echo ('.$GLOBALS['phpgw']->msg->format_byte_size($force_echo_size).') criteria';
+					$display_str = $this->xi['lang_keywords'].': '.$this->part_nice[$i]['m_keywords'].' - '.\App\modules\email\services\MailMessage::getInstance()->format_byte_size($this->part_nice[$i]['bytes'])
+						.'; meets force_echo ('.\App\modules\email\services\MailMessage::getInstance()->format_byte_size($force_echo_size).') criteria';
 					
 					$this->part_nice[$i]['title_text'] = $title_text;
 					$this->part_nice[$i]['display_str'] = $display_str;
@@ -1401,7 +1401,7 @@ $msg_headers->udate = $new_time;
 					// get the body
 					$this_msgball = $msgball;
 					$this_msgball['part_no'] = $this->part_nice[$i]['m_part_num_mime'];
-					$dsp = $GLOBALS['phpgw']->msg->phpgw_fetchbody($this_msgball);
+					$dsp = \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchbody($this_msgball);
 					// is a blank part test necessary for html ???
 					
 					// ----  prepare the message part seperator(s)  ----
@@ -1418,13 +1418,13 @@ $msg_headers->udate = $new_time;
 					
 					//$display_str = $this->part_nice[$i]['type'].'/'.strtolower($this->part_nice[$i]['subtype']);
 					$display_str = $this->xi['lang_keywords'].': '.$this->part_nice[$i]['m_keywords']
-						.' - '.$GLOBALS['phpgw']->msg->format_byte_size(strlen($dsp));
+						.' - '.\App\modules\email\services\MailMessage::getInstance()->format_byte_size(strlen($dsp));
 					$this->part_nice[$i]['title_text'] = $title_text;
 					$this->part_nice[$i]['display_str'] = $display_str;
 					
 					if (stristr($this->part_nice[$i]['m_keywords'], 'qprint'))
 					{
-						$dsp = $GLOBALS['phpgw']->msg->qprint($dsp);
+						$dsp = \App\modules\email\services\MailMessage::getInstance()->qprint($dsp);
 					}
 					
 					if (stristr($this->part_nice[$i]['m_keywords'], 'base64'))
@@ -1639,7 +1639,7 @@ $msg_headers->udate = $new_time;
 					// ----- get the part from the server
 					$this_msgball = $msgball;
 					$this_msgball['part_no'] = $this->part_nice[$i]['m_part_num_mime'];
-					$dsp = $GLOBALS['phpgw']->msg->phpgw_fetchbody($this_msgball);
+					$dsp = \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchbody($this_msgball);
 					$dsp = trim($dsp);
 					
 					/*
@@ -1688,7 +1688,7 @@ $msg_headers->udate = $new_time;
 					{
 						if (stristr($this->part_nice[$i]['m_keywords'], 'qprint'))
 						{
-							$dsp = $GLOBALS['phpgw']->msg->qprint($dsp);
+							$dsp = \App\modules\email\services\MailMessage::getInstance()->qprint($dsp);
 							// this next line I think is OBSOLETED
 							$tag = 'tt';
 						}
@@ -1697,26 +1697,26 @@ $msg_headers->udate = $new_time;
 							// some idiots encode text/plain parts in base64
 							//$this->part_nice[$i]['d_threat_level'] .= 'warn_b64_encoded_displayable ';
 							$this->part_nice[$i]['d_threat_level'] .= $this->xi['lang_warn_b64_encoded_displayable'].' ';
-							$dsp = $GLOBALS['phpgw']->msg->de_base64($dsp);
+							$dsp = \App\modules\email\services\MailMessage::getInstance()->de_base64($dsp);
 						}
 						
 						//    normalize line breaks to rfc2822 CRLF
-						$dsp = $GLOBALS['phpgw']->msg->normalize_crlf($dsp);
+						$dsp = \App\modules\email\services\MailMessage::getInstance()->normalize_crlf($dsp);
 						
-						if (($GLOBALS['phpgw']->msg->get_isset_arg('no_fmt'))
-						&& ($GLOBALS['phpgw']->msg->get_arg_value('no_fmt') != ''))
+						if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('no_fmt'))
+						&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('no_fmt') != ''))
 						{
-							$dsp = $GLOBALS['phpgw']->msg->htmlspecialchars_decode($dsp);
+							$dsp = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_decode($dsp);
 							// (OPT 1) THIS WILL DISPLAY UNFORMATTED TEXT (faster)
 							// enforce HARD WRAP - X chars per line
 							// how many chars to allow on any single line, if more then we ADD a CRLF and split the line
 							$wrap_text_at = 85;
-							$dsp = $GLOBALS['phpgw']->msg->body_hard_wrap($dsp, $wrap_text_at) ."\r\n";
-							$dsp = $GLOBALS['phpgw']->msg->htmlspecialchars_encode($dsp);
+							$dsp = \App\modules\email\services\MailMessage::getInstance()->body_hard_wrap($dsp, $wrap_text_at) ."\r\n";
+							$dsp = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($dsp);
 							$dsp = '<pre>'.$dsp.'</pre>';
 							// alternate (toggle) to view formatted
-							$view_option = $GLOBALS['phpgw']->msg->href_maketag($view_option_url, $this->xi['lang_view_formatted']);
-							$view_option_ilnk = $GLOBALS['phpgw']->msg->href_maketag($view_option_url, $view_formatted_img);
+							$view_option = \App\modules\email\services\MailMessage::getInstance()->href_maketag($view_option_url, $this->xi['lang_view_formatted']);
+							$view_option_ilnk = \App\modules\email\services\MailMessage::getInstance()->href_maketag($view_option_url, $view_formatted_img);
 							$this->xi['view_option_ilnk'] = $view_option_ilnk;
 						}
 						else
@@ -1727,21 +1727,21 @@ $msg_headers->udate = $new_time;
 								// we need to make sure there are no html entities already there
 								// else we'll end up encoding the & (ampersand) when it should not be
 								// ex. &gt; becoming &amp;gt; is NOT what we want
-								$dsp = $GLOBALS['phpgw']->msg->htmlspecialchars_decode($dsp);
+								$dsp = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_decode($dsp);
 								// now we can make browser friendly html entities out of $ < > ' " chars
-								$dsp = $GLOBALS['phpgw']->msg->htmlspecialchars_encode($dsp);
+								$dsp = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($dsp);
 								// now lets preserve the spaces, else html squashes multiple spaces into 1 space
 								// NOT WORTH IT: give view unformatted option instead
 								//$dsp = $GLOBALS['phpgw']->msg->space_to_nbsp($dsp);
 							//}
-							$dsp = $GLOBALS['phpgw']->msg->make_clickable($dsp, $GLOBALS['phpgw']->msg->get_arg_value('["msgball"]["folder"]'));
+							$dsp = \App\modules\email\services\MailMessage::getInstance()->make_clickable($dsp, \App\modules\email\services\MailMessage::getInstance()->get_arg_value('["msgball"]["folder"]'));
 							// (OPT 2) THIS CONVERTS UNFORMATTED TEXT TO *VERY* SIMPLE HTML - adds only <br />
 							$dsp = nl2br($dsp, true);
 							// add a line after the last line of the message
 							$dsp = $dsp .'<br /><br />';
 							// alternate (toggle) to view unformatted, for this we add "&no_fmt=1" to the URL
-							$view_option = $GLOBALS['phpgw']->msg->href_maketag($view_option_url.'&no_fmt=1', $this->xi['lang_view_unformatted']);
-							$view_option_ilnk = $GLOBALS['phpgw']->msg->href_maketag($view_option_url.'&no_fmt=1', $view_unformatted_img);
+							$view_option = \App\modules\email\services\MailMessage::getInstance()->href_maketag($view_option_url.'&no_fmt=1', $this->xi['lang_view_unformatted']);
+							$view_option_ilnk = \App\modules\email\services\MailMessage::getInstance()->href_maketag($view_option_url.'&no_fmt=1', $view_unformatted_img);
 							$this->xi['view_option_ilnk'] = $view_option_ilnk;
 						}
 						
@@ -1762,7 +1762,7 @@ $msg_headers->udate = $new_time;
 						//$GLOBALS['phpgw']->template->set_var('title_text',$title_text);
 						$this->part_nice[$i]['title_text'] = $title_text;
 						$display_str = $this->xi['lang_keywords'].': '.$this->part_nice[$i]['m_keywords']
-							.' - '.$GLOBALS['phpgw']->msg->format_byte_size(strlen($dsp));
+							.' - '.\App\modules\email\services\MailMessage::getInstance()->format_byte_size(strlen($dsp));
 						// View formatted / unformatted moved to toolbar, do not show it here
 						// however, template var "display_str" was set to empty above
 						// if it deserves to be filled, this code just above here will fill it
@@ -1799,11 +1799,11 @@ $msg_headers->udate = $new_time;
 					if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: part is presentable image <br />'); }
 					
 					$title_text = $this->xi['lang_section'].': '.$this->part_nice[$i]['m_part_num_mime'];
-					$title_text = $GLOBALS['phpgw']->msg->ascii2utf($title_text);
-					$display_str = $GLOBALS['phpgw']->msg->decode_header_string($this->part_nice[$i]['ex_part_name'])
-						.' - ' .$GLOBALS['phpgw']->msg->format_byte_size((int)$this->part_nice[$i]['bytes']) 
+					$title_text = \App\modules\email\services\MailMessage::getInstance()->ascii2utf($title_text);
+					$display_str = \App\modules\email\services\MailMessage::getInstance()->decode_header_string($this->part_nice[$i]['ex_part_name'])
+						.' - ' .\App\modules\email\services\MailMessage::getInstance()->format_byte_size((int)$this->part_nice[$i]['bytes'])
 						.' - '.$this->xi['lang_keywords'].': ' .$this->part_nice[$i]['m_keywords'];
-					$display_str = $GLOBALS['phpgw']->msg->ascii2utf($display_str);
+					$display_str = \App\modules\email\services\MailMessage::getInstance()->ascii2utf($display_str);
 
 					$this->part_nice[$i]['title_text'] = $title_text;
 					$this->part_nice[$i]['display_str'] = $display_str;
@@ -1846,7 +1846,7 @@ $msg_headers->udate = $new_time;
 					
 					$msg_text = '&nbsp;&nbsp; <strong>'.$this->xi['lang_attachment'].':</strong>'
 						.'&nbsp;&nbsp; '.$this->part_nice[$i]['ex_part_clickable']
-						.'&nbsp;&nbsp; '.$this->xi['lang_size'].': '.$GLOBALS['phpgw']->msg->format_byte_size((int)$this->part_nice[$i]['bytes'])
+						.'&nbsp;&nbsp; '.$this->xi['lang_size'].': '.\App\modules\email\services\MailMessage::getInstance()->format_byte_size((int)$this->part_nice[$i]['bytes'])
 						.'&nbsp;&nbsp; '.'<b>'.$this->part_nice[$i]['d_threat_level'].'</b>'
 						.'<br /><br />';
 					
@@ -1868,7 +1868,7 @@ $msg_headers->udate = $new_time;
 					
 					// if we get here then we've got some kind of error, all things we know about are handle above
 					$title_text = $this->xi['lang_section'].': '.$this->part_nice[$i]['m_part_num_mime'];
-					$display_str = $GLOBALS['phpgw']->msg->decode_header_string($this->part_nice[$i]['ex_part_name'])
+					$display_str = \App\modules\email\services\MailMessage::getInstance()->decode_header_string($this->part_nice[$i]['ex_part_name'])
 						.' - '.$this->xi['lang_keywords'].': ' .$this->part_nice[$i]['m_keywords'];
 					//$GLOBALS['phpgw']->template->set_var('title_text',$title_text);
 					$this->part_nice[$i]['title_text'] = $title_text;
@@ -1882,7 +1882,7 @@ $msg_headers->udate = $new_time;
 					{
 							$this_msgball = $msgball;
 							$this_msgball['part_no'] = $this->part_nice[$i]['m_part_num_mime'];
-							$dsp = $GLOBALS['phpgw']->msg->phpgw_fetchbody($this_msgball);
+							$dsp = \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchbody($this_msgball);
 							//$dsp = $GLOBALS['phpgw']->dcom->fetchbody($mailbox, $GLOBALS['phpgw']->msg->get_arg_value('msgnum'), $this->part_nice[$i]['m_part_num_mime']);
 							//$processed_msg_body = $processed_msg_body . base64_decode($dsp) .'<br />' ."\r\n";
 						$msg_text = $msg_text . 'actual part size: ' .strlen($dsp);

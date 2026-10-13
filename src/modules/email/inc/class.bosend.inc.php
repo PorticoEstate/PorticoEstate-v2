@@ -57,7 +57,7 @@
 			$this->msg_bootstrap = CreateObject("email.msg_bootstrap");
 			$this->msg_bootstrap->ensure_mail_msg_exists('email.bosend.constructor', $this->debug_send);
 			
-			$this->not_set = $GLOBALS['phpgw']->msg->not_set;
+			$this->not_set = \App\modules\email\services\MailMessage::getInstance()->not_set;
 			if ($this->debug_constructor > 0) { echo 'email.bosend *constructor*: LEAVING<br />'; }
 		}
 		
@@ -132,13 +132,13 @@
 			## now run the rest of the function as usual.
 			*/ 
 			
-			if ($GLOBALS['phpgw']->msg->get_isset_pref('use_sent_folder') == False)
+			if (\App\modules\email\services\MailMessage::getInstance()->get_isset_pref('use_sent_folder') == False)
 			{
 				// ERROR, THIS ACCT DOES NOT WANT SENT FOLDER USED
 				return False;
 			}
 
-			return $this->save_message($message, $GLOBALS['phpgw']->msg->get_pref_value('sent_folder_name'));
+			return $this->save_message($message, \App\modules\email\services\MailMessage::getInstance()->get_pref_value('sent_folder_name'));
 		}
 
 		/**
@@ -161,7 +161,7 @@
 			NOTES:	"append" will CHECK  to make sure this folder exists, and try to create it if it does not
 				make sure there is a \r\n CRLF empty last line sequence so Cyrus will be happy
 			*/
-			return $GLOBALS['phpgw']->msg->phpgw_append($folder,
+			return \App\modules\email\services\MailMessage::getInstance()->phpgw_append($folder,
 							$msg . "\r\n",
 							"\\Seen {$extra_flags}");
 		}
@@ -173,7 +173,7 @@
 		*/
 		function mark_as_replied($msgball)
 		{
-			$GLOBALS['phpgw']->msg->phpgw_set_flag($msgball, "\\Answered");
+			\App\modules\email\services\MailMessage::getInstance()->phpgw_set_flag($msgball, "\\Answered");
 		}
 		
 		/**
@@ -182,9 +182,9 @@
 		function send_message_cleanup()
 		{
 			//echo 'send_message cleanup';
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 
-			$upload_dir = $GLOBALS['phpgw']->msg->att_files_dir;
+			$upload_dir = \App\modules\email\services\MailMessage::getInstance()->att_files_dir;
 			if (file_exists($upload_dir))
 			{
 				$dh = dir($upload_dir);
@@ -218,16 +218,16 @@
 			if ($this->debug_sendorspell > 2)
 			{
 				echo 'email.bosend.sendorspell: data dump: $GLOBALS[HTTP_POST_VARS]<pre>'; 
-				print_r($GLOBALS['phpgw']->msg->ref_POST);
+				print_r(\App\modules\email\services\MailMessage::getInstance()->ref_POST);
 				echo '</pre>'."\r\n";
 				
 				echo 'email.bosend.sendorspell: data dump: $GLOBALS[HTTP_GET_VARS]<pre>';
-				print_r($GLOBALS['phpgw']->msg->ref_GET);
+				print_r(\App\modules\email\services\MailMessage::getInstance()->ref_GET);
 				echo '</pre>'."\r\n";
 			}
 
-			if ((isset($GLOBALS['phpgw']->msg->ref_POST['draft']))
-			&& ($GLOBALS['phpgw']->msg->ref_POST['draft'] == 'save'))
+			if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['draft']))
+			&& (\App\modules\email\services\MailMessage::getInstance()->ref_POST['draft'] == 'save'))
 			{
 				if ($this->debug_sendorspell > 1)
 				{
@@ -236,8 +236,8 @@
 				$this->save_draft();
 			}
 			
-			if ((isset($GLOBALS['phpgw']->msg->ref_POST['btn_spellcheck']))
-			&& ($GLOBALS['phpgw']->msg->ref_POST['btn_spellcheck'] != ''))
+			if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_spellcheck']))
+			&& (\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_spellcheck'] != ''))
 			{
 				if ($this->debug_sendorspell > 1)
 				{
@@ -245,8 +245,8 @@
 				}
 				$this->spellcheck();
 			}
-			elseif ((isset($GLOBALS['phpgw']->msg->ref_POST['btn_send']))
-			&& ($GLOBALS['phpgw']->msg->ref_POST['btn_send'] != ''))
+			elseif ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_send']))
+			&& (\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_send'] != ''))
 			{
 				if ($this->debug_sendorspell > 1)
 				{
@@ -281,8 +281,8 @@
 		{
 			if ($this->debug_spellcheck > 0) { echo 'ENTERING: email.bosend.spellcheck'.'<br />'; }
 			
-			if ($this->debug_spellcheck > 2) { 	echo 'email.bosend.spellcheck: data dump: $GLOBALS[HTTP_POST_VARS]<pre>'; print_r($GLOBALS['phpgw']->msg->ref_POST); echo '</pre>'."\r\n";
-									echo 'email.bosend.spellcheck: data dump: $GLOBALS[HTTP_GET_VARS]<pre>'; print_r($GLOBALS['phpgw']->msg->ref_GET); echo '</pre>'."\r\n"; }
+			if ($this->debug_spellcheck > 2) { 	echo 'email.bosend.spellcheck: data dump: $GLOBALS[HTTP_POST_VARS]<pre>'; print_r(\App\modules\email\services\MailMessage::getInstance()->ref_POST); echo '</pre>'."\r\n";
+									echo 'email.bosend.spellcheck: data dump: $GLOBALS[HTTP_GET_VARS]<pre>'; print_r(\App\modules\email\services\MailMessage::getInstance()->ref_GET); echo '</pre>'."\r\n"; }
 			
 			// we may strip slashes, but that is all we should do before handing the body to the spell class
 			//$my_body = $GLOBALS['phpgw']->msg->stripslashes_gpc(trim($GLOBALS['phpgw']->msg->get_arg_value('body')));
@@ -290,29 +290,29 @@
 			
 			$this->mail_spell = CreateObject("email.spell");
 			// preserve these vars
-			$this->mail_spell->set_preserve_var('action', $GLOBALS['phpgw']->msg->get_arg_value('action'));
+			$this->mail_spell->set_preserve_var('action', \App\modules\email\services\MailMessage::getInstance()->get_arg_value('action'));
 			// experimental, should this go here? is not this already in the URI or something?
 			//$this->mail_spell->set_preserve_var('orig_action', $GLOBALS['phpgw']->msg->recall_desired_action());
-			$this->mail_spell->set_preserve_var('from', $GLOBALS['phpgw']->msg->get_arg_value('from'));
-			$this->mail_spell->set_preserve_var('sender', $GLOBALS['phpgw']->msg->get_arg_value('sender'));
-			$this->mail_spell->set_preserve_var('to', $GLOBALS['phpgw']->msg->stripslashes_gpc($GLOBALS['phpgw']->msg->get_arg_value('to')));
-			$this->mail_spell->set_preserve_var('cc', $GLOBALS['phpgw']->msg->stripslashes_gpc($GLOBALS['phpgw']->msg->get_arg_value('cc')));
-			$this->mail_spell->set_preserve_var('bcc', $GLOBALS['phpgw']->msg->stripslashes_gpc($GLOBALS['phpgw']->msg->get_arg_value('bcc')));
-			$this->mail_spell->set_preserve_var('msgtype', $GLOBALS['phpgw']->msg->get_arg_value('msgtype'));
+			$this->mail_spell->set_preserve_var('from', \App\modules\email\services\MailMessage::getInstance()->get_arg_value('from'));
+			$this->mail_spell->set_preserve_var('sender', \App\modules\email\services\MailMessage::getInstance()->get_arg_value('sender'));
+			$this->mail_spell->set_preserve_var('to', \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('to')));
+			$this->mail_spell->set_preserve_var('cc', \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('cc')));
+			$this->mail_spell->set_preserve_var('bcc', \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('bcc')));
+			$this->mail_spell->set_preserve_var('msgtype', \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgtype'));
 			
-			$this->mail_spell->set_subject($GLOBALS['phpgw']->msg->stripslashes_gpc($GLOBALS['phpgw']->msg->get_arg_value('subject')));
-			$this->mail_spell->set_body_orig($GLOBALS['phpgw']->msg->stripslashes_gpc(trim($GLOBALS['phpgw']->msg->get_arg_value('body'))));
+			$this->mail_spell->set_subject(\App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('subject')));
+			$this->mail_spell->set_body_orig(\App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('body'))));
 			
 			// oops, do not forget about these, "attach_sig" and "req_notify"
-			if (($GLOBALS['phpgw']->msg->get_isset_arg('attach_sig'))
-			&& ($GLOBALS['phpgw']->msg->get_arg_value('attach_sig') != ''))
+			if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('attach_sig'))
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('attach_sig') != ''))
 			{
-				$this->mail_spell->set_preserve_var('attach_sig', $GLOBALS['phpgw']->msg->get_arg_value('attach_sig'));
+				$this->mail_spell->set_preserve_var('attach_sig', \App\modules\email\services\MailMessage::getInstance()->get_arg_value('attach_sig'));
 			}
-			if (($GLOBALS['phpgw']->msg->get_isset_arg('req_notify'))
-			&& ($GLOBALS['phpgw']->msg->get_arg_value('req_notify') != ''))
+			if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('req_notify'))
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('req_notify') != ''))
 			{
-				$this->mail_spell->set_preserve_var('req_notify', $GLOBALS['phpgw']->msg->get_arg_value('req_notify'));
+				$this->mail_spell->set_preserve_var('req_notify', \App\modules\email\services\MailMessage::getInstance()->get_arg_value('req_notify'));
 			}
 			
 			//$this->mail_spell->basic_spcheck();
@@ -349,13 +349,13 @@
 			// ===== DEBUG ===== 
 			*/
 
-			if( $returnccode && $GLOBALS['phpgw']->msg->get_isset_pref('use_sent_folder') )
+			if( $returnccode && \App\modules\email\services\MailMessage::getInstance()->get_isset_pref('use_sent_folder') )
 			{
 				$success = $this->copy_to_sent_folder($this->smtp->getHeader() . "\n" . $this->smtp->getBody());
 			}
 
-			$msgball = (array) $GLOBALS['phpgw']->msg->get_arg_value('msgball');
-			$is_reply = in_array($GLOBALS['phpgw']->msg->recall_desired_action(), ['reply', 'replyall'], true);
+			$msgball = (array) \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgball');
+			$is_reply = in_array(\App\modules\email\services\MailMessage::getInstance()->recall_desired_action(), ['reply', 'replyall'], true);
 			if ($is_reply && $returncode)
 			{
 				$this->mark_as_replied($msgball);
@@ -367,10 +367,9 @@
 				$sent = (bool) $returnccode;
 				$error = $sent ? '' : (string) ($this->smtp->ErrorInfo ?? '');
 				$this->send_message_cleanup();
-				if (is_object($GLOBALS['phpgw']->msg))
+				if (\App\modules\email\services\MailMessage::hasInstance())
 				{
-					$GLOBALS['phpgw']->msg = '';
-					unset($GLOBALS['phpgw']->msg);
+					\App\modules\email\services\MailMessage::releaseInstance();
 				}
 				return ['sent' => $sent, 'error' => $error];
 			}
@@ -401,13 +400,12 @@
 					//header('Location: '.$return_to_folder_href);
 					phpgw::redirect_link('/index.php',$return_to_folder_href);
 					// kill the rest of this script
-					if (is_object($GLOBALS['phpgw']->msg))
+					if (\App\modules\email\services\MailMessage::hasInstance())
 					{
 						// close down ALL mailserver streams
-						$GLOBALS['phpgw']->msg->end_request();
+						\App\modules\email\services\MailMessage::getInstance()->end_request();
 						// destroy the object
-						$GLOBALS['phpgw']->msg = '';
-						unset($GLOBALS['phpgw']->msg);
+						\App\modules\email\services\MailMessage::releaseInstance();
 					}
 					// shut down this transaction
 					$GLOBALS['phpgw']->common->phpgw_exit(False);
@@ -447,19 +445,19 @@
 			if ($this->debug_send > 2)
 			{
 				echo 'email.bosend.send: data dump: $GLOBALS[HTTP_POST_VARS]<pre>'; 
-				print_r($GLOBALS['phpgw']->msg->ref_POST); 
+				print_r(\App\modules\email\services\MailMessage::getInstance()->ref_POST);
 				echo '</pre>'."\r\n";
 				
 				echo 'email.bosend.send: data dump: $GLOBALS[HTTP_GET_VARS]<pre>';
-				print_r($GLOBALS['phpgw']->msg->ref_GET); 
+				print_r(\App\modules\email\services\MailMessage::getInstance()->ref_GET);
 				echo '</pre>'."\r\n";
 				return;
 			}
 			
 			// ---- BEGIN BO SEND LOGIC
 			
-			$not_set = $GLOBALS['phpgw']->msg->not_set;
-			$msgball = $GLOBALS['phpgw']->msg->get_arg_value('msgball');
+			$not_set = \App\modules\email\services\MailMessage::getInstance()->not_set;
+			$msgball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgball');
 			
 			//  -------  Init Array Structure For Outgoing Mail  -----------
 			$this->mail_out = Array();
@@ -471,47 +469,47 @@
 			
 			$this->smtp->CharSet = (lang('charset') != 'charset*') ? lang('charset') : 'US-ASCII';
 			
-			$this->smtp->Sender = ( $GLOBALS['phpgw']->msg->get_isset_arg('sender') 
-						? $GLOBALS['phpgw']->msg->get_arg_value('sender') 
+			$this->smtp->Sender = ( \App\modules\email\services\MailMessage::getInstance()->get_isset_arg('sender')
+						? \App\modules\email\services\MailMessage::getInstance()->get_arg_value('sender')
 						: '');
 						
-			$this->smtp->FromName = $GLOBALS['phpgw']->msg->get_pref_value('fullname');
+			$this->smtp->FromName = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('fullname');
 			
-			$this->smtp->From = $GLOBALS['phpgw']->msg->get_pref_value('address');
+			$this->smtp->From = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('address');
 			
-			$this->smtp->Subject = $GLOBALS['phpgw']->msg->stripslashes_gpc($GLOBALS['phpgw']->msg->get_arg_value('subject'));
+			$this->smtp->Subject = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('subject'));
 
 			$this->smtp->Helo = trim($GLOBALS['phpgw_info']['server']['hostname']);
 
-			$this->smtp->Body = $GLOBALS['phpgw']->msg->stripslashes_gpc(trim($GLOBALS['phpgw']->msg->get_arg_value('body')));
+			$this->smtp->Body = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('body')));
 
 			$this->smtp->AddCustomHeader('X-Originating-IP: ' . $this->get_originating_ip() );	
 			
 			// ----  Forwarding Detection  -----
-			if (($GLOBALS['phpgw']->msg->get_isset_arg('action'))
-			&& ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'forward'))
+			if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('action'))
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'forward'))
 			{
 				// fill mail_out[] structure information
 				$this->mail_out['is_forward'] = True;
 				// after this, ONLY USE $this->mail_out[] structure for this
 			}
-			if (($GLOBALS['phpgw']->msg->get_isset_arg('fwd_proc'))
-			&& ($GLOBALS['phpgw']->msg->get_arg_value('fwd_proc') != ''))
+			if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('fwd_proc'))
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('fwd_proc') != ''))
 			{
 				// convert script GPC args into useful mail_out[] structure information
-				$this->mail_out['fwd_proc'] = $GLOBALS['phpgw']->msg->get_arg_value('fwd_proc');
+				$this->mail_out['fwd_proc'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('fwd_proc');
 				// after this, ONLY USE $this->mail_out[] structure for this
 			}
 			
 			//  ------  get rid of the escape \ that magic_quotes (if enabled) HTTP POST will add, " becomes \" and  '  becomes  \'
 			// convert script GPC args into useful mail_out structure information
-			$to = $GLOBALS['phpgw']->msg->stripslashes_gpc($GLOBALS['phpgw']->msg->get_arg_value('to'));
-			$cc = $GLOBALS['phpgw']->msg->stripslashes_gpc($GLOBALS['phpgw']->msg->get_arg_value('cc'));
-			$bcc = $GLOBALS['phpgw']->msg->stripslashes_gpc($GLOBALS['phpgw']->msg->get_arg_value('bcc'));
+			$to = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('to'));
+			$cc = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('cc'));
+			$bcc = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('bcc'));
 			// after this,  do NOT use ->msg->get_arg_value() for these anymore
 			
 			// since arg "body" *may* be huge (and is now in local var $body), lets clear it now
-			$GLOBALS['phpgw']->msg->set_arg_value('body', '');
+			\App\modules\email\services\MailMessage::getInstance()->set_arg_value('body', '');
 			
 			/* ----  DE-code HTML SpecialChars in the body   -----
 			THIS NEEDS TO BE CHANGED WHEN MULTIPLE PART FORWARDS ARE ENABLED
@@ -520,20 +518,20 @@
 			i.e. with NO ENCODED HTML ENTITIES, so use > instead of $rt; and " instead of &quot; . etc...
 			it's up to the endusers MUA to handle any htmlspecialchars, whether to encode them or leave as it, the MUA should decide 
 			*/
-			$this->smtp->Body = $GLOBALS['phpgw']->msg->htmlspecialchars_decode($this->smtp->Body);
+			$this->smtp->Body = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_decode($this->smtp->Body);
 			
 			// ----  Add Email Sig to Body   -----
-			if (($GLOBALS['phpgw']->msg->get_isset_pref('email_sig'))
-			&& ($GLOBALS['phpgw']->msg->get_pref_value('email_sig') != '')
-			&& ($GLOBALS['phpgw']->msg->get_isset_arg('attach_sig'))
-			&& ($GLOBALS['phpgw']->msg->get_arg_value('attach_sig') != '')
+			if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_pref('email_sig'))
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_pref_value('email_sig') != '')
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('attach_sig'))
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('attach_sig') != '')
 			// ONLY ADD SIG IF USER PUTS TEXT IN THE BODY
 			//&& (strlen(trim($body)) > 3))
 			&& ($this->mail_out['is_forward'] == False))
 			{
-				$user_sig = $GLOBALS['phpgw']->msg->get_pref_value('email_sig');
+				$user_sig = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('email_sig');
 				// html_quotes_decode may be obsoleted someday:  workaround for a preferences database issue (<=pgpgw ver 0.9.13)
-				$user_sig = $GLOBALS['phpgw']->msg->html_quotes_decode($user_sig);
+				$user_sig = \App\modules\email\services\MailMessage::getInstance()->html_quotes_decode($user_sig);
 				$this->smtp->Body = $this->smtp->Body."\r\n"
 						."\r\n"
 						.'-- '."\r\n" 
@@ -552,15 +550,15 @@
 			html textbox no longer adds hard wrap on submit, so we handle it here now
 			NOTE reply bodies have already been handled as to length when we quoted the text
 			*/
-			if (($GLOBALS['phpgw']->msg->recall_desired_action()== 'new')
-			|| ($GLOBALS['phpgw']->msg->recall_desired_action() == 'forward'))
+			if ((\App\modules\email\services\MailMessage::getInstance()->recall_desired_action()== 'new')
+			|| (\App\modules\email\services\MailMessage::getInstance()->recall_desired_action() == 'forward'))
 			{
 				// WRAP BODY to lines of 78 chars then CRLF
 				// IS THIS TOO SHORT? what about code snippets and stuff?or long URLs
-				$this->smtp->Body = $GLOBALS['phpgw']->msg->body_hard_wrap($this->smtp->Body, 78);
+				$this->smtp->Body = \App\modules\email\services\MailMessage::getInstance()->body_hard_wrap($this->smtp->Body, 78);
 			}
-			elseif (($GLOBALS['phpgw']->msg->recall_desired_action() == 'reply')
-			|| ($GLOBALS['phpgw']->msg->recall_desired_action() == 'replyall'))
+			elseif ((\App\modules\email\services\MailMessage::getInstance()->recall_desired_action() == 'reply')
+			|| (\App\modules\email\services\MailMessage::getInstance()->recall_desired_action() == 'replyall'))
 			{
 				$is_reply = True;
 				//echo 'entering recall_desired_action == reply line length handling'."\r\n";
@@ -583,7 +581,7 @@
 					// because it has already been line length normalized in bocompose
 					$this_line = $body_array[$bodyidx];
 					if ((strlen($this_line) > 1)
-					&& ($this_line[0] == $GLOBALS['phpgw']->msg->reply_prefix[0]))
+					&& ($this_line[0] == \App\modules\email\services\MailMessage::getInstance()->reply_prefix[0]))
 					{
 						// ... this line starts with the quoting char
 						if ($in_unquoted_block == True)
@@ -591,7 +589,7 @@
 							//echo 'line ength handling: processing MY text block'."\r\n";
 							// TOGGLE - we are exiting block of our text
 							// process the preceeding block of unquoted text, if any
-							$unquoted_text = $GLOBALS['phpgw']->msg->body_hard_wrap($unquoted_text, 78);
+							$unquoted_text = \App\modules\email\services\MailMessage::getInstance()->body_hard_wrap($unquoted_text, 78);
 							// now pass it into the new body var
 							$new_body .= $unquoted_text;
 							// clear this var
@@ -616,7 +614,7 @@
 						// even if this is the only single line of unquoted text in the message, process it now
 						// otherwise we may leave off the end of the message, if it is our text
 						$unquoted_text .= $this_line;
-						$unquoted_text = $GLOBALS['phpgw']->msg->body_hard_wrap($unquoted_text, 78);
+						$unquoted_text = \App\modules\email\services\MailMessage::getInstance()->body_hard_wrap($unquoted_text, 78);
 						$new_body .= $unquoted_text;
 						$unquoted_text = '';
 						// this really is not needed, but so it anyway
@@ -650,8 +648,8 @@
 			
 			// Step One Addition - fixed by skwashd :P
 			// ---- Request Delivery Notification in Headers ----
-			if (($GLOBALS['phpgw']->msg->get_isset_arg('req_notify'))
-			&& ($GLOBALS['phpgw']->msg->get_arg_value('req_notify') != ''))
+			if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('req_notify'))
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('req_notify') != ''))
 			{
 				$this->smtp->ConfirmReadingTo = $this->smtp->Sender;
 			}
@@ -660,7 +658,7 @@
 			if ($to)
 			{
 				// mail_out[to] is an array of addresses, each has properties [plain] and [personal]
-				$to_array = $GLOBALS['phpgw']->msg->make_rfc_addy_array($to);
+				$to_array = \App\modules\email\services\MailMessage::getInstance()->make_rfc_addy_array($to);
 				if( $to_array && is_array($to_array) )
 				{
 					foreach( $to_array as $recip )
@@ -672,7 +670,7 @@
 			}
 			if ($cc)
 			{
-				$cc_array = $GLOBALS['phpgw']->msg->make_rfc_addy_array($cc);
+				$cc_array = \App\modules\email\services\MailMessage::getInstance()->make_rfc_addy_array($cc);
 				if ($cc_array && is_array($cc_array))
 				{
 					foreach( $cc_array as $recip )
@@ -684,7 +682,7 @@
 			}
 			if ($bcc)
 			{
-				$bcc_array = $GLOBALS['phpgw']->msg->make_rfc_addy_array($bcc);
+				$bcc_array = \App\modules\email\services\MailMessage::getInstance()->make_rfc_addy_array($bcc);
 				if ($bcc_array && is_array($bcc_array))
 				{
 					foreach( $bcc_array as $recip )
@@ -719,15 +717,9 @@
 			// ===== DEBUG ===== 
 			*/
 			
-			// do we need to retain a copy of the sent message for the "Sent" folder?
-			if($GLOBALS['phpgw']->msg->get_isset_pref('use_sent_folder'))
-			{
-				$GLOBALS['phpgw']->mail_send->retain_copy = True;
-			}
-
 			// ----  Attachment Detection  -----
 			// some of this attachment uploading and handling code is from squirrelmail (www.squirrelmail.org)
-			$upload_dir = $GLOBALS['phpgw']->msg->att_files_dir;
+			$upload_dir = \App\modules\email\services\MailMessage::getInstance()->att_files_dir;
 			if (file_exists($upload_dir))
 			{
 				$dh = dir($upload_dir);
@@ -752,8 +744,8 @@
 			if ($this->mail_out['is_forward'] == True)
 			{
 				// DUMP the original message verbatim into this part's "body" - i.e. encapsulate the original mail
-				$fwd_this['sub_header'] = trim($GLOBALS['phpgw']->msg->phpgw_fetchheader());
-				$fwd_this['sub_header'] = $GLOBALS['phpgw']->msg->normalize_crlf($fwd_this['sub_header']);
+				$fwd_this['sub_header'] = trim(\App\modules\email\services\MailMessage::getInstance()->phpgw_fetchheader());
+				$fwd_this['sub_header'] = \App\modules\email\services\MailMessage::getInstance()->normalize_crlf($fwd_this['sub_header']);
 				
 				// CLENSE headers of offensive artifacts that can confuse dumb MUAs
 				$fwd_this['sub_header'] = preg_replace("/^[>]{0,1}From\s.{1,}\r\n/i", "", $fwd_this['sub_header']);
@@ -762,7 +754,7 @@
 				$fwd_this['sub_header'] = trim($fwd_this['sub_header']);
 				
 				// get the body
-				$fwd_this['sub_body'] = trim($GLOBALS['phpgw']->msg->phpgw_body());
+				$fwd_this['sub_body'] = trim(\App\modules\email\services\MailMessage::getInstance()->phpgw_body());
 				//$fwd_this['sub_body'] = $GLOBALS['phpgw']->msg->normalize_crlf($fwd_this['sub_body']);
 				
 				// Make Sure ALL INLINE BOUNDARY strings actually have CRLF CRLF preceeding them
@@ -841,28 +833,28 @@
 			// what folder to go back to (the one we came from)
 			// Personally, I think people should go back to the INBOX after sending an email
 			// HOWEVER, we will go back to the folder this message came from (if available)
-			if (($GLOBALS['phpgw']->msg->get_isset_arg('["msgball"]["folder"]'))
-			&& ($GLOBALS['phpgw']->msg->get_isset_arg('["msgball"]["acctnum"]')))
+			if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('["msgball"]["folder"]'))
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('["msgball"]["acctnum"]')))
 			{
-				$fldball_candidate['folder'] = $GLOBALS['phpgw']->msg->get_arg_value('["msgball"]["folder"]');
-				$fldball_candidate['acctnum'] = (int)$GLOBALS['phpgw']->msg->get_arg_value('["msgball"]["acctnum"]');
+				$fldball_candidate['folder'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('["msgball"]["folder"]');
+				$fldball_candidate['acctnum'] = (int)\App\modules\email\services\MailMessage::getInstance()->get_arg_value('["msgball"]["acctnum"]');
 			}
-			elseif (($GLOBALS['phpgw']->msg->get_isset_arg('["fldball"]["folder"]'))
-			&& ($GLOBALS['phpgw']->msg->get_isset_arg('["fldball"]["acctnum"]')))
+			elseif ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('["fldball"]["folder"]'))
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('["fldball"]["acctnum"]')))
 			{
-				$fldball_candidate['folder'] = $GLOBALS['phpgw']->msg->get_arg_value('["fldball"]["folder"]');
-				$fldball_candidate['acctnum'] = (int)$GLOBALS['phpgw']->msg->get_arg_value('["fldball"]["acctnum"]');
+				$fldball_candidate['folder'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('["fldball"]["folder"]');
+				$fldball_candidate['acctnum'] = (int)\App\modules\email\services\MailMessage::getInstance()->get_arg_value('["fldball"]["acctnum"]');
 			}
 			// did we get useful data
 			if ( (isset($fldball_candidate))
 			&& ($fldball_candidate['folder'] != '') )
 			{
-				$fldball_candidate['folder'] = $GLOBALS['phpgw']->msg->prep_folder_out($fldball_candidate['folder']);
+				$fldball_candidate['folder'] = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out($fldball_candidate['folder']);
 			}
 			else
 			{
-				$fldball_candidate['folder'] = $GLOBALS['phpgw']->msg->prep_folder_out('INBOX');
-				$fldball_candidate['acctnum'] = (int)$GLOBALS['phpgw']->msg->get_acctnum();
+				$fldball_candidate['folder'] = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out('INBOX');
+				$fldball_candidate['acctnum'] = (int)\App\modules\email\services\MailMessage::getInstance()->get_acctnum();
 			}
 /*			return phpgw::link(
 						'/index.php',array(
@@ -878,9 +870,9 @@
 						'menuaction'=>'email.uiindex.index',
 						'fldball[folder]'=>$fldball_candidate['folder'],
 						'fldball[acctnum]'=>$fldball_candidate['acctnum'],
-						'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-						'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-						'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'));
+						'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+						'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+						'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'));
 		
 		}
 				

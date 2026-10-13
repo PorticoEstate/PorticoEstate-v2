@@ -76,32 +76,32 @@
 			}
 			
 			// what value does the "Send" button need
-			if ($GLOBALS['phpgw']->msg->get_isset_arg('msgball'))
+			if (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('msgball'))
 			{
-				$msgball = $GLOBALS['phpgw']->msg->get_arg_value('msgball');
+				$msgball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgball');
 				// generally, msgball arg exists when reply,replyall, or forward is being done
 				// if it exists, preserve (carry forward) its "folder" "action" and "acctnum" values
 				$send_btn_action = phpgw::link(
 						'/index.php',array(
 						'menuaction'=>$menuaction_target,
 						//'action'=>'forward',
-						'action'=>$GLOBALS['phpgw']->msg->get_arg_value('action'),
+						'action'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action'),
 						// this is used to preserve these values when we return to folder list after the send
-						'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-						'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-						'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'),
+						'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+						'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+						'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'),
 						// this is somewhat redundant in this particular case
-						'orig_action'=>$GLOBALS['phpgw']->msg->recall_desired_action())
+						'orig_action'=>\App\modules\email\services\MailMessage::getInstance()->recall_desired_action())
 						+$msgball['uri']
 				);
-				if (($GLOBALS['phpgw']->msg->get_isset_arg('action'))
-				&& ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'forward')
-				&& ($GLOBALS['phpgw']->msg->get_isset_arg('fwd_proc')))
+				if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('action'))
+				&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'forward')
+				&& (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('fwd_proc')))
 				{
-					$send_btn_action['fwd_proc'] = $GLOBALS['phpgw']->msg->get_arg_value('fwd_proc');
+					$send_btn_action['fwd_proc'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('fwd_proc');
 				}
 			}
-			elseif ($GLOBALS['phpgw']->msg->get_isset_arg('fldball'))
+			elseif (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('fldball'))
 			{
 				// if fldball it exists, preserve (carry forward) its "folder" and "acctnum" values
 				// generally, fldball arg exists only when NOT doing reply,replyall, or forward
@@ -114,18 +114,18 @@
 				// since we are not dealing with a specific message here, we will pass the data
 				// on in the form of a fldball structure, which is more generic in nature in that
 				// it never holds a "msgnum" value.
-				$fldball = $GLOBALS['phpgw']->msg->get_arg_value('fldball');
+				$fldball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('fldball');
 				$send_btn_action = phpgw::link(
 						'/index.php',array(
 						'menuaction'=>$menuaction_target,
 						// this is used to preserve these values when we return to folder list after the send
 						'fldball[folder]'=>$fldball['folder'],
 						'fldball[acctnum]'=>$fldball['acctnum'],
-						'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-						'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-						'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'),
+						'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+						'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+						'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'),
 						// when this hits bosend it is useful to know if it is a reply  or not for linebreak purposes
-						'orig_action'=>$GLOBALS['phpgw']->msg->recall_desired_action())
+						'orig_action'=>\App\modules\email\services\MailMessage::getInstance()->recall_desired_action())
 				);
 			}
 			else
@@ -139,13 +139,13 @@
 						'/index.php',array(
 						'menuaction'=>$menuaction_target,
 						// this is used to preserve these values when we return to folder list after the send
-						'fldball[folder]'=>$GLOBALS['phpgw']->msg->prep_folder_out(),
-						'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum(),
-						'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-						'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-						'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'),
+						'fldball[folder]'=>\App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+						'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum(),
+						'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+						'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+						'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'),
 						// when this hits bosend it is useful to know if it is a reply  or not for linebreak purposes
-						'orig_action'=>$GLOBALS['phpgw']->msg->recall_desired_action())
+						'orig_action'=>\App\modules\email\services\MailMessage::getInstance()->recall_desired_action())
 				);
 			}
 			return $send_btn_action;
@@ -179,27 +179,27 @@
 					}
 					
 					$bodystring = '';
-					$bodystring = $GLOBALS['phpgw']->msg->phpgw_fetchbody($msgball);
+					$bodystring = \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchbody($msgball);
 					// see if we have to un-do qprint (or other) encoding of the part we are about to quote
-					if (($GLOBALS['phpgw']->msg->get_isset_arg('encoding'))
-					|| ($GLOBALS['phpgw']->msg->get_isset_arg('subtype')))
+					if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('encoding'))
+					|| (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('subtype')))
 					{
 						// see if we have to un-do qprint encoding (fairly common)
-						if ($GLOBALS['phpgw']->msg->get_arg_value('encoding') == 'qprint')
+						if (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('encoding') == 'qprint')
 						{
-							$bodystring = $GLOBALS['phpgw']->msg->qprint($bodystring);
+							$bodystring = \App\modules\email\services\MailMessage::getInstance()->qprint($bodystring);
 						}
 						// *rare, maybe never seen* see if we have to un-do base64 encoding
-						elseif ($GLOBALS['phpgw']->msg->get_arg_value('encoding') == 'base64')
+						elseif (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('encoding') == 'base64')
 						{
 							// a human readable body part (non-attachment) should NOT be base64 encoded
 							// but you can never account for idiots
-							$bodystring = $GLOBALS['phpgw']->msg->de_base64($bodystring);
+							$bodystring = \App\modules\email\services\MailMessage::getInstance()->de_base64($bodystring);
 						}
 						// after that idiot check, we need another now as well...
 						// *TOTALLY IDIOTIC* hotmail.com may send HTML ONLY mail
 						// without the rfc REQUIRED text only part, so we have to strip html
-						if ($GLOBALS['phpgw']->msg->get_arg_value('subtype') == 'html')
+						if (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('subtype') == 'html')
 						{
 							// class validator has the required function
 							$this->my_validator = CreateObject("phpgwapi.validator");
@@ -208,7 +208,7 @@
 						}
 					}
 					// "normalize" all line breaks into CRLF pairs
-					$bodystring = $GLOBALS['phpgw']->msg->normalize_crlf($bodystring);
+					$bodystring = \App\modules\email\services\MailMessage::getInstance()->normalize_crlf($bodystring);
 					
 					// ----- Remove Email "Personal Signature" from Quoted Body  -----
 					// RFC's unofficially suggest you remove the "personal signature" before quoting the body
@@ -232,7 +232,7 @@
 					if (!preg_match("/[\n|\r]/", $bodystring ))
 					{
 						// aim for a 74-80 char line length
-						$bodystring = $GLOBALS['phpgw']->msg->body_hard_wrap($bodystring, 74);
+						$bodystring = \App\modules\email\services\MailMessage::getInstance()->body_hard_wrap($bodystring, 74);
 					}
 					// explode into an array
 					$body_array = explode("\r\n", $bodystring);
@@ -257,7 +257,7 @@
 					// it's up to the endusers MUA to handle any htmlspecialchars
 					// as for 7-bit vs. 8-bit, we prefer to leave body chars as-is and send out as 8-bit mail
 					// Later Note: see RFCs 2045-2049 for what MTA's (note "T") can and can not handle
-					return $GLOBALS['phpgw']->msg->htmlspecialchars_decode(trim($body));
+					return \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_decode(trim($body));
 		}
 		
 		/*!
@@ -273,7 +273,7 @@
 			
 			// this function is in class.msg_bootstrap.inc.php, we created in the constructor for this class.
 			$this->msg_bootstrap->ensure_mail_msg_exists('email.bocompose.compose', $this->debug);
-			@$not_set = $GLOBALS['phpgw']->msg->not_set;
+			@$not_set = \App\modules\email\services\MailMessage::getInstance()->not_set;
 			
 			// ---- BEGIN BO COMPOSE
 			
@@ -281,33 +281,33 @@
 			if ($special_instructions == 'mail_spell_special_handling')
 			{
 				// just act stupid and output the form using whatever vars mail.spell set for us
-				$to_box_value = $GLOBALS['phpgw']->msg->htmlspecialchars_encode(urldecode($GLOBALS['phpgw']->msg->get_arg_value('to')));
-				$cc_box_value = $GLOBALS['phpgw']->msg->htmlspecialchars_encode(urldecode($GLOBALS['phpgw']->msg->get_arg_value('cc')));
-				$bcc_box_value = $GLOBALS['phpgw']->msg->htmlspecialchars_encode(urldecode($GLOBALS['phpgw']->msg->get_arg_value('bcc')));
-				$subject = $GLOBALS['phpgw']->msg->htmlspecialchars_encode(urldecode($GLOBALS['phpgw']->msg->get_arg_value('subject')));
+				$to_box_value = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode(urldecode(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('to')));
+				$cc_box_value = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode(urldecode(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('cc')));
+				$bcc_box_value = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode(urldecode(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('bcc')));
+				$subject = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode(urldecode(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('subject')));
 				// and these are set according to arg values on return from the spell check page, (but according to pref values on first call of compose page)
 				// SET BELOW are "attach_sig" and "req_notify"
 				
 				// body is a little more tricky, ...
-				$body = $GLOBALS['phpgw']->msg->get_arg_value('body');
+				$body = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('body');
 				// first we decode any html special chars that may be in the message, there may be a mix of unencoded and encoded, so standardize unencoded.
-				$body = $GLOBALS['phpgw']->msg->htmlspecialchars_decode($body);
+				$body = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_decode($body);
 				// now we know all (all ?) html specialchars are decoded, so we will not get that erronious encoding of the ampersand that is actually itself part of an html specialchar
-				$body = $GLOBALS['phpgw']->msg->htmlspecialchars_encode($body);
+				$body = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($body);
 				// NOTE this goes back into the textbox with out changing the line lengths yet, that happens later
 			
 			// ----  Handle Replying and Forwarding  -----
 			}
-			elseif ($GLOBALS['phpgw']->msg->get_isset_arg('["msgball"]["msgnum"]'))
+			elseif (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('["msgball"]["msgnum"]'))
 			{
 				if ($this->debug > 1) { echo 'email.bocompose.compose: get_isset_arg ["msgball"]["msgnum"] is TRUE <br />'; }
-				if ($this->debug > 1) { echo 'email.bocompose.compose: $GLOBALS[phpgw]->msg->get_arg_value(action) : ['.$GLOBALS['phpgw']->msg->get_arg_value('action').'] <br />'; }
-				$msgball = $GLOBALS['phpgw']->msg->get_arg_value('msgball');
-				$msg_headers = $GLOBALS['phpgw']->msg->phpgw_header($msgball);
-				$msg_struct = $GLOBALS['phpgw']->msg->phpgw_fetchstructure($msgball);
+				if ($this->debug > 1) { echo 'email.bocompose.compose: $GLOBALS[phpgw]->msg->get_arg_value(action) : ['.\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action').'] <br />'; }
+				$msgball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgball');
+				$msg_headers = \App\modules\email\services\MailMessage::getInstance()->phpgw_header($msgball);
+				$msg_struct = \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchstructure($msgball);
 				
 				// ----  initial handling of Replying  -----
-				if ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'reply')
+				if (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'reply')
 				{
 					// if "Reply-To" is specified, use it, or else use the "from" address as the address to reply to
 					if ($msg_headers->reply_to[0])
@@ -318,10 +318,10 @@
 					{
 						$reply = $msg_headers->from[0];
 					}
-					$to = $GLOBALS['phpgw']->msg->make_rfc2822_address($reply);
-					$subject = $GLOBALS['phpgw']->msg->get_subject($msg_headers,'Re: ');
+					$to = \App\modules\email\services\MailMessage::getInstance()->make_rfc2822_address($reply);
+					$subject = \App\modules\email\services\MailMessage::getInstance()->get_subject($msg_headers,'Re: ');
 				}
-				elseif ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'replyall')
+				elseif (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'replyall')
 				{
 					if ($msg_headers->to)
 					{
@@ -349,7 +349,7 @@
 						for ($i = 0; $i < count($msg_headers->to); $i++)
 						{
 							$topeople = $msg_headers->to[$i];
-							$tolist[$i] = $GLOBALS['phpgw']->msg->make_rfc2822_address($topeople);
+							$tolist[$i] = \App\modules\email\services\MailMessage::getInstance()->make_rfc2822_address($topeople);
 						}
 						// these spaces after the comma will be taken out in send_message, they are only for user readability here
 						$to = implode(", ", $tolist);
@@ -360,7 +360,7 @@
 						if (!preg_match("/.*$my_reply_plain.*/", $to))
 						{
 							// it's ok to add $from_or_reply_to, it is not a duplicate
-							$my_reply_addr_spec = $GLOBALS['phpgw']->msg->make_rfc2822_address($my_reply);
+							$my_reply_addr_spec = \App\modules\email\services\MailMessage::getInstance()->make_rfc2822_address($my_reply);
 							$to = $my_reply_addr_spec.', '.$to;
 						}
 						/*// RFC2822 leaves the following as an option:
@@ -383,42 +383,42 @@
 						for ($i = 0; $i < count($msg_headers->cc); $i++)
 						{
 							$ccpeople = $msg_headers->cc[$i];
-							$cclist[$i] = $GLOBALS['phpgw']->msg->make_rfc2822_address($ccpeople);
+							$cclist[$i] = \App\modules\email\services\MailMessage::getInstance()->make_rfc2822_address($ccpeople);
 						}
 						// these spaces after the comma will be taken out in send_message, they are only for user readability here
 						$cc = implode(", ", $cclist);
 					}
-					$subject = $GLOBALS['phpgw']->msg->get_subject($msg_headers,'Re: ');
+					$subject = \App\modules\email\services\MailMessage::getInstance()->get_subject($msg_headers,'Re: ');
 				}
 				
 				// ... we just did initial processing of reply / replyall actions...
 				// (processing for forwaring mail is further down)
 				// so continue with reply / replyall processing ...
 				
-				if (($GLOBALS['phpgw']->msg->get_arg_value('action') == 'reply')
-				|| ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'replyall'))
+				if ((\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'reply')
+				|| (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'replyall'))
 				{
 					// ----  Begin The Message Body  (of the body we are replying to) -----
-					$who_wrote = $GLOBALS['phpgw']->msg->get_who_wrote($msg_headers);
+					$who_wrote = \App\modules\email\services\MailMessage::getInstance()->get_who_wrote($msg_headers);
 					$lang_wrote = lang('wrote');
 										
 					$body   = "\r\n"
 						. "\r\n"
 						. "\r\n"
 						. $who_wrote .' '.$lang_wrote.': '."\r\n" // the who wrote line
-						. $GLOBALS['phpgw']->msg->reply_prefix."\r\n" // then one blank quoted line b4 the quoted body
-						. $this->quote_inline_message('', $msgball, $GLOBALS['phpgw']->msg->reply_prefix)
+						. \App\modules\email\services\MailMessage::getInstance()->reply_prefix."\r\n" // then one blank quoted line b4 the quoted body
+						. $this->quote_inline_message('', $msgball, \App\modules\email\services\MailMessage::getInstance()->reply_prefix)
 						. "\r\n";
 				}
-				elseif ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'forward')
+				elseif (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'forward')
 				{
 					// ----  initial Handling of Forwarding  -----
 					
 					// get information from the orig email
-					$subject = $GLOBALS['phpgw']->msg->get_subject($msg_headers,'Fw: ');
-					$fwd_info_from = $GLOBALS['phpgw']->msg->make_rfc2822_address($msg_headers->from[0]);
+					$subject = \App\modules\email\services\MailMessage::getInstance()->get_subject($msg_headers,'Fw: ');
+					$fwd_info_from = \App\modules\email\services\MailMessage::getInstance()->make_rfc2822_address($msg_headers->from[0]);
 					$fwd_info_date = $GLOBALS['phpgw']->common->show_date($msg_headers->udate);
-					$fwd_info_subject = $GLOBALS['phpgw']->msg->get_subject($msg_headers,'');
+					$fwd_info_subject = \App\modules\email\services\MailMessage::getInstance()->get_subject($msg_headers,'');
 					
 					$body = "\r\n"."\r\n"
 						.'forward - original mail:'."\r\n"
@@ -427,11 +427,11 @@
 						.'  Subject ' .$fwd_info_subject ."\r\n";
 					//Check to see if they want us to quote the forwarded message's body and inlude it
 					//in the mail we are going to compose
-					$fwd_as_inline_pref=$GLOBALS['phpgw']->msg->get_pref_value('fwd_inline_text');
+					$fwd_as_inline_pref=\App\modules\email\services\MailMessage::getInstance()->get_pref_value('fwd_inline_text');
 					//print "<br />$fwd_as_inline_pref<br />";
 					if($fwd_as_inline_pref)
 					{
-						$body = $this->quote_inline_message($body."\r\n",$msgball, $GLOBALS['phpgw']->msg->reply_prefix);
+						$body = $this->quote_inline_message($body."\r\n",$msgball, \App\modules\email\services\MailMessage::getInstance()->reply_prefix);
 					}
 					
 					
@@ -440,7 +440,7 @@
 					//echo '<br />orig_boundary ' .$orig_boundary .'<br />';
 					//echo '<br />struct: <br />' .$GLOBALS['phpgw']->msg->htmlspecialchars_encode(serialize($msg_struct)) .'<br />';
 				}
-				elseif ($GLOBALS['phpgw']->msg->get_arg_value('action') == 'edit')
+				elseif (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'edit')
 				{
 					
 					//FIXME: Doesn't handle attachments atm - will fix that soon :)
@@ -450,7 +450,7 @@
 						$tolist = array();
 						foreach($msg_headers->to as $recip)
 						{
-							$tolist[] = $GLOBALS['phpgw']->msg->make_rfc2822_address($recip);
+							$tolist[] = \App\modules\email\services\MailMessage::getInstance()->make_rfc2822_address($recip);
 						}
 						$to = implode(',', $tolist);
 					}
@@ -460,12 +460,12 @@
 						$tolist = array();
 						foreach($msg_headers->cc as $recip)
 						{
-							$cclist[] = $GLOBALS['phpgw']->msg->make_rfc2822_address($recip);
+							$cclist[] = \App\modules\email\services\MailMessage::getInstance()->make_rfc2822_address($recip);
 						}
 						$cc = implode(',', $cclist);
 					}
 					
-					$subject = $GLOBALS['phpgw']->msg->get_subject($msg_headers, '');
+					$subject = \App\modules\email\services\MailMessage::getInstance()->get_subject($msg_headers, '');
 					$body = $this->quote_inline_message($body, $msgball);
 
 					if($msg_struct->parts && count($msg_struct->parts) > 1)
@@ -480,9 +480,9 @@
 									'video',
 									'other'
 								);
-						if( !is_dir($GLOBALS['phpgw']->msg->att_files_dir) )
+						if( !is_dir(\App\modules\email\services\MailMessage::getInstance()->att_files_dir) )
 						{
-							mkdir($GLOBALS['phpgw']->msg->att_files_dir, 0700);
+							mkdir(\App\modules\email\services\MailMessage::getInstance()->att_files_dir, 0700);
 						}
 						
 						$parts = $msg_struct->parts;
@@ -518,19 +518,20 @@
 							
 							$random_number = mt_rand(1000,999999999);
 							$newfilename = md5($filename.', '.$GLOBALS['phpgw_info']['user']['sessionid'].time().$_SERVER['REMOTE_ADDR'].$random_number);
-							$part_string = $GLOBALS['phpgw']->msg->phpgw_fetchbody($partball);
+							$part_string = \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchbody($partball);
 							if($part->encoding == 3)//base64
 							{
 								$part_string = base64_decode($part_string);
 							}
 							
-							$fpart = fopen("{$GLOBALS['phpgw']->msg->att_files_dir}/{$newfilename}",'wb');
+							$attachmentPath = \App\modules\email\services\MailMessage::getInstance()->att_files_dir . '/' . $newfilename;
+							$fpart = fopen($attachmentPath,'wb');
 							fputs($fpart, $part_string);
 							fclose($fpart);
 							unset($fpart);
 							unset($part_string);
 				
-							$finfo = fopen("{$GLOBALS['phpgw']->msg->att_files_dir}/{$newfilename}" . '.info','wb');
+							$finfo = fopen($attachmentPath . '.info','wb');
 							fputs($finfo, strtolower($mimemajors[$part->type] . '/' . $part->subtype) ."\n" 
 								. $filename . "\n");
 							fclose($finfo);
@@ -551,9 +552,9 @@
 				// this typically is only called when the user clicks on a mailto: link in an html document
 				// this behavior defines what your "default mail app" is, i.e. what mail app is called when
 				// the user clicks a "mailto:" link
-				$mailto = $GLOBALS['phpgw']->msg->get_arg_value('mailto');
-				$to = $GLOBALS['phpgw']->msg->get_arg_value('to');
-				$personal = $GLOBALS['phpgw']->msg->get_arg_value('personal');
+				$mailto = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('mailto');
+				$to = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('to');
+				$personal = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('personal');
 				
 				if ($mailto)
 				{
@@ -567,17 +568,17 @@
 				&& ($personal != '')
 				&& (urldecode($personal) != urldecode($to)) )
 				{
-					$to = $GLOBALS['phpgw']->msg->stripslashes_gpc($to);
-					$GLOBALS['phpgw']->msg->set_arg_value('to', $to);
-					$personal = $GLOBALS['phpgw']->msg->stripslashes_gpc($personal);
-					$GLOBALS['phpgw']->msg->set_arg_value('personal', $personal);
-					$to_box_value = $GLOBALS['phpgw']->msg->htmlspecialchars_encode('"'.urldecode($personal).'" <'.urldecode($to).'>');
+					$to = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($to);
+					\App\modules\email\services\MailMessage::getInstance()->set_arg_value('to', $to);
+					$personal = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($personal);
+					\App\modules\email\services\MailMessage::getInstance()->set_arg_value('personal', $personal);
+					$to_box_value = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode('"'.urldecode($personal).'" <'.urldecode($to).'>');
 				}
 				elseif ((isset($to))
 				&& ($to != ''))
 				{
-					$to = $GLOBALS['phpgw']->msg->stripslashes_gpc($to);
-					$GLOBALS['phpgw']->msg->set_arg_value('to', $to);
+					$to = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($to);
+					\App\modules\email\services\MailMessage::getInstance()->set_arg_value('to', $to);
 					$to_box_value = urldecode($to);
 				}
 				else
@@ -639,7 +640,7 @@
 			
 			// grab your value from the prefs
 			// $this->addybook_choice (string) [ "orig" | "lex" ]
-			$this->addybook_choice = $GLOBALS['phpgw']->msg->get_pref_value('addressbook_choice',$GLOBALS['phpgw']->msg->get_acctnum());
+			$this->addybook_choice = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('addressbook_choice',\App\modules\email\services\MailMessage::getInstance()->get_acctnum());
 			
 			// that is the flag indicating what address book should pop up
 			if ($this->addybook_choice == 'lex')
@@ -653,15 +654,15 @@
 
 			$this->xi['js_addylink'] = $js_addylink;
 			//we need to set the width of the addybook window according to user prefs
-			$addywidth = $GLOBALS['phpgw']->msg->get_pref_value('js_addressbook_screensize',$GLOBALS['phpgw']->msg->get_acctnum());
+			$addywidth = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('js_addressbook_screensize',\App\modules\email\services\MailMessage::getInstance()->get_acctnum());
 						
 			$this->xi['jsaddybook_width']=$addywidth;
 			//this is to determine the addybook's height
 			$this->xi['jsaddybook_height']=$addywidth*3/4;
 			// Set Image Directory and icon size and theme
 			$this->xi['image_dir'] = PHPGW_IMAGES;
-			$icon_theme = $GLOBALS['phpgw']->msg->get_pref_value('icon_theme',$GLOBALS['phpgw']->msg->get_acctnum());
-			$icon_size = $GLOBALS['phpgw']->msg->get_pref_value('icon_size',$GLOBALS['phpgw']->msg->get_acctnum());
+			$icon_theme = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('icon_theme',\App\modules\email\services\MailMessage::getInstance()->get_acctnum());
+			$icon_size = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('icon_size',\App\modules\email\services\MailMessage::getInstance()->get_acctnum());
 			$this->xi['toolbar_font'] = 'Arial, Helvetica, san-serif';
 			$this->xi['send_btn_action'] = $send_btn_action;
 			$this->xi['to_box_value'] = $to_box_value;
@@ -676,17 +677,17 @@
 			$this->mail_spell = CreateObject("email.spell");
 			// Set Variables for AddressBook button
 			$addressbook_text = lang('Address Book');
-			$addressbook_image = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/address-conduit-'.$icon_size,'_on'),$addressbook_text,'','','0');
+			$addressbook_image = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/address-conduit-'.$icon_size,'_on'),$addressbook_text,'','','0');
 			//$addressbook_image = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->common->image_on('email',$icon_theme.'-address-conduit-'.$icon_size,'_on'),$addressbook_text,'','','0');
 			$addressbook_onclick = 'addybook()';
 			// Set Variables for Send button			
 			$send_text = lang('Send');
-			$send_image = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/send-'.$icon_size,'_on'),$send_text,'','','0');
+			$send_image = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/send-'.$icon_size,'_on'),$send_text,'','','0');
 			//$send_image = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->common->image_on('email',$icon_theme.'-send-'.$icon_size,'_on'),$send_text,'','','0');
 			$send_onclick = 'send()';
 			// Set Variables for Spellcheck button
 			$spellcheck_text = lang('Spell Check');
-			$spellcheck_image = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/spellcheck-'.$icon_size,'_on'),$spellcheck_text,'','','0');
+			$spellcheck_image = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/spellcheck-'.$icon_size,'_on'),$spellcheck_text,'','','0');
 			//$spellcheck_image = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->common->image_on('email',$icon_theme.'-spellcheck-'.$icon_size,'_on'),$spellcheck_text,'','','0');
 			$spellcheck_onclick = 'spellcheck()';
 			// Create Spell Object so we can check and see if we need a spell check button
@@ -699,10 +700,10 @@
 			);
 			$this->xi['attachfile_js_onclick'] = 'attach_window(\''.$this->attachfile_js_link.'\')';
 			$attachfile_js_text = lang('Attach file');
-			$attachfile_js_image = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$icon_theme.'/add-attachment-'.$icon_size,'_on'),$attachfile_js_text,'','','0');
+			$attachfile_js_image = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$icon_theme.'/add-attachment-'.$icon_size,'_on'),$attachfile_js_text,'','','0');
 			//$attachfile_js_image = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->common->image_on('email',$icon_theme.'-add-attachment-'.$icon_size,'_on'),$attachfile_js_text,'','','0');
 			// This code looksup the users preference for the type of button and create the buttons to send to the UI
-			switch ($GLOBALS['phpgw']->msg->get_pref_value('button_type',$GLOBALS['phpgw']->msg->get_acctnum())){
+			switch (\App\modules\email\services\MailMessage::getInstance()->get_pref_value('button_type',\App\modules\email\services\MailMessage::getInstance()->get_acctnum())){
 				case 'text':
 					$this->xi['addressbook_button'] = '<a href="javascript:'.$addressbook_onclick.'">'.$addressbook_text.'</a>';
 					$this->xi['send_button'] = '<a href="javascript:'.$send_onclick.'">'.$send_text.'</a>';
@@ -773,7 +774,7 @@
 			$this->xi['checkbox_req_notify_value']= 'true';
 
 			$save_text = lang('save');
-			$save_image = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email','save','_on'),$save_text,'','','0');
+			$save_image = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email','save','_on'),$save_text,'','','0');
 			$save_onclick = 'save()';
 			// Set Variables for Save button			
 			$this->xi['save_button'] = '<a href="javascript:'.$save_onclick.'">'.$save_image.'&nbsp;'.$save_text.'</a>';
@@ -797,8 +798,8 @@
 			can NOT even display the "email_sig" checkbox because there is NO sig to attach to the message.
 			*/
 			// we can not even show the sig checkbox at all if the user has no sig text set in their prefs
-			if ($GLOBALS['phpgw']->msg->get_isset_pref('email_sig')
-			&& ($GLOBALS['phpgw']->msg->get_pref_value('email_sig') != ''))
+			if (\App\modules\email\services\MailMessage::getInstance()->get_isset_pref('email_sig')
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_pref_value('email_sig') != ''))
 			{
 				$this->xi['do_checkbox_sig'] = True;
 			}
@@ -811,8 +812,8 @@
 				// restore the state preserved thru the spell check stuff
 				// ---- email_sig ----
 				if (($this->xi['do_checkbox_sig'] == True)
-				&& ($GLOBALS['phpgw']->msg->get_isset_arg('attach_sig'))
-				&& ($GLOBALS['phpgw']->msg->get_arg_value('attach_sig') != ''))
+				&& (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('attach_sig'))
+				&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('attach_sig') != ''))
 				{
 					$this->xi['ischecked_checkbox_sig'] = True;
 				}
@@ -821,8 +822,8 @@
 					$this->xi['ischecked_checkbox_sig'] = False;
 				}
 				// ---- req_notify ----
-				if ($GLOBALS['phpgw']->msg->get_isset_arg('req_notify')
-				&& ($GLOBALS['phpgw']->msg->get_arg_value('req_notify') != ''))
+				if (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('req_notify')
+				&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('req_notify') != ''))
 				{
 					$this->xi['ischecked_checkbox_req_notify'] = True;
 				}

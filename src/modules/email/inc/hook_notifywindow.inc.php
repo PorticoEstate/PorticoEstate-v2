@@ -35,9 +35,9 @@
 		  $inbox_data['number_all'] integer - for IMAP and pop3 is total number messages in that inbox
 		*/
 		$inbox_data = Array();
-		$inbox_data = $GLOBALS['phpgw']->msg->new_message_check();
+		$inbox_data = \App\modules\email\services\MailMessage::getInstance()->new_message_check();
 		// end the mailserver request (i.e. logout of the mail server)
-		$GLOBALS['phpgw']->msg->end_request();
+		\App\modules\email\services\MailMessage::getInstance()->end_request();
 
 		$current_uid=$inbox_data['uidnext'];
 		$old_uid=$GLOBALS['phpgw']->common->appsession();

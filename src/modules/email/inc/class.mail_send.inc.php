@@ -108,7 +108,7 @@
 		{
 			if ($this->debug_fake_send)
 			{
-				echo $GLOBALS['phpgw']->msg->htmlspecialchars_encode($message);
+				echo \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($message);
 				return True;
 			}
 			// if we need a copy of this message for the "sent" folder, assemble it here

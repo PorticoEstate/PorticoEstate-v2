@@ -80,7 +80,7 @@
 	}
 
 	//$uploaddir = "{$GLOBALS['phpgw_info']['server']['temp_dir']}/{$GLOBALS['phpgw_info']['user']['sessionid']}/";
-	$uploaddir = $GLOBALS['phpgw']->msg->att_files_dir;
+	$uploaddir = \App\modules\email\services\MailMessage::getInstance()->att_files_dir;
 	
 	// if we were NOT able to create this temp directory, then make an ERROR report
 	if (!file_exists($uploaddir))
@@ -115,13 +115,13 @@
 	
 	// clean / prepare PHP provided file info
 	// note that "uploadedfile" is the POST submit form identification for the file
-	if ( isset($GLOBALS['phpgw']->msg->ref_FILES['uploadedfile']) )
+	if ( isset(\App\modules\email\services\MailMessage::getInstance()->ref_FILES['uploadedfile']) )
 	{
-		$file_tmp_name = $GLOBALS['phpgw']->msg->stripslashes_gpc(trim($GLOBALS['phpgw']->msg->ref_FILES['uploadedfile']['tmp_name']));
-		$file_name = $GLOBALS['phpgw']->msg->stripslashes_gpc(trim($GLOBALS['phpgw']->msg->ref_FILES['uploadedfile']['name']));
-		$file_size = $GLOBALS['phpgw']->msg->stripslashes_gpc(trim($GLOBALS['phpgw']->msg->ref_FILES['uploadedfile']['size']));
-		$file_type = $GLOBALS['phpgw']->msg->stripslashes_gpc(trim($GLOBALS['phpgw']->msg->ref_FILES['uploadedfile']['type']));
-		if ($fup_debug > 1) { echo 'ref_FILE dump: '.htmlspecialchars(serialize($GLOBALS['phpgw']->msg->ref_FILES)).'<br />'; } 
+		$file_tmp_name = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim(\App\modules\email\services\MailMessage::getInstance()->ref_FILES['uploadedfile']['tmp_name']));
+		$file_name = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim(\App\modules\email\services\MailMessage::getInstance()->ref_FILES['uploadedfile']['name']));
+		$file_size = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim(\App\modules\email\services\MailMessage::getInstance()->ref_FILES['uploadedfile']['size']));
+		$file_type = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim(\App\modules\email\services\MailMessage::getInstance()->ref_FILES['uploadedfile']['type']));
+		if ($fup_debug > 1) { echo 'ref_FILE dump: '.htmlspecialchars(serialize(\App\modules\email\services\MailMessage::getInstance()->ref_FILES)).'<br />'; }
 	}
 	
 	// sometimes PHP is very clue-less about MIME types, and gives NO file_type
@@ -291,7 +291,7 @@
 	$GLOBALS['phpgw']->template->pfp('out','T_attach_file');
 
 	//$GLOBALS['phpgw']->common->phpgw_exit();
-	if (is_object($GLOBALS['phpgw']->msg))
+	if (\App\modules\email\services\MailMessage::hasInstance())
 	{
 		$terminate = True;
 	}
@@ -303,10 +303,9 @@
 	if ($terminate == True)
 	{
 		// close down ALL mailserver streams
-		$GLOBALS['phpgw']->msg->end_request();
+		\App\modules\email\services\MailMessage::getInstance()->end_request();
 		// destroy the object
-		$GLOBALS['phpgw']->msg = '';
-		unset($GLOBALS['phpgw']->msg);
+		\App\modules\email\services\MailMessage::releaseInstance();
 	}
 	
 	// shut down this transaction

@@ -63,10 +63,10 @@
 		
 		public function __construct()
 		{
-			if ( !isset($GLOBALS['phpgw']->msg) || !is_object($GLOBALS['phpgw']->msg) )
+			if ( !\App\modules\email\services\MailMessage::hasInstance() || !\App\modules\email\services\MailMessage::hasInstance() )
 			{
-				$GLOBALS['phpgw']->msg = CreateObject("email.mail_msg");
-				$GLOBALS['phpgw']->msg->initialize_mail_msg();
+				\App\modules\email\services\MailMessage::getInstance();
+				\App\modules\email\services\MailMessage::getInstance()->initialize_mail_msg();
 			}
 		}
 		
@@ -94,7 +94,7 @@
 			// make sure we have msg object and a server stream
 			$this->msg_bootstrap = CreateObject("email.msg_bootstrap");
 			$this->msg_bootstrap->ensure_mail_msg_exists('email.boaction.delmov', $this->debug);
-			if ($this->debug > 0) { $GLOBALS['phpgw']->msg->dbug->out('ENTERING email.boaction.delmov'.'<br />'); }
+			if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('ENTERING email.boaction.delmov'.'<br />'); }
 			
 			// initialize this to an "ignore me" value, we change it later only if it should have a meaning
 			// MOVED TO MSG CLASS
@@ -102,9 +102,9 @@
 			
 			// get the not set value, usually '-1', 
 			// because php False, empty and 0 are too similar we use this instead, where a value of -1 is unlikely
-			if (isset($GLOBALS['phpgw']->msg->not_set))
+			if (isset(\App\modules\email\services\MailMessage::getInstance()->not_set))
 			{
-				$not_set = $GLOBALS['phpgw']->msg->not_set;
+				$not_set = \App\modules\email\services\MailMessage::getInstance()->not_set;
 			}
 			else
 			{
@@ -112,14 +112,14 @@
 			}
 			
 			// make an error report URL
-			$this->redirect_if_error = phpgw::link('/index.php',$GLOBALS['phpgw']->msg->get_arg_value('index_menuaction'));
+			$this->redirect_if_error = phpgw::link('/index.php',\App\modules\email\services\MailMessage::getInstance()->get_arg_value('index_menuaction'));
 			
 			$folder_info = array();
-			$folder_info = $GLOBALS['phpgw']->msg->get_folder_status_info();
+			$folder_info = \App\modules\email\services\MailMessage::getInstance()->get_folder_status_info();
 			$totalmessages = $folder_info['number_all'];
 			
 			// ---- MOVE (Multiple) Messages from folder to folder   -----
-			if ($GLOBALS['phpgw']->msg->get_arg_value('what') == "move")
+			if (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('what') == "move")
 			{
 				/*!
 				@capability boaction.delmov code for moving messages 
@@ -155,7 +155,7 @@
 				"nextmatches" view, then the code _SHOULD_ page back to where there are messages to show, 
 				BUT this is not done yet. 
 				*/
-				if ($this->debug > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov: get_arg_value(what) == "move") <br />'); }
+				if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov: get_arg_value(what) == "move") <br />'); }
 				
 				/*
 				$fromacctnum = (int)$GLOBALS['phpgw']->msg->get_arg_value('acctnum');
@@ -180,8 +180,8 @@
 				$did_move = $GLOBALS['phpgw']->msg->phpgw_mail_move($msgs, $tofolder);
 				*/
 				
-				$delmov_list = $GLOBALS['phpgw']->msg->get_arg_value('delmov_list');
-				$to_fldball = $GLOBALS['phpgw']->msg->get_arg_value('to_fldball');
+				$delmov_list = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('delmov_list');
+				$to_fldball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('to_fldball');
 				// WHY URLDECODE SO SOON?
 				//$to_fldball['folder'] = $GLOBALS['phpgw']->msg->prep_folder_in($to_fldball['folder']);
 				$to_fldball['acctnum'] = (int)$to_fldball['acctnum'];
@@ -203,7 +203,7 @@
 				
 				for ($i = 0; $i < count($delmov_list); $i++)
 				{
-					if ($this->debug > 2) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov: in mail move loop ['.(string)($i+1).'] of ['.$tm.']<br />'); }
+					if ($this->debug > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov: in mail move loop ['.(string)($i+1).'] of ['.$tm.']<br />'); }
 					$mov_msgball = $delmov_list[$i];
 					// WHY URLDECODE SO SOON?
 					//$mov_msgball['folder'] = $GLOBALS['phpgw']->msg->prep_folder_in($mov_msgball['folder']);
@@ -211,7 +211,7 @@
 					$did_move = False;
 					//if ($this->debug > 2) { echo 'email.boaction.delmov: calling  $GLOBALS[phpgw]->msg->interacct_mail_move('.serialize($mov_msgball).', '.serialize($to_fldball).'<br />'; }
 					//$did_move = $GLOBALS['phpgw']->msg->interacct_mail_move($mov_msgball, $to_fldball);
-					if ($this->debug > 2) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov: calling  $GLOBALS[phpgw]->msg->industrial_interacct_mail_move('.serialize($mov_msgball).', '.serialize($to_fldball).'<br />'); }
+					if ($this->debug > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov: calling  $GLOBALS[phpgw]->msg->industrial_interacct_mail_move('.serialize($mov_msgball).', '.serialize($to_fldball).'<br />'); }
 					// single move, NO NEED to use the move grouping stuff, NOTE $tm was filled above as count($delmov_list)
 					// MOVED TO FLUSH MOVES LOGIG
 					//if ($tm == 1)
@@ -221,19 +221,19 @@
 					//}
 					//else
 					//{
-						if ($this->debug > 2) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov: calling  $GLOBALS[phpgw]->msg->industrial_interacct_mail_move('.serialize($mov_msgball).', '.serialize($to_fldball).'<br />'); }
-						$did_move = $GLOBALS['phpgw']->msg->industrial_interacct_mail_move($mov_msgball, $to_fldball);
+						if ($this->debug > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov: calling  $GLOBALS[phpgw]->msg->industrial_interacct_mail_move('.serialize($mov_msgball).', '.serialize($to_fldball).'<br />'); }
+						$did_move = \App\modules\email\services\MailMessage::getInstance()->industrial_interacct_mail_move($mov_msgball, $to_fldball);
 					//}
 					if ($did_move == False)
 					{
 						// error
-						if ($this->debug > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): ***ERROR**** $GLOBALS[phpgw]->msg->industrial_interacct_mail_move() returns FALSE, ERROR, break out of loop<br />'
-								.' * * Server reports error: '.$GLOBALS['phpgw']->msg->phpgw_server_last_error().'<br />'); }
+						if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): ***ERROR**** $GLOBALS[phpgw]->msg->industrial_interacct_mail_move() returns FALSE, ERROR, break out of loop<br />'
+								.' * * Server reports error: '.\App\modules\email\services\MailMessage::getInstance()->phpgw_server_last_error().'<br />'); }
 						break;
 					}
 					else
 					{
-						if ($this->debug > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): $GLOBALS[phpgw]->msg->industrial_interacct_mail_move() returns True<br />'); }
+						if ($this->debug > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): $GLOBALS[phpgw]->msg->industrial_interacct_mail_move() returns True<br />'); }
 						//$did_expunge = False;
 						//$did_expunge = $GLOBALS['phpgw']->msg->phpgw_expunge($mov_msgball['acctnum'], $mov_msgball);
 						//if ($this->debug > 2) { echo 'email.boaction.delmov: $GLOBALS[phpgw]->msg->phpgw_expunge() returns '.serialize($did_expunge).'<br />'; }
@@ -241,10 +241,10 @@
 				}
 				
 				// ok, done moving, now expunge, "industrial_interacct_mail_move" uses ""
-				if ($this->debug > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): done moving, now call $GLOBALS[phpgw]->msg->expunge_expungable_folders<br />'); }
+				if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): done moving, now call $GLOBALS[phpgw]->msg->expunge_expungable_folders<br />'); }
 				$did_expunge = False;
-				$did_expunge = $GLOBALS['phpgw']->msg->expunge_expungable_folders('email.boaction.delmov LINE '.__LINE__);
-				if ($this->debug > 2) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): $GLOBALS[phpgw]->msg->expunge_expungable_folders() returns ['.serialize($did_expunge).']<br />'); }
+				$did_expunge = \App\modules\email\services\MailMessage::getInstance()->expunge_expungable_folders('email.boaction.delmov LINE '.__LINE__);
+				if ($this->debug > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): $GLOBALS[phpgw]->msg->expunge_expungable_folders() returns ['.serialize($did_expunge).']<br />'); }
 				
 				if (! $did_move)
 				{
@@ -259,17 +259,17 @@
 				//echo 'boaction: $tf ['.$tf.'] <br />';
 				
 				// folder or message we should go back to
-				if (($GLOBALS['phpgw']->msg->get_isset_arg('move_postmove_goto'))
-				&& ($GLOBALS['phpgw']->msg->get_arg_value('move_postmove_goto') != ''))
+				if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('move_postmove_goto'))
+				&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('move_postmove_goto') != ''))
 				{
 					// THIS MEANS WE WERE CALLED BY UIMESSAGE
 					// treat the post-move navigation like a "delete_single_msg", as per data passed to us from that page
-					$move_postmove_goto = $GLOBALS['phpgw']->msg->get_arg_value('move_postmove_goto');
-					if ($this->debug > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): move single *called by uimessage*: $move_postmove_goto: : '.$move_postmove_goto.'<br />'); }
+					$move_postmove_goto = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('move_postmove_goto');
+					if ($this->debug > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): move single *called by uimessage*: $move_postmove_goto: : '.$move_postmove_goto.'<br />'); }
 					// ----  "Go To Previous Message" Handling  -----
 					// these insrustions passed from uimessage when prev_next_navigation is obtained anyway
 					$this->redirect_to = $move_postmove_goto;
-					if ($this->debug > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov: ('.__LINE__.') move single *called by uimessage*: determination of $this->redirect_to : ['.$this->redirect_to.']<br />'); }
+					if ($this->debug > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov: ('.__LINE__.') move single *called by uimessage*: determination of $this->redirect_to : ['.$this->redirect_to.']<br />'); }
 				}
 				else
 				{
@@ -286,15 +286,15 @@
 									'fldball[acctnum]'=>$return_to_fldball['acctnum'],
 									'tm'=>$tm,
 									'tf'=>$tf,
-									'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-									'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-									'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start')));
+									'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+									'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+									'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start')));
 					
-					if ($this->debug > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): NOT called by uimessage, determination of $this->redirect_to : ['.$this->redirect_to.']<br />'); }
+					if ($this->debug > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): NOT called by uimessage, determination of $this->redirect_to : ['.$this->redirect_to.']<br />'); }
 				}
 			}
 			// ---- DELETE (MULTIPLE) MESSAGES ----
-			elseif ($GLOBALS['phpgw']->msg->get_arg_value('what') == 'delall')
+			elseif (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('what') == 'delall')
 			{
 				/*!
 				@capability boaction.delmov code for deleting multiple messages 
@@ -305,10 +305,10 @@
 				using its "folder" and "acctnum" values. 
 				*/
 				
-				if ($this->debug > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov: get_arg_value(what) == "delall") <br />'); }
+				if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov: get_arg_value(what) == "delall") <br />'); }
 				// this is called from the index pge after you check some boxes and click "delete" button
 				
-				$delmov_list = $GLOBALS['phpgw']->msg->get_arg_value('delmov_list');
+				$delmov_list = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('delmov_list');
 				// is this a "big move" as far as the "smart caching" is concerned?
 				// MOVED TOP MSG CLASS
 				//if (count($delmov_list) > $this->big_move_threshold)
@@ -325,23 +325,23 @@
 				$loops = count($delmov_list);
 				for ($i = 0; $i < $loops; $i++)
 				{
-					if ($this->debug > 2) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov: (delete) in mail delete loop ['.(string)($i+1).'] of ['.$loops.']<br />'); }
+					if ($this->debug > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov: (delete) in mail delete loop ['.(string)($i+1).'] of ['.$loops.']<br />'); }
 					$this_msgnum = $delmov_list[$i]['msgnum'];
 					// was_in_folder is used in Trash handling in the ->phpgw_delete function
 					// if a message "was_in_folder" Trash, it gets deleted for real, no option to move to Trash in that case
 					$was_in_folder = $delmov_list[$i]['folder'];
 					$was_in_folder_acctnum = (int)$delmov_list[$i]['acctnum'];
-					$did_delete = $GLOBALS['phpgw']->msg->phpgw_delete($this_msgnum,'',$was_in_folder);
+					$did_delete = \App\modules\email\services\MailMessage::getInstance()->phpgw_delete($this_msgnum,'',$was_in_folder);
 					if ($did_delete == False)
 					{
 						// error
-						if ($this->debug > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov: (delete) ***ERROR**** $GLOBALS[phpgw]->msg->phpgw_delete() returns FALSE, ERROR, break out of loop<br />'
-								.' * * Server reports error: '.$GLOBALS['phpgw']->msg->phpgw_server_last_error().'<br />'); }
+						if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov: (delete) ***ERROR**** $GLOBALS[phpgw]->msg->phpgw_delete() returns FALSE, ERROR, break out of loop<br />'
+								.' * * Server reports error: '.\App\modules\email\services\MailMessage::getInstance()->phpgw_server_last_error().'<br />'); }
 						break;
 					}
 					else
 					{
-						if ($this->debug > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov: (delete) $GLOBALS[phpgw]->msg->phpgw_delete() returns True (so it buffered the command, really does not mean anything not that we buffer commands)<br />'); }
+						if ($this->debug > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov: (delete) $GLOBALS[phpgw]->msg->phpgw_delete() returns True (so it buffered the command, really does not mean anything not that we buffer commands)<br />'); }
 						
 						//if ($this->debug > 0) { echo 'email.boaction.delmov: (delete) calling $GLOBALS[phpgw]->msg->phpgw_expunge('.$delmov_list[$i]['acctnum'].', $delmov_list[$i])<br />'; }
 						//$did_expunge = False;
@@ -351,22 +351,22 @@
 				}
 				
 				// ok, done deleting, now expunge
-				if ($this->debug > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): done deleting, now call $GLOBALS[phpgw]->msg->expunge_expungable_folders<br />'); }
+				if ($this->debug > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): done deleting, now call $GLOBALS[phpgw]->msg->expunge_expungable_folders<br />'); }
 				$did_expunge = False;
-				$did_expunge = $GLOBALS['phpgw']->msg->expunge_expungable_folders('email.boaction.delmov LINE '.__LINE__);
-				if ($this->debug > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): $GLOBALS[phpgw]->msg->expunge_expungable_folders() returns ['.serialize($did_expunge).']<br />'); }
+				$did_expunge = \App\modules\email\services\MailMessage::getInstance()->expunge_expungable_folders('email.boaction.delmov LINE '.__LINE__);
+				if ($this->debug > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): $GLOBALS[phpgw]->msg->expunge_expungable_folders() returns ['.serialize($did_expunge).']<br />'); }
 
 				$totaldeleted = $i;
 				//$GLOBALS['phpgw']->msg->phpgw_expunge();
 				$this->redirect_to = phpgw::link(
 								'/index.php',array(
 								 'menuaction'=>'email.uiindex.index',
-								'fldball[folder]'=>$GLOBALS['phpgw']->msg->prep_folder_out($was_in_folder),
+								'fldball[folder]'=>\App\modules\email\services\MailMessage::getInstance()->prep_folder_out($was_in_folder),
 								'fldball[acctnum]'=>$was_in_folder_acctnum,
 								'td'=>$totaldeleted,
-								'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-								'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-								'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start')));
+								'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+								'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+								'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start')));
 				/*
 				// Experimental:
 				// NO REDIRECT - DIRECTLY MANUFACTURE THE NEXT PAGE VIEW RIGHT NOW
@@ -420,7 +420,7 @@
 				
 			}
 			// ---- DELETE A SINGLE MESSAGE  ----
-			elseif ($GLOBALS['phpgw']->msg->get_arg_value('what') == "delete_single_msg")
+			elseif (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('what') == "delete_single_msg")
 			{
 				/*!
 				@capability boaction.delmov code for deleting a single messages 
@@ -435,19 +435,19 @@
 				
 				// if preserving no_fmt then add it to every navigation (prev, next) links
 				// if no_fmt=1 is in the args it is because bomesage wants us to preserve it
-				if (($GLOBALS['phpgw']->msg->get_isset_arg('no_fmt'))
-				&& ($GLOBALS['phpgw']->msg->get_arg_value('no_fmt') != ''))
+				if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('no_fmt'))
+				&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('no_fmt') != ''))
 				{
 					$this->no_fmt = array('no_fmt'=>1);
 				}
-				if ($this->debug > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): get_arg_value(what) == "delete_single_msg") <br />'); }
+				if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): get_arg_value(what) == "delete_single_msg") <br />'); }
 				// called by clicking the "X" dutton while reading an individual message
-				$msgball = $GLOBALS['phpgw']->msg->get_arg_value('msgball');
-				if ($this->debug > 2) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): delete_single_msg: pre-delete $msgball[] DUMP:', $msgball); }
+				$msgball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgball');
+				if ($this->debug > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): delete_single_msg: pre-delete $msgball[] DUMP:', $msgball); }
 				
 				// BEFORE we delete, if there is no mext message, then we will go back to index page
-				$nav_data = $GLOBALS['phpgw']->msg->prev_next_navigation($folder_info['number_all']);
-				if ($this->debug > 2) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): delete_single_msg: pre-delete $nav_data[] DUMP:', $nav_data); }
+				$nav_data = \App\modules\email\services\MailMessage::getInstance()->prev_next_navigation($folder_info['number_all']);
+				if ($this->debug > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): delete_single_msg: pre-delete $nav_data[] DUMP:', $nav_data); }
 				// ----  "Go To Previous Message" Handling  -----
 				if ($nav_data['prev_msg'] != $not_set)
 				{
@@ -463,9 +463,9 @@
 					$this->redirect_to = phpgw::link(
 						'/index.php',array(
 						'menuaction'=>'email.uimessage.message',
-						'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-						'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-						'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start'))
+						'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+						'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+						'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'))
 						+$this->no_fmt
 						+$nav_data_uri);
 				}
@@ -478,42 +478,42 @@
 					$this->redirect_to = phpgw::link(
 							'/index.php',array(
 							'menuaction'=>'email.uiindex.index',
-							'fldball[folder]'=>$GLOBALS['phpgw']->msg->prep_folder_out(),
-							'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum(),
-							'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-							'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-							'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start')));
+							'fldball[folder]'=>\App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+							'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum(),
+							'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+							'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+							'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start')));
 				}
-				if ($this->debug > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): delete_single_msg: pre-delete determination of $this->redirect_to : ['.$this->redirect_to.']<br />'); }
+				if ($this->debug > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): delete_single_msg: pre-delete determination of $this->redirect_to : ['.$this->redirect_to.']<br />'); }
 				
 				
 				if ($this->debug > 3)
 				{
-					$GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov: delete_single_msg ('.__LINE__.'): debug flag = 4 or higher, _SKIP_ the delete and expunge action<br />');
+					\App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov: delete_single_msg ('.__LINE__.'): debug flag = 4 or higher, _SKIP_ the delete and expunge action<br />');
 				}
 				else
 				{
 					// ok, now do the delete
-					if ($this->debug > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov: delete_single_msg: ('.__LINE__.') : (single delete) calling $GLOBALS[phpgw]->msg->phpgw_delete('.$msgball['msgnum'].', " ",'.$msgball['folder'].', '.$msgball['acctnum'].', True) '); } 
+					if ($this->debug > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov: delete_single_msg: ('.__LINE__.') : (single delete) calling $GLOBALS[phpgw]->msg->phpgw_delete('.$msgball['msgnum'].', " ",'.$msgball['folder'].', '.$msgball['acctnum'].', True) '); }
 					// True = just a single delete call, don't use the buffer commands
 					// " just a single delete call" logic MOVED TO BUFFERED COMMANDS function
 					//$GLOBALS['phpgw']->msg->phpgw_delete($msgball['msgnum'],'',$msgball['folder'], (int)$msgball['acctnum'], True);
-					$GLOBALS['phpgw']->msg->phpgw_delete($msgball['msgnum'],'',$msgball['folder'], (int)$msgball['acctnum']);
+					\App\modules\email\services\MailMessage::getInstance()->phpgw_delete($msgball['msgnum'],'',$msgball['folder'], (int)$msgball['acctnum']);
 					// now do the expunge, both IMAP and POP3 require this, or the message is not really deleted
 					//if ($this->debug > 1) { echo 'email.boaction.delmov: delete_single_msg: ('.__LINE__.') : calling $GLOBALS[phpgw]->msg->phpgw_expunge('.$msgball['acctnum'].', $msgball) '; } 
 					// MOVED to "expunge_expungable_folders"
 					//$GLOBALS['phpgw']->msg->phpgw_expunge((int)$msgball['acctnum'], $msgball);
 					
 					// ok, done deleting, now expunge
-					if ($this->debug > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov: delete_single_msg: ('.__LINE__.'): done deleting, now call $GLOBALS[phpgw]->msg->expunge_expungable_folders<br />'); }
+					if ($this->debug > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov: delete_single_msg: ('.__LINE__.'): done deleting, now call $GLOBALS[phpgw]->msg->expunge_expungable_folders<br />'); }
 					$did_expunge = False;
-					$did_expunge = $GLOBALS['phpgw']->msg->expunge_expungable_folders('email.boaction.delmov (delete_single_msg) LINE '.__LINE__);
-					if ($this->debug > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov: delete_single_msg: ('.__LINE__.'): $GLOBALS[phpgw]->msg->expunge_expungable_folders() returns ['.serialize($did_expunge).']<br />'); }
+					$did_expunge = \App\modules\email\services\MailMessage::getInstance()->expunge_expungable_folders('email.boaction.delmov (delete_single_msg) LINE '.__LINE__);
+					if ($this->debug > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov: delete_single_msg: ('.__LINE__.'): $GLOBALS[phpgw]->msg->expunge_expungable_folders() returns ['.serialize($did_expunge).']<br />'); }
 				}
 			}
 			else
 			{
-				if ($this->debug > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): get_arg_value(what) == unknown_value<br />'); }
+				if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): get_arg_value(what) == unknown_value<br />'); }
 				$error_str = '<p><center><b>'.lang('UNKNOWN ACTION')."<br /> \r\n"
 						.'called from '.$GLOBALS['REDIRECT_URL'].', delmov()'."<br /> \r\n"
 						.'</b></center></p>'."<br /> \r\n";
@@ -521,7 +521,7 @@
 			}
 			
 			// GOTO NECT PAGEVIEW VIA REDIRECT OR OBJECT CALL
-			if ($this->debug > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): about to enter logic to display page defined in this URI: $this->redirect_to ['.$this->redirect_to.']<br />'); }
+			if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): about to enter logic to display page defined in this URI: $this->redirect_to ['.$this->redirect_to.']<br />'); }
 			
 			/*!
 			@capability use_old_redirect_method
@@ -532,14 +532,13 @@
 			*/
 			if ($this->use_old_redirect_method == True)
 			{
-				if ($this->debug > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): EXITING with OLD REDIRECT CODE : $this->use_old_redirect_method: ['.serialize($this->use_old_redirect_method).']<br />'); }
+				if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): EXITING with OLD REDIRECT CODE : $this->use_old_redirect_method: ['.serialize($this->use_old_redirect_method).']<br />'); }
 				$GLOBALS['phpgw']->redirect($this->redirect_to);
 				// kill this script, we re outa here...
-				if (is_object($GLOBALS['phpgw']->msg))
+				if (\App\modules\email\services\MailMessage::hasInstance())
 				{
-					$GLOBALS['phpgw']->msg->end_request();
-					$GLOBALS['phpgw']->msg = '';
-					unset($GLOBALS['phpgw']->msg);
+					\App\modules\email\services\MailMessage::getInstance()->end_request();
+					\App\modules\email\services\MailMessage::releaseInstance();
 				}
 				$GLOBALS['phpgw']->common->phpgw_exit(False);
 			}
@@ -562,16 +561,16 @@
 				//sessionid
 				//kp3
 				//domain
-			if ($this->debug > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): calling $this->set_expected_args($expected_args) ; $expected_args DUMP:', $expected_args); }
+			if ($this->debug > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): calling $this->set_expected_args($expected_args) ; $expected_args DUMP:', $expected_args); }
 			$this->set_expected_args($expected_args);
 			// the URI of the redirect string contains data needed for the next page view
-			if ($this->debug > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): calling $this->set_new_args_uri($this->redirect_to) ; $this->redirect_to ['.$this->redirect_to.']<br />'); }
+			if ($this->debug > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): calling $this->set_new_args_uri($this->redirect_to) ; $this->redirect_to ['.$this->redirect_to.']<br />'); }
 			$this->set_new_args_uri($this->redirect_to);
 			// clear existing args, apply the new arg enviornment, 
 			// we get back the menuaction the redirect would have asked for
-			if ($this->debug > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): calling $this->apply_new_args_env()<br />'); }
+			if ($this->debug > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): calling $this->apply_new_args_env()<br />'); }
 			$my_menuaction = $this->apply_new_args_env();
-			if ($this->debug > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): $my_menuaction is ['.$my_menuaction.'] which was returned from $this->apply_new_args_env()<br />'); }
+			if ($this->debug > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): $my_menuaction is ['.$my_menuaction.'] which was returned from $this->apply_new_args_env()<br />'); }
 			// (c) IF A "BIG MOVE", THEN TURN BACK ON THE SMART CACHE
 			// MOVED TO MSG CLASS
 			//if ((isset($initial_session_cache_extreme))
@@ -587,7 +586,7 @@
 			//}
 			
 			// imitate the next menuaction command with direct object calls
-			if ($this->debug > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): LEAVING by creating "next_obj" and calling its menuaction verb ...<br />'); }
+			if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): LEAVING by creating "next_obj" and calling its menuaction verb ...<br />'); }
 			if (stristr($my_menuaction, 'uimessage'))
 			{
 				//// NEW: mail so object group fill may need to be reset
@@ -597,9 +596,9 @@
 				//$GLOBALS['phpgw']->msg->so->so_prop_use_group_data(False);
 				// NEW: mail so object group fill may need to be reset
 				//clear existing data, if any, and reset the query attempt excess counter
-				$GLOBALS['phpgw']->msg->so->so_prop_use_group_data(False);
+				\App\modules\email\services\MailMessage::getInstance()->so->so_prop_use_group_data(False);
 				// then make sure group data capability it turned on
-				$GLOBALS['phpgw']->msg->so->so_prop_use_group_data(True);
+				\App\modules\email\services\MailMessage::getInstance()->so->so_prop_use_group_data(True);
 				// MAKE THE UIMESSAGE PAGE OBJECT
 				$this->next_obj = CreateObject('email.uimessage');
 				// CALL THE FUNCTION THAT DISPLAYS THE PAGE VIEW
@@ -610,26 +609,25 @@
 			{
 				// NEW: mail so object group fill may need to be reset
 				//clear existing data, if any, and reset the query attempt excess counter
-				$GLOBALS['phpgw']->msg->so->so_prop_use_group_data(False);
+				\App\modules\email\services\MailMessage::getInstance()->so->so_prop_use_group_data(False);
 				// then make sure group data capability it turned on
-				$GLOBALS['phpgw']->msg->so->so_prop_use_group_data(True);
+				\App\modules\email\services\MailMessage::getInstance()->so->so_prop_use_group_data(True);
 				// MAKE THE INDEX PAGE OBJECT
 				$this->next_obj = CreateObject('email.uiindex');
 				// CALL THE FUNCTION THAT DISPLAYS THE PAGE VIEW
 				$this->next_obj->index();
 			}
 			// (e) cleanup
-			if (isset($GLOBALS['phpgw']->msg) && is_object($GLOBALS['phpgw']->msg))
+			if (\App\modules\email\services\MailMessage::hasInstance() && \App\modules\email\services\MailMessage::hasInstance())
 			{
-				if ($this->debug > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): oops, not LEFT yet, cleanup and unset ->msg object<br />'); }
+				if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): oops, not LEFT yet, cleanup and unset ->msg object<br />'); }
 				// close down ALL mailserver streams
-				$GLOBALS['phpgw']->msg->end_request();
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
 				// destroy the object
-				$GLOBALS['phpgw']->msg = '';
-				unset($GLOBALS['phpgw']->msg);
+				\App\modules\email\services\MailMessage::releaseInstance();
 			}
 			// shut down this transaction
-			if ($this->debug > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.delmov ('.__LINE__.'): LEAVING for <b>real</b> with $GLOBALS[phpgw]->common->phpgw_exit(False)<br />'); }
+			if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): LEAVING for <b>real</b> with $GLOBALS[phpgw]->common->phpgw_exit(False)<br />'); }
 			$GLOBALS['phpgw']->common->phpgw_exit(False);
 		}
 
@@ -644,13 +642,13 @@
 			$this->msg_bootstrap = CreateObject('email.msg_bootstrap');
 			$this->msg_bootstrap->ensure_mail_msg_exists('email.boaction.empty_trash', $this->debug);
 
-			$acctnum = $GLOBALS['phpgw']->msg->get_acctnum();
-			$folder = $GLOBALS['phpgw']->msg->get_folder_long($GLOBALS['phpgw']->msg->get_pref_value('trash_folder_name', $acctnum));
-			$GLOBALS['phpgw']->msg->event_begin_big_move(array('folder' => $folder, 'acctnum' => $acctnum), 'bo_action::empty_trash');
-			$GLOBALS['phpgw']->msg->empty_trash( $acctnum );
-			$GLOBALS['phpgw']->msg->event_begin_big_end('bo_action::empty_trash');
+			$acctnum = \App\modules\email\services\MailMessage::getInstance()->get_acctnum();
+			$folder = \App\modules\email\services\MailMessage::getInstance()->get_folder_long(\App\modules\email\services\MailMessage::getInstance()->get_pref_value('trash_folder_name', $acctnum));
+			\App\modules\email\services\MailMessage::getInstance()->event_begin_big_move(array('folder' => $folder, 'acctnum' => $acctnum), 'bo_action::empty_trash');
+			\App\modules\email\services\MailMessage::getInstance()->empty_trash( $acctnum );
+			\App\modules\email\services\MailMessage::getInstance()->event_begin_big_end('bo_action::empty_trash');
 
-			$folder = 'INBOX.' . $GLOBALS['phpgw']->msg->get_pref_value('trash_folder_name', $acctnum);
+			$folder = 'INBOX.' . \App\modules\email\services\MailMessage::getInstance()->get_pref_value('trash_folder_name', $acctnum);
 			phpgw::redirect_link('/index.php',
 							array(
 								'menuaction'		=> 'email.uiindex.index',
@@ -678,11 +676,11 @@
 		*/
 		function set_expected_args($comma_set_str='-1')
 		{
-			if ($this->debug_new_env > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.set_expected_args ('.__LINE__.'): ENTERING<br />'); } 
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.set_expected_args ('.__LINE__.'): param $comma_set_str: ['.$comma_set_str.'] <br />'); } 
+			if ($this->debug_new_env > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.set_expected_args ('.__LINE__.'): ENTERING<br />'); }
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.set_expected_args ('.__LINE__.'): param $comma_set_str: ['.$comma_set_str.'] <br />'); }
 			$exploded_expected_args = array();
 			$exploded_expected_args = explode(',',$comma_set_str);
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.set_expected_args ('.__LINE__.'): $exploded_expected_args DUMP:', $exploded_expected_args); } 
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.set_expected_args ('.__LINE__.'): $exploded_expected_args DUMP:', $exploded_expected_args); }
 			
 			//$this->expected_args = array();
 			$this->expected_args = array();
@@ -692,8 +690,8 @@
 				$arg_name = $exploded_expected_args[$i];
 				$this->expected_args[$arg_name] = '-1';
 			}
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.set_expected_args ('.__LINE__.'): $this->expected_args DUMP:', $this->expected_args); } 
-			if ($this->debug_new_env > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.set_expected_args ('.__LINE__.'): LEAVING<br />'); } 
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.set_expected_args ('.__LINE__.'): $this->expected_args DUMP:', $this->expected_args); }
+			if ($this->debug_new_env > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.set_expected_args ('.__LINE__.'): LEAVING<br />'); }
 		}
 		
 		/*!
@@ -708,9 +706,9 @@
 		*/
 		function set_new_args_uri($new_args_uri='-1')
 		{
-			if ($this->debug_new_env > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.set_new_args_uri ('.__LINE__.'): ENTERING, $new_args_uri ['.$new_args_uri.']<br />'); } 
+			if ($this->debug_new_env > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.set_new_args_uri ('.__LINE__.'): ENTERING, $new_args_uri ['.$new_args_uri.']<br />'); }
 			$this->new_args_uri = $new_args_uri;
-			if ($this->debug_new_env > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): LEAVING<br />'); } 
+			if ($this->debug_new_env > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): LEAVING<br />'); }
 		}
 		
 		/*!
@@ -739,45 +737,45 @@
 		*/
 		function apply_new_args_env()
 		{
-			if ($this->debug_new_env > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): ENTERING<br />'); } 
+			if ($this->debug_new_env > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): ENTERING<br />'); }
 			$recovered_data = array();
 			$this->new_args_uri = str_replace('amp;','&',$this->new_args_uri); // difficult to handle this one as array
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): source data is $this->new_args_uri DUMP:', $this->new_args_uri); } 
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): source data is $this->new_args_uri DUMP:', $this->new_args_uri); }
 
 			parse_str($this->new_args_uri, $recovered_data);
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): used command "parsed_str" on that to get this $recovered_data DUMP:', $recovered_data); } 
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): used command "parsed_str" on that to get this $recovered_data DUMP:', $recovered_data); }
 
 			// NOTE PARSE_STR ***WILL ADD SLASHES*** TO ESCAPE QUOTES
 			// NO MATTER WHAT YOUR MAGIC SLASHES SETTING IS
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): NOTE PARSE_STR ***WILL ADD SLASHES*** TO ESCAPE QUOTES NO MATTER WHAT YOUR MAGIC SLASHES SETTING IS **stripping slashes NOW*** from any folder names'.'<br />'); }  
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): NOTE PARSE_STR ***WILL ADD SLASHES*** TO ESCAPE QUOTES NO MATTER WHAT YOUR MAGIC SLASHES SETTING IS **stripping slashes NOW*** from any folder names'.'<br />'); }
 			if (isset($recovered_data['fldball']['folder']))
 			{
 				$recovered_data['fldball']['folder'] = stripslashes($recovered_data['fldball']['folder']);
-				$recovered_data['fldball']['folder'] = $GLOBALS['phpgw']->msg->prep_folder_out($recovered_data['fldball']['folder']);
+				$recovered_data['fldball']['folder'] = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out($recovered_data['fldball']['folder']);
 			}
 			if (isset($recovered_data['msgball']['folder']))
 			{
 				$recovered_data['msgball']['folder'] = stripslashes($recovered_data['msgball']['folder']);
-				$recovered_data['msgball']['folder'] = $GLOBALS['phpgw']->msg->prep_folder_out($recovered_data['msgball']['folder']);
+				$recovered_data['msgball']['folder'] = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out($recovered_data['msgball']['folder']);
 			}
 			if (isset($recovered_data['tf']))
 			{
 				$recovered_data['tf'] = stripslashes($recovered_data['tf']);
-				$recovered_data['tf'] = $GLOBALS['phpgw']->msg->prep_folder_out($recovered_data['tf']);
+				$recovered_data['tf'] = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out($recovered_data['tf']);
 			}
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): AFTER STRIPSLASH: used command "parsed_str" on that to get this $recovered_data DUMP:', $recovered_data); } 
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): AFTER STRIPSLASH: used command "parsed_str" on that to get this $recovered_data DUMP:', $recovered_data); }
 			
 			$new_args_env = array();
 			$new_args_env = $this->expected_args;
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): $this->expected_args DUMP:', $new_args_env); } 
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): initial $new_args_env DUMP:', $new_args_env); } 
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): $this->expected_args DUMP:', $new_args_env); }
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): initial $new_args_env DUMP:', $new_args_env); }
 			
 			// loop thru KNOWN POSSIBLE new_args_env elements, GATHER the ones that are filled for later use
 			reset($new_args_env);
 			//while(list($key,$value) = each($new_args_env))
                         foreach($new_args_env as $key => $value)
 			{
-				if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out(' * ('.__LINE__.') $key: ['.$key.']  $value: ['.$value.']<br />'); } 
+				if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out(' * ('.__LINE__.') $key: ['.$key.']  $value: ['.$value.']<br />'); }
 				$known_arg = $key;
 				//handle the special URI not match case
 				if ($key == 'index_php?menuaction')
@@ -787,7 +785,7 @@
 					//while(list($recovered_key,$recovered_value) = each($recovered_data))
                                         foreach($recovered_data as $recovered_key => $recovered_value)
 					{
-						if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out(' * * ('.__LINE__.') $recovered_key: ['.$recovered_key.']  $recovered_value: ['.$recovered_value.']<br />'); } 
+						if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out(' * * ('.__LINE__.') $recovered_key: ['.$recovered_key.']  $recovered_value: ['.$recovered_value.']<br />'); }
 						if (stristr($recovered_key, 'menuaction'))
 						{
 							$new_args_env[$key] = $recovered_data[$recovered_key];
@@ -795,7 +793,7 @@
 							break;
 						}
 					}
-					if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out(' ** found menuaction ** ('.__LINE__.') ['.$recovered_data[$recovered_key].']<br />'); } 
+					if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out(' ** found menuaction ** ('.__LINE__.') ['.$recovered_data[$recovered_key].']<br />'); }
 				}
 				elseif ((isset($recovered_data[$known_arg]))
 				&& ((string)$recovered_data[$known_arg] != ''))
@@ -805,10 +803,10 @@
 				}
 			}
 			reset($new_args_env);
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): FIRST PASS filled available known possible recovered_data elements <b>Post-Gather</b> $new_args_env DUMP:', $new_args_env); } 
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): FIRST PASS filled available known possible recovered_data elements <b>Post-Gather</b> $new_args_env DUMP:', $new_args_env); }
 			
 			// we are NOT DONE yet, extract some more args that we derive from what we gathered so far
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): ADDITIONALLY extract embedded "*ball" items "acctnum" and "folder" AND if a "msgball", add a "uri" element to it<br />'); } 
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): ADDITIONALLY extract embedded "*ball" items "acctnum" and "folder" AND if a "msgball", add a "uri" element to it<br />'); }
 			// GET GOOD ACCTNUM FOR THE UNSET COMMANDS BELOW
 			// and also get other useful info while we are at it (folder), and if we find a "msgball", make and add to it a "uri" element
 			if ($new_args_env['fldball'] != '-1')
@@ -832,38 +830,38 @@
 			else
 			{
 				echo 'email.boaction.apply_new_args_env: LINE '.__LINE__.': ERROR getting valid acctnum for goto pageview, NO fldball NO msgball found <br />';
-				$GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env: LINE '.__LINE__.': ERROR getting valid acctnum for goto pageview, NO fldball NO msgball found <br />');
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env: LINE '.__LINE__.': ERROR getting valid acctnum for goto pageview, NO fldball NO msgball found <br />');
 			}
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): extracted additional data: will use $new_acctnum ['.$new_acctnum.'];  and $new_folder ['.$new_folder.'] <br />'); }
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): FINAL filled available known possible recovered_data elements <b>Post-Gather</b> $new_args_env DUMP:', $new_args_env); } 
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): extracted additional data: will use $new_acctnum ['.$new_acctnum.'];  and $new_folder ['.$new_folder.'] <br />'); }
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): FINAL filled available known possible recovered_data elements <b>Post-Gather</b> $new_args_env DUMP:', $new_args_env); }
 			
 			// UNSET ARGS WE USED IN THIS PAGE BUT ARE NO LONGER NEEDED
 			// HELL, JUST UNSET ALL EXTERNAL ARGS
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): unset ALL known external class args as defined in array $GLOBALS[phpgw]->msg->known_external_args<br />'); }
-			$loops = count($GLOBALS['phpgw']->msg->known_external_args);
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): unset ALL known external class args as defined in array $GLOBALS[phpgw]->msg->known_external_args<br />'); }
+			$loops = count(\App\modules\email\services\MailMessage::getInstance()->known_external_args);
 			for ($i = 0; $i < $loops; $i++)
 			{
-				$arg_name = $GLOBALS['phpgw']->msg->known_external_args[$i];
-				if ($GLOBALS['phpgw']->msg->get_isset_arg($arg_name, $new_acctnum) == True)
+				$arg_name = \App\modules\email\services\MailMessage::getInstance()->known_external_args[$i];
+				if (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg($arg_name, $new_acctnum) == True)
 				{
-					if ($this->debug_new_env > 2) { $GLOBALS['phpgw']->msg->dbug->out(' * email.boaction.apply_new_args_env ('.__LINE__.'):UNSETTING with $GLOBALS[phpgw]->msg->unset_arg('.$arg_name.', '.$new_acctnum.') <br />'); }
-					$GLOBALS['phpgw']->msg->unset_arg($arg_name, $new_acctnum);
+					if ($this->debug_new_env > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out(' * email.boaction.apply_new_args_env ('.__LINE__.'):UNSETTING with $GLOBALS[phpgw]->msg->unset_arg('.$arg_name.', '.$new_acctnum.') <br />'); }
+					\App\modules\email\services\MailMessage::getInstance()->unset_arg($arg_name, $new_acctnum);
 				}
 				else
 				{
-					if ($this->debug_new_env > 2) { $GLOBALS['phpgw']->msg->dbug->out(' * email.boaction.apply_new_args_env ('.__LINE__.'): <i>was not set $arg_name ['.$arg_name.'];  and $new_acctnum ['.$new_acctnum.']</i><br />'); }
+					if ($this->debug_new_env > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out(' * email.boaction.apply_new_args_env ('.__LINE__.'): <i>was not set $arg_name ['.$arg_name.'];  and $new_acctnum ['.$new_acctnum.']</i><br />'); }
 				}
 			}
 			
 			// REFILL ARGS WITH NEW PAGE VIEW VALUES
 			// (a) set the very important acctnum arg we collected earlier, and also the folder arg, because these values are _derived_ values
 			// they are not plainly in the $new_args_env as simple key and value elements, they were derived from some of them, though
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): BEGIN setting new arg env by setting the "new_acctnum" and "new_folder"<br />'); } 
-			$GLOBALS['phpgw']->msg->set_acctnum($new_acctnum);
-			$GLOBALS['phpgw']->msg->set_arg_value('folder', $new_folder, $new_acctnum);
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): BEGIN setting new arg env by setting the "new_acctnum" and "new_folder"<br />'); }
+			\App\modules\email\services\MailMessage::getInstance()->set_acctnum($new_acctnum);
+			\App\modules\email\services\MailMessage::getInstance()->set_arg_value('folder', $new_folder, $new_acctnum);
 			
 			// (b) LOOP thru Gathered Args, setting the class args to those values
-			if ($this->debug_new_env > 1) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): continue by LOOPING thru Final Gathered Args, setting the class args to those values that are not still "-1" (that data was found for)<br />'); } 
+			if ($this->debug_new_env > 1) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): continue by LOOPING thru Final Gathered Args, setting the class args to those values that are not still "-1" (that data was found for)<br />'); }
 			//reset($new_args_env);
 			//while(list($key,$value) = each($new_args_env))
                         foreach($new_args_env as $key => $value)
@@ -874,12 +872,12 @@
 				if ((!stristr($arg_name, 'index_php?menuaction'))
 				&& ($arg_value != '-1'))
 				{
-					if ($this->debug_new_env > 2) { $GLOBALS['phpgw']->msg->dbug->out(' * email.boaction.apply_new_args_env ('.__LINE__.'): calling $GLOBALS[phpgw]->msg->set_arg_value('.$arg_name.', '.$arg_value.', '.$new_acctnum.') <br />'); }
-					$GLOBALS['phpgw']->msg->set_arg_value($arg_name, $arg_value, $new_acctnum);
+					if ($this->debug_new_env > 2) { \App\modules\email\services\MailMessage::getInstance()->dbug->out(' * email.boaction.apply_new_args_env ('.__LINE__.'): calling $GLOBALS[phpgw]->msg->set_arg_value('.$arg_name.', '.$arg_value.', '.$new_acctnum.') <br />'); }
+					\App\modules\email\services\MailMessage::getInstance()->set_arg_value($arg_name, $arg_value, $new_acctnum);
 				}
 			}
 			//$my_menuaction = $new_args_env['/mail/index_php?menuaction'];
-			if ($this->debug_new_env > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): LEAVING, returning next menuaction command $my_menuaction ['.$my_menuaction.'] <br />'); } 
+			if ($this->debug_new_env > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.apply_new_args_env ('.__LINE__.'): LEAVING, returning next menuaction command $my_menuaction ['.$my_menuaction.'] <br />'); }
 			return $my_menuaction;
 		}
 		
@@ -905,29 +903,29 @@
 			$this->msg_bootstrap = CreateObject('email.msg_bootstrap');
 			$this->msg_bootstrap->ensure_mail_msg_exists('email.boaction.get_attach', $this->debug);
 
-			if ($this->debug > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.get_attach: creating $this->browser <br />'); }
+			if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.get_attach: creating $this->browser <br />'); }
 			$this->browser = CreateObject('phpgwapi.browser');
 
-			$msgball = $GLOBALS['phpgw']->msg->get_arg_value('msgball');
+			$msgball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgball');
 			if (!isset($msgball['part_no']))
 			{
-				$part_no = $GLOBALS['phpgw']->msg->get_arg_value('part_no');
+				$part_no = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('part_no');
 				$msgball['part_no'] = $part_no;
 			}
 
 			// decode rfc2047 encoded attachment name MIME part headers
 			// see RFC2047 "Message Header Extensions for Non-ASCII Text"
-			$defanged_name=urldecode($GLOBALS['phpgw']->msg->get_arg_value('name'));
-			$att_name = $GLOBALS['phpgw']->msg->decode_rfc_header($defanged_name);
+			$defanged_name=urldecode(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('name'));
+			$att_name = \App\modules\email\services\MailMessage::getInstance()->decode_rfc_header($defanged_name);
 			//Check if the name changed thru the header decoding im not shure
-			if (($att_name != urldecode($GLOBALS['phpgw']->msg->get_arg_value('name')))
+			if (($att_name != urldecode(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('name')))
 			&& (trim($att_name) != '')
-			&& (trim(urldecode($GLOBALS['phpgw']->msg->get_arg_value('name'))) != ''))
+			&& (trim(urldecode(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('name'))) != ''))
 			{
-				$GLOBALS['phpgw']->msg->set_arg_value('name', $att_name);
+				\App\modules\email\services\MailMessage::getInstance()->set_arg_value('name', $att_name);
 			}
 
-			$mime = strtolower($GLOBALS['phpgw']->msg->get_arg_value('type')) .'/' .strtolower($GLOBALS['phpgw']->msg->get_arg_value('subtype'));
+			$mime = strtolower(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('type')) .'/' .strtolower(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('subtype'));
 			// do not do this until we get a length
 			//$this->browser->content_header($GLOBALS['phpgw']->msg->get_arg_value('name'), $mime);
 
@@ -939,42 +937,42 @@
 			if ($msgball['part_no'] == 'raw_message')
 			{
 				// NOTE no length for this purpose
-				$this->browser->content_header($GLOBALS['phpgw']->msg->get_arg_value('name'), $mime);
+				$this->browser->content_header(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('name'), $mime);
 				// to dump out the whole raw message, do this:
 				// 1) output the headers, 2) output the raw body 3) output a "closing" CRLF
 				//headers_msgball will be used get the message headers, by specifying "part_no" = 0
 				$headers_msgball = $msgball;
 				$headers_msgball['part_no'] = 0;
 				// that can also be used to ge tthe raw message body because phpgw_body() doesn't care about "part_no"
-				echo $GLOBALS['phpgw']->msg->phpgw_fetchbody($headers_msgball);
-				echo $GLOBALS['phpgw']->msg->phpgw_body($headers_msgball);
+				echo \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchbody($headers_msgball);
+				echo \App\modules\email\services\MailMessage::getInstance()->phpgw_body($headers_msgball);
 				echo "\r\n";
 			}
 			// ---- "regular" attachment handling  ----
-			elseif ($GLOBALS['phpgw']->msg->get_arg_value('encoding') == 'base64')
+			elseif (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('encoding') == 'base64')
 			{
 				//echo $GLOBALS['phpgw']->msg->de_base64($GLOBALS['phpgw']->msg->phpgw_fetchbody($msgball));
-				$this->output_data = $GLOBALS['phpgw']->msg->de_base64($GLOBALS['phpgw']->msg->phpgw_fetchbody($msgball));
+				$this->output_data = \App\modules\email\services\MailMessage::getInstance()->de_base64(\App\modules\email\services\MailMessage::getInstance()->phpgw_fetchbody($msgball));
 				$size = strlen($this->output_data);
-				$this->browser->content_header($GLOBALS['phpgw']->msg->get_arg_value('name'), $mime, $size);
+				$this->browser->content_header(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('name'), $mime, $size);
 				echo $this->output_data;
 				$this->output_data = '';
 			}
-			elseif ($GLOBALS['phpgw']->msg->get_arg_value('encoding') == 'qprint')
+			elseif (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('encoding') == 'qprint')
 			{
 				//echo $GLOBALS['phpgw']->msg->qprint($GLOBALS['phpgw']->msg->phpgw_fetchbody($msgball));
-				$this->output_data = $GLOBALS['phpgw']->msg->qprint($GLOBALS['phpgw']->msg->phpgw_fetchbody($msgball));
+				$this->output_data = \App\modules\email\services\MailMessage::getInstance()->qprint(\App\modules\email\services\MailMessage::getInstance()->phpgw_fetchbody($msgball));
 				$size = strlen($this->output_data);
-				$this->browser->content_header($GLOBALS['phpgw']->msg->get_arg_value('name'), $mime, $size);
+				$this->browser->content_header(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('name'), $mime, $size);
 				echo $this->output_data;
 				$this->output_data = '';
 			}
 			else
 			{
 				//echo $GLOBALS['phpgw']->msg->phpgw_fetchbody($msgball);
-				$this->output_data = $GLOBALS['phpgw']->msg->phpgw_fetchbody($msgball);
+				$this->output_data = \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchbody($msgball);
 				$size = strlen($this->output_data);
-				$this->browser->content_header($GLOBALS['phpgw']->msg->get_arg_value('name'), $mime, $size);
+				$this->browser->content_header(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('name'), $mime, $size);
 				echo $this->output_data;
 				$this->output_data = '';
 			}
@@ -982,10 +980,9 @@
 			//$GLOBALS['phpgw']->msg->end_request($msgball);
 			//$GLOBALS['phpgw']->common->phpgw_footer();
 			// close down ALL mailserver streams
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 			// destroy the object
-			$GLOBALS['phpgw']->msg = '';
-			unset($GLOBALS['phpgw']->msg);
+			\App\modules\email\services\MailMessage::releaseInstance();
 			// shut down this transaction
 			$GLOBALS['phpgw']->common->phpgw_exit(False);
 		}
@@ -1021,37 +1018,36 @@
 			$this->msg_bootstrap = CreateObject('email.msg_bootstrap');
 			$this->msg_bootstrap->ensure_mail_msg_exists('email.boaction.get_attach', $this->debug);
 
-			if ($this->debug > 0) { $GLOBALS['phpgw']->msg->dbug->out('email.boaction.view_html: creating $this->browser <br />'); }
+			if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.view_html: creating $this->browser <br />'); }
 			$this->browser = CreateObject('phpgwapi.browser');
 
 			//$this->browser->content_header($name,$mime);
-			if ((($GLOBALS['phpgw']->msg->get_isset_arg('html_part')))
-			&& ($GLOBALS['phpgw']->msg->get_arg_value('html_part') != ''))
+			if (((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('html_part')))
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('html_part') != ''))
 			{
 				$this->browser->content_header('','');
-				$html_part = $GLOBALS['phpgw']->msg->stripslashes_gpc($GLOBALS['phpgw']->msg->get_arg_value('html_part'));
-				echo $GLOBALS['phpgw']->msg->de_base64($html_part);
-				$GLOBALS['phpgw']->msg->end_request();
+				$html_part = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('html_part'));
+				echo \App\modules\email\services\MailMessage::getInstance()->de_base64($html_part);
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
 			}
-			elseif ((($GLOBALS['phpgw']->msg->get_isset_arg('html_reference')))
-			&& ($GLOBALS['phpgw']->msg->get_arg_value('html_reference') != ''))
+			elseif (((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('html_reference')))
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('html_reference') != ''))
 			{
-				$html_reference = $GLOBALS['phpgw']->msg->stripslashes_gpc($GLOBALS['phpgw']->msg->get_arg_value('html_reference'));
-				$GLOBALS['phpgw']->msg->end_request();
+				$html_reference = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('html_reference'));
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
 				//header('Location: ' . $html_reference);
 				$GLOBALS['phpgw']->redirect($html_reference);
 				//$GLOBALS['phpgw']->common->phpgw_footer();
 			}
 			else
 			{
-				$GLOBALS['phpgw']->msg->end_request();
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
 				//$GLOBALS['phpgw']->common->phpgw_footer();
 			}
 			// close down ALL mailserver streams
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 			// destroy the object
-			$GLOBALS['phpgw']->msg = '';
-			unset($GLOBALS['phpgw']->msg);
+			\App\modules\email\services\MailMessage::releaseInstance();
 			// shut down this transaction
 			$GLOBALS['phpgw']->common->phpgw_exit(False);
 		}

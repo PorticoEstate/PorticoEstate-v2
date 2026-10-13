@@ -216,18 +216,18 @@
 			
 			//$attempt_reuse = True;
 			$attempt_reuse = False;
-			if (!is_object($GLOBALS['phpgw']->msg))
+			if (!\App\modules\email\services\MailMessage::hasInstance())
 			{
-				$GLOBALS['phpgw']->msg = CreateObject("email.mail_msg");
+				\App\modules\email\services\MailMessage::getInstance();
 			}
 			
-			if ((is_object($GLOBALS['phpgw']->msg))
+			if ((\App\modules\email\services\MailMessage::hasInstance())
 			&& ($attempt_reuse == True))
 			{
 				// no not create, we will reuse existing
 				echo 'mail_filters: do_imap_search: reusing existing mail_msg object'.'<br />';
 				// we need to feed the existing object some params begin_request uses to re-fill the msg->args[] data
-				$reuse_feed_args = $GLOBALS['phpgw']->msg->get_all_args();
+				$reuse_feed_args = \App\modules\email\services\MailMessage::getInstance()->get_all_args();
 				$args_array = Array();
 				$args_array = $reuse_feed_args;
 				if ((isset($this->filters[0]['source_folder']))
@@ -281,16 +281,16 @@
 			$args_array['do_login'] = True;
 			*/
 			
-			$GLOBALS['phpgw']->msg->begin_request($args_array);
+			\App\modules\email\services\MailMessage::getInstance()->begin_request($args_array);
 			
 			$initial_result_set = Array();
-			$initial_result_set = $GLOBALS['phpgw']->msg->phpgw_search($imap_search_str);
+			$initial_result_set = \App\modules\email\services\MailMessage::getInstance()->phpgw_search($imap_search_str);
 			// sanity check on 1 returned hit, is it for real?
 			if (($initial_result_set == False)
 			|| (count($initial_result_set) == 0))
 			{
 				echo 'mail_filters: do_imap_search: no hits or possible search error<br />'."\r\n";
-				echo 'mail_filters: do_imap_search: server_last_error (if any) was: "'.$GLOBALS['phpgw']->msg->phpgw_server_last_error().'"'."\r\n";
+				echo 'mail_filters: do_imap_search: server_last_error (if any) was: "'.\App\modules\email\services\MailMessage::getInstance()->phpgw_server_last_error().'"'."\r\n";
 				// we leave this->result_set_mlist an an empty array, as it was initialized on class creation
 			}
 			else
@@ -299,14 +299,14 @@
 				if ($this->debug_level > 0) { echo 'mail_filters: do_imap_search: number of matches = ' .count($this->result_set).'<br />'."\r\n"; }
 				// make a "fake" folder_info array to make things simple for get_msg_list_display
 				$this->fake_folder_info['is_imap'] = True;
-				$this->fake_folder_info['folder_checked'] = $GLOBALS['phpgw']->msg->get_arg_value('folder');
+				$this->fake_folder_info['folder_checked'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder');
 				$this->fake_folder_info['alert_string'] = 'you have search results';
 				$this->fake_folder_info['number_new'] = count($this->result_set);
 				$this->fake_folder_info['number_all'] = count($this->result_set);
 				// retrieve user displayable data for each message in the result set
-				$this->result_set_mlist = $GLOBALS['phpgw']->msg->get_msg_list_display($this->fake_folder_info,$this->result_set);
+				$this->result_set_mlist = \App\modules\email\services\MailMessage::getInstance()->get_msg_list_display($this->fake_folder_info,$this->result_set);
 			}
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 			//echo 'mail_filters: do_imap_search: returned:<br />'; var_dump($this->result_set); echo "<br />\r\n";
 		}
 

@@ -306,10 +306,10 @@ require_once __DIR__ . '/imap_config.php';
 			// NOTE THIS FLAG "folder_list_changed" IS NOW OBSOLETED SINCE THIS 
 			// CALLBACK FUNCTION IS PROVEN TO WORK
 			$this->folder_list_changed = True;
-			if (is_object($GLOBALS['phpgw']->msg))
+			if (\App\modules\email\services\MailMessage::hasInstance())
 			{
 				// call that classes "callback" function designed to handle cleaning stale folder_list there
-				$sucess = $GLOBALS['phpgw']->msg->folder_list_change_callback();
+				$sucess = \App\modules\email\services\MailMessage::getInstance()->folder_list_change_callback();
 				// if it was handled correctly, then reset the "folder_list_changed" because we did our job
 				if ($sucess)
 				{

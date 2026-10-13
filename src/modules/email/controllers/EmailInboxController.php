@@ -81,12 +81,24 @@ class EmailInboxController
 		{
 			$businessObject = \CreateObject('email.bomessage');
 			$businessObject->message_data();
-			$mail = $GLOBALS['phpgw']->msg;
+			$mail = \App\modules\email\services\MailMessage::getInstance();
 			$activeMsgball = (array) $mail->get_arg_value('msgball');
 			$headers = $mail->phpgw_header($activeMsgball);
 			$parts = (array) $businessObject->part_nice;
 			foreach ($parts as $index => $part)
 			{
+				if (($part['d_processed_as'] ?? '') === 'image_href')
+				{
+					$imageUrl = \phpgw::link('/email/api/attachment', [
+						'msgball[acctnum]' => $activeMsgball['acctnum'] ?? $account,
+						'msgball[folder]' => $activeMsgball['folder'] ?? $folder,
+						'msgball[msgnum]' => $activeMsgball['msgnum'] ?? $messageNumber,
+						'msgball[part_no]' => $part['m_part_num_mime'] ?? '',
+						'inline' => '1',
+					]);
+					$parts[$index]['message_body'] = '<img src="' . htmlspecialchars($imageUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '" alt="">';
+					continue;
+				}
 				if (($part['d_instructions'] ?? '') !== 'echo_out') continue;
 				$partBall = $activeMsgball;
 				$partBall['part_no'] = $part['m_part_num_mime'] ?? '';
@@ -143,7 +155,9 @@ class EmailInboxController
 
 	public function attachment(Request $request, Response $response): Response
 	{
-		$msgball = (array) ($request->getQueryParams()['msgball'] ?? []);
+		$query = $request->getQueryParams();
+		$msgball = (array) ($query['msgball'] ?? []);
+		$inline = ($query['inline'] ?? '') === '1';
 		$account = $msgball['acctnum'] ?? null;
 		$folder = $msgball['folder'] ?? null;
 		$messageNumber = $msgball['msgnum'] ?? null;
@@ -157,7 +171,7 @@ class EmailInboxController
 		{
 			$businessObject = \CreateObject('email.bomessage');
 			$businessObject->message_data();
-			$mail = $GLOBALS['phpgw']->msg;
+			$mail = \App\modules\email\services\MailMessage::getInstance();
 			$activeMsgball = (array) $mail->get_arg_value('msgball');
 			if ((int) ($activeMsgball['acctnum'] ?? -1) !== (int) $account || (string) ($activeMsgball['folder'] ?? '') !== $folder || (int) ($activeMsgball['msgnum'] ?? -1) !== (int) $messageNumber)
 			{
@@ -167,7 +181,10 @@ class EmailInboxController
 			$selectedPart = null;
 			foreach ((array) $businessObject->part_nice as $part)
 			{
-				if ((string) ($part['m_part_num_mime'] ?? '') === $partNumber && !empty($part['ex_attachment']))
+				$isInlineImage = $inline
+					&& strtolower((string) ($part['type'] ?? '')) === 'image'
+					&& strtolower((string) ($part['subtype'] ?? '')) !== 'svg+xml';
+				if ((string) ($part['m_part_num_mime'] ?? '') === $partNumber && (!empty($part['ex_attachment']) || $isInlineImage))
 				{
 					$selectedPart = $part;
 					break;
@@ -196,7 +213,7 @@ class EmailInboxController
 			return $response
 				->withHeader('Content-Type', $mimeType)
 				->withHeader('Content-Length', (string) strlen($data))
-				->withHeader('Content-Disposition', 'attachment; filename="' . $fallbackName . '"; filename*=UTF-8\'\'' . rawurlencode($fileName))
+				->withHeader('Content-Disposition', ($inline ? 'inline' : 'attachment') . '; filename="' . $fallbackName . '"; filename*=UTF-8\'\'' . rawurlencode($fileName))
 				->withHeader('X-Content-Type-Options', 'nosniff');
 		}
 		catch (\Throwable $exception)

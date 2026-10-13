@@ -286,7 +286,7 @@
 			/* This is only used by the login() function */
 			// Cyrus style: INBOX.Junque
 			// UWash style: ./aeromail/Junque
-			return $GLOBALS['phpgw']->msg->get_folder_long($folder);
+			return \App\modules\email\services\MailMessage::getInstance()->get_folder_long($folder);
 		}
 
 		function deconstruct_folder_str($folder)
@@ -294,7 +294,7 @@
 			//  This is only used by the login() function
 			// Cyrus style: INBOX.Junque
 			// UWash style: ./aeromail/Junque
-			return $GLOBALS['phpgw']->msg->get_folder_short($folder);
+			return \App\modules\email\services\MailMessage::getInstance()->get_folder_short($folder);
 		}
 
 		function set_flag($stream, $msgnum, $flag)

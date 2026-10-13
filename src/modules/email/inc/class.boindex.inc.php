@@ -178,9 +178,9 @@
 			//if ($GLOBALS['phpgw']->msg->get_folder_short($GLOBALS['phpgw']->msg->get_arg_value('folder')) == "INBOX")
 			// ok this new way is super overkill just to test for the INBOX, so maybe go back to the above if atatement
 			$querey_fldball = array();
-			$querey_fldball['acctnum'] = $GLOBALS['phpgw']->msg->get_acctnum();
-			$querey_fldball['folder'] = $GLOBALS['phpgw']->msg->prep_folder_out($GLOBALS['phpgw']->msg->get_arg_value('folder'));
-			if ($GLOBALS['phpgw']->msg->common_folder_is($querey_fldball, 'INBOX') == True)
+			$querey_fldball['acctnum'] = \App\modules\email\services\MailMessage::getInstance()->get_acctnum();
+			$querey_fldball['folder'] = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder'));
+			if (\App\modules\email\services\MailMessage::getInstance()->common_folder_is($querey_fldball, 'INBOX') == True)
 			{
 				// show INBOX in the users translated language.
 				//$nice_folder_name = $langs['lang_inbox'];
@@ -188,11 +188,11 @@
 				//$common_langs = $GLOBALS['phpgw']->msg->get_common_langs();
 				//$nice_folder_name = $common_langs['lang_inbox'];
 				// or try this shortcut, it works too
-				$nice_folder_name = $GLOBALS['phpgw']->msg->get_common_langs('lang_inbox');
+				$nice_folder_name = \App\modules\email\services\MailMessage::getInstance()->get_common_langs('lang_inbox');
 			}
 			else
 			{
-				$nice_folder_name = $GLOBALS['phpgw']->msg->get_folder_short($GLOBALS['phpgw']->msg->get_arg_value('folder'));
+				$nice_folder_name = \App\modules\email\services\MailMessage::getInstance()->get_folder_short(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder'));
 			}
 			
 			$tpl_vars = Array(
@@ -216,7 +216,7 @@
 			$tpl->set_var($tpl_vars);
 			
 			$folder_info = array();
-			$folder_info = $GLOBALS['phpgw']->msg->get_folder_status_info();
+			$folder_info = \App\modules\email\services\MailMessage::getInstance()->get_folder_status_info();
 			// save this data for use below in function "index_data" if necessary
 			$this->xi['folder_info'] = array();
 			$this->xi['folder_info'] = $folder_info;
@@ -253,7 +253,7 @@
 				//$size_report_args['stats_size_threshold'] = 100;
 				//$size_report_args['number_all'] = $folder_info['number_all'];
 				//$stats_size = $GLOBALS['phpgw']->msg->report_total_foldersize($size_report_args);		
-				$stats_size = $GLOBALS['phpgw']->msg->report_total_foldersize_conditional();
+				$stats_size = \App\modules\email\services\MailMessage::getInstance()->report_total_foldersize_conditional();
 				// toggle the "get folder size" button or link, if getting that size was skipped as a time-saving measure
 				if ($stats_size != '')
 				{
@@ -269,11 +269,11 @@
 					$tpl->set_var('lang_size2', '');
 					$get_size_link = phpgw::link('/index.php',array(
 								'menuaction' => 'email.uiindex.index',
-								'fldball[folder]' => $GLOBALS['phpgw']->msg->prep_folder_out(),
-								'fldball[acctnum]' => $GLOBALS['phpgw']->msg->get_acctnum(),
-								'sort' => $GLOBALS['phpgw']->msg->get_arg_value('sort'),
-								'order' => $GLOBALS['phpgw']->msg->get_arg_value('order'),
-								'start' => $GLOBALS['phpgw']->msg->get_arg_value('start'),
+								'fldball[folder]' => \App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+								'fldball[acctnum]' => \App\modules\email\services\MailMessage::getInstance()->get_acctnum(),
+								'sort' => \App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+								'order' => \App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+								'start' => \App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'),
 								'force_showsize' => '1'));
 					//$my_widgets->new_form();
 					//$my_widgets->set_form_name('form_get_size');
@@ -289,7 +289,7 @@
 				}
 			}
 			
-			$stats_first = $GLOBALS['phpgw']->msg->get_arg_value('start') + 1;
+			$stats_first = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('start') + 1;
 			$tpl->set_var('stats_first', $stats_first);
 			if ($folder_info['number_all'] == 0)
 			{
@@ -306,7 +306,7 @@
 			
 			// LAYOUT 1 ONLY ITEMS
 			if (((string)$layout == '1')
-			&& ($GLOBALS['phpgw']->msg->get_mailsvr_supports_folders() == True))
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_mailsvr_supports_folders() == True))
 			{
 				//{form_folder_switch_opentag}
 				//{folder_switch_combobox}
@@ -323,7 +323,7 @@
 								'menuaction' => 'email.uifolder.folder',
 								// going to the folder list page, we only need log into the INBOX folder
 								'fldball[folder]' => 'INBOX',
-								'fldball[acctnum]' => $GLOBALS['phpgw']->msg->get_acctnum()));
+								'fldball[acctnum]' => \App\modules\email\services\MailMessage::getInstance()->get_acctnum()));
 				$folders_btn_js = 'window.location=\''.$folders_link.'\'';
 				$tpl->set_var('folders_btn', $my_widgets->make_button('button', 'folder_link_btn',$langs['folders_txt1'],$folders_btn_js));
 				
@@ -367,7 +367,7 @@
 			
 			// ---  this->xi ("eXternal Interface") is an array that will hold ALL data necessary for an index page
 			// if auto-refresh is in use, it will need to know what to refresh, use with ->link to get full http string
-			$GLOBALS['phpgw_info']['flags']['email_refresh_uri'] = $GLOBALS['phpgw']->msg->get_arg_value('index_refresh_uri');
+			$GLOBALS['phpgw_info']['flags']['email_refresh_uri'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('index_refresh_uri');
 			// EXPERIMENTAL: auto refresh widget
 			// create widgets class, $GLOBALS['phpgw']->widgets produce errors, so make a local one
 			$my_other_widgets = CreateObject('email.html_widgets');
@@ -378,7 +378,7 @@
 					240000);
 			
 			// if we just moved or deleted messages, make a report string
-			$this->xi['report_this'] = $GLOBALS['phpgw']->msg->report_moved_or_deleted();
+			$this->xi['report_this'] = \App\modules\email\services\MailMessage::getInstance()->report_moved_or_deleted();
 			
 			// some fonts and font sizes
 	//		$this->xi['ctrl_bar_font'] = $GLOBALS['phpgw_info']['theme']['font'];
@@ -399,7 +399,7 @@
 			$this->xi['empty_trash_link'] = phpgw::link('/index.php', 
 								array(
 									'menuaction'	=> 'email.boaction.empty_trash',
-									'acctnum'	=> $GLOBALS['phpgw']->msg->get_acctnum()
+									'acctnum'	=> \App\modules\email\services\MailMessage::getInstance()->get_acctnum()
 								)
 							);
 			
@@ -407,14 +407,14 @@
 			// can not put acctnum=X here because any single piece of data may apply to a different account
 			$this->xi['svr_image_dir'] = PHPGW_IMAGES_DIR;
 			$this->xi['image_dir'] = PHPGW_IMAGES;
-			$this->xi['current_sort'] = $GLOBALS['phpgw']->msg->get_arg_value('sort');
-			$this->xi['current_order'] = $GLOBALS['phpgw']->msg->get_arg_value('order');
-			$this->xi['current_start'] = $GLOBALS['phpgw']->msg->get_arg_value('start');
-			$this->xi['current_fldball_fake_uri'] =	 '&folder='.$GLOBALS['phpgw']->msg->prep_folder_out()
-								.'&acctnum='.$GLOBALS['phpgw']->msg->get_acctnum();
+			$this->xi['current_sort'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort');
+			$this->xi['current_order'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('order');
+			$this->xi['current_start'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('start');
+			$this->xi['current_fldball_fake_uri'] =	 '&folder='.\App\modules\email\services\MailMessage::getInstance()->prep_folder_out()
+								.'&acctnum='.\App\modules\email\services\MailMessage::getInstance()->get_acctnum();
 			$this->xi['show_num_new'] = False;
-			$this->icon_theme = $GLOBALS['phpgw']->msg->get_pref_value('icon_theme',$GLOBALS['phpgw']->msg->get_acctnum());
-			$this->icon_size = $GLOBALS['phpgw']->msg->get_pref_value('icon_size',$GLOBALS['phpgw']->msg->get_acctnum());
+			$this->icon_theme = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('icon_theme',\App\modules\email\services\MailMessage::getInstance()->get_acctnum());
+			$this->icon_size = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('icon_size',\App\modules\email\services\MailMessage::getInstance()->get_acctnum());
 			//echo "icon size is ".$this->icon_size."<br />\r\n";
 			
 			/* MOVED TO FUNCTION ABOVE
@@ -446,7 +446,7 @@
 			
 			*/
 			
-			$this->xi['mailsvr_supports_folders'] = $GLOBALS['phpgw']->msg->get_mailsvr_supports_folders();
+			$this->xi['mailsvr_supports_folders'] = \App\modules\email\services\MailMessage::getInstance()->get_mailsvr_supports_folders();
 			// if using folders, make a HTML comobox used to switch folders
 			/* MOVED TO FUNCTION ABOVE
 			if ($this->xi['mailsvr_supports_folders'])
@@ -480,7 +480,7 @@
 			|| (!$this->xi['folder_info']))
 			{
 				$this->xi['folder_info'] = array();
-				$this->xi['folder_info'] = $GLOBALS['phpgw']->msg->get_folder_status_info();
+				$this->xi['folder_info'] = \App\modules\email\services\MailMessage::getInstance()->get_folder_status_info();
 			}
 			$this->xi['arrows_form_action'] = phpgw::link(
 								'/index.php',array('menuaction'=>'email.uiindex.index'));
@@ -490,20 +490,20 @@
 			//$this->xi['arrows_td_backcolor'] = $GLOBALS['phpgw_info']['theme']['th_bg'];
 			$this->xi['arrows_td_backcolor'] = '';
 			
-			$this->xi['current_sort'] = $GLOBALS['phpgw']->msg->get_arg_value('sort');
-			$this->xi['current_order'] = $GLOBALS['phpgw']->msg->get_arg_value('order');
-			$this->xi['current_start'] = $GLOBALS['phpgw']->msg->get_arg_value('start');
+			$this->xi['current_sort'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort');
+			$this->xi['current_order'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('order');
+			$this->xi['current_start'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('start');
 
 			$nav_common_uri = phpgw::link(
 								'/index.php',array(
 								 'menuaction'=>'email.uiindex.index',
-								'fldball[folder]'=>$GLOBALS['phpgw']->msg->prep_folder_out(),
-								'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum(),
-								'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-								'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order')));
+								'fldball[folder]'=>\App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+								'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum(),
+								'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+								'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order')));
 			
 			$nav_args = Array (
-				'start'		=> $GLOBALS['phpgw']->msg->get_arg_value('start'),
+				'start'		=> \App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'),
 				'common_uri'	=> $nav_common_uri,
 				'total'		=> $this->xi['folder_info']['number_all']
 			);
@@ -517,39 +517,39 @@
 			// Depreciated, only for template 1
 			$this->xi['td_prev_arrows'] = $this->nextmatchs->left(
 								'/index.php',
-								$GLOBALS['phpgw']->msg->get_arg_value('start'),
+								\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'),
 								$this->xi['folder_info']['number_all'],
 								 array('menuaction'=>'email.uiindex.index',
-								'fldball[folder]'=>$GLOBALS['phpgw']->msg->prep_folder_out(),
-								'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum(),
-								'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-								'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order')));
+								'fldball[folder]'=>\App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+								'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum(),
+								'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+								'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order')));
 			
 			// depreciated, only for template 1
 			$this->xi['td_next_arrows'] = $this->nextmatchs->right(
 								'/index.php',
-								$GLOBALS['phpgw']->msg->get_arg_value('start'),
+								\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'),
 								$this->xi['folder_info']['number_all'],
 								 array('menuaction'=>'email.uiindex.index',
-								'fldball[folder]'=>$GLOBALS['phpgw']->msg->prep_folder_out(),
-								'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum(),
-								'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-								'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order')));
+								'fldball[folder]'=>\App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+								'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum(),
+								'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+								'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order')));
 			
 		//	$this->xi['ctrl_bar_back2'] = $GLOBALS['phpgw_info']['theme']['row_off'];
 			$this->xi['compose_link'] = phpgw::link(
 								'/index.php',array(
 								 'menuaction'=>'email.uicompose.compose',
 								// this data tells us where to return to after sending a message
-								'fldball[folder]'=>$GLOBALS['phpgw']->msg->prep_folder_out(),
-								'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum(),
-								'sort'=>$GLOBALS['phpgw']->msg->get_arg_value('sort'),
-								'order'=>$GLOBALS['phpgw']->msg->get_arg_value('order'),
-								'start'=>$GLOBALS['phpgw']->msg->get_arg_value('start')));
-			
-			$this->xi['compose_img'] = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/compose-message-'.$this->icon_size,'_on'),$this->xi['compose_txt'],'','','0');
-			$this->xi['ilnk_compose'] = $GLOBALS['phpgw']->msg->href_maketag($this->xi['compose_link'],$this->xi['compose_img']);
-			switch ($GLOBALS['phpgw']->msg->get_pref_value('button_type',$GLOBALS['phpgw']->msg->get_acctnum())){
+								'fldball[folder]'=>\App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+								'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum(),
+								'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
+								'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
+								'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start')));
+
+			$this->xi['compose_img'] = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/compose-message-'.$this->icon_size,'_on'),$this->xi['compose_txt'],'','','0');
+			$this->xi['ilnk_compose'] = \App\modules\email\services\MailMessage::getInstance()->href_maketag($this->xi['compose_link'],$this->xi['compose_img']);
+			switch (\App\modules\email\services\MailMessage::getInstance()->get_pref_value('button_type',\App\modules\email\services\MailMessage::getInstance()->get_acctnum())){
 				case 'text':
 					$this->xi['compose_clickme'] = '<a href="'.$this->xi['compose_link'].'">'.$this->xi['compose_txt'].'</a>';
 					break;
@@ -568,10 +568,10 @@
 								 'menuaction'=>'email.uifolder.folder',
 								// going to the folder list page, we only need log into the INBOX folder
 								'fldball[folder]'=>'INBOX',
-								'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum()));
+								'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum()));
 				
-				$this->xi['folders_img'] = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/folder-'.$this->icon_size,'_on'),$this->xi['folders_txt1'],'','','0');
-				$this->xi['ilnk_folders'] = $GLOBALS['phpgw']->msg->href_maketag($this->xi['folders_link'],$this->xi['folders_img']);
+				$this->xi['folders_img'] = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/folder-'.$this->icon_size,'_on'),$this->xi['folders_txt1'],'','','0');
+				$this->xi['ilnk_folders'] = \App\modules\email\services\MailMessage::getInstance()->href_maketag($this->xi['folders_link'],$this->xi['folders_img']);
 				
 				$this->xi['folders_href'] = '<a href="'.$this->xi['folders_link'].'">'.$this->xi['folders_txt1'].'</a>';
 				
@@ -587,8 +587,8 @@
 			$this->xi['filters_link'] = phpgw::link(
 								'/index.php',array('menuaction'=>'email.uifilters.filters_list'));
 			
-			$this->xi['filters_img'] = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/filters-'.$this->icon_size,'_on'),$this->xi['folders_txt1'],'','','0');
-			$this->xi['ilnk_filters'] = $GLOBALS['phpgw']->msg->href_maketag($this->xi['filters_link'],$this->xi['filters_img']);
+			$this->xi['filters_img'] = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/filters-'.$this->icon_size,'_on'),$this->xi['folders_txt1'],'','','0');
+			$this->xi['ilnk_filters'] = \App\modules\email\services\MailMessage::getInstance()->href_maketag($this->xi['filters_link'],$this->xi['filters_img']);
 			
 			$this->xi['filters_href'] = '<a href="'.$this->xi['filters_link'].'">'.$this->xi['filters_txt'].'</a>';
 			
@@ -596,10 +596,10 @@
 			$this->xi['email_prefs_link'] = phpgw::link(
 								'/index.php',array(
 								 'menuaction'=>'email.uipreferences.preferences',
-								 'ex_acctnum'=>$GLOBALS['phpgw']->msg->get_acctnum()));
+								 'ex_acctnum'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum()));
 			
-			$this->xi['email_prefs_img'] = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/customize-'.$this->icon_size,'_on'),$this->xi['folders_txt1'],'','','0');
-			$this->xi['ilnk_email_prefs'] = $GLOBALS['phpgw']->msg->href_maketag($this->xi['email_prefs_link'],$this->xi['email_prefs_img']);
+			$this->xi['email_prefs_img'] = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/customize-'.$this->icon_size,'_on'),$this->xi['folders_txt1'],'','','0');
+			$this->xi['ilnk_email_prefs'] = \App\modules\email\services\MailMessage::getInstance()->href_maketag($this->xi['email_prefs_link'],$this->xi['email_prefs_img']);
 			
 			// FIXME
 			//$this->xi['accounts_link'] = phpgw::link(
@@ -609,20 +609,20 @@
 			$this->xi['accounts_link'] = phpgw::link(
 								'/index.php',array(
 								 'menuaction'=>'email.uipreferences.ex_accounts_list'));
-			$this->xi['accounts_img'] = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/accounts-'.$this->icon_size,'_on'),$this->xi['folders_txt1'],'','','0');
-			$this->xi['ilnk_accounts'] = $GLOBALS['phpgw']->msg->href_maketag($this->xi['accounts_link'],$this->xi['accounts_img']);
+			$this->xi['accounts_img'] = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/accounts-'.$this->icon_size,'_on'),$this->xi['folders_txt1'],'','','0');
+			$this->xi['ilnk_accounts'] = \App\modules\email\services\MailMessage::getInstance()->href_maketag($this->xi['accounts_link'],$this->xi['accounts_img']);
 			
 			$this->xi['accounts_href'] = '<a href="'.$this->xi['accounts_link'].'">'.$this->xi['accounts_txt'].'</a>';
 			
 			
 			// by now we have an acctnum!
-			if ((string)$GLOBALS['phpgw']->msg->get_acctnum() == '0')
+			if ((string)\App\modules\email\services\MailMessage::getInstance()->get_acctnum() == '0')
 			{
 				$this->xi['ctrl_bar_current_acctnum'] = 'default';
 			}
 			else
 			{
-				$this->xi['ctrl_bar_current_acctnum'] = 'extra '.(string)$GLOBALS['phpgw']->msg->get_acctnum();
+				$this->xi['ctrl_bar_current_acctnum'] = 'extra '.(string)\App\modules\email\services\MailMessage::getInstance()->get_acctnum();
 			}
 			
 			/*
@@ -659,7 +659,7 @@
 				3 => '',
 				6 => ''
 			);
-			$sort_selected[$GLOBALS['phpgw']->msg->get_arg_value('sort')] = " selected";
+			$sort_selected[\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort')] = " selected";
 			$this->xi['sortbox_select_options'] =
 				 '<option value="0"' .$sort_selected[0] .'>'.$this->xi['lang_email_date'].'</option>' ."\r\n"
 				.'<option value="1"' .$sort_selected[1] .'>'.$this->xi['lang_arrival_date'].'</option>' ."\r\n"
@@ -744,7 +744,7 @@
 			// column labels for the message list
 			$flag_sort_pre = '* ';
 			$flag_sort_post = ' *';
-			switch ((int)$GLOBALS['phpgw']->msg->get_arg_value('sort'))
+			switch ((int)\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'))
 			{
 				case 1 : $this->xi['lang_date'] = $flag_sort_pre .$this->xi['lang_date'] .$flag_sort_post; break;
 				case 2 : $this->xi['lang_from'] = $flag_sort_pre .$this->xi['lang_from'] .$flag_sort_post; break;
@@ -754,8 +754,8 @@
 					 $this->xi['lang_lines'] = $this->xi['lang_lines'] .$flag_sort_post; break;
 			}
 			// default order is needed for the "nextmatchs" args, to know when to toggle this between normal and reverse
-			if (($GLOBALS['phpgw']->msg->get_isset_pref('default_sorting'))
-			  && ($GLOBALS['phpgw']->msg->get_pref_value('default_sorting') == 'new_old'))
+			if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_pref('default_sorting'))
+			  && (\App\modules\email\services\MailMessage::getInstance()->get_pref_value('default_sorting') == 'new_old'))
 			{
 				$this->xi['default_order'] = 1;
 			}
@@ -767,23 +767,23 @@
 			$this->xi['hdr_subject'] = 
 				$this->svc_nextmatches->show_sort_order_mail
 				(
-					$GLOBALS['phpgw']->msg->get_arg_value('sort'),
+					\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
 					'3',
 					$this->xi['default_order'],
-					$GLOBALS['phpgw']->msg->get_arg_value('order'),
+					\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
 					'/index.php?menuaction=email.uiindex.index', // Sigurd: keep this as string
 					$this->xi['lang_subject'],array(
-					'fldball[folder]'=>$GLOBALS['phpgw']->msg->prep_folder_out(),
-					'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum())
+					'fldball[folder]'=>\App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+					'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum())
 				);
 			$this->xi['hdr_date'] = 
 				$this->svc_nextmatches->show_sort_order_mail
-				($GLOBALS['phpgw']->msg->get_arg_value('sort'),'1',$this->xi['default_order'],$GLOBALS['phpgw']->msg->get_arg_value('order'),'/index.php?menuaction=email.uiindex.index',$this->xi['lang_date'],
-					array('fldball[folder]'=>$GLOBALS['phpgw']->msg->prep_folder_out(),
-					'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum()));
-			$this->xi['hdr_size'] = $this->svc_nextmatches->show_sort_order_mail($GLOBALS['phpgw']->msg->get_arg_value('sort'),'6',$this->xi['default_order'],$GLOBALS['phpgw']->msg->get_arg_value('order'),'/index.php?menuaction=email.uiindex.index',$this->xi['lang_size'],
-					array('fldball[folder]'=>$GLOBALS['phpgw']->msg->prep_folder_out(),
-					'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum()));
+				(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),'1',$this->xi['default_order'],\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),'/index.php?menuaction=email.uiindex.index',$this->xi['lang_date'],
+					array('fldball[folder]'=>\App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+					'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum()));
+			$this->xi['hdr_size'] = $this->svc_nextmatches->show_sort_order_mail(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),'6',$this->xi['default_order'],\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),'/index.php?menuaction=email.uiindex.index',$this->xi['lang_size'],
+					array('fldball[folder]'=>\App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+					'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum()));
 			
 			// are we IN THE SENT folder or not
 			//if (	$GLOBALS['phpgw']->msg->get_folder_short($GLOBALS['phpgw']->msg->get_arg_value('folder'))
@@ -794,21 +794,21 @@
 			// NOTE: this common_folder_is querey for "Sent" folder can not be true unless user has pref "Use Sent Folder" set to True!
 			// i.e. a folder named "Sent" is not THE sent folder unless the prefs say so
 			$querey_fldball = array();
-			$querey_fldball['acctnum'] = $GLOBALS['phpgw']->msg->get_acctnum();
-			$querey_fldball['folder'] = $GLOBALS['phpgw']->msg->prep_folder_out($GLOBALS['phpgw']->msg->get_arg_value('folder'));
-			if ($GLOBALS['phpgw']->msg->common_folder_is($querey_fldball, 'Sent') == False)
+			$querey_fldball['acctnum'] = \App\modules\email\services\MailMessage::getInstance()->get_acctnum();
+			$querey_fldball['folder'] = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder'));
+			if (\App\modules\email\services\MailMessage::getInstance()->common_folder_is($querey_fldball, 'Sent') == False)
 			{
 				// for every folder EXCEPT the sent folder, we display FROM data in this column
-				$this->xi['hdr_from'] = $this->svc_nextmatches->show_sort_order_mail($GLOBALS['phpgw']->msg->get_arg_value('sort'),'2',$this->xi['default_order'],$GLOBALS['phpgw']->msg->get_arg_value('order'),'/index.php?menuaction=email.uiindex.index',$this->xi['lang_from'],
-						array('fldball[folder]'=>$GLOBALS['phpgw']->msg->prep_folder_out(),
-							'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum()));
+				$this->xi['hdr_from'] = $this->svc_nextmatches->show_sort_order_mail(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),'2',$this->xi['default_order'],\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),'/index.php?menuaction=email.uiindex.index',$this->xi['lang_from'],
+						array('fldball[folder]'=>\App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+							'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum()));
 			}
 			else
 			{
 				// this is for SENT FOLDER use only, where we display "To" data instead of "From" as with all the other folders, SORTTO = 4
-				$this->xi['hdr_from'] = $this->svc_nextmatches->show_sort_order_mail($GLOBALS['phpgw']->msg->get_arg_value('sort'),'4',$this->xi['default_order'],$GLOBALS['phpgw']->msg->get_arg_value('order'),'/index.php?menuaction=email.uiindex.index',$this->xi['lang_to'],
-						array('fldball[folder]'=>$GLOBALS['phpgw']->msg->prep_folder_out(),
-						'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum()));
+				$this->xi['hdr_from'] = $this->svc_nextmatches->show_sort_order_mail(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),'4',$this->xi['default_order'],\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),'/index.php?menuaction=email.uiindex.index',$this->xi['lang_to'],
+						array('fldball[folder]'=>\App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+						'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum()));
 			}
 			
 	//		$this->xi['hdr_backcolor'] = $GLOBALS['phpgw_info']['theme']['th_bg'];
@@ -859,15 +859,15 @@
 			{
 				$this->xi['msg_list_dsp'] = Array();
 				$this->xi['stats_last'] = 0;
-				$some_stream = $GLOBALS['phpgw']->msg->get_arg_value('mailsvr_stream');
+				$some_stream = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('mailsvr_stream');
 				// zero messages and no stream is OK ONLY IF Extreme Caching is IN EFFECT
 				if ((!isset($some_stream))
 				|| ($some_stream == ''))
 				{
 					// if extreme caching is in use, then no stream != error
 					// Extreme Caching tries never to login unless absolutely necessary
-					if (($GLOBALS['phpgw']->msg->session_cache_enabled == True)
-					&& ($GLOBALS['phpgw']->msg->session_cache_extreme == True))
+					if ((\App\modules\email\services\MailMessage::getInstance()->session_cache_enabled == True)
+					&& (\App\modules\email\services\MailMessage::getInstance()->session_cache_extreme == True))
 					{
 						// in this case no stream is NOT AN ERROR
 						$some_stream = 'session_cache_extreme_OK';
@@ -887,9 +887,9 @@
 			{
 					$this->xi['msg_list_dsp'] = Array();
 					// hi-level function assembles all data for each message we will display
-					$this->xi['msg_list_dsp'] = $GLOBALS['phpgw']->msg->get_msg_list_display($this->xi['folder_info']);
+					$this->xi['msg_list_dsp'] = \App\modules\email\services\MailMessage::getInstance()->get_msg_list_display($this->xi['folder_info']);
 					// after we know how many messages we will display, we make the "showing from X to X" string
-					$this->xi['totaltodisplay'] = $GLOBALS['phpgw']->msg->get_arg_value('start') + count($this->xi['msg_list_dsp']);
+					$this->xi['totaltodisplay'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('start') + count($this->xi['msg_list_dsp']);
 					
 					$this->xi['stats_last'] = $this->xi['totaltodisplay'];
 			}
@@ -918,19 +918,19 @@
 				// UPDATE use the newer widgets high level function
 				$my_widgets = CreateObject('email.html_widgets');
 				$skip_fldball = array();
-				$skip_fldball['acctnum'] = $GLOBALS['phpgw']->msg->get_acctnum();
-				$skip_fldball['folder'] = $GLOBALS['phpgw']->msg->prep_folder_out($GLOBALS['phpgw']->msg->get_arg_value('folder'));
+				$skip_fldball['acctnum'] = \App\modules\email\services\MailMessage::getInstance()->get_acctnum();
+				$skip_fldball['folder'] = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder'));
 				$this->xi['delmov_listbox'] = $my_widgets->all_folders_combobox('delmov', True, $skip_fldball);
 			}
 			else
 			{
 				$this->xi['delmov_listbox'] = '&nbsp;';
 			}
-			$this->xi['delmov_image'] = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->msg->_image_on('email',$this->icon_theme.'/trash-'.$this->icon_size,'_on'),$this->xi['lang_delete'],'','','0');
+			$this->xi['delmov_image'] = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/trash-'.$this->icon_size,'_on'),$this->xi['lang_delete'],'','','0');
 			//$this->xi['delmov_image'] = $GLOBALS['phpgw']->msg->img_maketag($GLOBALS['phpgw']->common->image_on('email',$icon_theme.'-trash-'.$icon_size,'_on'),$this->xi['lang_delete'],'','','0');
 			//$this->xi['delmov_image'] = $GLOBALS['phpgw']->msg->img_maketag($this->xi['image_dir'].'/'.$this->icon_theme.'-trash-'.$this->icon_size.'.png',$this->xi['lang_delete'],'','','0');
 			$delmov_onclick = "javascript:do_action('delall')";
-			switch ($GLOBALS['phpgw']->msg->get_pref_value('button_type',$GLOBALS['phpgw']->msg->get_acctnum())){
+			switch (\App\modules\email\services\MailMessage::getInstance()->get_pref_value('button_type',\App\modules\email\services\MailMessage::getInstance()->get_acctnum())){
 				case 'text':
 					$this->xi['delmov_button'] = '<a href="'.$delmov_onclick.'">'.$this->xi['lang_delete'].'</a>';
 					break;
@@ -965,14 +965,14 @@
 			// create class objects
 			$this->nextmatchs = CreateObject('phpgwapi.nextmatchs');
 			
-			if (is_object($GLOBALS['phpgw']->msg))
+			if (\App\modules\email\services\MailMessage::hasInstance())
 			{
 				if ($this->debug_index_data) { echo 'email.boindex.mlist_data: is_object test: $GLOBALS[phpgw]->msg is already set, do not create again<br />'; }
 			}
 			else
 			{
 				if ($this->debug_index_data) { echo 'email.boindex.mlist_data: is_object: $GLOBALS[phpgw]->msg is NOT set, creating mail_msg object<br />'; }
-				$GLOBALS['phpgw']->msg = CreateObject("email.mail_msg");
+				\App\modules\email\services\MailMessage::getInstance();
 			}
 			
 			$args_array = Array();
@@ -980,38 +980,38 @@
 			// should we log in
 			$args_array['do_login'] = True;
 			// "start your engines"
-			$some_stream = $GLOBALS['phpgw']->msg->begin_request($args_array);
+			$some_stream = \App\modules\email\services\MailMessage::getInstance()->begin_request($args_array);
 			// error if login failed
 			if (($args_array['do_login'] == True)
 			&& (!$some_stream))
 			{
-				$GLOBALS['phpgw']->msg->login_error($_SERVER['REDIRECT_URL'].', mlist_data()');
+				\App\modules\email\services\MailMessage::getInstance()->login_error($_SERVER['REDIRECT_URL'].', mlist_data()');
 			}
 			// base http URI on which we will add other stuff down below
-			$this->index_base_link = phpgw::link('/index.php',$GLOBALS['phpgw']->msg->get_arg_value('mlist_menuaction'));
+			$this->index_base_link = phpgw::link('/index.php',\App\modules\email\services\MailMessage::getInstance()->get_arg_value('mlist_menuaction'));
 			// any app may use these lang'd labels in their email UI
 			$this->get_langed_labels();
 			// ---  this->xi ("eXternal Interface") is an array that will hold ALL data necessary for an index page
 			// if we just moved or deleted messages, make a report string
 			// NOTE: not yet implemented for mlists
-			$this->xi['report_this'] = $GLOBALS['phpgw']->msg->report_moved_or_deleted();
+			$this->xi['report_this'] = \App\modules\email\services\MailMessage::getInstance()->report_moved_or_deleted();
 			
 			// some of the following may not be necessary
 			
 			// establish all manner of important data
 			$this->xi['svr_image_dir'] = PHPGW_IMAGES_DIR;
 			$this->xi['image_dir'] = PHPGW_IMAGES;
-			$this->xi['current_sort'] = $GLOBALS['phpgw']->msg->get_arg_value('sort');
-			$this->xi['current_order'] = $GLOBALS['phpgw']->msg->get_arg_value('order');
-			$this->xi['current_start'] = $GLOBALS['phpgw']->msg->get_arg_value('start');
-			$this->xi['current_folder'] = $GLOBALS['phpgw']->msg->prep_folder_out('');
+			$this->xi['current_sort'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort');
+			$this->xi['current_order'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('order');
+			$this->xi['current_start'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('start');
+			$this->xi['current_folder'] = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out('');
 			$this->xi['show_num_new'] = False;
 			
-			$this->xi['mailsvr_supports_folders'] = $GLOBALS['phpgw']->msg->get_mailsvr_supports_folders();
+			$this->xi['mailsvr_supports_folders'] = \App\modules\email\services\MailMessage::getInstance()->get_mailsvr_supports_folders();
 			// if using folders, make a HTML comobox used to switch folders
 			// EXCEPT for mlists
 			if (($this->xi['mailsvr_supports_folders'])
-			&& ($GLOBALS['phpgw']->msg->get_isset_arg('mlist_set') == False))
+			&& (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('mlist_set') == False))
 			{
 				$feed_args = Array(
 					'mailsvr_stream'	=> '',
@@ -1022,7 +1022,7 @@
 					'on_change'		=> 'document.switchbox.submit()',
 					'first_line_txt'	=> $this->xi['first_line_txt']
 				);
-				$this->xi['switchbox_listbox'] = $GLOBALS['phpgw']->msg->all_folders_listbox($feed_args);
+				$this->xi['switchbox_listbox'] = \App\modules\email\services\MailMessage::getInstance()->all_folders_listbox($feed_args);
 			}
 			else
 			{
@@ -1036,10 +1036,10 @@
 			//$this->xi['folder_info'] = $GLOBALS['phpgw']->msg->get_folder_status_info();
 			// make a  FAKE  folder_info array to make things simple for get_msg_list_display
 			$this->xi['folder_info']['is_imap'] = True;
-			$this->xi['folder_info']['folder_checked'] = $GLOBALS['phpgw']->msg->get_arg_value('folder');
+			$this->xi['folder_info']['folder_checked'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder');
 			$this->xi['folder_info']['alert_string'] = 'you have search results';
-			$this->xi['folder_info']['number_new'] = count($GLOBALS['phpgw']->msg->get_arg_value('mlist_set'));
-			$this->xi['folder_info']['number_all'] = count($GLOBALS['phpgw']->msg->get_arg_value('mlist_set'));
+			$this->xi['folder_info']['number_new'] = count(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('mlist_set'));
+			$this->xi['folder_info']['number_all'] = count(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('mlist_set'));
 			// first, previous, next, last  page navagation arrows
 			$this->xi['arrows_form_action'] = $this->index_base_link;
 			$this->xi['arrows_form_name'] = 'arrownav';
@@ -1047,7 +1047,7 @@
 			//$this->xi['arrows_td_backcolor'] = $GLOBALS['phpgw_info']['theme']['th_bg'];
 			$this->xi['arrows_td_backcolor'] = '';
 			$nav_args = Array (
-				'start'		=> $GLOBALS['phpgw']->msg->get_arg_value('start'),
+				'start'		=> \App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'),
 				// remember we made that "fake" folder_info data above
 				'total'		=> $this->xi['folder_info']['number_all'],
 				'cmd_prefix'	=> 'do_navigate(\'',
@@ -1085,15 +1085,15 @@
 			$this->xi['compose_link'] = phpgw::link(
 								'/index.php',array(
 								 'menuaction'=>'email.uicompose.compose',
-								'fldball[folder]'=>$GLOBALS['phpgw']->msg->prep_folder_out(),
-								'fldball[acctnum]'=>$GLOBALS['phpgw']->msg->get_acctnum()));
+								'fldball[folder]'=>\App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
+								'fldball[acctnum]'=>\App\modules\email\services\MailMessage::getInstance()->get_acctnum()));
 			
 			if ($this->xi['mailsvr_supports_folders'])
 			{
 				//$this->xi['folders_link'] = phpgw::link('/'.$GLOBALS['phpgw_info']['flags']['currentapp'].'/folder.php');
 				$this->xi['folders_link'] = phpgw::link(
 							'/index.php',
-							$GLOBALS['phpgw']->msg->get_arg_value('folder_menuaction'));
+							\App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder_menuaction'));
 				$this->xi['folders_href'] = '<a href="'.$this->xi['folders_link'].'">'.$this->xi['folders_txt2'].'</a>';
 		
 				$folders_btn_js = 'window.location=\''.$this->xi['folders_link'].'\'';
@@ -1123,7 +1123,7 @@
 				3 => '',
 				6 => ''
 			);
-			$sort_selected[$GLOBALS['phpgw']->msg->get_arg_value('sort')] = " selected";
+			$sort_selected[\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort')] = " selected";
 			$this->xi['sortbox_select_options'] =
 				 '<option value="0"' .$sort_selected[0] .'>'.$this->xi['lang_email_date'].'</option>' ."\r\n"
 				.'<option value="1"' .$sort_selected[1] .'>'.$this->xi['lang_arrival_date'].'</option>' ."\r\n"
@@ -1131,7 +1131,7 @@
 				.'<option value="3"' .$sort_selected[3] .'>'.$this->xi['lang_subject'].'</option>' ."\r\n"
 				.'<option value="6"' .$sort_selected[6] .'>'.$this->xi['lang_size'].'</option>' ."\r\n";
 			
-			$this->xi['sortbox_action'] = $this->index_base_link.'&folder='.$GLOBALS['phpgw']->msg->prep_folder_out('');
+			$this->xi['sortbox_action'] = $this->index_base_link.'&folder='.\App\modules\email\services\MailMessage::getInstance()->prep_folder_out('');
 			$this->xi['sortbox_on_change'] = 'document.sortbox.submit()';
 			$this->xi['sortbox_select_name'] = 'sort';
 			
@@ -1168,8 +1168,8 @@
 			*/
 			$this->xi['stats_backcolor'] = $GLOBALS['phpgw_info']['theme']['em_folder'];
 			$this->xi['stats_color'] = $GLOBALS['phpgw_info']['theme']['em_folder_text'];
-			$this->xi['stats_folder'] = $GLOBALS['phpgw']->msg->get_folder_short($GLOBALS['phpgw']->msg->get_arg_value('folder'));
-			$this->xi['stats_first'] = $GLOBALS['phpgw']->msg->get_arg_value('start') + 1;
+			$this->xi['stats_folder'] = \App\modules\email\services\MailMessage::getInstance()->get_folder_short(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder'));
+			$this->xi['stats_first'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('start') + 1;
 			
 			// NA for mlist
 			$this->xi['get_size_link'] = '';
@@ -1252,7 +1252,7 @@
 				$this->xi['msg_list_dsp'] = Array();
 				$this->xi['stats_last'] = 0;
 				
-				$some_stream = $GLOBALS['phpgw']->msg->get_arg_value('mailsvr_stream');
+				$some_stream = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('mailsvr_stream');
 				if ((!isset($some_stream))
 				|| ($some_stream == ''))
 				{
@@ -1268,12 +1268,12 @@
 					$this->xi['msg_list_dsp'] = Array();
 					// hi-level function assembles all data for each message we will display
 					// FEED IT THE MLIST SET TO DISPLAY
-					$this->xi['msg_list_dsp'] = $GLOBALS['phpgw']->msg->get_msg_list_display(
+					$this->xi['msg_list_dsp'] = \App\modules\email\services\MailMessage::getInstance()->get_msg_list_display(
 												$this->xi['folder_info'],
-												$GLOBALS['phpgw']->msg->get_arg_value('mlist_set')
+												\App\modules\email\services\MailMessage::getInstance()->get_arg_value('mlist_set')
 					);
 					// after we know how many messages we will display, we make the "showing from X to X" string
-					$this->xi['totaltodisplay'] = $GLOBALS['phpgw']->msg->get_arg_value('start') + count($this->xi['msg_list_dsp']);
+					$this->xi['totaltodisplay'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('start') + count($this->xi['msg_list_dsp']);
 					$this->xi['stats_last'] = $this->xi['totaltodisplay'];
 			}
 			
@@ -1289,13 +1289,13 @@
 				$feed_args = Array(
 					'mailsvr_stream'	=> '',
 					'pre_select_folder'	=> '',
-					'skip_folder'		=> $GLOBALS['phpgw']->msg->get_folder_short($GLOBALS['phpgw']->msg->get_arg_value('folder')),
+					'skip_folder'		=> \App\modules\email\services\MailMessage::getInstance()->get_folder_short(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder')),
 					'show_num_new'		=> $this->xi['show_num_new'],
 					'widget_name'		=> 'tofolder',
 					'on_change'		=> 'do_action(\'move\')',
 					'first_line_txt'	=> lang('move selected messages into')
 				);
-				$this->xi['delmov_listbox'] = $GLOBALS['phpgw']->msg->all_folders_listbox($feed_args);
+				$this->xi['delmov_listbox'] = \App\modules\email\services\MailMessage::getInstance()->all_folders_listbox($feed_args);
 			}
 			else
 			{

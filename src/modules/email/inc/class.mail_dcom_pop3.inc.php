@@ -240,7 +240,7 @@ defined('PE_IMAP_SE_UID') || define('PE_IMAP_SE_UID', 1);
 		{
 			// pop3 has only 1 "folder" - inbox
 			$folder = 'INBOX';
-			$folder_str = $GLOBALS['phpgw']->msg->get_folder_long($folder);
+			$folder_str = \App\modules\email\services\MailMessage::getInstance()->get_folder_long($folder);
 			return $folder_str;
 		}
 
@@ -248,7 +248,7 @@ defined('PE_IMAP_SE_UID') || define('PE_IMAP_SE_UID', 1);
 		{
 			// pop3 has only 1 "folder" - inbox
 			$folder = 'INBOX';
-			$folder_str = $GLOBALS['phpgw']->msg->get_folder_short($folder);
+			$folder_str = \App\modules\email\services\MailMessage::getInstance()->get_folder_short($folder);
 			return $folder_str;
 		}
 

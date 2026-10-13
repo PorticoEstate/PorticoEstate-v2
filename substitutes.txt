@@ -135,3 +135,21 @@ $webhookManager = new WebhookManager();
 
 use App\modules\booking\services\WebhookNotifier;
 $webhookNotifier = new WebhookNotifier();
+
+
+$GLOBALS['phpgw']->send
+use App\modules\phpgwapi\services\Send;
+$send = new Send();
+
+$GLOBALS['phpgw']->msg
+use App\modules\email\services\MailMessage;
+$mail = MailMessage::getInstance();
+
+is_object($GLOBALS['phpgw']->msg)
+MailMessage::hasInstance();
+
+unset($GLOBALS['phpgw']->msg)
+MailMessage::releaseInstance();
+
+$GLOBALS['phpgw_dcom_'.$acctnum]->dcom
+$mail->getTransport((int) $acctnum);

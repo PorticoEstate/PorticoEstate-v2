@@ -77,11 +77,10 @@
 		{
 			if ($this->debug > 0) { echo 'ENTERING: email.ui_mail_debug.end_msg_session_object'.'<br />'; }
 			// kill this script, we re outa here...
-			if (is_object($GLOBALS['phpgw']->msg))
+			if (\App\modules\email\services\MailMessage::hasInstance())
 			{
-				$GLOBALS['phpgw']->msg->end_request();
-				$GLOBALS['phpgw']->msg = '';
-				unset($GLOBALS['phpgw']->msg);
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
 			}
 			// WHEN do we need to call phpgw_exit now with updated phpgw API?
 			//$GLOBALS['phpgw']->common->phpgw_exit(False);
@@ -263,7 +262,7 @@
 				// IF we need to show debug data, now is the time
 				$this->show_desired_data();
 				// new way to handle debug data, if there is debug data, this will put it in the template source data vars
-				$this->tpl->set_var('debugdata', $GLOBALS['phpgw']->msg->dbug->notice_pagedone());
+				$this->tpl->set_var('debugdata', \App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone());
 				// clear the previous tpl var and fill the ending one
 				$this->tpl->set_var('V_before_echo','');
 				$this->tpl->parse('V_after_echo','B_after_echo');
@@ -280,7 +279,7 @@
 				// IF we need to show debug data, now is the time
 				$this->show_desired_data();
 				// new way to handle debug data, if there is debug data, this will put it in the template source data vars
-				$this->tpl->set_var('debugdata', $GLOBALS['phpgw']->msg->dbug->notice_pagedone());
+				$this->tpl->set_var('debugdata', \App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone());
 				$data['email_page'] = $this->tpl->parse('out','T_debug_main');
 				phpgwapi_xslttemplates::getInstance()->set_var('phpgw',array('generic_out' => $data));
 				phpgwapi_xslttemplates::getInstance()->pp();
@@ -300,33 +299,33 @@
 			
 			//echo 'REQUEST_URI: '.$GLOBALS['phpgw']->msg->ref_SERVER['REQUEST_URI'].'<br />';
 			//echo 'QUERY_STRING: '.$GLOBALS['phpgw']->msg->ref_SERVER['QUERY_STRING'].'<br />';
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): REQUEST_URI: '.$GLOBALS['phpgw']->msg->ref_SERVER['REQUEST_URI'].'<br />');
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): QUERY_STRING: '.$GLOBALS['phpgw']->msg->ref_SERVER['QUERY_STRING'].'<br />');
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): REQUEST_URI: '.\App\modules\email\services\MailMessage::getInstance()->ref_SERVER['REQUEST_URI'].'<br />');
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): QUERY_STRING: '.\App\modules\email\services\MailMessage::getInstance()->ref_SERVER['QUERY_STRING'].'<br />');
 			
 			$desired_function = '';
 			$uri_confirm = '';
 			
-			if ((isset($GLOBALS['phpgw']->msg->ref_GET['dfunc']))
-			&& ($GLOBALS['phpgw']->msg->ref_GET['dfunc'] != ''))
+			if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_GET['dfunc']))
+			&& (\App\modules\email\services\MailMessage::getInstance()->ref_GET['dfunc'] != ''))
 			{
-				$desired_function = $GLOBALS['phpgw']->msg->ref_GET['dfunc'];
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): You requested: '.$desired_function.'<br />');
+				$desired_function = \App\modules\email\services\MailMessage::getInstance()->ref_GET['dfunc'];
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): You requested: '.$desired_function.'<br />');
 				
 				// some things require you manually type in "&confirn=1" to really make it work
-				if ((isset($GLOBALS['phpgw']->msg->ref_GET['confirm']))
-				&& ($GLOBALS['phpgw']->msg->ref_GET['confirm'] != ''))
+				if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_GET['confirm']))
+				&& (\App\modules\email\services\MailMessage::getInstance()->ref_GET['confirm'] != ''))
 				{
-					$uri_confirm = $GLOBALS['phpgw']->msg->ref_GET['confirm'];
-					$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): confirm token is present in URI: '.$uri_confirm.'<br />');
+					$uri_confirm = \App\modules\email\services\MailMessage::getInstance()->ref_GET['confirm'];
+					\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): confirm token is present in URI: '.$uri_confirm.'<br />');
 				}
 				else
 				{
-					$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): no confirm token is in the URI'.'<br />');
+					\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): no confirm token is in the URI'.'<br />');
 				}
 			}
 			else
 			{
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): no desired data'.'<br />');
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): no desired data'.'<br />');
 				return;
 			}
 			
@@ -339,14 +338,14 @@
 			{
 				// this function echos out its data
 				//echo 'get_defined_constants DUMP:<pre>'; print_r(get_defined_constants()); echo '</pre>';
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): get_defined_constants DUMP:', get_defined_constants());
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): get_defined_constants DUMP:', get_defined_constants());
 				
 			}
 			elseif ($desired_function == 'globals_dump')
 			{
 				// this function echos out its data
 				//echo 'GLOBALS[] array dump:<pre>'; print_r($GLOBALS) ; echo '</pre>';
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): GLOBALS[] array DUMP:', $GLOBALS);
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): GLOBALS[] array DUMP:', $GLOBALS);
 
 			}
 			elseif ($desired_function == 'common.debug_list_core_functions')
@@ -358,37 +357,37 @@
 			{
 				// this function echos out its data
 				//echo 'GLOBALS[phpgw] dump:<pre>'; print_r($GLOBALS['phpgw']) ; echo '</pre>';
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): GLOBALS[phpgw] DUMP:', $GLOBALS['phpgw']);
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): GLOBALS[phpgw] DUMP:', $GLOBALS['phpgw']);
 			}
 			elseif ($desired_function == 'globals_phpgw_info_dump')
 			{
 				// this function echos out its data
 				//echo 'GLOBALS[phpgw_info] dump:<pre>'; print_r($GLOBALS['phpgw_info']) ; echo '</pre>';
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): GLOBALS[phpgw_info] DUMP:', $GLOBALS['phpgw_info']);
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): GLOBALS[phpgw_info] DUMP:', $GLOBALS['phpgw_info']);
 			}
 			elseif ($desired_function == 'globals_phpgw_session_dump')
 			{
 				// this function echos out its data
 				//echo 'GLOBALS[phpgw_session] dump:<pre>'; print_r($GLOBALS['phpgw_session']) ; echo '</pre>';
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): GLOBALS[phpgw_session] DUMP:', $GLOBALS['phpgw_session']);
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): GLOBALS[phpgw_session] DUMP:', $GLOBALS['phpgw_session']);
 			}
 			elseif ($desired_function == 'ref_session_dump')
 			{
 				// this function echos out its data
 				//echo 'msg->ref_SESSION dump:<pre>'; print_r($GLOBALS['phpgw']->msg->ref_SESSION); echo '</pre>';
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): msg->ref_SESSION DUMP:', $GLOBALS['phpgw']->msg->ref_SESSION);
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): msg->ref_SESSION DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_SESSION);
 			}
 			elseif ($desired_function == 'msg_object_dump')
 			{
 				// this function echos out its data
 				//echo 'GLOBALS[phpgw]->msg dump:<pre>'; print_r($GLOBALS['phpgw']->msg) ; echo '</pre>';
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): GLOBALS[phpgw]->msg DUMP:', $GLOBALS['phpgw']->msg);
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): GLOBALS[phpgw]->msg DUMP:', \App\modules\email\services\MailMessage::getInstance());
 			}
 			elseif ($desired_function == 'preferences_object_dump')
 			{
 				// this function echos out its data
 				//echo '$GLOBALS[phpgw]->preferences dump:<pre>'; print_r($GLOBALS['phpgw']->preferences) ; echo '</pre>';
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): GLOBALS[phpgw]->preferences DUMP:', $GLOBALS['phpgw']->preferences);
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): GLOBALS[phpgw]->preferences DUMP:', $GLOBALS['phpgw']->preferences);
 			}
 			elseif ($desired_function == 'copyinteresting')
 			{
@@ -416,13 +415,13 @@
 			}
 			else
 			{
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): unknown desired debug request: '.$desired_function.']<br />');
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): unknown desired debug request: '.$desired_function.']<br />');
 			}
 			
 			// DAMN, since we invoked bootstrap above, we should kill the msg session
 			// BUT WILL WE NEED IT AGAIN?
 			// php does not have a definitive destructor, so we have to guess where script will end
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): calling "end_msg_session_object" so I hope you do not need it anymore<br />');
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): calling "end_msg_session_object" so I hope you do not need it anymore<br />');
 			
 			// new way to handle debug data, if there is debug data, this will put it in the template source data vars
 			//$this->tpl->set_var('debugdata', $GLOBALS['phpgw']->msg->dbug->notice_pagedone());
@@ -440,14 +439,14 @@
 			
 			
 			// begin TYPICAL CLASS MSG INITALIZATION ROUTINE
-			if (is_object($GLOBALS['phpgw']->msg))
+			if (\App\modules\email\services\MailMessage::hasInstance())
 			{
 				if ($this->debug > 0) { echo 'emai.ui_mail_debug.copyinteresting: is_object test: $GLOBALS[phpgw]->msg is already set, do not create again<br />'; }
 			}
 			else
 			{
 				if ($this->debug > 0) { echo 'emai.ui_mail_debug.copyinteresting: is_object test: $GLOBALS[phpgw]->msg is NOT set, creating mail_msg object<br />'; }
-				$GLOBALS['phpgw']->msg = CreateObject("email.mail_msg");
+				\App\modules\email\services\MailMessage::getInstance();
 			}
 			
 			// for EXTERNAL CONTROL of msg class (i.e. not a result of  GET POST) it seems very important
@@ -462,11 +461,11 @@
 			$args_array['folder'] = $my_folder;
 			$args_array['do_login'] = True;
 			
-			$some_stream = $GLOBALS['phpgw']->msg->begin_request($args_array);
+			$some_stream = \App\modules\email\services\MailMessage::getInstance()->begin_request($args_array);
 			if (($args_array['do_login'] == True)
 			&& (!$some_stream))
 			{
-				$GLOBALS['phpgw']->msg->login_error($GLOBALS['PHP_SELF'].', copyinteresting()');
+				\App\modules\email\services\MailMessage::getInstance()->login_error($GLOBALS['PHP_SELF'].', copyinteresting()');
 			}
 			// end TYPICAL CLASS MSG INITALIZATION ROUTINE
 			
@@ -474,12 +473,12 @@
 			// function get_msgball_list($acctnum='', $folder='')
 			//not necessary and is discouraged to actually provide any args to get_msgball_list()
 			// instead, a well done begin request opens the desired accftnum folder and get_msgball_list uses that info.
-			$my_from_list = $GLOBALS['phpgw']->msg->get_msgball_list();
+			$my_from_list = \App\modules\email\services\MailMessage::getInstance()->get_msgball_list();
 			echo 'Msgball List for account number ['.$my_acctnum.'] folder name ['.$my_folder.']:<pre>';
 			print_r($my_from_list) ;
 			echo '</pre>';
 			
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 		}
 		
 		// this evenually made it to boaction and is not used there
@@ -535,16 +534,16 @@
 			$my_menuaction = $boaction_obj->apply_new_args_env();
 			echo 'returned $my_menuaction ['.$my_menuaction.']<br />';
 			
-			$GLOBALS['phpgw']->msg->end_request();
+			\App\modules\email\services\MailMessage::getInstance()->end_request();
 		}
 		
 		
 		function db_admin_make_table($really_do_it=False)
 		{
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_admin_make_table('.__LINE__.'): ENTERING<br />');
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_admin_make_table('.__LINE__.'): ENTERING<br />');
 			if ($really_do_it == False)
 			{
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_admin_make_table('.__LINE__.'): param $really_do_it ['.serialize($really_do_it).'] so we are DO NOTHING, and we EXIT<br />');
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_admin_make_table('.__LINE__.'): param $really_do_it ['.serialize($really_do_it).'] so we are DO NOTHING, and we EXIT<br />');
 				return;
 			}
 			// this function makes a table for email in the phpgw DB
@@ -559,7 +558,7 @@
 			
 			$table_names = $GLOBALS['phpgw']->db->table_names();
 			//echo '$table_names dump:<pre>'; print_r($table_names); echo '</pre>';
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_admin_make_table('.__LINE__.'): $table_names DUMP:', $table_names);
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_admin_make_table('.__LINE__.'): $table_names DUMP:', $table_names);
 			
 			/*
 			'phpgw_anglemail' => array(
@@ -573,66 +572,66 @@
 				'ix' => array(),
 				'uc' => array()
 			*/
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_admin_make_table('.__LINE__.'): LEAVING<br />');
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_admin_make_table('.__LINE__.'): LEAVING<br />');
 		}
 		
 		function db_admin_rm_table($really_do_it=False)
 		{
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_admin_rm_table('.__LINE__.'): ENTERING<br />');
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_admin_rm_table('.__LINE__.'): ENTERING<br />');
 			if (!$really_do_it)
 			{
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_admin_rm_table('.__LINE__.'): param $really_do_it ['.serialize($really_do_it).'] so we are DO NOTHING, and we EXIT<br />');
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_admin_rm_table('.__LINE__.'): param $really_do_it ['.serialize($really_do_it).'] so we are DO NOTHING, and we EXIT<br />');
 				return;
 			}
 			// this function drops the table for email in the phpgw DB
 			$sTableName = 'phpgw_anglemail';
 			$query = "DROP TABLE " . $sTableName;
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_admin_rm_table('.__LINE__.'): about to CALL $GLOBALS[phpgw]->db->query('.$query.','.__LINE__.','.__FILE__.');<br />');
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_admin_rm_table('.__LINE__.'): about to CALL $GLOBALS[phpgw]->db->query('.$query.','.__LINE__.','.__FILE__.');<br />');
 			$GLOBALS['phpgw']->db->query($query,__LINE__,__FILE__);
 			
 			$table_names = $GLOBALS['phpgw']->db->table_names();
 			//echo '$table_names dump:<pre>'; print_r($table_names); echo '</pre>';
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_admin_rm_table('.__LINE__.'): $table_names DUMP:', $table_names);
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_admin_rm_table('.__LINE__.'): $table_names DUMP:', $table_names);
 		}
 		
 		function db_admin_clear_entire_table($really_do_it=False)
 		{
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_admin_clear_entire_table('.__LINE__.'): ENTERING<br />');
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_admin_clear_entire_table('.__LINE__.'): ENTERING<br />');
 			if (!$really_do_it)
 			{
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_admin_clear_entire_table('.__LINE__.'): param $really_do_it ['.serialize($really_do_it).'] so we are DO NOTHING, and we EXIT<br />');
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_admin_clear_entire_table('.__LINE__.'): param $really_do_it ['.serialize($really_do_it).'] so we are DO NOTHING, and we EXIT<br />');
 				return;
 			}
 			// If you issue a DELETE with no WHERE clause, all rows are deleted.
 			// THIS WIPES THE TABLE CLEAN OF ALL DATA
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_admin_clear_entire_table('.__LINE__.'): param $really_do_it ['.serialize($really_do_it).'] so we CALL $GLOBALS[phpgw]->db->query("DELETE FROM phpgw_anglemail",'.__LINE__.','.__FILE__.');<br />');
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_admin_clear_entire_table('.__LINE__.'): param $really_do_it ['.serialize($really_do_it).'] so we CALL $GLOBALS[phpgw]->db->query("DELETE FROM phpgw_anglemail",'.__LINE__.','.__FILE__.');<br />');
 			$GLOBALS['phpgw']->db->query("DELETE FROM phpgw_anglemail",__LINE__,__FILE__);
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_admin_clear_entire_table('.__LINE__.'): LEAVING<br />');
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_admin_clear_entire_table('.__LINE__.'): LEAVING<br />');
 		}
 		
 		function db_am_table_exists()
 		{
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_am_table_exists('.__LINE__.'): ENTERING<br />');
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_am_table_exists('.__LINE__.'): ENTERING<br />');
 			$look_for_me = 'phpgw_anglemail';
 			$found_table = False;
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_am_table_exists('.__LINE__.'): about to call $GLOBALS[phpgw]->db->table_names()<br />'); 
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_am_table_exists('.__LINE__.'): about to call $GLOBALS[phpgw]->db->table_names()<br />');
 			$table_names = $GLOBALS['phpgw']->db->table_names();
 			$table_names_serialized = serialize($table_names);
 			if (strstr($table_names_serialized, $look_for_me))
 			{
 				
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_am_table_exists('.__LINE__.'): result: table ['.$look_for_me.'] DOES exist<br />');
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_am_table_exists('.__LINE__.'): result: table ['.$look_for_me.'] DOES exist<br />');
 				$found_table = True;
 			}
 			else
 			{
-				$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_am_table_exists('.__LINE__.'): result: table ['.$look_for_me.'] does NOT exist<br />');
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_am_table_exists('.__LINE__.'): result: table ['.$look_for_me.'] does NOT exist<br />');
 				$found_table = False;
 			}
 			//echo '$table_names dump:<pre>'; print_r($table_names); echo '</pre>';
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_am_table_exists('.__LINE__.'): $table_names DUMP:', $table_names);
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_am_table_exists('.__LINE__.'): $table_names DUMP:', $table_names);
 			
-			$GLOBALS['phpgw']->msg->dbug->out('ui_mail_debug.db_am_table_exists('.__LINE__.'): LEAVING: returning ['.serialize($found_table).']<br />');
+			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_am_table_exists('.__LINE__.'): LEAVING: returning ['.serialize($found_table).']<br />');
 			return $found_table;
 		}
 		

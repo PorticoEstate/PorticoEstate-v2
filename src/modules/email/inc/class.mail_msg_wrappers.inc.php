@@ -30,6 +30,85 @@
 	*/	
 	class mail_msg_wrappers extends mail_msg_base
 	{
+		private static ?self $instance = null;
+		private static bool $shutdownRegistered = false;
+		private array $transports = [];
+		private ?object $commonService = null;
+
+		protected function getCommon(): object
+		{
+			return $this->commonService ??= \CreateObject('phpgwapi.common');
+		}
+
+		protected function appSession(string $location, string $module, mixed $data = null): mixed
+		{
+			if (func_num_args() < 3)
+			{
+				return \App\modules\phpgwapi\services\Cache::session_get($module, $location);
+			}
+			return \App\modules\phpgwapi\services\Cache::session_set($module, $location, $data);
+		}
+
+		public static function getInstance(): self
+		{
+			if (self::$instance === null)
+			{
+				self::$instance = new static();
+				try
+				{
+					self::$instance->initialize_mail_msg();
+				}
+				catch (\Throwable $exception)
+				{
+					self::$instance = null;
+					throw $exception;
+				}
+				if (!self::$shutdownRegistered)
+				{
+					register_shutdown_function([self::class, 'releaseInstance']);
+					self::$shutdownRegistered = true;
+				}
+			}
+			return self::$instance;
+		}
+
+		public static function hasInstance(): bool
+		{
+			return self::$instance !== null;
+		}
+
+		public static function releaseInstance(): void
+		{
+			if (self::$instance === null) return;
+			try
+			{
+				self::$instance->end_request();
+			}
+			finally
+			{
+				self::$instance->transports = [];
+				self::$instance = null;
+			}
+		}
+
+		public function setTransport(int $account, object $transport): void
+		{
+			$this->transports[$account] = $transport;
+		}
+
+		public function getTransport(int $account): object
+		{
+			if (!isset($this->transports[$account]))
+			{
+				throw new \LogicException('Mail transport is not initialized for account ' . $account);
+			}
+			return $this->transports[$account];
+		}
+
+		public function hasTransport(int $account): bool
+		{
+			return isset($this->transports[$account]);
+		}
 	
 		/**
 		* Constructor
@@ -117,7 +196,7 @@
 				// get  the data from the mail server
 				$this->ensure_stream_and_folder($msgball, 'phpgw_fetchstructure'.' LINE '.__LINE__, $display_error);
 				$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
-				$data = $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->fetchstructure($mailsvr_stream, $msgball['msgnum']);
+				$data = $this->getTransport($acctnum)->fetchstructure($mailsvr_stream, $msgball['msgnum']);
 				// PUT THIS IN CACHE
 				//  if "session_cache_extreme" is True
 				if ($this->session_cache_extreme == True)
@@ -243,7 +322,7 @@
 				// get  the data from the mail server
 				$this->ensure_stream_and_folder($msgball, 'phpgw_header'.' LINE '.__LINE__, $display_error);
 				$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
-				$data = $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->header($mailsvr_stream, $msgball['msgnum']);
+				$data = $this->getTransport($acctnum)->header($mailsvr_stream, $msgball['msgnum']);
 				
 					 // fix escape problem FORGET THIS FOR NOW
 					//$this->cache_clean_phpgw_header($data);
@@ -416,7 +495,7 @@
 			
 			$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
 			// Message Information: THE MESSAGE'S HEADERS RETURNED RAW (no processing)
-			return $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->fetchheader($mailsvr_stream, $msgball['msgnum']);
+			return $this->getTransport($acctnum)->fetchheader($mailsvr_stream, $msgball['msgnum']);
 		}
 	
 		/*!
@@ -447,7 +526,7 @@
 			$this->ensure_stream_and_folder($fldball, 'all_headers_in_folder', $display_error);
 			$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
 			
-			return $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->headers($mailsvr_stream);
+			return $this->getTransport($acctnum)->headers($mailsvr_stream);
 		}
 		
 		/*!
@@ -465,7 +544,7 @@
 			{
 				$msgball = $this->get_arg_value('msgball');
 				$this->ensure_stream_and_folder($msgball , 'phpgw_get_flag'.' LINE '.__LINE__, $display_error);
-				return $GLOBALS['phpgw_dcom_'.$this->acctnum]->dcom->get_flag($this->get_arg_value('mailsvr_stream'),$this->get_arg_value('["msgball"]["msgnum"]'),$flag);
+				return $this->getTransport($this->acctnum)->get_flag($this->get_arg_value('mailsvr_stream'),$this->get_arg_value('["msgball"]["msgnum"]'),$flag);
 			}
 		}
 
@@ -476,7 +555,7 @@
 		function phpgw_set_flag($msgball, $flag, $display_error = true)
 		{
 			$this->ensure_stream_and_folder($msgball , 'phpgw_set_flag'.' LINE '.__LINE__, $display_error);
-			return $GLOBALS['phpgw_dcom_'.$msgball['acctnum'] ]->dcom->set_flag($this->get_arg_value('mailsvr_stream'), $msgball['msgnum'], $flag);
+			return $this->getTransport($msgball['acctnum'])->set_flag($this->get_arg_value('mailsvr_stream'), $msgball['msgnum'], $flag);
 		}
 		
 		// ====  Functions For Getting A Message Or A Part (MIME Part) Of A Message  ====
@@ -505,7 +584,7 @@
 			$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
 			// notice of event
 			$this->event_msg_seen($msgball, 'phpgw_body');
-			return $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->get_body($mailsvr_stream, $msgball['msgnum']);
+			return $this->getTransport($acctnum)->get_body($mailsvr_stream, $msgball['msgnum']);
 		}
 		
 		/*!
@@ -548,7 +627,7 @@
 			//echo 'mail_msg(_wrappers): phpgw_fetchbody: processed: $acctnum: '.$acctnum.'; $mailsvr_stream: '.serialize($mailsvr_stream).'; $msgnum: '.$msgnum.'; $part_no: '.$part_no.'<br /> * $msgball dump<pre>'; print_r($msgball); echo '</pre>';
 			
 			$data = '';
-			$data = $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->fetchbody($mailsvr_stream, $msgnum, $part_no, $flags);
+			$data = $this->getTransport($acctnum)->fetchbody($mailsvr_stream, $msgnum, $part_no, $flags);
 			
 			if ($data)
 			{
@@ -693,7 +772,7 @@
 				//	$server_msgnum_list = $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->sort($this->get_arg_value('mailsvr_stream', $acctnum), $this->get_arg_value('sort', $acctnum), $this->get_arg_value('order', $acctnum));
 				//}
 				if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): get_msgball_list: ('.__LINE__.') <font color="red">MAILSERVER CALL</font> calling $GLOBALS[phpgw_dcom_'.$acctnum.']->dcom->sort('.$this->get_arg_value('mailsvr_stream', $acctnum).', '.$this->get_arg_value('sort', $acctnum).', '.$this->get_arg_value('order', $acctnum).')<br />'); } 
-				$server_msgnum_list = $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->sort($this->get_arg_value('mailsvr_stream', $acctnum), $this->get_arg_value('sort', $acctnum), $this->get_arg_value('order', $acctnum));
+				$server_msgnum_list = $this->getTransport($acctnum)->sort($this->get_arg_value('mailsvr_stream', $acctnum), $this->get_arg_value('sort', $acctnum), $this->get_arg_value('order', $acctnum));
 				
 				// put more information about these particular messages into the msgball_list[] structure
 				/*
@@ -812,7 +891,7 @@
 			$this->ensure_stream_and_folder($fldball, 'get_folder_size'.' LINE '.__LINE__, $display_error);
 			
 			if ($this->debug_wrapper_dcom_calls > 1) { $this->dbug->out('mail_msg(_wrappers): get_folder_size: ('.__LINE__.') calling $GLOBALS[phpgw_dcom_'.$this->acctnum.']->dcom->mailboxmsginfo('.$this->get_arg_value('mailsvr_stream').', '.$fldball['acctnum'].')<br />'); } 
-			$mailbox_detail = $GLOBALS['phpgw_dcom_'.$fldball['acctnum']]->dcom->mailboxmsginfo($this->get_arg_value('mailsvr_stream'), $fldball['acctnum']); 
+			$mailbox_detail = $this->getTransport($fldball['acctnum'])->mailboxmsginfo($this->get_arg_value('mailsvr_stream'), $fldball['acctnum']);
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): get_folder_size: ('.__LINE__.') LEAVING, returning ['.(serialize($mailbox_detail)).']<br />'); } 
 			return $mailbox_detail->Size;
 		}
@@ -1064,7 +1143,7 @@
 			//}
 			// earlier we called $this->ensure_stream_and_folder, so stream *should* exist
 			if (($this->debug_session_caching > 0) || ($this->debug_wrapper_dcom_calls > 0)) { $this->dbug->out('mail_msg(_wrappers): get_folder_status_info: ('.__LINE__.') calling $GLOBALS[phpgw_dcom_'.$fldball['acctnum'].']->dcom->status('.$mailsvr_stream.','.$server_str.$clean_folder_name.',SA_ALL)<br />'); } 
-			$mailbox_status = $GLOBALS['phpgw_dcom_'.$fldball['acctnum']]->dcom->status($mailsvr_stream,$server_str.$clean_folder_name,PE_IMAP_SA_ALL);
+			$mailbox_status = $this->getTransport($fldball['acctnum'])->status($mailsvr_stream,$server_str.$clean_folder_name,PE_IMAP_SA_ALL);
 			if (($this->debug_session_caching > 2) || ($this->debug_wrapper_dcom_calls > 2)) { $this->dbug->out('mail_msg(_wrappers): get_folder_status_info: ('.__LINE__.') ->dcom->status returns: $mailbox_status DUMP', $mailbox_status); } 
 			
 			// cache validity data - will be used to cache msg_list_array data, which is good until UID_NEXT changes
@@ -1150,7 +1229,7 @@
 			$server_str = $this->get_arg_value('mailsvr_callstr');
 			$mailsvr_stream = $this->get_arg_value('mailsvr_stream');
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(wrappers): phpgw_status ('.__LINE__.'): calling $GLOBALS[phpgw_dcom_$fake_fldball[acctnum]('.$fake_fldball['acctnum'].')]->dcom->status($mailsvr_stream['.$mailsvr_stream.'],"$server_str"."$feed_folder_long"['.htmlspecialchars("$server_str"."$feed_folder_long").'],SA_ALL)<br />'); } 
-			$retval = $GLOBALS['phpgw_dcom_'.$fake_fldball['acctnum']]->dcom->status($mailsvr_stream,"$server_str"."$feed_folder_long",PE_IMAP_SA_ALL);
+			$retval = $this->getTransport($fake_fldball['acctnum'])->status($mailsvr_stream,"$server_str"."$feed_folder_long",PE_IMAP_SA_ALL);
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(wrappers): phpgw_status ('.__LINE__.'): LEAVING, returning $retval ['.serialize($retval).'] <br />'); }
 			return $retval;
 		}
@@ -1170,7 +1249,7 @@
 				$acctnum = $this->get_acctnum();
 			}
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): phpgw_server_last_error: ('.__LINE__.') calling $GLOBALS[phpgw_dcom_'.$acctnum.']->dcom->server_last_error()<br />'); } 
-			return $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->server_last_error();
+			return $this->getTransport($acctnum)->server_last_error();
 		}
 		
 		/*!
@@ -1190,7 +1269,7 @@
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): phpgw_ping ('.__LINE__.'): ENTERING, $acctnum ['.$acctnum.'], we DO NOT use "ensure_stream_and_folder" here because that would open the stream we are testing, making this test useless.<br />'); } 
 			$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): phpgw_ping ('.__LINE__.'): calling $GLOBALS[phpgw_dcom_'.$acctnum.']->dcom->noop_ping_test('.$mailsvr_stream.') <br />'); } 
-			$retval = $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->noop_ping_test($mailsvr_stream);
+			$retval = $this->getTransport($acctnum)->noop_ping_test($mailsvr_stream);
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): phpgw_ping ('.__LINE__.'): LEAVING, returing $retval ['.serialize($retval).']<br />'); } 
 			return $retval;
 		}
@@ -1229,7 +1308,7 @@
 
 			// now we have the stream and the desired folder open
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): phpgw_search ('.__LINE__.'): calling $GLOBALS[phpgw_dcom_'.$acctnum.']->dcom->i_search($mailsvr_stream['.$mailsvr_stream.'], $criteria['.$criteria.'],$flags['.serialize($flags).']) <br />'); } 
-			$retval = $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->i_search($mailsvr_stream,$criteria,$flags);
+			$retval = $this->getTransport($acctnum)->i_search($mailsvr_stream,$criteria,$flags);
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): phpgw_search ('.__LINE__.'): LEAVING, returing $retval ['.serialize($retval).']<br />'); } 
 			return $retval;
 		}
@@ -1272,7 +1351,7 @@
 				$folder = $mailsvr_callstr.$folder;
 			}
 			$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
-			return $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->createmailbox($mailsvr_stream, $folder);
+			return $this->getTransport($acctnum)->createmailbox($mailsvr_stream, $folder);
 		}
 		
 		/*!
@@ -1325,7 +1404,7 @@
 			}
 			$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('phpgw_createmailbox_ex('.__LINE__.'): calling $GLOBALS[phpgw_dcom_'.$acctnum.']->dcom->createmailbox('.serialize($mailsvr_stream).', '.htmlspecialchars($target_folder_clean).'<br />'); } 
-			return $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->createmailbox($mailsvr_stream, $target_folder_clean);
+			return $this->getTransport($acctnum)->createmailbox($mailsvr_stream, $target_folder_clean);
 		}
 		
 		/*!
@@ -1340,7 +1419,7 @@
 			$acctnum = $target_fldball['acctnum'];
 			$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
 			$folder = $target_fldball['folder'];
-			return $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->deletemailbox($mailsvr_stream, $folder);
+			return $this->getTransport($acctnum)->deletemailbox($mailsvr_stream, $folder);
 		}
 		
 		/*!
@@ -1393,7 +1472,7 @@
 			}
 			$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('phpgw_deletemailbox_ex('.__LINE__.'): calling $GLOBALS[phpgw_dcom_'.$acctnum.']->dcom->deletemailbox('.serialize($mailsvr_stream).', '.htmlspecialchars($target_folder_clean).'<br />'); } 
-			return $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->deletemailbox($mailsvr_stream, $target_folder_clean);
+			return $this->getTransport($acctnum)->deletemailbox($mailsvr_stream, $target_folder_clean);
 		}
 		
 		/*!
@@ -1409,7 +1488,7 @@
 			$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
 			$folder_old = $source_fldball['folder'];
 			$folder_new = $target_fldball['folder'];
-			return $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->renamemailbox($mailsvr_stream, $folder_old, $folder_new);
+			return $this->getTransport($acctnum)->renamemailbox($mailsvr_stream, $folder_old, $folder_new);
 		}
 
 		/*!
@@ -1486,7 +1565,7 @@
 			$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('phpgw_renamemailbox_ex('.__LINE__.'): calling $GLOBALS[phpgw_dcom_'.$acctnum.']->dcom->renamemailbox('.serialize($mailsvr_stream).', '.htmlspecialchars($source_folder_clean).', '.htmlspecialchars($target_folder_clean).'<br />'); } 
 			//return $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->createmailbox($mailsvr_stream, $target_folder_clean);
-			return $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->renamemailbox($mailsvr_stream, $source_folder_clean, $target_folder_clean);
+			return $this->getTransport($acctnum)->renamemailbox($mailsvr_stream, $source_folder_clean, $target_folder_clean);
 		}
 		
 		/*!
@@ -1516,7 +1595,7 @@
 			
 			// ... so stream exists, do the transaction ...
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): phpgw_listmailbox ('.__LINE__.'): calling $GLOBALS[phpgw_dcom_'.$acctnum.']->dcom->listmailbox($mailsvr_stream['.$mailsvr_stream.'],$ref['.$ref.'], $pattern['.$pattern.']); <br />'); } 
-			return $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->listmailbox($mailsvr_stream,$ref,$pattern);
+			return $this->getTransport($acctnum)->listmailbox($mailsvr_stream,$ref,$pattern);
 		}
 		
 		/*!
@@ -1591,7 +1670,7 @@
 				// do the append
 				if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): phpgw_append: $GLOBALS["phpgw_dcom_'.$target_fldball['acctnum'].']->dcom->append('.$mailsvr_stream.', '."$server_str"."$official_folder_long".', $message, '.$flags.') '); } 
 				//$acctnum: ['.$acctnum.'] $mailsvr_stream: ['.$mailsvr_stream.'] $msgnum: ['.$msgnum.'] $mailbox: ['.htmlspecialchars($mailbox).']<br />'; } 
-				$retval = $GLOBALS['phpgw_dcom_'.$target_fldball['acctnum']]->dcom->append($mailsvr_stream, $server_str.$official_folder_long, $message, $flags);
+				$retval = $this->getTransport($target_fldball['acctnum'])->append($mailsvr_stream, $server_str.$official_folder_long, $message, $flags);
 				if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): phpgw_append ('.__LINE__.'): LEAVING, returning $retval ['.serialize($retval).']<br />'); } 
 				return $retval;
 			}
@@ -1620,7 +1699,7 @@
 			// delete session msg array data thAt is now stale
 			//$this->expire_session_cache_item('msgball_list');
 			
-			$retval = $GLOBALS['phpgw_dcom_'.$this->acctnum]->dcom->mail_move($this->get_arg_value('mailsvr_stream'), $msg_list, $mailbox);
+			$retval = $this->getTransport($this->acctnum)->mail_move($this->get_arg_value('mailsvr_stream'), $msg_list, $mailbox);
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): phpgw_mail_move: (DEPRECIATED) LEAVING, $retval ['.serialize($retval).'] <br />'); } 
 			return $retval;
 		}
@@ -1663,7 +1742,7 @@
 			// that requires a fetch then an append - FIXME!!!
 			
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): interacct_mail_move: $acctnum: ['.$acctnum.'] $mailsvr_stream: ['.$mailsvr_stream.'] $msgnum: ['.$msgnum.'] $mailbox: ['.htmlspecialchars($mailbox).']<br />'); } 
-			$retval = $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->mail_move($mailsvr_stream ,$msgnum, $mailbox);
+			$retval = $this->getTransport($acctnum)->mail_move($mailsvr_stream ,$msgnum, $mailbox);
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): interacct_mail_move: LEAVING, $retval ['.serialize($retval).'] <br />'); }
 			return $retval;
 		}
@@ -1684,7 +1763,7 @@
 			$this->set_arg_value('fldball[folder]', $folder, $acctnum);
 			$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
 			
-			$GLOBALS['phpgw_dcom_'.$acctnum]->dcom->empty_trash($mailsvr_stream);
+			$this->getTransport($acctnum)->empty_trash($mailsvr_stream);
 		}
 		
 		/*!
@@ -2172,10 +2251,10 @@ Array
 						if ($this->debug_wrapper_dcom_calls > 1) { $this->dbug->out('mail_msg(_wrappers): flush_buffered_move_commmands: SRAIGHT DELETE ($do_it_for_real is '.serialize($do_it_for_real).'): $GLOBALS[phpgw_dcom_'.$this_acctnum.']->dcom->delete('.serialize($mailsvr_stream).' ,'.$collected_msg_num_string.')<br />'); }
 						if ($do_it_for_real == True)
 						{
-							$did_delete = $GLOBALS['phpgw_dcom_'.$this_acctnum]->dcom->delete($mailsvr_stream , $collected_msg_num_string);
+							$did_delete = $this->getTransport($this_acctnum)->delete($mailsvr_stream , $collected_msg_num_string);
 							if (!$did_delete)
 							{
-								$imap_err = $GLOBALS['phpgw_dcom_'.$this_acctnum]->dcom->server_last_error();
+								$imap_err = $this->getTransport($this_acctnum)->server_last_error();
 								if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): flush_buffered_move_commmands: STRAIGHT DELETE: LEAVING on ERROR, $imap_err: ['.$imap_err.'] return False'.' LINE '.__LINE__.'<br />'); }
 								echo 'mail_msg(_wrappers): flush_buffered_move_commmands: LEAVING on ERROR, $imap_err: ['.$imap_err.'] return False'.' LINE '.__LINE__.'<br />';
 								echo '&nbsp; command was: $GLOBALS[phpgw_dcom_'.$this_acctnum.']->dcom->delete('.serialize($mailsvr_stream).' ,'.$collected_msg_num_string.')<br />';
@@ -2189,10 +2268,10 @@ Array
 						if ($this->debug_wrapper_dcom_calls > 1) { $this->dbug->out('mail_msg(_wrappers): flush_buffered_move_commmands: ($do_it_for_real is '.serialize($do_it_for_real).'): $GLOBALS[phpgw_dcom_'.$this_acctnum.']->dcom->mail_move('.serialize($mailsvr_stream).' ,'.$collected_msg_num_string.', '.serialize($to_fldball['folder']).')<br />'); }
 						if ($do_it_for_real == True)
 						{
-							$did_move = $GLOBALS['phpgw_dcom_'.$this_acctnum]->dcom->mail_move($mailsvr_stream , $collected_msg_num_string, $to_fldball['folder']);
+							$did_move = $this->getTransport($this_acctnum)->mail_move($mailsvr_stream , $collected_msg_num_string, $to_fldball['folder']);
 							if (!$did_move)
 							{
-								$imap_err = $GLOBALS['phpgw_dcom_'.$this_acctnum]->dcom->server_last_error();
+								$imap_err = $this->getTransport($this_acctnum)->server_last_error();
 								if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): flush_buffered_move_commmands: LEAVING on ERROR, $imap_err: ['.$imap_err.'] return False'.' LINE '.__LINE__.'<br />'); }
 								echo 'mail_msg(_wrappers): flush_buffered_move_commmands: LEAVING on ERROR, $imap_err: ['.$imap_err.'] return False'.' LINE '.__LINE__.'<br />';
 								echo '&nbsp; command was: $GLOBALS[phpgw_dcom_'.$this_acctnum.']->dcom->mail_move('.serialize($mailsvr_stream).' ,'.$collected_msg_num_string.', '.serialize($to_fldball['folder']).')<br />';
@@ -2278,7 +2357,7 @@ Array
 				$to_fldball['folder'] = urldecode($to_fldball['folder']);
 				$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $common_acctnum);
 				if ($this->debug_wrapper_dcom_calls > 1) { $this->dbug->out('mail_msg(_wrappers): single_interacct_mail_move: $GLOBALS[phpgw_dcom_'.$common_acctnum.']->dcom->mail_move('.serialize($mailsvr_stream).' ,'.serialize($mov_msgball['msgnum']).', '.serialize($to_fldball['folder']).')<br />'); }
-				$did_move = $GLOBALS['phpgw_dcom_'.$common_acctnum]->dcom->mail_move($mailsvr_stream ,$mov_msgball['msgnum'], $to_fldball['folder']);
+				$did_move = $this->getTransport($common_acctnum)->mail_move($mailsvr_stream ,$mov_msgball['msgnum'], $to_fldball['folder']);
 				if (!$did_move)
 				{
 					if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): single_interacct_mail_move: LEAVING, return False'.' LINE '.__LINE__.'<br />'); }
@@ -2345,7 +2424,7 @@ Array
 				$to_mailsvr_stream = $this->get_arg_value('mailsvr_stream', $to_fldball['acctnum']);
 				//$to_fldball['folder'] = $remember_to_fldball;
 				// $tol_folder_utldecoded = 
-				$good_to_go = $GLOBALS['phpgw_dcom_'.$to_fldball['acctnum']]->dcom->append($to_mailsvr_stream, $mailsvr_callstr.$to_fldball['folder'], $moving_message, $mov_msgball['flags']);
+				$good_to_go = $this->getTransport($to_fldball['acctnum'])->append($to_mailsvr_stream, $mailsvr_callstr.$to_fldball['folder'], $moving_message, $mov_msgball['flags']);
 				if (!$good_to_go)
 				{
 					if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): single_interacct_mail_move: LEAVING, return False'.' LINE '.__LINE__.'<br />'); }
@@ -2353,7 +2432,7 @@ Array
 				}
 				// DELETE and EXPUNGE from FROM FOLDER
 				$from_mailsvr_stream = $this->get_arg_value('mailsvr_stream', $mov_msgball['acctnum']);
-				$good_to_go = $GLOBALS['phpgw_dcom_'.$mov_msgball['acctnum']]->dcom->delete($from_mailsvr_stream, $mov_msgball['msgnum']);
+				$good_to_go = $this->getTransport($mov_msgball['acctnum'])->delete($from_mailsvr_stream, $mov_msgball['msgnum']);
 				if (!$good_to_go)
 				{
 					if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): single_interacct_mail_move: LEAVING, return False'.' LINE '.__LINE__.'<br />'); }
@@ -2558,7 +2637,7 @@ Array
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): dcom_call: phpgw_expunge: $acctnum: '.serialize($acctnum).' NOTE current "folder" arg set for that acct is ['.$note_folder.']<br />'); } 
 			
 			if ($this->debug_wrapper_dcom_calls > 0) { $this->dbug->out('mail_msg(_wrappers): dcom_call: phpgw_expunge: $acctnum: '.serialize($acctnum).' $mailsvr_stream: '.$mailsvr_stream.'<br />'); } 
-			return $GLOBALS['phpgw_dcom_'.$acctnum]->dcom->expunge($mailsvr_stream);
+			return $this->getTransport($acctnum)->expunge($mailsvr_stream);
 		}
 		
 		/*!
@@ -4101,7 +4180,7 @@ Array
 					else
 					{
 						// NOTE compression not available for appsession table
-						$GLOBALS['phpgw']->session->appsession($my_location, 'email', $data);
+						$this->appSession($my_location, 'email', $data);
 					}
 				}
 				
@@ -4160,7 +4239,7 @@ Array
 					}
 					else
 					{
-						$GLOBALS['phpgw']->session->appsession($my_location, 'email', $data);
+						$this->appSession($my_location, 'email', $data);
 					}
 				}
 				
@@ -4250,7 +4329,7 @@ Array
 					}
 					else
 					{
-						$GLOBALS['phpgw']->session->appsession($my_location, 'email', $data);
+						$this->appSession($my_location, 'email', $data);
 					}
 				}
 				$data = array();
@@ -4342,7 +4421,7 @@ Array
 					}
 					else
 					{
-						$GLOBALS['phpgw']->session->appsession($my_location, 'email', $data);
+						$this->appSession($my_location, 'email', $data);
 					}
 				}
 				$data = array();
@@ -4406,7 +4485,7 @@ Array
 					}
 					else
 					{
-						$GLOBALS['phpgw']->session->appsession($my_location, 'email', $data);
+						$this->appSession($my_location, 'email', $data);
 					}
 				}
 				$data = array();
@@ -4524,7 +4603,7 @@ Array
 					else
 					{
 						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder]
-							= $GLOBALS['phpgw']->session->appsession($my_location, 'email');
+							= $this->appSession($my_location, 'email');
 					}
 					//if ($this->debug_session_caching > 2) { echo 'mail_msg: read_session_cache_item('.__LINE__.'): [email][dat]['.$acctnum.']['.$data_name.']['.$ex_folder.'] DUMP:<pre>'; print_r($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder]); echo '</pre>'; }
 				}
@@ -4672,7 +4751,7 @@ Array
 					{
 						// NOTE: no compression available for appsession
 						$got_data = array();
-						$got_data = $GLOBALS['phpgw']->session->appsession($my_location, 'email');
+						$got_data = $this->appSession($my_location, 'email');
 						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder]
 							= $got_data;
 						
@@ -4799,7 +4878,7 @@ Array
 					else
 					{
 						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name]
-							= $GLOBALS['phpgw']->session->appsession($my_location, 'email');
+							= $this->appSession($my_location, 'email');
 					}
 					if ($this->debug_session_caching > 2) { $this->dbug->out('mail_msg: read_session_cache_item('.__LINE__.'): [email][dat]['.$acctnum.']['.$data_name.'] DUMP:', $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name]); }
 				}
@@ -4852,7 +4931,7 @@ Array
 					else
 					{
 						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum]
-							= $GLOBALS['phpgw']->session->appsession($my_location, 'email');
+							= $this->appSession($my_location, 'email');
 					}
 					//if ($this->debug_session_caching > 2) { echo 'mail_msg: read_session_cache_item('.__LINE__.'): [email][dat]['.$acctnum.']['.$data_name.']['.$ex_folder.'] ['.$ex_msgnum.']DUMP:<pre>'; print_r($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum]); echo '</pre>'; }
 				}
@@ -4893,7 +4972,7 @@ Array
 					else
 					{
 						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum][$ex_part_no]
-							= $GLOBALS['phpgw']->session->appsession($my_location, 'email');
+							= $this->appSession($my_location, 'email');
 					}
 					//if ($this->debug_session_caching > 2) { echo 'mail_msg: read_session_cache_item('.__LINE__.'): [email][dat]['.$acctnum.']['.$data_name.']['.$ex_folder.'] ['.$ex_msgnum.']DUMP:<pre>'; print_r($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum][$ex_part_no]); echo '</pre>'; }
 				}
@@ -5018,7 +5097,7 @@ Array
 				else
 				{
 					if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: expire_session_cache_item('.__LINE__.'): sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to blank data in the "phpgw_app_sessions" table, $my_location ['.$my_location.']<br />'); } 
-					$GLOBALS['phpgw']->session->appsession($my_location, 'email', '');
+					$this->appSession($my_location, 'email', '');
 				}
 			}
 			

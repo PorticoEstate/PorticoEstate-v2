@@ -32,7 +32,7 @@
 		  $inbox_data['number_all'] integer - for IMAP and pop3 is total number messages in that inbox
 		*/
 		$inbox_data = Array();
-		$inbox_data = $GLOBALS['phpgw']->msg->new_message_check();		
+		$inbox_data = \App\modules\email\services\MailMessage::getInstance()->new_message_check();
 		if ($inbox_data['is_imap'])
 		{
 			if ($inbox_data['number_new'] > 0) 
@@ -48,5 +48,5 @@
 			}
 		}
 		// end the mailserver request
-		$GLOBALS['phpgw']->msg->end_request();
+		\App\modules\email\services\MailMessage::getInstance()->end_request();
 	}

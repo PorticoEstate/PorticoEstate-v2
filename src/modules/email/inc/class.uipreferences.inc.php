@@ -182,7 +182,7 @@
 					if ($this_item['type'] == 'user_string')
 					{
 						if ($this->debug > 1) { echo ' * email.uipreferences.create_prefs_block: $this_item[type] == "user string" , before htmlspecialchars_encode: [<code>'.$actual_user_prefs[$this_item['id']].'</code>]<br />'; }
-						$this_item_value = $GLOBALS['phpgw']->msg->htmlspecialchars_encode($actual_user_prefs[$this_item['id']]);
+						$this_item_value = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($actual_user_prefs[$this_item['id']]);
 						if ($this->debug > 1) { echo ' * email.uipreferences.create_prefs_block: $this_item[type] == "user string" , after htmlspecialchars_encode: [<code>'.$this_item_value.'</code>]<br />'; }
 					}
 					else
@@ -298,8 +298,8 @@
 					$done_widget = $this->tpl->get_var('V_tr_sec_title');
 				}
 				// add long help if requested
-				if ((isset($GLOBALS['phpgw']->msg->ref_GET['show_help']))
-				&& ($GLOBALS['phpgw']->msg->ref_GET['show_help']))
+				if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_GET['show_help']))
+				&& (\App\modules\email\services\MailMessage::getInstance()->ref_GET['show_help']))
 				{
 					$this->tpl->set_var('long_desc', $this_item['long_desc']);
 					$done_widget .= $this->tpl->parse('V_tr_long_desc','B_tr_long_desc');
@@ -323,13 +323,13 @@
 			// If we ar given an acct number, then display prefs for that account, else show prefs for default account zero
 			if
 			(
-				((isset($GLOBALS['phpgw']->msg->ref_POST['ex_acctnum']))
-				&& ((string)$GLOBALS['phpgw']->msg->ref_POST['ex_acctnum'] != '')
-				&& ((string)$GLOBALS['phpgw']->msg->ref_POST['ex_acctnum'] != '0'))
+				((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['ex_acctnum']))
+				&& ((string)\App\modules\email\services\MailMessage::getInstance()->ref_POST['ex_acctnum'] != '')
+				&& ((string)\App\modules\email\services\MailMessage::getInstance()->ref_POST['ex_acctnum'] != '0'))
 			||
-				((isset($GLOBALS['phpgw']->msg->ref_GET['ex_acctnum']))
-				&& ((string)$GLOBALS['phpgw']->msg->ref_GET['ex_acctnum'] != '')
-				&& ((string)$GLOBALS['phpgw']->msg->ref_GET['ex_acctnum'] != '0'))
+				((isset(\App\modules\email\services\MailMessage::getInstance()->ref_GET['ex_acctnum']))
+				&& ((string)\App\modules\email\services\MailMessage::getInstance()->ref_GET['ex_acctnum'] != '')
+				&& ((string)\App\modules\email\services\MailMessage::getInstance()->ref_GET['ex_acctnum'] != '0'))
 			)
 			{
 				// we are dealing with a non-default account here
@@ -359,7 +359,7 @@
 			$this->bo->account_group = 'default';
 			if ($this->debug > 1) { echo 'email.uipreferences.preferences: just set $this->bo->account_group to ['.$this->bo->account_group.']<br />'; }
 
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// we point to the global template for this version of phpgw templatings
 				$this->tpl =& $GLOBALS['phpgw']->template;
@@ -371,7 +371,7 @@
 				$this->tpl = CreateObject('phpgwapi.template',PHPGW_APP_TPL);
 			}
 
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				unset($GLOBALS['phpgw_info']['flags']['noheader']);
 				unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
@@ -436,11 +436,11 @@
 			// section title for standars prefs
 			$this->tpl->set_var('section_title', lang('Standard E-Mail preferences'));
 			//This checks if we are all ready displaying the help and gives us the option of hiding it.
-			if ((isset($GLOBALS['phpgw']->msg->ref_GET['show_help']))
-				&& ($GLOBALS['phpgw']->msg->ref_GET['show_help']))
+			if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_GET['show_help']))
+				&& (\App\modules\email\services\MailMessage::getInstance()->ref_GET['show_help']))
 			{
 			// link to display verbose help text
-			$show_help_lnk = $GLOBALS['phpgw']->msg->href_maketag(
+			$show_help_lnk = \App\modules\email\services\MailMessage::getInstance()->href_maketag(
 					phpgw::link('/index.php',
 						Array('menuaction'	=> 'email.uipreferences.preferences',
 							)
@@ -448,7 +448,7 @@
 					lang('Hide Help'));
 			} else {
 			// link to hide verbose help text
-			$show_help_lnk = $GLOBALS['phpgw']->msg->href_maketag(
+			$show_help_lnk = \App\modules\email\services\MailMessage::getInstance()->href_maketag(
 					phpgw::link('/index.php',
 						Array('menuaction'	=> 'email.uipreferences.preferences',
 							'show_help'		=> '1')
@@ -494,11 +494,11 @@
 			$this->tpl->set_var('submit_btn_row', $submit_btn_row);
 
 			// new way to handle debug data, if there is debug data, this will put it in the template source data vars
-			$this->tpl->set_var('debugdata', $GLOBALS['phpgw']->msg->dbug->notice_pagedone());
+			$this->tpl->set_var('debugdata', \App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone());
 
 			// output the template
 			if ($this->debug > 0) { echo 'email.uipreferences.preferences: LEAVING, about to output the template<br />'; }
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				$this->tpl->set_unknowns('comment');
 				//$this->tpl->set_unknowns('remove');
@@ -538,7 +538,7 @@
 			$this->bo->acctnum = $acctnum;
 			if ($this->debug > 1) { echo 'email.uipreferences.ex_accounts_edit: we just set $this->bo->acctnum to ['.serialize($this->bo->acctnum).']<br />'; }
 
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// we point to the global template for this version of phpgw templatings
 				$this->tpl =& $GLOBALS['phpgw']->template;
@@ -550,7 +550,7 @@
 				$this->tpl = CreateObject('phpgwapi.template',PHPGW_APP_TPL);
 			}
 
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				unset($GLOBALS['phpgw_info']['flags']['noheader']);
 				unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
@@ -622,11 +622,11 @@
 			$this->tpl->set_var('section_title', '*** '.lang('E-Mail Extra Account').' *** '.lang('Number').' '.$this->bo->acctnum);
 			//This checks if we are all ready displaying the help and gives us the option of hiding it.
 			// https://brick.earthlink.net/mail/index.php?menuaction=email.uipreferences.ex_accounts_edit&ex_acctnum=2
-			if ((isset($GLOBALS['phpgw']->msg->ref_GET['show_help']))
-				&& ($GLOBALS['phpgw']->msg->ref_GET['show_help']))
+			if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_GET['show_help']))
+				&& (\App\modules\email\services\MailMessage::getInstance()->ref_GET['show_help']))
 			{
 				// link to display verbose help text
-				$show_help_lnk = $GLOBALS['phpgw']->msg->href_maketag(
+				$show_help_lnk = \App\modules\email\services\MailMessage::getInstance()->href_maketag(
 					phpgw::link('/index.php',
 						Array('menuaction'	=> 'email.uipreferences.preferences',
 							'ex_acctnum'	=> $this->bo->acctnum)
@@ -634,7 +634,7 @@
 					lang('Hide Help'));
 			} else {
 				// link to hide verbose help text
-				$show_help_lnk = $GLOBALS['phpgw']->msg->href_maketag(
+				$show_help_lnk = \App\modules\email\services\MailMessage::getInstance()->href_maketag(
 					phpgw::link('/index.php',
 						Array('menuaction'	=> 'email.uipreferences.preferences',
 							'ex_acctnum'	=> $this->bo->acctnum,
@@ -686,11 +686,11 @@
 			$this->tpl->set_var('submit_btn_row', $submit_btn_row);
 
 			// new way to handle debug data, if there is debug data, this will put it in the template source data vars
-			$this->tpl->set_var('debugdata', $GLOBALS['phpgw']->msg->dbug->notice_pagedone());
+			$this->tpl->set_var('debugdata', \App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone());
 
 			// output the template
 			if ($this->debug > 0) { echo 'email.uipreferences.ex_accounts_edit: LEAVING, about to output the template<br />'; }
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				$this->tpl->set_unknowns('comment');
 				//$this->tpl->set_unknowns('remove');
@@ -713,7 +713,7 @@
 
 		function ex_accounts_list()
 		{
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// we point to the global template for this version of phpgw templatings
 				$this->tpl =& $GLOBALS['phpgw']->template;
@@ -725,7 +725,7 @@
 				$this->tpl = CreateObject('phpgwapi.template',PHPGW_APP_TPL);
 			}
 
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				unset($GLOBALS['phpgw_info']['flags']['noheader']);
 				unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
@@ -823,10 +823,10 @@
 			$this->tpl->set_var('done_href',$done_href);
 
 			// new way to handle debug data, if there is debug data, this will put it in the template source data vars
-			$this->tpl->set_var('debugdata', $GLOBALS['phpgw']->msg->dbug->notice_pagedone());
+			$this->tpl->set_var('debugdata', \App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone());
 
 			// output the template
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
+			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				$this->tpl->set_unknowns('comment');
 				//$this->tpl->set_unknowns('remove');

@@ -77,7 +77,7 @@
 			// make the convience reference
 			if ($this->msg == '##NOTHING##')
 			{
-				$this->msg =& $GLOBALS['phpgw']->msg;
+				$this->msg = \App\modules\email\services\MailMessage::getInstance();
 			}
 			if ($this->debug_set_prefs > 0) { $this->msg->dbug->out('email.bopreferences. *constructor*: LEAVING<br />'); }
 			//return;
@@ -663,14 +663,14 @@
 				$acctnum = $this->acctnum;
 			}
 			
-			$GLOBALS['phpgw']->msg->expire_session_cache_item('mailsvr_callstr', $acctnum);
-			$GLOBALS['phpgw']->msg->expire_session_cache_item('mailsvr_namespace', $acctnum);
-			$GLOBALS['phpgw']->msg->expire_session_cache_item('mailsvr_delimiter', $acctnum);
+			\App\modules\email\services\MailMessage::getInstance()->expire_session_cache_item('mailsvr_callstr', $acctnum);
+			\App\modules\email\services\MailMessage::getInstance()->expire_session_cache_item('mailsvr_namespace', $acctnum);
+			\App\modules\email\services\MailMessage::getInstance()->expire_session_cache_item('mailsvr_delimiter', $acctnum);
 			// DAAA! the folder list probably also changes if the components that make up the Fully Qualified folder name have changed
-			$GLOBALS['phpgw']->msg->expire_session_cache_item('folder_list', $acctnum);
+			\App\modules\email\services\MailMessage::getInstance()->expire_session_cache_item('folder_list', $acctnum);
 			// NEW: now we cache all the prefs in bulk cache in the appsession
 			$my_location = '0;cached_prefs';
-			$GLOBALS['phpgw']->msg->so->so_appsession_passthru($my_location, ' ');
+			\App\modules\email\services\MailMessage::getInstance()->so->so_appsession_passthru($my_location, ' ');
 		}
 		
 		/*!
@@ -732,7 +732,7 @@
 			// HOWEVER, do not attempt to grab data if the "submit_prefs" GPC submit_token variable is not present
 			
 			// ----  DEFAULT EMAIL ACCOUNT  ----
-			if (isset($GLOBALS['phpgw']->msg->ref_POST[$this->submit_token]))
+			if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->submit_token]))
 			{
 				if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email.bopreferences: INSIDE grab_set_prefs_args_gpc for Default Email Account data<br />'); }
 				
@@ -740,7 +740,7 @@
 				$this->expire_related_cached_items(0);
 				
 				//$this->args['submit_prefs'] = $GLOBALS['phpgw']->msg->ref_POST['submit_prefs'];
-				$this->args[$this->submit_token] = $GLOBALS['phpgw']->msg->ref_POST[$this->submit_token];
+				$this->args[$this->submit_token] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->submit_token];
 				// standard prefs
 				$loops = count($this->std_prefs);				
 				for($i=0;$i<$loops;$i++)
@@ -757,10 +757,10 @@
 						// ok, we have a pref item that applies to the default email account
 						$this_pref_name = $this->std_prefs[$i]['id'];
 						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out(' * * (std pref) $this_pref_name: '.$this_pref_name.'<br />'); }
-						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out(' * * (std pref) $GLOBALS[HTTP_POST_VARS][$this_pref_name]: '.$GLOBALS['phpgw']->msg->ref_POST[$this_pref_name].'<br />'); }
-						if (isset($GLOBALS['phpgw']->msg->ref_POST[$this_pref_name]))
+						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out(' * * (std pref) $GLOBALS[HTTP_POST_VARS][$this_pref_name]: '.\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name].'<br />'); }
+						if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name]))
 						{
-							$this->args[$this_pref_name] = $GLOBALS['phpgw']->msg->ref_POST[$this_pref_name];
+							$this->args[$this_pref_name] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name];
 						}
 					}
 				}
@@ -780,21 +780,21 @@
 						// ok, we have a pref item that applies to the default email account
 						$this_pref_name = $this->cust_prefs[$i]['id'];
 						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out(' * * (cust pref) $this_pref_name: '.$this_pref_name.'<br />'); }
-						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out(' * * (cust pref) $GLOBALS[HTTP_POST_VARS][$this_pref_name]: '.$GLOBALS['phpgw']->msg->ref_POST[$this_pref_name].'<br />'); }
-						if (isset($GLOBALS['phpgw']->msg->ref_POST[$this_pref_name]))
+						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out(' * * (cust pref) $GLOBALS[HTTP_POST_VARS][$this_pref_name]: '.\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name].'<br />'); }
+						if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name]))
 						{
-							$this->args[$this_pref_name] = $GLOBALS['phpgw']->msg->ref_POST[$this_pref_name];
+							$this->args[$this_pref_name] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name];
 						}
 					}
 				}
 			}
 			// ----  EXTRA EMAIL ACCOUNTS  ----
-			elseif (isset($GLOBALS['phpgw']->msg->ref_POST[$this->submit_token_extra_accounts]))
+			elseif (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->submit_token_extra_accounts]))
 			{
 				if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email.bopreferences: INSIDE grab_set_prefs_args_gpc for EXTRA EMAIL ACCOUNTS data<br />'); }
 				
 				//$this->args['submit_prefs'] = $GLOBALS['phpgw']->msg->ref_POST['submit_prefs'];
-				$this->args[$this->submit_token_extra_accounts] = $GLOBALS['phpgw']->msg->ref_POST[$this->submit_token_extra_accounts];
+				$this->args[$this->submit_token_extra_accounts] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->submit_token_extra_accounts];
 				
 				// ==== ACCTNUM ====
 				if ((!isset($this->acctnum))
@@ -823,10 +823,10 @@
 						// ok, we have a pref item that applies to the default email account
 						$this_pref_name = $this->std_prefs[$i]['id'];
 						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out(' * * (std pref) $this_pref_name: '.$this_pref_name.'<br />'); }
-						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out(' * * (std pref) $GLOBALS[HTTP_POST_VARS][$this->acctnum('.$this->acctnum.')][$this_pref_name('.$this_pref_name.')]: ['.$GLOBALS['phpgw']->msg->ref_POST[$this->acctnum][$this_pref_name].']<br />'); }
-						if (isset($GLOBALS['phpgw']->msg->ref_POST[$this->acctnum][$this_pref_name]))
+						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out(' * * (std pref) $GLOBALS[HTTP_POST_VARS][$this->acctnum('.$this->acctnum.')][$this_pref_name('.$this_pref_name.')]: ['.\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name].']<br />'); }
+						if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name]))
 						{
-							$this->args[$this->acctnum][$this_pref_name] = $GLOBALS['phpgw']->msg->ref_POST[$this->acctnum][$this_pref_name];
+							$this->args[$this->acctnum][$this_pref_name] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name];
 						}
 					}
 				}
@@ -847,10 +847,10 @@
 						// ok, we have a pref item that applies to extra email accounts
 						$this_pref_name = $this->cust_prefs[$i]['id'];
 						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out(' * * (cust pref) $this_pref_name: '.$this_pref_name.'<br />'); }
-						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out(' * * (cust pref) $GLOBALS[HTTP_POST_VARS][$this->acctnum('.$this->acctnum.')][$this_pref_name('.$this_pref_name.')]: ['.$GLOBALS['phpgw']->msg->ref_POST[$this->acctnum][$this_pref_name].']<br />'); }
-						if (isset($GLOBALS['phpgw']->msg->ref_POST[$this->acctnum][$this_pref_name]))
+						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out(' * * (cust pref) $GLOBALS[HTTP_POST_VARS][$this->acctnum('.$this->acctnum.')][$this_pref_name('.$this_pref_name.')]: ['.\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name].']<br />'); }
+						if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name]))
 						{
-							$this->args[$this->acctnum][$this_pref_name] = $GLOBALS['phpgw']->msg->ref_POST[$this->acctnum][$this_pref_name];
+							$this->args[$this->acctnum][$this_pref_name] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name];
 						}
 					}
 				}
@@ -971,7 +971,7 @@
 						{
 							// typical "user_string" needs to strip any slashes 
 							// that PHP "magic_quotes_gpc"may have added
-							$processed_pref = $GLOBALS['phpgw']->msg->stripslashes_gpc($submitted_pref);
+							$processed_pref = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($submitted_pref);
 							// most "user_string" items require pre-processing before going into
 							// the repository (strip slashes, html encode, encrypt, etc...)
 							// we call this database "de-fanging", remove database unfriendly chars
@@ -988,12 +988,12 @@
 							// as of Jan 24 2002, it is verified that un-defanged passwords *may* destroy
 							// all user prefs because they may have the database unfriendly chars that 
 							// "de-fanging" encodes, i.e. this is STILL an issue at the database level
-							$processed_pref = $GLOBALS['phpgw']->msg->stripslashes_gpc($submitted_pref);
+							$processed_pref = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($submitted_pref);
 							// we SHOULD feed the password as UNALTERED as possible into the encryption
 							// after that, we may manipulate it for database "friendliness"
-							$processed_pref = $GLOBALS['phpgw']->msg->encrypt_email_passwd($processed_pref);
+							$processed_pref = \App\modules\email\services\MailMessage::getInstance()->encrypt_email_passwd($processed_pref);
 							// the last thing you do before saving to the DB is "de-fang"
-							$processed_pref = $GLOBALS['phpgw']->msg->html_quotes_encode($processed_pref);
+							$processed_pref = \App\modules\email\services\MailMessage::getInstance()->html_quotes_encode($processed_pref);
 							// so the FIRST thing you do when reading from the db MUST be to "UN-defang"
 							// note this IS INDEED what happens in api/class,preferences,
 							// unless "no_db_defang" is specified, any "user_string" will be defanged
@@ -1002,10 +1002,10 @@
 						{
 							// typical "user_string" needs to strip any slashes 
 							// that PHP "magic_quotes_gpc"may have added
-							$processed_pref = $GLOBALS['phpgw']->msg->stripslashes_gpc($submitted_pref);
+							$processed_pref = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($submitted_pref);
 							// and this is a _LAME_ way to make the value "database friendly"
 							// because slashes and quotes will FRY the whole preferences repository
-							$processed_pref = $GLOBALS['phpgw']->msg->html_quotes_encode($processed_pref);
+							$processed_pref = \App\modules\email\services\MailMessage::getInstance()->html_quotes_encode($processed_pref);
 						}
 					}
 					else
@@ -1086,7 +1086,7 @@
 					$GLOBALS['phpgw']->preferences->save_repository();
 				}
 				// end the email session
-				$GLOBALS['phpgw']->msg->end_request();
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
 				
 				// redirect user back to main preferences page
 				$take_me_to_url = phpgw::link(
@@ -1362,7 +1362,7 @@
 						{
 							// typical "user_string" needs to strip any slashes 
 							// that PHP "magic_quotes_gpc"may have added
-							$processed_pref = $GLOBALS['phpgw']->msg->stripslashes_gpc($submitted_pref);
+							$processed_pref = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($submitted_pref);
 							// most "user_string" items require pre-processing before going into
 							// the repository (strip slashes, html encode, encrypt, etc...)
 							// we call this database "de-fanging", remove database unfriendly chars
@@ -1375,17 +1375,17 @@
 							// certain data (passwords) should be encrypted before going into the repository
 							// "user_string"s to be "encrypted" do NOT get "html_quotes_encode"
 							// before going into the encryption routine
-							$processed_pref = $GLOBALS['phpgw']->msg->stripslashes_gpc($submitted_pref);
-							$processed_pref = $GLOBALS['phpgw']->msg->encrypt_email_passwd($processed_pref);
+							$processed_pref = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($submitted_pref);
+							$processed_pref = \App\modules\email\services\MailMessage::getInstance()->encrypt_email_passwd($processed_pref);
 						}
 						else
 						{
 							// typical "user_string" needs to strip any slashes 
 							// that PHP "magic_quotes_gpc"may have added
-							$processed_pref = $GLOBALS['phpgw']->msg->stripslashes_gpc($submitted_pref);
+							$processed_pref = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($submitted_pref);
 							// and this is a _LAME_ way to make the value "database friendly"
 							// because slashes and quotes will FRY the whole preferences repository
-							$processed_pref = $GLOBALS['phpgw']->msg->html_quotes_encode($processed_pref);
+							$processed_pref = \App\modules\email\services\MailMessage::getInstance()->html_quotes_encode($processed_pref);
 						}
 					}
 					else
@@ -1421,8 +1421,8 @@
 		function ex_accounts_delete($acctnum='')
 		{
 			if ($this->debug_set_prefs > 0) { $this->msg->dbug->out('email.bopreferences.ex_accounts_delete ENTERING feed acctnum: ['.serialize($acctnum).']<br />'); }
-			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.ex_accounts_delete: $GLOBALS[HTTP_POST_VARS] DUMP:', $GLOBALS['phpgw']->msg->ref_POST); }
-			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.ex_accounts_delete: $GLOBALS[HTTP_GET_VARS] DUMP:', $GLOBALS['phpgw']->msg->ref_GET); }
+			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.ex_accounts_delete: $GLOBALS[HTTP_POST_VARS] DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_POST); }
+			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.ex_accounts_delete: $GLOBALS[HTTP_GET_VARS] DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_GET); }
 			
 			$this->account_group = 'extra_accounts';
 			
@@ -1474,9 +1474,9 @@
 				$GLOBALS['phpgw']->preferences->save_repository();
 			}
 			// end the email session
-			if (is_object($GLOBALS['phpgw']->msg))
+			if (\App\modules\email\services\MailMessage::hasInstance())
 			{
-				$GLOBALS['phpgw']->msg->end_request();
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
 			}
 			// redirect user back to main preferences page
 			if ($this->debug_set_prefs > 2)
@@ -1504,8 +1504,8 @@
 		function ex_accounts_edit($acctnum='')
 		{
 			if ($this->debug_set_prefs > 0) { $this->msg->dbug->out('email.bopreferences.ex_accounts_edit ENTERING <br />'); }
-			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.ex_accounts_edit: $GLOBALS[HTTP_POST_VARS] DUMP:', $GLOBALS['phpgw']->msg->ref_POST); }
-			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.ex_accounts_edit: $GLOBALS[HTTP_GET_VARS] DUMP:', $GLOBALS['phpgw']->msg->ref_GET); }
+			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.ex_accounts_edit: $GLOBALS[HTTP_POST_VARS] DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_POST); }
+			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.ex_accounts_edit: $GLOBALS[HTTP_GET_VARS] DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_GET); }
 			
 			// ==== ACCTNUM ====
 			// this tells people that we are dealing with the extra email accounts
@@ -1605,9 +1605,9 @@
 			}
 			
 			// end the email session
-			if (is_object($GLOBALS['phpgw']->msg))
+			if (\App\modules\email\services\MailMessage::hasInstance())
 			{
-				$GLOBALS['phpgw']->msg->end_request();
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
 			}
 			
 			// redirect user back to main preferences page
@@ -1639,11 +1639,11 @@
 			
 			// list accounts, except "empty" ones (show "enabled" and "disabled"
 			$return_list = array();
-			$loops = count($GLOBALS['phpgw']->msg->extra_accounts);
+			$loops = count(\App\modules\email\services\MailMessage::getInstance()->extra_accounts);
 			for($i=0; $i < $loops; $i++)
 			{
-				$this_acctnum = $GLOBALS['phpgw']->msg->extra_accounts[$i]['acctnum'];
-				$this_status = $GLOBALS['phpgw']->msg->extra_accounts[$i]['status'];
+				$this_acctnum = \App\modules\email\services\MailMessage::getInstance()->extra_accounts[$i]['acctnum'];
+				$this_status = \App\modules\email\services\MailMessage::getInstance()->extra_accounts[$i]['status'];
 				
 				if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email.bopreferences.ex_accounts_list: $GLOBALS[phpgw]->msg->extra_accounts['.$i.'][acctnum]=['.$this_acctnum.'] ;  [status]=['.$this->extra_accounts[$i]['status'].'] <br />'); }
 				if ($this_status == 'empty')
@@ -1673,17 +1673,17 @@
 						// "disabled" accounts will not return a fullname because they were not initialized during "begin_request"
 						// try to directly obtain it from RAW prefs data
 						//$fullname = '(disabled) '.$GLOBALS['phpgw']->msg->unprocessed_prefs['email']['ex_accounts'][$this_acctnum]['fullname'];
-						$accountname = $GLOBALS['phpgw']->msg->unprocessed_prefs['email']['ex_accounts'][$this_acctnum]['account_name'];
+						$accountname = \App\modules\email\services\MailMessage::getInstance()->unprocessed_prefs['email']['ex_accounts'][$this_acctnum]['account_name'];
 						if ( (isset($accountname) == False)
 						|| (trim($accountname) == '') )
 						{
-							$accountname = $GLOBALS['phpgw']->msg->unprocessed_prefs['email']['ex_accounts'][$this_acctnum]['fullname'];
+							$accountname = \App\modules\email\services\MailMessage::getInstance()->unprocessed_prefs['email']['ex_accounts'][$this_acctnum]['fullname'];
 						}
 						// test again
 						if ((isset($accountname) == False)
 						|| (trim($accountname) == ''))
 						{
-							$accountname = $GLOBALS['phpgw']->msg->get_pref_value('account_name', $this_acctnum);
+							$accountname = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('account_name', $this_acctnum);
 						}
 						// FIX ME test again, take care of this in the prefs reading like it should be, not here
 						if ((isset($accountname) == False)
@@ -1699,11 +1699,11 @@
 					}
 					else
 					{
-						$accountname = $GLOBALS['phpgw']->msg->get_pref_value('account_name', $this_acctnum);
+						$accountname = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('account_name', $this_acctnum);
 						if ( (isset($accountname) == False)
 						|| (trim($accountname) == '') )
 						{
-							$accountname = $GLOBALS['phpgw']->msg->get_pref_value('fullname', $this_acctnum);
+							$accountname = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('fullname', $this_acctnum);
 						}
 						// FIX ME test again, should we take care of this in the prefs reading, not here?
 						if ((isset($accountname) == False)
@@ -1723,9 +1723,9 @@
 					// NEXT: html encode the acctname string
 					// html encode entities on the fullname so it's safe to display in the browser, and prefix with the acctnum
 					if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email.bopreferences.ex_accounts_list: fullname raw: <code>'.serialize($accountname).'</code><br />'); }
-					$accountname = $GLOBALS['phpgw']->msg->htmlspecialchars_decode($accountname);
+					$accountname = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_decode($accountname);
 					if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email.bopreferences.ex_accounts_list: fullname B: <code>'.serialize($accountname).'</code><br />'); }
-					$accountname = $GLOBALS['phpgw']->msg->htmlspecialchars_encode($accountname);
+					$accountname = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($accountname);
 					if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email.bopreferences.ex_accounts_list: fullname C: <code>'.serialize($accountname).'</code><br />'); }
 					// FINALLY we have a string we are going to display to the user that is the name of the account
 					$return_list[$next_pos]['display_string'] = '['.$this_acctnum.'] '.$accountname;
@@ -1760,11 +1760,11 @@
 		function get_first_empty_ex_acctnum()
 		{
 			if ($this->debug_set_prefs > 0) { $this->msg->dbug->out('email.bopreferences.get_first_empty_ex_acctnum: ENTERING<br />'); }
-			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.get_first_empty_ex_acctnum: $GLOBALS[phpgw]->msg->extra_accounts DUMP:', $GLOBALS['phpgw']->msg->extra_accounts); }
-			$loops = count($GLOBALS['phpgw']->msg->extra_accounts);
+			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.get_first_empty_ex_acctnum: $GLOBALS[phpgw]->msg->extra_accounts DUMP:', \App\modules\email\services\MailMessage::getInstance()->extra_accounts); }
+			$loops = count(\App\modules\email\services\MailMessage::getInstance()->extra_accounts);
 			if ($loops == 0)
 			{
-				if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email.bopreferences.get_first_empty_ex_acctnum: count($GLOBALS[phpgw]->msg->extra_accounts =['.serialize(count($GLOBALS['phpgw']->msg->extra_accounts)).']<br />'); }
+				if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email.bopreferences.get_first_empty_ex_acctnum: count($GLOBALS[phpgw]->msg->extra_accounts =['.serialize(count(\App\modules\email\services\MailMessage::getInstance()->extra_accounts)).']<br />'); }
 				$first_empty_ex_acctnum = 1;
 			}
 			else
@@ -1772,8 +1772,8 @@
 				$did_get_acctnum = False;
 				for($i=0; $i < $loops; $i++)
 				{
-					$this_acctnum = $GLOBALS['phpgw']->msg->extra_accounts[$i]['acctnum'];
-					$this_status = $GLOBALS['phpgw']->msg->extra_accounts[$i]['status'];
+					$this_acctnum = \App\modules\email\services\MailMessage::getInstance()->extra_accounts[$i]['acctnum'];
+					$this_status = \App\modules\email\services\MailMessage::getInstance()->extra_accounts[$i]['status'];
 					// loop =0 *would* = acctnum 1 *if* acctnum slots are filled in order, they'd always be 1 apart
 					if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email.bopreferences.get_first_empty_ex_acctnum: in loop ['.$i.'] : status: ['.$this_status.'] ; acctnum: ['.$this_acctnum.']<br />'); }
 					if ($this_status == 'empty')
@@ -1794,7 +1794,7 @@
 				if ($did_get_acctnum == False)
 				{
 					// all slots taken, add +1 to last filled acctnum
-					$first_empty_ex_acctnum = count($GLOBALS['phpgw']->msg->extra_accounts);
+					$first_empty_ex_acctnum = count(\App\modules\email\services\MailMessage::getInstance()->extra_accounts);
 					// since extra accounts are not zero based, add one to that count to get real next available
 					$first_empty_ex_acctnum++;
 					if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email.bopreferences.get_first_empty_ex_acctnum: no empty spaces extra_accounts[], advance to next int: $first_empty_ex_acctnum ['.$first_empty_ex_acctnum.']<br />'); }
@@ -1813,19 +1813,19 @@
 		function obtain_ex_acctnum()
 		{
 			if ($this->debug_set_prefs > 0) { $this->msg->dbug->out('email: bopreferences.obtain_ex_acctnum: ENTERING<br />'); }
-			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.obtain_ex_acctnum: $GLOBALS[HTTP_POST_VARS] DUMP:', $GLOBALS['phpgw']->msg->ref_POST); }
-			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.obtain_ex_acctnum: $GLOBALS[HTTP_GET_VARS] DUMP:', $GLOBALS['phpgw']->msg->ref_GET); }
+			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.obtain_ex_acctnum: $GLOBALS[HTTP_POST_VARS] DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_POST); }
+			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.obtain_ex_acctnum: $GLOBALS[HTTP_GET_VARS] DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_GET); }
 			// get fromPOST or GET
 			$prelim_acctnum = '##NOTHING##';
-			if ((isset($GLOBALS['phpgw']->msg->ref_POST['ex_acctnum'])
-			&& ((string)$GLOBALS['phpgw']->msg->ref_POST['ex_acctnum'] != '')))
+			if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['ex_acctnum'])
+			&& ((string)\App\modules\email\services\MailMessage::getInstance()->ref_POST['ex_acctnum'] != '')))
 			{
-				$prelim_acctnum = (int)$GLOBALS['phpgw']->msg->ref_POST['ex_acctnum'];
+				$prelim_acctnum = (int)\App\modules\email\services\MailMessage::getInstance()->ref_POST['ex_acctnum'];
 			}
-			elseif ((isset($GLOBALS['phpgw']->msg->ref_GET['ex_acctnum'])
-			&& ((string)$GLOBALS['phpgw']->msg->ref_GET['ex_acctnum'] != '')))
+			elseif ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_GET['ex_acctnum'])
+			&& ((string)\App\modules\email\services\MailMessage::getInstance()->ref_GET['ex_acctnum'] != '')))
 			{
-				$prelim_acctnum = (int)$GLOBALS['phpgw']->msg->ref_GET['ex_acctnum'];
+				$prelim_acctnum = (int)\App\modules\email\services\MailMessage::getInstance()->ref_GET['ex_acctnum'];
 			}
 			// in all these cases we don't have a valid acct num (or we are asked to make a new one)
 			// so any of these requires a new, blank acctnum

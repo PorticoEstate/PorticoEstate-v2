@@ -76,13 +76,12 @@
 			$GLOBALS['phpgw']->template->pfp('out','T_attach_file');
 			
 			//$GLOBALS['phpgw']->common->phpgw_exit();
-			if (is_object($GLOBALS['phpgw']->msg))
+			if (\App\modules\email\services\MailMessage::hasInstance())
 			{
 				// close down ALL mailserver streams
-				$GLOBALS['phpgw']->msg->end_request();
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
 				// destroy the object
-				$GLOBALS['phpgw']->msg = '';
-				unset($GLOBALS['phpgw']->msg);
+				\App\modules\email\services\MailMessage::releaseInstance();
 			}
 			
 			// shut down this transaction

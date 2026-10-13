@@ -49,9 +49,9 @@
 				$this->maxmatches = 15;
 			}
 
-			if(isset($GLOBALS['phpgw']->msg->ref_GET['menuaction']))
+			if(isset(\App\modules\email\services\MailMessage::getInstance()->ref_GET['menuaction']))
 			{
-				$this->action = $GLOBALS['phpgw']->msg->ref_GET['menuaction'];
+				$this->action = \App\modules\email\services\MailMessage::getInstance()->ref_GET['menuaction'];
 			}
 		}
 		
@@ -244,11 +244,11 @@
 		*/
 		function nav_left_right_mail($feed_vars)
 		{
-			if ((@$GLOBALS['phpgw']->msg->get_isset_pref('icon_theme'))
-			&& (@$GLOBALS['phpgw']->msg->get_isset_pref('icon_size')))
+			if ((@\App\modules\email\services\MailMessage::getInstance()->get_isset_pref('icon_theme'))
+			&& (@\App\modules\email\services\MailMessage::getInstance()->get_isset_pref('icon_size')))
 			{
-				$this->icon_theme = $GLOBALS['phpgw']->msg->get_pref_value('icon_theme');
-				$this->icon_size = $GLOBALS['phpgw']->msg->get_pref_value('icon_size');
+				$this->icon_theme = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('icon_theme');
+				$this->icon_size = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('icon_size');
 			}
 			//echo "icon size is ".$this->icon_size."<br />\r\n";
 			
@@ -354,7 +354,7 @@
 		*/
 		function set_link_mail($align,$img,$alt_text,$out_vars)
 		{
-			$button_type = $GLOBALS['phpgw']->msg->get_pref_value('button_type');
+			$button_type = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('button_type');
 			// in reality we never show BOTH text and image for the page nav links
 			// so here we respect only just text, or else the default is just image
 			if ($button_type == 'text')
@@ -365,7 +365,7 @@
 			else
 			{
 				//$img_full = $GLOBALS['phpgw']->common->image('email',$img);
-				$img_full = $GLOBALS['phpgw']->msg->_image_on('email',$img,'_on');
+				$img_full = \App\modules\email\services\MailMessage::getInstance()->_image_on('email',$img,'_on');
 				$image_part = '<img src="'.$img_full.'" border="0" title="'.$alt_text.'"  alt="'.$alt_text.'">';
 				return '<a href="'.$out_vars['common_uri'].'&start='.$out_vars['start'].'">'.$image_part.'</a>';
 			}
@@ -384,7 +384,7 @@
 		*/
 		function set_icon_mail($align,$img,$alt_text)
 		{
-			$button_type = $GLOBALS['phpgw']->msg->get_pref_value('button_type');
+			$button_type = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('button_type');
 			// in reality we never show BOTH text and image for the page nav links
 			// so here we respect only just text, or else the default is just image
 			if ($button_type == 'text')
@@ -395,7 +395,7 @@
 			else
 			{
 				//$img_full = $GLOBALS['phpgw']->common->image('email',$img);
-				$img_full = $GLOBALS['phpgw']->msg->_image_on('email',$img,'_on');
+				$img_full = \App\modules\email\services\MailMessage::getInstance()->_image_on('email',$img,'_on');
 				return '<img src="'.$img_full.'" border="0" title="'.$alt_text.'" alt="'.$alt_text.'">'."\r\n"; 
 			}
 		}

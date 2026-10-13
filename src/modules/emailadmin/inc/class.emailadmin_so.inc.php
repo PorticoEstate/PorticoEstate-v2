@@ -15,7 +15,6 @@ use App\modules\phpgwapi\services\Settings;
 	\***************************************************************************/
 /* $Id$ */
 
-phpgw::import_class('felamimail.bofelamimail');
 class emailadmin_so
 {
 	var $phpgwapi_common;
@@ -302,9 +301,9 @@ class emailadmin_so
 								if (strlen($toMerge['ea_smtp_server']) > 0) $mergeInTo[$key] = $toMerge[$key];
 								break;
 							case 'ea_default_signature':
-								$testVal = $toMerge['ea_default_signature'];
-								bofelamimail::getCleanHTML($testVal);
-								if (strlen($testVal) > 10 || $testVal != '<br>' || $testVal != '<br />') $mergeInTo[$key] = $toMerge[$key];
+								$userSettings = Settings::getInstance()->get('user') ?? [];
+								$allowExternalImages = !empty($userSettings['preferences']['felamimail']['allowExternalIMGs']);
+								$mergeInTo[$key] = \Sanitizer::clean_email_signature((string) $toMerge[$key], $allowExternalImages);
 								break;
 							default:
 								$mergeInTo[$key] = $toMerge[$key];

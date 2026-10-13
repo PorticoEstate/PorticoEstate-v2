@@ -39,6 +39,11 @@ use App\modules\phpgwapi\services\Cache;
 phpgwapi_cache
 Cache
 
+Use this service for all persistent caching; do not add private SQL caches or direct session cache storage.
+Cache::session_get($module, $key);
+Cache::session_set($module, $key, $data);
+Cache::session_set($module, $key, null);
+
 $GLOBALS['phpgw']->link()
 phpgw::link()
 

@@ -375,7 +375,7 @@
 			{
 				// this function echos out its data
 				//echo 'msg->ref_SESSION dump:<pre>'; print_r($GLOBALS['phpgw']->msg->ref_SESSION); echo '</pre>';
-				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): msg->ref_SESSION DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_SESSION);
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): mail cache DUMP:', \App\modules\email\services\MailMessage::getInstance()->getSessionCache());
 			}
 			elseif ($desired_function == 'msg_object_dump')
 			{
@@ -604,8 +604,7 @@
 			}
 			// If you issue a DELETE with no WHERE clause, all rows are deleted.
 			// THIS WIPES THE TABLE CLEAN OF ALL DATA
-			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_admin_clear_entire_table('.__LINE__.'): param $really_do_it ['.serialize($really_do_it).'] so we CALL $GLOBALS[phpgw]->db->query("DELETE FROM phpgw_anglemail",'.__LINE__.','.__FILE__.');<br />');
-			$GLOBALS['phpgw']->db->query("DELETE FROM phpgw_anglemail",__LINE__,__FILE__);
+			\App\modules\email\services\MailMessage::getInstance()->so->so_clear_all_data_this_user();
 			\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.db_admin_clear_entire_table('.__LINE__.'): LEAVING<br />');
 		}
 		

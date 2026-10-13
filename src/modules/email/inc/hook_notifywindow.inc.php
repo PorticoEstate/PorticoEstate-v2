@@ -40,10 +40,10 @@
 		\App\modules\email\services\MailMessage::getInstance()->end_request();
 
 		$current_uid=$inbox_data['uidnext'];
-		$old_uid=$GLOBALS['phpgw']->common->appsession();
+		$old_uid=\App\modules\phpgwapi\services\Cache::session_get('email', 'notification_uid');
 		if(!empty($old_uid))
 		{
-			$new_msgs=$current_id-$old_id;
+			$new_msgs=max(0, (int) $current_uid - (int) $old_uid);
 		}
 		else
 		{
@@ -107,5 +107,5 @@
 			echo "</td></tr></table>\r\n";
 			echo "\r\n".'<!-- Mailox info --></td></tr>'."\r\n";
 		}
-		$GLOBALS['phpgw']->common->appsession($current_uid);
+		\App\modules\phpgwapi\services\Cache::session_set('email', 'notification_uid', $current_uid);
 	}

@@ -1,4 +1,5 @@
 <?php
+	use App\modules\phpgwapi\services\Cache;
 	/**
 	* EMail - Handles specific operations in manipulating email messages
 	*
@@ -34,6 +35,38 @@
 		private static bool $shutdownRegistered = false;
 		private array $transports = [];
 		private ?object $commonService = null;
+		private ?array $sessionCache = null;
+
+		public function &getSessionCache(): array
+		{
+			if ($this->sessionCache === null)
+			{
+				$data = $this->session_cache_enabled ? Cache::session_get('email', 'mail_state') : [];
+				$this->sessionCache = is_array($data) ? $data : [];
+			}
+			return $this->sessionCache;
+		}
+
+		public function persistSessionCache(): bool
+		{
+			if (!$this->session_cache_enabled) return false;
+			return Cache::session_set('email', 'mail_state', $this->getSessionCache());
+		}
+
+		public function resetSessionCache(bool $retainAccountMetadata = false): bool
+		{
+			$cache =& $this->getSessionCache();
+			$retained = [];
+			if ($retainAccountMetadata)
+			{
+				foreach ($cache as $account => $data)
+				{
+					$retained[$account] = array_intersect_key((array) $data, array_flip(['mailsvr_callstr', 'folder_list', 'mailsvr_namespace']));
+				}
+			}
+			$cache = $retained;
+			return $this->persistSessionCache();
+		}
 
 		protected function getCommon(): object
 		{
@@ -44,9 +77,9 @@
 		{
 			if (func_num_args() < 3)
 			{
-				return \App\modules\phpgwapi\services\Cache::session_get($module, $location);
+				return Cache::session_get($module, $location);
 			}
-			return \App\modules\phpgwapi\services\Cache::session_set($module, $location, $data);
+			return Cache::session_set($module, $location, $data);
 		}
 
 		public static function getInstance(): \mail_msg
@@ -3996,13 +4029,15 @@ Array
 			if ($this->session_cache_enabled == False)
 			{
 				if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): LEAVING, because $this->session_cache_enabled='.serialize($this->session_cache_enabled).', so not this basic stuff, and not the extra "extreme cache" stuff, nothing can use the appsession cache.<br />'); }
+				$this->persistSessionCache();
 				// LEAVING
 				return False;
 			}
 			// IF EMPTY DATA - LEAVE
 			if (!$data)
 			{
-				if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): LEAVING with ERROR, no $data param was provided for $data_name ['.$data_name.'] $acctnum ['.$acctnum.'], we gotta return false because no data was saved<br />'); } 
+				if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): LEAVING with ERROR, no $data param was provided for $data_name ['.$data_name.'] $acctnum ['.$acctnum.'], we gotta return false because no data was saved<br />'); }
+				$this->persistSessionCache();
 				// LEAVING
 				return False;
 			}
@@ -4022,6 +4057,7 @@ Array
 				{
 					$this->dbug->out('mail_msg: save_session_cache_item: LEAVING on ERROR, FIXME line '.__LINE__.' we have no msgball_list<br />');
 					echo 'mail_msg: save_session_cache_item: LEAVING on ERROR, FIXME line '.__LINE__.' we have no msgball_list<br />';
+					$this->persistSessionCache();
 					// LEAVING ERROR
 					return False;
 				}
@@ -4159,34 +4195,14 @@ Array
 				$folder_name = $data['validity']['fldball']['folder'];
 				if (($this->debug_session_caching > 2) && ($this->debug_allow_magball_list_dumps)) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): [email][dat]['.$acctnum.']['.$data_name.']['.$folder_name.'] DUMP:', $data); } 
 				// SET DATA
-				//$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name] = $data;
+				//$this->getSessionCache()[$acctnum][$data_name] = $data;
 				// SET DATA USING FOLDER ALSO
-				$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$folder_name] = $data;
-				
-				// for DB sessions_db ONLY
-				if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-				|| ($this->use_private_table == True))
-				{
-					//$my_location = (string)$acctnum.';'.$data_name;
-					// SET DATA USING FOLDER ALSO
-					$my_location = (string)$acctnum.';'.$data_name.';'.$folder_name;
-					if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to put data into database anglemail table, $my_location ['.$my_location.']<br />'); } 
-					if ($this->use_private_table == True)
-					{
-						//$this->so->so_set_data($my_location, $data);
-						// TRY USING COMPRESSION
-						$this->so->so_set_data($my_location, $data, True);
-					}
-					else
-					{
-						// NOTE compression not available for appsession table
-						$this->appSession($my_location, 'email', $data);
-					}
-				}
+				$this->getSessionCache()[$acctnum][$data_name][$folder_name] = $data;
 				
 				$data = array();
 				unset($data);
 				if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): LEAVING, did SET data for location: [email][dat][$acctnum][$data_name][$extra_keys] :: [email][dat]['.$acctnum.']['.$data_name.']['.$folder_name.'] <br />'); }
+				$this->persistSessionCache();
 				return True;
 			}
 			// DEFANG special handler for data that might b0rk a database, stuff like ' " / \ and maybe some others, only "mailsvr_callstr" needs this right now
@@ -4205,10 +4221,11 @@ Array
 				
 				if ($this->debug_session_caching > 2) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): [email][dat]['.$acctnum.']['.$data_name.'] DUMP:', $data); } 
 				// SET DATA
-				$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name] = $data;
+				$this->getSessionCache()[$acctnum][$data_name] = $data;
 				$data = array();
 				if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): LEAVING, did SET data for location: [email][dat][$acctnum][$data_name] :: [email][dat]['.$acctnum.']['.$data_name.'] <br />'); }
 				unset($data);
+				$this->persistSessionCache();
 				return True;
 			}
 			// ANYTHING that is non extreme-mode cachable that requires NO special treatment, add it to this block here
@@ -4226,26 +4243,12 @@ Array
 				
 				if ($this->debug_session_caching > 2) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): [email][dat]['.$acctnum.']['.$data_name.'] DUMP:', $data); } 
 				// SET DATA
-				$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name] = $data;
-				// session_db backwards_compat
-				if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-				|| ($this->use_private_table == True))
-				{
-					$my_location = (string)$acctnum.';'.$data_name;
-					if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to put data into phpgw_app_sessions table, $my_location ['.$my_location.']<br />'); } 
-					if ($this->use_private_table == True)
-					{
-						$this->so->so_set_data($my_location, $data);
-					}
-					else
-					{
-						$this->appSession($my_location, 'email', $data);
-					}
-				}
+				$this->getSessionCache()[$acctnum][$data_name] = $data;
 				
 				$data = array();
 				if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): LEAVING, did SET data for location: [email][dat][$acctnum][$data_name] :: [email][dat]['.$acctnum.']['.$data_name.'] <br />'); }
 				unset($data);
+				$this->persistSessionCache();
 				return True;
 			}
 			else
@@ -4257,6 +4260,7 @@ Array
 			if ($this->session_cache_extreme == False)
 			{
 				if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): LEAVING, return False, because $this->session_cache_extreme='.serialize($this->session_cache_extreme).', so the extra "extreme cache" stuff can NOT use the appsession cache.<br />'); }
+				$this->persistSessionCache();
 				return False;
 			}
 			elseif ($data_name == 'folder_status_info')
@@ -4316,25 +4320,11 @@ Array
 				
 				if ($this->debug_session_caching > 2) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): [email][dat]['.$acctnum.']['.$data_name.']['.$extra_keys.'] DUMP:', $data); } 
 				// SET DATA
-				$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$extra_keys] = $data;
-				// for DB sessions_db ONLY
-				if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-				|| ($this->use_private_table == True))
-				{
-					$my_location = (string)$acctnum.';'.$data_name.';'.$extra_keys;
-					if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to put data into phpgw_app_sessions table, $my_location ['.$my_location.']<br />'); } 
-					if ($this->use_private_table == True)
-					{
-						$this->so->so_set_data($my_location, $data);
-					}
-					else
-					{
-						$this->appSession($my_location, 'email', $data);
-					}
-				}
+				$this->getSessionCache()[$acctnum][$data_name][$extra_keys] = $data;
 				$data = array();
 				unset($data);
 				if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): LEAVING, did SET data for location: [email][dat][$acctnum][$data_name][$extra_keys] :: [email][dat]['.$acctnum.']['.$data_name.']['.$extra_keys.'] <br />'); }
+				$this->persistSessionCache();
 				return True;
 			}
 			elseif (($data_name == 'msg_structure')
@@ -4408,26 +4398,12 @@ Array
 				$data = $data[$data_name];
 				if ($this->debug_session_caching > 2) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): [email][dat]['.$acctnum.']['.$data_name.']['.$ex_folder.']['.$ex_msgnum.'] DUMP:', $data); } 
 				// SET DATA
-				$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum] = $data;
-				// for DB sessions_db ONLY
-				if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-				|| ($this->use_private_table == True))
-				{
-					$my_location = (string)$acctnum.';'.$data_name.';'.$ex_folder.';'.$ex_msgnum;
-					if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to put data into phpgw_app_sessions table, $my_location ['.$my_location.']<br />'); } 
-					if ($this->use_private_table == True)
-					{
-						$this->so->so_set_data($my_location, $data);
-					}
-					else
-					{
-						$this->appSession($my_location, 'email', $data);
-					}
-				}
+				$this->getSessionCache()[$acctnum][$data_name][$ex_folder][$ex_msgnum] = $data;
 				$data = array();
 				unset($data);
 				//if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): LEAVING, did SET data for location: [email][dat][$acctnum][$data_name][$ex_folder][$ex_msgnum] :: [email][dat]['.$acctnum.']['.$data_name.']['.$ex_folder.']['.$ex_msgnum.'] <br />'); }
 				if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): LEAVING, did SET data for [email][dat]['.$acctnum.']['.$data_name.']['.$ex_folder.']['.$ex_msgnum.'] <br />'); }
+				$this->persistSessionCache();
 				return True;
 			}
 			elseif ($data_name == 'phpgw_fetchbody')
@@ -4451,6 +4427,7 @@ Array
 				{
 					// LEAVING
 					if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): LEAVING with ERROR, returning FALSE, insufficient data for ['.$data_name.'] because NOT GIVEN $data[msgball][part_no];  $data[msgball] was ['.serialize($data['msgball']).'] <br />'); }
+					$this->persistSessionCache();
 					return False;
 				}
 				$strlen_phpgw_fetchbody = strlen($data['phpgw_fetchbody']);
@@ -4458,6 +4435,7 @@ Array
 				{
 					// LEAVING
 					if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): LEAVING with ERROR, returning FALSE, data TOO LARGE for ['.$data_name.']; $strlen_phpgw_fetchbody;  $data[msgball] was ['.$strlen_phpgw_fetchbody.'] <br />'); }
+					$this->persistSessionCache();
 					return False;
 				}
 				
@@ -4472,25 +4450,11 @@ Array
 				$data = $data[$data_name];
 				if ($this->debug_session_caching > 2) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): [email][dat]['.$acctnum.']['.$data_name.']['.$ex_folder.']['.$ex_msgnum.']['.$ex_part_no.'] DUMP:', $data); } 
 				// SET DATA
-				$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum][$ex_part_no] = $data;
-				// for DB sessions_db ONLY
-				if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-				|| ($this->use_private_table == True))
-				{
-					$my_location = (string)$acctnum.';'.$data_name.';'.$ex_folder.';'.$ex_msgnum.';'.$ex_part_no;
-					if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): AM Table in use or sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to put data into a table table, $my_location ['.$my_location.'], this is always needed for AM table<br />'); } 
-					if ($this->use_private_table == True)
-					{
-						$this->so->so_set_data($my_location, $data);
-					}
-					else
-					{
-						$this->appSession($my_location, 'email', $data);
-					}
-				}
+				$this->getSessionCache()[$acctnum][$data_name][$ex_folder][$ex_msgnum][$ex_part_no] = $data;
 				$data = array();
 				unset($data);
 				if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): LEAVING, did SET data for [email][dat]['.$acctnum.']['.$data_name.']['.$ex_folder.']['.$ex_msgnum.']['.$ex_part_no.'] <br />'); }
+				$this->persistSessionCache();
 				return True;
 			}
 			else
@@ -4500,6 +4464,7 @@ Array
 				//echo 'mail_msg: save_session_cache_item('.__LINE__.'): LEAVING with ERROR: NO HANDLER for data_name='.$data_name.' in extreme-mode block, DATA WILL NOT BE SAVED, returning False<br />';
 				// LEAVING
 				if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: save_session_cache_item('.__LINE__.'): LEAVING with ERROR, no data handler for: [email][dat][$acctnum][$data_name][$extra_keys] :: [email][dat]['.$acctnum.']['.$data_name.']['.$extra_keys.'] <br />'); }
+				$this->persistSessionCache();
 				return False;
 			}
 			
@@ -4589,28 +4554,8 @@ Array
 			&& ($this->session_cache_extreme == True))
 			{
 				// GET DATA
-				// for DB sessions_db ONLY
-				if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-				|| ($this->use_private_table == True))
-				{
-					$my_location = (string)$acctnum.';'.$data_name.';'.$ex_folder;
-					if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: read_session_cache_item('.__LINE__.'): sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to read data from phpgw_app_sessions table, $my_location ['.$my_location.']<br />'); } 
-					if ($this->use_private_table == True)
-					{
-						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder]
-							= $this->so->so_get_data($my_location);
-					}
-					else
-					{
-						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder]
-							= $this->appSession($my_location, 'email');
-					}
-					//if ($this->debug_session_caching > 2) { echo 'mail_msg: read_session_cache_item('.__LINE__.'): [email][dat]['.$acctnum.']['.$data_name.']['.$ex_folder.'] DUMP:<pre>'; print_r($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder]); echo '</pre>'; }
-				}
-				
-				// GET DATA
 				// "folder_status_info" DATA IS ONLY appsession CACHED IF $this->session_cache_extreme IS TRUE
-				$folder_status_info = $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder];
+				$folder_status_info = $this->getSessionCache()[$acctnum][$data_name][$ex_folder] ?? false;
 				
 				if ($folder_status_info)
 				{
@@ -4642,8 +4587,8 @@ Array
 						if ($this->debug_session_caching > 1) { $this->dbug->out('class_msg: get_folder_status_info: ('.__LINE__.') LEAVING, $timestamp_age ['.$timestamp_age.'] EXCEEDS $timestamp_age_limit ['.$timestamp_age_limit.'], this data NEEDS REFRESHING, expire this element<br />'); }
 						$got_data = '';
 						unset($got_data);
-						//$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder] = array();
-						//unset($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder]);
+						//$this->getSessionCache()[$acctnum][$data_name][$ex_folder] = array();
+						//unset($this->getSessionCache()[$acctnum][$data_name][$ex_folder]);
 						// this does the same thing, so use this instead
 						$this->expire_session_cache_item('folder_status_info', $acctnum, $ex_folder);
 						
@@ -4717,51 +4662,7 @@ Array
 					$ex_folder = $this->prep_folder_out($this->get_arg_value('folder', $acctnum));
 					if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: read_session_cache_item('.__LINE__.'): handling ['.$data_name.'] we did NOT get param $ex_folder so we just obtained and set it to this: ['.$ex_folder.']<br />'); } 
 				}
-				
-				// GET DATA
-				// for DB sessions_db ONLY
-				if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-				|| ($this->use_private_table == True))
-				{
-					//$my_location = (string)$acctnum.';'.$data_name;
-					// WE N OW USE FOLDER DATA TOO
-					$my_location = (string)$acctnum.';'.$data_name.';'.$ex_folder;
-					if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: read_session_cache_item('.__LINE__.'): sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to read data from a database table, $my_location ['.$my_location.']<br />'); } 
-					if ($this->use_private_table == True)
-					{
-						//$got_data = array();
-						//$got_data = $this->so->so_get_data($my_location);
-						//$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name]
-						//	= $got_data;
-						
-						//$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name]
-						//	= $this->so->so_get_data($my_location);
-						
-						// TRY USING COMPRESSION
-						//$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name]
-						//	= $this->so->so_get_data($my_location, True);
-						
-						// TRY USING COMPRESSION
-						$got_data = array();
-						$got_data = $this->so->so_get_data($my_location, True);
-						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder]
-							= $got_data;
-					}
-					else
-					{
-						// NOTE: no compression available for appsession
-						$got_data = array();
-						$got_data = $this->appSession($my_location, 'email');
-						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder]
-							= $got_data;
-						
-						// NOTE: no compression available for appsession
-						//$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder]
-						//	= $GLOBALS['phpgw']->session->appsession($my_location, 'email');
-					}
-					if ($this->debug_session_caching > 2) { $this->dbug->out('mail_msg: read_session_cache_item('.__LINE__.'): [email][dat]['.$acctnum.']['.$data_name.'] DUMP:', $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder]); }
-				}
-				//$got_data = $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name];
+				$got_data = ($this->getSessionCache()[$acctnum][$data_name][$ex_folder] ?? false) ?? false;
 				
 				if (($this->debug_session_caching > 2) && ($this->debug_allow_magball_list_dumps)) { $this->dbug->out('mail_msg: read_session_cache_item: $data_name ['.$data_name.'] verified NOT Stale, restored data DUMP:', $got_data); } 
 				if (!$got_data)
@@ -4825,8 +4726,8 @@ Array
 					else
 					{
 						if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: read_session_cache_item('.__LINE__.'): EXPIRE STALE ['.$data_name.'] session data for $acctnum: ['.$acctnum.'], $ex_folder ['.$ex_folder.']<br />'); }
-						//$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name] = array();
-						//unset($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name]);
+						//$this->getSessionCache()[$acctnum][$data_name] = array();
+						//unset($this->getSessionCache()[$acctnum][$data_name]);
 						// this is better to use
 						//$this->expire_session_cache_item($data_name, $acctnum);
 						// NOW WE USE FOLDER IN DATA KEY ALSO
@@ -4840,7 +4741,7 @@ Array
 			//elseif ($data_name == 'mailsvr_callstr')
 			{
 				// GET DATA
-				$got_data = $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name];
+				$got_data = $this->getSessionCache()[$acctnum][$data_name] ?? false;
 				if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: read_session_cache_item('.__LINE__.'): DEFANG because session cache is "db", this handler exists for $data_name ['.$data_name.']<br />'); }
 				// this special handler decodes the database defanging
 				if ($got_data)
@@ -4863,26 +4764,7 @@ Array
 			|| ($data_name == 'folder_list')
 			|| ($data_name == 'mailsvr_callstr'))
 			{
-				// GET DATA
-				// for DB sessions_db ONLY
-				if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-				|| ($this->use_private_table == True))
-				{
-					$my_location = (string)$acctnum.';'.$data_name;
-					if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: read_session_cache_item('.__LINE__.'): sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to read data from phpgw_app_sessions table, $my_location ['.$my_location.']<br />'); } 
-					if ($this->use_private_table == True)
-					{
-						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name]
-							= $this->so->so_get_data($my_location);
-					}
-					else
-					{
-						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name]
-							= $this->appSession($my_location, 'email');
-					}
-					if ($this->debug_session_caching > 2) { $this->dbug->out('mail_msg: read_session_cache_item('.__LINE__.'): [email][dat]['.$acctnum.']['.$data_name.'] DUMP:', $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name]); }
-				}
-				$got_data = $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name];
+				$got_data = $this->getSessionCache()[$acctnum][$data_name] ?? false;
 				
 				// "mailsvr_callstr" if session is NOT "db" is handled here because no database defang if necessary
 				if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: read_session_cache_item('.__LINE__.'): handler exists for $data_name ['.$data_name.']<br />'); }
@@ -4908,34 +4790,7 @@ Array
 			{
 				// THIS DATA IS NEVER CACHED IF $this->session_cache_extreme IS FALSE
 				if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: read_session_cache_item('.__LINE__.'): handler exists for $data_name ['.$data_name.']<br />'); }
-				// this IS a special handler because we do not return the entire cached array of "msg_structure" elements, 
-				// we only return ONE SINGLE "msg_structure" (or "phpgw_header" ) value from that array, 
-				// if it exists in that array. 
-				// the array can exist but not have the specific element we are looking for
-				// NOTE: we need param $special_extra_stuff because other cached items are returned whole
-				// but "msg_structure" (or "phpgw_header" ) need that EXTRA peice of information 
-				// to return only a portion of cached data. 
-				
-				// GET DATA
-				// for DB sessions_db ONLY
-				if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-				|| ($this->use_private_table == True))
-				{
-					$my_location = (string)$acctnum.';'.$data_name.';'.$ex_folder.';'.$ex_msgnum;
-					if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: read_session_cache_item('.__LINE__.'): sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to read data from phpgw_app_sessions table, $my_location ['.$my_location.']<br />'); } 
-					if ($this->use_private_table == True)
-					{
-						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum]
-							= $this->so->so_get_data($my_location);
-					}
-					else
-					{
-						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum]
-							= $this->appSession($my_location, 'email');
-					}
-					//if ($this->debug_session_caching > 2) { echo 'mail_msg: read_session_cache_item('.__LINE__.'): [email][dat]['.$acctnum.']['.$data_name.']['.$ex_folder.'] ['.$ex_msgnum.']DUMP:<pre>'; print_r($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum]); echo '</pre>'; }
-				}
-				$got_data = $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum];
+				$got_data = $this->getSessionCache()[$acctnum][$data_name][$ex_folder][$ex_msgnum] ?? false;
 				
 				if ($got_data)
 				{
@@ -4956,27 +4811,7 @@ Array
 			{
 				// THIS DATA IS NEVER CACHED IF $this->session_cache_extreme IS FALSE
 				if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: read_session_cache_item('.__LINE__.'): handler exists for $data_name ['.$data_name.']<br />'); }
-				
-				// GET DATA
-				// for DB sessions_db ONLY
-				if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-				|| ($this->use_private_table == True))
-				{
-					$my_location = (string)$acctnum.';'.$data_name.';'.$ex_folder.';'.$ex_msgnum.';'.$ex_part_no;
-					if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: read_session_cache_item('.__LINE__.'): AM table in use or sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to read data from a table table, $my_location ['.$my_location.']<br />'); } 
-					if ($this->use_private_table == True)
-					{
-						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum][$ex_part_no]
-							= $this->so->so_get_data($my_location);
-					}
-					else
-					{
-						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum][$ex_part_no]
-							= $this->appSession($my_location, 'email');
-					}
-					//if ($this->debug_session_caching > 2) { echo 'mail_msg: read_session_cache_item('.__LINE__.'): [email][dat]['.$acctnum.']['.$data_name.']['.$ex_folder.'] ['.$ex_msgnum.']DUMP:<pre>'; print_r($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum][$ex_part_no]); echo '</pre>'; }
-				}
-				$got_data = $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum][$ex_part_no];
+				$got_data = $this->getSessionCache()[$acctnum][$data_name][$ex_folder][$ex_msgnum][$ex_part_no] ?? false;
 				
 				if ($got_data)
 				{
@@ -5060,91 +4895,56 @@ Array
 				$this->set_arg_value($data_name, $empty_data, $acctnum);
 			}
 			
-			// SECOND -- EXPIRE ANY APPSESSION CACHE for this data_name
-			// ---  now get rid of any "$data_name" value saved in the session cache  ---
-			// also note that in extreme mode we expire "folder_status_info" here because 
-			//    (a) it would be handled above for non-extreme mode and 
-			//    (b) it uses subitems so we need to handle it here so we expire single sub item and not the whole thing
-			
-			// DELETE DATA
-			// for DB sessions_db ONLY
-			if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-			|| ($this->use_private_table == True))
-			{
-				// generic fallback value
-				$my_location = (string)$acctnum.';'.$data_name;
-				if (((string)$ex_folder != '')
-				&& ((string)$ex_msgnum != '')
-				&& ((string)$ex_part_no != ''))
-				{
-					$my_location = (string)$acctnum.';'.$data_name.';'.$ex_folder.';'.$ex_msgnum.';'.$ex_part_no;
-				}
-				elseif (((string)$ex_folder != '')
-				&& ((string)$ex_msgnum != ''))
-				{
-					$my_location = (string)$acctnum.';'.$data_name.';'.$ex_folder.';'.$ex_msgnum;
-				}
-				elseif ((string)$ex_folder != '')
-				{
-					$my_location = (string)$acctnum.';'.$data_name.';'.$ex_folder;
-				}
-				
-				if ($this->use_private_table == True)
-				{
-					if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: expire_session_cache_item('.__LINE__.'): we are using private table, SO we have this additional step to blank data in the "phpgw_anglemail" table, $my_location ['.$my_location.']<br />'); } 
-					$this->so->so_delete_data($my_location);
-				}
-				else
-				{
-					if ($this->debug_session_caching > 1) { $this->dbug->out('mail_msg: expire_session_cache_item('.__LINE__.'): sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to blank data in the "phpgw_app_sessions" table, $my_location ['.$my_location.']<br />'); } 
-					$this->appSession($my_location, 'email', '');
-				}
-			}
-			
 			//if ((!$ex_folder)
 			//&& (!$ex_msgnum)
 			if (((string)$ex_folder == '')
 			&& ((string)$ex_msgnum == '')
-			&& (isset($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name])))
+			&& (isset($this->getSessionCache()[$acctnum][$data_name])))
 			{
-				$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name] = '';
-				unset($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name]);
+				$this->getSessionCache()[$acctnum][$data_name] = '';
+				unset($this->getSessionCache()[$acctnum][$data_name]);
 				if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: expire_session_cache_item('.__LINE__.'): LEAVING return True, did expire existing data for [email][dat]['.$acctnum.']['.$data_name.']<br />'); }
+				$this->persistSessionCache();
 				return True;
 			}
 			//elseif (($ex_folder)
 			//&& (!$ex_msgnum)
 			elseif (((string)$ex_folder != '')
 			&& ((string)$ex_msgnum == '')
-			&& (isset($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder])))
+			&& (isset($this->getSessionCache()[$acctnum][$data_name][$ex_folder])))
 			{
-				$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder] = '';
-				unset($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder]);
+				$this->getSessionCache()[$acctnum][$data_name][$ex_folder] = '';
+				unset($this->getSessionCache()[$acctnum][$data_name][$ex_folder]);
 				if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: expire_session_cache_item('.__LINE__.'): LEAVING return True, did expire existing data for [email][dat]['.$acctnum.']['.$data_name.']['.$ex_folder.']<br />'); }
+				$this->persistSessionCache();
 				return True;
 			}
 			//elseif (($ex_folder)
 			//&& ($ex_msgnum)
 			elseif (((string)$ex_folder != '')
 			&& ((string)$ex_msgnum != '')
-			&& (isset($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum])))
+			&& ((string)$ex_part_no == '')
+			&& (isset($this->getSessionCache()[$acctnum][$data_name][$ex_folder][$ex_msgnum])))
 			{
-				$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum] = '';
-				unset($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum]);
+				$this->getSessionCache()[$acctnum][$data_name][$ex_folder][$ex_msgnum] = '';
+				unset($this->getSessionCache()[$acctnum][$data_name][$ex_folder][$ex_msgnum]);
 				if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: expire_session_cache_item('.__LINE__.'): LEAVING return True, did expire existing data for [email][dat]['.$acctnum.']['.$data_name.']['.$ex_folder.']['.$ex_msgnum.']<br />'); }
+				$this->persistSessionCache();
 				return True;
 			}
 			elseif (((string)$ex_folder != '')
 			&& ((string)$ex_msgnum != '')
 			&& ((string)$ex_part_no != '')
-			&& (isset($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum][$ex_part_no])))
+			&& (isset($this->getSessionCache()[$acctnum][$data_name][$ex_folder][$ex_msgnum][$ex_part_no])))
 			{
-				$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum][$ex_part_no] = '';
-				unset($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$ex_folder][$ex_msgnum][$ex_part_no]);
+				$this->getSessionCache()[$acctnum][$data_name][$ex_folder][$ex_msgnum][$ex_part_no] = '';
+				unset($this->getSessionCache()[$acctnum][$data_name][$ex_folder][$ex_msgnum][$ex_part_no]);
 				if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: expire_session_cache_item('.__LINE__.'): LEAVING return True, did expire existing data for [email][dat]['.$acctnum.']['.$data_name.']['.$ex_folder.']['.$ex_msgnum.']['.$ex_part_no.']<br />'); }
+				$this->persistSessionCache();
 				return True;
 			}
-			if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: expire_session_cache_item('.__LINE__.'): LEAVING, return False, data did not exist for [email][dat]['.$acctnum.']['.$data_name.']['.serialize($ex_folder).']['.serialize($ex_msgnum).']['.serialize($ex_part_no).']<br />'); } 
+			if ($this->debug_session_caching > 0) { $this->dbug->out('mail_msg: expire_session_cache_item('.__LINE__.'): LEAVING, return False, data did not exist for [email][dat]['.$acctnum.']['.$data_name.']['.serialize($ex_folder).']['.serialize($ex_msgnum).']['.serialize($ex_part_no).']<br />'); }
+			$this->persistSessionCache();
 			return False;
 		}
 

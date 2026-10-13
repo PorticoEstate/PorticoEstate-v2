@@ -779,10 +779,10 @@
 		//$this->get_msgball_list($ex_acctnum, $ex_folder);
 		// remember the actual msgball_list is a sub element of an array that includes validity info
 		if (($this->session_cache_enabled == True)
-		&& (isset($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list'])))
+		&& (isset($this->getSessionCache()[$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list'])))
 		//&& (isset($GLOBALS['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list']['msgball_list'][$ex_folder])))
 		{
-			$nav_data['msgball_list'] =& $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list'];
+			$nav_data['msgball_list'] =& $this->getSessionCache()[$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list'];
 		}
 		else
 		{
@@ -2735,10 +2735,10 @@
 			// TESTING get the acctnum from the folder info
 			$ex_acctnum = $folder_info['fldball']['acctnum'];
 			if (($this->session_cache_enabled == True)
-			&& (isset($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list'])))
+			&& (isset($this->getSessionCache()[$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list'])))
 			//&& (isset($GLOBALS['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list']['msgball_list'])))
 			{
-				$msgball_list =& $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list'];
+				$msgball_list =& $this->getSessionCache()[$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list'];
 				//$msgball_list =& $GLOBALS['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list']['msgball_list'];
 				//{ echo 'mail_msg_display: get_msg_list_display('.__LINE__.'): $msgball_list *REFERENCE* DUMP:<pre>'; print_r($msgball_list); echo '</pre>'; }
 				//$msgball_list = $GLOBALS['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list']['msgball_list'];

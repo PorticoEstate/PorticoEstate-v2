@@ -228,7 +228,6 @@
 		var $ref_POST = '##NOTHING##';
 		var $ref_SERVER = '##NOTHING##';
 		var $ref_FILES = '##NOTHING##';
-		var $ref_SESSION = '##NOTHING##';
 		
 		// ----  args that are known to be used for email
 		// externally filled args, such as thru GPC values, or xmlrpc call
@@ -386,7 +385,6 @@
 			$this->ref_POST = &$_POST;
 			$this->ref_SERVER = &$_SERVER;
 			$this->ref_FILES = &$_FILES;
-			$this->ref_SESSION = &$_SESSION;
 
 			// SO object has data storage functions
 			if ($this->so === null)
@@ -750,15 +748,6 @@
 			
 			// Initialize Internal Args
 			$this->init_internal_args_and_set_them($acctnum);
-			
-			// ----  Things To Be Done Whether You Login Or Not  -----
-			// UNDER DEVELOPMEMT - backwards_compat with sessions_db where php4 sessions are not being used
-			// ALSO UNDER DEVELOPMENT - using private table for anglemail
-			if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-			|| ($this->use_private_table == True))
-			{
-				$this->so->prep_db_session_compat('begin_request LINE '.__LINE__);
-			}
 			
 			
 			// ----  Obtain Preferences Data  ----
@@ -5164,18 +5153,7 @@ HTML;
 					}
 				}
 			}
-			// for DB sessions_db ONLY
-			if (
-			(
-				($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-				|| ($this->use_private_table == True)
-			)
-			&& ($only_msgball_list == False))
-			{
-				// we already expired actual DB msgball data above, this will erase all other data, that function may save a few important things though
-				if ($this->debug_events > 1) { $this->dbug->out('mail_msg_base: batch_expire_cached_items: ('.__LINE__.') session_db IS in use, calling the appsession eraser function $this->so->expire_db_session_bulk_data <br />'); } 
-				$this->so->expire_db_session_bulk_data($called_by='batch_expire_cached_items LINE '.__LINE__);
-			}
+			if (!$only_msgball_list) $this->resetSessionCache(true);
 			if ($this->debug_events > 0) { $this->dbug->out('mail_msg_base: batch_expire_cached_items: ('.__LINE__.') LEAVING, called by ['.$called_by.'],  $only_msgball_list: ['.serialize($only_msgball_list).'], $this->session_cache_extreme is ['.serialize($this->session_cache_extreme).']<br />'); } 
 		}
 		
@@ -5209,7 +5187,8 @@ HTML;
 				// DO NOTHING, this data is not cached in non-extreme mode
 				$did_expire = False;
 				
-				if ($this->debug_events > 0) { $this->dbug->out('mail_msg_base: event_msg_seen('.__LINE__.'): (non-extreme mode) LEAVING, $did_expire is ['.serialize($did_expire).']<br />'); } 
+				if ($this->debug_events > 0) { $this->dbug->out('mail_msg_base: event_msg_seen('.__LINE__.'): (non-extreme mode) LEAVING, $did_expire is ['.serialize($did_expire).']<br />'); }
+				$this->persistSessionCache();
 				return $did_expire;
 			}
 			elseif (($this->session_cache_enabled == True)
@@ -5260,28 +5239,8 @@ HTML;
 					//$app = 'email';
 					// get session data
 					$folder_status_info = array();
-					//$folder_status_info = $GLOBALS['phpgw']->session->appsession($location,$app);
 					
-					// for DB sessions_db ONLY
-					if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-					|| ($this->use_private_table == True))
-					{
-						$my_location = (string)$acctnum.';'.$data_name.';'.$extra_keys;
-						if ($this->debug_events > 1) { $this->dbug->out('email_msg_base: event_msg_seen('.__LINE__.'): (extreme mode) sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to read data from phpgw_app_sessions table, $my_location ['.$my_location.']<br />'); } 
-						if ($this->use_private_table == True)
-						{
-							$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$extra_keys]
-								= $this->so->so_get_data($my_location);
-						}
-						else
-						{
-							$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$extra_keys]
-								= $this->appSession($my_location, 'email');
-						}
-						if ($this->debug_events > 2) { $this->dbug->out('email_msg_base: event_msg_seen('.__LINE__.'): (extreme mode) [email][dat]['.$acctnum.']['.$data_name.']['.$extra_keys.']  DUMP:', $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$extra_keys]); } 
-					}
-					
-					$folder_status_info = $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$extra_keys];
+					$folder_status_info = $this->getSessionCache()[$acctnum][$data_name][$extra_keys] ?? false;
 					
 					if ($this->debug_events > 1) { $this->dbug->out('mail_msg_base: event_msg_seen('.__LINE__.'): (extreme mode) (step 2) grabbed $folder_status_info DUMP:', $folder_status_info); } 
 					//if ($this->debug_events > 1) { $this->dbug->out('mail_msg_base: event_msg_seen: (extreme mode) (step 2) grabbed folder_status_info :: unserialized $meta_data[$specific_key] DUMP <pre>'; print_r($folder_status_info); echo '</pre>'); } 
@@ -5307,30 +5266,17 @@ HTML;
 						if ($this->debug_events > 1) { $this->dbug->out('mail_msg: event_msg_seen('.__LINE__.'): (extreme mode) (step 2) save ADJUSTED "folder_status_info" back to cache with "save_session_cache_item", note the timestamp not changed<br />'); } 
 						// thid call is OK, it will not change the data, it just puts it in cache, no need for direct APPSESSION call
 						//$this->save_session_cache_item('folder_status_info', $folder_status_info, $acctnum, $extra_keys);
-						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$extra_keys] = $folder_status_info;
-						// for DB sessions_db ONLY
-						if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-						|| ($this->use_private_table == True))
-						{
-							$my_location = (string)$acctnum.';'.$data_name.';'.$extra_keys;
-							if ($this->debug_events > 1) { $this->dbug->out('email_msg_base: event_msg_seen('.__LINE__.'): (extreme mode) sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to save data to phpgw_app_sessions table, $my_location ['.$my_location.']<br />'); } 
-							if ($this->use_private_table == True)
-							{
-								$this->so->so_set_data($my_location, $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$extra_keys]);
-							}
-							else
-							{
-								$this->appSession($my_location, 'email', $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name][$extra_keys]);
-							}
-						}
+						$this->getSessionCache()[$acctnum][$data_name][$extra_keys] = $folder_status_info;
 						$did_alter = True;
 					}
 				}
-				if ($this->debug_events > 0) { $this->dbug->out('mail_msg_base: event_msg_seen('.__LINE__.'): (extreme mode) LEAVING, $did_alter is ['.serialize($did_alter).']<br />'); } 
+				if ($this->debug_events > 0) { $this->dbug->out('mail_msg_base: event_msg_seen('.__LINE__.'): (extreme mode) LEAVING, $did_alter is ['.serialize($did_alter).']<br />'); }
+				$this->persistSessionCache();
 				return $did_alter;
 			}
 			
-			if ($this->debug_events > 0) { $this->dbug->out('mail_msg_base: event_msg_seen: LEAVING, unhaandled situation, or caching is turned off<br />'); } 
+			if ($this->debug_events > 0) { $this->dbug->out('mail_msg_base: event_msg_seen: LEAVING, unhaandled situation, or caching is turned off<br />'); }
+			$this->persistSessionCache();
 			return False;
 		}
 		
@@ -5352,6 +5298,7 @@ HTML;
 			&& ($this->session_cache_extreme == False))
 			{
 				if ($this->debug_events > 0) { $this->dbug->out('mail_msg: event_msg_move_or_delete: ('.__LINE__.') LEAVING, BOTH session_cache_enabled AND session_cache_extreme are FALSE, we have nothing to do here, returning False<br />'); }
+				$this->persistSessionCache();
 				return False;
 			}
 			
@@ -5362,6 +5309,7 @@ HTML;
 				if ($this->debug_events > 0) { $this->dbug->out('mail_msg: event_msg_move_or_delete: ('.__LINE__.') FALLBACK BATCH EXPIRE because param $msgball ['.serialize($msgball).'] is not set or not an array, we do not know what account nor folder we need to operate on, but we still need to clean cache so it matches reality after the move or delete<br />'); }
 				$this->batch_expire_cached_items('mail_msg: event_msg_move_or_delete: ('.__LINE__.') (because we got erronious msgball data) ');
 				if ($this->debug_events > 0) { $this->dbug->out('mail_msg: event_msg_move_or_delete: ('.__LINE__.') LEAVING, returning True because we did expire stuff<br />'); }
+				$this->persistSessionCache();
 				return True;
 			}
 			$did_alter_or_expire = False;
@@ -5385,52 +5333,8 @@ HTML;
 			// currently we DO NOT use the $extra_keys param for msgball_list data
 			// UPDATE YES NOW WE USE FOLDER NAME IN THE DATA KEYS FOR MSGBALL_LIST
 			$ex_folder = $urlencoded_folder;
-			// get session data
-			//if (($this->debug_events > 1) || ($this->debug_session_caching > 1)) { echo 'mail_msg: event_msg_move_or_delete('.__LINE__.'): DIRECT CALL to get appsession data for $location ['.$location.'], $app ['.$app.']<br />'; } 
-			
-			//$cached_msgball_data = $GLOBALS['phpgw']->session->appsession($location,$app);
-			//$cached_msgball_data = $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum][$data_name];
-			//$cached_msgball_data = $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list'];
-			
-			// $cached_msgball_data is saved in cache with validity data, like this:
-			// 	$cached_msgball_data['msgball_list']
-			// 	$cached_msgball_data['validity']
-			// this makes for a strange looking array with the string "msgball_list" appearing two times in a row, but that is how it works, like this
-			// 	['email']['dat'][0]['msgball_list']
-			// is the base "node" the data is attached to, and the rest looks like this
-			// 	['email']['dat'][0]['msgball_list']['msgball_list']
-			// 	['email']['dat'][0]['msgball_list']['validity']
-			
-			// for DB sessions_db ONLY
-			if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-			|| ($this->use_private_table == True))
-			{
-				if ((isset($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list'][$ex_folder]) == False)
-				|| (!$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list'][$ex_folder]))
-				{
-					//$my_location = (string)$acctnum.';msgball_list';
-					// NOW WE USE FOLDER TOO as a data key for msgball_list
-					$my_location = (string)$acctnum.';msgball_list;'.$ex_folder;
-					if (($this->debug_events > 1) || ($this->debug_session_caching > 1)) { echo 'mail_msg: event_msg_move_or_delete('.__LINE__.'): DIRECT CALL to get appsession data for $location ['.$location.'], $app ['.$app.']<br />'; } 
-					if ($this->debug_events > 1) { $this->dbug->out('email_msg_base: event_msg_move_or_delete('.__LINE__.'): (extreme mode) sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to read data from a database table, $my_location ['.$my_location.']<br />'); } 
-					if ($this->use_private_table == True)
-					{
-						//$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list'][$ex_folder]
-						//	= $this->so->so_get_data($my_location);
-						// TRY USING COMPRESSION for msgball_list
-						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list'][$ex_folder]
-							= $this->so->so_get_data($my_location, True);
-					}
-					else
-					{
-						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list'][$ex_folder]
-							= $this->appSession($my_location, 'email');
-					}
-					//if ($this->debug_events > 2) { $this->dbug->out('email_msg_base: event_msg_move_or_delete('.__LINE__.'): (extreme mode) [email][dat]['.$acctnum.'][msgball_list] DUMP:<pre>'; print_r($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list'][ex_folder]); echo '</pre>'); }
-				}
-			}
 
-			$cached_msgball_data =& $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list'][$ex_folder];
+			$cached_msgball_data =& $this->getSessionCache()[$acctnum]['msgball_list'][$ex_folder];
 			
 			if (($this->debug_events > 2) && ($this->debug_allow_magball_list_dumps)) { $this->dbug->out('mail_msg: event_msg_move_or_delete('.__LINE__.'): for $my_location ['.$my_location.'], restored $cached_msgball_data DUMP:', $cached_msgball_data); } 
 			
@@ -5438,6 +5342,7 @@ HTML;
 			&& ($this->session_cache_extreme == False))
 			{
 				if ($this->debug_events > 0) { $this->dbug->out('mail_msg: event_msg_move_or_delete: ('.__LINE__.') LEAVING, because NOTHING TO DO, IN NON-EXTREME MODE, and we have NO CACHED MSGBALL_LIST, there is no action we need to take, return False<br />'); }
+				$this->persistSessionCache();
 				return False;
 			}
 			elseif ((!$cached_msgball_data)
@@ -5468,7 +5373,8 @@ HTML;
 				// folder_status_info in "non-extreme" mode is not saved to appsession, so it does not need expiring
 				if ($this->debug_events > 1) { $this->dbug->out('mail_msg: event_msg_move_or_delete: ('.__LINE__.') (non-extreme mode) in non-extreme mode we do NOT alter the "folder_status_info", in fact "folder_status_info" is not even appsession cached in non-extreme mode <br />'); } 
 				
-				if ($this->debug_events > 0) { $this->dbug->out('mail_msg: event_msg_move_or_delete: ('.__LINE__.') (non-extreme mode) LEAVING, expiring entire msgball list<br />'); } 
+				if ($this->debug_events > 0) { $this->dbug->out('mail_msg: event_msg_move_or_delete: ('.__LINE__.') (non-extreme mode) LEAVING, expiring entire msgball list<br />'); }
+				$this->persistSessionCache();
 				return True;
 			}
 			// IF EXTREME MODE IS OFF, WE SIMPLY EXPIRE THE WHOLE MSGBALL_LIST
@@ -5539,37 +5445,7 @@ HTML;
 					$new_count = ($old_count - 1);
 					$cached_msgball_data['validity']['folder_status_info']['number_all'] = $new_count;
 					if ($this->debug_events > 1) { $this->dbug->out('mail_msg: event_msg_move_or_delete: ('.__LINE__.') (extreme mode) (step 1) $cached_msgball_data[validity][folder_status_info][number_all] AFTER reduction '.serialize($cached_msgball_data['validity']['folder_status_info']['number_all']).'<br />'); } 
-					if (($this->debug_events > 2) && ($this->debug_allow_magball_list_dumps)) { $this->dbug->out('mail_msg: event_msg_move_or_delete('.__LINE__.'): (extreme mode) (step 1) array_splice of $cached_msgball_data[msgball_list] results in this $cached_msgball_data DUMP:', $cached_msgball_data); } 
-					
-					// save altered data back into the cache
-					// NOT needed if using a REFERENCE and only using regular appsession (i.e. NOT the anglemail table)
-					//if (($this->debug_session_caching > 1) || ($this->debug_events > 1)) { $this->dbug->out('mail_msg: event_msg_move_or_delete: ('.__LINE__.') saving altered msgball_list directly to appsession, location: ['.$location.'] $app ['.$app.']<br />'); } 
-					// COMMENT IF USING REF, UNCOMMENT IF NOT USING REFERENCES
-					//$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list'] = $cached_msgball_data;
-					
-					// for DB sessions_db ONLY
-					if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-					|| ($this->use_private_table == True))
-					{
-						//$my_location = (string)$acctnum.';msgball_list';
-						// NOW WE USE FOLDER TOO as a data key for msgball_list
-						$my_location = (string)$acctnum.';msgball_list;'.$ex_folder;
-						if ($this->debug_events > 1) { $this->dbug->out('email_msg_base: event_msg_move_or_delete('.__LINE__.'): (extreme mode) sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to save data to a database table, $my_location ['.$my_location.'], if using anglemail table this step is always necessary<br />'); } 
-						if ($this->use_private_table == True)
-						{
-							//$this->so->so_set_data($my_location, $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list']);
-							// TRY USING COMPRESSION for msgball_list (only available for anglemail table)
-							$this->so->so_set_data(
-								$my_location, 
-								$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list'][$ex_folder],
-								True
-							);
-						}
-						else
-						{
-							$this->appSession($my_location, 'email', $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['msgball_list'][$ex_folder]);
-						}
-					}
+					if (($this->debug_events > 2) && ($this->debug_allow_magball_list_dumps)) { $this->dbug->out('mail_msg: event_msg_move_or_delete('.__LINE__.'): (extreme mode) (step 1) array_splice of $cached_msgball_data[msgball_list] results in this $cached_msgball_data DUMP:', $cached_msgball_data); }
 					$did_alter = True;
 				}
 			}
@@ -5617,27 +5493,8 @@ HTML;
 				$data_name = 'folder_status_info';
 				// get session data
 				$folder_status_info = array();
-				//$folder_status_info = $GLOBALS['phpgw']->session->appsession($location,$app);
-				// for DB sessions_db ONLY
-				if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-				|| ($this->use_private_table == True))
-				{
-					$my_location = (string)$acctnum.';folder_status_info;'.$ex_folder;
-					if ($this->debug_events > 1) { $this->dbug->out('email_msg_base: event_msg_move_or_delete('.__LINE__.'): (extreme mode) sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to read data from phpgw_app_sessions table, $my_location ['.$my_location.']<br />'); } 
-					if ($this->use_private_table == True)
-					{
-						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['folder_status_info'][$ex_folder]
-							= $this->so->so_get_data($my_location);
-					}
-					else
-					{
-						$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['folder_status_info'][$ex_folder]
-							= $this->appSession($my_location, 'email');
-					}
-					//if ($this->debug_events > 2) { $this->dbug->out('email_msg_base: event_msg_move_or_delete('.__LINE__.'): (extreme mode) [email][dat]['.$acctnum.'][folder_status_info]['.$ex_folder.'] DUMP:<pre>'; print_r($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['folder_status_info'][$ex_folder]); echo '</pre>'); }
-				}
 				
-				$folder_status_info = $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['folder_status_info'][$ex_folder];
+				$folder_status_info = $this->getSessionCache()[$acctnum]['folder_status_info'][$ex_folder] ?? false;
 				
 				//if ($this->debug_events > 1) { $this->dbug->out('mail_msg_base: event_msg_move_or_delete('.__LINE__.'): (extreme mode) (step 2) session ['.$location.','.$app.'] grabbed $meta_data serialized DUMP <pre>'; echo "\r\n".serialize($meta_data)."\r\n"; echo '</pre>'); } 
 				if ($this->debug_events > 1) { $this->dbug->out('mail_msg_base: event_msg_move_or_delete('.__LINE__.'): (extreme mode) (step 2) session ['.$location.','.$app.'] grabbed $folder_status_info DUMP:', $folder_status_info); } 
@@ -5672,22 +5529,7 @@ HTML;
 					// the $location we used above is still usable
 					if (($this->debug_session_caching > 1) || ($this->debug_events > 1)) { $this->dbug->out('mail_msg: event_msg_move_or_delete: saving altered folder_status_info **directly** to appsession, $location: ['.$location.'] $app['.$app.']<br />'); } 
 					//$GLOBALS['phpgw']->session->appsession($location,$app,$folder_status_info);
-					$this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['folder_status_info'][$ex_folder] = $folder_status_info;
-					// for DB sessions_db ONLY
-					if (($GLOBALS['phpgw_info']['server']['sessions_type'] == 'db')
-					|| ($this->use_private_table == True))
-					{
-						$my_location = (string)$acctnum.';folder_status_info;'.$ex_folder;
-						if ($this->debug_events > 1) { $this->dbug->out('email_msg_base: event_msg_move_or_delete('.__LINE__.'): (extreme mode) sessions_type is ['.$GLOBALS['phpgw_info']['server']['sessions_type'].'] SO we have this additional step to save data to phpgw_app_sessions table, $my_location ['.$my_location.']<br />'); } 
-						if ($this->use_private_table == True)
-						{
-							$this->so->so_set_data($my_location, $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['folder_status_info'][$ex_folder]);
-						}
-						else
-						{
-							$this->appSession($my_location, 'email', $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$acctnum]['folder_status_info'][$ex_folder]);
-						}
-					}
+					$this->getSessionCache()[$acctnum]['folder_status_info'][$ex_folder] = $folder_status_info;
 					$did_alter = True;
 				}
 				
@@ -5733,11 +5575,13 @@ HTML;
 					if ($this->debug_events > 1) { $this->dbug->out('mail_msg: event_msg_move_or_delete('.__LINE__.'): (step 3b) (extreme mode) can not do this step3 because TARGET FOLDER data was NOT provided OR the folder is $this->del_pseudo_folder: ['.$this->del_pseudo_folder.'], note data for $to_fldball was ['.serialize($to_fldball).']<br />'); } 
 				}
 				
-				if ($this->debug_events > 0) { $this->dbug->out('mail_msg: event_msg_move_or_delete('.__LINE__.'): (extreme mode) LEAVING, $did_alter ['.serialize($did_alter).']<br />'); } 
+				if ($this->debug_events > 0) { $this->dbug->out('mail_msg: event_msg_move_or_delete('.__LINE__.'): (extreme mode) LEAVING, $did_alter ['.serialize($did_alter).']<br />'); }
+				$this->persistSessionCache();
 				return $did_alter;
 			}
 			
-			if ($this->debug_events > 0) { $this->dbug->out('mail_msg: event_msg_move_or_delete('.__LINE__.'): LEAVING, unhandled situation or caching not enabled<br />'); } 
+			if ($this->debug_events > 0) { $this->dbug->out('mail_msg: event_msg_move_or_delete('.__LINE__.'): LEAVING, unhandled situation or caching not enabled<br />'); }
+			$this->persistSessionCache();
 			return False;
 		}
 		

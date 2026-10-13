@@ -335,12 +335,12 @@
 			if($this->querycommand=='cleanquery')//We have been ordered to clean the query
 			{
 				$this->searchbox="";
-				$GLOBALS['phpgw']->session->appsession('jsuibook_sbox','email','');
+				\App\modules\phpgwapi\services\Cache::session_set('email', 'jsuibook_sbox', '');
 			}
 			elseif(!$this->searchbox)//wow, nothing in the searchbox, and weve been ordered to serve
 						//....look for it in the cache
 			{
-					$this->searchbox=$GLOBALS['phpgw']->session->appsession('jsuibook_sbox','email');
+					$this->searchbox=\App\modules\phpgwapi\services\Cache::session_get('email', 'jsuibook_sbox');
 			}
 			/*      This is the View More checkbox */
 			$this->viewmore = $_POST['viewmore'] ? $_POST['viewmore'] : $_GET['viewmore'];
@@ -464,7 +464,7 @@
 			{
 				//Supposedly, the user wants us to show nothing, no query being made.
 				//BUT, we check if we have cache that needs has another value
-				$this->cat_id=$GLOBALS['phpgw']->session->appsession('jsuibook_catid','email');
+				$this->cat_id=\App\modules\phpgwapi\services\Cache::session_get('email', 'jsuibook_catid');
 				if(!$this->cat_id)//if we still have nothing
 				{
 					//Then we believe the user wants no query, otherwise, we used
@@ -474,7 +474,7 @@
 			}
 			if(!$this->cat_id)
 			{
-				$this->cat_id=$GLOBALS['phpgw']->session->appsession('jsuibook_catid','email');
+				$this->cat_id=\App\modules\phpgwapi\services\Cache::session_get('email', 'jsuibook_catid');
 				
 			}
 			//When the category id is -2, this means we selected all
@@ -491,12 +491,12 @@
 			$this->searchautocomplete  = $_POST['searchautocomplete'] ? $_POST['searchautocomplete'] : $_GET['searchautocomplete'];
 			if(!$this->searchautocomplete&&($this->querycommand != 'cleanquery'))//again, not found in the vars, look for it in cache
 			{
-				$this->searchautocomplete=$GLOBALS['phpgw']->session->appsession('jsuibook_acbox','email');
+				$this->searchautocomplete=\App\modules\phpgwapi\services\Cache::session_get('email', 'jsuibook_acbox');
 			}
 			elseif($this->querycommand == 'cleanquery')//wants us to clean the cache
 			{
 				$this->searchautocomplete="";
-				$GLOBALS['phpgw']->session->appsession('jsuibook_acbox','email','');
+				\App\modules\phpgwapi\services\Cache::session_set('email', 'jsuibook_acbox', '');
 			}
 			//The sort field ... NOTUSED ATM
 			$this->sort = $_POST['sort'] ? $_POST['sort'] : $_GET['sort'];
@@ -597,9 +597,9 @@
 						)
 					);
 			//Try and remember what values where selected so that we can put them back in the boxes as needed
-			$GLOBALS['phpgw']->session->appsession('jsuibook_sbox','email',$this->searchbox);
-			$GLOBALS['phpgw']->session->appsession('jsuibook_acbox','email',$this->searchautocomplete);
-			$GLOBALS['phpgw']->session->appsession('jsuibook_catid','email',$this->cat_id);
+			\App\modules\phpgwapi\services\Cache::session_set('email', 'jsuibook_sbox', $this->searchbox);
+			\App\modules\phpgwapi\services\Cache::session_set('email', 'jsuibook_acbox', $this->searchautocomplete);
+			\App\modules\phpgwapi\services\Cache::session_set('email', 'jsuibook_catid', $this->cat_id);
 			//The contactquery to send to the bo class constructor. Look into the bo class
 			//for a discussion of this parameter
 			$contactquery=($this->cat_id==-1) ?"":array('start' => $this->start,
@@ -848,9 +848,9 @@
 			$this->bo->forget_destboxes();
 			$this->bo->forget_query();
 			//forget our own cache
-			$GLOBALS['phpgw']->session->appsession('jsuibook_sbox','email',"");
-			$GLOBALS['phpgw']->session->appsession('jsuibook_acbox','email',"");
-			$GLOBALS['phpgw']->session->appsession('jsuibook_catid','email','');
+			\App\modules\phpgwapi\services\Cache::session_set('email', 'jsuibook_sbox', "");
+			\App\modules\phpgwapi\services\Cache::session_set('email', 'jsuibook_acbox', "");
+			\App\modules\phpgwapi\services\Cache::session_set('email', 'jsuibook_catid', '');
 			if($non_interactive=="")
 			{
 				print $this->final_js("","window.parent.all_forgoten();");

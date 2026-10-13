@@ -51,6 +51,136 @@ namespace Tests\Controllers
 			return $mail;
 		}
 
+		private function withSessionCache(callable $check): void
+		{
+			$property = new \ReflectionProperty(Settings::class, 'instance');
+			$property->setAccessible(true);
+			$originalSettings = $property->getValue();
+			$property->setValue(null, new class
+			{
+				public function get(string $key): array
+				{
+					return $key === 'server' ? ['install_id' => 'email-cache-test', 'encryptkey' => '', 'mcrypt_iv' => ''] : [];
+				}
+			});
+			$originalData = [];
+			foreach (['mail_state', 'mail_keys', 'test-mail-storage', '0;cached_prefs'] as $key)
+			{
+				$originalData[$key] = Cache::session_get('email', $key);
+				Cache::session_set('email', $key, null);
+			}
+			try
+			{
+				$this->mailDouble();
+				$check();
+			}
+			finally
+			{
+				foreach ($originalData as $key => $value) Cache::session_set('email', $key, $value);
+				$property->setValue(null, $originalSettings);
+			}
+		}
+
+		public function testModuleHasNoLegacyCacheBackend(): void
+		{
+			$violations = [];
+			$files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(__DIR__ . '/../../src/modules/email'));
+			foreach ($files as $file)
+			{
+				if (!$file->isFile() || $file->getExtension() !== 'php' || str_contains($file->getPathname(), '/setup/')) continue;
+				foreach (token_get_all(file_get_contents($file->getPathname())) as $token)
+				{
+					if (!is_array($token)) continue;
+					if (($token[0] === T_STRING && in_array($token[1], ['appsession', 'ref_SESSION'], true))
+						|| ($token[0] === T_VARIABLE && in_array($token[1], ['$_SESSION', '$ref_SESSION'], true))
+						|| ($token[0] === T_CONSTANT_ENCAPSED_STRING && preg_match('/(?:SELECT|INSERT|UPDATE|DELETE).*phpgw_(?:anglemail|app_sessions)/is', $token[1])))
+					{
+						$violations[] = $file->getFilename() . ':' . $token[2];
+					}
+				}
+			}
+			$this->assertSame([], $violations);
+		}
+
+		public function testMailCachePersistsAcrossInstancesAndIsolatesAccounts(): void
+		{
+			$this->withSessionCache(function (): void
+			{
+				$mail = new \mail_msg();
+				$cache =& $mail->getSessionCache();
+				$cache[0]['mailsvr_callstr'] = 'default-account';
+				$cache[3]['mailsvr_callstr'] = 'external-account';
+				$this->assertTrue($mail->persistSessionCache());
+				$next = new \mail_msg();
+				$this->assertSame($cache, $next->getSessionCache());
+				$this->assertSame($cache, Cache::session_get('email', 'mail_state'));
+			});
+		}
+
+		public function testBodyCachePersistsAndExpiresOnlyTheSelectedPart(): void
+		{
+			$this->withSessionCache(function (): void
+			{
+				$mail = new \mail_msg();
+				$msgball = ['acctnum' => 3, 'folder' => 'INBOX', 'msgnum' => 12, 'part_no' => '1.2'];
+				$this->assertTrue($mail->save_session_cache_item('phpgw_fetchbody', ['msgball' => $msgball, 'phpgw_fetchbody' => 'first'], 3));
+				$msgball['part_no'] = '1.3';
+				$this->assertTrue($mail->save_session_cache_item('phpgw_fetchbody', ['msgball' => $msgball, 'phpgw_fetchbody' => 'second'], 3));
+				$next = new \mail_msg();
+				$this->assertSame('first', $next->read_session_cache_item('phpgw_fetchbody', 3, 'INBOX', 12, '1.2'));
+				$this->assertTrue($next->expire_session_cache_item('phpgw_fetchbody', 3, 'INBOX', 12, '1.2'));
+				$afterExpiry = new \mail_msg();
+				$this->assertFalse($afterExpiry->read_session_cache_item('phpgw_fetchbody', 3, 'INBOX', 12, '1.2'));
+				$this->assertSame('second', $afterExpiry->read_session_cache_item('phpgw_fetchbody', 3, 'INBOX', 12, '1.3'));
+			});
+		}
+
+		public function testBulkExpiryRetainsAccountMetadataAndDropsMessageBodies(): void
+		{
+			$this->withSessionCache(function (): void
+			{
+				$mail = new \mail_msg();
+				$cache =& $mail->getSessionCache();
+				$cache[3] = ['mailsvr_callstr' => 'server', 'folder_list' => [['folder_long' => 'INBOX']], 'mailsvr_namespace' => 'INBOX', 'phpgw_fetchbody' => ['stale']];
+				$mail->extra_and_default_acounts = [['acctnum' => 3, 'status' => 'enabled']];
+				$mail->batch_expire_cached_items('unit-test');
+				$next = new \mail_msg();
+				$this->assertSame(['mailsvr_callstr' => 'server', 'folder_list' => [['folder_long' => 'INBOX']], 'mailsvr_namespace' => 'INBOX'], $next->getSessionCache()[3]);
+			});
+		}
+
+		public function testDisabledCacheDoesNotReadOrWriteTheBackend(): void
+		{
+			$this->withSessionCache(function (): void
+			{
+				Cache::session_set('email', 'mail_state', [3 => ['mailsvr_callstr' => 'existing']]);
+				$mail = new \mail_msg();
+				$mail->session_cache_enabled = false;
+				$this->assertSame([], $mail->getSessionCache());
+				$this->assertFalse($mail->persistSessionCache());
+				$this->assertSame([3 => ['mailsvr_callstr' => 'existing']], Cache::session_get('email', 'mail_state'));
+			});
+		}
+
+		public function testStorageCompatibilityUsesTheStandardCacheWithoutSQL(): void
+		{
+			$this->withSessionCache(function (): void
+			{
+				require_once __DIR__ . '/../../src/modules/email/inc/class.so_mail_msg.inc.php';
+				$storage = new \so_mail_msg();
+				$data = ['body' => 'cached', 'count' => 0];
+				$this->assertTrue($storage->so_set_data('test-mail-storage', $data, true));
+				$this->assertSame($data, Cache::session_get('email', 'test-mail-storage'));
+				$this->assertSame($data, $storage->so_get_data('test-mail-storage', true));
+				$this->assertTrue($storage->so_appsession_passthru('0;cached_prefs', $data, true));
+				$this->assertSame($data, $storage->so_appsession_passthru('0;cached_prefs', '##NOTHING##', true));
+				$this->assertFalse($storage->so_am_table_exists());
+				$storage->so_clear_all_data_this_user();
+				$this->assertNull(Cache::session_get('email', 'test-mail-storage'));
+				$this->assertNull(Cache::session_get('email', '0;cached_prefs'));
+			});
+		}
+
 		public function testEmailModuleHasNoExecutableGlobalMailObjectReferences(): void
 		{
 			$violations = [];
@@ -251,7 +381,7 @@ namespace Tests\Controllers
 			}
 			finally
 			{
-				Cache::session_clear('email', 'mail-session-test');
+				Cache::session_set('email', 'mail-session-test', null);
 				$property->setValue(null, $original);
 			}
 		}

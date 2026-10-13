@@ -262,13 +262,13 @@
 //----------------SO, UNCOMMENT THE NEXT ONE TO OBTAIN THI BEHAVIOUR, WILL MAKE PREFERENCE LATER
 //------ Categories almost do not change.....we cache them allways...
 
-$catlist=$GLOBALS['phpgw']->session->appsession('jsbook_catlist','email');
+$catlist=\App\modules\phpgwapi\services\Cache::session_get('email', 'jsbook_catlist');
 //We dont have none
 if(!$catlist)
 {
 	$catlist=$c->formated_list('select','all',$cat_id,'True');
 	
-	$GLOBALS['phpgw']->session->appsession('jsbook_catlist','email',$catlist);
+	\App\modules\phpgwapi\services\Cache::session_set('email', 'jsbook_catlist', $catlist);
 }
 
 
@@ -307,11 +307,11 @@ if(!$catlist)
 	{
 		$entries = $d->read($start,$offset,$cols,$query,$qfilter,$sort,"n_given");
 		/*Save it in the cache */
-		$GLOBALS['phpgw']->session->appsession('session_data','jsbook_query',$entries);
+		\App\modules\phpgwapi\services\Cache::session_set('jsbook_query', 'session_data', $entries);
 	}
 	else
 	{
-		$entries = $GLOBALS['phpgw']->session->appsession('session_data','jsbook_query');
+		$entries = \App\modules\phpgwapi\services\Cache::session_get('jsbook_query', 'session_data');
 	}
 	for ($i=0;$i<count($entries);$i++)
 	{

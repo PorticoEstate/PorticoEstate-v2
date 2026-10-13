@@ -422,7 +422,7 @@
 		{
 			if ($this->use_session)
 			{
-				$GLOBALS['phpgw']->session->appsession('session_data',"jsbook_data".($location ? '_'.$location :""),$data);
+				\App\modules\phpgwapi\services\Cache::session_set("jsbook_data".($location ? '_'.$location :""), 'session_data', $data);
 			}
 			if($this->debug)
 			{
@@ -438,7 +438,7 @@
 
 		function read_sessiondata($location="")
 		{
-			$data = $GLOBALS['phpgw']->session->appsession('session_data','jsbook_data'.($location ? '_'.$location :""));
+			$data = \App\modules\phpgwapi\services\Cache::session_get('jsbook_data'.($location ? '_'.$location :""), 'session_data');
 			if($this->debug)
 			{
 				echo '<br />Read: ';

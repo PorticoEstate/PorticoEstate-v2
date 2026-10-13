@@ -82,7 +82,7 @@ class EmailSearchController
 							'msgball[acctnum]' => $criteria['account'],
 							'msgball[folder]' => $folderLong,
 							'msgball[msgnum]' => (int) $messageNumber,
-						]),
+						], true),
 					];
 				}
 			}

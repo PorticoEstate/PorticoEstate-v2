@@ -27,21 +27,21 @@ class EmailInboxViewController
 
 		$html = $this->twig->render('@views/inbox.twig', [
 			'layout' => '@views/_bare.twig',
-			'api_url' => \phpgw::link('/email/api/inbox'),
-			'compose_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uicompose.compose']),
+			'api_url' => \phpgw::link('/email/api/inbox', [], true),
+			'compose_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uicompose.compose'], true),
 			'folders_url' => \phpgw::link('/email/view/folders', array_filter([
 				'fldball[acctnum]' => $request->getQueryParams()['fldball']['acctnum'] ?? null,
 				'fldball[folder]' => $request->getQueryParams()['fldball']['folder'] ?? null,
-			], static fn($value) => $value !== null && $value !== '')),
+			], static fn($value) => $value !== null && $value !== ''), true),
 			'search_url' => \phpgw::link('/email/view/search', array_filter([
 				'fldball[acctnum]' => $request->getQueryParams()['fldball']['acctnum'] ?? null,
 				'fldball[folder]' => $request->getQueryParams()['fldball']['folder'] ?? null,
-			], static fn($value) => $value !== null && $value !== '')),
+			], static fn($value) => $value !== null && $value !== ''), true),
 			'filters_url' => \phpgw::link('/email/view/filters', array_filter([
 				'fldball[acctnum]' => $request->getQueryParams()['fldball']['acctnum'] ?? null,
 				'fldball[folder]' => $request->getQueryParams()['fldball']['folder'] ?? null,
-			], static fn($value) => $value !== null && $value !== '')),
-			'preferences_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uipreferences.preferences']),
+			], static fn($value) => $value !== null && $value !== ''), true),
+			'preferences_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uipreferences.preferences'], true),
 			'has_preferences' => !empty($emailPreferences),
 		]);
 
@@ -85,11 +85,11 @@ class EmailInboxViewController
 				'msgball[acctnum]' => (int) $account,
 				'msgball[folder]' => $folder,
 				'msgball[msgnum]' => (int) $messageNumber,
-			]),
-			'back_url' => \phpgw::link('/email/view/inbox', $backParameters),
-			'reply_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uicompose.compose', 'action' => 'reply'] + $composeParameters),
-			'reply_all_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uicompose.compose', 'action' => 'replyall'] + $composeParameters),
-			'forward_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uicompose.compose', 'action' => 'forward'] + $composeParameters),
+			], true),
+			'back_url' => \phpgw::link('/email/view/inbox', $backParameters, true),
+			'reply_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uicompose.compose', 'action' => 'reply'] + $composeParameters, true),
+			'reply_all_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uicompose.compose', 'action' => 'replyall'] + $composeParameters, true),
+			'forward_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uicompose.compose', 'action' => 'forward'] + $composeParameters, true),
 		]);
 
 		$response->getBody()->write($this->legacyView->render($html, ['email', 'message']));
@@ -113,9 +113,9 @@ class EmailInboxViewController
 		Settings::getInstance()->update('flags', ['app_header' => lang('E-Mail') . ': ' . lang('Folders')]);
 		$html = $this->twig->render('@views/folders.twig', [
 			'layout' => '@views/_bare.twig',
-			'api_url' => \phpgw::link('/email/api/folders', $apiParameters),
-			'inbox_url' => \phpgw::link('/email/view/inbox', $backParameters),
-			'manage_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uifolder.folder'] + $backParameters),
+			'api_url' => \phpgw::link('/email/api/folders', $apiParameters, true),
+			'inbox_url' => \phpgw::link('/email/view/inbox', $backParameters, true),
+			'manage_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uifolder.folder'] + $backParameters, true),
 		]);
 		$response->getBody()->write($this->legacyView->render($html, ['email', 'folders']));
 		return $response->withHeader('Content-Type', 'text/html');

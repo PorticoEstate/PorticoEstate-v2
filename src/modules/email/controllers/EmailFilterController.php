@@ -17,10 +17,10 @@ class EmailFilterController
 			foreach ($filters as $index => $filter)
 			{
 				$id = $filter['id'];
-				$filters[$index]['editUrl'] = \phpgw::link('/index.php', ['menuaction' => 'email.uifilters.filters_edit', 'filter_num' => $id]);
-				$filters[$index]['moveUpUrl'] = \phpgw::link('/index.php', ['menuaction' => 'email.bofilters.move_up', 'filter_num' => $id]);
-				$filters[$index]['moveDownUrl'] = \phpgw::link('/index.php', ['menuaction' => 'email.bofilters.move_down', 'filter_num' => $id]);
-				$filters[$index]['deleteUrl'] = \phpgw::link('/index.php', ['menuaction' => 'email.bofilters.delete_filter', 'filter_num' => $id]);
+				$filters[$index]['editUrl'] = \phpgw::link('/index.php', ['menuaction' => 'email.uifilters.filters_edit', 'filter_num' => $id], true);
+				$filters[$index]['moveUpUrl'] = \phpgw::link('/index.php', ['menuaction' => 'email.bofilters.move_up', 'filter_num' => $id], true);
+				$filters[$index]['moveDownUrl'] = \phpgw::link('/index.php', ['menuaction' => 'email.bofilters.move_down', 'filter_num' => $id], true);
+				$filters[$index]['deleteUrl'] = \phpgw::link('/index.php', ['menuaction' => 'email.bofilters.delete_filter', 'filter_num' => $id], true);
 			}
 			return $this->json($response, ['items' => $filters]);
 		}

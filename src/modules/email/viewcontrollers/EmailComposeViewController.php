@@ -80,9 +80,9 @@ class EmailComposeViewController
 		$attachmentParameters = ['menuaction' => 'email.uiattach_file.attach'] + $query;
 		$html = $this->twig->render('@views/compose.twig', [
 			'layout' => '@views/_bare.twig',
-			'api_url' => \phpgw::link('/email/api/send'),
-			'attach_url' => \phpgw::link('/index.php', $attachmentParameters),
-			'return_url' => \phpgw::link('/email/view/inbox', $returnParameters),
+			'api_url' => \phpgw::link('/email/api/send', [], true),
+			'attach_url' => \phpgw::link('/index.php', $attachmentParameters, true),
+			'return_url' => \phpgw::link('/email/view/inbox', $returnParameters, true),
 			'context' => $context,
 			'csrf' => $this->csrf($request),
 			'to' => $this->formValue($compose['to_box_value'] ?? ''),

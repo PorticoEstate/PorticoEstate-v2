@@ -46,9 +46,9 @@ class EmailSearchViewController
 
 		$html = $this->twig->render('@views/search.twig', [
 			'layout' => '@views/_bare.twig',
-			'api_url' => \phpgw::link('/email/api/search'),
-			'folders_api_url' => \phpgw::link('/email/api/folders', ['fldball[acctnum]' => $account]),
-			'inbox_url' => \phpgw::link('/email/view/inbox', ['fldball[acctnum]' => $account, 'fldball[folder]' => $folder]),
+			'api_url' => \phpgw::link('/email/api/search', [], true),
+			'folders_api_url' => \phpgw::link('/email/api/folders', ['fldball[acctnum]' => $account], true),
+			'inbox_url' => \phpgw::link('/email/view/inbox', ['fldball[acctnum]' => $account, 'fldball[folder]' => $folder], true),
 			'account' => $account,
 			'preferred_folder' => $folder,
 			'csrf' => $this->csrf($request),

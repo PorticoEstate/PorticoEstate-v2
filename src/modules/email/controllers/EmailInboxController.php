@@ -40,7 +40,7 @@ class EmailInboxController
 				{
 					if (isset($query[$key])) $params[$key] = $query[$key];
 				}
-				$result['items'][$index]['messageUrl'] = \phpgw::link('/index.php', ['menuaction' => 'email.uimessage.message'] + $params);
+				$result['items'][$index]['messageUrl'] = \phpgw::link('/index.php', ['menuaction' => 'email.uimessage.message'] + $params, true);
 			}
 			return $this->json($response, $result);
 		}
@@ -95,7 +95,7 @@ class EmailInboxController
 						'msgball[msgnum]' => $activeMsgball['msgnum'] ?? $messageNumber,
 						'msgball[part_no]' => $part['m_part_num_mime'] ?? '',
 						'inline' => '1',
-					]);
+					], true);
 					$parts[$index]['message_body'] = '<img src="' . htmlspecialchars($imageUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '" alt="">';
 					continue;
 				}
@@ -126,7 +126,7 @@ class EmailInboxController
 					'msgball[folder]' => $item['folder'],
 					'msgball[msgnum]' => $item['messageNumber'],
 					'msgball[part_no]' => $attachment['partNumber'],
-				]);
+				], true);
 			}
 			return $this->json($response, ['item' => $item]);
 		}

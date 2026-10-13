@@ -34,5 +34,5 @@
 		'msgball[msgnum]' => $msgball['msgnum'],
 		'msgball[part_no]' => $msgball['part_no'],
 		'inline' => '1',
-	]), true, 302);
+	], true), true, 302);
 	exit;

@@ -28,12 +28,12 @@ class EmailFilterViewController
 		Settings::getInstance()->update('flags', ['app_header' => lang('E-Mail') . ': ' . lang('Filters')]);
 		$html = $this->twig->render('@views/filters.twig', [
 			'layout' => '@views/_bare.twig',
-			'api_url' => \phpgw::link('/email/api/filters'),
-			'new_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uifilters.filters_edit', 'filter_num' => 'add_new']),
-			'run_url' => \phpgw::link('/index.php', ['menuaction' => 'email.bofilters.do_filter']),
-			'test_url' => \phpgw::link('/index.php', ['menuaction' => 'email.bofilters.do_filter', 'filter_test' => 1]),
-			'inbox_url' => \phpgw::link('/email/view/inbox', $baseParameters),
-			'legacy_list_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uifilters.filters_list'] + $baseParameters),
+			'api_url' => \phpgw::link('/email/api/filters', [], true),
+			'new_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uifilters.filters_edit', 'filter_num' => 'add_new'], true),
+			'run_url' => \phpgw::link('/index.php', ['menuaction' => 'email.bofilters.do_filter'], true),
+			'test_url' => \phpgw::link('/index.php', ['menuaction' => 'email.bofilters.do_filter', 'filter_test' => 1], true),
+			'inbox_url' => \phpgw::link('/email/view/inbox', $baseParameters, true),
+			'legacy_list_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uifilters.filters_list'] + $baseParameters, true),
 		]);
 		$response->getBody()->write($this->legacyView->render($html, ['email', 'filters']));
 		return $response->withHeader('Content-Type', 'text/html');

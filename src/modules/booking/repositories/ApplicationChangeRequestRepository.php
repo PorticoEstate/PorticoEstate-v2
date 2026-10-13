@@ -7,7 +7,7 @@ use PDO;
 
 /**
  * bb_application_change_request: an applicant's request for a new time on one
- * element (event, later allocation) of an application, decided by the case
+ * element (event or allocation) of an application, decided by the case
  * officer on that element.
  *
  * Times are stored as the element tables store them: from_/to_ naive local,
@@ -228,19 +228,7 @@ class ApplicationChangeRequestRepository
 	 */
 	public function findEventsWithHourlyPrice(array $eventIds): array
 	{
-		if (empty($eventIds)) {
-			return [];
-		}
-		$placeholders = implode(',', array_map('intval', $eventIds));
-		$stmt = $this->db->prepare(
-			"SELECT DISTINCT po.reservation_id
-			 FROM bb_purchase_order po
-			 JOIN bb_purchase_order_line l ON l.order_id = po.id
-			 JOIN bb_article_mapping m ON m.id = l.article_mapping_id
-			 WHERE po.reservation_type = 'event' AND po.reservation_id IN ({$placeholders}) AND m.unit = 'hour'"
-		);
-		$stmt->execute();
-		return array_map('intval', array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'reservation_id'));
+		return $this->findWithHourlyPrice('event', $eventIds);
 	}
 
 	public function updateEventTime(int $eventId, string $from, string $to): void
@@ -296,20 +284,120 @@ class ApplicationChangeRequestRepository
 	}
 
 	/**
-	 * Keep a not yet exported invoicing row on the event's time, as
-	 * soevent::update() does on every update of an event.
+	 * Keep a not yet exported invoicing row on the element's time, as
+	 * soevent::update() and soallocation::update() do on every update.
 	 */
-	public function updateCompletedReservationTime(int $eventId, string $from, string $to): void
+	public function updateCompletedReservationTime(int $reservationId, string $from, string $to, string $reservationType = 'event'): void
 	{
 		$stmt = $this->db->prepare(
 			"UPDATE bb_completed_reservation SET from_ = :from, to_ = :to, description = :description
-			 WHERE reservation_type = 'event' AND reservation_id = :id AND export_file_id IS NULL"
+			 WHERE reservation_type = :reservation_type AND reservation_id = :id AND export_file_id IS NULL"
 		);
 		$stmt->execute([
-			':from'        => $from,
-			':to'          => $to,
-			':description' => mb_substr($from, 0, -3) . ' - ' . mb_substr($to, 0, -3),
-			':id'          => $eventId,
+			':from'             => $from,
+			':to'               => $to,
+			':description'      => mb_substr($from, 0, -3) . ' - ' . mb_substr($to, 0, -3),
+			':reservation_type' => $reservationType,
+			':id'               => $reservationId,
 		]);
+	}
+
+	// ── The allocations requests are made on ────────────────────────────
+
+	/**
+	 * Current time and state of the given allocations, keyed by id.
+	 *
+	 * @param int[] $allocationIds
+	 * @return array<int, array{id:int, application_id:?int, from_:string, to_:string, active:int}>
+	 */
+	public function fetchAllocations(array $allocationIds): array
+	{
+		if (empty($allocationIds)) {
+			return [];
+		}
+		$placeholders = implode(',', array_map('intval', $allocationIds));
+		$stmt = $this->db->prepare(
+			"SELECT id, application_id, from_, to_, active FROM bb_allocation WHERE id IN ({$placeholders})"
+		);
+		$stmt->execute();
+
+		$allocations = [];
+		foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+			$allocations[(int) $row['id']] = $row;
+		}
+		return $allocations;
+	}
+
+	/**
+	 * One allocation, locked for the rest of the transaction, with what a change
+	 * of its time and price needs.
+	 */
+	public function lockAllocation(int $allocationId): ?array
+	{
+		$stmt = $this->db->prepare(
+			"SELECT id, application_id, organization_id, from_, to_, active, cost, price_locked
+			 FROM bb_allocation WHERE id = :id FOR UPDATE"
+		);
+		$stmt->execute([':id' => $allocationId]);
+		$row = $stmt->fetch(PDO::FETCH_ASSOC);
+		return $row ?: null;
+	}
+
+	/**
+	 * The given allocations whose own order carries a line priced per hour.
+	 *
+	 * @param int[] $allocationIds
+	 * @return int[]
+	 */
+	public function findAllocationsWithHourlyPrice(array $allocationIds): array
+	{
+		return $this->findWithHourlyPrice('allocation', $allocationIds);
+	}
+
+	/**
+	 * The active bookings made inside the allocation. They live within its time,
+	 * so they are its own and never a collision with it.
+	 *
+	 * @return int[]
+	 */
+	public function findAllocationBookingIds(int $allocationId): array
+	{
+		$stmt = $this->db->prepare("SELECT id FROM bb_booking WHERE allocation_id = :id AND active = 1");
+		$stmt->execute([':id' => $allocationId]);
+		return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+	}
+
+	/**
+	 * Only the two time columns: unlike soallocation::update() this leaves the
+	 * cost history (bb_allocation_cost) alone instead of deleting and re-inserting it.
+	 */
+	public function updateAllocationTime(int $allocationId, string $from, string $to): void
+	{
+		$stmt = $this->db->prepare("UPDATE bb_allocation SET from_ = :from, to_ = :to WHERE id = :id");
+		$stmt->execute([':from' => $from, ':to' => $to, ':id' => $allocationId]);
+	}
+
+	/**
+	 * The given reservations of one type whose own order carries a line priced
+	 * per hour. Such a price depends on the element's length.
+	 *
+	 * @param int[] $reservationIds
+	 * @return int[]
+	 */
+	private function findWithHourlyPrice(string $reservationType, array $reservationIds): array
+	{
+		if (empty($reservationIds)) {
+			return [];
+		}
+		$placeholders = implode(',', array_map('intval', $reservationIds));
+		$stmt = $this->db->prepare(
+			"SELECT DISTINCT po.reservation_id
+			 FROM bb_purchase_order po
+			 JOIN bb_purchase_order_line l ON l.order_id = po.id
+			 JOIN bb_article_mapping m ON m.id = l.article_mapping_id
+			 WHERE po.reservation_type = :reservation_type AND po.reservation_id IN ({$placeholders}) AND m.unit = 'hour'"
+		);
+		$stmt->execute([':reservation_type' => $reservationType]);
+		return array_map('intval', array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'reservation_id'));
 	}
 }

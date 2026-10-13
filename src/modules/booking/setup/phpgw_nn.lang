@@ -1302,3 +1302,9 @@ change_request_element_inactive	booking	nn	Arrangementet er ikkje aktivt
 change_request_dates_ambiguous	booking	nn	Fann ikkje datoraden til arrangementet
 change_applied_without_application_date	booking	nn	Endringa er lagra. Ingen søknadsdato høyrde til arrangementet, så datoane i søknaden er uendra.
 change_applied_shared_application_date	booking	nn	Endringa er lagra. Søknadsdatoen gjeld òg andre element, så datoane i søknaden er uendra.
+accept_change_help_allocation	booking	nn	Tildelinga får den ønskte tida. Tida blir sjekka mot andre reservasjonar før noko blir lagra. Datoane i søknaden og prisen blir ikkje endra.
+reject_change_help_allocation	booking	nn	Tildelinga beheld noverande tid, og førespurnaden blir lukka.
+change_price_not_recalculated_allocation	booking	nn	Tildelinga har timepris. Prisen blir ikkje rekna ut på nytt for den nye tida – kontroller artiklane under Endre.
+change_request_stale_allocation	booking	nn	Tildelinga er endra etter førespurnaden
+change_request_element_inactive_allocation	booking	nn	Tildelinga er ikkje aktiv
+change_applied_allocation	booking	nn	Endringa er lagra. Datoane i søknaden og prisen er uendra.

@@ -143,8 +143,8 @@ export class AllocationCancellationError extends Error {
 
 async function postAllocationCancellation<T>(
 	allocationId: number,
-	action: 'cancel-preview' | 'cancel' | 'withdraw',
-	body: IAllocationCancelRequest | {comment?: string},
+	action: 'cancel-preview' | 'cancel' | 'withdraw' | 'change-time',
+	body: IAllocationCancelRequest | {comment?: string} | IAllocationTimeChangeRequest,
 	secret?: string
 ): Promise<T> {
 	const url = phpGWLink(
@@ -243,6 +243,49 @@ export function withdrawAllocationTimeslot(
 		allocationId,
 		'withdraw',
 		{comment},
+		secret
+	);
+}
+
+/**
+ * Min side change of one occurrence's time (GH #1392). The server decides what it is: a shorter
+ * time inside the approved one is stored at once and its price follows the new hours
+ * ('shortened'); any other time becomes a request the case officer decides on ('requested').
+ * See AllocationTimeChangeService.php server-side.
+ */
+export interface IAllocationTimeChangeRequest {
+	/** Naive local "yyyy-MM-dd HH:mm", on the occurrence's own date */
+	from_: string;
+	to_: string;
+	comment?: string;
+}
+
+export interface IAllocationTimeChangeResult {
+	outcome: 'shortened' | 'requested';
+	allocation_id: number;
+	application_id: number;
+	from_: string;
+	to_: string;
+	request_id?: number;
+	price?: {
+		status: 'recalculated' | 'unchanged' | 'kept_locked' | 'not_recalculated';
+		reason: string | null;
+		old_cost: number;
+		new_cost: number;
+		/** The sentence the case officer's comment got, in the request's language */
+		message: string;
+	};
+}
+
+export function changeAllocationTime(
+	allocationId: number,
+	body: IAllocationTimeChangeRequest,
+	secret?: string
+): Promise<IAllocationTimeChangeResult> {
+	return postAllocationCancellation<IAllocationTimeChangeResult>(
+		allocationId,
+		'change-time',
+		body,
 		secret
 	);
 }

@@ -56,6 +56,7 @@ import {
 } from '@navikt/aksel-icons';
 import {useQueryClient} from '@tanstack/react-query';
 import {useAllocationWithdraw} from "@/service/hooks/allocation-cancellation-hooks";
+import AllocationTimeChangeDialog from "./allocation-time-change-dialog";
 import TimeAgo from 'timeago-react';
 import * as timeago from 'timeago.js';
 import nb from 'timeago.js/lib/lang/nb_NO';
@@ -323,6 +324,7 @@ const ReservedTimesList: FC<{
     const withdrawMutation = useAllocationWithdraw();
     const [withdrawTarget, setWithdrawTarget] = useState<IAPIAllocation | null>(null);
     const [withdrawComment, setWithdrawComment] = useState('');
+    const [timeChangeTarget, setTimeChangeTarget] = useState<IAPIAllocation | null>(null);
 
     const closeWithdrawDialog = () => {
         setWithdrawTarget(null);
@@ -458,9 +460,11 @@ const ReservedTimesList: FC<{
 
                 const hasActions = showCalendarLink || showRegisterParticipants || showEdit || !!newBookingHref || showWithdraw;
 
-                // The time the owner asked for on the event's edit page, until the case officer
-                // accepts or rejects it. The server sends it for the owner's events only.
-                const pendingChange = row.type === 'event' ? (entity as IAPIEvent).pending_change : undefined;
+                // The time the owner asked for (an event's edit page, or "Endre tid" on an
+                // allocation), until the case officer accepts or rejects it. The server sends it
+                // for the owner's events and allocations only.
+                const pendingChange = row.type === 'event' ? (entity as IAPIEvent).pending_change
+                    : row.type === 'allocation' ? (entity as IAPIAllocation).pending_change : undefined;
 
                 return (
                     <div
@@ -522,6 +526,16 @@ const ReservedTimesList: FC<{
                                             <CalendarIcon fontSize="1.1rem"/>
                                             {t('bookingfrontend.show_in_calendar')}
                                         </Link>
+                                    </Button>
+                                )}
+                                {showWithdraw && (
+                                    <Button
+                                        variant="tertiary"
+                                        data-color="accent"
+                                        data-size="sm"
+                                        onClick={() => setTimeChangeTarget(entity as IAPIAllocation)}
+                                    >
+                                        {t('bookingfrontend.change_time')}
                                     </Button>
                                 )}
                                 {showWithdraw && (
@@ -589,6 +603,13 @@ const ReservedTimesList: FC<{
                 </div>
             </Dialog.Block>
         </Dialog>
+
+        <AllocationTimeChangeDialog
+            allocation={timeChangeTarget}
+            applicationId={applicationId}
+            applicationSecret={applicationSecret}
+            onClose={() => setTimeChangeTarget(null)}
+        />
         </>
     );
 };

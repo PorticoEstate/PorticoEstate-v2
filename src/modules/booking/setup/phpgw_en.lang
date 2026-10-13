@@ -1327,3 +1327,9 @@ change_request_element_inactive	booking	en	The event is not active
 change_request_dates_ambiguous	booking	en	The event's date row was not found
 change_applied_without_application_date	booking	en	The change has been saved. No application date belonged to the event, so the application's dates are unchanged.
 change_applied_shared_application_date	booking	en	The change has been saved. The application date also holds other elements, so the application's dates are unchanged.
+accept_change_help_allocation	booking	en	The allocation gets the requested time. The time is checked against other reservations before anything is saved. The application's dates and the price are not changed.
+reject_change_help_allocation	booking	en	The allocation keeps its current time and the request is closed.
+change_price_not_recalculated_allocation	booking	en	The allocation is priced per hour. The price is not recalculated for the new time – check the articles under Edit.
+change_request_stale_allocation	booking	en	The allocation has changed since the request
+change_request_element_inactive_allocation	booking	en	The allocation is not active
+change_applied_allocation	booking	en	The change has been saved. The application's dates and the price are unchanged.

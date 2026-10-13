@@ -1844,8 +1844,12 @@
 			  <div class="form-group">
 				<label for="rejection_reason">
 				  <xsl:value-of select="php:function('lang', 'Reason for rejection')" />
+				  <xsl:text> *</xsl:text>
 				</label>
 				<textarea name="rejection_reason" id="rejection_reason" class="form-control" rows="4"></textarea>
+				<div id="rejection_reason_error" class="invalid-feedback">
+				  <xsl:value-of select="php:function('lang', 'Field %1 is required', php:function('lang', 'Reason for rejection'))" />
+				</div>
 			  </div>
 			  <div class="form-group form-check">
 				<input type="checkbox" class="form-check-input" id="send_rejection_email" name="send_rejection_email" value="1" checked="checked"/>

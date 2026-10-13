@@ -106,3 +106,29 @@ function populateTableChkorder(order_id)
 
 	createTable(container, url, colDefsPurchase_order, 'lines', 'pure-table pure-table-bordered', '', order_sum);
 }
+
+/**
+ * The reject dialog requires a reason. The rich text editor leaves markup such as
+ * "<p><br></p>" or "<p>&nbsp;</p>" in the textarea when it shows no text, so only
+ * the text counts.
+ */
+$(document).on('submit', '#rejectApplicationModal form', function (e)
+{
+	var textarea = $(this).find('textarea[name="rejection_reason"]');
+	var editor = textarea.siblings('.note-editor');
+	var editable = editor.find('.note-editable');
+	var text = new DOMParser().parseFromString(textarea.val() || '', 'text/html').body.textContent;
+	var missing = text.replace(/[\s\u200B]/g, '') === '';
+
+	textarea.toggleClass('is-invalid', missing);
+	editor.toggleClass('border-danger', missing);
+	textarea.add(editable)
+		.attr('aria-invalid', missing ? 'true' : null)
+		.attr('aria-describedby', missing ? 'rejection_reason_error' : null);
+
+	if (missing)
+	{
+		e.preventDefault();
+		(editable.length ? editable : textarea).trigger('focus');
+	}
+});

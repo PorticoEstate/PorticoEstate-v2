@@ -221,7 +221,7 @@
 		// this object is 3 files, each an object "extending" the other, this prevents 3 constructor calls
 		var $been_constructed = False;
 		// data storage for caching functions moved to SO object
-		var $so = '##NOTHING##';
+		public ?so_mail_msg $so = null;
 		
 		// ---- compat for PHP < 4.1 vs. > 4.2
 		var $ref_GET = '##NOTHING##';
@@ -389,7 +389,7 @@
 			$this->ref_SESSION = &$_SESSION;
 
 			// SO object has data storage functions
-			if ($this->so == '##NOTHING##')
+			if ($this->so === null)
 			{
 				if ($this->debug_logins > 1) { $this->dbug->out('mail_msg.initialize_mail_msg('.__LINE__.'): manual *constructor*: creating sub SO object "so_mail_msg"<br />'); }
 				$this->so = CreateObject('email.so_mail_msg');

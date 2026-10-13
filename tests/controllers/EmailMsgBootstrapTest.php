@@ -167,6 +167,36 @@ namespace Tests\Controllers
 			$this->assertSame('body', $mail->phpgw_fetchbody($msgball));
 		}
 
+		public function testInitializationPreservesTypedStorageAndMissingTableFallback(): void
+		{
+			require_once __DIR__ . '/../../src/modules/email/inc/class.so_mail_msg.inc.php';
+			require_once __DIR__ . '/../../src/modules/email/inc/class.svc_debug.inc.php';
+			$mail = new \mail_msg();
+			$this->assertNull($mail->so);
+			$storage = $this->getMockBuilder(\so_mail_msg::class)
+				->disableOriginalConstructor()
+				->onlyMethods(['so_am_table_exists', 'so_prop_use_group_data'])
+				->getMock();
+			$storage->expects($this->once())->method('so_am_table_exists')->willReturn(false);
+			$storage->expects($this->once())->method('so_prop_use_group_data')->with(false);
+			$mail->so = $storage;
+			$mail->dbug = new \svc_debug();
+			$originalGet = $_GET;
+			$_GET = [];
+			try
+			{
+				$mail->initialize_mail_msg();
+				$mail->initialize_mail_msg();
+				$this->assertSame($storage, $mail->so);
+				$this->assertFalse($mail->use_private_table);
+				$this->assertTrue($mail->been_constructed);
+			}
+			finally
+			{
+				$_GET = $originalGet;
+			}
+		}
+
 		public function testMoveDebuggingUsesTheTypedLogger(): void
 		{
 			require_once __DIR__ . '/../../src/modules/email/inc/class.svc_debug.inc.php';

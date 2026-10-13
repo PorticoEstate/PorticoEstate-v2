@@ -878,26 +878,34 @@ class ApplicationRepository
 	}
 
 	/**
-	 * Deactivate a single association (allocation/booking/event) by type and ID.
+	 * Deactivate a single association (allocation/booking/event) by type and ID,
+	 * provided it belongs to one of $applicationIds.
+	 *
+	 * @param int[] $applicationIds
 	 */
-	public function deactivateAssociation(string $type, int $associationId): bool
+	public function deactivateAssociation(string $type, int $associationId, array $applicationIds): bool
 	{
-		return $this->setAssociationActive($type, $associationId, 0);
+		return $this->setAssociationActive($type, $associationId, $applicationIds, 0);
 	}
 
 	/**
-	 * Reactivate a single association (allocation/booking/event) by type and ID.
+	 * Reactivate a single association (allocation/booking/event) by type and ID,
+	 * provided it belongs to one of $applicationIds.
+	 *
+	 * @param int[] $applicationIds
 	 */
-	public function reactivateAssociation(string $type, int $associationId): bool
+	public function reactivateAssociation(string $type, int $associationId, array $applicationIds): bool
 	{
-		return $this->setAssociationActive($type, $associationId, 1);
+		return $this->setAssociationActive($type, $associationId, $applicationIds, 1);
 	}
 
 	/**
 	 * Set the active flag on a single association. Returns false for an unknown
-	 * type or when no matching row exists.
+	 * type, or when no row with that ID belongs to one of $applicationIds.
+	 *
+	 * @param int[] $applicationIds
 	 */
-	private function setAssociationActive(string $type, int $associationId, int $active): bool
+	private function setAssociationActive(string $type, int $associationId, array $applicationIds, int $active): bool
 	{
 		$tableMap = [
 			'allocation' => 'bb_allocation',
@@ -905,11 +913,12 @@ class ApplicationRepository
 			'event'      => 'bb_event',
 		];
 		$table = $tableMap[$type] ?? null;
-		if (!$table) {
+		if (!$table || !$applicationIds) {
 			return false;
 		}
+		$appIds = implode(',', array_map('intval', $applicationIds));
 		$stmt = $this->db->prepare(
-			"UPDATE {$table} SET active = :active WHERE id = :id"
+			"UPDATE {$table} SET active = :active WHERE id = :id AND application_id IN ({$appIds})"
 		);
 		$stmt->execute([':active' => $active, ':id' => $associationId]);
 		return $stmt->rowCount() > 0;

@@ -1144,3 +1144,6 @@ withdraw_whole_application_failed	bookingfrontend	nn	Søknaden kunne ikkje trekk
 withdraw_whole_application_help_no_selection	bookingfrontend	nn	Trekkjer søknaden og alle reserverte tider i han.
 cancel_whole_application_help_no_selection	bookingfrontend	nn	Avbestiller søknaden og alle reserverte tider i han.
 change_request_pending	bookingfrontend	nn	Ønskt endring til kl. {{time}} ventar på sakshandsaming
+comment_on_time	bookingfrontend	nn	Kommenter
+comment_on_time_heading	bookingfrontend	nn	Kommentar til tidspunktet
+comment_time_removed	bookingfrontend	nn	Tidspunktet er fjerna

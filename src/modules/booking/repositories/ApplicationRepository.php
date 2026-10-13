@@ -279,13 +279,13 @@ class ApplicationRepository
 	public function fetchComments(int $applicationId): array
 	{
 		$stmt = $this->db->prepare(
-			"SELECT id, application_id, time, author, comment, type
+			"SELECT id, application_id, time, author, comment, type, element_type, element_id
 			 FROM bb_application_comment
 			 WHERE application_id = :id
 			 ORDER BY time DESC"
 		);
 		$stmt->execute([':id' => $applicationId]);
-		return $stmt->fetchAll(PDO::FETCH_ASSOC);
+		return (new ApplicationCommentElementRepository())->attachElements($stmt->fetchAll(PDO::FETCH_ASSOC));
 	}
 
 	// ── Internal notes (admin only) ─────────────────────────────────────
@@ -834,18 +834,24 @@ class ApplicationRepository
 		$stmt->execute([':status' => $status, ':id' => $applicationId]);
 	}
 
-	public function addComment(int $applicationId, string $author, string $comment, string $type = 'comment'): int
+	/**
+	 * $elementType/$elementId name the element the comment is about (both or neither, the
+	 * table's CHECK); the caller checks it belongs to the application.
+	 */
+	public function addComment(int $applicationId, string $author, string $comment, string $type = 'comment', ?string $elementType = null, ?int $elementId = null): int
 	{
 		$stmt = $this->db->prepare(
-			"INSERT INTO bb_application_comment (application_id, time, author, comment, type)
-			 VALUES (:id, :time, :author, :comment, :type)"
+			"INSERT INTO bb_application_comment (application_id, time, author, comment, type, element_type, element_id)
+			 VALUES (:id, :time, :author, :comment, :type, :element_type, :element_id)"
 		);
 		$stmt->execute([
-			':id'      => $applicationId,
-			':time'    => gmdate('Y-m-d H:i:s'),
-			':author'  => $author,
-			':comment' => $comment,
-			':type'    => $type,
+			':id'           => $applicationId,
+			':time'         => gmdate('Y-m-d H:i:s'),
+			':author'       => $author,
+			':comment'      => $comment,
+			':type'         => $type,
+			':element_type' => $elementType,
+			':element_id'   => $elementId,
 		]);
 
 		return (int) $this->db->lastInsertId();

@@ -147,6 +147,20 @@ export interface IUpdatePartialApplication extends Partial<Omit<IApplication, 'd
     recurring_info?: RecurringInfo | null; // For convenience, will be JSON.stringify'd. Allow null to clear
 }
 
+export type CommentElementType = "allocation" | "event" | "booking";
+
+/** The element a comment is about, as it is now (GH #1392). */
+export interface CommentElement {
+    type: CommentElementType;
+    id: number;
+    /** False when the element has been deleted or no longer belongs to the application */
+    exists: boolean;
+    from_?: string; // Local time, ISO without an offset
+    to_?: string;
+    active?: boolean;
+    resource_names?: string;
+}
+
 export interface ApplicationComment {
     id: number;
     application_id: number;
@@ -154,6 +168,9 @@ export interface ApplicationComment {
     author: string;
     comment: string;
     type: "comment" | "ownership" | "status";
+    element_type?: CommentElementType;
+    element_id?: number;
+    element?: CommentElement;
 }
 
 export interface CommentStats {
@@ -173,6 +190,8 @@ export interface GetCommentsResponse {
 export interface AddCommentRequest {
     comment: string; // Required, max 10000 characters
     type?: "comment" | "ownership"; // Optional, defaults to "comment"
+    element_type?: CommentElementType; // With element_id: an element of this application the comment is about
+    element_id?: number;
 }
 
 export interface AddCommentResponse {

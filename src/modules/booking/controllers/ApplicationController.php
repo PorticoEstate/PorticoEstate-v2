@@ -1383,8 +1383,16 @@ class ApplicationController
 			return ResponseHelper::sendErrorResponse(['error' => 'Only the case officer can reply'], 403);
 		}
 
+		// A reply on one element of the application (ref #1392); the service refuses a
+		// half reference or an element of another application with a 400.
+		$elementType = $body['element_type'] ?? null;
+		$elementId = $body['element_id'] ?? null;
+		if (($elementType !== null && !is_string($elementType)) || ($elementId !== null && !is_numeric($elementId))) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Invalid element reference'], 400);
+		}
+
 		try {
-			$this->service->addComment($id, $this->currentAccountId, $comment);
+			$this->service->addComment($id, $this->currentAccountId, $comment, $elementType, $elementId !== null ? (int) $elementId : null);
 			return ResponseHelper::sendJSONResponse(['status' => 'ok'], 200, $response);
 		} catch (RuntimeException $e) {
 			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], $this->httpCode($e));

@@ -42,6 +42,7 @@ import {getStatusColor} from './status-utils';
 import {resolveParticipantLimit} from "@/components/building-calendar/util/participant-limit";
 import {isFutureDate, phpGWLink} from "@/service/util";
 import styles from "./application-details.module.scss";
+import {ElementCommentButton, CommentElementBadge, formatElementTime} from "./element-comment";
 import {
     ArrowLeftIcon,
     FilesIcon,
@@ -316,8 +317,11 @@ const ReservedTimesList: FC<{
     embedded?: boolean;
     /** The row to mark and scroll to — see ApplicationDetailsProps.highlight. */
     highlight?: HighlightEntity;
-}> = ({entities, applicationId, applicationSecret, embedded, highlight}) => {
+    /** Offer "Kommenter" on each row: a comment that names that element (GH #1392). */
+    canComment?: boolean;
+}> = ({entities, applicationId, applicationSecret, embedded, highlight, canComment}) => {
     const t = useTrans();
+    const {i18n} = useClientTranslation();
     const serverSettings = useServerSettings();
     const participantLimitDefault = serverSettings.data?.booking_config?.participant_limit;
     const withdrawMutation = useAllocationWithdraw();
@@ -456,7 +460,9 @@ const ReservedTimesList: FC<{
                     }, false));
                 }
 
-                const hasActions = showCalendarLink || showRegisterParticipants || showEdit || !!newBookingHref || showWithdraw;
+                const showComment = !!canComment;
+
+                const hasActions = showCalendarLink || showRegisterParticipants || showEdit || !!newBookingHref || showWithdraw || showComment;
 
                 // The time the owner asked for on the event's edit page, until the case officer
                 // accepts or rejects it. The server sends it for the owner's events only.
@@ -534,6 +540,18 @@ const ReservedTimesList: FC<{
                                         <XMarkOctagonIcon fontSize="1.1rem"/>
                                         {t('bookingfrontend.withdraw_timeslot')}
                                     </Button>
+                                )}
+                                {showComment && (
+                                    <ElementCommentButton
+                                        applicationId={applicationId}
+                                        secret={applicationSecret}
+                                        elementType={row.type}
+                                        elementId={entity.id}
+                                        elementLabel={[
+                                            formatElementTime(entity.from_, entity.to_, i18n.language),
+                                            ...entity.resources.map(r => r.name),
+                                        ].join(' · ')}
+                                    />
                                 )}
                             </div>
                         )}
@@ -674,6 +692,7 @@ const CommentsSection: FC<{
                                             <TimeAgo datetime={c.time} locale={i18n.language}/>{' · '}
                                             {DateTime.fromISO(c.time).toFormat('dd.MM.yyyy HH:mm')}
                                         </span>
+                                        {c.element && <CommentElementBadge element={c.element}/>}
                                     </div>
                                     <div className={styles.commentText} dangerouslySetInnerHTML={{__html: c.comment}}/>
                                 </div>
@@ -1103,6 +1122,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                                     applicationSecret={props.secret || application.secret || undefined}
                                     embedded={embedded}
                                     highlight={props.highlight}
+                                    canComment={!isCancelled}
                                 />
                             </>
                         )}

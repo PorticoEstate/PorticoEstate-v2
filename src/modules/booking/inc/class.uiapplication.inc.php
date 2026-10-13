@@ -465,7 +465,10 @@ class booking_uiapplication extends booking_uicommon
 			'time' => 'now',
 			'author' => $customer_name ? $customer_name : $this->current_account_fullname(),
 			'comment' => Sanitizer::clean_html($comment),
-			'type' => $type
+			'type' => $type,
+			// A legacy comment is about the whole application (ref #1392).
+			'element_type' => null,
+			'element_id' => null
 		);
 	}
 

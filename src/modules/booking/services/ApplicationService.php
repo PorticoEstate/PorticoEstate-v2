@@ -3,6 +3,7 @@
 namespace App\modules\booking\services;
 
 use App\modules\booking\models\Allocation;
+use App\modules\booking\repositories\ApplicationCommentElementRepository;
 use App\modules\booking\repositories\ApplicationRepository;
 use App\modules\booking\services\EmailService;
 use RuntimeException;
@@ -178,12 +179,22 @@ class ApplicationService
 
 	/**
 	 * Add a comment to the application and send email notification.
+	 *
+	 * $elementType/$elementId make it a reply on one element (allocation, event or
+	 * booking) of THIS application; anything else is refused with a 400.
 	 */
-	public function addComment(int $appId, int $accountId, string $comment): void
+	public function addComment(int $appId, int $accountId, string $comment, ?string $elementType = null, ?int $elementId = null): void
 	{
 		$row = $this->repo->getById($appId);
 		if (!$row) {
 			throw new RuntimeException('Application not found', 404);
+		}
+
+		if ($elementType !== null || $elementId !== null) {
+			if ($elementType === null || $elementId === null
+				|| !(new ApplicationCommentElementRepository())->belongsToApplication($appId, $elementType, $elementId)) {
+				throw new RuntimeException('The element does not belong to this application', 400);
+			}
 		}
 
 		// Sanitise the rich-editor HTML ONCE here, on write. The stored value is then
@@ -194,7 +205,7 @@ class ApplicationService
 		$comment = Sanitizer::clean_html($comment);
 
 		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';
-		$commentId = $this->repo->addComment($appId, $authorName, $comment, 'comment');
+		$commentId = $this->repo->addComment($appId, $authorName, $comment, 'comment', $elementType, $elementId);
 
  		// Send email notification (non-fatal on failure). Pass the officer's reply text
 		// so the applicant email contains the actual message — without it the email is

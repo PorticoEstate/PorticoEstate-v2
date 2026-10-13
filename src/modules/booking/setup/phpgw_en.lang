@@ -1327,3 +1327,7 @@ change_request_element_inactive	booking	en	The event is not active
 change_request_dates_ambiguous	booking	en	The event's date row was not found
 change_applied_without_application_date	booking	en	The change has been saved. No application date belonged to the event, so the application's dates are unchanged.
 change_applied_shared_application_date	booking	en	The change has been saved. The application date also holds other elements, so the application's dates are unchanged.
+comment_regarding	booking	en	Regarding
+whole_application	booking	en	The whole application
+reply_on_this_time	booking	en	Reply on this time
+comment_time_removed	booking	en	The time has been removed

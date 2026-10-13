@@ -410,3 +410,4 @@ email_required	common	no	E-post er påkrevd
 
 previous	common	no	Forrige
 access not permitted	common	no	Tilgang nektet
+session_expired_log_in_again	common	no	Sesjonen din er utløpt. Logg inn på nytt i en annen fane og prøv igjen.

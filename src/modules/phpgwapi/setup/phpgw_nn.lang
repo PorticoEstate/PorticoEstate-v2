@@ -490,3 +490,4 @@ phone_number_required	common	nn	Telefonnummer er påkrevd
 email_required	common	nn	E-post er påkrevd
 
 previous	common	nn	Førre
+session_expired_log_in_again	common	nn	Sesjonen din er gått ut. Logg inn på nytt i ei anna fane og prøv igjen.

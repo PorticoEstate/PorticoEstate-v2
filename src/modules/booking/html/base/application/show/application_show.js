@@ -296,6 +296,7 @@
 			headers: { 'Content-Type': 'application/json' },
 			body: '{}'
 		}).then(function (res) {
+			if (res.status === 401) throw new Error(lang('sessionExpiredLogInAgain'));
 			if (!res.ok) throw new Error('HTTP ' + res.status);
 			return res.json();
 		});
@@ -308,8 +309,9 @@
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(data || {})
 		}).then(function (res) {
-			// An expired session is redirected to the login page, which fetch follows
-			// silently — the body is then HTML, not JSON
+			// An expired session is answered 401. Where the server still redirects to
+			// the login page, fetch follows silently — the body is then HTML, not JSON
+			if (res.status === 401) throw new Error(lang('sessionExpiredLogInAgain'));
 			if ((res.headers.get('content-type') || '').indexOf('application/json') === -1) {
 				throw new Error(res.redirected ? lang('sessionExpiredLogInAgain') : 'HTTP ' + res.status);
 			}
@@ -327,6 +329,8 @@
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(data)
 		}).then(function (res) {
+			// An expired session is answered 401, carried in errors so renderConflict shows it
+			if (res.status === 401) throw { status: 401, errors: { session: [lang('sessionExpiredLogInAgain')] } };
 			return res.json().then(function (json) {
 				// Forward the FULL failure body (errors + conflict_details /
 				// conflict_links / conflict_count) so callers can show overlaps.

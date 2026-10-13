@@ -595,18 +595,20 @@ class emailadmin_bo
 	function getUserData($_accountID)
 	{
 		$accounts_obj = new Accounts();
+		$icUserData = array();
+		$ogUserData = array();
 		if ($userProfile = $this->getUserProfile('felamimail'))
 		{
 			$icServer = $userProfile->getIncomingServer(0);
 			if (is_a($icServer, 'defaultimap') && $username = $accounts_obj->id2name($_accountID))
 			{
-				$icUserData = $icServer->getUserData($username);
+				$icUserData = (array) $icServer->getUserData($username);
 			}
 
 			$ogServer = $userProfile->getOutgoingServer(0);
 			if (is_a($ogServer, 'defaultsmtp'))
 			{
-				$ogUserData = $ogServer->getUserData($_accountID);
+				$ogUserData = (array) $ogServer->getUserData($_accountID);
 			}
 
 			return $icUserData + $ogUserData;

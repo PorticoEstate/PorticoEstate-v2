@@ -205,14 +205,14 @@ class emailadmin_so
 		{
 			$placeholder = ':group_' . $index;
 			$groupPlaceholders[] = $placeholder;
-			$parameters[$placeholder] = $groupId;
+			$parameters[$placeholder] = (string) $groupId;
 		}
 		$where = '(ea_appname = :app_name OR ea_appname IS NULL OR ea_appname = \'\')'
 			. ' AND (ea_group IN (' . implode(', ', $groupPlaceholders) . ') OR ea_group IS NULL OR ea_group = \'\')';
 		if (!empty($_user))
 		{
-			$where .= ' AND (ea_user = :user_id OR ea_user IS NULL OR ea_user = 0 OR ea_user = \'\')';
-			$parameters[':user_id'] = (int) $_user;
+			$where .= ' AND (ea_user = :user_id OR ea_user IS NULL OR ea_user = \'0\' OR ea_user = \'\')';
+			$parameters[':user_id'] = (string) (int) $_user;
 		}
 		$anyValues = 0;
 		$globalDefaults = [];
@@ -238,7 +238,7 @@ class emailadmin_so
 		$primaryGroup = Settings::getInstance()->get('user')['account_primary_group'] ?? null;
 		if ($primaryGroup && isset($_groups[1]) && (int) $_groups[1] === (int) $primaryGroup)
 		{
-			$groupId = $this->fetchProfileId('ea_group = :group_id AND ea_active = 1', [':group_id' => (int) $_groups[1]]);
+			$groupId = $this->fetchProfileId('ea_group = :group_id AND ea_active = 1', [':group_id' => (string) (int) $_groups[1]]);
 			if ($groupId)
 			{
 				$groupDefaults = $this->getProfile($groupId, $this->db_cols);
@@ -249,7 +249,7 @@ class emailadmin_so
 		// retrieve usersettings if set
 		if (!empty($_user) && $_user != 0)
 		{
-			$userId = $this->fetchProfileId('ea_user = :user_id AND ea_active = 1', [':user_id' => (int) $_user]);
+			$userId = $this->fetchProfileId('ea_user = :user_id AND ea_active = 1', [':user_id' => (string) (int) $_user]);
 			if ($userId)
 			{
 				$userDefaults = $this->getProfile($userId, $this->db_cols);
@@ -326,7 +326,7 @@ class emailadmin_so
 		}
 		elseif ($_defaultProfile)
 		{
-			$where = 'ea_appname = :app_name AND ea_group = 0 AND ea_user = 0';
+			$where = "ea_appname = :app_name AND ea_group = '0' AND ea_user = '0'";
 			$parameters[':app_name'] = '';
 		}
 		$sql = "SELECT * FROM {$this->table}" . ($where !== '' ? ' WHERE ' . $where : '')

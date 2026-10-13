@@ -10,6 +10,7 @@
 <main class="emailadmin-page" id="emailadmin-editor"
 	data-api-url="{{ api_url|e('html_attr') }}"
 	data-profile-id="{{ profile_id }}"
+	data-user-edit-url-template="{{ user_edit_url_template|e('html_attr') }}"
 	data-any-application="{{ lang('any application')|e('html_attr') }}"
 	data-csrf-name="{{ csrf.name|e('html_attr') }}"
 	data-csrf-value="{{ csrf.value|e('html_attr') }}"
@@ -28,7 +29,10 @@
 				<label>{{ lang('Organisation name') }}<input name="globalsettings[organisationName]"></label>
 				<label>{{ lang('Can be used by application') }}<select name="globalsettings[ea_appname]" id="emailadmin-app"></select></label>
 				<label>{{ lang('Can be used by group') }}<select name="globalsettings[ea_group]" id="emailadmin-group"></select></label>
-				<label>{{ lang('Can be used by user') }}<select name="globalsettings[ea_user]" id="emailadmin-user"></select></label>
+				<div class="emailadmin-user-field">
+					<label>{{ lang('Can be used by user') }}<select name="globalsettings[ea_user]" id="emailadmin-user"></select></label>
+					<a class="emailadmin-button" id="emailadmin-user-edit-link" href="#" hidden>{{ lang('Edit email settings') }}</a>
+				</div>
 			</div>
 			<div class="emailadmin-checks">
 				<label><input type="checkbox" name="globalsettings[ea_active]"> {{ lang('Profile is active') }}</label>

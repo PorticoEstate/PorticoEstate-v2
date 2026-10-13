@@ -1,6 +1,7 @@
 <?php
 
 use App\modules\emailadmin\controllers\EmailadminController;
+use App\modules\emailadmin\controllers\EmailadminUserController;
 use App\modules\emailadmin\helpers\RedirectHelper;
 use App\modules\emailadmin\viewcontrollers\EmailadminViewController;
 use App\modules\phpgwapi\middleware\SessionsMiddleware;
@@ -48,12 +49,15 @@ $app->group('/emailadmin', function (RouteCollectorProxy $group) use ($emailadmi
 		$view->get('/profiles', EmailadminViewController::class . ':index');
 		$view->get('/profiles/add', EmailadminViewController::class . ':add');
 		$view->get('/profiles/{id:[0-9]+}/edit', EmailadminViewController::class . ':edit');
+		$view->get('/users/{id:[0-9]+}/edit', EmailadminViewController::class . ':editUserData');
 	})->add($emailadminCsrf);
 
 	$group->get('/profiles', EmailadminController::class . ':index');
 	$group->get('/profiles/{id:[0-9]+}', EmailadminController::class . ':show');
+	$group->get('/users/{id:[0-9]+}', EmailadminUserController::class . ':show');
 	$group->post('/profiles', EmailadminController::class . ':store')->add($emailadminCsrf);
 	$group->put('/profiles/{id:[0-9]+}', EmailadminController::class . ':update')->add($emailadminCsrf);
+	$group->put('/users/{id:[0-9]+}', EmailadminUserController::class . ':update')->add($emailadminCsrf);
 	$group->delete('/profiles/{id:[0-9]+}', EmailadminController::class . ':destroy')->add($emailadminCsrf);
 	$group->patch('/profiles/order', EmailadminController::class . ':reorder')->add($emailadminCsrf);
 })

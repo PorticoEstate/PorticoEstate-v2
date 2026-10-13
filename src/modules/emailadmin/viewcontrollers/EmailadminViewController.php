@@ -107,6 +107,27 @@ class EmailadminViewController
 		return $this->editor($request, $response, (int) ($args['id'] ?? 0));
 	}
 
+	public function editUserData(Request $request, Response $response, array $args): Response
+	{
+		if (!$this->isAdmin()) return $response->withStatus(403);
+		$id = (int) ($args['id'] ?? 0);
+		$accountName = $id > 0 ? (new Accounts())->id2name($id) : false;
+		if (!$accountName) return $response->withStatus(404);
+
+		$title = lang('edit email settings');
+		Settings::getInstance()->update('flags', ['app_header' => lang('Email administration') . ': ' . $title]);
+		$html = $this->twig->render('@views/users/emailadmin_user_edit.twig', [
+			'layout' => '@views/_bare.twig',
+			'account_id' => $id,
+			'account_name' => (string) $accountName,
+			'api_url' => \phpgw::link('/emailadmin/users/' . $id),
+			'back_url' => \phpgw::link('/admin/accounts.php'),
+			'csrf' => $this->csrf($request),
+		]);
+		$response->getBody()->write($this->legacyView->render($html, ['admin', 'emailadmin'], 'admin::emailadmin'));
+		return $response->withHeader('Content-Type', 'text/html');
+	}
+
 	private function editor(Request $request, Response $response, int $id): Response
 	{
 		if (!$this->isAdmin()) return $response->withStatus(403);
@@ -117,6 +138,7 @@ class EmailadminViewController
 			'profile_id' => $id,
 			'api_url' => \phpgw::link('/emailadmin/profiles'),
 			'list_url' => \phpgw::link('/emailadmin/view/profiles'),
+			'user_edit_url_template' => \phpgw::link('/emailadmin/view/users/__USER_ID__/edit'),
 			'csrf' => $this->csrf($request),
 		]));
 		$response->getBody()->write($this->legacyView->render($html, ['admin', 'emailadmin'], 'admin::emailadmin'));

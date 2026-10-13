@@ -8,6 +8,8 @@
 	const options = JSON.parse(root.dataset.options || '{}');
 	const form = document.getElementById('emailadmin-profile-form');
 	const alertBox = document.getElementById('emailadmin-error');
+	const userSelect = document.getElementById('emailadmin-user');
+	const userEditLink = document.getElementById('emailadmin-user-edit-link');
 	const csrfHeaders = { [root.dataset.csrfName]: root.dataset.csrfValue };
 	const checkboxFields = new Set([
 		'smtpAuth', 'editforwardingaddress', 'smtpLDAPUseDefault', 'imapEnableCyrusAdmin',
@@ -48,6 +50,22 @@
 		(list || []).forEach(item => select.add(new Option(item.name, item.id)));
 		select.value = selected == null ? (includeAny ? '' : '0') : String(selected);
 	}
+
+	function updateUserEditLink()
+	{
+		const userId = userSelect.value;
+		if (!userId || Number(userId) <= 0)
+		{
+			userEditLink.hidden = true;
+			userEditLink.removeAttribute('href');
+			return;
+		}
+
+		userEditLink.href = root.dataset.userEditUrlTemplate.replace('__USER_ID__', encodeURIComponent(userId));
+		userEditLink.hidden = false;
+	}
+
+	userSelect.addEventListener('change', updateUserEditLink);
 
 	function makeInput(container, group, type, key, value)
 	{
@@ -136,6 +154,7 @@
 		addOptions(document.getElementById('emailadmin-app'), options.apps, true, profile.ea_appname || '');
 		addOptions(document.getElementById('emailadmin-group'), options.groups, false, profile.ea_group || 0);
 		addOptions(document.getElementById('emailadmin-user'), options.users, false, profile.ea_user || 0);
+		updateUserEditLink();
 		Object.entries(profile).forEach(([key, value]) =>
 		{
 			const input = form.elements.namedItem('globalsettings[' + key + ']');

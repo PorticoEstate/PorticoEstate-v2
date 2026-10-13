@@ -268,7 +268,7 @@ export interface IAllocationTimeChangeResult {
 	to_: string;
 	request_id?: number;
 	price?: {
-		status: 'recalculated' | 'unchanged' | 'kept_locked' | 'not_recalculated';
+		status: 'recalculated' | 'unchanged' | 'not_recalculated';
 		reason: string | null;
 		old_cost: number;
 		new_cost: number;

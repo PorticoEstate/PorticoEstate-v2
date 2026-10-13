@@ -242,14 +242,20 @@ class AllocationTimeChangeService
 	 * allocations - every miss a test fixture. When EVERY hour line of the order
 	 * still follows that rule for the old time, each gets the quantity for the
 	 * new time, amount = unit_price × quantity and tax = amount × the tax code's
-	 * percent, as the order writers compute them; other lines keep theirs. All
-	 * or nothing: one hour line off the rule and the order is not touched.
+	 * percent, as the order writers compute them; the unit price and the other
+	 * lines keep theirs. All or nothing: one hour line off the rule - a quantity
+	 * the case officer set by hand - and the order is not touched.
 	 *
-	 * Not recalculated - the price stays, and the comment says why - when the
-	 * price is locked (price_locked: set by the case officer by hand, or locked by
-	 * an earlier shortening), when there is no order
-	 * or more than one, when the order is parent-less (the application's own
-	 * order, which later allocations of the application are copied from,
+	 * The rule, not price_locked, decides: a locked price is recalculated too when
+	 * its hour lines still follow the time. price_locked cannot tell a price the
+	 * case officer typed from one an earlier shortening locked, and a unit price
+	 * the officer typed survives the recalculation anyway, so only a quantity he
+	 * changed has to stop it.
+	 *
+	 * Not recalculated - the price stays, and the comment says why - when an hour
+	 * line is off the rule, when there is no order or more than one, when the
+	 * order is parent-less (the application's own order, which later allocations
+	 * of the application are copied from,
 	 * sopurchase_order::copy_purchase_order_from_application), or when it is
 	 * already billed.
 	 *
@@ -276,10 +282,6 @@ class AllocationTimeChangeService
 			'message' => lang($messageKey),
 		];
 
-		if ((int) $allocation['price_locked'] === 1) {
-			return $kept('kept_locked', null, 'bookingfrontend.allocation_price_locked');
-		}
-
 		$orders = $this->repository->findOwnOrders($allocationId);
 		if (count($orders) !== 1) {
 			return $kept('not_recalculated', $orders ? 'several_orders' : 'no_order', 'bookingfrontend.allocation_price_not_recalculated');
@@ -298,7 +300,8 @@ class AllocationTimeChangeService
 		$hourLines = array_filter($this->repository->fetchOrderLines($orderId), fn(array $line) => $line['unit'] === 'hour');
 		foreach ($hourLines as $line) {
 			if (abs((float) $line['quantity'] - $oldQuantity) >= 0.005) {
-				return $kept('not_recalculated', 'off_rule', 'bookingfrontend.allocation_price_not_recalculated');
+				// A quantity off the rule was set by hand, and the text says so
+				return $kept('not_recalculated', 'off_rule', 'bookingfrontend.allocation_price_kept_locked');
 			}
 		}
 		if (!$hourLines || $newQuantity === $oldQuantity) {

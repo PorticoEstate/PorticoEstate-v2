@@ -1,0 +1,37 @@
+.email-inbox {
+	--mail-ink: #1d292f;
+	--mail-muted: #53636b;
+	--mail-line: #cbd4d8;
+	--mail-surface: #f2f6f6;
+	--mail-accent: #075d73;
+	color: var(--mail-ink);
+	max-width: 1280px;
+	margin: 0 auto;
+	padding: 1.25rem;
+}
+.email-inbox-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.email-inbox-header h1 { margin: 0; font-size: 1.6rem; }
+.email-inbox-kicker { margin: 0 0 .2rem; color: var(--mail-muted); font-size: .82rem; }
+.email-inbox-header nav { display: flex; flex-wrap: wrap; gap: .45rem; }
+.email-inbox-action, .email-inbox-pagination button { display: inline-flex; align-items: center; min-height: 2.25rem; padding: .4rem .7rem; border: 1px solid #9aa9af; border-radius: 3px; background: #fff; color: var(--mail-ink); text-decoration: none; cursor: pointer; }
+.email-inbox-action--primary { background: var(--mail-accent); border-color: var(--mail-accent); color: #fff; }
+.email-inbox-status { padding: .55rem 0; color: var(--mail-muted); }
+.email-inbox-error { margin: .75rem 0; padding: .75rem; border-left: 4px solid #a32c2c; background: #fff0f0; color: #681d1d; }
+.email-inbox-notice { border: 1px solid var(--mail-line); padding: 1rem; background: var(--mail-surface); }
+.email-inbox-notice p { margin: 0 0 .5rem; }
+.email-inbox-table-wrap { overflow-x: auto; }
+.email-inbox-table { width: 100%; border-collapse: collapse; }
+.email-inbox-table th, .email-inbox-table td { padding: .65rem .75rem; border-bottom: 1px solid var(--mail-line); text-align: left; }
+.email-inbox-table th { background: var(--mail-surface); font-weight: 650; }
+.email-inbox-table tr.is-unseen { font-weight: 700; }
+.email-inbox-sender-address { display: block; color: var(--mail-muted); font-size: .85rem; font-weight: 400; }
+.email-inbox-subject a { color: var(--mail-ink); text-decoration: none; }
+.email-inbox-subject a:hover { text-decoration: underline; }
+.email-inbox-pagination { display: flex; justify-content: center; align-items: center; gap: .8rem; padding: 1rem 0; }
+.email-inbox-pagination button:disabled { opacity: .5; cursor: default; }
+@media (max-width: 720px) {
+	.email-inbox { padding: .75rem; }
+	.email-inbox-header { align-items: flex-start; flex-direction: column; }
+	.email-inbox-header nav { width: 100%; }
+	.email-inbox-action { flex: 1 1 auto; justify-content: center; }
+}

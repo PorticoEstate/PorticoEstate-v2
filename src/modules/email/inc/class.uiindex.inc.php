@@ -58,29 +58,10 @@
 		*/
 		function index()
 		{
-			if ( !isset($GLOBALS['phpgw_info']['user']['preferences']['email']) || !count($GLOBALS['phpgw_info']['user']['preferences']['email']) )
-			{
-				$GLOBALS['phpgw']->common->phpgw_header(true);
-				echo '<h1><a href="' . phpgw::link('/index.php', array('menuaction' => 'email.uipreferences.preferences')) . '">' . lang('Please set your preferences') . '</a></h1>';
-				$GLOBALS['phpgw']->common->phpgw_exit(true);
-			}
-			
-			$GLOBALS['phpgw_info']['flags']['currentapp'] = 'email';
-			phpgw_handle_error(PHPGW_E_DEBUG, 'relevant phpgw_info data ' . @print_r($GLOBALS['phpgw_info']['user']['preferences']['email'], true), __FILE__, __LINE__);
-
-			$this->bo = CreateObject('email.boindex');
-			$this->bo->index_data();
-			
-			$this->index_old_tpl();
-			return;
-			if ($GLOBALS['phpgw']->msg->phpgw_before_xslt)
-			{
-				$this->index_old_tpl();
-			}
-			else
-			{
-				$this->index_xslt_tpl();
-			}
+			$query = array_intersect_key($_GET, array_flip([
+				'fldball', 'folder', 'acctnum', 'sort', 'order', 'start', 'click_history'
+			]));
+			phpgw::redirect_link('/email/view/inbox', $query);
 		}
 		
 		/*!

@@ -1,0 +1,59 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Inbox') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/inbox.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<main class="email-inbox" id="email-inbox"
+	data-api-url="{{ api_url|e('html_attr') }}"
+	data-has-preferences="{{ has_preferences ? '1' : '0' }}">
+	<header class="email-inbox-header">
+		<div>
+			<p class="email-inbox-kicker">{{ lang('E-Mail') }}</p>
+			<h1>{{ lang('Inbox') }}</h1>
+		</div>
+		<nav aria-label="{{ lang('Email navigation') }}">
+			<a class="email-inbox-action email-inbox-action--primary" href="{{ compose_url|e }}">{{ lang('Compose') }}</a>
+			<a class="email-inbox-action" href="{{ folders_url|e }}">{{ lang('Folders') }}</a>
+			<a class="email-inbox-action" href="{{ search_url|e }}">{{ lang('Search') }}</a>
+			<a class="email-inbox-action" href="{{ filters_url|e }}">{{ lang('Filters') }}</a>
+			<a class="email-inbox-action" href="{{ preferences_url|e }}">{{ lang('Settings') }}</a>
+		</nav>
+	</header>
+
+	{% if not has_preferences %}
+		<section class="email-inbox-notice" role="status">
+			<p>{{ lang('Please set your preferences') }}</p>
+			<a href="{{ preferences_url|e }}">{{ lang('Email settings') }}</a>
+		</section>
+	{% else %}
+		<div class="email-inbox-status" id="email-inbox-status" role="status" aria-live="polite">{{ lang('Loading messages') }}</div>
+		<div class="email-inbox-error" id="email-inbox-error" role="alert" hidden></div>
+		<div class="email-inbox-table-wrap">
+			<table class="email-inbox-table">
+				<thead>
+					<tr>
+						<th scope="col">{{ lang('From') }}</th>
+						<th scope="col">{{ lang('Subject') }}</th>
+						<th scope="col">{{ lang('Date') }}</th>
+						<th scope="col">{{ lang('Size') }}</th>
+					</tr>
+				</thead>
+				<tbody id="email-inbox-rows"></tbody>
+			</table>
+		</div>
+		<nav class="email-inbox-pagination" id="email-inbox-pagination" aria-label="{{ lang('Message pages') }}" hidden>
+			<button type="button" id="email-inbox-previous">{{ lang('Previous') }}</button>
+			<span id="email-inbox-range"></span>
+			<button type="button" id="email-inbox-next">{{ lang('Next') }}</button>
+		</nav>
+	{% endif %}
+</main>
+{% endblock %}
+
+{% block scripts %}
+{% if has_preferences %}<script>{{ source('@views/inbox.js') }}</script>{% endif %}
+{% endblock %}

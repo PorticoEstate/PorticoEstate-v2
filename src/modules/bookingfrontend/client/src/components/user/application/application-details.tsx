@@ -1,5 +1,5 @@
 'use client'
-import React, {FC, useMemo, useEffect, useState, useRef} from 'react';
+import React, {FC, useMemo, useEffect, useState, useRef, useCallback} from 'react';
 import {IApplication, IApplicationDate, ApplicationComment as IComment, RecurringInfoUtils} from "@/service/types/api/application.types";
 import {
     useApplication,
@@ -35,7 +35,7 @@ import ResourceCircles from "@/components/resource-circles/resource-circles";
 import {useTrans, useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
 import {getDocumentLink} from "@/service/api/building";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
-import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
+import {FCallTempEvent, HighlightEntity} from "@/components/building-calendar/building-calendar.types";
 import ArticleTable from "@/components/article-table/article-table";
 import {ENABLE_COMBINED_APPLICATIONS} from '@/service/feature-flags';
 import {getStatusColor} from './status-utils';
@@ -77,6 +77,10 @@ interface ApplicationDetailsProps {
      *  is suppressed when embedded — so it uses this to supply the modal Dialog's title,
      *  giving the dialog an accessible name carrying the application's identity. */
     onTitleReady?: (name: string) => void;
+    /** The schedule entity the user opened this application FOR — set by the calendar's
+     *  manage modal, so the reserved-times row it corresponds to is marked and scrolled to
+     *  instead of leaving the user to find it in the whole series (GH #1392). */
+    highlight?: HighlightEntity;
 }
 
 const ACCEPTED_FILE_TYPES = '.jpg,.jpeg,.png,.gif,.xls,.xlsx,.doc,.docx,.txt,.pdf,.odt,.ods';
@@ -255,6 +259,22 @@ type ReservedEntity =
     | { type: 'allocation'; entity: IAPIAllocation }
     | { type: 'booking'; entity: IAPIBooking };
 
+type ScheduleEntities = { events: IAPIEvent[]; allocations: IAPIAllocation[]; bookings: IAPIBooking[] };
+
+// The elements the application currently holds: the rows "Reserverte tider" lists, and the
+// same set the server deactivates when the whole application is cancelled
+// (ApplicationRepository::deactivateAssociatedEntities — every active event, allocation and
+// booking carrying this application_id). A recurring application stores ONE requested date
+// however many weeks were placed, so this — not application.dates — is what a cancel loses.
+function activeReservedEntities(entities: ScheduleEntities): ReservedEntity[] {
+    const all: ReservedEntity[] = [
+        ...entities.events.map(e => ({type: 'event' as const, entity: e})),
+        ...entities.allocations.map(e => ({type: 'allocation' as const, entity: e})),
+        ...entities.bookings.map(e => ({type: 'booking' as const, entity: e})),
+    ];
+    return all.filter(r => r.entity.active === 1);
+}
+
 // Builds a deep link into the calendar that jumps straight to the reserved entity.
 // Smart target: the focused resource calendar when the entity is on a single resource,
 // otherwise the building calendar (which can show an entity spanning several resources).
@@ -287,14 +307,16 @@ function editLabelLangKey(type: ReservedEntity['type']): string {
 }
 
 const ReservedTimesList: FC<{
-    entities: { events: IAPIEvent[]; allocations: IAPIAllocation[]; bookings: IAPIBooking[] };
+    entities: ScheduleEntities;
     applicationId: number;
     applicationSecret?: string;
     /** True when hosted inside the manage modal — suppresses only the
      *  "show_in_calendar" link (a navigation into a page the modal already
      *  replaces); the row's other actions are unaffected. */
     embedded?: boolean;
-}> = ({entities, applicationId, applicationSecret, embedded}) => {
+    /** The row to mark and scroll to — see ApplicationDetailsProps.highlight. */
+    highlight?: HighlightEntity;
+}> = ({entities, applicationId, applicationSecret, embedded, highlight}) => {
     const t = useTrans();
     const serverSettings = useServerSettings();
     const participantLimitDefault = serverSettings.data?.booking_config?.participant_limit;
@@ -324,21 +346,28 @@ const ReservedTimesList: FC<{
     };
 
     const rows = useMemo<ReservedEntity[]>(() => {
-        const all: ReservedEntity[] = [
-            ...entities.events.map(e => ({type: 'event' as const, entity: e})),
-            ...entities.allocations.map(e => ({type: 'allocation' as const, entity: e})),
-            ...entities.bookings.map(e => ({type: 'booking' as const, entity: e})),
-        ].filter(r => r.entity.active === 1);
-        return all.sort((a, b) =>
+        return activeReservedEntities(entities).sort((a, b) =>
             DateTime.fromISO(a.entity.from_).toMillis() - DateTime.fromISO(b.entity.from_).toMillis()
         );
     }, [entities]);
+
+    // Scrolled to ONCE, when the row first mounts: rows only exist after the schedule query
+    // resolves, and a later refetch (e.g. after a withdraw) must not yank the view back.
+    const highlightKey = highlight ? `${highlight.type}-${highlight.id}` : null;
+    const scrolledToRef = useRef<string | null>(null);
+    const highlightedRowRef = useCallback((el: HTMLDivElement | null) => {
+        if (!el || !highlightKey || scrolledToRef.current === highlightKey) return;
+        scrolledToRef.current = highlightKey;
+        requestAnimationFrame(() => el.scrollIntoView({block: 'center'}));
+    }, [highlightKey]);
 
     return (
         <>
         <div className={styles.datesList}>
             {rows.map(row => {
                 const entity = row.entity;
+                const rowKey = `${row.type}-${entity.id}`;
+                const isHighlighted = rowKey === highlightKey;
                 const f = fmtDate(entity.from_);
                 const to = fmtDate(entity.to_);
                 const sameDay = f.full === to.full;
@@ -430,7 +459,12 @@ const ReservedTimesList: FC<{
                 const hasActions = showCalendarLink || showRegisterParticipants || showEdit || !!newBookingHref || showWithdraw;
 
                 return (
-                    <div key={`${row.type}-${entity.id}`} className={styles.reservedRow}>
+                    <div
+                        key={rowKey}
+                        ref={isHighlighted ? highlightedRowRef : undefined}
+                        className={isHighlighted ? `${styles.reservedRow} ${styles.reservedRowHighlighted}` : styles.reservedRow}
+                        aria-current={isHighlighted ? 'true' : undefined}
+                    >
                         <div className={styles.reservedMain}>
                             <div className={styles.dateBadge}>
                                 <span className={styles.day}>{f.day}</span>
@@ -442,6 +476,9 @@ const ReservedTimesList: FC<{
                                     kl. {f.time}{sameDay ? `–${to.time}` : ` → ${to.full} kl. ${to.time}`}
                                 </div>
                             </div>
+                            {isHighlighted && (
+                                <Tag data-color="accent" data-size="sm">{t('bookingfrontend.selected')}</Tag>
+                            )}
                             <div className={styles.dateDuration}>{hours} t</div>
                         </div>
                         {hasActions && (
@@ -832,6 +869,16 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
         }
     };
 
+    // A refusal from an earlier attempt must not greet the next opening of the dialog.
+    const openCancelConfirm = () => {
+        cancelStatus.reset();
+        setConfirmCancelOpen(true);
+    };
+    const closeCancelConfirm = () => {
+        setConfirmCancelOpen(false);
+        cancelStatus.reset();
+    };
+
     if (isLoading) {
         return (
             <div style={{display: 'flex', justifyContent: 'center', padding: '3rem'}}>
@@ -858,10 +905,10 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
     const orderTotal = application.orders.reduce((s, o) => s + o.sum, 0);
 
     // Actual schedule entities (events/allocations/bookings) created and activated for this
-    // application. Only the active ones represent confirmed reservations.
-    const hasReservedTimes = !!scheduleEntities
-        && [...scheduleEntities.events, ...scheduleEntities.allocations, ...scheduleEntities.bookings]
-            .some(e => e.active === 1);
+    // application. Only the active ones represent confirmed reservations. Null while the
+    // schedule is unknown, so the cancel confirm never states a count it has not read.
+    const reservedCount = scheduleEntities ? activeReservedEntities(scheduleEntities).length : null;
+    const hasReservedTimes = !!reservedCount;
 
     // Withdrawal/cancellation eligibility.
     // Allowed for not-yet-finalized (NEW/PENDING) and approved (ACCEPTED) applications,
@@ -885,10 +932,27 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
             ? t('bookingfrontend.withdraw_unavailable_deadline')
             : null;
     const withdrawalDisabled = !!withdrawalBlockedReason;
-    // Approved bookings are "cancelled", not-yet-approved ones are "withdrawn"
-    const withdrawLabel = isAccepted
-        ? t('bookingfrontend.cancel_booking')
-        : t('bookingfrontend.withdraw_application');
+    // Approved applications are "cancelled", not-yet-approved ones are "withdrawn" — every
+    // text of the whole-application action carries that verb. The help only says "not only the
+    // time you selected" when a time was selected (the calendar modal's highlight); on Min side
+    // nothing is.
+    const wholeCancelText = isAccepted
+        ? {
+            label: t('bookingfrontend.cancel_whole_application'),
+            help: t(props.highlight
+                ? 'bookingfrontend.cancel_whole_application_help'
+                : 'bookingfrontend.cancel_whole_application_help_no_selection'),
+            confirmKey: 'bookingfrontend.confirm_cancel_whole_application_description',
+            failed: t('bookingfrontend.cancel_whole_application_failed'),
+        }
+        : {
+            label: t('bookingfrontend.withdraw_whole_application'),
+            help: t(props.highlight
+                ? 'bookingfrontend.withdraw_whole_application_help'
+                : 'bookingfrontend.withdraw_whole_application_help_no_selection'),
+            confirmKey: 'bookingfrontend.confirm_withdraw_whole_application_description',
+            failed: t('bookingfrontend.withdraw_whole_application_failed'),
+        };
 
     const MainWrapper: React.ElementType = embedded ? React.Fragment : 'main';
 
@@ -934,25 +998,10 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                         )}
                     </div>
                 </div>
+                {/* The whole-application cancel is NOT offered up here (GH #1392): as the first
+                    action it was the one a user reached for when they meant a single time, and
+                    lost the whole series. It lives in its own card at the end of the page. */}
                 <div className={styles.appActions}>
-                    {canRequestWithdrawal && (
-                        <div className={styles.withdrawAction}>
-                            <Button
-                                data-color="danger"
-                                variant="secondary"
-                                data-size="sm"
-                                disabled={withdrawalDisabled}
-                                title={withdrawalBlockedReason || undefined}
-                                onClick={() => setConfirmCancelOpen(true)}
-                            >
-                                <XMarkOctagonIcon fontSize="0.9rem"/>
-                                {withdrawLabel}
-                            </Button>
-                            {withdrawalBlockedReason && (
-                                <span className={styles.withdrawHint}>{withdrawalBlockedReason}</span>
-                            )}
-                        </div>
-                    )}
                     {(isAccepted || isRejected || isCancelled) && (
                         <Button variant="secondary" data-size="sm" onClick={() => setShowCopyDialog(true)}>
                             <FilesIcon fontSize="0.9rem"/>
@@ -1042,6 +1091,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                                     applicationId={props.applicationId}
                                     applicationSecret={props.secret || application.secret || undefined}
                                     embedded={embedded}
+                                    highlight={props.highlight}
                                 />
                             </>
                         )}
@@ -1248,6 +1298,35 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                             </Details.Content>
                         </Details>
                     )}
+
+                    {/* Avbestill / Trekk hele søknaden — deliberately last and on its own, away from
+                        the per-time actions above, and named for what it does (GH #1392). */}
+                    {canRequestWithdrawal && (
+                        <div className={styles.card}>
+                            <Heading level={2} data-size="sm">
+                                {wholeCancelText.label}
+                            </Heading>
+                            <Paragraph data-size="sm" className={styles.cancelWholeHelp}>
+                                {wholeCancelText.help}
+                            </Paragraph>
+                            <div className={styles.cancelWholeAction}>
+                                <Button
+                                    data-color="danger"
+                                    variant="secondary"
+                                    data-size="sm"
+                                    disabled={withdrawalDisabled}
+                                    title={withdrawalBlockedReason || undefined}
+                                    onClick={openCancelConfirm}
+                                >
+                                    <XMarkOctagonIcon fontSize="0.9rem"/>
+                                    {wholeCancelText.label}
+                                </Button>
+                                {withdrawalBlockedReason && (
+                                    <span className={styles.withdrawHint}>{withdrawalBlockedReason}</span>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Sidebar */}
@@ -1348,25 +1427,32 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
             {/* Cancel confirmation dialog */}
             <Dialog
                 open={confirmCancelOpen}
-                onClose={() => setConfirmCancelOpen(false)}
+                onClose={closeCancelConfirm}
                 closedby="any"
                 className={styles.cancelDialog}
             >
                 <Dialog.Block>
                     <Heading level={2} data-size="sm">
-                        {isAccepted
-                            ? t('bookingfrontend.confirm_cancel_booking_title')
-                            : t('bookingfrontend.confirm_cancel_title')}
+                        {wholeCancelText.label}
                     </Heading>
+                    {/* The count is of reserved times — what the server deactivates — never
+                        application.dates, which holds ONE row for a whole recurring series. */}
                     <Paragraph style={{margin: '12px 0'}}>
-                        {isAccepted
-                            ? t('bookingfrontend.confirm_cancel_booking_description')
-                            : t('bookingfrontend.confirm_cancel_description')}
+                        {reservedCount
+                            ? t(wholeCancelText.confirmKey, {count: reservedCount})
+                            : isAccepted
+                                ? t('bookingfrontend.confirm_cancel_booking_description')
+                                : t('bookingfrontend.confirm_cancel_description')}
                     </Paragraph>
+                    {cancelStatus.isError && (
+                        <Paragraph data-size="sm" style={{color: 'var(--ds-color-danger-text-default)'}}>
+                            {wholeCancelText.failed}
+                        </Paragraph>
+                    )}
                 </Dialog.Block>
                 <Dialog.Block>
                     <div style={{display: 'flex', justifyContent: 'flex-end', gap: 8}}>
-                        <Button variant="tertiary" onClick={() => setConfirmCancelOpen(false)}>
+                        <Button variant="tertiary" onClick={closeCancelConfirm}>
                             {t('common.cancel')}
                         </Button>
                         <Button
@@ -1377,7 +1463,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                             {cancelStatus.isPending
                                 ? <Spinner data-size="xs" aria-hidden="true"/>
                                 : null}
-                            {withdrawLabel}
+                            {wholeCancelText.label}
                         </Button>
                     </div>
                 </Dialog.Block>

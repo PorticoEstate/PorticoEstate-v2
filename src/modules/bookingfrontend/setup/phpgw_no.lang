@@ -1134,3 +1134,13 @@ price_choice_required_checkout	bookingfrontend	no	Velg priskategori før du send
 price_pending	bookingfrontend	no	Beregnes når du har valgt
 does_not_affect_price	bookingfrontend	no	Påvirker ikke prisen.
 price_category	bookingfrontend	no	Priskategori
+cancel_whole_application	bookingfrontend	no	Avbestill hele søknaden
+cancel_whole_application_help	bookingfrontend	no	Avbestiller søknaden og alle reserverte tider i den, ikke bare tiden du valgte.
+confirm_cancel_whole_application_description	bookingfrontend	no	Søknaden avbestilles, og alle reserverte tider i den frigjøres. Antall reserverte tider: {{count}}. Dette kan ikke angres.
+cancel_whole_application_failed	bookingfrontend	no	Søknaden kunne ikke avbestilles. Prøv igjen.
+withdraw_whole_application	bookingfrontend	no	Trekk hele søknaden
+withdraw_whole_application_help	bookingfrontend	no	Trekker søknaden og alle reserverte tider i den, ikke bare tiden du valgte.
+confirm_withdraw_whole_application_description	bookingfrontend	no	Søknaden trekkes, og alle reserverte tider i den frigjøres. Antall reserverte tider: {{count}}. Dette kan ikke angres.
+withdraw_whole_application_failed	bookingfrontend	no	Søknaden kunne ikke trekkes. Prøv igjen.
+withdraw_whole_application_help_no_selection	bookingfrontend	no	Trekker søknaden og alle reserverte tider i den.
+cancel_whole_application_help_no_selection	bookingfrontend	no	Avbestiller søknaden og alle reserverte tider i den.

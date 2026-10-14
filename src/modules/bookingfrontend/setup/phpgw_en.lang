@@ -1144,3 +1144,6 @@ withdraw_whole_application_failed	bookingfrontend	en	The application could not b
 withdraw_whole_application_help_no_selection	bookingfrontend	en	Withdraws the application and every reserved time in it.
 cancel_whole_application_help_no_selection	bookingfrontend	en	Cancels the application and every reserved time in it.
 change_request_pending	bookingfrontend	en	Requested change to {{time}} is awaiting processing
+comment_on_time	bookingfrontend	en	Comment
+comment_on_time_heading	bookingfrontend	en	Comment on this time
+comment_time_removed	bookingfrontend	en	The time has been removed

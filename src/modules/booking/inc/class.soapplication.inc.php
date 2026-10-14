@@ -123,7 +123,16 @@ class booking_soapplication extends booking_socommon
 					'manytomany' => array(
 						'table'	 => 'bb_application_comment',
 						'key'	 => 'application_id',
-						'column' => array('time' => array('type' => 'timestamp', 'read_callback' => 'modify_by_timezone'), 'author', 'comment', 'type'),
+						// update() DELETEs and re-INSERTs the whole comment set from this list, so a
+						// column missing here is written back as NULL on every legacy save (ref #1392).
+						'column' => array(
+							'time' => array('type' => 'timestamp', 'read_callback' => 'modify_by_timezone'),
+							'author',
+							'comment',
+							'type',
+							'element_type' => array('type' => 'string', 'read_callback' => 'empty_string_to_null'),
+							'element_id' => array('type' => 'int'),
+						),
 						'order'	 => array('sort' => 'time', 'dir' => 'ASC')
 					)
 				),
@@ -161,6 +170,20 @@ class booking_soapplication extends booking_socommon
 	public function get_subject_roles($for_object = null, $initial_roles = array())
 	{
 		return null;
+	}
+
+	/**
+	 * read_callback for a nullable string column of a manytomany row. The db layer reads
+	 * NULL as '' and _marshal writes '' as '', so without this a NULL element_type would
+	 * come back from a legacy save as '', which bb_application_comment's CHECK refuses.
+	 * socommon calls it on read and, with $reverse, on write.
+	 */
+	protected function empty_string_to_null(&$value, $reverse = false)
+	{
+		if ($value === '')
+		{
+			$value = null;
+		}
 	}
 
 	function validate(&$entity)

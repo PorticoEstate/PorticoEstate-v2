@@ -194,6 +194,40 @@
 		return day + from.substring(11) + '–' + to.substring(11);
 	}
 
+	// This application's own elements, set in render(): what the case officer can
+	// reply on in the comment modal (ref #1392).
+	var commentElements = [];
+
+	// "2026-12-04 17:00:00" (local, no offset) → "Fre 04.12 17:00". Built from the
+	// parts, never through Date's string parsing, so no time zone shifts it.
+	function elementDayTime(s) {
+		var key = minuteKey(s);
+		if (!key) return '';
+		var weekday = new Date(+key.substring(0, 4), +key.substring(5, 7) - 1, +key.substring(8, 10))
+			.toLocaleDateString('nb-NO', { weekday: 'short' }).replace('.', '');
+		return weekday.charAt(0).toUpperCase() + weekday.slice(1) + ' ' +
+			key.substring(8, 10) + '.' + key.substring(5, 7) + ' ' + key.substring(11);
+	}
+
+	// "Fre 04.12 17:00–20:00"; the end carries its own date when it is on another day.
+	function elementTimeText(from_, to_) {
+		var to = minuteKey(to_);
+		var sameDay = to.substring(0, 10) === minuteKey(from_).substring(0, 10);
+		return elementDayTime(from_) + '–' + (sameDay ? to.substring(11) : elementDayTime(to_));
+	}
+
+	// The element a comment is about, worded as the applicant sees it on Min side:
+	// time and resources, "Inaktiv" once deactivated, a note when it no longer exists.
+	function commentElementTag(element) {
+		if (!element.exists) {
+			return '<span class="booking-tag ds-tag" data-color="neutral">' + esc(lang('commentTimeRemoved')) + '</span>';
+		}
+		var text = elementTimeText(element.from_, element.to_);
+		if (element.resource_names) text += ' · ' + element.resource_names;
+		if (!element.active) text += ' · ' + lang('inactive');
+		return '<span class="booking-tag ds-tag" data-color="info">' + esc(text) + '</span>';
+	}
+
 	// Handling cell for a row's elements, built like the create split (createSplitHtml):
 	// "Endre" plus a caret menu holding the delete/activate item the delegated
 	// handlers in renderDetails act on. Only the case officer gets that menu; anyone
@@ -488,7 +522,11 @@
 		renderDetails(app, data);
 		renderTerms(app);
 		renderNotes(data.internal_notes || []);
-		renderComments(data.comments || []);
+		// A comment lands on this application, so only its own elements can be replied on.
+		commentElements = (data.associations || []).filter(function (a) {
+			return String(a.application_id) === String(app.id);
+		});
+		renderComments(data.comments || [], app);
 		renderHospitalityOrders(data);
 
 		// Activate tab from URL hash
@@ -731,7 +769,7 @@
 				window.open(tb.export_pdf_url + '&preview=1', '_blank');
 			}
 			// Modal actions
-		if (action === 'comment-modal') showCommentModal();
+		if (action === 'comment-modal') showCommentModal(item.dataset.elementRef);
 		else if (action === 'internal-note-modal') showInternalNoteModal();
 		else if (action === 'messenger-modal') showMessengerModal();
 		else if (action === 'accept-modal') showAcceptModal();
@@ -1940,24 +1978,37 @@
 	// History / comments tab
 	// ═══════════════════════════════════════════════════════════════════
 
-	function renderComments(comments) {
+	function renderComments(comments, app) {
 		if (!comments || comments.length === 0) {
 			document.getElementById('application-comments').innerHTML =
 				'<p class="app-show__empty">' + lang('comments') + ': &mdash;</p>';
 			return;
 		}
+		var isCO = app && app.toolbar && app.toolbar.case_officer_is_current_user;
 		var html = '';
 		comments.forEach(function (comment) {
 			var typeTag = '';
 			if (comment.type && comment.type !== 'comment') {
 				typeTag = ' <span class="booking-tag ds-tag" data-color="neutral">' + esc(comment.type) + '</span>';
 			}
+			// The element the comment is about (ref #1392), and for the case officer a
+			// reply on that same element through the comment modal.
+			var elementTag = '';
+			var replyOnElement = '';
+			if (comment.element) {
+				elementTag = ' ' + commentElementTag(comment.element);
+				if (isCO && comment.element.exists) {
+					replyOnElement = '<div><button type="button" class="booking-button ds-button" data-variant="tertiary" data-size="sm" data-booking-action="comment-modal" data-element-ref="' +
+						esc(comment.element.type + ':' + comment.element.id) + '">' + ICONS.reply + esc(lang('replyOnThisTime')) + '</button></div>';
+				}
+			}
 			html += '<div class="app-show__comment">' +
 				'<div class="app-show__comment-meta">' +
 				esc(comment.author || comment.name || 'System') + ' &mdash; ' + fmtDate(comment.time) +
-				typeTag +
+				typeTag + elementTag +
 				'</div>' +
 				'<div class="app-show__comment-text">' + escNl(comment.comment) + '</div>' +
+				replyOnElement +
 				'</div>';
 		});
 		document.getElementById('application-comments').innerHTML = html;
@@ -2381,8 +2432,24 @@
 
 	// ── Comment modal (reply to applicant) ─────────────────────────────
 
-	function showCommentModal() {
-		var body = '<div class="booking-field ds-field" data-size="sm">' +
+	// elementRef ("allocation:123") preselects the element the reply is about.
+	function showCommentModal(elementRef) {
+		var regarding = '';
+		if (commentElements.length) {
+			var options = '<option value="">' + esc(lang('wholeApplication')) + '</option>';
+			commentElements.forEach(function (a) {
+				var ref = assocRef(a);
+				// The id tells apart elements of one type at the same time, as the
+				// page's own element tags do ("Tildeling #498388").
+				var label = enumLabel(a.type) + ' #' + a.id + ' · ' + elementTimeText(a.from_, a.to_) +
+					(isAssocActive(a) ? '' : ' · ' + lang('inactive'));
+				options += '<option value="' + esc(ref) + '"' + (ref === elementRef ? ' selected' : '') + '>' + esc(label) + '</option>';
+			});
+			regarding = '<div class="booking-field ds-field" data-size="sm">' +
+				'<label class="booking-label ds-label" for="modal-comment-element">' + esc(lang('commentRegarding')) + '</label>' +
+				'<select id="modal-comment-element" class="booking-input ds-input">' + options + '</select></div>';
+		}
+		var body = regarding + '<div class="booking-field ds-field" data-size="sm">' +
 			'<label class="booking-label ds-label" for="modal-comment-text">' + esc(lang('writeReplyToApplicant')) + '</label>' +
 			'<textarea id="modal-comment-text" class="booking-input ds-input" rows="5"></textarea></div>';
 		var footer = '<button type="button" class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
@@ -2397,7 +2464,15 @@
 			btn.disabled = true;
 			btn.textContent = '...';
 
-			postJsonBody(apiUrl + '/comment', { comment: text }).then(function () {
+			var payload = { comment: text };
+			var elementSelect = document.getElementById('modal-comment-element');
+			if (elementSelect && elementSelect.value) {
+				var parts = elementSelect.value.split(':');
+				payload.element_type = parts[0];
+				payload.element_id = Number(parts[1]);
+			}
+
+			postJsonBody(apiUrl + '/comment', payload).then(function () {
 				closeModal('comment-dialog');
 				showToast(lang('commentSent'));
 				setTimeout(function () { window.location.reload(); }, 800);

@@ -1302,3 +1302,7 @@ change_request_element_inactive	booking	nn	Arrangementet er ikkje aktivt
 change_request_dates_ambiguous	booking	nn	Fann ikkje datoraden til arrangementet
 change_applied_without_application_date	booking	nn	Endringa er lagra. Ingen søknadsdato høyrde til arrangementet, så datoane i søknaden er uendra.
 change_applied_shared_application_date	booking	nn	Endringa er lagra. Søknadsdatoen gjeld òg andre element, så datoane i søknaden er uendra.
+comment_regarding	booking	nn	Gjeld
+whole_application	booking	nn	Heile søknaden
+reply_on_this_time	booking	nn	Svar på dette tidspunktet
+comment_time_removed	booking	nn	Tidspunktet er fjerna

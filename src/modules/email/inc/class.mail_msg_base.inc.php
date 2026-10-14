@@ -957,7 +957,6 @@ class mail_msg_base
 				$this->dbug->out('mail_msg.begin_request(' . __LINE__ . '): BEFORE processing email prefs, GLOBALS[phpgw_info][user][preferences][email] DUMP:', $GLOBALS['phpgw_info']['user']['preferences']['email']);
 			}
 
-			//$this->unprocessed_prefs = $GLOBALS['phpgw']->preferences->create_email_preferences();
 			$tmp_email_only_prefs = array();
 			if ($this->debug_logins > 1)
 			{
@@ -4135,14 +4134,14 @@ HTML;
 					{
 						// (3) SAVE THE FIXED / UPGRADED PASSWD TO PREFS
 						// feed the unserialized / fixed passwd in the prefs class
-						$GLOBALS['phpgw']->preferences->delete('email','passwd');
+						\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email','passwd');
 						// make any html quote entities back to real form (i.e. ' or ")
 						$encrypted_passwd = $this->html_quotes_decode($passwd);
 						// encrypt it as it would be as if the user had just submitted the preferences page (no need to strip slashes, no POST occured)
 						$encrypted_passwd = $this->encrypt_email_passwd($passwd);
 						// store in preferences so this does not happen again
-						$GLOBALS['phpgw']->preferences->add('email','passwd',$encrypted_passwd);
-						$GLOBALS['phpgw']->preferences->save_repository();
+						\App\modules\phpgwapi\services\Preferences::getInstance()->add('email','passwd',$encrypted_passwd);
+						\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
 					}
 				}
 				// #### (end) Upgrade Routine for 0.9.12 and earlier versions ####

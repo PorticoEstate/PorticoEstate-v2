@@ -943,15 +943,15 @@
 						// Typical Usage: email sig, UWash Mail Folder
 						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences: save empty string to repository for ["'.$this_pref['id'].'"] because of "empty_string_ok"<br />'); }
 						// a) as always, delete the pref before we assign a value
-						$GLOBALS['phpgw']->preferences->delete('email',$this_pref['id']);
+						\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email',$this_pref['id']);
 						// b) now assign a blank string value
-						$GLOBALS['phpgw']->preferences->add('email',$this_pref['id'],'');
+						\App\modules\phpgwapi\services\Preferences::getInstance()->add('email',$this_pref['id'],'');
 					}
 					else
 					{
 						// just delete it from the preferences repository
 						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences: deleting empty or blank pref ["'.$this_pref['id'].'"] from the repository<br />'); }
-						$GLOBALS['phpgw']->preferences->delete('email',$this_pref['id']);
+						\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email',$this_pref['id']);
 					}
 				}
 				else
@@ -1016,9 +1016,9 @@
 					if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences: process_submitted_prefs: about to assign pref ["'.$this_pref['id'].'"] this value, post processing (if any):', phpgw::strip_html($processed_pref)); }
 					
 					// a) as always, delete the pref before we assign a value
-					$GLOBALS['phpgw']->preferences->delete('email',$this_pref['id']);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email',$this_pref['id']);
 					// b) now assign that processed data to this pref item in the repository
-					$GLOBALS['phpgw']->preferences->add('email',$this_pref['id'], $processed_pref);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->add('email',$this_pref['id'], $processed_pref);
 				}
 			}
 			// since we apparently did process some prefs data, return True
@@ -1071,7 +1071,7 @@
 					for($i=0;$i<$c_prefs;$i++)
 					{
 						if ($this->debug_set_prefs > 2) { $this->msg->dbug->out(' *(loop)* email.bopreferences: preferences: deleting custom pref $this->cust_prefs['.$i.'][id] : ['.$this->cust_prefs[$i]['id'].']<br />'); }
-						$GLOBALS['phpgw']->preferences->delete('email',$this->cust_prefs[$i]['id']);
+						\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email',$this->cust_prefs[$i]['id']);
 					}
 				}
 				
@@ -1083,7 +1083,7 @@
 				else
 				{
 					if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email.bopreferences.preferences(): SAVING REPOSITORY<br />'); }
-					$GLOBALS['phpgw']->preferences->save_repository();
+					\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
 				}
 				// end the email session
 				\App\modules\email\services\MailMessage::getInstance()->end_request();
@@ -1121,11 +1121,11 @@
 				$c_prefs = count($prefs);
 				for($i=0;$i<$c_prefs;$i++)
 				{
-					$GLOBALS['phpgw']->preferences->delete('email',$prefs[$i]);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email',$prefs[$i]);
 					if (isset($this->args[$prefs[$i]])
 						&& $this->args[$prefs[$i]] != '')
 					{
-						$GLOBALS['phpgw']->preferences->add('email',$prefs[$i],$this->args[$prefs[$i]]);
+						\App\modules\phpgwapi\services\Preferences::getInstance()->add('email',$prefs[$i],$this->args[$prefs[$i]]);
 					}
 				}
 				// these are the standard (non-custom) email options
@@ -1138,7 +1138,7 @@
 				$c_prefs = count($prefs);
 				for($i=0;$i<$c_prefs;$i++)
 				{
-					$GLOBALS['phpgw']->preferences->delete('email',$prefs[$i]);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email',$prefs[$i]);
 					if(isset($this->args[$prefs[$i]]))
 					{
 						$temp_var = $email_base->stripslashes_gpc($this->args[$prefs[$i]]);
@@ -1146,7 +1146,7 @@
 						{
 							$temp_var = $email_base->html_quotes_encode($temp_var);
 						}
-						$GLOBALS['phpgw']->preferences->add('email',$prefs[$i],$temp_var);
+						\App\modules\phpgwapi\services\Preferences::getInstance()->add('email',$prefs[$i],$temp_var);
 					}
 					else
 					{
@@ -1159,7 +1159,7 @@
 								$temp_var = 'Sent';
 								break;
 						}
-						$GLOBALS['phpgw']->preferences->add('email',$prefs[$i],$temp_var);						
+						\App\modules\phpgwapi\services\Preferences::getInstance()->add('email',$prefs[$i],$temp_var);
 					}
 				}
 				// these are the "custom" email options, here handle both user-entered strings
@@ -1181,21 +1181,21 @@
 				// at the preference class level or the database class level.
 				// UNKNOWN at present (11-30-2001) if this is still an issue (it was in 0.9.12) ed: Angles
 				$c_prefs = count($prefs);
-				$GLOBALS['phpgw']->preferences->delete('email',$prefs[0]);
+				\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email',$prefs[0]);
 				if (!isset($this->args[$prefs[0]]))
 				{
 					// use is NOT using custom settings, so delete them all from the repository
 					for($i=1;$i<$c_prefs;$i++)
 					{
-						$GLOBALS['phpgw']->preferences->delete('email',$prefs[$i]);
+						\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email',$prefs[$i]);
 					}
 					// and also the passwd, which is not in that array above because it gets special handling
-					$GLOBALS['phpgw']->preferences->delete('email','passwd');
+					\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email','passwd');
 				}
 				else
 				{
 					// custom prefs ARE in use
-					$GLOBALS['phpgw']->preferences->add('email',$prefs[0],$this->args[$prefs[0]]);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->add('email',$prefs[0],$this->args[$prefs[0]]);
 					for($i=1;$i<$c_prefs;$i++)
 					{
 						// if ((isset($email_base->args[$check_array[$i]])) && ($email_base->args[$check_array[$i]] != ''))
@@ -1203,7 +1203,7 @@
 						&& ($this->args[$prefs[$i]] != ''))
 						{
 							// user has specified a value for this particular email custom option
-							$GLOBALS['phpgw']->preferences->add('email',$prefs[$i],$this->args[$prefs[$i]]);
+							\App\modules\phpgwapi\services\Preferences::getInstance()->add('email',$prefs[$i],$this->args[$prefs[$i]]);
 						}
 						else
 						{
@@ -1213,7 +1213,7 @@
 							// from the repository, so next time function "create_email_preferences"
 							// is called, it knows by the lack of the existence of a custom particular
 							// custom option to use the server supplied default instead for that item
-							$GLOBALS['phpgw']->preferences->delete('email',$prefs[$i]);
+							\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email',$prefs[$i]);
 						}
 					}
 					if (isset($this->args['passwd'])
@@ -1234,8 +1234,8 @@
 						//but does NOT fill in a custom passwd, the user's phpgw login password will be used
 						//as the email server password, following the concept that unfilled custom options
 						//get a phpgw system default value.
-						$GLOBALS['phpgw']->preferences->delete('email','passwd');
-						$GLOBALS['phpgw']->preferences->add('email','passwd',$email_base->encrypt_email_passwd($email_base->stripslashes_gpc($this->args['passwd'])));
+						\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email','passwd');
+						\App\modules\phpgwapi\services\Preferences::getInstance()->add('email','passwd',$email_base->encrypt_email_passwd($email_base->stripslashes_gpc($this->args['passwd'])));
 					}
 				}
 				if ($this->debug_set_prefs > 1) 
@@ -1244,7 +1244,7 @@
 				}
 				else
 				{
-					$GLOBALS['phpgw']->preferences->save_repository();
+					\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
 				}
 				$email_base->end_request();
 			}
@@ -1334,10 +1334,10 @@
 						// a) as always, delete the pref before we assign a value
 						$pref_struct_str = '["ex_accounts"]['.$this->acctnum.']["'.$this_pref['id'].'"]';
 						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences process_ex_accounts_submitted_prefs: using preferences->delete_struct("email", $pref_struct_str) which will eval $pref_struct_str='.$pref_struct_str.'<br />'); }
-						$GLOBALS['phpgw']->preferences->delete_struct('email',$pref_struct_str);
+						\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email',$pref_struct_str);
 						// b) now assign a blank string value
 						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs: using preferences->add_struct("email", $pref_struct_str, \'\') which will eval $pref_struct_str='.$pref_struct_str.'<br />'); }
-						$GLOBALS['phpgw']->preferences->add_struct('email',$pref_struct_str,'');
+						\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email',$pref_struct_str,'');
 					}
 					else
 					{
@@ -1345,7 +1345,7 @@
 						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs deleting empty or blank pref ["'.$this_pref['id'].'"] from the repository<br />'); }
 						$pref_struct_str = '["ex_accounts"]['.$this->acctnum.']["'.$this_pref['id'].'"]';
 						if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs: using preferences->delete_struct("email", $pref_struct_str) which will eval $pref_struct_str='.$pref_struct_str.'<br />'); }
-						$GLOBALS['phpgw']->preferences->delete_struct('email',$pref_struct_str);
+						\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email',$pref_struct_str);
 					}
 				}
 				else
@@ -1399,12 +1399,12 @@
 					// a) as always, delete the pref before we assign a value
 					$pref_struct_str = '["ex_accounts"]['.$this->acctnum.']["'.$this_pref['id'].'"]';
 					if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences process_ex_accounts_submitted_prefs: using preferences->delete_struct("email", $pref_struct_str) which will eval $pref_struct_str='.$pref_struct_str.'<br />'); }
-					$GLOBALS['phpgw']->preferences->delete_struct('email',$pref_struct_str);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email',$pref_struct_str);
 					// b) now assign that processed data to this pref item in the repository
 					if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs: using preferences->add_struct("email", $pref_struct_str, $processed_pref) which will eval $pref_struct_str='.$pref_struct_str.'<br />'); }
-					$GLOBALS['phpgw']->preferences->add_struct('email', $pref_struct_str, $processed_pref);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $processed_pref);
 					// SORT THAT ARRAY by key, so the integer array heys go from lowest to hightest
-					ksort($GLOBALS['phpgw']->preferences->data['email']['ex_accounts']);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->sort_struct('email', '["ex_accounts"]');
 				}
 			}
 			// since we apparently did process some prefs data, return True
@@ -1451,9 +1451,9 @@
 				// delete the extra account pref item
 				$pref_struct_str = '["ex_accounts"]['.$this->acctnum.']';
 				if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences.ex_accounts_delete: using preferences->delete_struct("email", $pref_struct_str) which will eval $pref_struct_str='.$pref_struct_str.'<br />'); }
-				$GLOBALS['phpgw']->preferences->delete_struct('email',$pref_struct_str);
+				\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email',$pref_struct_str);
 				
-				if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences.ex_accounts_delete: $GLOBALS[phpgw]->preferences->data DUMP:', $GLOBALS['phpgw']->preferences->data); }
+				if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences.ex_accounts_delete: Preferences service data DUMP:', \App\modules\phpgwapi\services\Preferences::getInstance()->data); }
 				// let the code below this block know we actually did something that requires saving the repository
 				$actually_did_something = True;
 			}
@@ -1472,7 +1472,7 @@
 			else
 			{
 				// we actually did something that requires saving repository, and we have the go-ahead
-				$GLOBALS['phpgw']->preferences->save_repository();
+				\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
 			}
 			// end the email session
 			if (\App\modules\email\services\MailMessage::hasInstance())
@@ -1556,7 +1556,7 @@
 				$pref_struct_str = '["ex_accounts"]['.$this->acctnum.']["'.$this->cust_prefs[0]['id'].'"]';
 				if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences.ex_accounts_edit(): "use_custom_settings" pref, delete it, reference it by ["ex_accounts"][$this->acctnum]["$this->cust_prefs[0][id]"]<br />'); }
 				if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences.ex_accounts_edit(): using preferences->delete_struct("email", $pref_struct_str) which will eval $pref_struct_str='.$pref_struct_str.'<br />'); }
-				$GLOBALS['phpgw']->preferences->delete_struct('email',$pref_struct_str);
+				\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email',$pref_struct_str);
 
 				if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email.bopreferences.ex_accounts_edit(): about to process_ex_accounts_submitted_prefs Custom Prefs, which are MANDATORY for extra email accounts<br />'); }
 				$this->process_ex_accounts_submitted_prefs($this->cust_prefs);
@@ -1580,12 +1580,12 @@
 					{
 						$pref_struct_str = '["ex_accounts"]['.$this->acctnum.']["'.$this->cust_prefs[$i]['id'].'"]';
 						if ($this->debug_set_prefs > 1) { echo ' ** (looping) email: bopreferences.ex_accounts_edit(): using preferences->delete_struct("email", $pref_struct_str) which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
-						$GLOBALS['phpgw']->preferences->delete_struct('email',$pref_struct_str);
+						\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email',$pref_struct_str);
 					}
 				}
 				*/
 				
-				if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences.ex_accounts_edit: $GLOBALS[phpgw]->preferences->data DUMP:', $GLOBALS['phpgw']->preferences->data); }
+				if ($this->debug_set_prefs > 1) { $this->msg->dbug->out('email: bopreferences.ex_accounts_edit: Preferences service data DUMP:', \App\modules\phpgwapi\services\Preferences::getInstance()->data); }
 			}
 				
 			// DONE processing prefs, SAVE to the Repository
@@ -1603,7 +1603,7 @@
 			{
 				// we actually did something that requires saving repository, and we have the go-ahead
 				if ($this->debug_set_prefs > 0) { $this->msg->dbug->out('email.bopreferences.ex_accounts_edit(): SAVING REPOSITORY<br />'); }
-				$GLOBALS['phpgw']->preferences->save_repository();
+				\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
 			}
 			
 			// end the email session

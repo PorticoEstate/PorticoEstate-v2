@@ -45,7 +45,6 @@
 			$this->nextmatchs = CreateObject('phpgwapi.nextmatchs');
 			$this->bo = CreateObject('email.bopreferences');
 			$temp_prefs = Preferences::getInstance()->create_email_preferences();
-	//		$temp_prefs = $GLOBALS['phpgw']->preferences->create_email_preferences();
 			$this->prefs = $temp_prefs['email'];
 		}
 
@@ -99,7 +98,7 @@
 				if ($this->debug > 1) { echo 'email.uipreferences.create_prefs_block: ('.$this->bo->account_group.') get user prefs from DB by calling $GLOBALS[phpgw]->preferences->create_email_preferences(\'\', '.$this->bo->acctnum.')<br />'; }
 				//by calling this function with a specific acctnum, we get back fully procecessed prefs data from the DB
 				// for the that acctnum
-				$temp_prefs = $GLOBALS['phpgw']->preferences->create_email_preferences('', $this->bo->acctnum);
+				$temp_prefs = Preferences::getInstance()->create_email_preferences('', $this->bo->acctnum);
 				$actual_user_prefs = $temp_prefs['email'];
 			}
 			else

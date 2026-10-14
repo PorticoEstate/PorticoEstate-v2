@@ -132,6 +132,27 @@ namespace Tests\Controllers
 			$this->assertSame([], $violations);
 		}
 
+		public function testStructuredPreferencesUpdateUserAndEffectiveValues(): void
+		{
+			$preferences = (new \ReflectionClass(\App\modules\phpgwapi\services\Preferences::class))->newInstanceWithoutConstructor();
+			$preferences->user = ['email' => []];
+			$preferences->default = ['email' => ['default_tree' => ['retained' => 'default']]];
+			$preferences->forced = [];
+			$preferences->data = $preferences->default;
+
+			$preferences->add_struct('email', '["filters"][2]["filtername"]', 'Second');
+			$preferences->add_struct('email', '["filters"][1]["filtername"]', 'First');
+			$preferences->sort_struct('email', '["filters"]');
+			$this->assertSame([1, 2], array_keys($preferences->user['email']['filters']));
+			$this->assertSame($preferences->user['email']['filters'], $preferences->data['email']['filters']);
+
+			$preferences->delete_struct('email', '["filters"][1]["filtername"]');
+			$this->assertSame([2], array_keys($preferences->user['email']['filters']));
+			$preferences->delete_struct('email', '["filters"]');
+			$this->assertArrayNotHasKey('filters', $preferences->user['email']);
+			$this->assertSame(['retained' => 'default'], $preferences->data['email']['default_tree']);
+		}
+
 		public function testMailCachePersistsAcrossInstancesAndIsolatesAccounts(): void
 		{
 			$this->withSessionCache(function (): void
@@ -226,6 +247,27 @@ namespace Tests\Controllers
 					$coreFile = in_array($file->getFilename(), ['class.mail_msg_base.inc.php', 'class.mail_msg_wrappers.inc.php', 'class.mail_msg_display.inc.php'], true);
 					if (preg_match('~^\$GLOBALS\[\s*[\'\"]phpgw[\'\"]\s*\]->(?:msg|mail_send|dcom|msg_bootstrap|uicompose|widgets|htmlwid)\b|^\$GLOBALS\[\s*[\'\"]phpgw_dcom_~', $expression)
 						|| ($coreFile && preg_match('~^\$GLOBALS\[\s*[\'\"]phpgw[\'\"]\s*\]->~', $expression)))
+					{
+						$violations[] = $file->getFilename() . ':' . $token[2];
+					}
+				}
+			}
+			$this->assertSame([], $violations);
+		}
+
+		public function testEmailModuleUsesPreferencesServiceInsteadOfGlobalPreferencesObject(): void
+		{
+			$violations = [];
+			$files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(__DIR__ . '/../../src/modules/email'));
+			foreach ($files as $file)
+			{
+				if (!$file->isFile() || $file->getExtension() !== 'php') continue;
+				$tokens = token_get_all(file_get_contents($file->getPathname()));
+				foreach ($tokens as $index => $token)
+				{
+					if (!is_array($token) || $token[0] !== T_VARIABLE || $token[1] !== '$GLOBALS') continue;
+					$expression = implode('', array_map(static fn($item): string => is_array($item) ? $item[1] : $item, array_slice($tokens, $index, 12)));
+					if (preg_match('~^\$GLOBALS\[\s*[\'\"]phpgw[\'\"]\s*\]->preferences\b~', $expression))
 					{
 						$violations[] = $file->getFilename() . ':' . $token[2];
 					}

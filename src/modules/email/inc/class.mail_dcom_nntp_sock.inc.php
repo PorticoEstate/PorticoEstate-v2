@@ -133,8 +133,8 @@
 		}
 		if ($this->db->f('active') != 'Y')
 		{
-			$GLOBALS['phpgw']->preferences->delete('nntp',$folder);
-			$GLOBALS['phpgw']->preferences->save_repository();
+			\App\modules\phpgwapi\services\Preferences::getInstance()->delete('nntp',$folder);
+			\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
 			
 			$this->set_error('Administration','Automatic Disabling','The newsgroup '.$mailbox.' is not activated by the Administrator.');
 			$this->error();

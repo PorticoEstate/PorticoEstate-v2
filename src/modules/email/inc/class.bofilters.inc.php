@@ -180,11 +180,10 @@
 				$this->all_filters = \App\modules\email\services\MailMessage::getInstance()->raw_filters;
 			}
 			// fallback location to try also
-			elseif ((isset($GLOBALS['phpgw']->preferences->data['email']['filters']))
-			&& (is_array($GLOBALS['phpgw']->preferences->data['email']['filters'])))
+			elseif ((isset(\App\modules\phpgwapi\services\Preferences::getInstance()->data['email']['filters']))
+			&& (is_array(\App\modules\phpgwapi\services\Preferences::getInstance()->data['email']['filters'])))
 			{
-				// METHOD2 (works but requires "access" to a maybe private object of prefernces object, so 2nd choice for data)
-				$this->all_filters = $GLOBALS['phpgw']->preferences->data['email']['filters'];
+				$this->all_filters = \App\modules\phpgwapi\services\Preferences::getInstance()->data['email']['filters'];
 			}
 			// UNDO the DATABASE DEFANG if instructions specified this
 			if ($also_undo_defang)
@@ -721,7 +720,7 @@
 			// first we delete any existing data at the desired prefs location
 			$pref_struct_str = '["filters"]';
 			if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->delete_struct("email", $pref_struct_str) which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
-			$GLOBALS['phpgw']->preferences->delete_struct('email',$pref_struct_str);
+			\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email',$pref_struct_str);
 			
 			for ($filter_idx=0; $filter_idx < count($this->all_filters); $filter_idx++)
 			{
@@ -734,7 +733,7 @@
 				// $this_filter['filtername']	string (will require htmlslecialchars_encode and decode
 				$pref_struct_str = '["filters"]['.$filter_idx.']["filtername"]';
 				if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['filtername'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
-				$GLOBALS['phpgw']->preferences->add_struct('email', $pref_struct_str, $this_filter['filtername']);
+				\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['filtername']);
 				
 				// $this_filter['source_accounts']	array
 				// $this_filter['source_accounts'][X]	array
@@ -745,11 +744,11 @@
 					// folder
 					$pref_struct_str = '["filters"]['.$filter_idx.']["source_accounts"]['.$i.']["folder"]';
 					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['source_accounts'][$i]['folder'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
-					$GLOBALS['phpgw']->preferences->add_struct('email', $pref_struct_str, $this_filter['source_accounts'][$i]['folder']);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['source_accounts'][$i]['folder']);
 					// acctnum
 					$pref_struct_str = '["filters"]['.$filter_idx.']["source_accounts"]['.$i.']["acctnum"]';
 					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['source_accounts'][$i]['acctnum'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
-					$GLOBALS['phpgw']->preferences->add_struct('email', $pref_struct_str, $this_filter['source_accounts'][$i]['acctnum']);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['source_accounts'][$i]['acctnum']);
 				}
 				
 				// $this_filter['matches']	Array
@@ -765,16 +764,16 @@
 					{
 						$pref_struct_str = '["filters"]['.$filter_idx.']["matches"]['.$i.']["andor"]';
 						if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['matches'][$i]['andor'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
-						$GLOBALS['phpgw']->preferences->add_struct('email', $pref_struct_str, $this_filter['matches'][$i]['andor']);
+						\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['matches'][$i]['andor']);
 					}
 					// examine
 					$pref_struct_str = '["filters"]['.$filter_idx.']["matches"]['.$i.']["examine"]';
 					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['matches'][$i]['examine'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
-					$GLOBALS['phpgw']->preferences->add_struct('email', $pref_struct_str, $this_filter['matches'][$i]['examine']);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['matches'][$i]['examine']);
 					// comparator
 					$pref_struct_str = '["filters"]['.$filter_idx.']["matches"]['.$i.']["comparator"]';
 					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['matches'][$i]['comparator'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
-					$GLOBALS['phpgw']->preferences->add_struct('email', $pref_struct_str, $this_filter['matches'][$i]['comparator']);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['matches'][$i]['comparator']);
 					// matchthis
 					// user_string, may need htmlslecialchars_encode decode and/or the user may forget to tnter data here
 					if ((!isset($this_filter['matches'][$i]['matchthis']))
@@ -784,7 +783,7 @@
 					}
 					$pref_struct_str = '["filters"]['.$filter_idx.']["matches"]['.$i.']["matchthis"]';
 					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['matches'][$i]['matchthis'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
-					$GLOBALS['phpgw']->preferences->add_struct('email', $pref_struct_str, $this_filter['matches'][$i]['matchthis']);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['matches'][$i]['matchthis']);
 				}
 				
 				// $this_filter['actions']	Array
@@ -798,21 +797,21 @@
 					// judgement
 					$pref_struct_str = '["filters"]['.$filter_idx.']["actions"]['.$i.']["judgement"]';
 					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['actions'][$i]['judgement'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
-					$GLOBALS['phpgw']->preferences->add_struct('email', $pref_struct_str, $this_filter['actions'][$i]['judgement']);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['actions'][$i]['judgement']);
 					// folder
 					$pref_struct_str = '["filters"]['.$filter_idx.']["actions"]['.$i.']["folder"]';
 					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['actions'][$i]['folder'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
-					$GLOBALS['phpgw']->preferences->add_struct('email', $pref_struct_str, $this_filter['actions'][$i]['folder']);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['actions'][$i]['folder']);
 					// actiontext
 					$pref_struct_str = '["filters"]['.$filter_idx.']["actions"]['.$i.']["actiontext"]';
 					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['actions'][$i]['actiontext'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
-					$GLOBALS['phpgw']->preferences->add_struct('email', $pref_struct_str, $this_filter['actions'][$i]['actiontext']);
+					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['actions'][$i]['actiontext']);
 					// stop_filtering
 					if (isset($this_filter['actions'][$i]['stop_filtering']))
 					{
 						$pref_struct_str = '["filters"]['.$filter_idx.']["actions"]['.$i.']["stop_filtering"]';
 						if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['actions'][$i]['stop_filtering'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
-						$GLOBALS['phpgw']->preferences->add_struct('email', $pref_struct_str, $this_filter['actions'][$i]['stop_filtering']);
+						\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['actions'][$i]['stop_filtering']);
 					}
 				}
 			}
@@ -824,9 +823,9 @@
 			}
 			else
 			{
-				if ($this->debug_set_prefs > 2) { echo 'bofilters.save_all_filters_to_repository: direct pre-save $GLOBALS[phpgw]->preferences->data[email][filters] DUMP:<pre>'; print_r($GLOBALS['phpgw']->preferences->data['email']['filters']); echo '</pre>'; }
+				if ($this->debug_set_prefs > 2) { echo 'bofilters.save_all_filters_to_repository: direct pre-save email filters DUMP:<pre>'; print_r(\App\modules\phpgwapi\services\Preferences::getInstance()->data['email']['filters'] ?? []); echo '</pre>'; }
 				if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: SAVING REPOSITORY<br />'; }
-				$GLOBALS['phpgw']->preferences->save_repository();
+				\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
 				// re-grab data from prefs
 				
 			}

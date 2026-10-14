@@ -386,8 +386,7 @@
 			elseif ($desired_function == 'preferences_object_dump')
 			{
 				// this function echos out its data
-				//echo '$GLOBALS[phpgw]->preferences dump:<pre>'; print_r($GLOBALS['phpgw']->preferences) ; echo '</pre>';
-				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): GLOBALS[phpgw]->preferences DUMP:', $GLOBALS['phpgw']->preferences);
+				\App\modules\email\services\MailMessage::getInstance()->dbug->out('ui_mail_debug.show_desired_data('.__LINE__.'): Preferences service DUMP:', \App\modules\phpgwapi\services\Preferences::getInstance());
 			}
 			elseif ($desired_function == 'copyinteresting')
 			{

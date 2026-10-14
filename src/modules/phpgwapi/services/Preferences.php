@@ -323,6 +323,108 @@ class Preferences
 			return $this->data;
 		}
 
+		public function add_struct($app_name, $path, $value)
+		{
+			$keys = $this->structuredPath($path);
+			$this->user[$app_name] = is_array($this->user[$app_name] ?? null) ? $this->user[$app_name] : [];
+			$this->setStructuredValue($this->user[$app_name], $keys, $value);
+			$this->refreshStructuredValue($app_name, $keys[0]);
+			return $this->data;
+		}
+
+		public function delete_struct($app_name, $path)
+		{
+			$keys = $this->structuredPath($path);
+			if (is_array($this->user[$app_name] ?? null))
+			{
+				$this->unsetStructuredValue($this->user[$app_name], $keys);
+			}
+			$this->refreshStructuredValue($app_name, $keys[0]);
+			return $this->data;
+		}
+
+		public function sort_struct($app_name, $path)
+		{
+			$keys = $this->structuredPath($path);
+			if (is_array($this->user[$app_name] ?? null))
+			{
+				$value =& $this->user[$app_name];
+				foreach ($keys as $key)
+				{
+					if (!isset($value[$key]) || !is_array($value[$key])) return false;
+					$value =& $value[$key];
+				}
+				ksort($value);
+				unset($value);
+			}
+			$this->refreshStructuredValue($app_name, $keys[0]);
+			return true;
+		}
+
+		private function structuredPath($path): array
+		{
+			if (!is_string($path) || $path === '') throw new \InvalidArgumentException('Preference path must be a non-empty string');
+			$keys = [];
+			$offset = 0;
+			while ($offset < strlen($path))
+			{
+				if (!preg_match('/\G\[(?:"([^"\[\]]+)"|(\d+))\]/', $path, $match, 0, $offset))
+				{
+					throw new \InvalidArgumentException('Invalid structured preference path');
+				}
+				$keys[] = ($match[1] ?? '') !== '' ? $match[1] : (int) $match[2];
+				$offset += strlen($match[0]);
+			}
+			if (!$keys) throw new \InvalidArgumentException('Structured preference path has no keys');
+			return $keys;
+		}
+
+		private function setStructuredValue(array &$tree, array $keys, $value): void
+		{
+			$cursor =& $tree;
+			$last = array_pop($keys);
+			foreach ($keys as $key)
+			{
+				if (!isset($cursor[$key]) || !is_array($cursor[$key])) $cursor[$key] = [];
+				$cursor =& $cursor[$key];
+			}
+			$cursor[$last] = $value;
+			unset($cursor);
+		}
+
+		private function unsetStructuredValue(array &$tree, array $keys): void
+		{
+			$key = array_shift($keys);
+			if (!$keys)
+			{
+				unset($tree[$key]);
+				return;
+			}
+			if (!isset($tree[$key]) || !is_array($tree[$key])) return;
+			$this->unsetStructuredValue($tree[$key], $keys);
+			if ($tree[$key] === []) unset($tree[$key]);
+		}
+
+		private function refreshStructuredValue($app_name, $root): void
+		{
+			if (isset($this->forced[$app_name]) && array_key_exists($root, $this->forced[$app_name]))
+			{
+				$this->data[$app_name][$root] = $this->forced[$app_name][$root];
+			}
+			elseif (isset($this->user[$app_name]) && array_key_exists($root, $this->user[$app_name]) && $this->user[$app_name][$root] !== '')
+			{
+				$this->data[$app_name][$root] = $this->user[$app_name][$root];
+			}
+			elseif (isset($this->default[$app_name]) && array_key_exists($root, $this->default[$app_name]))
+			{
+				$this->data[$app_name][$root] = $this->default[$app_name][$root];
+			}
+			else
+			{
+				unset($this->data[$app_name][$root]);
+			}
+		}
+
 	/**
 	 * parses a notify and replaces the substitutes
 	 *

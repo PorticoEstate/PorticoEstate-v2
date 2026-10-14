@@ -1306,3 +1306,10 @@ comment_regarding	booking	nn	Gjeld
 whole_application	booking	nn	Heile søknaden
 reply_on_this_time	booking	nn	Svar på dette tidspunktet
 comment_time_removed	booking	nn	Tidspunktet er fjerna
+accept_change_help_allocation	booking	nn	Tildelinga får den ønskte tida. Tida blir sjekka mot andre reservasjonar før noko blir lagra. Datoane i søknaden og prisen blir ikkje endra.
+reject_change_help_allocation	booking	nn	Tildelinga beheld noverande tid, og førespurnaden blir lukka.
+change_price_not_recalculated_allocation	booking	nn	Tildelinga har timepris. Prisen blir ikkje rekna ut på nytt for den nye tida – kontroller artiklane under Endre.
+change_request_stale_allocation	booking	nn	Tildelinga er endra etter førespurnaden
+change_request_element_inactive_allocation	booking	nn	Tildelinga er ikkje aktiv
+change_applied_allocation	booking	nn	Endringa er lagra. Datoane i søknaden og prisen er uendra.
+change_request_booking_outside_allocation	booking	nn	Endringa kan ikkje godtakast: booking #%1 i tildelinga ville hamna utanfor den nye tida.

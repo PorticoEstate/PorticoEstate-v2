@@ -1148,3 +1148,24 @@ change_request_pending	bookingfrontend	no	Ønsket endring til kl. {{time}} vente
 comment_on_time	bookingfrontend	no	Kommenter
 comment_on_time_heading	bookingfrontend	no	Kommentar til tidspunktet
 comment_time_removed	bookingfrontend	no	Tidspunktet er fjernet
+change_time	bookingfrontend	no	Endre tid
+change_allocation_time_description	bookingfrontend	no	Velg ny tid på samme dag. En kortere tid innenfor den tildelte tiden lagres med en gang, og prisen beregnes på nytt for de nye timene. En lengre eller flyttet tid sendes til saksbehandler, som godtar eller avslår endringen.
+allocation_time_shortened	bookingfrontend	no	Tiden er endret til kl. {{time}}.
+allocation_change_requested	bookingfrontend	no	Ønsket ny tid er sendt til saksbehandler. Tiden er uendret til saksbehandler har godtatt endringen.
+allocation_change_invalid_time	bookingfrontend	no	Ugyldig tidspunkt.
+allocation_change_other_day	bookingfrontend	no	Ny tid må være på samme dag som tildelingen.
+allocation_change_unchanged	bookingfrontend	no	Tiden er ikke endret.
+allocation_change_started	bookingfrontend	no	Tildelingen har allerede startet og kan ikke endres.
+allocation_change_inactive	bookingfrontend	no	Tildelingen er trukket tilbake.
+allocation_change_no_application	bookingfrontend	no	Tildelingen hører ikke til en søknad.
+allocation_change_booking_in_removed_time	bookingfrontend	no	Tiden kan ikke kortes ned: det ligger en booking i tiden som fjernes.
+allocation_changed_meanwhile	bookingfrontend	no	Tildelingen er endret i mellomtiden. Last inn siden på nytt.
+allocation_shortened_comment	bookingfrontend	no	Tildeling #%1 (%2, %3): tiden er kortet ned fra %4 til %5.
+allocation_change_requested_comment	bookingfrontend	no	Tildeling #%1 (%2, %3): ønsker ny tid %5 i stedet for %4. Saksbehandler godtar eller avslår endringen.
+allocation_price_recalculated	bookingfrontend	no	Prisen er omregnet for den nye tiden: %1 → %2. Pris låst etter forkorting.
+allocation_price_unchanged	bookingfrontend	no	Prisen er uendret.
+allocation_price_kept_locked	bookingfrontend	no	Pris ikke omregnet: prisen er satt manuelt av saksbehandler.
+allocation_price_master_order	bookingfrontend	no	Pris ikke omregnet: søknadens hovedordre.
+allocation_price_not_recalculated	bookingfrontend	no	Pris ikke omregnet: saksbehandler kontrollerer prisen.
+allocation_cost_recalculated_after_shortening	bookingfrontend	no	Pris omregnet etter forkorting (%1). Pris låst etter forkorting.
+allocation_price_off_rule	bookingfrontend	no	Pris ikke omregnet: saksbehandler har endret tiden uten å regne om prisen.

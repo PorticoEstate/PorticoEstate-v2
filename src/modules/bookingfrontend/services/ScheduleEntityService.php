@@ -104,26 +104,27 @@ class ScheduleEntityService
 
     /**
      * Add the time the owner has asked for (an open bb_application_change_request)
-     * to each of the owner's events, as pending_change {from_, to_} in the same
-     * Europe/Oslo ISO format as from_/to_. A request made from a time the event
+     * to each of the owner's elements, as pending_change {from_, to_} in the same
+     * Europe/Oslo ISO format as from_/to_. A request made from a time the element
      * no longer has - it was changed after the request - is left out.
      *
-     * @param array $results serialized events
-     * @param array<int, array> $ownEvents bb_event rows of the owner's events, by index in $results
+     * @param array $results serialized elements
+     * @param array<int, array> $ownElements rows of the owner's elements, by index in $results
+     * @param string $elementType 'event' or 'allocation'
      */
-    private function addPendingChanges(array &$results, array $ownEvents): void
+    private function addPendingChanges(array &$results, array $ownElements, string $elementType = 'event'): void
     {
-        if (!$ownEvents) {
+        if (!$ownElements) {
             return;
         }
 
         $requests = (new ApplicationChangeRequestRepository())->findOpenForElements(
-            'event',
-            array_map(fn(array $row) => (int)$row['id'], $ownEvents)
+            $elementType,
+            array_map(fn(array $row) => (int)$row['id'], $ownElements)
         );
 
         $oslo = new \DateTimeZone('Europe/Oslo');
-        foreach ($ownEvents as $index => $row) {
+        foreach ($ownElements as $index => $row) {
             $request = $requests[(int)$row['id']] ?? null;
             if (!$request
                 || strtotime($row['from_']) !== strtotime($request['old_from_'])
@@ -174,7 +175,12 @@ class ScheduleEntityService
             // Load booking configuration
             $config = $this->loadBookingConfig();
 
+            // The time asked for on an allocation is the applicant's, so only a caller who may
+            // open the application sees it - this route itself is public.
+            $isOwner = $this->computeCanViewApplication($applicationId);
+
             $results = [];
+            $ownAllocations = [];
             foreach ($this->groupByEntity($rows) as $allocationGroup) {
                 $allocation = new Allocation($allocationGroup[0]);
                 $allocation->resources = array_map([$this, 'formatResource'], $allocationGroup);
@@ -184,7 +190,12 @@ class ScheduleEntityService
                 $this->addEditCancelLinks($allocationData, $config, 'allocation', $application);
 
                 $results[] = $allocationData;
+                if ($isOwner) {
+                    $ownAllocations[count($results) - 1] = $allocationGroup[0];
+                }
             }
+
+            $this->addPendingChanges($results, $ownAllocations, 'allocation');
 
             return $results;
         } catch (Exception $e) {

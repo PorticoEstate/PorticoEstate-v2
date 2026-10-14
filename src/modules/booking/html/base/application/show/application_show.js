@@ -173,7 +173,7 @@
 			if (req) {
 				html += '<span class="booking-tag ds-tag" data-color="warning">' + esc(lang('changeRequestedTime')) + ': ' + esc(changeTimeText(req)) + '</span>';
 				if (req.stale) {
-					html += '<span class="booking-tag ds-tag" data-color="neutral">' + esc(lang('changeRequestStale')) + '</span>';
+					html += '<span class="booking-tag ds-tag" data-color="neutral">' + esc(changeLang('changeRequestStale', req)) + '</span>';
 				}
 			}
 			return html + '</div>';
@@ -184,6 +184,12 @@
 	// (bb_application_change_request), by assocRef. Set from /change-requests
 	// before the page renders.
 	var changeRequests = {};
+
+	// A change request text that names the element: an allocation has its own
+	// (the event's say "Arrangementet").
+	function changeLang(key, req) {
+		return lang(req.element_type === 'allocation' ? key + 'Allocation' : key);
+	}
 
 	// The requested time: "18:00–20:00", with the date in front when it is
 	// another day than the element's time when asked.
@@ -2562,10 +2568,10 @@
 			field(lang('changeRequestedTime'), fmtDate(req.new_from_) + ' – ' + minuteKey(req.new_to_).substring(11))
 		);
 		var body = '<div class="booking-alert ds-alert" data-color="danger" role="alert" id="modal-change-error" hidden></div>' +
-			'<p class="booking-paragraph ds-paragraph" data-size="sm">' + esc(lang(accept ? 'acceptChangeHelp' : 'rejectChangeHelp')) + '</p>' +
+			'<p class="booking-paragraph ds-paragraph" data-size="sm">' + esc(changeLang(accept ? 'acceptChangeHelp' : 'rejectChangeHelp', req)) + '</p>' +
 			times +
 			(accept && req.price_review
-				? '<div class="booking-alert ds-alert" data-color="warning"><p class="booking-paragraph ds-paragraph">' + esc(lang('changePriceNotRecalculated')) + '</p></div>'
+				? '<div class="booking-alert ds-alert" data-color="warning"><p class="booking-paragraph ds-paragraph">' + esc(changeLang('changePriceNotRecalculated', req)) + '</p></div>'
 				: '');
 		var label = lang(accept ? 'acceptChange' : 'rejectChange');
 		var footer = '<button type="button" class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
@@ -2583,6 +2589,7 @@
 			postJsonBody(apiUrl + '/change-requests/' + encodeURIComponent(req.id) + '/' + (accept ? 'accept' : 'reject'), {}).then(function (result) {
 				closeModal(dialogId);
 				var done = !accept ? lang('changeRejected')
+					: req.element_type === 'allocation' ? lang('changeAppliedAllocation')
 					: result && result.application_date_shared ? lang('changeAppliedSharedApplicationDate')
 					: (result && result.application_date_id == null ? lang('changeAppliedWithoutApplicationDate') : lang('changeAccepted'));
 				showToast(done);

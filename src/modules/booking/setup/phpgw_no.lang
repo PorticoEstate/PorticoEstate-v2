@@ -1332,3 +1332,10 @@ comment_regarding	booking	no	Gjelder
 whole_application	booking	no	Hele søknaden
 reply_on_this_time	booking	no	Svar på dette tidspunktet
 comment_time_removed	booking	no	Tidspunktet er fjernet
+accept_change_help_allocation	booking	no	Tildelingen får den ønskede tiden. Tiden sjekkes mot andre reservasjoner før noe lagres. Søknadens datoer og prisen endres ikke.
+reject_change_help_allocation	booking	no	Tildelingen beholder nåværende tid, og forespørselen lukkes.
+change_price_not_recalculated_allocation	booking	no	Tildelingen har timepris. Prisen beregnes ikke på nytt for den nye tiden – kontroller artiklene under Endre.
+change_request_stale_allocation	booking	no	Tildelingen er endret etter forespørselen
+change_request_element_inactive_allocation	booking	no	Tildelingen er ikke aktiv
+change_applied_allocation	booking	no	Endringen er lagret. Søknadens datoer og prisen er uendret.
+change_request_booking_outside_allocation	booking	no	Endringen kan ikke godtas: booking #%1 i tildelingen ville havnet utenfor den nye tiden.

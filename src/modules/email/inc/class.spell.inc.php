@@ -151,7 +151,7 @@
 			holds public data structure classes for class email spell
 			*/
 			$required_file = 'spell_struct';
-			require_once(PHPGW_INCLUDE_ROOT.'/'.$GLOBALS['phpgw_info']['flags']['currentapp'].'/inc/class.'.$required_file.'.inc.php');
+			require_once(PHPGW_INCLUDE_ROOT.'/email/inc/class.'.$required_file.'.inc.php');
 			
 			$this->msg_bootstrap = CreateObject("email.msg_bootstrap");
 			

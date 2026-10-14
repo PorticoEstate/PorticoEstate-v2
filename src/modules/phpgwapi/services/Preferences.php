@@ -33,15 +33,16 @@ class Preferences
 	public function __construct($account_id = null)
 	{
 		$this->db = \App\Database\Db::getInstance();
-		$this->account_id = $account_id;
+		$sessions = Sessions::getInstance();
+		$this->account_id = $account_id ?? $sessions->getAccountId();
 		$this->serverSettings = Settings::getInstance()->get('server');
 		$this->preferences = $this->Readpreferences();
 
 		// Load settings from the database
 		$this->settings = $this->loadSettingsFromDatabase();
-		if ($account_id)
+		if ($this->account_id)
 		{
-			$this->set('account_id', $account_id);
+			$this->set('account_id', $this->account_id);
 		}
 	}
 
@@ -471,6 +472,32 @@ class Preferences
 			}
 		}
 		return $port_number;
+	}
+	/**
+	 * Helper function for create_email_preferences, gets default userid for email
+	 *
+	 * This will generate the appropriate userid for accessing an email server.
+	 * In the absence of a custom ['email']['userid'], this function should be used to set it.
+	 * @param $accountid - as determined in and/or passed to "create_email_preferences"
+	 * @access Private
+	 */
+	function sub_default_userid($account_id = '')
+	{
+		$accounts = new Accounts();
+		$prefs_email_userid = $accounts->id2lid($account_id);
+
+		if (isset($this->serverSettings['mail_login_type']))
+		{
+			if ($this->serverSettings['mail_login_type'] == 'vmailmgr')
+			{
+				$prefs_email_userid .= "@{$this->serverSettings['mail_suffix']}";
+			}
+			else if ($this->serverSettings['mail_login_type'] == 'ispman')
+			{
+				$prefs_email_userid .= '_' . str_replace('.', '_', $this->serverSettings['mail_suffix']);
+			}
+		}
+		return $prefs_email_userid;
 	}
 
 	/**

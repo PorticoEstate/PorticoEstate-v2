@@ -51,6 +51,7 @@
 			// can not do this here because the msg object may not be available yet
 			//$this->addybook_choice = $GLOBALS['phpgw_info']['user']['preferences']['email']['addressbook_choice'];
 			$this->msg_bootstrap = CreateObject("email.msg_bootstrap");
+			$phpgwapi_common = new \phpgwapi_common();
 			//return;
 		}
 		

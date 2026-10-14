@@ -50,7 +50,7 @@ $app->group('/emailadmin', function (RouteCollectorProxy $group) use ($emailadmi
 		$view->get('/profiles/add', EmailadminViewController::class . ':add');
 		$view->get('/profiles/{id:[0-9]+}/edit', EmailadminViewController::class . ':edit');
 		$view->get('/users/{id:[0-9]+}/edit', EmailadminViewController::class . ':editUserData');
-	})->add($emailadminCsrf);
+	});
 
 	$group->get('/profiles', EmailadminController::class . ':index');
 	$group->get('/profiles/{id:[0-9]+}', EmailadminController::class . ':show');

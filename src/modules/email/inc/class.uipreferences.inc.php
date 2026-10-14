@@ -14,6 +14,7 @@
 	* @internal Based on Aeromail http://the.cushman.net/
 	*/
 
+	use App\modules\phpgwapi\services\Preferences;
 
 	/**
 	* Preferences
@@ -43,7 +44,8 @@
 		{
 			$this->nextmatchs = CreateObject('phpgwapi.nextmatchs');
 			$this->bo = CreateObject('email.bopreferences');
-			$temp_prefs = $GLOBALS['phpgw']->preferences->create_email_preferences();
+			$temp_prefs = Preferences::getInstance()->create_email_preferences();
+	//		$temp_prefs = $GLOBALS['phpgw']->preferences->create_email_preferences();
 			$this->prefs = $temp_prefs['email'];
 		}
 
@@ -338,7 +340,9 @@
 			else
 			{
 				// we are dealing with the default account, account number 0, this is default fallback behavior
-				$this->preferences_default_acct_zero();
+				$query = $_GET;
+				unset($query['menuaction']);
+				phpgw::redirect_link('/email/view/preferences', $query);
 			}
 		}
 
@@ -353,6 +357,11 @@
 		 */
 		function preferences_default_acct_zero()
 		{
+			$query = $_GET;
+			unset($query['menuaction']);
+			phpgw::redirect_link('/email/view/preferences', $query);
+			return;
+
 			// this tells "create_prefs_block" that we are dealing with the default email account
 			if ($this->debug > 0) { echo 'email.uipreferences.preferences: ENTERING, this function *should* only be called for the default email account prefs submission<br />'; }
 			if ($this->debug > 1) { echo 'email.uipreferences.preferences: about to set $this->bo->account_group<br />'; }
@@ -526,6 +535,11 @@
 		 */
 		function ex_accounts_edit()
 		{
+			$query = $_GET;
+			unset($query['menuaction']);
+			phpgw::redirect_link('/email/view/account', $query);
+			return;
+
 			// this tells "create_prefs_block" that we are dealing with the extra email accounts
 			if ($this->debug > 0) { echo 'email.uipreferences.ex_accounts_edit: ENTERING, this function *should* only be called for the EXTRA email account prefs submission<br />'; }
 			if ($this->debug > 1) { echo 'email.uipreferences.ex_accounts_edit: about to set $this->bo->account_group<br />'; }
@@ -713,6 +727,9 @@
 
 		function ex_accounts_list()
 		{
+			phpgw::redirect_link('/email/view/accounts');
+			return;
+
 			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// we point to the global template for this version of phpgw templatings

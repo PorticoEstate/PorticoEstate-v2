@@ -44,6 +44,11 @@ class EmailInboxController
 			}
 			return $this->json($response, $result);
 		}
+		catch (\App\modules\email\services\EmailMailConfigurationException $exception)
+		{
+			$message = $exception->getMessage();
+			return $this->json($response, ['error' => $message, 'reason' => $message], 422);
+		}
 		catch (\Throwable $exception)
 		{
 			return $this->json($response, ['error' => lang('Unable to load messages')], 500);
@@ -130,6 +135,11 @@ class EmailInboxController
 			}
 			return $this->json($response, ['item' => $item]);
 		}
+		catch (\App\modules\email\services\EmailMailConfigurationException $exception)
+		{
+			$message = $exception->getMessage();
+			return $this->json($response, ['error' => $message, 'reason' => $message], 422);
+		}
 		catch (\Throwable $exception)
 		{
 			return $this->json($response, ['error' => lang('Unable to load message')], 500);
@@ -138,18 +148,90 @@ class EmailInboxController
 
 	public function folders(Request $request, Response $response): Response
 	{
+		$query = $request->getQueryParams();
+		$folderBall = (array) ($query['fldball'] ?? []);
+		$account = filter_var($folderBall['acctnum'] ?? 0, FILTER_VALIDATE_INT);
+		if ($account === false || $account < 0)
+		{
+			return $this->json($response, ['error' => lang('Invalid account')], 400);
+		}
 		try
 		{
 			$bootstrap = \CreateObject('email.msg_bootstrap');
-			$bootstrap->ensure_mail_msg_exists('email.api.folders', 0);
+			$bootstrap->ensure_mail_msg_exists('email.api.folders', $account);
 			$businessObject = \CreateObject('email.bofolder');
 			$businessObject->folder_data();
 			$folders = (array) ($businessObject->xi['folder_list_display'] ?? []);
 			return $this->json($response, ['items' => EmailFolderSerializer::serialize($folders)]);
 		}
+		catch (\App\modules\email\services\EmailMailConfigurationException $exception)
+		{
+			$message = $exception->getMessage();
+			return $this->json($response, ['error' => $message, 'reason' => $message], 422);
+		}
 		catch (\Throwable $exception)
 		{
 			return $this->json($response, ['error' => lang('Unable to load folders')], 500);
+		}
+	}
+
+	public function folderAction(Request $request, Response $response): Response
+	{
+		$input = $request->getParsedBody();
+		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		$input = is_array($input) ? $input : [];
+		$action = (string) ($input['action'] ?? '');
+		$target = (array) ($input['target_fldball'] ?? []);
+		$source = (array) ($input['source_fldball'] ?? []);
+		$targetFolder = $target['folder'] ?? null;
+		$sourceFolder = $source['folder'] ?? null;
+		$account = filter_var($target['acctnum'] ?? 0, FILTER_VALIDATE_INT);
+		if (!in_array($action, ['create', 'delete', 'rename'], true)
+			|| $account === false || $account < 0
+			|| !is_string($targetFolder) || trim($targetFolder) === ''
+			|| (($action === 'rename') && (!is_string($sourceFolder) || trim($sourceFolder) === '')))
+		{
+			return $this->json($response, ['error' => lang('Invalid folder action')], 400);
+		}
+
+		$originalPost = $_POST;
+		$_POST = array_replace($originalPost, $input);
+		try
+		{
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->ensure_mail_msg_exists('email.api.folders.action', $account);
+			$businessObject = \CreateObject('email.bofolder');
+			$success = $businessObject->folder_action();
+			$report = (string) ($businessObject->xi['action_report'] ?? '');
+			$reason = trim(html_entity_decode(strip_tags(str_ireplace(['<br />', '<br>'], ' ', $report)), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+			if (!$success)
+			{
+				return $this->json($response, [
+					'error' => lang('Unable to update folder'),
+					'reason' => $reason !== '' ? $reason : lang('Folder action failed'),
+				], 422);
+			}
+			return $this->json($response, ['updated' => true, 'message' => $reason]);
+		}
+		catch (\App\modules\email\services\EmailMailConfigurationException $exception)
+		{
+			$message = $exception->getMessage();
+			return $this->json($response, ['error' => $message, 'reason' => $message], 422);
+		}
+		catch (\Throwable $exception)
+		{
+			return $this->json($response, [
+				'error' => lang('Unable to update folder'),
+				'reason' => $exception->getMessage(),
+			], 500);
+		}
+		finally
+		{
+			$_POST = $originalPost;
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
 		}
 	}
 
@@ -215,6 +297,11 @@ class EmailInboxController
 				->withHeader('Content-Length', (string) strlen($data))
 				->withHeader('Content-Disposition', ($inline ? 'inline' : 'attachment') . '; filename="' . $fallbackName . '"; filename*=UTF-8\'\'' . rawurlencode($fileName))
 				->withHeader('X-Content-Type-Options', 'nosniff');
+		}
+		catch (\App\modules\email\services\EmailMailConfigurationException $exception)
+		{
+			$message = $exception->getMessage();
+			return $this->json($response, ['error' => $message, 'reason' => $message], 422);
 		}
 		catch (\Throwable $exception)
 		{

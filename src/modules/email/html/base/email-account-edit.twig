@@ -1,0 +1,38 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Email account preferences') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/preferences.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<main class="email-preferences" id="email-preferences"
+	data-api-url="{{ api_url|e('html_attr') }}"
+	data-save-url="{{ save_url|e('html_attr') }}"
+	data-csrf-name="{{ csrf_name|e('html_attr') }}"
+	data-csrf-value="{{ csrf_value|e('html_attr') }}"
+	data-account-mode="1"
+	data-accounts-url="{{ accounts_url|e('html_attr') }}">
+	<header class="email-preferences-header">
+		<div><p>{{ lang('E-Mail') }}</p><h1>{{ lang('Email account preferences') }}</h1></div>
+		<nav><a href="{{ accounts_url|e }}">{{ lang('Back to email accounts') }}</a></nav>
+	</header>
+	<div class="email-preferences-status" id="email-preferences-status" role="status" aria-live="polite">{{ lang('Loading preferences') }}</div>
+	<div class="email-preferences-error" id="email-preferences-error" role="alert" hidden></div>
+	<form id="email-preferences-form" hidden>
+		<section class="email-preferences-section">
+			<div id="email-preferences-standard"></div>
+		</section>
+		<section class="email-preferences-section">
+			<div id="email-preferences-custom-fields"></div>
+			<label class="email-preferences-toggle" hidden><input id="email-preferences-custom-enabled" type="checkbox"></label>
+		</section>
+		<div class="email-preferences-actions"><button type="submit">{{ lang('Save account') }}</button></div>
+	</form>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/preferences.js') }}</script>
+{% endblock %}

@@ -77,11 +77,13 @@ class EmailComposeViewController
 		}
 
 		Settings::getInstance()->update('flags', ['app_header' => lang('E-Mail') . ': ' . lang('Compose')]);
-		$attachmentParameters = ['menuaction' => 'email.uiattach_file.attach'] + $query;
 		$html = $this->twig->render('@views/compose.twig', [
 			'layout' => '@views/_bare.twig',
 			'api_url' => \phpgw::link('/email/api/send', [], true),
-			'attach_url' => \phpgw::link('/index.php', $attachmentParameters, true),
+			'attachments_api_url' => \phpgw::link('/email/api/attachments', [], true),
+			'attachment_upload_url' => \phpgw::link('/email/api/attachments', [], true),
+			'attachment_delete_url' => \phpgw::link('/email/api/attachments/delete', [], true),
+			'contacts_api_url' => \phpgw::link('/email/api/addressbook', [], true),
 			'return_url' => \phpgw::link('/email/view/inbox', $returnParameters, true),
 			'context' => $context,
 			'csrf' => $this->csrf($request),

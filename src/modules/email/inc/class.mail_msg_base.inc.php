@@ -342,7 +342,7 @@ class mail_msg_base
 	var $crypto = null;
 	var $serverSettings = array();
 	// Wrapper methods belong to the same mail message object.
-	var $mail_msg_wrappers = null;
+	public ?mail_msg_wrappers $mail_msg_wrappers = null;
 
 	/*!
 		@function __construct
@@ -351,7 +351,10 @@ class mail_msg_base
 	function __construct()
 	{
 		$this->serverSettings = Settings::getInstance()->get('server');
-		$this->mail_msg_wrappers = $this;
+		if ($this instanceof mail_msg_wrappers)
+		{
+			$this->mail_msg_wrappers = $this;
+		}
 
 		if (($this->debug_logins > 0) && ($this->dbug !== null))
 		{
@@ -1568,11 +1571,14 @@ class mail_msg_base
 				// FIXME make this use an official error function
 				// problem - invalid or nonexistant info for userid and/or passwd
 				//if ($this->debug_logins > 0) {
-				echo 'mail_msg.begin_request(' . __LINE__ . '): ERROR: userid or passwd empty' . "<br />\r\n"
-					. ' * * $this->mail_msg_wrappers->get_pref_value(userid) = '
-					. $this->mail_msg_wrappers->get_pref_value('userid') . "<br />\r\n"
-					. ' * * if the userid is filled, then it must be the password that is missing' . "<br />\r\n"
-					. ' * * tell your admin if a) you have a custom email password or not when reporting this error' . "<br />\r\n";
+				if (empty($args_array['api_request']))
+				{
+					echo 'mail_msg.begin_request(' . __LINE__ . '): ERROR: userid or passwd empty' . "<br />\r\n"
+						. ' * * $this->mail_msg_wrappers->get_pref_value(userid) = '
+						. $this->mail_msg_wrappers->get_pref_value('userid') . "<br />\r\n"
+						. ' * * if the userid is filled, then it must be the password that is missing' . "<br />\r\n"
+						. ' * * tell your admin if a) you have a custom email password or not when reporting this error' . "<br />\r\n";
+				}
 				//}
 				if ($this->debug_logins > 0)
 				{
@@ -1817,7 +1823,7 @@ class mail_msg_base
 		only as long as the page view or mail operation. This function should be called so the streams are 
 		properly closed with the logout command to the mail server.
 		*/
-	function end_request($args_array = '')
+	function end_request($args_array = array())
 	{
 		if ($this->debug_logins > 0)
 		{
@@ -1902,7 +1908,7 @@ class mail_msg_base
 		the source or destination mail  server stream is open and the required folder is selected. If not, this 
 		function will open the connection and select the desired folder.
 		*/
-	function ensure_stream_and_folder($fldball = '', $called_from = '', $display_error = true)
+	function ensure_stream_and_folder($fldball = array(), $called_from = '', $display_error = true)
 	{
 		if ($this->debug_logins > 0)
 		{

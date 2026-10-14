@@ -6,6 +6,12 @@
 	const rows = document.getElementById('email-folders-rows');
 	const status = document.getElementById('email-folders-status');
 	const error = document.getElementById('email-folders-error');
+	const form = document.getElementById('email-folders-manager');
+	const actionSelect = document.getElementById('email-folder-action');
+	const sourceSelect = document.getElementById('email-folder-source');
+	const targetInput = document.getElementById('email-folder-target');
+	const actionStatus = document.getElementById('email-folders-action-status');
+	let folders = [];
 
 	function cell(row, value)
 	{
@@ -21,9 +27,18 @@
 		{
 			const response = await fetch(root.dataset.apiUrl, { headers: { Accept: 'application/json' } });
 			const result = await response.json();
-			if (!response.ok) throw new Error(result.error || 'Unable to load folders');
+			if (!response.ok) throw new Error(result.reason || result.error || 'Unable to load folders');
 			rows.replaceChildren();
-			const folders = result.items || [];
+			folders = result.items || [];
+			sourceSelect.replaceChildren();
+			folders.forEach(folder =>
+			{
+				const option = document.createElement('option');
+				option.value = folder.longName;
+				option.textContent = folder.name || folder.longName;
+				sourceSelect.appendChild(option);
+			});
+			updateActionFields();
 			if (!folders.length)
 			{
 				const row = document.createElement('tr');
@@ -57,6 +72,61 @@
 			error.hidden = false;
 		}
 	}
+
+	function updateActionFields()
+	{
+		const needsSource = actionSelect.value === 'rename';
+		sourceSelect.disabled = !needsSource;
+		sourceSelect.required = needsSource;
+		targetInput.required = actionSelect.value !== 'delete';
+		if (actionSelect.value === 'delete')
+		{
+			targetInput.value = sourceSelect.selectedOptions[0]?.textContent || '';
+			targetInput.readOnly = true;
+		} else
+		{
+			targetInput.readOnly = false;
+		}
+	}
+
+	actionSelect.addEventListener('change', updateActionFields);
+	form.addEventListener('submit', async event =>
+	{
+		event.preventDefault();
+		const action = actionSelect.value;
+		if (action === 'delete' && !window.confirm('Delete folder "' + targetInput.value + '"?')) return;
+		actionStatus.textContent = '';
+		error.hidden = true;
+		const account = Number(root.dataset.account || 0);
+		const targetFolder = action === 'delete' ? sourceSelect.value : targetInput.value.trim();
+		const payload = {
+			action,
+			target_fldball: { acctnum: account, folder: targetFolder }
+		};
+		if (action === 'rename') payload.source_fldball = { acctnum: account, folder: sourceSelect.value };
+		try
+		{
+			const response = await fetch(root.dataset.actionUrl, {
+				method: 'POST',
+				headers: {
+					Accept: 'application/json',
+					'Content-Type': 'application/json',
+					'X-CSRF-NAME': root.dataset.csrfName,
+					'X-CSRF-VALUE': root.dataset.csrfValue
+				},
+				body: JSON.stringify(payload)
+			});
+			const result = await response.json();
+			if (!response.ok) throw new Error(result.reason || result.error || 'Unable to update folder');
+			actionStatus.textContent = result.message || 'Folder updated';
+			targetInput.value = '';
+			await load();
+		} catch (exception)
+		{
+			error.textContent = exception.message;
+			error.hidden = false;
+		}
+	});
 
 	load();
 })();

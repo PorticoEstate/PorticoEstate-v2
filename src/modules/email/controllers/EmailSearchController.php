@@ -98,6 +98,11 @@ class EmailSearchController
 				'pageSize' => $pageSize,
 			]);
 		}
+		catch (\App\modules\email\services\EmailMailConfigurationException $exception)
+		{
+			$message = $exception->getMessage();
+			return $this->json($response, ['error' => $message, 'reason' => $message], 422);
+		}
 		catch (\Throwable $exception)
 		{
 			return $this->json($response, ['error' => lang('Unable to search messages')], 500);

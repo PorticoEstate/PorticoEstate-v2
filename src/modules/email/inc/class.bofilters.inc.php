@@ -304,7 +304,7 @@
 		@abstract ?
 		@author Angles
 		*/
-		function move_up()
+		function move_up($api_mode = False)
 		{
 			// "False" means  return $this->not_set  if no filter number was found anywhere
 			$found_filter_num = $this->obtain_filer_num(False);
@@ -332,7 +332,8 @@
 			$this->all_filters[$found_filter_num-1] = $im_moving_up;
 			$this->all_filters[$found_filter_num] = array();
 			$this->all_filters[$found_filter_num] = $take_my_position;
-			$this->save_all_filters_to_repository();
+			$this->save_all_filters_to_repository($api_mode);
+			if ($api_mode) return True;
 			// redirect user back to filters list page
 			$take_me_to_url = phpgw::link(
 										'/index.php',array(
@@ -346,7 +347,7 @@
 		@abstract ?
 		@author Angles
 		*/
-		function move_down()
+		function move_down($api_mode = False)
 		{
 			// "False" means  return $this->not_set  if no filter number was found anywhere
 			$found_filter_num = $this->obtain_filer_num(False);
@@ -374,7 +375,8 @@
 			$this->all_filters[$found_filter_num+1] = $im_moving_down;
 			$this->all_filters[$found_filter_num] = array();
 			$this->all_filters[$found_filter_num] = $take_my_position;
-			$this->save_all_filters_to_repository();
+			$this->save_all_filters_to_repository($api_mode);
+			if ($api_mode) return True;
 			// redirect user back to filters list page
 			$take_me_to_url = phpgw::link(
 										'/index.php',array(
@@ -536,7 +538,7 @@
 		@abstract Handles POST data from the make or edit filter page. 
 		@author Angles
 		*/
-		function process_submitted_data()
+		function process_submitted_data($api_mode = False)
 		{
 			if ($this->debug_set_prefs > 0) { echo 'bofilters.process_submitted_data('.__LINE__.'): ENTERING<br />'."\r\n"; }
 			if ($this->debug_set_prefs > 2) { echo 'bofilters.process_submitted_data('.__LINE__.'): (pre-buggy apache2 check) ref_POST dump:<pre>'; print_r(\App\modules\email\services\MailMessage::getInstance()->ref_POST); echo '</pre>'."\r\n"; }
@@ -554,8 +556,8 @@
 			$found_filter_num = $this->obtain_filer_num();
 			if ((string)$found_filter_num == $this->not_set)
 			{
-				echo 'bofilters.process_submitted_data('.__LINE__.'): LEAVING with ERROR, unable to obtain POST filter_num';
-				return;
+				if (!$api_mode) echo 'bofilters.process_submitted_data('.__LINE__.'): LEAVING with ERROR, unable to obtain POST filter_num';
+				return False;
 			}
 			if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): $this_filter[filter_num]: ['.$found_filter_num.']<br />'; }
 			
@@ -664,7 +666,8 @@
 			if ($this->debug_set_prefs > 2) { echo 'bofilters.process_submitted_data('.__LINE__.'): $this_filter[] dump <strong><pre>'; print_r($this_filter); echo "</pre></strong>\r\n"; }
 			$this->all_filters[$found_filter_num] = array();
 			$this->all_filters[$found_filter_num] = $this_filter;
-			$this->save_all_filters_to_repository();
+			$this->save_all_filters_to_repository($api_mode);
+			return True;
 		}
 		
 		/*!
@@ -700,7 +703,7 @@
 		@abstract ?
 		@author Angles
 		*/
-		function save_all_filters_to_repository()
+		function save_all_filters_to_repository($api_mode = False)
 		{
 			// KEY SORT so the filters are numbered in acending array index order
 			// SQUASH / COMPACT $this->all_prefs so there are NO GAPS
@@ -829,6 +832,7 @@
 			}
 			// end the email session
 			\App\modules\email\services\MailMessage::getInstance()->end_request();
+			if ($api_mode) return;
 			
 			// redirect user back to filters list page
 			$take_me_to_url = phpgw::link(
@@ -852,7 +856,7 @@
 		@abstract ?
 		@author Angles
 		*/
-		function delete_filter()
+		function delete_filter($api_mode = False)
 		{
 			if ($this->debug_set_prefs > 0) { echo 'bofilters.delete_filter: ENTERING<br />'; }
 			// FILTER NUMBER
@@ -860,15 +864,16 @@
 			
 			if (!$this->filter_exists($filter_num))
 			{
-				echo 'bofilters.delete_filter: LEAVING with ERROR, filter $filter_num ['.serialize($filter_num).'] does not even exist';
-				return;
+				if (!$api_mode) echo 'bofilters.delete_filter: LEAVING with ERROR, filter $filter_num ['.serialize($filter_num).'] does not even exist';
+				return False;
 			}
 			
 			// by now it's ok to unset the target filter
 			$this->all_filters[$filter_num] = array();
 			unset($this->all_filters[$filter_num]);
-			$this->save_all_filters_to_repository();
+			$this->save_all_filters_to_repository($api_mode);
 			if ($this->debug_set_prefs > 0) { echo 'bofilters.delete_filter: LEAVING<br />'; }
+			return True;
 		}
 		
 		
@@ -877,7 +882,7 @@
 		@abstract this appears to be the mail access point to apply filter, single or all, test or apply, this is the function
 		@author Angles
 		*/
-		function do_filter()
+		function do_filter($api_mode = False)
 		{
 			if ($this->debug > 0) { echo 'bofilters.do_filter('.__LINE__.'): ENTERING<br />'; }
 			if (count($this->all_filters) == 0)
@@ -931,9 +936,24 @@
 			$did_expunge = False;
 			$did_expunge = \App\modules\email\services\MailMessage::getInstance()->expunge_expungable_folders('bofilters.do_filter LINE '.__LINE__);
 			if ($this->debug > 1) { echo 'bofilters.do_filter ('.__LINE__.'): $GLOBALS[phpgw]->msg->expunge_expungable_folders() returns ['.serialize($did_expunge).']<br />'; }
+			$report = [];
+			for ($filter_idx = 0; $filter_idx < count($this->all_filters); $filter_idx++)
+			{
+				$this_filter = $this->all_filters[$filter_idx];
+				$targetFolder = [];
+				parse_str((string) ($this_filter['actions'][0]['folder'] ?? ''), $targetFolder);
+				$report[] = [
+					'id' => $filter_idx,
+					'name' => (string) ($this_filter['filtername'] ?? ''),
+					'matchCount' => count($this->each_filter_mball_list[$filter_idx] ?? []),
+					'action' => (string) ($this_filter['actions'][0]['judgement'] ?? ''),
+					'destinationAccount' => (int) ($targetFolder['acctnum'] ?? 0),
+					'destinationFolder' => (string) ($targetFolder['folder'] ?? ''),
+				];
+			}
 			
 			// ok, filters have run, do we have a report to show?
-			if ($this->just_testing())
+			if (!$api_mode && $this->just_testing())
 			{
 				//echo '<html>'.$this->html_matches_table.'</html>';
 				unset($GLOBALS['phpgw_info']['flags']['noheader']);
@@ -944,7 +964,7 @@
 				echo '<p>&nbsp</p>'."\r\n";
 				echo $this->html_matches_table;
 			}
-			else
+			elseif (!$api_mode)
 			{
 				// FIX ME - make a better report
 				unset($GLOBALS['phpgw_info']['flags']['noheader']);
@@ -972,6 +992,11 @@
 			if ($this->debug > 1) { echo 'bofilters.do_filter('.__LINE__.'): calling end_request<br />'; }
 			\App\modules\email\services\MailMessage::getInstance()->end_request();
 			if ($this->debug > 0) { echo 'bofilters.do_filter('.__LINE__.'): LEAVING<br />'; }
+			if ($api_mode)
+			{
+				$matchReport = trim(html_entity_decode(strip_tags(str_ireplace(['<br />', '<br>'], "\n", $this->html_matches_table)), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+				return ['items' => $report, 'matchReport' => $matchReport, 'tested' => $this->just_testing(), 'didExpunge' => (bool) $did_expunge];
+			}
 			$take_me_to_url = phpgw::link(
 										'/index.php',array(
 										//'menuaction'=>'email.uifilters.filters_list'));

@@ -35,6 +35,11 @@
 		
 		function folder()
 		{
+			$query = $_GET;
+			unset($query['menuaction']);
+			phpgw::redirect_link('/email/view/folders', $query);
+			return;
+
 			$this->bo = CreateObject('email.bofolder');
 			$this->bo->folder();
 			

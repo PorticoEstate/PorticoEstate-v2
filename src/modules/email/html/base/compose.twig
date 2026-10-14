@@ -9,6 +9,10 @@
 {% block content %}
 <main class="email-compose" id="email-compose"
 	data-api-url="{{ api_url|e('html_attr') }}"
+	data-attachments-api-url="{{ attachments_api_url|e('html_attr') }}"
+	data-attachment-upload-url="{{ attachment_upload_url|e('html_attr') }}"
+	data-attachment-delete-url="{{ attachment_delete_url|e('html_attr') }}"
+	data-contacts-api-url="{{ contacts_api_url|e('html_attr') }}"
 	data-return-url="{{ return_url|e('html_attr') }}"
 	data-context="{{ context|json_encode|e('html_attr') }}"
 	data-csrf-name="{{ csrf.name|e('html_attr') }}"
@@ -24,14 +28,22 @@
 	<div class="email-compose-status" id="email-compose-status" role="status" aria-live="polite" hidden></div>
 	<form id="email-compose-form" name="doit">
 		<div class="email-compose-recipients">
-			<label>{{ lang('To') }}<input name="to" type="text" autocomplete="email" value="{{ to }}"></label>
-			<label>{{ lang('Cc') }}<input name="cc" type="text" value="{{ cc }}"></label>
-			<label>{{ lang('Bcc') }}<input name="bcc" type="text" value="{{ bcc }}"></label>
+			<label>{{ lang('To') }}<input name="to" type="text" autocomplete="email" value="{{ to }}"><button class="email-compose-button" type="button" data-address-target="to">{{ lang('Address book') }}</button></label>
+			<label>{{ lang('Cc') }}<input name="cc" type="text" value="{{ cc }}"><button class="email-compose-button" type="button" data-address-target="cc">{{ lang('Address book') }}</button></label>
+			<label>{{ lang('Bcc') }}<input name="bcc" type="text" value="{{ bcc }}"><button class="email-compose-button" type="button" data-address-target="bcc">{{ lang('Address book') }}</button></label>
 		</div>
 		<label>{{ lang('Subject') }}<input name="subject" type="text" value="{{ subject }}"></label>
 		<label>{{ lang('Message') }}<textarea name="body" rows="18">{{ body }}</textarea></label>
-		<input type="hidden" name="attached_filenames" value="">
-		<p><a class="email-compose-button" href="{{ attach_url|e }}" target="email-attachments">{{ lang('Attach files') }}</a></p>
+		<section class="email-compose-attachments" aria-labelledby="email-compose-attachments-heading">
+			<h2 id="email-compose-attachments-heading">{{ lang('Attachments') }}</h2>
+			<div class="email-compose-attachment-upload">
+				<label>{{ lang('Choose file') }} <input id="email-compose-file" type="file"></label>
+				<button class="email-compose-button" id="email-compose-upload" type="button">{{ lang('Upload') }}</button>
+				<span>{{ lang('Maximum file size: 25 MiB') }}</span>
+			</div>
+			<div class="email-compose-attachments-status" id="email-compose-attachments-status" role="status" aria-live="polite"></div>
+			<ul class="email-compose-attachment-list" id="email-compose-attachment-list"></ul>
+		</section>
 		<div class="email-compose-options">
 			{% if has_signature %}<label><input name="attach_sig" type="checkbox" {{ attach_signature ? 'checked' }}> {{ lang('Attach signature') }}</label>{% endif %}
 			<label><input name="req_notify" type="checkbox"> {{ lang('Notify on delivery') }}</label>
@@ -41,6 +53,22 @@
 			<a class="email-compose-button" href="{{ return_url|e }}">{{ lang('Cancel') }}</a>
 		</div>
 	</form>
+	<dialog class="email-addressbook" id="email-addressbook-dialog" aria-labelledby="email-addressbook-title">
+		<header><h2 id="email-addressbook-title">{{ lang('Address book') }}</h2><button class="email-compose-button" type="button" id="email-addressbook-close">{{ lang('Close') }}</button></header>
+		<form id="email-addressbook-search">
+			<label>{{ lang('Search') }}<input id="email-addressbook-query" type="search" autocomplete="off"></label>
+			<label>{{ lang('Contact scope') }}
+				<select id="email-addressbook-filter">
+					<option value="none">{{ lang('Global contacts') }}</option>
+					<option value="user_only">{{ lang('My contacts') }}</option>
+					<option value="private">{{ lang('Private contacts') }}</option>
+				</select>
+			</label>
+			<button class="email-compose-button" type="submit">{{ lang('Search') }}</button>
+		</form>
+		<div id="email-addressbook-status" role="status" aria-live="polite"></div>
+		<ul id="email-addressbook-results"></ul>
+	</dialog>
 </main>
 {% endblock %}
 

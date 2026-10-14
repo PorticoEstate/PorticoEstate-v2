@@ -9,19 +9,22 @@
 {% block content %}
 <main class="email-filters" id="email-filters"
 	data-api-url="{{ api_url|e('html_attr') }}"
-	data-new-url="{{ new_url|e('html_attr') }}"
+	data-action-url="{{ action_url|e('html_attr') }}"
 	data-run-url="{{ run_url|e('html_attr') }}"
-	data-test-url="{{ test_url|e('html_attr') }}">
+	data-csrf-name="{{ csrf.name|e('html_attr') }}"
+	data-csrf-value="{{ csrf.value|e('html_attr') }}"
+	data-new-url="{{ new_url|e('html_attr') }}">
 	<header class="email-filters-header">
 		<div><p>{{ lang('E-Mail') }}</p><h1>{{ lang('Filters') }}</h1></div>
 		<nav>
 			<a class="email-filters-button email-filters-button--primary" href="{{ new_url|e }}">{{ lang('New filter') }}</a>
-			<a class="email-filters-button" href="{{ run_url|e }}">{{ lang('Apply all') }}</a>
-			<a class="email-filters-button" href="{{ test_url|e }}">{{ lang('Test all') }}</a>
+			<button class="email-filters-button" type="button" data-filter-run="apply">{{ lang('Apply all') }}</button>
+			<button class="email-filters-button" type="button" data-filter-run="test">{{ lang('Test all') }}</button>
 		</nav>
 	</header>
 	<div class="email-filters-status" id="email-filters-status" role="status" aria-live="polite">{{ lang('Loading filters') }}</div>
 	<div class="email-filters-error" id="email-filters-error" role="alert" hidden></div>
+	<div class="email-filters-report" id="email-filters-report" aria-live="polite" hidden></div>
 	<div class="email-filters-table-wrap">
 		<table class="email-filters-table">
 			<thead><tr><th scope="col">{{ lang('Filter') }}</th><th scope="col">{{ lang('Sources') }}</th><th scope="col">{{ lang('Conditions') }}</th><th scope="col">{{ lang('Actions') }}</th><th scope="col">{{ lang('Manage') }}</th></tr></thead>

@@ -1032,7 +1032,7 @@
 		@author skeeter, Angles
 		@access Public
 		*/
-		function preferences()
+		function preferences($api_mode = False)
 		{
 			if ($this->debug_set_prefs > 0) { $this->msg->dbug->out('email.bopreferences.preferences(): ENTERING<br />'); }
 			// establish all available prefs for email
@@ -1087,6 +1087,7 @@
 				}
 				// end the email session
 				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				if ($api_mode) return True;
 				
 				// redirect user back to main preferences page
 				$take_me_to_url = phpgw::link(
@@ -1418,7 +1419,7 @@
 		@discussion ?
 		@access private
 		*/
-		function ex_accounts_delete($acctnum='')
+		function ex_accounts_delete($acctnum='', $api_mode = False)
 		{
 			if ($this->debug_set_prefs > 0) { $this->msg->dbug->out('email.bopreferences.ex_accounts_delete ENTERING feed acctnum: ['.serialize($acctnum).']<br />'); }
 			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.ex_accounts_delete: $GLOBALS[HTTP_POST_VARS] DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_POST); }
@@ -1478,6 +1479,7 @@
 			{
 				\App\modules\email\services\MailMessage::getInstance()->end_request();
 			}
+			if ($api_mode) return $actually_did_something;
 			// redirect user back to main preferences page
 			if ($this->debug_set_prefs > 2)
 			{
@@ -1501,7 +1503,7 @@
 		@author Angles
 		@access Public
 		*/
-		function ex_accounts_edit($acctnum='')
+		function ex_accounts_edit($acctnum='', $api_mode = False)
 		{
 			if ($this->debug_set_prefs > 0) { $this->msg->dbug->out('email.bopreferences.ex_accounts_edit ENTERING <br />'); }
 			if ($this->debug_set_prefs > 2) { $this->msg->dbug->out('email: bopreferences.ex_accounts_edit: $GLOBALS[HTTP_POST_VARS] DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_POST); }
@@ -1609,6 +1611,7 @@
 			{
 				\App\modules\email\services\MailMessage::getInstance()->end_request();
 			}
+			if ($api_mode) return $actually_did_something;
 			
 			// redirect user back to main preferences page
 			$take_me_to_url = phpgw::link(

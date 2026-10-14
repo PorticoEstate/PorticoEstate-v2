@@ -1,0 +1,67 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Edit Filter') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/filter-edit.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<main class="email-filter-edit" id="email-filter-edit"
+	data-api-url="{{ api_url|e('html_attr') }}"
+	data-folders-api-url="{{ folders_api_url|e('html_attr') }}"
+	data-save-url="{{ save_url|e('html_attr') }}"
+	data-run-url="{{ run_url|e('html_attr') }}"
+	data-csrf-name="{{ csrf.name|e('html_attr') }}"
+	data-csrf-value="{{ csrf.value|e('html_attr') }}"
+	data-filters-url="{{ filters_url|e('html_attr') }}">
+	<header class="email-filter-edit-header">
+		<div><p>{{ lang('E-Mail') }}</p><h1>{{ lang('Filter') }}</h1></div>
+		<a href="{{ filters_url|e }}">{{ lang('Back to filters') }}</a>
+	</header>
+	<div class="email-filter-edit-error" id="email-filter-edit-error" role="alert" hidden></div>
+	<div class="email-filter-edit-report" id="email-filter-edit-report" aria-live="polite" hidden></div>
+	<div class="email-filter-edit-status" id="email-filter-edit-status" role="status" aria-live="polite">{{ lang('Loading filter') }}</div>
+	<form id="email-filter-edit-form" hidden>
+		<label class="email-filter-name">{{ lang('Filter name') }}
+			<input name="name" type="text" maxlength="255" required>
+		</label>
+		<fieldset>
+			<legend>{{ lang('Filter inboxes for accounts') }}</legend>
+			<div class="email-filter-source-accounts" id="email-filter-source-accounts"></div>
+		</fieldset>
+		<fieldset>
+			<legend>{{ lang('If messages match') }}</legend>
+			<div class="email-filter-condition-list" id="email-filter-condition-list"></div>
+		</fieldset>
+		<fieldset>
+			<legend>{{ lang('Then do this') }}</legend>
+			<div class="email-filter-action-grid">
+				<label>{{ lang('Action') }}
+					<select name="judgement"><option value="fileinto">{{ lang('File into') }}</option></select>
+				</label>
+				<label>{{ lang('Account') }}
+					<select name="actionAccount" required></select>
+				</label>
+				<label>{{ lang('Destination folder') }}
+					<select name="actionFolder" required></select>
+				</label>
+				<label>{{ lang('Or enter text') }}
+					<input name="actiontext" type="text" maxlength="255">
+				</label>
+				<label class="email-filter-stop"><input name="stopFiltering" type="checkbox" value="1"> {{ lang('Stop filtering') }}</label>
+			</div>
+		</fieldset>
+		<div class="email-filter-edit-buttons">
+			<button type="submit">{{ lang('Save filter') }}</button>
+			<button type="button" data-filter-run="test">{{ lang('Test saved filter') }}</button>
+			<button type="button" data-filter-run="apply">{{ lang('Apply saved filter') }}</button>
+			<a href="{{ filters_url|e }}">{{ lang('Cancel') }}</a>
+		</div>
+	</form>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/filter-edit.js') }}</script>
+{% endblock %}

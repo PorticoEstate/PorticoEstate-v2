@@ -7,6 +7,7 @@ use App\modules\phpgwapi\helpers\TwigHelper;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Slim\Csrf\Guard;
 
 class EmailInboxViewController
 {
@@ -17,6 +18,22 @@ class EmailInboxViewController
 	{
 		$this->legacyView = new LegacyViewHelper();
 		$this->twig = new TwigHelper('email');
+	}
+
+	private function csrf(Request $request): array
+	{
+		$name = (string) ($request->getAttribute('csrf_name') ?? '');
+		$value = (string) ($request->getAttribute('csrf_value') ?? '');
+		if ($name === '' || $value === '')
+		{
+			$responseFactory = new \Slim\Psr7\Factory\ResponseFactory();
+			$csrfStorage = null;
+			$guard = new Guard($responseFactory, 'csrf', $csrfStorage, null, 200, 16, true);
+			$request = $guard->appendNewTokenToRequest($request);
+			$name = (string) $request->getAttribute('csrf_name');
+			$value = (string) $request->getAttribute('csrf_value');
+		}
+		return ['name' => $name, 'value' => $value];
 	}
 
 	public function index(Request $request, Response $response): Response
@@ -100,6 +117,7 @@ class EmailInboxViewController
 	{
 		$query = $request->getQueryParams();
 		$folderBall = (array) ($query['fldball'] ?? []);
+		$csrf = $this->csrf($request);
 		$apiParameters = [];
 		$backParameters = [];
 		foreach (['acctnum', 'folder'] as $key)
@@ -114,8 +132,10 @@ class EmailInboxViewController
 		$html = $this->twig->render('@views/folders.twig', [
 			'layout' => '@views/_bare.twig',
 			'api_url' => \phpgw::link('/email/api/folders', $apiParameters, true),
+			'action_url' => \phpgw::link('/email/api/folders/action', [], true),
+			'csrf' => $csrf,
+			'account' => (int) ($folderBall['acctnum'] ?? 0),
 			'inbox_url' => \phpgw::link('/email/view/inbox', $backParameters, true),
-			'manage_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uifolder.folder'] + $backParameters, true),
 		]);
 		$response->getBody()->write($this->legacyView->render($html, ['email', 'folders']));
 		return $response->withHeader('Content-Type', 'text/html');

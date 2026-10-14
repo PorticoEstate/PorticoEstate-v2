@@ -41,6 +41,16 @@ class EmailComposeController
 			}
 			return $this->json($response, ['sent' => true]);
 		}
+		catch (\App\modules\email\services\EmailMailConfigurationException $exception)
+		{
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
+			$message = $exception->getMessage();
+			return $this->json($response, ['error' => $message, 'reason' => $message], 422);
+		}
 		catch (\Throwable $exception)
 		{
 			if (\App\modules\email\services\MailMessage::hasInstance() && \App\modules\email\services\MailMessage::hasInstance())

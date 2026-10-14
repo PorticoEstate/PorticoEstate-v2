@@ -168,7 +168,7 @@
 		Squirrelmail <Luke Ehresman> http://www.squirrelmail.org, particularly the 
 		moving, temporary naming, and the ".info" file code. 
 		*/
-		function attach()
+		function attach($api_mode = False)
 		{			
 			if ($this->debug > 0) { echo 'ENTERING emai.boattach_file.attach'.'<br />'; }
 			if ($this->debug > 2) { echo 'emai.boattach_file.attach: initial $GLOBALS[phpgw_info][flags] DUMP<pre>'; print_r($GLOBALS['phpgw_info']['flags']);  echo '</pre>'; }
@@ -180,7 +180,7 @@
 			// that is NOT IMPLEMENTED YET
 			// THIS IS A HACK LINE to remind calling proc to give us a template or something to hold our data
 			// probably should remove this line later on
-			if (isset($this->var_holder) == False)
+			if (!$api_mode && isset($this->var_holder) == False)
 			{
 				echo 'emai.boattach_file.attach ('.__LINE__.'): ERROR: initial $this->var_holder needs to be set by this point in the code <br />';
 			}
@@ -297,6 +297,7 @@
 					. '<br />';
 			}
 
+			$attachments = [];
 			$dh = dir($this->uploaddir);
 
 			while ( false !== ($file = $dh->read() ) )
@@ -321,17 +322,30 @@
 					}
 
 					if ($fup_debug > 2) { echo 'FILE contents DUMP: <pre>'; print_r(file("{$this->uploaddir}/{$real_file}")); echo '</pre>'; } 
-					// for every file, fill the file list template with it
-					$GLOBALS['phpgw']->template->set_var('ckbox_delete_name', 'delete[]');
-					$GLOBALS['phpgw']->template->set_var('ckbox_delete_value', substr($file,0,-5));
-					$GLOBALS['phpgw']->template->set_var('hidden_delete_name', substr($file,0,-5));
-					$GLOBALS['phpgw']->template->set_var('hidden_delete_filename', $file_info[1]);
-					$GLOBALS['phpgw']->template->set_var('ckbox_delete_filename', "{$file_info[1]} ({$real_file_size})");
-					$GLOBALS['phpgw']->template->parse('V_attached_list','B_attached_list',True);
+					$attachments[] = [
+						'id' => $real_file,
+						'name' => trim((string) ($file_info[1] ?? 'attachment')),
+						'mimeType' => trim((string) ($file_info[0] ?? 'application/octet-stream')),
+						'size' => (int) filesize("{$this->uploaddir}/{$real_file}"),
+					];
+					if (!$api_mode)
+					{
+						// for every file, fill the legacy popup template with it
+						$GLOBALS['phpgw']->template->set_var('ckbox_delete_name', 'delete[]');
+						$GLOBALS['phpgw']->template->set_var('ckbox_delete_value', $real_file);
+						$GLOBALS['phpgw']->template->set_var('hidden_delete_name', $real_file);
+						$GLOBALS['phpgw']->template->set_var('hidden_delete_filename', $file_info[1]);
+						$GLOBALS['phpgw']->template->set_var('ckbox_delete_filename', "{$file_info[1]} ({$real_file_size})");
+						$GLOBALS['phpgw']->template->parse('V_attached_list','B_attached_list',True);
+					}
 					$totalfiles++;
 				}
 			}
 			$dh->close();
+			if ($api_mode)
+			{
+				return ['items' => $attachments, 'message' => strip_tags($alert_msg)];
+			}
 			if ($totalfiles == 0)
 			{
 				// there is no list of files, clear that block

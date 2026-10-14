@@ -1,0 +1,37 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Extra E-Mail Accounts') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/email-accounts.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<main class="email-accounts" id="email-accounts"
+	data-api-url="{{ api_url|e('html_attr') }}"
+	data-action-url="{{ action_url|e('html_attr') }}"
+	data-edit-url="{{ edit_url|e('html_attr') }}"
+	data-csrf-name="{{ csrf_name|e('html_attr') }}"
+	data-csrf-value="{{ csrf_value|e('html_attr') }}">
+	<header class="email-accounts-header">
+		<div><p>{{ lang('E-Mail') }}</p><h1>{{ lang('Extra email accounts') }}</h1></div>
+		<nav>
+			<a class="email-accounts-button email-accounts-button--primary" href="{{ new_url|e }}">{{ lang('New account') }}</a>
+			<a href="{{ preferences_url|e }}">{{ lang('Preferences') }}</a>
+			<a href="{{ inbox_url|e }}">{{ lang('Back to inbox') }}</a>
+		</nav>
+	</header>
+	<div class="email-accounts-status" id="email-accounts-status" role="status" aria-live="polite">{{ lang('Loading accounts') }}</div>
+	<div class="email-accounts-error" id="email-accounts-error" role="alert" hidden></div>
+	<div class="email-accounts-table-wrap">
+		<table>
+			<thead><tr><th scope="col">{{ lang('Account') }}</th><th scope="col">{{ lang('Status') }}</th><th scope="col">{{ lang('Actions') }}</th></tr></thead>
+			<tbody id="email-accounts-rows"></tbody>
+		</table>
+	</div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/email-accounts.js') }}</script>
+{% endblock %}

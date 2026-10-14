@@ -203,6 +203,8 @@
 				'do_login'		=> $this->do_login,
 				'do_login_ex'	=> $this->do_login_ex
 			);
+			$isApiRequest = preg_match('~/email/api(?:/|$)~', (string) ($_SERVER['REQUEST_URI'] ?? '')) === 1;
+			$args_array['api_request'] = $isApiRequest;
 			
 			// "start your engines"
 			if ($this->debug_level > 1) { echo 'msg_bootstrap: ensure_mail_msg_exists: (called_by: '.$called_by.'): call msg->begin_request with args array:<pre>'; print_r($args_array); echo '</pre>'; }
@@ -210,6 +212,12 @@
 			// error if login failed
 			if (  $args_array['do_login']  && !$some_stream )
 			{
+				if ($isApiRequest)
+				{
+					throw new \App\modules\email\services\EmailMailConfigurationException(
+						lang('Configure your email account username and password before using email.')
+					);
+				}
 				$mail->login_error($_SERVER['PHP_SELF'].', msg_bootstrap: ensure_mail_msg_exists(), called_by: '.$called_by);
 			}
 			// login error will halt this script execution

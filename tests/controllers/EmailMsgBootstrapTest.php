@@ -1,5 +1,16 @@
 <?php
 
+namespace
+{
+	if (!function_exists('lang'))
+	{
+		function lang(string $message): string
+		{
+			return $message;
+		}
+	}
+}
+
 namespace Tests\Controllers
 {
 	require_once __DIR__ . '/../../vendor/autoload.php';
@@ -15,6 +26,7 @@ namespace Tests\Controllers
 	class MailMessageTestDouble extends \mail_msg
 	{
 		public static bool $failInitialization = false;
+		public static bool $failRequest = false;
 		public int $initializations = 0;
 		public int $closures = 0;
 		public bool $wrapperReadyDuringInitialization = false;
@@ -40,7 +52,7 @@ namespace Tests\Controllers
 		public function begin_request($args_array)
 		{
 			$this->requests[] = $args_array;
-			return true;
+			return self::$failRequest ? false : true;
 		}
 	}
 
@@ -225,6 +237,7 @@ namespace Tests\Controllers
 		protected function tearDown(): void
 		{
 			MailMessageTestDouble::$failInitialization = false;
+			MailMessageTestDouble::$failRequest = false;
 			MailMessage::releaseInstance();
 			$property = new \ReflectionProperty(Settings::class, 'instance');
 			$property->setAccessible(true);
@@ -313,8 +326,35 @@ namespace Tests\Controllers
 			$bootstrap->set_do_login(false);
 			$bootstrap->ensure_mail_msg_exists('unit-test');
 			$bootstrap->ensure_mail_msg_exists('unit-test');
-			$this->assertSame([['do_login' => false, 'do_login_ex' => \email_msg_bootstrap::LOGIN_NEVER]], $mail->requests);
+			$this->assertSame([['do_login' => false, 'do_login_ex' => \email_msg_bootstrap::LOGIN_NEVER, 'api_request' => false]], $mail->requests);
 			$this->assertSame(1, $mail->initializations);
+		}
+
+		public function testApiMissingCredentialsBecomeStructuredConfigurationException(): void
+		{
+			$originalRequestUri = $_SERVER['REQUEST_URI'] ?? null;
+			$_SERVER['REQUEST_URI'] = '/portico/email/api/search';
+			$mail = $this->mailDouble();
+			MailMessageTestDouble::$failRequest = true;
+			try
+			{
+				$bootstrap = new \email_msg_bootstrap();
+				try
+				{
+					$bootstrap->ensure_mail_msg_exists('email.api.search');
+					$this->fail('The API bootstrap should report missing email credentials');
+				}
+				catch (\App\modules\email\services\EmailMailConfigurationException $exception)
+				{
+					$this->assertStringContainsString('username and password', $exception->getMessage());
+				}
+				$this->assertTrue($mail->requests[0]['api_request']);
+			}
+			finally
+			{
+				if ($originalRequestUri === null) unset($_SERVER['REQUEST_URI']);
+				else $_SERVER['REQUEST_URI'] = $originalRequestUri;
+			}
 		}
 
 		public function testBodyFetchUsesTheOwnedAccountTransport(): void

@@ -64,7 +64,12 @@
 		@author Angles
 		*/
 		function filters_edit()
-		{			
+		{
+			$query = $_GET;
+			unset($query['menuaction']);
+			phpgw::redirect_link('/email/view/filter', $query);
+			return;
+
 			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// we point to the global template for this version of phpgw templatings

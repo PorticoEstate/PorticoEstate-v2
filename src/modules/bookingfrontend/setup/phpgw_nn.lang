@@ -1164,3 +1164,4 @@ allocation_price_kept_locked	bookingfrontend	nn	Pris ikkje rekna om: prisen er s
 allocation_price_master_order	bookingfrontend	nn	Pris ikkje rekna om: hovudordren til søknaden.
 allocation_price_not_recalculated	bookingfrontend	nn	Pris ikkje rekna om: saksbehandlar kontrollerer prisen.
 allocation_cost_recalculated_after_shortening	bookingfrontend	nn	Pris rekna om etter forkorting (%1). Pris låst etter forkorting.
+allocation_price_off_rule	bookingfrontend	nn	Pris ikkje rekna om: saksbehandlar har endra tida utan å rekne om prisen.

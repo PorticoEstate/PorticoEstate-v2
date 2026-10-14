@@ -1164,3 +1164,4 @@ allocation_price_kept_locked	bookingfrontend	en	Price not recalculated: the pric
 allocation_price_master_order	bookingfrontend	en	Price not recalculated: the application's main order.
 allocation_price_not_recalculated	bookingfrontend	en	Price not recalculated: the case officer checks the price.
 allocation_cost_recalculated_after_shortening	bookingfrontend	en	Price recalculated after shortening (%1). Price locked after shortening.
+allocation_price_off_rule	bookingfrontend	en	Price not recalculated: the case officer changed the time without recalculating the price.

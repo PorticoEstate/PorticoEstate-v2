@@ -243,14 +243,17 @@ class AllocationTimeChangeService
 	 * still follows that rule for the old time, each gets the quantity for the
 	 * new time, amount = unit_price × quantity and tax = amount × the tax code's
 	 * percent, as the order writers compute them; the unit price and the other
-	 * lines keep theirs. All or nothing: one hour line off the rule - a quantity
-	 * the case officer set by hand - and the order is not touched.
+	 * lines keep theirs. All or nothing: one hour line off the rule and the order
+	 * is not touched. In practice such a line belongs to a time the case officer
+	 * changed without recalculating the price: "Godta endring" moves the time and
+	 * keeps the lines (ApplicationChangeRequestService), and his allocation form
+	 * does not offer the quantity of the line priced per hour.
 	 *
 	 * The rule, not price_locked, decides: a locked price is recalculated too when
 	 * its hour lines still follow the time. price_locked cannot tell a price the
 	 * case officer typed from one an earlier shortening locked, and a unit price
-	 * the officer typed survives the recalculation anyway, so only a quantity he
-	 * changed has to stop it.
+	 * the officer typed survives the recalculation anyway, so only a quantity that
+	 * no longer follows the time has to stop it.
 	 *
 	 * Not recalculated - the price stays, and the comment says why - when an hour
 	 * line is off the rule, when there is no order or more than one, when the
@@ -300,8 +303,7 @@ class AllocationTimeChangeService
 		$hourLines = array_filter($this->repository->fetchOrderLines($orderId), fn(array $line) => $line['unit'] === 'hour');
 		foreach ($hourLines as $line) {
 			if (abs((float) $line['quantity'] - $oldQuantity) >= 0.005) {
-				// A quantity off the rule was set by hand, and the text says so
-				return $kept('not_recalculated', 'off_rule', 'bookingfrontend.allocation_price_kept_locked');
+				return $kept('not_recalculated', 'off_rule', 'bookingfrontend.allocation_price_off_rule');
 			}
 		}
 		if (!$hourLines || $newQuantity === $oldQuantity) {

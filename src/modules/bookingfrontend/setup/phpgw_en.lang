@@ -1174,3 +1174,4 @@ occurrence_awaiting	bookingfrontend	en	Awaiting processing
 occurrence_allocated	bookingfrontend	en	Allocated
 occurrence_withdrawn	bookingfrontend	en	Withdrawn
 occurrence_not_allocated	bookingfrontend	en	Not allocated
+occurrence_outside_series	bookingfrontend	en	Outside the series

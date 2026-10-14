@@ -1175,3 +1175,4 @@ occurrence_awaiting	bookingfrontend	no	Venter på saksbehandling
 occurrence_allocated	bookingfrontend	no	Tildelt
 occurrence_withdrawn	bookingfrontend	no	Trukket
 occurrence_not_allocated	bookingfrontend	no	Ikke tildelt
+occurrence_outside_series	bookingfrontend	no	Utenfor serien

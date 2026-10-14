@@ -12,6 +12,7 @@ use App\modules\booking\models\Document;
 use App\modules\bookingfrontend\repositories\ApplicationRepository;
 use App\modules\bookingfrontend\repositories\ArticleRepository;
 use App\modules\bookingfrontend\services\applications\ApplicationService;
+use App\modules\bookingfrontend\services\applications\RecurringSeriesService;
 use App\modules\bookingfrontend\services\FreeTimeService;
 use App\modules\phpgwapi\security\Sessions;
 use App\modules\phpgwapi\services\Log;
@@ -21,6 +22,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\WebSocket\Services\RedisService;
 use Exception;
+use RuntimeException;
 use OpenApi\Annotations as OA;
 
 /**
@@ -251,6 +253,95 @@ class ApplicationController extends DocumentController
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => "Error retrieving application: " . $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/applications/{id}/recurring-series",
+     *     summary="Get every occurrence of a recurring application, with its status",
+     *     description="The case officer's recurring preview as the applicant may see it: each occurrence, whether a time is allocated for it, and the application's own elements placed on it. Same access as the application itself.",
+     *     tags={"Applications"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID of the recurring application",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="secret",
+     *         in="query",
+     *         required=false,
+     *         description="Secret key that can be used to access the application without authentication",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="The series",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="application_id", type="integer"),
+     *             @OA\Property(property="interval_weeks", type="integer"),
+     *             @OA\Property(property="occurrences", type="array", @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(property="from_", type="string", format="date-time"),
+     *                 @OA\Property(property="to_", type="string", format="date-time"),
+     *                 @OA\Property(property="status", type="string", enum={"allocated", "rejected", "cancelled", "withdrawn", "not_allocated", "awaiting"}),
+     *                 @OA\Property(property="elements", type="array", @OA\Items(ref="#/components/schemas/RecurringSeriesElement"))
+     *             )),
+     *             @OA\Property(property="outside_series", type="array", @OA\Items(ref="#/components/schemas/RecurringSeriesElement"))
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="The application is not recurring, or has no date"),
+     *     @OA\Response(response=403, description="Unauthorized to view this application"),
+     *     @OA\Response(response=404, description="Application not found")
+     * )
+     * @OA\Schema(
+     *     schema="RecurringSeriesElement",
+     *     type="object",
+     *     @OA\Property(property="type", type="string", enum={"allocation", "event", "booking"}),
+     *     @OA\Property(property="id", type="integer"),
+     *     @OA\Property(property="active", type="boolean"),
+     *     @OA\Property(property="from_", type="string", format="date-time", nullable=true),
+     *     @OA\Property(property="to_", type="string", format="date-time", nullable=true)
+     * )
+     */
+    public function getRecurringSeries(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $id = (int)$args['id'];
+
+            $application = $this->applicationService->getApplicationById($id);
+            if (!$application) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Application not found'],
+                    404
+                );
+            }
+
+            // The guard of the application itself (getApplicationById), before anything about
+            // the series is computed: the owner, a delegate of the owning organization, or the
+            // application's secret.
+            if (!$this->applicationHelper->canViewApplication($application, $request)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Unauthorized to view this application'],
+                    403
+                );
+            }
+
+            $series = (new RecurringSeriesService())->getSeries($id, (string)$application['status']);
+            return ResponseHelper::sendJSONResponse($series);
+
+        } catch (RuntimeException $e) {
+            // The recurring preview's own refusals: not recurring or no date (400), gone (404).
+            $code = in_array($e->getCode(), [400, 404], true) ? $e->getCode() : 500;
+            return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], $code);
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => "Error retrieving recurring series: " . $e->getMessage()],
                 500
             );
         }

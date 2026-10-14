@@ -134,6 +134,9 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('/articles', ApplicationController::class . ':getArticlesByResources');
 		$group->get('/{id}', ApplicationController::class . ':getApplicationById');
 		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getApplicationSchedule');
+		// Every occurrence of a recurring application, for Min side (GH #1392). Guarded like
+		// GET /{id} itself, unlike /{id}/schedule above.
+		$group->get('/{id}/recurring-series', ApplicationController::class . ':getRecurringSeries');
 		$group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
 
 		// Comments endpoints

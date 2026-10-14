@@ -1168,3 +1168,9 @@ allocation_price_master_order	bookingfrontend	nn	Pris ikkje rekna om: hovudordre
 allocation_price_not_recalculated	bookingfrontend	nn	Pris ikkje rekna om: saksbehandlar kontrollerer prisen.
 allocation_cost_recalculated_after_shortening	bookingfrontend	nn	Pris rekna om etter forkorting (%1). Pris låst etter forkorting.
 allocation_price_off_rule	bookingfrontend	nn	Pris ikkje rekna om: saksbehandlar har endra tida utan å rekne om prisen.
+
+repeating	bookingfrontend	nn	Gjentakande
+occurrence_awaiting	bookingfrontend	nn	Ventar på sakshandsaming
+occurrence_allocated	bookingfrontend	nn	Tildelt
+occurrence_withdrawn	bookingfrontend	nn	Trekt
+occurrence_not_allocated	bookingfrontend	nn	Ikkje tildelt

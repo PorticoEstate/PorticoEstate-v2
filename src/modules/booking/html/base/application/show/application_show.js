@@ -108,6 +108,139 @@
 		return label;
 	}
 
+	function isAssocActive(a) {
+		return a.active === 1 || a.active === '1';
+	}
+
+	// Ids are only unique per type, so an element is identified by both.
+	function assocRef(a) {
+		return a.type + ':' + a.id;
+	}
+
+	// Same target as the legacy associations list (class.uiapplication.inc.php).
+	function assocEditUrl(a) {
+		return '/?menuaction=booking.ui' + encodeURIComponent(a.type) + '.edit&id=' + encodeURIComponent(a.id);
+	}
+
+	// "2026-10-22T09:00:00+02:00" or "2026-10-22 09:00:00" → "2026-10-22 09:00".
+	// The dates API sends ISO 8601, associations and the recurring preview raw
+	// PG timestamps; both are local time.
+	function minuteKey(s) {
+		return String(s || '').substring(0, 16).replace('T', ' ');
+	}
+
+	// An element's own time when it differs from the slot (date row or
+	// occurrence) it is placed on, e.g. after its time was changed: "12:00–13:30",
+	// with the date in front when the day differs too. Empty when it matches.
+	function assocTimeText(a, slot) {
+		if (!slot || !a.from_ || !a.to_) return '';
+		var from = minuteKey(a.from_), to = minuteKey(a.to_);
+		if (from === minuteKey(slot.from_) && to === minuteKey(slot.to_)) return '';
+		var day = from.substring(0, 10) === minuteKey(slot.from_).substring(0, 10)
+			? '' : from.substring(0, 10).split('-').reverse().slice(0, 2).join('.') + ' ';
+		return day + from.substring(11) + '–' + to.substring(11);
+	}
+
+	// What a slot collides with, from collision details ({type, name}):
+	// "allocation (Bølleball forening), event (…)".
+	function conflictText(details) {
+		return (details || []).map(function (c) {
+			return c.type + (c.name ? ' (' + c.name + ')' : '');
+		}).join(', ');
+	}
+
+	// Status cell: each linked element (allocation/booking/event) as a tag linking
+	// to its edit page, one line per element. Its time when it differs from the
+	// slot it sits on (assocTimeText), the cost only when there is one, and
+	// "Inaktiv" only for a deactivated element. The link sits inside the tag: an
+	// <a class="ds-tag"> loses the tag background to the unlayered a-rule in
+	// pure-min.css.
+	function assocTagsHtml(elements, slot) {
+		return elements.map(function (a) {
+			var html = '<div class="app-show__tags-row">' +
+				'<span class="booking-tag ds-tag" data-color="neutral"><a class="booking-link ds-link" href="' + esc(assocEditUrl(a)) + '">' + esc(enumLabel(a.type)) + ' #' + esc(a.id) + '</a></span>';
+			var time = assocTimeText(a, slot);
+			if (time) {
+				html += '<span class="booking-tag ds-tag" data-color="neutral">' + esc(time) + '</span>';
+			}
+			if (a.cost != null && a.cost !== '' && Number(a.cost) !== 0) {
+				html += '<span class="booking-tag ds-tag" data-color="neutral">' + esc(lang('cost')) + ': ' + Number(a.cost).toFixed(2) + '</span>';
+			}
+			if (!isAssocActive(a)) {
+				html += '<span class="booking-tag ds-tag" data-color="warning">' + esc(lang('inactive')) + '</span>';
+			}
+			return html + '</div>';
+		}).join('');
+	}
+
+	// Handling cell for a row's elements, built like the create split (createSplitHtml):
+	// "Endre" plus a caret menu holding the delete/activate item the delegated
+	// handlers in renderDetails act on. Only the case officer gets that menu; anyone
+	// else gets the plain edit button. Several elements share one menu button with
+	// an entry per element. The menu carries data-booking-role="dropdown" so the
+	// toolbar's placePopover anchors it under its button: a bare ds-dropdown sits
+	// at the top of the document, out of view once the page is scrolled. Popover
+	// ids only need to be unique on the page, and a counter stays unique when a
+	// date row is re-rendered in place.
+	var assocMenuSeq = 0;
+	function assocActionsHtml(elements, isCO) {
+		if (!elements.length) return '';
+		var menuId = 'assocmenu-' + (++assocMenuSeq);
+		// Icons as in the Handlinger menu: this page colours a menu item's icon, not
+		// its text, by data-color.
+		function toggleItem(a, suffix) {
+			var active = isAssocActive(a);
+			return '<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="' + (active ? 'delete-association' : 'activate-association') + '"' +
+				' data-color="' + (active ? 'danger' : 'success') + '" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' +
+				(active ? ICONS.xCircle : ICONS.checkCircle) + '<span>' + esc(lang(active ? 'delete' : 'activate') + suffix) + '</span></button></li>';
+		}
+		function menu(listsHtml) {
+			return '<div class="booking-dropdown ds-dropdown app-show__menu app-show__split-menu" data-booking-role="dropdown" popover id="' + menuId + '">' + listsHtml + '</div>';
+		}
+		if (elements.length === 1) {
+			var a = elements[0];
+			var edit = '<a class="booking-button ds-button" data-variant="secondary" data-color="accent" data-size="sm" href="' + esc(assocEditUrl(a)) + '">' + esc(lang('edit')) + '</a>';
+			if (!isCO) return edit;
+			return '<div class="app-show__split">' + edit +
+				'<button type="button" class="booking-button ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '" aria-label="' + esc(lang('actions')) + '">' + ICONS.chevron + '</button>' +
+				menu('<ul>' + toggleItem(a, '') + '</ul>') + '</div>';
+		}
+		var lists = elements.map(function (a) {
+			var suffix = ' #' + a.id;
+			return '<ul><li><a class="booking-dropdown__item ds-dropdown__item" href="' + esc(assocEditUrl(a)) + '">' + ICONS.edit + '<span>' + esc(lang('edit') + suffix) + '</span></a></li>' +
+				(isCO ? toggleItem(a, suffix) : '') + '</ul>';
+		});
+		return '<button type="button" class="booking-button ds-button app-show__menu-trigger" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '">' + esc(lang('edit')) + ICONS.chevron + '</button>' +
+			menu(lists.join('<hr class="app-show__menu-sep">'));
+	}
+
+	// Elements that neither a date row nor the recurring table shows. placed holds
+	// the assocRef of every element already rendered elsewhere on the page, so
+	// nothing linked to the application drops out of view.
+	function renderOtherAssociations(app, data, placed) {
+		var el = document.getElementById('other-associations-section');
+		if (!el) return;
+		var isCO = app.toolbar && app.toolbar.case_officer_is_current_user;
+		var isCombined = app.related_application_count > 1;
+		var others = (data.associations || []).filter(function (a) {
+			return !placed[assocRef(a)];
+		});
+		if (!others.length) {
+			el.innerHTML = '';
+			return;
+		}
+		var html = '<table class="booking-table ds-table" data-size="sm" data-zebra><thead><tr>';
+		if (isCombined) html += '<th>' + lang('application') + '</th>';
+		html += '<th>' + lang('from') + '</th><th>' + lang('to') + '</th><th>' + lang('status') + '</th><th>' + lang('handling') + '</th></tr></thead><tbody>';
+		others.forEach(function (a) {
+			html += '<tr>';
+			if (isCombined) html += '<td>#' + esc(a.application_id) + '</td>';
+			html += '<td>' + fmtDate(a.from_) + '</td><td>' + fmtDate(a.to_) + '</td><td>' + assocTagsHtml([a]) + '</td><td>' + assocActionsHtml([a], isCO) + '</td></tr>';
+		});
+		html += '</tbody></table>';
+		el.innerHTML = section(lang('otherAssociatedItems'), html, { icon: ICONS.link });
+	}
+
 	// A titled card. opts.icon = ICONS key/svg, opts.aside = right-aligned header html.
 	function section(title, bodyHtml, opts) {
 		opts = opts || {};
@@ -409,7 +542,10 @@
 
 		var decisionGroup = [];
 		if (tb.show_accept) {
-			if (tb.num_associations === 0) {
+			// Gate on this application's OWN associations, not the group sum in
+			// num_associations: the accept endpoint refuses a row that has none of
+			// its own, even when a combined sibling has some.
+			if (tb.num_own_associations === 0) {
 				decisionGroup.push(menuItem(lang('acceptRequiresAssociations'), { disabled: true, color: 'success', icon: icons.checkCircle }));
 			} else if (tb.hospitality_orders_pending > 0) {
 				// Same gate, second reason: every hospitality order must have been
@@ -798,84 +934,100 @@
 		var isRecurring = !!app.recurring_data;
 		var dates = data.dates || [];
 
-		// Build association lookup: normalised from_ → true
-		// Dates API returns ISO 8601 ("2026-02-19T19:30:00+01:00"),
-		// associations come as raw PG timestamps ("2026-02-19 19:30:00").
-		// Strip timezone and separators to get a canonical "YYYY-MM-DDTHH:MM:SS" key.
+		// Dates API returns ISO 8601 ("2026-02-19T19:30:00+01:00"); strip the
+		// timezone to a canonical "YYYY-MM-DDTHH:MM:SS".
 		function normDate(s) {
 			if (!s) return '';
 			// Take only the first 19 chars ("2026-02-19T19:30:00" or "2026-02-19 19:30:00")
 			// and normalise the separator to 'T'.
 			return s.substring(0, 19).replace(' ', 'T');
 		}
-		var assocFromSet = {};
-		(data.associations || []).forEach(function (a) {
-			var key = normDate(a.from_);
-			if (key) assocFromSet[key] = true;
-		});
 
 		// Build params map for each date (for the create dropdown)
 		var dateParamsMap = {};
+		var datesById = {};
+		// assocRef of every element a date row shows; the rest go to "Andre elementer".
+		var placedAssocs = {};
 
-		// Allocations are org-level grants: an individual/SSN application has no
-		// organisation, so the Allocation option is hidden for those (booking/event
-		// only). Booking/event remain available to individuals.
+		// Allocations and bookings belong to an organisation. An individual/SSN
+		// application has none to create them for, so for those two the officer
+		// picks one in the create modal; organisation applications create them in
+		// one click.
 		var hasOrg = !!(app.customer_organization_id || app.customer_organization_number);
+
+		// Split button — primary "Lag arrangement" + caret dropdown for the rest.
+		function createSplitHtml(d) {
+			if (!isCO) {
+				return '<div class="app-show__split">' +
+					'<button type="button" class="booking-button ds-button" data-variant="primary" data-color="accent" data-size="sm" disabled>' + esc(lang('createEvent')) + '</button>' +
+					'<button type="button" class="booking-button ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" disabled aria-label="' + esc(lang('dateActions')) + '">' + ICONS.chevron + '</button>' +
+					'</div>';
+			}
+			var menuId = 'datemenu-' + d.id;
+			return '<div class="app-show__split">' +
+				'<button type="button" class="booking-button ds-button" data-variant="primary" data-color="accent" data-size="sm" data-booking-action="create-date" data-create="event" data-date-id="' + d.id + '">' + esc(lang('createEvent')) + '</button>' +
+				'<button type="button" class="booking-button ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '" aria-label="' + esc(lang('dateActions')) + '">' + ICONS.chevron + '</button>' +
+				'<div class="booking-dropdown ds-dropdown app-show__menu app-show__split-menu" data-booking-role="dropdown" popover id="' + menuId + '"><ul>' +
+				'<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="create-date" data-create="allocation" data-date-id="' + d.id + '"><span>' + esc(lang('createAllocation')) + '</span></button></li>' +
+				'<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="create-date" data-create="booking" data-date-id="' + d.id + '"><span>' + esc(lang('createBooking')) + '</span></button></li>' +
+				// Reject only this sub-application (combined carts) — siblings stay open.
+				(isCombined ? '<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="reject-application" data-color="danger" data-reject-app="' + esc(d.application_id) + '"><span>' + esc(lang('rejectApplication')) + '</span></button></li>' : '') +
+				'</ul></div></div>';
+		}
+
+		// The <td>s of one date row. The server places the row's own elements on it
+		// (d.associations), also after their time was changed. A row counts as
+		// created once it has an element of its own, active or not: delete only
+		// deactivates, and accepting the application reactivates every element
+		// linked to it, so a replacement created next to an inactive element would
+		// end up double-booked. The inactive element stays inline with its activate
+		// button instead. A collision is one with anything but the row's own
+		// elements (d.collision_foreign), so it shows next to them too.
+		function dateRowCells(d) {
+			var elements = d.associations || [];
+			elements.forEach(function (a) { placedAssocs[assocRef(a)] = true; });
+			var hasAssoc = elements.length > 0;
+			var collisionTag = '';
+			if (d.collision_foreign) {
+				collisionTag = '<span class="booking-tag ds-tag" data-color="danger">' + lang('collision') + '</span>';
+				var conflict = conflictText(d.collision_foreign_details);
+				if (conflict) collisionTag += ' <span class="app-show__conflict-text">' + esc(conflict) + '</span>';
+			}
+			if (hasAssoc) {
+				collisionTag += assocTagsHtml(elements, d);
+			} else if (!d.collision_foreign) {
+				collisionTag = '<span class="booking-tag ds-tag" data-color="success">' + lang('noCollision') + '</span>';
+			}
+
+			// Schedule link: show on collision + case officer
+			var scheduleIcon = '';
+			if (isCO && d.collision_foreign) {
+				scheduleIcon = ' <a href="javascript:void(0)" class="app-show__schedule-link" data-booking-action="open-schedule" data-schedule-date="' + esc(d.from_) + '" title="' + lang('schedule') + '">' +
+					'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
+					'</a>';
+			}
+
+			// Build params for this date — extract flat agegroups for combined apps
+			var flatAgegroups = rawAgegroups.combined
+				? ((rawAgegroups.per_app || [])[0] || {}).agegroups || []
+				: rawAgegroups || [];
+			dateParamsMap[d.id] = buildDateParams(app, d, flatAgegroups, data.audience || {});
+
+			// Action: the row's own elements, or the create split when it has none.
+			var actionHtml = hasAssoc ? assocActionsHtml(elements, isCO) : createSplitHtml(d);
+
+			var cells = '';
+			if (isCombined) cells += '<td>#' + esc(d.application_id) + '</td>';
+			return cells + '<td>' + fmtDate(d.from_) + '</td><td>' + fmtDate(d.to_) + '</td><td>' + esc(d.resource_names) + '</td><td>' + collisionTag + scheduleIcon + '</td><td>' + actionHtml + '</td>';
+		}
 
 		if (dates.length > 0 && !isRecurring) {
 			var datesHtml = '<table class="booking-table ds-table" data-size="sm" data-zebra id="dates-table"><thead><tr>';
 			if (isCombined) datesHtml += '<th>' + lang('application') + '</th>';
 			datesHtml += '<th>' + lang('from') + '</th><th>' + lang('to') + '</th><th>' + lang('resources') + '</th><th>' + lang('status') + '</th><th>' + lang('handling') + '</th></tr></thead><tbody>';
 			dates.forEach(function (d) {
-				var hasAssoc = !!assocFromSet[normDate(d.from_)];
-				var collisionTag;
-				if (hasAssoc) {
-					collisionTag = '<span class="booking-tag ds-tag" data-color="neutral">' + lang('dateCreated') + '</span>';
-				} else if (d.collision) {
-					collisionTag = '<span class="booking-tag ds-tag" data-color="danger">' + lang('collision') + '</span>';
-				} else {
-					collisionTag = '<span class="booking-tag ds-tag" data-color="success">' + lang('noCollision') + '</span>';
-				}
-
-				// Schedule link: show on collision + case officer + no association
-				var scheduleIcon = '';
-				if (isCO && d.collision && !hasAssoc) {
-					scheduleIcon = ' <a href="javascript:void(0)" class="app-show__schedule-link" data-booking-action="open-schedule" data-schedule-date="' + esc(d.from_) + '" title="' + lang('schedule') + '">' +
-						'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
-						'</a>';
-				}
-
-				// Build params for this date — extract flat agegroups for combined apps
-				var flatAgegroups = rawAgegroups.combined
-					? ((rawAgegroups.per_app || [])[0] || {}).agegroups || []
-					: rawAgegroups || [];
-				dateParamsMap[d.id] = buildDateParams(app, d, flatAgegroups, data.audience || {});
-
-				// Action: split button — primary "Lag arrangement" + caret dropdown for the rest
-				var actionHtml;
-				if (hasAssoc) {
-					actionHtml = '<span class="booking-tag ds-tag" data-color="neutral">' + lang('dateCreated') + '</span>';
-				} else if (!isCO) {
-					actionHtml = '<div class="app-show__split">' +
-						'<button type="button" class="booking-button ds-button" data-variant="primary" data-color="accent" data-size="sm" disabled>' + esc(lang('createEvent')) + '</button>' +
-						'<button type="button" class="booking-button ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" disabled aria-label="' + esc(lang('dateActions')) + '">' + ICONS.chevron + '</button>' +
-						'</div>';
-				} else {
-					var menuId = 'datemenu-' + d.id;
-					actionHtml = '<div class="app-show__split">' +
-						'<button type="button" class="booking-button ds-button" data-variant="primary" data-color="accent" data-size="sm" data-booking-action="create-date" data-create="event" data-date-id="' + d.id + '">' + esc(lang('createEvent')) + '</button>' +
-						'<button type="button" class="booking-button ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '" aria-label="' + esc(lang('dateActions')) + '">' + ICONS.chevron + '</button>' +
-						'<div class="booking-dropdown ds-dropdown app-show__menu app-show__split-menu" popover id="' + menuId + '"><ul>' +
-						(hasOrg ? '<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="create-date" data-create="allocation" data-date-id="' + d.id + '"><span>' + esc(lang('createAllocation')) + '</span></button></li>' : '') +
-						'<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="create-date" data-create="booking" data-date-id="' + d.id + '"><span>' + esc(lang('createBooking')) + '</span></button></li>' +
-						// Reject only this sub-application (combined carts) — siblings stay open.
-						(isCombined ? '<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="reject-application" data-color="danger" data-reject-app="' + esc(d.application_id) + '"><span>' + esc(lang('rejectApplication')) + '</span></button></li>' : '') +
-						'</ul></div></div>';
-				}
-
-				datesHtml += '<tr>';
-				if (isCombined) datesHtml += '<td>#' + esc(d.application_id) + '</td>';
-				datesHtml += '<td>' + fmtDate(d.from_) + '</td><td>' + fmtDate(d.to_) + '</td><td>' + esc(d.resource_names) + '</td><td>' + collisionTag + scheduleIcon + '</td><td>' + actionHtml + '</td></tr>';
+				datesById[d.id] = d;
+				datesHtml += '<tr data-date-id="' + esc(d.id) + '">' + dateRowCells(d) + '</tr>';
 			});
 			datesHtml += '</tbody></table>';
 			html += section(lang('dates'), datesHtml, { icon: ICONS.calendar });
@@ -967,6 +1119,25 @@
 			clearConflict(cell);
 			clearGroupPicker(cell);
 			refreshToolbar(app);
+			refreshDateRow(cell);
+		}
+
+		// Re-render a date row from freshly fetched dates (which carry the row's
+		// elements), so an element created in-page shows inline with its delete
+		// button without a reload. If the fetch fails the row keeps the ✓ + Edit
+		// link left above.
+		function refreshDateRow(cell) {
+			var tr = cell && cell.closest('tr[data-date-id]');
+			var d = tr && datesById[tr.dataset.dateId];
+			if (!d) return;
+			fetchJson(apiUrl + '/dates').then(function (freshDates) {
+				var fresh = (freshDates || []).filter(function (x) { return String(x.id) === String(d.id); })[0];
+				if (!fresh) return;
+				datesById[fresh.id] = fresh;
+				tr.innerHTML = dateRowCells(fresh);
+			}).catch(function () {
+				// Non-fatal: the ✓ + Edit link still leads to the element.
+			});
 		}
 
 		// Inline group picker for multi-group-org bookings. The booking create
@@ -1027,6 +1198,270 @@
 			});
 		}
 
+		// Create modal for an applicant without an organisation. It recreates the
+		// legacy allocation/booking form (organisation search, group, season,
+		// time, resources, price) and creates through the REST layer only. The
+		// building, activity, audience and agegroups come from the application
+		// server-side, so the modal does not send them.
+		function showCreateModal(kind, d) {
+			if (!d) return;
+			var isBooking = kind === 'booking';
+			// In a combined cart the date belongs to its own sub-application.
+			var appUrl = apiUrl.replace(/\/\d+$/, '/' + d.application_id);
+			var restRoot = apiUrl.replace(/\/applications\/\d+.*$/, '');
+			var dateResources = (d.resources || []).map(String);
+
+			function modalField(id, label, controlHtml, description) {
+				return '<div class="booking-field ds-field" data-size="sm">' +
+					'<label class="booking-label ds-label" for="' + id + '">' + esc(label) + '</label>' +
+					(description ? '<div data-field="description">' + esc(description) + '</div>' : '') +
+					controlHtml + '</div>';
+			}
+
+			// "2030-10-14T10:00:00+02:00" → the datetime-local value "2030-10-14T10:00"
+			function localValue(iso) {
+				return normDate(iso).substring(0, 16);
+			}
+
+			function dayLabel(ymd) {
+				return String(ymd || '').substring(0, 10).split('-').reverse().join('.');
+			}
+
+			var body = '<div class="app-show__create-form">' +
+				'<div class="booking-alert ds-alert" data-color="danger" role="alert" data-create-errors hidden></div>' +
+				'<p class="booking-paragraph ds-paragraph" data-size="sm">' + esc(lang('building')) + ': ' + esc(app.building_name) +
+					(isCombined ? ' · ' + esc(lang('application')) + ' #' + esc(d.application_id) : '') + '</p>' +
+				modalField('modal-create-org-q', lang('organization') + ' *',
+					'<input type="search" id="modal-create-org-q" class="booking-input ds-input" autocomplete="off">',
+					lang('searchOrganizationHint')) +
+				'<div class="booking-field ds-field" data-size="sm" data-create-org-field hidden>' +
+					'<label class="booking-label ds-label" for="modal-create-org">' + esc(lang('selectOrganization')) + '</label>' +
+					'<select id="modal-create-org" class="booking-input ds-input"></select></div>' +
+				'<p class="booking-paragraph ds-paragraph" data-size="sm" data-create-org-hint hidden></p>' +
+				(isBooking ? modalField('modal-create-group', lang('selectGroup') + ' *',
+					'<select id="modal-create-group" class="booking-input ds-input" disabled><option value="">' + esc(lang('selectGroup')) + '…</option></select>') : '') +
+				modalField('modal-create-season', lang('season') + ' *',
+					'<select id="modal-create-season" class="booking-input ds-input" disabled><option value="">' + esc(lang('loading')) + '…</option></select>') +
+				modalField('modal-create-from', lang('from') + ' *',
+					'<input type="datetime-local" id="modal-create-from" class="booking-input ds-input" value="' + esc(localValue(d.from_)) + '">') +
+				modalField('modal-create-to', lang('to') + ' *',
+					'<input type="datetime-local" id="modal-create-to" class="booking-input ds-input" value="' + esc(localValue(d.to_)) + '">') +
+				'<fieldset class="booking-fieldset ds-fieldset" data-size="sm">' +
+					'<legend class="booking-label ds-label">' + esc(lang('resources')) + ' *</legend>' +
+					'<div class="app-show__create-resources" data-create-resources>' + esc(lang('loading')) + '…</div></fieldset>' +
+				modalField('modal-create-cost', lang('cost'),
+					'<input type="number" id="modal-create-cost" class="booking-input ds-input" min="0" step="0.01" value="0">') +
+				(isBooking ? '' :
+					modalField('modal-create-invoice', lang('additionalInvoiceInformation'),
+						'<textarea id="modal-create-invoice" class="booking-input ds-input" rows="2"></textarea>') +
+					'<div class="booking-field ds-field" data-size="sm"><input type="checkbox" class="booking-input ds-input" id="modal-create-skip-bas">' +
+					'<label class="booking-label ds-label" for="modal-create-skip-bas">' + esc(lang('skipBas')) + '</label></div>') +
+				'</div>';
+			var footer = '<button type="button" class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+				'<button type="button" class="booking-button ds-button" data-variant="primary" data-color="accent" data-create-submit>' + esc(lang('save')) + '</button>';
+
+			var dlg = showModal('create-dialog', lang(isBooking ? 'createBooking' : 'createAllocation') + ' – ' + fmtDate(d.from_), body, footer);
+			function q(selector) { return dlg.querySelector(selector); }
+
+			var orgInput = q('#modal-create-org-q');
+			var orgField = q('[data-create-org-field]');
+			var orgSelect = q('#modal-create-org');
+			var orgHint = q('[data-create-org-hint]');
+			var groupSelect = q('#modal-create-group');
+			var seasonSelect = q('#modal-create-season');
+			var fromInput = q('#modal-create-from');
+			var toInput = q('#modal-create-to');
+			var resourcesBox = q('[data-create-resources]');
+			var errorsBox = q('[data-create-errors]');
+			var submitBtn = q('[data-create-submit]');
+
+			// Each lookup renders only the answer to its latest request: debounced
+			// searches and quick re-choices can come back out of order.
+			var orgSeq = 0, groupSeq = 0, seasonSeq = 0;
+			var searchTimer = null;
+
+			function showOrgHint(text) {
+				orgHint.textContent = text || '';
+				orgHint.hidden = !text;
+			}
+
+			function resetGroups() {
+				if (!groupSelect) return;
+				groupSeq++;
+				groupSelect.innerHTML = '<option value="">' + esc(lang('selectGroup')) + '…</option>';
+				groupSelect.disabled = true;
+			}
+
+			function searchOrganizations() {
+				var query = orgInput.value.trim();
+				var seq = ++orgSeq;
+				orgSelect.innerHTML = '';
+				orgField.hidden = true;
+				resetGroups();
+				if (query.length < 2) {
+					showOrgHint('');
+					return;
+				}
+				fetchJson(appUrl + '/organizations?query=' + encodeURIComponent(query)).then(function (res) {
+					if (seq !== orgSeq) return;
+					var rows = (res && res.results) || [];
+					if (!rows.length) {
+						showOrgHint(lang('noOrganizationsFound'));
+						return;
+					}
+					showOrgHint('');
+					orgSelect.innerHTML = '<option value="">' + esc(lang('selectOrganization')) + '…</option>' +
+						rows.map(function (o) {
+							return '<option value="' + esc(o.id) + '">' + esc(o.name) +
+								(o.organization_number ? ' (' + esc(o.organization_number) + ')' : '') + '</option>';
+						}).join('') +
+						(res.total > rows.length ? '<option value="" disabled>' + esc(lang('refineOrganizationSearch')) + '</option>' : '');
+					orgField.hidden = false;
+				}).catch(function () {
+					if (seq === orgSeq) showOrgHint(lang('error'));
+				});
+			}
+
+			orgInput.addEventListener('input', function () {
+				orgSeq++;
+				clearTimeout(searchTimer);
+				searchTimer = setTimeout(searchOrganizations, 300);
+			});
+
+			function loadGroups(orgId) {
+				var seq = ++groupSeq;
+				groupSelect.innerHTML = '<option value="">' + esc(lang('loading')) + '…</option>';
+				groupSelect.disabled = true;
+				fetchJson(restRoot + '/organizations/' + encodeURIComponent(orgId) + '/groups').then(function (groups) {
+					if (seq !== groupSeq) return;
+					groups = groups || [];
+					groupSelect.innerHTML = '<option value="">' + esc(lang('selectGroup')) + '…</option>' +
+						groups.map(function (g) {
+							return '<option value="' + esc(g.id) + '">' + esc(g.name) + '</option>';
+						}).join('');
+					// A single active group is the one the server would pick anyway.
+					if (groups.length === 1) groupSelect.value = String(groups[0].id);
+					groupSelect.disabled = false;
+				}).catch(function () {
+					if (seq === groupSeq) groupSelect.innerHTML = '<option value="">' + esc(lang('error')) + '</option>';
+				});
+			}
+
+			orgSelect.addEventListener('change', function () {
+				if (!groupSelect) return;
+				if (orgSelect.value) loadGroups(orgSelect.value);
+				else resetGroups();
+			});
+
+			// Seasons of the building covering the start date: one is preselected,
+			// several (overlapping seasons) are left for the officer to choose.
+			function loadSeasons() {
+				var date = fromInput.value.substring(0, 10);
+				var seq = ++seasonSeq;
+				seasonSelect.disabled = true;
+				seasonSelect.innerHTML = '<option value="">' + esc(lang('loading')) + '…</option>';
+				if (!date) return;
+				fetchJson(appUrl + '/seasons?date=' + encodeURIComponent(date)).then(function (seasons) {
+					if (seq !== seasonSeq) return;
+					seasons = seasons || [];
+					if (!seasons.length) {
+						seasonSelect.innerHTML = '<option value="">' + esc(lang('noSeasonForDate')) + '</option>';
+						return;
+					}
+					seasonSelect.innerHTML = (seasons.length > 1 ? '<option value="">' + esc(lang('selectSeason')) + '</option>' : '') +
+						seasons.map(function (s) {
+							return '<option value="' + esc(s.id) + '">' + esc(s.name) +
+								' (' + esc(dayLabel(s.from_)) + ' – ' + esc(dayLabel(s.to_)) + ')</option>';
+						}).join('');
+					seasonSelect.disabled = false;
+				}).catch(function () {
+					if (seq === seasonSeq) seasonSelect.innerHTML = '<option value="">' + esc(lang('error')) + '</option>';
+				});
+			}
+
+			fromInput.addEventListener('change', loadSeasons);
+			loadSeasons();
+
+			// The building's resources, with the date's own resources checked.
+			fetchJson(restRoot + '/buildings/' + encodeURIComponent(app.building_id) + '/resources').then(function (resources) {
+				resourcesBox.innerHTML = (resources || []).map(function (r) {
+					var id = 'modal-create-res-' + r.id;
+					return '<div class="booking-field ds-field" data-size="sm">' +
+						'<input type="checkbox" class="booking-input ds-input" id="' + esc(id) + '" value="' + esc(r.id) + '"' +
+						(dateResources.indexOf(String(r.id)) !== -1 ? ' checked' : '') + '>' +
+						'<label class="booking-label ds-label" for="' + esc(id) + '">' + esc(r.name) + '</label></div>';
+				}).join('');
+			}).catch(function () {
+				resourcesBox.textContent = lang('error');
+			});
+
+			function showErrors(messages) {
+				errorsBox.innerHTML = messages.map(function (m) {
+					return '<p class="booking-paragraph ds-paragraph" data-size="sm">' + esc(m) + '</p>';
+				}).join('');
+				errorsBox.hidden = !messages.length;
+				if (messages.length) errorsBox.scrollIntoView({ block: 'nearest' });
+			}
+
+			// datetime-local "2030-10-14T10:00" → naive local time with seconds
+			function serverTime(value) {
+				return value ? value.substring(0, 16) + ':00' : '';
+			}
+
+			// One create POST per Lagre; the server validates everything.
+			submitBtn.addEventListener('click', function () {
+				var payload = {
+					organization_id: parseInt(orgSelect.value, 10) || 0,
+					season_id: parseInt(seasonSelect.value, 10) || 0,
+					from_: serverTime(fromInput.value),
+					to_: serverTime(toInput.value),
+					resource_ids: Array.prototype.map.call(resourcesBox.querySelectorAll('input[type="checkbox"]:checked'), function (c) {
+						return parseInt(c.value, 10);
+					}),
+					cost: parseFloat(q('#modal-create-cost').value) || 0
+				};
+				if (isBooking) {
+					payload.group_id = parseInt(groupSelect.value, 10) || 0;
+				} else {
+					payload.skip_bas = q('#modal-create-skip-bas').checked ? 1 : 0;
+					payload.additional_invoice_information = q('#modal-create-invoice').value;
+				}
+
+				submitBtn.disabled = true;
+				submitBtn.setAttribute('aria-busy', 'true');
+				showErrors([]);
+
+				fetch(appUrl + (isBooking ? '/bookings' : '/allocations'), {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(payload)
+				}).then(function (res) {
+					return res.json().catch(function () { return {}; }).then(function (json) {
+						if (!res.ok) throw { status: res.status, body: json };
+						return json;
+					});
+				}).then(function () {
+					closeModal('create-dialog');
+					showToast(lang('successfullyCreated'));
+					refreshToolbar(app);
+					var tr = root.querySelector('tr[data-date-id="' + d.id + '"]');
+					if (tr) refreshDateRow(tr.cells[tr.cells.length - 1]);
+				}).catch(function (err) {
+					submitBtn.disabled = false;
+					submitBtn.removeAttribute('aria-busy');
+					var res = (err && err.body) || {};
+					var messages = res.errors
+						? [].concat.apply([], Object.keys(res.errors).map(function (k) { return [].concat(res.errors[k]); }))
+						: [];
+					if (!messages.length) {
+						messages = [lang('error') + ': ' + (res.error || (err && err.status ? 'HTTP ' + err.status : (err && err.message) || ''))];
+					}
+					showErrors(messages);
+				});
+			});
+		}
+
 		// Delegated event: date action split button (primary + dropdown items)
 		root.addEventListener('click', function (e) {
 					var btn = e.target.closest('[data-booking-action="create-date"]');
@@ -1042,6 +1477,15 @@
 			};
 			var url = urls[btn.dataset.create];
 			if (!url) return;
+
+			// No organisation on the application: the officer picks one in the
+			// create modal, which posts nothing until Lagre.
+			if (!hasOrg && (btn.dataset.create === 'allocation' || btn.dataset.create === 'booking')) {
+				var pop = btn.closest('[data-booking-role="dropdown"]');
+				if (pop && pop.matches(':popover-open')) pop.hidePopover();
+				showCreateModal(btn.dataset.create, datesById[btn.dataset.dateId]);
+				return;
+			}
 
 			// Disable only the clicked button while submitting. The three
 			// create actions (allocation/booking/event) for a date are
@@ -1144,33 +1588,37 @@
 			});
 		});
 
-		// Documents
-		var docs = data.documents || [];
-		if (docs.length > 0) {
-			var docsHtml = '<table class="booking-table ds-table" data-size="sm" data-zebra>' +
-				'<thead><tr><th>' + lang('name') + '</th><th>' + lang('category') + '</th></tr></thead><tbody>';
-			docs.forEach(function (doc) {
-				var nameCell = doc.download_url
-					? '<a href="' + esc(doc.download_url) + '">' + esc(doc.name) + '</a>'
-					: esc(doc.name);
-				docsHtml += '<tr><td>' + nameCell + '</td><td>' + esc(enumLabel(doc.category)) + '</td></tr>';
-			});
-			docsHtml += '</tbody></table>';
-			html += section(lang('documents'), docsHtml, { icon: ICONS.doc });
-		}
+		// Documents: always shown, so the case officer can add the first one. The
+		// list re-renders in place after an upload or a delete.
+		html += section(lang('documents'),
+			'<div id="application-documents">' + documentsHtml(data.documents || [], isCO) + '</div>' +
+			(isCO ? documentUploadHtml() : ''),
+			{ icon: ICONS.doc });
+		bindDocuments(isCO);
 
 		// Orders (only when articles config is enabled)
-		// Aggregate all order lines by article into a single summary table (matches legacy)
+		// Aggregate all order lines by article into a single summary table (matches legacy).
+		// Lines priced differently stay apart: the price the citizen chose and
+		// the unit price the row shows are part of the key, so one row never
+		// stands for two prices, also for lines saved without a chosen price.
 		var orders = data.orders || [];
 		if (app.activate_application_articles && orders.length > 0) {
 			var articleMap = {};
 			var grandTotal = 0;
 			orders.forEach(function (order) {
 				(order.lines || []).forEach(function (line) {
-					var key = line.article_mapping_id || line.name;
+					var lineAmount = Number(line.amount) || 0;
+					var lineTax = Number(line.tax) || 0;
+					// Derive unit price from the line (amount / quantity)
+					var qty = Number(line.quantity) || 1;
+					var unitPrice = lineAmount / qty;
+					var key = (line.article_mapping_id || line.name) + '|' +
+						(line.article_price_id || '') + '|' + (line.price_label || '') + '|' +
+						unitPrice.toFixed(2);
 					if (!articleMap[key]) {
 						articleMap[key] = {
 							name: line.name,
+							price_label: line.price_label || '',
 							unit: line.unit,
 							unit_price: 0,
 							tax_per_unit: 0,
@@ -1179,12 +1627,8 @@
 						};
 					}
 					articleMap[key].quantity += Number(line.quantity) || 0;
-					var lineAmount = Number(line.amount) || 0;
-					var lineTax = Number(line.tax) || 0;
 					articleMap[key].total += lineAmount + lineTax;
-					// Derive unit price from the line (amount / quantity)
-					var qty = Number(line.quantity) || 1;
-					articleMap[key].unit_price = (lineAmount / qty);
+					articleMap[key].unit_price = unitPrice;
 					articleMap[key].tax_per_unit = (lineTax / qty);
 					grandTotal += lineAmount + lineTax;
 				});
@@ -1200,7 +1644,10 @@
 					'<thead><tr><th>' + lang('article') + '</th><th>' + lang('unit') + '</th><th class="app-show__num">' + lang('unitPrice') + '</th><th class="app-show__num">' + lang('tax') + '</th><th class="app-show__num">' + lang('quantity') + '</th><th class="app-show__num">' + lang('sum') + '</th></tr></thead><tbody>';
 				articleKeys.forEach(function (key) {
 					var a = articleMap[key];
-					ordersHtml += '<tr><td>' + esc(a.name) + '</td><td>' + esc(enumLabel(a.unit)) + '</td><td class="app-show__num">' + a.unit_price.toFixed(2) + '</td><td class="app-show__num">' + a.tax_per_unit.toFixed(2) + '</td><td class="app-show__num">' + a.quantity + '</td><td class="app-show__num">' + a.total.toFixed(2) + '</td></tr>';
+					var priceCategory = a.price_label
+						? '<div class="booking-paragraph ds-paragraph" data-size="sm">' + esc(lang('price_category')) + ': ' + esc(a.price_label) + '</div>'
+						: '';
+					ordersHtml += '<tr><td>' + esc(a.name) + priceCategory + '</td><td>' + esc(enumLabel(a.unit)) + '</td><td class="app-show__num">' + a.unit_price.toFixed(2) + '</td><td class="app-show__num">' + a.tax_per_unit.toFixed(2) + '</td><td class="app-show__num">' + a.quantity + '</td><td class="app-show__num">' + a.total.toFixed(2) + '</td></tr>';
 				});
 				ordersHtml += '</tbody>' +
 					'<tfoot><tr><td colspan="5">' + lang('sum') + ':</td><td class="app-show__num">' + grandTotal.toFixed(2) + '</td></tr></tfoot>' +
@@ -1209,29 +1656,10 @@
 			}
 		}
 
-		// Associations
-		var associations = data.associations || [];
-		if (associations.length > 0) {
-			var assocHtml = '<table class="booking-table ds-table" data-size="sm" data-zebra>' +
-				'<thead><tr><th>ID</th><th>' + lang('type') + '</th><th>' + lang('from') + '</th><th>' + lang('to') + '</th><th class="app-show__num">' + lang('cost') + '</th><th>' + lang('active') + '</th>';
-			if (isCO) assocHtml += '<th></th>';
-			assocHtml += '</tr></thead><tbody>';
-			associations.forEach(function (a) {
-				var activeLabel = (a.active === 1 || a.active === '1') ? lang('yes') : lang('no');
-				var costVal = (a.cost != null && a.cost !== '' && Number(a.cost) !== 0) ? Number(a.cost).toFixed(2) : '—';
-				assocHtml += '<tr><td>' + esc(a.id) + '</td><td>' + esc(enumLabel(a.type)) + '</td><td>' + fmtDate(a.from_) + '</td><td>' + fmtDate(a.to_) + '</td><td class="app-show__num">' + costVal + '</td><td>' + activeLabel + '</td>';
-				if (isCO) {
-					if (a.active === 1 || a.active === '1') {
-						assocHtml += '<td><button type="button" class="booking-button ds-button app-show__assoc-delete" data-booking-action="delete-association" data-variant="primary" data-color="danger" data-size="sm" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' + lang('delete') + '</button></td>';
-					} else {
-						assocHtml += '<td><button type="button" class="booking-button ds-button app-show__assoc-activate" data-booking-action="activate-association" data-variant="secondary" data-color="success" data-size="sm" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' + lang('activate') + '</button></td>';
-					}
-				}
-				assocHtml += '</tr>';
-			});
-			assocHtml += '</tbody></table>';
-			html += section(lang('associations'), assocHtml, { icon: ICONS.link });
-		}
+		// Linked elements that no date row shows ("Andre elementer"). Filled once
+		// the rows are known; for a recurring app, after its preview has placed
+		// the elements it carries.
+		html += '<div id="other-associations-section"></div>';
 
 		// Recurring info — async loaded section
 		if (app.recurring_data) {
@@ -1247,7 +1675,143 @@
 		// Load recurring preview asynchronously after initial render
 		if (app.recurring_data) {
 			loadRecurringPreview(app, data);
+		} else {
+			renderOtherAssociations(app, data, placedAssocs);
 		}
+	}
+
+	// ═══════════════════════════════════════════════════════════════════
+	// Documents (attachments)
+	// ═══════════════════════════════════════════════════════════════════
+
+	function documentsHtml(docs, isCO) {
+		if (!docs.length) {
+			return '<p class="app-show__empty">' + esc(lang('noAttachments')) + '</p>';
+		}
+		var html = '<table class="booking-table ds-table" data-size="sm" data-zebra>' +
+			'<thead><tr><th>' + esc(lang('name')) + '</th><th>' + esc(lang('category')) + '</th>' +
+			(isCO ? '<th>' + esc(lang('delete')) + '</th>' : '') + '</tr></thead><tbody>';
+		docs.forEach(function (doc) {
+			var nameCell = doc.download_url
+				? '<a href="' + esc(doc.download_url) + '">' + esc(doc.name) + '</a>'
+				: esc(doc.name);
+			html += '<tr><td>' + nameCell + '</td><td>' + esc(enumLabel(doc.category)) + '</td>';
+			if (isCO) {
+				html += '<td><button type="button" class="booking-button ds-button" data-variant="tertiary" data-color="danger" data-size="sm"' +
+					' data-booking-action="delete-document" data-doc-id="' + esc(doc.id) + '">' + esc(lang('delete')) + '</button></td>';
+			}
+			html += '</tr>';
+		});
+		return html + '</tbody></table>';
+	}
+
+	// The case officer's upload form: one file per upload.
+	function documentUploadHtml() {
+		return '<div class="app-show__upload-form">' +
+			'<div class="booking-field ds-field" data-size="sm">' +
+				'<label class="booking-label ds-label" for="application-document-file">' + esc(lang('addAttachment')) + '</label>' +
+				'<div data-field="description">' + esc(lang('attachmentHint')) + '</div>' +
+				'<input type="file" class="booking-input ds-input" id="application-document-file" accept="' + esc(root.dataset.attachmentAccept || '') + '">' +
+			'</div>' +
+			'<div class="booking-alert ds-alert" data-color="danger" role="alert" data-document-errors hidden></div>' +
+			'<button type="button" class="booking-button ds-button" data-variant="secondary" data-color="accent" data-size="sm" data-booking-action="upload-document">' + esc(lang('upload')) + '</button>' +
+		'</div>';
+	}
+
+	function showDocumentErrors(messages) {
+		var box = root.querySelector('[data-document-errors]');
+		if (!box) return;
+		box.innerHTML = messages.map(function (m) {
+			return '<p class="booking-paragraph ds-paragraph" data-size="sm">' + esc(m) + '</p>';
+		}).join('');
+		box.hidden = !messages.length;
+	}
+
+	// The messages of a failed request: the server's {errors} or {error}. A body
+	// that is not JSON comes from in front of the app: a 413 there means too large.
+	function documentErrorMessages(status, body) {
+		if (body && body.errors) {
+			return [].concat.apply([], Object.keys(body.errors).map(function (k) { return [].concat(body.errors[k]); }));
+		}
+		if (body && body.error) return [body.error];
+		if (status === 413) return [lang('attachmentTooLarge')];
+		return [lang('attachmentUploadFailed') + (status ? ' (HTTP ' + status + ')' : '')];
+	}
+
+	function sendDocumentRequest(url, options) {
+		return fetch(url, Object.assign({ credentials: 'same-origin' }, options)).then(function (res) {
+			if (res.ok) return res;
+			return res.json().catch(function () { return null; }).then(function (body) {
+				throw { messages: documentErrorMessages(res.status, body) };
+			});
+		}, function () {
+			throw { messages: [lang('attachmentUploadFailed')] };
+		});
+	}
+
+	function refreshDocuments(isCO) {
+		var container = document.getElementById('application-documents');
+		return fetchJson(apiUrl + '/documents').then(function (docs) {
+			container.innerHTML = documentsHtml(docs || [], isCO);
+		}).catch(function (err) {
+			container.innerHTML = '<p class="app-show__empty">' + esc(lang('error')) + ': ' + esc(err.message) + '</p>';
+		});
+	}
+
+	function bindDocuments(isCO) {
+		if (!isCO) return;
+
+		// One POST per click: the button stays disabled until the request settles,
+		// so a double click lands on a disabled button.
+		root.addEventListener('click', function (e) {
+			var btn = e.target.closest('[data-booking-action="upload-document"]');
+			if (!btn || btn.disabled) return;
+			var input = document.getElementById('application-document-file');
+			var file = input.files && input.files[0];
+			if (!file) {
+				showDocumentErrors([lang('missingFileForDocument')]);
+				return;
+			}
+			if (file.size > Number(root.dataset.attachmentMaxBytes)) {
+				showDocumentErrors([lang('attachmentTooLarge')]);
+				return;
+			}
+
+			var body = new FormData();
+			body.append('file', file);
+			btn.disabled = true;
+			btn.setAttribute('aria-busy', 'true');
+			input.disabled = true;
+			showDocumentErrors([]);
+
+			sendDocumentRequest(apiUrl + '/documents', { method: 'POST', body: body }).then(function () {
+				input.value = '';
+				showToast(lang('attachmentUploaded'));
+				return refreshDocuments(isCO);
+			}, function (err) {
+				showDocumentErrors(err.messages);
+			}).then(function () {
+				btn.disabled = false;
+				btn.removeAttribute('aria-busy');
+				input.disabled = false;
+			});
+		});
+
+		root.addEventListener('click', function (e) {
+			var btn = e.target.closest('[data-booking-action="delete-document"]');
+			if (!btn || btn.disabled) return;
+			if (!confirm(lang('deleteAttachmentConfirm'))) return;
+			btn.disabled = true;
+			showDocumentErrors([]);
+
+			sendDocumentRequest(apiUrl + '/documents/' + encodeURIComponent(btn.dataset.docId), { method: 'DELETE' }).then(function () {
+				showToast(lang('attachmentDeleted'));
+				return refreshDocuments(isCO);
+			}, function (err) {
+				btn.disabled = false;
+				showDocumentErrors(err.messages);
+			});
+		});
 	}
 
 	// ═══════════════════════════════════════════════════════════════════
@@ -1355,6 +1919,8 @@
 					'<p class="app-show__empty">' + lang('error') + ': ' + esc(err.message) + '</p>',
 					{ icon: ICONS.repeat });
 			}
+			// Without the preview no element is placed: list them all.
+			renderOtherAssociations(app, data, {});
 		});
 	}
 
@@ -1425,8 +1991,12 @@
 		}
 		html += '</div>';
 
-		// Preview table
-		if (items.length > 0) {
+		// Preview table. Linked elements that match no occurrence exactly come in
+		// their own key (outside_series, never part of items or the counts) and are
+		// merged in by start, tagged "Utenfor serien".
+		var outside = preview.outside_series || [];
+		var placed = {};
+		if (items.length > 0 || outside.length > 0) {
 			html += '<table class="booking-table ds-table" data-size="sm" data-zebra id="recurring-table">' +
 				'<thead><tr>' +
 				'<th>' + esc(lang('dates')) + '</th>' +
@@ -1436,38 +2006,67 @@
 				'<th>' + esc(lang('handling')) + '</th>' +
 				'</tr></thead><tbody>';
 
-			items.forEach(function (item) {
+			// Sort is stable, and occurrences go in first: an occurrence stays
+			// ahead of an element with the same start.
+			var rows = items.map(function (item) { return { from: item.from_, item: item }; })
+				.concat(outside.map(function (a) { return { from: a.from_, outside: a }; }));
+			rows.sort(function (x, y) {
+				var fx = String(x.from || '').substring(0, 16), fy = String(y.from || '').substring(0, 16);
+				return fx < fy ? -1 : (fx > fy ? 1 : 0);
+			});
+
+			rows.forEach(function (row) {
+				if (row.outside) {
+					var a = row.outside;
+					placed[assocRef(a)] = true;
+					html += '<tr>';
+					html += '<td>' + esc(a.day_name) + ' ' + esc(a.date_display) + '</td>';
+					html += '<td>' + esc(a.time_display) + '</td>';
+					html += '<td>&mdash;</td>';
+					html += '<td><span class="booking-tag ds-tag" data-color="warning">' + esc(lang('outsideSeries')) + '</span>' + assocTagsHtml([a]) + '</td>';
+					html += '<td>' + assocActionsHtml([a], isCO) + '</td>';
+					html += '</tr>';
+					return;
+				}
+
+				var item = row.item;
 				html += '<tr>';
 				html += '<td>' + esc(item.day_name) + ' ' + esc(item.date_display) + '</td>';
 				html += '<td>' + esc(item.time_display) + '</td>';
 				html += '<td>' + esc(item.resource_display) + '</td>';
 
-				// Status column
-				if (item.exists) {
+				// Status column. The elements placed on this occurrence (also after
+				// their time was changed) stand in for "Opprettet"; a collision or "not
+				// yet created" keeps its tag above them. An existing occurrence shows
+				// a collision with anything but its own elements (collision_foreign).
+				var elements = item.associations || [];
+				function collisionHtml(details) {
+					var text = conflictText(details);
+					return '<span class="booking-tag ds-tag" data-color="danger">' + esc(lang('collision')) + '</span>' +
+						(text ? ' <span class="app-show__conflict-text">' + esc(text) + '</span>' : '');
+				}
+				if (item.exists && elements.length) {
+					html += '<td>' + (item.collision_foreign ? collisionHtml(item.collision_foreign_details) : '') +
+						assocTagsHtml(elements, item) + '</td>';
+				} else if (item.exists) {
 					html += '<td><span class="booking-tag ds-tag" data-color="success">' + esc(lang('dateCreated')).replace(/^- | -$/g, '') + '</span></td>';
 				} else if (item.has_conflict) {
-					var conflictText = '';
-					(item.conflict_details || []).forEach(function (c) {
-						if (conflictText) conflictText += ', ';
-						conflictText += c.type + (c.name ? ' (' + c.name + ')' : '');
-					});
-					html += '<td><span class="booking-tag ds-tag" data-color="danger">' + esc(lang('collision')) + '</span>';
-					if (conflictText) {
-						html += ' <span class="app-show__conflict-text">' + esc(conflictText) + '</span>';
-					}
-					html += '</td>';
+					html += '<td>' + collisionHtml(item.conflict_details) + assocTagsHtml(elements, item) + '</td>';
 				} else {
-					html += '<td><span class="booking-tag ds-tag" data-color="neutral">' + esc(lang('notYetCreated')) + '</span></td>';
+					html += '<td><span class="booking-tag ds-tag" data-color="neutral">' + esc(lang('notYetCreated')) + '</span>' + assocTagsHtml(elements, item) + '</td>';
 				}
 
-				// Action column
-				if (item.exists) {
-					html += '<td><a class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-size="sm" href="/?menuaction=booking.uiallocation.edit&id=' + esc(item.allocation_id) + '">' + esc(lang('show')) + '</a></td>';
-				} else if (item.has_conflict) {
-					html += '<td><a class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-size="sm" href="' + esc(item.schedule_link) + '" target="_blank">' + esc(lang('schedule')) + '</a></td>';
-				} else {
-					html += '<td>&mdash;</td>';
+				// Action column: the elements placed on this occurrence, then the
+				// schedule link for a conflict.
+				elements.forEach(function (a) { placed[assocRef(a)] = true; });
+				var actionHtml = assocActionsHtml(elements, isCO);
+				if (item.exists && !elements.length) {
+					// A preview without associations: link the allocation as before.
+					actionHtml = '<a class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-size="sm" href="/?menuaction=booking.uiallocation.edit&id=' + esc(item.allocation_id) + '">' + esc(lang('show')) + '</a>';
+				} else if (item.has_conflict || item.collision_foreign) {
+					actionHtml += (actionHtml ? ' ' : '') + '<a class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-size="sm" href="' + esc(item.schedule_link) + '" target="_blank">' + esc(lang('schedule')) + '</a>';
 				}
+				html += '<td>' + (actionHtml || '&mdash;') + '</td>';
 
 				html += '</tr>';
 			});
@@ -1476,6 +2075,7 @@
 		}
 
 		el.innerHTML = section(lang('recurring'), html, { icon: ICONS.repeat });
+		renderOtherAssociations(app, data, placed);
 
 		// Create button handler
 		var createBtn = document.getElementById('recurring-create-btn');

@@ -1125,3 +1125,12 @@ repeating_direct_booking_warning	bookingfrontend	no	Denne ressursen har direkte 
 withdraw_timeslot	bookingfrontend	no	Trekk tilbake
 confirm_withdraw_timeslot_description	bookingfrontend	no	Er du sikker på at du vil trekke tilbake denne enkelttimen? Saksbehandler vil bli varslet om trekkingen.
 withdraw_timeslot_comment_label	bookingfrontend	no	Kommentar til saksbehandler (valgfritt)
+price_choice_label	bookingfrontend	no	Hvem søker du som?
+price_choice_help	bookingfrontend	no	Prisen avhenger av hvem som leier — velg kategorien som passer.
+price_choice_placeholder	bookingfrontend	no	Velg priskategori
+price_choice_required	bookingfrontend	no	Du må velge priskategori
+price_choice_required_footer	bookingfrontend	no	Velg priskategori for å lagre søknaden.
+price_choice_required_checkout	bookingfrontend	no	Velg priskategori før du sender inn.
+price_pending	bookingfrontend	no	Beregnes når du har valgt
+does_not_affect_price	bookingfrontend	no	Påvirker ikke prisen.
+price_category	bookingfrontend	no	Priskategori

@@ -585,6 +585,37 @@
 			));
 		}
 
+		/**
+		 * The season a recurring series is put in where nobody chose one for it: the
+		 * wizard's prefill, and a date of the series outside the season the officer
+		 * did choose. Picked out of $seasons in the order they were read. A building
+		 * can have several active seasons over the same dates, each holding its own
+		 * resources, so the one holding the most of the series' resources wins;
+		 * between equals the first one read does, and the caller's ORDER BY settles
+		 * it.
+		 *
+		 * @param array $seasons seasons as read, each with its 'resources'
+		 * @param array $resource_ids the series' resources
+		 * @return int|null
+		 */
+		private function pick_recurring_season( array $seasons, array $resource_ids )
+		{
+			$season_id = null;
+			$most_held = -1;
+
+			foreach ($seasons as $season)
+			{
+				$held = count(array_intersect($resource_ids, !empty($season['resources']) ? $season['resources'] : array()));
+				if ($held > $most_held)
+				{
+					$season_id = (int)$season['id'];
+					$most_held = $held;
+				}
+			}
+
+			return $season_id;
+		}
+
 		public function add()
 		{
 			$isJsonRequest = self::handleJsonPost();
@@ -623,34 +654,42 @@
 					$allocation['building_id'] = $recurring_app['building_id'];
 					$allocation['building_name'] = $recurring_app['building_name'];
 					
-					// Set season based on application dates - find season that contains the first application date
-					if (!empty($recurring_app['dates']) && is_array($recurring_app['dates'])) {
+					// Set season based on application dates - find season that contains the first application date.
+					// Only while the officer has not chosen one: the form posts back to this
+					// same URL, recurring_application_id and all, so this runs again on every
+					// step, and a season picked on the form has to survive it.
+					$resource_ids = !empty($recurring_app['resources']) ? $recurring_app['resources'] : array();
+					if (!Sanitizer::get_var('season_id', 'int', 'POST') && !empty($recurring_app['dates']) && is_array($recurring_app['dates'])) {
 						$first_date = $recurring_app['dates'][0];
 						$app_date = date('Y-m-d', strtotime($first_date['from_']));
-						
-						// Find seasons for this building that are active and contain the application date
+
+						// Find seasons for this building that are active and contain the application date.
+						// All of them, in a fixed order, so the pick never rests on how the rows
+						// happen to come back.
 						$matching_seasons = $this->season_bo->read(array(
 							'filters' => array(
-								'active' => 1, 
+								'active' => 1,
 								'building_id' => $recurring_app['building_id'],
 								'where' => array(
 									"%%table%%.from_ <= '{$app_date}'",
 									"%%table%%.to_ >= '{$app_date}'"
 								)
-							), 
-							'results' => 1
+							),
+							'sort' => array('from_', 'id'),
+							'dir' => 'desc',
+							'results' => -1
 						));
-						
-						if (!empty($matching_seasons['results'][0])) {
-							$allocation['season_id'] = $matching_seasons['results'][0]['id'];
-							$_POST['season_id'] = $matching_seasons['results'][0]['id'];
-						} else {
+						$season_id = $this->pick_recurring_season($matching_seasons['results'], $resource_ids);
+
+						if (!$season_id) {
 							// Fallback to current active season if no matching season found
-							$current_seasons = $this->season_bo->read(array('filters' => array('active' => 1, 'building_id' => $recurring_app['building_id']), 'sort' => 'to_', 'dir' => 'desc', 'results' => 1));
-							if (!empty($current_seasons['results'][0])) {
-								$allocation['season_id'] = $current_seasons['results'][0]['id'];
-								$_POST['season_id'] = $current_seasons['results'][0]['id'];
-							}
+							$current_seasons = $this->season_bo->read(array('filters' => array('active' => 1, 'building_id' => $recurring_app['building_id']), 'sort' => array('to_', 'id'), 'dir' => 'desc', 'results' => -1));
+							$season_id = $this->pick_recurring_season($current_seasons['results'], $resource_ids);
+						}
+
+						if ($season_id) {
+							$allocation['season_id'] = $season_id;
+							$_POST['season_id'] = $season_id;
 						}
 					}
 
@@ -943,25 +982,37 @@
 						$allocation['from_'] = $fromdate;
 						$allocation['to_'] = $todate;
 
-						// Update season_id for each date - it may span different seasons
+						// Update season_id for each date - it may span different seasons. A date
+						// inside the season the officer chose keeps it; only a date outside it is
+						// given another, picked the same way as the prefill. The date's season goes
+						// on its own copy, never on $allocation: $allocation keeps the officer's,
+						// and step 2 renders it into the form that Lagre posts.
+						$occurrence = $allocation;
 						$iter_date = date('Y-m-d', strtotime($fromdate));
-						$iter_seasons = $this->season_bo->read(array(
-							'filters' => array(
-								'active' => 1,
-								'building_id' => $allocation['building_id'],
-								'where' => array(
-									"%%table%%.from_ <= '{$iter_date}'",
-									"%%table%%.to_ >= '{$iter_date}'"
-								)
-							),
-							'results' => 1
-						));
-						if (!empty($iter_seasons['results'][0])) {
-							$allocation['season_id'] = $iter_seasons['results'][0]['id'];
+						if (!empty($season['id']) && strtotime($season['from_']) <= strtotime($iter_date) && strtotime($season['to_']) >= strtotime($iter_date)) {
+							$occurrence['season_id'] = $season['id'];
+						} else {
+							$iter_seasons = $this->season_bo->read(array(
+								'filters' => array(
+									'active' => 1,
+									'building_id' => $allocation['building_id'],
+									'where' => array(
+										"%%table%%.from_ <= '{$iter_date}'",
+										"%%table%%.to_ >= '{$iter_date}'"
+									)
+								),
+								'sort' => array('from_', 'id'),
+								'dir' => 'desc',
+								'results' => -1
+							));
+							$iter_season_id = $this->pick_recurring_season($iter_seasons['results'], (array)$allocation['resources']);
+							if ($iter_season_id) {
+								$occurrence['season_id'] = $iter_season_id;
+							}
 						}
-						// If no season found, keep the previous season_id and let validation catch it
+						// If no season found, keep the officer's season_id and let validation catch it
 
-						$err = $this->bo->validate($allocation);
+						$err = $this->bo->validate($occurrence);
 						if ($err)
 						{
 							// If skip_conflicts is enabled, don't save invalid dates - just skip them
@@ -999,7 +1050,7 @@
 							{
 								try
 								{
-									$receipt = $this->bo->add($allocation);
+									$receipt = $this->bo->add($occurrence);
 									$allocation['id'] = $receipt['id'];
 									$last_successful_id = $receipt['id'];
 									$this->bo->so->update_id_string($allocation['id']);
@@ -1023,7 +1074,8 @@
 											{
 												$this->add_cost_history($allocation, lang('cost is set'), $purchase_order_result['sum']);
 												$allocation['cost'] = (float)$purchase_order_result['sum'];
-												$this->bo->update($allocation);
+												// Written with this date's season, not the officer's
+												$this->bo->update(array_merge($allocation, array('season_id' => $occurrence['season_id'])));
 											}
 										}
 									}

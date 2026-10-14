@@ -80,6 +80,14 @@ class Auth extends Auth_
 	}
 
 
+	/**
+	 * Direct account lookup supports a full email matching either the full
+	 * account_lid or its local part (before @), preferring full-value matches.
+	 * A short incoming username does not reverse-match a stored full email.
+	 * Header username lookup applies only without SSN and OpenID Connect.
+	 * OpenID Connect callback emails are checked before existing SSN and
+	 * external database fallbacks; supplied SSNs use the existing SSN path.
+	 */
 	public function get_username(): string
 	{
 		$headers = array_change_key_case(getallheaders(), CASE_LOWER);
@@ -98,8 +106,7 @@ class Auth extends Auth_
 		$upn = !empty($headers['upn']) ? $headers['upn'] : false;
 
 		$remote_user = !empty($headers['remote_user']) ? $headers['remote_user'] : $upn;
-		$username_arr  = explode('@', $remote_user);
-		$username = $username_arr[0];
+		$username = $remote_user ? explode('@', $remote_user, 2)[0] : '';
 
 		$location_obj = new \App\modules\phpgwapi\controllers\Locations();
 		$location_id	= $location_obj->get_id('admin', 'openid_connect');
@@ -146,7 +153,16 @@ class Auth extends Auth_
 			//				return '';
 			//			}
 
-			return $username;
+			return $this->findAccountLid($this->getUsernameCandidates($remote_user)) ?: $username;
+		}
+
+		if ($epost)
+		{
+			$account_lid = $this->findAccountLid($this->getUsernameCandidates($epost));
+			if ($account_lid)
+			{
+				return $account_lid;
+			}
 		}
 
 		/**
@@ -234,12 +250,43 @@ class Auth extends Auth_
 		if ($row)
 		{
 			$username = $row['BRUKERNAVN'];
-			return $username;
+			return $this->findAccountLid($this->getUsernameCandidates($username)) ?: $username;
 		}
 		else
 		{
 			return '';
 		}
+	}
+
+	private function getUsernameCandidates($username): array
+	{
+		$username = trim((string) $username);
+		if ($username === '')
+		{
+			return [];
+		}
+
+		return array_values(array_unique([$username, explode('@', $username, 2)[0]]));
+	}
+
+	private function findAccountLid(array $usernames): string
+	{
+		$sql = 'SELECT account_lid FROM phpgw_accounts'
+			. " WHERE account_lid = :account_lid AND account_type = 'u'"
+			. " AND account_status = 'A'";
+		$stmt = $this->db->prepare($sql);
+
+		foreach ($usernames as $username)
+		{
+			$stmt->execute([':account_lid' => $username]);
+			$account_lid = $stmt->fetchColumn();
+			if ($account_lid !== false)
+			{
+				return (string) $account_lid;
+			}
+		}
+
+		return '';
 	}
 
 	/**

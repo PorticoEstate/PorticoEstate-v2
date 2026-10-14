@@ -40,8 +40,10 @@ class solog
 
 		if ($date > 0)
 		{
+			// $date is expected to be a timestamp, move it to the end of the day for comparison
+			$date = strtotime(date('Y-m-d', $date) . ' 23:59:59');
 			$limit_date = date($this->db->date_format(), $date);
-			$filtermethod .= " $where log_date <= '$limit_date 23:59:59'";
+			$filtermethod .= " $where log_date <= '$limit_date'";
 			$where = 'AND';
 		}
 		return $filtermethod;

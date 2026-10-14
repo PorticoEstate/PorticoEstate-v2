@@ -1148,7 +1148,7 @@ class booking_uievent extends booking_uicommon
 
 				if ((int)$organization['customer_internal'] == 0 || ! Sanitizer::get_var('customer_internal', 'bool', 'POST'))
 				{
-					$event['customer_identifier_type'] = $organization['customer_identifier_type'];
+					$event['customer_identifier_type'] = $event['customer_identifier_type'] ? $event['customer_identifier_type'] : $organization['customer_identifier_type'];
 
 					if (!Sanitizer::get_var('customer_internal', 'bool', 'POST'))
 					{
@@ -1170,6 +1170,15 @@ class booking_uievent extends booking_uicommon
 						$organization['customer_identifier_type'] = 'organization_number';
 						$organization['customer_internal'] = 0;
 						$this->organization_bo->update($organization);
+					}
+					else if($event['customer_identifier_type'] == 'ssn' && strlen($event['customer_ssn'])==11)
+					{
+						if(!$organization['customer_ssn'])
+						{
+							$organization['customer_ssn'] = $event['customer_ssn'];
+							$organization['customer_identifier_type'] = 'ssn';
+							$this->organization_bo->update($organization);
+						}
 					}
 					else
 					{

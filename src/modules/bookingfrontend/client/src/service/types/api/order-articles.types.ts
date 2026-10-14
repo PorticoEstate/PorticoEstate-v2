@@ -10,9 +10,33 @@ export interface ArticleOrder {
 
 	/** Optional parent mapping ID for sub-items */
 	parent_id?: number | null;
+
+	/** The chosen price (a price_options[].price_id); only for the resource itself */
+	price_id?: number | null;
 }
 
+/**
+ * One of the prices a citizen can choose for a resource
+ */
+export interface IPriceOption {
+	/** The price row; sent back as ArticleOrder.price_id */
+	price_id: number;
 
+	/** What the price is for, as the admin wrote it; may be empty */
+	remark: string;
+
+	/** Price before tax */
+	ex_tax_price: string;
+
+	/** Tax amount */
+	tax: string;
+
+	/** Price including tax */
+	price: string;
+
+	/** Marked as the default price in the admin */
+	is_default: boolean;
+}
 
 
 /**
@@ -84,4 +108,13 @@ export interface IArticle {
 
 	/** Localized unit name */
 	lang_unit: string;
+
+	/** The prices the citizen can choose between (resource articles only) */
+	price_options?: IPriceOption[] | null;
+
+	/** The option preselected: the only one, or the default; null when the citizen must choose */
+	default_price_id?: number | null;
+
+	/** Several prices and no default: a choice is required before saving */
+	price_choice_required?: boolean;
 }

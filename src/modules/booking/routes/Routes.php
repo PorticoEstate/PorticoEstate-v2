@@ -227,6 +227,8 @@ $app->group('/booking/applications', function (RouteCollectorProxy $group)
 	$group->get('/{id:[0-9]+}/comments', ApplicationController::class . ':showComments');
 	$group->get('/{id:[0-9]+}/internal-notes', ApplicationController::class . ':showInternalNotes');
 	$group->get('/{id:[0-9]+}/documents', ApplicationController::class . ':showDocuments');
+	$group->post('/{id:[0-9]+}/documents', ApplicationController::class . ':uploadDocument');
+	$group->delete('/{id:[0-9]+}/documents/{docId:[0-9]+}', ApplicationController::class . ':deleteDocument');
 	$group->get('/{id:[0-9]+}/orders', ApplicationController::class . ':showOrders');
 	$group->get('/{id:[0-9]+}/associations', ApplicationController::class . ':showAssociations');
 	$group->delete('/{id:[0-9]+}/associations/{assocId:[0-9]+}', ApplicationController::class . ':deleteAssociation');
@@ -242,6 +244,11 @@ $app->group('/booking/applications', function (RouteCollectorProxy $group)
 	$group->get('/{id:[0-9]+}/recurring-preview', ApplicationController::class . ':recurringPreview');
 	$group->post('/{id:[0-9]+}/create-recurring-allocations', ApplicationController::class . ':createRecurringAllocations');
 	$group->get('/{id:[0-9]+}/hospitalities', ApplicationController::class . ':showHospitalities');
+	// Create modal for applicants without an organization
+	$group->get('/{id:[0-9]+}/organizations', ApplicationController::class . ':searchOrganizations');
+	$group->get('/{id:[0-9]+}/seasons', ApplicationController::class . ':showSeasons');
+	$group->post('/{id:[0-9]+}/allocations', ApplicationController::class . ':createAllocation');
+	$group->post('/{id:[0-9]+}/bookings', ApplicationController::class . ':createBooking');
 })
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));

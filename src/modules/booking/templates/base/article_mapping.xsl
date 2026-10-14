@@ -24,8 +24,9 @@
 			</xsl:variable>
 
 			<script type="text/javascript">
-				var lang = <xsl:value-of select="php:function('js_lang', 'Name or company is required', 'next', 'save', 'Name', 'Resource Type', 'Select', 'Active')"/>;
+				var lang = <xsl:value-of select="php:function('js_lang', 'Name or company is required', 'next', 'save', 'Name', 'Resource Type', 'Select', 'Active', 'price_incl_vat_nearest', 'vat_rate_missing')"/>;
 				var initialSelection = <xsl:value-of select="resources_json"/>;
+				var tax_percentages = <xsl:value-of select="tax_percentages_json"/>;
 
 			</script>
 			<form id="form" name="form" method="post" action="{$form_action}" class="pure-form pure-form-aligned">
@@ -199,6 +200,12 @@
 								<xsl:value-of select="php:function('lang', 'prizing')"/>
 							</legend>
 							<div class="pure-control-group">
+								<label>
+									<xsl:value-of select="php:function('lang', 'tax code')"/>
+								</label>
+								<span id="prizing_tax_code"></span>
+							</div>
+							<div class="pure-control-group">
 								<xsl:variable name="lang_date_from">
 									<xsl:value-of select="php:function('lang', 'from')"/>
 								</xsl:variable>
@@ -220,27 +227,36 @@
 								</input>
 							</div>
 							<div class="pure-control-group">
-								<label>
-									<xsl:value-of select="php:function('lang', 'price')"/>
+								<label for="price">
+									<xsl:value-of select="php:function('lang', 'price_ex_vat')"/>
 								</label>
-								<input type="text" id="price" name="article_prizing[price]" size="10" value="{article_prizing/price}" >
-<!--									<xsl:attribute name="data-validation">
-										<xsl:text>number</xsl:text>
-									</xsl:attribute>-->
-									<xsl:attribute name="data-validation-allowing">
-										<xsl:text>float</xsl:text>
+								<input type="text" id="price" name="article_prizing[price]" size="10" value="{article_prizing/price}" inputmode="decimal" autocomplete="off">
+									<xsl:attribute name="data-validation">
+										<xsl:text>article_price</xsl:text>
 									</xsl:attribute>
-									<xsl:attribute name="data-validation-decimal-separator">
-										<xsl:text>,</xsl:text>
+									<xsl:attribute name="data-validation-optional">
+										<xsl:text>true</xsl:text>
 									</xsl:attribute>
 									<xsl:attribute name="data-validation-error-msg">
-										<xsl:value-of select="php:function('lang', 'price')"/>
+										<xsl:value-of select="php:function('lang', 'price_invalid')"/>
 									</xsl:attribute>
 									<xsl:attribute name="placeholder">
 										<xsl:value-of select="php:function('lang', 'float')"/>
 									</xsl:attribute>
 
 								</input>
+							</div>
+							<div class="pure-control-group">
+								<label for="price_incl">
+									<xsl:value-of select="php:function('lang', 'price_incl_vat')"/>
+								</label>
+								<!-- No name: only the price ex. VAT is posted -->
+								<input type="text" id="price_incl" size="10" inputmode="decimal" autocomplete="off">
+									<xsl:attribute name="placeholder">
+										<xsl:value-of select="php:function('lang', 'float')"/>
+									</xsl:attribute>
+								</input>
+								<span id="price_incl_note" hidden="hidden"></span>
 							</div>
 							<div class="pure-control-group">
 								<label>

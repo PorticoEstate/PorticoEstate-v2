@@ -86,6 +86,20 @@ class ApplicationRepository
 		return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'resource_id');
 	}
 
+	/**
+	 * IDs of every resource linked to a building.
+	 *
+	 * @return int[]
+	 */
+	public function fetchBuildingResourceIds(int $buildingId): array
+	{
+		$stmt = $this->db->prepare(
+			"SELECT resource_id FROM bb_building_resource WHERE building_id = :id"
+		);
+		$stmt->execute([':id' => $buildingId]);
+		return array_map('intval', array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'resource_id'));
+	}
+
 	// ── Allocation recurrence groups ────────────────────────────────────
 
 	/**
@@ -370,7 +384,7 @@ class ApplicationRepository
 	{
 		try {
 			$stmt = $this->db->prepare(
-				"SELECT id, type, from_, to_, active, cost
+				"SELECT id, type, application_id, from_, to_, active, cost
 				 FROM bb_application_association
 				 WHERE application_id = :id
 				 ORDER BY from_ NULLS LAST"
@@ -464,7 +478,7 @@ class ApplicationRepository
 	 * Return detail rows for every conflicting item in a time range.
 	 * Similar to hasCollision() but returns type/name/times instead of bool.
 	 *
-	 * @return array<array{id:int, type:string, name:string, from_:string, to_:string}>
+	 * @return array<array{id:int, type:string, name:string, from_:string, to_:string, application_id:?int}>
 	 */
 	public function getCollisionDetails(array $resourceIds, string $from, string $to): array
 	{
@@ -475,7 +489,7 @@ class ApplicationRepository
 
 		$sql = "
 			SELECT a.id, 'allocation' AS type,
-			       COALESCE(o.name, '') AS name, a.from_, a.to_
+			       COALESCE(o.name, '') AS name, a.from_, a.to_, a.application_id
 			FROM bb_allocation a
 			JOIN bb_allocation_resource ar ON a.id = ar.allocation_id
 			LEFT JOIN bb_organization o ON a.organization_id = o.id
@@ -483,14 +497,14 @@ class ApplicationRepository
 			  AND a.from_ < :to1 AND a.to_ > :from1
 			UNION ALL
 			SELECT e.id, 'event' AS type,
-			       COALESCE(e.name, '') AS name, e.from_, e.to_
+			       COALESCE(e.name, '') AS name, e.from_, e.to_, e.application_id
 			FROM bb_event e
 			JOIN bb_event_resource er ON e.id = er.event_id
 			WHERE er.resource_id IN ({$rids}) AND e.active = 1
 			  AND e.from_ < :to2 AND e.to_ > :from2
 			UNION ALL
 			SELECT b.id, 'booking' AS type,
-			       COALESCE(g.name, '') AS name, b.from_, b.to_
+			       COALESCE(g.name, '') AS name, b.from_, b.to_, b.application_id
 			FROM bb_booking b
 			JOIN bb_booking_resource br ON b.id = br.booking_id
 			LEFT JOIN bb_group g ON b.group_id = g.id
@@ -507,30 +521,24 @@ class ApplicationRepository
 		return $stmt->fetchAll(PDO::FETCH_ASSOC);
 	}
 
-	// ── Existing allocations for an application ────────────────────────
+	// ── Recurrence groups of an application's allocations ──────────────
 
 	/**
-	 * Fetch active allocations already created for this application.
-	 * Keyed by "Y-m-d H:i_Y-m-d H:i" for quick lookup.
+	 * The recurrence group of each of the application's allocations, active or
+	 * not, keyed by allocation id; null for an allocation in no group.
 	 *
-	 * @return array<string, array{id:int, from_:string, to_:string}>
+	 * @return array<int, ?int>
 	 */
-	public function fetchExistingAllocations(int $applicationId): array
+	public function fetchAllocationGroupMap(int $applicationId): array
 	{
 		$stmt = $this->db->prepare(
-			"SELECT id, from_, to_
-			 FROM bb_allocation
-			 WHERE application_id = :id AND active = 1
-			 ORDER BY from_"
+			"SELECT id, allocation_group_id FROM bb_allocation WHERE application_id = :id"
 		);
 		$stmt->execute([':id' => $applicationId]);
-		$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 		$map = [];
-		foreach ($rows as $row) {
-			$key = date('Y-m-d H:i', strtotime($row['from_']))
-				. '_' . date('Y-m-d H:i', strtotime($row['to_']));
-			$map[$key] = $row;
+		foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+			$map[(int) $row['id']] = $row['allocation_group_id'] !== null ? (int) $row['allocation_group_id'] : null;
 		}
 		return $map;
 	}
@@ -566,6 +574,58 @@ class ApplicationRepository
 		} catch (\Throwable $e) {
 			return null;
 		}
+	}
+
+	/**
+	 * Active organizations whose name or organization number contains $query,
+	 * for the create modal's organization search. Returns only the columns the
+	 * picker shows: the legacy search (uiorganization.index) also sends contacts
+	 * and customer_ssn per row.
+	 *
+	 * @return array{total: int, results: array<int, array{id: int, name: string, organization_number: string}>}
+	 */
+	public function searchOrganizations(string $query, int $limit): array
+	{
+		$pattern = '%' . addcslashes($query, '\\%_') . '%';
+		$where = "WHERE active = 1 AND (name ILIKE :name OR organization_number ILIKE :number)";
+		$params = [':name' => $pattern, ':number' => $pattern];
+
+		$count = $this->db->prepare("SELECT count(*) FROM bb_organization {$where}");
+		$count->execute($params);
+		$total = (int) $count->fetchColumn();
+
+		$stmt = $this->db->prepare(
+			"SELECT id, name, organization_number
+			 FROM bb_organization
+			 {$where}
+			 ORDER BY name ASC, id ASC
+			 LIMIT " . max(1, $limit)
+		);
+		$stmt->execute($params);
+
+		$results = array_map(function (array $row): array {
+			return [
+				'id' => (int) $row['id'],
+				'name' => $this->decodeEntities($row['name']),
+				'organization_number' => (string) ($row['organization_number'] ?? ''),
+			];
+		}, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+		return ['total' => $total, 'results' => $results];
+	}
+
+	/**
+	 * IDs of the organization's active groups (the groups a booking can be made for).
+	 *
+	 * @return int[]
+	 */
+	public function fetchActiveGroupIds(int $organizationId): array
+	{
+		$stmt = $this->db->prepare(
+			"SELECT id FROM bb_group WHERE organization_id = :org_id AND active = 1 ORDER BY id"
+		);
+		$stmt->execute([':org_id' => $organizationId]);
+		return array_map('intval', array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'id'));
 	}
 
 	// ── Activity ────────────────────────────────────────────────────────
@@ -636,6 +696,7 @@ class ApplicationRepository
 		$stmt = $this->db->prepare(
 			"SELECT po.id AS order_id, pol.id AS line_id,
 			        pol.article_mapping_id, pol.quantity, pol.amount, pol.tax,
+			        pol.article_price_id, pol.price_label,
 			        am.unit,
 			        CASE WHEN r.name IS NULL THEN s.name ELSE r.name END AS article_name
 			 FROM bb_purchase_order po
@@ -666,6 +727,9 @@ class ApplicationRepository
 				'quantity'           => (int) ($row['quantity'] ?? 0),
 				'amount'             => $amount,
 				'tax'                => $tax,
+				// The citizen's price choice, when they had one
+				'article_price_id'   => $row['article_price_id'] !== null ? (int) $row['article_price_id'] : null,
+				'price_label'        => $row['price_label'] !== null ? $this->decodeEntities($row['price_label']) : null,
 			];
 			$orders[$oid]['sum'] += $amount + $tax;
 		}
@@ -712,6 +776,36 @@ class ApplicationRepository
 		$stmt->execute([':building_id' => $buildingId, ':d' => $appDate]);
 		$row = $stmt->fetch(PDO::FETCH_ASSOC);
 		return $row ?: null;
+	}
+
+	/**
+	 * Every season of the building that covers $date (Y-m-d), for the create
+	 * modal's season select. Unlike fetchSeasonInfo() this does not pick one: a
+	 * building with overlapping seasons lists them all and the officer chooses.
+	 * Same filters as the legacy season list (active, not archived).
+	 */
+	public function fetchSeasonsCovering(int $buildingId, string $date): array
+	{
+		$stmt = $this->db->prepare(
+			"SELECT id, name, from_, to_
+			 FROM bb_season
+			 WHERE active = 1
+			   AND status <> 'ARCHIVED'
+			   AND building_id = :building_id
+			   AND from_ <= :from_date
+			   AND to_ >= :to_date
+			 ORDER BY from_ DESC, id ASC"
+		);
+		$stmt->execute([':building_id' => $buildingId, ':from_date' => $date, ':to_date' => $date]);
+
+		return array_map(function (array $row): array {
+			return [
+				'id' => (int) $row['id'],
+				'name' => $this->decodeEntities($row['name']),
+				'from_' => $row['from_'],
+				'to_' => $row['to_'],
+			];
+		}, $stmt->fetchAll(PDO::FETCH_ASSOC));
 	}
 
 	// ── Assign / Unassign ──────────────────────────────────────────────

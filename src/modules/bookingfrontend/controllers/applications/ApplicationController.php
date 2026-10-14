@@ -4,6 +4,7 @@ namespace App\modules\bookingfrontend\controllers\applications;
 
 use App\modules\bookingfrontend\controllers\DocumentController;
 use App\modules\bookingfrontend\helpers\ApplicationHelper;
+use App\modules\bookingfrontend\helpers\PriceChoiceException;
 use App\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\helpers\WebSocketHelper;
@@ -13,6 +14,7 @@ use App\modules\bookingfrontend\repositories\ArticleRepository;
 use App\modules\bookingfrontend\services\applications\ApplicationService;
 use App\modules\bookingfrontend\services\FreeTimeService;
 use App\modules\phpgwapi\security\Sessions;
+use App\modules\phpgwapi\services\Log;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -496,7 +498,8 @@ class ApplicationController extends DocumentController
      *                     type="object",
      *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
      *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
-     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items"),
+     *                     @OA\Property(property="price_id", type="integer", nullable=true, description="The resource's chosen price (a price_options[].price_id from /applications/articles); only for the resource itself")
      *                 )
      *             ),
      *             @OA\Property(
@@ -522,6 +525,10 @@ class ApplicationController extends DocumentController
      *     @OA\Response(
      *         response=400,
      *         description="Invalid input or missing session"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Refused price choice: {error, errors, code: price_choice_required|price_choice_invalid, article_mapping_id}"
      *     )
      * )
      */
@@ -587,6 +594,8 @@ class ApplicationController extends DocumentController
             $response->getBody()->write(json_encode($responseData));
             return $response->withStatus(201)
                 ->withHeader('Content-Type', 'application/json');
+        } catch (PriceChoiceException $e) {
+            return ResponseHelper::sendErrorResponse($e->toResponseBody(), 422);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => "Error creating partial application: " . $e->getMessage()],
@@ -617,7 +626,8 @@ class ApplicationController extends DocumentController
      *                     type="object",
      *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
      *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
-     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items"),
+     *                     @OA\Property(property="price_id", type="integer", nullable=true, description="The resource's chosen price (a price_options[].price_id from /applications/articles); only for the resource itself")
      *                 )
      *             )
      *         )
@@ -625,6 +635,10 @@ class ApplicationController extends DocumentController
      *     @OA\Response(
      *         response=200,
      *         description="Application updated successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Refused price choice: {error, errors, code: price_choice_required|price_choice_invalid, article_mapping_id}"
      *     )
      * )
      */
@@ -669,6 +683,8 @@ class ApplicationController extends DocumentController
                 ->withHeader('Content-Type', 'application/json');
 
 
+        } catch (PriceChoiceException $e) {
+            return ResponseHelper::sendErrorResponse($e->toResponseBody(), 422);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => "Error updating application: " . $e->getMessage()],
@@ -724,7 +740,8 @@ class ApplicationController extends DocumentController
      *                     type="object",
      *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
      *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
-     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items"),
+     *                     @OA\Property(property="price_id", type="integer", nullable=true, description="The resource's chosen price (a price_options[].price_id from /applications/articles); only for the resource itself")
      *                 )
      *             ),
      *             @OA\Property(
@@ -753,6 +770,10 @@ class ApplicationController extends DocumentController
      *     @OA\Response(
      *         response=404,
      *         description="Application not found"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Refused price choice: {error, errors, code: price_choice_required|price_choice_invalid, article_mapping_id}"
      *     )
      * )
      */
@@ -806,6 +827,8 @@ class ApplicationController extends DocumentController
             return $response->withStatus(200)
                 ->withHeader('Content-Type', 'application/json');
 
+        } catch (PriceChoiceException $e) {
+            return ResponseHelper::sendErrorResponse($e->toResponseBody(), 422);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => "Error updating application: " . $e->getMessage()],
@@ -1030,6 +1053,14 @@ class ApplicationController extends DocumentController
      *     @OA\Response(
      *         response=404,
      *         description="Application not found"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="A file was refused (type, size or name); none of the files were stored",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="error", type="string"),
+     *             @OA\Property(property="errors", type="array", @OA\Items(type="string"))
+     *         )
      *     )
      * )
      */
@@ -1068,44 +1099,21 @@ class ApplicationController extends DocumentController
                 $files = [$files];
             }
 
-            $documents = [];
             $parseBody = $request->getParsedBody();
-            $description = $parseBody['description'] ?? null;
-            $focalPointX = $parseBody['focal_point_x'] ?? null;
-            $focalPointY = $parseBody['focal_point_y'] ?? null;
 
-            foreach ($files as $file) {
-                // Basic validation
-                $filename = $file->getClientFilename();
-//                $fileType = $this->documentService->getFileTypeFromFilename($filename);
-//
-//                if (!$this->documentService->isAllowedFileType($fileType)) {
-//                    return ResponseHelper::sendErrorResponse(
-//                        ['error' => "File type not allowed for: {$filename}"],
-//                        400
-//                    );
-//                }
-
-                // Create document record
-                $document = [
-                    'category' => Document::CATEGORY_OTHER,
-                    'owner_id' => $applicationId,
-                    'name' => $filename,
-                    'description' => $description ?? $filename
-                ];
-
-                // Add focal point if provided
-                if ($focalPointX !== null && $focalPointY !== null) {
-                    $document['focal_point_x'] = $focalPointX;
-                    $document['focal_point_y'] = $focalPointY;
-                }
-
-                $docId = $this->documentService->createDocument($document);
-
-                // Move uploaded file to correct location
-                $this->documentService->saveDocumentFile($docId, $file);
-                $documents[] = $docId;
+            // Every file is checked before any is stored; one refused file stores none.
+            $result = $this->documentService->storeUploads($applicationId, $files, [
+                'description' => $parseBody['description'] ?? null,
+                'focal_point_x' => $parseBody['focal_point_x'] ?? null,
+                'focal_point_y' => $parseBody['focal_point_y'] ?? null,
+            ]);
+            if (!empty($result['errors'])) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => implode("\n", $result['errors']), 'errors' => $result['errors']],
+                    422
+                );
             }
+            $documents = $result['ids'];
 
             WebSocketHelper::triggerPartialApplicationsUpdate();
 
@@ -1116,9 +1124,16 @@ class ApplicationController extends DocumentController
             ]));
             return $response->withHeader('Content-Type', 'application/json');
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
+            // The message, file and trace go to phpgw_log, not to the citizen.
+            $log = new Log();
+            $log->fatal([
+                'text' => get_class($e) . ': ' . $e->getMessage() . "\n" . $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
             return ResponseHelper::sendErrorResponse(
-                ['error' => "Error uploading files: " . $e->getMessage()],
+                ['error' => lang('booking.attachment_upload_failed')],
                 500
             );
         }

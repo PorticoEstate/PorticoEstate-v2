@@ -107,6 +107,10 @@ export interface IOrderLine {
     tax_code: number;
     tax: number;
     name: string;
+    /** The price row a resource line was priced from; absent when no choice was recorded */
+    article_price_id?: number | null;
+    /** What the citizen chose, as it read when they chose it; only set when there was a choice */
+    price_label?: string | null;
 }
 
 interface IApplicationAgeGroup {

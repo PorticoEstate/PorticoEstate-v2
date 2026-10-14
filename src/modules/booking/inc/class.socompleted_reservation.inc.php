@@ -212,9 +212,9 @@ class booking_socompleted_reservation extends booking_socommon
 		$building = $this->get_building($type, $reservation);
 		$entity['article_description'] = $building['name'] . ': ' . implode(', ', $this->get_resource_names($reservation['resources']));
 
-		if (mb_strlen($entity['article_description']) > 35)
+		if (mb_strlen($entity['article_description']) > 100)
 		{
-			$entity['article_description'] = mb_substr($entity['article_description'], 0, 32, 'UTF-8') . '...';
+			$entity['article_description'] = mb_substr($entity['article_description'], 0, 97, 'UTF-8') . '...';
 		}
 
 		$entity['description'] = mb_substr($entity['from_'], 0, -3, 'UTF-8') . ' - ' . mb_substr($entity['to_'], 0, -3, 'UTF-8');

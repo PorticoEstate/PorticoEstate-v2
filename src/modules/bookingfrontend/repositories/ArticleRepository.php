@@ -2,6 +2,7 @@
 namespace App\modules\bookingfrontend\repositories;
 
 use App\Database\Db;
+use App\modules\bookingfrontend\helpers\PriceChoiceException;
 use App\modules\bookingfrontend\models\Article;
 use PDO;
 
@@ -36,6 +37,142 @@ class ArticleRepository
         $stmt->execute(['id' => $mappingId]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /**
+     * The prices a citizen chooses between for a resource (article_cat 1): every
+     * active row of the mapping whose from_ has been reached today. A future
+     * from_ is not offered yet; superseded prices are deleted by the admin, so
+     * the rows are alternatives, not a history.
+     *
+     * from_ is a naive local timestamp, so "today" is the Oslo date: the session
+     * runs in UTC, where CURRENT_DATE is still yesterday until 02:00, and a row
+     * dated later today would not count until tomorrow.
+     *
+     * The timeslot path runs the same query in its node port
+     * (WebSocket/node/src/modules/booking/resource-price.ts); keep them identical.
+     *
+     * @return array Rows of id, price (ex. tax), remark and default_
+     */
+    public function getEligibleResourcePrices(int $mappingId): array
+    {
+        $sql = "SELECT id, price, remark, default_
+                FROM bb_article_price
+                WHERE article_mapping_id = :mapping_id
+                AND active = 1
+                AND from_ < (now() AT TIME ZONE 'Europe/Oslo')::date + 1
+                ORDER BY price, id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':mapping_id' => $mappingId]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * The option a resource's price starts out as: the only one, or else the
+     * default. Two or more default rows are no default at all. Null means the
+     * citizen has to choose, or that there is nothing to choose between.
+     */
+    public static function preselectedPrice(array $options): ?array
+    {
+        if (count($options) === 1) {
+            return $options[0];
+        }
+
+        $defaults = array_values(array_filter($options, fn($option) => (int)$option['default_'] === 1));
+
+        return count($defaults) === 1 ? $defaults[0] : null;
+    }
+
+    /**
+     * The label stored with the order line, so the case officer sees what the
+     * citizen picked. Only a real choice gets one: the remark, or the amount when
+     * the remark is empty. A single price was never chosen and gets none.
+     */
+    public static function priceLabel(array $option, int $optionCount): ?string
+    {
+        if ($optionCount < 2) {
+            return null;
+        }
+
+        $remark = trim((string)($option['remark'] ?? ''));
+
+        return $remark !== '' ? $remark : number_format((float)$option['price'], 2, '.', '');
+    }
+
+    /**
+     * The price a resource line is billed at, given the citizen's choice
+     * ($priceId null = none sent). A choice must be one of today's options; the
+     * client's price is never used. Without a choice the preselected option
+     * applies, and where there is none the choice is required.
+     *
+     * @return array|null The chosen price row plus option_count, or null when
+     *                    the resource has no price (the line stays free, as before)
+     * @throws PriceChoiceException
+     */
+    public function resolveResourcePrice(int $mappingId, ?int $priceId): ?array
+    {
+        $options = $this->getEligibleResourcePrices($mappingId);
+
+        if ($priceId !== null) {
+            foreach ($options as $option) {
+                if ((int)$option['id'] === $priceId) {
+                    return $option + ['option_count' => count($options)];
+                }
+            }
+            throw new PriceChoiceException(PriceChoiceException::INVALID, $mappingId);
+        }
+
+        if (empty($options)) {
+            return null;
+        }
+
+        $preselected = self::preselectedPrice($options);
+        if ($preselected === null) {
+            throw new PriceChoiceException(PriceChoiceException::REQUIRED, $mappingId);
+        }
+
+        return $preselected + ['option_count' => count($options)];
+    }
+
+    /**
+     * Refuse checkout while a resource line still waits for the citizen's price.
+     *
+     * The timeslot path books before anyone can choose, so when the resource has
+     * several prices and no default it leaves the resource line unpriced: no
+     * price row and a unit price of 0. Such a line is only resolved by a choice,
+     * also when the resource has gained a default since; it must not go through
+     * as free.
+     *
+     * @param int[] $applicationIds
+     * @throws PriceChoiceException
+     */
+    public function assertPriceChoicesMade(array $applicationIds): void
+    {
+        $applicationIds = array_map('intval', $applicationIds);
+        if (empty($applicationIds)) {
+            return;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($applicationIds), '?'));
+        $sql = "SELECT DISTINCT pol.article_mapping_id
+                FROM bb_purchase_order po
+                JOIN bb_purchase_order_line pol ON po.id = pol.order_id
+                JOIN bb_article_mapping am ON pol.article_mapping_id = am.id
+                WHERE po.cancelled IS NULL
+                AND po.application_id IN ({$placeholders})
+                AND am.article_cat_id = 1
+                AND pol.article_price_id IS NULL
+                AND pol.unit_price = 0
+                ORDER BY pol.article_mapping_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($applicationIds);
+
+        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $mappingId) {
+            if (!empty($this->getEligibleResourcePrices((int)$mappingId))) {
+                throw new PriceChoiceException(PriceChoiceException::REQUIRED, (int)$mappingId);
+            }
+        }
     }
 
     /**
@@ -80,23 +217,29 @@ class ArticleRepository
      * Save articles for an application using the new ArticleOrder format
      *
      * @param int $applicationId The application ID
-     * @param array $articles Array of ArticleOrder objects with id, quantity, and parent_id
+     * @param array $articles Array of ArticleOrder objects with id, quantity, parent_id
+     *                        and, for the resource itself, the chosen price_id
+     * @throws PriceChoiceException When a resource's price choice is missing or not offered
      */
     public function saveArticlesForApplication(int $applicationId, array $articles): void
     {
         try {
-            // First delete existing purchase order lines for this application
-            $this->deleteExistingPurchaseOrderLines($applicationId);
-
-            // Create a new purchase order if it doesn't exist
-            $purchase_order_id = $this->getOrCreatePurchaseOrder($applicationId);
-
-            // Add each article as a purchase order line
+            // Price every line before anything is deleted, so a refused price
+            // choice leaves the existing order as it was
+            $lines = [];
             foreach ($articles as $article) {
                 // Get article details from the mapping
                 $mapping = $this->getArticleMappingById($article['id']);
                 if (!$mapping) {
                     continue; // Skip if mapping not found
+                }
+
+                $priceId = null;
+                if (isset($article['price_id'])) {
+                    $priceId = filter_var($article['price_id'], FILTER_VALIDATE_INT);
+                    if ($priceId === false) {
+                        throw new PriceChoiceException(PriceChoiceException::INVALID, (int)$article['id']);
+                    }
                 }
 
                 // Create the purchase order line
@@ -106,11 +249,37 @@ class ArticleRepository
                     'parent_mapping_id' => $article['parent_id'] ?? null,
                     'ex_tax_price' => $mapping['price'] ?? 0, // Using price from mapping
                     'tax_code' => $mapping['tax_code'] ?? null,
-                    'tax_percent' => (float)($mapping['tax_percent'] ?? 0)
+                    'tax_percent' => (float)($mapping['tax_percent'] ?? 0),
+                    'article_price_id' => null,
+                    'price_label' => null
                 ];
 
+                if ((int)$mapping['article_cat_id'] === 1) {
+                    // The resource itself: billed at the price row the citizen chose
+                    $price = $this->resolveResourcePrice((int)$article['id'], $priceId);
+                    $line['ex_tax_price'] = $price['price'] ?? 0;
+                    $line['article_price_id'] = $price ? (int)$price['id'] : null;
+                    $line['price_label'] = $price ? self::priceLabel($price, $price['option_count']) : null;
+                } elseif ($priceId !== null) {
+                    // Only the resource has a price choice; services keep their own price
+                    throw new PriceChoiceException(PriceChoiceException::INVALID, (int)$article['id']);
+                }
+
+                $lines[] = $line;
+            }
+
+            // First delete existing purchase order lines for this application
+            $this->deleteExistingPurchaseOrderLines($applicationId);
+
+            // Create a new purchase order if it doesn't exist
+            $purchase_order_id = $this->getOrCreatePurchaseOrder($applicationId);
+
+            // Add each article as a purchase order line
+            foreach ($lines as $line) {
                 $this->savePurchaseOrderLine($purchase_order_id, $line);
             }
+        } catch (PriceChoiceException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new \Exception("Error saving application articles: " . $e->getMessage());
         }
@@ -172,10 +341,12 @@ class ArticleRepository
     {
         $sql = "INSERT INTO bb_purchase_order_line (
             order_id, article_mapping_id, quantity,
-            tax_code, unit_price, parent_mapping_id, amount, tax, currency
+            tax_code, unit_price, parent_mapping_id, amount, tax, currency,
+            article_price_id, price_label
         ) VALUES (
             :order_id, :article_mapping_id, :quantity,
-            :tax_code, :unit_price, :parent_mapping_id, :amount, :tax, :currency
+            :tax_code, :unit_price, :parent_mapping_id, :amount, :tax, :currency,
+            :article_price_id, :price_label
         )";
 
         // Calculate the amount based on unit price and quantity
@@ -197,7 +368,9 @@ class ArticleRepository
             ':parent_mapping_id' => $line['parent_mapping_id'] ?? null,
             ':amount' => $amount,
             ':tax' => $tax,
-            ':currency' => 'NOK' // Default currency
+            ':currency' => 'NOK', // Default currency
+            ':article_price_id' => $line['article_price_id'] ?? null,
+            ':price_label' => $line['price_label'] ?? null
         ]);
     }
 
@@ -316,16 +489,40 @@ class ArticleRepository
         // Create Article objects and add pricing info
         $articles = [];
         foreach ($articlesData as $articleData) {
-            // Get pricing info
-            $sql = "SELECT price, remark FROM bb_article_price
-                WHERE article_mapping_id = ?
-                AND active = 1
-                AND from_ <= CURRENT_DATE
-                ORDER BY default_ ASC, from_ DESC";
+            if (isset($articleData['resource_id'])) {
+                // The resource itself: the citizen chooses between today's prices.
+                // The article's own price is the preselected option, and 0 while
+                // a choice is required.
+                $options = $this->getEligibleResourcePrices((int)$articleData['id']);
+                $preselected = self::preselectedPrice($options);
+                $price = $preselected ? ['price' => $preselected['price'], 'remark' => $preselected['remark']] : false;
 
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([$articleData['id']]);
-            $price = $stmt->fetch(PDO::FETCH_ASSOC);
+                $taxPercent = (float)$articleData['tax_percent'];
+                $articleData['price_options'] = array_map(function ($option) use ($taxPercent) {
+                    $exTaxPrice = (float)$option['price'];
+                    return [
+                        'price_id' => (int)$option['id'],
+                        'remark' => $option['remark'] ?? '',
+                        'ex_tax_price' => number_format($exTaxPrice, 2, '.', ''),
+                        'tax' => number_format($exTaxPrice * ($taxPercent / 100), 2, '.', ''),
+                        'price' => number_format($exTaxPrice * (1 + ($taxPercent / 100)), 2, '.', ''),
+                        'is_default' => (int)$option['default_'] === 1
+                    ];
+                }, $options);
+                $articleData['default_price_id'] = $preselected ? (int)$preselected['id'] : null;
+                $articleData['price_choice_required'] = count($options) > 1 && $preselected === null;
+            } else {
+                // Get pricing info
+                $sql = "SELECT price, remark FROM bb_article_price
+                    WHERE article_mapping_id = ?
+                    AND active = 1
+                    AND from_ <= CURRENT_DATE
+                    ORDER BY default_ ASC, from_ DESC";
+
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([$articleData['id']]);
+                $price = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
 
             // Add price data to article data
             $articleData['ex_tax_price'] = (float)($price['price'] ?? 0);

@@ -1333,3 +1333,4 @@ change_price_not_recalculated_allocation	booking	en	The allocation is priced per
 change_request_stale_allocation	booking	en	The allocation has changed since the request
 change_request_element_inactive_allocation	booking	en	The allocation is not active
 change_applied_allocation	booking	en	The change has been saved. The application's dates and the price are unchanged.
+change_request_booking_outside_allocation	booking	en	The change cannot be accepted: booking #%1 in the allocation would end up outside the new time.

@@ -257,10 +257,13 @@ class AllocationTimeChangeService
 	 *
 	 * Not recalculated - the price stays, and the comment says why - when an hour
 	 * line is off the rule, when there is no order or more than one, when the
-	 * order is parent-less (the application's own order, which later allocations
-	 * of the application are copied from,
-	 * sopurchase_order::copy_purchase_order_from_application), or when it is
-	 * already billed.
+	 * order is parent-less (the application's own order) and the application is
+	 * recurring, or when it is already billed. The occurrences "Opprett alle"
+	 * creates later are copied from that order
+	 * (sopurchase_order::copy_purchase_order_from_application), so its hour lines
+	 * must keep the series' length. The own order of a plain application is
+	 * recalculated like any other; an element the case officer creates from that
+	 * application afterwards copies its lines as they then are.
 	 *
 	 * The hour lines follow the new time even when the total does not move (a
 	 * line priced 0). A changed total is written with
@@ -290,7 +293,7 @@ class AllocationTimeChangeService
 			return $kept('not_recalculated', $orders ? 'several_orders' : 'no_order', 'bookingfrontend.allocation_price_not_recalculated');
 		}
 		$orderId = $orders[0]['id'];
-		if ($orders[0]['parent_id'] === null) {
+		if ($orders[0]['parent_id'] === null && $this->repository->isRecurringApplication((int) $allocation['application_id'])) {
 			return $kept('not_recalculated', 'master_order', 'bookingfrontend.allocation_price_master_order');
 		}
 		if ($this->repository->isBilled($orderId, $allocationId)) {

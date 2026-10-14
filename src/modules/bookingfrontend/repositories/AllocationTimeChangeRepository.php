@@ -9,7 +9,8 @@ use PDO;
  * What a change of one allocation's time from Min side reads and writes besides
  * the allocation row itself (AllocationTimeChangeService): the bookings made
  * inside it, and the allocation's own purchase order, whose lines priced per
- * hour follow the new time.
+ * hour follow the new time. The case officer's "Godta endring" of a new time
+ * (booking ApplicationChangeRequestService) checks the bookings the same way.
  */
 class AllocationTimeChangeRepository
 {
@@ -59,6 +60,19 @@ class AllocationTimeChangeRepository
 			'id' => (int) $row['id'],
 			'parent_id' => $row['parent_id'] !== null ? (int) $row['parent_id'] : null,
 		], $stmt->fetchAll(PDO::FETCH_ASSOC));
+	}
+
+	/**
+	 * Whether the application repeats: its recurring_info decodes to an object
+	 * with an interval. NULL is a plain application, and so is the JSON string
+	 * "" a legacy save leaves in its place (socommon json-encodes the empty field).
+	 */
+	public function isRecurringApplication(int $applicationId): bool
+	{
+		$stmt = $this->db->prepare("SELECT recurring_info FROM bb_application WHERE id = :id");
+		$stmt->execute([':id' => $applicationId]);
+		$info = json_decode((string) $stmt->fetchColumn(), true);
+		return is_array($info) && isset($info['field_interval']);
 	}
 
 	/**

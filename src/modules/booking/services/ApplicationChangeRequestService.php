@@ -5,6 +5,7 @@ namespace App\modules\booking\services;
 use App\Database\Db;
 use App\modules\booking\repositories\ApplicationChangeRequestRepository;
 use App\modules\booking\repositories\ApplicationRepository;
+use App\modules\bookingfrontend\repositories\AllocationTimeChangeRepository;
 use RuntimeException;
 
 /**
@@ -18,7 +19,8 @@ use RuntimeException;
  * status. "Godta endring" moves the SAME element to the requested time - nothing
  * is deleted or recreated. An event keeps its date row and, when it is alone on
  * it, the application's date row on that time; an allocation never moves the
- * application's date row, which for a series is the time of every occurrence.
+ * application's date row, which for a series is the time of every occurrence,
+ * and moves only while the bookings made inside it still fit the new time.
  * "Avslå endring" keeps the old time.
  * Neither writes a comment or sends mail, and neither recalculates a price.
  */
@@ -27,12 +29,14 @@ class ApplicationChangeRequestService
 	private ApplicationRepository $repo;
 	private ApplicationService $applicationService;
 	private ApplicationChangeRequestRepository $requests;
+	private AllocationTimeChangeRepository $allocationTimes;
 
 	public function __construct(ApplicationRepository $repo, ApplicationService $applicationService)
 	{
 		$this->repo = $repo;
 		$this->applicationService = $applicationService;
 		$this->requests = new ApplicationChangeRequestRepository();
+		$this->allocationTimes = new AllocationTimeChangeRepository();
 	}
 
 	/**
@@ -88,12 +92,13 @@ class ApplicationChangeRequestService
 	 * Move the element to the requested time, in one transaction.
 	 *
 	 * Refused - nothing written, the request stays open - when the element is not
-	 * active, when its time changed after the request, when the legacy
-	 * validation (soevent::doValidate or soallocation::doValidate: other events,
-	 * allocations and bookings on the element's resources) fails for the new
-	 * time, or when the new time collides with anything on the application's
-	 * resources other than the elements of the element's own slot (the #1438
-	 * rule the date rows show).
+	 * active, when its time changed after the request, when a booking made inside
+	 * an allocation would lie outside the new time, when the legacy validation
+	 * (soevent::doValidate or soallocation::doValidate: other events, allocations
+	 * and bookings on the element's resources) fails for the new time, or when
+	 * the new time collides with anything on the application's resources other
+	 * than the elements of the element's own slot (the #1438 rule the date rows
+	 * show).
 	 *
 	 * @return array{status:string, from_:string, to_:string, application_date_id:?int, application_date_shared:bool, price_review:bool}
 	 *         plus event_id or allocation_id
@@ -204,7 +209,9 @@ class ApplicationChangeRequestService
 	 * because for a recurring application it is the time of every occurrence,
 	 * and the price is not recalculated (price_review).
 	 *
-	 * The bookings made inside the allocation are its own, never a collision.
+	 * The bookings made inside the allocation are its own, never a collision -
+	 * but each must still fit inside the new time, the same check as the
+	 * applicant's shortening (AllocationTimeChangeRepository::findBookingOutside).
 	 *
 	 * @return array{0: array, 1: array} the response and the allocation's resource ids
 	 */
@@ -222,6 +229,13 @@ class ApplicationChangeRequestService
 		$newFrom = (string) $request['new_from_'];
 		$newTo = (string) $request['new_to_'];
 		$applicationId = (int) $allocation['application_id'];
+
+		// A booking made inside the allocation stays inside it, as when the
+		// applicant shortens it (bookingfrontend AllocationTimeChangeService::shorten).
+		$bookingOutside = $this->allocationTimes->findBookingOutside($allocationId, $newFrom, $newTo);
+		if ($bookingOutside !== null) {
+			throw new RuntimeException(lang('booking.change_request_booking_outside_allocation', $bookingOutside), 409);
+		}
 
 		$slot = $this->findSlot($applicationId, 'allocation', $allocationId);
 		$own = $slot['elements'] ?? [['type' => 'allocation', 'id' => $allocationId]];

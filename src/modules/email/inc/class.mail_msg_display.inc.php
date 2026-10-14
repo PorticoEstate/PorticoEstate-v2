@@ -42,13 +42,12 @@
 	@discussion normally this would call $this->initialize_mail_msg which is a function in the base class,
 	HOWEVER I had to stop the auto constructor runthrough because preferences class API keeps making
 	copies of this object thus calling the constructor unnecessarily for what the pref API needs, which is
-	only a few functions in this object, SO NOW this class has NO real auto called constructor,
-	instead the initialization function needs to be explicitly called, which it is in the bootstrap class.
+	only a few functions in this object. The automatic constructor only wires the base dependencies;
+	full initialization is explicitly called by the shared-instance factory.
 	*/
 	function __construct()
 	{
-		//$this->initialize_mail_msg();
-		return;
+		parent::__construct();
 	}
 
 	/*!

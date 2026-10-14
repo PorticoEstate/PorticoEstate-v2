@@ -15,7 +15,6 @@
  */
 
 use App\modules\phpgwapi\services\Settings;
-use App\modules\email\services\MailMessage;
 
 /**
  * This class has one purpose, PHP3 compatibility. It simply holds the DataCommunications Object.
@@ -342,17 +341,17 @@ class mail_msg_base
 	var $newsmode = '';
 	var $crypto = null;
 	var $serverSettings = array();
-	// MailMessage wrapper instance
+	// Wrapper methods belong to the same mail message object.
 	var $mail_msg_wrappers = null;
 
 	/*!
-		@function mail_msg_base
-		@abstract CONSTRUCTOR place holder, does nothing  
+		@function __construct
+		@abstract Load server settings and wire the wrapper; full initialization is deferred.
 		*/
 	function __construct()
 	{
 		$this->serverSettings = Settings::getInstance()->get('server');
-		$this->mail_msg_wrappers = MailMessage::getInstance();
+		$this->mail_msg_wrappers = $this;
 
 		if (($this->debug_logins > 0) && ($this->dbug !== null))
 		{
@@ -5745,14 +5744,11 @@ HTML;
 		@discussion This is a  PHP3 SAFE and PHP< 4.0.6 Version of php function array_search. 
 		NOTE I did not implement the $strict param.
 		*/
-	function array_search_ex($needle = '', $haystack = '', $strict = False)
+	function array_search_ex($needle = '', $haystack = array(), $strict = False)
 	{
-		if (!$haystack)
-		{
-			$haystack = array();
-		}
 		// error check
 		if ((trim($needle) == '')
+			|| (!is_array($haystack))
 			|| (!$haystack)
 			|| (count($haystack) == 0)
 		)
@@ -5992,7 +5988,7 @@ HTML;
 		So if we are clearing a flag, we set it to " " in that structure, and save it back to the cache. 
 		UNDER DEVELOPMEMT. 
 		*/
-	function event_msg_seen($msgball = '', $called_by = 'not_specified')
+	function event_msg_seen($msgball = array(), $called_by = 'not_specified')
 	{
 		if ($this->debug_events > 0)
 		{

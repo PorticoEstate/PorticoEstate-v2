@@ -148,7 +148,7 @@
 		*/
 		public function __construct()
 		{
-			return;
+			parent::__construct();
 		}
 		
 		// ====  Functions For Getting Information About A Message  ====

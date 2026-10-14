@@ -17,11 +17,13 @@ namespace Tests\Controllers
 		public static bool $failInitialization = false;
 		public int $initializations = 0;
 		public int $closures = 0;
+		public bool $wrapperReadyDuringInitialization = false;
 		public array $requests = [];
 
 		public function initialize_mail_msg()
 		{
 			$this->initializations++;
+			$this->wrapperReadyDuringInitialization = $this->mail_msg_wrappers === $this;
 			if (self::$failInitialization) throw new \RuntimeException('Initialization failed');
 		}
 
@@ -44,6 +46,22 @@ namespace Tests\Controllers
 
 	class EmailMsgBootstrapTest extends TestCase
 	{
+		private mixed $originalSettings;
+
+		protected function setUp(): void
+		{
+			$property = new \ReflectionProperty(Settings::class, 'instance');
+			$property->setAccessible(true);
+			$this->originalSettings = $property->getValue();
+			$property->setValue(null, new class
+			{
+				public function get(string $key): array
+				{
+					return $key === 'server' ? ['install_id' => 'email-test', 'encryptkey' => '', 'mcrypt_iv' => ''] : [];
+				}
+			});
+		}
+
 		private function mailDouble(): MailMessageTestDouble
 		{
 			$mail = MailMessageTestDouble::getInstance();
@@ -208,6 +226,23 @@ namespace Tests\Controllers
 		{
 			MailMessageTestDouble::$failInitialization = false;
 			MailMessage::releaseInstance();
+			$property = new \ReflectionProperty(Settings::class, 'instance');
+			$property->setAccessible(true);
+			$property->setValue(null, $this->originalSettings);
+		}
+
+		public function testConstructorsWireTheOwnedWrapperWithoutFullInitialization(): void
+		{
+			foreach ([\mail_msg_wrappers::class, \mail_msg::class, MailMessage::class] as $class)
+			{
+				$mail = new $class();
+				$this->assertSame($mail, $mail->mail_msg_wrappers);
+				$this->assertSame(Settings::getInstance()->get('server'), $mail->serverSettings);
+				$this->assertFalse($mail->mail_msg_wrappers->get_isset_arg('already_grab_class_args_gpc'));
+				$this->assertFalse($mail->been_constructed);
+				$this->assertNull($mail->so);
+				$this->assertFalse(MailMessage::hasInstance());
+			}
 		}
 
 		public function testModernServiceExposesWrappersWithoutCreatingAnInstance(): void
@@ -220,6 +255,8 @@ namespace Tests\Controllers
 		public function testSharedInstanceIsInitializedOnce(): void
 		{
 			$mail = $this->mailDouble();
+			$this->assertTrue($mail->wrapperReadyDuringInitialization);
+			$this->assertSame($mail, $mail->mail_msg_wrappers);
 			$this->assertSame($mail, MailMessage::getInstance());
 			$this->assertSame($mail, MailMessageTestDouble::getInstance());
 			$this->assertSame(1, $mail->initializations);

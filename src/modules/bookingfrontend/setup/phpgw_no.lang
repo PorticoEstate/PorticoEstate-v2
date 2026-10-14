@@ -1169,3 +1169,9 @@ allocation_price_master_order	bookingfrontend	no	Pris ikke omregnet: søknadens 
 allocation_price_not_recalculated	bookingfrontend	no	Pris ikke omregnet: saksbehandler kontrollerer prisen.
 allocation_cost_recalculated_after_shortening	bookingfrontend	no	Pris omregnet etter forkorting (%1). Pris låst etter forkorting.
 allocation_price_off_rule	bookingfrontend	no	Pris ikke omregnet: saksbehandler har endret tiden uten å regne om prisen.
+
+repeating	bookingfrontend	no	Gjentakende
+occurrence_awaiting	bookingfrontend	no	Venter på saksbehandling
+occurrence_allocated	bookingfrontend	no	Tildelt
+occurrence_withdrawn	bookingfrontend	no	Trukket
+occurrence_not_allocated	bookingfrontend	no	Ikke tildelt

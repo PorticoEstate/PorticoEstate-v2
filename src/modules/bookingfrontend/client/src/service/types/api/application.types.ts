@@ -210,4 +210,42 @@ export interface UpdateStatusResponse {
     message: string; // "Application status updated successfully"
 }
 
+/**
+ * What an occurrence of a recurring application holds, from the applicant's side:
+ * - allocated: an active element of the application's own is placed on it
+ * - rejected / cancelled: the application was rejected or cancelled
+ * - withdrawn: its elements are all inactive
+ * - not_allocated: the application is accepted, but nothing was allocated for it
+ * - awaiting: the case officer has not processed it yet
+ */
+export type RecurringOccurrenceStatus = "allocated" | "rejected" | "cancelled" | "withdrawn" | "not_allocated" | "awaiting";
+
+/** One of the application's own elements, placed on an occurrence or outside the series. */
+export interface IRecurringSeriesElement {
+    type: "allocation" | "event" | "booking";
+    id: number;
+    active: boolean;
+    from_: string | null; // Europe/Oslo ISO, like applications/{id}/schedule
+    to_: string | null;
+}
+
+export interface IRecurringOccurrence {
+    from_: string; // Europe/Oslo ISO
+    to_: string;
+    status: RecurringOccurrenceStatus;
+    elements: IRecurringSeriesElement[];
+}
+
+/**
+ * GET /bookingfrontend/applications/{id}/recurring-series: every occurrence of a recurring
+ * application, from the case officer's own recurring preview (GH #1392).
+ */
+export interface IRecurringSeries {
+    application_id: number;
+    interval_weeks: number;
+    occurrences: IRecurringOccurrence[];
+    /** Elements that belong to no occurrence - moved to another day, or made outside the series */
+    outside_series: IRecurringSeriesElement[];
+}
+
 // Notification types live in @/service/types/api/notification.types

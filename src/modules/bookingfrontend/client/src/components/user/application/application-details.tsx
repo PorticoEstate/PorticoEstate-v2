@@ -1,6 +1,6 @@
 'use client'
 import React, {FC, useMemo, useEffect, useState, useRef, useCallback} from 'react';
-import {IApplication, IApplicationDate, ApplicationComment as IComment, RecurringInfoUtils} from "@/service/types/api/application.types";
+import {IApplication, IApplicationDate, ApplicationComment as IComment, RecurringInfoUtils, IRecurringOccurrence, RecurringOccurrenceStatus} from "@/service/types/api/application.types";
 import {
     useApplication,
     useResourceRegulationDocuments,
@@ -12,6 +12,7 @@ import {
     useUploadApplicationDocument,
     useDeleteApplicationDocument,
     useApplicationScheduleEntities,
+    useApplicationRecurringSeries,
     useServerSettings,
     markNotificationsAsRead,
 } from "@/service/hooks/api-hooks";
@@ -38,7 +39,7 @@ import ApplicationCrud from "@/components/building-calendar/modules/event/edit/a
 import {FCallTempEvent, HighlightEntity} from "@/components/building-calendar/building-calendar.types";
 import ArticleTable from "@/components/article-table/article-table";
 import {ENABLE_COMBINED_APPLICATIONS} from '@/service/feature-flags';
-import {getStatusColor} from './status-utils';
+import {getStatusColor, StatusColor} from './status-utils';
 import {resolveParticipantLimit} from "@/components/building-calendar/util/participant-limit";
 import {isFutureDate, phpGWLink} from "@/service/util";
 import styles from "./application-details.module.scss";
@@ -248,6 +249,82 @@ const DatesList: FC<{ dates: DateRowItem[] }> = ({dates}) => {
                                 kl. {f.time}{sameDay ? `–${to.time}` : ` → ${to.full} kl. ${to.time}`}
                             </div>
                         </div>
+                        <div className={styles.dateDuration}>{hours} t</div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+// How each status of a recurring application's occurrence reads (RecurringSeriesService on the
+// server decides it). A rejected or cancelled application reads like the page's own status tag.
+const OCCURRENCE_STATUS: Record<RecurringOccurrenceStatus, { langKey: string; color: StatusColor }> = {
+    allocated: {langKey: 'bookingfrontend.occurrence_allocated', color: 'success'},
+    awaiting: {langKey: 'bookingfrontend.occurrence_awaiting', color: 'warning'},
+    withdrawn: {langKey: 'bookingfrontend.occurrence_withdrawn', color: 'neutral'},
+    not_allocated: {langKey: 'bookingfrontend.occurrence_not_allocated', color: 'neutral'},
+    rejected: {langKey: 'bookingfrontend.rejected', color: getStatusColor('REJECTED')},
+    cancelled: {langKey: 'bookingfrontend.cancelled', color: getStatusColor('CANCELLED')},
+};
+
+// Every occurrence of a recurring application, in place of the ONE date it stores (GH #1392),
+// each with what it holds. An occurrence whose time was changed since - shortened by the
+// applicant, or moved by the case officer - shows the time it now has under the one asked for.
+// A time the applicant has asked for and the case officer has not decided on shows the same tag
+// as in "Reserverte tider", read from the same schedule entity.
+const RecurringSeriesList: FC<{ occurrences: IRecurringOccurrence[]; entities?: ScheduleEntities }> = ({occurrences, entities}) => {
+    const t = useTrans();
+
+    return (
+        <div className={styles.datesList}>
+            {occurrences.map(occurrence => {
+                const f = fmtDate(occurrence.from_);
+                const to = fmtDate(occurrence.to_);
+                const sameDay = f.full === to.full;
+                const hours = durationHours(occurrence.from_, occurrence.to_);
+                const status = OCCURRENCE_STATUS[occurrence.status];
+
+                const active = occurrence.elements.filter(e => e.active);
+                const held = active.find(e => e.type === 'allocation') ?? active[0];
+                const heldFrom = held?.from_;
+                const heldTo = held?.to_;
+                const heldTimeDiffers = !!heldFrom && !!heldTo && (
+                    DateTime.fromISO(heldFrom).toMillis() !== DateTime.fromISO(occurrence.from_).toMillis()
+                    || DateTime.fromISO(heldTo).toMillis() !== DateTime.fromISO(occurrence.to_).toMillis()
+                );
+                const pendingChange = entities ? active.map(e => e.type === 'allocation'
+                    ? entities.allocations.find(a => a.id === e.id)?.pending_change
+                    : e.type === 'event'
+                        ? entities.events.find(ev => ev.id === e.id)?.pending_change
+                        : undefined
+                ).find(Boolean) : undefined;
+
+                return (
+                    <div key={occurrence.from_} className={styles.dateRow}>
+                        <div className={styles.dateBadge}>
+                            <span className={styles.day}>{f.day}</span>
+                            <span className={styles.month}>{f.mon}</span>
+                        </div>
+                        <div className={styles.dateInfo}>
+                            <div className={styles.primary}>{f.weekday} {f.full}</div>
+                            <div className={styles.secondary}>
+                                kl. {f.time}{sameDay ? `–${to.time}` : ` → ${to.full} kl. ${to.time}`}
+                            </div>
+                            {heldTimeDiffers && heldFrom && heldTo && (
+                                <div className={styles.secondary}>
+                                    → kl. {fmtDate(heldFrom).time}–{fmtDate(heldTo).time}
+                                </div>
+                            )}
+                            {pendingChange && (
+                                <Tag data-color="warning" data-size="sm">
+                                    {t('bookingfrontend.change_request_pending', {
+                                        time: `${fmtDate(pendingChange.from_).time}–${fmtDate(pendingChange.to_).time}`,
+                                    })}
+                                </Tag>
+                            )}
+                        </div>
+                        <Tag data-color={status.color} data-size="sm">{t(status.langKey)}</Tag>
                         <div className={styles.dateDuration}>{hours} t</div>
                     </div>
                 );
@@ -778,6 +855,10 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
     const {data: audience} = useBuildingAudience(application?.building_id);
     const {data: applicationDocuments} = useApplicationDocuments(props.applicationId);
     const {data: scheduleEntities} = useApplicationScheduleEntities(props.applicationId, props.secret);
+    // A recurring application stores ONE requested date; its whole series comes from the server,
+    // which generates it as the case officer's recurring preview does (GH #1392).
+    const isRecurring = !!application && RecurringInfoUtils.isRecurring(application);
+    const {data: recurringSeries, isError: recurringSeriesFailed} = useApplicationRecurringSeries(props.applicationId, props.secret, isRecurring);
     const cancelStatus = useUpdateApplicationStatus();
     const uploadDocumentMutation = useUploadApplicationDocument();
     const deleteDocumentMutation = useDeleteApplicationDocument();
@@ -955,6 +1036,12 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
     const isOrg = application.application_type === 'organization';
     const orderTotal = application.orders.reduce((s, o) => s + o.sum, 0);
 
+    // A recurring application counts and lists its series. Until the series has loaded no count
+    // is shown, rather than the ONE stored date; if it cannot be read, the stored dates as before.
+    const series = isRecurring && !recurringSeriesFailed ? recurringSeries : undefined;
+    const seriesLoading = isRecurring && !recurringSeriesFailed && !recurringSeries;
+    const dateCount = series ? series.occurrences.length : application.dates.length;
+
     // Actual schedule entities (events/allocations/bookings) created and activated for this
     // application. Only the active ones represent confirmed reservations. Null while the
     // schedule is unknown, so the cancel confirm never states a count it has not read.
@@ -1038,14 +1125,24 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                         <span className={styles.metaItem}>
                             <PinIcon fontSize="0.9rem"/>{application.building_name}
                         </span>
-                        <span className={styles.metaItem}>
-                            <CalendarIcon fontSize="0.9rem"/>
-                            {application.dates.length} {application.dates.length === 1
-                                ? (t('bookingfrontend.date'))
-                                : (t('bookingfrontend.dates'))}
-                        </span>
+                        {!seriesLoading && (
+                            <span className={styles.metaItem}>
+                                <CalendarIcon fontSize="0.9rem"/>
+                                {/* `dates` reads "Fra/Til" - a series says "datoer" (num_dates) */}
+                                {dateCount} {dateCount === 1
+                                    ? (t('bookingfrontend.date'))
+                                    : (t(series ? 'bookingfrontend.num_dates' : 'bookingfrontend.dates'))}
+                            </span>
+                        )}
                         {RecurringInfoUtils.isRecurring(application) && (
                             <Tag data-size="sm" data-color="neutral">{t('bookingfrontend.recurring_application')}</Tag>
+                        )}
+                        {series && (
+                            <span className={styles.metaItem}>
+                                {series.interval_weeks === 1
+                                    ? t('bookingfrontend.every_week')
+                                    : t('bookingfrontend.every_n_weeks', {n: series.interval_weeks})}
+                            </span>
                         )}
                     </div>
                 </div>
@@ -1118,7 +1215,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                                 {t('bookingfrontend.times_and_venue')}
                             </Heading>
                             <span style={{fontSize: 13, color: 'var(--ds-color-neutral-text-subtle)'}}>
-                                {application.dates.length} {t('bookingfrontend.time_slots')}
+                                {!seriesLoading && `${dateCount} ${t('bookingfrontend.time_slots')}`}
                             </span>
                         </div>
                         <div className={styles.dlGrid} style={{marginBottom: 16}}>
@@ -1150,7 +1247,13 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                         <h3 className={styles.sectionCaption}>
                             {t('bookingfrontend.requested_times')}
                         </h3>
-                        <DatesList dates={application.dates}/>
+                        {series ? (
+                            <RecurringSeriesList occurrences={series.occurrences} entities={scheduleEntities}/>
+                        ) : seriesLoading ? (
+                            <Spinner data-size="sm" aria-label={t('common.loading')}/>
+                        ) : (
+                            <DatesList dates={application.dates}/>
+                        )}
                     </div>
 
                     {/* Om arrangementet */}

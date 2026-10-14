@@ -3,6 +3,7 @@
 namespace App\modules\bookingfrontend\services\applications;
 
 use App\Database\Db;
+use App\modules\booking\repositories\ApplicationCommentElementRepository;
 use App\modules\booking\services\NotificationService;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\helpers\WebSocketHelper;
@@ -54,7 +55,7 @@ class ApplicationCommentsService implements CommentsServiceInterface
 
         $typesList = implode(',', array_fill(0, count($types), '?'));
 
-        $sql = "SELECT id, application_id, time, author, comment, type
+        $sql = "SELECT id, application_id, time, author, comment, type, element_type, element_id
                 FROM bb_application_comment
                 WHERE application_id = ?
                 AND type IN ($typesList)
@@ -65,7 +66,7 @@ class ApplicationCommentsService implements CommentsServiceInterface
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
 
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = (new ApplicationCommentElementRepository())->attachElements($stmt->fetchAll(PDO::FETCH_ASSOC));
 
         // Convert database rows to ApplicationComment models and serialize
         $comments = [];
@@ -88,11 +89,25 @@ class ApplicationCommentsService implements CommentsServiceInterface
      *                                       time) for a Min-side timeslot withdrawal (GH #1393
      *                                       criterion 7) - threaded through to the staff mail only,
      *                                       never stored on the comment row itself.
+     * @param array|null $element Optional ['type' => allocation|event|booking, 'id' => int]: the
+     *                            element of THIS application the comment is about (GH #1392),
+     *                            stored as element_type/element_id.
      * @return array The created comment
+     * @throws \InvalidArgumentException If $element is not an element of the application
      * @throws Exception If comment creation fails
      */
-    public function addComment(int $applicationId, string $comment, string $type = 'comment', ?string $author = null, ?array $occurrenceContext = null): array
+    public function addComment(int $applicationId, string $comment, string $type = 'comment', ?string $author = null, ?array $occurrenceContext = null, ?array $element = null): array
     {
+        $elementType = null;
+        $elementId = null;
+        if ($element !== null) {
+            $elementType = isset($element['type']) && is_string($element['type']) ? $element['type'] : '';
+            $elementId = isset($element['id']) && is_numeric($element['id']) ? (int) $element['id'] : 0;
+            if (!(new ApplicationCommentElementRepository())->belongsToApplication($applicationId, $elementType, $elementId)) {
+                throw new \InvalidArgumentException('The element does not belong to this application');
+            }
+        }
+
         // Sanitise on write, same as the officer path (booking/services/ApplicationService.php)
         // — the stored value is now trusted HTML for every consumer (mail template, Next
         // client dangerouslySetInnerHTML), so this is the only place a citizen-authored
@@ -113,22 +128,22 @@ class ApplicationCommentsService implements CommentsServiceInterface
             }
 
             // Insert comment
-            $sql = "INSERT INTO bb_application_comment (application_id, time, author, comment, type)
-                    VALUES (?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO bb_application_comment (application_id, time, author, comment, type, element_type, element_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$applicationId, gmdate('Y-m-d H:i:s'), $author, $comment, $type]);
+            $stmt->execute([$applicationId, gmdate('Y-m-d H:i:s'), $author, $comment, $type, $elementType, $elementId]);
 
             $commentId = $this->db->lastInsertId();
 
             // Get the created comment
-            $sql = "SELECT id, application_id, time, author, comment, type
+            $sql = "SELECT id, application_id, time, author, comment, type, element_type, element_id
                     FROM bb_application_comment
                     WHERE id = ?";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$commentId]);
-            $createdComment = $stmt->fetch(PDO::FETCH_ASSOC);
+            $createdComment = (new ApplicationCommentElementRepository())->attachElements([$stmt->fetch(PDO::FETCH_ASSOC)])[0];
 
             // Update application's frontend_modified timestamp
             $this->updateApplicationModified($applicationId);

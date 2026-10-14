@@ -41,6 +41,10 @@ export interface IAPIAllocation extends IAPIScheduleEntity {
 	// (ApplicationHelper::canViewApplication), so the client never needs the
 	// application's customer ssn/orgnr to decide. Meaningless without application_id.
 	can_view_application?: boolean;  // @Expose, default false
+	// The time the applicant has asked for and the case officer has not yet decided on
+	// (bb_application_change_request). Only applications/{id}/schedule sends it, and only
+	// to a caller who may open the application (ScheduleEntityService::getAllocationsByApplicationId).
+	pending_change?: { from_: string; to_: string };
 }
 
 export interface IAPIBooking extends IAPIScheduleEntity {
@@ -85,6 +89,10 @@ export interface IAPIEvent extends IAPIScheduleEntity {
 	// organizations/applications), curl-verified present and varying (true/false) on
 	// buildings/{id}/schedule — the endpoint the calendar popper itself reads (#23473).
 	cancellation_closes_application: boolean;
+	// The time the owner has asked for and the case officer has not yet decided on
+	// (bb_application_change_request). Only applications/{id}/schedule sends it, and only
+	// on the owner's events (ScheduleEntityService::addPendingChanges).
+	pending_change?: { from_: string; to_: string };
 }
 
 

@@ -134,6 +134,9 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('/articles', ApplicationController::class . ':getArticlesByResources');
 		$group->get('/{id}', ApplicationController::class . ':getApplicationById');
 		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getApplicationSchedule');
+		// Every occurrence of a recurring application, for Min side (GH #1392). Guarded like
+		// GET /{id} itself, unlike /{id}/schedule above.
+		$group->get('/{id}/recurring-series', ApplicationController::class . ':getRecurringSeries');
 		$group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
 
 		// Comments endpoints
@@ -162,6 +165,9 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		// Min side single-timeslot withdrawal (GH #1393 criteria 5-8) - soft-deactivate, not the
 		// hard delete above. See AllocationWithdrawalService's docblock.
 		$group->post('/{id}/withdraw', AllocationController::class . ':withdraw');
+		// Min side change of a single timeslot's time (GH #1392): a shorter time inside the
+		// approved one is applied, any other time is a request to the case officer.
+		$group->post('/{id}/change-time', AllocationController::class . ':changeTime');
 	});
 
 	// Booking cancellation. Same #1210 guard shape as /allocations above, but resolved through

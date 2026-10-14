@@ -1133,3 +1133,45 @@ price_choice_required_checkout	bookingfrontend	en	Choose a price category before
 price_pending	bookingfrontend	en	Calculated once you have chosen
 does_not_affect_price	bookingfrontend	en	Does not affect the price.
 price_category	bookingfrontend	en	Price category
+cancel_whole_application	bookingfrontend	en	Cancel the whole application
+cancel_whole_application_help	bookingfrontend	en	Cancels the application and every reserved time in it, not only the time you selected.
+confirm_cancel_whole_application_description	bookingfrontend	en	The application is cancelled and every reserved time in it is released. Number of reserved times: {{count}}. This cannot be undone.
+cancel_whole_application_failed	bookingfrontend	en	The application could not be cancelled. Please try again.
+withdraw_whole_application	bookingfrontend	en	Withdraw the whole application
+withdraw_whole_application_help	bookingfrontend	en	Withdraws the application and every reserved time in it, not only the time you selected.
+confirm_withdraw_whole_application_description	bookingfrontend	en	The application is withdrawn and every reserved time in it is released. Number of reserved times: {{count}}. This cannot be undone.
+withdraw_whole_application_failed	bookingfrontend	en	The application could not be withdrawn. Please try again.
+withdraw_whole_application_help_no_selection	bookingfrontend	en	Withdraws the application and every reserved time in it.
+cancel_whole_application_help_no_selection	bookingfrontend	en	Cancels the application and every reserved time in it.
+change_request_pending	bookingfrontend	en	Requested change to {{time}} is awaiting processing
+comment_on_time	bookingfrontend	en	Comment
+comment_on_time_heading	bookingfrontend	en	Comment on this time
+comment_time_removed	bookingfrontend	en	The time has been removed
+change_time	bookingfrontend	en	Change time
+change_allocation_time_description	bookingfrontend	en	Choose a new time on the same day. A shorter time within the allocated time is saved at once, and the price is recalculated for the new hours. A longer or moved time is sent to the case officer, who accepts or rejects the change.
+allocation_time_shortened	bookingfrontend	en	The time has been changed to {{time}}.
+allocation_change_requested	bookingfrontend	en	The requested time has been sent to the case officer. The time stays as it is until the case officer accepts the change.
+allocation_change_invalid_time	bookingfrontend	en	Invalid time.
+allocation_change_other_day	bookingfrontend	en	The new time must be on the same day as the allocation.
+allocation_change_unchanged	bookingfrontend	en	The time is unchanged.
+allocation_change_started	bookingfrontend	en	The allocation has already started and can no longer be changed.
+allocation_change_inactive	bookingfrontend	en	The allocation has been withdrawn.
+allocation_change_no_application	bookingfrontend	en	The allocation does not belong to an application.
+allocation_change_booking_in_removed_time	bookingfrontend	en	The time cannot be shortened: a booking lies in the time that would be removed.
+allocation_changed_meanwhile	bookingfrontend	en	The allocation was changed in the meantime. Reload the page.
+allocation_shortened_comment	bookingfrontend	en	Allocation #%1 (%2, %3): the time has been shortened from %4 to %5.
+allocation_change_requested_comment	bookingfrontend	en	Allocation #%1 (%2, %3): requests the new time %5 instead of %4. The case officer accepts or rejects the change.
+allocation_price_recalculated	bookingfrontend	en	The price has been recalculated for the new time: %1 → %2. Price locked after shortening.
+allocation_price_unchanged	bookingfrontend	en	The price is unchanged.
+allocation_price_kept_locked	bookingfrontend	en	Price not recalculated: the price was set by the case officer.
+allocation_price_master_order	bookingfrontend	en	Price not recalculated: the application's main order.
+allocation_price_not_recalculated	bookingfrontend	en	Price not recalculated: the case officer checks the price.
+allocation_cost_recalculated_after_shortening	bookingfrontend	en	Price recalculated after shortening (%1). Price locked after shortening.
+allocation_price_off_rule	bookingfrontend	en	Price not recalculated: the case officer changed the time without recalculating the price.
+
+repeating	bookingfrontend	en	Recurring
+occurrence_awaiting	bookingfrontend	en	Awaiting processing
+occurrence_allocated	bookingfrontend	en	Allocated
+occurrence_withdrawn	bookingfrontend	en	Withdrawn
+occurrence_not_allocated	bookingfrontend	en	Not allocated
+occurrence_outside_series	bookingfrontend	en	Outside the series

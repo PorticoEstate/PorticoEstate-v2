@@ -233,6 +233,9 @@ $app->group('/booking/applications', function (RouteCollectorProxy $group)
 	$group->get('/{id:[0-9]+}/associations', ApplicationController::class . ':showAssociations');
 	$group->delete('/{id:[0-9]+}/associations/{assocId:[0-9]+}', ApplicationController::class . ':deleteAssociation');
 	$group->post('/{id:[0-9]+}/associations/{assocId:[0-9]+}/activate', ApplicationController::class . ':activateAssociation');
+	$group->get('/{id:[0-9]+}/change-requests', ApplicationController::class . ':showChangeRequests');
+	$group->post('/{id:[0-9]+}/change-requests/{requestId:[0-9]+}/accept', ApplicationController::class . ':acceptChangeRequest');
+	$group->post('/{id:[0-9]+}/change-requests/{requestId:[0-9]+}/reject', ApplicationController::class . ':rejectChangeRequest');
 	$group->get('/{id:[0-9]+}/related', ApplicationController::class . ':showRelated');
 	$group->get('/{id:[0-9]+}/user-list', ApplicationController::class . ':showUserList');
 	$group->post('/{id:[0-9]+}/comment', ApplicationController::class . ':addComment');

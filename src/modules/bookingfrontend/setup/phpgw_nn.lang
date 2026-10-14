@@ -1133,3 +1133,45 @@ price_choice_required_checkout	bookingfrontend	nn	Vel priskategori før du sende
 price_pending	bookingfrontend	nn	Blir rekna ut når du har valt
 does_not_affect_price	bookingfrontend	nn	Påverkar ikkje prisen.
 price_category	bookingfrontend	nn	Priskategori
+cancel_whole_application	bookingfrontend	nn	Avbestill heile søknaden
+cancel_whole_application_help	bookingfrontend	nn	Avbestiller søknaden og alle reserverte tider i han, ikkje berre tida du valde.
+confirm_cancel_whole_application_description	bookingfrontend	nn	Søknaden vert avbestilt, og alle reserverte tider i han vert frigjorde. Talet på reserverte tider: {{count}}. Dette kan ikkje angrast.
+cancel_whole_application_failed	bookingfrontend	nn	Søknaden kunne ikkje avbestillast. Prøv igjen.
+withdraw_whole_application	bookingfrontend	nn	Trekk heile søknaden
+withdraw_whole_application_help	bookingfrontend	nn	Trekkjer søknaden og alle reserverte tider i han, ikkje berre tida du valde.
+confirm_withdraw_whole_application_description	bookingfrontend	nn	Søknaden vert trekt, og alle reserverte tider i han vert frigjorde. Talet på reserverte tider: {{count}}. Dette kan ikkje angrast.
+withdraw_whole_application_failed	bookingfrontend	nn	Søknaden kunne ikkje trekkjast. Prøv igjen.
+withdraw_whole_application_help_no_selection	bookingfrontend	nn	Trekkjer søknaden og alle reserverte tider i han.
+cancel_whole_application_help_no_selection	bookingfrontend	nn	Avbestiller søknaden og alle reserverte tider i han.
+change_request_pending	bookingfrontend	nn	Ønskt endring til kl. {{time}} ventar på sakshandsaming
+comment_on_time	bookingfrontend	nn	Kommenter
+comment_on_time_heading	bookingfrontend	nn	Kommentar til tidspunktet
+comment_time_removed	bookingfrontend	nn	Tidspunktet er fjerna
+change_time	bookingfrontend	nn	Endre tid
+change_allocation_time_description	bookingfrontend	nn	Vel ny tid på same dag. Ei kortare tid innanfor den tildelte tida blir lagra med ein gong, og prisen blir rekna ut på nytt for dei nye timane. Ei lengre eller flytta tid blir send til saksbehandlar, som godtek eller avslår endringa.
+allocation_time_shortened	bookingfrontend	nn	Tida er endra til kl. {{time}}.
+allocation_change_requested	bookingfrontend	nn	Ønskt ny tid er send til saksbehandlar. Tida er uendra til saksbehandlar har godteke endringa.
+allocation_change_invalid_time	bookingfrontend	nn	Ugyldig tidspunkt.
+allocation_change_other_day	bookingfrontend	nn	Ny tid må vere på same dag som tildelinga.
+allocation_change_unchanged	bookingfrontend	nn	Tida er ikkje endra.
+allocation_change_started	bookingfrontend	nn	Tildelinga har alt starta og kan ikkje endrast.
+allocation_change_inactive	bookingfrontend	nn	Tildelinga er trekt tilbake.
+allocation_change_no_application	bookingfrontend	nn	Tildelinga høyrer ikkje til ein søknad.
+allocation_change_booking_in_removed_time	bookingfrontend	nn	Tida kan ikkje kortast ned: det ligg ei booking i tida som blir fjerna.
+allocation_changed_meanwhile	bookingfrontend	nn	Tildelinga er endra i mellomtida. Last inn sida på nytt.
+allocation_shortened_comment	bookingfrontend	nn	Tildeling #%1 (%2, %3): tida er korta ned frå %4 til %5.
+allocation_change_requested_comment	bookingfrontend	nn	Tildeling #%1 (%2, %3): ønskjer ny tid %5 i staden for %4. Saksbehandlar godtek eller avslår endringa.
+allocation_price_recalculated	bookingfrontend	nn	Prisen er rekna om for den nye tida: %1 → %2. Pris låst etter forkorting.
+allocation_price_unchanged	bookingfrontend	nn	Prisen er uendra.
+allocation_price_kept_locked	bookingfrontend	nn	Pris ikkje rekna om: prisen er sett manuelt av saksbehandlar.
+allocation_price_master_order	bookingfrontend	nn	Pris ikkje rekna om: hovudordren til søknaden.
+allocation_price_not_recalculated	bookingfrontend	nn	Pris ikkje rekna om: saksbehandlar kontrollerer prisen.
+allocation_cost_recalculated_after_shortening	bookingfrontend	nn	Pris rekna om etter forkorting (%1). Pris låst etter forkorting.
+allocation_price_off_rule	bookingfrontend	nn	Pris ikkje rekna om: saksbehandlar har endra tida utan å rekne om prisen.
+
+repeating	bookingfrontend	nn	Gjentakande
+occurrence_awaiting	bookingfrontend	nn	Ventar på sakshandsaming
+occurrence_allocated	bookingfrontend	nn	Tildelt
+occurrence_withdrawn	bookingfrontend	nn	Trekt
+occurrence_not_allocated	bookingfrontend	nn	Ikkje tildelt
+occurrence_outside_series	bookingfrontend	nn	Utanfor serien

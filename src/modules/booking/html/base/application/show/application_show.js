@@ -169,8 +169,69 @@
 			if (!isAssocActive(a)) {
 				html += '<span class="booking-tag ds-tag" data-color="warning">' + esc(lang('inactive')) + '</span>';
 			}
+			var req = changeRequests[assocRef(a)];
+			if (req) {
+				html += '<span class="booking-tag ds-tag" data-color="warning">' + esc(lang('changeRequestedTime')) + ': ' + esc(changeTimeText(req)) + '</span>';
+				if (req.stale) {
+					html += '<span class="booking-tag ds-tag" data-color="neutral">' + esc(changeLang('changeRequestStale', req)) + '</span>';
+				}
+			}
 			return html + '</div>';
 		}).join('');
+	}
+
+	// The applicant's open requests for a new time on an element
+	// (bb_application_change_request), by assocRef. Set from /change-requests
+	// before the page renders.
+	var changeRequests = {};
+
+	// A change request text that names the element: an allocation has its own
+	// (the event's say "Arrangementet").
+	function changeLang(key, req) {
+		return lang(req.element_type === 'allocation' ? key + 'Allocation' : key);
+	}
+
+	// The requested time: "18:00–20:00", with the date in front when it is
+	// another day than the element's time when asked.
+	function changeTimeText(req) {
+		var from = minuteKey(req.new_from_), to = minuteKey(req.new_to_);
+		var day = from.substring(0, 10) === minuteKey(req.old_from_).substring(0, 10)
+			? '' : from.substring(0, 10).split('-').reverse().slice(0, 2).join('.') + ' ';
+		return day + from.substring(11) + '–' + to.substring(11);
+	}
+
+	// This application's own elements, set in render(): what the case officer can
+	// reply on in the comment modal (ref #1392).
+	var commentElements = [];
+
+	// "2026-12-04 17:00:00" (local, no offset) → "Fre 04.12 17:00". Built from the
+	// parts, never through Date's string parsing, so no time zone shifts it.
+	function elementDayTime(s) {
+		var key = minuteKey(s);
+		if (!key) return '';
+		var weekday = new Date(+key.substring(0, 4), +key.substring(5, 7) - 1, +key.substring(8, 10))
+			.toLocaleDateString('nb-NO', { weekday: 'short' }).replace('.', '');
+		return weekday.charAt(0).toUpperCase() + weekday.slice(1) + ' ' +
+			key.substring(8, 10) + '.' + key.substring(5, 7) + ' ' + key.substring(11);
+	}
+
+	// "Fre 04.12 17:00–20:00"; the end carries its own date when it is on another day.
+	function elementTimeText(from_, to_) {
+		var to = minuteKey(to_);
+		var sameDay = to.substring(0, 10) === minuteKey(from_).substring(0, 10);
+		return elementDayTime(from_) + '–' + (sameDay ? to.substring(11) : elementDayTime(to_));
+	}
+
+	// The element a comment is about, worded as the applicant sees it on Min side:
+	// time and resources, "Inaktiv" once deactivated, a note when it no longer exists.
+	function commentElementTag(element) {
+		if (!element.exists) {
+			return '<span class="booking-tag ds-tag" data-color="neutral">' + esc(lang('commentTimeRemoved')) + '</span>';
+		}
+		var text = elementTimeText(element.from_, element.to_);
+		if (element.resource_names) text += ' · ' + element.resource_names;
+		if (!element.active) text += ' · ' + lang('inactive');
+		return '<span class="booking-tag ds-tag" data-color="info">' + esc(text) + '</span>';
 	}
 
 	// Handling cell for a row's elements, built like the create split (createSplitHtml):
@@ -194,6 +255,20 @@
 				' data-color="' + (active ? 'danger' : 'success') + '" data-assoc-id="' + esc(a.id) + '" data-assoc-type="' + esc(a.type) + '">' +
 				(active ? ICONS.xCircle : ICONS.checkCircle) + '<span>' + esc(lang(active ? 'delete' : 'activate') + suffix) + '</span></button></li>';
 		}
+		// "Godta endring" and "Avslå endring" for an open change request. Accept is
+		// left out when the element's time moved after the request or the element
+		// is inactive: the server refuses both, and rejecting is what is left.
+		function changeItems(a, suffix) {
+			var req = changeRequests[assocRef(a)];
+			if (!req) return '';
+			var html = '';
+			if (!req.stale && req.element_active) {
+				html += '<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="change-request" data-change-action="accept"' +
+					' data-color="success" data-change-ref="' + esc(assocRef(a)) + '">' + ICONS.checkCircle + '<span>' + esc(lang('acceptChange') + suffix) + '</span></button></li>';
+			}
+			return html + '<li><button type="button" class="booking-dropdown__item ds-dropdown__item" data-booking-action="change-request" data-change-action="reject"' +
+				' data-color="danger" data-change-ref="' + esc(assocRef(a)) + '">' + ICONS.xCircle + '<span>' + esc(lang('rejectChange') + suffix) + '</span></button></li>';
+		}
 		function menu(listsHtml) {
 			return '<div class="booking-dropdown ds-dropdown app-show__menu app-show__split-menu" data-booking-role="dropdown" popover id="' + menuId + '">' + listsHtml + '</div>';
 		}
@@ -203,12 +278,12 @@
 			if (!isCO) return edit;
 			return '<div class="app-show__split">' + edit +
 				'<button type="button" class="booking-button ds-button app-show__split-toggle" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '" aria-label="' + esc(lang('actions')) + '">' + ICONS.chevron + '</button>' +
-				menu('<ul>' + toggleItem(a, '') + '</ul>') + '</div>';
+				menu('<ul>' + changeItems(a, '') + toggleItem(a, '') + '</ul>') + '</div>';
 		}
 		var lists = elements.map(function (a) {
 			var suffix = ' #' + a.id;
 			return '<ul><li><a class="booking-dropdown__item ds-dropdown__item" href="' + esc(assocEditUrl(a)) + '">' + ICONS.edit + '<span>' + esc(lang('edit') + suffix) + '</span></a></li>' +
-				(isCO ? toggleItem(a, suffix) : '') + '</ul>';
+				(isCO ? changeItems(a, suffix) + toggleItem(a, suffix) : '') + '</ul>';
 		});
 		return '<button type="button" class="booking-button ds-button app-show__menu-trigger" data-variant="secondary" data-color="accent" data-size="sm" popovertarget="' + menuId + '">' + esc(lang('edit')) + ICONS.chevron + '</button>' +
 			menu(lists.join('<hr class="app-show__menu-sep">'));
@@ -296,6 +371,7 @@
 			headers: { 'Content-Type': 'application/json' },
 			body: '{}'
 		}).then(function (res) {
+			if (res.status === 401) throw new Error(lang('sessionExpiredLogInAgain'));
 			if (!res.ok) throw new Error('HTTP ' + res.status);
 			return res.json();
 		});
@@ -308,6 +384,12 @@
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(data || {})
 		}).then(function (res) {
+			// An expired session is answered 401. Where the server still redirects to
+			// the login page, fetch follows silently — the body is then HTML, not JSON
+			if (res.status === 401) throw new Error(lang('sessionExpiredLogInAgain'));
+			if ((res.headers.get('content-type') || '').indexOf('application/json') === -1) {
+				throw new Error(res.redirected ? lang('sessionExpiredLogInAgain') : 'HTTP ' + res.status);
+			}
 			return res.json().then(function (json) {
 				if (!res.ok) throw new Error(json.error || 'HTTP ' + res.status);
 				return json;
@@ -322,6 +404,8 @@
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(data)
 		}).then(function (res) {
+			// An expired session is answered 401, carried in errors so renderConflict shows it
+			if (res.status === 401) throw { status: 401, errors: { session: [lang('sessionExpiredLogInAgain')] } };
 			return res.json().then(function (json) {
 				// Forward the FULL failure body (errors + conflict_details /
 				// conflict_links / conflict_count) so callers can show overlaps.
@@ -389,7 +473,11 @@
 		fetchJson(apiUrl + '/orders'),          // 8: orders
 		fetchJson(apiUrl + '/related'),         // 9: related applications
 		fetchJson(apiUrl + '/associations'),    // 10: associations
+		fetchJson(apiUrl + '/change-requests'), // 11: open change requests
 	]).then(function (results) {
+		(results[11] || []).forEach(function (req) {
+			changeRequests[req.element_type + ':' + req.element_id] = req;
+		});
 		render({
 			application:    results[0],
 			dates:          results[1],
@@ -440,7 +528,11 @@
 		renderDetails(app, data);
 		renderTerms(app);
 		renderNotes(data.internal_notes || []);
-		renderComments(data.comments || []);
+		// A comment lands on this application, so only its own elements can be replied on.
+		commentElements = (data.associations || []).filter(function (a) {
+			return String(a.application_id) === String(app.id);
+		});
+		renderComments(data.comments || [], app);
 		renderHospitalityOrders(data);
 
 		// Activate tab from URL hash
@@ -683,7 +775,7 @@
 				window.open(tb.export_pdf_url + '&preview=1', '_blank');
 			}
 			// Modal actions
-		if (action === 'comment-modal') showCommentModal();
+		if (action === 'comment-modal') showCommentModal(item.dataset.elementRef);
 		else if (action === 'internal-note-modal') showInternalNoteModal();
 		else if (action === 'messenger-modal') showMessengerModal();
 		else if (action === 'accept-modal') showAcceptModal();
@@ -1588,6 +1680,16 @@
 			});
 		});
 
+		// Delegated event: "Godta endring" / "Avslå endring" on an element
+		root.addEventListener('click', function (e) {
+			var btn = e.target.closest('[data-booking-action="change-request"]');
+			if (!btn) return;
+			var pop = btn.closest('[data-booking-role="dropdown"]');
+			if (pop && pop.matches(':popover-open')) pop.hidePopover();
+			var req = changeRequests[btn.dataset.changeRef];
+			if (req) showChangeRequestModal(req, btn.dataset.changeAction === 'accept');
+		});
+
 		// Documents: always shown, so the case officer can add the first one. The
 		// list re-renders in place after an upload or a delete.
 		html += section(lang('documents'),
@@ -1882,24 +1984,37 @@
 	// History / comments tab
 	// ═══════════════════════════════════════════════════════════════════
 
-	function renderComments(comments) {
+	function renderComments(comments, app) {
 		if (!comments || comments.length === 0) {
 			document.getElementById('application-comments').innerHTML =
 				'<p class="app-show__empty">' + lang('comments') + ': &mdash;</p>';
 			return;
 		}
+		var isCO = app && app.toolbar && app.toolbar.case_officer_is_current_user;
 		var html = '';
 		comments.forEach(function (comment) {
 			var typeTag = '';
 			if (comment.type && comment.type !== 'comment') {
 				typeTag = ' <span class="booking-tag ds-tag" data-color="neutral">' + esc(comment.type) + '</span>';
 			}
+			// The element the comment is about (ref #1392), and for the case officer a
+			// reply on that same element through the comment modal.
+			var elementTag = '';
+			var replyOnElement = '';
+			if (comment.element) {
+				elementTag = ' ' + commentElementTag(comment.element);
+				if (isCO && comment.element.exists) {
+					replyOnElement = '<div><button type="button" class="booking-button ds-button" data-variant="tertiary" data-size="sm" data-booking-action="comment-modal" data-element-ref="' +
+						esc(comment.element.type + ':' + comment.element.id) + '">' + ICONS.reply + esc(lang('replyOnThisTime')) + '</button></div>';
+				}
+			}
 			html += '<div class="app-show__comment">' +
 				'<div class="app-show__comment-meta">' +
 				esc(comment.author || comment.name || 'System') + ' &mdash; ' + fmtDate(comment.time) +
-				typeTag +
+				typeTag + elementTag +
 				'</div>' +
 				'<div class="app-show__comment-text">' + escNl(comment.comment) + '</div>' +
+				replyOnElement +
 				'</div>';
 		});
 		document.getElementById('application-comments').innerHTML = html;
@@ -2323,8 +2438,24 @@
 
 	// ── Comment modal (reply to applicant) ─────────────────────────────
 
-	function showCommentModal() {
-		var body = '<div class="booking-field ds-field" data-size="sm">' +
+	// elementRef ("allocation:123") preselects the element the reply is about.
+	function showCommentModal(elementRef) {
+		var regarding = '';
+		if (commentElements.length) {
+			var options = '<option value="">' + esc(lang('wholeApplication')) + '</option>';
+			commentElements.forEach(function (a) {
+				var ref = assocRef(a);
+				// The id tells apart elements of one type at the same time, as the
+				// page's own element tags do ("Tildeling #498388").
+				var label = enumLabel(a.type) + ' #' + a.id + ' · ' + elementTimeText(a.from_, a.to_) +
+					(isAssocActive(a) ? '' : ' · ' + lang('inactive'));
+				options += '<option value="' + esc(ref) + '"' + (ref === elementRef ? ' selected' : '') + '>' + esc(label) + '</option>';
+			});
+			regarding = '<div class="booking-field ds-field" data-size="sm">' +
+				'<label class="booking-label ds-label" for="modal-comment-element">' + esc(lang('commentRegarding')) + '</label>' +
+				'<select id="modal-comment-element" class="booking-input ds-input">' + options + '</select></div>';
+		}
+		var body = regarding + '<div class="booking-field ds-field" data-size="sm">' +
 			'<label class="booking-label ds-label" for="modal-comment-text">' + esc(lang('writeReplyToApplicant')) + '</label>' +
 			'<textarea id="modal-comment-text" class="booking-input ds-input" rows="5"></textarea></div>';
 		var footer = '<button type="button" class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
@@ -2339,7 +2470,15 @@
 			btn.disabled = true;
 			btn.textContent = '...';
 
-			postJsonBody(apiUrl + '/comment', { comment: text }).then(function () {
+			var payload = { comment: text };
+			var elementSelect = document.getElementById('modal-comment-element');
+			if (elementSelect && elementSelect.value) {
+				var parts = elementSelect.value.split(':');
+				payload.element_type = parts[0];
+				payload.element_id = Number(parts[1]);
+			}
+
+			postJsonBody(apiUrl + '/comment', payload).then(function () {
 				closeModal('comment-dialog');
 				showToast(lang('commentSent'));
 				setTimeout(function () { window.location.reload(); }, 800);
@@ -2414,6 +2553,56 @@
 		});
 	}
 
+	// ── Change request modal (Godta endring / Avslå endring) ───────────
+
+	// The applicant's request for a new time on one element. Accepting moves the
+	// element to that time once the server has checked it against everything else
+	// on the resources; a refusal is shown here, nothing is written and the
+	// request stays open. Rejecting keeps the element's time. Neither notifies
+	// the applicant.
+	function showChangeRequestModal(req, accept) {
+		var dialogId = 'change-request-dialog';
+		var times = defGrid(
+			field(enumLabel(req.element_type), '#' + req.element_id) +
+			field(lang('currentTime'), fmtDate(req.old_from_) + ' – ' + minuteKey(req.old_to_).substring(11)) +
+			field(lang('changeRequestedTime'), fmtDate(req.new_from_) + ' – ' + minuteKey(req.new_to_).substring(11))
+		);
+		var body = '<div class="booking-alert ds-alert" data-color="danger" role="alert" id="modal-change-error" hidden></div>' +
+			'<p class="booking-paragraph ds-paragraph" data-size="sm">' + esc(changeLang(accept ? 'acceptChangeHelp' : 'rejectChangeHelp', req)) + '</p>' +
+			times +
+			(accept && req.price_review
+				? '<div class="booking-alert ds-alert" data-color="warning"><p class="booking-paragraph ds-paragraph">' + esc(changeLang('changePriceNotRecalculated', req)) + '</p></div>'
+				: '');
+		var label = lang(accept ? 'acceptChange' : 'rejectChange');
+		var footer = '<button type="button" class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
+			'<button type="button" class="booking-button ds-button" data-variant="primary" data-color="' + (accept ? 'success' : 'danger') + '" id="modal-change-submit">' + esc(label) + '</button>';
+
+		showModal(dialogId, label, body, footer);
+
+		document.getElementById('modal-change-submit').addEventListener('click', function () {
+			var btn = this;
+			var errorBox = document.getElementById('modal-change-error');
+			errorBox.hidden = true;
+			btn.disabled = true;
+			btn.textContent = '...';
+
+			postJsonBody(apiUrl + '/change-requests/' + encodeURIComponent(req.id) + '/' + (accept ? 'accept' : 'reject'), {}).then(function (result) {
+				closeModal(dialogId);
+				var done = !accept ? lang('changeRejected')
+					: req.element_type === 'allocation' ? lang('changeAppliedAllocation')
+					: result && result.application_date_shared ? lang('changeAppliedSharedApplicationDate')
+					: (result && result.application_date_id == null ? lang('changeAppliedWithoutApplicationDate') : lang('changeAccepted'));
+				showToast(done);
+				setTimeout(function () { window.location.reload(); }, 800);
+			}).catch(function (err) {
+				btn.disabled = false;
+				btn.textContent = label;
+				errorBox.innerHTML = '<p class="booking-paragraph ds-paragraph" data-size="sm">' + esc(err.message) + '</p>';
+				errorBox.hidden = false;
+			});
+		});
+	}
+
 	// ── Reject modal ───────────────────────────────────────────────────
 
 	// opts.appId + opts.single → reject only that sub-application (no cascade to the
@@ -2431,7 +2620,8 @@
 
 		var body = '<div class="booking-field ds-field" data-size="sm">' +
 			'<label class="booking-label ds-label" for="modal-reject-text">' + esc(lang('rejectionReason')) + ' *</label>' +
-			'<textarea id="modal-reject-text" class="booking-input ds-input" rows="4" required></textarea></div>' +
+			'<textarea id="modal-reject-text" class="booking-input ds-input" rows="4" required aria-describedby="modal-reject-error"></textarea>' +
+			'<p id="modal-reject-error" class="booking-validation-message ds-validation-message" data-color="danger" hidden>' + esc(lang('rejectionReasonRequired')) + '</p></div>' +
 			'<div class="booking-field ds-field" data-size="sm"><input type="checkbox" class="booking-input ds-input" id="modal-reject-email" checked>' +
 			'<label class="booking-label ds-label" for="modal-reject-email">' + esc(lang('sendEmailToApplicant')) + '</label></div>';
 		var footer = '<button type="button" class="booking-button ds-button" data-variant="secondary" data-color="neutral" data-modal-close>' + esc(lang('cancel')) + '</button>' +
@@ -2440,11 +2630,16 @@
 		showModal('reject-dialog', title, body, footer);
 
 		document.getElementById('modal-reject-submit').addEventListener('click', function () {
-			var text = document.getElementById('modal-reject-text').value.trim();
+			var textarea = document.getElementById('modal-reject-text');
+			var text = textarea.value.trim();
+			var error = document.getElementById('modal-reject-error');
+			error.hidden = !!text;
 			if (!text) {
-				document.getElementById('modal-reject-text').focus();
+				textarea.setAttribute('aria-invalid', 'true');
+				textarea.focus();
 				return;
 			}
+			textarea.removeAttribute('aria-invalid');
 			var btn = this;
 			btn.disabled = true;
 			btn.textContent = '...';

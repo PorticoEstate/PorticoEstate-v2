@@ -3,6 +3,7 @@
 namespace App\modules\booking\services;
 
 use App\modules\booking\models\Allocation;
+use App\modules\booking\repositories\ApplicationCommentElementRepository;
 use App\modules\booking\repositories\ApplicationRepository;
 use App\modules\booking\services\EmailService;
 use RuntimeException;
@@ -178,12 +179,22 @@ class ApplicationService
 
 	/**
 	 * Add a comment to the application and send email notification.
+	 *
+	 * $elementType/$elementId make it a reply on one element (allocation, event or
+	 * booking) of THIS application; anything else is refused with a 400.
 	 */
-	public function addComment(int $appId, int $accountId, string $comment): void
+	public function addComment(int $appId, int $accountId, string $comment, ?string $elementType = null, ?int $elementId = null): void
 	{
 		$row = $this->repo->getById($appId);
 		if (!$row) {
 			throw new RuntimeException('Application not found', 404);
+		}
+
+		if ($elementType !== null || $elementId !== null) {
+			if ($elementType === null || $elementId === null
+				|| !(new ApplicationCommentElementRepository())->belongsToApplication($appId, $elementType, $elementId)) {
+				throw new RuntimeException('The element does not belong to this application', 400);
+			}
 		}
 
 		// Sanitise the rich-editor HTML ONCE here, on write. The stored value is then
@@ -194,7 +205,7 @@ class ApplicationService
 		$comment = Sanitizer::clean_html($comment);
 
 		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';
-		$commentId = $this->repo->addComment($appId, $authorName, $comment, 'comment');
+		$commentId = $this->repo->addComment($appId, $authorName, $comment, 'comment', $elementType, $elementId);
 
  		// Send email notification (non-fatal on failure). Pass the officer's reply text
 		// so the applicant email contains the actual message — without it the email is
@@ -1031,10 +1042,8 @@ class ApplicationService
 	 */
 	private function slotForeignCollisions(array $resourceIds, string $from, string $to, array $slotElements): array
 	{
-		$own = [];
 		$windows = [];
 		foreach ($slotElements as $element) {
-			$own[$element['type'] . ':' . $element['id']] = true;
 			if ((int) $element['active'] === 1 && !empty($element['from_']) && !empty($element['to_'])) {
 				$windows[] = [(string) $element['from_'], (string) $element['to_']];
 			}
@@ -1045,11 +1054,34 @@ class ApplicationService
 
 		$foreign = [];
 		foreach ($windows as [$windowFrom, $windowTo]) {
-			foreach ($this->repo->getCollisionDetails($resourceIds, $windowFrom, $windowTo) as $collision) {
-				$ref = $collision['type'] . ':' . $collision['id'];
-				if (!isset($own[$ref])) {
-					$foreign[$ref] = $collision;
-				}
+			foreach ($this->windowForeignCollisions($resourceIds, $windowFrom, $windowTo, $slotElements) as $collision) {
+				$foreign[$collision['type'] . ':' . $collision['id']] = $collision;
+			}
+		}
+		return array_values($foreign);
+	}
+
+	/**
+	 * Active elements colliding with one time window on the resources, other
+	 * than the given own elements - the check slotForeignCollisions runs per
+	 * window. An applicant's requested new time is checked with it before the
+	 * case officer's "Godta endring" applies the time (ApplicationChangeRequestService).
+	 *
+	 * @param array $ownElements elements ({type, id}) that do not count as collisions
+	 * @return array<array{id:int, type:string, name:string, from_:string, to_:string, application_id:?int}>
+	 */
+	public function windowForeignCollisions(array $resourceIds, string $from, string $to, array $ownElements): array
+	{
+		$own = [];
+		foreach ($ownElements as $element) {
+			$own[$element['type'] . ':' . $element['id']] = true;
+		}
+
+		$foreign = [];
+		foreach ($this->repo->getCollisionDetails($resourceIds, $from, $to) as $collision) {
+			$ref = $collision['type'] . ':' . $collision['id'];
+			if (!isset($own[$ref])) {
+				$foreign[$ref] = $collision;
 			}
 		}
 		return array_values($foreign);

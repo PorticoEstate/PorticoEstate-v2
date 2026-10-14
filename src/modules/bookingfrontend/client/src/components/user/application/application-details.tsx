@@ -1,6 +1,6 @@
 'use client'
-import React, {FC, useMemo, useEffect, useState, useRef} from 'react';
-import {IApplication, IApplicationDate, ApplicationComment as IComment, RecurringInfoUtils} from "@/service/types/api/application.types";
+import React, {FC, useMemo, useEffect, useState, useRef, useCallback} from 'react';
+import {IApplication, IApplicationDate, ApplicationComment as IComment, RecurringInfoUtils, IRecurringOccurrence, IRecurringSeriesElement, RecurringOccurrenceStatus} from "@/service/types/api/application.types";
 import {
     useApplication,
     useResourceRegulationDocuments,
@@ -12,6 +12,7 @@ import {
     useUploadApplicationDocument,
     useDeleteApplicationDocument,
     useApplicationScheduleEntities,
+    useApplicationRecurringSeries,
     useServerSettings,
     markNotificationsAsRead,
 } from "@/service/hooks/api-hooks";
@@ -35,13 +36,14 @@ import ResourceCircles from "@/components/resource-circles/resource-circles";
 import {useTrans, useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
 import {getDocumentLink} from "@/service/api/building";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
-import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
+import {FCallTempEvent, HighlightEntity} from "@/components/building-calendar/building-calendar.types";
 import ArticleTable from "@/components/article-table/article-table";
 import {ENABLE_COMBINED_APPLICATIONS} from '@/service/feature-flags';
-import {getStatusColor} from './status-utils';
+import {getStatusColor, StatusColor} from './status-utils';
 import {resolveParticipantLimit} from "@/components/building-calendar/util/participant-limit";
 import {isFutureDate, phpGWLink} from "@/service/util";
 import styles from "./application-details.module.scss";
+import {ElementCommentButton, CommentElementBadge, formatElementTime} from "./element-comment";
 import {
     ArrowLeftIcon,
     FilesIcon,
@@ -56,6 +58,7 @@ import {
 } from '@navikt/aksel-icons';
 import {useQueryClient} from '@tanstack/react-query';
 import {useAllocationWithdraw} from "@/service/hooks/allocation-cancellation-hooks";
+import AllocationTimeChangeDialog from "./allocation-time-change-dialog";
 import TimeAgo from 'timeago-react';
 import * as timeago from 'timeago.js';
 import nb from 'timeago.js/lib/lang/nb_NO';
@@ -77,6 +80,10 @@ interface ApplicationDetailsProps {
      *  is suppressed when embedded — so it uses this to supply the modal Dialog's title,
      *  giving the dialog an accessible name carrying the application's identity. */
     onTitleReady?: (name: string) => void;
+    /** The schedule entity the user opened this application FOR — set by the calendar's
+     *  manage modal, so the reserved-times row it corresponds to is marked and scrolled to
+     *  instead of leaving the user to find it in the whole series (GH #1392). */
+    highlight?: HighlightEntity;
 }
 
 const ACCEPTED_FILE_TYPES = '.jpg,.jpeg,.png,.gif,.xls,.xlsx,.doc,.docx,.txt,.pdf,.odt,.ods';
@@ -250,10 +257,134 @@ const DatesList: FC<{ dates: DateRowItem[] }> = ({dates}) => {
     );
 };
 
+// How each status of a recurring application's occurrence reads (RecurringSeriesService on the
+// server decides it). A rejected or cancelled application reads like the page's own status tag.
+// An element of the application's own that sits outside the series has no occurrence to take a
+// status from; it reads "outside the series" in the same place.
+const OCCURRENCE_STATUS: Record<RecurringOccurrenceStatus | 'outside_series', { langKey: string; color: StatusColor }> = {
+    allocated: {langKey: 'bookingfrontend.occurrence_allocated', color: 'success'},
+    awaiting: {langKey: 'bookingfrontend.occurrence_awaiting', color: 'warning'},
+    withdrawn: {langKey: 'bookingfrontend.occurrence_withdrawn', color: 'neutral'},
+    not_allocated: {langKey: 'bookingfrontend.occurrence_not_allocated', color: 'neutral'},
+    outside_series: {langKey: 'bookingfrontend.occurrence_outside_series', color: 'neutral'},
+    rejected: {langKey: 'bookingfrontend.rejected', color: getStatusColor('REJECTED')},
+    cancelled: {langKey: 'bookingfrontend.cancelled', color: getStatusColor('CANCELLED')},
+};
+
+// One row of the series list: an occurrence, or an element of the application's own that sits
+// outside the series (moved to another day, or made outside it), told apart by `status`.
+interface SeriesRow {
+    key: string;
+    from_: string;
+    to_: string;
+    status: RecurringOccurrenceStatus | 'outside_series';
+    elements: IRecurringSeriesElement[];
+}
+
+// The occurrences with the application's active elements outside the series merged in by start.
+// Outside elements are never part of the occurrences or of any count, as in the case officer's
+// view. One without both times has no date to show and no span to measure, and an inactive one
+// holds nothing, so neither is listed. The sort is stable and the occurrences come first, so an
+// occurrence stays ahead of an element starting at the same time.
+function seriesRows(occurrences: IRecurringOccurrence[], outsideSeries: IRecurringSeriesElement[]): SeriesRow[] {
+    const rows: SeriesRow[] = [
+        ...occurrences.map(o => ({key: o.from_, from_: o.from_, to_: o.to_, status: o.status, elements: o.elements})),
+        ...outsideSeries.flatMap((e): SeriesRow[] => e.active && e.from_ && e.to_
+            ? [{key: `outside-${e.type}-${e.id}`, from_: e.from_, to_: e.to_, status: 'outside_series', elements: [e]}]
+            : []),
+    ];
+    return rows.sort((a, b) => DateTime.fromISO(a.from_).toMillis() - DateTime.fromISO(b.from_).toMillis());
+}
+
+// Every occurrence of a recurring application, in place of the ONE date it stores (GH #1392),
+// each with what it holds. An occurrence whose time was changed since - shortened by the
+// applicant, or moved by the case officer - shows the time it now has under the one asked for.
+// A time the applicant has asked for and the case officer has not decided on shows the same tag
+// as in "Reserverte tider", read from the same schedule entity. An element moved to another day
+// belongs to no occurrence; it is listed among them by its own date, tagged as outside the series.
+const RecurringSeriesList: FC<{ occurrences: IRecurringOccurrence[]; outsideSeries: IRecurringSeriesElement[]; entities?: ScheduleEntities }> = ({occurrences, outsideSeries, entities}) => {
+    const t = useTrans();
+    const rows = useMemo(() => seriesRows(occurrences, outsideSeries), [occurrences, outsideSeries]);
+
+    return (
+        <div className={styles.datesList}>
+            {rows.map(row => {
+                const f = fmtDate(row.from_);
+                const to = fmtDate(row.to_);
+                const sameDay = f.full === to.full;
+                const status = OCCURRENCE_STATUS[row.status];
+
+                const active = row.elements.filter(e => e.active);
+                const held = active.find(e => e.type === 'allocation') ?? active[0];
+                const heldFrom = held?.from_;
+                const heldTo = held?.to_;
+                const heldTimeDiffers = !!heldFrom && !!heldTo && (
+                    DateTime.fromISO(heldFrom).toMillis() !== DateTime.fromISO(row.from_).toMillis()
+                    || DateTime.fromISO(heldTo).toMillis() !== DateTime.fromISO(row.to_).toMillis()
+                );
+                // What is held, not what was asked for: a shortened time holds less, as in "Reserverte
+                // tider". Without a held element, or one lacking a time, the row's own span.
+                const hours = heldFrom && heldTo ? durationHours(heldFrom, heldTo) : durationHours(row.from_, row.to_);
+                const pendingChange = entities ? active.map(e => e.type === 'allocation'
+                    ? entities.allocations.find(a => a.id === e.id)?.pending_change
+                    : e.type === 'event'
+                        ? entities.events.find(ev => ev.id === e.id)?.pending_change
+                        : undefined
+                ).find(Boolean) : undefined;
+
+                return (
+                    <div key={row.key} className={styles.dateRow}>
+                        <div className={styles.dateBadge}>
+                            <span className={styles.day}>{f.day}</span>
+                            <span className={styles.month}>{f.mon}</span>
+                        </div>
+                        <div className={styles.dateInfo}>
+                            <div className={styles.primary}>{f.weekday} {f.full}</div>
+                            <div className={styles.secondary}>
+                                kl. {f.time}{sameDay ? `–${to.time}` : ` → ${to.full} kl. ${to.time}`}
+                            </div>
+                            {heldTimeDiffers && heldFrom && heldTo && (
+                                <div className={styles.secondary}>
+                                    → kl. {fmtDate(heldFrom).time}–{fmtDate(heldTo).time}
+                                </div>
+                            )}
+                            {pendingChange && (
+                                <Tag data-color="warning" data-size="sm">
+                                    {t('bookingfrontend.change_request_pending', {
+                                        time: `${fmtDate(pendingChange.from_).time}–${fmtDate(pendingChange.to_).time}`,
+                                    })}
+                                </Tag>
+                            )}
+                        </div>
+                        <Tag data-color={status.color} data-size="sm">{t(status.langKey)}</Tag>
+                        <div className={styles.dateDuration}>{hours} t</div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
 type ReservedEntity =
     | { type: 'event'; entity: IAPIEvent }
     | { type: 'allocation'; entity: IAPIAllocation }
     | { type: 'booking'; entity: IAPIBooking };
+
+type ScheduleEntities = { events: IAPIEvent[]; allocations: IAPIAllocation[]; bookings: IAPIBooking[] };
+
+// The elements the application currently holds: the rows "Reserverte tider" lists, and the
+// same set the server deactivates when the whole application is cancelled
+// (ApplicationRepository::deactivateAssociatedEntities — every active event, allocation and
+// booking carrying this application_id). A recurring application stores ONE requested date
+// however many weeks were placed, so this — not application.dates — is what a cancel loses.
+function activeReservedEntities(entities: ScheduleEntities): ReservedEntity[] {
+    const all: ReservedEntity[] = [
+        ...entities.events.map(e => ({type: 'event' as const, entity: e})),
+        ...entities.allocations.map(e => ({type: 'allocation' as const, entity: e})),
+        ...entities.bookings.map(e => ({type: 'booking' as const, entity: e})),
+    ];
+    return all.filter(r => r.entity.active === 1);
+}
 
 // Builds a deep link into the calendar that jumps straight to the reserved entity.
 // Smart target: the focused resource calendar when the entity is on a single resource,
@@ -287,20 +418,26 @@ function editLabelLangKey(type: ReservedEntity['type']): string {
 }
 
 const ReservedTimesList: FC<{
-    entities: { events: IAPIEvent[]; allocations: IAPIAllocation[]; bookings: IAPIBooking[] };
+    entities: ScheduleEntities;
     applicationId: number;
     applicationSecret?: string;
     /** True when hosted inside the manage modal — suppresses only the
      *  "show_in_calendar" link (a navigation into a page the modal already
      *  replaces); the row's other actions are unaffected. */
     embedded?: boolean;
-}> = ({entities, applicationId, applicationSecret, embedded}) => {
+    /** The row to mark and scroll to — see ApplicationDetailsProps.highlight. */
+    highlight?: HighlightEntity;
+    /** Offer "Kommenter" on each row: a comment that names that element (GH #1392). */
+    canComment?: boolean;
+}> = ({entities, applicationId, applicationSecret, embedded, highlight, canComment}) => {
     const t = useTrans();
+    const {i18n} = useClientTranslation();
     const serverSettings = useServerSettings();
     const participantLimitDefault = serverSettings.data?.booking_config?.participant_limit;
     const withdrawMutation = useAllocationWithdraw();
     const [withdrawTarget, setWithdrawTarget] = useState<IAPIAllocation | null>(null);
     const [withdrawComment, setWithdrawComment] = useState('');
+    const [timeChangeTarget, setTimeChangeTarget] = useState<IAPIAllocation | null>(null);
 
     const closeWithdrawDialog = () => {
         setWithdrawTarget(null);
@@ -324,21 +461,28 @@ const ReservedTimesList: FC<{
     };
 
     const rows = useMemo<ReservedEntity[]>(() => {
-        const all: ReservedEntity[] = [
-            ...entities.events.map(e => ({type: 'event' as const, entity: e})),
-            ...entities.allocations.map(e => ({type: 'allocation' as const, entity: e})),
-            ...entities.bookings.map(e => ({type: 'booking' as const, entity: e})),
-        ].filter(r => r.entity.active === 1);
-        return all.sort((a, b) =>
+        return activeReservedEntities(entities).sort((a, b) =>
             DateTime.fromISO(a.entity.from_).toMillis() - DateTime.fromISO(b.entity.from_).toMillis()
         );
     }, [entities]);
+
+    // Scrolled to ONCE, when the row first mounts: rows only exist after the schedule query
+    // resolves, and a later refetch (e.g. after a withdraw) must not yank the view back.
+    const highlightKey = highlight ? `${highlight.type}-${highlight.id}` : null;
+    const scrolledToRef = useRef<string | null>(null);
+    const highlightedRowRef = useCallback((el: HTMLDivElement | null) => {
+        if (!el || !highlightKey || scrolledToRef.current === highlightKey) return;
+        scrolledToRef.current = highlightKey;
+        requestAnimationFrame(() => el.scrollIntoView({block: 'center'}));
+    }, [highlightKey]);
 
     return (
         <>
         <div className={styles.datesList}>
             {rows.map(row => {
                 const entity = row.entity;
+                const rowKey = `${row.type}-${entity.id}`;
+                const isHighlighted = rowKey === highlightKey;
                 const f = fmtDate(entity.from_);
                 const to = fmtDate(entity.to_);
                 const sameDay = f.full === to.full;
@@ -427,10 +571,23 @@ const ReservedTimesList: FC<{
                     }, false));
                 }
 
-                const hasActions = showCalendarLink || showRegisterParticipants || showEdit || !!newBookingHref || showWithdraw;
+                const showComment = !!canComment;
+
+                const hasActions = showCalendarLink || showRegisterParticipants || showEdit || !!newBookingHref || showWithdraw || showComment;
+
+                // The time the owner asked for (an event's edit page, or "Endre tid" on an
+                // allocation), until the case officer accepts or rejects it. The server sends it
+                // for the owner's events and allocations only.
+                const pendingChange = row.type === 'event' ? (entity as IAPIEvent).pending_change
+                    : row.type === 'allocation' ? (entity as IAPIAllocation).pending_change : undefined;
 
                 return (
-                    <div key={`${row.type}-${entity.id}`} className={styles.reservedRow}>
+                    <div
+                        key={rowKey}
+                        ref={isHighlighted ? highlightedRowRef : undefined}
+                        className={isHighlighted ? `${styles.reservedRow} ${styles.reservedRowHighlighted}` : styles.reservedRow}
+                        aria-current={isHighlighted ? 'true' : undefined}
+                    >
                         <div className={styles.reservedMain}>
                             <div className={styles.dateBadge}>
                                 <span className={styles.day}>{f.day}</span>
@@ -441,7 +598,17 @@ const ReservedTimesList: FC<{
                                 <div className={styles.secondary}>
                                     kl. {f.time}{sameDay ? `–${to.time}` : ` → ${to.full} kl. ${to.time}`}
                                 </div>
+                                {pendingChange && (
+                                    <Tag data-color="warning" data-size="sm">
+                                        {t('bookingfrontend.change_request_pending', {
+                                            time: `${fmtDate(pendingChange.from_).time}–${fmtDate(pendingChange.to_).time}`,
+                                        })}
+                                    </Tag>
+                                )}
                             </div>
+                            {isHighlighted && (
+                                <Tag data-color="accent" data-size="sm">{t('bookingfrontend.selected')}</Tag>
+                            )}
                             <div className={styles.dateDuration}>{hours} t</div>
                         </div>
                         {hasActions && (
@@ -479,6 +646,16 @@ const ReservedTimesList: FC<{
                                 {showWithdraw && (
                                     <Button
                                         variant="tertiary"
+                                        data-color="accent"
+                                        data-size="sm"
+                                        onClick={() => setTimeChangeTarget(entity as IAPIAllocation)}
+                                    >
+                                        {t('bookingfrontend.change_time')}
+                                    </Button>
+                                )}
+                                {showWithdraw && (
+                                    <Button
+                                        variant="tertiary"
                                         data-color="danger"
                                         data-size="sm"
                                         onClick={() => setWithdrawTarget(entity as IAPIAllocation)}
@@ -486,6 +663,18 @@ const ReservedTimesList: FC<{
                                         <XMarkOctagonIcon fontSize="1.1rem"/>
                                         {t('bookingfrontend.withdraw_timeslot')}
                                     </Button>
+                                )}
+                                {showComment && (
+                                    <ElementCommentButton
+                                        applicationId={applicationId}
+                                        secret={applicationSecret}
+                                        elementType={row.type}
+                                        elementId={entity.id}
+                                        elementLabel={[
+                                            formatElementTime(entity.from_, entity.to_, i18n.language),
+                                            ...entity.resources.map(r => r.name),
+                                        ].join(' · ')}
+                                    />
                                 )}
                             </div>
                         )}
@@ -541,6 +730,13 @@ const ReservedTimesList: FC<{
                 </div>
             </Dialog.Block>
         </Dialog>
+
+        <AllocationTimeChangeDialog
+            allocation={timeChangeTarget}
+            applicationId={applicationId}
+            applicationSecret={applicationSecret}
+            onClose={() => setTimeChangeTarget(null)}
+        />
         </>
     );
 };
@@ -626,6 +822,7 @@ const CommentsSection: FC<{
                                             <TimeAgo datetime={c.time} locale={i18n.language}/>{' · '}
                                             {DateTime.fromISO(c.time).toFormat('dd.MM.yyyy HH:mm')}
                                         </span>
+                                        {c.element && <CommentElementBadge element={c.element}/>}
                                     </div>
                                     <div className={styles.commentText} dangerouslySetInnerHTML={{__html: c.comment}}/>
                                 </div>
@@ -690,6 +887,10 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
     const {data: audience} = useBuildingAudience(application?.building_id);
     const {data: applicationDocuments} = useApplicationDocuments(props.applicationId);
     const {data: scheduleEntities} = useApplicationScheduleEntities(props.applicationId, props.secret);
+    // A recurring application stores ONE requested date; its whole series comes from the server,
+    // which generates it as the case officer's recurring preview does (GH #1392).
+    const isRecurring = !!application && RecurringInfoUtils.isRecurring(application);
+    const {data: recurringSeries, isError: recurringSeriesFailed} = useApplicationRecurringSeries(props.applicationId, props.secret, isRecurring);
     const cancelStatus = useUpdateApplicationStatus();
     const uploadDocumentMutation = useUploadApplicationDocument();
     const deleteDocumentMutation = useDeleteApplicationDocument();
@@ -832,6 +1033,16 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
         }
     };
 
+    // A refusal from an earlier attempt must not greet the next opening of the dialog.
+    const openCancelConfirm = () => {
+        cancelStatus.reset();
+        setConfirmCancelOpen(true);
+    };
+    const closeCancelConfirm = () => {
+        setConfirmCancelOpen(false);
+        cancelStatus.reset();
+    };
+
     if (isLoading) {
         return (
             <div style={{display: 'flex', justifyContent: 'center', padding: '3rem'}}>
@@ -857,11 +1068,17 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
     const isOrg = application.application_type === 'organization';
     const orderTotal = application.orders.reduce((s, o) => s + o.sum, 0);
 
+    // A recurring application counts and lists its series. Until the series has loaded no count
+    // is shown, rather than the ONE stored date; if it cannot be read, the stored dates as before.
+    const series = isRecurring && !recurringSeriesFailed ? recurringSeries : undefined;
+    const seriesLoading = isRecurring && !recurringSeriesFailed && !recurringSeries;
+    const dateCount = series ? series.occurrences.length : application.dates.length;
+
     // Actual schedule entities (events/allocations/bookings) created and activated for this
-    // application. Only the active ones represent confirmed reservations.
-    const hasReservedTimes = !!scheduleEntities
-        && [...scheduleEntities.events, ...scheduleEntities.allocations, ...scheduleEntities.bookings]
-            .some(e => e.active === 1);
+    // application. Only the active ones represent confirmed reservations. Null while the
+    // schedule is unknown, so the cancel confirm never states a count it has not read.
+    const reservedCount = scheduleEntities ? activeReservedEntities(scheduleEntities).length : null;
+    const hasReservedTimes = !!reservedCount;
 
     // Withdrawal/cancellation eligibility.
     // Allowed for not-yet-finalized (NEW/PENDING) and approved (ACCEPTED) applications,
@@ -885,10 +1102,27 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
             ? t('bookingfrontend.withdraw_unavailable_deadline')
             : null;
     const withdrawalDisabled = !!withdrawalBlockedReason;
-    // Approved bookings are "cancelled", not-yet-approved ones are "withdrawn"
-    const withdrawLabel = isAccepted
-        ? t('bookingfrontend.cancel_booking')
-        : t('bookingfrontend.withdraw_application');
+    // Approved applications are "cancelled", not-yet-approved ones are "withdrawn" — every
+    // text of the whole-application action carries that verb. The help only says "not only the
+    // time you selected" when a time was selected (the calendar modal's highlight); on Min side
+    // nothing is.
+    const wholeCancelText = isAccepted
+        ? {
+            label: t('bookingfrontend.cancel_whole_application'),
+            help: t(props.highlight
+                ? 'bookingfrontend.cancel_whole_application_help'
+                : 'bookingfrontend.cancel_whole_application_help_no_selection'),
+            confirmKey: 'bookingfrontend.confirm_cancel_whole_application_description',
+            failed: t('bookingfrontend.cancel_whole_application_failed'),
+        }
+        : {
+            label: t('bookingfrontend.withdraw_whole_application'),
+            help: t(props.highlight
+                ? 'bookingfrontend.withdraw_whole_application_help'
+                : 'bookingfrontend.withdraw_whole_application_help_no_selection'),
+            confirmKey: 'bookingfrontend.confirm_withdraw_whole_application_description',
+            failed: t('bookingfrontend.withdraw_whole_application_failed'),
+        };
 
     const MainWrapper: React.ElementType = embedded ? React.Fragment : 'main';
 
@@ -923,36 +1157,31 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                         <span className={styles.metaItem}>
                             <PinIcon fontSize="0.9rem"/>{application.building_name}
                         </span>
-                        <span className={styles.metaItem}>
-                            <CalendarIcon fontSize="0.9rem"/>
-                            {application.dates.length} {application.dates.length === 1
-                                ? (t('bookingfrontend.date'))
-                                : (t('bookingfrontend.dates'))}
-                        </span>
+                        {!seriesLoading && (
+                            <span className={styles.metaItem}>
+                                <CalendarIcon fontSize="0.9rem"/>
+                                {/* `dates` reads "Fra/Til" - a series says "datoer" (num_dates) */}
+                                {dateCount} {dateCount === 1
+                                    ? (t('bookingfrontend.date'))
+                                    : (t(series ? 'bookingfrontend.num_dates' : 'bookingfrontend.dates'))}
+                            </span>
+                        )}
                         {RecurringInfoUtils.isRecurring(application) && (
                             <Tag data-size="sm" data-color="neutral">{t('bookingfrontend.recurring_application')}</Tag>
                         )}
+                        {series && (
+                            <span className={styles.metaItem}>
+                                {series.interval_weeks === 1
+                                    ? t('bookingfrontend.every_week')
+                                    : t('bookingfrontend.every_n_weeks', {n: series.interval_weeks})}
+                            </span>
+                        )}
                     </div>
                 </div>
+                {/* The whole-application cancel is NOT offered up here (GH #1392): as the first
+                    action it was the one a user reached for when they meant a single time, and
+                    lost the whole series. It lives in its own card at the end of the page. */}
                 <div className={styles.appActions}>
-                    {canRequestWithdrawal && (
-                        <div className={styles.withdrawAction}>
-                            <Button
-                                data-color="danger"
-                                variant="secondary"
-                                data-size="sm"
-                                disabled={withdrawalDisabled}
-                                title={withdrawalBlockedReason || undefined}
-                                onClick={() => setConfirmCancelOpen(true)}
-                            >
-                                <XMarkOctagonIcon fontSize="0.9rem"/>
-                                {withdrawLabel}
-                            </Button>
-                            {withdrawalBlockedReason && (
-                                <span className={styles.withdrawHint}>{withdrawalBlockedReason}</span>
-                            )}
-                        </div>
-                    )}
                     {(isAccepted || isRejected || isCancelled) && (
                         <Button variant="secondary" data-size="sm" onClick={() => setShowCopyDialog(true)}>
                             <FilesIcon fontSize="0.9rem"/>
@@ -1018,7 +1247,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                                 {t('bookingfrontend.times_and_venue')}
                             </Heading>
                             <span style={{fontSize: 13, color: 'var(--ds-color-neutral-text-subtle)'}}>
-                                {application.dates.length} {t('bookingfrontend.time_slots')}
+                                {!seriesLoading && `${dateCount} ${t('bookingfrontend.time_slots')}`}
                             </span>
                         </div>
                         <div className={styles.dlGrid} style={{marginBottom: 16}}>
@@ -1042,13 +1271,21 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                                     applicationId={props.applicationId}
                                     applicationSecret={props.secret || application.secret || undefined}
                                     embedded={embedded}
+                                    highlight={props.highlight}
+                                    canComment={!isCancelled}
                                 />
                             </>
                         )}
                         <h3 className={styles.sectionCaption}>
                             {t('bookingfrontend.requested_times')}
                         </h3>
-                        <DatesList dates={application.dates}/>
+                        {series ? (
+                            <RecurringSeriesList occurrences={series.occurrences} outsideSeries={series.outside_series} entities={scheduleEntities}/>
+                        ) : seriesLoading ? (
+                            <Spinner data-size="sm" aria-label={t('common.loading')}/>
+                        ) : (
+                            <DatesList dates={application.dates}/>
+                        )}
                     </div>
 
                     {/* Om arrangementet */}
@@ -1248,6 +1485,35 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                             </Details.Content>
                         </Details>
                     )}
+
+                    {/* Avbestill / Trekk hele søknaden — deliberately last and on its own, away from
+                        the per-time actions above, and named for what it does (GH #1392). */}
+                    {canRequestWithdrawal && (
+                        <div className={styles.card}>
+                            <Heading level={2} data-size="sm">
+                                {wholeCancelText.label}
+                            </Heading>
+                            <Paragraph data-size="sm" className={styles.cancelWholeHelp}>
+                                {wholeCancelText.help}
+                            </Paragraph>
+                            <div className={styles.cancelWholeAction}>
+                                <Button
+                                    data-color="danger"
+                                    variant="secondary"
+                                    data-size="sm"
+                                    disabled={withdrawalDisabled}
+                                    title={withdrawalBlockedReason || undefined}
+                                    onClick={openCancelConfirm}
+                                >
+                                    <XMarkOctagonIcon fontSize="0.9rem"/>
+                                    {wholeCancelText.label}
+                                </Button>
+                                {withdrawalBlockedReason && (
+                                    <span className={styles.withdrawHint}>{withdrawalBlockedReason}</span>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Sidebar */}
@@ -1348,25 +1614,32 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
             {/* Cancel confirmation dialog */}
             <Dialog
                 open={confirmCancelOpen}
-                onClose={() => setConfirmCancelOpen(false)}
+                onClose={closeCancelConfirm}
                 closedby="any"
                 className={styles.cancelDialog}
             >
                 <Dialog.Block>
                     <Heading level={2} data-size="sm">
-                        {isAccepted
-                            ? t('bookingfrontend.confirm_cancel_booking_title')
-                            : t('bookingfrontend.confirm_cancel_title')}
+                        {wholeCancelText.label}
                     </Heading>
+                    {/* The count is of reserved times — what the server deactivates — never
+                        application.dates, which holds ONE row for a whole recurring series. */}
                     <Paragraph style={{margin: '12px 0'}}>
-                        {isAccepted
-                            ? t('bookingfrontend.confirm_cancel_booking_description')
-                            : t('bookingfrontend.confirm_cancel_description')}
+                        {reservedCount
+                            ? t(wholeCancelText.confirmKey, {count: reservedCount})
+                            : isAccepted
+                                ? t('bookingfrontend.confirm_cancel_booking_description')
+                                : t('bookingfrontend.confirm_cancel_description')}
                     </Paragraph>
+                    {cancelStatus.isError && (
+                        <Paragraph data-size="sm" style={{color: 'var(--ds-color-danger-text-default)'}}>
+                            {wholeCancelText.failed}
+                        </Paragraph>
+                    )}
                 </Dialog.Block>
                 <Dialog.Block>
                     <div style={{display: 'flex', justifyContent: 'flex-end', gap: 8}}>
-                        <Button variant="tertiary" onClick={() => setConfirmCancelOpen(false)}>
+                        <Button variant="tertiary" onClick={closeCancelConfirm}>
                             {t('common.cancel')}
                         </Button>
                         <Button
@@ -1377,7 +1650,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                             {cancelStatus.isPending
                                 ? <Spinner data-size="xs" aria-hidden="true"/>
                                 : null}
-                            {withdrawLabel}
+                            {wholeCancelText.label}
                         </Button>
                     </div>
                 </Dialog.Block>

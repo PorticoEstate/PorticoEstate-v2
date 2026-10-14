@@ -465,7 +465,10 @@ class booking_uiapplication extends booking_uicommon
 			'time' => 'now',
 			'author' => $customer_name ? $customer_name : $this->current_account_fullname(),
 			'comment' => Sanitizer::clean_html($comment),
-			'type' => $type
+			'type' => $type,
+			// A legacy comment is about the whole application (ref #1392).
+			'element_type' => null,
+			'element_id' => null
 		);
 	}
 
@@ -4223,6 +4226,18 @@ class booking_uiapplication extends booking_uicommon
 				if ($application['status'] == 'REJECTED')
 				{
 					$rejection_reason = Sanitizer::get_var('rejection_reason', 'html', 'POST');
+
+					// The reject dialog requires a reason. Its editor posts markup such as
+					// "<p><br></p>" or "<p>&nbsp;</p>" when it shows no text, so only the text
+					// counts. A form without the field (the base template's reject button)
+					// is let through as before.
+					$rejection_text = html_entity_decode(strip_tags((string)$rejection_reason), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+					if (array_key_exists('rejection_reason', $_POST) && preg_replace('/[\s\x{00A0}\x{200B}\x{FEFF}]+/u', '', $rejection_text) === '')
+					{
+						Cache::message_set(lang('Field %1 is required', lang('Reason for rejection')), 'error');
+						self::redirect(array('menuaction' => $this->url_prefix . '.show', 'id' => $application['id']));
+					}
+
 					if ($rejection_reason)
 					{
 						$application['comment'] = $rejection_reason;

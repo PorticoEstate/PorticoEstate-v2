@@ -7,7 +7,7 @@ import {
 	IDocumentCategoryQuery,
 	IDocument
 } from "@/service/types/api.types";
-import {IApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
+import {IApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse, IRecurringSeries} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {IEvent, IFreeTimeSlot, IShortEvent, IAPIEvent, IAPIBooking, IAPIAllocation} from "@/service/pecalendar.types";
@@ -626,6 +626,41 @@ export async function fetchApplicationScheduleEntities(
 
     if (!response.ok) {
         throw new Error(`Failed to fetch events/allocations/bookings for application ${id}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Fetch every occurrence of a recurring application, with its status (GH #1392)
+ * @param id The application ID
+ * @param secret Optional secret for external access
+ * @returns The series as the case officer's recurring preview generates it
+ */
+export async function fetchApplicationRecurringSeries(
+    id: number,
+    secret?: string
+): Promise<IRecurringSeries> {
+    const params: Record<string, any> = {};
+
+    if (secret) {
+        params.secret = secret;
+    }
+
+    if (typeof window === 'undefined') {
+        const cookies = require("next/headers").cookies()
+        const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+        if (sessionCookie) {
+            params.bookingfrontendsession = sessionCookie;
+        }
+    }
+
+    const url = phpGWLink(['bookingfrontend', 'applications', id.toString(), 'recurring-series'], params);
+
+    const response = await fetch(url, FetchAuthOptions());
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch the recurring series of application ${id}`);
     }
 
     return response.json();

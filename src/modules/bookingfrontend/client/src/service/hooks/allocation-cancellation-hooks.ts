@@ -6,8 +6,11 @@ import {
 	IAllocationCancelRequest,
 	IAllocationCancelResult,
 	IAllocationWithdrawResult,
+	IAllocationTimeChangeRequest,
+	IAllocationTimeChangeResult,
 	previewAllocationCancellation,
 	withdrawAllocationTimeslot,
+	changeAllocationTime,
 } from "@/service/api/allocation-cancellation";
 
 interface AllocationCancellationVariables {
@@ -79,6 +82,32 @@ export function useAllocationWithdraw() {
 	return useMutation<IAllocationWithdrawResult, AllocationCancellationError, AllocationWithdrawVariables>({
 		mutationFn: ({allocationId, comment, secret}) =>
 			withdrawAllocationTimeslot(allocationId, comment, secret),
+		retry: false,
+		onSuccess: (_data, variables) => {
+			queryClient.invalidateQueries({queryKey: ['applicationEventsAllocationsBookings', variables.applicationId]});
+			queryClient.invalidateQueries({queryKey: ['applicationComments', variables.applicationId]});
+			queryClient.invalidateQueries({queryKey: ['application', variables.applicationId]});
+		},
+	});
+}
+
+interface AllocationTimeChangeVariables extends IAllocationTimeChangeRequest {
+	allocationId: number;
+	applicationId: number;
+	secret?: string;
+}
+
+/**
+ * Min side change of one occurrence's time. The same caches as a withdrawal are invalidated: the
+ * reserved times (new time, or the pending request), the comment it left, and the application
+ * (its price).
+ */
+export function useAllocationTimeChange() {
+	const queryClient = useQueryClient();
+
+	return useMutation<IAllocationTimeChangeResult, AllocationCancellationError, AllocationTimeChangeVariables>({
+		mutationFn: ({allocationId, secret, from_, to_, comment}) =>
+			changeAllocationTime(allocationId, {from_, to_, comment}, secret),
 		retry: false,
 		onSuccess: (_data, variables) => {
 			queryClient.invalidateQueries({queryKey: ['applicationEventsAllocationsBookings', variables.applicationId]});

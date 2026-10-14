@@ -144,6 +144,10 @@ class SessionsMiddleware implements MiddlewareInterface
 						$cookietime = time() + 60;
 						$sessions->phpgw_setcookie('redirect', json_encode($_GET), $cookietime);
 					}
+					if ($this->isJsonRequest($request))
+					{
+						return $this->sendSessionExpiredResponse();
+					}
 					//					\phpgw::redirect_link('/login_ui');
 					\phpgw::redirect_link('/login.php');
 				}
@@ -156,6 +160,10 @@ class SessionsMiddleware implements MiddlewareInterface
 				// request itself, so capture it before bouncing to the login form
 				(new Login())->rememberRedirectDestination();
 				$sessions->phpgw_setcookie('login_second_pass', false);
+				if ($this->isJsonRequest($request))
+				{
+					return $this->sendSessionExpiredResponse();
+				}
 				\phpgw::redirect_link('/login_ui');
 			}
 			else
@@ -187,6 +195,10 @@ class SessionsMiddleware implements MiddlewareInterface
 					// 	$sessions->phpgw_setcookie('redirect', json_encode($_GET), $cookietime);
 					// }
 
+					if ($this->isJsonRequest($request))
+					{
+						return $this->sendSessionExpiredResponse();
+					}
 					\phpgw::redirect_link('/login.php');
 					//\phpgw::redirect_link('/login_ui');
 				}
@@ -237,6 +249,31 @@ class SessionsMiddleware implements MiddlewareInterface
 		);
 	}
 
+
+	/**
+	 * Whether the request asks for JSON: a fetch with a JSON body, or a jQuery dataType 'json' call.
+	 * A browser navigation sends neither header, so it still gets the login page
+	 *
+	 * @param Request $request
+	 *
+	 * @return bool
+	 */
+	private function isJsonRequest(Request $request): bool
+	{
+		return stripos($request->getHeaderLine('Content-Type'), 'application/json') !== false
+			|| stripos($request->getHeaderLine('Accept'), 'application/json') !== false;
+	}
+
+	/**
+	 * Answer a JSON request on an expired session with 401 instead of the redirect to login:
+	 * the login page is useless to it, and an SSO login page can be cross-origin, which fetch cannot follow
+	 *
+	 * @return Response
+	 */
+	private function sendSessionExpiredResponse(): Response
+	{
+		return $this->sendErrorResponse(['error' => lang('session_expired_log_in_again'), 'sessionExpired' => true], 401);
+	}
 
 	/**
 	 * Send an error response

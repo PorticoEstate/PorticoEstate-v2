@@ -129,17 +129,28 @@ class CommentsController
                 ? $data['type'] 
                 : 'comment';
 
+            // Optional: the element of this application the comment is about (GH #1392).
+            // The service refuses an element of another application.
+            $element = null;
+            if (isset($data['element_type']) || isset($data['element_id'])) {
+                $element = ['type' => $data['element_type'] ?? null, 'id' => $data['element_id'] ?? null];
+            }
+
             // Add the comment. A secret-link caller has no session, so the service
             // cannot name them; the controller is the only layer that knows how this
             // request was authorised.
             $author = $this->applicationHelper->resolveCommentAuthor($application, $request);
-            $createdComment = $this->commentsService->addComment($applicationId, $comment, $type, $author);
+            $createdComment = $this->commentsService->addComment($applicationId, $comment, $type, $author, null, $element);
 
             return ResponseHelper::sendJSONResponse([
                 'comment' => $createdComment,
                 'message' => 'Comment added successfully'
             ], 201, $response);
 
+        } catch (\InvalidArgumentException $e) {
+            return ResponseHelper::sendErrorResponse([
+                'error' => $e->getMessage()
+            ], 400, $response);
         } catch (Exception $e) {
             error_log("Error adding application comment: " . $e->getMessage());
             return ResponseHelper::sendErrorResponse([

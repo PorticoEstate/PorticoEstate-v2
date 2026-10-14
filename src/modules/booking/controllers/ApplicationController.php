@@ -10,6 +10,7 @@ use App\modules\booking\models\Date;
 use App\modules\booking\models\Document;
 use App\modules\booking\models\Order;
 use App\modules\booking\repositories\ApplicationRepository;
+use App\modules\booking\services\ApplicationChangeRequestService;
 use App\modules\booking\services\ApplicationService;
 use App\modules\booking\services\DocumentService;
 use App\helpers\ResponseHelper;
@@ -891,7 +892,10 @@ class ApplicationController
 		}
 
 		try {
-			$success = $this->repo->deactivateAssociation($type, $assocId);
+			// Only an element of this application or a related one, the set the
+			// page lists (showAssociations); anything else is not found from here
+			$relatedInfo = $this->repo->getRelatedApplications($id);
+			$success = $this->repo->deactivateAssociation($type, $assocId, $relatedInfo['application_ids']);
 			if (!$success) {
 				return ResponseHelper::sendErrorResponse(['error' => 'Association not found'], 404);
 			}
@@ -927,7 +931,9 @@ class ApplicationController
 		}
 
 		try {
-			$success = $this->repo->reactivateAssociation($type, $assocId);
+			// Same scope as deleteAssociation
+			$relatedInfo = $this->repo->getRelatedApplications($id);
+			$success = $this->repo->reactivateAssociation($type, $assocId, $relatedInfo['application_ids']);
 			if (!$success) {
 				return ResponseHelper::sendErrorResponse(['error' => 'Association not found'], 404);
 			}
@@ -935,6 +941,107 @@ class ApplicationController
 		} catch (Exception $e) {
 			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
 		}
+	}
+
+	// ── GET /booking/applications/{id}/change-requests ──────────────────
+
+	/**
+	 * @OA\Get(
+	 *     path="/booking/applications/{id}/change-requests",
+	 *     summary="Open requests from the applicant for a new time on an element of the application or of the applications combined with it",
+	 *     tags={"Applications"},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Application ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Open change requests, with element_active, stale (the element's time changed after the request) and price_review (priced per hour)",
+	 *         @OA\JsonContent(type="array", @OA\Items(type="object"))
+	 *     ),
+	 *     @OA\Response(response=400, description="Missing application ID"),
+	 *     @OA\Response(response=500, description="Server error")
+	 * )
+	 */
+	public function showChangeRequests(Request $request, Response $response, array $args): Response
+	{
+		$id = $this->getApplicationId($args);
+		if (!$id) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Missing application ID'], 400);
+		}
+
+		try {
+			return ResponseHelper::sendJSONResponse($this->changeRequests()->listOpen($id), 200, $response);
+		} catch (\Throwable $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
+		}
+	}
+
+	// ── POST /booking/applications/{id}/change-requests/{requestId}/accept ──
+
+	/**
+	 * @OA\Post(
+	 *     path="/booking/applications/{id}/change-requests/{requestId}/accept",
+	 *     summary="Godta endring: move the event to the requested time",
+	 *     tags={"Applications"},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Application ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="requestId", in="path", required=true, description="Change request ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="The event, its date row and the application's date row hold the new time", @OA\JsonContent(type="object")),
+	 *     @OA\Response(response=403, description="Not the case officer"),
+	 *     @OA\Response(response=404, description="Application or change request not found"),
+	 *     @OA\Response(response=409, description="Refused, nothing written: the request is handled, the event inactive or changed since, or the new time collides"),
+	 *     @OA\Response(response=422, description="Not a change of an event")
+	 * )
+	 */
+	public function acceptChangeRequest(Request $request, Response $response, array $args): Response
+	{
+		$app = $this->caseOfficerApplication($args, 'accept a change');
+		if ($app instanceof Response) {
+			return $app;
+		}
+
+		try {
+			$result = $this->changeRequests()->accept((int) $app['id'], (int) ($args['requestId'] ?? 0), $this->currentAccountId);
+			return ResponseHelper::sendJSONResponse($result, 200, $response);
+		} catch (RuntimeException $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], $this->httpCode($e));
+		} catch (\Throwable $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
+		}
+	}
+
+	// ── POST /booking/applications/{id}/change-requests/{requestId}/reject ──
+
+	/**
+	 * @OA\Post(
+	 *     path="/booking/applications/{id}/change-requests/{requestId}/reject",
+	 *     summary="Avslå endring: close the request, the element keeps its time",
+	 *     tags={"Applications"},
+	 *     @OA\Parameter(name="id", in="path", required=true, description="Application ID", @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="requestId", in="path", required=true, description="Change request ID", @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Rejected", @OA\JsonContent(@OA\Property(property="status", type="string", example="ok"))),
+	 *     @OA\Response(response=403, description="Not the case officer"),
+	 *     @OA\Response(response=404, description="Application or change request not found"),
+	 *     @OA\Response(response=409, description="The request is already handled")
+	 * )
+	 */
+	public function rejectChangeRequest(Request $request, Response $response, array $args): Response
+	{
+		$app = $this->caseOfficerApplication($args, 'reject a change');
+		if ($app instanceof Response) {
+			return $app;
+		}
+
+		try {
+			$this->changeRequests()->reject((int) $app['id'], (int) ($args['requestId'] ?? 0), $this->currentAccountId);
+			return ResponseHelper::sendJSONResponse(['status' => 'ok'], 200, $response);
+		} catch (RuntimeException $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], $this->httpCode($e));
+		} catch (\Throwable $e) {
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
+		}
+	}
+
+	private function changeRequests(): ApplicationChangeRequestService
+	{
+		return new ApplicationChangeRequestService($this->repo, $this->service);
 	}
 
 	// ── GET /booking/applications/{id}/recurring-preview ────────────────
@@ -1276,8 +1383,16 @@ class ApplicationController
 			return ResponseHelper::sendErrorResponse(['error' => 'Only the case officer can reply'], 403);
 		}
 
+		// A reply on one element of the application (ref #1392); the service refuses a
+		// half reference or an element of another application with a 400.
+		$elementType = $body['element_type'] ?? null;
+		$elementId = $body['element_id'] ?? null;
+		if (($elementType !== null && !is_string($elementType)) || ($elementId !== null && !is_numeric($elementId))) {
+			return ResponseHelper::sendErrorResponse(['error' => 'Invalid element reference'], 400);
+		}
+
 		try {
-			$this->service->addComment($id, $this->currentAccountId, $comment);
+			$this->service->addComment($id, $this->currentAccountId, $comment, $elementType, $elementId !== null ? (int) $elementId : null);
 			return ResponseHelper::sendJSONResponse(['status' => 'ok'], 200, $response);
 		} catch (RuntimeException $e) {
 			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], $this->httpCode($e));

@@ -1310,3 +1310,31 @@ vat_rate_missing	booking	en	the VAT code has no rate
 price_invalid	booking	en	Invalid price
 price_invalid_not_saved	booking	en	Invalid price – the new price was not saved
 price_row_invalid_not_saved	booking	en	Invalid price or date on row %1 – the row was not changed
+session_expired_log_in_again	booking	en	Your session has expired. Log in again in another tab and try again.
+change_requested_time	booking	en	Requested new time
+current_time	booking	en	Current time
+accept_change	booking	en	Accept change
+reject_change	booking	en	Reject change
+accept_change_help	booking	en	The event gets the requested time. The time is checked against other reservations before anything is saved.
+reject_change_help	booking	en	The event keeps its current time and the request is closed.
+change_price_not_recalculated	booking	en	The event is priced per hour. The price is not recalculated for the new time – check the articles under Edit.
+change_accepted	booking	en	The change has been saved
+change_rejected	booking	en	The change has been rejected
+change_conflicts_with	booking	en	The new time collides with
+change_request_not_open	booking	en	The request has already been handled
+change_request_stale	booking	en	The event has changed since the request
+change_request_element_inactive	booking	en	The event is not active
+change_request_dates_ambiguous	booking	en	The event's date row was not found
+change_applied_without_application_date	booking	en	The change has been saved. No application date belonged to the event, so the application's dates are unchanged.
+change_applied_shared_application_date	booking	en	The change has been saved. The application date also holds other elements, so the application's dates are unchanged.
+comment_regarding	booking	en	Regarding
+whole_application	booking	en	The whole application
+reply_on_this_time	booking	en	Reply on this time
+comment_time_removed	booking	en	The time has been removed
+accept_change_help_allocation	booking	en	The allocation gets the requested time. The time is checked against other reservations before anything is saved. The application's dates and the price are not changed.
+reject_change_help_allocation	booking	en	The allocation keeps its current time and the request is closed.
+change_price_not_recalculated_allocation	booking	en	The allocation is priced per hour. The price is not recalculated for the new time – check the articles under Edit.
+change_request_stale_allocation	booking	en	The allocation has changed since the request
+change_request_element_inactive_allocation	booking	en	The allocation is not active
+change_applied_allocation	booking	en	The change has been saved. The application's dates and the price are unchanged.
+change_request_booking_outside_allocation	booking	en	The change cannot be accepted: booking #%1 in the allocation would end up outside the new time.

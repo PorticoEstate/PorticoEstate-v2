@@ -2,7 +2,9 @@
 import {z} from "zod";
 import { ArticleOrder } from "@/service/types/api/order-articles.types";
 
-export const applicationFormSchema = z.object({
+// `hasAgeGroups` is false ONLY when the building's age-group query succeeded with an empty
+// list; the form value cannot tell that apart from "not loaded yet", so the caller decides.
+export const createApplicationFormSchema = ({hasAgeGroups}: {hasAgeGroups: boolean}) => z.object({
 	title: z.string().min(1, ('bookingfrontend.enter_title')),
 	start: z.date(),
 	end: z.date(),
@@ -11,7 +13,8 @@ export const applicationFormSchema = z.object({
 	description: z.string().optional(),
 	equipment: z.string().optional(),
 	organizer: z.string().optional(),
-	audience: z.array(z.number()),
+	// Defaults to [] so a building without target audiences (field not rendered) still validates.
+	audience: z.array(z.number()).default([]),
 	articles: z.array(z.object({
 		id: z.number(),
 		quantity: z.number().min(0),
@@ -26,7 +29,7 @@ export const applicationFormSchema = z.object({
 		description: z.string().nullable(),
 		sort: z.number()
 	})).refine(
-		(agegroups) => agegroups.some(group => group.male > 0),
+		(agegroups) => !hasAgeGroups || agegroups.some(group => group.male > 0),
 		{
 			message: ("bookingfrontend.number of participants is required")
 		}
@@ -88,4 +91,4 @@ export const applicationFormSchema = z.object({
 	}
 );
 
-export type ApplicationFormData = z.infer<typeof applicationFormSchema>;
+export type ApplicationFormData = z.infer<ReturnType<typeof createApplicationFormSchema>>;

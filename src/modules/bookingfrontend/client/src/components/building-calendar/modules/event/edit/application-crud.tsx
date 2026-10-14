@@ -36,7 +36,7 @@ import {NewPartialApplication, IUpdatePartialApplication, IApplication, Recurrin
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
 import {IAgeGroup, IAudience, IBuilding, Season} from "@/service/types/Building";
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
-import {ApplicationFormData, applicationFormSchema} from './application-form';
+import {ApplicationFormData, createApplicationFormSchema} from './application-form';
 import {IBookingUser, IDelegate} from "@/service/types/api.types";
 import ArticleTable from "@/components/article-table/article-table";
 import PriceChoiceField from "@/components/price-choice/price-choice-field";
@@ -64,6 +64,10 @@ interface ApplicationCrudInnerProps extends ApplicationCrudProps {
 	partials?: { list: IApplication[], total_sum: number };
 	audience?: IAudience[];
 	agegroups?: IAgeGroup[];
+	// True ONLY when the query SUCCEEDED with an empty list. Loading, error and a failed
+	// refetch are all false, which keeps Målgruppe / participants required.
+	noAudiences: boolean;
+	noAgeGroups: boolean;
 	existingApplication?: IApplication;
 	onSubmitSuccess?: (data: ApplicationFormData) => void;
 	lastSubmittedData?: Partial<ApplicationFormData> | null;
@@ -90,12 +94,19 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 		building_id
 	);
 	const {data: partials, isLoading: partialsLoading} = usePartialApplications();
-	const {data: audience, isLoading: audienceLoading} = useBuildingAudience(
+	const audienceQuery = useBuildingAudience(
 		building_id ? +building_id : undefined
 	);
-	const {data: agegroups, isLoading: agegroupsLoading} = useBuildingAgeGroups(
+	const ageGroupsQuery = useBuildingAgeGroups(
 		building_id ? +building_id : undefined
 	);
+	const {data: audience, isLoading: audienceLoading} = audienceQuery;
+	const {data: agegroups, isLoading: agegroupsLoading} = ageGroupsQuery;
+	// A list is only "empty" once its query has SUCCEEDED with an empty array. `isSuccess` is
+	// false while loading, on error, and after a failed refetch (react-query keeps the stale
+	// `data` then), so none of those can drop a field the citizen must fill in.
+	const noAudiences = audienceQuery.isSuccess && Array.isArray(audience) && audience.length === 0;
+	const noAgeGroups = ageGroupsQuery.isSuccess && Array.isArray(agegroups) && agegroups.length === 0;
 	const {data: bookingUser, isLoading: userLoading} = useBookingUser();
 
 	// Check for pending recurring application data after login and update props if needed
@@ -195,6 +206,8 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 				building={building}
 				existingApplication={existingApplication || undefined}
 				audience={audience}
+				noAudiences={noAudiences}
+				noAgeGroups={noAgeGroups}
 				buildingResources={buildingResources}
 				partials={partials}
 				lastSubmittedData={lastSubmittedData}
@@ -229,7 +242,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const [filesToUpload, setFilesToUpload] = useState<FileList | null>(null);
 	const [isUploadingFiles, setIsUploadingFiles] = useState(false);
 	const [hasExternalChanges, setHasExternalChanges] = useState(false);
-	const {building, buildingResources, audience, agegroups, partials, existingApplication} = props;
+	const {building, buildingResources, audience, agegroups, noAudiences, noAgeGroups, partials, existingApplication} = props;
 	const t = useTrans();
 	const [isEditingResources, setIsEditingResources] = useState(false);
 	const createMutation = useCreatePartialApplication();
@@ -479,6 +492,10 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		};
 	}, [existingApplication, props.lastSubmittedData, defaultStartEnd, agegroups, props.selectedTempApplication, props.bookingUser]);
 
+	// The schema cannot see the query state through the form values (an unloaded or failed
+	// list defaults to [] just like a loaded empty one), so it is told explicitly.
+	const formSchema = useMemo(() => createApplicationFormSchema({hasAgeGroups: !noAgeGroups}), [noAgeGroups]);
+
 	const {
 		control,
 		handleSubmit,
@@ -489,7 +506,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		clearErrors,
 		formState: {errors, isDirty, dirtyFields, isSubmitted}
 	} = useForm<ApplicationFormData>({
-		resolver: zodResolver(applicationFormSchema),
+		resolver: zodResolver(formSchema),
 		defaultValues: defaultValues
 	});
 
@@ -1700,120 +1717,124 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 							/>
 						</div>
 					)}
-					<div className={`${styles.formGroup}`}>
-						<div className={styles.resourcesHeader}>
-							<h4>{t('bookingfrontend.target audience')} <span className="required-asterisk">*</span></h4>
-						</div>
-						<Controller
-							name="audience"
-							control={control}
-							defaultValue={existingApplication?.audience || []}
-							render={({field}) => (
-								<Field>
-									{priceChoiceArticles.length > 0 && (
-										<Field.Description>{t('bookingfrontend.does_not_affect_price')}</Field.Description>
-									)}
-									<Select
-										required
-										{...field}
-										value={field.value?.[0]}
-										onChange={(event) => field.onChange([(Number(event.target.value))])}
-										aria-invalid={!!errors.audience}
-									>
-										<Select.Option value="" disabled selected={!field.value?.[0]}>
-											{t('bookingfrontend.choose target audience')}
-										</Select.Option>
-										{audience?.map(item => (
-											<Select.Option key={item.id} value={item.id}>
-												{item.name}
-											</Select.Option>
-										))}
-									</Select>
-									{errors.audience && (
-										<ValidationMessage>
-											{errors.audience.message}
-										</ValidationMessage>
-									)}
-								</Field>
-							)}
-						/>
-					</div>
-
-					<div className={`${styles.formGroup}`} style={{gridColumn: 1}} ref={participantsSectionRef}>
-						<div className={styles.resourcesHeader}
-							 style={{flexDirection: 'column', alignItems: 'flex-start'}}>
-							<h4>{t('bookingfrontend.estimated number of participants')} <span className="required-asterisk">*</span></h4>
-							{priceChoiceArticles.length > 0 && (
-								<Paragraph data-size="sm">{t('bookingfrontend.does_not_affect_price')}</Paragraph>
-							)}
-							{errors.agegroups?.['root']?.message && (
-								<span className={styles.error}>{t(errors.agegroups?.['root']?.message)}</span>
-							)}
-						</div>
-
-						{agegroups?.map((agegroup, index) => (
-							<Fragment key={agegroup.id}>
-								{/* Visible male count input */}
-								<Controller
-									name={`agegroups.${index}.male`}
-									control={control}
-									defaultValue={existingApplication?.agegroups?.find(ag => ag.id === agegroup.id)?.male || 0}
-									render={({field}) => (
-										<Textfield
-											type="number"
-											label={agegroup.name}
+					{!noAudiences && (
+						<div className={`${styles.formGroup}`}>
+							<div className={styles.resourcesHeader}>
+								<h4>{t('bookingfrontend.target audience')} <span className="required-asterisk">*</span></h4>
+							</div>
+							<Controller
+								name="audience"
+								control={control}
+								defaultValue={existingApplication?.audience || []}
+								render={({field}) => (
+									<Field>
+										{priceChoiceArticles.length > 0 && (
+											<Field.Description>{t('bookingfrontend.does_not_affect_price')}</Field.Description>
+										)}
+										<Select
+											required
 											{...field}
-											value={field.value === 0 ? '' : field.value}
-											placeholder="0"
-											min={0}
-											inputMode="numeric"
-											pattern="[0-9]*"
-											description={agegroup.description}
-											onChange={(e) => {
-												const value = e.target.value === '' ? 0 : Number(e.target.value);
-												field.onChange(value);
-											}}
-											error={errors.agegroups?.[0]?.message ? t(errors.agegroups?.[0]?.message) : undefined}
-											className={styles.participantInput}
-										/>
-									)}
-								/>
-								{/* Hidden fields for other required data */}
-								<Controller
-									name={`agegroups.${index}.id`}
-									control={control}
-									defaultValue={agegroup.id}
-									render={({field}) => <input type="hidden" {...field} />}
-								/>
-								<Controller
-									name={`agegroups.${index}.female`}
-									control={control}
-									defaultValue={0}
-									render={({field}) => <input type="hidden" {...field} />}
-								/>
-								<Controller
-									name={`agegroups.${index}.name`}
-									control={control}
-									defaultValue={agegroup.name}
-									render={({field}) => <input type="hidden" {...field} />}
-								/>
-								<Controller
-									name={`agegroups.${index}.description`}
-									control={control}
-									defaultValue={agegroup.description || ''}
-									render={({field}) => <input type="hidden" {...field} value={field.value || ''}/>}
-								/>
-								<Controller
-									name={`agegroups.${index}.sort`}
-									control={control}
-									defaultValue={agegroup.sort}
-									render={({field}) => <input type="hidden" {...field} />}
-								/>
-							</Fragment>
-						))}
+											value={field.value?.[0]}
+											onChange={(event) => field.onChange([(Number(event.target.value))])}
+											aria-invalid={!!errors.audience}
+										>
+											<Select.Option value="" disabled selected={!field.value?.[0]}>
+												{t('bookingfrontend.choose target audience')}
+											</Select.Option>
+											{audience?.map(item => (
+												<Select.Option key={item.id} value={item.id}>
+													{item.name}
+												</Select.Option>
+											))}
+										</Select>
+										{errors.audience && (
+											<ValidationMessage>
+												{errors.audience.message}
+											</ValidationMessage>
+										)}
+									</Field>
+								)}
+							/>
+						</div>
+					)}
+
+					{!noAgeGroups && (
+						<div className={`${styles.formGroup}`} style={{gridColumn: 1}} ref={participantsSectionRef}>
+							<div className={styles.resourcesHeader}
+								 style={{flexDirection: 'column', alignItems: 'flex-start'}}>
+								<h4>{t('bookingfrontend.estimated number of participants')} <span className="required-asterisk">*</span></h4>
+								{priceChoiceArticles.length > 0 && (
+									<Paragraph data-size="sm">{t('bookingfrontend.does_not_affect_price')}</Paragraph>
+								)}
+								{errors.agegroups?.['root']?.message && (
+									<span className={styles.error}>{t(errors.agegroups?.['root']?.message)}</span>
+								)}
+							</div>
+
+							{agegroups?.map((agegroup, index) => (
+								<Fragment key={agegroup.id}>
+									{/* Visible male count input */}
+									<Controller
+										name={`agegroups.${index}.male`}
+										control={control}
+										defaultValue={existingApplication?.agegroups?.find(ag => ag.id === agegroup.id)?.male || 0}
+										render={({field}) => (
+											<Textfield
+												type="number"
+												label={agegroup.name}
+												{...field}
+												value={field.value === 0 ? '' : field.value}
+												placeholder="0"
+												min={0}
+												inputMode="numeric"
+												pattern="[0-9]*"
+												description={agegroup.description}
+												onChange={(e) => {
+													const value = e.target.value === '' ? 0 : Number(e.target.value);
+													field.onChange(value);
+												}}
+												error={errors.agegroups?.[0]?.message ? t(errors.agegroups?.[0]?.message) : undefined}
+												className={styles.participantInput}
+											/>
+										)}
+									/>
+									{/* Hidden fields for other required data */}
+									<Controller
+										name={`agegroups.${index}.id`}
+										control={control}
+										defaultValue={agegroup.id}
+										render={({field}) => <input type="hidden" {...field} />}
+									/>
+									<Controller
+										name={`agegroups.${index}.female`}
+										control={control}
+										defaultValue={0}
+										render={({field}) => <input type="hidden" {...field} />}
+									/>
+									<Controller
+										name={`agegroups.${index}.name`}
+										control={control}
+										defaultValue={agegroup.name}
+										render={({field}) => <input type="hidden" {...field} />}
+									/>
+									<Controller
+										name={`agegroups.${index}.description`}
+										control={control}
+										defaultValue={agegroup.description || ''}
+										render={({field}) => <input type="hidden" {...field} value={field.value || ''}/>}
+									/>
+									<Controller
+										name={`agegroups.${index}.sort`}
+										control={control}
+										defaultValue={agegroup.sort}
+										render={({field}) => <input type="hidden" {...field} />}
+									/>
+								</Fragment>
+							))}
 
 
-					</div>
+						</div>
+					)}
 
 					<div className={`${styles.formGroup} ${styles.wide}`}>
 						<Details data-color={'neutral'}>

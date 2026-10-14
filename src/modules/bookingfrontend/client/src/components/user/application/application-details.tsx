@@ -1,6 +1,6 @@
 'use client'
 import React, {FC, useMemo, useEffect, useState, useRef, useCallback} from 'react';
-import {IApplication, IApplicationDate, ApplicationComment as IComment, RecurringInfoUtils, IRecurringOccurrence, RecurringOccurrenceStatus} from "@/service/types/api/application.types";
+import {IApplication, IApplicationDate, ApplicationComment as IComment, RecurringInfoUtils, IRecurringOccurrence, IRecurringSeriesElement, RecurringOccurrenceStatus} from "@/service/types/api/application.types";
 import {
     useApplication,
     useResourceRegulationDocuments,
@@ -259,40 +259,72 @@ const DatesList: FC<{ dates: DateRowItem[] }> = ({dates}) => {
 
 // How each status of a recurring application's occurrence reads (RecurringSeriesService on the
 // server decides it). A rejected or cancelled application reads like the page's own status tag.
-const OCCURRENCE_STATUS: Record<RecurringOccurrenceStatus, { langKey: string; color: StatusColor }> = {
+// An element of the application's own that sits outside the series has no occurrence to take a
+// status from; it reads "outside the series" in the same place.
+const OCCURRENCE_STATUS: Record<RecurringOccurrenceStatus | 'outside_series', { langKey: string; color: StatusColor }> = {
     allocated: {langKey: 'bookingfrontend.occurrence_allocated', color: 'success'},
     awaiting: {langKey: 'bookingfrontend.occurrence_awaiting', color: 'warning'},
     withdrawn: {langKey: 'bookingfrontend.occurrence_withdrawn', color: 'neutral'},
     not_allocated: {langKey: 'bookingfrontend.occurrence_not_allocated', color: 'neutral'},
+    outside_series: {langKey: 'bookingfrontend.occurrence_outside_series', color: 'neutral'},
     rejected: {langKey: 'bookingfrontend.rejected', color: getStatusColor('REJECTED')},
     cancelled: {langKey: 'bookingfrontend.cancelled', color: getStatusColor('CANCELLED')},
 };
+
+// One row of the series list: an occurrence, or an element of the application's own that sits
+// outside the series (moved to another day, or made outside it), told apart by `status`.
+interface SeriesRow {
+    key: string;
+    from_: string;
+    to_: string;
+    status: RecurringOccurrenceStatus | 'outside_series';
+    elements: IRecurringSeriesElement[];
+}
+
+// The occurrences with the application's active elements outside the series merged in by start.
+// Outside elements are never part of the occurrences or of any count, as in the case officer's
+// view. One without both times has no date to show and no span to measure, and an inactive one
+// holds nothing, so neither is listed. The sort is stable and the occurrences come first, so an
+// occurrence stays ahead of an element starting at the same time.
+function seriesRows(occurrences: IRecurringOccurrence[], outsideSeries: IRecurringSeriesElement[]): SeriesRow[] {
+    const rows: SeriesRow[] = [
+        ...occurrences.map(o => ({key: o.from_, from_: o.from_, to_: o.to_, status: o.status, elements: o.elements})),
+        ...outsideSeries.flatMap((e): SeriesRow[] => e.active && e.from_ && e.to_
+            ? [{key: `outside-${e.type}-${e.id}`, from_: e.from_, to_: e.to_, status: 'outside_series', elements: [e]}]
+            : []),
+    ];
+    return rows.sort((a, b) => DateTime.fromISO(a.from_).toMillis() - DateTime.fromISO(b.from_).toMillis());
+}
 
 // Every occurrence of a recurring application, in place of the ONE date it stores (GH #1392),
 // each with what it holds. An occurrence whose time was changed since - shortened by the
 // applicant, or moved by the case officer - shows the time it now has under the one asked for.
 // A time the applicant has asked for and the case officer has not decided on shows the same tag
-// as in "Reserverte tider", read from the same schedule entity.
-const RecurringSeriesList: FC<{ occurrences: IRecurringOccurrence[]; entities?: ScheduleEntities }> = ({occurrences, entities}) => {
+// as in "Reserverte tider", read from the same schedule entity. An element moved to another day
+// belongs to no occurrence; it is listed among them by its own date, tagged as outside the series.
+const RecurringSeriesList: FC<{ occurrences: IRecurringOccurrence[]; outsideSeries: IRecurringSeriesElement[]; entities?: ScheduleEntities }> = ({occurrences, outsideSeries, entities}) => {
     const t = useTrans();
+    const rows = useMemo(() => seriesRows(occurrences, outsideSeries), [occurrences, outsideSeries]);
 
     return (
         <div className={styles.datesList}>
-            {occurrences.map(occurrence => {
-                const f = fmtDate(occurrence.from_);
-                const to = fmtDate(occurrence.to_);
+            {rows.map(row => {
+                const f = fmtDate(row.from_);
+                const to = fmtDate(row.to_);
                 const sameDay = f.full === to.full;
-                const hours = durationHours(occurrence.from_, occurrence.to_);
-                const status = OCCURRENCE_STATUS[occurrence.status];
+                const status = OCCURRENCE_STATUS[row.status];
 
-                const active = occurrence.elements.filter(e => e.active);
+                const active = row.elements.filter(e => e.active);
                 const held = active.find(e => e.type === 'allocation') ?? active[0];
                 const heldFrom = held?.from_;
                 const heldTo = held?.to_;
                 const heldTimeDiffers = !!heldFrom && !!heldTo && (
-                    DateTime.fromISO(heldFrom).toMillis() !== DateTime.fromISO(occurrence.from_).toMillis()
-                    || DateTime.fromISO(heldTo).toMillis() !== DateTime.fromISO(occurrence.to_).toMillis()
+                    DateTime.fromISO(heldFrom).toMillis() !== DateTime.fromISO(row.from_).toMillis()
+                    || DateTime.fromISO(heldTo).toMillis() !== DateTime.fromISO(row.to_).toMillis()
                 );
+                // What is held, not what was asked for: a shortened time holds less, as in "Reserverte
+                // tider". Without a held element, or one lacking a time, the row's own span.
+                const hours = heldFrom && heldTo ? durationHours(heldFrom, heldTo) : durationHours(row.from_, row.to_);
                 const pendingChange = entities ? active.map(e => e.type === 'allocation'
                     ? entities.allocations.find(a => a.id === e.id)?.pending_change
                     : e.type === 'event'
@@ -301,7 +333,7 @@ const RecurringSeriesList: FC<{ occurrences: IRecurringOccurrence[]; entities?: 
                 ).find(Boolean) : undefined;
 
                 return (
-                    <div key={occurrence.from_} className={styles.dateRow}>
+                    <div key={row.key} className={styles.dateRow}>
                         <div className={styles.dateBadge}>
                             <span className={styles.day}>{f.day}</span>
                             <span className={styles.month}>{f.mon}</span>
@@ -1248,7 +1280,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                             {t('bookingfrontend.requested_times')}
                         </h3>
                         {series ? (
-                            <RecurringSeriesList occurrences={series.occurrences} entities={scheduleEntities}/>
+                            <RecurringSeriesList occurrences={series.occurrences} outsideSeries={series.outside_series} entities={scheduleEntities}/>
                         ) : seriesLoading ? (
                             <Spinner data-size="sm" aria-label={t('common.loading')}/>
                         ) : (

@@ -1174,3 +1174,4 @@ occurrence_awaiting	bookingfrontend	nn	Ventar på sakshandsaming
 occurrence_allocated	bookingfrontend	nn	Tildelt
 occurrence_withdrawn	bookingfrontend	nn	Trekt
 occurrence_not_allocated	bookingfrontend	nn	Ikkje tildelt
+occurrence_outside_series	bookingfrontend	nn	Utanfor serien

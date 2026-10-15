@@ -13,9 +13,9 @@
 {
 	$title = $appname;
 	$file = Array(
-		'E-Mail Preferences'	=> phpgw::link('/index.php',array('menuaction'=> 'email.uipreferences.preferences')),
-		'Extra E-Mail Accounts'	=> phpgw::link('/index.php',array('menuaction'=> 'email.uipreferences.ex_accounts_list')),
-		'E-Mail Filters'	=> phpgw::link('/index.php',array('menuaction'=> 'email.uifilters.filters_list'))
+		'E-Mail Preferences'	=> phpgw::link('/email/view/preferences'),
+		'Extra E-Mail Accounts'	=> phpgw::link('/email/view/accounts'),
+		'E-Mail Filters'	=> phpgw::link('/email/view/filters')
 	);
 	// relfbecker recommends NOT using a version test for xslt check
 	if (is_object($GLOBALS['phpgw']->xslttpl))

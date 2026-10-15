@@ -38,6 +38,22 @@ class EmailInboxViewController
 
 	public function index(Request $request, Response $response): Response
 	{
+		$query = $request->getQueryParams();
+		$fakeFolderBall = trim((string) ($query['fldball_fake_uri'] ?? ''));
+		if ($fakeFolderBall !== '')
+		{
+			parse_str(ltrim($fakeFolderBall, '&'), $selection);
+			$account = filter_var($selection['acctnum'] ?? null, FILTER_VALIDATE_INT);
+			$folder = $selection['folder'] ?? null;
+			if ($account !== false && $account >= 0 && is_string($folder) && $folder !== '')
+			{
+				$query['fldball'] = ['acctnum' => $account, 'folder' => $folder];
+				unset($query['fldball_fake_uri']);
+				$location = \phpgw::link('/email/view/inbox', $query, true);
+				return $response->withStatus(302)->withHeader('Location', $location);
+			}
+		}
+
 		$user = (array) Settings::getInstance()->get('user');
 		$emailPreferences = (array) ($user['preferences']['email'] ?? []);
 		Settings::getInstance()->update('flags', ['app_header' => lang('E-Mail') . ': ' . lang('Inbox')]);

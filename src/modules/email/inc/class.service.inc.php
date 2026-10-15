@@ -37,7 +37,7 @@ class email_service
 			'email'	=> array
 			(
 				'text'	=> $translation->translate('Email', [], false, 'email'),
-				'url'	=> phpgw::link('/index.php', array('menuaction'=> 'email.uiindex.index') ),
+				'url'	=> phpgw::link('/email/view/inbox'),
 				'image'	=> array('email', 'navbar'),
 				'order'	=> 6,
 				'group'	=> 'office'
@@ -60,19 +60,19 @@ class email_service
 			array
 			(
 				// this is a bit of a hack, but it means that we can degrade gracefully
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'email.uicompose.compose')) . '" onclick="window.open(\'' . phpgw::link('/index.php', array('menuaction' => 'email.uicompose.compose')) . '\'); return false;"',
+				'url'	=> phpgw::link('/email/view/compose') . '" onclick="window.open(\'' . phpgw::link('/email/view/compose') . '\'); return false;"',
 				'text'	=> $translation->translate('New', [], false, 'email'),
 				'image'	=> array('email', 'new')
 			),
 			array
 			(
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'email.uisearch.form')),
+				'url'	=> phpgw::link('/email/view/search'),
 				'text'	=> $translation->translate('Search', [], false, 'email'),
 				'image'	=> array('email', 'search')
 			),
 			array
 			(
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'email.uifilters.filters_list') ),
+				'url'	=> phpgw::link('/email/view/filters'),
 				'text'	=> $translation->translate('Filters', [], false, 'email'),
 				'image'	=> array('email', 'filters')
 			)
@@ -85,30 +85,30 @@ class email_service
 				array
 				(
 					'text'	=> $translation->translate('EMail Preferences', [], false, 'email'),
-					'url'	=> phpgw::link('/index.php',array('menuaction'=> 'email.uipreferences.preferences'))
+					'url'	=> phpgw::link('/email/view/preferences')
 				),
 				array
 				(
 					'text'	=> $translation->translate('Extra EMail Accounts', [], false, 'email'),
-					'url'	=> phpgw::link('/index.php',array('menuaction'=> 'email.uipreferences.ex_accounts_list'))
+					'url'	=> phpgw::link('/email/view/accounts')
 				),
 				array
 				(
 					'text'	=> $translation->translate('EMail Filters', [], false, 'email'),
-					'url'	=> phpgw::link('/index.php',array('menuaction'=> 'email.uifilters.filters_list'))
+					'url'	=> phpgw::link('/email/view/filters')
 				)
 			);
 
 			$menu['toolbar'][] = array
 			(
 				'text'	=> $translation->translate('Preferences', [], false, 'email'),
-				'url'	=> phpgw::link('/index.php',array('menuaction'=> 'email.uipreferences.preferences'))
+				'url'	=> phpgw::link('/email/view/preferences')
 			);
 
 			$menu['toolbar'][] = array
 			(
 				'text'	=> $translation->translate('Accounts', [], false, 'email'),
-				'url'	=> phpgw::link('/index.php',array('menuaction'=> 'email.uipreferences.ex_accounts_list'))
+				'url'	=> phpgw::link('/email/view/accounts')
 			);
 		}
 

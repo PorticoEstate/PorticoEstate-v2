@@ -55,7 +55,7 @@ if (($userSettings['preferences']['email']['mainscreen_showmail'])
 		echo '	<!-- Activate Cloaking Device' . "\n";
 		echo '	function CheckEmail()' . "\n";
 		echo '	{' . "\n";
-		echo '		window.opener.document.location.href="' . phpgw::link('/index.php', array('menuaction' => 'email.uiindex.index')) . '";' . "\n";
+		echo '		window.opener.document.location.href="' . phpgw::link('/email/view/inbox') . '";' . "\n";
 		echo '	}' . "\n";
 		echo '	//-->' . "\n";
 		echo '	</script>' . "\n";

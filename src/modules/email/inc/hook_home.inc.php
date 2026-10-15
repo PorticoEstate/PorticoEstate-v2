@@ -80,18 +80,13 @@
 			}
 			$data[] = array(
 				'text' => $subject,
-				'link' => phpgw::link(
-						'/index.php',array(
-						'menuaction'=>'email.uimessage.message')
-						+$this_loop_msgball['uri']
-				)
+				'link' => phpgw::link('/email/view/message', $this_loop_msgball['uri'])
 			);
 		}
 
 		// COMPOSE NEW email link
 		$compose_link = phpgw::link(
-					'/index.php',array(
-					'menuaction'=>'email.uicompose.compose',
+					'/email/view/compose',array(
 					// this data tells us where to return to after sending a message
 					// since we started from home page, send can not (at this time) take us back there
 					// so instead take user to INBOX for the default account (acctnum 0) after clicking the send button
@@ -142,8 +137,8 @@
 			$my_widgets = CreateObject('email.html_widgets');
 			$my_widgets->new_form();
 			$my_widgets->set_form_name('switchbox');
-			$my_widgets->set_form_action(phpgw::link('/index.php',array('menuaction'=>'email.uiindex.index')));
-			$my_widgets->set_form_method('post');
+			$my_widgets->set_form_action(phpgw::link('/email/view/inbox'));
+			$my_widgets->set_form_method('get');
 			$form_folder_switch_opentag = $my_widgets->get_form();
 			$folder_switch_combobox = $my_widgets->all_folders_combobox('switchbox');
 			$form_folder_switch_closetag = $my_widgets->form_closetag();

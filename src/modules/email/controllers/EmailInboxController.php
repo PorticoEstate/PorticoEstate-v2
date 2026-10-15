@@ -40,7 +40,7 @@ class EmailInboxController
 				{
 					if (isset($query[$key])) $params[$key] = $query[$key];
 				}
-				$result['items'][$index]['messageUrl'] = \phpgw::link('/index.php', ['menuaction' => 'email.uimessage.message'] + $params, true);
+				$result['items'][$index]['messageUrl'] = \phpgw::link('/email/view/message', $params, true);
 			}
 			return $this->json($response, $result);
 		}

@@ -77,8 +77,7 @@ class EmailSearchController
 						'subject' => (string) $mail->get_subject($headers, ''),
 						'date' => isset($headers->udate) ? date('Y-m-d H:i', (int) $headers->udate) : '',
 						'size' => (string) $mail->format_byte_size((int) ($headers->Size ?? 0)),
-						'messageUrl' => \phpgw::link('/index.php', [
-							'menuaction' => 'email.uimessage.message',
+						'messageUrl' => \phpgw::link('/email/view/message', [
 							'msgball[acctnum]' => $criteria['account'],
 							'msgball[folder]' => $folderLong,
 							'msgball[msgnum]' => (int) $messageNumber,

@@ -50,9 +50,9 @@ class EmailFilterViewController
 			'action_url' => \phpgw::link('/email/api/filters/action', [], true),
 			'run_url' => \phpgw::link('/email/api/filters/run', [], true),
 			'csrf' => $csrf,
-			'new_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uifilters.filters_edit', 'filter_num' => 'add_new'], true),
+			'new_url' => \phpgw::link('/email/view/filter', ['filter_num' => 'add_new'], true),
 			'inbox_url' => \phpgw::link('/email/view/inbox', $baseParameters, true),
-			'legacy_list_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uifilters.filters_list'] + $baseParameters, true),
+			'legacy_list_url' => \phpgw::link('/email/view/filters', $baseParameters, true),
 		]);
 		$response->getBody()->write($this->legacyView->render($html, ['email', 'filters']));
 		return $response->withHeader('Content-Type', 'text/html');

@@ -188,7 +188,7 @@ class EmailFilterController
 			foreach ($filters as $index => $filter)
 			{
 				$id = $filter['id'];
-				$filters[$index]['editUrl'] = \phpgw::link('/index.php', ['menuaction' => 'email.uifilters.filters_edit', 'filter_num' => $id], true);
+				$filters[$index]['editUrl'] = \phpgw::link('/email/view/filter', ['filter_num' => $id], true);
 			}
 			return $this->json($response, ['items' => $filters]);
 		}

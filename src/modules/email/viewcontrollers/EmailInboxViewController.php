@@ -45,7 +45,7 @@ class EmailInboxViewController
 		$html = $this->twig->render('@views/inbox.twig', [
 			'layout' => '@views/_bare.twig',
 			'api_url' => \phpgw::link('/email/api/inbox', [], true),
-			'compose_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uicompose.compose'], true),
+			'compose_url' => \phpgw::link('/email/view/compose', [], true),
 			'folders_url' => \phpgw::link('/email/view/folders', array_filter([
 				'fldball[acctnum]' => $request->getQueryParams()['fldball']['acctnum'] ?? null,
 				'fldball[folder]' => $request->getQueryParams()['fldball']['folder'] ?? null,
@@ -58,7 +58,7 @@ class EmailInboxViewController
 				'fldball[acctnum]' => $request->getQueryParams()['fldball']['acctnum'] ?? null,
 				'fldball[folder]' => $request->getQueryParams()['fldball']['folder'] ?? null,
 			], static fn($value) => $value !== null && $value !== ''), true),
-			'preferences_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uipreferences.preferences'], true),
+			'preferences_url' => \phpgw::link('/email/view/preferences', [], true),
 			'has_preferences' => !empty($emailPreferences),
 		]);
 
@@ -104,9 +104,9 @@ class EmailInboxViewController
 				'msgball[msgnum]' => (int) $messageNumber,
 			], true),
 			'back_url' => \phpgw::link('/email/view/inbox', $backParameters, true),
-			'reply_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uicompose.compose', 'action' => 'reply'] + $composeParameters, true),
-			'reply_all_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uicompose.compose', 'action' => 'replyall'] + $composeParameters, true),
-			'forward_url' => \phpgw::link('/index.php', ['menuaction' => 'email.uicompose.compose', 'action' => 'forward'] + $composeParameters, true),
+			'reply_url' => \phpgw::link('/email/view/compose', ['action' => 'reply'] + $composeParameters, true),
+			'reply_all_url' => \phpgw::link('/email/view/compose', ['action' => 'replyall'] + $composeParameters, true),
+			'forward_url' => \phpgw::link('/email/view/compose', ['action' => 'forward'] + $composeParameters, true),
 		]);
 
 		$response->getBody()->write($this->legacyView->render($html, ['email', 'message']));

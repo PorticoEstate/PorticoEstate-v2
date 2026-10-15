@@ -230,7 +230,11 @@ class emailadmin_bo
 				'imapTLSAuthentication',
 					'imapoldcclient',
 					'imapAuthUsername',
-					'imapAuthPassword'
+					'imapAuthPassword',
+					'microsoft_tenant_id',
+					'microsoft_client_id',
+					'microsoft_client_secret',
+					'microsoft_redirect_uri'
 				),
 				'description'	=> 'Microsoft Outlook IMAP',
 				'protocol'	=> 'imap',
@@ -494,27 +498,16 @@ class emailadmin_bo
 		return $retData;
 	}
 
-	function getUserProfile($_appName = '', $_groups = '')
+	function getResolvedProfileData($_appName = '', $_groups = '')
 	{
-		$this->restoreSessionData();
-		if (is_array($this->sessionData) && count($this->sessionData) > 0 && $this->sessionData['eapreferences'])
-		{
-			#error_log("sessionData Restored for UserProfile<br>");
-			return $this->sessionData['eapreferences'];
-		}
-		$appName	= ($_appName != '' ? $_appName : Settings::getInstance()->get('flags')['currentapp']);
+		$appName = ($_appName != '' ? $_appName : Settings::getInstance()->get('flags')['currentapp']);
 		if (!is_array($_groups))
 		{
-			// initialize with 0 => means no group id
 			$groups = array(0);
-			// set the second entry to the users primary group
-			if (isset(Settings::getInstance()->get('user')['account_primary_group']))
-			{
-				$groups[] = Settings::getInstance()->get('user')['account_primary_group'];
-			}
+			$user = Settings::getInstance()->get('user');
+			if (isset($user['account_primary_group'])) $groups[] = $user['account_primary_group'];
 			$accounts_obj = new Accounts();
-			$userGroups = $accounts_obj->membership(Settings::getInstance()->get('user')['account_id']);
-			foreach ((array)$userGroups as $groupInfo)
+			foreach ((array) $accounts_obj->membership($user['account_id']) as $groupInfo)
 			{
 				$groups[] = $groupInfo->id;
 			}
@@ -524,7 +517,19 @@ class emailadmin_bo
 			$groups = $_groups;
 		}
 
-		if ($data = $this->soemailadmin->getUserProfile($appName, $groups, Settings::getInstance()->get('user')['account_id']))
+		$user = Settings::getInstance()->get('user');
+		return $this->soemailadmin->getUserProfile($appName, $groups, $user['account_id']);
+	}
+
+	function getUserProfile($_appName = '', $_groups = '')
+	{
+		$this->restoreSessionData();
+		if (is_array($this->sessionData) && count($this->sessionData) > 0 && $this->sessionData['eapreferences'])
+		{
+			#error_log("sessionData Restored for UserProfile<br>");
+			return $this->sessionData['eapreferences'];
+		}
+		if ($data = $this->getResolvedProfileData($_appName, $_groups))
 		{
 
 			$eaPreferences = &CreateObject('emailadmin.ea_preferences');

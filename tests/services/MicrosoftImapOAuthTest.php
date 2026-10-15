@@ -11,16 +11,11 @@ use PHPUnit\Framework\TestCase;
 
 class MicrosoftImapOAuthTest extends TestCase
 {
-	private array $originalEnvironment = [];
 	private mixed $originalSession;
 	private mixed $originalSettings;
 
 	protected function setUp(): void
 	{
-		foreach (['EMAIL_MICROSOFT_TENANT_ID', 'EMAIL_MICROSOFT_CLIENT_ID', 'EMAIL_MICROSOFT_CLIENT_SECRET', 'EMAIL_MICROSOFT_REDIRECT_URI'] as $name)
-		{
-			$this->originalEnvironment[$name] = getenv($name);
-		}
 		$this->originalSession = $_SESSION ?? null;
 		$_SESSION = [];
 		$settingsProperty = new \ReflectionProperty(Settings::class, 'instance');
@@ -33,18 +28,10 @@ class MicrosoftImapOAuthTest extends TestCase
 				return $key === 'server' ? ['install_id' => 'microsoft-oauth-test', 'encryptkey' => '', 'mcrypt_iv' => ''] : [];
 			}
 		});
-		putenv('EMAIL_MICROSOFT_TENANT_ID=common');
-		putenv('EMAIL_MICROSOFT_CLIENT_ID=test-client');
-		putenv('EMAIL_MICROSOFT_CLIENT_SECRET=test-secret');
-		putenv('EMAIL_MICROSOFT_REDIRECT_URI=https://example.test/portico/email/oauth/microsoft/callback');
 	}
 
 	protected function tearDown(): void
 	{
-		foreach ($this->originalEnvironment as $name => $value)
-		{
-			$value === false ? putenv($name) : putenv($name . '=' . $value);
-		}
 		if ($this->originalSession === null)
 		{
 			unset($_SESSION);
@@ -60,7 +47,14 @@ class MicrosoftImapOAuthTest extends TestCase
 
 	public function testAuthorizationUrlUsesOutlookImapScopeAndPkce(): void
 	{
-		$url = MicrosoftImapOAuth::authorizationUrl(3, 'outlook@example.test');
+		$profile = [
+			'profileID' => 17,
+			'microsoft_tenant_id' => 'common',
+			'microsoft_client_id' => 'test-client',
+			'microsoft_client_secret' => 'encrypted-client-secret',
+			'microsoft_redirect_uri' => 'https://example.test/portico/email/oauth/microsoft/callback',
+		];
+		$url = MicrosoftImapOAuth::authorizationUrl(3, 'outlook@example.test', $profile);
 		parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
 
 		$this->assertSame('login.microsoftonline.com', parse_url($url, PHP_URL_HOST));
@@ -70,9 +64,11 @@ class MicrosoftImapOAuthTest extends TestCase
 		$this->assertStringContainsString('https://outlook.office.com/IMAP.AccessAsUser.All', $query['scope']);
 		$this->assertStringContainsString('offline_access', $query['scope']);
 		$this->assertSame('S256', $query['code_challenge_method']);
+		$this->assertTrue(MicrosoftImapOAuth::isConfigured($profile));
 
 		$state = Cache::session_get('email', 'microsoft_imap_oauth_' . $query['state']);
 		$this->assertSame(3, $state['account']);
+		$this->assertSame(17, $state['profile_id']);
 		$this->assertSame(
 			rtrim(strtr(base64_encode(hash('sha256', $state['verifier'], true)), '+/', '-_'), '='),
 			$query['code_challenge']

@@ -25,7 +25,7 @@ class EmailPreferencesViewController
 		return $this->render($request, $response, '@views/preferences.twig', [
 			'api_url' => \phpgw::link('/email/api/preferences', [], true),
 			'save_url' => \phpgw::link('/email/api/preferences', [], true),
-			'oauth_url' => \App\modules\email\services\MicrosoftImapOAuth::isConfigured()
+			'oauth_url' => $this->oauthConfigured()
 				? \phpgw::link('/email/oauth/microsoft/authorize', ['acctnum' => 0])
 				: '',
 		]);
@@ -49,7 +49,7 @@ class EmailPreferencesViewController
 			'save_url' => \phpgw::link('/email/api/preferences/account', [], true),
 			'accounts_url' => \phpgw::link('/email/view/accounts', [], true),
 			'account_mode' => true,
-			'oauth_url' => ctype_digit($account) && (int) $account > 0 && \App\modules\email\services\MicrosoftImapOAuth::isConfigured()
+			'oauth_url' => ctype_digit($account) && (int) $account > 0 && $this->oauthConfigured()
 				? \phpgw::link('/email/oauth/microsoft/authorize', ['acctnum' => (int) $account])
 				: '',
 		]);
@@ -79,5 +79,11 @@ class EmailPreferencesViewController
 		]));
 		$response->getBody()->write($this->legacyView->render($html, ['email', 'preferences']));
 		return $response->withHeader('Content-Type', 'text/html');
+	}
+
+	private function oauthConfigured(): bool
+	{
+		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('felamimail');
+		return is_array($profile) && \App\modules\email\services\MicrosoftImapOAuth::isConfigured($profile);
 	}
 }

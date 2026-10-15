@@ -28,6 +28,8 @@
 		imapTLSEncryption: 'Connection encryption', imapTLSAuthentication: 'Do not validate certificate',
 		imapoldcclient: 'Legacy IMAP client', imapAuthUsername: 'IMAP username',
 		imapAuthPassword: 'IMAP password', imapEnableCyrusAdmin: 'Enable Cyrus administration',
+		microsoft_tenant_id: 'Microsoft tenant ID', microsoft_client_id: 'Microsoft client ID',
+		microsoft_client_secret: 'Microsoft client secret', microsoft_redirect_uri: 'Microsoft redirect URI',
 		imapAdminUsername: 'Admin username', imapAdminPW: 'Admin password', imapEnableSieve: 'Enable Sieve',
 		imapSieveServer: 'Sieve server', imapSievePort: 'Sieve port'
 	};
@@ -134,7 +136,7 @@
 		} else
 		{
 			const input = document.createElement('input');
-			input.type = /password|PW$/.test(key) ? 'password' : 'text';
+			input.type = /password|PW$/.test(key) || key === 'microsoft_client_secret' ? 'password' : 'text';
 			input.name = name;
 			input.value = input.type === 'password' ? '' : (value == null ? '' : String(value));
 			if (input.type === 'password') input.autocomplete = 'new-password';

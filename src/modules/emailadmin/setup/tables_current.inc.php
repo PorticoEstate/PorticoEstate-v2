@@ -55,7 +55,11 @@
 				'ea_user_defined_signatures' => array('type' => 'varchar','precision' => '3'),
 				'ea_default_signature' => array('type' => 'varchar','precision' => '255'),
 				'ea_imap_auth_username' => array('type' => 'varchar','precision' => '80'),
-				'ea_imap_auth_password' => array('type' => 'varchar','precision' => '80')
+				'ea_imap_auth_password' => array('type' => 'varchar','precision' => '80'),
+				'microsoft_tenant_id' => array('type' => 'varchar','precision' => '255'),
+				'microsoft_client_id' => array('type' => 'varchar','precision' => '255'),
+				'microsoft_client_secret' => array('type' => 'varchar','precision' => '255'),
+				'microsoft_redirect_uri' => array('type' => 'varchar','precision' => '255')
 			),
 			'pk' => array('ea_profile_id'),
 			'fk' => array(),

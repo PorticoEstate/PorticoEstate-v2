@@ -15,7 +15,8 @@ class EmailMicrosoftOAuthController
 	{
 		$account = filter_var($request->getQueryParams()['acctnum'] ?? 0, FILTER_VALIDATE_INT);
 		if ($account === false || $account < 0) return $this->error($response, 'Invalid email account', 400);
-		if (!MicrosoftImapOAuth::isConfigured()) return $this->error($response, 'Microsoft Outlook OAuth is not configured on this server', 503);
+		$profile = $this->resolvedProfile();
+		if (!MicrosoftImapOAuth::isConfigured($profile)) return $this->error($response, 'Microsoft Outlook OAuth is not configured on the emailadmin profile assigned to your account', 503);
 
 		try
 		{
@@ -35,7 +36,7 @@ class EmailMicrosoftOAuthController
 			{
 				return $this->error($response, 'Select an IMAP or IMAPS server before connecting Outlook', 422);
 			}
-			$url = MicrosoftImapOAuth::authorizationUrl($account, $emailAddress);
+			$url = MicrosoftImapOAuth::authorizationUrl($account, $emailAddress, $profile);
 			return $response->withStatus(302)->withHeader('Location', $url);
 		}
 		catch (\Throwable $exception)
@@ -53,7 +54,7 @@ class EmailMicrosoftOAuthController
 		}
 		try
 		{
-			$tokens = MicrosoftImapOAuth::completeAuthorization((string) ($query['code'] ?? ''), (string) ($query['state'] ?? ''));
+			$tokens = MicrosoftImapOAuth::completeAuthorization((string) ($query['code'] ?? ''), (string) ($query['state'] ?? ''), $this->resolvedProfile());
 			$account = (int) $tokens['account'];
 			$preferences = Preferences::getInstance();
 			$mail = MailMessage::getInstance();
@@ -95,5 +96,11 @@ class EmailMicrosoftOAuthController
 	{
 		$response->getBody()->write((string) htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
 		return $response->withStatus($status)->withHeader('Content-Type', 'text/plain; charset=UTF-8');
+	}
+
+	private function resolvedProfile(): array
+	{
+		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('felamimail');
+		return is_array($profile) ? $profile : [];
 	}
 }

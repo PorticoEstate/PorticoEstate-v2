@@ -787,7 +787,8 @@ class mail_msg_base
 			throw new \RuntimeException('Microsoft OAuth2 requires an IMAP or IMAPS account');
 		}
 
-		$tokens = \App\modules\email\services\MicrosoftImapOAuth::refreshAccessToken((string) $password);
+		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('felamimail');
+		$tokens = \App\modules\email\services\MicrosoftImapOAuth::refreshAccessToken((string) $password, is_array($profile) ? $profile : []);
 		$refreshToken = (string) ($tokens['refresh_token'] ?? $password);
 		if ($refreshToken !== (string) $password)
 		{

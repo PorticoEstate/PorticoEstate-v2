@@ -103,7 +103,8 @@
 		if (!window.confirm('Delete profile "' + profile.description + '"?')) return;
 		try
 		{
-			const response = await fetch(apiUrl + '/' + profile.profileID, { method: 'DELETE', headers: csrfHeaders });
+			const deleteUrl = phpGWLink('emailadmin/profiles/' + encodeURIComponent(profile.profileID), {}, true);
+			const response = await fetch(deleteUrl, { method: 'DELETE', headers: csrfHeaders });
 			const result = await response.json();
 			if (!response.ok) throw new Error(result.error || 'Delete failed');
 			await load();
@@ -120,7 +121,8 @@
 		render();
 		try
 		{
-			const response = await fetch(apiUrl + '/order', {
+			const orderUrl = phpGWLink('emailadmin/profiles/order', {}, true);
+			const response = await fetch(orderUrl, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...csrfHeaders },
 				body: JSON.stringify({ profile_ids: profiles.map(profile => profile.profileID) })

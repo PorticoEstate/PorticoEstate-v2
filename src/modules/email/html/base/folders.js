@@ -52,9 +52,9 @@
 					const row = document.createElement('tr');
 					const name = document.createElement('td');
 					const link = document.createElement('a');
-					const inboxUrl = new URL('/email/view/inbox', window.location.origin);
+					const inboxUrl = new URL(root.dataset.inboxUrl, window.location.href);
 					inboxUrl.searchParams.set('fldball[acctnum]', String(folder.account));
-					inboxUrl.searchParams.set('fldball[folder]', folder.folderParam || folder.longName);
+					inboxUrl.searchParams.set('fldball[folder]', folder.longName);
 					link.href = inboxUrl;
 					link.textContent = folder.name || folder.longName;
 					name.appendChild(link);

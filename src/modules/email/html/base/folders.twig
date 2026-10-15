@@ -9,6 +9,7 @@
 {% block content %}
 <main class="email-folders" id="email-folders"
 	data-api-url="{{ api_url|e('html_attr') }}"
+	data-inbox-url="{{ inbox_url|e('html_attr') }}"
 	data-action-url="{{ action_url|e('html_attr') }}"
 	data-csrf-name="{{ csrf.name|e('html_attr') }}"
 	data-csrf-value="{{ csrf.value|e('html_attr') }}"

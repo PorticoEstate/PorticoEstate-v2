@@ -50,8 +50,19 @@
 			const option = new Option(root.dataset.anyApplication, '');
 			select.add(option);
 		}
-		(list || []).forEach(item => select.add(new Option(item.name, item.id)));
+		(list || []).forEach(item =>
+		{
+			const option = new Option(item.name, item.id);
+			option.disabled = Boolean(item.disabled);
+			select.add(option);
+		});
 		select.value = selected == null ? (includeAny ? '' : '0') : String(selected);
+	}
+
+	function makeSearchable(select)
+	{
+		if (typeof window.jQuery === 'undefined' || typeof window.jQuery.fn.select2 === 'undefined') return;
+		window.jQuery(select).select2({ width: '100%', minimumResultsForSearch: 0 });
 	}
 
 	function updateUserEditLink()
@@ -157,6 +168,8 @@
 		addOptions(document.getElementById('emailadmin-app'), options.apps, true, profile.ea_appname || '');
 		addOptions(document.getElementById('emailadmin-group'), options.groups, false, profile.ea_group || 0);
 		addOptions(document.getElementById('emailadmin-user'), options.users, false, profile.ea_user || 0);
+		makeSearchable(document.getElementById('emailadmin-group'));
+		makeSearchable(userSelect);
 		updateUserEditLink();
 		Object.entries(profile).forEach(([key, value]) =>
 		{

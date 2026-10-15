@@ -64,7 +64,9 @@ class EmailadminViewController
 		}
 		foreach ((array) $accounts_obj->get_list('accounts') as $user)
 		{
-			$users[] = ['id' => (int) $user->id, 'name' => (string) $user->lid];
+			$disabled = !$user->enabled;
+
+			$users[] = ['id' => (int) $user->id, 'name' => (string) $user->__toString() . ' (' . (string) $user->lid . ')', 'disabled' => $disabled];
 		}
 		usort($groups, static fn($left, $right) => $left['id'] === 0 ? ($right['id'] === 0 ? 0 : -1) : ($right['id'] === 0 ? 1 : strcasecmp($left['name'], $right['name'])));
 		usort($users, static fn($left, $right) => $left['id'] === 0 ? ($right['id'] === 0 ? 0 : -1) : ($right['id'] === 0 ? 1 : strcasecmp($left['name'], $right['name'])));
@@ -133,6 +135,8 @@ class EmailadminViewController
 		if (!$this->isAdmin()) return $response->withStatus(403);
 		$title = $id ? lang('edit profile') : lang('add profile');
 		Settings::getInstance()->update('flags', ['app_header' => lang('Email administration') . ': ' . $title]);
+		\phpgw::import_class('phpgwapi.jquery');
+		\phpgwapi_jquery::load_widget('select2');
 		$html = $this->twig->render('@views/profiles/emailadmin_edit.twig', array_merge($this->options(), [
 			'layout' => '@views/_bare.twig',
 			'profile_id' => $id,

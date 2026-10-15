@@ -136,7 +136,7 @@ class EmailadminViewController
 		$html = $this->twig->render('@views/profiles/emailadmin_edit.twig', array_merge($this->options(), [
 			'layout' => '@views/_bare.twig',
 			'profile_id' => $id,
-			'api_url' => \phpgw::link('/emailadmin/profiles'),
+			'api_url' => \phpgw::link('/emailadmin/profiles' . ($id > 0 ? '/' . $id : '')),
 			'list_url' => \phpgw::link('/emailadmin/view/profiles'),
 			'user_edit_url_template' => \phpgw::link('/emailadmin/view/users/__USER_ID__/edit'),
 			'csrf' => $this->csrf($request),

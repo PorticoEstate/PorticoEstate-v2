@@ -90,13 +90,15 @@ class EmailadminController
 	{
 		if (!$this->isAdmin()) return $this->denied($response);
 		$id = (int) ($args['id'] ?? 0);
-		$profiles = (array) $this->businessObject()->getProfileList();
-		foreach ($profiles as $profile)
+		$businessObject = $this->businessObject();
+		if (!$this->hasProfile((array) $businessObject->getProfileList(), $id))
 		{
-			if ((int) ($profile['profileID'] ?? 0) === $id)
-			{
-				return $this->json($response, ['item' => $this->safeProfile($profile)]);
-			}
+			return $this->json($response, ['error' => lang('Profile not found')], 404);
+		}
+		$profile = $businessObject->getProfile($id);
+		if (is_array($profile) && (int) ($profile['profileID'] ?? 0) === $id)
+		{
+			return $this->json($response, ['item' => $this->safeProfile($profile)]);
 		}
 		return $this->json($response, ['error' => lang('Profile not found')], 404);
 	}

@@ -389,7 +389,7 @@ class emailadmin_bo
 		{
 			foreach ($profileData as $n => $data)
 			{
-				if ($data['ProfileID'] == $_profileID)
+				if ((int) ($data['profileID'] ?? 0) === (int) $_profileID)
 				{
 					$found = $n;
 					break;

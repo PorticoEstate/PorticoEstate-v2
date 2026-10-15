@@ -203,7 +203,7 @@
 	async function loadProfile()
 	{
 		if (!profileId) return {};
-		const response = await fetch(apiUrl + '/' + profileId, { headers: { Accept: 'application/json' } });
+		const response = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
 		const result = await response.json();
 		if (!response.ok) throw new Error(result.error || 'Unable to load profile');
 		return result.item || {};
@@ -236,7 +236,7 @@
 		{
 			const saveButton = form.querySelector('[type="submit"]');
 			saveButton.disabled = true;
-			const response = await fetch(profileId ? apiUrl + '/' + profileId : apiUrl, {
+			const response = await fetch(apiUrl, {
 				method: profileId ? 'PUT' : 'POST',
 				headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...csrfHeaders },
 				body: JSON.stringify(body)

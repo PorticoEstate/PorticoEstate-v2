@@ -555,6 +555,21 @@
 			);
 			$i++;
 			$this->cust_prefs[$i] = array(
+				'id' => 'imap_auth_type',
+				'type' => 'known_string',
+				'widget' => 'combobox',
+				'accts_usage' => 'default, extra_accounts',
+				'write_props' => 'no_db_defang',
+				'lang_blurb' => lang('IMAP authentication'),
+				'init_default' => 'string,password',
+				'values' => array(
+					'password' => lang('Password'),
+					'microsoft_oauth' => lang('Microsoft Outlook OAuth2'),
+				),
+				'long_desc' => lang('Choose password authentication or Microsoft OAuth2 for an Outlook IMAP account. OAuth2 requires the server administrator to configure a Microsoft application.')
+			);
+			$i++;
+			$this->cust_prefs[$i] = array(
 				'id' 		=> 'address',
 				'type'		=> 'user_string',
 				'widget'	=> 'textbox',

@@ -25,6 +25,7 @@
 			<div id="email-preferences-standard"></div>
 		</section>
 		<section class="email-preferences-section">
+			{% if oauth_url %}<p><a href="{{ oauth_url|e }}">{{ lang('Connect Microsoft Outlook with OAuth2') }}</a></p>{% endif %}
 			<div id="email-preferences-custom-fields"></div>
 			<label class="email-preferences-toggle" hidden><input id="email-preferences-custom-enabled" type="checkbox"></label>
 		</section>

@@ -81,13 +81,15 @@ class IMAPManager
     private static function executeWithFallback($function, $args)
     {
         $wrapper = self::getWrapper();
+        $oauthAuthentication = $function === 'imap_open'
+            && (($args[5]['authentication'] ?? 'login') === 'oauth');
         
         try {
             // Try primary wrapper
             $result = call_user_func_array([$wrapper, $function], $args);
             
             // If result is false and we haven't tried legacy yet, try fallback
-            if ($result === false && self::$mode === self::MODE_AUTO && $wrapper === 'ModernIMAPWrapper' && !self::$fallbackOccurred) {
+            if (!$oauthAuthentication && $result === false && self::$mode === self::MODE_AUTO && $wrapper === 'ModernIMAPWrapper' && !self::$fallbackOccurred) {
                 self::$fallbackOccurred = true;
                 self::$currentWrapper = 'LegacyIMAPWrapper';
                 
@@ -100,7 +102,7 @@ class IMAPManager
             
         } catch (Exception $e) {
             // If exception occurs and we're in auto mode, try fallback
-            if (self::$mode === self::MODE_AUTO && $wrapper === 'ModernIMAPWrapper' && !self::$fallbackOccurred) {
+            if (!$oauthAuthentication && self::$mode === self::MODE_AUTO && $wrapper === 'ModernIMAPWrapper' && !self::$fallbackOccurred) {
                 self::$fallbackOccurred = true;
                 self::$currentWrapper = 'LegacyIMAPWrapper';
                 

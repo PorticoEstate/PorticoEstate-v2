@@ -494,6 +494,7 @@ HTML;
 		{
 			$icon = $this->image($appname, 'navbar', '', ($this->userSettings['preferences']['common']['template_set'] == 'funkwerk' ? True : False));
 
+			$link_data = array();
 			if (count($file))
 			{
 				foreach ($file as $text => $url)

@@ -67,7 +67,7 @@ class ModernIMAPWrapper
                 'username' => $username,
                 'password' => $password,
                 'protocol' => $protocol,
-                'authentication' => 'login'
+                'authentication' => (string) ($params['authentication'] ?? 'login')
             ];
             
             $client = self::$clientManager->make($config);

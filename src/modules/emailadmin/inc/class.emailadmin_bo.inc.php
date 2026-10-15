@@ -220,6 +220,22 @@ class emailadmin_bo
 				'protocol'	=> 'imap',
 				'classname'	=> 'dbmaildbmailuser'
 			),
+			'7' 	=> array(
+				'fieldNames'	=> array(
+					'imapServer',
+					'imapPort',
+					'imapType',
+					'imapLoginType',
+					'imapTLSEncryption',
+				'imapTLSAuthentication',
+					'imapoldcclient',
+					'imapAuthUsername',
+					'imapAuthPassword'
+				),
+				'description'	=> 'Microsoft Outlook IMAP',
+				'protocol'	=> 'imap',
+				'classname'	=> 'defaultimap'
+			),
 		);
 
 		if ($_restoreSesssion) $this->restoreSessionData();

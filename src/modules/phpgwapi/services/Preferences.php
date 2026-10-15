@@ -463,6 +463,7 @@ class Preferences
 	 */
 	function lang_notify($msg, $vals = array(), $un_lang = False)
 	{
+		$langs = array();
 		foreach ($vals as $key => $val)
 		{
 			$lname = ($lname = lang($key)) == $key . '*' ? $key : $lname;

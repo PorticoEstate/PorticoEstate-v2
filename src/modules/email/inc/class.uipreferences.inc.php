@@ -54,7 +54,7 @@
 		 * bopreferences class vars ->std_prefs[]  and ->cust_prefs[], various HTML widgets supported
 		 * @param $feed_prefs : array : preference data as standardized in email bopreferences class
 		 * vars ->std_prefs[]  and ->cust_prefs[]
-		 * @return : string : HTML data accumulated for parsed prefernce widget TR's
+		 * @return string : HTML data accumulated for parsed prefernce widget TR's
 		 *  email bopreferences class vars ->std_prefs[]  and ->cust_prefs[], as filled by
 		 * email bopreferences->init_available_prefs(), represent a standardized preferences schema,
 		 * this function generates TR's from that data, using elements "id", "widget", "other_props",

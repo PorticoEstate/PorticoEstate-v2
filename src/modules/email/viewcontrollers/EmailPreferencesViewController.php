@@ -25,6 +25,9 @@ class EmailPreferencesViewController
 		return $this->render($request, $response, '@views/preferences.twig', [
 			'api_url' => \phpgw::link('/email/api/preferences', [], true),
 			'save_url' => \phpgw::link('/email/api/preferences', [], true),
+			'oauth_url' => \App\modules\email\services\MicrosoftImapOAuth::isConfigured()
+				? \phpgw::link('/email/oauth/microsoft/authorize', ['acctnum' => 0])
+				: '',
 		]);
 	}
 
@@ -46,6 +49,9 @@ class EmailPreferencesViewController
 			'save_url' => \phpgw::link('/email/api/preferences/account', [], true),
 			'accounts_url' => \phpgw::link('/email/view/accounts', [], true),
 			'account_mode' => true,
+			'oauth_url' => ctype_digit($account) && (int) $account > 0 && \App\modules\email\services\MicrosoftImapOAuth::isConfigured()
+				? \phpgw::link('/email/oauth/microsoft/authorize', ['acctnum' => (int) $account])
+				: '',
 		]);
 	}
 

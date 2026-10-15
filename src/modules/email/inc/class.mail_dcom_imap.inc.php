@@ -223,10 +223,10 @@
 			return IMAPManager::imap_ping($stream);
 		}
 
-		function open($mailbox,$username,$password,$flags=0)
+		function open($mailbox,$username,$password,$flags=0,$authentication='login')
 		{
 			$mailbox = $this->utf7_encode($mailbox);
-			return IMAPManager::imap_open($mailbox, $username, $password, $flags,2);
+			return IMAPManager::imap_open($mailbox, $username, $password, $flags, 2, ['authentication' => $authentication]);
 		}
 
 		function qprint($message)

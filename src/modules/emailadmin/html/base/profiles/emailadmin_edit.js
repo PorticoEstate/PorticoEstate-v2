@@ -157,6 +157,10 @@
 			const type = select.value;
 			const fields = source[type] ? source[type].fields : [];
 			const defaults = { smtpPort: '25', imapPort: '143', imapSievePort: '2000', imapTLSEncryption: 0, imapTLSAuthentication: 1 };
+			if (server === 'imap' && type === '7')
+			{
+				Object.assign(defaults, { imapServer: 'outlook.office365.com', imapPort: '993', imapTLSEncryption: 3 });
+			}
 			fields.filter(key => key !== typeField).forEach(key => makeInput(container, server + 'settings', type, key, profile[key] == null ? defaults[key] : profile[key]));
 		};
 		select.addEventListener('change', draw);

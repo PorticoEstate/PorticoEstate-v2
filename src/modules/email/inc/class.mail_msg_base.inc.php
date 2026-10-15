@@ -773,6 +773,41 @@ class mail_msg_base
 		@description the who enchalada happens here. Recently only class msg_bootstrap calls this directly.
 		*/
 	// ----  BEGIN request from Mailserver / Initialize This Mail Session  -----
+	function resolve_imap_credentials($acctnum, $password)
+	{
+		$authentication = (string) $this->mail_msg_wrappers->get_pref_value('imap_auth_type', $acctnum);
+		if ($authentication !== 'microsoft_oauth')
+		{
+			return ['password' => $password, 'authentication' => 'login'];
+		}
+
+		$serverType = (string) $this->mail_msg_wrappers->get_pref_value('mail_server_type', $acctnum);
+		if (!in_array($serverType, ['imap', 'imaps'], true))
+		{
+			throw new \RuntimeException('Microsoft OAuth2 requires an IMAP or IMAPS account');
+		}
+
+		$tokens = \App\modules\email\services\MicrosoftImapOAuth::refreshAccessToken((string) $password);
+		$refreshToken = (string) ($tokens['refresh_token'] ?? $password);
+		if ($refreshToken !== (string) $password)
+		{
+			$encrypted = $this->encrypt_email_passwd($refreshToken);
+			$preferences = \App\modules\phpgwapi\services\Preferences::getInstance();
+			if ((int) $acctnum === 0)
+			{
+				$preferences->add('email', 'passwd', $this->html_quotes_encode($encrypted));
+			}
+			else
+			{
+				$preferences->add_struct('email', '["ex_accounts"][' . (int) $acctnum . ']["passwd"]', $encrypted);
+			}
+			$preferences->save_repository();
+			\App\modules\phpgwapi\services\Cache::session_set('email', '0;cached_prefs', null);
+		}
+
+		return ['password' => (string) $tokens['access_token'], 'authentication' => 'oauth'];
+	}
+
 	function begin_request($args_array)
 	{
 		$got_args = array();
@@ -1520,20 +1555,20 @@ class mail_msg_base
 			}
 
 			//  ----  Get Email Password
-			if ($this->mail_msg_wrappers->get_isset_pref('passwd') == False)
+			$authType = (string) $this->mail_msg_wrappers->get_pref_value('imap_auth_type', $acctnum);
+			if ($this->mail_msg_wrappers->get_isset_pref('passwd', $acctnum) == False)
 			{
-				if ($this->debug_logins > 1)
+				if ($authType === 'microsoft_oauth')
 				{
-					$this->dbug->out('mail_msg.begin_request(' . __LINE__ . '): this->a[$this->acctnum][prefs][passwd] NOT set, fallback to $GLOBALS[phpgw_info][user][passwd]' . '<br />');
+					$pass = '';
 				}
-				// DO NOT alter the password and put that altered password BACK into the preferences array
-				// why not? used to have a reason, but that was obviated, no reason at the moment
-				//$this->set_pref_value('passwd',$GLOBALS['phpgw_info']['user']['passwd']);
-				//$this->a[$this->acctnum]['prefs']['passwd'] = $GLOBALS['phpgw_info']['user']['passwd'];
-				$pass = $GLOBALS['phpgw_info']['user']['passwd'];
-				if ($this->debug_logins > 1)
+				else
 				{
-					$this->dbug->out('mail_msg.begin_request(' . __LINE__ . '): pass grabbed from GLOBALS[phpgw_info][user][passwd] = ' . htmlspecialchars(serialize($pass)) . '<br />');
+					if ($this->debug_logins > 1)
+					{
+						$this->dbug->out('mail_msg.begin_request(' . __LINE__ . '): this->a[$this->acctnum][prefs][passwd] NOT set, fallback to $GLOBALS[phpgw_info][user][passwd]' . '<br />');
+					}
+					$pass = $GLOBALS['phpgw_info']['user']['passwd'];
 				}
 			}
 			else
@@ -1541,7 +1576,7 @@ class mail_msg_base
 				// DO NOT alter the password and do NOT put that altered password BACK into the preferences array
 				// keep the one in GLOBALS in encrypted form if possible ????
 				$pass = $this->mail_msg_wrappers->get_pref_value('passwd');
-				if ($this->debug_logins > 1)
+				if ($this->debug_logins > 1 && $authType !== 'microsoft_oauth')
 				{
 					$this->dbug->out('mail_msg.begin_request(' . __LINE__ . '): pass from prefs: already defanged for us, but still encrypted <pre>' . $pass . '</pre><br />' . "\r\n");
 				}
@@ -1550,7 +1585,7 @@ class mail_msg_base
 				// so the FIRST thing class prefs does when reading from the db MUST be to "UN-defang", and that IS what happens there
 				// so by now phpgwapi/class.preferences has ALREADY done the "de-fanging"
 				$pass = $this->decrypt_email_passwd($pass);
-				if ($this->debug_logins > 1)
+				if ($this->debug_logins > 1 && $authType !== 'microsoft_oauth')
 				{
 					$this->dbug->out('mail_msg.begin_request(' . __LINE__ . '): pass from prefs: decrypted: <pre>' . $pass . '</pre><br />' . "\r\n");
 				}
@@ -1626,7 +1661,8 @@ class mail_msg_base
 			//@set_time_limit(60);
 			// login to INBOX because we know that always(?) should exist on an imap server and pop server
 			// after we are logged in we can get additional info that will lead us to the desired folder (if not INBOX)
-			$mailsvr_stream = $this->mail_msg_wrappers->getTransport($acctnum)->open($mailsvr_callstr . "INBOX", $user, $pass, 0);
+			$imapCredentials = $this->resolve_imap_credentials($acctnum, $pass);
+			$mailsvr_stream = $this->mail_msg_wrappers->getTransport($acctnum)->open($mailsvr_callstr . "INBOX", $user, $imapCredentials['password'], 0, $imapCredentials['authentication']);
 			$pass = '';
 
 			if ($this->debug_logins > 1)
@@ -1995,27 +2031,31 @@ class mail_msg_base
 			{
 				$this->dbug->out('mail_msg: ensure_stream_and_folder: stream for this account needs to be opened, login to $acctnum [' . $acctnum . ']' . '<br />');
 			}
+			$authType = (string) $this->mail_msg_wrappers->get_pref_value('imap_auth_type', $acctnum);
 			if ($this->mail_msg_wrappers->get_isset_pref('passwd', $acctnum) == False)
 			{
-				if ($this->debug_logins > 1)
+				if ($authType === 'microsoft_oauth')
 				{
-					$this->dbug->out('mail_msg: ensure_stream_and_folder: this->a[$this->acctnum][prefs][passwd] NOT set, fallback to $GLOBALS[phpgw_info][user][passwd]' . '<br />');
+					$pass = '';
 				}
-				$pass = $GLOBALS['phpgw_info']['user']['passwd'];
-				if ($this->debug_logins > 1)
+				else
 				{
-					$this->dbug->out('mail_msg: ensure_stream_and_folder: pass grabbed from GLOBALS[phpgw_info][user][passwd] = ' . htmlspecialchars(serialize($pass)) . '<br />');
+					if ($this->debug_logins > 1)
+					{
+						$this->dbug->out('mail_msg: ensure_stream_and_folder: this->a[$this->acctnum][prefs][passwd] NOT set, fallback to $GLOBALS[phpgw_info][user][passwd]' . '<br />');
+					}
+					$pass = $GLOBALS['phpgw_info']['user']['passwd'];
 				}
 			}
 			else
 			{
 				$pass = $this->mail_msg_wrappers->get_pref_value('passwd', $acctnum);
-				if ($this->debug_logins > 1)
+				if ($this->debug_logins > 1 && $authType !== 'microsoft_oauth')
 				{
 					$this->dbug->out('mail_msg: ensure_stream_and_folder: pass from prefs: already "defanged" for us, but still ancrypted ' . htmlspecialchars(serialize($pass)) . '<br />');
 				}
 				$pass = $this->decrypt_email_passwd($pass);
-				if ($this->debug_logins > 1)
+				if ($this->debug_logins > 1 && $authType !== 'microsoft_oauth')
 				{
 					$this->dbug->out('mail_msg: ensure_stream_and_folder: pass from prefs: decrypted: ' . htmlspecialchars(serialize($pass)) . '<br />');
 				}
@@ -2073,7 +2113,8 @@ class mail_msg_base
 			{
 				$this->dbug->out('mail_msg: ensure_stream_and_folder(' . __LINE__ . '): <font color="red">MAIL SERVER COMMAND</font>' . '<br />');
 			}
-			$mailsvr_stream = $this->mail_msg_wrappers->getTransport($acctnum)->open($mailsvr_callstr . "INBOX", $user, $pass, 0);
+			$imapCredentials = $this->resolve_imap_credentials($acctnum, $pass);
+			$mailsvr_stream = $this->mail_msg_wrappers->getTransport($acctnum)->open($mailsvr_callstr . "INBOX", $user, $imapCredentials['password'], 0, $imapCredentials['authentication']);
 			$pass = '';
 			//@set_time_limit(0);
 			if ($this->debug_logins > 1)

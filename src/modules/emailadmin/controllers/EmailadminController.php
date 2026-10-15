@@ -60,6 +60,11 @@ class EmailadminController
 		return $profile;
 	}
 
+	private function isEnabled($value): bool
+	{
+		return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+	}
+
 	private function profileSummary(array $profile): array
 	{
 		$apps = (array) Settings::getInstance()->get('apps');
@@ -145,10 +150,10 @@ class EmailadminController
 			'description' => trim((string) ($global['description'] ?? '')),
 			'defaultDomain' => trim((string) ($global['defaultDomain'] ?? '')),
 			'organisationName' => trim((string) ($global['organisationName'] ?? '')),
-			'userDefinedAccounts' => isset($global['userDefinedAccounts']) ? 'yes' : 'no',
-			'userDefinedIdentities' => isset($global['userDefinedIdentities']) ? 'yes' : 'no',
-			'ea_active' => isset($global['ea_active']) ? 1 : 0,
-			'ea_user_defined_signatures' => isset($global['ea_user_defined_signatures']) ? 'yes' : 'no',
+			'userDefinedAccounts' => $this->isEnabled($global['userDefinedAccounts'] ?? false) ? 'yes' : 'no',
+			'userDefinedIdentities' => $this->isEnabled($global['userDefinedIdentities'] ?? false) ? 'yes' : 'no',
+			'ea_active' => $this->isEnabled($global['ea_active'] ?? false) ? 1 : 0,
+			'ea_user_defined_signatures' => $this->isEnabled($global['ea_user_defined_signatures'] ?? false) ? 'yes' : 'no',
 			'ea_default_signature' => (string) ($global['ea_default_signature'] ?? ''),
 			'ea_appname' => trim((string) ($global['ea_appname'] ?? '')),
 			'ea_group' => (int) ($global['ea_group'] ?? 0),
@@ -196,12 +201,12 @@ class EmailadminController
 			if ($field === 'smtpType' || $field === 'imapType') continue;
 			if ($server === 'imap' && $field === 'imapTLSAuthentication')
 			{
-				$settings[$field] = isset($values[$field]) ? 0 : 1;
+				$settings[$field] = !empty($values[$field]) ? 0 : 1;
 				continue;
 			}
 			if (in_array($field, $checkboxes, true))
 			{
-				$settings[$field] = isset($values[$field]) ? 'yes' : 'no';
+				$settings[$field] = $this->isEnabled($values[$field] ?? false) ? 'yes' : 'no';
 				continue;
 			}
 			$settings[$field] = trim((string) ($values[$field] ?? ''));

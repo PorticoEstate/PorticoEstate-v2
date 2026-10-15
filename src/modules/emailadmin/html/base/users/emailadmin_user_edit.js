@@ -6,7 +6,10 @@
 	const form = document.getElementById('emailadmin-user-form');
 	const errorBox = document.getElementById('emailadmin-user-error');
 	const statusBox = document.getElementById('emailadmin-user-status');
-	const csrfHeaders = { [root.dataset.csrfName]: root.dataset.csrfValue };
+	const csrfHeaders = {
+		'X-CSRF-NAME': root.dataset.csrfName,
+		'X-CSRF-VALUE': root.dataset.csrfValue
+	};
 
 	function showError(message)
 	{

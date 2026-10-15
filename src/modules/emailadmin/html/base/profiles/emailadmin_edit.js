@@ -10,7 +10,10 @@
 	const alertBox = document.getElementById('emailadmin-error');
 	const userSelect = document.getElementById('emailadmin-user');
 	const userEditLink = document.getElementById('emailadmin-user-edit-link');
-	const csrfHeaders = { [root.dataset.csrfName]: root.dataset.csrfValue };
+	const csrfHeaders = {
+		'X-CSRF-NAME': root.dataset.csrfName,
+		'X-CSRF-VALUE': root.dataset.csrfValue
+	};
 	const checkboxFields = new Set([
 		'smtpAuth', 'editforwardingaddress', 'smtpLDAPUseDefault', 'imapEnableCyrusAdmin',
 		'imapEnableSieve', 'imapoldcclient'

@@ -7,7 +7,10 @@
 	const editTemplate = root.dataset.editUrl;
 	const tbody = document.getElementById('emailadmin-profile-rows');
 	const alertBox = document.getElementById('emailadmin-error');
-	const csrfHeaders = { [root.dataset.csrfName]: root.dataset.csrfValue };
+	const csrfHeaders = {
+		'X-CSRF-NAME': root.dataset.csrfName,
+		'X-CSRF-VALUE': root.dataset.csrfValue
+	};
 	let profiles = [];
 
 	function showError(message)

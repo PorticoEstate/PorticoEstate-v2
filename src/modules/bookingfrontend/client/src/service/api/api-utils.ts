@@ -771,12 +771,21 @@ export async function setVersionSettings(version: 'original' | 'new'): Promise<V
 export async function fetchBuildingAgeGroups(building_id: number): Promise<IAgeGroup[]> {
     const url = phpGWLink(['bookingfrontend', 'buildings', building_id, 'agegroups']);
     const response = await fetch(url);
+    // A failed request must be a query ERROR, never a "successful" list: the application
+    // dialog treats a succeeded empty list as "nothing to ask for" and drops the field.
+    if (!response.ok) {
+        throw new Error(`Failed to fetch building age groups: ${response.status}`);
+    }
     const result = await response.json();
     return result;
 }
 export async function fetchBuildingAudience(building_id: number): Promise<IAudience[]> {
     const url = phpGWLink(['bookingfrontend', 'buildings', building_id, 'audience']);
     const response = await fetch(url);
+    // See fetchBuildingAgeGroups: an HTTP error must not resolve as an (empty) list.
+    if (!response.ok) {
+        throw new Error(`Failed to fetch building target audience: ${response.status}`);
+    }
     const result = await response.json();
     return result;
 }

@@ -1313,3 +1313,5 @@ change_request_stale_allocation	booking	nn	Tildelinga er endra etter førespurna
 change_request_element_inactive_allocation	booking	nn	Tildelinga er ikkje aktiv
 change_applied_allocation	booking	nn	Endringa er lagra. Datoane i søknaden og prisen er uendra.
 change_request_booking_outside_allocation	booking	nn	Endringa kan ikkje godtakast: booking #%1 i tildelinga ville hamna utanfor den nye tida.
+
+reactivate	booking	nn	Aktiver igjen

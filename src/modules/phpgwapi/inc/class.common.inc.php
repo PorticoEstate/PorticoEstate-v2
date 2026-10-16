@@ -1354,8 +1354,8 @@ HTML;
 	 */
 	public function create_emailpreferences($prefs = '', $accountid = '')
 	{
-		$preferences = createObject('phpgwapi.preferences');
-		return $preferences->create_email_preferences($accountid);
+		$userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+		return $userSettings['preferences']['email'] ?? [];
 	}
 
 	/**

@@ -28,6 +28,7 @@ class Preferences
 	private $preferences;
 	public $account_id;
 	private $global_lock = false;
+	private $userSettings;
 
 
 	public function __construct($account_id = null)
@@ -36,6 +37,7 @@ class Preferences
 		$sessions = Sessions::getInstance();
 		$this->account_id = $account_id ?? $sessions->getAccountId();
 		$this->serverSettings = Settings::getInstance()->get('server');
+		$this->userSettings = Settings::getInstance()->get('user');
 		$this->preferences = $this->Readpreferences();
 
 		// Load settings from the database
@@ -681,6 +683,7 @@ class Preferences
 		{
 
 			$this->serverSettings['mail_server_type'] = 'imap';
+			Settings::getInstance()->update('server', ['mail_server_type' => 'imap']);
 		}
 
 		// ---  [server][mail_folder]  ---
@@ -688,6 +691,7 @@ class Preferences
 		// ====  default to "mail" so upgrades happen transparently
 		// ---  TEMP MAKE DEFAULT UWASH MAIL FOLDER ~/mail (a.k.a. $HOME/mail)
 		$this->serverSettings['mail_folder'] = 'mail';
+		Settings::getInstance()->update('server', ['mail_folder' => 'mail']);
 		// ---  DELETE THE ABOVE WHEN THIS OPTION GETS INTO THE SYSTEM SETUP
 		// pick up custom "mail_folder" if it exists (used for UWash and UWash Maildir servers)
 		// else use the system default (which we temporarily hard coded to "mail" just above here)

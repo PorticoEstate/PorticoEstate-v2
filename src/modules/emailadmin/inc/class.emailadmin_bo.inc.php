@@ -501,10 +501,10 @@ class emailadmin_bo
 	function getResolvedProfileData($_appName = '', $_groups = '')
 	{
 		$appName = ($_appName != '' ? $_appName : Settings::getInstance()->get('flags')['currentapp']);
+		$user = Settings::getInstance()->get('user');
 		if (!is_array($_groups))
 		{
 			$groups = array(0);
-			$user = Settings::getInstance()->get('user');
 			if (isset($user['account_primary_group'])) $groups[] = $user['account_primary_group'];
 			$accounts_obj = new Accounts();
 			foreach ((array) $accounts_obj->membership($user['account_id']) as $groupInfo)
@@ -517,7 +517,6 @@ class emailadmin_bo
 			$groups = $_groups;
 		}
 
-		$user = Settings::getInstance()->get('user');
 		return $this->soemailadmin->getUserProfile($appName, $groups, $user['account_id']);
 	}
 
@@ -618,7 +617,7 @@ class emailadmin_bo
 		$accounts_obj = new Accounts();
 		$icUserData = array();
 		$ogUserData = array();
-		if ($userProfile = $this->getUserProfile('felamimail'))
+		if ($userProfile = $this->getUserProfile('email'))
 		{
 			$icServer = $userProfile->getIncomingServer(0);
 			if (is_a($icServer, 'defaultimap') && $username = $accounts_obj->id2name($_accountID))
@@ -819,7 +818,7 @@ class emailadmin_bo
 	{
 		$accounts_obj = new Accounts();
 
-		if ($userProfile = $this->getUserProfile('felamimail'))
+		if ($userProfile = $this->getUserProfile('email'))
 		{
 			$ogServer = $userProfile->getOutgoingServer(0);
 			if (is_a($ogServer, 'defaultsmtp'))

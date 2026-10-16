@@ -66,6 +66,22 @@ services:
         depends_on:
             - redis
 
+    imap-test:
+        image: greenmail/standalone:2.1.2
+        container_name: portico_imap_test
+        profiles: [email-test]
+        environment:
+            GREENMAIL_OPTS: >-
+                -Dgreenmail.setup.test.imap
+                -Dgreenmail.setup.test.imaps
+                -Dgreenmail.hostname=0.0.0.0
+                -Dgreenmail.users=outlook-test:local-test-password@outlook.test
+        ports:
+            - "1143:3143"
+            - "1993:3993"
+        networks:
+            - internal
+
     websocket:
         container_name: ${WEBSOCKET_HOST:-portico_websocket}
         hostname: ${WEBSOCKET_HOST:-portico_websocket}

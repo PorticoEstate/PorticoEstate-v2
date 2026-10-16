@@ -83,7 +83,7 @@ class EmailPreferencesViewController
 
 	private function oauthConfigured(): bool
 	{
-		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('felamimail');
+		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('email');
 		return is_array($profile) && \App\modules\email\services\MicrosoftImapOAuth::isConfigured($profile);
 	}
 }

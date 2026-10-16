@@ -49,7 +49,7 @@ class EmailadminViewController
 		$apps = [];
 		foreach ((array) (Settings::getInstance()->get('apps') ?: []) as $app => $details)
 		{
-			if (in_array($app, ['calendar', 'felamimail'], true))
+			if (in_array($app, ['calendar', 'email'], true))
 			{
 				$apps[] = ['id' => $app, 'name' => (string) ($details['title'] ?? lang($app))];
 			}

@@ -143,7 +143,7 @@
 				'accts_usage'	=> 'extra_accounts',
 				'write_props'	=> '',
 				'lang_blurb'	=> lang('Your full name'),
-				'init_default'	=> 'varEVAL,$GLOBALS["phpgw_info"]["user"]["fullname"];',
+				'init_default'	=> 'varEVAL,$this->userSettings["fullname"];',
 				'values'	=> array(),
 				'long_desc' => lang('This is the name that appears in the users FROM address. The default mail account gets this value automatically from the phpgwapi. Additional accounts are created with the phpgwapi supplied fullname you can specify a different fullname for each extra email account.')
 			);

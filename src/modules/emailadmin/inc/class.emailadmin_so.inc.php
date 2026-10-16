@@ -200,7 +200,9 @@ class emailadmin_so
 	function getUserProfile($_appName, $_groups, $_user = NULL)
 	{
 		if (empty($_appName) || !is_array($_groups))
+		{
 			return false;
+		}
 		$groupIds = array_values(array_map('intval', $_groups));
 		if (!$groupIds) $groupIds = [0];
 		$groupPlaceholders = [];
@@ -306,7 +308,7 @@ class emailadmin_so
 								break;
 							case 'ea_default_signature':
 								$userSettings = Settings::getInstance()->get('user') ?? [];
-								$allowExternalImages = !empty($userSettings['preferences']['felamimail']['allowExternalIMGs']);
+								$allowExternalImages = !empty($userSettings['preferences']['email']['allowExternalIMGs']);
 								$mergeInTo[$key] = \Sanitizer::clean_email_signature((string) $toMerge[$key], $allowExternalImages);
 								break;
 							default:

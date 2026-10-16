@@ -341,6 +341,7 @@ class mail_msg_base
 	var $newsmode = '';
 	var $crypto = null;
 	var $serverSettings = array();
+	var $userSettings = array();
 	// Wrapper methods belong to the same mail message object.
 	public ?mail_msg_wrappers $mail_msg_wrappers = null;
 
@@ -351,6 +352,7 @@ class mail_msg_base
 	function __construct()
 	{
 		$this->serverSettings = Settings::getInstance()->get('server');
+		$this->userSettings = Settings::getInstance()->get('user');
 		if ($this instanceof mail_msg_wrappers)
 		{
 			$this->mail_msg_wrappers = $this;
@@ -787,7 +789,7 @@ class mail_msg_base
 			throw new \RuntimeException('Microsoft OAuth2 requires an IMAP or IMAPS account');
 		}
 
-		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('felamimail');
+		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('email');
 		$tokens = \App\modules\email\services\MicrosoftImapOAuth::refreshAccessToken((string) $password, is_array($profile) ? $profile : []);
 		$refreshToken = (string) ($tokens['refresh_token'] ?? $password);
 		if ($refreshToken !== (string) $password)
@@ -969,13 +971,13 @@ class mail_msg_base
 		}
 		//$allow_prefs_shortcut = True;
 		//$allow_prefs_shortcut = False;
-		//if ((is_array($GLOBALS['phpgw_info']['user']['preferences']['email']) == True)
+		//if ((is_array($this->userSettings['preferences']['email']) == True)
 		//&& ($allow_prefs_shortcut == True))
 		//{
 		//	if ($this->debug_logins > 1) { $this->dbug->out('mail_msg.begin_request('.__LINE__.'): prefs array already created by the API, NOT calling "create_email_preferences"<br />'); } 
 		//	$this->unprocessed_prefs = array();
 		//	$this->unprocessed_prefs['email'] = array();
-		//	$this->unprocessed_prefs['email'] = $GLOBALS['phpgw_info']['user']['preferences']['email'];
+		//	$this->unprocessed_prefs['email'] = $this->userSettings['preferences']['email'];
 		//	if ($this->debug_logins > 1) { $this->dbug->out('mail_msg.begin_request('.__LINE__.'): did NOT call create_email_preferences, prefs were already available in $GLOBALS["phpgw_info"]["user"]["preferences"]["email"] <br />'); } 
 		//}
 		else
@@ -990,7 +992,7 @@ class mail_msg_base
 			// obtain the preferences from the database, put them in $this->unprocessed_prefs, note THIS GETS ALL PREFS for some reason, not just email prefs?
 			if ($this->debug_logins > 2)
 			{
-				$this->dbug->out('mail_msg.begin_request(' . __LINE__ . '): BEFORE processing email prefs, GLOBALS[phpgw_info][user][preferences][email] DUMP:', $GLOBALS['phpgw_info']['user']['preferences']['email']);
+				$this->dbug->out('mail_msg.begin_request(' . __LINE__ . '): BEFORE processing email prefs, GLOBALS[phpgw_info][user][preferences][email] DUMP:', $this->userSettings['preferences']['email']);
 			}
 
 			$tmp_email_only_prefs = array();
@@ -998,44 +1000,46 @@ class mail_msg_base
 			{
 				$this->dbug->out('mail_msg.begin_request(' . __LINE__ . '): calling create_email_preferences, may be time consuming<br />');
 			}
-			$tmp_email_only_prefs = \App\modules\phpgwapi\services\Preferences::getInstance()->create_email_preferences();
+			$userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+			$tmp_email_only_prefs = $userSettings['preferences'] ?? [];
+
 			// clean "unprocessed_prefs" so all prefs oher than email are NOT included 
 			$this->unprocessed_prefs = array();
 			$this->unprocessed_prefs['email'] = array();
 			$this->unprocessed_prefs['email'] = $tmp_email_only_prefs['email'];
 			$tmp_email_only_prefs = array();
 			unset($tmp_email_only_prefs);
-			//if ($this->debug_logins > 2) { $this->dbug->out('mail_msg.begin_request('.__LINE__.'): AFTER "create_email_preferences" GLOBALS[phpgw_info][user][preferences] DUMP<pre>'; print_r($GLOBALS['phpgw_info']['user']['preferences']); echo '</pre>'); } 
+			//if ($this->debug_logins > 2) { $this->dbug->out('mail_msg.begin_request('.__LINE__.'): AFTER "create_email_preferences" GLOBALS[phpgw_info][user][preferences] DUMP<pre>'; print_r($this->userSettings['preferences']); echo '</pre>'); } 
 
 			// BACKWARDS COMPAT for apps that have no clue what multiple accounts are about
-			// fill email's $GLOBALS['phpgw_info']['user']['preferences'] with the data for backwards compatibility (we don't use that)
+			// fill email's $this->userSettings['preferences'] with the data for backwards compatibility (we don't use that)
 			// damn, where did email's prefs get filled already? Where are they getting filled, anyway do not re-fill if not needed
 			// NO - IT IS POSSIBLE THIS MAY NOT CATCH ALL PREF CHANGES IN CORNER CASES
 			if (
-				isset($GLOBALS['phpgw_info']['user']['preferences']['email'])
-				&& is_array($GLOBALS['phpgw_info']['user']['preferences']['email'])
+				isset($this->userSettings['preferences']['email'])
+				&& is_array($this->userSettings['preferences']['email'])
 			)
 			{
-				//$GLOBALS['phpgw_info']['user']['preferences'] = $this->unprocessed_prefs;
-				$GLOBALS['phpgw_info']['user']['preferences']['email'] = array();
-				$GLOBALS['phpgw_info']['user']['preferences']['email'] = $this->unprocessed_prefs['email'];
+				//$this->userSettings['preferences'] = $this->unprocessed_prefs;
+				$this->userSettings['preferences']['email'] = array();
+				$this->userSettings['preferences']['email'] = $this->unprocessed_prefs['email'];
 			}
-			//echo 'dump3 <pre>'; print_r($GLOBALS['phpgw_info']['user']['preferences']); echo '</pre>';
+			//echo 'dump3 <pre>'; print_r($this->userSettings['preferences']); echo '</pre>';
 			// BUT DO NOT put unneeded stuff in there, [ex_accounts] and [filters] multilevel arrays 
 			// are not needed for mackward compat, we need them internally but external apps do not use this raw data
-			//if (isset($GLOBALS['phpgw_info']['user']['preferences']['email']['ex_accounts']))
+			//if (isset($this->userSettings['preferences']['email']['ex_accounts']))
 			//{
-			//	$GLOBALS['phpgw_info']['user']['preferences']['email']['ex_accounts'] = array();
-			//	unset($GLOBALS['phpgw_info']['user']['preferences']['email']['ex_accounts']);
+			//	$this->userSettings['preferences']['email']['ex_accounts'] = array();
+			//	unset($this->userSettings['preferences']['email']['ex_accounts']);
 			//}
-			//if (isset($GLOBALS['phpgw_info']['user']['preferences']['email']['filters']))
+			//if (isset($this->userSettings['preferences']['email']['filters']))
 			//{
-			//	$GLOBALS['phpgw_info']['user']['preferences']['email']['filters'] = array();
-			//	unset($GLOBALS['phpgw_info']['user']['preferences']['email']['filters']);
+			//	$this->userSettings['preferences']['email']['filters'] = array();
+			//	unset($this->userSettings['preferences']['email']['filters']);
 			//}
 			if ($this->debug_logins > 2)
 			{
-				$this->dbug->out('mail_msg.begin_request(' . __LINE__ . '): AFTER backwards_compat and cleaning GLOBALS[phpgw_info][user][preferences] DUMP:', $GLOBALS['phpgw_info']['user']['preferences']);
+				$this->dbug->out('mail_msg.begin_request(' . __LINE__ . '): AFTER backwards_compat and cleaning GLOBALS[phpgw_info][user][preferences] DUMP:', $this->userSettings['preferences']);
 			}
 
 
@@ -1307,7 +1311,7 @@ class mail_msg_base
 		}
 
 		// ---- SET important class vars  ----
-		$this->att_files_dir = "{$this->serverSettings['temp_dir']}/{$GLOBALS['phpgw_info']['user']['sessionid']}";
+		$this->att_files_dir = "{$this->serverSettings['temp_dir']}/{$this->userSettings['sessionid']}";
 
 		// and.or get some vars we will use later in this function
 		$mailsvr_callstr = $this->mail_msg_wrappers->get_arg_value('mailsvr_callstr');
@@ -1569,7 +1573,7 @@ class mail_msg_base
 					{
 						$this->dbug->out('mail_msg.begin_request(' . __LINE__ . '): this->a[$this->acctnum][prefs][passwd] NOT set, fallback to $GLOBALS[phpgw_info][user][passwd]' . '<br />');
 					}
-					$pass = $GLOBALS['phpgw_info']['user']['passwd'];
+					$pass = $this->userSettings['passwd'];
 				}
 			}
 			else
@@ -2045,7 +2049,7 @@ class mail_msg_base
 					{
 						$this->dbug->out('mail_msg: ensure_stream_and_folder: this->a[$this->acctnum][prefs][passwd] NOT set, fallback to $GLOBALS[phpgw_info][user][passwd]' . '<br />');
 					}
-					$pass = $GLOBALS['phpgw_info']['user']['passwd'];
+					$pass = $this->userSettings['passwd'];
 				}
 			}
 			else
@@ -5325,31 +5329,10 @@ HTML;
 		@function html_quotes_encode
 		@abstract &quot;poor-mans&quot; database compatibility, encode database unfriendly chars as html entities
 		@author Angles
-		@discussion phpGroupWare supports a variets of databases and to date still needs certain database 
-		unfriendly chars to be encoded into something else so as not to corrupt data. Such database unfriendly 
-		chars are the double quote, single quote, comma, forward slash, and back slash. Adding to this need is 
-		the fact that some of phpGroupWare data is stored in the database in the form of php serialized items, 
-		which are sensitive to the same chars. Various databases may escape or otherwise alter the data 
-		as their native handling of these unencoded chars, which data altering may completely destroy the 
-		integrity of a php serialized item, i.e. the ability of the serialized item to be converted back into its 
-		native unserialized format. phpGroupWare preference database is the primary use for this encoding.
-		NOTE this function uses html entities as replacements for the database unfriendly chars, but any 
-		encoding technique that does not itself use those chars could have been used.
+		@discussion handled by the database.
 		*/
 	function html_quotes_encode($str)
 	{
-		// ==  "poor-man's" database compatibility ==
-		// encode database unfriendly chars as html entities
-		// it'll work for now, and it can be easily un-done later when real DB classes take care of this issue
-		// replace  '  and  "  with htmlspecialchars
-		$str = str_replace('"', '&quot;', $str);
-		$str = str_replace('\'', '&#039;', $str);
-		// replace  , (comma)
-		$str = str_replace(',', '&#044;', $str);
-		// replace /  (forward slash)
-		$str = str_replace('/', '&#047;', $str);
-		// replace \  (back slash)
-		$str = str_replace("\\", '&#092;', $str);
 		return $str;
 	}
 

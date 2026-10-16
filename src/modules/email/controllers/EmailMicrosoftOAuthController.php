@@ -6,6 +6,7 @@ use App\modules\email\services\MailMessage;
 use App\modules\email\services\MicrosoftImapOAuth;
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Preferences;
+use App\modules\phpgwapi\services\Settings;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -21,14 +22,16 @@ class EmailMicrosoftOAuthController
 		try
 		{
 			$preferences = Preferences::getInstance();
-			$defaultPreferences = $preferences->create_email_preferences('', 0)['email'] ?? [];
+			$userSettings = Settings::getInstance()->get('user');
+			$defaultPreferences = $userSettings['preferences']['email'] ?? [];
+
 			if ($account > 0 && !isset($defaultPreferences['ex_accounts'][$account]))
 			{
 				return $this->error($response, 'Email account not found', 404);
 			}
 			$accountPreferences = $account === 0
 				? $defaultPreferences
-				: ($preferences->create_email_preferences('', $account)['email'] ?? []);
+				: ($userSettings['preferences']['email']['ex_accounts'][$account] ?? []);
 			$emailAddress = trim((string) ($accountPreferences['userid'] ?? ''));
 			if ($emailAddress === '') return $this->error($response, 'Set the Outlook email address before connecting', 422);
 			if (($accountPreferences['mail_server_type'] ?? '') !== 'imap'
@@ -68,7 +71,8 @@ class EmailMicrosoftOAuthController
 			}
 			else
 			{
-				$defaultPreferences = $preferences->create_email_preferences('', 0)['email'] ?? [];
+				$userSettings = Settings::getInstance()->get('user');
+				$defaultPreferences = $userSettings['preferences']['email'] ?? [];
 				if (!isset($defaultPreferences['ex_accounts'][$account]))
 				{
 					return $this->error($response, 'Email account no longer exists', 404);
@@ -100,7 +104,7 @@ class EmailMicrosoftOAuthController
 
 	private function resolvedProfile(): array
 	{
-		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('felamimail');
+		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('email');
 		return is_array($profile) ? $profile : [];
 	}
 }

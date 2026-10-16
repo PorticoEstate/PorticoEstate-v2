@@ -44,8 +44,8 @@
 		{
 			$this->nextmatchs = CreateObject('phpgwapi.nextmatchs');
 			$this->bo = CreateObject('email.bopreferences');
-			$temp_prefs = Preferences::getInstance()->create_email_preferences();
-			$this->prefs = $temp_prefs['email'];
+			$userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+			$this->prefs = $userSettings['preferences']['email'] ?? [];
 		}
 
 		/**

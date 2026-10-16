@@ -3,6 +3,8 @@
 namespace App\modules\email\controllers;
 
 use App\modules\phpgwapi\services\Preferences;
+//settings
+use App\modules\phpgwapi\services\Settings;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -14,8 +16,8 @@ class EmailPreferencesController
 		{
 			$businessObject = \CreateObject('email.bopreferences');
 			$businessObject->init_available_prefs();
-			$userPreferences = Preferences::getInstance()->create_email_preferences('', 0);
-			$emailPreferences = (array) ($userPreferences['email'] ?? []);
+			$userSettings = Settings::getInstance()->get('user');
+			$emailPreferences = (array) ($userSettings['preferences']['email'] ?? []);
 			$fields = [];
 			$groups = [
 				'normal' => ['label' => lang('Standard preferences'), 'fields' => (array) $businessObject->std_prefs],
@@ -26,7 +28,10 @@ class EmailPreferencesController
 				foreach ($group['fields'] as $field)
 				{
 					$field = (array) $field;
-					if (stripos((string) ($field['accts_usage'] ?? ''), 'default') === false || stripos((string) ($field['type'] ?? ''), 'INACTIVE') !== false) continue;
+					if (stripos((string) ($field['accts_usage'] ?? ''), 'default') === false || stripos((string) ($field['type'] ?? ''), 'INACTIVE') !== false)
+					{
+						continue;
+					}
 					$hidden = stripos((string) ($field['write_props'] ?? ''), 'hidden') !== false;
 					$value = $hidden ? '' : ($emailPreferences[$field['id']] ?? '');
 					$fields[] = [
@@ -137,7 +142,10 @@ class EmailPreferencesController
 		}
 		finally
 		{
-			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
 		}
 	}
 
@@ -154,14 +162,15 @@ class EmailPreferencesController
 			$businessObject = \CreateObject('email.bopreferences');
 			$businessObject->init_available_prefs();
 			$mail = \App\modules\email\services\MailMessage::getInstance();
-			$userPreferences = Preferences::getInstance()->create_email_preferences('', 0);
-			$storedAccounts = (array) ($userPreferences['email']['ex_accounts'] ?? []);
+			$userSettings = Settings::getInstance()->get('user');
+			$storedAccounts = (array) ($userSettings['preferences']['email']['ex_accounts'] ?? []);
 			$account = $accountValue === 'add_new' ? (int) $businessObject->get_first_empty_ex_acctnum() : (int) $accountValue;
 			if ($accountValue !== 'add_new' && !array_key_exists($account, $storedAccounts))
 			{
 				return $this->json($response, ['error' => lang('Email account not found')], 404);
 			}
-			$accountPreferences = (array) (Preferences::getInstance()->create_email_preferences('', $account)['email'] ?? []);
+			$accountPreferences = (array) $userSettings['preferences']['email']['ex_accounts'][$account] ?? [];
+
 			$fields = [];
 			foreach (array_merge((array) $businessObject->std_prefs, (array) $businessObject->cust_prefs) as $field)
 			{
@@ -213,8 +222,8 @@ class EmailPreferencesController
 		{
 			$businessObject = \CreateObject('email.bopreferences');
 			$businessObject->init_available_prefs();
-			$userPreferences = Preferences::getInstance()->create_email_preferences('', 0);
-			$storedAccounts = (array) ($userPreferences['email']['ex_accounts'] ?? []);
+			$userSettings = Settings::getInstance()->get('user');
+			$storedAccounts = (array) ($userSettings['preferences']['email']['ex_accounts'] ?? []);
 			if (!array_key_exists($account, $storedAccounts) && $account !== (int) $businessObject->get_first_empty_ex_acctnum())
 			{
 				return $this->json($response, ['error' => lang('Invalid email account')], 422);
@@ -241,7 +250,7 @@ class EmailPreferencesController
 			$_POST = array_replace($originalPost, [
 				$businessObject->submit_token_extra_accounts => '1',
 				'ex_acctnum' => $account,
-			$account => $legacyValues,
+				$account => $legacyValues,
 			]);
 			if (!$businessObject->ex_accounts_edit($account, true)) return $this->json($response, ['error' => lang('Unable to save email account')], 422);
 			return $this->json($response, ['saved' => true, 'id' => $account]);
@@ -269,8 +278,9 @@ class EmailPreferencesController
 		try
 		{
 			$businessObject = \CreateObject('email.bopreferences');
-			$userPreferences = Preferences::getInstance()->create_email_preferences('', 0);
-			if (!array_key_exists($account, (array) ($userPreferences['email']['ex_accounts'] ?? [])))
+			$userSettings = Settings::getInstance()->get('user');
+			$emailPreferences = (array) ($userSettings['preferences']['email'] ?? []);
+			if (!array_key_exists($account, (array) ($emailPreferences['ex_accounts'] ?? [])))
 			{
 				return $this->json($response, ['error' => lang('Email account not found')], 404);
 			}

@@ -12,6 +12,7 @@
  * @internal Based on AngleMail http://www.anglemail.org/
  */
 
+use App\modules\phpgwapi\services\Settings;
 
 /**
  * Message Lists
@@ -354,7 +355,7 @@ class boindex
 	function index_data()
 	{
 
-
+		$flags = Settings::getInstance()->get('flags');
 		if ($this->debug_index_data == True)
 		{
 			echo 'ENTERING: email.boindex.index_data' . '<br />';
@@ -374,14 +375,14 @@ class boindex
 
 		// ---  this->xi ("eXternal Interface") is an array that will hold ALL data necessary for an index page
 		// if auto-refresh is in use, it will need to know what to refresh, use with ->link to get full http string
-		$GLOBALS['phpgw_info']['flags']['email_refresh_uri'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('index_refresh_uri');
+		$flags['email_refresh_uri'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('index_refresh_uri');
 		// EXPERIMENTAL: auto refresh widget
 		// create widgets class, $GLOBALS['phpgw']->widgets produce errors, so make a local one
 		$my_other_widgets = CreateObject('email.html_widgets');
 		// this returns an empty string if not enough info provided
 		$this->xi['auto_refresh_widget'] =
 			$my_other_widgets->auto_refresh(
-				$GLOBALS['phpgw_info']['flags']['email_refresh_uri'],
+				$flags['email_refresh_uri'],
 				240000
 			);
 
@@ -1052,6 +1053,7 @@ class boindex
 	function mlist_data()
 	{
 		// DISPLAY SEARCH RESULTS
+		$flags = Settings::getInstance()->get('flags');
 
 		if ($this->debug_index_data == True)
 		{
@@ -1202,7 +1204,7 @@ class boindex
 
 		if ($this->xi['mailsvr_supports_folders'])
 		{
-			//$this->xi['folders_link'] = phpgw::link('/'.$GLOBALS['phpgw_info']['flags']['currentapp'].'/folder.php');
+			//$this->xi['folders_link'] = phpgw::link('/'.$flags['currentapp'].'/folder.php');
 			$this->xi['folders_link'] = phpgw::link(
 				'/index.php',
 				\App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder_menuaction')
@@ -1224,7 +1226,7 @@ class boindex
 			)
 		);
 		$this->xi['filters_link'] = phpgw::link(
-			'/' . $GLOBALS['phpgw_info']['flags']['currentapp'] . '/filters.php'
+			'/' . $flags['currentapp'] . '/filters.php'
 		);
 		$this->xi['filters_href'] = '<a href="' . $this->xi['filters_link'] . '">' . $this->xi['filters_txt'] . '</a>';
 		// multiple account maintenance - not yet implemented

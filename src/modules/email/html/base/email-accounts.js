@@ -35,9 +35,7 @@
 				const actions = document.createElement('td');
 				actions.className = 'email-accounts-actions';
 				const edit = document.createElement('a');
-				const editUrl = new URL(root.dataset.editUrl, window.location.href);
-				editUrl.searchParams.set('ex_acctnum', String(account.id));
-				edit.href = editUrl;
+				edit.href = phpGWLink('email/view/account', { ex_acctnum: account.id });
 				edit.textContent = 'Edit';
 				const remove = document.createElement('button');
 				remove.type = 'button';

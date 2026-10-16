@@ -1,4 +1,5 @@
 <?php
+
 /**
  * EMail - Message Processing Core Functions
  *
@@ -271,8 +272,8 @@ class mail_msg_base
 	//var $reply_prefix = '| ';
 
 	// ---- Data Caching  ----
-	var $use_cached_prefs = True;
-	//var $use_cached_prefs = False;
+	//var $use_cached_prefs = True;
+	var $use_cached_prefs = False;
 
 	// (A) session data caching in appsession, for data that is temporary in nature
 	// right now this means msgball_list in appsession, and a bunch of stuff we generate (mailsvr_str) stored in L1 cache
@@ -353,6 +354,7 @@ class mail_msg_base
 	{
 		$this->serverSettings = Settings::getInstance()->get('server');
 		$this->userSettings = Settings::getInstance()->get('user');
+		$this->extra_accounts = (array) ($this->userSettings['preferences']['email']['ex_accounts'] ?? []);
 		if ($this instanceof mail_msg_wrappers)
 		{
 			$this->mail_msg_wrappers = $this;
@@ -957,7 +959,7 @@ class mail_msg_base
 			$this->unprocessed_prefs = $cached_prefs['unprocessed_prefs'];
 			$this->raw_filters = $cached_prefs['raw_filters'];
 			$this->ex_accounts_count = $cached_prefs['ex_accounts_count'];
-			$this->extra_accounts = $cached_prefs['extra_accounts'];
+			//		$this->extra_accounts = $cached_prefs['extra_accounts'];
 			$this->extra_and_default_acounts = $cached_prefs['extra_and_default_acounts'];
 			$loops = count($this->extra_and_default_acounts);
 			for ($i = 0; $i < $loops; $i++)
@@ -1175,9 +1177,11 @@ class mail_msg_base
 						{
 							$this->dbug->out('mail_msg.begin_request(' . __LINE__ . '): CALLING create_email_preferences("", $this_ex_acctnum) for specific account, where $this_ex_acctnum: [' . serialize($this_ex_acctnum) . '] <br />');
 						}
-						$sub_tmp_prefs = \App\modules\phpgwapi\services\Preferences::getInstance()->create_email_preferences('', $this_ex_acctnum);
+						
+			//			$sub_tmp_prefs = \App\modules\phpgwapi\services\Preferences::getInstance()->create_email_preferences('', $this_ex_acctnum);
+						$sub_tmp_prefs = $this->userSettings['preferences']['email']['ex_accounts'][$this_ex_acctnum]; 
 						// now put these processed prefs in the correct location  in our prefs array
-						$this->mail_msg_wrappers->set_pref_array($sub_tmp_prefs['email'], $this_ex_acctnum);
+						$this->mail_msg_wrappers->set_pref_array($sub_tmp_prefs, $this_ex_acctnum);
 					}
 				}
 				// extra_and_default_acounts is the same as above but has default account inserted at position zero

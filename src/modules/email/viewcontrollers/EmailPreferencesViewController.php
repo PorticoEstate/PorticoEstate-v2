@@ -36,7 +36,6 @@ class EmailPreferencesViewController
 		return $this->render($request, $response, '@views/email-accounts.twig', [
 			'api_url' => \phpgw::link('/email/api/preferences/accounts', [], true),
 			'action_url' => \phpgw::link('/email/api/preferences/accounts/delete', [], true),
-			'edit_url' => \phpgw::link('/email/view/account', [], true),
 			'new_url' => \phpgw::link('/email/view/account', ['ex_acctnum' => 'add_new'], true),
 		]);
 	}

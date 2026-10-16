@@ -1022,9 +1022,10 @@ class mail_msg_base
 				&& is_array($this->userSettings['preferences']['email'])
 			)
 			{
-				//$this->userSettings['preferences'] = $this->unprocessed_prefs;
-				$this->userSettings['preferences']['email'] = array();
+				$preferences = $this->userSettings['preferences'];
+				$preferences['email'] = $this->unprocessed_prefs['email'];
 				$this->userSettings['preferences']['email'] = $this->unprocessed_prefs['email'];
+				Settings::getInstance()->update('user', ['preferences' => $preferences]);
 			}
 			//echo 'dump3 <pre>'; print_r($this->userSettings['preferences']); echo '</pre>';
 			// BUT DO NOT put unneeded stuff in there, [ex_accounts] and [filters] multilevel arrays 

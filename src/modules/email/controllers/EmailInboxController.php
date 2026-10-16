@@ -22,9 +22,21 @@ class EmailInboxController
 	{
 		try
 		{
-			$businessObject = \CreateObject('email.boindex');
-			$businessObject->index_data();
-			$data = (array) ($businessObject->xi ?? []);
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->ensure_mail_msg_exists('email.api.inbox');
+			$mail = \App\modules\email\services\MailMessage::getInstance();
+			$folderInfo = (array) $mail->get_folder_status_info();
+			$data = [
+				'folder_info' => $folderInfo,
+				'current_start' => max(0, (int) $mail->get_arg_value('start')),
+				'msg_list_dsp' => (array) $mail->get_msg_list_display($folderInfo),
+			];
+			if ((int) ($folderInfo['number_all'] ?? 0) === 0)
+			{
+				$data['report_no_msgs'] = $mail->get_arg_value('mailsvr_stream')
+					? lang('this folder is empty')
+					: lang('Could not open this mailbox');
+			}
 			$result = InboxSerializer::serialize($data);
 			$user = (array) Settings::getInstance()->get('user');
 			$result['pageSize'] = max(1, (int) ($user['preferences']['common']['maxmatchs'] ?? 25));

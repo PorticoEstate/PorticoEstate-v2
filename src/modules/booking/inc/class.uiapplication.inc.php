@@ -4775,17 +4775,18 @@ JS;
 
 			if (!empty($recurring_preview)) {
 				foreach ($recurring_preview as $item) {
-					if (isset($item['has_conflict']) && $item['has_conflict']) {
+					// The create button is decided on ANY allocation on the date, active or
+					// deactivated: the allocation wizard does not skip dates that already have
+					// one. $item['exists'] only drives how the row is shown, so a conflict seen on
+					// a date that has a deactivated allocation is ignored here ($has_conflicts too).
+					if (!empty($item['has_any_allocation'])) {
+						$existing_allocations_count++;
+					} else if (!empty($item['has_conflict'])) {
 						$has_conflicts = true;
 						$conflicts_count++;
-					} else if (!isset($item['exists']) || !$item['exists']) {
+					} else {
 						$non_conflict_count++;
 					}
-
-				// Count existing allocations
-				if (isset($item['exists']) && $item['exists']) {
-					$existing_allocations_count++;
-				}
 				}
 			}
 
@@ -5011,11 +5012,20 @@ JS;
 			'results' => -1
 		));
 
+		// Two views of the same rows. Only an ACTIVE allocation shows the date as created
+		// (badge, Vis link). ANY allocation, active or deactivated, counts as the date
+		// already having one: approval skips it and the create button is gated on it,
+		// because Accept reactivates every allocation of the application.
 		$existing_by_date = array();
+		$any_allocation_by_date = array();
 		if (!empty($existing_allocations['results'])) {
 			foreach ($existing_allocations['results'] as $alloc) {
 				$key = date('Y-m-d H:i', strtotime($alloc['from_'])) . '_' . date('Y-m-d H:i', strtotime($alloc['to_']));
-				$existing_by_date[$key] = $alloc;
+				$any_allocation_by_date[$key] = true;
+				// A deactivated row is left out, so it can never replace the active one on a date
+				if (!empty($alloc['active'])) {
+					$existing_by_date[$key] = $alloc;
+				}
 			}
 		}
 
@@ -5151,6 +5161,7 @@ JS;
 				'time_display' => $current_from->format('H:i') . ' - ' . $current_to->format('H:i'),
 				'resource_display' => $resource_display,
 				'exists' => false,
+				'has_any_allocation' => false,
 				'allocation_id' => null,
 				'allocation_link' => null,
 				'has_conflict' => false,
@@ -5159,6 +5170,7 @@ JS;
 
 			// Check if allocation exists for this date/time
 			$key = $fromdate . '_' . $todate;
+			$preview_item['has_any_allocation'] = isset($any_allocation_by_date[$key]);
 			if (isset($existing_by_date[$key])) {
 				$preview_item['exists'] = true;
 				$preview_item['allocation_id'] = $existing_by_date[$key]['id'];
@@ -5677,8 +5689,11 @@ JS;
 
 		// Try to create each allocation
 		foreach ($recurring_preview as $preview_item) {
-			// Skip if allocation already exists
-			if ($preview_item['exists']) {
+			// Skip if the date already has an allocation, active or deactivated. Accept
+			// reactivates the deactivated one, so creating a new row would book the date
+			// twice. This has to stay BEFORE the conflict check below: a date with only a
+			// deactivated allocation can show as a conflict, and must not be listed as failed.
+			if ($preview_item['has_any_allocation']) {
 				continue;
 			}
 

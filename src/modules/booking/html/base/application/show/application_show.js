@@ -2083,12 +2083,22 @@
 				: lang('createAllAllocations');
 			html += '<button class="booking-button ds-button app-show__recurring-create" data-variant="secondary" type="button" data-color="neutral" data-size="sm" id="recurring-create-btn">' +
 				esc(btnLabel) + ' <span class="booking-badge ds-badge" data-color="neutral" data-count="' + esc(counts.creatable) + '"></span></button>';
-		} else if (counts.creatable === 0 && counts.existing > 0) {
+		} else if (counts.creatable === 0 && counts.existing > 0 && !counts.inactive) {
+			// Not with a deactivated date: "all created" would be false beside the
+			// reactivate button below.
 			html += '<button type="button" class="booking-button ds-button app-show__recurring-create" data-variant="secondary" data-color="neutral" data-size="sm" disabled>' +
 				esc(lang('allAllocationsCreated')) + '</button>';
 		} else if (!isCO && counts.creatable > 0) {
 			html += '<button type="button" class="booking-button ds-button app-show__recurring-create" data-variant="secondary" data-color="neutral" data-size="sm" disabled title="' + esc(lang('notCaseOfficerWarning')) + '">' +
 				esc(lang('createAllAllocations')) + ' <span class="booking-badge ds-badge" data-color="neutral" data-count="' + esc(counts.creatable) + '"></span></button>';
+		}
+
+		// Reactivate button — for the dates whose own element is deactivated, which
+		// the create button leaves alone (counts.inactive). Like the "Aktiver" of
+		// a row, case officer only and in every application status.
+		if (counts.inactive > 0 && isCO) {
+			html += '<button class="booking-button ds-button app-show__recurring-create" data-variant="secondary" type="button" data-color="neutral" data-size="sm" id="recurring-reactivate-btn">' +
+				esc(lang('reactivate')) + ' <span class="booking-badge ds-badge" data-color="neutral" data-count="' + esc(counts.inactive) + '"></span></button>';
 		}
 		html += '</div>';
 
@@ -2208,6 +2218,42 @@
 					createBtn.disabled = false;
 					createBtn.textContent = lang('createAllAllocations');
 					alert(lang('error') + ': ' + err.message);
+				});
+			});
+		}
+
+		// Reactivate button handler. One request per element, the one the "Aktiver"
+		// of its row sends, so each is allowed or refused exactly as that action
+		// would be. The elements are the ones this page shows: an inactive_only
+		// date holds no active element (that would make it `exists`), so these are
+		// all of its elements, of any type. No collision test, as on the row.
+		var reactivateBtn = document.getElementById('recurring-reactivate-btn');
+		if (reactivateBtn) {
+			reactivateBtn.addEventListener('click', function () {
+				var elements = [];
+				items.forEach(function (item) {
+					if (!item.inactive_only) return;
+					(item.associations || []).forEach(function (a) {
+						if (!isAssocActive(a)) elements.push(a);
+					});
+				});
+
+				reactivateBtn.disabled = true;
+				reactivateBtn.textContent = '...';
+
+				var failed = 0, firstError = '';
+				elements.reduce(function (chain, a) {
+					return chain.then(function () {
+						return postJsonBody(apiUrl + '/associations/' + a.id + '/activate', { type: a.type })
+							.catch(function (err) {
+								failed++;
+								firstError = firstError || err.message;
+							});
+					});
+				}, Promise.resolve()).then(function () {
+					if (failed) alert(lang('error') + ' (' + failed + '): ' + firstError);
+					// As after the row's "Aktiver": the page shows the real state, also after a failure
+					window.location.reload();
 				});
 			});
 		}

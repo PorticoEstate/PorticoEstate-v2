@@ -266,7 +266,7 @@ abstract class booking_uicommon extends phpgwapi_uicommon_jquery
 	 * Whether sms can be used: a gateway is selected.
 	 * Checked before CreateObject('sms.sms'), because including the sms class dies when no gateway
 	 * module is available. Reads the config the way sms/inc/class.sms.inc.php does, including the
-	 * fallback from gateway_module_send to gateway_module_get.
+	 * fallback from gateway_module_get to gateway_module_send.
 	 *
 	 * @return bool
 	 */

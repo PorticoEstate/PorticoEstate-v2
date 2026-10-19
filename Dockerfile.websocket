@@ -44,8 +44,9 @@ COPY --from=builder /app/package.json ./
 
 # The service answers 404 on "/", so that can never pass. The socket.io handshake only answers
 # while the service's event loop is running, which is what a stuck service stops doing.
+# Shell form, so WS_PORT is read from the container's environment at run time, like main.js does.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD wget -q -T 4 -O /dev/null "http://localhost:8080/socket.io/?EIO=4&transport=polling" || exit 1
+    CMD wget -q -T 4 -O /dev/null "http://localhost:${WS_PORT:-8080}/socket.io/?EIO=4&transport=polling" || exit 1
 
 # supervisor.js runs the service (main.js) and restarts it when it stops answering that handshake.
 # Set WS_WATCHDOG=off to run main.js directly.

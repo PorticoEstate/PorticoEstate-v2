@@ -42,7 +42,11 @@ COPY --from=builder /app/package.json ./
 # The PHP config file is mounted via volume at /var/www/html
 # so the config parser can find it at runtime
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -qO- http://localhost:8080/ || exit 1
+# The service answers 404 on "/", so that can never pass. The socket.io handshake only answers
+# while the service's event loop is running, which is what a stuck service stops doing.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD wget -q -T 4 -O /dev/null "http://localhost:8080/socket.io/?EIO=4&transport=polling" || exit 1
 
-CMD ["node", "/app/dist/main.js"]
+# supervisor.js runs the service (main.js) and restarts it when it stops answering that handshake.
+# Set WS_WATCHDOG=off to run main.js directly.
+CMD ["node", "/app/dist/supervisor.js"]

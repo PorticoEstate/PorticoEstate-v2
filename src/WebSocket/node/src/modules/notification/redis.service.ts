@@ -9,6 +9,13 @@ import { PhpConfigService } from '../../config/php-config.service';
 
 export type RedisMessageHandler = (channel: string, message: string) => void;
 
+const SUBSCRIBE_CHANNELS = [
+  'notifications',
+  'session_messages',
+  'room_messages',
+  'booking_requests',
+];
+
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
@@ -17,49 +24,74 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private publisher: Redis | null = null;
   private connected = false;
   private handlers: RedisMessageHandler[] = [];
+  private lastError = new Map<string, string>();
 
   constructor(private readonly configService: PhpConfigService) {}
 
-  async onModuleInit() {
+  onModuleInit() {
     const { host, port } = this.configService.getConfig().redis;
 
-    try {
-      this.publisher = new Redis({ host, port, lazyConnect: true });
-      this.subscriber = new Redis({ host, port, lazyConnect: true });
+    // Connect in the background: ioredis keeps retrying with back-off, so a Redis that is down
+    // while the service starts, or goes away later, is picked up as soon as it answers.
+    this.publisher = new Redis({ host, port });
+    this.subscriber = new Redis({ host, port, autoResubscribe: false });
 
-      await this.publisher.connect();
-      await this.subscriber.connect();
-
-      this.subscriber.on('message', (channel, message) => {
-        for (const handler of this.handlers) {
-          try {
-            handler(channel, message);
-          } catch (err: any) {
-            this.logger.error(
-              `Redis message handler error: ${err.message}`,
-            );
-          }
-        }
-      });
-
-      // Subscribe to the same channels as the PHP server
-      await this.subscriber.subscribe(
-        'notifications',
-        'session_messages',
-        'room_messages',
-        'booking_requests',
-      );
-
+    this.publisher.on('ready', () => {
       this.connected = true;
+      this.lastError.delete('publisher');
       this.logger.log(`Redis connected: ${host}:${port}`);
+    });
+    this.publisher.on('close', () => {
+      this.connected = false;
+    });
+    this.publisher.on('error', (err) => this.logConnectionError('publisher', err));
+    this.subscriber.on('error', (err) => this.logConnectionError('subscriber', err));
+
+    this.subscriber.on('message', (channel, message) => {
+      for (const handler of this.handlers) {
+        try {
+          handler(channel, message);
+        } catch (err: any) {
+          this.logger.error(
+            `Redis message handler error: ${err.message}`,
+          );
+        }
+      }
+    });
+
+    // 'ready' comes on the first connection and after every reconnect, and each of those is a
+    // new connection with no subscriptions.
+    this.subscriber.on('ready', () => {
+      void this.subscribe();
+    });
+  }
+
+  private async subscribe() {
+    try {
+      // Subscribe to the same channels as the PHP server
+      await this.subscriber!.subscribe(...SUBSCRIBE_CHANNELS);
+      this.lastError.delete('subscriber');
+      this.logger.log(`Redis subscribed: ${SUBSCRIBE_CHANNELS.join(', ')}`);
     } catch (err: any) {
-      this.logger.error(`Redis connection failed: ${err.message}`);
+      this.logger.error(`Redis subscribe failed: ${err.message}`);
+      // A connection that is up but not subscribed stays silent for good: start over with a new one.
+      this.subscriber?.disconnect(true);
     }
   }
 
+  /** Log a connection error once, not on every reconnect attempt while Redis stays down. */
+  private logConnectionError(which: string, err: Error) {
+    if (this.lastError.get(which) === err.message) return;
+    this.lastError.set(which, err.message);
+    this.logger.error(`Redis ${which}: ${err.message}`);
+  }
+
   async onModuleDestroy() {
-    await this.subscriber?.quit();
-    await this.publisher?.quit();
+    for (const client of [this.subscriber, this.publisher]) {
+      if (!client) continue;
+      if (client.status === 'ready') await client.quit().catch(() => client.disconnect());
+      else client.disconnect();
+    }
   }
 
   isConnected(): boolean {

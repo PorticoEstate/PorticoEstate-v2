@@ -69,6 +69,7 @@ services:
     websocket:
         container_name: ${WEBSOCKET_HOST:-portico_websocket}
         hostname: ${WEBSOCKET_HOST:-portico_websocket}
+        restart: unless-stopped
         build:
             context: .
             dockerfile: Dockerfile.websocket

@@ -14,6 +14,13 @@ use App\modules\phpgwapi\services\Settings;
  */
 class FreeTimeService
 {
+	/**
+	 * Last-resort bound for the slot loop in generateTimeSlots, per resource. The loop is already
+	 * stopped when its state repeats; this only stops a run that never repeats and never ends.
+	 * Far above any real call.
+	 */
+	private const MAX_SLOT_ITERATIONS = 1000000;
+
 	private $db;
 	private string $timezone;
 	private \DateTimeZone $dateTimeZone;
@@ -876,7 +883,38 @@ class FreeTimeService
 				$limitDate->format('Y-m-d')
 			);
 
+			// Each pass depends only on ($checkDate, $defaultStartHour, $defaultStartMinute). If that
+			// state comes back, the loop would never end. Brent's cycle detection: keep a checkpoint of
+			// the state at doubling intervals and compare against it. A loop that ends never repeats
+			// a state, so nothing that works today is changed.
+			$seenTime = null;
+			$seenHour = null;
+			$seenMinute = null;
+			$sinceSeen = 0;
+			$seenEvery = 1;
+			$iterations = 0;
+			$stopped = false;
+
 			do {
+				$stateTime = $checkDate->getTimestamp();
+				$stateHour = (int)$defaultStartHour;
+				$stateMinute = (int)$defaultStartMinute;
+				if ($stateTime === $seenTime && $stateHour === $seenHour && $stateMinute === $seenMinute) {
+					$stopped = true;
+					break;
+				}
+				if (++$sinceSeen === $seenEvery) {
+					$seenTime = $stateTime;
+					$seenHour = $stateHour;
+					$seenMinute = $stateMinute;
+					$sinceSeen = 0;
+					$seenEvery *= 2;
+				}
+				if (++$iterations > self::MAX_SLOT_ITERATIONS) {
+					$stopped = true;
+					break;
+				}
+
 				$startTime = clone $checkDate;
 
 				if ($defaultStartHour > $defaultEndHour && ($bookingLength > -1 || $resource['booking_time_default_end'] == -1)) {
@@ -1013,6 +1051,23 @@ class FreeTimeService
 					}
 				}
 			} while ($checkDate < $limitDate);
+
+			if ($stopped) {
+				// The booking defaults of this resource cannot produce a schedule (for example length 0
+				// with a fixed end hour). Offer no timeslots for it rather than hold the request until
+				// PHP's time limit. Returns an empty list, not an exception: the callers that refresh
+				// timeslots after a booking or a deletion do not catch one.
+				$availableTimeSlots[$resource['id']] = [];
+				$this->tick("slot_loop_stopped resource_{$resource['id']}");
+				error_log(
+					"FreeTimeService: resource {$resource['id']} cannot advance its timeslots, none returned "
+					. "(booking_day_default_lenght={$resource['booking_day_default_lenght']}, "
+					. "booking_time_default_start={$resource['booking_time_default_start']}, "
+					. "booking_time_default_end={$resource['booking_time_default_end']}, "
+					. "booking_time_minutes={$resource['booking_time_minutes']}, "
+					. "booking_dow_default_start={$resource['booking_dow_default_start']})"
+				);
+			}
 		}
 
 		return $availableTimeSlots;

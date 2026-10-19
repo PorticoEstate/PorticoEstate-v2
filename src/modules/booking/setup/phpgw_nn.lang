@@ -1317,3 +1317,4 @@ change_request_booking_outside_allocation	booking	nn	Endringa kan ikkje godtakas
 reactivate	booking	nn	Aktiver igjen
 sms_no_participants	booking	nn	Ingen deltakarar med telefonnummer er registrerte – SMS vart ikkje sendt.
 sms_not_configured	booking	nn	SMS er ikkje sett opp – kontakt systemadministrator.
+sms_no_recipients	booking	nn	Ingen deltakarar eller søkjar med telefonnummer er registrerte – SMS vart ikkje sendt.

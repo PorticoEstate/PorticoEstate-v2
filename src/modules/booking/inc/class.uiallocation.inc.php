@@ -1740,18 +1740,10 @@
 			if($send_sms && $sms_content)
 			{
 				$soparticipant = createObject('booking.soparticipant');
-				$params = array(
-					'results' => -1,
-					'filters' => array(
-						'reservation_id' => $id,
-						'reservation_type' => $type
-						)
-				);
-
-				$participants = $soparticipant->read($params);
-				if(!$participants['results'])
+				$recipients = $soparticipant->get_sms_recipients($type, $id);
+				if(!$recipients)
 				{
-					Cache::message_set(lang('sms_no_participants'), 'error');
+					Cache::message_set(lang('sms_no_recipients'), 'error');
 					self::redirect(array('menuaction' => "booking.ui{$type}.show", 'id' => $id));
 				}
 
@@ -1762,12 +1754,7 @@
 				}
 
 				$sms_service = CreateObject('sms.sms');
-				$sms_recipients = array();
-				foreach ($participants['results'] as $participant)
-				{
-					$sms_recipients[] = $participant['phone'];
-				}
-				$final_recipients = array_unique($sms_recipients);
+				$final_recipients = array_column($recipients, 'phone');
 
 				$account_id = $this->current_account_id();
 				$log_success = array();

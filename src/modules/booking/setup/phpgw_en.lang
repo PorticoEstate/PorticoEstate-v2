@@ -1342,3 +1342,4 @@ change_request_booking_outside_allocation	booking	en	The change cannot be accept
 reactivate	booking	en	Reactivate
 sms_no_participants	booking	en	No participants with a phone number are registered – no SMS was sent.
 sms_not_configured	booking	en	SMS is not set up – contact the system administrator.
+sms_no_recipients	booking	en	No participants or applicant with a phone number are registered – no SMS was sent.

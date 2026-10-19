@@ -1343,3 +1343,4 @@ change_request_booking_outside_allocation	booking	no	Endringen kan ikke godtas: 
 reactivate	booking	no	Aktiver igjen
 sms_no_participants	booking	no	Ingen deltakere med telefonnummer er registrert – SMS ble ikke sendt.
 sms_not_configured	booking	no	SMS er ikke satt opp – kontakt systemadministrator.
+sms_no_recipients	booking	no	Ingen deltakere eller søker med telefonnummer er registrert – SMS ble ikke sendt.

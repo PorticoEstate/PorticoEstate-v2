@@ -182,7 +182,7 @@
 			if ($reservation_type == 'allocation')
 			{
 				$applicant = $this->get_applicant_phone($reservation_id);
-				if ($applicant && !in_array(self::phone_key($applicant['phone']), $known))
+				if ($applicant && !in_array(self::phone_key($applicant['phone']), $known, true))
 				{
 					$recipients[] = $applicant;
 				}
@@ -194,7 +194,7 @@
 		/**
 		 * The applicant's phone for an allocation that comes from an application: the number entered
 		 * on the application, else the one on the applicant's account (bb_user, found by customer_ssn).
-		 * An entry without a digit counts as empty.
+		 * A value that is not a usable phone number (see usable_phone_sql) counts as empty.
 		 *
 		 * @param int $allocation_id
 		 * @return array|null array('phone' => string, 'source' => 'application'|'account'), or null
@@ -202,9 +202,11 @@
 		 */
 		protected function get_applicant_phone( $allocation_id )
 		{
-			$sql = "SELECT CASE WHEN a.contact_phone ~ '[0-9]' THEN btrim(a.contact_phone) END AS application_phone,"
+			$application_usable = self::usable_phone_sql('a.contact_phone');
+			$account_usable = self::usable_phone_sql('u.phone');
+			$sql = "SELECT CASE WHEN {$application_usable} THEN btrim(a.contact_phone) END AS application_phone,"
 				. " (SELECT btrim(u.phone) FROM bb_user u"
-				. " WHERE a.customer_ssn <> '' AND u.customer_ssn = a.customer_ssn AND u.phone ~ '[0-9]'"
+				. " WHERE a.customer_ssn <> '' AND u.customer_ssn = a.customer_ssn AND {$account_usable}"
 				. " ORDER BY u.id LIMIT 1) AS account_phone"
 				. " FROM bb_allocation al JOIN bb_application a ON a.id = al.application_id"
 				. " WHERE al.id = " . (int) $allocation_id;
@@ -227,6 +229,19 @@
 			}
 
 			return null;
+		}
+
+		/**
+		 * SQL condition for "this column holds a phone number we may send to". The applicant's number is
+		 * free text from the citizen, so only 0-9, space, + - / ( ) with at least one digit other than 0
+		 * passes: anything else (a quote, letters, ';') and an all-zero placeholder count as no number.
+		 *
+		 * @param string $column a column of our own SQL, never user input
+		 * @return string
+		 */
+		protected static function usable_phone_sql( $column )
+		{
+			return "({$column} ~ '^[0-9 +/()-]+$' AND {$column} ~ '[1-9]')";
 		}
 
 		/**

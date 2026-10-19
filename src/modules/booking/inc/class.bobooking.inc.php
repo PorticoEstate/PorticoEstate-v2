@@ -1715,8 +1715,45 @@ phpgw::import_class('booking.bocommon_authorized');
 
 					$active_seasons = $soseason->get_resource_seasons($resource['id'], $checkDate->format('Y-m-d'), $limitDate->format('Y-m-d'));
 
+					/**
+					 * Each pass depends only on ($checkDate, $defaultStartHour, $defaultStartMinute). If that state
+					 * comes back, the loop would never end. Brent's cycle detection: keep a checkpoint of the state
+					 * at doubling intervals and compare against it. A loop that ends never repeats a state, so
+					 * nothing that works today is changed. Same guard as bookingfrontend FreeTimeService.
+					 */
+					$seen_time		 = null;
+					$seen_hour		 = null;
+					$seen_minute	 = null;
+					$since_seen		 = 0;
+					$seen_every		 = 1;
+					$slot_iterations = 0;
+					$slot_loop_stopped = false;
+					$slot_loop_deadline = microtime(true) + 10; // last-resort bound, under PHP's max_execution_time
+
 					do
 					{
+						$state_time	 = $checkDate->getTimestamp();
+						$state_hour	 = (int)$defaultStartHour;
+						$state_minute	 = (int)$defaultStartMinute;
+						if ($state_time === $seen_time && $state_hour === $seen_hour && $state_minute === $seen_minute)
+						{
+							$slot_loop_stopped = true;
+							break;
+						}
+						if (++$since_seen === $seen_every)
+						{
+							$seen_time		 = $state_time;
+							$seen_hour		 = $state_hour;
+							$seen_minute	 = $state_minute;
+							$since_seen		 = 0;
+							$seen_every		 *= 2;
+						}
+						if (++$slot_iterations > 1000000 || ($slot_iterations % 1024 === 0 && microtime(true) > $slot_loop_deadline))
+						{
+							$slot_loop_stopped = true;
+							break;
+						}
+
 						$StartTime = clone ($checkDate);
 						if ($defaultStartHour > $defaultEndHour && ($booking_lenght > -1 || $resource['booking_time_default_end'] == -1))
 						{
@@ -1864,6 +1901,19 @@ phpgw::import_class('booking.bocommon_authorized');
 						}
 					}
 					while ($checkDate < $limitDate);
+
+					if ($slot_loop_stopped)
+					{
+						// The booking defaults of this resource cannot produce a schedule (for example length 0 with
+						// a fixed end hour): offer no timeslots for it rather than hold the request until PHP's time limit.
+						$availlableTimeSlots[$resource['id']] = [];
+						error_log("booking_bobooking::get_free_events: resource {$resource['id']} cannot advance its timeslots, none returned "
+							. "(booking_day_default_lenght={$resource['booking_day_default_lenght']}, "
+							. "booking_time_default_start={$resource['booking_time_default_start']}, "
+							. "booking_time_default_end={$resource['booking_time_default_end']}, "
+							. "booking_time_minutes={$resource['booking_time_minutes']}, "
+							. "booking_dow_default_start={$resource['booking_dow_default_start']})");
+					}
 				}
 			}
 

@@ -2,6 +2,7 @@
 
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Translation;
+use App\modules\phpgwapi\controllers\Locations;
 
 phpgw::import_class('phpgwapi.uicommon_jquery');
 phpgw::import_class('phpgwapi.datetime');
@@ -259,6 +260,28 @@ abstract class booking_uicommon extends phpgwapi_uicommon_jquery
 		{
 			phpgw::redirect_link('/index.php', $link_data);
 		}
+	}
+
+	/**
+	 * Whether sms can be used: the sms app is available to the user and a gateway is selected.
+	 * Checked before CreateObject('sms.sms'), because including the sms class dies when no gateway
+	 * module is available. Reads the config the way sms/inc/class.sms.inc.php does, including the
+	 * fallback from gateway_module_send to gateway_module_get.
+	 *
+	 * @return bool
+	 */
+	protected function sms_is_configured()
+	{
+		if (empty($this->apps['sms']))
+		{
+			return false;
+		}
+
+		$location_id	 = (new Locations())->get_id('sms', 'run');
+		$sms_config		 = CreateObject('admin.soconfig', $location_id)->read();
+		$common			 = $sms_config['common'] ?? array();
+
+		return !empty($common['gateway_module_send']) || !empty($common['gateway_module_get']);
 	}
 
 	/**

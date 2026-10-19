@@ -1315,3 +1315,5 @@ change_applied_allocation	booking	nn	Endringa er lagra. Datoane i søknaden og p
 change_request_booking_outside_allocation	booking	nn	Endringa kan ikkje godtakast: booking #%1 i tildelinga ville hamna utanfor den nye tida.
 
 reactivate	booking	nn	Aktiver igjen
+sms_no_participants	booking	nn	Ingen deltakarar med telefonnummer er registrerte – SMS vart ikkje sendt.
+sms_not_configured	booking	nn	SMS er ikkje sett opp – kontakt systemadministrator.

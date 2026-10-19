@@ -143,6 +143,114 @@
 			return (int)$this->db->f('cnt');
 		}
 		
+		/**
+		 * The phone numbers an SMS sent from a reservation's page reaches: the people who registered
+		 * as participants and, for an allocation that comes from an application, the applicant.
+		 * Only resolves the numbers; nothing is sent.
+		 *
+		 * The participants are exactly the numbers the page has always used. The applicant's number
+		 * is added when it is not already one of them: same digits, with or without the country code.
+		 *
+		 * @param string $reservation_type
+		 * @param int $reservation_id
+		 * @return array list of array('phone' => string, 'source' => 'participant'|'application'|'account')
+		 */
+		public function get_sms_recipients( $reservation_type, $reservation_id )
+		{
+			$participants = $this->read(array(
+				'results' => -1,
+				'filters' => array(
+					'reservation_id' => $reservation_id,
+					'reservation_type' => $reservation_type
+				)
+			));
+
+			$participant_phones = array();
+			foreach ((array)$participants['results'] as $participant)
+			{
+				$participant_phones[] = $participant['phone'];
+			}
+
+			$recipients = array();
+			$known = array();
+			foreach (array_unique($participant_phones) as $phone)
+			{
+				$recipients[] = array('phone' => $phone, 'source' => 'participant');
+				$known[] = self::phone_key($phone);
+			}
+
+			if ($reservation_type == 'allocation')
+			{
+				$applicant = $this->get_applicant_phone($reservation_id);
+				if ($applicant && !in_array(self::phone_key($applicant['phone']), $known))
+				{
+					$recipients[] = $applicant;
+				}
+			}
+
+			return $recipients;
+		}
+
+		/**
+		 * The applicant's phone for an allocation that comes from an application: the number entered
+		 * on the application, else the one on the applicant's account (bb_user, found by customer_ssn).
+		 * An entry without a digit counts as empty.
+		 *
+		 * @param int $allocation_id
+		 * @return array|null array('phone' => string, 'source' => 'application'|'account'), or null
+		 *	when the allocation has no application or neither source has a number
+		 */
+		protected function get_applicant_phone( $allocation_id )
+		{
+			$sql = "SELECT CASE WHEN a.contact_phone ~ '[0-9]' THEN btrim(a.contact_phone) END AS application_phone,"
+				. " (SELECT btrim(u.phone) FROM bb_user u"
+				. " WHERE a.customer_ssn <> '' AND u.customer_ssn = a.customer_ssn AND u.phone ~ '[0-9]'"
+				. " ORDER BY u.id LIMIT 1) AS account_phone"
+				. " FROM bb_allocation al JOIN bb_application a ON a.id = al.application_id"
+				. " WHERE al.id = " . (int) $allocation_id;
+			$this->db->query($sql, __LINE__, __FILE__);
+			if (!$this->db->next_record())
+			{
+				return null;
+			}
+
+			$application_phone = (string) $this->db->f('application_phone');
+			$account_phone = (string) $this->db->f('account_phone');
+
+			if ($application_phone !== '')
+			{
+				return array('phone' => $application_phone, 'source' => 'application');
+			}
+			if ($account_phone !== '')
+			{
+				return array('phone' => $account_phone, 'source' => 'account');
+			}
+
+			return null;
+		}
+
+		/**
+		 * What makes two phone numbers the same number: the digits, without a leading 00 or the
+		 * Norwegian country code (+47 91234567, 0047 91234567 and 91234567 are one number).
+		 *
+		 * @param string $phone
+		 * @return string
+		 */
+		protected static function phone_key( $phone )
+		{
+			$digits = preg_replace('/\D+/', '', $phone);
+			if (strpos($digits, '00') === 0)
+			{
+				$digits = substr($digits, 2);
+			}
+			if (strlen($digits) == 10 && strpos($digits, '47') === 0)
+			{
+				$digits = substr($digits, 2);
+			}
+
+			return $digits;
+		}
+
 		function delete_from_completed($reservation_type, $age_days)
 		{
 			$interval = (int) $age_days;

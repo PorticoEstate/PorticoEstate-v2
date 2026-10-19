@@ -4,6 +4,14 @@ import { DatabaseService } from '../../database/database.service';
 import { RedisService } from '../notification/redis.service';
 import { FreeTimeService } from '../freetime/freetime.service';
 
+/**
+ * A booking takes milliseconds. A statement in its transaction that runs longer than
+ * STATEMENT_TIMEOUT_MS is aborted by the database. A booking still unfinished after JOB_TIMEOUT_MS
+ * (a database that no longer answers at all) has its connection dropped.
+ */
+const STATEMENT_TIMEOUT_MS = 20_000;
+const JOB_TIMEOUT_MS = 30_000;
+
 export class TranslatableError extends Error {
   translationKey: string;
   constructor(message: string, translationKey: string) {
@@ -190,12 +198,13 @@ export class BookingService implements OnModuleInit {
     worker.processing = true;
 
     try {
-      // Get or reuse a dedicated DB connection for this resource
-      if (!worker.client) {
-        worker.client = await this.db.getClient();
-      }
-
       while (worker.queue.length > 0) {
+        // Get or reuse a dedicated DB connection for this resource (a dropped one is replaced here)
+        if (!worker.client) {
+          worker.client = await this.db.getClient();
+        }
+        const client = worker.client;
+
         const job = worker.queue.shift()!;
         const waitMs = Date.now() - job.enqueuedAt;
         if (waitMs > 120_000) {
@@ -203,11 +212,26 @@ export class BookingService implements OnModuleInit {
           continue;
         }
 
+        // A statement the database never answers (a lock wait, a dead connection) would hold this
+        // resource's queue for ever. Destroying the connection fails the stuck statement and the
+        // ones queued behind it at once, and the database rolls the transaction back.
+        const abandon = setTimeout(() => {
+          this.logger.error(
+            `Booking on resource ${resourceId} took over ${JOB_TIMEOUT_MS / 1000}s, dropping its database connection`,
+          );
+          if (worker.client === client) {
+            worker.client = null;
+          }
+          client.release(true);
+        }, JOB_TIMEOUT_MS);
+
         try {
-          const result = await this.processBooking(worker.client, job);
+          const result = await this.processBooking(client, job);
           job.resolve(result);
         } catch (err: any) {
           job.reject(err);
+        } finally {
+          clearTimeout(abandon);
         }
         worker.lastUsed = Date.now();
       }
@@ -236,6 +260,10 @@ export class BookingService implements OnModuleInit {
 
     await client.query('BEGIN');
     try {
+      // Have the database abort a statement or lock wait that hangs. Only for this transaction,
+      // so it is safe behind a connection pooler and does not outlive the connection's use here.
+      await client.query(`SET LOCAL statement_timeout = ${STATEMENT_TIMEOUT_MS}`);
+
       // Overlap check (no FOR UPDATE — we're serialized by the queue)
       const overlapResult = await client.query(
         `SELECT a.id, a.status, ad.from_, ad.to_

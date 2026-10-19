@@ -169,6 +169,72 @@ class ModernIMAPWrapper
         }
     }
     
+    public static function imap_sort($stream, $criteria, $reverse, $options = 0)
+    {
+        if (!isset(self::$connections[$stream]['folder'])) {
+            return false;
+        }
+
+        try {
+            if (!in_array($criteria, range(0, 6), true)) {
+                throw new InvalidArgumentException('Invalid IMAP sort criterion');
+            }
+
+            $connection = self::$connections[$stream];
+            $client = $connection['client'];
+            $client->openFolder($connection['folder']->path);
+            $metadata = $client->getConnection()->fetch(
+                ['UID', 'INTERNALDATE', 'RFC822.SIZE', 'BODY.PEEK[HEADER]'],
+                1,
+                INF,
+                \Webklex\PHPIMAP\IMAP::ST_MSGN
+            )->validatedData();
+            $messages = [];
+            foreach ($metadata as $sequence => $attributes) {
+                $header = new \Webklex\PHPIMAP\Header($attributes['BODY[HEADER]'] ?? '', $client->getConfig());
+                $value = '';
+                switch ($criteria) {
+                    case 0:
+                        $value = strtotime((string) $header->get('date')) ?: 0;
+                        break;
+                    case 1:
+                        $value = strtotime($attributes['INTERNALDATE'] ?? '') ?: 0;
+                        break;
+                    case 2:
+                    case 4:
+                    case 5:
+                        $field = [2 => 'from', 4 => 'to', 5 => 'cc'][$criteria];
+                        $address = $header->get($field)->first();
+                        $value = strtolower($address->mailbox ?? '');
+                        if ($value === '') {
+                            $value = "\xff";
+                        }
+                        break;
+                    case 3:
+                        $value = strtolower(preg_replace('/^(?:(?:re|fw|fwd)\s*:\s*)+/i', '', trim((string) $header->get('subject'))));
+                        if ($value === '') {
+                            $value = "\xff";
+                        }
+                        break;
+                    case 6:
+                        $value = (int) ($attributes['RFC822.SIZE'] ?? 0);
+                        break;
+                }
+                $messages[] = ['id' => (int) (($options & 1) ? $attributes['UID'] : $sequence), 'value' => $value];
+            }
+            usort($messages, static function ($left, $right) use ($reverse) {
+                $comparison = is_string($left['value'])
+                    ? strcmp($left['value'], $right['value'])
+                    : $left['value'] <=> $right['value'];
+                return $reverse ? -$comparison : $comparison;
+            });
+            return array_column($messages, 'id');
+        } catch (Exception $e) {
+            self::$lastError = $e->getMessage();
+            return false;
+        }
+    }
+
     /**
      * Modern replacement for imap_fetchheader()
      */

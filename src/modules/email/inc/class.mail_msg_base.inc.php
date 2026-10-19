@@ -2906,11 +2906,24 @@ HTML;
 		// determine the Mail Server Call String AND PORT
 		// construct the email server call string from the opening bracket "{"  to the closing bracket  "}"
 		$mail_server_type = $this->mail_msg_wrappers->get_pref_value('mail_server_type', $acctnum);
+		$profile_imap_port = null;
+		if (in_array($mail_server_type, ['imap', 'imaps'], true))
+		{
+			$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('email');
+			if (is_array($profile))
+			{
+				$profile_imap_port = filter_var(
+					$profile['imapPort'] ?? null,
+					FILTER_VALIDATE_INT,
+					['options' => ['min_range' => 1, 'max_range' => 65535]]
+				);
+			}
+		}
 		if ($mail_server_type == 'imaps')
 		{
 			// IMAP over SSL
 			$callstr_extra = '/imap/ssl/novalidate-cert';
-			$mail_port = 993;
+			$mail_port = $profile_imap_port ?: 993;
 		}
 		elseif ($mail_server_type == 'pop3s')
 		{
@@ -2928,7 +2941,7 @@ HTML;
 		{
 			// IMAP normal connection, No SSL
 			$callstr_extra = '/imap/notls';
-			$mail_port = 143;
+			$mail_port = $profile_imap_port ?: 143;
 		}
 		elseif ($mail_server_type == 'nntp')
 		{

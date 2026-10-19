@@ -15,7 +15,7 @@ import { RoomService } from '../session/room.service';
 import { NotificationService } from '../notification/notification.service';
 import { ApplicationService } from '../application/application.service';
 import { DeliveredApplicationService } from '../application/delivered-application.service';
-import { FreeTimeService } from '../freetime/freetime.service';
+import { FreeTimeService, MAX_FREE_TIME_SPAN_DAYS } from '../freetime/freetime.service';
 import { BookingService } from '../booking/booking.service';
 import { PhpConfigService } from '../../config/php-config.service';
 import { RedisService } from '../notification/redis.service';
@@ -800,6 +800,25 @@ export class PorticoGateway
       return;
     }
 
+    // A client gets no say over how much work one call does. The error carries buildingId so the
+    // client's request fails at once and it falls back to REST.
+    const spanDays = (new Date(endDate).getTime() - new Date(startDate).getTime()) / 86_400_000;
+    if (spanDays > MAX_FREE_TIME_SPAN_DAYS) {
+      this.logger.warn(`FreeTime range refused: ${startDate} - ${endDate} (${Math.round(spanDays)} days)`);
+      client.emit('message', {
+        type: 'free_time_response',
+        data: {
+          error: true,
+          message: `Date range too large (max ${MAX_FREE_TIME_SPAN_DAYS} days)`,
+          buildingId: Number(buildingId),
+          startDate,
+          endDate,
+        },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     const session = this.sessionService.getSession(client.id);
 
     try {
@@ -829,7 +848,7 @@ export class PorticoGateway
       this.logger.error(`FreeTime error: ${err.message}`);
       client.emit('message', {
         type: 'free_time_response',
-        data: { error: true, message: err.message },
+        data: { error: true, message: err.message, buildingId: Number(buildingId) },
         timestamp: new Date().toISOString(),
       });
     }

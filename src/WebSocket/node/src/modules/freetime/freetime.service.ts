@@ -10,6 +10,27 @@ import { DatabaseService } from '../../database/database.service';
 const TIMEZONE = 'Europe/Oslo';
 const DATEFORMAT = 'd/m-Y';
 
+/**
+ * Largest date range a client may ask the gateway for in one get_free_time call.
+ * The clients ask for 8 days (one week) or about 30 days (four-week prefetch).
+ */
+export const MAX_FREE_TIME_SPAN_DAYS = 62;
+
+/**
+ * Last-resort bounds for the slot loop in generateTimeSlots, per resource. The loop is already
+ * stopped when its state repeats; these only stop a run that never repeats and never ends.
+ * Far above any real call (largest measured: 13,503 iterations / 1.3 s, booking_month_horizon 64
+ * without stopOnEndDate).
+ */
+const MAX_SLOT_ITERATIONS = 1_000_000;
+const MAX_SLOT_LOOP_MS = 10_000;
+
+/** Log a resource whose slot loop cannot advance at most this often, per resource. */
+const STUCK_LOG_INTERVAL_MS = 10 * 60_000;
+
+/** Thrown when a free-time request runs past a safety bound. Callers treat it like any failed lookup. */
+export class FreeTimeLimitError extends Error {}
+
 interface Resource {
   id: number;
   simple_booking: number;
@@ -725,8 +746,42 @@ export class FreeTimeService {
         resource.id, fmtDate(checkDate), fmtDate(limitDate),
       );
 
+      // Each pass depends only on (checkDate, defaultStartHour, defaultStartMinute). If that state
+      // comes back, the loop would run forever, and with no real await in it nothing else on the
+      // event loop would run again. Brent's cycle detection: keep a checkpoint of the state at
+      // doubling intervals and compare against it. A loop that ends never repeats a state.
+      let seenTime = NaN;
+      let seenHour = NaN;
+      let seenMinute = NaN;
+      let sinceSeen = 0;
+      let seenEvery = 1;
+      let stuck = false;
+      let iterations = 0;
+      const loopDeadline = Date.now() + MAX_SLOT_LOOP_MS;
+
       // Main slot generation loop (ported do...while)
       while (checkDate < limitDate) {
+        if (
+          checkDate.getTime() === seenTime
+          && defaultStartHour === seenHour
+          && defaultStartMinute === seenMinute
+        ) {
+          stuck = true;
+          break;
+        }
+        if (++sinceSeen === seenEvery) {
+          seenTime = checkDate.getTime();
+          seenHour = defaultStartHour;
+          seenMinute = defaultStartMinute;
+          sinceSeen = 0;
+          seenEvery *= 2;
+        }
+        if (++iterations > MAX_SLOT_ITERATIONS || (iterations % 1024 === 0 && Date.now() > loopDeadline)) {
+          throw new FreeTimeLimitError(
+            `Timeslot generation for resource ${resource.id} stopped after ${iterations} iterations`,
+          );
+        }
+
         const startTime = new Date(checkDate);
 
         if (defaultStartHour > defaultEndHour && (bookingLength > -1 || resource.booking_time_default_end === -1)) {
@@ -828,9 +883,33 @@ export class FreeTimeService {
           }
         }
       }
+
+      if (stuck) {
+        // The resource's booking defaults cannot produce a schedule (for example length 0 with a
+        // fixed end hour). Offer no timeslots for it rather than stall the whole service.
+        result[resource.id] = [];
+        this.logStuckResource(resource);
+      }
     }
 
     return result;
+  }
+
+  private readonly stuckLoggedAt = new Map<number, number>();
+
+  private logStuckResource(resource: Resource) {
+    const now = Date.now();
+    const last = this.stuckLoggedAt.get(resource.id);
+    if (last !== undefined && now - last < STUCK_LOG_INTERVAL_MS) return;
+    this.stuckLoggedAt.set(resource.id, now);
+    this.logger.warn(
+      `Resource ${resource.id}: slot generation cannot advance, no timeslots returned `
+      + `(booking_day_default_lenght=${resource.booking_day_default_lenght}, `
+      + `booking_time_default_start=${resource.booking_time_default_start}, `
+      + `booking_time_default_end=${resource.booking_time_default_end}, `
+      + `booking_time_minutes=${resource.booking_time_minutes}, `
+      + `booking_dow_default_start=${resource.booking_dow_default_start})`,
+    );
   }
 
   // Synchronous versions for the hot loop (caches pre-populated)

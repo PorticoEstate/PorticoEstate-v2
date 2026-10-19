@@ -273,7 +273,7 @@
 
 		function status($stream,$mailbox,$options=0)
 		{
-			if ( !is_resource($stream) )
+			if ( !($stream) )
 			{
 				return;
 			}

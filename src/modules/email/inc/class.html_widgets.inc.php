@@ -1673,11 +1673,14 @@
 				//$refresh_ms = '240000';
 
 				$oArgs = '{';
-				foreach($reload_me as $key => $value)
+				foreach(is_array($reload_me) ? $reload_me : array() as $key => $value)
 				{
 					$oArgs .= str_replace(array('fldball[',']'),'',$key) . ":'" . $value . "',\r\n";
 				}
 				$oArgs .= '};';
+				$refresh_url_js = is_array($reload_me)
+					? "phpGWLink('index.php', oArgs)"
+					: json_encode($reload_me, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
 	/*			$reload_js = 
 					 '<script language="javascript">'."\r\n"
@@ -1688,7 +1691,7 @@
 				$reload_js = 
 					 '<script language="javascript">'."\r\n"
 					.' var oArgs = ' . $oArgs . "\r\n"
-					." var strURL = phpGWLink('index.php', oArgs); \r\n"
+					.' var strURL = ' . $refresh_url_js . "; \r\n"
 					.'window.setTimeout('."'".'window.location=strURL;'."'".','.$refresh_ms.');'."\r\n"
 					.'</script>'."\r\n";
 

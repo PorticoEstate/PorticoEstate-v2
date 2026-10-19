@@ -235,6 +235,14 @@ class ModernIMAPWrapper
         }
     }
 
+    private static function getMessage($stream, $msgNum, $flags = 0)
+    {
+        $query = self::$connections[$stream]['folder']->query()->leaveUnread();
+        return ($flags & 1)
+            ? $query->getMessageByUid((int) $msgNum)
+            : $query->getMessageByMsgn((int) $msgNum);
+    }
+
     /**
      * Modern replacement for imap_fetchheader()
      */
@@ -245,11 +253,10 @@ class ModernIMAPWrapper
         }
         
         try {
-            $folder = self::$connections[$stream]['folder'];
-            $message = $folder->getMessage($msgNum);
+            $message = self::getMessage($stream, $msgNum, $flags);
             
             if ($message) {
-                return $message->getHeaderRaw();
+                return $message->getHeader()->raw;
             }
             
             return false;
@@ -270,8 +277,7 @@ class ModernIMAPWrapper
         }
         
         try {
-            $folder = self::$connections[$stream]['folder'];
-            $message = $folder->getMessage($msgNum);
+            $message = self::getMessage($stream, $msgNum, $flags);
             
             if ($message) {
                 if ($section === '1') {
@@ -304,8 +310,7 @@ class ModernIMAPWrapper
         }
         
         try {
-            $folder = self::$connections[$stream]['folder'];
-            $message = $folder->getMessage($msgNum);
+            $message = self::getMessage($stream, $msgNum, $flags);
             
             if ($message) {
                 // Create a simplified structure object
@@ -336,8 +341,7 @@ class ModernIMAPWrapper
         }
         
         try {
-            $folder = self::$connections[$stream]['folder'];
-            $message = $folder->getMessage($msgNum);
+            $message = self::getMessage($stream, $msgNum);
             
             if ($message) {
                 $header = new stdClass();
@@ -370,13 +374,11 @@ class ModernIMAPWrapper
         }
         
         try {
-            $folder = self::$connections[$stream]['folder'];
-            
             // Handle multiple message numbers
             $nums = is_array($msgNums) ? $msgNums : explode(',', $msgNums);
             
             foreach ($nums as $msgNum) {
-                $message = $folder->getMessage(trim($msgNum));
+                $message = self::getMessage($stream, trim($msgNum), $flags);
                 if ($message) {
                     $message->delete();
                 }
@@ -410,6 +412,39 @@ class ModernIMAPWrapper
         }
     }
     
+    public static function imap_status($stream, $mailbox, $options)
+    {
+        if (!isset(self::$connections[$stream]['client'])) {
+            return false;
+        }
+
+        try {
+            $folder = preg_replace('/^\{[^}]+\}/', '', $mailbox);
+            $fields = [1 => 'messages', 2 => 'recent', 4 => 'unseen', 8 => 'uidnext', 16 => 'uidvalidity'];
+            $arguments = [];
+            foreach ($fields as $flag => $field) {
+                if ($options & $flag) {
+                    $arguments[] = strtoupper($field);
+                }
+            }
+            $client = self::$connections[$stream]['client'];
+            $data = $client->getConnection()->folderStatus($folder, $arguments)->validatedData();
+            $data = array_change_key_case($data, CASE_LOWER);
+            $status = new stdClass();
+            $status->flags = 0;
+            foreach ($fields as $flag => $field) {
+                if (($options & $flag) && isset($data[$field])) {
+                    $status->$field = (int) $data[$field];
+                    $status->flags |= $flag;
+                }
+            }
+            return $status;
+        } catch (Exception $e) {
+            self::$lastError = $e->getMessage();
+            return false;
+        }
+    }
+
     /**
      * Modern replacement for imap_num_msg()
      */
@@ -429,6 +464,26 @@ class ModernIMAPWrapper
         }
     }
     
+    public static function imap_msgno($stream, $uid)
+    {
+        if (!isset(self::$connections[$stream]['folder'])) {
+            return false;
+        }
+
+        try {
+            $connection = self::$connections[$stream];
+            $client = $connection['client'];
+            $client->openFolder($connection['folder']->path);
+            return $client->getConnection()->getMessageNumber((string) $uid)->validate()->integer();
+        } catch (\Webklex\PHPIMAP\Exceptions\MessageNotFoundException $e) {
+            self::$lastError = $e->getMessage();
+            return 0;
+        } catch (Exception $e) {
+            self::$lastError = $e->getMessage();
+            return false;
+        }
+    }
+
     /**
      * Modern replacement for imap_list()
      */

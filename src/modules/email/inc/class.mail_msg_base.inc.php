@@ -289,8 +289,8 @@ class mail_msg_base
 	// NOTE msgball_list is ALWAYS appsession cached in "session_cache_enabled" even if "session_cache_extreme" is false, 
 	// repeat: msgball_list is still appsession cached in non-extreme mode as long as "session_cache_enabled" is True. 
 	// also, note that folder_info is ONLY appsession cached in extreme-mode, BUT folder_info is only L1 cached in non-extreme mode
-	var $session_cache_extreme = True;
-	//var $session_cache_extreme = False;
+	//var $session_cache_extreme = True;
+	var $session_cache_extreme = False;
 
 	// ---- Private Table Caching  ---- data store is migrating to anglemails own DB table, should we use it?
 	// value will be double checked to make sure the table is present, if not present, it does to False
@@ -1784,13 +1784,12 @@ class mail_msg_base
 
 			// now we have folder, sort and order, make a URI for auto-refresh use
 			// we can NOT put "start" in auto refresh or user may not see the 1st index page on refresh
-			$this_index_refresh_uri = array(
-				'menuaction' => 'email.uiindex.index',
+			$this_index_refresh_uri = phpgw::link('/email/view/inbox', array(
 				'fldball[folder]' => $this->prep_folder_out(),
 				'fldball[acctnum]' => $this->mail_msg_wrappers->get_acctnum(),
 				'sort' => $this->mail_msg_wrappers->get_arg_value('sort'),
 				'order' => $this->mail_msg_wrappers->get_arg_value('order')
-			);
+			), true);
 			if ($this->debug_logins > 1)
 			{
 				$this->dbug->out('mail_msg.begin_request(' . __LINE__ . '): about to call $this->mail_msg_wrappers->set_arg_value(index_refresh_uri, $this_index_refresh_uri, $acctnum(=' . $acctnum . ')); ; where $this_index_refresh_uri: ' . htmlspecialchars($this_index_refresh_uri) . '<br />');
@@ -1814,13 +1813,12 @@ class mail_msg_base
 			// EXPERIMENTAL since we did not login can we still get a good refresh URI?
 			// now we have folder, sort and order, make a URI for auto-refresh use
 			// we can NOT put "start" in auto refresh or user may not see the 1st index page on refresh
-			$this_index_refresh_uri = array(
-				'menuaction' => 'email.uiindex.index',
+			$this_index_refresh_uri = phpgw::link('/email/view/inbox', array(
 				'fldball[folder]' => $this->prep_folder_out(),
 				'fldball[acctnum]' => $this->mail_msg_wrappers->get_acctnum(),
 				'sort' => $this->mail_msg_wrappers->get_arg_value('sort'),
 				'order' => $this->mail_msg_wrappers->get_arg_value('order')
-			);
+			), true);
 			if ($this->debug_logins > 1)
 			{
 				$this->dbug->out('mail_msg.begin_request(' . __LINE__ . '): about to call $this->mail_msg_wrappers->set_arg_value(index_refresh_uri, $this_index_refresh_uri, $acctnum(=' . $acctnum . ')); ; where $this_index_refresh_uri: ' . htmlspecialchars($this_index_refresh_uri) . '<br />');

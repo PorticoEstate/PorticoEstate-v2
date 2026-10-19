@@ -1175,3 +1175,4 @@ occurrence_allocated	bookingfrontend	nn	Tildelt
 occurrence_withdrawn	bookingfrontend	nn	Trekt
 occurrence_not_allocated	bookingfrontend	nn	Ikkje tildelt
 occurrence_outside_series	bookingfrontend	nn	Utanfor serien
+application_not_found	bookingfrontend	nn	Fann ikkje søknaden. Du kan mangle tilgang.

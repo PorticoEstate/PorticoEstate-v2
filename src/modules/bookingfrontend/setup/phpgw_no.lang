@@ -1176,3 +1176,4 @@ occurrence_allocated	bookingfrontend	no	Tildelt
 occurrence_withdrawn	bookingfrontend	no	Trukket
 occurrence_not_allocated	bookingfrontend	no	Ikke tildelt
 occurrence_outside_series	bookingfrontend	no	Utenfor serien
+application_not_found	bookingfrontend	no	Fant ikke søknaden. Du kan mangle tilgang.

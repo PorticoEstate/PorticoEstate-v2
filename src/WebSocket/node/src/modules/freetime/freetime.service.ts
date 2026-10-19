@@ -17,13 +17,12 @@ const DATEFORMAT = 'd/m-Y';
 export const MAX_FREE_TIME_SPAN_DAYS = 62;
 
 /**
- * Last-resort bounds for the slot loop in generateTimeSlots, per resource. The loop is already
- * stopped when its state repeats; these only stop a run that never repeats and never ends.
+ * Last-resort bound for the slot loop in generateTimeSlots, per resource. The loop is already
+ * stopped when its state repeats; this only stops a run that never repeats and never ends.
  * Far above any real call (largest measured: 13,503 iterations / 1.3 s, booking_month_horizon 64
  * without stopOnEndDate).
  */
 const MAX_SLOT_ITERATIONS = 1_000_000;
-const MAX_SLOT_LOOP_MS = 10_000;
 
 /** Log a resource whose slot loop cannot advance at most this often, per resource. */
 const STUCK_LOG_INTERVAL_MS = 10 * 60_000;
@@ -757,7 +756,6 @@ export class FreeTimeService {
       let seenEvery = 1;
       let stuck = false;
       let iterations = 0;
-      const loopDeadline = Date.now() + MAX_SLOT_LOOP_MS;
 
       // Main slot generation loop (ported do...while)
       while (checkDate < limitDate) {
@@ -776,7 +774,7 @@ export class FreeTimeService {
           sinceSeen = 0;
           seenEvery *= 2;
         }
-        if (++iterations > MAX_SLOT_ITERATIONS || (iterations % 1024 === 0 && Date.now() > loopDeadline)) {
+        if (++iterations > MAX_SLOT_ITERATIONS) {
           throw new FreeTimeLimitError(
             `Timeslot generation for resource ${resource.id} stopped after ${iterations} iterations`,
           );

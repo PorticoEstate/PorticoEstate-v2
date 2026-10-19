@@ -15,12 +15,11 @@ use App\modules\phpgwapi\services\Settings;
 class FreeTimeService
 {
 	/**
-	 * Last-resort bounds for the slot loop in generateTimeSlots, per resource. The loop is already
-	 * stopped when its state repeats; these only stop a run that never repeats and never ends.
-	 * Far above any real call, and under PHP's max_execution_time so that a JSON answer is given.
+	 * Last-resort bound for the slot loop in generateTimeSlots, per resource. The loop is already
+	 * stopped when its state repeats; this only stops a run that never repeats and never ends.
+	 * Far above any real call.
 	 */
 	private const MAX_SLOT_ITERATIONS = 1000000;
-	private const MAX_SLOT_LOOP_SECONDS = 10;
 
 	private $db;
 	private string $timezone;
@@ -895,7 +894,6 @@ class FreeTimeService
 			$seenEvery = 1;
 			$iterations = 0;
 			$stopped = false;
-			$loopDeadline = microtime(true) + self::MAX_SLOT_LOOP_SECONDS;
 
 			do {
 				$stateTime = $checkDate->getTimestamp();
@@ -912,8 +910,7 @@ class FreeTimeService
 					$sinceSeen = 0;
 					$seenEvery *= 2;
 				}
-				if (++$iterations > self::MAX_SLOT_ITERATIONS
-					|| ($iterations % 1024 === 0 && microtime(true) > $loopDeadline)) {
+				if (++$iterations > self::MAX_SLOT_ITERATIONS) {
 					$stopped = true;
 					break;
 				}

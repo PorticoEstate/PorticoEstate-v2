@@ -1728,7 +1728,6 @@ phpgw::import_class('booking.bocommon_authorized');
 					$seen_every		 = 1;
 					$slot_iterations = 0;
 					$slot_loop_stopped = false;
-					$slot_loop_deadline = microtime(true) + 10; // last-resort bound, under PHP's max_execution_time
 
 					do
 					{
@@ -1748,7 +1747,7 @@ phpgw::import_class('booking.bocommon_authorized');
 							$since_seen		 = 0;
 							$seen_every		 *= 2;
 						}
-						if (++$slot_iterations > 1000000 || ($slot_iterations % 1024 === 0 && microtime(true) > $slot_loop_deadline))
+						if (++$slot_iterations > 1000000)
 						{
 							$slot_loop_stopped = true;
 							break;

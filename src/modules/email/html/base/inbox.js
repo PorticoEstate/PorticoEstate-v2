@@ -10,6 +10,74 @@
 	const range = document.getElementById('email-inbox-range');
 	const previous = document.getElementById('email-inbox-previous');
 	const next = document.getElementById('email-inbox-next');
+	const folderList = document.getElementById('email-inbox-folder-list');
+	const folderStatus = document.getElementById('email-inbox-folder-status');
+	const folderError = document.getElementById('email-inbox-folder-error');
+	const heading = document.getElementById('email-inbox-title');
+	const selection = new URL(window.location.href).searchParams;
+	const activeAccount = Number(selection.get('fldball[acctnum]') || 0);
+	const activeFolder = selection.get('fldball[folder]') || 'INBOX';
+
+	async function loadFolders()
+	{
+		try
+		{
+			const url = new URL(root.dataset.foldersApiUrl, window.location.origin);
+			url.searchParams.set('fldball[acctnum]', String(activeAccount));
+			const response = await fetch(url, { headers: { Accept: 'application/json' } });
+			const result = await response.json();
+			if (!response.ok) throw new Error(result.reason || result.error || 'Unable to load folders');
+			const folders = window.emailFolderHierarchy(result.items || [], result.delimiter || '');
+			folderList.replaceChildren();
+			const lists = [folderList];
+			folders.forEach(folder =>
+			{
+				while (lists.length > folder.depth + 1) lists.pop();
+				if (folder.depth === lists.length)
+				{
+					const children = document.createElement('ul');
+					lists[lists.length - 1].lastElementChild.appendChild(children);
+					lists.push(children);
+				}
+				const item = document.createElement('li');
+				const link = document.createElement('a');
+				const destination = new URL(window.location.href);
+				destination.searchParams.set('fldball[acctnum]', String(folder.account));
+				destination.searchParams.set('fldball[folder]', folder.longName);
+				destination.searchParams.delete('start');
+				destination.searchParams.delete('fldball_fake_uri');
+				link.href = destination;
+				const total = Math.max(0, Number(folder.total) || 0);
+				const unread = Math.max(0, Number(folder.unseen) || 0);
+				link.title = folder.longName + ': ' + total + ' messages, ' + unread + ' unread';
+				link.setAttribute('aria-label', link.title);
+				if (unread) link.classList.add('has-unread');
+				if (Number(folder.account) === activeAccount && folder.longName === activeFolder)
+				{
+					link.setAttribute('aria-current', 'page');
+					heading.textContent = folder.label;
+				}
+				const label = document.createElement('span');
+				label.className = 'email-inbox-folder-name';
+				label.textContent = folder.label;
+				const count = document.createElement('span');
+				count.className = 'email-inbox-folder-count';
+				count.textContent = String(total);
+				count.setAttribute('aria-hidden', 'true');
+				link.append(label, count);
+				item.appendChild(link);
+				lists[lists.length - 1].appendChild(item);
+			});
+			folderStatus.textContent = folders.length ? '' : 'No folders found';
+			folderStatus.hidden = folders.length > 0;
+			folderError.hidden = true;
+		} catch (exception)
+		{
+			folderStatus.hidden = true;
+			folderError.textContent = exception.message;
+			folderError.hidden = false;
+		}
+	}
 
 	function cell(row, value, className)
 	{
@@ -114,4 +182,5 @@
 	}
 
 	load();
+	loadFolders();
 })();

@@ -61,6 +61,7 @@ class EmailInboxViewController
 		$html = $this->twig->render('@views/inbox.twig', [
 			'layout' => '@views/_bare.twig',
 			'api_url' => \phpgw::link('/email/api/inbox', [], true),
+			'folders_api_url' => \phpgw::link('/email/api/folders', [], true),
 			'compose_url' => \phpgw::link('/email/view/compose', [], true),
 			'folders_url' => \phpgw::link('/email/view/folders', array_filter([
 				'fldball[acctnum]' => $request->getQueryParams()['fldball']['acctnum'] ?? null,

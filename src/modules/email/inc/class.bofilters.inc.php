@@ -185,6 +185,15 @@
 			{
 				$this->all_filters = \App\modules\phpgwapi\services\Preferences::getInstance()->data['email']['filters'];
 			}
+			foreach ($this->all_filters as &$filter)
+			{
+				if (!is_array($filter)) $filter = [];
+				foreach (['source_accounts', 'matches', 'actions'] as $field)
+				{
+					if (!isset($filter[$field]) || !is_array($filter[$field])) $filter[$field] = [];
+				}
+			}
+			unset($filter);
 			// UNDO the DATABASE DEFANG if instructions specified this
 			if ($also_undo_defang)
 			{
@@ -1042,8 +1051,7 @@
 			
 				// GET LIST OF ALL MSGS IN MAILBOX
 				// only if not already exists
-				if ((isset($this->inbox_full_msgball_list[$src_acct_loop_num]))
-				|| (count($this->inbox_full_msgball_list[$src_acct_loop_num]) > 0))
+				if (isset($this->inbox_full_msgball_list[$src_acct_loop_num]))
 				{
 					if ($this->debug > 1) { echo 'bofilters.run_single_filter('.__LINE__.'): already obtained inbox_full_msgball_list, during a previous filter, for $src_acct_loop_num ['.$src_acct_loop_num.']<br />'; }
 				}
@@ -1506,11 +1514,11 @@
 		@abstract ?
 		@author Angles
 		*/
-		function make_filter_match_report($filter_num='')
+		function make_filter_match_report($filter_num=0)
 		{
 			$this_filter = $this->all_filters[$filter_num];
 			if (($this->just_testing())
-			&& (count($this->each_filter_mball_list[$filter_num]) > 0))
+			&& (count($this->each_filter_mball_list[$filter_num] ?? []) > 0))
 			{
 				if ($this->debug > 1) { echo 'bofilters.make_filter_match_report: Filter Report Maker<br />'; }
 				if ($this->debug > 1) { echo 'bofilters.make_filter_match_report: number of matches $this->each_filter_mball_list['.$filter_num.'] = ' .count($this->each_filter_mball_list[$filter_num]).'<br />'."\r\n"; }

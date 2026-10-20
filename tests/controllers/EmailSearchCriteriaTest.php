@@ -24,6 +24,29 @@ namespace Tests\Controllers
 			$this->assertSame('SUBJECT "release \\"notes\\" next" FROM "sender@example.test" UNSEEN SINCE "01/05/2026"', EmailSearchCriteria::build($criteria));
 		}
 
+		public function testEmptyCriteriaSearchesAllMessagesInSelectedFolder(): void
+		{
+			$criteria = EmailSearchCriteria::normalize([
+				'fldball' => ['acctnum' => 0],
+				'folder_list' => ['INBOX'],
+				'flags' => [],
+				'start' => 0,
+				'search_subject' => '',
+				'search_body' => '',
+				'search_from' => '',
+				'search_to' => '',
+				'search_cc' => '',
+				'search_bcc' => '',
+				'search_keyword' => '',
+				'date_on' => '',
+				'date_before' => '',
+				'date_after' => '',
+			]);
+			$this->assertNotNull($criteria);
+			$this->assertSame(['INBOX'], $criteria['folders']);
+			$this->assertSame('ALL', EmailSearchCriteria::build($criteria));
+		}
+
 		public function testRejectsMissingFoldersAndInvalidDates(): void
 		{
 			$this->assertNull(EmailSearchCriteria::normalize(['fldball' => ['acctnum' => 0], 'folder_list' => []]));

@@ -97,6 +97,6 @@ final class EmailSearchCriteria
 		{
 			$parts[] = $operator . ' "' . (string) $date . '"';
 		}
-		return implode(' ', $parts);
+		return $parts ? implode(' ', $parts) : 'ALL';
 	}
 }

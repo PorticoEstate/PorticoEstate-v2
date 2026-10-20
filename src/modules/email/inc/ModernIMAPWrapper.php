@@ -133,6 +133,10 @@ class ModernIMAPWrapper
             
             // Convert IMAP search criteria to Webklex format
             $query = $folder->query();
+
+            if (strcasecmp(trim($criteria), 'ALL') === 0) {
+                $query->all();
+            }
             
             // Basic criteria parsing (extend as needed)
             if (strpos($criteria, 'UNSEEN') !== false) {

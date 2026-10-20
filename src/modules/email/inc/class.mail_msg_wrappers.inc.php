@@ -628,7 +628,7 @@
 		(Not related to a message flag like "unseen", this is an optional argument for the mail server.) 
 		@author Angles
 		*/
-		function phpgw_fetchbody($msgball='', $flags='', $display_error = true)
+		function phpgw_fetchbody($msgball='', $flags=0, $display_error = true)
 		{
 			//echo 'mail_msg(_wrappers): phpgw_fetchbody: ENTERING, $msgball dump<pre>'; print_r($msgball); echo '</pre>';
 			if ( (!isset($msgball))

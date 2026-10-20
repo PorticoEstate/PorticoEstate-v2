@@ -531,4 +531,5 @@ if(!$catlist)
 	$GLOBALS['phpgw']->template->parse('out','addressbook_names_t',True);
 	$GLOBALS['phpgw']->template->p('out');
 
-	$GLOBALS['phpgw']->common->phpgw_exit();
+	(new \phpgwapi_common())->phpgw_exit();
+	

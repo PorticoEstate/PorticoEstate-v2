@@ -1825,7 +1825,8 @@
 					\App\modules\email\services\MailMessage::getInstance()->end_request();
 					\App\modules\email\services\MailMessage::releaseInstance();
 				}
-				$GLOBALS['phpgw']->common->phpgw_exit();
+				//$GLOBALS['phpgw']->common->phpgw_exit();
+				(new \phpgwapi_common())->phpgw_exit();
 			}
 		}
 		

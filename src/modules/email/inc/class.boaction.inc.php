@@ -367,7 +367,7 @@
 								'sort'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
 								'order'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
 								'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start')));
-				/*
+			/*
 				// Experimental:
 				// NO REDIRECT - DIRECTLY MANUFACTURE THE NEXT PAGE VIEW RIGHT NOW
 				// NAME  THE DESIRED FLDBALL
@@ -415,10 +415,9 @@
 					$GLOBALS['phpgw']->msg->end_request();
 				}
 				// shut down this transaction
-				$GLOBALS['phpgw']->common->phpgw_exit(False);
+				(new \phpgwapi_common())->phpgw_exit(False);
 				*/
-				
-			}
+		}
 			// ---- DELETE A SINGLE MESSAGE  ----
 			elseif (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('what') == "delete_single_msg")
 			{
@@ -540,7 +539,7 @@
 					\App\modules\email\services\MailMessage::getInstance()->end_request();
 					\App\modules\email\services\MailMessage::releaseInstance();
 				}
-				$GLOBALS['phpgw']->common->phpgw_exit(False);
+				(new \phpgwapi_common())->phpgw_exit(False);
 			}
 			
 			
@@ -628,7 +627,7 @@
 			}
 			// shut down this transaction
 			if ($this->debug > 0) { \App\modules\email\services\MailMessage::getInstance()->dbug->out('email.boaction.delmov ('.__LINE__.'): LEAVING for <b>real</b> with $GLOBALS[phpgw]->common->phpgw_exit(False)<br />'); }
-			$GLOBALS['phpgw']->common->phpgw_exit(False);
+			(new \phpgwapi_common())->phpgw_exit(False);
 		}
 
 		/**
@@ -984,7 +983,7 @@
 			// destroy the object
 			\App\modules\email\services\MailMessage::releaseInstance();
 			// shut down this transaction
-			$GLOBALS['phpgw']->common->phpgw_exit(False);
+			(new \phpgwapi_common())->phpgw_exit(False);
 		}
 
 		/*!
@@ -1049,7 +1048,7 @@
 			// destroy the object
 			\App\modules\email\services\MailMessage::releaseInstance();
 			// shut down this transaction
-			$GLOBALS['phpgw']->common->phpgw_exit(False);
+			(new \phpgwapi_common())->phpgw_exit(False);
 		}
 	
 	

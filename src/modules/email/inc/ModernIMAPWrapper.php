@@ -345,13 +345,37 @@ class ModernIMAPWrapper
             
             if ($message) {
                 $header = new stdClass();
-                $header->from = $message->getFrom()->toArray();
-                $header->to = $message->getTo()->toArray();
-                $header->cc = $message->getCc()->toArray();
-                $header->subject = $message->getSubject();
-                $header->date = $message->getDate()->toString();
-                $header->message_id = $message->getMessageId();
-                $header->size = strlen($message->getRawBody());
+                foreach (['from', 'to', 'cc', 'bcc', 'reply_to', 'sender', 'return_path'] as $field) {
+                    $addresses = $message->get($field)->toArray();
+                    $header->$field = array_map(static fn($address) => (object) [
+                        'personal' => $address->personal,
+                        'mailbox' => $address->mailbox,
+                        'host' => $address->host,
+                    ], $addresses);
+                    $addressField = $field . 'address';
+                    $header->$addressField = implode(', ', array_map(static fn($address) => (string) $address, $addresses));
+                }
+                if (!$header->reply_to) {
+                    $header->reply_to = $header->from;
+                    $header->reply_toaddress = $header->fromaddress;
+                }
+                $header->subject = $header->Subject = (string) $message->getSubject();
+                $date = $message->getDate()->first();
+                $header->date = $header->Date = $date ? (string) $date : '';
+                $internalDates = $message->getClient()->getConnection()->fetch(
+                    ['UID', 'INTERNALDATE'], [(int) $msgNum], null, \Webklex\PHPIMAP\IMAP::ST_MSGN
+                )->validatedData();
+                $header->udate = strtotime($internalDates[(int) $msgNum]['INTERNALDATE'] ?? '') ?: 0;
+                $header->message_id = (string) $message->getMessageId();
+                $header->size = $header->Size = (string) $message->getSize();
+                $header->Msgno = (string) $msgNum;
+                $flags = $message->getFlags();
+                $header->Unseen = $flags->has('seen') ? ' ' : 'U';
+                $header->Recent = $flags->has('recent') ? ($flags->has('seen') ? 'R' : 'N') : ' ';
+                foreach (['answered' => 'A', 'flagged' => 'F', 'deleted' => 'D', 'draft' => 'X'] as $flag => $marker) {
+                    $field = ucfirst($flag);
+                    $header->$field = $flags->has($flag) ? $marker : ' ';
+                }
                 
                 return $header;
             }

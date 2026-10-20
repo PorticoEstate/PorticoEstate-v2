@@ -408,7 +408,7 @@
 						\App\modules\email\services\MailMessage::releaseInstance();
 					}
 					// shut down this transaction
-					$GLOBALS['phpgw']->common->phpgw_exit(False);
+					(new \phpgwapi_common())->phpgw_exit(False);
 				}
 			}
 			else

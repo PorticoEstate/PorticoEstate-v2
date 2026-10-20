@@ -199,7 +199,7 @@
 			{
 				echo '<p><center><b>' . lang('There was an error trying to connect to your POP3 server.<br />Please contact your admin to check the servername, username or password.').'</b></center>';
 				echo('<CENTER><A HREF="'.phpgw::link('/home/').'">'.lang('Click here to continue').'...</A></CENTER>'); //cbsman			
-				$GLOBALS['phpgw']->common->phpgw_exit();
+				(new \phpgwapi_common())->phpgw_exit(False);
 			}
 			$this->read_port();
 			if(!$this->msg2socket('USER '.$user,"^\+ok",$response) || !$this->msg2socket('PASS '.$pass,"^\+ok",$response))

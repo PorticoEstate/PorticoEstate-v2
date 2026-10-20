@@ -427,12 +427,12 @@
 			$GLOBALS['phpgw']->template->set_var('btn_done_value',lang('Done'));
 			$GLOBALS['phpgw']->template->set_var('btn_done_js','copyback()');
 			$GLOBALS['phpgw']->template->set_var('form1_name','doit');
-			
-			// DAMN, THIS SHOULD BE IN THE UI FILE
-			//$GLOBALS['phpgw']->template->pfp('out','T_attach_file');
-			
-			// IF called bu UI, then UI takes care of this
-			/* MOVED to UI
+
+		// DAMN, THIS SHOULD BE IN THE UI FILE
+		//$GLOBALS['phpgw']->template->pfp('out','T_attach_file');
+
+		// IF called bu UI, then UI takes care of this
+		/* MOVED to UI
 			//$GLOBALS['phpgw']->common->phpgw_exit();
 			if (is_object($GLOBALS['phpgw']->msg))
 			{
@@ -444,10 +444,10 @@
 			}
 			
 			// shut down this transaction
-			$GLOBALS['phpgw']->common->phpgw_exit(False);
+			(new \phpgwapi_common())->phpgw_exit(False);
 			*/
-			
-			if ($this->debug > 0) { echo 'LEAVING emai.boattach_file.attach'.'<br />'; }
+
+		if ($this->debug > 0) { echo 'LEAVING emai.boattach_file.attach'.'<br />'; }
 		
 		}
 	

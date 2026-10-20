@@ -173,6 +173,22 @@ class ModernIMAPWrapper
         }
     }
     
+    public static function imap_createmailbox($stream, $mailbox)
+    {
+        if (!isset(self::$connections[$stream]['client'])) {
+            return false;
+        }
+
+        try {
+            $path = preg_replace('/^\{[^}]*\}/', '', $mailbox);
+            self::$connections[$stream]['client']->createFolder($path, false, true);
+            return true;
+        } catch (Exception $exception) {
+            self::$lastError = $exception->getMessage();
+            return false;
+        }
+    }
+
     public static function imap_sort($stream, $criteria, $reverse, $options = 0)
     {
         if (!isset(self::$connections[$stream]['folder'])) {
@@ -523,12 +539,12 @@ class ModernIMAPWrapper
         
         try {
             $client = self::$connections[$stream]['client'];
-            $folders = $client->getFolders();
+            $folders = $client->getFolders(false);
             
             $folderList = [];
             foreach ($folders as $folder) {
-                $folderName = $ref . $folder->name;
-                if (fnmatch($pattern, $folder->name)) {
+                $folderName = $ref . $folder->path;
+                if (fnmatch($pattern, $folder->path)) {
                     $folderList[] = $folderName;
                 }
             }
@@ -664,13 +680,13 @@ class ModernIMAPWrapper
         
         try {
             $client = self::$connections[$stream]['client'];
-            $folders = $client->getFolders();
+            $folders = $client->getFolders(false);
             
             $mailboxes = [];
             foreach ($folders as $folder) {
-                if (fnmatch($pattern, $folder->name)) {
+                if (fnmatch($pattern, $folder->path)) {
                     $mailbox = new stdClass();
-                    $mailbox->name = $ref . $folder->name;
+                    $mailbox->name = $ref . $folder->path;
                     $mailbox->delimiter = $folder->delimiter ?: '.';
                     $mailbox->attributes = 0; // Could be extended based on folder attributes
                     $mailboxes[] = $mailbox;

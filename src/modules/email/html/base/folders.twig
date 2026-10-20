@@ -33,13 +33,19 @@
 				<option value="delete">{{ lang('Delete') }}</option>
 			</select>
 		</label>
-		<label>{{ lang('Folder to rename') }}
+		<label id="email-folder-parent-field">
+			{{ lang('Parent folder') }}
+			<select id="email-folder-parent" name="parent_folder">
+				<option value="">{{ lang('Top level') }}</option>
+			</select>
+		</label>
+		<label id="email-folder-source-field" hidden><span id="email-folder-source-label">{{ lang('Folder to rename') }}</span>
 			<select id="email-folder-source" name="source"></select>
 		</label>
 		<label>{{ lang('Folder name') }}
 			<input id="email-folder-target" name="target" type="text" maxlength="255" autocomplete="off">
 		</label>
-		<button type="submit">{{ lang('Apply') }}</button>
+		<button id="email-folder-submit" type="submit" disabled>{{ lang('Apply') }}</button>
 	</form>
 	<div class="email-folders-action-status" id="email-folders-action-status" role="status" aria-live="polite"></div>
 	<div class="email-folders-table-wrap">

@@ -171,10 +171,15 @@ class EmailInboxController
 		{
 			$bootstrap = \CreateObject('email.msg_bootstrap');
 			$bootstrap->ensure_mail_msg_exists('email.api.folders', $account);
+			$mail = \App\modules\email\services\MailMessage::getInstance();
+			$mail->get_folder_list($account, true);
 			$businessObject = \CreateObject('email.bofolder');
 			$businessObject->folder_data();
 			$folders = (array) ($businessObject->xi['folder_list_display'] ?? []);
-			return $this->json($response, ['items' => EmailFolderSerializer::serialize($folders)]);
+			return $this->json($response, [
+				'items' => EmailFolderSerializer::serialize($folders),
+				'delimiter' => (string) $mail->get_arg_value('mailsvr_delimiter', $account),
+			]);
 		}
 		catch (\App\modules\email\services\EmailMailConfigurationException $exception)
 		{
@@ -197,10 +202,12 @@ class EmailInboxController
 		$source = (array) ($input['source_fldball'] ?? []);
 		$targetFolder = $target['folder'] ?? null;
 		$sourceFolder = $source['folder'] ?? null;
+		$parentFolder = $input['parent_folder'] ?? '';
 		$account = filter_var($target['acctnum'] ?? 0, FILTER_VALIDATE_INT);
 		if (!in_array($action, ['create', 'delete', 'rename'], true)
 			|| $account === false || $account < 0
 			|| !is_string($targetFolder) || trim($targetFolder) === ''
+			|| ($action === 'create' && !is_string($parentFolder))
 			|| (($action === 'rename') && (!is_string($sourceFolder) || trim($sourceFolder) === '')))
 		{
 			return $this->json($response, ['error' => lang('Invalid folder action')], 400);
@@ -212,6 +219,28 @@ class EmailInboxController
 		{
 			$bootstrap = \CreateObject('email.msg_bootstrap');
 			$bootstrap->ensure_mail_msg_exists('email.api.folders.action', $account);
+			if ($action === 'create' && $parentFolder !== '')
+			{
+				$mail = \App\modules\email\services\MailMessage::getInstance();
+				$delimiter = (string) $mail->get_arg_value('mailsvr_delimiter', $account);
+				$availableFolders = (array) $mail->get_arg_value('folder_list', $account);
+				if ($delimiter === '' || !in_array($parentFolder, array_column($availableFolders, 'folder_long'), true))
+				{
+					return $this->json($response, ['error' => lang('Select a valid parent folder')], 422);
+				}
+				if (str_contains($targetFolder, $delimiter))
+				{
+					return $this->json($response, ['error' => lang('Enter a single folder name when selecting a parent')], 422);
+				}
+				$target['folder'] = $parentFolder . $delimiter . trim($targetFolder);
+			}
+			if ($action === 'create' && array_key_exists('parent_folder', $input))
+			{
+				$mail = \App\modules\email\services\MailMessage::getInstance();
+				$target['folder'] = trim($target['folder']);
+				$mail->set_arg_value('target_fldball', $target, $account);
+				$mail->set_arg_value('action', 'create_expert', $account);
+			}
 			$businessObject = \CreateObject('email.bofolder');
 			$success = $businessObject->folder_action();
 			$report = (string) ($businessObject->xi['action_report'] ?? '');

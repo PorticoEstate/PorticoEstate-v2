@@ -174,7 +174,7 @@
 
 		function listmailbox($stream,$ref,$pattern)
 		{
-			if ( !is_resource($stream) )
+			if ( !$stream )
 			{
 				return array();
 			}

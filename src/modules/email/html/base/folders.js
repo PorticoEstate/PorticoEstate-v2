@@ -9,9 +9,51 @@
 	const form = document.getElementById('email-folders-manager');
 	const actionSelect = document.getElementById('email-folder-action');
 	const sourceSelect = document.getElementById('email-folder-source');
+	const sourceField = document.getElementById('email-folder-source-field');
+	const sourceLabel = document.getElementById('email-folder-source-label');
+	const parentSelect = document.getElementById('email-folder-parent');
+	const parentField = document.getElementById('email-folder-parent-field');
+	const submitButton = document.getElementById('email-folder-submit');
 	const targetInput = document.getElementById('email-folder-target');
 	const actionStatus = document.getElementById('email-folders-action-status');
 	let folders = [];
+	let delimiter = '';
+
+	function folderHierarchy(items, separator)
+	{
+		const key = (account, path) => JSON.stringify([account, path]);
+		const nodes = new Map(items.map(folder => [key(folder.account, folder.longName), { folder, children: [], parent: null }]));
+		const roots = [];
+		for (const node of nodes.values())
+		{
+			let path = node.folder.longName;
+			while (separator && path.includes(separator))
+			{
+				path = path.slice(0, path.lastIndexOf(separator));
+				const parent = nodes.get(key(node.folder.account, path));
+				if (parent)
+				{
+					node.parent = parent;
+					parent.children.push(node);
+					break;
+				}
+			}
+			if (!node.parent) roots.push(node);
+		}
+		const ordered = [];
+		function append(branch, depth)
+		{
+			branch.sort((first, second) => first.folder.longName.localeCompare(second.folder.longName, undefined, { numeric: true }));
+			branch.forEach(node =>
+			{
+				const label = node.parent ? node.folder.longName.slice(node.parent.folder.longName.length + separator.length) : (node.folder.name || node.folder.longName);
+				ordered.push({ ...node.folder, label, depth });
+				append(node.children, depth + 1);
+			});
+		}
+		append(roots, 0);
+		return ordered;
+	}
 
 	function cell(row, value)
 	{
@@ -29,15 +71,26 @@
 			const result = await response.json();
 			if (!response.ok) throw new Error(result.reason || result.error || 'Unable to load folders');
 			rows.replaceChildren();
-			folders = result.items || [];
+			delimiter = result.delimiter || '';
+			folders = folderHierarchy(result.items || [], delimiter);
+			const selectedParent = parentSelect.value;
+			parentSelect.querySelectorAll('option:not(:first-child)').forEach(option => option.remove());
 			sourceSelect.replaceChildren();
 			folders.forEach(folder =>
 			{
 				const option = document.createElement('option');
 				option.value = folder.longName;
-				option.textContent = folder.name || folder.longName;
+				option.textContent = '\u00a0\u00a0'.repeat(folder.depth) + folder.label;
 				sourceSelect.appendChild(option);
+				if (delimiter)
+				{
+					const parentOption = document.createElement('option');
+					parentOption.value = folder.longName;
+					parentOption.textContent = '\u00a0\u00a0'.repeat(folder.depth) + folder.label;
+					parentSelect.appendChild(parentOption);
+				}
 			});
+			parentSelect.value = [...parentSelect.options].some(option => option.value === selectedParent) ? selectedParent : '';
 			updateActionFields();
 			if (!folders.length)
 			{
@@ -51,12 +104,15 @@
 				{
 					const row = document.createElement('tr');
 					const name = document.createElement('td');
+					name.className = 'email-folders-name';
+					name.style.setProperty('--folder-depth', folder.depth);
 					const link = document.createElement('a');
 					const inboxUrl = new URL(root.dataset.inboxUrl, window.location.href);
 					inboxUrl.searchParams.set('fldball[acctnum]', String(folder.account));
 					inboxUrl.searchParams.set('fldball[folder]', folder.longName);
 					link.href = inboxUrl;
-					link.textContent = folder.name || folder.longName;
+					link.textContent = folder.label;
+					link.title = folder.longName;
 					name.appendChild(link);
 					row.appendChild(name);
 					cell(row, folder.unseen);
@@ -65,6 +121,7 @@
 				});
 			}
 			status.textContent = folders.length + ' folders';
+			submitButton.disabled = false;
 		} catch (exception)
 		{
 			status.textContent = '';
@@ -75,13 +132,17 @@
 
 	function updateActionFields()
 	{
-		const needsSource = actionSelect.value === 'rename';
+		const needsSource = actionSelect.value !== 'create';
+		sourceField.hidden = !needsSource;
+		sourceLabel.textContent = actionSelect.value === 'delete' ? 'Folder to delete' : 'Folder to rename';
 		sourceSelect.disabled = !needsSource;
 		sourceSelect.required = needsSource;
+		parentField.hidden = needsSource;
+		parentSelect.disabled = needsSource || !delimiter;
 		targetInput.required = actionSelect.value !== 'delete';
 		if (actionSelect.value === 'delete')
 		{
-			targetInput.value = sourceSelect.selectedOptions[0]?.textContent || '';
+			targetInput.value = folders.find(folder => folder.longName === sourceSelect.value)?.longName || '';
 			targetInput.readOnly = true;
 		} else
 		{
@@ -90,6 +151,7 @@
 	}
 
 	actionSelect.addEventListener('change', updateActionFields);
+	sourceSelect.addEventListener('change', updateActionFields);
 	form.addEventListener('submit', async event =>
 	{
 		event.preventDefault();
@@ -104,6 +166,8 @@
 			target_fldball: { acctnum: account, folder: targetFolder }
 		};
 		if (action === 'rename') payload.source_fldball = { acctnum: account, folder: sourceSelect.value };
+		if (action === 'create') payload.parent_folder = parentSelect.value;
+		submitButton.disabled = true;
 		try
 		{
 			const response = await fetch(root.dataset.actionUrl, {
@@ -125,6 +189,7 @@
 		{
 			error.textContent = exception.message;
 			error.hidden = false;
+			submitButton.disabled = false;
 		}
 	});
 

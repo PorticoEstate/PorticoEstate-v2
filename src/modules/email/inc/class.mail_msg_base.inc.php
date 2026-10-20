@@ -3547,7 +3547,7 @@ HTML;
 
 		// see if we have object class var cached data that we can use
 		$class_cached_folder_list = $this->mail_msg_wrappers->_direct_access_arg_value('folder_list', $acctnum);
-		if (count($class_cached_folder_list) > 0 && !$force_refresh == False)
+		if (is_array($class_cached_folder_list) && count($class_cached_folder_list) > 0 && !$force_refresh)
 		{
 			// use the cached data
 			if ($this->debug_args_special_handlers > 2)

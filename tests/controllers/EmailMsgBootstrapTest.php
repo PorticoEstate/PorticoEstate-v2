@@ -213,6 +213,35 @@ namespace Tests\Controllers
 			});
 		}
 
+		public function testForcedFolderRefreshBypassesCachedFolders(): void
+		{
+			$cached = [['folder_long' => 'INBOX', 'folder_short' => 'INBOX', 'acctnum' => 0]];
+			$mail = $this->getMockBuilder(\mail_msg::class)->onlyMethods([
+				'_direct_access_arg_value', 'get_pref_value', 'get_arg_value',
+				'read_session_cache_item', 'save_session_cache_item', 'phpgw_listmailbox',
+				'is_imap_folder', 'get_folder_short',
+			])->getMock();
+			$mail->method('_direct_access_arg_value')->willReturn($cached);
+			$mail->method('get_pref_value')->willReturn('imap');
+			$mail->method('get_arg_value')->willReturnMap([
+				['mailsvr_stream', 0, '', true, 'test-stream'],
+				['mailsvr_callstr', 0, '', true, '{test}'],
+				['mailsvr_namespace', 0, '', true, 'INBOX'],
+				['mailsvr_delimiter', 0, '', true, '.'],
+			]);
+			$mail->expects($this->never())->method('read_session_cache_item');
+			$mail->expects($this->once())->method('phpgw_listmailbox')
+				->with('{test}', '*', 0, false)->willReturn(['{test}INBOX', '{test}INBOX.New child']);
+			$mail->method('is_imap_folder')->willReturn(true);
+			$mail->method('get_folder_short')->willReturnCallback(static fn($folder): string => str_replace('{test}', '', $folder));
+			$mail->expects($this->once())->method('save_session_cache_item')->with('folder_list', $this->callback(
+				static fn($folders): bool => in_array('INBOX.New child', array_column($folders, 'folder_long'), true)
+			), 0);
+
+			$this->assertSame($cached, $mail->get_folder_list(0));
+			$this->assertSame(['INBOX', 'INBOX.New child'], array_column($mail->get_folder_list(0, true), 'folder_long'));
+		}
+
 		public function testStorageCompatibilityUsesTheStandardCacheWithoutSQL(): void
 		{
 			$this->withSessionCache(function (): void

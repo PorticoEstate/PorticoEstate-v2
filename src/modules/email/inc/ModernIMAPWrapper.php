@@ -189,6 +189,27 @@ class ModernIMAPWrapper
         }
     }
 
+    public static function imap_deletemailbox($stream, $mailbox)
+    {
+        if (!isset(self::$connections[$stream]['client'])) {
+            return false;
+        }
+
+        try {
+            $path = preg_replace('/^\{[^}]*\}/', '', $mailbox);
+            $client = self::$connections[$stream]['client'];
+            if (!$client->getFolderByPath($path, true)) {
+                throw new RuntimeException('Mailbox does not exist');
+            }
+            $path = \Webklex\PHPIMAP\EncodingAliases::convert($path, 'UTF7-IMAP', 'UTF-8');
+            $client->deleteFolder($path, false);
+            return true;
+        } catch (Exception $exception) {
+            self::$lastError = $exception->getMessage();
+            return false;
+        }
+    }
+
     public static function imap_sort($stream, $criteria, $reverse, $options = 0)
     {
         if (!isset(self::$connections[$stream]['folder'])) {

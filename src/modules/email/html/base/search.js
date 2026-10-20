@@ -12,7 +12,10 @@
 	const range = document.getElementById('email-search-range');
 	const previous = document.getElementById('email-search-previous');
 	const next = document.getElementById('email-search-next');
-	const csrfHeaders = { [root.dataset.csrfName]: root.dataset.csrfValue };
+	const csrfHeaders = {
+		'X-CSRF-NAME': root.dataset.csrfName,
+		'X-CSRF-VALUE': root.dataset.csrfValue
+	};
 	let pageStart = 0;
 	let pageSize = 25;
 	let total = 0;

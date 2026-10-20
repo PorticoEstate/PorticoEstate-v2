@@ -59,8 +59,7 @@ class email_service
 		(
 			array
 			(
-				// this is a bit of a hack, but it means that we can degrade gracefully
-				'url'	=> phpgw::link('/email/view/compose') . '" onclick="window.open(\'' . phpgw::link('/email/view/compose') . '\'); return false;"',
+				'url'	=> phpgw::link('/email/view/compose'),
 				'text'	=> $translation->translate('New', [], false, 'email'),
 				'image'	=> array('email', 'new')
 			),

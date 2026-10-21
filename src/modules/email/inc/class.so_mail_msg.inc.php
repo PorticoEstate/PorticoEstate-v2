@@ -1,49 +1,51 @@
 <?php
-	use App\modules\phpgwapi\services\Cache;
-	/**
-	* EMail - Message Data Storage for Caching Functions
-	*
-	* @author Angelo (Angles) Puglisi <angles@aminvestments.com>
-	* @copyright Copyright (C) 2001-2003 Angelo Tony Puglisi (Angles)
-	* @copyright Copyright (C) 2003-2005 Free Software Foundation, Inc. http://www.fsf.org/
-	* @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
-	* @package email
-	* @version $Id$
-	* @internal Based on AngleMail http://www.anglemail.org/
-	*/
+
+use App\modules\phpgwapi\services\Cache;
+
+/**
+ * EMail - Message Data Storage for Caching Functions
+ *
+ * @author Angelo (Angles) Puglisi <angles@aminvestments.com>
+ * @copyright Copyright (C) 2001-2003 Angelo Tony Puglisi (Angles)
+ * @copyright Copyright (C) 2003-2005 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ * @version $Id$
+ * @internal Based on AngleMail http://www.anglemail.org/
+ */
 
 
-	/**
-	* E-Mail Message Data Storage for Data Caching
-	*
-	* INTERFACE FUNCTIONS AND/OR  WRAPPER FUNCTIONS
-	* @package email
-	*/
-	class so_mail_msg
-	{
-		var $use_group_data=True;
-		//var $use_group_data=False;
-		var $data_group_array=array();
-		var $data_group_done_filled=0;
-		// when something with a folder triggers gathering of group data
-		// store that something here so we know what triggered gathering group data
-		// because if "folder_status_info" is the trigger, it may not contain the
-		// folder that is actually what we need later on, because "show number new
-		// in combobox" will cache that for ALL folders, so a request for that
-		// status info may to fill the combobox and have nothing to do with the
-		// folder in which we are later going to need the group data.
-		var $data_group_last_trigger = '';
+/**
+ * E-Mail Message Data Storage for Data Caching
+ *
+ * INTERFACE FUNCTIONS AND/OR  WRAPPER FUNCTIONS
+ * @package email
+ */
+class so_mail_msg
+{
+	var $use_group_data = True;
+	//var $use_group_data=False;
+	var $data_group_array = array();
+	var $data_group_done_filled = 0;
+	// when something with a folder triggers gathering of group data
+	// store that something here so we know what triggered gathering group data
+	// because if "folder_status_info" is the trigger, it may not contain the
+	// folder that is actually what we need later on, because "show number new
+	// in combobox" will cache that for ALL folders, so a request for that
+	// status info may to fill the combobox and have nothing to do with the
+	// folder in which we are later going to need the group data.
+	var $data_group_last_trigger = '';
 
-		/*!
+	/*!
 		@function so_mail_msg
 		@abstract Constructor
 		*/
-		function __construct()
-		{
-			return;
-		}
+	function __construct()
+	{
+		return;
+	}
 
-		/*!
+	/*!
 		@cabability appsession TEMPORARY DATA CACHING - data we generate
 		@abstract Caching via the the api appsession cache occurs in 2 basic forms.
 		(ONE) information we are responsible for generating in this mail_msg class, and
@@ -61,7 +63,7 @@
 		logic in that function is actually encountered.
 		*/
 
-		/*!
+	/*!
 		@cabability appsession TEMPORARY DATA CACHING - data from the mailserver
 		@abstract Caching via the the api appsession cache occurs in 2 basic forms.
 		(ONE) information we are responsible for generating in this mail_msg class, and
@@ -104,43 +106,43 @@
 		DRAMITICALLY.
 		*/
 
-		/*!
+	/*!
 		@function so_save_session_cache_item
 		@abstract SO Data Access only, logic is in main class mail_msg.
 		@access private
 		@author Angles
 		*/
-		function so_save_session_cache_item($data_name='misc',$data,$acctnum='',$extra_keys='')
-		{
-			return \App\modules\email\services\MailMessage::getInstance()->save_session_cache_item($data_name, $data, $acctnum, $extra_keys);
-		}
+	function so_save_session_cache_item($data_name = 'misc', $data, $acctnum = '', $extra_keys = '')
+	{
+		return \App\modules\email\services\MailMessage::getInstance()->save_session_cache_item($data_name, $data, $acctnum, $extra_keys);
+	}
 
 
-		/*!
+	/*!
 		@function so_read_session_cache_item
 		@abstract SO Data Access functions only, actual logic is in main class mail_msg
 		@access private
 		@author Angles
 		*/
-		function so_read_session_cache_item($data_name='misc', $acctnum='', $ex_folder='', $ex_msgnum='')
-		{
-			return \App\modules\email\services\MailMessage::getInstance()->read_session_cache_item($data_name, $acctnum, $ex_folder, $ex_msgnum);
-		}
+	function so_read_session_cache_item($data_name = 'misc', $acctnum = '', $ex_folder = '', $ex_msgnum = '')
+	{
+		return \App\modules\email\services\MailMessage::getInstance()->read_session_cache_item($data_name, $acctnum, $ex_folder, $ex_msgnum);
+	}
 
-		/*!
+	/*!
 		@function so_expire_session_cache_item
 		@abstract SO Data Access functions only, actual logic is in main class mail_msg
 		@discussion ?
 		@author Angles
 		@access private
 		*/
-		function so_expire_session_cache_item($data_name='misc',$acctnum='', $ex_folder='', $ex_msgnum='')
-		{
-			return \App\modules\email\services\MailMessage::getInstance()->expire_session_cache_item($data_name, $acctnum, $ex_folder, $ex_msgnum);
-		}
+	function so_expire_session_cache_item($data_name = 'misc', $acctnum = '', $ex_folder = '', $ex_msgnum = '')
+	{
+		return \App\modules\email\services\MailMessage::getInstance()->expire_session_cache_item($data_name, $acctnum, $ex_folder, $ex_msgnum);
+	}
 
 
-		/*!
+	/*!
 		@function prep_db_session_compat
 		@abstract for DB sessions_db storage, backward compatibility where php4 sessions are not in use.
 		@discussion Imitates the session array that php4 sessions create. ALSO used when caching to
@@ -169,12 +171,12 @@
 		pointer to it, instead of having it point to the real GLOBALS[session] array tree.
 		@author Angles
 		*/
-		function prep_db_session_compat($called_by='not_specified')
-		{
-			return;
-		}
+	function prep_db_session_compat($called_by = 'not_specified')
+	{
+		return;
+	}
 
-		/*!
+	/*!
 		@function expire_db_session_bulk_data
 		@abstract for DB sessions_db ONLY, backward compatibility where php4 sessions are not in use,
 		Also with the anglemail table but calls lower level functions in that case.
@@ -186,80 +188,80 @@
 		@access Private
 		@author Angles
 		*/
-		function expire_db_session_bulk_data($called_by='not_specified', $wipe_absolutely_everything=False)
+	function expire_db_session_bulk_data($called_by = 'not_specified', $wipe_absolutely_everything = False)
+	{
+		$retained = [];
+		foreach ((array) Cache::session_get('email', 'mail_keys') as $key => $unused)
 		{
-			$retained = [];
-			foreach ((array) Cache::session_get('email', 'mail_keys') as $key => $unused)
+			$parts = explode(';', (string) $key);
+			if (!$wipe_absolutely_everything && in_array($parts[1] ?? '', ['mailsvr_callstr', 'folder_list', 'mailsvr_namespace', 'cached_prefs'], true))
 			{
-				$parts = explode(';', (string) $key);
-				if (!$wipe_absolutely_everything && in_array($parts[1] ?? '', ['mailsvr_callstr', 'folder_list', 'mailsvr_namespace', 'cached_prefs'], true))
-				{
-					$retained[$key] = true;
-					continue;
-				}
-				Cache::session_set('email', (string) $key, null);
+				$retained[$key] = true;
+				continue;
 			}
-			Cache::session_set('email', 'mail_keys', $retained);
-			return \App\modules\email\services\MailMessage::getInstance()->resetSessionCache(!$wipe_absolutely_everything);
+			Cache::session_set('email', (string) $key, null);
 		}
+		Cache::session_set('email', 'mail_keys', $retained);
+		return \App\modules\email\services\MailMessage::getInstance()->resetSessionCache(!$wipe_absolutely_everything);
+	}
 
-		// ==BEGIN== TEMP DATA STORE COMMANDS
-		/*!
+	// ==BEGIN== TEMP DATA STORE COMMANDS
+	/*!
 		@function so_am_table_exists
 		@abstract ?
 		@author Angles
 		*/
-		function so_am_table_exists()
-		{
-			return false;
-		}
+	function so_am_table_exists()
+	{
+		return false;
+	}
 
-		// these bext functions will go inti the future SO class
-		/*!
+	// these bext functions will go inti the future SO class
+	/*!
 		@function so_set_data
 		@abstract ?
 		*/
-		function so_set_data($data_key, $content, $compression=False)
-		{
-			$keys = (array) Cache::session_get('email', 'mail_keys');
-			$keys[(string) $data_key] = true;
-			Cache::session_set('email', 'mail_keys', $keys);
-			return Cache::session_set('email', (string) $data_key, $content);
-		}
+	function so_set_data($data_key, $content, $compression = False)
+	{
+		$keys = (array) Cache::session_get('email', 'mail_keys');
+		$keys[(string) $data_key] = true;
+		Cache::session_set('email', 'mail_keys', $keys);
+		return Cache::session_set('email', (string) $data_key, $content);
+	}
 
-		/*!
+	/*!
 		@function so_get_data
 		@abstract ?
 		*/
-		function so_get_data($data_key, $compression=False)
-		{
-			return Cache::session_get('email', (string) $data_key) ?? false;
-		}
+	function so_get_data($data_key, $compression = False)
+	{
+		return Cache::session_get('email', (string) $data_key) ?? false;
+	}
 
-		/*!
+	/*!
 		@function so_delete_data
 		@abstract ?
 		*/
-		function so_delete_data($data_key)
-		{
-			return Cache::session_set('email', (string) $data_key, null);
-		}
+	function so_delete_data($data_key)
+	{
+		return Cache::session_set('email', (string) $data_key, null);
+	}
 
-		/*!
+	/*!
 		@function so_clear_all_data_this_user
 		@abstract ?
 		*/
-		function so_clear_all_data_this_user()
+	function so_clear_all_data_this_user()
+	{
+		foreach ((array) Cache::session_get('email', 'mail_keys') as $key => $unused)
 		{
-			foreach ((array) Cache::session_get('email', 'mail_keys') as $key => $unused)
-			{
-				Cache::session_set('email', (string) $key, null);
-			}
-			Cache::session_set('email', 'mail_keys', []);
-			return \App\modules\email\services\MailMessage::getInstance()->resetSessionCache();
+			Cache::session_set('email', (string) $key, null);
 		}
+		Cache::session_set('email', 'mail_keys', []);
+		return \App\modules\email\services\MailMessage::getInstance()->resetSessionCache();
+	}
 
-		/*!
+	/*!
 		@function so_prop_use_group_data
 		@abstract Delphi style property function for "use_group_data"
 		@discussion This Delphi style property function replaces the typical "get" and
@@ -268,52 +270,52 @@
 		passing anything else as an arg sets "use_group_data" to true.
 		@author Angles
 		*/
-		function so_prop_use_group_data($feed_value='##NOTHING##')
-		{
-			if ($feed_value !== '##NOTHING##') $this->use_group_data = (bool) $feed_value;
-			return $this->use_group_data;
-		}
+	function so_prop_use_group_data($feed_value = '##NOTHING##')
+	{
+		if ($feed_value !== '##NOTHING##') $this->use_group_data = (bool) $feed_value;
+		return $this->use_group_data;
+	}
 
-		/*!
+	/*!
 		@function so_fill_data_group
 		@abstract ?
 		*/
-		function so_fill_data_group($data_key_partial='', $make_like=True)
-		{
-			return false;
-		}
+	function so_fill_data_group($data_key_partial = '', $make_like = True)
+	{
+		return false;
+	}
 
-		/*!
+	/*!
 		@function so_have_data_group
 		@abstract ?
 		*/
-		function so_have_data_group()
-		{
-			return false;
-		}
+	function so_have_data_group()
+	{
+		return false;
+	}
 
-		/*!
+	/*!
 		@function so_clear_data_group
 		@abstract ?
 		*/
-		function so_clear_data_group($data_key='')
-		{
-			$this->data_group_array = [];
-			$this->data_group_done_filled = 0;
-			return true;
-		}
+	function so_clear_data_group($data_key = '')
+	{
+		$this->data_group_array = [];
+		$this->data_group_done_filled = 0;
+		return true;
+	}
 
-		/*!
+	/*!
 		@function so_lookup_data_group
 		@abstract ?
 		*/
-		function so_lookup_data_group($data_key, $do_stripslashes='')
-		{
-			return $this->so_get_data($data_key);
-		}
+	function so_lookup_data_group($data_key, $do_stripslashes = '')
+	{
+		return $this->so_get_data($data_key);
+	}
 
 
-		/*!
+	/*!
 		@function so_appsession_passthru
 		@abstract this will ONLY use the ACTUAL REAL APPSESSION of phpgwapi
 		@param $location (string) in phpgwapi session speak this is the "name" of the information aka the
@@ -324,10 +326,10 @@
 		never use the anglemail table, it is intended for stuff we REALLY want to last only for one session.
 		@author Angles
 		*/
-		function so_appsession_passthru($location='',$data='##NOTHING##', $compression=False)
-		{
-			if (!\App\modules\email\services\MailMessage::getInstance()->session_cache_enabled) return false;
-			if ($data === '##NOTHING##') return $this->so_get_data($location);
-			return $this->so_set_data($location, $data);
-		}
+	function so_appsession_passthru($location = '', $data = '##NOTHING##', $compression = False)
+	{
+		if (!\App\modules\email\services\MailMessage::getInstance()->session_cache_enabled) return false;
+		if ($data === '##NOTHING##') return $this->so_get_data($location);
+		return $this->so_set_data($location, $data);
 	}
+}

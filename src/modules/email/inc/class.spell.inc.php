@@ -1,103 +1,104 @@
 <?php
-	/**
-	* EMail - SpellChecking Functions
-	*
-	* @author Angelo (Angles) Puglisi <angles@aminvestments.com>
-	* @copyright Copyright (C) 2002 Angelo Tony Puglisi (Angles)
-	* @copyright Copyright (C) 2003-2005 Free Software Foundation, Inc. http://www.fsf.org/
-	* @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
-	* @package email
-	* @version $Id$
-	* @internal Based on AngleMail http://www.anglemail.org/
-	*/
+
+/**
+ * EMail - SpellChecking Functions
+ *
+ * @author Angelo (Angles) Puglisi <angles@aminvestments.com>
+ * @copyright Copyright (C) 2002 Angelo Tony Puglisi (Angles)
+ * @copyright Copyright (C) 2003-2005 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ * @version $Id$
+ * @internal Based on AngleMail http://www.anglemail.org/
+ */
+
+/**
+ * Handles spell checking for email messages. Give it all necessary data and it 
+ * handles the rest. All class params are private unless an OOP style access 
+ * function is provided.
+ *
+ * Provide this class with any of the above vars that you have. Subject and 
+ * Body will be spellchecked, but the other data is needed because this class 
+ * handles the rest of the logic from spell checking, to user review of 
+ * spellcheck, to applying the users choices to the body, only then is the 
+ * message handed off to another object, either class send for sending, or 
+ * class compose if the user wants to edit the text some more. Calling process 
+ * MUST set any vars it wants preserved through the spellcheck process, they 
+ * will be put in the spellcheck page form.
+ * @package email
+ */
+
+// Guard-defined pspell compatibility constants (removed in PHP 8.4)
+defined('PE_PSPELL_FAST') || define('PE_PSPELL_FAST', 1);
+defined('PE_PSPELL_RUN_TOGETHER') || define('PE_PSPELL_RUN_TOGETHER', 2);
+
+class spell
+{
+	var $public_functions = array(
+		'basic_spcheck'	=> True,
+		'spell_review'	=> True,
+		'spell_finished' => True
+	);
 
 	/**
-	* Handles spell checking for email messages. Give it all necessary data and it 
-	* handles the rest. All class params are private unless an OOP style access 
-	* function is provided.
-	*
-	* Provide this class with any of the above vars that you have. Subject and 
-	* Body will be spellchecked, but the other data is needed because this class 
-	* handles the rest of the logic from spell checking, to user review of 
-	* spellcheck, to applying the users choices to the body, only then is the 
-	* message handed off to another object, either class send for sending, or 
-	* class compose if the user wants to edit the text some more. Calling process 
-	* MUST set any vars it wants preserved through the spellcheck process, they 
-	* will be put in the spellcheck page form.
-	* @package email
-	*/	
-	
-	// Guard-defined pspell compatibility constants (removed in PHP 8.4)
-	defined('PE_PSPELL_FAST') || define('PE_PSPELL_FAST', 1);
-	defined('PE_PSPELL_RUN_TOGETHER') || define('PE_PSPELL_RUN_TOGETHER', 2);
-	
-	class spell
-	{	
-		var $public_functions = array(
-			'basic_spcheck'	=> True,
-			'spell_review'	=> True,
-			'spell_finished' => True
-		);
-		
-		/**
-		 * @var integer $max_suggest Maximum number is suggestions to show in a combobox
-		 * Max suggest is zero based, to 4 suggestions = max_suggest of 3
-		 */
-		var $max_suggest=5;
-		/**
-		 * @var object $spell_svc The spell service access class, a dummy module if pspell is not compiled in
-		 */
-		var $spell_svc;
-		/**
-		 * @var boolean $can_spell This is picked up from the spell service module, a dummy module will report False. Read Only, Access with ->get_can_spell()
-		 */
-		var $can_spell = False;
-		/**
-		 * @var integer $sp_feed_type SP_FEED_UNKNOWN or SP_FEED_WORDS or SP_FEED_LINES, defined in file class.spell_struct
-		 */
-		var $sp_feed_type=1;
-		/**
-		 * @var integer $pspell_link A pointer kind of thing you get when you create a new pspell dictionary link.
-		 */
-		var $pspell_link;
-		/**
-		 * @var object $my_validator Used to help decide what words to not bother spellchecking, like URLs.
-		 */
-		var $my_validator;
-		/**
-		 * @var object $widgets
-		 */
-		var $widgets;
-		var $msg_bootstrap;
-		/**
-		 * @var string $user_lang Obtained from "phpgw_info", used when creating the pspell disctionary link. Read Only, Access with ->get_user_lang()
-		 */
-		var $user_lang='';
-		/**
-		 * @var string $reject_reason When this class decides a word is not worth checking, it fills this with the reason, ex. "do not check URLs"
-		 */
-		var $reject_reason='';
+	 * @var integer $max_suggest Maximum number is suggestions to show in a combobox
+	 * Max suggest is zero based, to 4 suggestions = max_suggest of 3
+	 */
+	var $max_suggest = 5;
+	/**
+	 * @var object $spell_svc The spell service access class, a dummy module if pspell is not compiled in
+	 */
+	var $spell_svc;
+	/**
+	 * @var boolean $can_spell This is picked up from the spell service module, a dummy module will report False. Read Only, Access with ->get_can_spell()
+	 */
+	var $can_spell = False;
+	/**
+	 * @var integer $sp_feed_type SP_FEED_UNKNOWN or SP_FEED_WORDS or SP_FEED_LINES, defined in file class.spell_struct
+	 */
+	var $sp_feed_type = 1;
+	/**
+	 * @var integer $pspell_link A pointer kind of thing you get when you create a new pspell dictionary link.
+	 */
+	var $pspell_link;
+	/**
+	 * @var object $my_validator Used to help decide what words to not bother spellchecking, like URLs.
+	 */
+	var $my_validator;
+	/**
+	 * @var object $widgets
+	 */
+	var $widgets;
+	var $msg_bootstrap;
+	/**
+	 * @var string $user_lang Obtained from "phpgw_info", used when creating the pspell disctionary link. Read Only, Access with ->get_user_lang()
+	 */
+	var $user_lang = '';
+	/**
+	 * @var string $reject_reason When this class decides a word is not worth checking, it fills this with the reason, ex. "do not check URLs"
+	 */
+	var $reject_reason = '';
 		
 		// the form action URI will carry these vars for us:
 		// sort, order, start, fldball / msgball, fwd_proc
 		
 		// some of the following we must preserve in hidden var
-		/**
-		 * @var array $preserve_tokens 
-		 * A list of GPC vars we typically want to preserve thru the spellchecking 
-		 * process. However, it is too limiting to had a hard-coded list, need to 
-		 * allow more flexibility.
-		 * @internal Scheduled For Depreciation, but still used. 
-		 */
-		var $preserve_tokens=array();
-		/**
-		 * @var array $preserve_vars 
-		 * Use OOP access functions ->set_preserve_var and ->get_preserve_vars. 
-		 * Currently, you can set any vars you want, but only those in the 
-		 * $preserve_tokens will be preserved as hiddenvars. 
-		 * @todo NEEDS FIXING. 
-		 */
-		var $preserve_vars=array();
+	/**
+	 * @var array $preserve_tokens 
+	 * A list of GPC vars we typically want to preserve thru the spellchecking 
+	 * process. However, it is too limiting to had a hard-coded list, need to 
+	 * allow more flexibility.
+	 * @internal Scheduled For Depreciation, but still used. 
+	 */
+	var $preserve_tokens = array();
+	/**
+	 * @var array $preserve_vars 
+	 * Use OOP access functions ->set_preserve_var and ->get_preserve_vars. 
+	 * Currently, you can set any vars you want, but only those in the 
+	 * $preserve_tokens will be preserved as hiddenvars. 
+	 * @todo NEEDS FIXING. 
+	 */
+	var $preserve_vars = array();
 		//var $action='';
 		//var $from='';
 		//var $sender='';
@@ -105,120 +106,118 @@
 		//var $cc='';
 		//var $bcc='';
 		//var $msgtype='';
-		/**
-		 * @var string $subject Use OOP access functions ->set_subject and ->get_subject.
-		 */
-		var $subject='';
-		/**
-		 * @var string $body_orig
-		 * Use OOP access functions ->set_body_orig and ->get_body_orig. 
-		 * This is record of the original message before any spell check changes.
-		 */
-		var $body_orig='';
-		var $body_array=array();
-		var $bad_words=array();
-		/**
-		 * @var string $body_display 
-		 * Scheduled for depreciation because the function "prep_body_display" 
-		 * directly returns this data and there us no readon to keep it stored in 
-		 * this param. "prep_body_display" is quite useful, do not limit it by 
-		 * bounding it to this param.
-		 * @internal ACCESS ONLY use OOP access functions  ->get_body_display.
-		 * @access private
-		 */
-		var $body_display='';
-		var $body_with_suggest='';
-		var $form_open_tags='';
+	/**
+	 * @var string $subject Use OOP access functions ->set_subject and ->get_subject.
+	 */
+	var $subject = '';
+	/**
+	 * @var string $body_orig
+	 * Use OOP access functions ->set_body_orig and ->get_body_orig. 
+	 * This is record of the original message before any spell check changes.
+	 */
+	var $body_orig = '';
+	var $body_array = array();
+	var $bad_words = array();
+	/**
+	 * @var string $body_display 
+	 * Scheduled for depreciation because the function "prep_body_display" 
+	 * directly returns this data and there us no readon to keep it stored in 
+	 * this param. "prep_body_display" is quite useful, do not limit it by 
+	 * bounding it to this param.
+	 * @internal ACCESS ONLY use OOP access functions  ->get_body_display.
+	 * @access private
+	 */
+	var $body_display = '';
+	var $body_with_suggest = '';
+	var $form_open_tags = '';
 
-		var $debug_spell_finished = 0;
+	var $debug_spell_finished = 0;
 
-		/**
-		* Constructor
-		*/
-		function __construct()
-		{
-			
-			/*!
+	/**
+	 * Constructor
+	 */
+	function __construct()
+	{
+
+		/*!
 			@class requires including header utility file spell_struct
 			@discussion  class spell needs the public shared C-Style Include .h file, which 
 			holds public data structure classes for class email spell
 			*/
-			$required_file = 'spell_struct';
-			require_once(PHPGW_INCLUDE_ROOT.'/email/inc/class.'.$required_file.'.inc.php');
-			
-			$this->msg_bootstrap = CreateObject("email.msg_bootstrap");
-			
-			// NOTE: keep an eye on whether PHP calls this constructors too many times, means code elsewhere needs fixing.
-			// FIXME : what if we want to preserve other stuff ? Get rid of this array and use for each loop to iterate thru whatever the user wants to preserve
-			$this->preserve_tokens = array(
-				0 => 'action',
-				// why is this different, "orig_action" can have the value "new" meaning new mail
-				// whereas plain old "action" can not tell us of a new mail situation, not right now anyway
-				// darn, I'm not sure this is needed here, is not this value kept in the URI or does that not matter here
-				1 => 'orig_action',
-				2 => 'from',
-				3 => 'sender',
-				4 => 'to',
-				5 => 'cc',
-				6 => 'bcc',
-				7 => 'msgtype',
-				8 => 'attach_sig',
-				9 => 'req_notify'
-			);
-			$this->preserve_vars['action'] = '';
-			$this->preserve_vars['orig_action'] = '';
-			$this->preserve_vars['from'] = '';
-			$this->preserve_vars['sender'] = '';
-			$this->preserve_vars['to'] ='';
-			$this->preserve_vars['cc'] = '';
-			$this->preserve_vars['bcc'] = '';
-			$this->preserve_vars['msgtype'] = '';
-			$this->preserve_vars['attach_sig'] = '';
-			$this->preserve_vars['req_notify'] = '';
-			
-			$this->subject = '';
-			$this->body_orig = '';
-			$this->body_array = array();
-			$this->body_display = '';
+		$required_file = 'spell_struct';
+		require_once(PHPGW_INCLUDE_ROOT . '/email/inc/class.' . $required_file . '.inc.php');
 
-			//$this->my_validator = CreateObject("phpgwapi.validator");
-			$this->widgets = CreateObject("email.html_widgets");
-			$this->user_lang = $GLOBALS['phpgw_info']['user']['preferences']['common']['lang'];
-			if ($this->user_lang == '')
-			{
-				$this->user_lang = 'en';
-			}
-			
-			/* -----  is PSPELL compiled into PHP */
-			//if ('one' == 'two')
-			if (function_exists('pspell_new') && function_exists('pspell_check'))
-			{
-				// load the spell service class for php builtin pspell extension
-				$this->spell_svc = CreateObject("email.spell_svc_php");
-				// open connection to dictionary backend 
-				$this->pspell_link = $this->spell_svc->pgw_pspell_new ("$this->user_lang", "", "", "", (PE_PSPELL_FAST|PE_PSPELL_RUN_TOGETHER));
-			}
-			else
-			{
-				// load the DUMMY spell service class so php does not complain about undefined functions.
-				$this->spell_svc = CreateObject("email.spell_svc_none");
-				
-			}
-			
-			// ask this service if it can reallyso spell checking, or is it a dummy class. 
-			// This spell class is required to discover that and make it public
-			//$svc_can_spell = $this->spell_svc->get_can_spell();
-			$this->set_can_spell($this->spell_svc->get_can_spell());
-			// ask this service how it wants its input, single words or lines of text
-			// This spell class is required to discover that and make it public
-			$this->set_sp_feed_type($this->spell_svc->get_sp_feed_type());
-			
+		$this->msg_bootstrap = CreateObject("email.msg_bootstrap");
+
+		// NOTE: keep an eye on whether PHP calls this constructors too many times, means code elsewhere needs fixing.
+		// FIXME : what if we want to preserve other stuff ? Get rid of this array and use for each loop to iterate thru whatever the user wants to preserve
+		$this->preserve_tokens = array(
+			0 => 'action',
+			// why is this different, "orig_action" can have the value "new" meaning new mail
+			// whereas plain old "action" can not tell us of a new mail situation, not right now anyway
+			// darn, I'm not sure this is needed here, is not this value kept in the URI or does that not matter here
+			1 => 'orig_action',
+			2 => 'from',
+			3 => 'sender',
+			4 => 'to',
+			5 => 'cc',
+			6 => 'bcc',
+			7 => 'msgtype',
+			8 => 'attach_sig',
+			9 => 'req_notify'
+		);
+		$this->preserve_vars['action'] = '';
+		$this->preserve_vars['orig_action'] = '';
+		$this->preserve_vars['from'] = '';
+		$this->preserve_vars['sender'] = '';
+		$this->preserve_vars['to'] = '';
+		$this->preserve_vars['cc'] = '';
+		$this->preserve_vars['bcc'] = '';
+		$this->preserve_vars['msgtype'] = '';
+		$this->preserve_vars['attach_sig'] = '';
+		$this->preserve_vars['req_notify'] = '';
+
+		$this->subject = '';
+		$this->body_orig = '';
+		$this->body_array = array();
+		$this->body_display = '';
+
+		//$this->my_validator = CreateObject("phpgwapi.validator");
+		$this->widgets = CreateObject("email.html_widgets");
+		$this->user_lang = $GLOBALS['phpgw_info']['user']['preferences']['common']['lang'];
+		if ($this->user_lang == '')
+		{
+			$this->user_lang = 'en';
 		}
-		
-		/**************************************************************************\
-		*	OO ACCESS METHODS
+
+		/* -----  is PSPELL compiled into PHP */
+		//if ('one' == 'two')
+		if (function_exists('pspell_new') && function_exists('pspell_check'))
+		{
+			// load the spell service class for php builtin pspell extension
+			$this->spell_svc = CreateObject("email.spell_svc_php");
+			// open connection to dictionary backend 
+			$this->pspell_link = $this->spell_svc->pgw_pspell_new("$this->user_lang", "", "", "", (PE_PSPELL_FAST | PE_PSPELL_RUN_TOGETHER));
+		}
+		else
+		{
+			// load the DUMMY spell service class so php does not complain about undefined functions.
+			$this->spell_svc = CreateObject("email.spell_svc_none");
+		}
+
+		// ask this service if it can reallyso spell checking, or is it a dummy class. 
+		// This spell class is required to discover that and make it public
+		//$svc_can_spell = $this->spell_svc->get_can_spell();
+		$this->set_can_spell($this->spell_svc->get_can_spell());
+		// ask this service how it wants its input, single words or lines of text
+		// This spell class is required to discover that and make it public
+		$this->set_sp_feed_type($this->spell_svc->get_sp_feed_type());
+	}
+
+	/**************************************************************************\
+	 *	OO ACCESS METHODS
 		\**************************************************************************/
-		/*!
+	/*!
 		@function set_can_spell (PRIVATE)
 		@abstract This class must discover if its spell service module is real or dummy, uses this to set that access to a working spell service backend.
 		@author Angles
@@ -226,14 +225,14 @@
 		information and make it available publicly via "get_can_spell". Should be discovered and set in the constructor.
 		@access private
 		*/
-		function set_can_spell($can_spell)
+	function set_can_spell($can_spell)
+	{
+		if (is_bool($can_spell))
 		{
-			if (is_bool($can_spell))
-			{
-				$this->can_spell = $can_spell;
-			}
+			$this->can_spell = $can_spell;
 		}
-		/*!
+	}
+	/*!
 		@function get_can_spell
 		@abstract check is this spelling class has access to a working spell service backend.
 		@result Boolean
@@ -244,12 +243,12 @@
 		loaded only so certain function names exists, so php will not complain anout undefined functions.
 		@access public
 		*/
-		function get_can_spell()
-		{
-			return $this->can_spell;
-		}
-		
-		/*!
+	function get_can_spell()
+	{
+		return $this->can_spell;
+	}
+
+	/*!
 		@function set_sp_feed_type (PRIVATE)
 		@abstract This class must discover if its spell service module takes single words or lines (strings) of text.
 		@author Angles
@@ -259,16 +258,17 @@
 		SP_FEED_WORDS, or SP_FEED_LINES, as defined in file class.spell_struct
 		@access private
 		*/
-		function set_sp_feed_type($feed_type)
-		{
-			if (($feed_type == SP_FEED_UNKNOWN)
+	function set_sp_feed_type($feed_type)
+	{
+		if (($feed_type == SP_FEED_UNKNOWN)
 			|| ($feed_type == SP_FEED_WORDS)
-			|| ($feed_type == SP_FEED_LINES))
-			{
-				$this->sp_feed_type = $feed_type;
-			}
+			|| ($feed_type == SP_FEED_LINES)
+		)
+		{
+			$this->sp_feed_type = $feed_type;
 		}
-		/*!
+	}
+	/*!
 		@function get_sp_feed_type
 		@abstract public access to how the spell service backend wants its input, as single words or lines of text.
 		@result Boolean
@@ -277,12 +277,12 @@
 		SP_FEED_WORDS, or SP_FEED_LINES, as defined in file class.spell_struct.
 		@access public
 		*/
-		function get_sp_feed_type()
-		{
-			return $this->sp_feed_type;
-		}
-		
-		/*!
+	function get_sp_feed_type()
+	{
+		return $this->sp_feed_type;
+	}
+
+	/*!
 		@function set_preserve_var
 		@abstract spell form needs to preserve, or carry forward, any send related vars that 
 		were sent to class.bosend.
@@ -308,39 +308,40 @@
 		process must use the OOP style access methods to set them. Only then will this class be able to preserve 
 		them, this class can only preserve what it is told to preserve.
 		*/
-		function set_preserve_var($name='',$value='')
+	function set_preserve_var($name = '', $value = '')
+	{
+		if ((isset($name)) && ($name != '')
+			&& (isset($value)) && ($value != '')
+		)
 		{
-			if ((isset($name)) && ($name != '')
-			&& (isset($value)) && ($value != ''))
-			{
-				$this->preserve_vars[$name] = $value;
-			}
+			$this->preserve_vars[$name] = $value;
 		}
-		/*!
+	}
+	/*!
 		@function commit_preserve_vars_to_form
 		@abstract Any valid items in $this->preserve_vars will be turned into widget form hiddenvars for preservation.
 		@discussion Uses a loop of vars we need to preserve (that are not preserved elsewhere) that tells the 
 		widget class to make them hiddenvars in the form we will use in the spell check page.
 		*/
-		function commit_preserve_vars_to_form()
+	function commit_preserve_vars_to_form()
+	{
+		$loops = count($this->preserve_tokens);
+		for ($i = 0; $i < $loops; $i++)
 		{
-			$loops = count($this->preserve_tokens);
-			for ($i=0; $i < $loops; $i++)
+			$name = $this->preserve_tokens[$i];
+			$value = 	$this->preserve_vars[$name];
+			if (trim($value) != '')
 			{
-				$name = $this->preserve_tokens[$i];
-				$value = 	$this->preserve_vars[$name];
-				if (trim($value) != '')
-				{
-					$this->widgets->set_form_hiddenvar($name, $value);
-				}
+				$this->widgets->set_form_hiddenvar($name, $value);
 			}
 		}
-		function get_preserve_vars()
-		{
-			return $this->preserve_vars;
-		}
-		
-		/*!
+	}
+	function get_preserve_vars()
+	{
+		return $this->preserve_vars;
+	}
+
+	/*!
 		@function set_subject
 		@abstract Set this to the subject of the message to be spell checked.
 		@param $str (string) 
@@ -350,23 +351,23 @@
 		to be spell checked. NOTE: in the future the subject *should* be spell checked too, currently the subject is *NOT* spellchecked,
 		@access Public
 		*/
-		function set_subject($str='')
-		{
-			$this->subject = $str;
-		}
-		/*!
+	function set_subject($str = '')
+	{
+		$this->subject = $str;
+	}
+	/*!
 		@function get_subject
 		@abstract Returns the value set with "set_subject"
 		@author Angles
 		@discussion ?
 		@access Public
 		*/
-		function get_subject()
-		{
-			return $this->subject;
-		}
-		
-		/*!
+	function get_subject()
+	{
+		return $this->subject;
+	}
+
+	/*!
 		@function set_body_orig
 		@abstract Set this to the body of the message to be spell checked.
 		@param $str (string) 
@@ -379,13 +380,13 @@
 		"stripslashes_gpc" (in the mail_msg class) before setting this value.
 		@access Public
 		*/
-		function set_body_orig($str='')
-		{
-			// STRIP SLASHES BEFORE YOU GIVE ME THE BODY
-			$this->body_orig = $str;
-			$this->prep_body_in();
-		}
-		/*!
+	function set_body_orig($str = '')
+	{
+		// STRIP SLASHES BEFORE YOU GIVE ME THE BODY
+		$this->body_orig = $str;
+		$this->prep_body_in();
+	}
+	/*!
 		@function get_body_orig
 		@abstract Returns the original, unmodified message text which was spell checked, without any corrections.
 		@param $str (string) 
@@ -394,15 +395,15 @@
 		you wish to compare to the spell fixed text, or for any reason, if you want it use this function.
 		@access Public
 		*/
-		function get_body_orig()
-		{
-			return $this->body_orig;
-		}
-		
-		/**************************************************************************\
-		*	UTILITY CODE
+	function get_body_orig()
+	{
+		return $this->body_orig;
+	}
+
+	/**************************************************************************\
+	 *	UTILITY CODE
 		\**************************************************************************/
-		/*!
+	/*!
 		@function prep_body_in
 		@abstract prepare bodt yexy for the spellchecker by normalizing CRLFs and decoding html specialchars. 
 		@param none, this is an OOP class function, operates directly on $this->body_orig.
@@ -413,20 +414,20 @@
 		which in turn calls this function.
 		@access Private
 		*/
-		function prep_body_in()
-		{
-			$tmp_text = $this->body_orig;
-			// make all stray CR and LF  into CRLF combos which is standard text structure in the email world
-			$tmp_text = \App\modules\email\services\MailMessage::getInstance()->normalize_crlf($tmp_text);
-			// we do not want to spell check html specialchars (&gt, $lt), so DECODE them now
-			$tmp_text = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_decode($tmp_text);
-			// now body is tripped and normalized as much as is possible before we do esoteric stuff in the spellcheck function
-			$this->body_orig = $tmp_text;
-			// note - although we do not want to spell check html specialchars, we still need to REENCODE them for display to the user
-			// see prep_body_display()
-		}
-		
-		/*!
+	function prep_body_in()
+	{
+		$tmp_text = $this->body_orig;
+		// make all stray CR and LF  into CRLF combos which is standard text structure in the email world
+		$tmp_text = \App\modules\email\services\MailMessage::getInstance()->normalize_crlf($tmp_text);
+		// we do not want to spell check html specialchars (&gt, $lt), so DECODE them now
+		$tmp_text = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_decode($tmp_text);
+		// now body is tripped and normalized as much as is possible before we do esoteric stuff in the spellcheck function
+		$this->body_orig = $tmp_text;
+		// note - although we do not want to spell check html specialchars, we still need to REENCODE them for display to the user
+		// see prep_body_display()
+	}
+
+	/*!
 		@function prep_body_display (somewhat DEPRECIATED)
 		@abstract prepare text into something we can display in an HTML page. This particular function is supposed 
 		to be private but is may be useful for other things too.
@@ -438,20 +439,20 @@
 		also directly fills class var $this->body_display with this prepared text, but that is a private class param.
 		@access Private
 		*/
-		function prep_body_display($feed_text)
-		{
-			$body_display = $feed_text;
-			// to make the body DISPLAYABLE to the user, do 2 things
-			// 1) enc ode any offensive ASCII (&, ", ', <, >) into their html specialchars equivalents
-			$body_display = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($body_display);
-			// 2) convert linebreaks to <br /> tags
-			//$body_display = ereg_replace("\r\n","_CRLF_",$body_display);
-			//$body_display = ereg_replace("\r\n","<br />",$body_display);
-			$body_display = nl2br($body_display, true);
-			return $body_display;
-		}
-		
-		/*!
+	function prep_body_display($feed_text)
+	{
+		$body_display = $feed_text;
+		// to make the body DISPLAYABLE to the user, do 2 things
+		// 1) enc ode any offensive ASCII (&, ", ', <, >) into their html specialchars equivalents
+		$body_display = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($body_display);
+		// 2) convert linebreaks to <br /> tags
+		//$body_display = ereg_replace("\r\n","_CRLF_",$body_display);
+		//$body_display = ereg_replace("\r\n","<br />",$body_display);
+		$body_display = nl2br($body_display, true);
+		return $body_display;
+	}
+
+	/*!
 		@function care_about_word
 		@abstract spell checker is stupid, so we only give it text we believe to be words.
 		@param $str (string) a string to test
@@ -469,86 +470,87 @@
 		whether it should be considered a "real word" or not.
 		@access Private
 		*/
-		function care_about_word($str='')
+	function care_about_word($str = '')
+	{
+		if (trim($str) == '')
 		{
-			if (trim($str) == '')
-			{
-				$this->reject_reason = "don't spellcheck an empty string";
-				return False;
-			}
-			
-			if ((stristr($str, "\r"))
-			|| (stristr($str, "\n")))
-			{
-				$this->reject_reason = "don't spellcheck CRLF chars";
-				return False;
-			}
-			elseif (
-				(stristr($str, "--"))
+			$this->reject_reason = "don't spellcheck an empty string";
+			return False;
+		}
+
+		if ((stristr($str, "\r"))
+			|| (stristr($str, "\n"))
+		)
+		{
+			$this->reject_reason = "don't spellcheck CRLF chars";
+			return False;
+		}
+		elseif (
+			(stristr($str, "--"))
 			|| (stristr($str, "_"))
 			|| (stristr($str, "="))
 			|| (stristr($str, ">"))
 			|| (stristr($str, "<"))
-			)
-			{
-				$this->reject_reason = "don't spellcheck something that's obviously not a conventional word";
-				return False;
-			}
-			elseif (strlen($str) < 2)
-			{
-				$this->reject_reason = "don't spellcheck single letters or blank strings";
-				return False;
-			}
-			elseif (preg_match('/['.chr(48).'-'.chr(57).']/', $str))
-			{
-				$this->reject_reason = "don't spellcheck something with numeric chars  [0 - 9]";
-				return False;
-			}
-			//elseif ($this->my_validator->is_email($str) == True)
-			elseif (preg_match('/.*@.*\..*/', $str))
-			{
-				$this->reject_reason = "don't spellcheck email addresses";
-				return False;
-			}
-			//elseif ($this->my_validator->is_url($str) == True)
-			elseif (preg_match('/[a-zA-Z0-9 \-\.]+\.([a-zA-Z]{2,4})/', $str))
-			{
-				$this->reject_reason = "don't spellcheck a URL or hostname";
-				return False;
-			}
-			/*
+		)
+		{
+			$this->reject_reason = "don't spellcheck something that's obviously not a conventional word";
+			return False;
+		}
+		elseif (strlen($str) < 2)
+		{
+			$this->reject_reason = "don't spellcheck single letters or blank strings";
+			return False;
+		}
+		elseif (preg_match('/[' . chr(48) . '-' . chr(57) . ']/', $str))
+		{
+			$this->reject_reason = "don't spellcheck something with numeric chars  [0 - 9]";
+			return False;
+		}
+		//elseif ($this->my_validator->is_email($str) == True)
+		elseif (preg_match('/.*@.*\..*/', $str))
+		{
+			$this->reject_reason = "don't spellcheck email addresses";
+			return False;
+		}
+		//elseif ($this->my_validator->is_url($str) == True)
+		elseif (preg_match('/[a-zA-Z0-9 \-\.]+\.([a-zA-Z]{2,4})/', $str))
+		{
+			$this->reject_reason = "don't spellcheck a URL or hostname";
+			return False;
+		}
+		/*
 			elseif ($this->my_validator->is_hostname($str) == True)
 			{
 				$this->reject_reason = "don't spellcheck internet hostnames";
 				return False;
 			}
 			*/
-			elseif (preg_match('/^<.*>$/', $str))
-			{
-				$this->reject_reason = "don't spellcheck bracked markup tags";
-				return False;
-			}
-			//elseif (preg_match('/^.*\..*$/', $str))
-			//elseif (preg_match('/\S*\.\S{2,3}$/i', $str))
-			//elseif (preg_match('/.*\w\.\w{2,3}$/i', $str))
-			//{
-				// OOPS - not working correctly
-				// \S	any character that is not a whitespace character
-				// trying to match [ALPHA].[ALPHA][ALPHA][ALPHA]  because we do not like dots in words 
-				// BUT a sentence where the user forgets the space after the period and before the next word, is an actual user error
-				// so we are trying to match a interner hostname type dot, trying to be somewhat picky about the dot.
-				
-				//$this->reject_reason = "don't spellcheck words with a dot in the middle of it";
-				//return False;
-			//}
-			else
-			{
-				$this->reject_reason = '"care_about_word" cleared word for spellcheck, word passed test, no rejecion';
-				return True;
-			}
+		elseif (preg_match('/^<.*>$/', $str))
+		{
+			$this->reject_reason = "don't spellcheck bracked markup tags";
+			return False;
 		}
+		//elseif (preg_match('/^.*\..*$/', $str))
+		//elseif (preg_match('/\S*\.\S{2,3}$/i', $str))
+		//elseif (preg_match('/.*\w\.\w{2,3}$/i', $str))
+		//{
+		// OOPS - not working correctly
+		// \S	any character that is not a whitespace character
+		// trying to match [ALPHA].[ALPHA][ALPHA][ALPHA]  because we do not like dots in words 
+		// BUT a sentence where the user forgets the space after the period and before the next word, is an actual user error
+		// so we are trying to match a interner hostname type dot, trying to be somewhat picky about the dot.
 
-		/*!
+		//$this->reject_reason = "don't spellcheck words with a dot in the middle of it";
+		//return False;
+		//}
+		else
+		{
+			$this->reject_reason = '"care_about_word" cleared word for spellcheck, word passed test, no rejecion';
+			return True;
+		}
+	}
+
+	/*!
 		@function strip_punctuation
 		@abstract this utility function will strip punctuation from text
 		@param $str (string) ?
@@ -557,34 +559,34 @@
 		the spell checker can look at the word itself, and not be confused by any punctuation.
 		@access Private
 		*/
-		function strip_punctuation($str='')
-		{
-			$no_punct = $str;
-			$no_punct = str_replace('.','',$no_punct);
-			$no_punct = str_replace(',','',$no_punct);
-			$no_punct = str_replace('?','',$no_punct);
-			$no_punct = str_replace(':','',$no_punct);
-			$no_punct = str_replace(';','',$no_punct);
-			$no_punct = str_replace('!','',$no_punct);
-			$no_punct = str_replace('"','',$no_punct);
-			$no_punct = str_replace('(','',$no_punct);
-			$no_punct = str_replace(')','',$no_punct);
-			$no_punct = str_replace('*','',$no_punct);
-			$no_punct = str_replace('[','',$no_punct);
-			$no_punct = str_replace(']','',$no_punct);
-			return $no_punct;
-		}
-		
-		/*!
+	function strip_punctuation($str = '')
+	{
+		$no_punct = $str;
+		$no_punct = str_replace('.', '', $no_punct);
+		$no_punct = str_replace(',', '', $no_punct);
+		$no_punct = str_replace('?', '', $no_punct);
+		$no_punct = str_replace(':', '', $no_punct);
+		$no_punct = str_replace(';', '', $no_punct);
+		$no_punct = str_replace('!', '', $no_punct);
+		$no_punct = str_replace('"', '', $no_punct);
+		$no_punct = str_replace('(', '', $no_punct);
+		$no_punct = str_replace(')', '', $no_punct);
+		$no_punct = str_replace('*', '', $no_punct);
+		$no_punct = str_replace('[', '', $no_punct);
+		$no_punct = str_replace(']', '', $no_punct);
+		return $no_punct;
+	}
+
+	/*!
 		@function html_mark_bad_word
 		@abstract DEPRECIATED
 		*/
-		function html_mark_bad_word($line_of_text, $bad_word_data)
-		{
-			return '';
-		}
-		
-		/*!
+	function html_mark_bad_word($line_of_text, $bad_word_data)
+	{
+		return '';
+	}
+
+	/*!
 		@function html_mark_entire_line
 		@abstract DEPRECIATED
 		@discussion This Depreciated function was used during developement of this class, before comboboxes were 
@@ -598,23 +600,23 @@
 		## note: this example is fictional, not actual spell suggestions.
 		@access Private
 		*/
-		function html_mark_entire_line($line_of_text, $line_num)
+	function html_mark_entire_line($line_of_text, $line_num)
+	{
+		$line_array = explode(' ', $line_of_text);
+
+		$bad_word_loops = count($this->bad_words);
+		for ($x = 0; $x < $bad_word_loops; $x++)
 		{
-			$line_array = explode(' ',$line_of_text);
-			
-			$bad_word_loops = count($this->bad_words);
-			for ($x=0; $x < $bad_word_loops; $x++)
+			$this_bad_word_element = $this->bad_words[$x];
+			if ($this_bad_word_element->line_num == $line_num)
 			{
-				$this_bad_word_element = $this->bad_words[$x];
-				if ($this_bad_word_element->line_num == $line_num)
-				{
-					// make this particular bad word bolded
-					$word_in_question = $line_array[$this_bad_word_element->word_num];
-					// is there any punctuation we need to consider seperate from this word?
-					$last_char_idx = strlen($word_in_question) - 1;
-					$last_char = $word_in_question[$last_char_idx];
-					if (
-						($last_char == '.')
+				// make this particular bad word bolded
+				$word_in_question = $line_array[$this_bad_word_element->word_num];
+				// is there any punctuation we need to consider seperate from this word?
+				$last_char_idx = strlen($word_in_question) - 1;
+				$last_char = $word_in_question[$last_char_idx];
+				if (
+					($last_char == '.')
 					||	($last_char == ',')
 					||	($last_char == '?')
 					||	($last_char == ':')
@@ -626,53 +628,53 @@
 					||	($last_char == '*')
 					||	($last_char == '[')
 					||	($last_char == ']')
-					)
-					{
-						// remove last char from word_in_question and store it in $punctuation
-						$punctuation = $last_char;
-						$word_in_question = substr($word_in_question, 0, -1);
-					}
-					else
-					{
-						$punctuation = '';
-					}
-					
-					// add the correction suggestions with html visual markup, add back punctuation if any
-					$word_in_question = '<strong><font color="red">'.$word_in_question.'</font></strong>'.$punctuation;
-					$suggestion_string = '';
-					$loops = count($this_bad_word_element->suggestions);
-					if ($loops > 0)
-					{
-						for ($i=0; $i < $loops; $i++)
-						{
-							if ($i > 0)
-							{
-								$pipe_sep = '&#124;';
-							}
-							else
-							{
-								$pipe_sep = '';
-							}
-							$suggestion_string .= $pipe_sep.$this_bad_word_element->suggestions[$i];
-						}
-						// surround them with html niceties
-						$bad_word_with_suggestions =	
-							$word_in_question.' <font color="green"><em>&#091;'.$suggestion_string.'&#093;</em></font>';
-					}
-					else
-					{
-						// no suggestions, all we can do is flag the word but offer no alternatives
-						$bad_word_with_suggestions = $word_in_question;
-					}
-					// replace original word with this marked up text
-					$line_array[$this_bad_word_element->word_num] = $bad_word_with_suggestions;
+				)
+				{
+					// remove last char from word_in_question and store it in $punctuation
+					$punctuation = $last_char;
+					$word_in_question = substr($word_in_question, 0, -1);
 				}
-			}
-			$remade_line = implode(' ', $line_array);
-			return $remade_line;
-		}
+				else
+				{
+					$punctuation = '';
+				}
 
-		/*!
+				// add the correction suggestions with html visual markup, add back punctuation if any
+				$word_in_question = '<strong><font color="red">' . $word_in_question . '</font></strong>' . $punctuation;
+				$suggestion_string = '';
+				$loops = count($this_bad_word_element->suggestions);
+				if ($loops > 0)
+				{
+					for ($i = 0; $i < $loops; $i++)
+					{
+						if ($i > 0)
+						{
+							$pipe_sep = '&#124;';
+						}
+						else
+						{
+							$pipe_sep = '';
+						}
+						$suggestion_string .= $pipe_sep . $this_bad_word_element->suggestions[$i];
+					}
+					// surround them with html niceties
+					$bad_word_with_suggestions =
+						$word_in_question . ' <font color="green"><em>&#091;' . $suggestion_string . '&#093;</em></font>';
+				}
+				else
+				{
+					// no suggestions, all we can do is flag the word but offer no alternatives
+					$bad_word_with_suggestions = $word_in_question;
+				}
+				// replace original word with this marked up text
+				$line_array[$this_bad_word_element->word_num] = $bad_word_with_suggestions;
+			}
+		}
+		$remade_line = implode(' ', $line_array);
+		return $remade_line;
+	}
+
+	/*!
 		@function add_option_boxes
 		@abstract takes one line of text and inserts suggestion comboboxes after each misspelled word.
 		@param $line_of_text (string) a single line of text from the body of the message, whicj message is exploded by linebreaks.
@@ -687,62 +689,62 @@
 		object of type "correction_info" (as defined in file class.spell_struct) to obtain the suggestion data.
 		@access Private
 		*/
-		function add_option_boxes($line_of_text, $line_num)
+	function add_option_boxes($line_of_text, $line_num)
+	{
+		$line_array = explode(' ', $line_of_text);
+
+		$bad_word_loops = count($this->bad_words);
+		for ($x = 0; $x < $bad_word_loops; $x++)
 		{
-			$line_array = explode(' ',$line_of_text);
-			
-			$bad_word_loops = count($this->bad_words);
-			for ($x=0; $x < $bad_word_loops; $x++)
+			$this_bad_word_element = $this->bad_words[$x];
+			if ($this_bad_word_element->line_num == $line_num)
 			{
-				$this_bad_word_element = $this->bad_words[$x];
-				if ($this_bad_word_element->line_num == $line_num)
+				// make this particular bad word bolded
+				// update: we don;t care about this unclean version, we want the word that the spellchecker got, stripped of punctuation
+				// however the punctuation around it must be preserved for the email message
+				$word_in_question_unclean = $line_array[$this_bad_word_element->word_num];
+				$word_in_question_clean = $this_bad_word_element->orig_word_clean;
+				// clean vs. unclean: is the cleaned word different, do we need to get rid of 
+				// any punctuation we need to consider seperate from this word?
+
+				// add the correction suggestions with html visual markup, add back punctuation if any
+				$word_in_question_clean = '<strong><font color="red">' . $word_in_question_clean . '</font></strong>';
+				$suggestion_string = '';
+				$loops = count($this_bad_word_element->suggestions);
+				if ($loops == 0)
 				{
-					// make this particular bad word bolded
-					// update: we don;t care about this unclean version, we want the word that the spellchecker got, stripped of punctuation
-					// however the punctuation around it must be preserved for the email message
-					$word_in_question_unclean = $line_array[$this_bad_word_element->word_num];
-					$word_in_question_clean = $this_bad_word_element->orig_word_clean;
-					// clean vs. unclean: is the cleaned word different, do we need to get rid of 
-					// any punctuation we need to consider seperate from this word?
-					
-					// add the correction suggestions with html visual markup, add back punctuation if any
-					$word_in_question_clean = '<strong><font color="red">'.$word_in_question_clean.'</font></strong>';
-					$suggestion_string = '';
-					$loops = count($this_bad_word_element->suggestions);
-					if ($loops == 0)
-					{
-						// no suggestions, all we can do is flag the word but offer no alternatives
-						$bad_word_with_suggestions = $word_in_question_clean;
-					}
-					else
-					{
-						// make option combobox widget
-						$this->widgets->new_combobox();
-						$this->widgets->set_cbox_name('line'.$line_num.'_word'.$this_bad_word_element->word_num.'_'.$this_bad_word_element->orig_word_clean);
-						//$this->widgets->set_cbox_item('K_E_E_P', lang('no change'));
-						//$this->widgets->set_cbox_item('K_E_E_P', '');
-						$this->widgets->set_cbox_item_spellcheck($this_bad_word_element, '');
-						for ($i=0; $i < $loops; $i++)
-						{
-							//$this->widgets->set_cbox_item($this_bad_word_element->suggestions[$i], $this_bad_word_element->suggestions[$i]);
-							$this->widgets->set_cbox_item_spellcheck($this_bad_word_element, $i);
-						}
-						// add cobmobox of suggestions right next the misspelled word
-						$correction_box = $this->widgets->get_combobox();
-						//echo '<pre>'.htmlspecialchars($correction_box).'<.pre>';
-						$bad_word_with_suggestions = $word_in_question_clean.' '.$correction_box;
-					}
-					
-					// replace original word with this marked up text
-					$processed_word = str_replace($this_bad_word_element->orig_word_clean, $bad_word_with_suggestions, $word_in_question_unclean);
-					$line_array[$this_bad_word_element->word_num] = $processed_word;
+					// no suggestions, all we can do is flag the word but offer no alternatives
+					$bad_word_with_suggestions = $word_in_question_clean;
 				}
+				else
+				{
+					// make option combobox widget
+					$this->widgets->new_combobox();
+					$this->widgets->set_cbox_name('line' . $line_num . '_word' . $this_bad_word_element->word_num . '_' . $this_bad_word_element->orig_word_clean);
+					//$this->widgets->set_cbox_item('K_E_E_P', lang('no change'));
+					//$this->widgets->set_cbox_item('K_E_E_P', '');
+					$this->widgets->set_cbox_item_spellcheck($this_bad_word_element, '');
+					for ($i = 0; $i < $loops; $i++)
+					{
+						//$this->widgets->set_cbox_item($this_bad_word_element->suggestions[$i], $this_bad_word_element->suggestions[$i]);
+						$this->widgets->set_cbox_item_spellcheck($this_bad_word_element, $i);
+					}
+					// add cobmobox of suggestions right next the misspelled word
+					$correction_box = $this->widgets->get_combobox();
+					//echo '<pre>'.htmlspecialchars($correction_box).'<.pre>';
+					$bad_word_with_suggestions = $word_in_question_clean . ' ' . $correction_box;
+				}
+
+				// replace original word with this marked up text
+				$processed_word = str_replace($this_bad_word_element->orig_word_clean, $bad_word_with_suggestions, $word_in_question_unclean);
+				$line_array[$this_bad_word_element->word_num] = $processed_word;
 			}
-			$remade_line = implode(' ', $line_array);
-			return $remade_line;
 		}
-		
-		/*!
+		$remade_line = implode(' ', $line_array);
+		return $remade_line;
+	}
+
+	/*!
 		@function get_form_action_url
 		@abstract generate the URL which is the target, or action, of the spell review form
 		@result string
@@ -751,16 +753,16 @@
 		The only difference is we pass a $menuaction_target var unique to this forms needs, 
 		whereas the compose form uses a different $menuaction_target specific to the compose form. 
 		*/
-		function get_form_action_url()
-		{
-			$bocompose_obj = CreateObject("email.bocompose");
-			//$menuaction_target = 'email.bocompose.spell_finished';
-			$menuaction_target = 'email.spell.spell_finished';
-			$my_form_action_url = $bocompose_obj->get_compose_form_action_url($menuaction_target);
-			return $my_form_action_url;
-		}
-		
-		/*!
+	function get_form_action_url()
+	{
+		$bocompose_obj = CreateObject("email.bocompose");
+		//$menuaction_target = 'email.bocompose.spell_finished';
+		$menuaction_target = 'email.spell.spell_finished';
+		$my_form_action_url = $bocompose_obj->get_compose_form_action_url($menuaction_target);
+		return $my_form_action_url;
+	}
+
+	/*!
 		@function make_correction_struct_from_array
 		@abstract recover badwords "correction_info" structure data from the GPC vars of the spell_review form.
 		@param $submitted_correction_data (array) numbered array where each element is an associative array of badwords data.
@@ -771,35 +773,36 @@
 		so it is possible to match the submitted badword data array to the "correction_info" structure it was 
 		modeled after.
 		*/
-		function make_correction_struct_from_array($submitted_correction_data='')
+	function make_correction_struct_from_array($submitted_correction_data = '')
+	{
+		$this->bad_words = array();
+		if ((!is_array($submitted_correction_data))
+			|| (count($submitted_correction_data) == 0)
+		)
 		{
-			$this->bad_words = array();
-			if ((!is_array($submitted_correction_data))
-			|| (count($submitted_correction_data) == 0))
-			{
-				// invalid data OR no correction data was submitted
-				// no harm in returning the empty array
-				return $this->bad_words;
-			}
-			
-			// ... continue ...
-			$loops = count($submitted_correction_data);
-			for ($i=0; $i < $loops; $i++)
-			{
-				$this_correction = $submitted_correction_data[$i];
-				$idx = count($this->bad_words);
-				$this->bad_words[$idx] = new correction_info;
-				$this->bad_words[$idx]->orig_word = $this_correction['orig_word'];
-				$this->bad_words[$idx]->orig_word_clean = $this_correction['orig_word_clean'];
-				$this->bad_words[$idx]->line_num = $this_correction['line_num'];
-				$this->bad_words[$idx]->word_num = $this_correction['word_num'];
-				$this->bad_words[$idx]->suggestions = array();
-				$this->bad_words[$idx]->suggestions[0] = $this_correction['suggestion_value'];
-			}
+			// invalid data OR no correction data was submitted
+			// no harm in returning the empty array
 			return $this->bad_words;
 		}
-		
-		/*!
+
+		// ... continue ...
+		$loops = count($submitted_correction_data);
+		for ($i = 0; $i < $loops; $i++)
+		{
+			$this_correction = $submitted_correction_data[$i];
+			$idx = count($this->bad_words);
+			$this->bad_words[$idx] = new correction_info;
+			$this->bad_words[$idx]->orig_word = $this_correction['orig_word'];
+			$this->bad_words[$idx]->orig_word_clean = $this_correction['orig_word_clean'];
+			$this->bad_words[$idx]->line_num = $this_correction['line_num'];
+			$this->bad_words[$idx]->word_num = $this_correction['word_num'];
+			$this->bad_words[$idx]->suggestions = array();
+			$this->bad_words[$idx]->suggestions[0] = $this_correction['suggestion_value'];
+		}
+		return $this->bad_words;
+	}
+
+	/*!
 		@function replace_badwords_this_line
 		@abstract takes one line of text and replace each misspelled word the user has specified a replacement for
 		@param $line_of_text (string) a single line of text from the body of the message, whicj message is exploded by linebreaks.
@@ -820,193 +823,192 @@
 		token "K_E_E_P" in which case the user desires no change for this word.
 		@access Private
 		*/
-		function replace_badwords_this_line($line_of_text, $line_num)
+	function replace_badwords_this_line($line_of_text, $line_num)
+	{
+		$line_array = explode(' ', $line_of_text);
+
+		$bad_word_loops = count($this->bad_words);
+		for ($x = 0; $x < $bad_word_loops; $x++)
 		{
-			$line_array = explode(' ',$line_of_text);
-			
-			$bad_word_loops = count($this->bad_words);
-			for ($x=0; $x < $bad_word_loops; $x++)
+			$this_bad_word_element = $this->bad_words[$x];
+			if ($this_bad_word_element->line_num == $line_num)
 			{
-				$this_bad_word_element = $this->bad_words[$x];
-				if ($this_bad_word_element->line_num == $line_num)
+				//if ($this->debug_spell_finished > 1) { echo 'email.spell.replace_badwords_this_line: bad word ['.$this_bad_word_element->orig_word_clean.'] exists on this line num ['.$this_bad_word_element->line_num.'], it is word num ['.$this_bad_word_element->word_num.']<br />'; }
+				//if ($this->debug_spell_finished > 2) { echo 'email.spell.replace_badwords_this_line: bad word: ['.$this_bad_word_element->orig_word_clean.'] :: user wants this replacement: ['.$this_bad_word_element->suggestions[0].'], if it is "K_E_E_P", do not replace<br />'; }
+				if ($this_bad_word_element->suggestions[0] == "K_E_E_P")
 				{
-					//if ($this->debug_spell_finished > 1) { echo 'email.spell.replace_badwords_this_line: bad word ['.$this_bad_word_element->orig_word_clean.'] exists on this line num ['.$this_bad_word_element->line_num.'], it is word num ['.$this_bad_word_element->word_num.']<br />'; }
-					//if ($this->debug_spell_finished > 2) { echo 'email.spell.replace_badwords_this_line: bad word: ['.$this_bad_word_element->orig_word_clean.'] :: user wants this replacement: ['.$this_bad_word_element->suggestions[0].'], if it is "K_E_E_P", do not replace<br />'; }
-					if ($this_bad_word_element->suggestions[0] == "K_E_E_P")
-					{
-						continue;
-					}
-					
-					// ... replace the word ...
-					$word_in_quesion_raw = $line_array[$this_bad_word_element->word_num];
-					$processed_word = str_replace($this_bad_word_element->orig_word_clean, $this_bad_word_element->suggestions[0], $word_in_quesion_raw);
-					$line_array[$this_bad_word_element->word_num] = $processed_word;
+					continue;
 				}
+
+				// ... replace the word ...
+				$word_in_quesion_raw = $line_array[$this_bad_word_element->word_num];
+				$processed_word = str_replace($this_bad_word_element->orig_word_clean, $this_bad_word_element->suggestions[0], $word_in_quesion_raw);
+				$line_array[$this_bad_word_element->word_num] = $processed_word;
 			}
-			$remade_line = implode(' ', $line_array);
-			return $remade_line;
 		}
-		/**************************************************************************\
-		*	CODE
+		$remade_line = implode(' ', $line_array);
+		return $remade_line;
+	}
+	/**************************************************************************\
+	 *	CODE
 		\**************************************************************************/
+	// DEPRECIATED
+	function basic_spcheck()
+	{
+
 		// DEPRECIATED
-		function basic_spcheck()
-		{
-			
-			// DEPRECIATED
-			
-		}
-		
-		/*!
+
+	}
+
+	/*!
 		@function spell_review
 		@abstract The guts of the spellcheck logic is here, where the body is examined and corrections suggested.
 		@author Angles
 		@discussion ?
 		*/
-		function spell_review()
+	function spell_review()
+	{
+
+		unset($GLOBALS['phpgw_info']['flags']['noheader']);
+		unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
+		$GLOBALS['phpgw_info']['flags']['noappheader'] = True;
+		$GLOBALS['phpgw_info']['flags']['noappfooter'] = True;
+		$GLOBALS['phpgw']->common->phpgw_header(true);
+
+		$GLOBALS['phpgw']->template->set_root(PHPGW_APP_TPL);
+		$GLOBALS['phpgw']->template->set_file(array(
+			'T_spell_main' => 'spell_review.tpl'
+		));
+		$GLOBALS['phpgw']->template->set_var('page_desc', 'Email Spell Check Review Page');
+
+		// setup the form
+		$this->widgets->new_form();
+		$this->widgets->set_form_name('spell_review');
+		$this->widgets->set_form_method('POST');
+		$form_action = $this->get_form_action_url();
+		$this->widgets->set_form_action($form_action);
+		// include copy of the original body as a hiddenvar, 
+		// prep it with (a) base64 encoded and (b) urlencoded, so no html offensive chars are present
+		$body_orig_b64_urlencode = base64_encode($this->body_orig);
+		// do NOT urlencode here  - WIDGET URLENCODES THIS FOR US! 
+		$this->widgets->set_form_hiddenvar('body_orig_b64_urlencode', $body_orig_b64_urlencode);
+		// preserve the subject (FIXME: we need to spell check the subject too)
+		$this->widgets->set_form_hiddenvar('subject', $this->subject);
+		// and any vars we are supposed to preserve as hidden vars
+		$this->commit_preserve_vars_to_form();
+		$this->form_open_tags = $this->widgets->get_form();
+		$GLOBALS['phpgw']->template->set_var('form_open_tags', $this->form_open_tags);
+
+		// now prepare to check words.
+		$this->body_array = array();
+		$this->body_array = \App\modules\email\services\MailMessage::getInstance()->explode_linebreaks($this->body_orig);
+
+		$loops = count($this->body_array);
+		for ($i = 0; $i < $loops; $i++)
 		{
+			$this_line_str = $this->body_array[$i];
 
-			unset($GLOBALS['phpgw_info']['flags']['noheader']);
-			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
-			$GLOBALS['phpgw_info']['flags']['noappheader'] = True;
-			$GLOBALS['phpgw_info']['flags']['noappfooter'] = True;
-			$GLOBALS['phpgw']->common->phpgw_header(true);
-			
-			$GLOBALS['phpgw']->template->set_root(PHPGW_APP_TPL);
-			$GLOBALS['phpgw']->template->set_file(array(
-				'T_spell_main' => 'spell_review.tpl'
-			));
-			$GLOBALS['phpgw']->template->set_var('page_desc', 'Email Spell Check Review Page');
-			
-			// setup the form
-			$this->widgets->new_form();
-			$this->widgets->set_form_name('spell_review');
-			$this->widgets->set_form_method('POST');
-			$form_action = $this->get_form_action_url();
-			$this->widgets->set_form_action($form_action);
-			// include copy of the original body as a hiddenvar, 
-			// prep it with (a) base64 encoded and (b) urlencoded, so no html offensive chars are present
-			$body_orig_b64_urlencode = base64_encode($this->body_orig);
-			// do NOT urlencode here  - WIDGET URLENCODES THIS FOR US! 
-			$this->widgets->set_form_hiddenvar('body_orig_b64_urlencode', $body_orig_b64_urlencode);
-			// preserve the subject (FIXME: we need to spell check the subject too)
-			$this->widgets->set_form_hiddenvar('subject', $this->subject);
-			// and any vars we are supposed to preserve as hidden vars
-			$this->commit_preserve_vars_to_form();
-			$this->form_open_tags = $this->widgets->get_form();
-			$GLOBALS['phpgw']->template->set_var('form_open_tags', $this->form_open_tags);
-			
-			// now prepare to check words.
-			$this->body_array = array();
-			$this->body_array = \App\modules\email\services\MailMessage::getInstance()->explode_linebreaks($this->body_orig);
-
-			$loops = count($this->body_array);
-			for ($i=0; $i < $loops; $i++)
+			if (strlen($this_line_str) == 0)
 			{
-				$this_line_str = $this->body_array[$i];
-				
-				if (strlen($this_line_str) == 0)
+				// is this a blank line
+			}
+			elseif ((stristr($this_line_str, ">"))
+				&& ($this_line_str[0] == '>')
+			)
+			{
+				// does the line begin with a repoly quoting char
+			}
+			else
+			{
+				// Line OK to check
+				$word_for_word = array();
+				$word_for_word = explode(' ', $this_line_str);
+				$words = count($word_for_word);
+				for ($x = 0; $x < $words; $x++)
 				{
-					// is this a blank line
-				}
-				elseif ((stristr($this_line_str, ">"))
-				&& ($this_line_str[0] == '>'))
-				{
-					// does the line begin with a repoly quoting char
-				}
-				else
-				{
-					// Line OK to check
-					$word_for_word = array();
-					$word_for_word = explode(' ', $this_line_str);
-					$words = count($word_for_word);
-					for ($x=0; $x < $words; $x++)
+					$this_word = $word_for_word[$x];
+					if ($this->care_about_word($this_word) == False)
 					{
-						$this_word = $word_for_word[$x];
-						if ($this->care_about_word($this_word) == False)
-						{
-							continue;
-						}
-						//strip punctuation
-						$this_word_clean = $this->strip_punctuation($this_word);
-						
-						if ($this->care_about_word($this_word_clean) == False)
-						{
-							continue;
-						}
-						
-						// DO THE SPELL CHECK
-						
-						if ($this->spell_svc->pgw_pspell_check ($this->pspell_link, $this_word_clean))
+						continue;
+					}
+					//strip punctuation
+					$this_word_clean = $this->strip_punctuation($this_word);
+
+					if ($this->care_about_word($this_word_clean) == False)
+					{
+						continue;
+					}
+
+					// DO THE SPELL CHECK
+
+					if ($this->spell_svc->pgw_pspell_check($this->pspell_link, $this_word_clean))
+					{
+					}
+					else
+					{
+						$idx = count($this->bad_words);
+						$this->bad_words[$idx] = new correction_info;
+						$this->bad_words[$idx]->orig_word = $this_word;
+						$this->bad_words[$idx]->orig_word_clean = $this_word_clean;
+						$this->bad_words[$idx]->line_num = $i;
+						$this->bad_words[$idx]->word_num = $x;
+						$this->bad_words[$idx]->suggestions = array();
+
+						$cur_suggest = 0;
+						$suggestions = $this->spell_svc->pgw_pspell_suggest($this->pspell_link, $this_word_clean);
+						if (count($suggestions) == 0)
 						{
 						}
 						else
 						{
-							$idx = count($this->bad_words);
-							$this->bad_words[$idx] = new correction_info;
-							$this->bad_words[$idx]->orig_word = $this_word;
-							$this->bad_words[$idx]->orig_word_clean = $this_word_clean;
-							$this->bad_words[$idx]->line_num = $i;
-							$this->bad_words[$idx]->word_num = $x;
-							$this->bad_words[$idx]->suggestions = array();
-
-							$cur_suggest=0;
-							$suggestions = $this->spell_svc->pgw_pspell_suggest ($this->pspell_link, $this_word_clean);
-							if ( count($suggestions) == 0)
+							foreach ($suggestions as $suggestion)
 							{
-							}
-							else
-							{
-								foreach ($suggestions as $suggestion)
+								if ($cur_suggest > $this->max_suggest)
 								{
-									if ($cur_suggest > $this->max_suggest)
-									{
-										break;
-									}
-									//echo ' * for ['.$this_word.'] Possible spelling: ['.$suggestion.']'.'<br />'."\r\n";
-									$this->bad_words[$idx]->suggestions[$cur_suggest] = $suggestion;
-									$cur_suggest++;
+									break;
 								}
-								//echo 'done suggesting'.'<br /><br />'."\r\n";
+								//echo ' * for ['.$this_word.'] Possible spelling: ['.$suggestion.']'.'<br />'."\r\n";
+								$this->bad_words[$idx]->suggestions[$cur_suggest] = $suggestion;
+								$cur_suggest++;
 							}
+							//echo 'done suggesting'.'<br /><br />'."\r\n";
 						}
-						// debug out a spacer before we go to the next word
 					}
+					// debug out a spacer before we go to the next word
 				}
-				
 			}
-
-			// put body_array back together inserting bad_words data
-			$loops = count($this->body_array);
-			for ($i=0; $i < $loops; $i++)
-			{
-				$this_line_str = $this->body_array[$i];
-				// first, we can encode the html specialchars that exist in the orig line
-				// this *should* not add any spaces, so word number data should still be valid
-				$this_line_str = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($this_line_str);
-				
-				// any and all bad words in this line of text are flagged now
-				//$this_line_str = $this->html_mark_entire_line($this_line_str, $i);
-				// add an optionbox of suggestions for any and all words on this line that are misspelled and have suggestions
-				$this_line_str = $this->add_option_boxes($this_line_str, $i);
-				$this->body_with_suggest .= $this_line_str."\r\n";
-			}
-			
-			$this->body_with_suggest = nl2br($this->body_with_suggest,true);
-			$GLOBALS['phpgw']->template->set_var('body_with_suggestions', $this->body_with_suggest);
-			
-			// BUTTONS
-			// make_button ( $type , $name , $value )
-			$btn_apply = $this->widgets->make_button('submit','btn_apply', lang('apply'));
-			$btn_cancel = $this->widgets->make_button('submit','btn_cancel', lang('cancel'));
-			$GLOBALS['phpgw']->template->set_var('btn_apply', $btn_apply);
-			$GLOBALS['phpgw']->template->set_var('btn_cancel', $btn_cancel);
-			
-			$GLOBALS['phpgw']->template->pfp('out','T_spell_main');
-		
 		}
 
-		/*!
+		// put body_array back together inserting bad_words data
+		$loops = count($this->body_array);
+		for ($i = 0; $i < $loops; $i++)
+		{
+			$this_line_str = $this->body_array[$i];
+			// first, we can encode the html specialchars that exist in the orig line
+			// this *should* not add any spaces, so word number data should still be valid
+			$this_line_str = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($this_line_str);
+
+			// any and all bad words in this line of text are flagged now
+			//$this_line_str = $this->html_mark_entire_line($this_line_str, $i);
+			// add an optionbox of suggestions for any and all words on this line that are misspelled and have suggestions
+			$this_line_str = $this->add_option_boxes($this_line_str, $i);
+			$this->body_with_suggest .= $this_line_str . "\r\n";
+		}
+
+		$this->body_with_suggest = nl2br($this->body_with_suggest, true);
+		$GLOBALS['phpgw']->template->set_var('body_with_suggestions', $this->body_with_suggest);
+
+		// BUTTONS
+		// make_button ( $type , $name , $value )
+		$btn_apply = $this->widgets->make_button('submit', 'btn_apply', lang('apply'));
+		$btn_cancel = $this->widgets->make_button('submit', 'btn_cancel', lang('cancel'));
+		$GLOBALS['phpgw']->template->set_var('btn_apply', $btn_apply);
+		$GLOBALS['phpgw']->template->set_var('btn_cancel', $btn_cancel);
+
+		$GLOBALS['phpgw']->template->pfp('out', 'T_spell_main');
+	}
+
+	/*!
 		@function spell_finished
 		@abstract User reviewed spell check data is submitted to this function, which replaces words and calls compose.
 		@author Angles
@@ -1016,81 +1018,79 @@
 		for spellcheck, and put those bars back in the compose form where they are needed for when the compose 
 		form is submitted to class.bosend.
 		*/
-		function spell_finished()
-		{
-			// this function is in class.msgl_bootstrap.inc.php, we created in the constructor for this class.
-			$this->msg_bootstrap->ensure_mail_msg_exists('email.spell.spell_finished', $this->debug_spell_finished);
+	function spell_finished()
+	{
+		// this function is in class.msgl_bootstrap.inc.php, we created in the constructor for this class.
+		$this->msg_bootstrap->ensure_mail_msg_exists('email.spell.spell_finished', $this->debug_spell_finished);
 
-			// recover the body_orig
-			$this->body_orig = urldecode(\App\modules\email\services\MailMessage::getInstance()->ref_POST['body_orig_b64_urlencode']);
-			$this->body_orig = base64_decode($this->body_orig);
-			
-			// CANCEL OR APPLY - which button was pressed
-			if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_apply']))
-			&& (\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_apply'] != ''))
+		// recover the body_orig
+		$this->body_orig = urldecode(\App\modules\email\services\MailMessage::getInstance()->ref_POST['body_orig_b64_urlencode']);
+		$this->body_orig = base64_decode($this->body_orig);
+
+		// CANCEL OR APPLY - which button was pressed
+		if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_apply']))
+			&& (\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_apply'] != '')
+		)
+		{
+			// recover the spellcheck data which was encooded as a URI get string in the spelling comboboxes
+			$all_badwords = array();
+			// ----  extract any "fake_uri" embedded data from HTTP_POST_VARS  ----
+			// note: this happens automatically for HTTP_GET_VARS 
+			if (is_array(\App\modules\email\services\MailMessage::getInstance()->ref_POST))
 			{
-				// recover the spellcheck data which was encooded as a URI get string in the spelling comboboxes
-				$all_badwords = array();
-				// ----  extract any "fake_uri" embedded data from HTTP_POST_VARS  ----
-				// note: this happens automatically for HTTP_GET_VARS 
-				if (is_array(\App\modules\email\services\MailMessage::getInstance()->ref_POST))
+				//@reset($GLOBALS['phpgw']->msg->ref_POST);
+				//while(list($key,$value) = each($GLOBALS['phpgw']->msg->ref_POST))
+				foreach (\App\modules\email\services\MailMessage::getInstance()->ref_POST as $key => $value)
 				{
-					//@reset($GLOBALS['phpgw']->msg->ref_POST);
-					//while(list($key,$value) = each($GLOBALS['phpgw']->msg->ref_POST))
-					foreach(\App\modules\email\services\MailMessage::getInstance()->ref_POST as $key => $value)
+					// looking for any key like this: "lineX_wordX_alphachars"
+					if (stristr($key, '_word'))
 					{
-						// looking for any key like this: "lineX_wordX_alphachars"
-						if (stristr($key, '_word'))
-						{
-							$uri_type_string = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$key];
-							$embeded_data = array();
-							// parse_str also urldecodes the items automatically.
-							parse_str($uri_type_string, $embeded_data);
-							// stripslashes_gpc if needed
-							$embeded_data['orig_word'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($embeded_data['orig_word']);
-							$embeded_data['orig_word_clean'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($embeded_data['orig_word_clean']);
-							$embeded_data['suggestion_value'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($embeded_data['suggestion_value']);
-							// add the key just for the record, we may not need it 
-							//it needs urldecoded since it did not pass thru parse_str
-							$embeded_data['post_key'] =  \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(urldecode($key));
-							$idx = count($all_badwords);
-							$all_badwords[$idx] = $embeded_data;
-						}
+						$uri_type_string = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$key];
+						$embeded_data = array();
+						// parse_str also urldecodes the items automatically.
+						parse_str($uri_type_string, $embeded_data);
+						// stripslashes_gpc if needed
+						$embeded_data['orig_word'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($embeded_data['orig_word']);
+						$embeded_data['orig_word_clean'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($embeded_data['orig_word_clean']);
+						$embeded_data['suggestion_value'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($embeded_data['suggestion_value']);
+						// add the key just for the record, we may not need it 
+						//it needs urldecoded since it did not pass thru parse_str
+						$embeded_data['post_key'] =  \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(urldecode($key));
+						$idx = count($all_badwords);
+						$all_badwords[$idx] = $embeded_data;
 					}
 				}
-				$this->make_correction_struct_from_array($all_badwords);
-			
-				// REPLACE WORDS
-				
-				$this->body_array = array();
-				$this->body_array = \App\modules\email\services\MailMessage::getInstance()->explode_linebreaks($this->body_orig);
-
-				// put the corrected line in $this->body_with_suggest 
-				$this->body_with_suggest = '';
-				$loops = count($this->body_array);
-				for ($i=0; $i < $loops; $i++)
-				{
-					$this_line_str = $this->body_array[$i];
-					// any and all replacable bad words in this line of text are replaced now, the entire line os processed at the same time
-					$this_line_str = $this->replace_badwords_this_line($this_line_str, $i);
-					$this->body_with_suggest .= $this_line_str."\r\n";
-				}
-				
 			}
-			else
+			$this->make_correction_struct_from_array($all_badwords);
+
+			// REPLACE WORDS
+
+			$this->body_array = array();
+			$this->body_array = \App\modules\email\services\MailMessage::getInstance()->explode_linebreaks($this->body_orig);
+
+			// put the corrected line in $this->body_with_suggest 
+			$this->body_with_suggest = '';
+			$loops = count($this->body_array);
+			for ($i = 0; $i < $loops; $i++)
 			{
-				// CANCEL was pressed, user wants no word substitutions
-				// simply fill $this->body_with_suggest with $this->body_orig, then the rest of the code is the same
-				$this->body_with_suggest = $this->body_orig;
+				$this_line_str = $this->body_array[$i];
+				// any and all replacable bad words in this line of text are replaced now, the entire line os processed at the same time
+				$this_line_str = $this->replace_badwords_this_line($this_line_str, $i);
+				$this->body_with_suggest .= $this_line_str . "\r\n";
 			}
-			
-			//$this->body_with_suggest = ereg_replace("\r\n","<br />",$this->body_with_suggest);
-			
-			// TELL BOCOMPOSE TO DO ITS THING WITH THIS SPELL FIXED BODY
-			\App\modules\email\services\MailMessage::getInstance()->set_arg_value('body', $this->body_with_suggest);
-			$compose = CreateObject("email.uicompose");
-			$compose->compose('mail_spell_special_handling');
-
+		}
+		else
+		{
+			// CANCEL was pressed, user wants no word substitutions
+			// simply fill $this->body_with_suggest with $this->body_orig, then the rest of the code is the same
+			$this->body_with_suggest = $this->body_orig;
 		}
 
+		//$this->body_with_suggest = ereg_replace("\r\n","<br />",$this->body_with_suggest);
+
+		// TELL BOCOMPOSE TO DO ITS THING WITH THIS SPELL FIXED BODY
+		\App\modules\email\services\MailMessage::getInstance()->set_arg_value('body', $this->body_with_suggest);
+		$compose = CreateObject("email.uicompose");
+		$compose->compose('mail_spell_special_handling');
 	}
+}

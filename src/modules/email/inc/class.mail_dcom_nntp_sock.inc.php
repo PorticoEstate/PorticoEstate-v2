@@ -1,32 +1,33 @@
 <?php
-	/**
-	* EMail - Handles specific operations in dealing with NNTP
-	*
-	* @author Mark Peters <skeeter@phpgroupware.org>
-	* @copyright Copyright (C) 2001-2005 Free Software Foundation, Inc. http://www.fsf.org/
-	* @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
-	* @package email
-	* @version $Id$
-	*/
+
+/**
+ * EMail - Handles specific operations in dealing with NNTP
+ *
+ * @author Mark Peters <skeeter@phpgroupware.org>
+ * @copyright Copyright (C) 2001-2005 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ * @version $Id$
+ */
 
 
-	/**
-	* Handles specific operations in dealing with NNTP
-	*
-	* @package email
-	* @ignore
-	*/	
-	defined('PE_IMAP_SA_ALL') || define('PE_IMAP_SA_ALL', 31);
-	defined('PE_IMAP_SORTDATE') || define('PE_IMAP_SORTDATE', 0);
-	defined('PE_IMAP_SORTARRIVAL') || define('PE_IMAP_SORTARRIVAL', 1);
-	defined('PE_IMAP_SORTFROM') || define('PE_IMAP_SORTFROM', 2);
-	defined('PE_IMAP_SORTSUBJECT') || define('PE_IMAP_SORTSUBJECT', 3);
-	defined('PE_IMAP_SORTTO') || define('PE_IMAP_SORTTO', 4);
-	defined('PE_IMAP_SORTCC') || define('PE_IMAP_SORTCC', 5);
-	defined('PE_IMAP_SORTSIZE') || define('PE_IMAP_SORTSIZE', 6);
+/**
+ * Handles specific operations in dealing with NNTP
+ *
+ * @package email
+ * @ignore
+ */
+defined('PE_IMAP_SA_ALL') || define('PE_IMAP_SA_ALL', 31);
+defined('PE_IMAP_SORTDATE') || define('PE_IMAP_SORTDATE', 0);
+defined('PE_IMAP_SORTARRIVAL') || define('PE_IMAP_SORTARRIVAL', 1);
+defined('PE_IMAP_SORTFROM') || define('PE_IMAP_SORTFROM', 2);
+defined('PE_IMAP_SORTSUBJECT') || define('PE_IMAP_SORTSUBJECT', 3);
+defined('PE_IMAP_SORTTO') || define('PE_IMAP_SORTTO', 4);
+defined('PE_IMAP_SORTCC') || define('PE_IMAP_SORTCC', 5);
+defined('PE_IMAP_SORTSIZE') || define('PE_IMAP_SORTSIZE', 6);
 
-  class mail_dcom extends mail_dcom_base
-  {
+class mail_dcom extends mail_dcom_base
+{
 	var $db;
 	var $folder;
 	var $start_msg;
@@ -34,26 +35,26 @@
 
 	function mode_reader()
 	{
-		return $this->msg2socket('mode reader','^20[01]',$response);
+		return $this->msg2socket('mode reader', '^20[01]', $response);
 	}
 
-	function login ($user,$passwd,$server,$port,$folder = '')
+	function login($user, $passwd, $server, $port, $folder = '')
 	{
 		global $phpgw;
-		
+
 		$this->db = $phpgw->db;
 
-		if(@!$server)
+		if (@!$server)
 		{
 			echo 'Error: Configuration Error! The administrator has not configured the NNTP Server.';
 		}
-		
-		if(@!$port)
+
+		if (@!$port)
 		{
 			$port = 119;
 		}
 
-		if (!$this->open_port($server,$port,15))
+		if (!$this->open_port($server, $port, 15))
 		{
 			$this->error();
 		}
@@ -61,11 +62,11 @@
 
 		if ($user <> '' && $passwd <> '')
 		{
-			if (!$this->msg2socket('authinfo user '.$user,'^381',$response))
+			if (!$this->msg2socket('authinfo user ' . $user, '^381', $response))
 			{
 				$this->error();
 			}
-			if (!$this->msg2socket('authinfo pass '.$passwd,'^281',$response))
+			if (!$this->msg2socket('authinfo pass ' . $passwd, '^281', $response))
 			{
 				$this->error();
 			}
@@ -74,10 +75,10 @@
 		{
 			$this->error();
 		}
-		if(!$folder)
+		if (!$folder)
 		{
 			$folder = $this->get_first_folder();
-			if(!$folder)
+			if (!$folder)
 			{
 				$this->error();
 			}
@@ -87,16 +88,16 @@
 		$this->num_msgs = $this->num_msg($this->mailbox);
 		$this->start_msg = $this->first_message($this->mailbox);
 		$this->end_msg = $this->last_message($this->mailbox);
-		echo 'Successful connection to '.$this->mailbox."<br />\n";
+		echo 'Successful connection to ' . $this->mailbox . "<br />\n";
 	}
 
-	function fix_folder($folder='')
+	function fix_folder($folder = '')
 	{
-		if($folder=='')
+		if ($folder == '')
 		{
 			$mailbox = $this->mailbox;
 		}
-		elseif(is_int($folder))
+		elseif (is_int($folder))
 		{
 			$mailbox = $this->get_mailbox_name($folder);
 		}
@@ -106,12 +107,12 @@
 		}
 		return $mailbox;
 	}
-	
+
 	function get_first_folder()
 	{
-		if(@!$GLOBALS['phpgw_info']['user']['preferences']['nntp'])
+		if (@!$GLOBALS['phpgw_info']['user']['preferences']['nntp'])
 		{
-			$this->set_error('Configuration','User Preferences','You have not set your user preferences in NNTP.');
+			$this->set_error('Configuration', 'User Preferences', 'You have not set your user preferences in NNTP.');
 			$this->error();
 		}
 		else
@@ -125,7 +126,7 @@
 	function get_mailbox_name($folder)
 	{
 		$active = False;
-		$this->db->query('SELECT name,active FROM newsgroups WHERE con='.$folder,_LINE__,__FILE__);
+		$this->db->query('SELECT name,active FROM newsgroups WHERE con=' . $folder, _LINE__, __FILE__);
 		if ($this->db->num_rows() > 0)
 		{
 			$this->db->next_record();
@@ -133,65 +134,65 @@
 		}
 		if ($this->db->f('active') != 'Y')
 		{
-			\App\modules\phpgwapi\services\Preferences::getInstance()->delete('nntp',$folder);
+			\App\modules\phpgwapi\services\Preferences::getInstance()->delete('nntp', $folder);
 			\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
-			
-			$this->set_error('Administration','Automatic Disabling','The newsgroup '.$mailbox.' is not activated by the Administrator.');
+
+			$this->set_error('Administration', 'Automatic Disabling', 'The newsgroup ' . $mailbox . ' is not activated by the Administrator.');
 			$this->error();
 		}
 		return $mailbox;
 	}
 
-	function get_mailbox_counts($folder='',$index=1)
+	function get_mailbox_counts($folder = '', $index = 1)
 	{
 		$mailbox = $this->fix_folder($folder);
-		if (!$this->msg2socket('group '.$mailbox,'^211',$response))
+		if (!$this->msg2socket('group ' . $mailbox, '^211', $response))
 		{
 			$this->error();
 		}
-		$temp_array = explode(' ',$response);
+		$temp_array = explode(' ', $response);
 		return $temp_array[$index];
 	}
 
-	function num_msg($folder='')
+	function num_msg($folder = '')
 	{
-		if(($folder == '' || $folder == $this->mailbox) && isset($this->num_msgs))
+		if (($folder == '' || $folder == $this->mailbox) && isset($this->num_msgs))
 		{
 			return $this->num_msgs;
 		}
-		return $this->get_mailbox_counts($folder,1);
+		return $this->get_mailbox_counts($folder, 1);
 	}
 
-	function first_message($folder='')
+	function first_message($folder = '')
 	{
-		if(($folder == '' || $folder == $this->mailbox) && isset($this->start_msg))
+		if (($folder == '' || $folder == $this->mailbox) && isset($this->start_msg))
 		{
 			return $this->start_msg;
 		}
-		return $this->get_mailbox_counts($folder,2);
+		return $this->get_mailbox_counts($folder, 2);
 	}
 
-	function last_message($folder='')
+	function last_message($folder = '')
 	{
-		if(($folder == '' || $folder == $this->mailbox) && isset($this->end_msg))
+		if (($folder == '' || $folder == $this->mailbox) && isset($this->end_msg))
 		{
 			return $this->end_msg;
 		}
-		return $this->get_mailbox_counts($folder,3);
+		return $this->get_mailbox_counts($folder, 3);
 	}
 
-	function mailboxmsginfo($folder='')
+	function mailboxmsginfo($folder = '')
 	{
 		$info = new msg_mb_info;
-		if($folder=='' || $folder==$this->mailbox || $folder==$this->folder)
+		if ($folder == '' || $folder == $this->mailbox || $folder == $this->folder)
 		{
-			if(isset($this->num_msgs))
+			if (isset($this->num_msgs))
 			{
 				$info->messages = $this->num_msgs;
 			}
 			else
 			{
-				if($folder==$this->folder)
+				if ($folder == $this->folder)
 				{
 					$this->mailbox = $this->get_mailbox_name($folder);
 				}
@@ -227,14 +228,14 @@
 		}
 	}
 
-	function fetch_field($start,$stop,$element)
+	function fetch_field($start, $stop, $element)
 	{
-		if (!$this->msg2socket('XHDR '.$element.' '.$start.'-'.$stop,'^221',$response))
+		if (!$this->msg2socket('XHDR ' . $element . ' ' . $start . '-' . $stop, '^221', $response))
 		{
 			$this->error();
 		}
 
-		$field_element = Array();
+		$field_element = array();
 		while ($line = $this->read_port())
 		{
 			$line = chop($line);
@@ -242,23 +243,23 @@
 			{
 				break;
 			}
-			$breakpos = strpos($line,' ');
-			
-			$field_element[intval(substr($line,0,$breakpos-1))] = $this->phpGW_quoted_printable_decode2(substr($line,$breakpos+1));
+			$breakpos = strpos($line, ' ');
+
+			$field_element[intval(substr($line, 0, $breakpos - 1))] = $this->phpGW_quoted_printable_decode2(substr($line, $breakpos + 1));
 		}
 		return $field_element;
 	}
 
-	function status($folder='',$options=PE_IMAP_SA_ALL)
+	function status($folder = '', $options = PE_IMAP_SA_ALL)
 	{
 		$info = new mailbox_status;
 		$info->messages = $this->num_msg($folder);
 		return $info;
 	}
 
-	function sort($folder='',$criteria=PE_IMAP_SORTDATE,$reverse=False,$options='')
+	function sort($folder = '', $criteria = PE_IMAP_SORTDATE, $reverse = False, $options = '')
 	{
-		if($folder == '' || $folder == $this->mailbox)
+		if ($folder == '' || $folder == $this->mailbox)
 		{
 			$mailbox = $this->mailbox;
 			$start_msg = $this->start_msg;
@@ -270,43 +271,43 @@
 			$start_msg = $this->first_message($mailbox);
 			$end_msg = $this->last_message($mailbox);
 		}
-		
-		switch($criteria)
+
+		switch ($criteria)
 		{
 			case PE_IMAP_SORTDATE:
-				$old_list = $this->fetch_field($start_msg,$end_msg,'Date');
+				$old_list = $this->fetch_field($start_msg, $end_msg, 'Date');
 				$field_list = $this->convert_date_array($old_list);
 				break;
 			case PE_IMAP_SORTARRIVAL:
 				break;
 			case PE_IMAP_SORTFROM:
-				$field_list = $this->fetch_field($start_msg,$end_msg,'From');
+				$field_list = $this->fetch_field($start_msg, $end_msg, 'From');
 				break;
 			case PE_IMAP_SORTSUBJECT:
-				$field_list = $this->fetch_field($start_msg,$end_msg,'Subject');
+				$field_list = $this->fetch_field($start_msg, $end_msg, 'Subject');
 				break;
 			case PE_IMAP_SORTTO:
-				$field_list = $this->fetch_field($start_msg,$end_msg,'To');
+				$field_list = $this->fetch_field($start_msg, $end_msg, 'To');
 				break;
 			case PE_IMAP_SORTCC:
-				$field_list = $this->fetch_field($start_msg,$end_msg,'cc');
+				$field_list = $this->fetch_field($start_msg, $end_msg, 'cc');
 				break;
 			case PE_IMAP_SORTSIZE:
 				break;
 		}
 		@reset($field_list);
-		if($criteria == PE_IMAP_SORTSUBJECT)
+		if ($criteria == PE_IMAP_SORTSUBJECT)
 		{
-			if(!$reverse)
+			if (!$reverse)
 			{
-				uasort($field_list,array($this,"ssort_ascending"));
+				uasort($field_list, array($this, "ssort_ascending"));
 			}
 			else
 			{
-				uasort($field_list,array($this,"ssort_decending"));
-			}			
+				uasort($field_list, array($this, "ssort_decending"));
+			}
 		}
-		elseif(!$reverse)
+		elseif (!$reverse)
 		{
 			asort($field_list);
 		}
@@ -314,20 +315,19 @@
 		{
 			arsort($field_list);
 		}
-		$return_array = Array();
+		$return_array = array();
 		//@reset($field_list);
 		$i = 1;
 		//while(list($key,$value) = each($field_list))
 		if (is_array($field_list))
 		{
-			foreach($field_list as $key => $value)
+			foreach ($field_list as $key => $value)
 			{
 				$return_array[] = $key;
-				echo '('.$i++.') Field: <b>'.$value."</b>\t\tMsg Num: <b>".$key."</b><br />\n";
+				echo '(' . $i++ . ') Field: <b>' . $value . "</b>\t\tMsg Num: <b>" . $key . "</b><br />\n";
 			}
 		}
 		@reset($return_array);
 		return $return_array;
 	}
 }
-

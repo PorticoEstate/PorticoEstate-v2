@@ -1,4 +1,5 @@
 <?php
+
 /**
  * EMail - Service
  *
@@ -15,7 +16,8 @@
  * Service
  *
  * @package email
- */	
+ */
+
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Translation;
 
@@ -32,10 +34,8 @@ class email_service
 		$userSettings = (array) Settings::getInstance()->get('user');
 		$translation = Translation::getInstance();
 
-		$menu['navbar'] = array
-		(
-			'email'	=> array
-			(
+		$menu['navbar'] = array(
+			'email'	=> array(
 				'text'	=> $translation->translate('Email', [], false, 'email'),
 				'url'	=> phpgw::link('/email/view/inbox'),
 				'image'	=> array('email', 'navbar'),
@@ -48,29 +48,24 @@ class email_service
 		if (!empty($userSettings['apps']['admin']))
 		{
 			$menu['admin'] = array();
-			$menu['admin'][] = array
-			(
+			$menu['admin'][] = array(
 				'text'	=> $translation->translate('Site Configuration', [], false, 'email'),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'admin.uiconfig.index', 'appname' => 'email') )
+				'url'	=> phpgw::link('/index.php', array('menuaction' => 'admin.uiconfig.index', 'appname' => 'email'))
 			);
 		}
 
-		$menu['toolbar'] = array
-		(
-			array
-			(
+		$menu['toolbar'] = array(
+			array(
 				'url'	=> phpgw::link('/email/view/compose'),
 				'text'	=> $translation->translate('New', [], false, 'email'),
 				'image'	=> array('email', 'new')
 			),
-			array
-			(
+			array(
 				'url'	=> phpgw::link('/email/view/search'),
 				'text'	=> $translation->translate('Search', [], false, 'email'),
 				'image'	=> array('email', 'search')
 			),
-			array
-			(
+			array(
 				'url'	=> phpgw::link('/email/view/filters'),
 				'text'	=> $translation->translate('Filters', [], false, 'email'),
 				'image'	=> array('email', 'filters')
@@ -79,33 +74,27 @@ class email_service
 
 		if (!empty($userSettings['apps']['preferences']))
 		{
-			$menu['preferences'] = array
-			(
-				array
-				(
+			$menu['preferences'] = array(
+				array(
 					'text'	=> $translation->translate('EMail Preferences', [], false, 'email'),
 					'url'	=> phpgw::link('/email/view/preferences')
 				),
-				array
-				(
+				array(
 					'text'	=> $translation->translate('Extra EMail Accounts', [], false, 'email'),
 					'url'	=> phpgw::link('/email/view/accounts')
 				),
-				array
-				(
+				array(
 					'text'	=> $translation->translate('EMail Filters', [], false, 'email'),
 					'url'	=> phpgw::link('/email/view/filters')
 				)
 			);
 
-			$menu['toolbar'][] = array
-			(
+			$menu['toolbar'][] = array(
 				'text'	=> $translation->translate('Preferences', [], false, 'email'),
 				'url'	=> phpgw::link('/email/view/preferences')
 			);
 
-			$menu['toolbar'][] = array
-			(
+			$menu['toolbar'][] = array(
 				'text'	=> $translation->translate('Accounts', [], false, 'email'),
 				'url'	=> phpgw::link('/email/view/accounts')
 			);
@@ -128,5 +117,4 @@ class email_service
 	{
 		return array('content', 'this is being phased out');
 	}
-
 }

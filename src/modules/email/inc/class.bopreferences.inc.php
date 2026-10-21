@@ -1525,7 +1525,6 @@ class email_bopreferences
 					}
 				}
 				*/
-
 		}
 
 		// DONE processing prefs, SAVE to the Repository

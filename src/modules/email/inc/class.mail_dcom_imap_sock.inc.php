@@ -1,66 +1,67 @@
 <?php
+
+/**
+ * EMail - Handles specific operations in dealing with IMAP via Sockets
+ *
+ * @author Angelo (Angles) Puglisi <angles@aminvestments.com>
+ * @author Mark Peters <skeeter@phpgroupware.org>
+ * @copyright Copyright (C) 2001-2002 Angelo Tony Puglisi (Angles)
+ * @copyright Copyright (C) 2001-2005 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ * @version $Id$
+ * @internal Based on AngleMail http://www.anglemail.org/
+ */
+
+
+/**
+ * IMAP module FOR SOCKETS, replaces php IMAP extension
+ *
+ * In around summer 2001, Mark Peeters "skeeter" emailed me "Angles" some 
+ * files which were the skeleton of a sockets replacement for the php IMAP 
+ * extensions. I believe skeeter wrote the base "network" class in the phpgwapi, 
+ * and these files extended that class, an excellent approach. Skeeter covered 
+ * the low level network functionality and also had some higher level sockets 
+ * functionality that appeared to be for NNTP. To the extent any function in 
+ * this class uses any of skeeters code, even when that code may be just one 
+ * line, skeeter is listed as an author for that function.
+ * @package email
+ * @ignore
+ */
+defined('PE_IMAP_SA_MESSAGES') || define('PE_IMAP_SA_MESSAGES', 1);
+defined('PE_IMAP_SA_RECENT') || define('PE_IMAP_SA_RECENT', 2);
+defined('PE_IMAP_SA_UNSEEN') || define('PE_IMAP_SA_UNSEEN', 4);
+defined('PE_IMAP_SA_UIDNEXT') || define('PE_IMAP_SA_UIDNEXT', 8);
+defined('PE_IMAP_SA_UIDVALIDITY') || define('PE_IMAP_SA_UIDVALIDITY', 16);
+defined('PE_IMAP_SA_ALL') || define('PE_IMAP_SA_ALL', 31);
+defined('PE_IMAP_SORTDATE') || define('PE_IMAP_SORTDATE', 0);
+defined('PE_IMAP_SORTARRIVAL') || define('PE_IMAP_SORTARRIVAL', 1);
+defined('PE_IMAP_SORTFROM') || define('PE_IMAP_SORTFROM', 2);
+defined('PE_IMAP_SORTSUBJECT') || define('PE_IMAP_SORTSUBJECT', 3);
+defined('PE_IMAP_SORTTO') || define('PE_IMAP_SORTTO', 4);
+defined('PE_IMAP_SORTCC') || define('PE_IMAP_SORTCC', 5);
+defined('PE_IMAP_SORTSIZE') || define('PE_IMAP_SORTSIZE', 6);
+
+class mail_dcom extends mail_dcom_base
+{
+
 	/**
-	* EMail - Handles specific operations in dealing with IMAP via Sockets
-	*
-	* @author Angelo (Angles) Puglisi <angles@aminvestments.com>
-	* @author Mark Peters <skeeter@phpgroupware.org>
-	* @copyright Copyright (C) 2001-2002 Angelo Tony Puglisi (Angles)
-	* @copyright Copyright (C) 2001-2005 Free Software Foundation, Inc. http://www.fsf.org/
-	* @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
-	* @package email
-	* @version $Id$
-	* @internal Based on AngleMail http://www.anglemail.org/
-	*/
-
-
-	/**
-	* IMAP module FOR SOCKETS, replaces php IMAP extension
-	*
-	* In around summer 2001, Mark Peeters "skeeter" emailed me "Angles" some 
-	* files which were the skeleton of a sockets replacement for the php IMAP 
-	* extensions. I believe skeeter wrote the base "network" class in the phpgwapi, 
-	* and these files extended that class, an excellent approach. Skeeter covered 
-	* the low level network functionality and also had some higher level sockets 
-	* functionality that appeared to be for NNTP. To the extent any function in 
-	* this class uses any of skeeters code, even when that code may be just one 
-	* line, skeeter is listed as an author for that function.
-	* @package email
-	* @ignore
-	*/	
-	defined('PE_IMAP_SA_MESSAGES') || define('PE_IMAP_SA_MESSAGES', 1);
-	defined('PE_IMAP_SA_RECENT') || define('PE_IMAP_SA_RECENT', 2);
-	defined('PE_IMAP_SA_UNSEEN') || define('PE_IMAP_SA_UNSEEN', 4);
-	defined('PE_IMAP_SA_UIDNEXT') || define('PE_IMAP_SA_UIDNEXT', 8);
-	defined('PE_IMAP_SA_UIDVALIDITY') || define('PE_IMAP_SA_UIDVALIDITY', 16);
-	defined('PE_IMAP_SA_ALL') || define('PE_IMAP_SA_ALL', 31);
-	defined('PE_IMAP_SORTDATE') || define('PE_IMAP_SORTDATE', 0);
-	defined('PE_IMAP_SORTARRIVAL') || define('PE_IMAP_SORTARRIVAL', 1);
-	defined('PE_IMAP_SORTFROM') || define('PE_IMAP_SORTFROM', 2);
-	defined('PE_IMAP_SORTSUBJECT') || define('PE_IMAP_SORTSUBJECT', 3);
-	defined('PE_IMAP_SORTTO') || define('PE_IMAP_SORTTO', 4);
-	defined('PE_IMAP_SORTCC') || define('PE_IMAP_SORTCC', 5);
-	defined('PE_IMAP_SORTSIZE') || define('PE_IMAP_SORTSIZE', 6);
-
-	class mail_dcom extends mail_dcom_base
+	 * This stops users from using email if they do not have php-imap enabled
+	 *
+	 * @author Dave Hall
+	 */
+	function __construct()
 	{
+		echo "<br />\n" . lang('php-imap support not installed - exiting') . "<br />\n";
+		echo lang('contact your system administrator');
+		exit;
+	}
 
-		/**
-		* This stops users from using email if they do not have php-imap enabled
-		*
-		* @author Dave Hall
-		*/
-		function __construct()
-		{
-			echo "<br />\n" . lang('php-imap support not installed - exiting') . "<br />\n";
-			echo lang('contact your system administrator');
-			exit;
-		}
-		
-		/**************************************************************************\
-		*	data analysis specific to IMAP data communications
+	/**************************************************************************\
+	 *	data analysis specific to IMAP data communications
 		\**************************************************************************/
 
-		/*!
+	/*!
 		@function str_begins_with
 		@abstract determine if string $haystack begins with string $needle
 		@param $haystack (string) data to examine to determine if it starts with $needle
@@ -72,14 +73,15 @@
 		regex special chars such as the period "." or the slashes "/" and "\" , etc...
 		@access public or private
 		*/
-		function str_begins_with($haystack,$needle='')
+	function str_begins_with($haystack, $needle = '')
+	{
+		if ((trim($haystack) == '')
+			|| (trim($needle) == '')
+		)
 		{
-			if ((trim($haystack) == '')
-			|| (trim($needle) == ''))
-			{
-				return False;
-			}
-			/*
+			return False;
+		}
+		/*
 			// now do a case insensitive search for needle as the beginning part of haystack
 			if (stristr($haystack,$needle) == False)
 			{
@@ -99,31 +101,31 @@
 				return False;
 			}
 			*/
-			// now do a case insensitive search for needle as the beginning part of haystack
-			// stristr returns everything in haystack from the 1st occurance of needle (including needle itself)
-			//   to the end of haystack, OR returns FALSE if needle is not in haystack
-			$stristr_found = stristr($haystack,$needle);
-			if ($stristr_found == False)
-			{
-				// needle is not anywhere in haystack
-				return False;
-			}
-			// so needle IS in haystack
-			// if needle starts at the beginning of haystack then stristr will return the entire haystack string
-			// thus strlen of $stristr_found and $haystack would be the same length
-			if (strlen($haystack) == strlen($stristr_found))
-			{
-				// needle DOES begin at position zero of haystack
-				return True;
-			}
-			else
-			{
-				// where ever needle is, it is NOT at the beginning of haystack
-				return False;
-			}
+		// now do a case insensitive search for needle as the beginning part of haystack
+		// stristr returns everything in haystack from the 1st occurance of needle (including needle itself)
+		//   to the end of haystack, OR returns FALSE if needle is not in haystack
+		$stristr_found = stristr($haystack, $needle);
+		if ($stristr_found == False)
+		{
+			// needle is not anywhere in haystack
+			return False;
 		}
-		
-		/*!
+		// so needle IS in haystack
+		// if needle starts at the beginning of haystack then stristr will return the entire haystack string
+		// thus strlen of $stristr_found and $haystack would be the same length
+		if (strlen($haystack) == strlen($stristr_found))
+		{
+			// needle DOES begin at position zero of haystack
+			return True;
+		}
+		else
+		{
+			// where ever needle is, it is NOT at the beginning of haystack
+			return False;
+		}
+	}
+
+	/*!
 		@function imap_read_port
 		@abstract reads data from an IMAP server until the line that begins with the specified param "cmd_tag"
 		@param $cmd_tag (string) the special string that indicates a server is done sending data
@@ -144,105 +146,106 @@
 		"BAD" = protocol error such as unrecognized command or syntax error, client should abort this command processing
 		@access private
 		*/
-		function imap_read_port($cmd_tag='')
+	function imap_read_port($cmd_tag = '')
+	{
+		// the $cmd_tag OK, BAD, NO line that marks the completion of server data
+		// is not actually considered data
+		// to put this line in the return data array may confuse the calling function
+		// so it will go in $this->server_last_ok_response
+		// for inspection by the calling function if so desired
+		// so clear it of any left over value from a previous request
+		$this->server_last_ok_response = '';
+
+		// we return an array of strings, so initialize an empty array
+		$return_me = array();
+		// is we do not know what to look for as an end tag, then abort
+		if ($cmd_tag == '')
 		{
-			// the $cmd_tag OK, BAD, NO line that marks the completion of server data
-			// is not actually considered data
-			// to put this line in the return data array may confuse the calling function
-			// so it will go in $this->server_last_ok_response
-			// for inspection by the calling function if so desired
-			// so clear it of any left over value from a previous request
-			$this->server_last_ok_response = '';
-			
-			// we return an array of strings, so initialize an empty array
-			$return_me = Array();
-			// is we do not know what to look for as an end tag, then abort
-			if ($cmd_tag == '')
-			{
-				return $return_me;
-			}
-			// read the data until a tagged command completion is encountered
-			while ($line = $this->read_port())
-			{
-				if ($this->str_begins_with($line, $cmd_tag) == False)
-				{
-					// continue reading from this port
-					// each line of data from the server goes into an array
-					$next_pos = count($return_me);
-					$return_me[$next_pos] = $line;
-				}
-				// so we have a cmd_tag, is it followed by OK ?
-				elseif ($this->str_begins_with($line, $cmd_tag.' OK'))
-				{
-					// we got a tagged command response OK
-					// but if we send an empty array under this test error scheme
-					// calling function will think there was an error
-					// DECISION: if array is count zero, put this OK line in it
-					// otherwise array already had valid server data in it
-					// FIXME: and we do not want to add this OK line which is NOT actually data
-					// FIXME: OR we ALWAYS add the final OK line and expect calling function
-					// to ignore it ????
-					if (count($return_me) == 0)
-					{
-						// add this OK line just to return a NON empty array
-						$return_me[0] = $line;
-					}
-					else
-					{
-						// valid server data ALREADY exists in the return array
-						// to add this final OK line *MAY* confuse the calling function
-						// because this final OK line is NOT actually server data
-						// THEREFOR: put the OK line in $this->server_last_ok_response for inspection
-						// by the calling function if so desired
-						$this->server_last_ok_response = $line;
-					}
-					// END READING THE PORT
-					// in any case, we reached the end of server data
-					// so we must break out of this loop
-					break;
-				}
-				// not an OK tag, was it an understandable error NO or BAD ?
-				elseif (($this->str_begins_with($line, $cmd_tag.' NO'))
-				|| ($this->str_begins_with($line, $cmd_tag.' BAD')))
-				{
-					// error analysis, we have a useful error response from the server
-					// put that error string into $this->server_last_error_str
-					$this->server_last_error_str = $line;
-					// what should we return here IF there was a NO or BAD error ?
-					// how about an empty array, how about FALSE ??
-						
-					// TEST THIS ERROR DETECTION - empty array = error (BAD or NO)
-					// empty the array
-					$return_me = Array();
-					// END READING THE PORT
-					// in any case (BAD or NO)
-					// we reached the end of server data
-					// so we must break out of this loop
-					break;
-				}
-				else
-				// so not OK and not a known error, log the unknown error
-				{
-					// error analysis, generic record of unknown error situation
-					// put that error string into $this->server_last_error_str
-					$this->server_last_error_str = 'imap unknown error in imap_read_port: "'.$line.'"';
-					// what should we return here IF there was a NO or BAD error ?
-					// how about an empty array, how about FALSE ??
-						
-					// TEST THIS ERROR DETECTION - empty array = error (BAD or NO)
-					// empty the array
-					$return_me = Array();
-					// END READING THE PORT
-					// in any case (unknown data after $cmd_tag completion)
-					// we reached the end of server data
-					// so we must break out of this loop
-					break;
-				}
-			}
 			return $return_me;
 		}
-		
-		/*!
+		// read the data until a tagged command completion is encountered
+		while ($line = $this->read_port())
+		{
+			if ($this->str_begins_with($line, $cmd_tag) == False)
+			{
+				// continue reading from this port
+				// each line of data from the server goes into an array
+				$next_pos = count($return_me);
+				$return_me[$next_pos] = $line;
+			}
+			// so we have a cmd_tag, is it followed by OK ?
+			elseif ($this->str_begins_with($line, $cmd_tag . ' OK'))
+			{
+				// we got a tagged command response OK
+				// but if we send an empty array under this test error scheme
+				// calling function will think there was an error
+				// DECISION: if array is count zero, put this OK line in it
+				// otherwise array already had valid server data in it
+				// FIXME: and we do not want to add this OK line which is NOT actually data
+				// FIXME: OR we ALWAYS add the final OK line and expect calling function
+				// to ignore it ????
+				if (count($return_me) == 0)
+				{
+					// add this OK line just to return a NON empty array
+					$return_me[0] = $line;
+				}
+				else
+				{
+					// valid server data ALREADY exists in the return array
+					// to add this final OK line *MAY* confuse the calling function
+					// because this final OK line is NOT actually server data
+					// THEREFOR: put the OK line in $this->server_last_ok_response for inspection
+					// by the calling function if so desired
+					$this->server_last_ok_response = $line;
+				}
+				// END READING THE PORT
+				// in any case, we reached the end of server data
+				// so we must break out of this loop
+				break;
+			}
+			// not an OK tag, was it an understandable error NO or BAD ?
+			elseif (($this->str_begins_with($line, $cmd_tag . ' NO'))
+				|| ($this->str_begins_with($line, $cmd_tag . ' BAD'))
+			)
+			{
+				// error analysis, we have a useful error response from the server
+				// put that error string into $this->server_last_error_str
+				$this->server_last_error_str = $line;
+				// what should we return here IF there was a NO or BAD error ?
+				// how about an empty array, how about FALSE ??
+
+				// TEST THIS ERROR DETECTION - empty array = error (BAD or NO)
+				// empty the array
+				$return_me = array();
+				// END READING THE PORT
+				// in any case (BAD or NO)
+				// we reached the end of server data
+				// so we must break out of this loop
+				break;
+			}
+			else
+			// so not OK and not a known error, log the unknown error
+			{
+				// error analysis, generic record of unknown error situation
+				// put that error string into $this->server_last_error_str
+				$this->server_last_error_str = 'imap unknown error in imap_read_port: "' . $line . '"';
+				// what should we return here IF there was a NO or BAD error ?
+				// how about an empty array, how about FALSE ??
+
+				// TEST THIS ERROR DETECTION - empty array = error (BAD or NO)
+				// empty the array
+				$return_me = array();
+				// END READING THE PORT
+				// in any case (unknown data after $cmd_tag completion)
+				// we reached the end of server data
+				// so we must break out of this loop
+				break;
+			}
+		}
+		return $return_me;
+	}
+
+	/*!
 		@function report_svr_data
 		@abstract reports server data array for debugging purposes
 		@param $data_array (array) server response data as returned by function "imap_read_port" as an array
@@ -253,21 +256,21 @@
 		@result  none, this function DIRECTLY echos multiline data, nothing is returned from this function
 		@access private
 		*/
-		function report_svr_data($data_array, $calling_func_name='', $show_ok_msg=True)
+	function report_svr_data($data_array, $calling_func_name = '', $show_ok_msg = True)
+	{
+		echo 'imap: ' . $calling_func_name . ': response_array line by line:<br />';
+		for ($i = 0; $i < count($data_array); $i++)
 		{
-			echo 'imap: '.$calling_func_name.': response_array line by line:<br />';
-			for ($i=0; $i<count($data_array); $i++)
-			{
-				echo ' -- ArrayPos['.$i.'] data: ' .htmlspecialchars($data_array[$i]) .'<br />';
-			}
-			echo 'imap: '.$calling_func_name.': =ENDS= response_array line by line:<br />';
-			if ($show_ok_msg == True)
-			{
-				echo 'imap: '.$calling_func_name.': last server completion line: "'.htmlspecialchars($this->server_last_ok_response).'"<br />';
-			}
+			echo ' -- ArrayPos[' . $i . '] data: ' . htmlspecialchars($data_array[$i]) . '<br />';
 		}
-		
-		/*!
+		echo 'imap: ' . $calling_func_name . ': =ENDS= response_array line by line:<br />';
+		if ($show_ok_msg == True)
+		{
+			echo 'imap: ' . $calling_func_name . ': last server completion line: "' . htmlspecialchars($this->server_last_ok_response) . '"<br />';
+		}
+	}
+
+	/*!
 		@function server_last_error
 		@abstract implements IMAP_LAST_ERROR
 		@result string
@@ -275,104 +278,104 @@
 		@discussion UNDER CONSTRUCTION
 		@access public
 		*/
-		function server_last_error()
-		{
-			return $this->server_last_error_str;
-		}
-		
-		
-		/**************************************************************************\
-		*	Functions NOT YET IMPLEMENTED
+	function server_last_error()
+	{
+		return $this->server_last_error_str;
+	}
+
+
+	/**************************************************************************\
+	 *	Functions NOT YET IMPLEMENTED
 		\**************************************************************************/
-		/*!
+	/*!
 		@function createmailbox
 		@abstract not yet implemented in IMAP sockets module
 		*/
-		function createmailbox($stream,$mailbox) 
-		{
-			// not yet implemented
-			// eventually this will use this function to call for expiration of stale cached data, if any
-			//$this->folder_list_did_change();
-			return true;
-		}
-		/*!
+	function createmailbox($stream, $mailbox)
+	{
+		// not yet implemented
+		// eventually this will use this function to call for expiration of stale cached data, if any
+		//$this->folder_list_did_change();
+		return true;
+	}
+	/*!
 		@function deletemailbox
 		@abstract not yet implemented in IMAP sockets module
 		*/
-		function deletemailbox($stream,$mailbox)
-		{
-			// not yet implemented
-			// eventually this will use this function to call for expiration of stale cached data, if any
-			//$this->folder_list_did_change();
-			return true;
-		}
-		/*!
+	function deletemailbox($stream, $mailbox)
+	{
+		// not yet implemented
+		// eventually this will use this function to call for expiration of stale cached data, if any
+		//$this->folder_list_did_change();
+		return true;
+	}
+	/*!
 		@function renamemailbox
 		@abstract not yet implemented in IMAP sockets module
 		*/
-		function renamemailbox($stream,$mailbox_old,$mailbox_new)
-		{
-			// not yet implemented
-			// eventually this will use this function to call for expiration of stale cached data, if any
-			//$this->folder_list_did_change();
-			return true;
-		}
-		
-		/*!
+	function renamemailbox($stream, $mailbox_old, $mailbox_new)
+	{
+		// not yet implemented
+		// eventually this will use this function to call for expiration of stale cached data, if any
+		//$this->folder_list_did_change();
+		return true;
+	}
+
+	/*!
 		@function expunge
 		@abstract not yet implemented in IMAP sockets module
 		*/
-		function expunge($stream)
-		{
-			// not yet implemented
-			return true;
-		}
-		/*!
+	function expunge($stream)
+	{
+		// not yet implemented
+		return true;
+	}
+	/*!
 		@function mailcopy
 		@abstract not yet implemented in IMAP sockets module
 		*/
-		function mailcopy($stream,$msg_list,$mailbox,$flags)
-		{
-			// not yet implemented
-			return False;
-		}
-		/*!
+	function mailcopy($stream, $msg_list, $mailbox, $flags)
+	{
+		// not yet implemented
+		return False;
+	}
+	/*!
 		@function mail_move
 		@abstract not yet implemented in IMAP sockets module
 		*/
-		function mail_move($stream,$msg_list,$mailbox)
-		{
-			// not yet implemented
-			return False;
-		}
-		/*!
+	function mail_move($stream, $msg_list, $mailbox)
+	{
+		// not yet implemented
+		return False;
+	}
+	/*!
 		@function noop_ping_test
 		@abstract not yet implemented in IMAP sockets module
 		*/
-		function noop_ping_test($stream)
-		{
-			// not yet implemented
-			return False;
-		}
-		/*!
+	function noop_ping_test($stream)
+	{
+		// not yet implemented
+		return False;
+	}
+	/*!
 		@function append
 		@abstract not yet implemented in IMAP sockets module
 		*/
-		function append($stream, $folder = "Sent", $header, $body, $flags = "")
-		{
-			// not yet implemented
-			return False;
-		}
-		/*!
+	function append($stream, $folder = "Sent", $header, $body, $flags = "")
+	{
+		// not yet implemented
+		return False;
+	}
+	/*!
 		@function fetch_overview
 		@abstract not yet implemented in IMAP sockets module
 		*/
-		function fetch_overview($stream_notused,$criteria,$flags)
-		{
-			// not yet implemented
-			return False;
-		}
-		/*
+	function fetch_overview($stream_notused, $criteria, $flags)
+	{
+		// not yet implemented
+		return False;
+	}
+	/*
 		@function search
 		@abstract  implements IMAP_SEARCH, search the mailbox currently opened for param $criteria args
 		@param $stream_notused Stream is automatically handled by the underlying code in this socket class. 
@@ -409,18 +412,18 @@
 		UNKEYWORD "string" - match messages that do not have the keyword "string"
 		UNSEEN - match messages which have not been read yet
 		*/
-		function search($stream_notused,$sequence,$flags)
-		{
-			$empty_return=array();
-			// not yet implemented
-			return $empty_return;
-		}
-	
-		
-		/**************************************************************************\
-		*	OPEN and CLOSE Server Connection
+	function search($stream_notused, $sequence, $flags)
+	{
+		$empty_return = array();
+		// not yet implemented
+		return $empty_return;
+	}
+
+
+	/**************************************************************************\
+	 *	OPEN and CLOSE Server Connection
 		\**************************************************************************/
-		/*!
+	/*!
 		@function open
 		@abstract implements php function IMAP_OPEN
 		@param $fq_folder (string) 
@@ -440,98 +443,104 @@
 		Where INBOX is the namespace and the dot is the delimiter, which will always preceed any subfolder.
 		@access public
 		*/
-		function open ($fq_folder, $user, $pass, $flags='')
+	function open($fq_folder, $user, $pass, $flags = '')
+	{
+
+		// fq_folder is a "fully qualified folder", seperate the parts:
+		$svr_data = array();
+		$svr_data = $this->distill_fq_folder($fq_folder);
+		$folder = $svr_data['folder'];
+		$server = $svr_data['server'];
+		$port = $svr_data['port'];
+
+		if (!$this->open_port($server, $port, 15))
 		{
-			
-			// fq_folder is a "fully qualified folder", seperate the parts:
-			$svr_data = array();
-			$svr_data = $this->distill_fq_folder($fq_folder);
-			$folder = $svr_data['folder'];
-			$server = $svr_data['server'];
-			$port = $svr_data['port'];
-			
-			if (!$this->open_port($server,$port,15))
-			{
-				echo '<p><center><b>' .lang('There was an error trying to connect to your IMAP server.<br />Please contact your admin to check the servername, username or password.') .'</b></center>';
-				echo('<CENTER><A HREF="'.phpgw::link('/home/').'">'.lang('Click here to continue').'...</A></CENTER>'); //cbsman
-				(new \phpgwapi_common())->phpgw_exit();
-			}
-			else
-			{
-				$junk = $this->read_port();
-			}
-
-
-			
-			$cmd_tag = 'L001';
-			$full_command = $cmd_tag.' LOGIN "'.$user.'" "'.$pass.'"';
-			$expecting = $cmd_tag; // may be followed by OK, NO, or BAD
-			
-			
-			if(!$this->write_port($full_command))
-			{
-				$this->error();
-				// does $this->error() ever continue onto next line?
-				return False;
-			}
-			// server can spew some b.s. hello messages before the official response
-			// read the server data
-			$response_array = $this->imap_read_port($expecting);
-			
-			// TEST THIS ERROR DETECTION - empty array = error (BAD or NO)
-			if (count($response_array) == 0)
-			{
-				return False;
-			}
-			else
-			{
-				if ($this->debug_dcom >= 2) { $this->report_svr_data($response_array, 'open', True); }
-			}
-			
-			// now that we have logged in, php's IMAP_OPEN would now select the desired folder
-			// php's IMAP_OPEN also selects the desired folder (mailbox) after the connection is established
-			if($folder != '')
-			{
-				$this->reopen('',$fq_folder);
-			}
-			return $this->socket;
+			echo '<p><center><b>' . lang('There was an error trying to connect to your IMAP server.<br />Please contact your admin to check the servername, username or password.') . '</b></center>';
+			echo ('<CENTER><A HREF="' . phpgw::link('/home/') . '">' . lang('Click here to continue') . '...</A></CENTER>'); //cbsman
+			(new \phpgwapi_common())->phpgw_exit();
+		}
+		else
+		{
+			$junk = $this->read_port();
 		}
 
-		/*!
+
+
+		$cmd_tag = 'L001';
+		$full_command = $cmd_tag . ' LOGIN "' . $user . '" "' . $pass . '"';
+		$expecting = $cmd_tag; // may be followed by OK, NO, or BAD
+
+
+		if (!$this->write_port($full_command))
+		{
+			$this->error();
+			// does $this->error() ever continue onto next line?
+			return False;
+		}
+		// server can spew some b.s. hello messages before the official response
+		// read the server data
+		$response_array = $this->imap_read_port($expecting);
+
+		// TEST THIS ERROR DETECTION - empty array = error (BAD or NO)
+		if (count($response_array) == 0)
+		{
+			return False;
+		}
+		else
+		{
+			if ($this->debug_dcom >= 2)
+			{
+				$this->report_svr_data($response_array, 'open', True);
+			}
+		}
+
+		// now that we have logged in, php's IMAP_OPEN would now select the desired folder
+		// php's IMAP_OPEN also selects the desired folder (mailbox) after the connection is established
+		if ($folder != '')
+		{
+			$this->reopen('', $fq_folder);
+		}
+		return $this->socket;
+	}
+
+	/*!
 		@function close
 		@abstract implements LOGOUT
 		@author Angles, skeeter
 		*/
-		function close($flags="")
+	function close($flags = "")
+	{
+
+		$cmd_tag = 'c001';
+		$full_command = $cmd_tag . ' LOGOUT';
+		$expecting = $cmd_tag; // may be followed by OK, NO, or BAD
+
+
+		if (!$this->write_port($full_command))
 		{
-			
-			$cmd_tag = 'c001';
-			$full_command = $cmd_tag.' LOGOUT';
-			$expecting = $cmd_tag; // may be followed by OK, NO, or BAD
-			
-			
-			if(!$this->write_port($full_command))
-			{
-				$this->error();
-			}
-			
-			// server can spew some b.s. goodbye message before the official response
-			// read the server data
-			$response_array = $this->imap_read_port($expecting);
-			
-			// TEST THIS ERROR DETECTION - empty array = error (BAD or NO)
-			if (count($response_array) == 0)
-			{
-				return False;				
-			}
-			else
-			{
-				if ($this->debug_dcom >= 2) { $this->report_svr_data($response_array, 'close', True); }
-				return True;
-			}
+			$this->error();
 		}
 
-		/*!
+		// server can spew some b.s. goodbye message before the official response
+		// read the server data
+		$response_array = $this->imap_read_port($expecting);
+
+		// TEST THIS ERROR DETECTION - empty array = error (BAD or NO)
+		if (count($response_array) == 0)
+		{
+			return False;
+		}
+		else
+		{
+			if ($this->debug_dcom >= 2)
+			{
+				$this->report_svr_data($response_array, 'close', True);
+			}
+			return True;
+		}
+	}
+
+	/*!
 		@function reopen
 		@abstract implements last part of IMAP_OPEN and all of IMAP_REOPEN
 		@param $stream_notused Socket class handles stream reference internally
@@ -542,40 +551,43 @@
 		@author Angles
 		@access public
 		*/
-		function reopen($stream_notused, $fq_folder, $flags='')
+	function reopen($stream_notused, $fq_folder, $flags = '')
+	{
+
+		// fq_folder is a "fully qualified folder", seperate the parts:
+		$svr_data = array();
+		$svr_data = $this->distill_fq_folder($fq_folder);
+		$folder = $svr_data['folder'];
+
+		$cmd_tag = 'r001';
+		$full_command = $cmd_tag . ' SELECT "' . $folder . '"';
+		$expecting = $cmd_tag; // may be followed by OK, NO, or BAD
+
+
+		if (!$this->write_port($full_command))
 		{
-			
-			// fq_folder is a "fully qualified folder", seperate the parts:
-			$svr_data = array();
-			$svr_data = $this->distill_fq_folder($fq_folder);
-			$folder = $svr_data['folder'];
-			
-			$cmd_tag = 'r001';
-			$full_command = $cmd_tag.' SELECT "'.$folder.'"';
-			$expecting = $cmd_tag; // may be followed by OK, NO, or BAD
-			
-			
-			if(!$this->write_port($full_command))
-			{
-				$this->error();
-			}
-			
-			// read the server data
-			$response_array = $this->imap_read_port($expecting);
-			
-			// TEST THIS ERROR DETECTION - empty array = error (BAD or NO)
-			if (count($response_array) == 0)
-			{
-				return False;				
-			}
-			else
-			{
-				if ($this->debug_dcom >= 2) { $this->report_svr_data($response_array, 'reopen', True); }
-				return True;
-			}
+			$this->error();
 		}
 
-		/*!
+		// read the server data
+		$response_array = $this->imap_read_port($expecting);
+
+		// TEST THIS ERROR DETECTION - empty array = error (BAD or NO)
+		if (count($response_array) == 0)
+		{
+			return False;
+		}
+		else
+		{
+			if ($this->debug_dcom >= 2)
+			{
+				$this->report_svr_data($response_array, 'reopen', True);
+			}
+			return True;
+		}
+	}
+
+	/*!
 		@function listmailbox
 		@abstract implements IMAP_LISTMAILBOX
 		@param $stream_notused Socket class handles stream reference internally
@@ -605,116 +617,125 @@
 		@author Angles, skeeter
 		@access public
 		*/
-		function listmailbox($stream_notused,$server_str,$pattern)
-		{
-			$mailboxes_array = Array();
-			
-			// prepare params, seperate wildcards "*" or "%" from param $pattern
-			// LIST param 1 is empty or is a mailbox reference string withOUT any wildcard
-			// LIST param 2 is empty or is the wildcard either "%" or "*"
-			if ((strstr($pattern, '*'))
-			|| (strstr($pattern, '%')))
-			{
-				if (($pattern == '*')
-				|| ($pattern == '%'))
-				{
-					// no mailbox reference string, so LIST param 1 is empty
-					$list_params = '"" "' .$pattern .'"';
-				}
-				else
-				{
-					// just assume the * or % is at the end of the string
-					// seperate it from the rest of the pattern
-					$boxref = substr($pattern, 0, -1);
-					$wildcard = substr($pattern, -1);
-					$list_params = '"' .$boxref .'" "' .$wildcard .'"';
-				}
-			}
-			elseif (strlen($pattern) == 0)
-			{
-				// empty $pattern equates to both LIST params being empty, which IS Valid
-				$list_params = '"" ""';
-			}
-			else
-			{
-				// we have a string with no wildcard, so LIST param 2 is empty
-				$list_params = '"' .$pattern .'" ""';
-			}
+	function listmailbox($stream_notused, $server_str, $pattern)
+	{
+		$mailboxes_array = array();
 
-			$cmd_tag = 'X001';
-			$full_command = $cmd_tag.' LIST '.$list_params;
-			$expecting = $cmd_tag; // may be followed by OK, NO, or BAD
-			
-			
-			if(!$this->write_port($full_command))
+		// prepare params, seperate wildcards "*" or "%" from param $pattern
+		// LIST param 1 is empty or is a mailbox reference string withOUT any wildcard
+		// LIST param 2 is empty or is the wildcard either "%" or "*"
+		if ((strstr($pattern, '*'))
+			|| (strstr($pattern, '%'))
+		)
+		{
+			if (($pattern == '*')
+				|| ($pattern == '%')
+			)
 			{
-				$this->error();
-			}
-			
-			// read the server data
-			$response_array = $this->imap_read_port($expecting);
-			
-			// TEST THIS ERROR DETECTION - empty array = error (BAD or NO)
-			if (count($response_array) == 0)
-			{
-				return False;				
+				// no mailbox reference string, so LIST param 1 is empty
+				$list_params = '"" "' . $pattern . '"';
 			}
 			else
 			{
-				if ($this->debug_dcom >= 2) { $this->report_svr_data($response_array, 'reopen', True); }
+				// just assume the * or % is at the end of the string
+				// seperate it from the rest of the pattern
+				$boxref = substr($pattern, 0, -1);
+				$wildcard = substr($pattern, -1);
+				$list_params = '"' . $boxref . '" "' . $wildcard . '"';
 			}
-			
-			// delete all text except the folder name
-			for ($i=0; $i<count($response_array); $i++)
-			{
-				// don't include "noselect" folders
-				if (stristr($response_array[$i], '\NoSelect'))
-				{
-					// do nothing
-				}
-				else
-				{
-					// get everything to the right of the quote_space " , INCLUDES the quote_space itself
-					$folder_name = strstr($response_array[$i],'" ');
-					// delete that quote_space and trim
-					$folder_name = trim(substr($folder_name, 2));
-					// if the folder name includes space(s) then it will be enclosed in quotes
-					if ((strlen($folder_name) > 0)
-					&& ($folder_name[0] == '"') )
-					{
-						// delete the opening quote
-						$folder_name = substr($folder_name, 1);
-						// delete the closing quote
-						$folder_name = substr($folder_name, 0, -1);
-					}
-					// php builtin function returns the server_str before the folder name
-					$folder_name = $server_str .$folder_name;
-					// add to the result array
-					$next_pos = count($mailboxes_array);
-					$mailboxes_array[$next_pos] = $folder_name;
-				}
-			}
-			
-			if ($this->debug_dcom >= 2) { $this->report_svr_data($mailboxes_array, 'listmailbox INTERNAL_mailboxes_array', False); }
-			//return '';
-			return $mailboxes_array;
 		}
-		
-		
-		/**************************************************************************\
-		*	Mailbox Status and Information
-		\**************************************************************************/
-		
-		/*!
-		@function mailboxmsginfo
-		@abstract not yet implemented in IMAP sockets module
-		*/
-		function mailboxmsginfo($stream_notused='')
+		elseif (strlen($pattern) == 0)
+		{
+			// empty $pattern equates to both LIST params being empty, which IS Valid
+			$list_params = '"" ""';
+		}
+		else
+		{
+			// we have a string with no wildcard, so LIST param 2 is empty
+			$list_params = '"' . $pattern . '" ""';
+		}
+
+		$cmd_tag = 'X001';
+		$full_command = $cmd_tag . ' LIST ' . $list_params;
+		$expecting = $cmd_tag; // may be followed by OK, NO, or BAD
+
+
+		if (!$this->write_port($full_command))
+		{
+			$this->error();
+		}
+
+		// read the server data
+		$response_array = $this->imap_read_port($expecting);
+
+		// TEST THIS ERROR DETECTION - empty array = error (BAD or NO)
+		if (count($response_array) == 0)
 		{
 			return False;
 		}
-		
-		/*
+		else
+		{
+			if ($this->debug_dcom >= 2)
+			{
+				$this->report_svr_data($response_array, 'reopen', True);
+			}
+		}
+
+		// delete all text except the folder name
+		for ($i = 0; $i < count($response_array); $i++)
+		{
+			// don't include "noselect" folders
+			if (stristr($response_array[$i], '\NoSelect'))
+			{
+				// do nothing
+			}
+			else
+			{
+				// get everything to the right of the quote_space " , INCLUDES the quote_space itself
+				$folder_name = strstr($response_array[$i], '" ');
+				// delete that quote_space and trim
+				$folder_name = trim(substr($folder_name, 2));
+				// if the folder name includes space(s) then it will be enclosed in quotes
+				if ((strlen($folder_name) > 0)
+					&& ($folder_name[0] == '"')
+				)
+				{
+					// delete the opening quote
+					$folder_name = substr($folder_name, 1);
+					// delete the closing quote
+					$folder_name = substr($folder_name, 0, -1);
+				}
+				// php builtin function returns the server_str before the folder name
+				$folder_name = $server_str . $folder_name;
+				// add to the result array
+				$next_pos = count($mailboxes_array);
+				$mailboxes_array[$next_pos] = $folder_name;
+			}
+		}
+
+		if ($this->debug_dcom >= 2)
+		{
+			$this->report_svr_data($mailboxes_array, 'listmailbox INTERNAL_mailboxes_array', False);
+		}
+		//return '';
+		return $mailboxes_array;
+	}
+
+
+	/**************************************************************************\
+	 *	Mailbox Status and Information
+		\**************************************************************************/
+
+	/*!
+		@function mailboxmsginfo
+		@abstract not yet implemented in IMAP sockets module
+		*/
+	function mailboxmsginfo($stream_notused = '')
+	{
+		return False;
+	}
+
+	/*
 		function mailboxmsginfo($folder='')
 		{
 			$info = new msg_mb_info;
@@ -749,8 +770,8 @@
 			}
 		}
 		*/
-		
-		/*!
+
+	/*!
 		@function status
 		@abstract implements php function IMAP_STATUS
 		@param $stream_notused  socket class handles stream reference internally
@@ -778,422 +799,427 @@
 		Normally only the line with the actual data would be returned by the server
 		@access public
 		*/
-		function status($stream_notused='', $fq_folder='',$options=PE_IMAP_SA_ALL)
+	function status($stream_notused = '', $fq_folder = '', $options = PE_IMAP_SA_ALL)
+	{
+
+		// fq_folder is a "fully qualified folder", seperate the parts:
+		$svr_data = array();
+		$svr_data = $this->distill_fq_folder($fq_folder);
+		$folder = $svr_data['folder'];
+		// build the query string
+		$query_str = '';
+		$available_options = array(
+			PE_IMAP_SA_MESSAGES	=> 'MESSAGES',
+			PE_IMAP_SA_RECENT	=> 'RECENT',
+			PE_IMAP_SA_UNSEEN	=> 'UNSEEN',
+			PE_IMAP_SA_UIDNEXT	=> 'UIDNEXT',
+			PE_IMAP_SA_UIDVALIDITY	=> 'UIDVALIDITY'
+		);
+		//@reset($available_options);
+		//while(list($key,$value) = each($available_options))
+		foreach ($available_options as $key => $value)
 		{
-			
-			// fq_folder is a "fully qualified folder", seperate the parts:
-			$svr_data = array();
-			$svr_data = $this->distill_fq_folder($fq_folder);
-			$folder = $svr_data['folder'];
-			// build the query string
-			$query_str = '';
-			$available_options = Array(
-				PE_IMAP_SA_MESSAGES	=> 'MESSAGES',
-				PE_IMAP_SA_RECENT	=> 'RECENT',
-				PE_IMAP_SA_UNSEEN	=> 'UNSEEN',
-				PE_IMAP_SA_UIDNEXT	=> 'UIDNEXT',
-				PE_IMAP_SA_UIDVALIDITY	=> 'UIDVALIDITY'
-			);
-			//@reset($available_options);
-			//while(list($key,$value) = each($available_options))
-			foreach($available_options as $key => $value)
+			if ($options & $key)
 			{
-				if($options & $key)
-				{
-					$query_str .= $value.' ';
-				}
+				$query_str .= $value . ' ';
 			}
-			$query_str = trim($query_str);
-			
-			$cmd_tag = 's001';
-			//$full_command = $cmd_tag.' STATUS '.$svr_data['folder'].' (MESSAGES RECENT UIDNEXT UIDVALIDITY UNSEEN)';
-			$full_command = $cmd_tag.' STATUS "'.$svr_data['folder'].'" ('.$query_str.')';
-			$expecting = $cmd_tag; // may be followed by OK, NO, or BAD
-			
-			
-			if(!$this->write_port($full_command))
-			{
-				$this->error();
-				return False;				
-			}
-			
-			// read the server data
-			$response_array = $this->imap_read_port($expecting);
-			
-			
-			// TEST THIS ERROR DETECTION - empty array = error (BAD or NO)
-			if (count($response_array) == 0)
-			{
-				return False;				
-			}
-			
-			// STATUS should only return 1 line of data
-			//if (count($response_array) > 1)
-			// BUGGY UWASH IMAP SERVERS RETURN 2 LINES HERE, so increase to > 2
-			//if (count($response_array) > 2)
-			//{
-			//	if ($this->debug_dcom >= 2)
-			//	{
-			//		echo 'imap: status: error in status, more than (one) TWO lines (for buggy uwash servers) line server response, not normal<br />';
-			//		echo 'imap: status: last recorded error:<br />';
-			//		echo  $this->server_last_error().'<br />';
-			//	}
-			//	if ($this->debug_dcom >= 1) { echo 'imap: Leaving status with error<br />'; }
-			//	return False;				
-			//}
-			
-			// if we get here we have valid server data
-			if ($this->debug_dcom >= 2) { $this->report_svr_data($response_array, 'status', True); }
-			
-			
-			// initialize structure
-			$info = new mailbox_status;
-			$info->messages = '';
-			$info->recent = '';
-			$info->unseen = '';
-			$info->uidnext = '';
-			$info->uidvalidity = '';
-			
-			// for buggy servers that return 2 lines, the last line has the data
-			// for compliant 1 line responses, that single line can also be defined as the "last" line of data
-			// so to account for buggy servers, we'll take the LAST array element\
-			$last_line = (count($response_array) - 1);
-			$response_line_of_data = $response_array[$last_line];
-			
-			// ERROR CHECK
-			if (stristr($response_line_of_data, '* STATUS') == False)
-			{
-				return False;				
-			}
-			
-			
-			// ok... 
-			//typical server data:
-			// * STATUS INBOX (MESSAGES 15 RECENT 1 UNSEEN 2 UIDNEXT 17 UIDVALIDITY 1005967489)
-			// data starts after the mailbox name, which could actually have similar strings as the status querey
-			// get data the includes and follows the opening paren
-			// $status_data_raw = strstr($response_array[0], '(');
-			$status_data_raw = strstr($response_array[$last_line], '(');
-			
-			
-			// snarf any of the 5 possible pieces of data if they are present
-			$status_data['messages'] = $this->snarf_status_data($status_data_raw, 'MESSAGES');
-			$status_data['recent'] = $this->snarf_status_data($status_data_raw, 'RECENT');
-			$status_data['unseen'] = $this->snarf_status_data($status_data_raw, 'UNSEEN');
-			$status_data['uidnext'] = $this->snarf_status_data($status_data_raw, 'UIDNEXT');
-			$status_data['uidvalidity'] = $this->snarf_status_data($status_data_raw, 'UIDVALIDITY');
-			
-			// fill structure and unset any unfilled data elements
-			if ($status_data['messages'] != '')
-			{
-				$info->messages = $status_data['messages'];
-			}
-			else
-			{
-				unset($info->messages);
-			}
-			if ($status_data['recent'] != '')
-			{
-				$info->recent = $status_data['recent'];
-			}
-			else
-			{
-				unset($info->recent);
-			}
-			if ($status_data['unseen'] != '')
-			{
-				$info->unseen = $status_data['unseen'];
-			}
-			else
-			{
-				unset($info->unseen);
-			}
-			if ($status_data['uidnext'] != '')
-			{
-				$info->uidnext = $status_data['uidnext'];
-			}
-			else
-			{
-				unset($info->uidnext);
-			}
-			if ($status_data['uidvalidity'] != '')
-			{
-				$info->uidvalidity = $status_data['uidvalidity'];
-			}
-			else
-			{
-				unset($info->uidvalidity);
-			}
-			// function "sort" needs to know "->messages" the total num msgs in (hopefully) this folder
-			// so L1 class var cache it so "sort" does not have to call this function if it has ALREADY been run
-			$this->mailbox_status = $info;
-			return $info;
 		}
-		
-		/*!
+		$query_str = trim($query_str);
+
+		$cmd_tag = 's001';
+		//$full_command = $cmd_tag.' STATUS '.$svr_data['folder'].' (MESSAGES RECENT UIDNEXT UIDVALIDITY UNSEEN)';
+		$full_command = $cmd_tag . ' STATUS "' . $svr_data['folder'] . '" (' . $query_str . ')';
+		$expecting = $cmd_tag; // may be followed by OK, NO, or BAD
+
+
+		if (!$this->write_port($full_command))
+		{
+			$this->error();
+			return False;
+		}
+
+		// read the server data
+		$response_array = $this->imap_read_port($expecting);
+
+
+		// TEST THIS ERROR DETECTION - empty array = error (BAD or NO)
+		if (count($response_array) == 0)
+		{
+			return False;
+		}
+
+		// STATUS should only return 1 line of data
+		//if (count($response_array) > 1)
+		// BUGGY UWASH IMAP SERVERS RETURN 2 LINES HERE, so increase to > 2
+		//if (count($response_array) > 2)
+		//{
+		//	if ($this->debug_dcom >= 2)
+		//	{
+		//		echo 'imap: status: error in status, more than (one) TWO lines (for buggy uwash servers) line server response, not normal<br />';
+		//		echo 'imap: status: last recorded error:<br />';
+		//		echo  $this->server_last_error().'<br />';
+		//	}
+		//	if ($this->debug_dcom >= 1) { echo 'imap: Leaving status with error<br />'; }
+		//	return False;				
+		//}
+
+		// if we get here we have valid server data
+		if ($this->debug_dcom >= 2)
+		{
+			$this->report_svr_data($response_array, 'status', True);
+		}
+
+
+		// initialize structure
+		$info = new mailbox_status;
+		$info->messages = '';
+		$info->recent = '';
+		$info->unseen = '';
+		$info->uidnext = '';
+		$info->uidvalidity = '';
+
+		// for buggy servers that return 2 lines, the last line has the data
+		// for compliant 1 line responses, that single line can also be defined as the "last" line of data
+		// so to account for buggy servers, we'll take the LAST array element\
+		$last_line = (count($response_array) - 1);
+		$response_line_of_data = $response_array[$last_line];
+
+		// ERROR CHECK
+		if (stristr($response_line_of_data, '* STATUS') == False)
+		{
+			return False;
+		}
+
+
+		// ok... 
+		//typical server data:
+		// * STATUS INBOX (MESSAGES 15 RECENT 1 UNSEEN 2 UIDNEXT 17 UIDVALIDITY 1005967489)
+		// data starts after the mailbox name, which could actually have similar strings as the status querey
+		// get data the includes and follows the opening paren
+		// $status_data_raw = strstr($response_array[0], '(');
+		$status_data_raw = strstr($response_array[$last_line], '(');
+
+
+		// snarf any of the 5 possible pieces of data if they are present
+		$status_data['messages'] = $this->snarf_status_data($status_data_raw, 'MESSAGES');
+		$status_data['recent'] = $this->snarf_status_data($status_data_raw, 'RECENT');
+		$status_data['unseen'] = $this->snarf_status_data($status_data_raw, 'UNSEEN');
+		$status_data['uidnext'] = $this->snarf_status_data($status_data_raw, 'UIDNEXT');
+		$status_data['uidvalidity'] = $this->snarf_status_data($status_data_raw, 'UIDVALIDITY');
+
+		// fill structure and unset any unfilled data elements
+		if ($status_data['messages'] != '')
+		{
+			$info->messages = $status_data['messages'];
+		}
+		else
+		{
+			unset($info->messages);
+		}
+		if ($status_data['recent'] != '')
+		{
+			$info->recent = $status_data['recent'];
+		}
+		else
+		{
+			unset($info->recent);
+		}
+		if ($status_data['unseen'] != '')
+		{
+			$info->unseen = $status_data['unseen'];
+		}
+		else
+		{
+			unset($info->unseen);
+		}
+		if ($status_data['uidnext'] != '')
+		{
+			$info->uidnext = $status_data['uidnext'];
+		}
+		else
+		{
+			unset($info->uidnext);
+		}
+		if ($status_data['uidvalidity'] != '')
+		{
+			$info->uidvalidity = $status_data['uidvalidity'];
+		}
+		else
+		{
+			unset($info->uidvalidity);
+		}
+		// function "sort" needs to know "->messages" the total num msgs in (hopefully) this folder
+		// so L1 class var cache it so "sort" does not have to call this function if it has ALREADY been run
+		$this->mailbox_status = $info;
+		return $info;
+	}
+
+	/*!
 		@function snarf_status_data
 		@abstract Utility function used by STATUS function
 		@author Angles
 		@access private
 		*/
-		function snarf_status_data($status_raw_str='',$snarf_this='')
+	function snarf_status_data($status_raw_str = '', $snarf_this = '')
+	{
+		// bogus data detection
+		if (($status_raw_str == '')
+			|| ($snarf_this == '')
+		)
 		{
-			// bogus data detection
-			if (($status_raw_str == '')
-			|| ($snarf_this == ''))
-			{
-				return '';
-			}
-			// fallback value
-			$return_data = '';
-			
-			//typical server data:
-			// * STATUS INBOX (MESSAGES 15 RECENT 1 UNSEEN 2 UIDNEXT 17 UIDVALIDITY 1005967489)
-			
-			// see if $snarf_this is in the raw data
-			$data_mini_str = stristr($status_raw_str, $snarf_this);
-			if ($data_mini_str != False)
-			{
-				// $data_mini_str has everything including and to the right of $snarf_this
-				// integer follows $snarf_this+space
-				$delete_len = strlen($snarf_this.' ');
-				// delete up to integer
-				$data_mini_str = substr($data_mini_str, $delete_len);
-				// integer will be followed by (A) a space ' ' or (B) a closing paren ')', or (C) any non-integer char
-				for ($i=0; $i< strlen($data_mini_str); $i++)
-				{
-					if ((ord($data_mini_str[$i]) >= chr(0))
-					&& (ord($data_mini_str[$i]) <= chr(9)))
-					{
-						// continue looking, this is integer data
-					}
-					else
-					{
-						// we reached a non-integer, so the position just prior to this ends the integer data
-						$data_end = $i - 1;
-						break;
-					}
-				}
-				// snarf the data
-				$data_mini_str = trim(substr($data_mini_str, 0, $data_end));
-				$return_data = (int)$data_mini_str;
-			}
-			return $return_data;
+			return '';
 		}
-		
-		/*!
-		@function num_msg
-		@abstract OBSOLETED
-		*/
-		// OBSOLETED
-		function num_msg($folder='')
+		// fallback value
+		$return_data = '';
+
+		//typical server data:
+		// * STATUS INBOX (MESSAGES 15 RECENT 1 UNSEEN 2 UIDNEXT 17 UIDVALIDITY 1005967489)
+
+		// see if $snarf_this is in the raw data
+		$data_mini_str = stristr($status_raw_str, $snarf_this);
+		if ($data_mini_str != False)
 		{
-			if($folder == '' || $folder == $this->folder)
+			// $data_mini_str has everything including and to the right of $snarf_this
+			// integer follows $snarf_this+space
+			$delete_len = strlen($snarf_this . ' ');
+			// delete up to integer
+			$data_mini_str = substr($data_mini_str, $delete_len);
+			// integer will be followed by (A) a space ' ' or (B) a closing paren ')', or (C) any non-integer char
+			for ($i = 0; $i < strlen($data_mini_str); $i++)
 			{
-				return $this->num_msgs;
-			}
-			return $this->status_query($folder,'MESSAGES');
-		}
-		
-		/*!
-		@function total
-		@abstract OBSOLETED
-		*/
-		// OBSOLETED
-		function total($field)
-		{
-			$total = 0;
-			//reset($field);
-			//while(list($key,$value) = each($field))
-			if (is_array($field))
-			{
-				foreach($field as $key => $value)
+				if ((ord($data_mini_str[$i]) >= chr(0))
+					&& (ord($data_mini_str[$i]) <= chr(9))
+				)
 				{
-					$total += intval($value);
-				}
-			}
-			return $total;
-		}
-					
-		/**************************************************************************\
-		*	Message Sorting
-		\**************************************************************************/
-		/*!
-		@function sort
-		@abstract not yet implemented in IMAP sockets module
-		*/
-		// options/flags are:
-			//SE_UID	Return UIDs instead of sequence numbers
-			//SE_NOPREFETCH	Don't prefetch searched messages.
-		function sort($stream_notused='',$criteria=PE_IMAP_SORTARRIVAL,$reverse=False,$options='')
-		{
-			//if ($this->debug_dcom >= 1) { echo 'imap: sort NOT YET IMPLEMENTED imap sockets function<br />'; }
-			//return False;
-		//}
-		
-		//function sort($folder='',$criteria=SORTDATE,$reverse=False,$options='')
-		//{
-			
-			// we need total num message in this folder, is it cached?
-			if ($this->mailbox_status != '')
-			{
-				$num_msgs = $this->mailbox_status->messages;
-			}
-			else
-			{
-				// we need an "fq_folder" to call this function
-				$fq_folder =	 \App\modules\email\services\MailMessage::getInstance()->get_arg_value('mailsvr_callstr')
-							.\App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder');
-				$status_data = $this->status($stream_notused, $fq_folder,PE_IMAP_SA_ALL);
-				$num_msgs = $status_data->messages;
-			}
-			
-			
-			// DEBUG
-			//if ($this->debug_dcom >= 1) { echo 'imap: debug QUICK EXIT sort<br />'; }
-			//return False;
-			
-			
-			switch($criteria)
-			{
-				case PE_IMAP_SORTDATE:
-					$old_list = $this->fetch_header(1,$num_msgs,'Date:');
-					$field_list = $this->convert_date_array($old_list);
-					break;
-				case PE_IMAP_SORTARRIVAL:
-					break;
-				case PE_IMAP_SORTFROM:
-					$field_list = $this->fetch_header(1,$num_msgs,'From:');
-					break;
-				case PE_IMAP_SORTSUBJECT:
-					$field_list = $this->fetch_header(1,$num_msgs,'Subject:');
-					break;
-				case PE_IMAP_SORTTO:
-					$field_list = $this->fetch_header(1,$num_msgs,'To:');
-					break;
-				case PE_IMAP_SORTCC:
-					$field_list = $this->fetch_header(1,$num_msgs,'cc:');
-					break;
-				case PE_IMAP_SORTSIZE:
-					$field_list = $this->fetch_field(1,$num_msgs,'RFC822.SIZE');
-					break;
-			}
-			@reset($field_list);
-			if($criteria == PE_IMAP_SORTSUBJECT)
-			{
-				if(!$reverse)
-				{
-					uasort($field_list,array($this,"ssort_ascending"));
+					// continue looking, this is integer data
 				}
 				else
 				{
-					uasort($field_list,array($this,"ssort_decending"));
+					// we reached a non-integer, so the position just prior to this ends the integer data
+					$data_end = $i - 1;
+					break;
 				}
 			}
-			elseif(!$reverse)
+			// snarf the data
+			$data_mini_str = trim(substr($data_mini_str, 0, $data_end));
+			$return_data = (int)$data_mini_str;
+		}
+		return $return_data;
+	}
+
+	/*!
+		@function num_msg
+		@abstract OBSOLETED
+		*/
+	// OBSOLETED
+	function num_msg($folder = '')
+	{
+		if ($folder == '' || $folder == $this->folder)
+		{
+			return $this->num_msgs;
+		}
+		return $this->status_query($folder, 'MESSAGES');
+	}
+
+	/*!
+		@function total
+		@abstract OBSOLETED
+		*/
+	// OBSOLETED
+	function total($field)
+	{
+		$total = 0;
+		//reset($field);
+		//while(list($key,$value) = each($field))
+		if (is_array($field))
+		{
+			foreach ($field as $key => $value)
 			{
-				asort($field_list);
+				$total += intval($value);
+			}
+		}
+		return $total;
+	}
+
+	/**************************************************************************\
+	 *	Message Sorting
+		\**************************************************************************/
+	/*!
+		@function sort
+		@abstract not yet implemented in IMAP sockets module
+		*/
+	// options/flags are:
+	//SE_UID	Return UIDs instead of sequence numbers
+	//SE_NOPREFETCH	Don't prefetch searched messages.
+	function sort($stream_notused = '', $criteria = PE_IMAP_SORTARRIVAL, $reverse = False, $options = '')
+	{
+		//if ($this->debug_dcom >= 1) { echo 'imap: sort NOT YET IMPLEMENTED imap sockets function<br />'; }
+		//return False;
+		//}
+
+		//function sort($folder='',$criteria=SORTDATE,$reverse=False,$options='')
+		//{
+
+		// we need total num message in this folder, is it cached?
+		if ($this->mailbox_status != '')
+		{
+			$num_msgs = $this->mailbox_status->messages;
+		}
+		else
+		{
+			// we need an "fq_folder" to call this function
+			$fq_folder =	 \App\modules\email\services\MailMessage::getInstance()->get_arg_value('mailsvr_callstr')
+				. \App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder');
+			$status_data = $this->status($stream_notused, $fq_folder, PE_IMAP_SA_ALL);
+			$num_msgs = $status_data->messages;
+		}
+
+
+		// DEBUG
+		//if ($this->debug_dcom >= 1) { echo 'imap: debug QUICK EXIT sort<br />'; }
+		//return False;
+
+
+		switch ($criteria)
+		{
+			case PE_IMAP_SORTDATE:
+				$old_list = $this->fetch_header(1, $num_msgs, 'Date:');
+				$field_list = $this->convert_date_array($old_list);
+				break;
+			case PE_IMAP_SORTARRIVAL:
+				break;
+			case PE_IMAP_SORTFROM:
+				$field_list = $this->fetch_header(1, $num_msgs, 'From:');
+				break;
+			case PE_IMAP_SORTSUBJECT:
+				$field_list = $this->fetch_header(1, $num_msgs, 'Subject:');
+				break;
+			case PE_IMAP_SORTTO:
+				$field_list = $this->fetch_header(1, $num_msgs, 'To:');
+				break;
+			case PE_IMAP_SORTCC:
+				$field_list = $this->fetch_header(1, $num_msgs, 'cc:');
+				break;
+			case PE_IMAP_SORTSIZE:
+				$field_list = $this->fetch_field(1, $num_msgs, 'RFC822.SIZE');
+				break;
+		}
+		@reset($field_list);
+		if ($criteria == PE_IMAP_SORTSUBJECT)
+		{
+			if (!$reverse)
+			{
+				uasort($field_list, array($this, "ssort_ascending"));
 			}
 			else
 			{
-				arsort($field_list);
+				uasort($field_list, array($this, "ssort_decending"));
 			}
-			$return_array = Array();
-			//@reset($field_list);
-			$i = 1;
-			//while(list($key,$value) = each($field_list))
-			if (is_array($field_list))
-			{
-				foreach($field_list as $key => $value)
-				{
-					$return_array[] = $key;
-				}
-			}
-			@reset($return_array);
-			return $return_array;
 		}
-		
-		
-		/*!
+		elseif (!$reverse)
+		{
+			asort($field_list);
+		}
+		else
+		{
+			arsort($field_list);
+		}
+		$return_array = array();
+		//@reset($field_list);
+		$i = 1;
+		//while(list($key,$value) = each($field_list))
+		if (is_array($field_list))
+		{
+			foreach ($field_list as $key => $value)
+			{
+				$return_array[] = $key;
+			}
+		}
+		@reset($return_array);
+		return $return_array;
+	}
+
+
+	/*!
 		@function fetch_header
 		@abstract Under Construction - Used by sort
 		*/
-		function fetch_header($start,$stop,$element)
+	function fetch_header($start, $stop, $element)
+	{
+
+		if (!$this->write_port('a001 FETCH ' . $start . ':' . $stop . ' RFC822.HEADER'))
 		{
-			
-			if(!$this->write_port('a001 FETCH '.$start.':'.$stop.' RFC822.HEADER'))
+			$this->error();
+		}
+		$field_element = array();
+
+		for ($i = $start; $i <= $stop; $i++)
+		{
+			$response = $this->read_port();
+			//while(!ereg('FETCH completed',$response))
+			while (chop($response) != '')
 			{
-				$this->error();
-			}
-			$field_element = array();
-			
-			for($i=$start;$i<=$stop;$i++)
-			{
-				$response = $this->read_port();
-				//while(!ereg('FETCH completed',$response))
-				while(chop($response)!='')
+				if (preg_match('/^\*/', $response))
 				{
-					if(preg_match('/^\*/',$response))
-					{
-						$field = explode(' ',$response);
-						$msg_num = $field[1];
-					}
-					if(preg_match("/^$element/",$response))
-					{
-						$field_element[$msg_num] = $this->phpGW_quoted_printable_decode2(substr($response,strlen($element)+1));
-					}
-					elseif(preg_match('/^'.strtoupper($element).'/',$response))
-					{
-						$field_element[$msg_num] = $this->phpGW_quoted_printable_decode2(substr($response,strlen(strtoupper($element))+1));
-					}
-					$response = $this->read_port();
+					$field = explode(' ', $response);
+					$msg_num = $field[1];
+				}
+				if (preg_match("/^$element/", $response))
+				{
+					$field_element[$msg_num] = $this->phpGW_quoted_printable_decode2(substr($response, strlen($element) + 1));
+				}
+				elseif (preg_match('/^' . strtoupper($element) . '/', $response))
+				{
+					$field_element[$msg_num] = $this->phpGW_quoted_printable_decode2(substr($response, strlen(strtoupper($element)) + 1));
 				}
 				$response = $this->read_port();
 			}
 			$response = $this->read_port();
-			return $field_element;
 		}
-		
-		
-		/*!
+		$response = $this->read_port();
+		return $field_element;
+	}
+
+
+	/*!
 		@function fetch_field
 		@abstract Under Construction
 		*/
-		function fetch_field($start,$stop,$element)
+	function fetch_field($start, $stop, $element)
+	{
+		if (!$this->write_port('a001 FETCH ' . $start . ':' . $stop . ' ' . $element))
 		{
-			if(!$this->write_port('a001 FETCH '.$start.':'.$stop.' '.$element))
-			{
-				$this->error();
-			}
+			$this->error();
+		}
+		$response = $this->read_port();
+		while (!preg_match('/FETCH completed/', $response))
+		{
+			//echo 'Response = '.$response."<br />\n";
+			$field = explode(' ', $response);
+			$msg_num = intval($field[1]);
+			$field_element[$msg_num] = substr($field[4], 0, strpos($field[4], ')'));
+			//echo '<b>Field:</b> '.substr($field[4],0,strpos($field[4],')'))."\t = <b>Msg Num</b> ".$field_element[substr($field[4],0,strpos($field[4],')'))]."<br />\n";
 			$response = $this->read_port();
-			while(!preg_match('/FETCH completed/',$response))
-			{
-				//echo 'Response = '.$response."<br />\n";
-				$field = explode(' ',$response);
-				$msg_num = intval($field[1]);
-				$field_element[$msg_num] = substr($field[4],0,strpos($field[4],')'));
-				//echo '<b>Field:</b> '.substr($field[4],0,strpos($field[4],')'))."\t = <b>Msg Num</b> ".$field_element[substr($field[4],0,strpos($field[4],')'))]."<br />\n";
-				$response = $this->read_port();
-			}
-			return $field_element;
-		}		
-		
-		
-		/**************************************************************************\
-		*
-		*	Message Structural Information
-		*
+		}
+		return $field_element;
+	}
+
+
+	/**************************************************************************\
+	 *
+	 *	Message Structural Information
+	 *
 		\**************************************************************************/
-		
-		/*!
+
+	/*!
 		@function fetchstructure
 		@abstract not yet implemented in IMAP sockets module
 		*/
-		function fetchstructure($stream_notused,$msg_num,$flags="")
-		{
-			// outer control structure for the multi-pass functions
-			return False;
-		}
+	function fetchstructure($stream_notused, $msg_num, $flags = "")
+	{
+		// outer control structure for the multi-pass functions
+		return False;
+	}
 		
 		/*
 		function fetchstructure($msgnum)
@@ -1229,73 +1255,71 @@
 			return $this->header;
 		}
 		*/
-		
-		
-		/**************************************************************************\
-		*	Message Envelope (Header Info) Data
+
+
+	/**************************************************************************\
+	 *	Message Envelope (Header Info) Data
 		\**************************************************************************/
-		/*!
+	/*!
 		@function header
 		@abstract not yet implemented in IMAP sockets module
 		*/
-		function header($stream_notused,$msg_num,$fromlength="",$tolength="",$defaulthost="")
-		{
-			return False;
-		}
-		
-		
-		/**************************************************************************\
-		*	More Data Communications (dcom) With IMAP Server
+	function header($stream_notused, $msg_num, $fromlength = "", $tolength = "", $defaulthost = "")
+	{
+		return False;
+	}
+
+
+	/**************************************************************************\
+	 *	More Data Communications (dcom) With IMAP Server
 		\**************************************************************************/
-	
-		/**************************************************************************\
-		*	DELETE a Message From the Server
+
+	/**************************************************************************\
+	 *	DELETE a Message From the Server
 		\**************************************************************************/
-		/*!
+	/*!
 		@function delete
 		@abstract not yet implemented in IMAP sockets module
 		*/
-		function delete($stream_notused,$msg_num,$flags="")
-		{
-			return False;
-		}
-		
-		
-		/**************************************************************************\
-		*	Get Message Headers From Server
+	function delete($stream_notused, $msg_num, $flags = "")
+	{
+		return False;
+	}
+
+
+	/**************************************************************************\
+	 *	Get Message Headers From Server
 		\**************************************************************************/
-		/*!
+	/*!
 		@function fetchheader
 		@abstract not yet implemented in IMAP sockets module
 		*/
-		function fetchheader($stream_notused,$msg_num,$flags='')
-		{
-			// NEEDED: code for flags: FT_UID; FT_INTERNAL; FT_PREFETCHTEXT
-			return False;
-		}
-		
-		
-		/**************************************************************************\
-		*	Get Message Body (Parts) From Server
+	function fetchheader($stream_notused, $msg_num, $flags = '')
+	{
+		// NEEDED: code for flags: FT_UID; FT_INTERNAL; FT_PREFETCHTEXT
+		return False;
+	}
+
+
+	/**************************************************************************\
+	 *	Get Message Body (Parts) From Server
 		\**************************************************************************/
-		/*!
+	/*!
 		@function fetchbody
 		@abstract not yet implemented in IMAP sockets module
 		*/
-		function fetchbody($stream_notused,$msg_num,$part_num="",$flags="")
-		{
-			return False;
-		}
-		
-		/*!
+	function fetchbody($stream_notused, $msg_num, $part_num = "", $flags = "")
+	{
+		return False;
+	}
+
+	/*!
 		@function get_body
 		@abstract implements IMAP_BODY
 		*/
-		function get_body($stream_notused,$msg_num,$flags='',$phpgw_include_header=True)
-		{
-			// NEEDED: code for flags: FT_UID; maybe FT_INTERNAL; FT_NOT; flag FT_PEEK has no effect on POP3
-			return False;
-		}
-		
+	function get_body($stream_notused, $msg_num, $flags = '', $phpgw_include_header = True)
+	{
+		// NEEDED: code for flags: FT_UID; maybe FT_INTERNAL; FT_NOT; flag FT_PEEK has no effect on POP3
+		return False;
 	}
-
+}

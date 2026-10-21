@@ -722,7 +722,6 @@ class mail_msg extends mail_msg_wrappers
 			// start at the beginning (relative to your "sort" and "order" of course)
 			$this->set_arg_value('start', 0);
 		}
-
 	}
 
 	// ---- Go To Previous / Next Message Logic Handling  -----

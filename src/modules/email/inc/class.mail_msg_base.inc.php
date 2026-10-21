@@ -1022,9 +1022,9 @@ class mail_msg_base
 						// we "fool" create_email_preferences into processing extra account info as if it were top level data
 						// by specifing the secong function arg as the integer of this particular enabled account
 						$this_ex_acctnum = $this->extra_accounts[$next_pos]['acctnum'];
-						
-			//			$sub_tmp_prefs = \App\modules\phpgwapi\services\Preferences::getInstance()->create_email_preferences('', $this_ex_acctnum);
-						$sub_tmp_prefs = $this->userSettings['preferences']['email']['ex_accounts'][$this_ex_acctnum]; 
+
+						//			$sub_tmp_prefs = \App\modules\phpgwapi\services\Preferences::getInstance()->create_email_preferences('', $this_ex_acctnum);
+						$sub_tmp_prefs = $this->userSettings['preferences']['email']['ex_accounts'][$this_ex_acctnum];
 						// now put these processed prefs in the correct location  in our prefs array
 						$this->mail_msg_wrappers->set_pref_array($sub_tmp_prefs, $this_ex_acctnum);
 					}

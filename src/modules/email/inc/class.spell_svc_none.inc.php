@@ -1,58 +1,59 @@
 <?php
-	/**
-	* EMail - SpellChecking Backend Service Class - Dummy Class
-	*
-	* If PHP psspell support is not compiled in,  this  dummy module 
-	* spell_svc_none is loaded so there are no errors related to undefined 
-	* pspell functions.
-	* @author Angelo (Angles) Puglisi <angles@aminvestments.com>
-	* @copyright Copyright (C) 2002 Angelo Tony Puglisi (Angles)
-	* @copyright Copyright (C) 2003-2005 Free Software Foundation, Inc. http://www.fsf.org/
-	* @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
-	* @package email
-	* @version $Id$
-	* @internal Based on AngleMail http://www.anglemail.org/
-	*/
 
-	
+/**
+ * EMail - SpellChecking Backend Service Class - Dummy Class
+ *
+ * If PHP psspell support is not compiled in,  this  dummy module 
+ * spell_svc_none is loaded so there are no errors related to undefined 
+ * pspell functions.
+ * @author Angelo (Angles) Puglisi <angles@aminvestments.com>
+ * @copyright Copyright (C) 2002 Angelo Tony Puglisi (Angles)
+ * @copyright Copyright (C) 2003-2005 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ * @version $Id$
+ * @internal Based on AngleMail http://www.anglemail.org/
+ */
+
+
+/**
+ * Dummy placeholder for spell-less installations
+ *
+ * @package email
+ */
+class spell_svc_none
+{
 	/**
-	* Dummy placeholder for spell-less installations
-	*
-	* @package email
-	*/	
-	class spell_svc_none
+	 * Flag if this is a working module or a dummy one.
+	 * 
+	 * @var boolean $can_spell F
+	 * @access private
+	 */
+	var $can_spell = False;
+	/**
+	 * If tis services takes single words or strings, values are defined 
+	 * in spell class, which gets the value from here and makes it public.
+	 * @var integer $sp_feed_type
+	 * @access private
+	 */
+	var $sp_feed_type;
+
+	/**
+	 * Constructor
+	 */
+	function __construct()
 	{
-		/**
-		 * Flag if this is a working module or a dummy one.
-		 * 
-		 * @var boolean $can_spell F
-		 * @access private
-		 */
-		var $can_spell = False;
-		/**
-		 * If tis services takes single words or strings, values are defined 
-		 * in spell class, which gets the value from here and makes it public.
-		 * @var integer $sp_feed_type
-		 * @access private
-		 */
-		var $sp_feed_type;
-		
-		/**
-		* Constructor
-		*/
-		function __construct()
-		{
-			// this is a dummy module for installations with no spell capability
-			$this->can_spell = False;
-			// SP_FEED_UNKNOWN is defined in the spell class.
-			$this->sp_feed_type = SP_FEED_UNKNOWN;
-			return;
-		}
-		
-		/**************************************************************************\
-		*	OO ACCESS METHODS
+		// this is a dummy module for installations with no spell capability
+		$this->can_spell = False;
+		// SP_FEED_UNKNOWN is defined in the spell class.
+		$this->sp_feed_type = SP_FEED_UNKNOWN;
+		return;
+	}
+
+	/**************************************************************************\
+	 *	OO ACCESS METHODS
 		\**************************************************************************/
-		/*!
+	/*!
 		@function get_can_spell
 		@abstract Read Only, report if this spell service is capable of spell check or not. 
 		@author Angles
@@ -61,12 +62,12 @@
 		maked that information public. This is a dummy placeholder module so it returns False.
 		@access private
 		*/
-		function get_can_spell()
-		{
-			return $this->can_spell;
-		}
-		
-		/*!
+	function get_can_spell()
+	{
+		return $this->can_spell;
+	}
+
+	/*!
 		@function get_sp_feed_type
 		@abstract Read Only, report if this spell service takes single words or strings. 
 		@author Angles
@@ -75,15 +76,15 @@
 		maked that information public.
 		@access private
 		*/
-		function get_sp_feed_type()
-		{
-			return $this->sp_feed_type;
-		}
-		
-		/**************************************************************************\
-		*	CODE
+	function get_sp_feed_type()
+	{
+		return $this->sp_feed_type;
+	}
+
+	/**************************************************************************\
+	 *	CODE
 		\**************************************************************************/
-		/*!
+	/*!
 		@function pgw_pspell_new
 		@abstract  dummy placeholder for spell-less installations
 		@param string language, string [spelling], string [jargon], string [encoding], int [mode]
@@ -91,12 +92,12 @@
 		spelling code.
 		@access public
 		*/
-		function pgw_pspell_new($language, $spelling, $jargon, $encoding, $mode)
-		{
-			return False;
-		}
-		
-		/*!
+	function pgw_pspell_new($language, $spelling, $jargon, $encoding, $mode)
+	{
+		return False;
+	}
+
+	/*!
 		@function pgw_pspell_check
 		@abstract  dummy placeholder for spell-less installations
 		@param int dictionary_link, string word
@@ -104,12 +105,12 @@
 		calling code will not ask for suggestions, hopefully.
 		@access public
 		*/
-		function pgw_pspell_check($dictionary_link, $word)
-		{
-			return True;
-		}
-		
-		/*!
+	function pgw_pspell_check($dictionary_link, $word)
+	{
+		return True;
+	}
+
+	/*!
 		@function pgw_pspell_suggest
 		@abstract  dummy placeholder for spell-less installations
 		@param int dictionary_link, string word
@@ -118,8 +119,8 @@
 		code will not act on any suggestions if it gets an empty array back.
 		@access public
 		*/
-		function pgw_pspell_suggest($dictionary_link, $word)
-		{
-			return array();
-		}
+	function pgw_pspell_suggest($dictionary_link, $word)
+	{
+		return array();
 	}
+}

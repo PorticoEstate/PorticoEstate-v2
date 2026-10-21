@@ -10,6 +10,9 @@
 <main class="email-inbox" id="email-inbox"
 	data-api-url="{{ api_url|e('html_attr') }}"
 	data-folders-api-url="{{ folders_api_url|e('html_attr') }}"
+	data-move-url="{{ move_url|e('html_attr') }}"
+	data-csrf-name="{{ csrf.name|e('html_attr') }}"
+	data-csrf-value="{{ csrf.value|e('html_attr') }}"
 	data-has-preferences="{{ has_preferences ? '1' : '0' }}">
 	<header class="email-inbox-header">
 		<div>
@@ -43,6 +46,7 @@
 			<section class="email-inbox-messages" aria-label="{{ lang('Messages') }}">
 		<div class="email-inbox-status" id="email-inbox-status" role="status" aria-live="polite">{{ lang('Loading messages') }}</div>
 		<div class="email-inbox-error" id="email-inbox-error" role="alert" hidden></div>
+		<div class="email-inbox-move-status" id="email-inbox-move-status" role="status" aria-live="polite"></div>
 		<div class="email-inbox-table-wrap">
 			<table class="email-inbox-table">
 				<thead>

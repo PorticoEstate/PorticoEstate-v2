@@ -210,6 +210,26 @@ class ModernIMAPWrapper
         }
     }
 
+    public static function imap_mail_move($stream, $msgList, $mailbox, $flags = 0)
+    {
+        if (!isset(self::$connections[$stream]['folder'])) {
+            return false;
+        }
+
+        try {
+            $connection = self::$connections[$stream];
+            $client = $connection['client'];
+            $path = preg_replace('/^\{[^}]*\}/', '', $mailbox);
+            $client->openFolder($connection['folder']->path);
+            $mode = ($flags & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN;
+            $client->getConnection()->moveMessage($path, $msgList, null, $mode)->validatedData();
+            return true;
+        } catch (Exception $exception) {
+            self::$lastError = $exception->getMessage();
+            return false;
+        }
+    }
+
     public static function imap_sort($stream, $criteria, $reverse, $options = 0)
     {
         if (!isset(self::$connections[$stream]['folder'])) {

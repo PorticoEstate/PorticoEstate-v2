@@ -53,6 +53,7 @@ $app->group('/email', function (RouteCollectorProxy $group) use ($emailCsrf)
 {
 	$group->get('/api/inbox', EmailInboxController::class . ':index');
 	$group->get('/api/message', EmailInboxController::class . ':message');
+	$group->post('/api/messages/move', EmailInboxController::class . ':move')->add($emailCsrf);
 	$group->get('/api/attachment', EmailInboxController::class . ':attachment');
 	$group->get('/api/folders', EmailInboxController::class . ':folders');
 	$group->post('/api/folders/action', EmailInboxController::class . ':folderAction')->add($emailCsrf);

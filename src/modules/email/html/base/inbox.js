@@ -17,6 +17,60 @@
 	const selection = new URL(window.location.href).searchParams;
 	const activeAccount = Number(selection.get('fldball[acctnum]') || 0);
 	const activeFolder = selection.get('fldball[folder]') || 'INBOX';
+	const moveStatus = document.getElementById('email-inbox-move-status');
+	let draggedMessage = null;
+	let movePending = false;
+
+	function canDrop(folder)
+	{
+		return !movePending && draggedMessage
+			&& Number(draggedMessage.account) === Number(folder.account)
+			&& draggedMessage.folder !== folder.longName;
+	}
+
+	function clearDropTargets()
+	{
+		folderList.querySelectorAll('.is-drop-target').forEach(link => link.classList.remove('is-drop-target'));
+	}
+
+	async function moveMessage(message, folder)
+	{
+		if (movePending) return;
+		movePending = true;
+		root.setAttribute('aria-busy', 'true');
+		moveStatus.textContent = 'Moving message';
+		error.hidden = true;
+		try
+		{
+			const response = await fetch(root.dataset.moveUrl, {
+				method: 'POST',
+				headers: {
+					Accept: 'application/json',
+					'Content-Type': 'application/json',
+					'X-CSRF-NAME': root.dataset.csrfName,
+					'X-CSRF-VALUE': root.dataset.csrfValue
+				},
+				body: JSON.stringify({
+					msgball: { acctnum: message.account, folder: message.folder, msgnum: message.messageNumber },
+					target_fldball: { acctnum: folder.account, folder: folder.longName }
+				})
+			});
+			const result = await response.json();
+			if (!response.ok || !result.moved) throw new Error(result.reason || result.error || 'Unable to move message');
+			await load();
+			await loadFolders();
+			moveStatus.textContent = 'Message moved to ' + folder.longName;
+		} catch (exception)
+		{
+			moveStatus.textContent = '';
+			error.textContent = exception.message;
+			error.hidden = false;
+		} finally
+		{
+			movePending = false;
+			root.setAttribute('aria-busy', 'false');
+		}
+	}
 
 	async function loadFolders()
 	{
@@ -47,6 +101,26 @@
 				destination.searchParams.delete('start');
 				destination.searchParams.delete('fldball_fake_uri');
 				link.href = destination;
+				link.addEventListener('dragover', event =>
+				{
+					if (!canDrop(folder)) return;
+					event.preventDefault();
+					event.dataTransfer.dropEffect = 'move';
+					link.classList.add('is-drop-target');
+				});
+				link.addEventListener('dragleave', event =>
+				{
+					if (!link.contains(event.relatedTarget)) link.classList.remove('is-drop-target');
+				});
+				link.addEventListener('drop', event =>
+				{
+					event.preventDefault();
+					clearDropTargets();
+					if (!canDrop(folder)) return;
+					const message = draggedMessage;
+					draggedMessage = null;
+					moveMessage(message, folder);
+				});
 				const total = Math.max(0, Number(folder.total) || 0);
 				const unread = Math.max(0, Number(folder.unseen) || 0);
 				link.title = folder.longName + ': ' + total + ' messages, ' + unread + ' unread';
@@ -111,6 +185,27 @@
 		items.forEach(item =>
 		{
 			const row = document.createElement('tr');
+			row.draggable = Boolean(item.sourceFolder);
+			row.classList.add('email-inbox-draggable');
+			row.addEventListener('dragstart', event =>
+			{
+				if (movePending || !row.draggable)
+				{
+					event.preventDefault();
+					return;
+				}
+				draggedMessage = { account: item.account, folder: item.sourceFolder, messageNumber: item.messageNumber };
+				event.dataTransfer.clearData();
+				event.dataTransfer.setData('application/x-portico-message', String(item.messageNumber));
+				event.dataTransfer.effectAllowed = 'move';
+				row.classList.add('is-dragging');
+			});
+			row.addEventListener('dragend', () =>
+			{
+				draggedMessage = null;
+				row.classList.remove('is-dragging');
+				clearDropTargets();
+			});
 			if (item.unseen) row.classList.add('is-unseen');
 
 			const sender = cell(row, item.from);
@@ -166,6 +261,18 @@
 			const total = Math.max(0, Number(result.total) || 0);
 			const pageSize = Math.max(1, Number(result.pageSize) || (result.items || []).length || 25);
 			const shown = (result.items || []).length;
+			if (!shown && start > 0)
+			{
+				const destination = new URL(window.location.href);
+				const lastPage = total > 0 ? Math.floor((total - 1) / pageSize) * pageSize : 0;
+				if (Number(destination.searchParams.get('start') || 0) !== lastPage)
+				{
+					if (lastPage > 0) destination.searchParams.set('start', String(lastPage));
+					else destination.searchParams.delete('start');
+					window.history.replaceState(null, '', destination);
+					return load();
+				}
+			}
 			pagination.hidden = total <= pageSize;
 			previous.disabled = start <= 0;
 			next.disabled = start + shown >= total;

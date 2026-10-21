@@ -43,6 +43,7 @@ class EmailInboxController
 			$query = $request->getQueryParams();
 			foreach ($result['items'] as $index => $item)
 			{
+				$result['items'][$index]['sourceFolder'] = (string) $mail->prep_folder_in($item['folder'], $item['account']);
 				$params = [
 					'msgball[acctnum]' => $item['account'],
 					'msgball[folder]' => $item['folder'],
@@ -64,6 +65,75 @@ class EmailInboxController
 		catch (\Throwable $exception)
 		{
 			return $this->json($response, ['error' => lang('Unable to load messages')], 500);
+		}
+	}
+
+	public function move(Request $request, Response $response): Response
+	{
+		$input = $request->getParsedBody();
+		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		$input = is_array($input) ? $input : [];
+		$message = (array) ($input['msgball'] ?? []);
+		$target = (array) ($input['target_fldball'] ?? []);
+		$account = filter_var($message['acctnum'] ?? null, FILTER_VALIDATE_INT);
+		$targetAccount = filter_var($target['acctnum'] ?? null, FILTER_VALIDATE_INT);
+		$messageNumber = filter_var($message['msgnum'] ?? null, FILTER_VALIDATE_INT);
+		$sourceFolder = $message['folder'] ?? null;
+		$targetFolder = $target['folder'] ?? null;
+		if ($account === false || $account < 0 || $targetAccount !== $account
+			|| $messageNumber === false || $messageNumber < 1
+			|| !is_string($sourceFolder) || $sourceFolder === ''
+			|| !is_string($targetFolder) || $targetFolder === '' || $sourceFolder === $targetFolder)
+		{
+			return $this->json($response, ['error' => lang('Invalid message move')], 400);
+		}
+
+		$originalPost = $_POST;
+		$_POST = ['fldball' => ['acctnum' => $account, 'folder' => $sourceFolder]];
+		$mail = null;
+		try
+		{
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->ensure_mail_msg_exists('email.api.move');
+			$mail = \App\modules\email\services\MailMessage::getInstance();
+			$folders = array_column((array) $mail->get_folder_list($account, true), 'folder_long');
+			if (!in_array($sourceFolder, $folders, true) || !in_array($targetFolder, $folders, true))
+			{
+				return $this->json($response, ['error' => lang('Select a valid destination folder')], 422);
+			}
+			$message = ['acctnum' => $account, 'folder' => $mail->prep_folder_out($sourceFolder), 'msgnum' => $messageNumber];
+			$target = ['acctnum' => $account, 'folder' => $mail->prep_folder_out($targetFolder)];
+			if (!$mail->phpgw_header($message, false))
+			{
+				return $this->json($response, ['error' => lang('Message no longer exists')], 404);
+			}
+			$mail->ensure_stream_and_folder($message, 'email.api.move', false);
+			$stream = $mail->get_arg_value('mailsvr_stream', $account);
+			$transport = $mail->getTransport($account);
+			if (!$transport->mail_move($stream, (string) $messageNumber, $targetFolder))
+			{
+				return $this->json($response, ['error' => lang('Unable to move message'), 'reason' => $transport->server_last_error()], 422);
+			}
+			if (!is_string($stream)) $transport->expunge($stream);
+			$mail->event_msg_move_or_delete($message, 'email.api.move', $target);
+			return $this->json($response, ['moved' => true]);
+		}
+		catch (\App\modules\email\services\EmailMailConfigurationException $exception)
+		{
+			return $this->json($response, ['error' => $exception->getMessage()], 422);
+		}
+		catch (\Throwable $exception)
+		{
+			return $this->json($response, ['error' => lang('Unable to move message'), 'reason' => $exception->getMessage()], 500);
+		}
+		finally
+		{
+			$_POST = $originalPost;
+			if (is_object($mail))
+			{
+				$mail->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
 		}
 	}
 

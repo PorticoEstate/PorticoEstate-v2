@@ -37,16 +37,19 @@ final class EmailAttachmentStorage
 	{
 		$id = bin2hex(random_bytes(16));
 		$attachmentPath = $this->path($id);
-		$name = trim(preg_replace('/[\x00-\x1f\x7f]/', '_', basename(str_replace('\\', '/', $name))) ?? 'attachment');
-		$mimeType = trim(preg_replace('/[\r\n]+/', '', $mimeType) ?? 'application/octet-stream');
-		if ($name === '') $name = 'attachment';
-		if ($mimeType === '') $mimeType = 'application/octet-stream';
+		[$name, $mimeType] = $this->normalizeMetadata($name, $mimeType);
 		if (!move_uploaded_file($temporaryPath, $attachmentPath)) throw new \RuntimeException('Unable to store uploaded attachment');
-		if (file_put_contents($attachmentPath . '.info', $mimeType . "\n" . $name . "\n", LOCK_EX) === false)
-		{
-			@unlink($attachmentPath);
-			throw new \RuntimeException('Unable to store attachment metadata');
-		}
+		$this->writeMetadata($attachmentPath, $mimeType, $name);
+		return $this->list();
+	}
+
+	public function storeContent(string $content, string $name, string $mimeType): array
+	{
+		$id = bin2hex(random_bytes(16));
+		$attachmentPath = $this->path($id);
+		[$name, $mimeType] = $this->normalizeMetadata($name, $mimeType);
+		if (file_put_contents($attachmentPath, $content, LOCK_EX) === false) throw new \RuntimeException('Unable to store attachment');
+		$this->writeMetadata($attachmentPath, $mimeType, $name);
 		return $this->list();
 	}
 
@@ -67,5 +70,21 @@ final class EmailAttachmentStorage
 	{
 		if (!preg_match('/^[a-f0-9]{32}$/i', $id)) throw new \InvalidArgumentException('Invalid attachment reference');
 		return $this->directory . '/' . $id;
+	}
+
+	private function normalizeMetadata(string $name, string $mimeType): array
+	{
+		$name = trim(preg_replace('/[\x00-\x1f\x7f]/', '_', basename(str_replace('\\', '/', $name))) ?? 'attachment');
+		$mimeType = trim(preg_replace('/[\r\n]+/', '', $mimeType) ?? 'application/octet-stream');
+		return [$name !== '' ? $name : 'attachment', $mimeType !== '' ? $mimeType : 'application/octet-stream'];
+	}
+
+	private function writeMetadata(string $attachmentPath, string $mimeType, string $name): void
+	{
+		if (file_put_contents($attachmentPath . '.info', $mimeType . "\n" . $name . "\n", LOCK_EX) === false)
+		{
+			@unlink($attachmentPath);
+			throw new \RuntimeException('Unable to store attachment metadata');
+		}
 	}
 }

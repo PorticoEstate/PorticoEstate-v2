@@ -10,6 +10,7 @@
 <main class="email-compose" id="email-compose"
 	data-api-url="{{ api_url|e('html_attr') }}"
 	data-compose-api-url="{{ compose_api_url|e('html_attr') }}"
+	data-spellcheck-url="{{ spellcheck_url|e('html_attr') }}"
 	data-draft-url="{{ draft_url|e('html_attr') }}"
 	data-attachments-api-url="{{ attachments_api_url|e('html_attr') }}"
 	data-attachment-upload-url="{{ attachment_upload_url|e('html_attr') }}"
@@ -35,7 +36,12 @@
 			<label>{{ lang('Bcc') }}<input name="bcc" type="text" value="{{ bcc }}"><button class="email-compose-button" type="button" data-address-target="bcc">{{ lang('Address book') }}</button></label>
 		</div>
 		<label>{{ lang('Subject') }}<input name="subject" type="text" spellcheck="true" value="{{ subject }}"></label>
+		<div class="email-compose-spellcheck">
+			<button class="email-compose-button" id="email-compose-spellcheck" type="button" hidden>{{ lang('Check spelling') }}</button>
+			<span id="email-compose-spellcheck-status" role="status" aria-live="polite"></span>
+		</div>
 		<label>{{ lang('Message') }}<textarea name="body" rows="18" spellcheck="true">{{ body }}</textarea></label>
+		<ul id="email-compose-spellcheck-results" class="email-compose-spellcheck-results" aria-label="{{ lang('Spelling suggestions') }}"></ul>
 		<section class="email-compose-attachments" aria-labelledby="email-compose-attachments-heading">
 			<h2 id="email-compose-attachments-heading">{{ lang('Attachments') }}</h2>
 			<div class="email-compose-attachment-upload">

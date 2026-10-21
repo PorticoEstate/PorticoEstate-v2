@@ -21,6 +21,10 @@
 .email-compose-attachment-list { display: grid; gap: .4rem; margin: .5rem 0 0; padding: 0; list-style: none; }
 .email-compose-attachment-list li { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .45rem 0; border-bottom: 1px solid var(--mail-line); }
 .email-compose-attachment-list button { padding: .2rem .45rem; border: 1px solid var(--mail-line); border-radius: 3px; background: #fff; color: var(--mail-ink); font: inherit; cursor: pointer; }
+.email-compose-spellcheck { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin: .5rem 0; }
+.email-compose-spellcheck-results { display: flex; flex-wrap: wrap; gap: .4rem; margin: .35rem 0 .75rem; padding: 0; list-style: none; }
+.email-compose-spellcheck-results li { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; padding: .35rem .5rem; border: 1px solid var(--mail-line); border-radius: 3px; }
+.email-compose-spellcheck-results strong { margin-right: .2rem; }
 .email-addressbook { box-sizing: border-box; width: min(42rem, calc(100vw - 2rem)); max-height: min(80vh, 42rem); padding: 1rem; border: 1px solid var(--mail-line); border-radius: 4px; color: var(--mail-ink); }
 .email-addressbook::backdrop { background: rgb(14 28 34 / 45%); }
 .email-addressbook header { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }

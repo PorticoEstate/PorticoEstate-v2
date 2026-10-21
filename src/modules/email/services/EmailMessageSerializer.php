@@ -11,6 +11,13 @@ final class EmailMessageSerializer
 		foreach ($parts as $part)
 		{
 			$part = (array) $part;
+			if (($part['d_processed_as'] ?? '') === 'image_href' && !empty($part['message_body']))
+			{
+				$bodyParts[] = [
+					'html' => \Sanitizer::clean_html((string) $part['message_body']),
+					'mimeType' => trim((string) ($part['type'] ?? '') . '/' . (string) ($part['subtype'] ?? ''), '/'),
+				];
+			}
 			if (!empty($part['ex_attachment']))
 			{
 				$attachments[] = [

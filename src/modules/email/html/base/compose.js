@@ -14,6 +14,9 @@
 	const attachmentStatus = document.getElementById('email-compose-attachments-status');
 	const attachmentFile = document.getElementById('email-compose-file');
 	const uploadButton = document.getElementById('email-compose-upload');
+	const spellcheckButton = document.getElementById('email-compose-spellcheck');
+	const spellcheckStatus = document.getElementById('email-compose-spellcheck-status');
+	const spellcheckResults = document.getElementById('email-compose-spellcheck-results');
 	const addressBook = document.getElementById('email-addressbook-dialog');
 	const addressBookForm = document.getElementById('email-addressbook-search');
 	const addressBookQuery = document.getElementById('email-addressbook-query');
@@ -34,8 +37,65 @@
 		signature.hidden = result.has_signature !== true;
 		const signatureInput = form.elements.namedItem('attach_sig');
 		if (signatureInput) signatureInput.checked = result.attach_signature === true;
+		spellcheckButton.hidden = result.spellcheck_available !== true;
 		form.inert = false;
 	}
+
+	spellcheckButton.addEventListener('click', async () =>
+	{
+		spellcheckButton.disabled = true;
+		spellcheckStatus.textContent = 'Checking spelling';
+		spellcheckResults.replaceChildren();
+		try
+		{
+			const response = await fetch(root.dataset.spellcheckUrl, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...csrfHeaders },
+				body: JSON.stringify({ body: form.elements.namedItem('body').value })
+			});
+			const result = await response.json();
+			if (!response.ok) throw new Error(result.error || 'Unable to check spelling');
+			if (!result.available)
+			{
+				spellcheckButton.hidden = true;
+				spellcheckStatus.textContent = 'Spellcheck is unavailable';
+				return;
+			}
+			const issues = result.issues || [];
+			spellcheckStatus.textContent = issues.length ? issues.length + ' possible spelling errors' : 'No spelling errors found';
+			issues.forEach(issue =>
+			{
+				const row = document.createElement('li');
+				const word = document.createElement('strong');
+				word.textContent = issue.word;
+				row.appendChild(word);
+				(issue.suggestions || []).forEach(suggestion =>
+				{
+					const replace = document.createElement('button');
+					replace.type = 'button';
+					replace.className = 'email-compose-button';
+					replace.textContent = suggestion;
+					replace.addEventListener('click', () =>
+					{
+						const escaped = issue.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+						const matcher = new RegExp('(^|[^\\p{L}\\p{N}_])(' + escaped + ')(?=$|[^\\p{L}\\p{N}_])', 'giu');
+						const body = form.elements.namedItem('body');
+						body.value = body.value.replace(matcher, (_, prefix) => prefix + suggestion);
+						body.dispatchEvent(new Event('input', { bubbles: true }));
+						row.remove();
+					});
+					row.appendChild(replace);
+				});
+				spellcheckResults.appendChild(row);
+			});
+		} catch (exception)
+		{
+			spellcheckStatus.textContent = exception.message;
+		} finally
+		{
+			spellcheckButton.disabled = false;
+		}
+	});
 
 	function showError(message)
 	{

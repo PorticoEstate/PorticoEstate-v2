@@ -27,19 +27,14 @@ class EmailComposeController
 		{
 			$bootstrap = \CreateObject('email.msg_bootstrap');
 			$bootstrap->ensure_mail_msg_exists('email.api.compose');
-			$businessObject = \CreateObject('email.bocompose');
-			$businessObject->compose();
-			$compose = (array) ($businessObject->xi ?? []);
-			$decode = static fn($key): string => htmlspecialchars_decode((string) ($compose[$key] ?? ''), ENT_QUOTES | ENT_HTML5);
-			return $this->json($response, [
-				'to' => $decode('to_box_value'),
-				'cc' => $decode('cc_box_value'),
-				'bcc' => $decode('bcc_box_value'),
-				'subject' => $decode('subject'),
-				'body' => $decode('body'),
-				'has_signature' => !empty($compose['do_checkbox_sig']),
-				'attach_signature' => !empty($compose['checkbox_sig_value']),
-			]);
+			$mail = \App\modules\email\services\MailMessage::getInstance();
+			$prefill = (new \App\modules\email\services\EmailComposePrefill($mail))->build($query);
+			$prefill['spellcheck_available'] = \App\modules\email\services\EmailSpellcheckService::available();
+			return $this->json($response, $prefill);
+		}
+		catch (\InvalidArgumentException $exception)
+		{
+			return $this->json($response, ['error' => $exception->getMessage()], 422);
 		}
 		catch (\Throwable $exception)
 		{
@@ -56,6 +51,25 @@ class EmailComposeController
 			$_GET = $originalGet;
 			$_POST = $originalPost;
 			$_REQUEST = $originalRequest;
+		}
+	}
+
+	public function spellcheck(Request $request, Response $response): Response
+	{
+		$input = $request->getParsedBody();
+		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		$body = is_array($input) ? ($input['body'] ?? null) : null;
+		if (!is_string($body) || strlen($body) > 200000) return $this->json($response, ['error' => lang('Invalid spellcheck text')], 400);
+		try
+		{
+			$user = (array) \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+			$language = (string) ($user['preferences']['common']['lang'] ?? 'en');
+			return $this->json($response, (new \App\modules\email\services\EmailSpellcheckService())->check($body, $language));
+		}
+		catch (\Throwable $exception)
+		{
+			error_log('[email] EmailComposeController::spellcheck failed (' . get_class($exception) . ')');
+			return $this->json($response, ['error' => lang('Unable to check spelling')], 500);
 		}
 	}
 

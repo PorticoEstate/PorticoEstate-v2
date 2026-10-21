@@ -269,8 +269,8 @@ class EmailInboxController
 
 		try
 		{
-			$businessObject = \CreateObject('email.bomessage');
-			$businessObject->message_data();
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->ensure_mail_msg_exists('email.api.message', (int) $account);
 			$mail = \App\modules\email\services\MailMessage::getInstance();
 			$activeMsgball = (array) $mail->get_arg_value('msgball');
 			$headers = $mail->phpgw_header($activeMsgball);
@@ -278,36 +278,16 @@ class EmailInboxController
 			{
 				return $this->json($response, ['error' => lang('Message no longer exists')], 404);
 			}
-			$parts = (array) $businessObject->part_nice;
-			foreach ($parts as $index => $part)
-			{
-				if (($part['d_processed_as'] ?? '') === 'image_href')
-				{
-					$imageUrl = \phpgw::link('/email/api/attachment', [
-						'msgball[acctnum]' => $activeMsgball['acctnum'] ?? $account,
-						'msgball[folder]' => $activeMsgball['folder'] ?? $folder,
-						'msgball[msgnum]' => $activeMsgball['msgnum'] ?? $messageNumber,
-						'msgball[part_no]' => $part['m_part_num_mime'] ?? '',
-						'inline' => '1',
-					], true);
-					$parts[$index]['message_body'] = '<img src="' . htmlspecialchars($imageUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '" alt="">';
-					continue;
-				}
-				if (($part['d_instructions'] ?? '') !== 'echo_out') continue;
-				$partBall = $activeMsgball;
-				$partBall['part_no'] = $part['m_part_num_mime'] ?? '';
-				$body = (string) $mail->phpgw_fetchbody($partBall);
-				$keywords = (string) ($part['m_keywords'] ?? '');
-				if (stripos($keywords, 'qprint') !== false) $body = $mail->qprint($body);
-				elseif (stripos($keywords, 'base64') !== false) $body = $mail->de_base64($body);
-				$parts[$index]['message_body'] = htmlspecialchars($body, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-				$parts[$index]['d_instructions'] = 'show';
-			}
-
-			$data = (array) ($businessObject->xi ?? []);
-			$data['account'] = (int) ($activeMsgball['acctnum'] ?? $account);
-			$data['folder'] = (string) ($activeMsgball['folder'] ?? $folder);
-			$data['messageNumber'] = (int) ($activeMsgball['msgnum'] ?? $messageNumber);
+			$content = (new \App\modules\email\services\EmailMessageContent())->build($mail, $activeMsgball, $headers,
+				static fn(string $partNumber, bool $inline): string => \phpgw::link('/email/api/attachment', [
+					'msgball[acctnum]' => $activeMsgball['acctnum'] ?? $account,
+					'msgball[folder]' => $activeMsgball['folder'] ?? $folder,
+					'msgball[msgnum]' => $activeMsgball['msgnum'] ?? $messageNumber,
+					'msgball[part_no]' => $partNumber,
+					'inline' => $inline ? '1' : null,
+				], true));
+			$parts = $content['parts'];
+			$data = $content['data'];
 			$item = EmailMessageSerializer::serialize($data, $parts, [
 				'from' => $this->addressList($headers->from ?? [], $mail),
 				'to' => $this->addressList($headers->to ?? [], $mail),
@@ -355,6 +335,14 @@ class EmailInboxController
 		{
 			error_log('[email] EmailInboxController::message failed (' . get_class($exception) . ')');
 			return $this->json($response, ['error' => lang('Unable to load message')], 500);
+		}
+		finally
+		{
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
 		}
 	}
 
@@ -505,8 +493,8 @@ class EmailInboxController
 
 		try
 		{
-			$businessObject = \CreateObject('email.bomessage');
-			$businessObject->message_data();
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->ensure_mail_msg_exists('email.api.attachment', (int) $account);
 			$mail = \App\modules\email\services\MailMessage::getInstance();
 			$activeMsgball = (array) $mail->get_arg_value('msgball');
 			if ((int) ($activeMsgball['acctnum'] ?? -1) !== (int) $account || (string) ($activeMsgball['folder'] ?? '') !== $folder || (int) ($activeMsgball['msgnum'] ?? -1) !== (int) $messageNumber)
@@ -514,8 +502,9 @@ class EmailInboxController
 				return $this->json($response, ['error' => lang('Invalid attachment reference')], 404);
 			}
 
+			$structure = $mail->phpgw_fetchstructure($activeMsgball, false);
 			$selectedPart = null;
-			foreach ((array) $businessObject->part_nice as $part)
+			foreach ($structure ? (array) $mail->get_flat_pgw_struct($structure) : [] as $part)
 			{
 				$isInlineImage = $inline
 					&& strtolower((string) ($part['type'] ?? '')) === 'image'
@@ -561,6 +550,14 @@ class EmailInboxController
 		{
 			error_log('[email] EmailInboxController::attachment failed (' . get_class($exception) . ')');
 			return $this->json($response, ['error' => lang('Unable to download attachment')], 500);
+		}
+		finally
+		{
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
 		}
 	}
 }

@@ -1,0 +1,86 @@
+<?php
+
+namespace Tests\Services;
+
+require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../../src/helpers/Sanitizer.php';
+
+use App\modules\email\services\EmailMessageContent;
+use App\modules\email\services\EmailMessageSerializer;
+use App\modules\phpgwapi\services\Settings;
+use PHPUnit\Framework\TestCase;
+
+class EmailMessageContentTest extends TestCase
+{
+	private \ReflectionProperty $settingsProperty;
+	private mixed $originalSettings;
+
+	protected function setUp(): void
+	{
+		$this->settingsProperty = new \ReflectionProperty(Settings::class, 'instance');
+		$this->settingsProperty->setAccessible(true);
+		$this->originalSettings = $this->settingsProperty->getValue();
+		$this->settingsProperty->setValue(null, new class
+		{
+			public function get(string $key): array
+			{
+				return match ($key) { 'server' => ['webserver_url' => 'https://example.test', 'usecookies' => true], 'flags' => [], default => [] };
+			}
+		});
+	}
+
+	protected function tearDown(): void
+	{
+		$this->settingsProperty->setValue(null, $this->originalSettings);
+	}
+
+	public function testBuildsPlainHtmlInlineImageAndAttachmentPayloads(): void
+	{
+		$parts = [
+			['m_description' => 'presentable', 'm_part_num_mime' => '1', 'm_keywords' => 'plain 7bit', 'type' => 'text', 'subtype' => 'plain', 'ex_attachment' => false],
+			['m_description' => 'presentable', 'm_part_num_mime' => '2', 'm_keywords' => 'html 7bit', 'type' => 'text', 'subtype' => 'html', 'ex_attachment' => false],
+			['m_description' => 'presentable/image', 'm_part_num_mime' => '3', 'm_keywords' => 'base64', 'type' => 'image', 'subtype' => 'png', 'id' => '<hero-image>', 'ex_attachment' => true, 'ex_part_name' => 'hero.png', 'bytes' => 4, 'encoding' => 'base64'],
+			['m_description' => 'attachment', 'm_part_num_mime' => '4', 'm_keywords' => 'base64', 'type' => 'application', 'subtype' => 'pdf', 'ex_attachment' => true, 'ex_part_name' => 'report.pdf', 'bytes' => 7, 'encoding' => 'base64'],
+		];
+		$mail = new class($parts) {
+			public function __construct(public array $parts) {}
+			public function phpgw_fetchstructure($msgball, $display) { return (object) []; }
+			public function get_flat_pgw_struct($structure) { return $this->parts; }
+			public function phpgw_fetchbody($msgball) { return match ($msgball['part_no']) { '1' => 'Plain &amp; readable', '2' => '<p>HTML body<img src="cid:hero-image"></p>', '3' => base64_encode('PNG!'), '4' => base64_encode('PDF data') }; }
+			public function qprint($body) { return quoted_printable_decode($body); }
+			public function de_base64($body) { return base64_decode($body); }
+			public function normalize_crlf($body) { return str_replace(["\r\n", "\r", "\n"], "\r\n", $body); }
+			public function make_clickable($body, $folder) { return $body; }
+			public function get_subject($headers, $prefix) { return $headers->Subject; }
+		};
+		$headers = (object) ['Subject' => 'Monthly report', 'udate' => 1700000000];
+		$content = (new EmailMessageContent())->build($mail, ['acctnum' => 2, 'folder' => 'INBOX', 'msgnum' => 9], $headers,
+			static fn($part, $inline) => '/email/api/attachment?part=' . $part . ($inline ? '&inline=1' : ''),
+			static fn($timestamp) => 'Nov 14, 2023');
+
+		$this->assertSame('Monthly report', $content['data']['message_subject']);
+		$this->assertSame('Nov 14, 2023', $content['data']['message_date']);
+		$this->assertSame('show', $content['parts'][0]['d_instructions']);
+		$this->assertStringContainsString('Plain &amp; readable', $content['parts'][0]['message_body']);
+		$this->assertStringContainsString('/email/api/attachment?part=3&amp;inline=1', $content['parts'][1]['message_body']);
+		$this->assertSame('image_href', $content['parts'][2]['d_processed_as']);
+		$item = EmailMessageSerializer::serialize($content['data'], $content['parts']);
+		$this->assertCount(3, $item['bodyParts']);
+		$this->assertCount(2, $item['attachments']);
+		$this->assertStringContainsString('/email/api/attachment?part=3&amp;inline=1', $item['bodyParts'][1]['html']);
+	}
+
+	public function testHidesAlternativePartsMarkedAltHide(): void
+	{
+		$mail = new class {
+			public function phpgw_fetchstructure($msgball, $display) { return (object) []; }
+			public function get_flat_pgw_struct($structure) { return [['m_description' => 'presentable', 'm_part_num_mime' => '1', 'm_keywords' => 'plain alt_hide', 'type' => 'text', 'subtype' => 'plain']]; }
+			public function get_subject($headers, $prefix) { return ''; }
+			public function normalize_crlf($body) { return $body; }
+			public function make_clickable($body, $folder) { return $body; }
+		};
+		$content = (new EmailMessageContent())->build($mail, ['acctnum' => 0, 'folder' => 'INBOX', 'msgnum' => 1], (object) ['udate' => 0],
+			static fn($part, $inline) => '', static fn($timestamp) => '');
+		$this->assertSame('', $content['parts'][0]['d_instructions'] ?? '');
+	}
+}

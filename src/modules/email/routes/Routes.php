@@ -60,6 +60,7 @@ $app->group('/email', function (RouteCollectorProxy $group) use ($emailCsrf)
 	$group->get('/api/folders', EmailInboxController::class . ':folders');
 	$group->post('/api/folders/action', EmailInboxController::class . ':folderAction')->add($emailCsrf);
 	$group->post('/api/send', EmailComposeController::class . ':send')->add($emailCsrf);
+	$group->post('/api/spellcheck', EmailComposeController::class . ':spellcheck')->add($emailCsrf);
 	$group->get('/api/compose', EmailComposeController::class . ':compose');
 	$group->post('/api/drafts', EmailComposeController::class . ':draft')->add($emailCsrf);
 	$group->get('/api/attachments', EmailAttachmentController::class . ':index');

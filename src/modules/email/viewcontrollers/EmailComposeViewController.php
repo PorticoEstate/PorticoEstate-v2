@@ -73,6 +73,7 @@ class EmailComposeViewController
 		$html = $this->twig->render('@views/compose.twig', [
 			'layout' => '@views/_bare.twig',
 			'compose_api_url' => \phpgw::link('/email/api/compose', $composeParameters, true),
+			'spellcheck_url' => \phpgw::link('/email/api/spellcheck', [], true),
 			'api_url' => \phpgw::link('/email/api/send', [], true),
 			'draft_url' => \phpgw::link('/email/api/drafts', [], true),
 			'attachments_api_url' => \phpgw::link('/email/api/attachments', [], true),

@@ -15,6 +15,50 @@ class EmailComposeController
 		return $response->withStatus($status)->withHeader('Content-Type', 'application/json');
 	}
 
+	public function compose(Request $request, Response $response): Response
+	{
+		$originalGet = $_GET;
+		$originalPost = $_POST;
+		$originalRequest = $_REQUEST;
+		$query = $request->getQueryParams();
+		$_GET = $query;
+		$_REQUEST = array_replace($originalPost, $query);
+		try
+		{
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->ensure_mail_msg_exists('email.api.compose');
+			$businessObject = \CreateObject('email.bocompose');
+			$businessObject->compose();
+			$compose = (array) ($businessObject->xi ?? []);
+			$decode = static fn($key): string => htmlspecialchars_decode((string) ($compose[$key] ?? ''), ENT_QUOTES | ENT_HTML5);
+			return $this->json($response, [
+				'to' => $decode('to_box_value'),
+				'cc' => $decode('cc_box_value'),
+				'bcc' => $decode('bcc_box_value'),
+				'subject' => $decode('subject'),
+				'body' => $decode('body'),
+				'has_signature' => !empty($compose['do_checkbox_sig']),
+				'attach_signature' => !empty($compose['checkbox_sig_value']),
+			]);
+		}
+		catch (\Throwable $exception)
+		{
+			error_log('[email] EmailComposeController::compose failed (' . get_class($exception) . ')');
+			return $this->json($response, ['error' => lang('Unable to prepare message')], 500);
+		}
+		finally
+		{
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
+			$_GET = $originalGet;
+			$_POST = $originalPost;
+			$_REQUEST = $originalRequest;
+		}
+	}
+
 	public function draft(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
@@ -34,14 +78,12 @@ class EmailComposeController
 				static fn($item) => ($item['status'] ?? '') === 'enabled'), 'acctnum'));
 			if (!in_array($account, $enabled, true)) throw new \InvalidArgumentException('Select an enabled email account');
 			$mail->set_acctnum($account);
-			$storage = \CreateObject('email.boattach_file');
-			$stored = $storage->attach(true);
+			$storage = new \App\modules\email\services\EmailAttachmentStorage($mail->att_files_dir);
 			$attachments = [];
-			foreach ((array) ($stored['items'] ?? []) as $attachment)
+			foreach ($storage->list() as $attachment)
 			{
 				$id = (string) $attachment['id'];
-				if (basename($id) !== $id) throw new \RuntimeException('Invalid attachment reference');
-				$path = $storage->uploaddir . '/' . $id;
+				$path = $mail->att_files_dir . '/' . $id;
 				if (!is_file($path) || is_link($path)) throw new \RuntimeException('Attachment no longer exists');
 				$attachments[] = ['path' => $path, 'name' => $attachment['name']];
 			}
@@ -57,10 +99,48 @@ class EmailComposeController
 			}
 			$stream = $mail->get_arg_value('mailsvr_stream', $account);
 			$path = $mail->get_arg_value('mailsvr_callstr', $account) . $mail->getTransport($account)->utf7_encode($folder);
+			$oldDraft = null;
+			if (($payload['action'] ?? 'new') === 'edit' && isset($payload['msgball']))
+			{
+				$oldDraft = $payload['msgball'];
+				if ((int) ($oldDraft['acctnum'] ?? -1) !== $account || (int) ($oldDraft['msgnum'] ?? 0) < 1
+					|| !is_string($oldDraft['folder'] ?? null) || !in_array($oldDraft['folder'], array_column((array) $mail->get_folder_list($account), 'folder_long'), true))
+				{
+					throw new \InvalidArgumentException('The draft no longer exists');
+				}
+				$oldDraft['folder'] = $mail->prep_folder_out($oldDraft['folder']);
+				$oldHeaders = $mail->phpgw_header($oldDraft, false);
+				if (!$oldHeaders || trim((string) ($oldHeaders->Draft ?? '')) === '') throw new \InvalidArgumentException('The selected message is not a draft');
+			}
 			if (!\IMAPManager::imap_append($stream, $path, $raw, '\\Draft \\Seen')) throw new \RuntimeException('Unable to save draft');
+			$transport = $mail->getTransport($account);
+			$searchOptions = $transport->force_msg_uids ? 1 : 0;
+			$mail->ensure_stream_and_folder(['acctnum' => $account, 'folder' => $mail->prep_folder_out($folder)], 'email.api.draft', false);
+			$numbers = \IMAPManager::imap_search($mail->get_arg_value('mailsvr_stream', $account), 'ALL', $searchOptions);
+			if ($numbers === false || !$numbers) throw new \RuntimeException('Draft saved, but its message reference could not be read');
+			$newMessageNumber = max(array_map('intval', $numbers));
+			$cleanupWarning = false;
+			if ($oldDraft)
+			{
+				$oldStream = $mail->get_arg_value('mailsvr_stream', $account);
+				$oldFolder = $oldDraft['folder'];
+				if ($mail->ensure_stream_and_folder($oldDraft, 'email.api.draft.replace', false)
+					&& \IMAPManager::imap_setflag_full($oldStream, (string) $oldDraft['msgnum'], '\\Deleted', $searchOptions)
+					&& \IMAPManager::imap_expunge($oldStream))
+				{
+					$mail->ensure_stream_and_folder(['acctnum' => $account, 'folder' => $mail->prep_folder_out($folder)], 'email.api.draft', false);
+					$numbers = \IMAPManager::imap_search($mail->get_arg_value('mailsvr_stream', $account), 'ALL', $searchOptions);
+					if ($numbers) $newMessageNumber = max(array_map('intval', $numbers));
+				} else
+				{
+					$cleanupWarning = true;
+				}
+				$mail->expire_session_cache_item('msgball_list', $account, $oldFolder);
+				$mail->expire_session_cache_item('folder_status_info', $account, $oldFolder);
+			}
 			foreach (['msgball_list', 'folder_status_info'] as $key) $mail->expire_session_cache_item($key, $account, $mail->prep_folder_out($folder));
 			$mail->expire_session_cache_item('folder_list', $account);
-			return $this->json($response, ['saved' => true, 'folder' => $folder]);
+			return $this->json($response, ['saved' => true, 'folder' => $folder, 'msgnum' => $newMessageNumber, 'cleanupWarning' => $cleanupWarning]);
 		}
 		catch (\InvalidArgumentException | \App\modules\email\services\EmailMailConfigurationException $exception)
 		{

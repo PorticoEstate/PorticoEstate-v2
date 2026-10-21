@@ -9,6 +9,7 @@
 {% block content %}
 <main class="email-compose" id="email-compose"
 	data-api-url="{{ api_url|e('html_attr') }}"
+	data-compose-api-url="{{ compose_api_url|e('html_attr') }}"
 	data-draft-url="{{ draft_url|e('html_attr') }}"
 	data-attachments-api-url="{{ attachments_api_url|e('html_attr') }}"
 	data-attachment-upload-url="{{ attachment_upload_url|e('html_attr') }}"
@@ -46,7 +47,7 @@
 			<ul class="email-compose-attachment-list" id="email-compose-attachment-list"></ul>
 		</section>
 		<div class="email-compose-options">
-			{% if has_signature %}<label><input name="attach_sig" type="checkbox" {{ attach_signature ? 'checked' }}> {{ lang('Attach signature') }}</label>{% endif %}
+			<label id="email-compose-signature-option" hidden><input name="attach_sig" type="checkbox" {{ attach_signature ? 'checked' }}> {{ lang('Attach signature') }}</label>
 			<label><input name="req_notify" type="checkbox"> {{ lang('Notify on delivery') }}</label>
 		</div>
 		<div class="email-compose-actions">

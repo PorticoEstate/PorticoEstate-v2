@@ -36,11 +36,6 @@ class EmailComposeViewController
 		return ['name' => $name, 'value' => $value];
 	}
 
-	private function formValue($value): string
-	{
-		return htmlspecialchars_decode((string) $value, ENT_QUOTES | ENT_HTML5);
-	}
-
 	private function context(array $query): array
 	{
 		$context = [];
@@ -53,11 +48,9 @@ class EmailComposeViewController
 
 	public function index(Request $request, Response $response): Response
 	{
-		$businessObject = \CreateObject('email.bocompose');
-		$businessObject->compose();
-		$compose = (array) ($businessObject->xi ?? []);
 		$query = $request->getQueryParams();
 		$context = $this->context($query);
+		$composeParameters = array_intersect_key($query, array_flip(['action', 'msgball', 'fldball', 'fwd_proc', 'sort', 'order', 'start', 'mailto', 'to', 'personal', 'cc', 'bcc', 'subject', 'body']));
 
 		$returnParameters = [];
 		$folderBall = (array) ($query['fldball'] ?? []);
@@ -79,6 +72,7 @@ class EmailComposeViewController
 		Settings::getInstance()->update('flags', ['app_header' => lang('E-Mail') . ': ' . lang('Compose')]);
 		$html = $this->twig->render('@views/compose.twig', [
 			'layout' => '@views/_bare.twig',
+			'compose_api_url' => \phpgw::link('/email/api/compose', $composeParameters, true),
 			'api_url' => \phpgw::link('/email/api/send', [], true),
 			'draft_url' => \phpgw::link('/email/api/drafts', [], true),
 			'attachments_api_url' => \phpgw::link('/email/api/attachments', [], true),
@@ -88,13 +82,13 @@ class EmailComposeViewController
 			'return_url' => \phpgw::link('/email/view/inbox', $returnParameters, true),
 			'context' => $context,
 			'csrf' => $this->csrf($request),
-			'to' => $this->formValue($compose['to_box_value'] ?? ''),
-			'cc' => $this->formValue($compose['cc_box_value'] ?? ''),
-			'bcc' => $this->formValue($compose['bcc_box_value'] ?? ''),
-			'subject' => $this->formValue($compose['subject'] ?? ''),
-			'body' => $this->formValue($compose['body'] ?? ''),
-			'has_signature' => !empty($compose['do_checkbox_sig']),
-			'attach_signature' => !empty($compose['checkbox_sig_value']),
+			'to' => '',
+			'cc' => '',
+			'bcc' => '',
+			'subject' => '',
+			'body' => '',
+			'has_signature' => false,
+			'attach_signature' => false,
 		]);
 
 		$response->getBody()->write($this->legacyView->render($html, ['email', 'compose']));

@@ -7,12 +7,19 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class EmailAttachmentController
 {
+	private function storage(): \App\modules\email\services\EmailAttachmentStorage
+	{
+		$bootstrap = \CreateObject('email.msg_bootstrap');
+		$bootstrap->ensure_mail_msg_exists('email.api.attachments');
+		$mail = \App\modules\email\services\MailMessage::getInstance();
+		return new \App\modules\email\services\EmailAttachmentStorage($mail->att_files_dir);
+	}
+
 	public function index(Request $request, Response $response): Response
 	{
 		try
 		{
-			$businessObject = \CreateObject('email.boattach_file');
-			return $this->json($response, $businessObject->attach(true));
+			return $this->json($response, ['items' => $this->storage()->list()]);
 		}
 		catch (\Throwable $exception)
 		{
@@ -24,7 +31,11 @@ class EmailAttachmentController
 		}
 		finally
 		{
-			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
 		}
 	}
 
@@ -44,16 +55,12 @@ class EmailAttachmentController
 			return $this->json($response, ['error' => lang('Invalid uploaded file')], 400);
 		}
 
-		$originalPost = $_POST;
 		$originalName = (string) ($file['name'] ?? 'attachment');
-		$_FILES['uploadedfile']['name'] = trim(preg_replace('/[\x00-\x1f\x7f]/', '_', basename(str_replace('\\', '/', $originalName))) ?? 'attachment');
-		$_POST['action'] = lang('Attach File');
 		try
 		{
-			$businessObject = \CreateObject('email.boattach_file');
-			$result = $businessObject->attach(true);
-			if (!empty($result['message'])) return $this->json($response, ['error' => $result['message']], 422);
-			return $this->json($response, $result);
+			$storage = $this->storage();
+			return $this->json($response, ['items' => $storage->storeUploadedFile(
+				(string) $file['tmp_name'], $originalName, (string) ($file['type'] ?? 'application/octet-stream'))]);
 		}
 		catch (\Throwable $exception)
 		{
@@ -65,9 +72,11 @@ class EmailAttachmentController
 		}
 		finally
 		{
-			$_POST = $originalPost;
-			$_FILES['uploadedfile']['name'] = $originalName;
-			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
 		}
 	}
 
@@ -80,21 +89,13 @@ class EmailAttachmentController
 		{
 			return $this->json($response, ['error' => lang('Select attachments to delete')], 422);
 		}
-		foreach ($ids as $id)
-		{
-			if (!is_string($id) || !preg_match('/^[a-f0-9]{32}$/i', $id))
-			{
-				return $this->json($response, ['error' => lang('Invalid attachment reference')], 400);
-			}
-		}
-
-		$originalPost = $_POST;
-		$_POST['action'] = lang('Delete');
-		$_POST['delete'] = array_values($ids);
 		try
 		{
-			$businessObject = \CreateObject('email.boattach_file');
-			return $this->json($response, $businessObject->attach(true));
+			return $this->json($response, ['items' => $this->storage()->delete($ids)]);
+		}
+		catch (\InvalidArgumentException $exception)
+		{
+			return $this->json($response, ['error' => $exception->getMessage()], 400);
 		}
 		catch (\Throwable $exception)
 		{
@@ -106,8 +107,11 @@ class EmailAttachmentController
 		}
 		finally
 		{
-			$_POST = $originalPost;
-			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
 		}
 	}
 

@@ -22,6 +22,20 @@
 	const addressBookStatus = document.getElementById('email-addressbook-status');
 	let recipientTarget = null;
 	const context = JSON.parse(root.dataset.context || '{}');
+	const fieldNames = ['to', 'cc', 'bcc', 'subject', 'body'];
+	form.inert = true;
+	async function loadCompose()
+	{
+		const response = await fetch(root.dataset.composeApiUrl, { headers: { Accept: 'application/json' } });
+		const result = await response.json();
+		if (!response.ok) throw new Error(result.error || 'Unable to prepare message');
+		fieldNames.forEach(name => { form.elements.namedItem(name).value = result[name] || ''; });
+		const signature = document.getElementById('email-compose-signature-option');
+		signature.hidden = result.has_signature !== true;
+		const signatureInput = form.elements.namedItem('attach_sig');
+		if (signatureInput) signatureInput.checked = result.attach_signature === true;
+		form.inert = false;
+	}
 
 	function showError(message)
 	{
@@ -197,6 +211,12 @@
 			const result = await response.json();
 			if (!response.ok || (draft && !result.saved)) throw new Error(result.error || (draft ? 'Unable to save draft' : 'Unable to send message'));
 			status.textContent = draft ? 'Draft saved' : 'Message sent';
+			if (draft && result.msgnum)
+			{
+				context.action = 'edit';
+				context.msgball = { acctnum: context.msgball?.acctnum ?? context.fldball?.acctnum ?? 0, folder: result.folder, msgnum: result.msgnum };
+			}
+			if (draft && result.cleanupWarning) status.textContent += ' (previous copy could not be removed)';
 			status.hidden = false;
 			if (!draft) window.location.assign(root.dataset.returnUrl);
 		} catch (exception)
@@ -208,8 +228,8 @@
 		}
 	});
 
-	loadAttachments().catch(exception =>
+	Promise.all([loadCompose(), loadAttachments()]).catch(exception =>
 	{
-		attachmentStatus.textContent = exception.message;
+		showError(exception.message);
 	});
 })();

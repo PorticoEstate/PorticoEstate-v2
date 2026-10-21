@@ -20,10 +20,11 @@
 	const moveStatus = document.getElementById('email-inbox-move-status');
 	let draggedMessage = null;
 	let movePending = false;
+	let seenPending = false;
 
 	function canDrop(folder)
 	{
-		return !movePending && draggedMessage
+		return !movePending && !seenPending && draggedMessage
 			&& Number(draggedMessage.account) === Number(folder.account)
 			&& draggedMessage.folder !== folder.longName;
 	}
@@ -35,7 +36,7 @@
 
 	async function moveMessage(message, folder)
 	{
-		if (movePending) return;
+		if (movePending || seenPending) return;
 		movePending = true;
 		root.setAttribute('aria-busy', 'true');
 		moveStatus.textContent = 'Moving message';
@@ -180,7 +181,7 @@
 		{
 			const row = document.createElement('tr');
 			const empty = cell(row, errorText || 'No messages in this folder');
-			empty.colSpan = 4;
+			empty.colSpan = 5;
 			rows.appendChild(row);
 			return;
 		}
@@ -192,7 +193,7 @@
 			row.classList.add('email-inbox-draggable');
 			row.addEventListener('dragstart', event =>
 			{
-				if (movePending || !row.draggable)
+				if (movePending || seenPending || !row.draggable)
 				{
 					event.preventDefault();
 					return;
@@ -210,6 +211,52 @@
 				clearDropTargets();
 			});
 			if (item.unseen) row.classList.add('is-unseen');
+			const readCell = document.createElement('td');
+			readCell.className = 'email-inbox-read';
+			const read = document.createElement('input');
+			read.type = 'checkbox';
+			read.checked = !item.unseen;
+			read.disabled = !item.sourceFolder;
+			function labelReadControl()
+			{
+				read.title = read.checked ? 'Mark as unread' : 'Mark as read';
+				read.setAttribute('aria-label', read.title + ': ' + (item.subject || '(no subject)'));
+			}
+			labelReadControl();
+			read.addEventListener('change', async () =>
+			{
+				if (movePending || seenPending)
+				{
+					read.checked = !item.unseen;
+					return;
+				}
+				seenPending = true;
+				read.disabled = true;
+				error.hidden = true;
+				root.setAttribute('aria-busy', 'true');
+				try
+				{
+					const seen = await window.emailSetSeen(root, item, read.checked);
+					item.unseen = !seen;
+					read.checked = seen;
+					row.classList.toggle('is-unseen', !seen);
+					moveStatus.textContent = seen ? 'Message marked as read' : 'Message marked as unread';
+					await loadFolders();
+				} catch (exception)
+				{
+					read.checked = !item.unseen;
+					error.textContent = exception.message;
+					error.hidden = false;
+				} finally
+				{
+					seenPending = false;
+					read.disabled = false;
+					root.setAttribute('aria-busy', 'false');
+					labelReadControl();
+				}
+			});
+			readCell.appendChild(read);
+			row.appendChild(readCell);
 
 			const sender = cell(row, item.from);
 			if (item.fromAddress)

@@ -6,6 +6,31 @@
 	const status = document.getElementById('email-message-status');
 	const error = document.getElementById('email-message-error');
 	const content = document.getElementById('email-message-content');
+	const read = document.getElementById('email-message-seen');
+	let currentMessage = null;
+
+	read.addEventListener('change', async () =>
+	{
+		if (!currentMessage) return;
+		const previous = currentMessage.seen;
+		read.disabled = true;
+		error.hidden = true;
+		try
+		{
+			currentMessage.seen = await window.emailSetSeen(root, currentMessage, read.checked);
+			read.checked = currentMessage.seen;
+			status.textContent = currentMessage.seen ? 'Message marked as read' : 'Message marked as unread';
+			status.hidden = false;
+		} catch (exception)
+		{
+			read.checked = previous;
+			error.textContent = exception.message;
+			error.hidden = false;
+		} finally
+		{
+			read.disabled = false;
+		}
+	});
 
 	function renderAddresses(target, addresses)
 	{
@@ -24,6 +49,9 @@
 
 	function render(item)
 	{
+		currentMessage = item;
+		read.checked = item.seen === true;
+		read.disabled = !item.sourceFolder;
 		document.getElementById('email-message-subject').textContent = item.subject || '(no subject)';
 		document.getElementById('email-message-date').textContent = item.date || '';
 		renderAddresses(document.getElementById('email-message-from'), item.from);

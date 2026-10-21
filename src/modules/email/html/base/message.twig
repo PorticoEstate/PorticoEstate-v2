@@ -7,12 +7,16 @@
 {% endblock %}
 
 {% block content %}
-<main class="email-message" id="email-message" data-api-url="{{ api_url|e('html_attr') }}">
+<main class="email-message" id="email-message" data-api-url="{{ api_url|e('html_attr') }}"
+	data-seen-url="{{ seen_url|e('html_attr') }}"
+	data-csrf-name="{{ csrf.name|e('html_attr') }}"
+	data-csrf-value="{{ csrf.value|e('html_attr') }}">
 	<header class="email-message-toolbar">
 		<a class="email-message-button" href="{{ back_url|e }}">{{ lang('Back to inbox') }}</a>
 		<a class="email-message-button" href="{{ reply_url|e }}">{{ lang('Reply') }}</a>
 		<a class="email-message-button" href="{{ reply_all_url|e }}">{{ lang('Reply all') }}</a>
 		<a class="email-message-button" href="{{ forward_url|e }}">{{ lang('Forward') }}</a>
+		<label class="email-message-read-control"><input id="email-message-seen" type="checkbox" checked disabled> {{ lang('Read') }}</label>
 	</header>
 	<div class="email-message-error" id="email-message-error" role="alert" hidden></div>
 	<div class="email-message-status" id="email-message-status" role="status" aria-live="polite">{{ lang('Loading message') }}</div>
@@ -36,5 +40,6 @@
 {% endblock %}
 
 {% block scripts %}
+<script>{{ source('@views/message-seen.js') }}</script>
 <script>{{ source('@views/message.js') }}</script>
 {% endblock %}

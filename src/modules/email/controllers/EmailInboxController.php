@@ -137,6 +137,70 @@ class EmailInboxController
 		}
 	}
 
+	public function seen(Request $request, Response $response): Response
+	{
+		$input = $request->getParsedBody();
+		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		$input = is_array($input) ? $input : [];
+		$message = (array) ($input['msgball'] ?? []);
+		$account = filter_var($message['acctnum'] ?? null, FILTER_VALIDATE_INT);
+		$number = filter_var($message['msgnum'] ?? null, FILTER_VALIDATE_INT);
+		$folder = $message['folder'] ?? null;
+		$seen = $input['seen'] ?? null;
+		if ($account === false || $account < 0 || $number === false || $number < 1
+			|| !is_string($folder) || $folder === '' || !is_bool($seen))
+		{
+			return $this->json($response, ['error' => lang('Invalid read status request')], 400);
+		}
+		$originalPost = $_POST;
+		$_POST = ['fldball' => ['acctnum' => $account, 'folder' => $folder]];
+		$mail = null;
+		try
+		{
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->ensure_mail_msg_exists('email.api.seen');
+			$mail = \App\modules\email\services\MailMessage::getInstance();
+			$folders = array_column((array) $mail->get_folder_list($account, true), 'folder_long');
+			if (!in_array($folder, $folders, true))
+			{
+				return $this->json($response, ['error' => lang('Select a valid folder')], 422);
+			}
+			$message = ['acctnum' => $account, 'folder' => $mail->prep_folder_out($folder), 'msgnum' => $number];
+			if (!$mail->phpgw_header($message, false))
+			{
+				return $this->json($response, ['error' => lang('Message no longer exists')], 404);
+			}
+			$mail->ensure_stream_and_folder($message, 'email.api.seen', false);
+			$stream = $mail->get_arg_value('mailsvr_stream', $account);
+			$transport = $mail->getTransport($account);
+			$method = $seen ? 'imap_setflag_full' : 'imap_clearflag_full';
+			if (!\IMAPManager::$method($stream, (string) $number, '\\Seen', $transport->force_msg_uids ? 1 : 0))
+			{
+				return $this->json($response, ['error' => lang('Unable to update read status'), 'reason' => \IMAPManager::imap_last_error()], 422);
+			}
+			$mail->expire_session_cache_item('phpgw_header', $account, $message['folder'], $number);
+			$mail->expire_session_cache_item('folder_status_info', $account, $message['folder']);
+			return $this->json($response, ['updated' => true, 'seen' => $seen]);
+		}
+		catch (\App\modules\email\services\EmailMailConfigurationException $exception)
+		{
+			return $this->json($response, ['error' => $exception->getMessage()], 422);
+		}
+		catch (\Throwable $exception)
+		{
+			return $this->json($response, ['error' => lang('Unable to update read status'), 'reason' => $exception->getMessage()], 500);
+		}
+		finally
+		{
+			$_POST = $originalPost;
+			if (is_object($mail))
+			{
+				$mail->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
+		}
+	}
+
 	private function addressList($addresses, object $mail): array
 	{
 		$result = [];
@@ -225,6 +289,8 @@ class EmailInboxController
 			}
 			$mail->expire_session_cache_item('phpgw_header', $activeMsgball['acctnum'], $activeMsgball['folder'], $activeMsgball['msgnum']);
 			$mail->expire_session_cache_item('folder_status_info', $activeMsgball['acctnum'], $activeMsgball['folder']);
+			$item['sourceFolder'] = (string) $mail->prep_folder_in($activeMsgball['folder'], $activeMsgball['acctnum']);
+			$item['seen'] = true;
 			return $this->json($response, ['item' => $item]);
 		}
 		catch (\App\modules\email\services\EmailMailConfigurationException $exception)

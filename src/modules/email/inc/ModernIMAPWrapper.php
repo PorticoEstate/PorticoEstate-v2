@@ -256,6 +256,16 @@ class ModernIMAPWrapper
 
     public static function imap_setflag_full($stream, $msgNums, $flag, $options = 0)
     {
+        return self::updateFlags($stream, $msgNums, $flag, $options, null);
+    }
+
+    public static function imap_clearflag_full($stream, $msgNums, $flag, $options = 0)
+    {
+        return self::updateFlags($stream, $msgNums, $flag, $options, '-');
+    }
+
+    private static function updateFlags($stream, $msgNums, $flag, $options, $operation)
+    {
         if (!isset(self::$connections[$stream]['folder'])) {
             return false;
         }
@@ -271,7 +281,7 @@ class ModernIMAPWrapper
             $flags = preg_split('/\s+/', trim($flag), -1, PREG_SPLIT_NO_EMPTY);
             foreach (explode(',', (string) $msgNums) as $range) {
                 $bounds = explode(':', $range);
-                $client->getConnection()->store($flags, (int) $bounds[0], isset($bounds[1]) ? (int) $bounds[1] : null, null, true, $mode)->validatedData();
+                $client->getConnection()->store($flags, (int) $bounds[0], isset($bounds[1]) ? (int) $bounds[1] : null, $operation, true, $mode)->validatedData();
             }
             return true;
         } catch (Exception $exception) {

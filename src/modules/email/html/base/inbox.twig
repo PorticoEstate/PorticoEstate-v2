@@ -11,6 +11,7 @@
 	data-api-url="{{ api_url|e('html_attr') }}"
 	data-folders-api-url="{{ folders_api_url|e('html_attr') }}"
 	data-move-url="{{ move_url|e('html_attr') }}"
+	data-seen-url="{{ seen_url|e('html_attr') }}"
 	data-csrf-name="{{ csrf.name|e('html_attr') }}"
 	data-csrf-value="{{ csrf.value|e('html_attr') }}"
 	data-has-preferences="{{ has_preferences ? '1' : '0' }}">
@@ -51,6 +52,7 @@
 			<table class="email-inbox-table">
 				<thead>
 					<tr>
+						<th scope="col">{{ lang('Read') }}</th>
 						<th scope="col">{{ lang('From') }}</th>
 						<th scope="col">{{ lang('Subject') }}</th>
 						<th scope="col">{{ lang('Date') }}</th>
@@ -74,6 +76,7 @@
 {% block scripts %}
 {% if has_preferences %}
 <script>{{ source('@views/folder-hierarchy.js') }}</script>
+<script>{{ source('@views/message-seen.js') }}</script>
 <script>{{ source('@views/inbox.js') }}</script>
 {% endif %}
 {% endblock %}

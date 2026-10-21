@@ -39,6 +39,9 @@
 .email-inbox-table th, .email-inbox-table td { padding: .65rem .75rem; border-bottom: 1px solid var(--mail-line); text-align: left; }
 .email-inbox-table th { background: var(--mail-surface); font-weight: 650; }
 .email-inbox-table tr.is-unseen { font-weight: 700; }
+.email-inbox-table .email-inbox-read { width: 3rem; text-align: center; }
+.email-inbox-read input { width: 1.1rem; height: 1.1rem; cursor: pointer; accent-color: var(--mail-accent); }
+.email-inbox-read input:disabled { cursor: wait; }
 .email-inbox-draggable { cursor: grab; }
 .email-inbox-draggable.is-dragging { opacity: .45; }
 .email-inbox[aria-busy="true"] .email-inbox-draggable { cursor: progress; }

@@ -353,6 +353,15 @@ class LegacyIMAPWrapper
         $fn = 'imap_setflag_full'; return @$fn($stream, $msgNum, $flag, $options);
     }
     
+    public static function imap_clearflag_full($stream, $msgNum, $flag, $options = 0)
+    {
+        if (!function_exists('imap_clearflag_full')) {
+            return false;
+        }
+
+        $fn = 'imap_clearflag_full'; return @$fn($stream, $msgNum, $flag, $options);
+    }
+
     /**
      * Legacy imap_sort() - direct passthrough to native function
      */
